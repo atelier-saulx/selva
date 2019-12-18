@@ -2,6 +2,8 @@
   "name": "selva-client",
   "version": "0.0.1",
   "scripts": {
+    "build": "tsc",
+    "start": "tsc && node lib index.js",
     "test": "ava",
     "watch": "ava --watch test/index.ts"
   },
