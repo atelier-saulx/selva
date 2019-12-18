@@ -1,6 +1,10 @@
 {
   "name": "selva-client",
   "version": "0.0.1",
+  "scripts": {
+    "test": "ava",
+    "watch": "ava --watch test/index.ts"
+  },
   "husky": {
     "hooks": {
       "/pre-commit": "lint-staged",
@@ -22,8 +26,16 @@
       "git add"
     ]
   },
+  "ava": {
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ]
+  },
   "devDependencies": {
+    "ava": "^2.4.0",
     "babel-eslint": "^10.0.3",
+    "typescript": "^3.7.3",
     "eslint": "^6.5.1",
     "eslint-config-prettier": "^6.4.0",
     "eslint-config-react-app": "^5.0.2",
