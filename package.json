@@ -8,12 +8,6 @@
       "/post-merge": "lerna bootstrap --since $(git rev-parse HEAD) --include-filtered-dependencies"
     }
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "services/*",
-    "scripts"
-  ],
   "lint-staged": {
     "{js,json}": [
       "prettier --write",
