@@ -180,7 +180,7 @@ const { data: items } = await db.get({
    parents: ['id', 'id3'],
    ancestors: ['id', 'id3'],
    date: ts,
-   start: ts,
+   start: ts, // '$date'
    end: ts,
    published: boolean,
    status: integer, // deprecate?
@@ -201,13 +201,15 @@ const { data: items } = await db.get({
    },
    theme: { ... ? },
    ads: {},
-   dictionairy: {},
+   dictionary: {},
    menu: {},
    social: {},
+
+
    layout: {
        default: { components: [] },
        match: { components: [] },
-       video: '$match' <---- ref to layout.match // think about this query language?
+       video: '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
    }
 }
 ```
