@@ -42,7 +42,7 @@ const { data: myItem } = await db.get({
   $id: 'mydingdong',
   speshTitle: {
     $inherit: {
-      field: ['title', 'description']
+      $field: ['title', 'description']
     }
   }
 })
@@ -59,89 +59,193 @@ const { data: myItem } = await db.get({
   $id: 'mydingdong',
   club: {
     $inherit: {
-      item: ['club'] // cannot combine this with field
+      $item: ['club'] // cannot combine this with field
     },
     title: true,
-    children: [
-      {
-        title: true,
+    children: {
+      $field: ['childrenzzz'],
+      $list: {
         $range: [0, 1000]
-      }
-    ]
+      },
+      title: true
+    }
   }
 })
 
+//-----------------------------------------------------
 const { data: myItem } = await db.get({
   $id: 'mydingdong', // top only
-  $version: 'jims"s version', // top only
-  clubs: [
-    {
-      $inherit: {
-        entity: ['club'] // cannot combine this with field
-      },
-      title: true,
-      children: [
-        {
-          title: true,
-          $range: [0, 1000]
+  $version: 'jims', // top only
+  clubs: {
+    $list: {
+      $range: [0, 100],
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $operator: '=',
+          $field: 'type',
+          $value: ['club', 'team']
         }
-      ]
+      }
+    },
+    title: true,
+    children: {
+      title: true,
+      $list: {
+        $range: [0, 1000]
+      }
     }
-  ]
+  }
 })
 
 const { data: items } = await db.get([
   {
-    $query: {
-      scope: [{ id: 'volleyball' }, { id: 'football' }],
-      type: ['match', 'video']
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: [
+          {
+            $operator: '=',
+            $field: 'type',
+            $value: ['match', 'video']
+          },
+          {
+            $field: 'start',
+            $operator: '>',
+            $value: 'now'
+          },
+          {
+            $traverse: 'ancestors',
+            $field: 'id',
+            $operator: '=',
+            $value: 'fo143'
+          }
+        ]
+      },
+      $range: [0, 100],
+      $sort: [{ field: 'start', order: 'ascending' }
     },
-    $filter: [{ field: 'start', operator: '>', value: 'now' }], // not everything
-    $range: [0, 100],
-    $sort: [{ field: 'start', order: 'ascending' }],
     title: true,
     ancestors: true,
-    teams: [
-      {
-        $inherit: { entiry: ['team'] },
-        title: true,
-        id: true
-      }
-    ],
-    relatedVideos: [
-      {
-        $query: {
-          type: ['match', 'video'],
-          scope: [{ ancestor: ['league'] }] // tricky how to know if its home / away?
+    teams: {
+      title: true,
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'ancestors',
+          $filter: {
+            $operator: '=',
+            $field: 'type',
+            $value: ['team']
+          }
         }
       }
-    ]
+    },
+    relatedVideos: {
+      id: true,
+      title: true,
+      $list: {
+        $find: {
+          $traverse: ['ancestors'],
+          $filter: {
+            $operator: '=',
+            $field: 'type',
+            $value: 'league'
+          },
+          $find: {
+            $traverse: ['descendants'],
+            $filter: {
+              $operator: '=',
+              $field: 'type',
+              $value: ['match', 'video']
+            }
+          }
+        }
+      }
+    }
   }
 ])
 
 const { data: items } = await db.get({
   $id: 'volleyball',
-  items: [
-    {
-      $query: {
-        scope: [{ id: '$id' }, { id: 'de' }],
-        type: ['match', 'video']
+  title: true,
+  items: {
+    title: true,
+    theme: { $inherit: true },
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: [
+          {
+            $operator: '=',
+            $field: 'type',
+            $value: ['match']
+          },
+        ],
+        $find: {
+          $filter: [
+            {
+              $operator: '=',
+              $field: 'id',
+              $value: ['de']
+            }
+          ],
+          $traverse: 'ancestors'
+        }
       }
     }
-  ]
+  }
 })
 
-const { data: items } = await db.get({
-  $id: 'volleyball',
-  items: [
-    {
-      $query: {
-        scope: [{ ancestor: ['region'] }],
-        type: ['match', 'video']
+// redis-cli ft.search masterIndex @ancestors:{volleyball} @ancestors:{de} @type:{match|video}
+
+items: {
+  $list: {
+    $find: {
+      $traverse: 'ancestors',
+      $filter: [
+        $operator: '=',
+        $field: 'type',
+        $value: 'region'
+      ],
+      $find: {
+        $filter: {
+          $operator: '=',
+          $field: 'flurp',
+          $value:  [ 'match'],
+          $and: {
+            $operator: '=',
+            $field: 'flurp',
+            $value:  [ 'match'],
+            $and: {
+              $operator: '=',
+              $field: 'flurp',
+              $value:  [ 'match'],
+            }
+          }
+        }
+        // OR
+        $filter: {
+          $or: [
+            {
+              $operator: '=',
+              $field: 'type',
+              $value:  [ 'match', 'video']
+            },
+            {
+              $operator: '=',
+              $field: 'flurp',
+              $value:  [ 'match']
+            },
+          ]
+          }
+        }
       }
     }
-  ]
-})
+  }
+}
+
+// $filter: ['type', '=', ['match', 'video']]
 
 const { data: items } = await db.get({
   $id: 'volleyball',
@@ -149,13 +253,19 @@ const { data: items } = await db.get({
   matches: [
     {
       title: true,
-      $query: {
-        scope: [{ id: '$id' }],
-        type: ['match', 'video']
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $operator: '=',
+            $field: 'type',
+            $value: [ 'match', 'video']
+          }
+        }
       }
     }
   ],
-  ancestors: [{ id: true, title: true, $range: [0, 2] }]
+  ancestors: { id: true, title: true, $list: { $range: [0, 2] } }
 })
 ```
 
@@ -164,10 +274,65 @@ const { data: items } = await db.get({
 ```javascript
 {
    version: 'flurpy',
-   id: ['root.match', 'root.video'],
+   key: ['root.match', 'root.video'],
    date: 1578060349513
 }
 ```
+
+## Item
+
+```javascript
+{
+   id: 'myid',
+   url: ['url', 'url2'], // needs a url map in a seperate field (specfic)
+   type: 'match',
+   children: ['id', 'id2'],
+   parents: ['id', 'id3'],
+   ancestors: ['id', 'id3'],
+  //  descendants
+   date: ts,
+   start: ts, // '$date'
+   end: ts,
+   published: boolean,
+   status: integer, // deprecate?
+   video: { hls, mp4, overlays: [{
+     interval: [0, 10, 60], // [start, end, repeat*optional]
+     src: 'scoreboard image'
+   }, {
+     src: 'watermark'
+   },] },
+   image: { thumb, poster, cover, logo }, // maybe call logo => icon?
+   title: { en, de, fr, nl },
+   description: { en, de, fr, nl },
+   article: { en, de, fr, nl },
+   access: {
+       geo: ['de', 'en' ],
+       needsSubscription: boolean,
+       payedItem: booleam
+   },
+   theme: { ... ? },
+   ads: {},
+   dictionary: {},
+   menu: {},
+   social: {},
+   geo: {},
+
+   layout: {
+       default: { components: [] },
+       match: { components: [] },
+       video: '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
+   }
+}
+```
+
+## Meta functionality
+
+- user id per field (edited)
+- last edited field
+- descendants
+  }
+
+````
 
 ## Item
 
@@ -206,6 +371,56 @@ const { data: items } = await db.get({
    social: {},
 
 
+   layout: {
+       default: { components: [] },
+       match: { components: [] },
+       video: '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
+   }
+}
+````
+
+## Meta functionality
+
+- user id per field (edited)
+- last edited field
+  }
+
+## Item
+
+```javascript
+{
+   id: 'myid',
+   url: ['url', 'url2'], // needs a url map in a seperate field (specfic)
+   type: 'match', // type ad, type video needs vid
+   children: ['id', 'id2'],
+   parents: ['id', 'id3'],
+   ancestors: ['id', 'id3'],
+   date: ts,
+   start: '$date'
+   end: ts,
+   published: boolean,
+   status: integer, // deprecate?
+   video: { hls, mp4, overlays: [{
+     interval: [0, 10, 60], // [start, end, repeat*optional]
+     src: 'scoreboard image'
+   }, {
+     src: 'watermark'
+   },] },
+   image: { thumb, poster, cover, logo }, // maybe call logo => icon?
+   title: { en, de, fr, nl, fi, se, es },
+   description: { en, de, fr, nl, fi, se, es },
+   article: { en, de, fr, nl, fi, se, es },
+   access: {
+       geo: ['de', 'en' ],
+       premium: [ needs package ],
+       price: real
+   },
+   price: real,
+   theme: { ... ?, font, colors, style },
+   ads: [{type: 'dfp'}, { type: 'custom'}],
+   dictionary: {},
+   menu: {},
+   social: {},
    layout: {
        default: { components: [] },
        match: { components: [] },
