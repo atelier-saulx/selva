@@ -43,7 +43,7 @@ const myItem = await db.get(
     id: 'myclub24'
   },
   {
-    club: {
+    speshTitle: {
       $inherit: {
         field: 'title' // by default if uses the field name 'club'
       }
@@ -59,15 +59,39 @@ const myItem = await db.get(
   {
     club: {
       $inherit: {
-        entity: ['club']
+        entity: ['club'] // cannot combine this with field
       },
       title: true,
       children: [
         {
-          title: true
+          title: true,
+          $range: [0, 1000]
         }
       ]
     }
+  }
+)
+
+// get all clubs
+const myItem = await db.get(
+  {
+    id: 'myclub24'
+  },
+  {
+    clubs: [
+      {
+        $inherit: {
+          entity: ['club'] // cannot combine this with field
+        },
+        title: true,
+        children: [
+          {
+            title: true,
+            $range: [0, 1000]
+          }
+        ]
+      }
+    ]
   }
 )
 
@@ -78,13 +102,65 @@ const children = await db.get(
     items: [
       {
         $query: {
-          scope: [{ queryType: 'ancestor', ancestorType: ['match', 'video'] }], // if match is found before
-          type: ['match', 'video'],
-          filter: [{ field: 'start', operator: '>', value: 'now' }],
-          range: [0, 100],
-          sort: [{ field: 'start', order: 'ascendin' }]
+          // firstEncounterOfType: true // default
+          //  deep: true,
+          //  shallow: true
+
+          scope: [
+            { queryType: 'id', id: 'volleyball' },
+            { queryType: 'id', id: 'football' }
+          ],
+          type: ['match', 'video']
         },
-        title: true
+        $filter: [{ field: 'start', operator: '>', value: 'now' }], // not everything
+        $range: [0, 100],
+        $sort: [{ field: 'start', order: 'ascending' }],
+        title: true,
+        teams: [
+          {
+            $inherit: { entiry: ['team'] },
+            title: true,
+            id: true
+          }
+        ],
+        relatedVideos: [
+          {
+            $query: {
+              type: ['match', 'video'],
+              scope: [{ queryType: 'ancestor', ancestorType: ['league'] }] // tricky how to know if its home / away?
+            }
+          }
+        ]
+      }
+    ]
+  }
+)
+
+// query
+const children = await db.get(
+  { id: 'volleyball' },
+  {
+    items: [
+      {
+        $query: {
+          scope: [{ queryType: '$self' }, { queryType: 'id', id: 'de' }],
+          type: ['match', 'video']
+        }
+      }
+    ]
+  }
+)
+
+// query
+const children = await db.get(
+  { id: 'volleyball' },
+  {
+    items: [
+      {
+        $query: {
+          scope: [{ queryType: 'ancestor', ancestorType: ['region'] }],
+          type: ['match', 'video']
+        }
       }
     ]
   }
