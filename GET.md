@@ -174,7 +174,7 @@ const { data: items } = await db.get({
 ```javascript
 {
    id: 'myid',
-   url: ['url', 'url2'],
+   url: ['url', 'url2'], // needs a url map in a seperate field (specfic)
    type: 'match',
    children: ['id', 'id2'],
    parents: ['id', 'id3'],
@@ -186,8 +186,10 @@ const { data: items } = await db.get({
    status: integer, // deprecate?
    video: { hls, mp4, overlays: [{
      interval: [0, 10, 60], // [start, end, repeat*optional]
-     src: 'imagesrc'
-   }] },
+     src: 'scoreboard image'
+   }, {
+     src: 'watermark'
+   },] },
    image: { thumb, poster, cover, logo }, // maybe call logo => icon?
    title: { en, de, fr, nl },
    description: { en, de, fr, nl },
@@ -197,6 +199,11 @@ const { data: items } = await db.get({
        needsSubscription: boolean,
        payedItem: booleam
    },
+   theme: { ... ? },
+   ads: {},
+   dictionairy: {},
+   menu: {},
+   social: {},
    layout: {
        default: { components: [] },
        match: { components: [] },
