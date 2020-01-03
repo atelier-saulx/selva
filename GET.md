@@ -23,7 +23,7 @@ const myItem = await db.get(
     id: 'myclub24'
   },
   {
-    theme: { inherit: true } // uses default order for inheritance
+    theme: { $inherit: true } // uses default order for inheritance
   }
 )
 
@@ -33,7 +33,7 @@ const myItem = await db.get(
     id: 'myclub24'
   },
   {
-    theme: { $inherit: { $type: ['sport', 'genre', 'region'] } } // prefers first in the list, if it cannot be found uses the next
+    theme: { $inherit: { type: ['sport', 'genre', 'region'] } } // prefers first in the list, if it cannot be found uses the next
   }
 )
 
@@ -45,7 +45,7 @@ const myItem = await db.get(
   {
     club: {
       $inherit: {
-        $field: 'title' // by default if uses the field name 'club'
+        field: 'title' // by default if uses the field name 'club'
       }
     }
   }
@@ -59,7 +59,7 @@ const myItem = await db.get(
   {
     club: {
       $inherit: {
-        $entity: ['club']
+        entity: ['club']
       },
       title: true,
       children: [
