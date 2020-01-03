@@ -1,4 +1,6 @@
-# get
+# Selva-client
+
+## Get
 
 ```javascript
 import selva from 'selva-client'
@@ -6,6 +8,13 @@ const db = selva.connect({ host: 'bla.com', port: 8080 })
 
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
+  id: true,
+  title: true
+})
+
+const { data: myItem } = await db.get({
+  $id: 'mydingdong',
+  $language: 'de', // gets [de] fields if available
   id: true,
   title: true
 })
@@ -150,11 +159,53 @@ const { data: items } = await db.get({
 })
 ```
 
-## Subscription descriptor
+## Subscription Descriptor
 
 ```javascript
 {
    version: 'flurpy',
-   id: ['root.match', 'root.video']
+   id: ['root.match', 'root.video'],
+   date: 1578060349513
 }
 ```
+
+## Item
+
+```javascript
+{
+   id: 'myid',
+   url: ['url', 'url2'],
+   type: 'match',
+   children: ['id', 'id2'],
+   parents: ['id', 'id3'],
+   ancestors: ['id', 'id3'],
+   date: ts,
+   start: ts,
+   end: ts,
+   published: boolean,
+   status: integer, // deprecate?
+   video: { hls, mp4, overlays: [{
+     interval: [0, 10, 60], // [start, end, repeat*optional]
+     src: 'imagesrc'
+   }] },
+   image: { thumb, poster, cover, logo }, // maybe call logo => icon?
+   title: { en, de, fr, nl },
+   description: { en, de, fr, nl },
+   article: { en, de, fr, nl },
+   access: {
+       geo: ['de', 'en' ],
+       needsSubscription: boolean,
+       payedItem: booleam
+   },
+   layout: {
+       default: { components: [] },
+       match: { components: [] },
+       video: '$match' <---- ref to layout.match // think about this query language?
+   }
+}
+```
+
+## Meta functionality
+
+- user id per field (edited)
+- last edited field
