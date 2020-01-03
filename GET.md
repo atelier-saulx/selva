@@ -150,8 +150,9 @@ const { data: items } = await db.get({
 })
 ```
 
+## Subscription descriptor
+
 ```javascript
-// subscritpion descriptor
 {
    version: 'flurpy',
    id: ['root.match', 'root.video']
