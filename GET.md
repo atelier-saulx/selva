@@ -146,14 +146,14 @@ const { data: items } = await db.get([
       title: true,
       $list: {
         $find: {
-          $traverse: ['ancestors'],
+          $traverse: 'ancestors',
           $filter: {
             $operator: '=',
             $field: 'type',
             $value: 'league'
           },
           $find: {
-            $traverse: ['descendants'],
+            $traverse: 'descendants',
             $filter: {
               $operator: '=',
               $field: 'type',
@@ -236,7 +236,7 @@ items: {
               $operator: '=',
               $field: 'flurp',
               $value:  [ 'match']
-            },
+            }
           ]
           }
         }
@@ -282,6 +282,23 @@ const { data: items } = await db.get({
 ## Item
 
 ```javascript
+types: match,
+  person,
+  organisation,
+  club,
+  video,
+  team,
+  genre,
+  movie,
+  show,
+  event,
+  location,
+  sport,
+  camera,
+  category
+```
+
+```javascript
 {
    id: 'myid',
    url: ['url', 'url2'], // needs a url map in a seperate field (specfic)
@@ -301,135 +318,38 @@ const { data: items } = await db.get({
    }, {
      src: 'watermark'
    },] },
-   image: { thumb, poster, cover, logo }, // maybe call logo => icon?
-   title: { en, de, fr, nl },
-   description: { en, de, fr, nl },
-   article: { en, de, fr, nl },
-   access: {
+  image: { thumb, poster, cover, icon },
+  title: { en, de, fr, nl },
+  description: { en, de, fr, nl },
+  article: { en, de, fr, nl },
+
+  access: {
        geo: ['de', 'en' ],
        needsSubscription: boolean,
        payedItem: booleam
    },
-   theme: { ... ? },
-   ads: {},
-   dictionary: {},
-   menu: {},
-   social: {},
-   geo: {},
 
-   layout: {
-       default: { components: [] },
-       match: { components: [] },
-       video: '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
-   }
+  contact:
+    name: string,
+    email: string,
+    phone: int,
+  },
+
+  age: int,
+  price: real,
+
+  geo: {},
+  address: { street, city, zip },
+
+  theme: { ... ? },
+  ads: {},
+  dictionary: {},
+  menu: {},
+  social: {},
+  layout: {
+      default: { components: [] },
+      match: { components: [] },
+      video: '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
+  }
 }
 ```
-
-## Meta functionality
-
-- user id per field (edited)
-- last edited field
-- descendants
-  }
-
-````
-
-## Item
-
-```javascript
-{
-   id: 'myid',
-   url: ['url', 'url2'], // needs a url map in a seperate field (specfic)
-   type: 'match',
-   children: ['id', 'id2'],
-   parents: ['id', 'id3'],
-   ancestors: ['id', 'id3'],
-   date: ts,
-   start: ts, // '$date'
-   end: ts,
-   published: boolean,
-   status: integer, // deprecate?
-   video: { hls, mp4, overlays: [{
-     interval: [0, 10, 60], // [start, end, repeat*optional]
-     src: 'scoreboard image'
-   }, {
-     src: 'watermark'
-   },] },
-   image: { thumb, poster, cover, logo }, // maybe call logo => icon?
-   title: { en, de, fr, nl },
-   description: { en, de, fr, nl },
-   article: { en, de, fr, nl },
-   access: {
-       geo: ['de', 'en' ],
-       needsSubscription: boolean,
-       payedItem: booleam
-   },
-   theme: { ... ? },
-   ads: {},
-   dictionary: {},
-   menu: {},
-   social: {},
-
-
-   layout: {
-       default: { components: [] },
-       match: { components: [] },
-       video: '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
-   }
-}
-````
-
-## Meta functionality
-
-- user id per field (edited)
-- last edited field
-  }
-
-## Item
-
-```javascript
-{
-   id: 'myid',
-   url: ['url', 'url2'], // needs a url map in a seperate field (specfic)
-   type: 'match', // type ad, type video needs vid
-   children: ['id', 'id2'],
-   parents: ['id', 'id3'],
-   ancestors: ['id', 'id3'],
-   date: ts,
-   start: '$date'
-   end: ts,
-   published: boolean,
-   status: integer, // deprecate?
-   video: { hls, mp4, overlays: [{
-     interval: [0, 10, 60], // [start, end, repeat*optional]
-     src: 'scoreboard image'
-   }, {
-     src: 'watermark'
-   },] },
-   image: { thumb, poster, cover, logo }, // maybe call logo => icon?
-   title: { en, de, fr, nl, fi, se, es },
-   description: { en, de, fr, nl, fi, se, es },
-   article: { en, de, fr, nl, fi, se, es },
-   access: {
-       geo: ['de', 'en' ],
-       premium: [ needs package ],
-       price: real
-   },
-   price: real,
-   theme: { ... ?, font, colors, style },
-   ads: [{type: 'dfp'}, { type: 'custom'}],
-   dictionary: {},
-   menu: {},
-   social: {},
-   layout: {
-       default: { components: [] },
-       match: { components: [] },
-       video: '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
-   }
-}
-```
-
-## Meta functionality
-
-- user id per field (edited)
-- last edited field
