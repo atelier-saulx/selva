@@ -298,6 +298,7 @@ match,
   sport,
   camera,
   category,
+  tag,
   ad
 ```
 

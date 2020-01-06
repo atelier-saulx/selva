@@ -243,63 +243,7 @@ const result = await client.unsubscribe(
 )
 ```
 
-## notes
-
-how to do setShallow?
-how to do SimpleClient vs Client?
-
-## doodles
-
-```js
-db.get(
-  {
-    id: 'root'
-  },
-  {
-    items: [
-      {
-        $query: {
-          $from: ['region'],
-          $ancestors: ['volleyball1', 'football1', '$id']
-        }
-      }
-    ]
-  }
-)
-
-db.get({
-  $id: 'football',
-  title: true,
-  image: true,
-  children: [
-    {
-      children: [
-        {
-          children: [{}]
-        }
-      ]
-    }
-  ]
-})
-
-{
-  id: ['id1', 'id2'],
-  version: 'myStaging'
-}
-
-
-
-db.get({
-  $scope: 'root',
-  $type: 'match',
-  $filter: 'match',
-  title: true,
-  image: true
-})
-```
-
-```js
-```
+````js
 
 ### id
 
@@ -310,4 +254,4 @@ Max types 1764!
 ```javascript
 const id = await client.id({ type: 'flurpy', externalId: 'smurkysmurk' })
 // flgurk
-```
+````
