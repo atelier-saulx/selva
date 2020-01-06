@@ -17,18 +17,17 @@ Takes an object with options
 - reconnects
 - batches commands
 - queues commands if disconnected
-- *optimized/cached results
+- \*optimized/cached results
 
 example
+
 ```js
 import { getService } from 'registry'
 
 const client = selva.connect(() => getService('name-of-db'))
 
 client.set('myId', { myShine: true }).then(result => console.log(result)) // logs OK
-
 ```
-
 
 ```js
 const client = selva.connect({
@@ -77,50 +76,42 @@ On every reconnect selva will call the given function. This allows you to change
 Set an object on an id. Will deep merge objects by default.
 
 ```js
-const result = await client.set(
-  {
-    $id: 'myId',
-    $shallow: true, // defaults to false
-    $version: 'mySpecialversion', // optional
-    id: 'myNewId',
-    foo: true
-  }
-)
+const result = await client.set({
+  $id: 'myId',
+  $shallow: true, // defaults to false
+  $version: 'mySpecialversion', // optional
+  id: 'myNewId',
+  foo: true
+})
 ```
 
 ```js
-const result = await client.set(
-  {
-    $id: 'myId',
-    $shallow: true, // defaults to false
-    $version: 'mySpecialversion', // optional
-    myThing: {
-      title: 'blurf',
-      // description: {
-      //   $ifNotExists: true,
-      //   $val: 'blurf'
-      // },
-      nestedCount: {
-        // $default: 100,
-        $inc: 1
-      }
+const result = await client.set({
+  $id: 'myId',
+  $shallow: true, // defaults to false
+  $version: 'mySpecialversion', // optional
+  myThing: {
+    title: 'blurf',
+    // description: {
+    //   $ifNotExists: true,
+    //   $val: 'blurf'
+    // },
+    nestedCount: {
+      // $default: 100,
+      $inc: 1
     }
   }
-)
+})
 ```
 
 ```js
-const result = await client.inc(
-  {
-    $id: 'myId',
-    $shallow: true, // defaults to false
-    $version: 'mySpecialversion', // optional
-    myCount: 1
-  }
-)
+const result = await client.inc({
+  $id: 'myId',
+  $shallow: true, // defaults to false
+  $version: 'mySpecialversion', // optional
+  myCount: 1
+})
 ```
-
-
 
 ```js
 myId
@@ -143,7 +134,6 @@ myId
 myId#mySpecialversion
 ```
 
-
 ```js
 const obj = {
   foo: {
@@ -160,10 +150,10 @@ const obj = {
 haha: true
 ```
 
-hkeys: foo.*
+hkeys: foo.\*
 
 {
-  foo: true
+foo: true
 }
 
 ### client.get()

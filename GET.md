@@ -4,11 +4,7 @@
 
 ```javascript
 import selva from 'selva-client'
-
-const db = selva.connect({
-  host: 'bla.com',
-  port: 8080
-})
+const db = selva.connect({ host: 'bla.com', port: 8080 })
 
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
@@ -102,8 +98,7 @@ const { data: myItem } = await db.get({
   }
 })
 
-const { data: items } = await db.get([
-  {
+const { data: items } = await db.get({
     $list: {
       $find: {
         $traverse: 'descendants',
@@ -167,8 +162,7 @@ const { data: items } = await db.get([
         }
       }
     }
-  }
-])
+  })
 
 const { data: items } = await db.get({
   $id: 'volleyball',
@@ -288,14 +282,9 @@ const { data: items } = await db.get({
 ### Types
 
 ```javascript
-<<<<<<< HEAD
 match,
-=======
-types:
-  article,
-  match,
->>>>>>> 269ca22043e462f3d481679d8881deaa62f677d0
   person,
+  character,
   organisation,
   club,
   video,
@@ -343,8 +332,9 @@ types:
       payedItem: booleam
    },
 
+  name: string,
+
   contact:
-    name: string,
     email: string,
     phone: int,
   },
@@ -357,7 +347,7 @@ types:
       id: [id],
       type: 'admin' | 'owner' | 'user' | 'api'?
     }
-  }
+  },
 
   age: int,
 
