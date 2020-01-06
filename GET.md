@@ -284,7 +284,13 @@ const { data: items } = await db.get({
 ### Types
 
 ```javascript
+<<<<<<< HEAD
 match,
+=======
+types:
+  article,
+  match,
+>>>>>>> 269ca22043e462f3d481679d8881deaa62f677d0
   person,
   organisation,
   club,
