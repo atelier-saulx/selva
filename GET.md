@@ -281,8 +281,10 @@ const { data: items } = await db.get({
 
 ## Item
 
+### Types
+
 ```javascript
-types: match,
+match,
   person,
   organisation,
   club,
@@ -295,11 +297,13 @@ types: match,
   location,
   sport,
   camera,
-  category
+  category,
+  ad
 ```
 
 ```javascript
 {
+  // U <--- id
    id: 'myid',
    url: ['url', 'url2'], // needs a url map in a seperate field (specfic)
    type: 'match',
@@ -324,9 +328,9 @@ types: match,
   article: { en, de, fr, nl },
 
   access: {
-       geo: ['de', 'en' ],
-       needsSubscription: boolean,
-       payedItem: booleam
+      geo: ['de', 'en' ],
+      needsSubscription: boolean,
+      payedItem: booleam
    },
 
   contact:
@@ -335,7 +339,18 @@ types: match,
     phone: int,
   },
 
+  auth: {
+    password: string, --> MD5
+    google: id,
+    facebook: id,
+    role: {
+      id: [id],
+      type: 'admin' | 'owner' | 'user' | 'api'?
+    }
+  }
+
   age: int,
+
   price: real,
 
   geo: {},
