@@ -14,6 +14,22 @@
 
 Takes an object with options
 
+- reconnects
+- batches commands
+- queues commands if disconnected
+- *optimized/cached results
+
+example
+```js
+import { getService } from 'registry'
+
+const client = selva.connect(() => getService('name-of-db'))
+
+client.set('myId', { myShine: true }).then(result => console.log(result)) // logs OK
+
+```
+
+
 ```js
 const client = selva.connect({
   port: 8080,
@@ -63,15 +79,92 @@ Set an object on an id. Will deep merge objects by default.
 ```js
 const result = await client.set(
   {
-    id: 'myId',
-    shallow: true, // defaults to false
-    version: 'mySpecialversion' // optional
-  },
-  {
+    $id: 'myId',
+    $shallow: true, // defaults to false
+    $version: 'mySpecialversion', // optional
+    id: 'myNewId',
     foo: true
   }
 )
 ```
+
+```js
+const result = await client.set(
+  {
+    $id: 'myId',
+    $shallow: true, // defaults to false
+    $version: 'mySpecialversion', // optional
+    myThing: {
+      title: 'blurf',
+      // description: {
+      //   $ifNotExists: true,
+      //   $val: 'blurf'
+      // },
+      nestedCount: {
+        // $default: 100,
+        $inc: 1
+      }
+    }
+  }
+)
+```
+
+```js
+const result = await client.inc(
+  {
+    $id: 'myId',
+    $shallow: true, // defaults to false
+    $version: 'mySpecialversion', // optional
+    myCount: 1
+  }
+)
+```
+
+
+
+```js
+myId
+myId#mySpecialversion
+```
+
+```js
+const result = await client.get(
+  {
+    $id: 'myId',
+    $version: 'mySpecialversion'
+  }
+)
+
+const versioned = redisClient.get('myId#mySpecialversion')
+const original = redisClient.get('myId') || {}
+const result = { ...original, ...versioned }
+
+myId
+myId#mySpecialversion
+```
+
+
+```js
+const obj = {
+  foo: {
+    bar: true
+  },
+  haha: true
+}
+```
+
+```js
+'foo.bar': true
+'foo.foo': true
+'foo.baz': true
+haha: true
+```
+
+hkeys: foo.*
+
+{
+  foo: true
+}
 
 ### client.get()
 

@@ -4,7 +4,11 @@
 
 ```javascript
 import selva from 'selva-client'
-const db = selva.connect({ host: 'bla.com', port: 8080 })
+
+const db = selva.connect({
+  host: 'bla.com',
+  port: 8080
+})
 
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
