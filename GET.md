@@ -16,7 +16,7 @@ const { data: myItem } = await db.get({
   $id: 'mydingdong',
   $language: 'de', // gets [de] fields if available
   id: true,
-  title: true
+  title: { $default: 'my smurfypants' }
 })
 
 const { data: myItem } = await db.get({
@@ -34,7 +34,8 @@ const { data: myItem } = await db.get({
   speshTitle: {
     // map title to spesh title
     $field: ['title'],
-    $inherit: true
+    $inherit: true,
+    $default: 'NO TITLE FUN'
   }
 })
 

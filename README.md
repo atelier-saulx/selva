@@ -75,10 +75,17 @@ On every reconnect selva will call the given function. This allows you to change
 
 Set an object on an id. Will deep merge objects by default.
 
+Default behaviours
+
+- Acenstors can never be set, children and parents update ancestors, children and parents.
+- Date is allways added by default
+- Keyword 'now' in date, start, end will add date
+- Setting a batch with adding new stuff is tricky \*
+
 ```js
 const result = await client.set({
   $id: 'myId',
-  $shallow: true, // defaults to false
+  $merge: false, // defaults to true
   $version: 'mySpecialversion', // optional
   id: 'myNewId',
   foo: true
@@ -88,17 +95,55 @@ const result = await client.set({
 ```js
 const result = await client.set({
   $id: 'myId',
-  $shallow: true, // defaults to false
+  $merge: false, // defaults to true
+  $version: 'mySpecialversion', // optional
+  id: 'myNewId',
+  foo: true,
+  children: {
+    // ---- :(
+    $append: 'smukytown',
+    $prepend: 'smootsiedog'
+  }
+})
+```
+
+```js
+const result = await client.set({
+  $id: 'myId',
+  children: {
+    // ---- :(
+    $hierarchy: false, // defaults to true
+    $append: 'smukytown'
+  }
+})
+```
+
+```js
+const result = await client.set({
+  $id: 'myId',
+  children: {
+    // ---- :(
+    $hierarchy: false, // defaults to true
+    $value: ['root']
+  }
+})
+```
+
+```js
+const result = await client.set({
+  $id: 'myId',
+  $merge: false, // defaults to true
   $version: 'mySpecialversion', // optional
   myThing: {
     title: 'blurf',
-    // description: {
-    //   $ifNotExists: true,
-    //   $val: 'blurf'
-    // },
     nestedCount: {
-      // $default: 100,
-      $inc: { $value: 1, $default: 100 }
+      $default: 100,
+      $inc: { $value: 1 }
+    },
+    access: {
+      $default: {
+        flurpiepants: 'my pants'
+      }
     }
   }
 })
@@ -107,8 +152,8 @@ const result = await client.set({
 ```js
 const result = await client.inc({
   $id: 'myId',
-  $shallow: true, // defaults to false
-  $version: 'mySpecialversion', // optional
+  $merge: false, // defaults to true
+  $version: 'mySpecialversion', // only on top make it nice
   myCount: 1
 })
 ```
@@ -147,6 +192,7 @@ const obj = {
 'foo.bar': true
 'foo.foo': true
 'foo.baz': true
+'foo.baz.blarf': true,
 haha: true
 ```
 
