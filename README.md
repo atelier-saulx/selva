@@ -80,10 +80,11 @@ Default behaviours
 - Acenstors can never be set, children and parents update ancestors, children and parents.
 - Date is allways added by default
 - Keyword 'now' in date, start, end will add date
-- Setting a batch with adding new stuff is tricky \*
+- Setting a batch with adding new stuff is tricky
+  - Try to set - if batch - error 'does' not exist - wait 150ms (?) order the non working results. if it does not work return error
 
 ```js
-const result = await client.set({
+await client.set({
   $id: 'myId',
   $merge: false, // defaults to true
   $version: 'mySpecialversion', // optional
@@ -93,7 +94,7 @@ const result = await client.set({
 ```
 
 ```js
-const result = await client.set({
+await client.set({
   $id: 'myId',
   $merge: false, // defaults to true
   $version: 'mySpecialversion', // optional
@@ -108,7 +109,7 @@ const result = await client.set({
 ```
 
 ```js
-const result = await client.set({
+await client.set({
   $id: 'myId',
   children: {
     // ---- :(
@@ -119,7 +120,7 @@ const result = await client.set({
 ```
 
 ```js
-const result = await client.set({
+await client.set({
   $id: 'myId',
   children: {
     // ---- :(
@@ -130,7 +131,7 @@ const result = await client.set({
 ```
 
 ```js
-const result = await client.set({
+await client.set({
   $id: 'myId',
   $merge: false, // defaults to true
   $version: 'mySpecialversion', // optional
@@ -150,7 +151,7 @@ const result = await client.set({
 ```
 
 ```js
-const result = await client.inc({
+await client.inc({
   $id: 'myId',
   $merge: false, // defaults to true
   $version: 'mySpecialversion', // only on top make it nice
@@ -201,31 +202,6 @@ hkeys: foo.\*
 {
 foo: true
 }
-
-### client.get()
-
-```js
-const result = await client.get({})
-// nice stuffz
-```
-
-### client.inc()
-
-Same as .set() but will increment numbers instead.
-
-```js
-const result = await client.inc(
-  {
-    id: 'myId',
-    version: 'mySpecialversion' // optional
-  },
-  {
-    myCounter: 1,
-    myBigCounter: 10,
-    myNegativeCounter: -20
-  }
-)
-```
 
 ### client.subscribe()
 
@@ -325,18 +301,13 @@ db.get({
 ```js
 ```
 
-### layouts
+### id
 
-```js
+Generate an id
+
+Max types 1764!
+
+```javascript
+const id = await client.id({ type: 'flurpy', externalId: 'smurkysmurk' })
+// flgurk
 ```
-
-{
-layout: {
-
-}
-}
-
-$item
-$field
-
-returnSubscription
