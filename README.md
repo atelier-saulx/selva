@@ -98,7 +98,7 @@ const result = await client.set({
     // },
     nestedCount: {
       // $default: 100,
-      $inc: 1
+      $inc: { $value: 1, $default: 100 }
     }
   }
 })
