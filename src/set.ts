@@ -1,4 +1,4 @@
-import { Text, Item, BaseItem, Id, ExternalId } from './types'
+import { BaseItem, Id, ExternalId, UserType } from './types'
 
 type RedisSetParams =
   | Id[]
@@ -11,7 +11,7 @@ type RedisSetParams =
 
 function set(
   payload: BaseItem & {
-    $id?: string
+    $id?: Id
     $version?: string
     children?: RedisSetParams
     parents?: RedisSetParams
@@ -23,6 +23,21 @@ function set(
           $add?: ExternalId[] | ExternalId
           $delete?: ExternalId[] | ExternalId
         }
+    auth?: {
+      password?: string
+      google?: string
+      facebook?: string
+      role?: {
+        id?:
+          | Id
+          | Id[]
+          | {
+              $add?: Id[] | Id
+              $delete?: Id[] | Id
+            }
+        type?: UserType
+      }
+    }
   }
 ): void {
   console.log('yesh', this.redis)

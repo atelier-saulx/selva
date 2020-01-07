@@ -96,32 +96,31 @@ export const itemTypes = [
 
 export type BaseItem = {
   id: string
-  type: Type
+  type?: Type
   url?: string[]
-  date: Timestamp
+  date?: Timestamp
   start?: Timestamp
   end?: Timestamp
-  published: boolean
+  published?: boolean
   status?: number
-  video: {
+  video?: {
     hls?: Url
     mp4?: Url
     overlays?: Overlay[]
   }
-
-  image: {
+  image?: {
     thumb?: Url
     poster?: Url
     cover?: Url
     icon?: Url
   }
-  title: Text
-  description: Text
-  article: Text
-  access: {
+  title?: Text
+  description?: Text
+  article?: Text
+  access?: {
     allowGeo?: Language[]
-    needsSubscription: boolean
-    payedItem: boolean
+    needsSubscription?: boolean
+    payedItem?: boolean
   }
   name?: string
   contact?: {
@@ -129,15 +128,6 @@ export type BaseItem = {
     lastName?: string
     email?: string
     phone?: number
-  }
-  auth?: {
-    password?: string
-    google?: string
-    facebook?: string
-    role?: {
-      id: Id[]
-      type: UserType
-    }
   }
   age?: number
   price?: number
@@ -151,8 +141,17 @@ export type BaseItem = {
 }
 
 export type Item = BaseItem & {
-  children: Id[]
-  ancestors: Id[]
-  parents: Id[]
+  children?: Id[]
+  ancestors?: Id[]
+  parents?: Id[]
   externalId?: ExternalId[]
+  auth?: {
+    password?: string
+    google?: string
+    facebook?: string
+    role?: {
+      id?: Id[]
+      type?: UserType
+    }
+  }
 }
