@@ -9,7 +9,7 @@ const wait = () => new Promise(r => setTimeout(r, 500))
 
 test.before(async t => {
   db = await start({ port: 6061, modules: ['redisearch'] })
-  await wait()
+  await wait() // for now until client is ready
   // This runs before all tests
 })
 

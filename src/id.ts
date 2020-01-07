@@ -15,7 +15,6 @@ export const typePrefix = {}
 export const inverseTypePrefix = {}
 
 // map needs to be added!
-
 const createPrefix = (type: string, index: number): string => {
   if (index > type.length) {
     return createPrefix(type, 0)
@@ -42,7 +41,7 @@ function id({ type, externalId }: FnId): Id {
 
   if (!prefix) {
     // need to load non predefined types from redis
-    throw Error('TYPE NOT PREDEFINED ' + type)
+    throw Error(`TYPE NOT PREDEFINED ${type} WILL DO IT LATER`)
   }
 
   if (externalId) {
