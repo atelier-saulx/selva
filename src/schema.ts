@@ -10,9 +10,8 @@ export type Overlay = {
 }
 
 // so sad would be nice to have the languages hardcoded here :( <- sad
-export type Language = string
 
-export type UserType = string
+export type UserType = 'admin' | 'owner' | 'user'
 
 export type Geo = {
   lat: number
@@ -67,9 +66,33 @@ export type Text = {
   fi?: string
 }
 
-export type Type = string
+export const languages = ['en', 'de', 'fr', 'nl', 'es', 'it', 'fi']
 
-// pre defined Item types
+export type Language = 'en' | 'de' | 'fr' | 'nl' | 'es' | 'it' | 'fi'
+
+export type Type =
+  | 'person'
+  | 'character'
+  | 'organisation'
+  | 'club'
+  | 'match'
+  | 'federation'
+  | 'league'
+  | 'video'
+  | 'team'
+  | 'genre'
+  | 'movie'
+  | 'show'
+  | 'event'
+  | 'location'
+  | 'sport'
+  | 'camera'
+  | 'category'
+  | 'tag'
+  | 'ad'
+  | 'root'
+  | 'custom'
+
 // can use this in the cms
 export const itemTypes = [
   'person',
@@ -91,8 +114,28 @@ export const itemTypes = [
   'category',
   'tag',
   'ad',
-  'root'
+  'root',
+  'custom'
 ]
+
+export const typePrefix = {}
+export const inverseTypePrefix = {}
+
+// map needs to be added!
+const createPrefix = (type: Type, index: number): string => {
+  if (index > type.length) {
+    return createPrefix(type, 0)
+  }
+  let prefix = type.slice(index, index + 2)
+  if (typePrefix[prefix]) {
+    return createPrefix(type, ++index)
+  }
+  inverseTypePrefix[type] = prefix
+  typePrefix[prefix] = type
+  return prefix
+}
+
+itemTypes.forEach((type: Type) => createPrefix(type, 0))
 
 export type BaseItem = {
   id?: string

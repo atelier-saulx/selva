@@ -1,8 +1,6 @@
 // type list is important may need to be stored in the db (other types)
-import { Type, ExternalId, Id, itemTypes } from './types'
+import { Type, ExternalId, Id, inverseTypePrefix } from './schema'
 const uuid = require('uuid')
-
-// import { SelvaClient } from './'
 
 const hash = (str: string): string => {
   let hash = 5381
@@ -11,26 +9,6 @@ const hash = (str: string): string => {
   return (hash >>> 0).toString(16)
 }
 
-export const typePrefix = {}
-export const inverseTypePrefix = {}
-
-// map needs to be added!
-const createPrefix = (type: string, index: number): string => {
-  if (index > type.length) {
-    return createPrefix(type, 0)
-  }
-  let prefix = type.slice(index, index + 2)
-  if (typePrefix[prefix]) {
-    return createPrefix(type, ++index)
-  }
-  inverseTypePrefix[type] = prefix
-  typePrefix[prefix] = type
-  return prefix
-}
-
-itemTypes.forEach((type: string) => createPrefix(type, 0))
-
-// client: SelvaClient,
 function id({
   type,
   externalId
@@ -42,7 +20,7 @@ function id({
 
   if (!prefix) {
     // need to load non predefined types from redis
-    throw Error(`TYPE NOT PREDEFINED ${type} WILL DO IT LATER`)
+    throw Error(`TYPE NOT PRE-DEFINED ${type} WILL DO IT LATER`)
   }
 
   if (externalId) {
