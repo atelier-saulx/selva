@@ -70,6 +70,7 @@ export type Text = {
 export type Type = string
 
 // pre defined Item types
+// can use this in the cms
 export const itemTypes = [
   'person',
   'character',
