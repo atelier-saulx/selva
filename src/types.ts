@@ -1,130 +1,131 @@
-export type id = string
+export type Id = string
 
-export type url = string
+export type Url = string
 
-export type timestamp = number
+export type Timestamp = number
 
-export type overlay = {
-  interval: undefined | number[]
-  src: url
+export type Overlay = {
+  interval?: number[]
+  src: Url
 }
 
-export type hmac = string
+export type Hmac = string
 
 // so sad would be nice to have the languages hardcoded here :( <- sad
-export type language = string
+export type Language = string
 
-export type userType = string
+export type UserType = string
 
-export type geo = {
+export type Geo = {
   lat: number
   long: number
 }
 
-export type location = {
-  adress:
-    | {
-        street: string
-        number: number
-        zip: number
-        city: string
-        region: string
-        country: string
-      }
-    | undefined
-  geo: geo | undefined
+export type ExternalId = string | number
+
+export type Address = {
+  street: string
+  number: number
+  zip: number
+  city: string
+  region: string
+  country: string
+}
+
+export type Location = {
+  address?: Address
+  geo?: Geo
 }
 
 // fill in later
 // fonts
 // color
 // graphic style
-export type theme = {}
+export type Theme = {}
 
-export type ads = {}
+export type Ads = {}
 
-export type dictionary = {}
+export type Dictionary = {}
 
-export type menu = {}
+export type Menu = {}
 
-export type social = {
-  instagram: url
-  facebook: url
-  twitter: url
+export type Social = {
+  instagram: Url
+  facebook: Url
+  twitter: Url
 }
 
 // any type as key?
-export type layout = {}
+export type Layout = {}
 
 // would be nice to generate this form a list of lang keys <-- so sad :(
-export type text = {
-  en: string | undefined
-  de: string | undefined
-  fr: string | undefined
-  nl: string | undefined
-  es: string | undefined
-  it: string | undefined
-  fi: string | undefined
+export type Text = {
+  en?: string
+  de?: string
+  fr?: string
+  nl?: string
+  es?: string
+  it?: string
+  fi?: string
 }
+
+export type Type = string
 
 export type Item = {
   id: string
-  type: string
-  url: id[]
-  children: id[]
-  ancestors: id[]
-  parents: id[]
-  externalId: (string | number)[]
-  date: timestamp
-  start: timestamp | undefined
-  end: timestamp | undefined
+  type: Type
+  url?: string[]
+  children: Id[]
+  ancestors: Id[]
+  parents: Id[]
+  externalId?: ExternalId[]
+  date: Timestamp
+  start?: Timestamp
+  end?: Timestamp
   published: boolean
-  status: number | undefined
+  status?: number
   video: {
-    hls: url | undefined
-    mp4: url | undefined
-    overlays: overlay[] | undefined
+    hls?: Url
+    mp4?: Url
+    overlays?: Overlay[]
   }
   image: {
-    thumb: url | undefined
-    poster: url | undefined
-    cover: url | undefined
-    icon: url | undefined
+    thumb?: Url
+    poster?: Url
+    cover?: Url
+    icon?: Url
   }
-  title: text
-  description: text
-  article: text
+  title: Text
+  description: Text
+  article: Text
   access: {
-    geo: language[] | undefined
+    allowGeo?: Language[]
     needsSubscription: boolean
     payedItem: boolean
   }
-  name: string | undefined
+  name?: string
   contact: {
-    firstName: string
-    lastName: string
-    email: string
-    phone: number
+    firstName?: string
+    lastName?: string
+    email?: string
+    phone?: number
   }
   auth: {
-    password: hmac | undefined
-    google: string | undefined
-    facebook: string | undefined
-    role:
-      | {
-          id: id[]
-          type: userType
-        }
-      | {}
+    password?: Hmac
+    google?: string
+    facebook?: string
+    role?: {
+      id: Id[]
+      type: UserType
+    }
   }
-  age: number | undefined
-  price: number | undefined
-  location: location | undefined
-
-  theme: theme | undefined
-  ads: ads | undefined
-  dictionary: dictionary | undefined
-  menu: menu | undefined
-  social: social | undefined
-  layout: layout | undefined
+  age: number
+  price: number
+  location: Location
+  theme?: Theme
+  ads?: Ads
+  dictionary?: Dictionary
+  menu?: Menu
+  social?: Social
+  layout?: Layout
 }

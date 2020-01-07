@@ -6,6 +6,8 @@ export class SelvaClient {
   constructor(opts: ConnectOptions | (() => Promise<ConnectOptions>)) {
     this.redis = new RedisClient(opts)
   }
+
+  id() {}
 }
 
 export function connect(
