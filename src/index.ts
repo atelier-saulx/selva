@@ -1,5 +1,6 @@
 import { default as RedisClient, ConnectOptions } from './redis'
 import id from './id'
+import set from './set'
 
 export class SelvaClient {
   public redis: RedisClient
@@ -11,6 +12,7 @@ export class SelvaClient {
   // need client.destroy (at least for tests)
 
   id = id
+  set = set
 }
 
 export function connect(

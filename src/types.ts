@@ -90,7 +90,8 @@ export const itemTypes = [
   'camera',
   'category',
   'tag',
-  'ad'
+  'ad',
+  'root'
 ]
 
 export type Item = {
