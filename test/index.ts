@@ -34,7 +34,7 @@ test('set', async t => {
 
   await client.set({
     type: 'root',
-    id: 'root'
+    $id: 'root'
   })
 
   await client.set({
