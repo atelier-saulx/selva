@@ -4,7 +4,7 @@ import { createClient, RedisClient as Redis, Commands } from 'redis'
 export type ConnectOptions = {
   port: number
   host: string
-  retryStrategy: () => number
+  retryStrategy?: () => number // make a good default
 }
 
 type RedisCommand = {

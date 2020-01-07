@@ -1,4 +1,5 @@
 import { default as RedisClient, ConnectOptions } from './redis'
+import id from './id'
 
 export class SelvaClient {
   public redis: RedisClient
@@ -7,7 +8,7 @@ export class SelvaClient {
     this.redis = new RedisClient(opts)
   }
 
-  id() {}
+  id = id
 }
 
 export function connect(

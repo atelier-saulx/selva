@@ -69,6 +69,26 @@ export type Text = {
 
 export type Type = string
 
+// pre defined Item types
+export const itemTypes = [
+  'person',
+  'character',
+  'organisation',
+  'club',
+  'video',
+  'team',
+  'genre',
+  'movie',
+  'show',
+  'event',
+  'location',
+  'sport',
+  'camera',
+  'category',
+  'tag',
+  'ad'
+]
+
 export type Item = {
   id: string
   type: Type
