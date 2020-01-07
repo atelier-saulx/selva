@@ -8,6 +8,8 @@ export class SelvaClient {
     this.redis = new RedisClient(opts)
   }
 
+  // need client.destroy (at least for tests)
+
   id = id
 }
 
