@@ -1,4 +1,4 @@
-import { BaseItem, Id, ExternalId, UserType } from './types'
+import { BaseItem, Id, ExternalId, UserType } from './schema'
 
 type RedisSetParams =
   | Id[]
@@ -9,9 +9,14 @@ type RedisSetParams =
       $delete?: Id[] | Id
     }
 
+// changing ids, default
+
+// { $merge, $default, $value, $increment }
+
 function set(
   payload: BaseItem & {
     $id?: Id
+    $merge?: boolean
     $version?: string
     children?: RedisSetParams
     parents?: RedisSetParams

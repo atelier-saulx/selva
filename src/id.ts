@@ -1,6 +1,6 @@
 // type list is important may need to be stored in the db (other types)
 import { Type, ExternalId, Id, inverseTypePrefix } from './schema'
-const uuid = require('uuid')
+import uuid from 'uuid'
 
 const hash = (str: string): string => {
   let hash = 5381

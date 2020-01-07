@@ -172,6 +172,7 @@ export type BaseItem = {
     email?: string
     phone?: number
   }
+  value?: number
   age?: number
   price?: number
   location?: Location

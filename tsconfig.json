@@ -10,12 +10,9 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "declaration": true,
-    "outDir": "./dist",
+    "esModuleInterop": true,
+    "outDir": "./dist"
   },
   "strict": true,
-  "exclude": [
-    "node_modules",
-    "test",
-    "dist"
-  ]
+  "exclude": ["node_modules", "test", "dist"]
 }
