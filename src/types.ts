@@ -95,7 +95,7 @@ export const itemTypes = [
 ]
 
 export type BaseItem = {
-  id: string
+  id?: string
   type?: Type
   url?: string[]
   date?: Timestamp
