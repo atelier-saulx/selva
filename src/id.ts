@@ -2,7 +2,6 @@
 import { Type, ExternalId, Id, itemTypes } from './types'
 const uuid = require('uuid')
 
-console.log('???', uuid)
 // import { SelvaClient } from './'
 
 const hash = (str: string): string => {
@@ -15,28 +14,22 @@ const hash = (str: string): string => {
 export const typePrefix = {}
 export const inverseTypePrefix = {}
 
-const createPrefix = (
-  type: string,
-  index: number,
-  capital: boolean
-): string => {
-  // must be better!
+// map needs to be added!
+
+const createPrefix = (type: string, index: number): string => {
   if (index > type.length) {
-    return createPrefix(type, 0, true)
+    return createPrefix(type, 0)
   }
   let prefix = type.slice(index, index + 2)
-  if (capital === true) {
-    prefix = prefix.toUpperCase()
-  }
   if (typePrefix[prefix]) {
-    return createPrefix(type, ++index, false)
+    return createPrefix(type, ++index)
   }
   inverseTypePrefix[type] = prefix
   typePrefix[prefix] = type
   return prefix
 }
 
-itemTypes.forEach((type: string) => createPrefix(type, 0, false))
+itemTypes.forEach((type: string) => createPrefix(type, 0))
 
 type FnId = {
   type: Type
@@ -45,16 +38,13 @@ type FnId = {
 
 // client: SelvaClient,
 function id({ type, externalId }: FnId): Id {
-  // on connect need to use type map
+  const prefix = inverseTypePrefix[type]
 
-  // need to handle new types
-  // if type not in default type need to create something that does not collide
-  // load types from db
-  // needs to store in db will have colision now bad!!!
+  if (!prefix) {
+    // need to load non predefined types from redis
+    throw Error('TYPE NOT PREDEFINED ' + type)
+  }
 
-  // if not in default types inverseTypePrefix[type] then do something
-
-  const prefix = inverseTypePrefix[type] || createPrefix(type, 0, false)
   if (externalId) {
     return (
       prefix +
