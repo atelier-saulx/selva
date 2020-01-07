@@ -94,14 +94,10 @@ export const itemTypes = [
   'root'
 ]
 
-export type Item = {
+export type BaseItem = {
   id: string
   type: Type
   url?: string[]
-  children: Id[]
-  ancestors: Id[]
-  parents: Id[]
-  externalId?: ExternalId[]
   date: Timestamp
   start?: Timestamp
   end?: Timestamp
@@ -112,6 +108,7 @@ export type Item = {
     mp4?: Url
     overlays?: Overlay[]
   }
+
   image: {
     thumb?: Url
     poster?: Url
@@ -151,4 +148,11 @@ export type Item = {
   menu?: Menu
   social?: Social
   layout?: Layout
+}
+
+export type Item = BaseItem & {
+  children: Id[]
+  ancestors: Id[]
+  parents: Id[]
+  externalId?: ExternalId[]
 }

@@ -1,16 +1,30 @@
-import { Text } from './types'
+import { Text, Item, BaseItem, Id, ExternalId } from './types'
 
-// how to add item in here / merge it
-type FnSet = {
-  $id?: string
-  $version?: string
-  type?: string
-  title?: Text
-}
+type RedisSetParams =
+  | Id[]
+  | {
+      $hierarchy?: boolean
+      $value?: Id[] | Id
+      $add?: Id[] | Id
+      $delete?: Id[] | Id
+    }
 
-// maybe make item
-
-function set(payload: FnSet): void {
+function set(
+  payload: BaseItem & {
+    $id?: string
+    $version?: string
+    children?: RedisSetParams
+    parents?: RedisSetParams
+    ancestors?: RedisSetParams
+    externalId?:
+      | ExternalId
+      | ExternalId[]
+      | {
+          $add?: ExternalId[] | ExternalId
+          $delete?: ExternalId[] | ExternalId
+        }
+  }
+): void {
   console.log('yesh', this.redis)
   if (!payload.$id) {
     console.log('create item')

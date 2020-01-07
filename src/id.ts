@@ -30,13 +30,14 @@ const createPrefix = (type: string, index: number): string => {
 
 itemTypes.forEach((type: string) => createPrefix(type, 0))
 
-type FnId = {
+// client: SelvaClient,
+function id({
+  type,
+  externalId
+}: {
   type: Type
   externalId?: ExternalId | ExternalId[]
-}
-
-// client: SelvaClient,
-function id({ type, externalId }: FnId): Id {
+}): Id {
   const prefix = inverseTypePrefix[type]
 
   if (!prefix) {
