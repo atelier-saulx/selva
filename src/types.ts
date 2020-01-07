@@ -9,8 +9,6 @@ export type Overlay = {
   src: Url
 }
 
-export type Hmac = string
-
 // so sad would be nice to have the languages hardcoded here :( <- sad
 export type Language = string
 
@@ -104,14 +102,14 @@ export type Item = {
     payedItem: boolean
   }
   name?: string
-  contact: {
+  contact?: {
     firstName?: string
     lastName?: string
     email?: string
     phone?: number
   }
-  auth: {
-    password?: Hmac
+  auth?: {
+    password?: string
     google?: string
     facebook?: string
     role?: {
@@ -119,9 +117,9 @@ export type Item = {
       type: UserType
     }
   }
-  age: number
-  price: number
-  location: Location
+  age?: number
+  price?: number
+  location?: Location
   theme?: Theme
   ads?: Ads
   dictionary?: Dictionary
