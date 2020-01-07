@@ -59,7 +59,7 @@
     "prettier": "^1.18.2",
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3",
-    "selva-server": "0.0.2"
+    "selva-server": "0.0.3"
   },
   "dependencies": {
     "uuid": "^3.3.3",
