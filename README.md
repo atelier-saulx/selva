@@ -26,6 +26,8 @@ import { getService } from 'registry'
 
 const client = selva.connect(() => getService('name-of-db'))
 
+// client.redis.hget()
+
 client.set('myId', { myShine: true }).then(result => console.log(result)) // logs OK
 ```
 
@@ -101,9 +103,8 @@ await client.set({
   id: 'myNewId',
   foo: true,
   children: {
-    // ---- :(
-    $append: 'smukytown',
-    $prepend: 'smootsiedog'
+    $add: 'smukytown',
+    $delete: 'myblarf'
   }
 })
 ```
@@ -112,9 +113,11 @@ await client.set({
 await client.set({
   $id: 'myId',
   children: {
+    // maybe redis SET do it?
     // ---- :(
     $hierarchy: false, // defaults to true
-    $append: 'smukytown'
+    $add: 'smukytown',
+    $delete: ['myblarf', 'xxx']
   }
 })
 ```
@@ -127,6 +130,35 @@ await client.set({
     $hierarchy: false, // defaults to true
     $value: ['root']
   }
+})
+```
+
+```js
+await client.set({
+  // gen id, add to root
+  type: 'tag',
+  title: 'flowers',
+  externalId: 'myflower.de'
+  }
+})
+```
+
+```js
+await client.set({
+  // gen id, add to root
+  type: 'tag',
+  title: 'flowers',
+  externalId: {
+    $merge: false,
+    $value: 'myflower.de'
+  }
+})
+```
+
+```js
+await client.set({
+  type: 'tag',
+  title: { de: 'blümen' }
 })
 ```
 
@@ -147,15 +179,6 @@ await client.set({
       }
     }
   }
-})
-```
-
-```js
-await client.inc({
-  $id: 'myId',
-  $merge: false, // defaults to true
-  $version: 'mySpecialversion', // only on top make it nice
-  myCount: 1
 })
 ```
 
@@ -217,6 +240,21 @@ const result = await client.subscribe(
 )
 ```
 
+### client.subscribe()
+
+```js
+const result = await client.subscribe(
+  {
+    id: 'myId',
+    date: 123123123,
+    version: 'mySpecialversion' // optional
+  },
+  (id, msg) => {
+    console.log(`Fired for ${id} with message: ${msg}`)
+  }
+)
+```
+
 or with an array for ids
 
 ```js
@@ -243,8 +281,6 @@ const result = await client.unsubscribe(
 )
 ```
 
-````js
-
 ### id
 
 Generate an id
@@ -254,4 +290,4 @@ Max types 1764!
 ```javascript
 const id = await client.id({ type: 'flurpy', externalId: 'smurkysmurk' })
 // flgurk
-````
+```

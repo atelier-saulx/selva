@@ -308,9 +308,15 @@ match,
    id: 'myid',
    url: ['url', 'url2'], // needs a url map in a seperate field (specfic)
    type: 'match',
-   children: ['id', 'id2'],
-   parents: ['id', 'id3'],
-   ancestors: ['id', 'id3'],
+
+   children: ['id', 'id2'], // redis SET
+   parents: ['id', 'id3'], // redis SET
+
+   ancestors: ['id', 'id3'], // ---> string seperated list
+   // ancestors_index: 'xxx,yyy,zzz',
+
+   // its a set not an array
+   externalId: ['5432','jhgfds'], // redis SET
   //  descendants
    date: ts,
    start: ts, // '$date'
@@ -337,6 +343,8 @@ match,
   name: string,
 
   contact:
+    firstName: string,
+    lastName: string
     email: string,
     phone: int,
   },
