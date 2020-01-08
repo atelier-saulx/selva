@@ -59,12 +59,28 @@ type setOptions = SetItem & {
   }
 }
 
+/*
+- storage setup
+hash (id)
+  
+
+
+
+
+*/
+
 function set(payload: setOptions): void {
   if (!payload.$id) {
-    console.log('create item')
+    console.log('create item', payload)
     if (!payload.type) {
       throw new Error('Cannot create an item if type is not provided')
     }
+
+    if (!payload.parents) {
+      console.info('no parents provided add to root')
+      payload.parents = ['root']
+    }
+
     // externalID
     // make root on start up?
   }

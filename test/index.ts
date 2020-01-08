@@ -33,11 +33,8 @@ test('set', async t => {
     host: '127.0.1.1'
   })
 
-  await client.set({
-    type: 'root',
-    $id: 'root'
-  })
-
+  // auto adds to root
+  // if root does not exists it creates it
   await client.set({
     type: 'match',
     title: { en: 'hello' }
