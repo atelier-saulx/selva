@@ -1,5 +1,4 @@
-import { promisify } from 'util'
-import { createClient, RedisClient as Redis, Commands } from 'redis'
+import { createClient, RedisClient as Redis } from 'redis'
 import commands from './commands'
 import fnv1a from '@sindresorhus/fnv1a'
 import RedisMethods from './methods'
@@ -35,22 +34,7 @@ export default class RedisClient extends RedisMethods {
     super()
     this.connector =
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
-
     this.buffer = []
-
-    // ---------------------------------------------
-    // tmp will generate this from a redis command list
-    const wrapCommand = key => {
-      if (!this[key]) {
-        this[key] = (...args) =>
-          new Promise((resolve, reject) => {
-            this.queue(key, args, resolve, reject)
-          })
-      }
-    }
-    commands.forEach(wrapCommand)
-    // ---------------------------------------------
-
     this.connect()
   }
 

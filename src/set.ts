@@ -80,21 +80,45 @@ async function set(client: SelvaClient, payload: SetOptions) {
     if (!payload.type) {
       throw new Error('Cannot create an item if type is not provided')
     }
-    if (payload.externalId) {
-      payload.$id = this.id({
-        type: payload.type,
+    const type =
+      typeof payload.type === 'string' ? payload.type : payload.type.$value
+
+    if (
+      (payload.externalId && typeof payload.externalId === 'string') ||
+      Array.isArray(payload.externalId)
+    ) {
+      payload.$id = client.id({
+        type,
         externalId: payload.externalId
       })
     } else {
-      payload.$id = this.id({ type: payload.type })
+      payload.$id = client.id({ type })
     }
   } else {
     // redis
-    const exists = await redis.hexists(payload.$id, 'type')
-    console.log(exists)
+    // const exists = await redis.hexists(payload.$id, 'type')
+    // console.log(exists)
     // find it!
     // exits
   }
+
+  console.log(await redis.dbsize())
+
+  console.log('set', await redis.set('flurp', 100))
+
+  console.log('decr', await redis.decr('flurp'))
+
+  console.log('incr', await redis.incr('flurp'))
+
+  console.log('decrby', await redis.decrby('flurp', 10))
+
+  console.log('incrby', await redis.incrby('flurp', 10))
+
+  console.log('get', await redis.get('flurp'))
+
+  console.log('del', await redis.del('flurp'))
+
+  console.log('get', await redis.get('flurp'))
 
   if (!exists) {
     console.info('create this')
