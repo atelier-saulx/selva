@@ -172,6 +172,9 @@ export default class RedisClient {
       // more added over time
       await this.flushBuffered()
     }
+
+    // make this a cache including the value
+    // default 500ms or something
     this.bufferedGet = new Map()
     this.inProgress = false
   }

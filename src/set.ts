@@ -85,7 +85,8 @@ async function set(payload: setOptions) {
       payload.$id = this.id({ type: payload.type })
     }
   } else {
-    redis.hexists(payload.$id, 'type')
+    const exists = await redis.hexists(payload.$id, 'type')
+    console.log(exists)
     // find it!
     // exits
   }
