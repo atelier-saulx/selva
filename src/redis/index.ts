@@ -1,6 +1,7 @@
 import { promisify } from 'util'
 import { createClient, RedisClient as Redis, Commands } from 'redis'
 import commands from './commands'
+import fnv1a from '@sindresorhus/fnv1a'
 
 export type ConnectOptions = {
   port: number
@@ -9,11 +10,16 @@ export type ConnectOptions = {
   // how we currently use this type is a 'service type' which can hold a bit more info, like name, id etc of the service)
 }
 
-type RedisCommand = {
-  command: string
-  args: (string | number)[]
+type Resolvable = {
   resolve: (x: any) => void
   reject: (x: Error) => void
+}
+
+type RedisCommand = Resolvable & {
+  command: string
+  args: (string | number)[]
+  hash?: number
+  nested?: Resolvable[]
 }
 
 export default class RedisClient {
@@ -22,6 +28,7 @@ export default class RedisClient {
   private buffer: RedisCommand[]
   private connected: boolean
   private inProgress: boolean
+  private bufferedGet: Map<number, RedisCommand>
 
   constructor(connect: ConnectOptions | (() => Promise<ConnectOptions>)) {
     this.connector =
@@ -60,12 +67,11 @@ export default class RedisClient {
       console.log('ERR', err)
     })
 
-    this.client.on('connect', a => {
-      console.log('connect it', a)
-    })
+    // this.client.on('connect', a => {
+    //   console.log('connect it', a)
+    // })
 
     this.client.on('ready', () => {
-      console.log('go drain')
       this.connected = true
       this.flushBuffered()
     })
@@ -77,14 +83,41 @@ export default class RedisClient {
     resolve: (x: any) => void,
     reject: (x: Error) => void
   ) {
-    this.buffer.push({
-      command,
-      args,
-      resolve,
-      reject
-    })
+    if (command === 'GET') {
+      // dont execute getting the same ids
+      // makes it a bit slower in some cases - check it
+      const hash = fnv1a(args.join('|'))
+      // can make this a cache
+      const hashedRedisCommand = this.bufferedGet.get(hash)
+      if (hashedRedisCommand) {
+        if (!hashedRedisCommand.nested) {
+          hashedRedisCommand.nested = []
+        }
+        hashedRedisCommand.nested.push({
+          resolve,
+          reject
+        })
+      } else {
+        const redisCommand = {
+          command,
+          args,
+          resolve,
+          reject,
+          hash
+        }
+        this.buffer.push(redisCommand)
+        this.bufferedGet.set(hash, redisCommand)
+      }
+    } else {
+      this.buffer.push({
+        command,
+        args,
+        resolve,
+        reject
+      })
+    }
     if (!this.inProgress && this.connected) {
-      // allrdy put it inProgress
+      // allrdy put it inProgress, but wait 1 tick to execute it
       this.inProgress = true
       process.nextTick(() => {
         this.flushBuffered()
@@ -100,30 +133,38 @@ export default class RedisClient {
       })
       batch.exec((err, reply) => {
         if (err) {
+          // if set returns error then do some stuff!
           reject(err)
         } else {
           reply.forEach((v, i) => {
             slice[i].resolve(v)
+            if (slice[i].nested) {
+              slice[i].nested.forEach(({ resolve }) => {
+                resolve(v)
+              })
+            }
           })
           resolve()
         }
       })
     })
   }
-  // FIXME: this is not ready
+
   private async flushBuffered() {
     this.inProgress = true
     const buffer = this.buffer
+    this.bufferedGet = new Map()
     this.buffer = []
-    console.log('drain this', buffer)
     const len = Math.ceil(buffer.length / 5000)
     for (let i = 0; i < len; i++) {
       const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
       await this.execBatch(slice)
     }
     if (this.buffer.length) {
+      // more added over time
       await this.flushBuffered()
     }
+    this.bufferedGet = new Map()
     this.inProgress = false
   }
 }

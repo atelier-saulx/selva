@@ -1,3 +1,4 @@
+// too many things need to be real commands only
 export default [
   'selected_db',
   'pipeline',
