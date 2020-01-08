@@ -50,14 +50,21 @@ type SetOptions = SetItem & {
   }
 }
 
-async function resetParents(client: SelvaClient, id: string, value: Id[]) {
+async function resetParents(
+  client: SelvaClient,
+  id: string,
+  value: Id[],
+  setKey: string
+) {
   const ancestorsKey = id + '.ancestors'
-  const ancestors = await client.redis.smembers(ancestorsKey)
-  if (ancestors) {
-    for (let ancestor of ancestors) {
-      await client.redis.srem(ancestor + '.children', id)
+  const parents = await client.redis.smembers(id + '.parents')
+  if (parents) {
+    for (let parent of parents) {
+      console.info('REMOVE FROM PARENTS', parent)
+      await client.redis.srem(parent + '.children', id)
     }
   }
+  await client.redis.del(setKey)
   const newAncestors = []
   await client.redis.del(ancestorsKey)
   for (let parent of value) {
@@ -83,15 +90,14 @@ async function resetSet(
   value: Id[]
 ) {
   const setKey = id + '.' + field
-  await client.redis.del(setKey)
-  await client.redis.sadd(setKey, ...value)
   if (hierarchy) {
     if (field === 'parents') {
-      await resetParents(client, id, value)
+      await resetParents(client, id, value, setKey)
     } else if (field === 'children') {
       // do it nice
     }
   }
+  await client.redis.sadd(setKey, ...value)
 }
 
 async function setInner(
