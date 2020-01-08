@@ -21,8 +21,8 @@ type SetItem = {
   [P in keyof BaseItem]:
     | BaseItem[P]
     | {
-        $default: any
-        $value: any
+        $default: BaseItem[P]
+        $value: BaseItem[P]
         $merge: boolean
         $increment: number // check for which things this makes sense
       }
