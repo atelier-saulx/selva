@@ -72,16 +72,30 @@ async function setInner(
         const ancestorsKey = id + '.ancestors'
         const ancestors = await client.redis.smembers(ancestorsKey)
         // for each in ancestors remove from children
+
+        if (ancestors) {
+          console.log('remove ancestors', ancestors)
+        }
+
+        const newAncestors = []
+
         await client.redis.del(ancestorsKey)
         for (let parent of value) {
           const childrenKey = parent + '.children'
           await client.redis.sadd(childrenKey, id)
           if (!(await client.redis.exists(parent))) {
             await set(client, { $id: parent })
+            // need to do more here (ancestors blabla)
+          } else {
+            console.log('ok lets create some ancestors')
+            const ancestors = await client.redis.smembers(parent + '.ancestors')
+            newAncestors.push(...ancestors)
           }
+          newAncestors.push(parent)
         }
 
-        await client.redis.del(setKey)
+        await client.redis.del(ancestorsKey)
+        await client.redis.sadd(ancestorsKey, ...newAncestors)
       } else if (field === 'children') {
       }
     } else {
@@ -129,7 +143,7 @@ async function setInner(
   // field can be 'x.y'
 }
 
-async function set(client: SelvaClient, payload: SetOptions) {
+async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
   let exists = false
   const redis = client.redis
 
@@ -168,6 +182,8 @@ async function set(client: SelvaClient, payload: SetOptions) {
 
     await setInner(client, payload.$id, payload, false)
   }
+
+  return payload.$id
 }
 
 export { set, SetOptions }

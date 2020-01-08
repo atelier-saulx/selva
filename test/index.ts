@@ -32,13 +32,20 @@ test('set', async t => {
 
   // auto adds to root
   // if root does not exists it creates it
-  await client.set({
+  const id = await client.set({
     type: 'match',
     title: { en: 'hello' }
   })
 
-  const ids = await client.redis.keys('*')
+  console.log(id)
 
+  await client.set({
+    type: 'person',
+    parents: [id],
+    title: { en: 'flurpy man' }
+  })
+
+  const ids = await client.redis.keys('*')
   console.log(
     (
       await Promise.all(
