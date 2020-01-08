@@ -239,10 +239,8 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
 
   if (!exists) {
     if (payload.$id && !payload.type) {
-      // console.info('type not defined create it from id')
       payload.type = getTypeFromId(payload.$id)
     }
-    // console.info('create new item')
     if (!payload.parents && payload.$id !== 'root') {
       payload.parents = ['root']
     }
