@@ -121,6 +121,14 @@ export const itemTypes = [
 export const typePrefix = {}
 export const inverseTypePrefix = {}
 
+export const getTypeFromId = id => {
+  if (id === 'root') {
+    return 'root'
+  } else {
+    return typePrefix[id.slice(0, 2)]
+  }
+}
+
 // map needs to be added!
 const createPrefix = (type: Type, index: number): string => {
   if (index > type.length) {

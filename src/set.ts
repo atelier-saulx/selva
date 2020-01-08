@@ -1,4 +1,4 @@
-import { BaseItem, Id, ExternalId, UserType } from './schema'
+import { BaseItem, Id, ExternalId, UserType, getTypeFromId } from './schema'
 import { SelvaClient } from './'
 // type AdvancedSetBaseItem = { [P in keyof BaseItem]: BaseItem[P] | { $default: any, … } }
 
@@ -67,8 +67,23 @@ async function setInner(
     const setKey = id + '.' + field
     if (Array.isArray(value)) {
       await client.redis.del(setKey)
-      console.log(...value)
       await client.redis.sadd(setKey, ...value)
+      if (field === 'parents') {
+        const ancestorsKey = id + '.ancestors'
+        const ancestors = await client.redis.smembers(ancestorsKey)
+        // for each in ancestors remove from children
+        await client.redis.del(ancestorsKey)
+        for (let parent of value) {
+          const childrenKey = parent + '.children'
+          await client.redis.sadd(childrenKey, id)
+          if (!(await client.redis.exists(parent))) {
+            await set(client, { $id: parent })
+          }
+        }
+
+        await client.redis.del(setKey)
+      } else if (field === 'children') {
+      }
     } else {
       // $add, $remove, $value, $hierarchy
     }
@@ -141,8 +156,13 @@ async function set(client: SelvaClient, payload: SetOptions) {
   }
 
   if (!exists) {
+    if (payload.$id && !payload.type) {
+      console.info('type not defined create it from id')
+      payload.type = getTypeFromId(payload.$id)
+    }
+
     console.info('create new item')
-    if (!payload.parents) {
+    if (!payload.parents && payload.$id !== 'root') {
       payload.parents = ['root']
     }
 
