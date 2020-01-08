@@ -62,7 +62,10 @@ type setOptions = SetItem & {
 /*
 - storage setup
 hash (id)
-  
+
+// children, parents, ancestors Redis Sets
+// fields bla.x (on hash) e.g. title.en
+// 
 
 
 
