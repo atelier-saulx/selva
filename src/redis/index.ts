@@ -170,6 +170,38 @@ export default class RedisClient extends RedisMethods {
     this.bufferedGet = {}
     this.inProgress = false
   }
+
+  // subscriber stuff fix it needs to become better!
+  // do it next week
+  async psubscribe(...pattern: string[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('psubscribe', pattern, resolve, reject, true)
+    })
+  }
+
+  async punsubscribe(...pattern: string[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('punsubscribe', pattern, resolve, reject, true)
+    })
+  }
+
+  async unsubscribe(...channel: string[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('unsubscribe', channel, resolve, reject, true)
+    })
+  }
+
+  async subscribe(...channel: string[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('subscribe', channel, resolve, reject, true)
+    })
+  }
+
+  async publish(channel: string, message?: string): Promise<BigInteger> {
+    return new Promise((resolve, reject) => {
+      this.queue('publish', [channel, message], resolve, reject, true)
+    })
+  }
 }
 
 // extend import Methods.ts
