@@ -1,5 +1,5 @@
 import { BaseItem, Id, ExternalId, UserType } from './schema'
-
+import { SelvaClient } from './'
 // type AdvancedSetBaseItem = { [P in keyof BaseItem]: BaseItem[P] | { $default: any, … } }
 
 type RedisSetParams =
@@ -28,7 +28,7 @@ type SetItem = {
       }
 }
 
-type setOptions = SetItem & {
+type SetOptions = SetItem & {
   $id?: Id
   $merge?: boolean
   $version?: string
@@ -63,14 +63,18 @@ type setOptions = SetItem & {
 - storage setup
 hash (id)
 
+// id.children
+// id.parents
+// id.ancestors 
+
 // children, parents, ancestors Redis Sets
 // fields bla.x (on hash) e.g. title.en
 // 
 */
 
-async function set(payload: setOptions) {
+async function set(client: SelvaClient, payload: SetOptions) {
   let exists = false
-  const redis = this.redis
+  const redis = client.redis
 
   if (!payload.$id) {
     if (!payload.type) {
@@ -91,11 +95,9 @@ async function set(payload: setOptions) {
     // exits
   }
 
-  console.log('exists', await redis.hexists(payload.$id, 'type'))
-
   if (!exists) {
     console.info('create this')
   }
 }
 
-export default set
+export { set, SetOptions }

@@ -28,7 +28,7 @@ export default class RedisClient {
   private buffer: RedisCommand[]
   private connected: boolean
   private inProgress: boolean
-  private bufferedGet: Map<number, RedisCommand>
+  private bufferedGet: Record<number, RedisCommand>
 
   constructor(connect: ConnectOptions | (() => Promise<ConnectOptions>)) {
     this.connector =
@@ -96,7 +96,7 @@ export default class RedisClient {
       // makes it a bit slower in some cases - check it
       const hash = fnv1a(args.join('|'))
       // can make this a cache
-      const hashedRedisCommand = this.bufferedGet.get(hash)
+      const hashedRedisCommand = this.bufferedGet[hash]
       if (hashedRedisCommand) {
         if (!hashedRedisCommand.nested) {
           hashedRedisCommand.nested = []
@@ -114,7 +114,7 @@ export default class RedisClient {
           hash
         }
         this.buffer.push(redisCommand)
-        this.bufferedGet.set(hash, redisCommand)
+        this.bufferedGet[hash] = redisCommand
       }
     } else {
       this.buffer.push({
@@ -161,7 +161,7 @@ export default class RedisClient {
   private async flushBuffered() {
     this.inProgress = true
     const buffer = this.buffer
-    this.bufferedGet = new Map()
+    this.bufferedGet = {}
     this.buffer = []
     const len = Math.ceil(buffer.length / 5000)
     for (let i = 0; i < len; i++) {
@@ -175,7 +175,7 @@ export default class RedisClient {
 
     // make this a cache including the value
     // default 500ms or something
-    this.bufferedGet = new Map()
+    this.bufferedGet = {}
     this.inProgress = false
   }
 }

@@ -1,6 +1,7 @@
 // type list is important may need to be stored in the db (other types)
 import { Type, ExternalId, Id, inverseTypePrefix } from './schema'
 import uuid from 'uuid'
+import { SelvaClient } from './'
 
 const hash = (str: string): string => {
   let hash = 5381
@@ -9,13 +10,12 @@ const hash = (str: string): string => {
   return (hash >>> 0).toString(16)
 }
 
-function id({
-  type,
-  externalId
-}: {
+type IdOptions = {
   type: Type
   externalId?: ExternalId | ExternalId[]
-}): Id {
+}
+
+function id(client: SelvaClient, { type, externalId }: IdOptions): Id {
   const prefix = inverseTypePrefix[type]
 
   if (!prefix) {
@@ -35,4 +35,4 @@ function id({
   }
 }
 
-export default id
+export { id, IdOptions }
