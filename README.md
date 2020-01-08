@@ -291,3 +291,10 @@ Max types 1764!
 const id = await client.id({ type: 'flurpy', externalId: 'smurkysmurk' })
 // flgurk
 ```
+
+### remove
+
+```javascript
+await client.remove({ $id: 'ma12231' })
+await client.remove({ $id: 'ma12231', $hierarchy: false })
+```

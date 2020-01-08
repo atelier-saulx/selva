@@ -50,6 +50,50 @@ type SetOptions = SetItem & {
   }
 }
 
+async function resetParents(client: SelvaClient, id: string, value: Id[]) {
+  const ancestorsKey = id + '.ancestors'
+  const ancestors = await client.redis.smembers(ancestorsKey)
+  if (ancestors) {
+    for (let ancestor of ancestors) {
+      await client.redis.srem(ancestor + '.children', id)
+    }
+  }
+  const newAncestors = []
+  await client.redis.del(ancestorsKey)
+  for (let parent of value) {
+    const childrenKey = parent + '.children'
+    await client.redis.sadd(childrenKey, id)
+    if (!(await client.redis.exists(parent))) {
+      await set(client, { $id: parent })
+    } else {
+      const ancestors = await client.redis.smembers(parent + '.ancestors')
+      newAncestors.push(...ancestors)
+    }
+    newAncestors.push(parent)
+  }
+  await client.redis.del(ancestorsKey)
+  await client.redis.sadd(ancestorsKey, ...newAncestors)
+}
+
+async function resetSet(
+  client: SelvaClient,
+  field: string,
+  hierarchy: boolean,
+  id: string,
+  value: Id[]
+) {
+  const setKey = id + '.' + field
+  await client.redis.del(setKey)
+  await client.redis.sadd(setKey, ...value)
+  if (hierarchy) {
+    if (field === 'parents') {
+      await resetParents(client, id, value)
+    } else if (field === 'children') {
+      // do it nice
+    }
+  }
+}
+
 async function setInner(
   client: SelvaClient,
   id: string,
@@ -64,40 +108,22 @@ async function setInner(
     field === 'externalId' ||
     field === 'auth.role.id'
   ) {
-    const setKey = id + '.' + field
     if (Array.isArray(value)) {
-      await client.redis.del(setKey)
-      await client.redis.sadd(setKey, ...value)
-      if (field === 'parents') {
-        const ancestorsKey = id + '.ancestors'
-        const ancestors = await client.redis.smembers(ancestorsKey)
-        // for each in ancestors remove from children
-
-        if (ancestors) {
-          console.log('remove from ancestors', ancestors)
-        }
-
-        const newAncestors = []
-
-        await client.redis.del(ancestorsKey)
-        for (let parent of value) {
-          const childrenKey = parent + '.children'
-          await client.redis.sadd(childrenKey, id)
-          if (!(await client.redis.exists(parent))) {
-            await set(client, { $id: parent })
-          } else {
-            const ancestors = await client.redis.smembers(parent + '.ancestors')
-            newAncestors.push(...ancestors)
-          }
-          newAncestors.push(parent)
-        }
-
-        await client.redis.del(ancestorsKey)
-        await client.redis.sadd(ancestorsKey, ...newAncestors)
-      } else if (field === 'children') {
-      }
+      resetSet(client, field, true, id, value)
     } else {
-      // $add, $remove, $value, $hierarchy
+      // if (value.$value) {
+      //   resetSet(client, field, value.$hierarchy || true, id, value)
+      // }
+      // if (value.$add) {
+      //   if (!Array.isArray(value.$add)) {
+      //     value.$add = [value.$add]
+      //   }
+      // }
+      // if (value.$remove) {
+      //   if (!Array.isArray(value.$remove)) {
+      //     value.$remove = [value.$remove]
+      //   }
+      // }
     }
   } else {
     if (typeof value === 'object' && !Array.isArray(value)) {
@@ -140,6 +166,7 @@ async function setInner(
   // field can be 'x.y'
 }
 
+// warning when removing all parents from something (by changing children - (default) option to remove automaticly?
 async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
   let exists = false
   const redis = client.redis
@@ -171,12 +198,12 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
       console.info('type not defined create it from id')
       payload.type = getTypeFromId(payload.$id)
     }
-
     console.info('create new item')
     if (!payload.parents && payload.$id !== 'root') {
       payload.parents = ['root']
     }
-
+    await setInner(client, payload.$id, payload, false)
+  } else {
     await setInner(client, payload.$id, payload, false)
   }
 

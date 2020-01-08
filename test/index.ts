@@ -37,14 +37,34 @@ test('set', async t => {
     title: { en: 'hello' }
   })
 
-  console.log(id)
+  const id2 = await client.set({
+    type: 'league',
+    title: { en: 'snurky' }
+  })
 
-  await client.set({
+  console.log(id, id2)
+
+  const moreId = await client.set({
     type: 'person',
     parents: [id],
     title: { en: 'flurpy man' }
   })
 
+  // move it
+  await wait()
+
+  console.log('only remove here....')
+  await client.set({
+    $id: moreId,
+    parents: [id2]
+  })
+
+  // remove ancestors
+
+  // then children
+
+  // then $add $delete syntax
+  await wait()
   const ids = await client.redis.keys('*')
   console.log(
     (

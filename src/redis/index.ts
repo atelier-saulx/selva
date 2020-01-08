@@ -27,7 +27,7 @@ export default class RedisClient extends RedisMethods {
   private buffer: RedisCommand[]
   private connected: boolean
   private inProgress: boolean
-  private bufferedGet: Record<number, RedisCommand>
+  // private bufferedGet: Record<number, RedisCommand>
 
   constructor(connect: ConnectOptions | (() => Promise<ConnectOptions>)) {
     super()
@@ -80,40 +80,40 @@ export default class RedisClient extends RedisMethods {
       // somewhere else!
       console.info('SUBSCRIBER NOT DONE YET')
     } else {
-      // do we want to cache?
-      if (command === 'GET') {
-        // dont execute getting the same ids
-        // makes it a bit slower in some cases - check it
-        const hash = fnv1a(args.join('|'))
-        // can make this a cache
-        const hashedRedisCommand = this.bufferedGet[hash]
-        if (hashedRedisCommand) {
-          if (!hashedRedisCommand.nested) {
-            hashedRedisCommand.nested = []
-          }
-          hashedRedisCommand.nested.push({
-            resolve,
-            reject
-          })
-        } else {
-          const redisCommand = {
-            command,
-            args,
-            resolve,
-            reject,
-            hash
-          }
-          this.buffer.push(redisCommand)
-          this.bufferedGet[hash] = redisCommand
-        }
-      } else {
-        this.buffer.push({
-          command,
-          args,
-          resolve,
-          reject
-        })
-      }
+      // // do we want to cache?
+      // if (command === 'GET') {
+      //   // dont execute getting the same ids
+      //   // makes it a bit slower in some cases - check it
+      //   const hash = fnv1a(args.join('|'))
+      //   // can make this a cache
+      //   const hashedRedisCommand = this.bufferedGet[hash]
+      //   if (hashedRedisCommand) {
+      //     if (!hashedRedisCommand.nested) {
+      //       hashedRedisCommand.nested = []
+      //     }
+      //     hashedRedisCommand.nested.push({
+      //       resolve,
+      //       reject
+      //     })
+      //   } else {
+      //     const redisCommand = {
+      //       command,
+      //       args,
+      //       resolve,
+      //       reject,
+      //       hash
+      //     }
+      //     this.buffer.push(redisCommand)
+      //     this.bufferedGet[hash] = redisCommand
+      //   }
+      // } else {
+      this.buffer.push({
+        command,
+        args,
+        resolve,
+        reject
+      })
+      // }
       if (!this.inProgress && this.connected) {
         // allrdy put it inProgress, but wait 1 tick to execute it
         this.inProgress = true
@@ -152,9 +152,9 @@ export default class RedisClient extends RedisMethods {
   private async flushBuffered() {
     this.inProgress = true
     const buffer = this.buffer
-    this.bufferedGet = {}
     this.buffer = []
     const len = Math.ceil(buffer.length / 5000)
+    // console.log(buffer.length)
     for (let i = 0; i < len; i++) {
       const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
       await this.execBatch(slice)
@@ -166,7 +166,7 @@ export default class RedisClient extends RedisMethods {
 
     // make this a cache including the value
     // default 500ms or something
-    this.bufferedGet = {}
+    // this.bufferedGet = {}
     this.inProgress = false
   }
 
