@@ -1,5 +1,4 @@
 import { createClient, RedisClient as Redis } from 'redis'
-import commands from './commands'
 import fnv1a from '@sindresorhus/fnv1a'
 import RedisMethods from './methods'
 
