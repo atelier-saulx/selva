@@ -1,6 +1,6 @@
 import test from 'ava'
 // expose types here (default), maybe expose things like id etc
-import { connect } from '../src/index'
+import { connect, SelvaClient } from '../src/index'
 import { start } from 'selva-server'
 
 let db
@@ -24,6 +24,23 @@ test('generates a unique id', async t => {
   // new types what this means is that the client allways needs to load a map add it to prefix
   // allways subscribe on it (hash)
 })
+
+const logAll = async (client: SelvaClient) => {
+  const ids = await client.redis.keys('*')
+  console.log(
+    (
+      await Promise.all(
+        ids.map(id =>
+          id.indexOf('.') > -1
+            ? client.redis.smembers(id)
+            : client.redis.hgetall(id)
+        )
+      )
+    ).map((v, i) => {
+      return [ids[i], v]
+    })
+  )
+}
 
 test('set', async t => {
   const client = connect({
@@ -51,34 +68,32 @@ test('set', async t => {
   })
 
   // move it
-  await wait()
+  await logAll(client)
 
-  console.log('only remove here....')
+  console.log('remove from previous parent')
   await client.set({
     $id: moreId,
     parents: [id2]
   })
 
+  // should not need wait... strange
+  // set needs to await for everything
+  // await wait()
+  await logAll(client)
+
+  console.log('add extra previous parent')
+  await client.set({
+    $id: moreId,
+    parents: {
+      $add: id
+    }
+  })
+
   // remove ancestors
-
   // then children
-
   // then $add $delete syntax
-  await wait()
-  const ids = await client.redis.keys('*')
-  console.log(
-    (
-      await Promise.all(
-        ids.map(id =>
-          id.indexOf('.') > -1
-            ? client.redis.smembers(id)
-            : client.redis.hgetall(id)
-        )
-      )
-    ).map((v, i) => {
-      return [ids[i], v]
-    })
-  )
+  // await wait()
+  await logAll(client)
 
   await wait()
 })

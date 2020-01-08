@@ -60,7 +60,6 @@ async function resetParents(
   const parents = await client.redis.smembers(id + '.parents')
   if (parents) {
     for (let parent of parents) {
-      console.info('REMOVE FROM PARENTS', parent)
       await client.redis.srem(parent + '.children', id)
     }
   }
@@ -82,6 +81,18 @@ async function resetParents(
   await client.redis.sadd(ancestorsKey, ...newAncestors)
 }
 
+async function addToParents(client: SelvaClient, id: string, value: Id[]) {
+  const ancestorsKey = id + '.ancestors'
+  for (let parent of value) {
+    const childrenKey = parent + '.children'
+    await client.redis.sadd(childrenKey, id)
+    if (!(await client.redis.exists(parent))) {
+      await set(client, { $id: parent })
+    }
+  }
+  await client.redis.sadd(ancestorsKey, ...value)
+}
+
 async function resetSet(
   client: SelvaClient,
   field: string,
@@ -93,6 +104,26 @@ async function resetSet(
   if (hierarchy) {
     if (field === 'parents') {
       await resetParents(client, id, value, setKey)
+    } else if (field === 'children') {
+      // do it nice
+    }
+  } else {
+    await client.redis.del(setKey)
+  }
+  await client.redis.sadd(setKey, ...value)
+}
+
+async function addToSet(
+  client: SelvaClient,
+  field: string,
+  hierarchy: boolean = true,
+  id: string,
+  value: Id[]
+) {
+  const setKey = id + '.' + field
+  if (hierarchy) {
+    if (field === 'parents') {
+      await addToParents(client, id, value)
     } else if (field === 'children') {
       // do it nice
     }
@@ -115,15 +146,22 @@ async function setInner(
     field === 'auth.role.id'
   ) {
     if (Array.isArray(value)) {
-      resetSet(client, field, true, id, value)
+      await resetSet(client, field, true, id, value)
     } else {
+      if (value.$add) {
+        if (!Array.isArray(value.$add)) {
+          value.$add = [value.$add]
+        }
+        await addToSet(
+          client,
+          field,
+          value.$hierarchy === false ? false : true,
+          id,
+          value.$add
+        )
+      }
       // if (value.$value) {
       //   resetSet(client, field, value.$hierarchy || true, id, value)
-      // }
-      // if (value.$add) {
-      //   if (!Array.isArray(value.$add)) {
-      //     value.$add = [value.$add]
-      //   }
       // }
       // if (value.$remove) {
       //   if (!Array.isArray(value.$remove)) {
@@ -138,9 +176,9 @@ async function setInner(
           const item = value[key]
           if (typeof item === 'object') {
             if (item.$value) {
-              console.log('set $value', item.$value)
+              // console.log('set $value', item.$value)
             } else if (item.$default) {
-              console.log('setnx $default', item.$default)
+              // console.log('setnx $default', item.$default)
             } else {
               await setInner(
                 client,
@@ -201,10 +239,10 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
 
   if (!exists) {
     if (payload.$id && !payload.type) {
-      console.info('type not defined create it from id')
+      // console.info('type not defined create it from id')
       payload.type = getTypeFromId(payload.$id)
     }
-    console.info('create new item')
+    // console.info('create new item')
     if (!payload.parents && payload.$id !== 'root') {
       payload.parents = ['root']
     }
