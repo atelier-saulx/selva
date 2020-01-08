@@ -50,6 +50,8 @@ type SetOptions = SetItem & {
   }
 }
 
+// ---------------------------------------------------------------
+// parents field
 async function resetParents(
   client: SelvaClient,
   id: string,
@@ -92,6 +94,7 @@ async function addToParents(client: SelvaClient, id: string, value: Id[]) {
   }
   await client.redis.sadd(ancestorsKey, ...value)
 }
+// ---------------------------------------------------------------
 
 async function resetSet(
   client: SelvaClient,
@@ -175,10 +178,15 @@ async function setInner(
         if (key[0] !== '$') {
           const item = value[key]
           if (typeof item === 'object') {
+            // if (item.$increment) {
+            // do it here...
+            // }
+
             if (item.$value) {
-              // console.log('set $value', item.$value)
+              // $increment
+              console.log('set $value', item.$value)
             } else if (item.$default) {
-              // console.log('setnx $default', item.$default)
+              console.log('setnx $default', item.$default)
             } else {
               await setInner(
                 client,
