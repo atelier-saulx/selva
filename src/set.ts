@@ -3,7 +3,6 @@ import { SelvaClient } from './'
 // type AdvancedSetBaseItem = { [P in keyof BaseItem]: BaseItem[P] | { $default: any, … } }
 
 type RedisSetParams =
-  | Id
   | Id[]
   | {
       $value?: Id[] | Id
@@ -34,12 +33,11 @@ type SetOptions = SetItem & {
   parents?: HierarchySet
   ancestors?: HierarchySet
   externalId?:
-    | ExternalId
     | ExternalId[]
     | {
         $add?: ExternalId[] | ExternalId
         $delete?: ExternalId[] | ExternalId
-        $value?: ExternalId[] | ExternalId
+        $value?: ExternalId[]
       }
   auth?: {
     password?: string
@@ -59,28 +57,40 @@ async function setInner(
   fromDefault: boolean,
   field?: string
 ) {
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    for (let key in value) {
-      if (key[0] !== '$') {
-        const item = value[key]
-        console.log(' ', key, item)
-
-        // handle parents, children, ancestors
-
-        if (
-          field === 'parents' ||
-          field === 'children' ||
-          field === 'ancestors' ||
-          field === 'externalId' ||
-          field === 'auth.role.id'
-        ) {
-          console.log('SET')
-        } else if (typeof item === 'object') {
-          if (item.$value) {
-            console.log('set value', item.$value)
-          } else if (item.$default) {
-            //   redis.setnx
-            console.log('getset default', item.$value)
+  if (
+    field === 'parents' ||
+    field === 'children' ||
+    field === 'ancestors' ||
+    field === 'externalId' ||
+    field === 'auth.role.id'
+  ) {
+    const setKey = id + '.' + field
+    if (Array.isArray(value)) {
+      await client.redis.del(setKey)
+      console.log(...value)
+      await client.redis.sadd(setKey, ...value)
+    } else {
+      // $add, $remove, $value, $hierarchy
+    }
+  } else {
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      for (let key in value) {
+        if (key[0] !== '$') {
+          const item = value[key]
+          if (typeof item === 'object') {
+            if (item.$value) {
+              console.log('set $value', item.$value)
+            } else if (item.$default) {
+              console.log('setnx $default', item.$default)
+            } else {
+              await setInner(
+                client,
+                id,
+                item,
+                false,
+                field ? field + '.' + key : key
+              )
+            }
           } else {
             await setInner(
               client,
@@ -90,19 +100,16 @@ async function setInner(
               field ? field + '.' + key : key
             )
           }
-        } else {
-          await setInner(
-            client,
-            id,
-            item,
-            false,
-            field ? field + '.' + key : key
-          )
         }
       }
+    } else {
+      console.log('SET FIELD -->', field, value, fromDefault)
+      if (fromDefault) {
+        await client.redis.hset(id, field, value)
+      } else {
+        await client.redis.hsetnx(id, field, value)
+      }
     }
-  } else {
-    console.log('hello -->', field, value, fromDefault)
   }
   // field can be 'x.y'
 }
@@ -135,6 +142,10 @@ async function set(client: SelvaClient, payload: SetOptions) {
 
   if (!exists) {
     console.info('create new item')
+    if (!payload.parents) {
+      payload.parents = ['root']
+    }
+
     await setInner(client, payload.$id, payload, false)
   }
 }

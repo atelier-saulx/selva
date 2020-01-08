@@ -37,5 +37,21 @@ test('set', async t => {
     title: { en: 'hello' }
   })
 
+  const ids = await client.redis.keys('*')
+
+  console.log(
+    (
+      await Promise.all(
+        ids.map(id =>
+          id.indexOf('.') > -1
+            ? client.redis.smembers(id)
+            : client.redis.hgetall(id)
+        )
+      )
+    ).map((v, i) => {
+      return [ids[i], v]
+    })
+  )
+
   await wait()
 })
