@@ -2,6 +2,7 @@ import { promisify } from 'util'
 import { createClient, RedisClient as Redis, Commands } from 'redis'
 import commands from './commands'
 import fnv1a from '@sindresorhus/fnv1a'
+import RedisMethods from './methods'
 
 export type ConnectOptions = {
   port: number
@@ -22,7 +23,7 @@ type RedisCommand = Resolvable & {
   nested?: Resolvable[]
 }
 
-export default class RedisClient {
+export default class RedisClient extends RedisMethods {
   private connector: () => Promise<ConnectOptions>
   private client: Redis
   private buffer: RedisCommand[]
@@ -31,6 +32,7 @@ export default class RedisClient {
   private bufferedGet: Record<number, RedisCommand>
 
   constructor(connect: ConnectOptions | (() => Promise<ConnectOptions>)) {
+    super()
     this.connector =
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
 
@@ -84,7 +86,7 @@ export default class RedisClient {
     })
   }
 
-  private async queue(
+  async queue(
     command: string,
     args: (string | number)[],
     resolve: (x: any) => void,
@@ -179,3 +181,5 @@ export default class RedisClient {
     this.inProgress = false
   }
 }
+
+// extend import Methods.ts

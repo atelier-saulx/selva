@@ -89,6 +89,7 @@ async function set(client: SelvaClient, payload: SetOptions) {
       payload.$id = this.id({ type: payload.type })
     }
   } else {
+    // redis
     const exists = await redis.hexists(payload.$id, 'type')
     console.log(exists)
     // find it!
