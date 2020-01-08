@@ -74,48 +74,54 @@ export default class RedisClient extends RedisMethods {
     command: string,
     args: (string | number)[],
     resolve: (x: any) => void,
-    reject: (x: Error) => void
+    reject: (x: Error) => void,
+    subscriber?: boolean
   ) {
-    // do we want to cache?
-    if (command === 'GET') {
-      // dont execute getting the same ids
-      // makes it a bit slower in some cases - check it
-      const hash = fnv1a(args.join('|'))
-      // can make this a cache
-      const hashedRedisCommand = this.bufferedGet[hash]
-      if (hashedRedisCommand) {
-        if (!hashedRedisCommand.nested) {
-          hashedRedisCommand.nested = []
+    if (subscriber) {
+      // somewhere else!
+      console.info('SUBSCRIBER NOT DONE YET')
+    } else {
+      // do we want to cache?
+      if (command === 'GET') {
+        // dont execute getting the same ids
+        // makes it a bit slower in some cases - check it
+        const hash = fnv1a(args.join('|'))
+        // can make this a cache
+        const hashedRedisCommand = this.bufferedGet[hash]
+        if (hashedRedisCommand) {
+          if (!hashedRedisCommand.nested) {
+            hashedRedisCommand.nested = []
+          }
+          hashedRedisCommand.nested.push({
+            resolve,
+            reject
+          })
+        } else {
+          const redisCommand = {
+            command,
+            args,
+            resolve,
+            reject,
+            hash
+          }
+          this.buffer.push(redisCommand)
+          this.bufferedGet[hash] = redisCommand
         }
-        hashedRedisCommand.nested.push({
-          resolve,
-          reject
-        })
       } else {
-        const redisCommand = {
+        this.buffer.push({
           command,
           args,
           resolve,
-          reject,
-          hash
-        }
-        this.buffer.push(redisCommand)
-        this.bufferedGet[hash] = redisCommand
+          reject
+        })
       }
-    } else {
-      this.buffer.push({
-        command,
-        args,
-        resolve,
-        reject
-      })
-    }
-    if (!this.inProgress && this.connected) {
-      // allrdy put it inProgress, but wait 1 tick to execute it
-      this.inProgress = true
-      process.nextTick(() => {
-        this.flushBuffered()
-      })
+      if (!this.inProgress && this.connected) {
+        // allrdy put it inProgress, but wait 1 tick to execute it
+        this.inProgress = true
+        process.nextTick(() => {
+          this.flushBuffered()
+        })
+      }
     }
   }
 
