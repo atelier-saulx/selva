@@ -141,6 +141,7 @@ async function setInner(
   fromDefault: boolean,
   field?: string
 ) {
+  // isSet
   if (
     field === 'parents' ||
     field === 'children' ||
@@ -181,9 +182,7 @@ async function setInner(
             // if (item.$increment) {
             // do it here...
             // }
-
             if (item.$value) {
-              // $increment
               console.log('set $value', item.$value)
             } else if (item.$default) {
               console.log('setnx $default', item.$default)
@@ -215,7 +214,6 @@ async function setInner(
       }
     }
   }
-  // field can be 'x.y'
 }
 
 // warning when removing all parents from something (by changing children - (default) option to remove automaticly?
