@@ -95,11 +95,7 @@ async function set(client: SelvaClient, payload: SetOptions) {
       payload.$id = client.id({ type })
     }
   } else {
-    // redis
-    // const exists = await redis.hexists(payload.$id, 'type')
-    // console.log(exists)
-    // find it!
-    // exits
+    exists = await redis.hexists(payload.$id, 'type')
   }
 
   console.log(await redis.dbsize())
@@ -120,10 +116,10 @@ async function set(client: SelvaClient, payload: SetOptions) {
 
   console.log('get', await redis.get('flurp'))
 
-  console.log('xxxx', await redis.psubscribe('flurp'))
+  // console.log('xxxx', await redis.psubscribe('flurp'))
 
   if (!exists) {
-    console.info('create this')
+    console.info('create new item')
   }
 }
 
