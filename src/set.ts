@@ -116,6 +116,14 @@ async function set(client: SelvaClient, payload: SetOptions) {
 
   console.log('get', await redis.get('flurp'))
 
+  console.log('add set', await redis.sadd('flapdrol', 'smurkysmurk'))
+
+  console.log('set members', await redis.smembers('flapdrol'))
+
+  console.log('add set', await redis.sadd('flapdrol2', 'flapper'))
+
+  console.log('set union', await redis.sunion('flapdrol', 'flapdrol2'))
+
   // console.log('xxxx', await redis.psubscribe('flurp'))
 
   if (!exists) {
