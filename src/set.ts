@@ -1,5 +1,7 @@
 import { BaseItem, Id, ExternalId, UserType } from './schema'
 
+// type AdvancedSetBaseItem = { [P in keyof BaseItem]: BaseItem[P] | { $default: any, … } }
+
 type RedisSetParams =
   | Id[]
   | {
@@ -9,43 +11,55 @@ type RedisSetParams =
       $delete?: Id[] | Id
     }
 
-// changing ids, default
+// type AdvancedSetBaseItem = { [P in keyof BaseItem]: BaseItem[P] | { $default: any, … } }
+// type Nullable<T> = { [P in keyof T]: T[P] | null }
 
+// changing ids, default
 // { $merge, $default, $value, $increment }
 
-function set(
-  payload: BaseItem & {
-    $id?: Id
-    $merge?: boolean
-    $version?: string
-    children?: RedisSetParams
-    parents?: RedisSetParams
-    ancestors?: RedisSetParams
-    externalId?:
-      | ExternalId
-      | ExternalId[]
-      | {
-          $add?: ExternalId[] | ExternalId
-          $delete?: ExternalId[] | ExternalId
-        }
-    auth?: {
-      password?: string
-      google?: string
-      facebook?: string
-      role?: {
-        id?:
-          | Id
-          | Id[]
-          | {
-              $add?: Id[] | Id
-              $delete?: Id[] | Id
-            }
-        type?: UserType
+type SetItem = {
+  [P in keyof BaseItem]:
+    | BaseItem[P]
+    | {
+        $default: any
+        $value: any
+        $merge: boolean
+        $increment: number // check for which things this makes sense
       }
+}
+
+type setOptions = SetItem & {
+  $id?: Id
+  $merge?: boolean
+  $version?: string
+  children?: RedisSetParams
+  parents?: RedisSetParams
+  ancestors?: RedisSetParams
+  externalId?:
+    | ExternalId
+    | ExternalId[]
+    | {
+        $add?: ExternalId[] | ExternalId
+        $delete?: ExternalId[] | ExternalId
+      }
+  auth?: {
+    password?: string
+    google?: string
+    facebook?: string
+    role?: {
+      id?:
+        | Id
+        | Id[]
+        | {
+            $add?: Id[] | Id
+            $delete?: Id[] | Id
+          }
+      type?: UserType
     }
   }
-): void {
-  console.log('yesh', this.redis)
+}
+
+function set(payload: setOptions): void {
   if (!payload.$id) {
     console.log('create item')
     if (!payload.type) {
