@@ -3,19 +3,17 @@ import { SelvaClient } from './'
 // type AdvancedSetBaseItem = { [P in keyof BaseItem]: BaseItem[P] | { $default: any, … } }
 
 type RedisSetParams =
+  | Id
   | Id[]
   | {
-      $hierarchy?: boolean
       $value?: Id[] | Id
       $add?: Id[] | Id
       $delete?: Id[] | Id
     }
 
-// type AdvancedSetBaseItem = { [P in keyof BaseItem]: BaseItem[P] | { $default: any, … } }
-// type Nullable<T> = { [P in keyof T]: T[P] | null }
-
-// changing ids, default
-// { $merge, $default, $value, $increment }
+type HierarchySet = RedisSetParams & {
+  $hierarchy?: boolean
+}
 
 type SetItem = {
   [P in keyof BaseItem]:
@@ -32,45 +30,82 @@ type SetOptions = SetItem & {
   $id?: Id
   $merge?: boolean
   $version?: string
-  children?: RedisSetParams
-  parents?: RedisSetParams
-  ancestors?: RedisSetParams
+  children?: HierarchySet
+  parents?: HierarchySet
+  ancestors?: HierarchySet
   externalId?:
     | ExternalId
     | ExternalId[]
     | {
         $add?: ExternalId[] | ExternalId
         $delete?: ExternalId[] | ExternalId
+        $value?: ExternalId[] | ExternalId
       }
   auth?: {
     password?: string
     google?: string
     facebook?: string
     role?: {
-      id?:
-        | Id
-        | Id[]
-        | {
-            $add?: Id[] | Id
-            $delete?: Id[] | Id
-          }
+      id?: RedisSetParams
       type?: UserType
     }
   }
 }
 
-/*
-- storage setup
-hash (id)
+async function setInner(
+  client: SelvaClient,
+  id: string,
+  value: any,
+  fromDefault: boolean,
+  field?: string
+) {
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    for (let key in value) {
+      if (key[0] !== '$') {
+        const item = value[key]
+        console.log(' ', key, item)
 
-// id.children
-// id.parents
-// id.ancestors 
+        // handle parents, children, ancestors
 
-// children, parents, ancestors Redis Sets
-// fields bla.x (on hash) e.g. title.en
-// 
-*/
+        if (
+          field === 'parents' ||
+          field === 'children' ||
+          field === 'ancestors' ||
+          field === 'externalId' ||
+          field === 'auth.role.id'
+        ) {
+          console.log('SET')
+        } else if (typeof item === 'object') {
+          if (item.$value) {
+            console.log('set value', item.$value)
+          } else if (item.$default) {
+            //   redis.setnx
+            console.log('getset default', item.$value)
+          } else {
+            await setInner(
+              client,
+              id,
+              item,
+              false,
+              field ? field + '.' + key : key
+            )
+          }
+        } else {
+          await setInner(
+            client,
+            id,
+            item,
+            false,
+            field ? field + '.' + key : key
+          )
+        }
+      }
+    }
+  } else {
+    console.log('hello -->', field, value, fromDefault)
+  }
+  // field can be 'x.y'
+}
 
 async function set(client: SelvaClient, payload: SetOptions) {
   let exists = false
@@ -98,36 +133,9 @@ async function set(client: SelvaClient, payload: SetOptions) {
     exists = await redis.hexists(payload.$id, 'type')
   }
 
-  console.log(await redis.dbsize())
-
-  console.log('set', await redis.set('flurp', 100))
-
-  console.log('decr', await redis.decr('flurp'))
-
-  console.log('incr', await redis.incr('flurp'))
-
-  console.log('decrby', await redis.decrby('flurp', 10))
-
-  console.log('incrby', await redis.incrby('flurp', 10))
-
-  console.log('get', await redis.get('flurp'))
-
-  console.log('del', await redis.del('flurp'))
-
-  console.log('get', await redis.get('flurp'))
-
-  console.log('add set', await redis.sadd('flapdrol', 'smurkysmurk'))
-
-  console.log('set members', await redis.smembers('flapdrol'))
-
-  console.log('add set', await redis.sadd('flapdrol2', 'flapper'))
-
-  console.log('set union', await redis.sunion('flapdrol', 'flapdrol2'))
-
-  // console.log('xxxx', await redis.psubscribe('flurp'))
-
   if (!exists) {
     console.info('create new item')
+    await setInner(client, payload.$id, payload, false)
   }
 }
 

@@ -57,6 +57,12 @@ abstract class RedisMethods {
     })
   }
 
+  async setnx(key: string, value: any): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      this.queue('setnx', [key, value], v => resolve(v === 'OK'), reject)
+    })
+  }
+
   async get(key: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.queue('get', [key], resolve, reject)
