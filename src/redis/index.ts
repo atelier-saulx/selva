@@ -36,6 +36,8 @@ export default class RedisClient {
 
     this.buffer = []
 
+    // ---------------------------------------------
+    // tmp will generate this from a redis command list
     const wrapCommand = key => {
       if (!this[key]) {
         this[key] = (...args) =>
@@ -44,8 +46,8 @@ export default class RedisClient {
           })
       }
     }
-
     commands.forEach(wrapCommand)
+    // ---------------------------------------------
 
     this.connect()
   }
@@ -64,7 +66,11 @@ export default class RedisClient {
     this.client = createClient(opts)
 
     this.client.on('error', err => {
-      console.log('ERR', err)
+      if (err.code === 'ECONNREFUSED') {
+        console.info(`Connecting to ${err.address}:${err.port}`)
+      } else {
+        console.log('ERR', err)
+      }
     })
 
     // this.client.on('connect', a => {
@@ -72,6 +78,7 @@ export default class RedisClient {
     // })
 
     this.client.on('ready', () => {
+      // also set connected to false
       this.connected = true
       this.flushBuffered()
     })
@@ -83,6 +90,7 @@ export default class RedisClient {
     resolve: (x: any) => void,
     reject: (x: Error) => void
   ) {
+    // do we want to cache?
     if (command === 'GET') {
       // dont execute getting the same ids
       // makes it a bit slower in some cases - check it
