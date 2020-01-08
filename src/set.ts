@@ -134,6 +134,8 @@ async function addToSet(
   await client.redis.sadd(setKey, ...value)
 }
 
+// ---------------------------------------------------------------
+
 async function setInner(
   client: SelvaClient,
   id: string,
@@ -141,7 +143,7 @@ async function setInner(
   fromDefault: boolean,
   field?: string
 ) {
-  // isSet
+  // SET
   if (
     field === 'parents' ||
     field === 'children' ||
@@ -216,18 +218,18 @@ async function setInner(
   }
 }
 
+// ---------------------------------------------------------------
+
 // warning when removing all parents from something (by changing children - (default) option to remove automaticly?
 async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
   let exists = false
   const redis = client.redis
-
   if (!payload.$id) {
     if (!payload.type) {
       throw new Error('Cannot create an item if type is not provided')
     }
     const type =
       typeof payload.type === 'string' ? payload.type : payload.type.$value
-
     if (
       (payload.externalId && typeof payload.externalId === 'string') ||
       Array.isArray(payload.externalId)
@@ -242,7 +244,6 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
   } else {
     exists = await redis.hexists(payload.$id, 'type')
   }
-
   if (!exists) {
     if (payload.$id && !payload.type) {
       payload.type = getTypeFromId(payload.$id)
@@ -254,7 +255,6 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
   } else {
     await setInner(client, payload.$id, payload, false)
   }
-
   return payload.$id
 }
 
