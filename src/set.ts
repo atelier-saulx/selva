@@ -66,26 +66,34 @@ hash (id)
 // children, parents, ancestors Redis Sets
 // fields bla.x (on hash) e.g. title.en
 // 
-
-
-
-
 */
 
-function set(payload: setOptions): void {
+async function set(payload: setOptions) {
+  let exists = false
+  const redis = this.redis
+
   if (!payload.$id) {
-    console.log('create item', payload)
     if (!payload.type) {
       throw new Error('Cannot create an item if type is not provided')
     }
-
-    if (!payload.parents) {
-      console.info('no parents provided add to root')
-      payload.parents = ['root']
+    if (payload.externalId) {
+      payload.$id = this.id({
+        type: payload.type,
+        externalId: payload.externalId
+      })
+    } else {
+      payload.$id = this.id({ type: payload.type })
     }
+  } else {
+    redis.hexists(payload.$id, 'type')
+    // find it!
+    // exits
+  }
 
-    // externalID
-    // make root on start up?
+  console.log('exists', await redis.hexists(payload.$id, 'type'))
+
+  if (!exists) {
+    console.info('create this')
   }
 }
 

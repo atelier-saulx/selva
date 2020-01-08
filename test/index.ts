@@ -9,14 +9,12 @@ const wait = () => new Promise(r => setTimeout(r, 500))
 
 test.before(async t => {
   db = await start({ port: 6061, modules: ['redisearch'] })
-  await wait() // for now until client is ready
   // This runs before all tests
 })
 
 test('generates a unique id', async t => {
   const client = connect({
-    port: 6060,
-    host: '127.0.1.1'
+    port: 6061
   })
   const id1 = client.id({ type: 'match' })
   const id2 = client.id({ type: 'match' })
@@ -29,8 +27,7 @@ test('generates a unique id', async t => {
 
 test('set', async t => {
   const client = connect({
-    port: 6060,
-    host: '127.0.1.1'
+    port: 6061
   })
 
   // auto adds to root
@@ -39,4 +36,6 @@ test('set', async t => {
     type: 'match',
     title: { en: 'hello' }
   })
+
+  await wait()
 })

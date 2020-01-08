@@ -63,6 +63,7 @@
   },
   "dependencies": {
     "@types/uuid": "^3.4.6",
+    "@sindresorhus/fnv1a": "^2.0.0",
     "redis": "^2.8.0",
     "uuid": "^3.3.3"
   }
