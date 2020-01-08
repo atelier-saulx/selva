@@ -74,7 +74,7 @@ async function setInner(
         // for each in ancestors remove from children
 
         if (ancestors) {
-          console.log('remove ancestors', ancestors)
+          console.log('remove from ancestors', ancestors)
         }
 
         const newAncestors = []
@@ -85,9 +85,7 @@ async function setInner(
           await client.redis.sadd(childrenKey, id)
           if (!(await client.redis.exists(parent))) {
             await set(client, { $id: parent })
-            // need to do more here (ancestors blabla)
           } else {
-            console.log('ok lets create some ancestors')
             const ancestors = await client.redis.smembers(parent + '.ancestors')
             newAncestors.push(...ancestors)
           }
@@ -132,7 +130,6 @@ async function setInner(
         }
       }
     } else {
-      console.log('SET FIELD -->', field, value, fromDefault)
       if (fromDefault) {
         await client.redis.hset(id, field, value)
       } else {
