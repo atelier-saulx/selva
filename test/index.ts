@@ -221,8 +221,8 @@ test('set', async t => {
   )
 
   t.deepEqual(
-    (await client.redis.smembers(person + '.parents')).sort(),
-    [league].sort(),
+    await client.redis.smembers(person + '.parents'),
+    [league],
     'person has correct parents after reset of children of match'
   )
 
@@ -232,15 +232,31 @@ test('set', async t => {
     'person has correct ancestors after reset of children of match'
   )
 
-  await logDb(client)
+  // add person to match using children
+  await client.set({
+    $id: match,
+    children: [person]
+  })
 
-  // await logAll(client)
+  t.deepEqual(
+    await client.redis.smembers(match + '.children'),
+    [person],
+    'match has children after adding person to match using children'
+  )
+
+  t.deepEqual(
+    (await client.redis.smembers(person + '.parents')).sort(),
+    [league, match].sort(),
+    'person has correct parents after adding person to match using children'
+  )
+
+  t.is(
+    await client.redis.hget(person, 'ancestors'),
+    ['root', league, match].join(','),
+    'person has correct ancestors after adding person to match using children'
+  )
 
   // console.log('reset children', id, moreId)
-  // await client.set({
-  //   $id: id,
-  //   children: [moreId]
-  // })
 
   // await logAll(client)
 

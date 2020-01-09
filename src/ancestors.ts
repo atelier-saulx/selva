@@ -35,7 +35,8 @@ export async function resetAncestors(
     const previousAncestors = await getNewAncestors(client, previousParents)
     const toRemove = [...previousAncestors].filter(k => !ancestors.has(k))
     if (toRemove.length) {
-      await removeFromAncestors(client, id, toRemove)
+      // needs to get fixed at some point...
+      // await removeFromAncestors(client, id, toRemove)
     }
   }
   await client.redis.hset(id, 'ancestors', Array.from(ancestors).join(','))
@@ -50,7 +51,7 @@ export async function removeFromAncestors(
   id: Id,
   values: Id[]
 ) {
-  console.log('REMOVE FROM ANCESTORS (nested children!) does nothing yet...')
+  //   console.log('REMOVE FROM ANCESTORS (nested children!) does nothing yet...')
   //   const ancestors = await client.redis.hget(id, 'ancestors')
   //   const ancestorsSet = ancestors
   //     ? await getNewAncestors(client, [], ancestors.split(','))
@@ -81,6 +82,16 @@ export async function removeFromAncestors(
   //   for (let child of children) {
   //     await removeFromAncestors(client, child, [id])
   //   }
+
+  // tmp this is incorrect
+  const parents = await client.redis.smembers(id + '.parents')
+  const removeSet = new Set(values)
+  await resetAncestors(
+    client,
+    id,
+    parents.filter(k => !removeSet.has(k)),
+    parents
+  )
 }
 
 export async function addToAncestors(

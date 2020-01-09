@@ -112,14 +112,7 @@ async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
 
   // ---------------------------------------
   // tmp solution needs to use remove
-  const parents = await client.redis.smembers(id + '.parents')
-  const removeSet = new Set(value)
-  await resetAncestors(
-    client,
-    id,
-    parents.filter(k => !removeSet.has(k)),
-    parents
-  )
+  await removeFromAncestors(client, id, value)
   // ---------------------------------------
 }
 
@@ -141,6 +134,8 @@ async function resetChildren(
     const size = await client.redis.scard(parentKey)
     if (size === 0) {
       await deleteItem(client, child)
+    } else {
+      await removeFromAncestors(client, child, [id])
     }
   }
   await client.redis.del(setKey)
