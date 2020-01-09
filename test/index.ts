@@ -151,6 +151,26 @@ test('set', async t => {
   await client.delete(moreId)
   await logAll(client)
 
+  console.log('del league ')
+  await client.delete(id2)
+  await logAll(client)
+
+  console.log('$add children', id, 'viDingDong')
+  await client.set({
+    $id: id,
+    children: { $add: 'viDingDong' }
+  })
+
+  console.log('$add children', 'viDingDong', 'viDingDong2')
+  await client.set({
+    $id: 'viDingDong',
+    children: { $add: 'viDingDong2' }
+  })
+  await logAll(client)
+
+  // some cases
+  //
+
   console.log('del all')
   await client.delete({ $id: 'root' })
   await logAll(client)

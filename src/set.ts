@@ -119,17 +119,16 @@ async function resetChildren(
     }
   }
   await client.redis.del(setKey)
-  for (const child of value) {
-    if (!(await client.redis.exists(child))) {
-      await set(client, { $id: child })
-    }
-    await client.redis.sadd(child + '.parents', id)
-  }
+  await addToChildren(client, id, value)
 }
 
 async function addToChildren(client: SelvaClient, id: string, value: Id[]) {
   for (const child of value) {
-    await client.redis.sadd(child + '.parents', id)
+    if (!(await client.redis.exists(child))) {
+      await set(client, { $id: child, parents: [id] })
+    } else {
+      await client.redis.sadd(child + '.parents', id)
+    }
   }
 }
 
@@ -236,41 +235,31 @@ async function setInner(
         }
         await removeFromSet(client, field, hierarchy, id, value.$delete)
       }
-      // combined ancestors update
+      // combined ancestors update ?
     }
   } else {
     if (typeof value === 'object' && !Array.isArray(value)) {
       for (let key in value) {
         if (key[0] !== '$') {
           const item = value[key]
+          const nestedField = field ? field + '.' + key : key
           if (typeof item === 'object') {
             if (item.$value) {
-              console.log('set $value', item.$value)
-              // overrides increment
+              await setInner(client, id, item, false, nestedField)
             } else if (item.$default) {
-              console.log('setnx $default', item.$default)
               if (item.$increment) {
-                // handle default as well
+                await setInner(client, id, item.$default, true, nestedField)
+                await client.redis.incrby(nestedField, item.$increment)
+              } else {
+                await setInner(client, id, item.$default, true, nestedField)
               }
             } else if (item.$increment) {
-              console.log('incr')
+              await client.redis.incrby(nestedField, item.$increment)
             } else {
-              await setInner(
-                client,
-                id,
-                item,
-                false,
-                field ? field + '.' + key : key
-              )
+              await setInner(client, id, item, false, nestedField)
             }
           } else {
-            await setInner(
-              client,
-              id,
-              item,
-              false,
-              field ? field + '.' + key : key
-            )
+            await setInner(client, id, item, false, nestedField)
           }
         }
       }
