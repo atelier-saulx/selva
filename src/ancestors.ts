@@ -6,8 +6,7 @@ export async function getNewAncestors(
   parents: Id[],
   from?: Id[]
 ): Promise<Set<string>> {
-  const newAncestors: Set<string> = new Set(from)
-
+  const ancestors: Set<string> = new Set(from)
   const ancestorsParents = await Promise.all(
     parents.map(k => client.redis.hget(k, 'ancestors'))
   )
@@ -15,36 +14,35 @@ export async function getNewAncestors(
     if (a) {
       const arr = a.split(',')
       if (arr.length) {
-        arr.forEach(v => newAncestors.add(v))
+        arr.forEach(v => ancestors.add(v))
       }
     }
   })
   parents.forEach(v => {
-    newAncestors.add(v)
+    ancestors.add(v)
   })
-  return newAncestors
+  return ancestors
 }
 
 export async function resetAncestors(
   client: SelvaClient,
   id: Id,
   parents: Id[],
-  previousValue: Id[]
+  previousParents: Id[]
 ) {
-  if (previousValue.length === 0) {
-    const newAncestors = await getNewAncestors(client, parents)
-    await client.redis.hset(id, 'ancestors', Array.from(newAncestors).join(','))
-    const children = await client.redis.smembers(id + '.children')
-    for (let child of children) {
-      await addToAncestors(client, child, [id])
+  const ancestors = await getNewAncestors(client, parents)
+  if (previousParents.length !== 0) {
+    const previousAncestors = await getNewAncestors(client, previousParents)
+    const ancestors = await getNewAncestors(client, parents)
+    const toRemove = [...previousAncestors].filter(k => !ancestors.has(k))
+    if (toRemove.length) {
+      await removeFromAncestors(client, id, toRemove)
     }
-  } else {
-    console.log(
-      '  🥰 ancestors changed! - means you need to remove the diff (intersection set)',
-      id,
-      parents
-    )
-    // need to remove shit as well
+  }
+  await client.redis.hset(id, 'ancestors', Array.from(ancestors).join(','))
+  const children = await client.redis.smembers(id + '.children')
+  for (let child of children) {
+    await addToAncestors(client, child, [id])
   }
 }
 
@@ -53,26 +51,27 @@ export async function removeFromAncestors(
   id: Id,
   parents: Id[]
 ) {
-  console.log(' 🥰 Remove from ancestors!')
-  // its about adding or remving parents
+  const ancestors = await client.redis.hget(id, 'ancestors')
+  const newAncestors = ancestors
+    ? await getNewAncestors(client, [], ancestors.split(','))
+    : await getNewAncestors(client, [])
+
+  console.log('SET', newAncestors)
+
+  console.log(' 🥰 Remove from ancestors!', id, parents)
 }
 
-// start with this
 export async function addToAncestors(
   client: SelvaClient,
   id: Id,
   parents: Id[]
 ) {
-  // its about adding parents
   if (!(await client.redis.sismember(id + '.parents', id))) {
     const ancestors = await client.redis.hget(id, 'ancestors')
-
     const newAncestors = ancestors
       ? await getNewAncestors(client, parents, ancestors.split(','))
       : await getNewAncestors(client, parents)
-
     await client.redis.hset(id, 'ancestors', Array.from(newAncestors).join(','))
-
     const children = await client.redis.smembers(id + '.children')
     for (let child of children) {
       await addToAncestors(client, child, [id])

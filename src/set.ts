@@ -111,6 +111,7 @@ async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
   }
   await removeFromAncestors(client, id, value)
 }
+
 // ---------------------------------------------------------------
 // children field
 async function resetChildren(
@@ -216,7 +217,6 @@ async function removeFromSet(
 }
 
 // ---------------------------------------------------------------
-
 async function setInner(
   client: SelvaClient,
   id: string,
@@ -297,8 +297,6 @@ async function setInner(
 }
 
 // ---------------------------------------------------------------
-
-// warning when removing all parents from something (by changing children - (default) option to remove automaticly?
 async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
   let exists = false
   const redis = client.redis
