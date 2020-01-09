@@ -171,7 +171,6 @@ async function resetSet(
   } else {
     await client.redis.del(setKey)
   }
-
   // empty parents means the same as delete item
   await client.redis.sadd(setKey, ...value)
 }
