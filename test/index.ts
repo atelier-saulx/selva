@@ -269,7 +269,7 @@ test('set', async t => {
   )
 
   t.deepEqual(
-    (await client.redis.smembers(league + '.parents')).sort(),
+    (await client.redis.smembers(league + '.children')).sort(),
     [match, person].sort(),
     'league has correct children after setting ancestors'
   )
