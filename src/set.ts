@@ -115,6 +115,64 @@ async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
   await client.redis.srem(ancestorsKey, ...value)
 }
 // ---------------------------------------------------------------
+// children field
+async function resetChildren(
+  client: SelvaClient,
+  id: string,
+  value: Id[],
+  setKey: string
+) {
+  const ancestorsKey = id + '.ancestors'
+  const parents = await client.redis.smembers(id + '.parents')
+  if (parents) {
+    for (let parent of parents) {
+      await client.redis.srem(parent + '.children', id)
+    }
+  }
+  await client.redis.del(setKey)
+  const newAncestors = []
+  await client.redis.del(ancestorsKey)
+  for (let parent of value) {
+    const childrenKey = parent + '.children'
+    await client.redis.sadd(childrenKey, id)
+    if (!(await client.redis.exists(parent))) {
+      await set(client, { $id: parent })
+    } else {
+      const ancestors = await client.redis.smembers(parent + '.ancestors')
+      newAncestors.push(...ancestors)
+    }
+    newAncestors.push(parent)
+  }
+  await client.redis.del(ancestorsKey)
+  await client.redis.sadd(ancestorsKey, ...newAncestors)
+}
+
+async function addToChildren(client: SelvaClient, id: string, value: Id[]) {
+  const ancestorsKey = id + '.ancestors'
+  for (let parent of value) {
+    const childrenKey = parent + '.children'
+    await client.redis.sadd(childrenKey, id)
+    if (!(await client.redis.exists(parent))) {
+      await set(client, { $id: parent })
+    }
+  }
+  await client.redis.sadd(ancestorsKey, ...value)
+}
+
+async function removeFromChildren(
+  client: SelvaClient,
+  id: string,
+  value: Id[]
+) {
+  const ancestorsKey = id + '.ancestors'
+  for (let parent of value) {
+    const childrenKey = parent + '.children'
+    await client.redis.srem(childrenKey, id)
+  }
+  await client.redis.srem(ancestorsKey, ...value)
+}
+
+// ---------------------------------------------------------------
 
 async function resetSet(
   client: SelvaClient,
@@ -205,10 +263,10 @@ async function setInner(
       }
 
       if (value.$delete) {
-        if (!Array.isArray(value.$add)) {
-          value.$delete = [value.$add]
+        if (!Array.isArray(value.$delete)) {
+          value.$delete = [value.$delete]
         }
-        await removeFromSet(client, field, hierarchy, id, value.$add)
+        await removeFromSet(client, field, hierarchy, id, value.$delete)
       }
     }
   } else {

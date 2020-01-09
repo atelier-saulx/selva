@@ -95,5 +95,15 @@ test('set', async t => {
   // await wait()
   await logAll(client)
 
+  console.log('remove extra previous parent')
+  await client.set({
+    $id: moreId,
+    parents: {
+      $delete: id
+    }
+  })
+
+  await logAll(client)
+
   await wait()
 })
