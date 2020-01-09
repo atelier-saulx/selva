@@ -1,5 +1,6 @@
 import { BaseItem, Id, ExternalId, UserType, getTypeFromId } from './schema'
 import { SelvaClient } from './'
+import { deleteItem } from './delete'
 
 type RedisSetParams =
   | Id[]
@@ -125,11 +126,22 @@ async function resetChildren(
   if (children) {
     for (let child of children) {
       await client.redis.srem(child + '.ancestors', id)
-      await client.redis.srem(child + '.parents', id)
+      const parentKey = child + '.parents'
+      await client.redis.srem(parentKey, id)
+      const size = await client.redis.scard(parentKey)
+      if (size === 0) {
+        await deleteItem(client, child)
+      }
     }
   }
-  // have to remove deep is !parents (calling the same thing but only removing 1 field)
   await client.redis.del(setKey)
+  for (let child of value) {
+    if (!(await client.redis.exists(child))) {
+      await set(client, { $id: child })
+    }
+    await client.redis.sadd(child + '.parents', id)
+    await client.redis.sadd(child + '.ancestors', id)
+  }
 }
 
 async function addToChildren(client: SelvaClient, id: string, value: Id[]) {}
@@ -159,6 +171,8 @@ async function resetSet(
   } else {
     await client.redis.del(setKey)
   }
+
+  // empty parents means the same as delete item
   await client.redis.sadd(setKey, ...value)
 }
 

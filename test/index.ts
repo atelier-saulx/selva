@@ -123,8 +123,16 @@ test('set', async t => {
 
   await logAll(client)
 
-  await client.delete({ $id: 'root' })
+  console.log('add children', id, moreId)
+  await client.set({
+    $id: id,
+    children: [moreId]
+  })
 
+  await logAll(client)
+
+  console.log('del all')
+  await client.delete({ $id: 'root' })
   await logAll(client)
 
   await wait()

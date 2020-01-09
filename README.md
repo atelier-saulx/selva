@@ -295,6 +295,7 @@ const id = await client.id({ type: 'flurpy', externalId: 'smurkysmurk' })
 ### delete
 
 ```javascript
+await client.delete('ma12231')
 await client.delete({ $id: 'ma12231' })
 await client.delete({ $id: 'ma12231', $hierarchy: false })
 ```

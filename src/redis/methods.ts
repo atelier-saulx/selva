@@ -156,7 +156,7 @@ abstract class RedisMethods {
     })
   }
 
-  async hstrlen(hash: string, field: string): Promise<BigInteger> {
+  async hstrlen(hash: string, field: string): Promise<number> {
     return new Promise((resolve, reject) => {
       this.queue('hstrlen', [hash, field], resolve, reject)
     })
@@ -168,17 +168,13 @@ abstract class RedisMethods {
     })
   }
 
-  async getbit(
-    key: string,
-    offset: number,
-    offset2?: number
-  ): Promise<BigInteger> {
+  async getbit(key: string, offset: number, offset2?: number): Promise<number> {
     return new Promise((resolve, reject) => {
       this.queue('getbit', [key, offset, offset2], resolve, reject)
     })
   }
 
-  async getrange(key: string, start: number, end: number): Promise<BigInteger> {
+  async getrange(key: string, start: number, end: number): Promise<number> {
     return new Promise((resolve, reject) => {
       this.queue('getrange', [key, start, end], resolve, reject)
     })
@@ -321,7 +317,7 @@ abstract class RedisMethods {
     })
   }
 
-  async scard(key: string): Promise<BigInteger> {
+  async scard(key: string): Promise<number> {
     return new Promise((resolve, reject) => {
       this.queue('scard', [key], resolve, reject)
     })
