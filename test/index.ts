@@ -23,21 +23,23 @@ test('generates a unique id', async t => {
   // allways subscribe on it (hash)
 })
 
-const logAll = async (client: SelvaClient) => {
+const dumpDb = async (client: SelvaClient): Promise<any[]> => {
   const ids = await client.redis.keys('*')
-  console.log(
-    (
-      await Promise.all(
-        ids.map(id =>
-          id.indexOf('.') > -1
-            ? client.redis.smembers(id)
-            : client.redis.hgetall(id)
-        )
+  return (
+    await Promise.all(
+      ids.map(id =>
+        id.indexOf('.') > -1
+          ? client.redis.smembers(id)
+          : client.redis.hgetall(id)
       )
-    ).map((v, i) => {
-      return [ids[i], v]
-    })
-  )
+    )
+  ).map((v, i) => {
+    return [ids[i], v]
+  })
+}
+
+const logDb = async (client: SelvaClient) => {
+  console.log(await dumpDb(client))
 }
 
 test('set', async t => {
@@ -45,36 +47,50 @@ test('set', async t => {
     port: 6061
   })
 
-  // auto adds to root
-  // if root does not exists it creates it
-  const id = await client.set({
-    type: 'match',
-    title: { en: 'hello' }
+  const match = await client.set({
+    type: 'match'
   })
 
-  const id2 = await client.set({
-    type: 'league',
-    title: { en: 'snurky' }
+  const league = await client.set({
+    type: 'league'
   })
 
-  console.log(id, id2)
-
-  const moreId = await client.set({
+  const person = await client.set({
     type: 'person',
-    parents: [id],
+    parents: [match],
     title: { en: 'flurpy man' }
   })
 
-  // move it
+  t.deepEqual(
+    await client.redis.smembers(match + '.children'),
+    [person],
+    'match has correct children'
+  )
+
+  t.deepEqual(
+    await client.redis.smembers('root.children'),
+    [league, match],
+    'root has correct children'
+  )
+
+  t.deepEqual(
+    await client.redis.smembers(league + '.children'),
+    [],
+    'league has no children'
+  )
+
+  t.is(
+    await client.redis.hget(person, 'title.en'),
+    'flurpy man',
+    'Title of person is correctly set'
+  )
+
+  // await client.set({
+  //   $id: moreId,
+  //   parents: [id2]
+  // })
+
   // await logAll(client)
-
-  console.log('move from previous parent', moreId, 'from', id, 'to', id2)
-  await client.set({
-    $id: moreId,
-    parents: [id2]
-  })
-
-  await logAll(client)
 
   // console.log('add extra previous parent')
   // await client.set({
@@ -205,6 +221,4 @@ test('set', async t => {
   //   children: { $add: 'viDong' }
   // })
   // await logAll(client)
-
-  await wait()
 })

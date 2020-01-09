@@ -33,7 +33,6 @@ export async function resetAncestors(
   const ancestors = await getNewAncestors(client, parents)
   if (previousParents.length !== 0) {
     const previousAncestors = await getNewAncestors(client, previousParents)
-    const ancestors = await getNewAncestors(client, parents)
     const toRemove = [...previousAncestors].filter(k => !ancestors.has(k))
     if (toRemove.length) {
       await removeFromAncestors(client, id, toRemove)
@@ -49,16 +48,38 @@ export async function resetAncestors(
 export async function removeFromAncestors(
   client: SelvaClient,
   id: Id,
-  parents: Id[]
+  values: Id[]
 ) {
-  const ancestors = await client.redis.hget(id, 'ancestors')
-  const newAncestors = ancestors
-    ? await getNewAncestors(client, [], ancestors.split(','))
-    : await getNewAncestors(client, [])
+  //   const ancestors = await client.redis.hget(id, 'ancestors')
+  //   const ancestorsSet = ancestors
+  //     ? await getNewAncestors(client, [], ancestors.split(','))
+  //     : await getNewAncestors(client, [])
+  // incorrect parent can be there from something else
+  // also need to double check if deleting it is the correct move
+  /*
+        root
+          |_ b
+             |_c
+             |_d
+               |_e
 
-  console.log('SET', newAncestors)
+        root
+          |_d
+            |_e
 
-  console.log(' 🥰 Remove from ancestors!', id, parents)
+    Remove b from d
+    Keep d / e
+
+    Dont remove root!
+    
+    And remove all correct paths
+    */
+  // ancestorsSet.delete(k)
+  //   await client.redis.hset(id, 'ancestors', Array.from(ancestorsSet).join(','))
+  //   const children = await client.redis.smembers(id + '.children')
+  //   for (let child of children) {
+  //     await removeFromAncestors(client, child, [id])
+  //   }
 }
 
 export async function addToAncestors(
