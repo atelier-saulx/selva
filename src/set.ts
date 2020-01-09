@@ -1,6 +1,7 @@
 import { BaseItem, Id, ExternalId, UserType, getTypeFromId } from './schema'
 import { SelvaClient } from './'
 import { deleteItem } from './delete'
+import { addToAncestors } from './ancestors'
 
 type RedisSetParams =
   | Id[]
