@@ -42,7 +42,6 @@ type SetOptions = SetItem & {
   $version?: string
   children?: HierarchySet
   parents?: HierarchySet
-  ancestors?: RedisSetParams // ancestors is too arbitrary to try to resolve (not sorted!)
   externalId?:
     | ExternalId[]
     | {
@@ -62,57 +61,44 @@ type SetOptions = SetItem & {
 }
 
 // ---------------------------------------------------------------
-// parents field
+
+async function addToParents(client: SelvaClient, id: string, value: Id[]) {
+  for (const parent of value) {
+    const childrenKey = parent + '.children'
+    await client.redis.sadd(childrenKey, id)
+    if (!(await client.redis.exists(parent))) {
+      await set(client, { $id: parent })
+    }
+  }
+}
+
 async function resetParents(
   client: SelvaClient,
   id: string,
   value: Id[],
   setKey: string
 ) {
-  const ancestorsKey = id + '.ancestors'
   const parents = await client.redis.smembers(id + '.parents')
   if (parents) {
-    for (let parent of parents) {
+    for (const parent of parents) {
       await client.redis.srem(parent + '.children', id)
     }
   }
   await client.redis.del(setKey)
-  const newAncestors = []
-  await client.redis.del(ancestorsKey)
-  for (let parent of value) {
-    const childrenKey = parent + '.children'
-    await client.redis.sadd(childrenKey, id)
-    if (!(await client.redis.exists(parent))) {
-      await set(client, { $id: parent })
-    } else {
-      const ancestors = await client.redis.smembers(parent + '.ancestors')
-      newAncestors.push(...ancestors)
-    }
-    newAncestors.push(parent)
-  }
-  await client.redis.del(ancestorsKey)
-  await client.redis.sadd(ancestorsKey, ...newAncestors)
-}
-
-async function addToParents(client: SelvaClient, id: string, value: Id[]) {
-  const ancestorsKey = id + '.ancestors'
-  for (let parent of value) {
+  for (const parent of value) {
     const childrenKey = parent + '.children'
     await client.redis.sadd(childrenKey, id)
     if (!(await client.redis.exists(parent))) {
       await set(client, { $id: parent })
     }
   }
-  await client.redis.sadd(ancestorsKey, ...value)
 }
 
 async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
-  const ancestorsKey = id + '.ancestors'
-  for (let parent of value) {
+  for (const parent of value) {
     const childrenKey = parent + '.children'
     await client.redis.srem(childrenKey, id)
   }
-  await client.redis.srem(ancestorsKey, ...value)
 }
 // ---------------------------------------------------------------
 // children field
@@ -124,8 +110,7 @@ async function resetChildren(
 ) {
   const children = await client.redis.smembers(setKey)
   if (children) {
-    for (let child of children) {
-      await client.redis.srem(child + '.ancestors', id)
+    for (const child of children) {
       const parentKey = child + '.parents'
       await client.redis.srem(parentKey, id)
       const size = await client.redis.scard(parentKey)
@@ -135,16 +120,19 @@ async function resetChildren(
     }
   }
   await client.redis.del(setKey)
-  for (let child of value) {
+  for (const child of value) {
     if (!(await client.redis.exists(child))) {
       await set(client, { $id: child })
     }
     await client.redis.sadd(child + '.parents', id)
-    await client.redis.sadd(child + '.ancestors', id)
   }
 }
 
-async function addToChildren(client: SelvaClient, id: string, value: Id[]) {}
+async function addToChildren(client: SelvaClient, id: string, value: Id[]) {
+  for (const child of value) {
+    await client.redis.sadd(child + '.parents', id)
+  }
+}
 
 async function removeFromChildren(
   client: SelvaClient,
@@ -153,7 +141,6 @@ async function removeFromChildren(
 ) {}
 
 // ---------------------------------------------------------------
-
 async function resetSet(
   client: SelvaClient,
   field: string,
@@ -187,7 +174,7 @@ async function addToSet(
     if (field === 'parents') {
       await addToParents(client, id, value)
     } else if (field === 'children') {
-      // do it nice
+      await addToChildren(client, id, value)
     }
   }
   await client.redis.sadd(setKey, ...value)
@@ -224,7 +211,6 @@ async function setInner(
   if (
     field === 'parents' ||
     field === 'children' ||
-    field === 'ancestors' ||
     field === 'externalId' ||
     field === 'auth.role.id'
   ) {

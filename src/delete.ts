@@ -25,12 +25,13 @@ async function deleteItem(
       const size = await client.redis.scard(key)
       if (!size) {
         await deleteItem(client, child)
+      } else {
+        // update all ancestors
       }
     }
   }
   await client.redis.del(id + '.children')
   await client.redis.del(id + '.parents')
-  await client.redis.del(id + '.ancestors')
   // returns true if it existed
   return client.redis.del(id)
 }

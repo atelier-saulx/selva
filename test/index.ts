@@ -115,7 +115,7 @@ test('set', async t => {
 
   await logAll(client)
 
-  console.log('reset children')
+  console.log('reset children', id, '[]')
   await client.set({
     $id: id,
     children: []
@@ -123,10 +123,18 @@ test('set', async t => {
 
   await logAll(client)
 
-  console.log('add children', id, moreId)
+  console.log('reset children', id, moreId)
   await client.set({
     $id: id,
     children: [moreId]
+  })
+
+  await logAll(client)
+
+  console.log('$add children', id2, id)
+  await client.set({
+    $id: id2,
+    children: { $add: id }
   })
 
   await logAll(client)

@@ -194,8 +194,8 @@ export type BaseItem = {
 
 export type Item = BaseItem & {
   children?: Id[]
-  ancestors?: Id[]
   parents?: Id[]
+  ancestors?: string
   externalId?: ExternalId[]
   auth?: {
     password?: string
