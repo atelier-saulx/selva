@@ -164,12 +164,16 @@ test('set', async t => {
   console.log('$add children', 'viDingDong', 'viDingDong2')
   await client.set({
     $id: 'viDingDong',
-    children: { $add: 'viDingDong2' }
+    children: { $add: 'viDingDong2' },
+    value: {
+      $default: 100,
+      $increment: 10
+    }
   })
   await logAll(client)
 
   // some cases
-  //
+  // double parents deep
 
   console.log('del all')
   await client.delete({ $id: 'root' })

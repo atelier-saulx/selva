@@ -249,12 +249,12 @@ async function setInner(
             } else if (item.$default) {
               if (item.$increment) {
                 await setInner(client, id, item.$default, true, nestedField)
-                await client.redis.incrby(nestedField, item.$increment)
+                await client.redis.hincrby(id, nestedField, item.$increment)
               } else {
                 await setInner(client, id, item.$default, true, nestedField)
               }
             } else if (item.$increment) {
-              await client.redis.incrby(nestedField, item.$increment)
+              await client.redis.hincrby(id, nestedField, item.$increment)
             } else {
               await setInner(client, id, item, false, nestedField)
             }
