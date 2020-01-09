@@ -156,6 +156,7 @@ async function removeFromChildren(
 ) {
   for (const child of value) {
     await client.redis.srem(child + '.parents', id)
+    await removeFromAncestors(client, child, [id])
   }
 }
 

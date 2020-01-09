@@ -316,8 +316,6 @@ test('set', async t => {
     'match has correct ancestors after removing match from league'
   )
 
-  // await logAll(client)
-
   // console.log('del person')
   // await client.delete(moreId)
   // await logAll(client)
