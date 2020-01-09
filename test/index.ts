@@ -161,7 +161,18 @@ test('set', async t => {
     children: { $add: 'viDingDong' }
   })
 
-  console.log('$add children', 'viDingDong', 'viDingDong2')
+  console.log('set default + increment')
+  await client.set({
+    $id: 'viDingDong',
+    children: { $add: 'viDingDong2' },
+    value: {
+      $default: 100,
+      $increment: 10
+    }
+  })
+  await logAll(client)
+
+  console.log('increment')
   await client.set({
     $id: 'viDingDong',
     children: { $add: 'viDingDong2' },

@@ -248,8 +248,17 @@ async function setInner(
               await setInner(client, id, item, false, nestedField)
             } else if (item.$default) {
               if (item.$increment) {
-                await setInner(client, id, item.$default, true, nestedField)
-                await client.redis.hincrby(id, nestedField, item.$increment)
+                if (
+                  !(await setInner(
+                    client,
+                    id,
+                    item.$default,
+                    true,
+                    nestedField
+                  ))
+                ) {
+                  await client.redis.hincrby(id, nestedField, item.$increment)
+                }
               } else {
                 await setInner(client, id, item.$default, true, nestedField)
               }
@@ -265,9 +274,9 @@ async function setInner(
       }
     } else {
       if (fromDefault) {
-        await client.redis.hset(id, field, value)
+        return await client.redis.hset(id, field, value)
       } else {
-        await client.redis.hsetnx(id, field, value)
+        return await client.redis.hsetnx(id, field, value)
       }
     }
   }
