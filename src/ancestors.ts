@@ -50,7 +50,7 @@ export async function resetAncestors(
 
 export async function removeFromAncestors(
   client: SelvaClient,
-  id: Id[],
+  id: Id,
   parents: Id[]
 ) {
   console.log(' 🥰 Remove from ancestors!')

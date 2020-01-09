@@ -76,7 +76,7 @@ async function addToParents(client: SelvaClient, id: string, value: Id[]) {
       await set(client, { $id: parent })
     }
   }
-  addToAncestors(client, id, value)
+  await addToAncestors(client, id, value)
 }
 
 async function resetParents(
@@ -109,6 +109,7 @@ async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
   for (const parent of value) {
     await client.redis.srem(parent + '.children', id)
   }
+  await removeFromAncestors(client, id, value)
 }
 // ---------------------------------------------------------------
 // children field
@@ -141,7 +142,7 @@ async function addToChildren(client: SelvaClient, id: string, value: Id[]) {
       await set(client, { $id: child, parents: { $add: id } })
     } else {
       await client.redis.sadd(child + '.parents', id)
-      addToAncestors(client, child, [id])
+      await addToAncestors(client, child, [id])
     }
   }
 }

@@ -1,6 +1,8 @@
 import { Id } from './schema'
 import { SelvaClient } from '.'
 
+import { removeFromAncestors } from './ancestors'
+
 type DeleteOptions =
   | Id
   | {
@@ -27,6 +29,7 @@ async function deleteItem(
         await deleteItem(client, child)
       } else {
         // update all ancestors
+        await removeFromAncestors(client, child, [id])
       }
     }
   }
