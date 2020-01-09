@@ -10,6 +10,10 @@ export class SelvaClient {
     this.redis = new RedisClient(opts)
   }
 
+  async destroy() {
+    console.log('destroy client')
+  }
+
   // need client.destroy (at least for tests)
 
   id(props: IdOptions) {

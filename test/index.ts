@@ -70,7 +70,7 @@ const logDb = async (client: SelvaClient) => {
   console.log(await dumpDb(client))
 }
 
-test('set', async t => {
+test('modify - basic', async t => {
   const client = connect({
     port: 6061
   })
@@ -358,7 +358,20 @@ test('set', async t => {
     'league is removed from db after delete'
   )
 
-  /*
+  // delete root
+  await client.delete('root')
+  t.deepEqual(await dumpDb(client), [])
+
+  await client.destroy()
+})
+
+// test('modify - $increment, $default', async t => {
+//   const client = connect({
+//     port: 6061
+//   })
+// })
+
+/*
     root
       |_ b
           |_c
@@ -371,61 +384,62 @@ test('set', async t => {
     Keep d / e
     Dont remove root!
     And remove all correct paths
-    */
+  */
 
-  // console.log('$add children', id, 'viDingDong')
-  // await client.set({
-  //   $id: id,
-  //   children: { $add: 'viDingDong' }
-  // })
+// make this test now
 
-  // console.log('set default + increment')
-  // await client.set({
-  //   $id: 'viDingDong',
-  //   children: { $add: 'viDingDong2' },
-  //   value: {
-  //     $default: 100,
-  //     $increment: 10
-  //   }
-  // })
-  // await logAll(client)
+// console.log('$add children', id, 'viDingDong')
+// await client.set({
+//   $id: id,
+//   children: { $add: 'viDingDong' }
+// })
 
-  // console.log('increment')
-  // await client.set({
-  //   $id: 'viDingDong',
-  //   children: { $add: 'viDingDong2' },
-  //   value: {
-  //     $default: 100,
-  //     $increment: 10
-  //   }
-  // })
-  // await logAll(client)
+// console.log('set default + increment')
+// await client.set({
+//   $id: 'viDingDong',
+//   children: { $add: 'viDingDong2' },
+//   value: {
+//     $default: 100,
+//     $increment: 10
+//   }
+// })
+// await logAll(client)
 
-  // // some cases
-  // // double parents deep - important
-  // console.log('$add children', 'maSmurkels + viDingDong', 'viDingDong3')
-  // await client.set({
-  //   $id: 'maSmurkels',
-  //   children: { $add: 'viDingDong3' }
-  // })
-  // await client.set({
-  //   $id: 'viDingDong',
-  //   children: { $add: 'viDingDong3' }
-  // })
-  // await logAll(client)
+// console.log('increment')
+// await client.set({
+//   $id: 'viDingDong',
+//   children: { $add: 'viDingDong2' },
+//   value: {
+//     $default: 100,
+//     $increment: 10
+//   }
+// })
+// await logAll(client)
 
-  // console.log('del all')
-  // await client.delete({ $id: 'root' })
-  // await logAll(client)
+// // some cases
+// // double parents deep - important
+// console.log('$add children', 'maSmurkels + viDingDong', 'viDingDong3')
+// await client.set({
+//   $id: 'maSmurkels',
+//   children: { $add: 'viDingDong3' }
+// })
+// await client.set({
+//   $id: 'viDingDong',
+//   children: { $add: 'viDingDong3' }
+// })
+// await logAll(client)
 
-  // console.log('do it again')
-  // await client.set({
-  //   $id: 'maSmurkels',
-  //   children: { $add: 'viDing' }
-  // })
-  // await client.set({
-  //   $id: 'viDing',
-  //   children: { $add: 'viDong' }
-  // })
-  // await logAll(client)
-})
+// console.log('del all')
+// await client.delete({ $id: 'root' })
+// await logAll(client)
+
+// console.log('do it again')
+// await client.set({
+//   $id: 'maSmurkels',
+//   children: { $add: 'viDing' }
+// })
+// await client.set({
+//   $id: 'viDing',
+//   children: { $add: 'viDong' }
+// })
+// await logAll(client)

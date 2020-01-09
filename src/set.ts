@@ -26,10 +26,8 @@ type SetExtraOptions<T> = {
   $merge?: boolean
 }
 
-// check for which things this makes sense
 type SetExtraCounterOptions = {
   $increment?: number
-  $decrement?: number
 }
 
 type SetItem<T = BaseItem> = {
