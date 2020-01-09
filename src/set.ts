@@ -109,7 +109,16 @@ async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
   for (const parent of value) {
     await client.redis.srem(parent + '.children', id)
   }
-  await removeFromAncestors(client, id, value)
+
+  // tmp solution needs to use remove
+  const parents = await client.redis.smembers(id + '.parents')
+  const removeSet = new Set(value)
+  await resetAncestors(
+    client,
+    id,
+    parents.filter(k => !removeSet.has(k)),
+    parents
+  )
 }
 
 // ---------------------------------------------------------------
@@ -139,7 +148,6 @@ async function resetChildren(
 async function addToChildren(client: SelvaClient, id: string, value: Id[]) {
   for (const child of value) {
     if (!(await client.redis.exists(child))) {
-      // console.log('CREATE CHILD FROM ADD', id, child)
       await set(client, { $id: child, parents: { $add: id } })
     } else {
       await client.redis.sadd(child + '.parents', id)

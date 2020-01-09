@@ -50,6 +50,7 @@ export async function removeFromAncestors(
   id: Id,
   values: Id[]
 ) {
+  console.log('REMOVE FROM ANCESTORS (nested children!) does nothing yet...')
   //   const ancestors = await client.redis.hget(id, 'ancestors')
   //   const ancestorsSet = ancestors
   //     ? await getNewAncestors(client, [], ancestors.split(','))
