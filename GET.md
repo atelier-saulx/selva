@@ -378,3 +378,8 @@ match,
   }
 }
 ```
+
+### special behaviour
+
+- decendants, does not exists just a colleciton of all children (deep) - gaurd against circulair stuff
+- ancestors, string for indexing, returns array

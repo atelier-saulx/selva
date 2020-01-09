@@ -86,18 +86,17 @@ async function resetParents(
   }
   await client.redis.del(setKey)
   for (const parent of value) {
-    const childrenKey = parent + '.children'
-    await client.redis.sadd(childrenKey, id)
+    await client.redis.sadd(parent + '.children', id)
     if (!(await client.redis.exists(parent))) {
       await set(client, { $id: parent })
     }
   }
+  // remove item if parents size is 0
 }
 
 async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
   for (const parent of value) {
-    const childrenKey = parent + '.children'
-    await client.redis.srem(childrenKey, id)
+    await client.redis.srem(parent + '.children', id)
   }
 }
 // ---------------------------------------------------------------
@@ -138,7 +137,11 @@ async function removeFromChildren(
   client: SelvaClient,
   id: string,
   value: Id[]
-) {}
+) {
+  for (const child of value) {
+    await client.redis.srem(child + '.parents', id)
+  }
+}
 
 // ---------------------------------------------------------------
 async function resetSet(
@@ -192,10 +195,10 @@ async function removeFromSet(
     if (field === 'parents') {
       await removeFromParents(client, id, value)
     } else if (field === 'children') {
-      // do it nice
+      await removeFromChildren(client, id, value)
     }
   }
-  await client.redis.sadd(setKey, ...value)
+  await client.redis.srem(setKey, ...value)
 }
 
 // ---------------------------------------------------------------
@@ -227,13 +230,13 @@ async function setInner(
         }
         await addToSet(client, field, hierarchy, id, value.$add)
       }
-
       if (value.$delete) {
         if (!Array.isArray(value.$delete)) {
           value.$delete = [value.$delete]
         }
         await removeFromSet(client, field, hierarchy, id, value.$delete)
       }
+      // combined ancestors update
     }
   } else {
     if (typeof value === 'object' && !Array.isArray(value)) {

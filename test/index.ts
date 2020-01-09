@@ -139,6 +139,14 @@ test('set', async t => {
 
   await logAll(client)
 
+  console.log('$delete children', id2, id)
+  await client.set({
+    $id: id2,
+    children: { $delete: id }
+  })
+
+  await logAll(client)
+
   console.log('del person')
   await client.delete(moreId)
   await logAll(client)
