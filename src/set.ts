@@ -122,29 +122,28 @@ async function resetChildren(
   value: Id[],
   setKey: string
 ) {
-  const ancestorsKey = id + '.ancestors'
-  const parents = await client.redis.smembers(id + '.parents')
-  if (parents) {
-    for (let parent of parents) {
-      await client.redis.srem(parent + '.children', id)
-    }
-  }
-  await client.redis.del(setKey)
-  const newAncestors = []
-  await client.redis.del(ancestorsKey)
-  for (let parent of value) {
-    const childrenKey = parent + '.children'
-    await client.redis.sadd(childrenKey, id)
-    if (!(await client.redis.exists(parent))) {
-      await set(client, { $id: parent })
-    } else {
-      const ancestors = await client.redis.smembers(parent + '.ancestors')
-      newAncestors.push(...ancestors)
-    }
-    newAncestors.push(parent)
-  }
-  await client.redis.del(ancestorsKey)
-  await client.redis.sadd(ancestorsKey, ...newAncestors)
+  // const children = await client.redis.smembers(id + '.children')
+  // if (children) {
+  //   for (let parent of children) {
+  //     await client.redis.srem(parent + '.children', id)
+  //   }
+  // }
+  // await client.redis.del(setKey)
+  // const newAncestors = []
+  // await client.redis.del(ancestorsKey)
+  // for (let parent of value) {
+  //   const childrenKey = parent + '.children'
+  //   await client.redis.sadd(childrenKey, id)
+  //   if (!(await client.redis.exists(parent))) {
+  //     await set(client, { $id: parent })
+  //   } else {
+  //     const ancestors = await client.redis.smembers(parent + '.ancestors')
+  //     newAncestors.push(...ancestors)
+  //   }
+  //   newAncestors.push(parent)
+  // }
+  // await client.redis.del(ancestorsKey)
+  // await client.redis.sadd(ancestorsKey, ...newAncestors)
 }
 
 async function addToChildren(client: SelvaClient, id: string, value: Id[]) {
@@ -186,7 +185,7 @@ async function resetSet(
     if (field === 'parents') {
       await resetParents(client, id, value, setKey)
     } else if (field === 'children') {
-      // do it nice
+      await resetChildren(client, id, value, setKey)
     }
   } else {
     await client.redis.del(setKey)
@@ -254,7 +253,6 @@ async function setInner(
       if (value.$value) {
         resetSet(client, field, hierarchy, id, value)
       }
-
       if (value.$add) {
         if (!Array.isArray(value.$add)) {
           value.$add = [value.$add]
@@ -275,13 +273,16 @@ async function setInner(
         if (key[0] !== '$') {
           const item = value[key]
           if (typeof item === 'object') {
-            // if (item.$increment) {
-            // do it here...
-            // }
             if (item.$value) {
               console.log('set $value', item.$value)
+              // overrides increment
             } else if (item.$default) {
               console.log('setnx $default', item.$default)
+              if (item.$increment) {
+                // handle default as well
+              }
+            } else if (item.$increment) {
+              console.log('incr')
             } else {
               await setInner(
                 client,
