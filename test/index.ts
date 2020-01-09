@@ -47,6 +47,7 @@ test('set', async t => {
     port: 6061
   })
 
+  // simple setup
   const match = await client.set({
     type: 'match'
   })
@@ -86,12 +87,6 @@ test('set', async t => {
   )
 
   t.is(
-    await client.redis.hget(person, 'ancestors'),
-    ['root', match].join(','),
-    'person has correct ancestors'
-  )
-
-  t.is(
     await client.redis.hget(match, 'ancestors'),
     'root',
     'match has correct ancestors'
@@ -103,12 +98,29 @@ test('set', async t => {
     'league has correct ancestors'
   )
 
-  // await client.set({
-  //   $id: moreId,
-  //   parents: [id2]
-  // })
+  // move person from match to league
+  await client.set({
+    $id: person,
+    parents: [league]
+  })
 
-  // await logAll(client)
+  t.deepEqual(
+    await client.redis.smembers(league + '.children'),
+    [person],
+    'league has person after move'
+  )
+
+  t.deepEqual(
+    await client.redis.smembers(match + '.children'),
+    [],
+    'match has no children after move'
+  )
+
+  t.is(
+    await client.redis.hget(person, 'ancestors'),
+    ['root', league].join(','),
+    'person has correct ancestors after move'
+  )
 
   // console.log('add extra previous parent')
   // await client.set({
