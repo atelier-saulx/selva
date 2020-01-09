@@ -174,25 +174,67 @@ test('set', async t => {
     'person has correct ancestors after $delete'
   )
 
+  // add parent again
+  await client.set({
+    $id: person,
+    parents: {
+      $add: league
+    }
+  })
+
+  // double add
+  await client.set({
+    $id: person,
+    parents: {
+      $add: league
+    }
+  })
+
+  t.deepEqual(
+    await client.redis.smembers(match + '.children'),
+    [person],
+    'match has children after 2nd $add'
+  )
+
+  t.deepEqual(
+    (await client.redis.smembers(person + '.parents')).sort(),
+    [league, match].sort(),
+    'person has correct parents after 2nd $add'
+  )
+
+  t.is(
+    await client.redis.hget(person, 'ancestors'),
+    ['root', match, league].join(','),
+    'person has correct ancestors after 2nd $add'
+  )
+
+  // reset children
+  await client.set({
+    $id: match,
+    children: []
+  })
+
+  t.deepEqual(
+    await client.redis.smembers(match + '.children'),
+    [],
+    'match has no children after reset'
+  )
+
+  t.deepEqual(
+    (await client.redis.smembers(person + '.parents')).sort(),
+    [league].sort(),
+    'person has correct parents after reset of children of match'
+  )
+
+  t.is(
+    await client.redis.hget(person, 'ancestors'),
+    ['root', league].join(','),
+    'person has correct ancestors after reset of children of match'
+  )
+
   await logDb(client)
 
-  // console.log('remove extra previous parent')
-
-  // console.log('add extra previous parent')
-  // await client.set({
-  //   $id: moreId,
-  //   parents: {
-  //     $add: id
-  //   }
-  // })
-
-  // await logAll(client)
-
   // console.log('reset children', id, '[]')
-  // await client.set({
-  //   $id: id,
-  //   children: []
-  // })
 
   // await logAll(client)
 

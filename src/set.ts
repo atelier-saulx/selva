@@ -110,6 +110,7 @@ async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
     await client.redis.srem(parent + '.children', id)
   }
 
+  // ---------------------------------------
   // tmp solution needs to use remove
   const parents = await client.redis.smembers(id + '.parents')
   const removeSet = new Set(value)
@@ -119,6 +120,7 @@ async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
     parents.filter(k => !removeSet.has(k)),
     parents
   )
+  // ---------------------------------------
 }
 
 // ---------------------------------------------------------------
