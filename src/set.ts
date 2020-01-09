@@ -14,15 +14,26 @@ type HierarchySet = RedisSetParams & {
   $hierarchy?: boolean
 }
 
-type SetItem = {
-  [P in keyof BaseItem]:
-    | BaseItem[P]
-    | {
-        $default: BaseItem[P]
-        $value: BaseItem[P]
-        $merge: boolean
-        $increment: number // check for which things this makes sense
-      }
+type SetExtraOptions<T> = {
+  $default?: T
+  $value?: T
+  $merge?: boolean
+}
+
+// check for which things this makes sense
+type SetExtraCounterOptions = {
+  $increment?: number
+  $decrement?: number
+}
+
+type SetItem<T = BaseItem> = {
+  [P in keyof T]?: T[P] extends BaseItem[]
+    ? SetItem<T>[]
+    : T[P] extends object
+    ? SetItem<T[P]>
+    : T[P] extends number
+    ? T[P] | (SetExtraOptions<T[P]> & SetExtraCounterOptions)
+    : T[P] | SetExtraOptions<T[P]>
 }
 
 type SetOptions = SetItem & {
