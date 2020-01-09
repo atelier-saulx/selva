@@ -68,8 +68,8 @@ test('set', async t => {
   )
 
   t.deepEqual(
-    await client.redis.smembers('root.children'),
-    [league, match],
+    (await client.redis.smembers('root.children')).sort(),
+    [league, match].sort(),
     'root has correct children'
   )
 
@@ -83,6 +83,24 @@ test('set', async t => {
     await client.redis.hget(person, 'title.en'),
     'flurpy man',
     'Title of person is correctly set'
+  )
+
+  t.is(
+    await client.redis.hget(person, 'ancestors'),
+    ['root', match].join(','),
+    'person has correct ancestors'
+  )
+
+  t.is(
+    await client.redis.hget(match, 'ancestors'),
+    'root',
+    'match has correct ancestors'
+  )
+
+  t.is(
+    await client.redis.hget(league, 'ancestors'),
+    'root',
+    'league has correct ancestors'
   )
 
   // await client.set({
