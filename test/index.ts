@@ -122,29 +122,61 @@ test('set', async t => {
     'person has correct ancestors after move'
   )
 
-  // console.log('add extra previous parent')
-  // await client.set({
-  //   $id: moreId,
-  //   parents: {
-  //     $add: id
-  //   }
-  // })
+  // add extra parent using $add
+  await client.set({
+    $id: person,
+    parents: {
+      $add: match
+    }
+  })
 
-  // // remove ancestors
-  // // then children
-  // // then $add $delete syntax
-  // // await wait()
-  // await logAll(client)
+  t.deepEqual(
+    await client.redis.smembers(match + '.children'),
+    [person],
+    'match has children after $add'
+  )
+
+  t.deepEqual(
+    (await client.redis.smembers(person + '.parents')).sort(),
+    [league, match].sort(),
+    'person has correct parents after $add'
+  )
+
+  t.is(
+    await client.redis.hget(person, 'ancestors'),
+    ['root', league, match].join(','),
+    'person has correct ancestors after $add'
+  )
+
+  // remove league from person
+  await client.set({
+    $id: person,
+    parents: {
+      $delete: league
+    }
+  })
+
+  t.deepEqual(
+    await client.redis.smembers(league + '.children'),
+    [],
+    'league has no children after $delete'
+  )
+
+  t.deepEqual(
+    await client.redis.smembers(person + '.parents'),
+    [match],
+    'person has correct parents after $delete'
+  )
+
+  t.is(
+    await client.redis.hget(person, 'ancestors'),
+    ['root', match].join(','),
+    'person has correct ancestors after $delete'
+  )
+
+  await logDb(client)
 
   // console.log('remove extra previous parent')
-  // await client.set({
-  //   $id: moreId,
-  //   parents: {
-  //     $delete: id
-  //   }
-  // })
-
-  // await logAll(client)
 
   // console.log('add extra previous parent')
   // await client.set({
