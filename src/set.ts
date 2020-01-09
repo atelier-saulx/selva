@@ -1,7 +1,12 @@
 import { BaseItem, Id, ExternalId, UserType, getTypeFromId } from './schema'
 import { SelvaClient } from './'
 import { deleteItem } from './delete'
-import { addToAncestors } from './ancestors'
+import {
+  addToAncestors,
+  resetAncestors,
+  removeFromAncestors
+} from './ancestors'
+import { arrayIsEqual } from './util'
 
 type RedisSetParams =
   | Id[]
@@ -62,7 +67,7 @@ type SetOptions = SetItem & {
 }
 
 // ---------------------------------------------------------------
-
+// addToAncestors
 async function addToParents(client: SelvaClient, id: string, value: Id[]) {
   for (const parent of value) {
     const childrenKey = parent + '.children'
@@ -71,6 +76,7 @@ async function addToParents(client: SelvaClient, id: string, value: Id[]) {
       await set(client, { $id: parent })
     }
   }
+  addToAncestors(client, id, value)
 }
 
 async function resetParents(
@@ -80,19 +86,23 @@ async function resetParents(
   setKey: string
 ) {
   const parents = await client.redis.smembers(id + '.parents')
-  if (parents) {
-    for (const parent of parents) {
-      await client.redis.srem(parent + '.children', id)
-    }
+  if (arrayIsEqual(parents, value)) {
+    return
+  }
+  for (const parent of parents) {
+    await client.redis.srem(parent + '.children', id)
   }
   await client.redis.del(setKey)
   for (const parent of value) {
     await client.redis.sadd(parent + '.children', id)
     if (!(await client.redis.exists(parent))) {
+      // add it to root
       await set(client, { $id: parent })
     }
   }
-  // remove item if parents size is 0
+
+  await resetAncestors(client, id, value, parents)
+  // remove item if parents size is 0 - bit shitty but can happen
 }
 
 async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
@@ -109,14 +119,15 @@ async function resetChildren(
   setKey: string
 ) {
   const children = await client.redis.smembers(setKey)
-  if (children) {
-    for (const child of children) {
-      const parentKey = child + '.parents'
-      await client.redis.srem(parentKey, id)
-      const size = await client.redis.scard(parentKey)
-      if (size === 0) {
-        await deleteItem(client, child)
-      }
+  if (arrayIsEqual(children, value)) {
+    return
+  }
+  for (const child of children) {
+    const parentKey = child + '.parents'
+    await client.redis.srem(parentKey, id)
+    const size = await client.redis.scard(parentKey)
+    if (size === 0) {
+      await deleteItem(client, child)
     }
   }
   await client.redis.del(setKey)
@@ -126,9 +137,11 @@ async function resetChildren(
 async function addToChildren(client: SelvaClient, id: string, value: Id[]) {
   for (const child of value) {
     if (!(await client.redis.exists(child))) {
-      await set(client, { $id: child, parents: [id] })
+      // console.log('CREATE CHILD FROM ADD', id, child)
+      await set(client, { $id: child, parents: { $add: id } })
     } else {
       await client.redis.sadd(child + '.parents', id)
+      addToAncestors(client, child, [id])
     }
   }
 }
@@ -309,11 +322,12 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
     exists = await redis.hexists(payload.$id, 'type')
   }
   if (!exists) {
+    const s = ~~(Math.random() * 100)
     if (payload.$id && !payload.type) {
       payload.type = getTypeFromId(payload.$id)
     }
     if (!payload.parents && payload.$id !== 'root') {
-      payload.parents = ['root']
+      payload.parents = { $add: 'root' }
     }
     await setInner(client, payload.$id, payload, false)
   } else {

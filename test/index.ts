@@ -66,137 +66,145 @@ test('set', async t => {
   })
 
   // move it
-  await logAll(client)
+  // await logAll(client)
 
-  console.log('remove from previous parent')
+  console.log('move from previous parent', moreId, 'from', id, 'to', id2)
   await client.set({
     $id: moreId,
     parents: [id2]
   })
 
-  // should not need wait... strange
-  // set needs to await for everything
-  // await wait()
   await logAll(client)
 
-  console.log('add extra previous parent')
-  await client.set({
-    $id: moreId,
-    parents: {
-      $add: id
-    }
-  })
+  // console.log('add extra previous parent')
+  // await client.set({
+  //   $id: moreId,
+  //   parents: {
+  //     $add: id
+  //   }
+  // })
 
-  // remove ancestors
-  // then children
-  // then $add $delete syntax
-  // await wait()
-  await logAll(client)
+  // // remove ancestors
+  // // then children
+  // // then $add $delete syntax
+  // // await wait()
+  // await logAll(client)
 
-  console.log('remove extra previous parent')
-  await client.set({
-    $id: moreId,
-    parents: {
-      $delete: id
-    }
-  })
+  // console.log('remove extra previous parent')
+  // await client.set({
+  //   $id: moreId,
+  //   parents: {
+  //     $delete: id
+  //   }
+  // })
 
-  await logAll(client)
+  // await logAll(client)
 
-  console.log('add extra previous parent')
-  await client.set({
-    $id: moreId,
-    parents: {
-      $add: id
-    }
-  })
+  // console.log('add extra previous parent')
+  // await client.set({
+  //   $id: moreId,
+  //   parents: {
+  //     $add: id
+  //   }
+  // })
 
-  await logAll(client)
+  // await logAll(client)
 
-  console.log('reset children', id, '[]')
-  await client.set({
-    $id: id,
-    children: []
-  })
+  // console.log('reset children', id, '[]')
+  // await client.set({
+  //   $id: id,
+  //   children: []
+  // })
 
-  await logAll(client)
+  // await logAll(client)
 
-  console.log('reset children', id, moreId)
-  await client.set({
-    $id: id,
-    children: [moreId]
-  })
+  // console.log('reset children', id, moreId)
+  // await client.set({
+  //   $id: id,
+  //   children: [moreId]
+  // })
 
-  await logAll(client)
+  // await logAll(client)
 
-  console.log('$add children', id2, id)
-  await client.set({
-    $id: id2,
-    children: { $add: id }
-  })
+  // console.log('$add children', id2, id)
+  // await client.set({
+  //   $id: id2,
+  //   children: { $add: id }
+  // })
 
-  await logAll(client)
+  // await logAll(client)
 
-  console.log('$delete children', id2, id)
-  await client.set({
-    $id: id2,
-    children: { $delete: id }
-  })
+  // console.log('$delete children', id2, id)
+  // await client.set({
+  //   $id: id2,
+  //   children: { $delete: id }
+  // })
 
-  await logAll(client)
+  // await logAll(client)
 
-  console.log('del person')
-  await client.delete(moreId)
-  await logAll(client)
+  // console.log('del person')
+  // await client.delete(moreId)
+  // await logAll(client)
 
-  console.log('del league ')
-  await client.delete(id2)
-  await logAll(client)
+  // console.log('del league ')
+  // await client.delete(id2)
+  // await logAll(client)
 
-  console.log('$add children', id, 'viDingDong')
-  await client.set({
-    $id: id,
-    children: { $add: 'viDingDong' }
-  })
+  // console.log('$add children', id, 'viDingDong')
+  // await client.set({
+  //   $id: id,
+  //   children: { $add: 'viDingDong' }
+  // })
 
-  console.log('set default + increment')
-  await client.set({
-    $id: 'viDingDong',
-    children: { $add: 'viDingDong2' },
-    value: {
-      $default: 100,
-      $increment: 10
-    }
-  })
-  await logAll(client)
+  // console.log('set default + increment')
+  // await client.set({
+  //   $id: 'viDingDong',
+  //   children: { $add: 'viDingDong2' },
+  //   value: {
+  //     $default: 100,
+  //     $increment: 10
+  //   }
+  // })
+  // await logAll(client)
 
-  console.log('increment')
-  await client.set({
-    $id: 'viDingDong',
-    children: { $add: 'viDingDong2' },
-    value: {
-      $default: 100,
-      $increment: 10
-    }
-  })
-  await logAll(client)
+  // console.log('increment')
+  // await client.set({
+  //   $id: 'viDingDong',
+  //   children: { $add: 'viDingDong2' },
+  //   value: {
+  //     $default: 100,
+  //     $increment: 10
+  //   }
+  // })
+  // await logAll(client)
 
-  // some cases
-  // double parents deep - important
-  console.log('$add children', 'maSmurkels + viDingDong', 'viDingDong3')
-  await client.set({
-    $id: 'maSmurkels',
-    children: { $add: 'viDingDong3' }
-  })
-  await client.set({
-    $id: 'viDingDong',
-    children: { $add: 'viDingDong3' }
-  })
-  await logAll(client)
+  // // some cases
+  // // double parents deep - important
+  // console.log('$add children', 'maSmurkels + viDingDong', 'viDingDong3')
+  // await client.set({
+  //   $id: 'maSmurkels',
+  //   children: { $add: 'viDingDong3' }
+  // })
+  // await client.set({
+  //   $id: 'viDingDong',
+  //   children: { $add: 'viDingDong3' }
+  // })
+  // await logAll(client)
 
-  console.log('del all')
-  await client.delete({ $id: 'root' })
-  await logAll(client)
+  // console.log('del all')
+  // await client.delete({ $id: 'root' })
+  // await logAll(client)
+
+  // console.log('do it again')
+  // await client.set({
+  //   $id: 'maSmurkels',
+  //   children: { $add: 'viDing' }
+  // })
+  // await client.set({
+  //   $id: 'viDing',
+  //   children: { $add: 'viDong' }
+  // })
+  // await logAll(client)
 
   await wait()
 })
