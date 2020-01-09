@@ -3,12 +3,10 @@ import test from 'ava'
 import { connect, SelvaClient } from '../src/index'
 import { start } from 'selva-server'
 
-let db
-
 const wait = () => new Promise(r => setTimeout(r, 500))
 
 test.before(async t => {
-  db = await start({ port: 6061, modules: ['redisearch'] })
+  await start({ port: 6061, modules: ['redisearch'] })
   // This runs before all tests
 })
 
@@ -184,7 +182,17 @@ test('set', async t => {
   await logAll(client)
 
   // some cases
-  // double parents deep
+  // double parents deep - important
+  console.log('$add children', 'maSmurkels + viDingDong', 'viDingDong3')
+  await client.set({
+    $id: 'maSmurkels',
+    children: { $add: 'viDingDong3' }
+  })
+  await client.set({
+    $id: 'viDingDong',
+    children: { $add: 'viDingDong3' }
+  })
+  await logAll(client)
 
   console.log('del all')
   await client.delete({ $id: 'root' })

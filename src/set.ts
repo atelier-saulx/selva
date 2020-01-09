@@ -235,7 +235,6 @@ async function setInner(
         }
         await removeFromSet(client, field, hierarchy, id, value.$delete)
       }
-      // combined ancestors update ?
     }
   } else {
     if (typeof value === 'object' && !Array.isArray(value)) {
