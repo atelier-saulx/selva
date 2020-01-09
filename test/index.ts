@@ -123,5 +123,9 @@ test('set', async t => {
 
   await logAll(client)
 
+  await client.delete({ $id: 'root' })
+
+  await logAll(client)
+
   await wait()
 })
