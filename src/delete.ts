@@ -8,21 +8,11 @@ type DeleteOptions =
       $hierarchy?: boolean
     }
 
-async function deleteItem(
+async function deleteItemInner(
   client: SelvaClient,
-  options: DeleteOptions
+  id: Id,
+  hierarchy: boolean = true
 ): Promise<boolean> {
-  let hierarchy = true
-  let id
-  if (typeof options == 'object') {
-    id = options.$id
-    if (options.$hierarchy === false) {
-      hierarchy = false
-    }
-  } else {
-    id = options
-  }
-
   if (hierarchy) {
     const children = await client.redis.smembers(id + '.children')
     const parents = await client.redis.smembers(id + '.parents')
@@ -43,6 +33,26 @@ async function deleteItem(
   await client.redis.del(id + '.ancestors')
   // returns true if it existed
   return client.redis.del(id)
+
+  return true
 }
 
-export { deleteItem, DeleteOptions }
+async function deleteItem(
+  client: SelvaClient,
+  options: DeleteOptions
+): Promise<boolean> {
+  let hierarchy = true
+  let id
+  if (typeof options == 'object') {
+    id = options.$id
+    if (options.$hierarchy === false) {
+      hierarchy = false
+    }
+  } else {
+    id = options
+  }
+
+  return deleteItemInner(client, id, hierarchy)
+}
+
+export { deleteItem, deleteItemInner, DeleteOptions }
