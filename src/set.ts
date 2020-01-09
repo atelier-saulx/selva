@@ -1,6 +1,5 @@
 import { BaseItem, Id, ExternalId, UserType, getTypeFromId } from './schema'
 import { SelvaClient } from './'
-// type AdvancedSetBaseItem = { [P in keyof BaseItem]: BaseItem[P] | { $default: any, … } }
 
 type RedisSetParams =
   | Id[]
@@ -122,54 +121,24 @@ async function resetChildren(
   value: Id[],
   setKey: string
 ) {
-  // const children = await client.redis.smembers(id + '.children')
-  // if (children) {
-  //   for (let parent of children) {
-  //     await client.redis.srem(parent + '.children', id)
-  //   }
-  // }
-  // await client.redis.del(setKey)
-  // const newAncestors = []
-  // await client.redis.del(ancestorsKey)
-  // for (let parent of value) {
-  //   const childrenKey = parent + '.children'
-  //   await client.redis.sadd(childrenKey, id)
-  //   if (!(await client.redis.exists(parent))) {
-  //     await set(client, { $id: parent })
-  //   } else {
-  //     const ancestors = await client.redis.smembers(parent + '.ancestors')
-  //     newAncestors.push(...ancestors)
-  //   }
-  //   newAncestors.push(parent)
-  // }
-  // await client.redis.del(ancestorsKey)
-  // await client.redis.sadd(ancestorsKey, ...newAncestors)
-}
-
-async function addToChildren(client: SelvaClient, id: string, value: Id[]) {
-  const ancestorsKey = id + '.ancestors'
-  for (let parent of value) {
-    const childrenKey = parent + '.children'
-    await client.redis.sadd(childrenKey, id)
-    if (!(await client.redis.exists(parent))) {
-      await set(client, { $id: parent })
+  const children = await client.redis.smembers(setKey)
+  if (children) {
+    for (let child of children) {
+      await client.redis.srem(child + '.ancestors', id)
+      await client.redis.srem(child + '.parents', id)
     }
   }
-  await client.redis.sadd(ancestorsKey, ...value)
+  // have to remove deep is !parents (calling the same thing but only removing 1 field)
+  await client.redis.del(setKey)
 }
+
+async function addToChildren(client: SelvaClient, id: string, value: Id[]) {}
 
 async function removeFromChildren(
   client: SelvaClient,
   id: string,
   value: Id[]
-) {
-  const ancestorsKey = id + '.ancestors'
-  for (let parent of value) {
-    const childrenKey = parent + '.children'
-    await client.redis.srem(childrenKey, id)
-  }
-  await client.redis.srem(ancestorsKey, ...value)
-}
+) {}
 
 // ---------------------------------------------------------------
 

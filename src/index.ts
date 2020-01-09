@@ -1,6 +1,7 @@
 import { default as RedisClient, ConnectOptions } from './redis'
 import { id, IdOptions } from './id'
 import { set, SetOptions } from './set'
+import { deleteItem, DeleteOptions } from './delete'
 
 export class SelvaClient {
   public redis: RedisClient
@@ -17,6 +18,10 @@ export class SelvaClient {
 
   set(props: SetOptions) {
     return set(this, props)
+  }
+
+  delete(props: DeleteOptions) {
+    return deleteItem(this, props)
   }
 }
 

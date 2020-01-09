@@ -105,5 +105,23 @@ test('set', async t => {
 
   await logAll(client)
 
+  console.log('add extra previous parent')
+  await client.set({
+    $id: moreId,
+    parents: {
+      $add: id
+    }
+  })
+
+  await logAll(client)
+
+  console.log('reset children')
+  await client.set({
+    $id: id,
+    children: []
+  })
+
+  await logAll(client)
+
   await wait()
 })
