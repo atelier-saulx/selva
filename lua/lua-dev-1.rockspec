@@ -8,9 +8,11 @@ description = {
    license = "*** please specify a license ***"
 }
 dependencies = {
-   "busted >= 2.0"
+   "testy"
 }
 build = {
    type = "builtin",
-   modules = {}
+   modules = {
+      ["lib.testutil"] = "lib/testutil.lua"
+   }
 }
