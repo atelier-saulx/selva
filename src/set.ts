@@ -31,7 +31,7 @@ type SetOptions = SetItem & {
   $version?: string
   children?: HierarchySet
   parents?: HierarchySet
-  ancestors?: HierarchySet
+  ancestors?: RedisSetParams // ancestors is too arbitrary to try to resolve (not sorted!)
   externalId?:
     | ExternalId[]
     | {
@@ -94,6 +94,15 @@ async function addToParents(client: SelvaClient, id: string, value: Id[]) {
   }
   await client.redis.sadd(ancestorsKey, ...value)
 }
+
+async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
+  const ancestorsKey = id + '.ancestors'
+  for (let parent of value) {
+    const childrenKey = parent + '.children'
+    await client.redis.srem(childrenKey, id)
+  }
+  await client.redis.srem(ancestorsKey, ...value)
+}
 // ---------------------------------------------------------------
 
 async function resetSet(
@@ -134,6 +143,24 @@ async function addToSet(
   await client.redis.sadd(setKey, ...value)
 }
 
+async function removeFromSet(
+  client: SelvaClient,
+  field: string,
+  hierarchy: boolean = true,
+  id: string,
+  value: Id[]
+) {
+  const setKey = id + '.' + field
+  if (hierarchy) {
+    if (field === 'parents') {
+      await removeFromParents(client, id, value)
+    } else if (field === 'children') {
+      // do it nice
+    }
+  }
+  await client.redis.sadd(setKey, ...value)
+}
+
 // ---------------------------------------------------------------
 
 async function setInner(
@@ -154,26 +181,24 @@ async function setInner(
     if (Array.isArray(value)) {
       await resetSet(client, field, true, id, value)
     } else {
+      const hierarchy = value.$hierarchy === false ? false : true
+      if (value.$value) {
+        resetSet(client, field, hierarchy, id, value)
+      }
+
       if (value.$add) {
         if (!Array.isArray(value.$add)) {
           value.$add = [value.$add]
         }
-        await addToSet(
-          client,
-          field,
-          value.$hierarchy === false ? false : true,
-          id,
-          value.$add
-        )
+        await addToSet(client, field, hierarchy, id, value.$add)
       }
-      // if (value.$value) {
-      //   resetSet(client, field, value.$hierarchy || true, id, value)
-      // }
-      // if (value.$remove) {
-      //   if (!Array.isArray(value.$remove)) {
-      //     value.$remove = [value.$remove]
-      //   }
-      // }
+
+      if (value.$delete) {
+        if (!Array.isArray(value.$add)) {
+          value.$delete = [value.$add]
+        }
+        await removeFromSet(client, field, hierarchy, id, value.$add)
+      }
     }
   } else {
     if (typeof value === 'object' && !Array.isArray(value)) {
