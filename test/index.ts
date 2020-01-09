@@ -233,7 +233,6 @@ test('set', async t => {
   )
 
   await logDb(client)
-
   // console.log('reset children', id, '[]')
 
   // await logAll(client)
