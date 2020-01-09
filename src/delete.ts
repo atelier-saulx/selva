@@ -28,7 +28,6 @@ async function deleteItem(
       if (!size) {
         await deleteItem(client, child)
       } else {
-        // update all ancestors
         await removeFromAncestors(client, child, [id])
       }
     }

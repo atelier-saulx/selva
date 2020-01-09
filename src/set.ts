@@ -109,11 +109,7 @@ async function removeFromParents(client: SelvaClient, id: string, value: Id[]) {
   for (const parent of value) {
     await client.redis.srem(parent + '.children', id)
   }
-
-  // ---------------------------------------
-  // tmp solution needs to use remove
   await removeFromAncestors(client, id, value)
-  // ---------------------------------------
 }
 
 // ---------------------------------------------------------------
