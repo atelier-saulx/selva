@@ -38,6 +38,34 @@ const dumpDb = async (client: SelvaClient): Promise<any[]> => {
   })
 }
 
+const idExists = async (
+  client: SelvaClient,
+  id: string,
+  dump?: any[]
+): Promise<boolean> => {
+  if (!dump) dump = await dumpDb(client)
+  for (let key in dump) {
+    if (key === id) {
+      return true
+    }
+    if (dump[key] === id) {
+      return true
+    }
+    if (
+      typeof dump[key] === 'string' &&
+      dump[key].split(',').indexOf(id) !== -1
+    ) {
+      return true
+    }
+    if (typeof dump[key] === 'object') {
+      if (await idExists(client, id, dump[key])) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
 const logDb = async (client: SelvaClient) => {
   console.log(await dumpDb(client))
 }
@@ -316,13 +344,34 @@ test('set', async t => {
     'match has correct ancestors after removing match from league'
   )
 
-  // console.log('del person')
-  // await client.delete(moreId)
-  // await logAll(client)
+  // delete person
+  await client.delete(person)
+  t.false(
+    await idExists(client, person),
+    'person is removed from db after delete'
+  )
 
-  // console.log('del league ')
-  // await client.delete(id2)
-  // await logAll(client)
+  // delete league
+  await client.delete(league)
+  t.false(
+    await idExists(client, league),
+    'league is removed from db after delete'
+  )
+
+  /*
+    root
+      |_ b
+          |_c
+          |_d
+            |_e
+    root
+      |_d
+        |_e
+    Remove b from d
+    Keep d / e
+    Dont remove root!
+    And remove all correct paths
+    */
 
   // console.log('$add children', id, 'viDingDong')
   // await client.set({
