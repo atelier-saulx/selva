@@ -98,12 +98,15 @@ async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
           } else if (key === 'ancestors') {
           } else if (key === 'descendants') {
             // return
-          } else if (key === 'id') {
+          }
+          // else if (key === 'type') {
+          // store type as 2 letter combination
+          //}
+          else if (key === 'id') {
             result.id = id
           } else {
             // need to cast types
             const val = await client.redis.hget(id, key)
-
             // would be nice to generate this
             if (
               key === 'value' ||
