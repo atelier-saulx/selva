@@ -115,7 +115,7 @@ abstract class RedisMethods {
     })
   }
 
-  async hkeys(hash: string): Promise<number> {
+  async hkeys(hash: string): Promise<string[]> {
     return new Promise((resolve, reject) => {
       this.queue('hkeys', [hash], resolve, reject)
     })

@@ -64,6 +64,7 @@ export type Text = {
   es?: string
   it?: string
   fi?: string
+  $merge?: boolean // TEMP
 }
 
 export const languages = ['en', 'de', 'fr', 'nl', 'es', 'it', 'fi']
@@ -92,6 +93,7 @@ export type Type =
   | 'ad'
   | 'root'
   | 'custom'
+  | 'article'
 
 // can use this in the cms
 export const itemTypes = [
@@ -115,7 +117,8 @@ export const itemTypes = [
   'tag',
   'ad',
   'root',
-  'custom'
+  'custom',
+  'article'
 ]
 
 export const typePrefix = {}
@@ -160,6 +163,7 @@ export type BaseItem = {
     overlays?: Overlay[]
   }
   image?: {
+    $merge?: boolean // TEMP
     thumb?: Url
     poster?: Url
     cover?: Url

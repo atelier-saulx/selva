@@ -216,6 +216,57 @@ async function removeFromSet(
   await client.redis.srem(setKey, ...value)
 }
 
+// used for shallow merge
+const removeFields = async (
+  client: SelvaClient,
+  id: string,
+  value: object,
+  keys: string[],
+  field?: string
+) => {
+  const path = field ? field.split('.') : []
+  if (!field) {
+    // no field is slightly different
+    for (let key in value) {
+      if (key[0] !== '$' && typeof value[key] === 'object') {
+        removeFields(client, id, value[key], keys, key)
+      }
+    }
+  } else {
+    for (let key in value) {
+      if (key[0] !== '$') {
+        for (const fieldKey of keys) {
+          const fields = fieldKey.split('.')
+          let removeField = true
+          for (let i = 0; i < path.length; i++) {
+            if (fields[i] !== path[i]) {
+              removeField = false
+              break
+            }
+          }
+          if (removeField) {
+            removeField = false
+            let segment = value
+            for (let i = path.length; i < fields.length; i++) {
+              segment = segment[fields[i]]
+              if (!segment) {
+                removeField = true
+                break
+              }
+            }
+            if (removeField) {
+              await client.redis.hdel(id, fieldKey)
+            }
+          }
+        }
+        if (typeof value[key] === 'object') {
+          removeFields(client, id, value[key], keys, path.join('.'))
+        }
+      }
+    }
+  }
+}
+
 // ---------------------------------------------------------------
 async function setInner(
   client: SelvaClient,
@@ -224,6 +275,11 @@ async function setInner(
   fromDefault: boolean,
   field?: string
 ) {
+  if (!fromDefault && value.$merge === false) {
+    const keys = await client.redis.hkeys(id)
+    await removeFields(client, id, value, keys, field)
+  }
+
   // SET
   if (
     field === 'parents' ||

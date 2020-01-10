@@ -54,7 +54,6 @@ const logDb = async (client: SelvaClient) => {
 
 test.before(async t => {
   await start({ port: 6061, modules: ['redisearch'] })
-  // This runs before all tests
 })
 
 test('generates a unique id', async t => {
@@ -63,7 +62,6 @@ test('generates a unique id', async t => {
   })
   const id1 = client.id({ type: 'match' })
   const id2 = client.id({ type: 'match' })
-
   t.true(id1 !== id2)
   t.true(/ma.+/.test(id1))
   // new types what this means is that the client allways needs to load a map add it to prefix
@@ -75,7 +73,6 @@ test.serial('modify - basic', async t => {
     port: 6061
   })
 
-  // simple setup
   const match = await client.set({
     type: 'match'
   })
@@ -469,4 +466,60 @@ test.serial('modify - $increment, $default', async t => {
   await client.delete('root')
 
   client.destroy()
+})
+
+test.serial('modify - $merge = false', async t => {
+  const client = connect({
+    port: 6061
+  })
+
+  await client.set({
+    $id: 'arPower',
+    title: {
+      en: 'flap',
+      de: 'flurpels'
+    },
+    image: {
+      thumb: 'x'
+    }
+  })
+
+  t.is(await client.redis.hget('arPower', 'title.en'), 'flap')
+  t.is(await client.redis.hget('arPower', 'title.de'), 'flurpels')
+
+  await client.set({
+    $id: 'arPower',
+    $merge: false,
+    title: {
+      de: 'deutschland'
+    }
+  })
+
+  t.is(await client.redis.hget('arPower', 'title.en'), null)
+  t.is(await client.redis.hget('arPower', 'title.de'), 'deutschland')
+
+  await client.set({
+    $id: 'arPower',
+    title: {
+      $merge: false,
+      nl: 'nl'
+    }
+  })
+
+  t.is(await client.redis.hget('arPower', 'title.nl'), 'nl')
+  t.is(await client.redis.hget('arPower', 'title.de'), null)
+
+  await client.set({
+    $id: 'arPower',
+    title: {
+      en: 'flap',
+      de: 'flurpels'
+    },
+    image: {
+      $merge: false,
+      poster: 'x'
+    }
+  })
+
+  await client.delete('root')
 })
