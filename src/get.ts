@@ -41,7 +41,7 @@ type GetItem<T = Item> = {
     : T[P] | Get<T[P]>
 }
 
-// also needs item
+// also needs item --> true is not allowed here :/
 type MapField =
   | (GetField & {
       $default?: any // inherit from field - hard to make follows 'field'
@@ -62,7 +62,7 @@ type GetOptions = GetItem & {
 
 // $language, title
 
-// item but also mapped fields :/
+// item but also mapped fields :/ see MapField
 async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
   const result: Item = {}
   if (props.$id) {
@@ -111,7 +111,7 @@ async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
           } else {
             // need to cast types
             const val = await client.redis.hget(id, key)
-            // would be nice to generate this
+            // would be nice to generate this from type
             if (
               key === 'value' ||
               key === 'age' ||
