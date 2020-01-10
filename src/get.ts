@@ -57,6 +57,11 @@ type GetOptions = GetItem & {
   $language?: Language
 }
 
+// const getNestedKeys = () => {
+// }
+
+// $language, title
+
 // item but also mapped fields :/
 async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
   const result: Item = {}
@@ -66,8 +71,6 @@ async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
     let keys: string[]
     for (let key in props) {
       if (key[0] !== '$') {
-        console.log('go for it')
-
         // need to generate this fro the type -- to double
         if (props[key] === true) {
           // load keys if you need to load all fields of nested ones
@@ -103,6 +106,7 @@ async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
           // store type as 2 letter combination
           //}
           else if (key === 'id') {
+            // id ----
             result.id = id
           } else {
             // need to cast types
