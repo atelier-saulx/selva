@@ -15,12 +15,14 @@ test.serial('get - basic', async t => {
     $id: 'viA',
     title: {
       en: 'nice!'
-    }
+    },
+    value: 25
   })
 
   const r = await client.get({
     $id: 'viA',
-    title: true
+    title: true,
+    value: true
   })
 
   console.log('xxx', r)
