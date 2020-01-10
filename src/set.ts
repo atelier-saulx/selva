@@ -321,7 +321,6 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
     exists = await redis.hexists(payload.$id, 'type')
   }
   if (!exists) {
-    const s = ~~(Math.random() * 100)
     if (payload.$id && !payload.type) {
       payload.type = getTypeFromId(payload.$id)
     }
