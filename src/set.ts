@@ -30,6 +30,7 @@ type SetExtraCounterOptions = {
   $increment?: number
 }
 
+// TEMP added $merge to Text and Image in baseItem
 type SetItem<T = BaseItem> = {
   [P in keyof T]?: T[P] extends BaseItem[]
     ? SetItem<T>[]

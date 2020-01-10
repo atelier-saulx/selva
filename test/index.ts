@@ -511,15 +511,13 @@ test.serial('modify - $merge = false', async t => {
 
   await client.set({
     $id: 'arPower',
-    title: {
-      en: 'flap',
-      de: 'flurpels'
-    },
     image: {
       $merge: false,
       poster: 'x'
     }
   })
+
+  t.is(await client.redis.hget('arPower', 'image.thumb'), null)
 
   await client.delete('root')
 })
