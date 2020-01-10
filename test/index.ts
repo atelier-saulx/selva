@@ -521,3 +521,7 @@ test.serial('modify - $merge = false', async t => {
 
   await client.delete('root')
 })
+
+// test.serial('modify - $version', async t => {
+
+// })
