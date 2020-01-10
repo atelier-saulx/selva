@@ -19,13 +19,19 @@ test.serial('get - basic', async t => {
     value: 25
   })
 
-  const r = await client.get({
-    $id: 'viA',
-    title: true,
-    value: true
-  })
-
-  console.log('xxx', r)
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: { en: 'nice!' },
+      value: 25
+    }
+  )
 
   t.is(true, true)
 })

@@ -59,7 +59,7 @@ type GetOptions = GetItem & {
 
 // item but also mapped fields :/
 async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
-  const result = {}
+  const result: Item = {}
   if (props.$id) {
     const id = props.$id
     // all actions
@@ -94,11 +94,12 @@ async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
               }
             }
             result[key] = fieldResult
-            console.log(keys)
           } else if (key === 'children' || key === 'parents') {
           } else if (key === 'ancestors') {
           } else if (key === 'descendants') {
             // return
+          } else if (key === 'id') {
+            result.id = id
           } else {
             // need to cast types
             const val = await client.redis.hget(id, key)
