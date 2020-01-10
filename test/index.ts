@@ -390,6 +390,14 @@ test('modify - deep hierarchy manipulation', async t => {
   t.is(await client.redis.hget('cuD', 'ancestors'), 'root,cuA')
   t.is(await client.redis.hget('cuE', 'ancestors'), 'root,cuA,cuD')
 
+  await client.set({
+    $id: 'cuD',
+    parents: { $delete: 'cuA' }
+  })
+
+  t.is(await client.redis.hget('cuD', 'ancestors'), 'root')
+  t.is(await client.redis.hget('cuE', 'ancestors'), 'root,cuD')
+
   await logDb(client)
 })
 
