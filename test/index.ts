@@ -3,40 +3,7 @@ import test from 'ava'
 import { connect, SelvaClient } from '../src/index'
 import { start } from 'selva-server'
 
-const wait = () => new Promise(r => setTimeout(r, 500))
-
-test.before(async t => {
-  await start({ port: 6061, modules: ['redisearch'] })
-  // This runs before all tests
-})
-
-test('generates a unique id', async t => {
-  const client = connect({
-    port: 6061
-  })
-  const id1 = client.id({ type: 'match' })
-  const id2 = client.id({ type: 'match' })
-
-  t.true(id1 !== id2)
-  t.true(/ma.+/.test(id1))
-  // new types what this means is that the client allways needs to load a map add it to prefix
-  // allways subscribe on it (hash)
-})
-
-const dumpDb = async (client: SelvaClient): Promise<any[]> => {
-  const ids = await client.redis.keys('*')
-  return (
-    await Promise.all(
-      ids.map(id =>
-        id.indexOf('.') > -1
-          ? client.redis.smembers(id)
-          : client.redis.hgetall(id)
-      )
-    )
-  ).map((v, i) => {
-    return [ids[i], v]
-  })
-}
+//  const wait = () => new Promise(r => setTimeout(r, 500))
 
 const idExists = async (
   client: SelvaClient,
@@ -66,9 +33,42 @@ const idExists = async (
   return false
 }
 
+const dumpDb = async (client: SelvaClient): Promise<any[]> => {
+  const ids = await client.redis.keys('*')
+  return (
+    await Promise.all(
+      ids.map(id =>
+        id.indexOf('.') > -1
+          ? client.redis.smembers(id)
+          : client.redis.hgetall(id)
+      )
+    )
+  ).map((v, i) => {
+    return [ids[i], v]
+  })
+}
+
 const logDb = async (client: SelvaClient) => {
   console.log(await dumpDb(client))
 }
+
+test.before(async t => {
+  await start({ port: 6061, modules: ['redisearch'] })
+  // This runs before all tests
+})
+
+test('generates a unique id', async t => {
+  const client = connect({
+    port: 6061
+  })
+  const id1 = client.id({ type: 'match' })
+  const id2 = client.id({ type: 'match' })
+
+  t.true(id1 !== id2)
+  t.true(/ma.+/.test(id1))
+  // new types what this means is that the client allways needs to load a map add it to prefix
+  // allways subscribe on it (hash)
+})
 
 test.serial('modify - basic', async t => {
   const client = connect({
@@ -326,9 +326,9 @@ test.serial('modify - basic', async t => {
     'person has correct parents after removing match from league'
   )
 
-  t.is(
-    await client.redis.hget(person, 'ancestors'),
-    ['root', league, match].join(','),
+  t.deepEqual(
+    (await client.redis.hget(person, 'ancestors')).split(',').sort(),
+    ['root', league, match].sort(),
     'person has correct parents after removing match from league'
   )
 
@@ -371,6 +371,11 @@ test('modify - deep hierarchy manipulation', async t => {
   })
 
   await client.set({
+    $id: 'cuX',
+    children: ['cuA']
+  })
+
+  await client.set({
     $id: 'cuA',
     children: ['cuB', 'cuC', 'cuD']
   })
@@ -385,10 +390,10 @@ test('modify - deep hierarchy manipulation', async t => {
     parents: { $add: 'root' }
   })
 
-  t.is(await client.redis.hget('cuB', 'ancestors'), 'root,cuA')
-  t.is(await client.redis.hget('cuC', 'ancestors'), 'root,cuA')
-  t.is(await client.redis.hget('cuD', 'ancestors'), 'root,cuA')
-  t.is(await client.redis.hget('cuE', 'ancestors'), 'root,cuA,cuD')
+  t.is(await client.redis.hget('cuB', 'ancestors'), 'root,cuX,cuA')
+  t.is(await client.redis.hget('cuC', 'ancestors'), 'root,cuX,cuA')
+  t.is(await client.redis.hget('cuD', 'ancestors'), 'root,cuX,cuA')
+  t.is(await client.redis.hget('cuE', 'ancestors'), 'root,cuX,cuA,cuD')
 
   await client.set({
     $id: 'cuD',
@@ -397,8 +402,6 @@ test('modify - deep hierarchy manipulation', async t => {
 
   t.is(await client.redis.hget('cuD', 'ancestors'), 'root')
   t.is(await client.redis.hget('cuE', 'ancestors'), 'root,cuD')
-
-  await logDb(client)
 })
 
 test.serial('modify - $increment, $default', async t => {
@@ -467,46 +470,3 @@ test.serial('modify - $increment, $default', async t => {
 
   client.destroy()
 })
-
-// console.log('set default + increment')
-
-// await logAll(client)
-
-// console.log('increment')
-// await client.set({
-//   $id: 'viDingDong',
-//   children: { $add: 'viDingDong2' },
-//   value: {
-//     $default: 100,
-//     $increment: 10
-//   }
-// })
-// await logAll(client)
-
-// // some cases
-// // double parents deep - important
-// console.log('$add children', 'maSmurkels + viDingDong', 'viDingDong3')
-// await client.set({
-//   $id: 'maSmurkels',
-//   children: { $add: 'viDingDong3' }
-// })
-// await client.set({
-//   $id: 'viDingDong',
-//   children: { $add: 'viDingDong3' }
-// })
-// await logAll(client)
-
-// console.log('del all')
-// await client.delete({ $id: 'root' })
-// await logAll(client)
-
-// console.log('do it again')
-// await client.set({
-//   $id: 'maSmurkels',
-//   children: { $add: 'viDing' }
-// })
-// await client.set({
-//   $id: 'viDing',
-//   children: { $add: 'viDong' }
-// })
-// await logAll(client)
