@@ -290,6 +290,8 @@ test('modify - basic', async t => {
     children: { $add: match }
   })
 
+  await logDb(client)
+
   t.deepEqual(
     (await client.redis.smembers(match + '.parents')).sort(),
     ['root', league].sort(),
