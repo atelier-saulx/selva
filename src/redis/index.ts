@@ -37,6 +37,11 @@ export default class RedisClient extends RedisMethods {
     this.connect()
   }
 
+  destroy() {
+    this.client.quit()
+    this.client = null
+  }
+
   private async connect() {
     const opts = await this.connector()
 

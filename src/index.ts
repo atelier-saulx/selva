@@ -12,6 +12,7 @@ export class SelvaClient {
 
   async destroy() {
     console.log('destroy client')
+    this.redis.destroy()
   }
 
   // need client.destroy (at least for tests)
