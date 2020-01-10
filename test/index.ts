@@ -365,25 +365,33 @@ test.serial('modify - basic', async t => {
   await client.destroy()
 })
 
-// test('modify - deep hierarchy manupilation', async t => {
-//   const client = connect({
-//     port: 6061
-//   })
-//   /*
-//     root
-//       |_ b
-//           |_c
-//           |_d
-//             |_e
-//     root
-//       |_d
-//         |_e
-//     Remove b from d
-//     Keep d / e
-//     Dont remove root!
-//     And remove all correct paths
-//   */
-// })
+test('modify - deep hierarchy manipulation', async t => {
+  const client = connect({
+    port: 6061
+  })
+
+  await client.set({
+    $id: 'cuA',
+    children: ['cuB', 'cuC', 'cuD']
+  })
+
+  await client.set({
+    $id: 'cuE',
+    parents: ['cuD']
+  })
+
+  await client.set({
+    $id: 'cuD',
+    parents: { $add: 'root' }
+  })
+
+  t.is(await client.redis.hget('cuB', 'ancestors'), 'root,cuA')
+  t.is(await client.redis.hget('cuC', 'ancestors'), 'root,cuA')
+  t.is(await client.redis.hget('cuD', 'ancestors'), 'root,cuA')
+  t.is(await client.redis.hget('cuE', 'ancestors'), 'root,cuA,cuD')
+
+  await logDb(client)
+})
 
 test.serial('modify - $increment, $default', async t => {
   const client = connect({
@@ -446,6 +454,8 @@ test.serial('modify - $increment, $default', async t => {
     'title',
     'does not overwrite if value exists'
   )
+
+  await client.delete('root')
 
   client.destroy()
 })
