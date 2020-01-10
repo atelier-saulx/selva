@@ -10,5 +10,17 @@ test.serial('get - basic', async t => {
   const client = connect({
     port: 6061
   })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!'
+    }
+  })
+
+  const r = await client.get({
+    $id: 'viA'
+  })
+
   t.is(true, true)
 })

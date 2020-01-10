@@ -2,7 +2,6 @@ import { Id } from './schema'
 import { SelvaClient } from './'
 
 // all this stuff is really slow
-
 export async function getNewAncestors(
   client: SelvaClient,
   parents: Id[],

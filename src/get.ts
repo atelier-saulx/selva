@@ -7,22 +7,29 @@ type Inherit =
       type: Type[]
     }
 
+type Find = {
+  $traverse?: 'descendants' | 'ancestors' | 'children' | 'parents'
+}
+
+type List = {
+  $range?: [number, number]
+  $find?: Find
+}
+
+type GetField =
+  | {
+      $field?: string | string[] // need to map all fields here
+      $inherit?: Inherit
+      $list?: List
+    }
+  | true
+
 // can read field options from keys bit hard
 // type Field =
 
-type MapField = {
-  $default?: any // inherit from field - hard to make
-  $field: string | string[] // need to map all fields here
-  $inherit?: Inherit
+type Get<T> = GetField & {
+  $default?: T // inherit
 }
-
-type Get<T> =
-  | {
-      $default?: T // inherit
-      $field?: string | string[] // need to map all fields here
-      $inherit?: Inherit
-    }
-  | true
 
 // TEMP added $merge to Text and Image in baseItem
 type GetItem<T = Item> = {
@@ -33,14 +40,24 @@ type GetItem<T = Item> = {
     : T[P] | Get<T[P]>
 }
 
-// Get allows every field (maps keys)
-type GetOptions = Record<string, MapField> &
-  GetItem & {
-    $id?: Id
-    $version?: string
-    $language?: Language
-  }
+// also needs item
+type MapField =
+  | (GetField & {
+      $default?: any // inherit from field - hard to make
+    })
+  | GetItem
 
-async function get(client: SelvaClient, props: GetOptions) {}
+// Get allows every field (maps keys)
+// how to combine this ???
+// { [key: string]: MapField } &
+type GetOptions = GetItem & {
+  $id?: Id
+  $version?: string
+  $language?: Language
+}
+
+async function get(client: SelvaClient, props: GetOptions) {
+  console.log(props)
+}
 
 export { get, GetOptions }
