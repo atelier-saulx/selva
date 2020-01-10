@@ -19,8 +19,11 @@ test.serial('get - basic', async t => {
   })
 
   const r = await client.get({
-    $id: 'viA'
+    $id: 'viA',
+    title: true
   })
+
+  console.log('xxx', r)
 
   t.is(true, true)
 })

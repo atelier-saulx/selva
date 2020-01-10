@@ -1,5 +1,6 @@
 import { Item, Id, Language, Type } from './schema'
 import { SelvaClient } from './'
+import { RedisClient } from 'redis'
 
 type Inherit =
   | boolean
@@ -33,19 +34,19 @@ type Get<T> = GetField & {
 
 // TEMP added $merge to Text and Image in baseItem
 type GetItem<T = Item> = {
-  [P in keyof T]?: T[P] extends Item[]
+  [P in keyof T]?: true | T[P] extends Item[]
     ? GetItem<T>[]
     : T[P] extends object
-    ? GetItem<T[P]>
+    ? GetItem<T[P]> | true
     : T[P] | Get<T[P]>
 }
 
 // also needs item
 type MapField =
   | (GetField & {
-      $default?: any // inherit from field - hard to make
+      $default?: any // inherit from field - hard to make follows 'field'
     })
-  | GetItem
+  | GetItem // nested , also need to support fields in a nested field
 
 // Get allows every field (maps keys)
 // how to combine this ???
@@ -56,8 +57,73 @@ type GetOptions = GetItem & {
   $language?: Language
 }
 
-async function get(client: SelvaClient, props: GetOptions) {
-  console.log(props)
+// item but also mapped fields :/
+async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
+  const result = {}
+  if (props.$id) {
+    const id = props.$id
+    // all actions
+    let keys: string[]
+    for (let key in props) {
+      if (key[0] !== '$') {
+        console.log('go for it')
+
+        // need to generate this fro the type -- to double
+        if (props[key] === true) {
+          // load keys if you need to load all fields of nested ones
+          if (
+            key === 'title' ||
+            key === 'auth' ||
+            key === 'image' ||
+            key === 'video'
+          ) {
+            if (!keys) {
+              keys = await client.redis.hkeys(id)
+            }
+            const fieldResult = {}
+            for (const field of keys) {
+              const fields = field.split('.')
+              if (fields[0] === key) {
+                const val = await client.redis.hget(id, field)
+                // fieldResult
+                if (fields.length > 2) {
+                  console.log('DEEP GO')
+                } else {
+                  fieldResult[fields[1]] = val
+                }
+              }
+            }
+            result[key] = fieldResult
+            console.log(keys)
+          } else if (key === 'children' || key === 'parents') {
+          } else if (key === 'ancestors') {
+          } else if (key === 'descendants') {
+            // return
+          } else {
+            // need to cast types
+            const val = await client.redis.hget(id, key)
+
+            // would be nice to generate this
+            if (
+              key === 'value' ||
+              key === 'age' ||
+              key === 'status' ||
+              key === 'date' ||
+              key === 'start' ||
+              key === 'end'
+            ) {
+              result[key] = val * 1
+            } else {
+              result[key] = val
+            }
+          }
+        }
+      }
+    }
+  } else {
+    // only find
+  }
+  return result
 }
 
 export { get, GetOptions }
