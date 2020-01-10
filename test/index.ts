@@ -70,7 +70,7 @@ const logDb = async (client: SelvaClient) => {
   console.log(await dumpDb(client))
 }
 
-test('modify - basic', async t => {
+test.serial('modify - basic', async t => {
   const client = connect({
     port: 6061
   })
@@ -290,8 +290,6 @@ test('modify - basic', async t => {
     children: { $add: match }
   })
 
-  await logDb(client)
-
   t.deepEqual(
     (await client.redis.smembers(match + '.parents')).sort(),
     ['root', league].sort(),
@@ -367,44 +365,93 @@ test('modify - basic', async t => {
   await client.destroy()
 })
 
-// test('modify - $increment, $default', async t => {
+// test('modify - deep hierarchy manupilation', async t => {
 //   const client = connect({
 //     port: 6061
 //   })
+//   /*
+//     root
+//       |_ b
+//           |_c
+//           |_d
+//             |_e
+//     root
+//       |_d
+//         |_e
+//     Remove b from d
+//     Keep d / e
+//     Dont remove root!
+//     And remove all correct paths
+//   */
 // })
 
-/*
-    root
-      |_ b
-          |_c
-          |_d
-            |_e
-    root
-      |_d
-        |_e
-    Remove b from d
-    Keep d / e
-    Dont remove root!
-    And remove all correct paths
-  */
+test.serial('modify - $increment, $default', async t => {
+  const client = connect({
+    port: 6061
+  })
+  await client.set({
+    $id: 'viDingDong',
+    value: {
+      $default: 100,
+      $increment: 10
+    }
+  })
 
-// make this test now
+  t.is(
+    await client.redis.hget('viDingDong', 'value'),
+    '100',
+    'uses default if value does not exist'
+  )
 
-// console.log('$add children', id, 'viDingDong')
-// await client.set({
-//   $id: id,
-//   children: { $add: 'viDingDong' }
-// })
+  await client.set({
+    $id: 'viDingDong',
+    value: {
+      $default: 100,
+      $increment: 10
+    }
+  })
+
+  t.is(
+    await client.redis.hget('viDingDong', 'value'),
+    '110',
+    'increment if value exists'
+  )
+
+  await client.set({
+    $id: 'viDingDong',
+    title: {
+      en: {
+        $default: 'title'
+      }
+    }
+  })
+
+  t.is(
+    await client.redis.hget('viDingDong', 'title.en'),
+    'title',
+    'set default'
+  )
+
+  await client.set({
+    $id: 'viDingDong',
+    title: {
+      en: {
+        $default: 'flurp'
+      }
+    }
+  })
+
+  t.is(
+    await client.redis.hget('viDingDong', 'title.en'),
+    'title',
+    'does not overwrite if value exists'
+  )
+
+  client.destroy()
+})
 
 // console.log('set default + increment')
-// await client.set({
-//   $id: 'viDingDong',
-//   children: { $add: 'viDingDong2' },
-//   value: {
-//     $default: 100,
-//     $increment: 10
-//   }
-// })
+
 // await logAll(client)
 
 // console.log('increment')

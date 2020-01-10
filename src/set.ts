@@ -288,9 +288,9 @@ async function setInner(
       }
     } else {
       if (fromDefault) {
-        return await client.redis.hset(id, field, value)
-      } else {
         return await client.redis.hsetnx(id, field, value)
+      } else {
+        return await client.redis.hset(id, field, value)
       }
     }
   }
