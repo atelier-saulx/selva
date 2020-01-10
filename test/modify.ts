@@ -508,6 +508,7 @@ test.serial('$merge = false', async t => {
   await client.delete('root')
 })
 
+// version important
 // test.serial('$version', async t => {
 
 // })

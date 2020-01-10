@@ -1,9 +1,26 @@
-import { Item, Id } from './schema'
+import { Item, Id, Language, Type } from './schema'
 import { SelvaClient } from './'
 
-type Get =
+type Inherit =
+  | boolean
   | {
-      $inherit?: boolean
+      type: Type[]
+    }
+
+// can read field options from keys bit hard
+// type Field =
+
+type MapField = {
+  $default?: any // inherit from field - hard to make
+  $field: string | string[] // need to map all fields here
+  $inherit?: Inherit
+}
+
+type Get<T> =
+  | {
+      $default?: T // inherit
+      $field?: string | string[] // need to map all fields here
+      $inherit?: Inherit
     }
   | true
 
@@ -13,14 +30,15 @@ type GetItem<T = Item> = {
     ? GetItem<T>[]
     : T[P] extends object
     ? GetItem<T[P]>
-    : T[P] | Get
+    : T[P] | Get<T[P]>
 }
 
-// get allows every field (maps keys)
-type GetOptions = Record<string, Get> &
+// Get allows every field (maps keys)
+type GetOptions = Record<string, MapField> &
   GetItem & {
     $id?: Id
     $version?: string
+    $language?: Language
   }
 
 async function get(client: SelvaClient, props: GetOptions) {}
