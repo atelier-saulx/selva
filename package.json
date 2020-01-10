@@ -5,7 +5,7 @@
     "build": "tsc",
     "start": "tsc && node dist/index.js",
     "test": "ava",
-    "watch": "ava --watch --verbose test/index.ts"
+    "watch": "ava --watch --verbose test/*"
   },
   "husky": {
     "hooks": {

@@ -1,10 +1,8 @@
 import test from 'ava'
-// expose types here (default), maybe expose things like id etc
 import { connect, SelvaClient } from '../src/index'
 import { start } from 'selva-server'
 
 //  const wait = () => new Promise(r => setTimeout(r, 500))
-
 const idExists = async (
   client: SelvaClient,
   id: string,
@@ -56,19 +54,7 @@ test.before(async t => {
   await start({ port: 6061, modules: ['redisearch'] })
 })
 
-test('generates a unique id', async t => {
-  const client = connect({
-    port: 6061
-  })
-  const id1 = client.id({ type: 'match' })
-  const id2 = client.id({ type: 'match' })
-  t.true(id1 !== id2)
-  t.true(/ma.+/.test(id1))
-  // new types what this means is that the client allways needs to load a map add it to prefix
-  // allways subscribe on it (hash)
-})
-
-test.serial('modify - basic', async t => {
+test.serial('basic', async t => {
   const client = connect({
     port: 6061
   })
@@ -362,7 +348,7 @@ test.serial('modify - basic', async t => {
   await client.destroy()
 })
 
-test('modify - deep hierarchy manipulation', async t => {
+test('deep hierarchy manipulation', async t => {
   const client = connect({
     port: 6061
   })
@@ -401,7 +387,7 @@ test('modify - deep hierarchy manipulation', async t => {
   t.is(await client.redis.hget('cuE', 'ancestors'), 'root,cuD')
 })
 
-test.serial('modify - $increment, $default', async t => {
+test.serial('$increment, $default', async t => {
   const client = connect({
     port: 6061
   })
@@ -468,7 +454,7 @@ test.serial('modify - $increment, $default', async t => {
   client.destroy()
 })
 
-test.serial('modify - $merge = false', async t => {
+test.serial('$merge = false', async t => {
   const client = connect({
     port: 6061
   })
@@ -522,6 +508,6 @@ test.serial('modify - $merge = false', async t => {
   await client.delete('root')
 })
 
-// test.serial('modify - $version', async t => {
+// test.serial('$version', async t => {
 
 // })
