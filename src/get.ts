@@ -1,6 +1,5 @@
 import { Item, Id, Language, Type, Text } from './schema'
 import { SelvaClient } from './'
-import { RedisClient } from 'redis'
 
 type Inherit =
   | boolean
@@ -104,7 +103,9 @@ async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
             }
             result[key] = fieldResult
           } else if (key === 'children' || key === 'parents') {
+            // smurky
           } else if (key === 'ancestors') {
+            // blarf
           } else if (key === 'descendants') {
             // return
           }
