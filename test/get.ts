@@ -62,6 +62,7 @@ test.serial('get - basic', async t => {
 
   client.destroy()
 })
+
 test.serial('get - $default', async t => {
   const client = connect({ port: 6061 })
 
@@ -88,6 +89,36 @@ test.serial('get - $default', async t => {
     }),
     {
       title: { en: 'flap', nl: 'naamloos' }
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+// also need a get $all (when just passing id perhaps?) or $all: true
+// also need an exists (when just passing id?)
+test.serial('get - $language', async t => {
+  const client = connect({ port: 6061 })
+
+  await client.set({
+    $id: 'viflap',
+    title: { en: 'flap', nl: 'flurp' },
+    description: { en: 'yes', nl: 'ja' }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viflap',
+      title: true,
+      description: true,
+      $language: 'nl'
+    }),
+    {
+      // thinkg about this
+      title: 'flurp',
+      description: 'ja'
     }
   )
 
