@@ -1,4 +1,4 @@
-import { Item, Id, Language, Type } from './schema'
+import { Item, Id, Language, Type, Text } from './schema'
 import { SelvaClient } from './'
 import { RedisClient } from 'redis'
 
@@ -38,6 +38,8 @@ type GetItem<T = Item> = {
     ? GetItem<T>[]
     : T[P] extends object
     ? GetItem<T[P]> | true
+    : T[P] extends Text
+    ? T[P] | string
     : T[P] | Get<T[P]>
 }
 
