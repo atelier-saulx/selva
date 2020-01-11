@@ -31,7 +31,6 @@ type Get<T> = GetField & {
   $default?: T // inherit
 }
 
-// TEMP added $merge to Text and Image in baseItem
 type GetItem<T = Item> = {
   [P in keyof T]?: true | T[P] extends Item[]
     ? GetItem<T>[]
