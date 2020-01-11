@@ -63,6 +63,9 @@ type GetOptions = GetItem & {
 // $language, title
 
 // item but also mapped fields :/ see MapField
+
+// text keys for language
+
 async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
   const result: Item = {}
   if (props.$id) {
@@ -78,7 +81,8 @@ async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
             key === 'title' ||
             key === 'auth' ||
             key === 'image' ||
-            key === 'video'
+            key === 'video' ||
+            key === 'auth'
           ) {
             if (!keys) {
               keys = await client.redis.hkeys(id)

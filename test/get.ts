@@ -16,6 +16,7 @@ test.serial('get - basic', async t => {
     },
     value: 25,
     auth: {
+      // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
         type: 'admin'
@@ -34,6 +35,16 @@ test.serial('get - basic', async t => {
       id: 'viA',
       title: { en: 'nice!' },
       value: 25
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      auth: true
+    }),
+    {
+      auth: { role: { id: ['root'], type: 'admin' } }
     }
   )
 
