@@ -222,7 +222,6 @@ export type Ad = {
   | 'value'
   | 'image'
   | 'video'
-  | 'price'
   | 'name'
   | 'access'
   | 'title'
@@ -231,6 +230,7 @@ export type Ad = {
 > & {
     // url is a bit different
     adType?: 'dfp' | 'custom'
+    adUnit?: string
     sizes?: { width: number; height: number }[]
   }
 

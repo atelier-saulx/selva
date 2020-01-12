@@ -33,12 +33,12 @@ type GetItem<T = Item> = {
     : T[P] extends object
     ? (GetItem<T[P]> & GetField<T>) | true
     : T[P] extends number
-    ? GetField<T[P]> | true
+    ? T[P] | GetField<T[P]> | true
     : T[P] extends string
-    ? GetField<T[P]> | true
+    ? T[P] | GetField<T[P]> | true
     : T[P] extends boolean
-    ? GetField<T[P]> | true
-    : GetField<T[P]> | true
+    ? T[P] | GetField<T[P]>
+    : (T[P] & GetField<T[P]>) | true
 } &
   GetField<T>
 
@@ -103,7 +103,7 @@ export async function getInner(
 
   // sad :( ah wait also need union on get item itself ?
   if (props.$default) {
-    console.log('ok')
+    console.log('ok', props)
   }
 }
 
