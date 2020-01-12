@@ -136,4 +136,4 @@ async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   return result
 }
 
-export { get, GetOptions }
+export { get, GetOptions, GetResult }
