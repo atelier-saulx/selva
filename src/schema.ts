@@ -194,6 +194,9 @@ export type BaseItem = {
   layout?: Layout
 }
 
+// make this super nice
+export type Field = string | string[]
+
 export type Item = BaseItem & {
   children?: Id[]
   parents?: Id[]

@@ -1,10 +1,13 @@
-import { Item, Id, Language, Type, Text } from './schema'
+import { Item, Id, Language, Type, Text, Field } from './schema'
 import { SelvaClient } from './'
 
 type Inherit =
   | boolean
   | {
-      type: Type[]
+      type?: Type | Type[]
+      name?: string | string[]
+      id?: Id | Id[]
+      $item?: Type | Type[]
     }
 
 type Find = {
@@ -16,16 +19,14 @@ type List = {
   $find?: Find
 }
 
+// bla.x , bla.$x
 type GetField =
   | {
-      $field?: string | string[] // need to map all fields here
+      $field?: Field
       $inherit?: Inherit
       $list?: List
     }
   | true
-
-// can read field options from keys bit hard
-// type Field =
 
 type Get<T> = GetField & {
   $default?: T // inherit
@@ -36,40 +37,30 @@ type GetItem<T = Item> = {
     ? GetItem<T>[]
     : T[P] extends object
     ? GetItem<T[P]> | true
-    : T[P] extends Text
-    ? T[P] | string
-    : T[P] | Get<T[P]>
+    : T[P] | (Get<T[P]> & MapField)
 }
 
-// also needs item --> true is not allowed here :/
-type MapField =
-  | (GetField & {
-      $default?: any // inherit from field - hard to make follows 'field'
-    })
-  | GetItem // nested , also need to support fields in a nested field
+type MapField = GetField & {
+  $default?: any
+}
 
-// Get allows every field (maps keys)
-// how to combine this really need to union this stuff
-
-// for return
-
-// { [key: string]: MapField } &
 type GetOptions = GetItem & {
   $id?: Id
   $version?: string
   $language?: Language
 }
 
-// const getNestedKeys = () => {
-// }
+type GetResult<T = Item> = {
+  [P in keyof T]?: true | T[P] extends Item[]
+    ? GetResult<T>[]
+    : T[P] extends Text
+    ? T[P] | string
+    : T[P] extends object
+    ? GetResult<T[P]>
+    : T[P]
+} & { [key: string]: any }
 
-// $language, title
-
-// item but also mapped fields :/ see MapField
-
-// text keys for language
-
-async function get(client: SelvaClient, props: GetOptions): Promise<Item> {
+async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const result: Item = {}
   if (props.$id) {
     const id = props.$id

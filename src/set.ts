@@ -1,4 +1,11 @@
-import { BaseItem, Id, ExternalId, UserType, getTypeFromId } from './schema'
+import {
+  BaseItem,
+  Id,
+  ExternalId,
+  UserType,
+  getTypeFromId,
+  Field
+} from './schema'
 import { SelvaClient } from './'
 import { deleteItem } from './delete'
 import {
@@ -24,6 +31,7 @@ type SetExtraOptions<T> = {
   $default?: T
   $value?: T
   $merge?: boolean
+  $field?: Field
 }
 
 type SetExtraCounterOptions = {

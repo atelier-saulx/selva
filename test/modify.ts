@@ -508,6 +508,12 @@ test.serial('$merge = false', async t => {
   await client.delete('root')
 })
 
+test.serial('$merge = false', async t => {
+  const client = connect({
+    port: 6061
+  })
+})
+
 // version important
 // test.serial('$version', async t => {
 

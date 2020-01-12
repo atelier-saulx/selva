@@ -30,6 +30,16 @@ const { data: myItem } = await db.get({
 })
 
 const { data: myItem } = await db.get({
+  $id: 'mydingdong',
+  theme: { $inherit: { id: ['mydingdongParent'] } } // prefers first in the list, if it cannot be found uses the next
+})
+
+const { data: myItem } = await db.get({
+  $id: 'mydingdong',
+  theme: { $inherit: { name: ['mydingdongName'] } } // prefers first in the list, if it cannot be found uses the next
+})
+
+const { data: myItem } = await db.get({
   $id: 'myclub24',
   speshTitle: {
     // map title to spesh title
@@ -374,7 +384,8 @@ match,
   layout: {
       default: { components: [] },
       match: { components: [] },
-      video: '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
+      video: { $field: 'layout.match' }
+      // '$layout.match' // this is is a ref onnly within your own object - store with a bit mask -- make the api in set powerfull and good for this
   }
 }
 ```
