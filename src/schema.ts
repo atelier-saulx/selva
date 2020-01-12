@@ -67,6 +67,7 @@ export type Text = {
 
 export const languages = ['en', 'de', 'fr', 'nl', 'es', 'it', 'fi']
 
+// order deterines fallback order
 export type Language = 'en' | 'de' | 'fr' | 'nl' | 'es' | 'it' | 'fi'
 
 export type Type =
@@ -250,6 +251,7 @@ export type Item = BaseItem & {
   children?: Id[]
   parents?: Id[]
   ancestors?: string
+  descendants?: Id[]
   externalId?: ExternalId[]
   auth?: {
     password?: string
