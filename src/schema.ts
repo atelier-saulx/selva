@@ -97,6 +97,7 @@ export type Type =
 // not the place to define the component type - too much limitation for front end
 export type Component = {
   type: string
+  index: number // bit weird
   props: { [key: string]: any }
 }
 
@@ -212,6 +213,7 @@ export type Field = string | string[]
 
 export type Item = BaseItem & {
   children?: Id[]
+  // layout?: Layout
   parents?: Id[]
   ancestors?: string
   externalId?: ExternalId[]

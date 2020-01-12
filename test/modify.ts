@@ -518,7 +518,9 @@ test.serial('Reference field', async t => {
     layout: {
       // does this need to be a redis set - yes does need index
       // can also be redis list
-      match: { components: [{ type: 'List', props: { x: true } }] },
+
+      // index: 0 is important
+      match: { components: [{ type: 'List', props: { x: true }, index: 0 }] },
       custom: { $field: 'layout.match' },
       video: { $field: 'layout.$type' }
     }

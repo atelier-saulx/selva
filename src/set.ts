@@ -4,7 +4,9 @@ import {
   ExternalId,
   UserType,
   getTypeFromId,
-  Field
+  Field,
+  Layout,
+  Component
 } from './schema'
 import { SelvaClient } from './'
 import { deleteItem } from './delete'
@@ -52,12 +54,17 @@ type SetItem<T = BaseItem> = {
     : T[P] | (T[P] & SetExtraOptions<T[P]>)
 }
 
+// type SetLayout<T = Layout> = Record<Type | 'default', {
+
+// } | SetItem>
+
 type SetOptions = SetItem & {
   $id?: Id
   $merge?: boolean
   $version?: string
   children?: HierarchySet
   parents?: HierarchySet
+  // layout?: SetLayout
   externalId?:
     | ExternalId[]
     | {
