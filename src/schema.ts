@@ -53,7 +53,6 @@ export type Social = {
 }
 
 // any type as key?
-export type Layout = {}
 
 // would be nice to generate this form a list of lang keys <-- so sad :(
 export type Text = {
@@ -93,6 +92,20 @@ export type Type =
   | 'root'
   | 'custom'
   | 'article'
+  | 'product'
+
+// not the place to define the component type - too much limitation for front end
+export type Component = {
+  type: string
+  props: { [key: string]: any }
+}
+
+export type Layout = Record<
+  Type | 'default',
+  {
+    components: Component[]
+  }
+>
 
 // can use this in the cms
 export const itemTypes = [

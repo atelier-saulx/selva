@@ -50,6 +50,8 @@ type GetOptions = GetItem & {
   $language?: Language
 }
 
+// tmp be able to return anythign
+// we can also make something else
 type GetResult<T = Item> = {
   [P in keyof T]?: true | T[P] extends Item[]
     ? GetResult<T>[]

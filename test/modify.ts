@@ -508,13 +508,21 @@ test.serial('$merge = false', async t => {
   await client.delete('root')
 })
 
-test.serial('$merge = false', async t => {
+test.serial('Reference field', async t => {
   const client = connect({
     port: 6061
   })
+
+  client.set({
+    $id: 'cuA',
+    layout: {
+      // does this need to be a redis set - yes does need index
+      // can also be redis list
+      match: { components: [{ type: 'List', props: { x: true } }] },
+      custom: { $field: 'layout.match' },
+      video: { $field: 'layout.$type' }
+    }
+  })
+
+  await client.delete('root')
 })
-
-// version important
-// test.serial('$version', async t => {
-
-// })
