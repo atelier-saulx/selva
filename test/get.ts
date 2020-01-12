@@ -172,12 +172,6 @@ test.serial('get - hierarchy', async t => {
     })
   ])
 
-  const x = await client.get({
-    $id: 'viflapx',
-    descendants: true,
-    children: true
-  })
-
   t.true(
     isEqual(
       await client.get({
