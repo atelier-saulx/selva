@@ -147,18 +147,23 @@ test.serial('get - $language', async t => {
       $language: 'nl'
     }),
     {
-      // thinkg about this
       title: 'flurp',
       description: 'ja'
     }
   )
 
-  console.log(
+  await client.set({
+    $id: 'viflurx',
+    title: { en: 'flap', nl: 'flurp' }
+  })
+
+  t.deepEqual(
     await client.get({
-      $id: 'viflap',
+      $id: 'viflurx',
       $language: 'nl',
       description: { $default: 'flurpy' }
-    })
+    }),
+    { description: 'flurpy' }
   )
 
   await client.delete('root')
