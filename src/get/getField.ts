@@ -13,7 +13,19 @@ const number = async (
   result?: GetResult,
   language?: Language
 ): Promise<void> => {
-  setNestedResult(result, field, 1 * (await client.redis.hget(id, field)))
+  const v = await client.redis.hget(id, field)
+  return setNestedResult(result, field, v === null ? null : v * 1)
+}
+
+const boolean = async (
+  client: SelvaClient,
+  id: Id,
+  props: Props,
+  field: string,
+  result?: GetResult,
+  language?: Language
+): Promise<void> => {
+  return setNestedResult(result, field, !!(await client.redis.hget(id, field)))
 }
 
 const string = async (
@@ -24,7 +36,11 @@ const string = async (
   result?: GetResult,
   language?: Language
 ): Promise<void> => {
-  setNestedResult(result, field, (await client.redis.hget(id, field)) || '')
+  return setNestedResult(
+    result,
+    field,
+    (await client.redis.hget(id, field)) || ''
+  )
 }
 
 const set = async (
@@ -35,7 +51,11 @@ const set = async (
   result?: GetResult,
   language?: Language
 ): Promise<void> => {
-  setNestedResult(result, field, await client.redis.smembers(id + '.' + field))
+  return setNestedResult(
+    result,
+    field,
+    await client.redis.smembers(id + '.' + field)
+  )
 }
 
 const stringified = async (
@@ -47,7 +67,11 @@ const stringified = async (
   language?: Language
 ): Promise<void> => {
   const value = await client.redis.hget(id, field)
-  setNestedResult(result, field, JSON.parse(value))
+  return setNestedResult(
+    result,
+    field,
+    value === null ? value : JSON.parse(value)
+  )
 }
 
 const object = async (
@@ -87,26 +111,21 @@ const text = async (
   language?: Language
 ): Promise<void> => {
   if (!language) {
-    await object(client, id, props, field, result)
+    return await object(client, id, props, field, result)
   } else {
     const value = await client.redis.hget(id, field + '.' + language)
     if (value) {
       setNestedResult(result, field, value)
     } else {
-      let found: boolean = false
       for (const lang of languages) {
         if (lang !== language) {
           const value = await client.redis.hget(id, field + '.' + lang)
           if (value) {
-            found = true
-            setNestedResult(result, field, value)
-            break
+            return setNestedResult(result, field, value)
           }
         }
       }
-      if (found === false) {
-        setNestedResult(result, field, '')
-      }
+      return setNestedResult(result, field, '')
     }
   }
 }
@@ -119,10 +138,11 @@ const authObject = async (
   result: GetResult,
   language?: Language
 ): Promise<void> => {
-  await object(client, id, props, field, result)
+  const r = await object(client, id, props, field, result)
   if (props === true) {
     result.auth.role.id = await client.redis.smembers(id + '.auth.role.id')
   }
+  return r
 }
 
 const id = async (
@@ -134,6 +154,7 @@ const id = async (
   language?: Language
 ) => {
   result.id = id
+  return result.id
 }
 
 const type = async (
@@ -146,6 +167,7 @@ const type = async (
 ) => {
   // also never have to store this!
   result.type = getTypeFromId(id)
+  return result.type
 }
 
 type Reader = (
@@ -155,7 +177,7 @@ type Reader = (
   field: string,
   result: GetResult,
   language?: Language
-) => Promise<void>
+) => Promise<any>
 
 const types: Record<string, Reader> = {
   id: id,
@@ -169,12 +191,14 @@ const types: Record<string, Reader> = {
   'contact.phone': number,
   value: number,
   age: number,
+  status: number,
   date: number,
   start: number,
   price: number,
   discount: number,
   tax: number,
   end: number,
+  published: boolean,
   children: set,
   parents: set,
   auth: authObject,
@@ -202,7 +226,7 @@ async function getField(
 ) {
   // version still missing!
   const fn = types[field] || string
-  await fn(client, id, props, field, result, language)
+  return await fn(client, id, props, field, result, language)
 }
 
 export default getField

@@ -12,6 +12,7 @@ const setNestedResult = (result: GetResult, field: string, value: any) => {
   } else {
     result[field] = value
   }
+  return value
 }
 
 export default setNestedResult

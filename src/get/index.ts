@@ -73,7 +73,7 @@ type GetResult<T = Item> = {
     ? GetResult<T[P]>
     : T[P]
 } & {
-  $keys?: string[]
+  // $keys?: string[]
   [key: string]: any
 }
 
@@ -101,9 +101,13 @@ export async function getInner(
     }
   }
 
-  // sad :( ah wait also need union on get item itself ?
   if (props.$default) {
-    console.log('ok', props)
+    console.log('ok', field, props)
+    await getField(client, id, true, field, result, language, version)
+    console.log(result)
+    const value = result
+
+    // const field = field.split('.')
   }
 }
 
