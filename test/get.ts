@@ -2,12 +2,44 @@ import test from 'ava'
 import { connect, SelvaClient } from '../src/index'
 import { start } from 'selva-server'
 
+const isEqual = (a: any, b: any): boolean => {
+  if (typeof a !== typeof b) {
+    return false
+  }
+  if (Array.isArray(a)) {
+    if (!Array.isArray(b)) {
+      return false
+    }
+    if (a.length !== b.length) {
+      return false
+    }
+    a.sort()
+    b.sort()
+    for (let i = 0; i < a.length; i++) {
+      if (!isEqual(a[i], b[i])) {
+        return false
+      }
+    }
+  } else if (typeof a === 'object') {
+    for (let k in a) {
+      if (!isEqual(a[k], b[k])) {
+        return false
+      }
+    }
+  } else {
+    if (a !== b) {
+      return false
+    }
+  }
+  return true
+}
+
 test.before(async t => {
-  await start({ port: 6061, modules: ['redisearch'] })
+  await start({ port: 6062, modules: ['redisearch'] })
 })
 
 test.serial('get - basic', async t => {
-  const client = connect({ port: 6061 })
+  const client = connect({ port: 6062 })
 
   await client.set({
     $id: 'viA',
@@ -66,7 +98,7 @@ test.serial('get - basic', async t => {
 })
 
 test.serial('get - $default', async t => {
-  const client = connect({ port: 6061 })
+  const client = connect({ port: 6062 })
 
   await client.set({
     $id: 'viflap',
@@ -100,7 +132,7 @@ test.serial('get - $default', async t => {
 })
 
 test.serial('get - $language', async t => {
-  const client = connect({ port: 6061 })
+  const client = connect({ port: 6062 })
   await client.set({
     $id: 'viflap',
     title: { en: 'flap', nl: 'flurp' },
@@ -119,6 +151,44 @@ test.serial('get - $language', async t => {
       title: 'flurp',
       description: 'ja'
     }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - hierarchy', async t => {
+  const client = connect({ port: 6062 })
+
+  await Promise.all([
+    client.set({
+      $id: 'viflapx',
+      children: ['vifla', 'viflo']
+    }),
+    client.set({
+      $id: 'vifla',
+      children: ['viflo', 'maflux']
+    })
+  ])
+
+  const x = await client.get({
+    $id: 'viflapx',
+    descendants: true,
+    children: true
+  })
+
+  const item = await client.get({
+    $id: 'viflapx',
+    descendants: true,
+    children: true
+  })
+
+  t.true(
+    isEqual(item, {
+      descendants: ['viflo', 'vifla', 'maflux'],
+      children: ['viflo', 'vifla']
+    })
   )
 
   await client.delete('root')
