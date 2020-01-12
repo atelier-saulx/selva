@@ -20,7 +20,6 @@ type List = {
   $find?: Find
 }
 
-// bla.x , bla.$x
 type GetField =
   | {
       $field?: Field
@@ -49,7 +48,6 @@ type GetOptions = GetItem & {
   $id?: Id
   $version?: string
   $language?: Language
-  $keys?: string[]
 }
 
 // tmp be able to return anythin
@@ -67,46 +65,39 @@ type GetResult<T = Item> = {
   [key: string]: any
 }
 
-// fn getLanguage (title, description, article)
-
 export async function getInner(
   client: SelvaClient,
   props: GetItem,
   result: GetResult,
   id: Id,
   field?: string,
-  languge?: Language,
+  language?: Language,
   version?: string
 ): Promise<void> {
   for (let key in props) {
+    // handle all special cases here
     if (key[0] !== '$') {
-      if (props[key] === true) {
-        await getField(client, id, key, result, languge, version)
-      } else {
-        console.log('NOT IMPLEMENTED OBJECT', key)
-      }
+      await getField(
+        client,
+        id,
+        props[key],
+        field ? field + '.' + key : key,
+        result,
+        language,
+        version
+      )
     }
   }
 }
 
 async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const result: GetResult = {}
-  const { $version: version, $id: id, $language: languge } = props
+  const { $version: version, $id: id, $language: language } = props
   if (id) {
-    await getInner(client, props, result, id)
+    await getInner(client, props, result, id, undefined, language)
   } else {
     // only find
   }
-
-  // this field is used as a cache
-  if (result.$keys) {
-    if (!props.$keys) {
-      delete result.$keys
-    }
-  } else if (props.$keys) {
-    result.$keys = await client.redis.hkeys(id)
-  }
-
   return result
 }
 

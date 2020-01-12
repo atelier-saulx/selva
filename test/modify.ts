@@ -508,19 +508,19 @@ test.serial('$merge = false', async t => {
   await client.delete('root')
 })
 
-test.serial('Reference field', async t => {
-  const client = connect({
-    port: 6061
-  })
+// test.serial('Reference field', async t => {
+//   const client = connect({
+//     port: 6061
+//   })
 
-  client.set({
-    $id: 'cuA',
-    layout: {
-      match: { components: [{ type: 'List', props: { x: true } }] },
-      custom: { $field: 'layout.match' },
-      video: { $field: 'layout.$type' }
-    }
-  })
+//   client.set({
+//     $id: 'cuA',
+//     layout: {
+//       match: { components: [{ type: 'List', props: { x: true } }] },
+//       custom: { $field: 'layout.match' },
+//       video: { $field: 'layout.$type' }
+//     }
+//   })
 
-  await client.delete('root')
-})
+//   await client.delete('root')
+// })

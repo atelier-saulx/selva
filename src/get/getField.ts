@@ -1,6 +1,8 @@
 import { SelvaClient } from '..'
-import { Id, Language, languages, itemTypes } from '../schema'
-import { GetResult, getInner } from './'
+import { Id, Language, languages, itemTypes, getTypeFromId } from '../schema'
+import { GetResult, getInner, GetOptions, get } from './'
+
+type Props = GetOptions | true
 
 const setNestedResult = (result: GetResult, field: string, value: any) => {
   const fields = field.split('.')
@@ -19,6 +21,7 @@ const setNestedResult = (result: GetResult, field: string, value: any) => {
 const number = async (
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
   result?: GetResult
 ): Promise<void> => {
@@ -28,25 +31,27 @@ const number = async (
 const string = async (
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
   result?: GetResult
 ): Promise<void> => {
-  // string
   setNestedResult(result, field, (await client.redis.hget(id, field)) || '')
 }
 
 const set = async (
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
   result?: GetResult
 ): Promise<void> => {
-  setNestedResult(result, field, client.redis.smembers(id + '.' + field))
+  setNestedResult(result, field, await client.redis.smembers(id + '.' + field))
 }
 
 const stringified = async (
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
   result: GetResult
 ): Promise<void> => {
@@ -57,34 +62,41 @@ const stringified = async (
 const object = async (
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
-  result: GetResult
+  result: GetResult,
+  language?: Language
 ): Promise<void> => {
-  // result.$keys is a cache
-  if (!result.$keys) {
-    result.$keys = await client.redis.hkeys(id)
+  // super innefficient - memoize
+  const keys = await client.redis.hkeys(id)
+  if (props === true) {
+    for (const key of keys) {
+      if (key.indexOf(field) === 0) {
+        await getField(client, id, true, key, result, language)
+      }
+    }
+  } else {
+    for (let key in props) {
+      const nestedField = field + '.' + key
+      if (props[key] === true) {
+        await getField(client, id, true, nestedField, result, language)
+      } else {
+        await getInner(client, props[key], result, id, nestedField, language)
+      }
+    }
   }
-
-  // getInner
-
-  //
-
-  console.log('ok', result)
-  // directly puts on result
-
-  // return client.redis.hget(id, field)
 }
 
 const text = async (
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
   result: GetResult,
   language?: Language
 ): Promise<void> => {
-  //   return 'lullz'
   if (!language) {
-    await object(client, id, field, result)
+    await object(client, id, props, field, result)
   } else {
     const value = await client.redis.hget(id, field + '.' + language)
     if (value) {
@@ -111,24 +123,40 @@ const text = async (
 const authObject = async (
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
   result: GetResult
 ): Promise<void> => {
-  await object(client, id, field, result)
-  result.auth.role.ids = await client.redis.smembers(id + '.auth.role.ids')
+  await object(client, id, props, field, result)
+  if (props === true) {
+    result.auth.role.id = await client.redis.smembers(id + '.auth.role.id')
+  }
 }
 
 const id = async (
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
   result: GetResult
 ) => {
   result.id = id
 }
 
+const type = async (
+  client: SelvaClient,
+  id: Id,
+  props: Props,
+  field: string,
+  result: GetResult
+) => {
+  // also never have to store this!
+  result.type = getTypeFromId(id)
+}
+
 const types = {
   id: id,
+  type: type,
   title: text,
   description: text,
   article: text,
@@ -157,6 +185,7 @@ for (const type of itemTypes) {
 async function getField(
   client: SelvaClient,
   id: Id,
+  props: Props,
   field: string,
   result: GetResult,
   language?: Language,
@@ -164,7 +193,7 @@ async function getField(
 ) {
   // think about version...
   const fn = types[field] || string
-  await fn(client, id, field, result, language)
+  await fn(client, id, props, field, result, language)
 }
 
 export default getField

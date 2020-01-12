@@ -46,7 +46,7 @@ test.serial('get - basic', async t => {
     {
       auth: { role: { id: ['root'], type: 'admin' } }
     },
-    'role'
+    'get role'
   )
 
   t.deepEqual(
@@ -56,7 +56,8 @@ test.serial('get - basic', async t => {
     }),
     {
       auth: { role: { id: ['root'] } }
-    }
+    },
+    'get role nested'
   )
 
   await client.delete('root')
@@ -98,32 +99,39 @@ test.serial('get - basic', async t => {
 //   client.destroy()
 // })
 
-// // also need a get $all (when just passing id perhaps?) or $all: true
-// // also need an exists (when just passing id?)
-// test.serial('get - $language', async t => {
-//   const client = connect({ port: 6061 })
+test.serial('get - $language', async t => {
+  const client = connect({ port: 6061 })
 
-//   await client.set({
-//     $id: 'viflap',
-//     title: { en: 'flap', nl: 'flurp' },
-//     description: { en: 'yes', nl: 'ja' }
-//   })
+  await client.set({
+    $id: 'viflap',
+    title: { en: 'flap', nl: 'flurp' },
+    description: { en: 'yes', nl: 'ja' }
+  })
 
-//   t.deepEqual(
-//     await client.get({
-//       $id: 'viflap',
-//       title: true,
-//       description: true,
-//       $language: 'nl'
-//     }),
-//     {
-//       // thinkg about this
-//       title: 'flurp',
-//       description: 'ja'
-//     }
-//   )
+  console.log(
+    await client.get({
+      $id: 'viflap',
+      title: true,
+      description: true,
+      $language: 'nl'
+    })
+  )
 
-//   await client.delete('root')
+  t.deepEqual(
+    await client.get({
+      $id: 'viflap',
+      title: true,
+      description: true,
+      $language: 'nl'
+    }),
+    {
+      // thinkg about this
+      title: 'flurp',
+      description: 'ja'
+    }
+  )
 
-//   client.destroy()
-// })
+  await client.delete('root')
+
+  client.destroy()
+})
