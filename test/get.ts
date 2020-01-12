@@ -45,7 +45,8 @@ test.serial('get - basic', async t => {
     }),
     {
       auth: { role: { id: ['root'], type: 'admin' } }
-    }
+    },
+    'role'
   )
 
   t.deepEqual(

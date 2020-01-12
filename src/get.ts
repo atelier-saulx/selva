@@ -50,8 +50,8 @@ type GetOptions = GetItem & {
   $language?: Language
 }
 
-// tmp be able to return anythign
-// we can also make something else
+// tmp be able to return anythin
+// we can also make something else e.g. GetApi (All), Get (Item)
 type GetResult<T = Item> = {
   [P in keyof T]?: true | T[P] extends Item[]
     ? GetResult<T>[]
@@ -107,7 +107,16 @@ async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
                 }
               }
             }
-            result[key] = fieldResult
+            result[key] = fieldResult || {}
+
+            // nested set
+            if (key === 'auth') {
+              const scopes = await client.redis.smembers(id + '.auth.role.id')
+              if (!result.auth.role) {
+                result.auth.role = {}
+              }
+              result.auth.role.id = scopes
+            }
           } else if (key === 'children' || key === 'parents') {
             // smurky
           } else if (key === 'ancestors') {
@@ -138,6 +147,8 @@ async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
               result[key] = val
             }
           }
+        } else {
+          console.log('NOT IMPLEMENTED', key)
         }
       }
     }
