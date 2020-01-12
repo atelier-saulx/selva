@@ -21,6 +21,9 @@ const isEqual = (a: any, b: any): boolean => {
       }
     }
   } else if (typeof a === 'object') {
+    if (Object.keys(a).length !== Object.keys(b).length) {
+      return false
+    }
     for (let k in a) {
       if (!isEqual(a[k], b[k])) {
         return false
@@ -211,6 +214,41 @@ test.serial('get - hierarchy', async t => {
         ancestors: ['root', 'vifla', 'viflapx']
       }
     )
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - $inherit', async t => {
+  const client = connect({ port: 6062 })
+
+  await Promise.all([
+    client.set({
+      $id: 'cuA',
+      title: { en: 'snurf' },
+      children: ['cuB', 'cuC']
+    }),
+    client.set({
+      $id: 'cuB',
+      children: ['cuC', 'cuD']
+    })
+  ])
+
+  const item = await client.get({
+    $id: 'cuD',
+    title: { $inherit: true }
+  })
+
+  console.log(item)
+
+  t.true(
+    isEqual(item, {
+      title: {
+        en: 'snurf'
+      }
+    })
   )
 
   await client.delete('root')
