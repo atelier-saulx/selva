@@ -49,7 +49,10 @@ type MapField =
   | GetItem // nested , also need to support fields in a nested field
 
 // Get allows every field (maps keys)
-// how to combine this ???
+// how to combine this really need to union this stuff
+
+// for return
+
 // { [key: string]: MapField } &
 type GetOptions = GetItem & {
   $id?: Id
