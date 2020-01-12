@@ -101,21 +101,11 @@ test.serial('get - $default', async t => {
 
 test.serial('get - $language', async t => {
   const client = connect({ port: 6061 })
-
   await client.set({
     $id: 'viflap',
     title: { en: 'flap', nl: 'flurp' },
     description: { en: 'yes', nl: 'ja' }
   })
-
-  console.log(
-    await client.get({
-      $id: 'viflap',
-      title: true,
-      description: true,
-      $language: 'nl'
-    })
-  )
 
   t.deepEqual(
     await client.get({

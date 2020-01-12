@@ -1,6 +1,7 @@
-import { Item, Id, Language, Type, Text, Field } from '../schema'
+import { Item, Id, Language, Type, Text, Field, languages } from '../schema'
 import { SelvaClient } from '..'
 import getField from './getField'
+import { getNestedField, setNestedResult } from './nestedFields'
 
 type Inherit =
   | boolean
@@ -77,6 +78,22 @@ type GetResult<T = Item> = {
   [key: string]: any
 }
 
+const isEmpty = (value: any, def: any): boolean => {
+  if (value === null || value === undefined || value === '') {
+    return true
+  } else if (Array.isArray(value) && value.length === 0 && Array.isArray(def)) {
+    return true
+  } else if (typeof value === 'object') {
+    for (const key in value) {
+      if (!isEmpty(value[key], def)) {
+        return false
+      }
+    }
+    return true
+  }
+  return false
+}
+
 export async function getInner(
   client: SelvaClient,
   props: GetItem,
@@ -89,25 +106,21 @@ export async function getInner(
   for (let key in props) {
     // handle all special cases here
     if (key[0] !== '$') {
-      await getField(
-        client,
-        id,
-        props[key],
-        field ? field + '.' + key : key,
-        result,
-        language,
-        version
-      )
+      const f = field ? field + '.' + key : key
+      if (props[key] === true) {
+        await getField(client, id, f, result, language, version)
+      } else {
+        await getInner(client, props[key], result, id, f, language, version)
+      }
     }
   }
 
   if (props.$default) {
-    console.log('ok', field, props)
-    await getField(client, id, true, field, result, language, version)
-    console.log(result)
-    const value = result
-
-    // const field = field.split('.')
+    await getField(client, id, field, result, language, version)
+    const value = getNestedField(result, field)
+    if (isEmpty(value, props.$default)) {
+      setNestedResult(result, field, props.$default)
+    }
   }
 }
 
