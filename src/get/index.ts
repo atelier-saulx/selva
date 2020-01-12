@@ -31,6 +31,8 @@ type GetField<T> = {
 type GetItem<T = Item> = {
   [P in keyof T]?: T[P] extends Item[]
     ? GetItem<T>[] | true
+    : T[P] extends Text
+    ? (GetItem<T[P]> & GetField<T | string>) | true
     : T[P] extends object
     ? (GetItem<T[P]> & GetField<T>) | true
     : T[P] extends number
@@ -107,6 +109,7 @@ export async function getInner(
     // handle all special cases here
     if (key[0] !== '$') {
       const f = field ? field + '.' + key : key
+
       if (props[key] === true) {
         await getField(client, id, f, result, language, version)
       } else {

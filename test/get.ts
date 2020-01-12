@@ -153,6 +153,14 @@ test.serial('get - $language', async t => {
     }
   )
 
+  console.log(
+    await client.get({
+      $id: 'viflap',
+      $language: 'nl',
+      description: { $default: 'flurpy' }
+    })
+  )
+
   await client.delete('root')
 
   client.destroy()
