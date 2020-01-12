@@ -1,5 +1,5 @@
 import test from 'ava'
-import { connect, SelvaClient } from '../src/index'
+import { connect } from '../src/index'
 import { start } from 'selva-server'
 
 const isEqual = (a: any, b: any): boolean => {
