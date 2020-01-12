@@ -295,6 +295,7 @@ async function setInner(
   }
 
   // SET
+
   if (
     field === 'parents' ||
     field === 'children' ||
@@ -357,6 +358,10 @@ async function setInner(
         }
       }
     } else {
+      if (Array.isArray(value)) {
+        value = JSON.stringify(value)
+        // for layouts, handle in get as well
+      }
       if (fromDefault) {
         return await client.redis.hsetnx(id, field, value)
       } else {

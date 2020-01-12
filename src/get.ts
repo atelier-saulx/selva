@@ -90,7 +90,7 @@ async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
                 const val = await client.redis.hget(id, field)
                 // fieldResult
                 if (fields.length > 2) {
-                  console.log('DEEP GO')
+                  console.log('DEEP GO', fields)
                 } else {
                   fieldResult[fields[1]] = val
                 }
