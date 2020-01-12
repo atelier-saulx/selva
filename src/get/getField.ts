@@ -180,7 +180,7 @@ async function getField(
   language?: Language,
   version?: string
 ) {
-  // think about version...
+  // version still missing!
   const fn = types[field] || string
   await fn(client, id, props, field, result, language)
 }
