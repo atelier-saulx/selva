@@ -65,39 +65,39 @@ test.serial('get - basic', async t => {
   client.destroy()
 })
 
-// test.serial('get - $default', async t => {
-//   const client = connect({ port: 6061 })
+test.serial('get - $default', async t => {
+  const client = connect({ port: 6061 })
 
-//   await client.set({
-//     $id: 'viflap',
-//     title: { en: 'flap' }
-//   })
+  await client.set({
+    $id: 'viflap',
+    title: { en: 'flap' }
+  })
 
-//   t.deepEqual(
-//     await client.get({
-//       $id: 'viflap',
-//       age: { $default: 100 }
-//     }),
-//     { age: 100 }
-//   )
+  t.deepEqual(
+    await client.get({
+      $id: 'viflap',
+      age: { $default: 100 }
+    }),
+    { age: 100 }
+  )
 
-//   t.deepEqual(
-//     await client.get({
-//       $id: 'viflap',
-//       title: {
-//         en: { $default: 'untitled' },
-//         nl: { $default: 'naamloos' }
-//       }
-//     }),
-//     {
-//       title: { en: 'flap', nl: 'naamloos' }
-//     }
-//   )
+  t.deepEqual(
+    await client.get({
+      $id: 'viflap',
+      title: {
+        en: { $default: 'untitled' },
+        nl: { $default: 'naamloos' }
+      }
+    }),
+    {
+      title: { en: 'flap', nl: 'naamloos' }
+    }
+  )
 
-//   await client.delete('root')
+  await client.delete('root')
 
-//   client.destroy()
-// })
+  client.destroy()
+})
 
 test.serial('get - $language', async t => {
   const client = connect({ port: 6061 })

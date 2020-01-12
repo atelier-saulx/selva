@@ -160,7 +160,7 @@ const types = {
   title: text,
   description: text,
   article: text,
-  video: object, // stringified for overlayarray
+  video: object, // stringified for overlayArray
   image: object,
   value: number,
   age: number,
