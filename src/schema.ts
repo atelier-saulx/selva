@@ -97,7 +97,6 @@ export type Type =
 // not the place to define the component type - too much limitation for front end
 export type Component = {
   type: string
-  index: number // bit weird
   props: { [key: string]: any }
 }
 
