@@ -3,6 +3,7 @@ import { SelvaClient } from '..'
 import getField from './getField'
 import { getNestedField, setNestedResult } from './nestedFields'
 import isEmpty from './isEmpty'
+import inherit from './inherit'
 
 type Inherit =
   | boolean
@@ -104,22 +105,7 @@ export async function getInner(
   }
 
   if (props.$inherit) {
-    // bit different (need to map fields)
-    // await getField(client, id, field, result, language, version)
-    if (props.$inherit === true) {
-      // --- fix fix
-    }
-
-    /*
-      $inherit: {
-        $item: ['club'] // cannot combine this with field
-      }
-    */
-
-    // if other fields....
-
-    // hard part here its overarching
-    // it needs to merge deeper as well
+    await inherit()
   }
 
   if (props.$default) {
