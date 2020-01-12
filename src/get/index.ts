@@ -28,6 +28,7 @@ type GetField<T> = {
   $default?: T
 }
 
+// update $language for default + text (algebraic)
 type GetItem<T = Item> = {
   [P in keyof T]?: T[P] extends Item[]
     ? GetItem<T>[] | true
