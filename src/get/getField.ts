@@ -1,22 +1,9 @@
 import { SelvaClient } from '..'
 import { Id, Language, languages, itemTypes, getTypeFromId } from '../schema'
 import { GetResult, getInner, GetOptions, get } from './'
+import setNestedResult from './setNestedResult'
 
 type Props = GetOptions | true
-
-const setNestedResult = (result: GetResult, field: string, value: any) => {
-  const fields = field.split('.')
-  const len = fields.length
-  if (len > 1) {
-    let segment = result
-    for (let i = 0; i < len - 1; i++) {
-      segment = segment[fields[i]] || (segment[fields[i]] = {})
-    }
-    segment[fields[len - 1]] = value
-  } else {
-    result[field] = value
-  }
-}
 
 const number = async (
   client: SelvaClient,
@@ -181,6 +168,8 @@ const types = {
 for (const type of itemTypes) {
   types['layout.' + type] = stringified
 }
+
+// test to see if we are missing things here (read from ts)
 
 async function getField(
   client: SelvaClient,
