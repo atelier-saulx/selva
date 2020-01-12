@@ -83,14 +83,25 @@ async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
             if (!keys) {
               keys = await client.redis.hkeys(id)
             }
-            const fieldResult = {}
+            const fieldResult = result[key] || {}
             for (const field of keys) {
               const fields = field.split('.')
               if (fields[0] === key) {
                 const val = await client.redis.hget(id, field)
-                // fieldResult
                 if (fields.length > 2) {
-                  console.log('DEEP GO', fields)
+                  let segment =
+                    fieldResult[fields[1]] || (fieldResult[fields[1]] = {})
+                  const len = fields.length
+                  for (let i = 2; i < len; i++) {
+                    if (i === len - 1) {
+                      segment[fields[i]] = val
+                    } else {
+                      segment = segment[fields[i]]
+                      if (!segment) {
+                        segment[fields[i]] = segment = {}
+                      }
+                    }
+                  }
                 } else {
                   fieldResult[fields[1]] = val
                 }
