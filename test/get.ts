@@ -178,17 +178,20 @@ test.serial('get - hierarchy', async t => {
     children: true
   })
 
-  const item = await client.get({
-    $id: 'viflapx',
-    descendants: true,
-    children: true
-  })
-
   t.true(
-    isEqual(item, {
-      descendants: ['viflo', 'vifla', 'maflux'],
-      children: ['viflo', 'vifla']
-    })
+    isEqual(
+      await client.get({
+        $id: 'viflapx',
+        descendants: true,
+        children: true,
+        parents: true
+      }),
+      {
+        descendants: ['viflo', 'vifla', 'maflux'],
+        children: ['viflo', 'vifla'],
+        parents: ['root']
+      }
+    )
   )
 
   await client.delete('root')
