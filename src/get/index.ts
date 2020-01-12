@@ -2,6 +2,7 @@ import { Item, Id, Language, Type, Text, Field, languages } from '../schema'
 import { SelvaClient } from '..'
 import getField from './getField'
 import { getNestedField, setNestedResult } from './nestedFields'
+import isEmpty from './isEmpty'
 
 type Inherit =
   | boolean
@@ -81,22 +82,6 @@ type GetResult<T = Item> = {
   [key: string]: any
 }
 
-const isEmpty = (value: any, def: any): boolean => {
-  if (value === null || value === undefined || value === '') {
-    return true
-  } else if (Array.isArray(value) && value.length === 0 && Array.isArray(def)) {
-    return true
-  } else if (typeof value === 'object') {
-    for (const key in value) {
-      if (!isEmpty(value[key], def)) {
-        return false
-      }
-    }
-    return true
-  }
-  return false
-}
-
 export async function getInner(
   client: SelvaClient,
   props: GetItem,
@@ -110,13 +95,31 @@ export async function getInner(
     // handle all special cases here
     if (key[0] !== '$') {
       const f = field ? field + '.' + key : key
-
       if (props[key] === true) {
         await getField(client, id, f, result, language, version)
       } else {
         await getInner(client, props[key], result, id, f, language, version)
       }
     }
+  }
+
+  if (props.$inherit) {
+    // bit different (need to map fields)
+    // await getField(client, id, field, result, language, version)
+    if (props.$inherit === true) {
+      // --- fix fix
+    }
+
+    /*
+      $inherit: {
+        $item: ['club'] // cannot combine this with field
+      }
+    */
+
+    // if other fields....
+
+    // hard part here its overarching
+    // it needs to merge deeper as well
   }
 
   if (props.$default) {
