@@ -142,6 +142,44 @@ const type = async (
   result.type = getTypeFromId(id)
 }
 
+const ancestors = async (
+  client: SelvaClient,
+  id: Id,
+  field: string,
+  result: GetResult,
+  language?: Language
+) => {
+  result.ancestors = ((await client.redis.hget(id, field)) || '').split(',')
+}
+
+const getDescendants = async (
+  client: SelvaClient,
+  id: Id,
+  passedId: Record<Id, true>
+): Promise<Id[]> => {
+  if (!passedId[id]) {
+    const children = await client.redis.smembers(id + '.children')
+    const results = []
+    passedId[id] = true
+    ;(
+      await Promise.all(children.map(c => getDescendants(client, c, passedId)))
+    ).forEach(v => results.push(...v))
+    return results
+  } else {
+    return []
+  }
+}
+
+const descendants = async (
+  client: SelvaClient,
+  id: Id,
+  field: string,
+  result: GetResult,
+  language?: Language
+) => {
+  result.descendants = await getDescendants(client, id, {})
+}
+
 type Reader = (
   client: SelvaClient,
   id: Id,
@@ -175,8 +213,8 @@ const types: Record<string, Reader> = {
   auth: authObject,
   'auth.role': authObject,
   'auth.role.id': set,
-  // ancestors: async () => {},
-  // descendants: async () => {},
+  ancestors,
+  descendants,
   layout: object,
   'layout.default': stringified
 }
