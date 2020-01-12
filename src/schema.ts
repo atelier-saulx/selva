@@ -169,11 +169,12 @@ export type BaseItem = {
   type?: Type
   url?: string[]
   externalUrl?: string
-  owner?: Id // from the user db
+  user?: Id // from the user db
   date?: Timestamp
   start?: Timestamp
   end?: Timestamp
   published?: boolean
+  // frozen?: boolean // maybe - just means you dont see it in the cms
   status?: number
   video?: {
     hls?: Url
@@ -201,10 +202,13 @@ export type BaseItem = {
     lastName?: string
     email?: string
     phone?: number
+    address?: string
   }
   value?: number
   age?: number // only for person and wine and whiskey
   price?: number
+  discount?: number
+  tax?: number
   location?: Location
   theme?: Theme
   ads?: Ads
@@ -218,7 +222,6 @@ export type Ad = {
   type: 'ad'
 } & Pick<
   BaseItem,
-  | 'price'
   | 'value'
   | 'image'
   | 'video'
@@ -226,7 +229,8 @@ export type Ad = {
   | 'access'
   | 'title'
   | 'externalUrl'
-  | 'owner'
+  | 'user'
+  | 'contact'
 > & {
     // url is a bit different
     adType?: 'dfp' | 'custom'
@@ -236,7 +240,7 @@ export type Ad = {
 
 export type Person = {
   type: 'person'
-} & Omit<BaseItem, 'id' | 'name' | 'status' | 'location' | 'owner'> & {
+} & Omit<BaseItem, 'id' | 'name' | 'status' | 'location'> & {
     age?: number
   }
 

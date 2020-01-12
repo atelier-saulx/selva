@@ -10,7 +10,8 @@ const number = async (
   id: Id,
   props: Props,
   field: string,
-  result?: GetResult
+  result?: GetResult,
+  language?: Language
 ): Promise<void> => {
   setNestedResult(result, field, 1 * (await client.redis.hget(id, field)))
 }
@@ -20,7 +21,8 @@ const string = async (
   id: Id,
   props: Props,
   field: string,
-  result?: GetResult
+  result?: GetResult,
+  language?: Language
 ): Promise<void> => {
   setNestedResult(result, field, (await client.redis.hget(id, field)) || '')
 }
@@ -30,7 +32,8 @@ const set = async (
   id: Id,
   props: Props,
   field: string,
-  result?: GetResult
+  result?: GetResult,
+  language?: Language
 ): Promise<void> => {
   setNestedResult(result, field, await client.redis.smembers(id + '.' + field))
 }
@@ -40,7 +43,8 @@ const stringified = async (
   id: Id,
   props: Props,
   field: string,
-  result: GetResult
+  result: GetResult,
+  language?: Language
 ): Promise<void> => {
   const value = await client.redis.hget(id, field)
   setNestedResult(result, field, JSON.parse(value))
@@ -112,7 +116,8 @@ const authObject = async (
   id: Id,
   props: Props,
   field: string,
-  result: GetResult
+  result: GetResult,
+  language?: Language
 ): Promise<void> => {
   await object(client, id, props, field, result)
   if (props === true) {
@@ -125,7 +130,8 @@ const id = async (
   id: Id,
   props: Props,
   field: string,
-  result: GetResult
+  result: GetResult,
+  language?: Language
 ) => {
   result.id = id
 }
@@ -135,13 +141,23 @@ const type = async (
   id: Id,
   props: Props,
   field: string,
-  result: GetResult
+  result: GetResult,
+  language?: Language
 ) => {
   // also never have to store this!
   result.type = getTypeFromId(id)
 }
 
-const types = {
+type Reader = (
+  client: SelvaClient,
+  id: Id,
+  props: Props,
+  field: string,
+  result: GetResult,
+  language?: Language
+) => Promise<void>
+
+const types: Record<string, Reader> = {
   id: id,
   type: type,
   title: text,
@@ -149,18 +165,23 @@ const types = {
   article: text,
   video: object, // stringified for overlayArray
   image: object,
+  contact: object,
+  'contact.phone': number,
   value: number,
   age: number,
   date: number,
   start: number,
+  price: number,
+  discount: number,
+  tax: number,
   end: number,
   children: set,
   parents: set,
   auth: authObject,
   'auth.role': authObject,
   'auth.role.id': set,
-  ancestors: async () => {},
-  descendants: async () => {},
+  // ancestors: async () => {},
+  // descendants: async () => {},
   layout: object,
   'layout.default': stringified
 }
@@ -170,7 +191,6 @@ for (const type of itemTypes) {
 }
 
 // test to see if we are missing things here (read from ts)
-
 async function getField(
   client: SelvaClient,
   id: Id,
