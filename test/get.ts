@@ -201,6 +201,18 @@ test.serial('get - hierarchy', async t => {
     )
   )
 
+  t.true(
+    isEqual(
+      await client.get({
+        $id: 'maflux',
+        ancestors: true
+      }),
+      {
+        ancestors: ['root', 'vifla', 'viflapx']
+      }
+    )
+  )
+
   await client.delete('root')
 
   client.destroy()
