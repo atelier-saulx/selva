@@ -93,6 +93,7 @@ export type Type =
   | 'custom'
   | 'article'
   | 'product'
+  | 'animal'
 
 // not the place to define the component type - too much limitation for front end
 export type Component = {
@@ -130,7 +131,9 @@ export const itemTypes = [
   'ad',
   'root',
   'custom',
-  'article'
+  'article',
+  'product',
+  'animal'
 ]
 
 export const typePrefix = {}
@@ -164,6 +167,8 @@ export type BaseItem = {
   id?: string
   type?: Type
   url?: string[]
+  externalUrl?: string
+  owner?: Id // from the user db
   date?: Timestamp
   start?: Timestamp
   end?: Timestamp
@@ -179,6 +184,7 @@ export type BaseItem = {
     poster?: Url
     cover?: Url
     icon?: Url
+    banner?: Url
   }
   title?: Text
   description?: Text
@@ -196,7 +202,7 @@ export type BaseItem = {
     phone?: number
   }
   value?: number
-  age?: number
+  age?: number // only for person and wine and whiskey
   price?: number
   location?: Location
   theme?: Theme
@@ -206,6 +212,34 @@ export type BaseItem = {
   social?: Social
   layout?: Layout
 }
+
+export type Ad = {
+  type: 'ad'
+} & Pick<
+  BaseItem,
+  | 'price'
+  | 'value'
+  | 'image'
+  | 'video'
+  | 'price'
+  | 'name'
+  | 'access'
+  | 'title'
+  | 'externalUrl'
+  | 'owner'
+> & {
+    // url is a bit different
+    adType?: 'dfp' | 'custom'
+    sizes?: { width: number; height: number }[]
+  }
+
+export type Person = {
+  type: 'person'
+} & Omit<BaseItem, 'id' | 'name' | 'status' | 'location' | 'owner'> & {
+    age?: number
+  }
+
+// Omit
 
 // make this super nice
 // export type AllowField = 'value' | 'name' | 'contact.firstName' | 'contact'
