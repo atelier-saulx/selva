@@ -242,7 +242,6 @@ test.serial('get - $inherit', async t => {
   })
 
   // $inherit: { $item }
-
   console.log(item)
 
   t.true(
