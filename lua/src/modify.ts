@@ -36,6 +36,12 @@ export default function modify(): string[] {
     PING: pong,
     hash: hashObj
   })
+  totalLength++
+
+  for (let key in hashObj) {
+    resultAry[totalLength] = hashObj[key]
+    totalLength++
+  }
 
   return resultAry
 }
