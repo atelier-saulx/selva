@@ -155,12 +155,14 @@ const ancestors = async (
 const getDescendants = async (
   client: SelvaClient,
   id: Id,
-  results: Set<Id>,
+  results: Record<Id, true>,
   passedId: Record<Id, true>
-): Promise<Set<Id>> => {
+): Promise<Record<Id, true>> => {
   if (!passedId[id]) {
     const children = await client.redis.smembers(id + '.children')
-    children.forEach(id => results.add(id))
+    for (const id of children) {
+      results[id] = true
+    }
     passedId[id] = true
     await Promise.all(
       children.map(c => getDescendants(client, c, results, passedId))
@@ -176,9 +178,12 @@ const descendants = async (
   result: GetResult,
   language?: Language
 ) => {
-  result.descendants = Array.from(
-    await getDescendants(client, id, new Set(), {})
-  )
+  const s = await getDescendants(client, id, {}, {})
+  const r = []
+  for (let key in s) {
+    result.push(key)
+  }
+  result.descendants = r
 }
 
 type Reader = (
