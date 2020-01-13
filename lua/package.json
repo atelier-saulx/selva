@@ -1,0 +1,11 @@
+{
+  "name": "lua",
+  "version": "1.0.0",
+  "description": "TS to Lua scripts for redis",
+  "scripts": {
+    "build": "scripts=$(ls ./scripts/*.ts); for script in $scripts; do tstl --luaBundleEntry $script --luaBundle ./dist/${script%.ts}.lua $script; node postprocessLua.js ./dist/${script%.ts}.lua; done"
+  },
+  "devDependencies": {
+    "typescript-to-lua": "^0.30.1"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext"],
+    "strict": true,
+    "outDir": "./dist"
+  },
+  "tstl": {
+    "luaTarget": "5.1", // redis uses 5.1
+    "luaLibImport": "inline"
+  }
+}
