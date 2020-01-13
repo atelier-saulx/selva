@@ -3,6 +3,10 @@ export function hexists(key: string, field: string): boolean {
   return result === 1
 }
 
+export function hgetall(key: string): string[] {
+  return redis.call('hgetall', key)
+}
+
 export function hmget(key: string, field: string, ...fields: string[]): any[] {
   return redis.call('hmget', key, field, ...fields)
 }

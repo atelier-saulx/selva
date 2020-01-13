@@ -5,6 +5,10 @@ export default function modify(): string[] {
   redis.hset('my_testkey', 'my_dingdong', 'dk_donkeykong')
   redis.hset('my_testkey', 'my_dongding', 'dk_diddykong')
 
+  // play with arrays, building a more complex array response
+  // noticed that concat includes the shim so not using it
+  // also [...hashKeys, pong, ...hashValues] has a bug,
+  // some values are missing
   const resultAry = []
   const hashKeys = redis.hkeys('my_testkey')
   for (let i = 0; i < hashKeys.length; i++) {
@@ -19,6 +23,19 @@ export default function modify(): string[] {
   for (let i = 0; i < hashValues.length; i++) {
     resultAry[totalLength + i] = hashValues[i]
   }
+  totalLength += hashValues.length
+
+  // build a nice object
+  const hashObj: Record<string, string> = {}
+  const allFields = redis.hgetall('my_testkey')
+  for (let i = 0; i < allFields.length; i += 2) {
+    hashObj[allFields[i]] = allFields[i + 1]
+  }
+
+  resultAry[totalLength] = cjson.encode({
+    PING: pong,
+    hash: hashObj
+  })
 
   return resultAry
 }
