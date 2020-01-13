@@ -54,6 +54,11 @@ export type Social = {
 
 // any type as key?
 
+export const languages = ['en', 'de', 'fr', 'nl', 'es', 'it', 'fi']
+
+// order deterines fallback order
+export type Language = 'en' | 'de' | 'fr' | 'nl' | 'es' | 'it' | 'fi'
+
 // would be nice to generate this form a list of lang keys <-- so sad :(
 export type Text = {
   en?: string
@@ -64,11 +69,6 @@ export type Text = {
   it?: string
   fi?: string
 }
-
-export const languages = ['en', 'de', 'fr', 'nl', 'es', 'it', 'fi']
-
-// order deterines fallback order
-export type Language = 'en' | 'de' | 'fr' | 'nl' | 'es' | 'it' | 'fi'
 
 export type Type =
   | 'person'
@@ -163,6 +163,10 @@ const createPrefix = (type: Type, index: number): string => {
 }
 
 itemTypes.forEach((type: Type) => createPrefix(type, 0))
+
+/*  
+  // json ld it
+*/
 
 export type BaseItem = {
   id?: string
