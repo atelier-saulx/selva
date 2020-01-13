@@ -137,10 +137,10 @@ export const itemTypes = [
   'animal'
 ]
 
-export const typePrefix = {}
+export const typePrefix: Record<string, Type> = {}
 export const inverseTypePrefix = {}
 
-export const getTypeFromId = id => {
+export const getTypeFromId = (id: Id) => {
   if (id === 'root') {
     return 'root'
   } else {
