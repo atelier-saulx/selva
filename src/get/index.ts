@@ -5,7 +5,7 @@ import { getNestedField, setNestedResult } from './nestedFields'
 import isEmpty from './isEmpty'
 import inherit from './inherit'
 
-type Inherit =
+export type Inherit =
   | boolean
   | {
       type?: Type | Type[]
@@ -31,7 +31,7 @@ type GetField<T> = {
 }
 
 // update $language for default + text (algebraic)
-type GetItem<T = Item> = {
+export type GetItem<T = Item> = {
   [P in keyof T]?: T[P] extends Item[]
     ? GetItem<T>[] | true
     : T[P] extends Text
@@ -105,13 +105,13 @@ export async function getInner(
   }
 
   if (props.$inherit) {
-    await inherit()
+    await inherit(client, id, field || '', props.$inherit, props, result)
   }
 
   if (props.$default) {
     await getField(client, id, field, result, language, version)
     const value = getNestedField(result, field)
-    if (isEmpty(value, props.$default)) {
+    if (isEmpty(value)) {
       setNestedResult(result, field, props.$default)
     }
   }

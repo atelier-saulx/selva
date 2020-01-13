@@ -1,11 +1,13 @@
-const isEmpty = (value: any, def: any): boolean => {
+// for components needs to be ok
+const isEmpty = (value: any): boolean => {
+  // better to use types for this and generate it...
   if (value === null || value === undefined || value === '') {
     return true
-  } else if (Array.isArray(value) && value.length === 0 && Array.isArray(def)) {
+  } else if (Array.isArray(value) && value.length === 0) {
     return true
   } else if (typeof value === 'object') {
     for (const key in value) {
-      if (!isEmpty(value[key], def)) {
+      if (!isEmpty(value[key])) {
         return false
       }
     }

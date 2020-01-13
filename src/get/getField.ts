@@ -181,7 +181,7 @@ const descendants = async (
   const s = await getDescendants(client, id, {}, {})
   const r = []
   for (let key in s) {
-    result.push(key)
+    r.push(key)
   }
   result.descendants = r
 }
