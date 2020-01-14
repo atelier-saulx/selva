@@ -46,7 +46,7 @@ const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
     const depth = s[id][1]
     let l = 0,
       r = result.length - 1,
-      m
+      m: number
     while (l <= r) {
       m = ((l + r) / 2) | 0
       const loopDepth = s[result[m]][1]
