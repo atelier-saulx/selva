@@ -31,6 +31,11 @@ const { data: myItem } = await db.get({
 
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
+  theme: { $inherit: { type: ['sport', 'genre', 'region', '*'] } } // if none of the types can be found defaults to normal sorting
+})
+
+const { data: myItem } = await db.get({
+  $id: 'mydingdong',
   theme: { $inherit: { id: ['mydingdongParent'] } } // prefers first in the list, if it cannot be found uses the next
 })
 

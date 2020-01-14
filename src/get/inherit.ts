@@ -47,6 +47,7 @@ const createAncestorsInner = async (
   return ancestor
 }
 
+// sort with type - also remove rest if ! '*'
 const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
   const s = {}
   await createAncestorsInner(client, id, s)
