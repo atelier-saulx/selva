@@ -317,16 +317,13 @@ test.serial('get - $inherit', async t => {
       await client.get({
         $id: 'cuC',
         flapdrol: {
-          $inherit: { $item: ['region', 'federation', '*'] },
+          $inherit: { $item: ['region', 'federation'] },
           image: true,
           id: true
         }
       }),
       {
-        flapdrol: {
-          image: { thumb: 'flurp.jpg' },
-          id: 'clClub'
-        }
+        flapdrol: {}
       }
     )
   )
