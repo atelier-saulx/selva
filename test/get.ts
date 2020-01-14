@@ -227,6 +227,9 @@ test.serial('get - $inherit', async t => {
   await Promise.all([
     client.set({
       $id: 'cuA',
+      image: {
+        thumb: 'flurp.jpg'
+      },
       title: { en: 'snurf' },
       children: ['cuB', 'cuC']
     }),
@@ -285,6 +288,25 @@ test.serial('get - $inherit', async t => {
         club: {
           image: { thumb: 'bla.jpg' },
           id: 'clClub'
+        }
+      }
+    )
+  )
+
+  t.true(
+    isEqual(
+      await client.get({
+        $id: 'cuC',
+        flapdrol: {
+          $inherit: { $item: ['custom', 'club'] },
+          image: true,
+          id: true
+        }
+      }),
+      {
+        flapdrol: {
+          image: { thumb: 'flurp.jpg' },
+          id: 'cuA'
         }
       }
     )
