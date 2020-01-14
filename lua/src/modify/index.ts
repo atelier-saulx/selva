@@ -2,34 +2,66 @@ import * as redis from '../redis'
 import { Id } from '~selva/schema'
 import { SetOptions } from '~selva/setTypes'
 import getTypeFromId from '../getTypeFromId'
-import { ensureArray } from '../util'
-import resetSet from './resetSet'
+import { isArray, ensureArray } from '../util'
+import {
+  resetSet,
+  resetParents,
+  resetChildren,
+  addToSet,
+  removeFromSet
+} from './setOperations'
 
 // TODO: maintain parent/child relationships refactor
-function setInternalArrayStructure(id: string, field: string, value: any) {
-  if (type(value) === 'table' && value[0]) {
-    resetSet(id, field, value)
+function setInternalArrayStructure(
+  id: string,
+  field: string,
+  value: any
+): void {
+  const hierarchy = value.$hierarchy === false ? false : true
+
+  if (isArray(value)) {
+    resetSet(id, field, value, hierarchy)
+    return
+  }
+
+  if (value.$value) {
+    resetSet(id, field, value, hierarchy)
+    return
+  }
+
+  if (value.$add) {
+    value.$add = ensureArray(value.$add)
+    addToSet(id, field, value.$add, hierarchy)
+  }
+  if (value.$delete) {
+    value.$delete = ensureArray(value.$delete)
+    removeFromSet(id, field, value.$add, hierarchy)
+  }
+}
+
+function setObject(id: string, field: string, item: any) {
+  if (item.$value !== null) {
+    setField(id, field, item, false)
+  } else if (item.$default) {
+    if (item.$increment) {
+      const result = redis.hsetnx(id, field, item)
+      if (result === 0) {
+        redis.hincrby(id, field, item.$increment)
+      }
+      return
+    }
+
+    setField(id, field, item.$default, true)
+  } else if (item.$increment) {
+    redis.hincrby(id, field, item.$increment)
   } else {
-    const hierarchy = value.$hierarchy === false ? false : true
-    if (value.$value) {
-      resetSet(id, field, value)
-    }
-    if (value.$add) {
-      value.$add = ensureArray(value.$add)
-      // TODO:
-      // addToSet(field, hierarchy, id, value.$add)
-    }
-    if (value.$delete) {
-      value.$delete = ensureArray(value.$delete)
-      // TODO:
-      // removeFromSet(field, hierarchy, id, value.$delete)
-    }
+    setField(id, field, item, false)
   }
 }
 
 function setField(
   id: string,
-  field: string,
+  field: string | null,
   value: any,
   fromDefault: boolean
 ): void {
@@ -38,10 +70,47 @@ function setField(
     // TODO: removeFields
   }
 
-  if (field === 'parents') {
-  } else if (field === 'children') {
-  } else if (field === 'externalId' || field === 'auth.role.id') {
-    // TODO: this
+  if (
+    field === 'parents' ||
+    field === 'children' ||
+    field === 'externalId' ||
+    field === 'auth.role.id'
+  ) {
+    setInternalArrayStructure(id, field, value)
+    return
+  }
+
+  if (isArray(value)) {
+    value = cjson.encode(value)
+  }
+
+  if (type(value) === 'table') {
+    for (let key in value) {
+      if (key[0] === '$') {
+        return
+      }
+
+      const item = value[key]
+      const nestedField = field ? field + '.' + key : key
+      if (type(item) === 'table') {
+        setObject(id, nestedField, item)
+      } else {
+        setField(id, field, item, false)
+      }
+    }
+
+    return
+  }
+
+  // should never happen but needed to make TS happy
+  if (!field) {
+    return
+  }
+
+  if (fromDefault) {
+    redis.hsetnx(id, field, value)
+  } else {
+    redis.hset(id, field, value)
   }
 }
 
@@ -59,6 +128,6 @@ export default function modify(payload: SetOptions & { $id: string }): Id {
     }
   }
 
-  // TODO: await setInner
+  setField(payload.$id, null, payload, false)
   return payload.$id
 }
