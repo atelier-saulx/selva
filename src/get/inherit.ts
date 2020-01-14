@@ -4,53 +4,65 @@ import { Inherit, GetResult, GetOptions, GetItem, getInner } from './'
 import { getNestedField, setNestedResult } from './nestedFields'
 import isEmpty from './isEmpty'
 
-type Ancestor = {
-  id: Id
-  parents: Ancestor[]
-  depth?: number
-}
+type Ancestor = [Ancestor[], number]
+// memoize this in lua
+// const ancestorMap = {} etc
 
-const countDepth = (ancestor: Ancestor): number => {
-  let d = 0
-  if (ancestor.depth !== void 0) {
-    return ancestor.depth
-  }
-  if (ancestor.parents.length === 0) {
-    d = 0
-  } else {
-    d = 1
-    let pd = 0
-    for (let a of ancestor.parents) {
-      let x = countDepth(a)
-      if (x > pd) {
-        pd = x
-      }
-      d += pd
-    }
-  }
-  ancestor.depth = d
-  return d
-}
-
-const createAncestors = async (
+const createAncestorsInner = async (
   client: SelvaClient,
-  id: Id
+  id: Id,
+  s: Record<Id, Ancestor>
 ): Promise<Ancestor> => {
+  if (s[id]) {
+    return s[id]
+  }
   const parents = await client.redis.smembers(id + '.parents')
-  const ancestor: Ancestor = { id, parents: [], depth: 0 }
+  const ancestor: Ancestor = [[], 0]
   if (parents.length) {
-    ancestor.depth = 1
+    ancestor[1] = 1
     let pd = 0
     for (let pId of parents) {
-      const a = await createAncestors(client, pId)
-      if (a.depth > pd) {
-        pd = a.depth
+      const a = await createAncestorsInner(client, pId, s)
+      if (a[1] > pd) {
+        pd = a[1]
+        a[0].unshift(a)
+      } else {
+        a[0].push(a)
       }
-      ancestor.parents.push(a)
     }
-    ancestor.depth = pd
+    ancestor[1] += pd
   }
+  s[id] = ancestor
   return ancestor
+}
+
+const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
+  const s = {}
+  await createAncestorsInner(client, id, s)
+  const result = []
+  let largest = 0
+  // order depends on inherit type
+  for (let id in s) {
+    const depth = s[id][1]
+    var l = 0,
+      r = result.length - 1,
+      m
+    while (l <= r) {
+      m = ((l + r) / 2) | 0
+      const loopDepth = s[result[m]][1]
+      // or if type is more prefered
+      if (loopDepth < depth) {
+        r = m - 1
+        continue
+      }
+      l = m + 1
+      if (loopDepth === depth) {
+        break
+      }
+    }
+    result.splice(l, 0, id)
+  }
+  return result
 }
 
 const inherit = async (
@@ -62,11 +74,10 @@ const inherit = async (
   result: GetResult,
   language?: Language
 ) => {
-  console.log('snurkels', inherit, props)
   const value = getNestedField(result, field)
   if (inherit === true && isEmpty(value)) {
     const a = await createAncestors(client, id)
-    console.log('ANCESTORS', JSON.stringify(a, void 0, 2))
+    console.log('ANCESTORS', a)
   }
 }
 
