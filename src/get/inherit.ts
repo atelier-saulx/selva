@@ -42,6 +42,8 @@ const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
   const result = []
   let largest = 0
   // order depends on inherit type
+
+  // binary insert
   for (let id in s) {
     const depth = s[id][1]
     let l = 0,
@@ -77,7 +79,10 @@ const inherit = async (
   const value = getNestedField(result, field)
   if (inherit === true && isEmpty(value)) {
     const a = await createAncestors(client, id)
-    console.log('ANCESTORS', a)
+    console.log('ANCESTORS', a, id)
+    for (let i = 1, len = a.length; i < len; i++) {
+      console.log('try in this order!', a[i])
+    }
   }
 }
 
