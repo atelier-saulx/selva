@@ -29,8 +29,6 @@ const { data: myItem } = await db.get({
   theme: { $inherit: { type: ['sport', 'genre', 'region'] } } // prefers first in the list, if it cannot be found uses the next
 })
 
-
-
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
   theme: { $inherit: { id: ['mydingdongParent'] } } // prefers first in the list, if it cannot be found uses the next

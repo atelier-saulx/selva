@@ -47,19 +47,51 @@ const createAncestorsInner = async (
   return ancestor
 }
 
-// sort with type - also remove rest if ! '*'
 const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
   const s = {}
   await createAncestorsInner(client, id, s)
   const result = []
   let largest = 0
-  // order depends on inherit type
   // binary insert
   for (let id in s) {
     const depth = s[id][1]
     let l = 0,
       r = result.length - 1,
-      m: number
+      m = 0
+    while (l <= r) {
+      m = ((l + r) / 2) | 0
+      const loopDepth = s[result[m]][1]
+      if (loopDepth < depth) {
+        r = m - 1
+        continue
+      }
+      l = m + 1
+      if (loopDepth === depth) {
+        break
+      }
+    }
+    result.splice(l, 0, id)
+  }
+  return result
+}
+
+const createAncestorsTypes = async (
+  client: SelvaClient,
+  id: Id,
+  types: Type[]
+): Promise<Id[]> => {
+  const s = {}
+  await createAncestorsInner(client, id, s)
+  const result = []
+  let largest = 0
+  // binary insert
+
+  // getTypeFromId(a[i])
+  for (let id in s) {
+    const depth = s[id][1]
+    let l = 0,
+      r = result.length - 1,
+      m = 0
     while (l <= r) {
       m = ((l + r) / 2) | 0
       const loopDepth = s[result[m]][1]
@@ -78,6 +110,23 @@ const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
   return result
 }
 
+const setFromAncestors = async (
+  client: SelvaClient,
+  ancestors: Id[],
+  field: string,
+  result: GetResult,
+  language?: Language,
+  version?: string
+) => {
+  for (let i = 1, len = ancestors.length; i < len; i++) {
+    await getField(client, ancestors[i], field, result, language, version)
+    const value = getNestedField(result, field)
+    if (!isEmpty(value)) {
+      break
+    }
+  }
+}
+
 const inherit = async (
   client: SelvaClient,
   id: Id,
@@ -92,45 +141,55 @@ const inherit = async (
     const value = getNestedField(result, field)
     if (inherit === true) {
       if (isEmpty(value)) {
-        const a = await createAncestors(client, id)
-        for (let i = 1, len = a.length; i < len; i++) {
-          await getField(client, a[i], field, result, language, version)
-          const value = getNestedField(result, field)
-          if (!isEmpty(value)) {
-            break
-          }
-        }
+        await setFromAncestors(
+          client,
+          await createAncestors(client, id),
+          field,
+          result,
+          language,
+          version
+        )
       }
     } else if (inherit.type || inherit.id || inherit.name) {
-      // name is important here, id bit less
-      if (inherit.id || inherit.name) {
-        console.log('NOT IMPLEMENTED YET')
-      } else {
-        console.log('-----')
+      if (isEmpty(value)) {
+        // name is important here, id bit less
+        if (inherit.id || inherit.name) {
+          console.log('inherit.id and inherit.name NOT IMPLEMENTED YET')
+        } else {
+          if (!Array.isArray(inherit.type)) {
+            inherit.type = [inherit.type]
+          }
+          await setFromAncestors(
+            client,
+            await createAncestorsTypes(client, id, inherit.type),
+            field,
+            result,
+            language,
+            version
+          )
+        }
       }
     } else if (inherit.$item) {
       // needs to order and select (same as type order)
       if (!Array.isArray(inherit.$item)) {
         inherit.$item = [inherit.$item]
       }
-      const a = await createAncestors(client, id)
+      const a = await createAncestorsTypes(client, id, inherit.$item)
       for (let i = 1, len = a.length; i < len; i++) {
-        if (inherit.$item.indexOf(getTypeFromId(a[i])) !== -1) {
-          const intermediateResult = {}
-          await getInner(
-            client,
-            props,
-            intermediateResult,
-            a[i],
-            '',
-            language,
-            version,
-            true
-          )
-          if (!isEmpty(intermediateResult)) {
-            setNestedResult(result, field, intermediateResult)
-            break
-          }
+        const intermediateResult = {}
+        await getInner(
+          client,
+          props,
+          intermediateResult,
+          a[i],
+          '',
+          language,
+          version,
+          true
+        )
+        if (!isEmpty(intermediateResult)) {
+          setNestedResult(result, field, intermediateResult)
+          break
         }
       }
     }
