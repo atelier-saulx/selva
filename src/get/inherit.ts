@@ -13,6 +13,7 @@ const createAncestorsInner = async (
   id: Id,
   s: Record<Id, Ancestor>
 ): Promise<Ancestor> => {
+  // if memoized[id] -> get it
   if (s[id]) {
     return s[id]
   }
@@ -42,7 +43,6 @@ const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
   const result = []
   let largest = 0
   // order depends on inherit type
-
   // binary insert
   for (let id in s) {
     const depth = s[id][1]
