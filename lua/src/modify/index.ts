@@ -7,7 +7,7 @@ import resetSet from './resetSet'
 
 // TODO: maintain parent/child relationships refactor
 function setInternalArrayStructure(id: string, field: string, value: any) {
-  if (Array.isArray(value)) {
+  if (type(value) === 'table' && value[0]) {
     resetSet(id, field, value)
   } else {
     const hierarchy = value.$hierarchy === false ? false : true
