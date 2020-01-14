@@ -77,7 +77,8 @@ const createAncestorsTypes = async (
 ): Promise<Id[]> => {
   const s = {}
 
-  // include type? for memoize
+  // memoize types and indexes
+  // dont .includes
   await createAncestorsInner(client, targetId, s)
   const result = []
   // binary insert
