@@ -101,9 +101,14 @@ const inherit = async (
         }
       }
     } else if (inherit.type || inherit.id || inherit.name) {
-      //
+      // name is important here, id bit less
+      if (inherit.id || inherit.name) {
+        console.log('NOT IMPLEMENTED YET')
+      } else {
+        console.log('-----')
+      }
     } else if (inherit.$item) {
-      // needs to order and select
+      // needs to order and select (same as type order)
       if (!Array.isArray(inherit.$item)) {
         inherit.$item = [inherit.$item]
       }
