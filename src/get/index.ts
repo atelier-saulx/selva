@@ -46,7 +46,9 @@ export type GetItem<T = Item> = {
     ? T[P] | GetField<T[P]>
     : (T[P] & GetField<T[P]>) | true
 } &
-  GetField<T>
+  GetField<T> & {
+    [key: string]: any
+  }
 
 // but explodes :D missing true somwhere
 

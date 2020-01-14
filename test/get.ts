@@ -233,6 +233,13 @@ test.serial('get - $inherit', async t => {
     client.set({
       $id: 'cuB',
       children: ['cuC', 'cuD']
+    }),
+    client.set({
+      $id: 'clClub',
+      image: {
+        thumb: 'bla.jpg'
+      },
+      children: ['cuB']
     })
   ])
 
@@ -253,12 +260,32 @@ test.serial('get - $inherit', async t => {
   t.true(
     isEqual(
       await client.get({
-        $id: 'cuD',
+        $id: 'cuC',
         $language: 'nl',
         title: { $inherit: true }
       }),
       {
         title: 'snurf'
+      }
+    )
+  )
+
+  // pluging on ava would be nice
+  t.true(
+    isEqual(
+      await client.get({
+        $id: 'cuC',
+        club: {
+          $inherit: { $item: 'club' },
+          image: true,
+          id: true
+        }
+      }),
+      {
+        club: {
+          image: { thumb: 'bla.jpg' },
+          id: 'clClub'
+        }
       }
     )
   )
