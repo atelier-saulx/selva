@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "selva/*": ["../src/*"]
+    },
     "target": "esnext",
     "lib": ["esnext"],
     "strict": true,
