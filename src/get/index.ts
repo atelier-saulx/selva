@@ -46,7 +46,9 @@ export type GetItem<T = Item> = {
     ? T[P] | GetField<T[P]>
     : (T[P] & GetField<T[P]>) | true
 } &
-  GetField<T>
+  GetField<T> & {
+    [key: string]: any
+  }
 
 // but explodes :D missing true somwhere
 
@@ -90,7 +92,8 @@ export async function getInner(
   id: Id,
   field?: string,
   language?: Language,
-  version?: string
+  version?: string,
+  noInherit?: true
 ): Promise<void> {
   for (let key in props) {
     // handle all special cases here
@@ -104,16 +107,9 @@ export async function getInner(
     }
   }
 
-  if (props.$inherit) {
-    await inherit(
-      client,
-      id,
-      field || '',
-      props.$inherit,
-      props,
-      result,
-      language
-    )
+  if (!noInherit && props.$inherit) {
+    // bit ugly but needs to be like this... (cant infer if you pass inherit here)
+    await inherit(client, id, field || '', props, result, language, version)
   }
 
   if (props.$default) {

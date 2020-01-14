@@ -195,6 +195,7 @@ export type BaseItem = {
     banner?: Url
   }
   title?: Text
+  caption?: Text
   description?: Text
   article?: Text
   access?: {
