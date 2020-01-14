@@ -44,7 +44,7 @@ const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
   // order depends on inherit type
   for (let id in s) {
     const depth = s[id][1]
-    var l = 0,
+    let l = 0,
       r = result.length - 1,
       m
     while (l <= r) {
