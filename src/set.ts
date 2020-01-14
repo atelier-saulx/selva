@@ -373,7 +373,6 @@ async function setInner(
 
 // ---------------------------------------------------------------
 async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
-  let exists = false
   const redis = client.redis
   if (!payload.$id) {
     if (!payload.type) {
@@ -392,9 +391,10 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
     } else {
       payload.$id = client.id({ type })
     }
-  } else {
-    exists = await redis.hexists(payload.$id, 'type')
   }
+
+  let exists = (await redis.hexists(payload.$id, 'type')) || false
+
   if (!exists) {
     if (payload.$id && !payload.type) {
       payload.type = getTypeFromId(payload.$id)
@@ -402,10 +402,9 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
     if (!payload.parents && payload.$id !== 'root') {
       payload.parents = { $add: 'root' }
     }
-    await setInner(client, payload.$id, payload, false)
-  } else {
-    await setInner(client, payload.$id, payload, false)
   }
+
+  await setInner(client, payload.$id, payload, false)
   return payload.$id
 }
 
