@@ -167,8 +167,8 @@ const inherit = async (
       }
     } else if (inherit.type || inherit.name) {
       if (isEmpty(value)) {
-        // name is important here, id bit less
         if (inherit.name) {
+          // is name important
           console.log('inherit.name NOT IMPLEMENTED YET')
         } else {
           if (!Array.isArray(inherit.type)) {
