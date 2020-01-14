@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
+    "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "selva/*": ["../src/*"]
+      "~selva/*": ["src/*"]
     },
     "target": "esnext",
     "lib": ["esnext"],
+    "skipLibCheck": true,
+    "noImplicitAny": false,
     "strict": true,
     "outDir": "./dist"
-  },
-  "tstl": {
-    "luaTarget": "5.1", // redis uses 5.1
-    "luaLibImport": "inline"
   }
 }

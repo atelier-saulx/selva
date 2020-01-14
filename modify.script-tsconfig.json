@@ -1,0 +1,16 @@
+{
+  "extends": "./lua-tsconfig.json",
+  "files": ["./luaScripts/modify.ts"],
+  "include": [
+    "./lua/src/modify/*.ts",
+    "./lua/types/*.d.ts",
+    "./src/schema.ts",
+    "./src/setTypes.ts"
+  ],
+  "tstl": {
+    "luaTarget": "5.1",
+    "luaLibImport": "require",
+    "luaBundle": "./dist/lua/modify.lua",
+    "luaBundleEntry": "./luaScripts/modify.ts"
+  }
+}

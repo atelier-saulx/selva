@@ -1,0 +1,9 @@
+#!/bin/bash
+script=$1
+
+tstl -p $script
+# move scripts that suffer from weird bundle path bug
+mv ./dist/lua/dist/scripts/* ./dist/lua
+mv ./dist/dist/lua/* ./dist/lua
+
+node lua/postprocessLua.js ./dist/lua/${script%.script-tsconfig.json}.lua

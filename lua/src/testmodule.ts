@@ -1,6 +1,6 @@
 import * as redis from './redis'
 
-export default function modify(): string[] {
+export function modify(): string[] {
   const pong = redis.ping()
   redis.hset('my_testkey', 'my_dingdong', 'dk_donkeykong')
   redis.hset('my_testkey', 'my_dongding', 'dk_diddykong')
@@ -9,7 +9,7 @@ export default function modify(): string[] {
   // noticed that concat includes the shim so not using it
   // also [...hashKeys, pong, ...hashValues] has a bug,
   // some values are missing
-  const resultAry = []
+  const resultAry: any[] = []
   const hashKeys = redis.hkeys('my_testkey')
   for (let i = 0; i < hashKeys.length; i++) {
     resultAry[i] = hashKeys[i]

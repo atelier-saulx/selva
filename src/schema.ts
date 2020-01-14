@@ -162,7 +162,9 @@ const createPrefix = (type: Type, index: number): string => {
   return prefix
 }
 
-itemTypes.forEach((type: Type) => createPrefix(type, 0))
+for (let i = 0; i < itemTypes.length; i++) {
+  createPrefix(<Type>itemTypes[i], 0)
+}
 
 /*  
   // json ld it

@@ -5,7 +5,8 @@
     "build": "tsc",
     "start": "tsc && node dist/index.js",
     "test": "ava test/*",
-    "watch": "ava --watch --verbose test/*"
+    "watch": "ava --watch --verbose test/*",
+    "buildLua": "scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ./bin/transpileScript $script; done"
   },
   "husky": {
     "hooks": {
@@ -59,11 +60,12 @@
     "prettier": "^1.18.2",
     "selva-server": "0.0.4",
     "ts-node": "^8.5.4",
-    "typescript": "^3.7.3"
+    "typescript": "^3.7.3",
+    "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
-    "@types/uuid": "^3.4.6",
     "@sindresorhus/fnv1a": "^2.0.0",
+    "@types/uuid": "^3.4.6",
     "redis": "^2.8.0",
     "uuid": "^3.3.3"
   }

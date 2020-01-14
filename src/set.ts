@@ -8,6 +8,7 @@ import {
   Layout,
   Component
 } from './schema'
+import { SetOptions } from './setTypes'
 import { SelvaClient } from './'
 import { deleteItem } from './delete'
 import {
@@ -15,68 +16,7 @@ import {
   resetAncestors,
   removeFromAncestors
 } from './ancestors'
-import { arrayIsEqual } from './util'
-
-type RedisSetParams =
-  | Id[]
-  | {
-      $value?: Id[] | Id
-      $add?: Id[] | Id
-      $delete?: Id[] | Id
-    }
-
-type HierarchySet = RedisSetParams & {
-  $hierarchy?: boolean
-}
-
-type SetExtraOptions<T> = {
-  $default?: T
-  $value?: T
-  $merge?: boolean
-  $field?: Field
-}
-
-type SetExtraCounterOptions = {
-  $increment?: number
-}
-
-type SetItem<T = BaseItem> = {
-  [P in keyof T]?: T[P] extends BaseItem[]
-    ? SetItem<T>[]
-    : T[P] extends object
-    ? SetItem<T[P]> & SetExtraOptions<T>
-    : T[P] extends number
-    ? T[P] | (SetExtraOptions<T[P]> & SetExtraCounterOptions)
-    : T[P] extends string
-    ? T[P] | SetExtraOptions<T[P]>
-    : T[P] extends boolean
-    ? T[P] | SetExtraOptions<T[P]>
-    : T[P] | (T[P] & SetExtraOptions<T[P]>)
-}
-
-type SetOptions = SetItem & {
-  $id?: Id
-  $merge?: boolean
-  $version?: string
-  children?: HierarchySet
-  parents?: HierarchySet
-  externalId?:
-    | ExternalId[]
-    | {
-        $add?: ExternalId[] | ExternalId
-        $delete?: ExternalId[] | ExternalId
-        $value?: ExternalId[]
-      }
-  auth?: {
-    password?: string
-    google?: string
-    facebook?: string
-    role?: {
-      id?: RedisSetParams
-      type?: UserType
-    }
-  }
-}
+import { arrayIsEqual, ensureArray } from './util'
 
 // ---------------------------------------------------------------
 // addToAncestors
@@ -282,6 +222,30 @@ const removeFields = async (
 }
 
 // ---------------------------------------------------------------
+async function setInternalArrayStructure(
+  client: SelvaClient,
+  id: string,
+  field: string,
+  value: any
+) {
+  if (Array.isArray(value)) {
+    await resetSet(client, field, true, id, value)
+  } else {
+    const hierarchy = value.$hierarchy === false ? false : true
+    if (value.$value) {
+      await resetSet(client, field, hierarchy, id, value)
+    }
+    if (value.$add) {
+      value.$add = ensureArray(value.$add)
+      await addToSet(client, field, hierarchy, id, value.$add)
+    }
+    if (value.$delete) {
+      value.$delete = ensureArray(value.$delete)
+      await removeFromSet(client, field, hierarchy, id, value.$delete)
+    }
+  }
+}
+
 async function setInner(
   client: SelvaClient,
   id: string,
@@ -302,26 +266,7 @@ async function setInner(
     field === 'externalId' ||
     field === 'auth.role.id'
   ) {
-    if (Array.isArray(value)) {
-      await resetSet(client, field, true, id, value)
-    } else {
-      const hierarchy = value.$hierarchy === false ? false : true
-      if (value.$value) {
-        resetSet(client, field, hierarchy, id, value)
-      }
-      if (value.$add) {
-        if (!Array.isArray(value.$add)) {
-          value.$add = [value.$add]
-        }
-        await addToSet(client, field, hierarchy, id, value.$add)
-      }
-      if (value.$delete) {
-        if (!Array.isArray(value.$delete)) {
-          value.$delete = [value.$delete]
-        }
-        await removeFromSet(client, field, hierarchy, id, value.$delete)
-      }
-    }
+    await setInternalArrayStructure(client, id, field, value)
   } else {
     if (typeof value === 'object' && !Array.isArray(value)) {
       for (let key in value) {

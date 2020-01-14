@@ -1,6 +1,7 @@
-import modify from '../src/testmodule'
+import { modify } from '../lua/src/testmodule'
 
 const result = modify()
+result
 
 // @ts-ignore
 return result

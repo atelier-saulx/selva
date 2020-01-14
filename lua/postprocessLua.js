@@ -1,6 +1,8 @@
 const fs = require('fs').promises
 const path = require('path')
 
+const CWD = process.cwd()
+
 let filename = process.argv[2]
 
 if (!filename) {
@@ -8,7 +10,7 @@ if (!filename) {
   process.exit(1)
 }
 
-fs.readFile(path.join(__dirname, filename), 'utf8')
+fs.readFile(path.join(CWD, filename), 'utf8')
   .then(content => {
     let moduleTableLocation = content.indexOf('____modules = {\n')
     const withoutRequireShim = content.substring(
@@ -31,7 +33,7 @@ fs.readFile(path.join(__dirname, filename), 'utf8')
   end\n`
 
     return fs.writeFile(
-      path.join(__dirname, filename),
+      path.join(CWD, filename),
       newRequireOverride + withoutRequireShim
     )
   })
