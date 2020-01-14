@@ -328,6 +328,20 @@ test.serial('get - $inherit', async t => {
     )
   )
 
+  t.true(
+    isEqual(
+      await client.get({
+        $id: 'cuC',
+        image: {
+          $inherit: { type: ['custom', 'club'] }
+        }
+      }),
+      {
+        image: { thumb: 'flurp.jpg' }
+      }
+    )
+  )
+
   await client.delete('root')
 
   client.destroy()
