@@ -209,6 +209,7 @@ export type BaseItem = {
     email?: string
     phone?: number
     address?: string
+    industry?: string
   }
   value?: number
   age?: number // only for person and wine and whiskey
