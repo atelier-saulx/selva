@@ -342,6 +342,8 @@ test.serial('get - $inherit', async t => {
     )
   )
 
+  // $inherit: { id: [] } // is this really nessecary :/
+
   await client.delete('root')
 
   client.destroy()

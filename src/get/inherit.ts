@@ -165,11 +165,11 @@ const inherit = async (
           version
         )
       }
-    } else if (inherit.type || inherit.id || inherit.name) {
+    } else if (inherit.type || inherit.name) {
       if (isEmpty(value)) {
         // name is important here, id bit less
-        if (inherit.id || inherit.name) {
-          console.log('inherit.id and inherit.name NOT IMPLEMENTED YET')
+        if (inherit.name) {
+          console.log('inherit.name NOT IMPLEMENTED YET')
         } else {
           if (!Array.isArray(inherit.type)) {
             inherit.type = [inherit.type]

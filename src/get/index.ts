@@ -10,7 +10,7 @@ export type Inherit =
   | {
       type?: Type | Type[]
       name?: string | string[]
-      id?: Id | Id[]
+      // id?: Id | Id[]
       $item?: Type | Type[]
     }
 
