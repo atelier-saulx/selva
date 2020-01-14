@@ -1,4 +1,6 @@
 // should not use this but returns in get (if its complete from props)
+
+// super heavy and pretty wrong (especialy for inheritance)
 const isEmpty = (value: any): boolean => {
   // better to use types for this and generate it...
   if (value === null || value === undefined || value === '') {
