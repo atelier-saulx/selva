@@ -1,4 +1,13 @@
-import { Item, Id, Language, Type, Text, Field, languages } from '../schema'
+import {
+  Item,
+  Id,
+  Language,
+  Type,
+  Text,
+  Field,
+  languages,
+  getTypeFromId
+} from '../schema'
 import { SelvaClient } from '..'
 import { Inherit, GetResult, GetOptions, GetItem, getInner } from './'
 import { getNestedField, setNestedResult } from './nestedFields'
@@ -94,6 +103,30 @@ const inherit = async (
     } else if (inherit.type || inherit.id || inherit.name) {
       //
     } else if (inherit.$item) {
+      // needs to order and select
+      if (!Array.isArray(inherit.$item)) {
+        inherit.$item = [inherit.$item]
+      }
+      const a = await createAncestors(client, id)
+      for (let i = 1, len = a.length; i < len; i++) {
+        if (inherit.$item.indexOf(getTypeFromId(a[i])) !== -1) {
+          const intermediateResult = {}
+          await getInner(
+            client,
+            props,
+            intermediateResult,
+            a[i],
+            '',
+            language,
+            version,
+            true
+          )
+          if (!isEmpty(intermediateResult)) {
+            setNestedResult(result, field, intermediateResult)
+            break
+          }
+        }
+      }
     }
   }
 }

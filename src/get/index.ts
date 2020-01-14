@@ -92,7 +92,8 @@ export async function getInner(
   id: Id,
   field?: string,
   language?: Language,
-  version?: string
+  version?: string,
+  noInherit?: true
 ): Promise<void> {
   for (let key in props) {
     // handle all special cases here
@@ -106,7 +107,7 @@ export async function getInner(
     }
   }
 
-  if (props.$inherit) {
+  if (!noInherit && props.$inherit) {
     // bit ugly but needs to be like this... (cant infer if you pass inherit here)
     await inherit(client, id, field || '', props, result, language, version)
   }
