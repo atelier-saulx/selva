@@ -4,7 +4,7 @@
   "scripts": {
     "build": "tsc",
     "start": "tsc && node dist/index.js",
-    "test": "ava",
+    "test": "ava test/*",
     "watch": "ava --watch --verbose test/*"
   },
   "husky": {
