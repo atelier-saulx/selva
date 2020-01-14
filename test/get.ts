@@ -250,18 +250,17 @@ test.serial('get - $inherit', async t => {
     )
   )
 
-  const item = await client.get({
-    $id: 'cuD',
-    $language: 'nl',
-    title: { $inherit: true }
-  })
-
-  console.log(item)
-
   t.true(
-    isEqual(item, {
-      title: 'snurf'
-    })
+    isEqual(
+      await client.get({
+        $id: 'cuD',
+        $language: 'nl',
+        title: { $inherit: true }
+      }),
+      {
+        title: 'snurf'
+      }
+    )
   )
 
   await client.delete('root')
