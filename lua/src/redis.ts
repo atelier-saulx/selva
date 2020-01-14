@@ -3,6 +3,10 @@ export function hexists(key: string, field: string): boolean {
   return result === 1
 }
 
+export function hget(key: string, field: string): string {
+  return redis.call('hget', key, field)
+}
+
 export function hgetall(key: string): string[] {
   return redis.call('hgetall', key)
 }
@@ -41,6 +45,10 @@ export function hdel(
   return redis.call('hdel', key, fieldKey, ...fieldKeys)
 }
 
+export function hincrby(key: string, field: string, increment: number): number {
+  return redis.call('hincrby', key, field, tostring(increment))
+}
+
 export function sadd(key: string, ...members: string[]): boolean {
   const result = redis.call('sadd', ...members)
   return result === 1
@@ -54,12 +62,8 @@ export function scard(key: string): number {
   return redis.call('scard', key)
 }
 
-export function srem(
-  key: string,
-  member: string,
-  ...members: string[]
-): boolean {
-  return redis.call('srem', member, ...members)
+export function srem(key: string, ...members: string[]): boolean {
+  return redis.call('srem', ...members)
 }
 
 export function exists(...keys: string[]): number {
