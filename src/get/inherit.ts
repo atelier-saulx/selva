@@ -3,9 +3,10 @@ import { SelvaClient } from '..'
 import { Inherit, GetResult, GetOptions, GetItem, getInner } from './'
 import { getNestedField, setNestedResult } from './nestedFields'
 import isEmpty from './isEmpty'
+import getField from './getField'
 
 type Ancestor = [Ancestor[], number]
-// memoize this in lua
+// memoize this in lua (within one batch of gets)
 // const ancestorMap = {} etc
 
 const createAncestorsInner = async (
@@ -52,7 +53,7 @@ const createAncestors = async (client: SelvaClient, id: Id): Promise<Id[]> => {
     while (l <= r) {
       m = ((l + r) / 2) | 0
       const loopDepth = s[result[m]][1]
-      // or if type is more prefered
+      // or if type is more prefered (! inherit true)
       if (loopDepth < depth) {
         r = m - 1
         continue
@@ -71,17 +72,28 @@ const inherit = async (
   client: SelvaClient,
   id: Id,
   field: string,
-  inherit: true | Inherit,
   props: GetItem,
   result: GetResult,
-  language?: Language
+  language?: Language,
+  version?: string
 ) => {
-  const value = getNestedField(result, field)
-  if (inherit === true && isEmpty(value)) {
-    const a = await createAncestors(client, id)
-    console.log('ANCESTORS', a, id)
-    for (let i = 1, len = a.length; i < len; i++) {
-      console.log('try in this order!', a[i])
+  const inherit = props.$inherit
+  if (inherit) {
+    const value = getNestedField(result, field)
+    if (inherit === true) {
+      if (isEmpty(value)) {
+        const a = await createAncestors(client, id)
+        for (let i = 1, len = a.length; i < len; i++) {
+          await getField(client, a[i], field, result, language, version)
+          const value = getNestedField(result, field)
+          if (!isEmpty(value)) {
+            break
+          }
+        }
+      }
+    } else if (inherit.type || inherit.id || inherit.name) {
+      //
+    } else if (inherit.$item) {
     }
   }
 }

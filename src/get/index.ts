@@ -105,15 +105,8 @@ export async function getInner(
   }
 
   if (props.$inherit) {
-    await inherit(
-      client,
-      id,
-      field || '',
-      props.$inherit,
-      props,
-      result,
-      language
-    )
+    // bit ugly but needs to be like this... (cant infer if you pass inherit here)
+    await inherit(client, id, field || '', props, result, language, version)
   }
 
   if (props.$default) {
