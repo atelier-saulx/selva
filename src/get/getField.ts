@@ -102,6 +102,7 @@ const text = async (
           const value = await client.redis.hget(id, field + '.' + lang)
           if (value) {
             setNestedResult(result, field, value)
+            return
           }
         }
       }

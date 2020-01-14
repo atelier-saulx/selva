@@ -236,8 +236,23 @@ test.serial('get - $inherit', async t => {
     })
   ])
 
+  t.true(
+    isEqual(
+      await client.get({
+        $id: 'cuD',
+        title: { $inherit: true }
+      }),
+      {
+        title: {
+          en: 'snurf'
+        }
+      }
+    )
+  )
+
   const item = await client.get({
     $id: 'cuD',
+    $language: 'nl',
     title: { $inherit: true }
   })
 
@@ -245,9 +260,7 @@ test.serial('get - $inherit', async t => {
 
   t.true(
     isEqual(item, {
-      title: {
-        en: 'snurf'
-      }
+      title: 'snurf'
     })
   )
 
