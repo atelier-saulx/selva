@@ -194,7 +194,6 @@ const inheritItem = async (
         version,
         '$inherit'
       )
-
       if (isComplete || i === len - 1) {
         setNestedResult(result, field, intermediateResult)
         break

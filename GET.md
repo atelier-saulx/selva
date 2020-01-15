@@ -26,17 +26,13 @@ const { data: myItem } = await db.get({
 
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
-  theme: { $inherit: { type: ['sport', 'genre', 'region'] } } // prefers first in the list, if it cannot be found uses the next
+  theme: { $inherit: { $type: ['sport', 'genre', 'region'] } } // prefers first in the list, if it cannot be found uses the next
 })
+
 
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
-  theme: { $inherit: { id: ['mydingdongParent'] } } // prefers first in the list, if it cannot be found uses the next
-})
-
-const { data: myItem } = await db.get({
-  $id: 'mydingdong',
-  theme: { $inherit: { name: ['mydingdongName'] } } // prefers first in the list, if it cannot be found uses the next
+  theme: { $inherit: { $name: ['mydingdongName'] } } // prefers first in the list, if it cannot be found uses the next
 })
 
 const { data: myItem } = await db.get({
@@ -45,9 +41,13 @@ const { data: myItem } = await db.get({
     // map title to spesh title
     $field: ['title'],
     $inherit: true,
-    $default: 'NO TITLE FUN'
+    $default: 'cdsds'
   }
 })
+
+// { speshTitle: 'NO TITLE FUN' }
+// { speshTitle: 'XXX }
+
 
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
@@ -133,41 +133,42 @@ const { data: items } = await db.get({
         ]
       },
       $range: [0, 100],
-      $sort: [{ field: 'start', order: 'ascending' }
-    },
-    title: true,
-    ancestors: true,
-    teams: {
+      $sort: [{ field: 'start', order: 'ascending' },
       title: true,
-      id: true,
-      $list: {
-        $find: {
-          $traverse: 'ancestors',
-          $filter: {
-            $operator: '=',
-            $field: 'type',
-            $value: ['team']
-          }
-        }
-      }
-    },
-    relatedVideos: {
-      id: true,
-      title: true,
-      $list: {
-        $find: {
-          $traverse: 'ancestors',
-          $filter: {
-            $operator: '=',
-            $field: 'type',
-            $value: 'league'
-          },
+      ancestors: true,
+      teams: {
+        title: true,
+        id: true,
+        $list: {
           $find: {
-            $traverse: 'descendants',
+            $traverse: 'ancestors',
             $filter: {
               $operator: '=',
               $field: 'type',
-              $value: ['match', 'video']
+              $value: ['team']
+            }
+          }
+        }
+      },
+      relatedVideos: {
+        id: true,
+        title: true,
+        $list: {
+          $range: [0, 100],
+          $find: {
+            $traverse: 'ancestors',
+            $filter: {
+              $operator: '=',
+              $field: 'type',
+              $value: ['league', 'genre', 'category']
+            },
+            $find: {
+              $traverse: 'descendants',
+              $filter: {
+                $operator: '=',
+                $field: 'type',
+                $value: ['match', 'video']
+              }
             }
           }
         }
@@ -222,7 +223,7 @@ $id: 'volleyball',
         // non redis
         $find: {
           $traverse: 'decendants',
-          $filter: {
+          $filter: [{
             $operator: '=',
             $field: 'type',
             $value:  [ 'match'],
@@ -236,7 +237,7 @@ $id: 'volleyball',
                 $value:  [ 100'],
               }
             }
-          }
+          }]
         }
       }
     }

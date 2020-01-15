@@ -1,41 +1,7 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
-
-const isEqual = (a: any, b: any): boolean => {
-  if (typeof a !== typeof b) {
-    return false
-  }
-  if (Array.isArray(a)) {
-    if (!Array.isArray(b)) {
-      return false
-    }
-    if (a.length !== b.length) {
-      return false
-    }
-    a.sort()
-    b.sort()
-    for (let i = 0; i < a.length; i++) {
-      if (!isEqual(a[i], b[i])) {
-        return false
-      }
-    }
-  } else if (typeof a === 'object') {
-    if (Object.keys(a).length !== Object.keys(b).length) {
-      return false
-    }
-    for (let k in a) {
-      if (!isEqual(a[k], b[k])) {
-        return false
-      }
-    }
-  } else {
-    if (a !== b) {
-      return false
-    }
-  }
-  return true
-}
+import './assertions'
 
 test.before(async t => {
   await start({ port: 6062, modules: ['redisearch'] })
@@ -188,32 +154,28 @@ test.serial('get - hierarchy', async t => {
     })
   ])
 
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'viflapx',
-        descendants: true,
-        children: true,
-        parents: true
-      }),
-      {
-        descendants: ['viflo', 'vifla', 'maflux'],
-        children: ['viflo', 'vifla'],
-        parents: ['root']
-      }
-    )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'viflapx',
+      descendants: true,
+      children: true,
+      parents: true
+    }),
+    {
+      descendants: ['viflo', 'vifla', 'maflux'],
+      children: ['viflo', 'vifla'],
+      parents: ['root']
+    }
   )
 
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'maflux',
-        ancestors: true
-      }),
-      {
-        ancestors: ['root', 'vifla', 'viflapx']
-      }
-    )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maflux',
+      ancestors: true
+    }),
+    {
+      ancestors: ['root', 'vifla', 'viflapx']
+    }
   )
 
   await client.delete('root')
@@ -262,117 +224,122 @@ test.serial('get - $inherit', async t => {
     })
   ])
 
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'cuD',
-        title: { $inherit: true }
-      }),
-      {
-        title: {
-          en: 'snurf'
-        }
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuD',
+      title: { $inherit: true }
+    }),
+    {
+      title: {
+        en: 'snurf'
       }
-    )
+    }
   )
 
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'cuC',
-        $language: 'nl',
-        title: { $inherit: true }
-      }),
-      {
-        title: 'snurf'
-      }
-    )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      $language: 'nl',
+      title: { $inherit: true }
+    }),
+    {
+      title: 'snurf'
+    }
   )
 
   // // pluging on ava would be nice
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'cuC',
-        club: {
-          $inherit: { $item: 'club' },
-          image: true,
-          id: true
-        }
-      }),
-      {
-        club: {
-          image: { thumb: 'bla.jpg' },
-          id: 'clClub'
-        }
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      club: {
+        $inherit: { $item: 'club' },
+        image: true,
+        id: true
       }
-    )
+    }),
+    {
+      club: {
+        image: { thumb: 'bla.jpg' },
+        id: 'clClub'
+      }
+    }
   )
 
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'cuC',
-        flapdrol: {
-          $inherit: { $item: ['custom', 'club'] },
-          image: true,
-          id: true
-        }
-      }),
-      {
-        flapdrol: {
-          image: { thumb: 'flurp.jpg' },
-          id: 'cuA'
-        }
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      flapdrol: {
+        $inherit: { $item: ['custom', 'club'] },
+        image: true,
+        id: true
       }
-    )
+    }),
+    {
+      flapdrol: {
+        image: { thumb: 'flurp.jpg' },
+        id: 'cuA'
+      }
+    }
   )
 
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'cuC',
-        flapdrol: {
-          $inherit: { $item: ['region', 'federation'] },
-          image: true,
-          id: true
-        }
-      }),
-      {
-        flapdrol: {}
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      flapdrol: {
+        $inherit: { $item: ['region', 'federation'] },
+        image: true,
+        id: true
       }
-    )
+    }),
+    {
+      flapdrol: {}
+    }
   )
 
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'cuC',
-        image: {
-          $inherit: { $type: ['custom', 'club'] }
-        }
-      }),
-      {
-        image: { thumb: 'flurp.jpg' }
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      image: {
+        $inherit: { $type: ['custom', 'club'] }
       }
-    )
+    }),
+    {
+      image: { thumb: 'flurp.jpg' }
+    }
   )
 
-  t.true(
-    isEqual(
-      await client.get({
-        $id: 'cuD',
-        image: {
-          $inherit: { $name: ['dfp', 'MrSnurfels'] }
-        }
-      }),
-      {
-        image: { thumb: 'dfp.jpg' }
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuD',
+      image: {
+        $inherit: { $name: ['dfp', 'MrSnurfels'] }
       }
-    )
+    }),
+    {
+      image: { thumb: 'dfp.jpg' }
+    }
   )
 
   await client.delete('root')
 
   client.destroy()
 })
+
+// test.serial('get - simple $list', async t => {
+//   const client = connect({ port: 6062 })
+
+//   await Promise.all([
+//     client.set({
+//       $id: 'cuA',
+//       image: {
+//         thumb: 'flurp.jpg'
+//       },
+//       title: { en: 'snurf' },
+//       children: ['cuB', 'cuC']
+//     })
+//   ])
+
+//   await client.delete('root')
+
+//   client.destroy()
+// })
