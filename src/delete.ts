@@ -1,14 +1,8 @@
 import { Id } from './schema'
+import { DeleteOptions } from './deleteTypes'
 import { SelvaClient } from '.'
 
 import { removeFromAncestors } from './ancestors'
-
-type DeleteOptions =
-  | Id
-  | {
-      $id: Id
-      $hierarchy?: boolean
-    }
 
 async function deleteItem(
   client: SelvaClient,
