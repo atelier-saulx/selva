@@ -80,69 +80,66 @@ const createAncestorsFn = async (
   const s = {}
   await createAncestorsInner(client, targetId, s)
   const result = []
-
   for (let id in s) {
-    if (targetId !== id) {
-      const ancestor = s[id]
-
-      // get type index etc
-      if (ancestor.length === 2) {
-        const value = await parse(client, id)
-        if (!value) {
-          return
-        }
-        let ignore = false
-        for (let i = 0, len = fields.length; i < len; i++) {
-          if (fields[i] === value) {
-            break
-          } else if (i === len - 1) {
-            ignore = true
-          }
-        }
-        if (!ignore) {
-          ancestor.push(fields.indexOf(value), value)
+    if (targetId === id) {
+      continue
+    }
+    const ancestor = s[id]
+    // get type/name index , store it for faster lookup
+    if (ancestor.length === 2) {
+      const value = await parse(client, id)
+      if (!value) {
+        continue
+      }
+      let ignore = false
+      for (let i = 0, len = fields.length; i < len; i++) {
+        if (fields[i] === value) {
+          break
+        } else if (i === len - 1) {
+          ignore = true
         }
       }
-
-      const depth = ancestor[1]
-      const index = ancestor[2]
-      const value = ancestor[3]
-
-      // binary insert
-      let l = 0,
-        r = result.length - 1,
-        m = 0
-      while (l <= r) {
-        m = ((l + r) / 2) | 0
-        const prev = s[result[m]]
-        const prevValue = prev[3]
-        if (value === prevValue) {
-          const prevDepth = prev[1]
-          if (prevDepth < depth) {
-            r = m - 1
-            continue
-          }
-          l = m + 1
-          if (prevDepth === depth) {
-            break
-          }
-        } else {
-          const prevIndex = prev[2]
-          if (prevIndex > index) {
-            r = m - 1
-            continue
-          }
-          l = m + 1
-          if (prevIndex === index) {
-            break
-          }
+      if (ignore) {
+        continue
+      }
+      ancestor.push(fields.indexOf(value), value)
+    }
+    const depth = ancestor[1]
+    const index = ancestor[2]
+    const value = ancestor[3]
+    // binary insert
+    let l = 0,
+      r = result.length - 1,
+      m = 0
+    while (l <= r) {
+      m = ((l + r) / 2) | 0
+      const prev = s[result[m]]
+      const prevValue = prev[3]
+      if (value === prevValue) {
+        const prevDepth = prev[1]
+        if (prevDepth < depth) {
+          r = m - 1
+          continue
         }
-        result.splice(l, 0, id)
+        l = m + 1
+        if (prevDepth === depth) {
+          break
+        }
+      } else {
+        const prevIndex = prev[2]
+        if (prevIndex > index) {
+          r = m - 1
+          continue
+        }
+        l = m + 1
+        if (prevIndex === index) {
+          break
+        }
       }
     }
-
-    return result
+    result.splice(l, 0, id)
   }
+  return result
 }
 
 const setFromAncestors = async (
@@ -162,11 +159,12 @@ const setFromAncestors = async (
   }
 }
 
-const parseName = async (client: SelvaClient, id: Id) => {
-  return await client.redis.hget(id, 'name')
+const parseName = async (client: SelvaClient, id: Id): Promise<string> => {
+  const name = await client.redis.hget(id, 'name')
+  return name
 }
 
-const parseType = async (client: SelvaClient, id: Id) => {
+const parseType = async (client: SelvaClient, id: Id): Promise<string> => {
   return getTypeFromId(id)
 }
 
@@ -201,7 +199,8 @@ const inheritItem = async (
       let empty = false
       for (let key in props) {
         if (key[0] !== '$') {
-          // needs to be much better getinner needs to return if all requirements are met...
+          // needs to be much better getInner needs to return if all requirements are met...
+          // this is basicly just broken and also extremely slow
           if (isEmpty(intermediateResult[key])) {
             empty = true
             break

@@ -361,7 +361,7 @@ test.serial('get - $inherit', async t => {
   t.true(
     isEqual(
       await client.get({
-        $id: 'cuC',
+        $id: 'cuD',
         image: {
           $inherit: { $name: ['dfp', 'MrSnurfels'] }
         }
