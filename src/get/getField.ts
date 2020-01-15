@@ -147,10 +147,10 @@ const authObject = async (
   result: GetResult,
   language?: Language,
   version?: string
-): Promise<boolean> => {
+): Promise<true> => {
   const r = await object(client, id, field, result)
   result.auth.role.id = await client.redis.smembers(id + '.auth.role.id')
-  return true // never inherit here - question
+  return true
 }
 
 const id = async (
@@ -173,7 +173,6 @@ const type = async (
   language?: Language,
   version?: string
 ): Promise<true> => {
-  // also never have to store this!
   result.type = getTypeFromId(id)
   return true
 }

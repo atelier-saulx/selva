@@ -1,10 +1,8 @@
 import { Id, Language, Type, getTypeFromId } from '../schema'
 import { SelvaClient } from '..'
 import { GetResult, GetItem, getInner } from './'
-import { getNestedField, setNestedResult } from './nestedFields'
+import { setNestedResult } from './nestedFields'
 import getField from './getField'
-
-import isEmpty from './isEmpty'
 
 type Ancestor = [Ancestor[], number]
 // memoize this in lua (within one batch of gets)
@@ -66,6 +64,7 @@ const createAncestors = async (
         break
       }
     }
+    // replace with insert
     result.splice(l, 0, id)
   }
   return result
