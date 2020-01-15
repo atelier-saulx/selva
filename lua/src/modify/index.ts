@@ -130,16 +130,14 @@ function setField(
 
   if (type(value) === 'table') {
     for (let key in value) {
-      if (key[0] === '$') {
-        return
-      }
-
-      const item = value[key]
-      const nestedField = field ? field + '.' + key : key
-      if (type(item) === 'table') {
-        setObject(id, nestedField, item)
-      } else {
-        setField(id, field, item, false)
+      if (key[0] !== '$') {
+        const item = value[key]
+        const nestedField = field ? field + '.' + key : key
+        if (type(item) === 'table') {
+          setObject(id, nestedField, item)
+        } else {
+          setField(id, nestedField, item, false)
+        }
       }
     }
 
