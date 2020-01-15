@@ -71,7 +71,7 @@ const createAncestors = async (
   return result
 }
 
-const createAncestorsFn = async (
+const createAncestorsFromFields = async (
   client: SelvaClient,
   targetId: Id,
   fields: string[],
@@ -179,7 +179,7 @@ const inheritItem = async (
   language?: Language,
   version?: string
 ) => {
-  const ancestors = await createAncestorsFn(client, id, item, parseType)
+  const ancestors = await createAncestorsFromFields(client, id, item, parseType)
   const len = ancestors.length
   if (len === 0) {
     setNestedResult(result, field, {})
@@ -249,7 +249,7 @@ const inherit = async (
           if (!Array.isArray(inherit.$name)) {
             inherit.$name = [inherit.$name]
           }
-          ancestors = await createAncestorsFn(
+          ancestors = await createAncestorsFromFields(
             client,
             id,
             inherit.$name,
@@ -259,7 +259,7 @@ const inherit = async (
           if (!Array.isArray(inherit.$type)) {
             inherit.$type = [inherit.$type]
           }
-          ancestors = await createAncestorsFn(
+          ancestors = await createAncestorsFromFields(
             client,
             id,
             inherit.$type,
