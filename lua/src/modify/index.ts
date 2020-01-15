@@ -3,13 +3,7 @@ import { Id } from '~selva/schema'
 import { SetOptions } from '~selva/setTypes'
 import getTypeFromId from '../getTypeFromId'
 import { isArray, ensureArray, splitString, joinString } from '../util'
-import {
-  resetSet,
-  resetParents,
-  resetChildren,
-  addToSet,
-  removeFromSet
-} from './setOperations'
+import { resetSet, addToSet, removeFromSet } from './setOperations'
 
 function removeFields(
   id: string,
@@ -70,18 +64,18 @@ function setInternalArrayStructure(
   const hierarchy = value.$hierarchy === false ? false : true
 
   if (isArray(value)) {
-    resetSet(id, field, value, hierarchy)
+    resetSet(id, field, value, modify, hierarchy)
     return
   }
 
   if (value.$value) {
-    resetSet(id, field, value, hierarchy)
+    resetSet(id, field, value, modify, hierarchy)
     return
   }
 
   if (value.$add) {
     value.$add = ensureArray(value.$add)
-    addToSet(id, field, value.$add, hierarchy)
+    addToSet(id, field, value.$add, modify, hierarchy)
   }
   if (value.$delete) {
     value.$delete = ensureArray(value.$delete)
