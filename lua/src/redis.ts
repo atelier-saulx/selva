@@ -55,7 +55,7 @@ export function hincrby(key: string, field: string, increment: number): number {
 }
 
 export function sadd(key: string, ...members: string[]): boolean {
-  const result = redis.call('sadd', ...members)
+  const result = redis.call('sadd', key, ...members)
   return result === 1
 }
 
