@@ -8,7 +8,6 @@ import getField from './getField'
 type Ancestor = [Ancestor[], number]
 // memoize this in lua (within one batch of gets)
 // const ancestorMap = {} etc
-
 const createAncestorsInner = async (
   client: SelvaClient,
   id: Id,
@@ -95,6 +94,7 @@ const createAncestorsFromFields = async (
       let ignore = false
       for (let i = 0, len = fields.length; i < len; i++) {
         if (fields[i] === value) {
+          ancestor.push(i, value)
           break
         } else if (i === len - 1) {
           ignore = true
@@ -103,7 +103,6 @@ const createAncestorsFromFields = async (
       if (ignore) {
         continue
       }
-      ancestor.push(fields.indexOf(value), value)
     }
     const depth = ancestor[1]
     const index = ancestor[2]
