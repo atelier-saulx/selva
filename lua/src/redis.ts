@@ -1,5 +1,5 @@
 export function hexists(key: string, field: string): boolean {
-  const result = redis.call('hexists', field)
+  const result = redis.call('hexists', key, field)
   return result === 1
 }
 
