@@ -192,7 +192,7 @@ const inheritItem = async (
         '',
         language,
         version,
-        true
+        '$inherit'
       )
 
       if (isComplete || i === len - 1) {

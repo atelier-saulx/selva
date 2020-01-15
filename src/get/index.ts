@@ -92,7 +92,7 @@ export async function getInner(
   field?: string,
   language?: Language,
   version?: string,
-  noInherit?: true // when from inherit
+  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): Promise<boolean> {
   let isComplete = true
   let hasKeys = false
@@ -122,7 +122,13 @@ export async function getInner(
     }
   }
 
-  if (!noInherit && props.$inherit && (!isComplete || !hasKeys)) {
+  // make no inherit a field - ignore field
+  //
+  if (
+    (!ignore || (ignore !== '$' && ignore !== '$inherit')) &&
+    props.$inherit &&
+    (!isComplete || !hasKeys)
+  ) {
     if (!hasKeys) {
       const complete = await getField(
         client,

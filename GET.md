@@ -207,46 +207,35 @@ const { data: items } = await db.get({
 })
 
 // redis-cli ft.search masterIndex @ancestors:{volleyball} @ancestors:{de} @type:{match|video}
-
-items: {
-  $list: {
-    $find: {
-      $traverse: 'ancestors',
-      $filter: [
-        $operator: '=',
-        $field: 'type',
-        $value: 'region'
-      ],
+{
+$id: 'volleyball',
+  items: {
+    $list: {
       $find: {
-        $filter: {
+        // non redis search if id and direct ancestors
+        $traverse: 'ancestors',
+        $filter: [
           $operator: '=',
-          $field: 'flurp',
-          $value:  [ 'match'],
-          $and: {
+          $field: 'type',
+          $value: 'region'
+        ],
+        // non redis
+        $find: {
+          $traverse: 'decendants',
+          $filter: {
             $operator: '=',
-            $field: 'flurp',
+            $field: 'type',
             $value:  [ 'match'],
             $and: {
               $operator: '=',
-              $field: 'flurp',
-              $value:  [ 'match'],
+              $field: 'name',
+              $value:  [ 'flurpy'],
+              $and: {
+                $operator: '=',
+                $field: 'status',
+                $value:  [ 100'],
+              }
             }
-          }
-        }
-        // OR
-        $filter: {
-          $or: [
-            {
-              $operator: '=',
-              $field: 'type',
-              $value:  [ 'match', 'video']
-            },
-            {
-              $operator: '=',
-              $field: 'flurp',
-              $value:  [ 'match']
-            }
-          ]
           }
         }
       }
