@@ -8,8 +8,8 @@ import inherit from './inherit'
 export type Inherit =
   | boolean
   | {
-      type?: Type | Type[]
-      name?: string | string[]
+      $type?: Type | Type[]
+      $name?: string | string[]
       // id?: Id | Id[]
       $item?: Type | Type[]
     }

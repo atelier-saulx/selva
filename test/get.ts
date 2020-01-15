@@ -243,6 +243,22 @@ test.serial('get - $inherit', async t => {
         thumb: 'bla.jpg'
       },
       children: ['cuB']
+    }),
+    client.set({
+      $id: 'cuDfp',
+      name: 'dfp',
+      image: {
+        thumb: 'dfp.jpg'
+      },
+      children: ['cuD']
+    }),
+    client.set({
+      $id: 'cuMrsnurfels',
+      name: 'MrSnurfels',
+      image: {
+        thumb: 'snurfels.jpg'
+      },
+      children: ['cuD']
     })
   ])
 
@@ -333,7 +349,7 @@ test.serial('get - $inherit', async t => {
       await client.get({
         $id: 'cuC',
         image: {
-          $inherit: { type: ['custom', 'club'] }
+          $inherit: { $type: ['custom', 'club'] }
         }
       }),
       {
@@ -342,9 +358,19 @@ test.serial('get - $inherit', async t => {
     )
   )
 
-  // $inherit: { id: [] } // is this really nessecary :/
-
-  // add inherit NAME
+  t.true(
+    isEqual(
+      await client.get({
+        $id: 'cuC',
+        image: {
+          $inherit: { $name: ['dfp', 'MrSnurfels'] }
+        }
+      }),
+      {
+        image: { thumb: 'dfp.jpg' }
+      }
+    )
+  )
 
   await client.delete('root')
 
