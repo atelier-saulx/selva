@@ -160,8 +160,7 @@ const setFromAncestors = async (
 }
 
 const parseName = async (client: SelvaClient, id: Id): Promise<string> => {
-  const name = await client.redis.hget(id, 'name')
-  return name
+  return await client.redis.hget(id, 'name')
 }
 
 const parseType = async (client: SelvaClient, id: Id): Promise<string> => {
