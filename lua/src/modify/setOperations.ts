@@ -4,11 +4,11 @@ import * as redis from '../redis'
 import { arrayIsEqual } from '../util'
 import { reCalculateAncestors } from './ancestors'
 
+type FnModify = (payload: SetOptions & { $id: string }) => Id
+
 function getSetKey(id: string, field: string): string {
   return id + '.' + field
 }
-
-type FnModify = (payload: SetOptions & { $id: string }) => Id
 
 export function resetSet(
   id: string,
