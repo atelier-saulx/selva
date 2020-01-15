@@ -2,8 +2,9 @@ import { Id, Language, Type, getTypeFromId } from '../schema'
 import { SelvaClient } from '..'
 import { GetResult, GetItem, getInner } from './'
 import { getNestedField, setNestedResult } from './nestedFields'
-import isEmpty from './isEmpty'
 import getField from './getField'
+
+import isEmpty from './isEmpty'
 
 type Ancestor = [Ancestor[], number]
 // memoize this in lua (within one batch of gets)
@@ -151,9 +152,9 @@ const setFromAncestors = async (
   version?: string
 ) => {
   for (let i = 0, len = ancestors.length; i < len; i++) {
-    await getField(client, ancestors[i], field, result, language, version)
-    const value = getNestedField(result, field)
-    if (!isEmpty(value)) {
+    if (
+      await getField(client, ancestors[i], field, result, language, version)
+    ) {
       break
     }
   }
@@ -184,7 +185,7 @@ const inheritItem = async (
   } else {
     for (let i = 0; i < len; i++) {
       const intermediateResult = {}
-      await getInner(
+      const isComplete = await getInner(
         client,
         props,
         intermediateResult,
@@ -194,24 +195,10 @@ const inheritItem = async (
         version,
         true
       )
-      // want not isEmpty but has results or something like that
-      let empty = false
-      for (let key in props) {
-        if (key[0] !== '$') {
-          // needs to be much better getInner needs to return if all requirements are met...
-          // this is basicly just broken and also extremely slow
-          if (isEmpty(intermediateResult[key])) {
-            empty = true
-            break
-          }
-        }
-      }
-      if (!empty) {
+
+      if (isComplete || i === len - 1) {
         setNestedResult(result, field, intermediateResult)
         break
-      }
-      if (i === len - 1) {
-        setNestedResult(result, field, {})
       }
     }
   }
@@ -228,51 +215,46 @@ const inherit = async (
 ) => {
   const inherit = props.$inherit
   if (inherit) {
-    const value = getNestedField(result, field)
     if (inherit === true) {
-      if (isEmpty(value)) {
-        await setFromAncestors(
-          client,
-          await createAncestors(client, id),
-          field,
-          result,
-          language,
-          version
-        )
-      }
+      await setFromAncestors(
+        client,
+        await createAncestors(client, id),
+        field,
+        result,
+        language,
+        version
+      )
     } else if (inherit.$type || inherit.$name) {
-      if (isEmpty(value)) {
-        let ancestors: Id[]
-        if (inherit.$name) {
-          if (!Array.isArray(inherit.$name)) {
-            inherit.$name = [inherit.$name]
-          }
-          ancestors = await createAncestorsFromFields(
-            client,
-            id,
-            inherit.$name,
-            parseName
-          )
-        } else {
-          if (!Array.isArray(inherit.$type)) {
-            inherit.$type = [inherit.$type]
-          }
-          ancestors = await createAncestorsFromFields(
-            client,
-            id,
-            inherit.$type,
-            parseType
-          )
+      let ancestors: Id[]
+      if (inherit.$name) {
+        if (!Array.isArray(inherit.$name)) {
+          inherit.$name = [inherit.$name]
         }
-        await setFromAncestors(
+        ancestors = await createAncestorsFromFields(
           client,
-          ancestors,
-          field,
-          result,
-          language,
-          version
+          id,
+          inherit.$name,
+          parseName
+        )
+      } else {
+        if (!Array.isArray(inherit.$type)) {
+          inherit.$type = [inherit.$type]
+        }
+        ancestors = await createAncestorsFromFields(
+          client,
+          id,
+          inherit.$type,
+          parseType
         )
       }
+      await setFromAncestors(
+        client,
+        ancestors,
+        field,
+        result,
+        language,
+        version
+      )
     } else if (inherit.$item) {
       if (!Array.isArray(inherit.$item)) {
         inherit.$item = [inherit.$item]

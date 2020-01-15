@@ -1,17 +1,21 @@
 import { SelvaClient } from '..'
 import { Id, Language, languages, itemTypes, getTypeFromId } from '../schema'
 import { GetResult, getInner, GetOptions, get } from './'
-import { setNestedResult } from './nestedFields'
+import { setNestedResult, getNestedField } from './nestedFields'
+import { Verify } from 'crypto'
 
 const number = async (
   client: SelvaClient,
   id: Id,
   field: string,
   result?: GetResult,
-  language?: Language
-): Promise<void> => {
+  language?: Language,
+  version?: string
+): Promise<boolean> => {
   const v = await client.redis.hget(id, field)
-  setNestedResult(result, field, v === null ? null : v * 1)
+  const value = v === null ? null : v * 1
+  setNestedResult(result, field, value)
+  return value !== null
 }
 
 const boolean = async (
@@ -19,9 +23,11 @@ const boolean = async (
   id: Id,
   field: string,
   result?: GetResult,
-  language?: Language
-): Promise<void> => {
+  language?: Language,
+  version?: string
+): Promise<true> => {
   setNestedResult(result, field, !!(await client.redis.hget(id, field)))
+  return true
 }
 
 const string = async (
@@ -29,13 +35,12 @@ const string = async (
   id: Id,
   field: string,
   result?: GetResult,
-  language?: Language
-): Promise<void> => {
-  return setNestedResult(
-    result,
-    field,
-    (await client.redis.hget(id, field)) || ''
-  )
+  language?: Language,
+  version?: string
+): Promise<boolean> => {
+  const value = (await client.redis.hget(id, field)) || ''
+  setNestedResult(result, field, value)
+  return !!value
 }
 
 const set = async (
@@ -43,13 +48,12 @@ const set = async (
   id: Id,
   field: string,
   result?: GetResult,
-  language?: Language
-): Promise<void> => {
-  return setNestedResult(
-    result,
-    field,
-    await client.redis.smembers(id + '.' + field)
-  )
+  language?: Language,
+  version?: string
+): Promise<boolean> => {
+  const value = await client.redis.smembers(id + '.' + field)
+  setNestedResult(result, field, value)
+  return !!value.length
 }
 
 const stringified = async (
@@ -57,14 +61,12 @@ const stringified = async (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-): Promise<void> => {
+  language?: Language,
+  version?: string
+): Promise<boolean> => {
   const value = await client.redis.hget(id, field)
-  return setNestedResult(
-    result,
-    field,
-    value === null ? value : JSON.parse(value)
-  )
+  setNestedResult(result, field, value === null ? value : JSON.parse(value))
+  return value !== null
 }
 
 const object = async (
@@ -72,15 +74,21 @@ const object = async (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-): Promise<void> => {
-  // super innefficient - memoize
+  language?: Language,
+  version?: string
+): Promise<boolean> => {
   const keys = await client.redis.hkeys(id)
+  let isComplete = true
+  let noKeys = true
   for (const key of keys) {
     if (key.indexOf(field) === 0) {
-      await getField(client, id, key, result, language)
+      noKeys = false
+      if (!(await getField(client, id, key, result, language))) {
+        isComplete = false
+      }
     }
   }
+  return noKeys ? false : isComplete
 }
 
 const text = async (
@@ -88,25 +96,46 @@ const text = async (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-): Promise<void> => {
+  language?: Language,
+  version?: string
+): Promise<boolean> => {
   if (!language) {
-    return await object(client, id, field, result)
+    const isComplete = await object(
+      client,
+      id,
+      field,
+      result,
+      language,
+      version
+    )
+    if (!isComplete) {
+      const value = getNestedField(result, field)
+      for (const key in value) {
+        if (value[key]) {
+          return true
+        }
+      }
+      return false
+    } else {
+      return true
+    }
   } else {
     const value = await client.redis.hget(id, field + '.' + language)
     if (value) {
       setNestedResult(result, field, value)
+      return true
     } else {
       for (const lang of languages) {
         if (lang !== language) {
           const value = await client.redis.hget(id, field + '.' + lang)
           if (value) {
             setNestedResult(result, field, value)
-            return
+            return true
           }
         }
       }
       setNestedResult(result, field, '')
+      return false
     }
   }
 }
@@ -116,10 +145,12 @@ const authObject = async (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-): Promise<void> => {
+  language?: Language,
+  version?: string
+): Promise<boolean> => {
   const r = await object(client, id, field, result)
   result.auth.role.id = await client.redis.smembers(id + '.auth.role.id')
+  return true // never inherit here - question
 }
 
 const id = async (
@@ -127,9 +158,11 @@ const id = async (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-) => {
+  language?: Language,
+  version?: string
+): Promise<true> => {
   result.id = id
+  return true
 }
 
 const type = async (
@@ -137,10 +170,12 @@ const type = async (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-) => {
+  language?: Language,
+  version?: string
+): Promise<true> => {
   // also never have to store this!
   result.type = getTypeFromId(id)
+  return true
 }
 
 const ancestors = async (
@@ -148,9 +183,11 @@ const ancestors = async (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-) => {
+  language?: Language,
+  version?: string
+): Promise<true> => {
   result.ancestors = ((await client.redis.hget(id, field)) || '').split(',')
+  return true
 }
 
 const getDescendants = async (
@@ -177,14 +214,16 @@ const descendants = async (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-) => {
+  language?: Language,
+  version?: string
+): Promise<true> => {
   const s = await getDescendants(client, id, {}, {})
   const r = []
   for (let key in s) {
     r.push(key)
   }
   result.descendants = r
+  return true
 }
 
 type Reader = (
@@ -192,8 +231,9 @@ type Reader = (
   id: Id,
   field: string,
   result: GetResult,
-  language?: Language
-) => Promise<any>
+  language?: Language,
+  version?: string
+) => Promise<boolean>
 
 const types: Record<string, Reader> = {
   id: id,
@@ -230,7 +270,6 @@ for (const type of itemTypes) {
   types['layout.' + type] = stringified
 }
 
-// test to see if we are missing things here (read from ts)
 async function getField(
   client: SelvaClient,
   id: Id,
@@ -238,10 +277,10 @@ async function getField(
   result: GetResult,
   language?: Language,
   version?: string
-) {
+): Promise<boolean> {
   // version still missing!
   const fn = types[field] || string
-  await fn(client, id, field, result, language)
+  return await fn(client, id, field, result, language, version)
 }
 
 export default getField

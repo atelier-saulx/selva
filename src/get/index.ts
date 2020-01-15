@@ -1,8 +1,7 @@
 import { Item, Id, Language, Type, Text, Field, languages } from '../schema'
 import { SelvaClient } from '..'
 import getField from './getField'
-import { getNestedField, setNestedResult } from './nestedFields'
-import isEmpty from './isEmpty'
+import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
 
 export type Inherit =
@@ -93,39 +92,76 @@ export async function getInner(
   field?: string,
   language?: Language,
   version?: string,
-  noInherit?: true
-): Promise<void> {
-  for (let key in props) {
-    // handle all special cases here
+  noInherit?: true // when from inherit
+): Promise<boolean> {
+  let isComplete = true
+  let hasKeys = false
+  for (const key in props) {
     if (key[0] !== '$') {
+      hasKeys = true
       const f = field ? field + '.' + key : key
       if (props[key] === true) {
-        await getField(client, id, f, result, language, version)
+        if (!(await getField(client, id, f, result, language, version))) {
+          isComplete = false
+        }
       } else {
-        await getInner(client, props[key], result, id, f, language, version)
+        if (
+          !(await getInner(
+            client,
+            props[key],
+            result,
+            id,
+            f,
+            language,
+            version
+          ))
+        ) {
+          isComplete = false
+        }
       }
     }
   }
 
-  if (!noInherit && props.$inherit) {
-    // bit ugly but needs to be like this... (cant infer if you pass inherit here)
-    await inherit(client, id, field || '', props, result, language, version)
+  if (!noInherit && props.$inherit && (!isComplete || !hasKeys)) {
+    if (!hasKeys) {
+      const complete = await getField(
+        client,
+        id,
+        field,
+        result,
+        language,
+        version
+      )
+      if (!complete) {
+        await inherit(client, id, field || '', props, result, language, version)
+      }
+    } else {
+      await inherit(client, id, field || '', props, result, language, version)
+    }
   }
 
   if (props.$default) {
-    await getField(client, id, field, result, language, version)
-    const value = getNestedField(result, field)
-    if (isEmpty(value)) {
+    const complete = await getField(
+      client,
+      id,
+      field,
+      result,
+      language,
+      version
+    )
+    if (!complete) {
       setNestedResult(result, field, props.$default)
     }
   }
+
+  return isComplete
 }
 
 async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const result: GetResult = {}
   const { $version: version, $id: id, $language: language } = props
   if (id) {
-    await getInner(client, props, result, id, undefined, language)
+    await getInner(client, props, result, id, undefined, language, version)
   } else {
     // only find
   }

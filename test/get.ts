@@ -289,7 +289,7 @@ test.serial('get - $inherit', async t => {
     )
   )
 
-  // pluging on ava would be nice
+  // // pluging on ava would be nice
   t.true(
     isEqual(
       await client.get({
