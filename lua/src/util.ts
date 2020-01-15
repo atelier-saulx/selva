@@ -12,10 +12,7 @@ export const arrayIsEqual = (a: any[], b: any[]): boolean => {
 }
 
 export function isArray<T>(value: T | T[]): boolean {
-  return (
-    type(value) === 'table' &&
-    ((<T[]>value).length === 0 || ((<T[]>value).length > 0 && !!value[0]))
-  )
+  return type(value) === 'table' && (<T[]>value).length > 0 && !!value[0]
 }
 
 export function ensureArray<T>(value: T | T[]): T[] {
