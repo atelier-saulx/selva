@@ -1,5 +1,6 @@
 import t from 'ava'
 import { Assertions } from 'ava/lib/assert.js'
+import { logDb, dumpDb, idExists } from './util'
 
 declare module 'ava' {
   export interface Assertions {
@@ -48,3 +49,5 @@ Object.assign(Assertions.prototype, {
     this.deepEqual(actual, expected, message)
   }
 })
+
+export { logDb, dumpDb, idExists }

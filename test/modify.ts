@@ -1,54 +1,7 @@
 import test from 'ava'
 import { connect, SelvaClient } from '../src/index'
 import { start } from 'selva-server'
-
-//  const wait = () => new Promise(r => setTimeout(r, 500))
-const idExists = async (
-  client: SelvaClient,
-  id: string,
-  dump?: any[]
-): Promise<boolean> => {
-  if (!dump) dump = await dumpDb(client)
-  for (let key in dump) {
-    if (key === id) {
-      return true
-    }
-    if (dump[key] === id) {
-      return true
-    }
-    if (
-      typeof dump[key] === 'string' &&
-      dump[key].split(',').indexOf(id) !== -1
-    ) {
-      return true
-    }
-    if (typeof dump[key] === 'object') {
-      if (await idExists(client, id, dump[key])) {
-        return true
-      }
-    }
-  }
-  return false
-}
-
-const dumpDb = async (client: SelvaClient): Promise<any[]> => {
-  const ids = await client.redis.keys('*')
-  return (
-    await Promise.all(
-      ids.map(id =>
-        id.indexOf('.') > -1
-          ? client.redis.smembers(id)
-          : client.redis.hgetall(id)
-      )
-    )
-  ).map((v, i) => {
-    return [ids[i], v]
-  })
-}
-
-const logDb = async (client: SelvaClient) => {
-  console.log(await dumpDb(client))
-}
+import { dumpDb, idExists } from './assertions'
 
 test.before(async t => {
   await start({ port: 6061, modules: ['redisearch'] })
