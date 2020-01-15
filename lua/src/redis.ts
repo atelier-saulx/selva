@@ -1,5 +1,5 @@
 export function hexists(key: string, field: string): boolean {
-  const result = redis.call('hexists', field)
+  const result = redis.call('hexists', key, field)
   return result === 1
 }
 
@@ -45,12 +45,17 @@ export function hdel(
   return redis.call('hdel', key, fieldKey, ...fieldKeys)
 }
 
+// NOTE: this only works in debug mode
+export function debug(msg: string): void {
+  redis.debug(msg)
+}
+
 export function hincrby(key: string, field: string, increment: number): number {
   return redis.call('hincrby', key, field, tostring(increment))
 }
 
 export function sadd(key: string, ...members: string[]): boolean {
-  const result = redis.call('sadd', ...members)
+  const result = redis.call('sadd', key, ...members)
   return result === 1
 }
 

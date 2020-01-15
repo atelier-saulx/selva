@@ -2,16 +2,60 @@ import * as redis from '../redis'
 import { Id } from '~selva/schema'
 import { SetOptions } from '~selva/setTypes'
 import getTypeFromId from '../getTypeFromId'
-import { isArray, ensureArray } from '../util'
-import {
-  resetSet,
-  resetParents,
-  resetChildren,
-  addToSet,
-  removeFromSet
-} from './setOperations'
+import { isArray, ensureArray, splitString, joinString } from '../util'
+import { resetSet, addToSet, removeFromSet } from './setOperations'
 
-// TODO: maintain parent/child relationships refactor
+function removeFields(
+  id: string,
+  field: string | null,
+  value: object,
+  keys: string[]
+): void {
+  const path = field ? splitString('field', '.') : []
+  if (!field) {
+    // no field is slightly different
+    for (let key in value) {
+      if (key[0] !== '$' && type(value[key]) === 'table') {
+        removeFields(id, key, value[key], keys)
+      }
+    }
+    return
+  }
+
+  for (let key in value) {
+    if (key[0] !== '$') {
+      for (const fieldKey of keys) {
+        const fields = splitString(fieldKey, '.')
+        let removeField = true
+        for (let i = 0; i < path.length; i++) {
+          if (fields[i] !== path[i]) {
+            removeField = false
+            break
+          }
+        }
+
+        if (removeField) {
+          removeField = false
+          let segment = value
+          for (let i = path.length; i < fields.length; i++) {
+            segment = segment[fields[i]]
+            if (!segment) {
+              removeField = true
+              break
+            }
+          }
+          if (removeField) {
+            redis.hdel(id, fieldKey)
+          }
+        }
+      }
+      if (type(value[key]) === 'table') {
+        removeFields(id, joinString(path, '.'), value[key], keys)
+      }
+    }
+  }
+}
+
 function setInternalArrayStructure(
   id: string,
   field: string,
@@ -20,18 +64,18 @@ function setInternalArrayStructure(
   const hierarchy = value.$hierarchy === false ? false : true
 
   if (isArray(value)) {
-    resetSet(id, field, value, hierarchy)
+    resetSet(id, field, value, modify, hierarchy)
     return
   }
 
   if (value.$value) {
-    resetSet(id, field, value, hierarchy)
+    resetSet(id, field, value, modify, hierarchy)
     return
   }
 
   if (value.$add) {
     value.$add = ensureArray(value.$add)
-    addToSet(id, field, value.$add, hierarchy)
+    addToSet(id, field, value.$add, modify, hierarchy)
   }
   if (value.$delete) {
     value.$delete = ensureArray(value.$delete)
@@ -67,7 +111,7 @@ function setField(
 ): void {
   if (!fromDefault && value.$merge === false) {
     const keys = redis.hkeys(id)
-    // TODO: removeFields
+    removeFields(id, field, value, keys)
   }
 
   if (
@@ -86,16 +130,14 @@ function setField(
 
   if (type(value) === 'table') {
     for (let key in value) {
-      if (key[0] === '$') {
-        return
-      }
-
-      const item = value[key]
-      const nestedField = field ? field + '.' + key : key
-      if (type(item) === 'table') {
-        setObject(id, nestedField, item)
-      } else {
-        setField(id, field, item, false)
+      if (key[0] !== '$') {
+        const item = value[key]
+        const nestedField = field ? field + '.' + key : key
+        if (type(item) === 'table') {
+          setObject(id, nestedField, item)
+        } else {
+          setField(id, nestedField, item, false)
+        }
       }
     }
 
