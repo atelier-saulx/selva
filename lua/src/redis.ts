@@ -45,6 +45,11 @@ export function hdel(
   return redis.call('hdel', key, fieldKey, ...fieldKeys)
 }
 
+// NOTE: this only works in debug mode
+export function debug(msg: string): void {
+  redis.debug(msg)
+}
+
 export function hincrby(key: string, field: string, increment: number): number {
   return redis.call('hincrby', key, field, tostring(increment))
 }
