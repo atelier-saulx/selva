@@ -11,6 +11,10 @@ export const arrayIsEqual = (a: any[], b: any[]): boolean => {
   return true
 }
 
+export function isString(val: any): val is string {
+  return type(val) === 'string'
+}
+
 export function isArray<T>(value: T | T[]): boolean {
   return type(value) === 'table' && (<T[]>value).length > 0 && !!value[0]
 }
