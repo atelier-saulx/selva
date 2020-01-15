@@ -2,7 +2,7 @@ import * as redis from '../redis'
 import { Id } from '~selva/schema'
 import { SetOptions } from '~selva/setTypes'
 import getTypeFromId from '../getTypeFromId'
-import { isArray, ensureArray } from '../util'
+import { isArray, ensureArray, splitString, joinString } from '../util'
 import {
   resetSet,
   resetParents,
@@ -11,7 +11,57 @@ import {
   removeFromSet
 } from './setOperations'
 
-// TODO: maintain parent/child relationships refactor
+function removeFields(
+  id: string,
+  field: string | null,
+  value: object,
+  keys: string[]
+): void {
+  const path = field ? splitString('field', '.') : []
+  if (!field) {
+    // no field is slightly different
+    for (let key in value) {
+      if (key[0] !== '$' && type(value[key]) === 'table') {
+        removeFields(id, key, value[key], keys)
+      }
+    }
+    return
+  }
+
+  for (let key in value) {
+    if (key[0] !== '$') {
+      for (const fieldKey of keys) {
+        const fields = splitString(fieldKey, '.')
+        let removeField = true
+        for (let i = 0; i < path.length; i++) {
+          if (fields[i] !== path[i]) {
+            removeField = false
+            break
+          }
+        }
+
+        if (removeField) {
+          removeField = false
+          let segment = value
+          for (let i = path.length; i < fields.length; i++) {
+            segment = segment[fields[i]]
+            if (!segment) {
+              removeField = true
+              break
+            }
+          }
+          if (removeField) {
+            redis.hdel(id, fieldKey)
+          }
+        }
+      }
+      if (type(value[key]) === 'table') {
+        removeFields(id, joinString(path, '.'), value[key], keys)
+      }
+    }
+  }
+}
+
 function setInternalArrayStructure(
   id: string,
   field: string,
@@ -67,7 +117,7 @@ function setField(
 ): void {
   if (!fromDefault && value.$merge === false) {
     const keys = redis.hkeys(id)
-    // TODO: removeFields
+    removeFields(id, field, value, keys)
   }
 
   if (
