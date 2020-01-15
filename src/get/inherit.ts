@@ -47,25 +47,26 @@ const createAncestors = async (
   const result = []
   // binary insert
   for (let id in s) {
-    if (targetId !== id) {
-      const depth = s[id][1]
-      let l = 0,
-        r = result.length - 1,
-        m = 0
-      while (l <= r) {
-        m = ((l + r) / 2) | 0
-        const prevDepth = s[result[m]][1]
-        if (prevDepth < depth) {
-          r = m - 1
-          continue
-        }
-        l = m + 1
-        if (prevDepth === depth) {
-          break
-        }
-      }
-      result.splice(l, 0, id)
+    if (targetId === id) {
+      continue
     }
+    const depth = s[id][1]
+    let l = 0,
+      r = result.length - 1,
+      m = 0
+    while (l <= r) {
+      m = ((l + r) / 2) | 0
+      const prevDepth = s[result[m]][1]
+      if (prevDepth < depth) {
+        r = m - 1
+        continue
+      }
+      l = m + 1
+      if (prevDepth === depth) {
+        break
+      }
+    }
+    result.splice(l, 0, id)
   }
   return result
 }
