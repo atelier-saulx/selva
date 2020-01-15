@@ -8,39 +8,18 @@ declare module 'ava' {
   }
 }
 
-const deepSort = (a: any, b: any): boolean => {
-  if (typeof a !== typeof b) {
-    return false
-  }
+const deepSort = (a: any, b: any): void => {
   if (Array.isArray(a)) {
-    if (!Array.isArray(b)) {
-      // return false
-    }
-    if (a.length !== b.length) {
-      // return false
-    }
     a.sort()
     b.sort()
     for (let i = 0; i < a.length; i++) {
-      if (!deepSort(a[i], b[i])) {
-        // return false
-      }
+      deepSort(a[i], b[i])
     }
   } else if (typeof a === 'object') {
-    if (Object.keys(a).length !== Object.keys(b).length) {
-      // return false
-    }
     for (let k in a) {
-      if (!deepSort(a[k], b[k])) {
-        // return false
-      }
-    }
-  } else {
-    if (a !== b) {
-      // return false
+      deepSort(a[k], b[k])
     }
   }
-  // return true
 }
 
 Object.assign(Assertions.prototype, {

@@ -247,7 +247,6 @@ test.serial('get - $inherit', async t => {
     }
   )
 
-  // // pluging on ava would be nice
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'cuC',
