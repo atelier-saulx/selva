@@ -80,6 +80,9 @@ export function exists(...keys: string[]): number {
 }
 
 export function del(key: string, ...keys: string[]): number {
+  if (keys.length === 0) {
+    return redis.call('del', key)
+  }
   return redis.call('del', key, ...keys)
 }
 

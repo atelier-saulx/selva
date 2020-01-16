@@ -9,7 +9,7 @@ async function deleteItem(
 ): Promise<boolean> {
   const modifyResult = await client.redis.modify({
     kind: 'delete',
-    payload: id
+    payload: { $id: id, $hierarchy: hierarchy }
   })
 
   return modifyResult[0]

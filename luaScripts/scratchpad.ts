@@ -47,6 +47,12 @@ let b = modify([
       $id: 'person',
       title: { en: 'flurpy man', de: 'ach so' }
     }
+  },
+  {
+    // @ts-ignore
+    kind: 'delete',
+    // @ts-ignore
+    payload: 'root'
   }
 ])
 
@@ -69,6 +75,12 @@ let d = modify([
       $merge: false,
       title: { de: 'fchlurpy mann' }
     }
+  },
+  {
+    // @ts-ignore
+    kind: 'delete',
+    // @ts-ignore
+    payload: 'root'
   }
 ])
 

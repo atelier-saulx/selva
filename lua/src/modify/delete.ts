@@ -13,7 +13,7 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
       const key = child + '.parents'
       redis.srem(key, id)
       const size = redis.scard(key)
-      if (!size) {
+      if (size === 0) {
         deleteItem(child)
       } else {
         reCalculateAncestors(id, parents)
