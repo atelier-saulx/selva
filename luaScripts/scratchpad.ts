@@ -43,6 +43,29 @@ let b = modify([
   }
 ])
 
+let d = modify([
+  {
+    // @ts-ignore
+    kind: 'update',
+    // @ts-ignore
+    payload: {
+      $id: 'match',
+      children: []
+    }
+  },
+  {
+    // @ts-ignore
+    kind: 'update',
+    // @ts-ignore
+    payload: {
+      $id: 'person',
+      $merge: false,
+      type: 'person',
+      title: { de: 'flurpy man' }
+    }
+  }
+])
+
 let c: any[] = []
 for (let i = 0; i < a.length; i++) {
   c[i] = a[i]
