@@ -1,7 +1,8 @@
 import test from 'ava'
 import { SelvaClient } from '../../src/index'
 
-//  const wait = () => new Promise(r => setTimeout(r, 500))
+export const wait = (timeMs: number = 500): Promise<void> =>
+  new Promise(r => setTimeout(r, timeMs))
 
 export const idExists = async (
   client: SelvaClient,

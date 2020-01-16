@@ -1,6 +1,6 @@
 import t from 'ava'
 import { Assertions } from 'ava/lib/assert.js'
-import { logDb, dumpDb, idExists } from './util'
+import { logDb, dumpDb, idExists, wait } from './util'
 
 declare module 'ava' {
   export interface Assertions {
@@ -29,4 +29,4 @@ Object.assign(Assertions.prototype, {
   }
 })
 
-export { logDb, dumpDb, idExists }
+export { logDb, dumpDb, idExists, wait }
