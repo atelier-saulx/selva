@@ -20,7 +20,7 @@ function removeFields(
   value: object,
   keys: string[]
 ): void {
-  const path = field ? splitString('field', '.') : []
+  const path = field ? splitString(field, '.') : []
   if (!field) {
     // no field is slightly different
     for (let key in value) {
@@ -72,7 +72,6 @@ function setInternalArrayStructure(
 ): void {
   const hierarchy = value.$hierarchy === false ? false : true
 
-  redis.debug('SETTING SPECIAL FIELD: ' + field)
   if (isArray(value)) {
     resetSet(id, field, value, update, hierarchy)
     return
@@ -121,6 +120,7 @@ function setField(
 ): void {
   if (!fromDefault && value.$merge === false) {
     const keys = redis.hkeys(id)
+
     removeFields(id, field, value, keys)
   }
 

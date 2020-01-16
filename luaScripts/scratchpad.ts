@@ -36,9 +36,7 @@ let b = modify([
     // @ts-ignore
     payload: {
       $id: 'person',
-      type: 'person',
-      parents: [a[0]],
-      title: { en: 'flurpy man' }
+      title: { en: 'flurpy man', de: 'ach so' }
     }
   }
 ])
@@ -60,8 +58,7 @@ let d = modify([
     payload: {
       $id: 'person',
       $merge: false,
-      type: 'person',
-      title: { de: 'flurpy man' }
+      title: { de: 'fchlurpy mann' }
     }
   }
 ])
