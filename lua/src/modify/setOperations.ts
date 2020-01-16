@@ -35,7 +35,11 @@ export function resetSet(
     redis.del(setKey)
   }
 
-  redis.sadd(setKey, ...value)
+  if (value.length === 0) {
+    redis.del(setKey)
+  } else {
+    redis.sadd(setKey, ...value)
+  }
 }
 
 export function addToSet(
@@ -147,9 +151,9 @@ export function resetChildren(
   modify: FnModify
 ): void {
   const children = redis.smembers(setKey)
-  if (arrayIsEqual(children, value)) {
-    return
-  }
+  // if (arrayIsEqual(children, value)) {
+  //   return
+  // }
   for (const child of children) {
     const parentKey = child + '.parents'
     redis.srem(parentKey, id)
