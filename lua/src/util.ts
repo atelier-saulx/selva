@@ -48,7 +48,9 @@ export function splitString(str: string, delim: string): string[] {
       current += str[i]
     }
   }
-  strings[idx] = current
+  if (current.length > 0) {
+    strings[idx] = current
+  }
   return strings
 }
 
@@ -58,6 +60,6 @@ export function joinString(strs: string[], delim: string): string {
     str += strs[i] + delim
   }
 
-  str += strs[strs.length - 1]
+  str += strs[strs.length - 1] || ''
   return str
 }
