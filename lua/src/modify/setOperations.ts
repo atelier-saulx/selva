@@ -3,6 +3,7 @@ import { Id } from '~selva/schema'
 import * as redis from '../redis'
 import { arrayIsEqual } from '../util'
 import { reCalculateAncestors } from './ancestors'
+import { deleteItem } from './delete'
 
 type FnModify = (payload: SetOptions & { $id: string }) => Id
 
@@ -148,7 +149,7 @@ export function resetChildren(
     redis.srem(parentKey, id)
     const size = redis.scard(parentKey)
     if (size === 0) {
-      // TODO: deleteItem(child)
+      deleteItem(child)
     } else {
       reCalculateAncestors(child, redis.smembers(parentKey))
     }

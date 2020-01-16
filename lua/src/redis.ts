@@ -68,7 +68,7 @@ export function scard(key: string): number {
 }
 
 export function srem(key: string, ...members: string[]): boolean {
-  return redis.call('srem', ...members)
+  return redis.call('srem', key, ...members)
 }
 
 export function exists(...keys: string[]): number {
