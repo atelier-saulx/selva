@@ -389,8 +389,15 @@ match,
 
 ### SHOW EXAMPLE
 
+root -> tag (folder)
+
 - Show x (Tag sci-fi)
-  - Episode y (Tag horror)
+
+  - Episode y (Tag horror, flurp)
+  - Episode C
+
+  // ancestors Y - horror,sci-fi,x,flurp
+  // closeAncestors Y - horror,x,flurp
 
 $traverse: descendants tag sci-fi gets all show x episodes
 $traverse: closeDescendants tag sci-fi gets all show x not the episode y (since it has a tag)
@@ -405,8 +412,21 @@ ACTOR EXAMPLE
 
 LEAGUE EXAMPLE
 
-League - season - team - match
-League - season - match
+League - season - match - team
 
 $traverse: descendants match -> will get all matches of teams play in the league
 $traverse: closeDescendants match -> will get all matches in season (shortest path to items)
+
+// give me all clubs in the leage
+id: league,
+$find: {
+   $traverse: 'closeDescendants',
+$filter: { type === 'team' }
+   $find: {
+$traverse: 'ancestors', // closeAncestors
+     $filter: { type: 'club' }
+}
+}
+
+// get type in parents thats closest to me dont do the other
+// descendants --> relatedDescendants
