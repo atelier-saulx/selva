@@ -38,7 +38,7 @@ export function getNewAncestors(parents: Id[], from?: Id[]): string[] {
   return result
 }
 
-// change this
+// change this .ancestor
 export function reCalculateAncestors(id: Id, parents?: Id[]) {
   if (!parents) {
     parents = redis.smembers(id + '.parents')
