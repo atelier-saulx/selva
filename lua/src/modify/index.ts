@@ -2,8 +2,17 @@ import * as redis from '../redis'
 import { Id } from '~selva/schema'
 import { SetOptions } from '~selva/setTypes'
 import getTypeFromId from '../getTypeFromId'
-import { isArray, ensureArray, splitString, joinString } from '../util'
+import {
+  isString,
+  isArray,
+  ensureArray,
+  splitString,
+  joinString
+} from '../util'
 import { resetSet, addToSet, removeFromSet } from './setOperations'
+import { ModifyOptions } from '../modifyTypes'
+import { DeleteOptions } from '~selva/deleteTypes'
+import { deleteItem } from './delete'
 
 function removeFields(
   id: string,
@@ -64,18 +73,18 @@ function setInternalArrayStructure(
   const hierarchy = value.$hierarchy === false ? false : true
 
   if (isArray(value)) {
-    resetSet(id, field, value, modify, hierarchy)
+    resetSet(id, field, value, update, hierarchy)
     return
   }
 
   if (value.$value) {
-    resetSet(id, field, value, modify, hierarchy)
+    resetSet(id, field, value, update, hierarchy)
     return
   }
 
   if (value.$add) {
     value.$add = ensureArray(value.$add)
-    addToSet(id, field, value.$add, modify, hierarchy)
+    addToSet(id, field, value.$add, update, hierarchy)
   }
   if (value.$delete) {
     value.$delete = ensureArray(value.$delete)
@@ -156,8 +165,15 @@ function setField(
   }
 }
 
-// We always set an $id property before passing to redis
-export default function modify(payload: SetOptions & { $id: string }): Id {
+function remove(payload: DeleteOptions): boolean {
+  if (isString(payload)) {
+    return deleteItem(payload)
+  }
+
+  return deleteItem(payload.$id, payload.$hierarchy)
+}
+
+function update(payload: SetOptions & { $id: string }): Id {
   const exists = !!payload.$id ? redis.hexists(payload.$id, 'type') : false
 
   if (!exists) {
@@ -172,4 +188,21 @@ export default function modify(payload: SetOptions & { $id: string }): Id {
 
   setField(payload.$id, null, payload, false)
   return payload.$id
+}
+
+// We always set an $id property before passing to redis
+// returns Id for updates, boolean for deletes
+
+export default function modify(payload: ModifyOptions[]): (Id | boolean)[] {
+  const results: (Id | boolean)[] = []
+  for (let i = 0; i < payload.length; i++) {
+    let operation = payload[i]
+    if (operation.kind === 'update') {
+      results[i] = update(operation.payload)
+    } else {
+      results[i] = remove(operation.payload)
+    }
+  }
+
+  return results
 }
