@@ -22,7 +22,7 @@ export function hkeys(key: string): string[] {
 export function hset(
   key: string,
   fieldKey: string,
-  value: string,
+  value: any,
   ...rest: string[]
 ): number {
   if (rest.length === 0) {

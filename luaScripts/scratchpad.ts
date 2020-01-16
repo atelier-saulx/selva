@@ -10,9 +10,18 @@ let a = modify([
   {
     kind: 'update',
     payload: {
-      $id: 'test',
-      title: { nl: 'test' },
-      description: { nl: 'lekker man' }
+      $id: 'viA',
+      title: {
+        en: 'nice!'
+      },
+      value: 25,
+      auth: {
+        // role needs to be different , different roles per scope should be possible
+        role: {
+          id: ['root'],
+          type: 'admin'
+        }
+      }
     }
   },
   {

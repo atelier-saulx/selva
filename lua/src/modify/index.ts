@@ -118,12 +118,6 @@ function setField(
   value: any,
   fromDefault: boolean
 ): void {
-  if (!fromDefault && value.$merge === false) {
-    const keys = redis.hkeys(id)
-
-    removeFields(id, field, value, keys)
-  }
-
   if (
     field === 'parents' ||
     field === 'children' ||
@@ -139,6 +133,12 @@ function setField(
   }
 
   if (type(value) === 'table') {
+    if (!fromDefault && value.$merge === false) {
+      const keys = redis.hkeys(id)
+
+      removeFields(id, field, value, keys)
+    }
+
     for (let key in value) {
       if (key[0] !== '$') {
         const item = value[key]
