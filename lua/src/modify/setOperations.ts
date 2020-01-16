@@ -20,11 +20,6 @@ export function resetSet(
 ): void {
   const setKey = getSetKey(id, field)
 
-  redis.debug('RESETTING SET ' + setKey + ' WITH:')
-  for (let i = 0; i < value.length; i++) {
-    redis.debug(value[i])
-  }
-
   if (hierarchy) {
     if (field === 'parents') {
       resetParents(id, setKey, value, modify)

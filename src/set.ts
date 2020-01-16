@@ -319,7 +319,6 @@ async function setInner(
 
 // ---------------------------------------------------------------
 async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
-  console.log('CALLING SET WITH', JSON.stringify(payload))
   const redis = client.redis
   if (!payload.$id) {
     if (!payload.type) {
@@ -345,7 +344,6 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
     payload: <SetOptions & { $id: string }>payload // assure TS that id is actually set :|
   })
 
-  console.log('GOT RESULT FROM MODIFY', modifyResult)
   return modifyResult[0]
 }
 
