@@ -12,3 +12,5 @@ declare function type(
   | 'userdata'
   | 'thread'
   | 'table'
+
+declare function next(this: void, table: any, index?: any): any

@@ -16,7 +16,15 @@ export function isString(val: any): val is string {
 }
 
 export function isArray<T>(value: T | T[]): boolean {
-  return type(value) === 'table' && (<T[]>value).length > 0 && !!value[0]
+  if (type(value) === 'table') {
+    if ((<T[]>value).length > 0 && value[0] !== null) {
+      return true
+    } else if ((<T[]>value).length === 0 && next(value) === null) {
+      return true
+    }
+  }
+
+  return false
 }
 
 export function ensureArray<T>(value: T | T[]): T[] {
