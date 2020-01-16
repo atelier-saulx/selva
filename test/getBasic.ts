@@ -324,21 +324,6 @@ test.serial('get - $inherit', async t => {
   client.destroy()
 })
 
-// test.serial('get - simple $list', async t => {
-//   const client = connect({ port: 6062 })
+// ADD FIELD
 
-//   await Promise.all([
-//     client.set({
-//       $id: 'cuA',
-//       image: {
-//         thumb: 'flurp.jpg'
-//       },
-//       title: { en: 'snurf' },
-//       children: ['cuB', 'cuC']
-//     })
-//   ])
-
-//   await client.delete('root')
-
-//   client.destroy()
-// })
+// ADD REF
