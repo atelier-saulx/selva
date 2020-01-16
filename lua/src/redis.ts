@@ -25,6 +25,10 @@ export function hset(
   value: string,
   ...rest: string[]
 ): number {
+  if (rest.length === 0) {
+    return redis.call('hset', key, fieldKey, value)
+  }
+
   return redis.call('hset', key, fieldKey, value, ...rest)
 }
 

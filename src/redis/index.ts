@@ -1,6 +1,21 @@
+import { readFileSync } from 'fs'
+import { join as pathJoin } from 'path'
 import { createClient, RedisClient as Redis } from 'redis'
-import fnv1a from '@sindresorhus/fnv1a'
+import { ModifyOptions, ModifyResult } from '../modifyTypes'
 import RedisMethods from './methods'
+
+// FIXME: this is pretty shit
+let MODIFY_SCRIPT
+try {
+  console.log('LOADING MODIFY_SCRIPT FROM WORKING DIR', process.cwd())
+  MODIFY_SCRIPT = readFileSync(
+    pathJoin(process.cwd(), 'dist', 'lua', 'modify.lua')
+  )
+  console.log('SCRIPT LOADED')
+} catch (e) {
+  console.error(`Failed to read modify.lua ${e.stack}`)
+  process.exit(1)
+}
 
 export type ConnectOptions = {
   port: number
@@ -27,6 +42,9 @@ export default class RedisClient extends RedisMethods {
   private buffer: RedisCommand[]
   private connected: boolean
   private inProgress: boolean
+  private scripts: {
+    modify?: string
+  } = {}
   // private bufferedGet: Record<number, RedisCommand>
 
   constructor(connect: ConnectOptions | (() => Promise<ConnectOptions>)) {
@@ -173,6 +191,17 @@ export default class RedisClient extends RedisMethods {
     // default 500ms or something
     // this.bufferedGet = {}
     this.inProgress = false
+  }
+
+  async modify(opts: ModifyOptions): Promise<ModifyResult> {
+    console.log('CALLING MODIFY WITH', JSON.stringify(opts))
+    if (!this.scripts.modify) {
+      console.log(`adding script`)
+      this.scripts.modify = await this.loadScript(MODIFY_SCRIPT)
+      console.log(`script added`, this.scripts.modify)
+    }
+
+    return this.evalSha(this.scripts.modify, 0, JSON.stringify([opts]))
   }
 
   // subscriber stuff fix it needs to become better!

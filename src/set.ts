@@ -17,6 +17,7 @@ import {
   removeFromAncestors
 } from './ancestors'
 import { arrayIsEqual, ensureArray } from './util'
+import modify from '../lua/src/modify/index'
 
 // ---------------------------------------------------------------
 // addToAncestors
@@ -318,6 +319,7 @@ async function setInner(
 
 // ---------------------------------------------------------------
 async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
+  console.log('CALLING SET WITH', JSON.stringify(payload))
   const redis = client.redis
   if (!payload.$id) {
     if (!payload.type) {
@@ -338,19 +340,13 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
     }
   }
 
-  let exists = (await redis.hexists(payload.$id, 'type')) || false
+  const modifyResult = await redis.modify({
+    kind: 'update',
+    payload: <SetOptions & { $id: string }>payload // assure TS that id is actually set :|
+  })
 
-  if (!exists) {
-    if (payload.$id && !payload.type) {
-      payload.type = getTypeFromId(payload.$id)
-    }
-    if (!payload.parents && payload.$id !== 'root') {
-      payload.parents = { $add: 'root' }
-    }
-  }
-
-  await setInner(client, payload.$id, payload, false)
-  return payload.$id
+  console.log('GOT RESULT FROM MODIFY', modifyResult)
+  return modifyResult[0]
 }
 
 export { set, SetOptions }

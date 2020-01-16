@@ -334,6 +334,22 @@ abstract class RedisMethods {
       this.queue('sunion', key, resolve, reject)
     })
   }
+
+  async loadScript(script: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      this.queue('script', ['load', script], resolve, reject)
+    })
+  }
+
+  async evalSha(
+    sha: string,
+    numKeys: number,
+    ...keysAndArgs: string[]
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('evalsha', [sha, numKeys, ...keysAndArgs], resolve, reject)
+    })
+  }
 }
 
 export default RedisMethods

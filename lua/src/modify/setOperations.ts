@@ -20,6 +20,11 @@ export function resetSet(
 ): void {
   const setKey = getSetKey(id, field)
 
+  redis.debug('RESETTING SET ' + setKey + ' WITH:')
+  for (let i = 0; i < value.length; i++) {
+    redis.debug(value[i])
+  }
+
   if (hierarchy) {
     if (field === 'parents') {
       resetParents(id, setKey, value, modify)
@@ -30,7 +35,6 @@ export function resetSet(
     redis.del(setKey)
   }
 
-  redis.del(setKey)
   redis.sadd(setKey, ...value)
 }
 
@@ -42,6 +46,8 @@ export function addToSet(
   hierarchy: boolean = true
 ): void {
   const setKey = getSetKey(id, field)
+  redis.sadd(setKey, ...value)
+
   if (hierarchy) {
     if (field === 'parents') {
       addToParents(id, value, modify)
@@ -49,8 +55,6 @@ export function addToSet(
       addToChildren(id, value, modify)
     }
   }
-
-  redis.sadd(setKey, ...value)
 }
 
 export function removeFromSet(
@@ -60,6 +64,8 @@ export function removeFromSet(
   hierarchy: boolean = true
 ): void {
   const setKey = getSetKey(id, field)
+  redis.srem(setKey, ...value)
+
   if (hierarchy) {
     if (field === 'parents') {
       removeFromParents(id, value)
@@ -67,7 +73,6 @@ export function removeFromSet(
       removeFromChildren(id, value)
     }
   }
-  redis.srem(setKey, ...value)
 }
 
 export function resetParents(
@@ -76,11 +81,13 @@ export function resetParents(
   value: Id[],
   modify: FnModify
 ): void {
-  // bail if parents are unchanged
   const parents = redis.smembers(id + '.parents')
-  if (arrayIsEqual(parents, value)) {
-    return
-  }
+  // bail if parents are unchanged
+  // needs to be commented for now as we set before recalculating ancestors
+  // this will likely change as we optimize ancestor calculation
+  // if (arrayIsEqual(parents, value)) {
+  //   return
+  // }
 
   // clean up existing parents
   for (const parent of parents) {
@@ -98,7 +105,7 @@ export function resetParents(
     }
   }
 
-  reCalculateAncestors(id, parents)
+  reCalculateAncestors(id, value)
 }
 
 export function addToParents(id: string, value: Id[], modify: FnModify): void {
@@ -110,8 +117,7 @@ export function addToParents(id: string, value: Id[], modify: FnModify): void {
     }
   }
 
-  const parents = redis.smembers(id + '.parents')
-  reCalculateAncestors(id, parents)
+  reCalculateAncestors(id)
 }
 
 export function removeFromParents(id: string, value: Id[]): void {
@@ -120,7 +126,7 @@ export function removeFromParents(id: string, value: Id[]): void {
   }
 
   const parents = redis.smembers(id + '.parents')
-  reCalculateAncestors(id, parents)
+  reCalculateAncestors(id)
 }
 
 export function addToChildren(id: string, value: Id[], modify: FnModify): void {
@@ -129,7 +135,7 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): void {
       modify({ $id: child, parents: { $add: id } })
     } else {
       redis.sadd(child + '.parents', id)
-      reCalculateAncestors(child, redis.smembers(child + '.parents'))
+      reCalculateAncestors(child)
     }
   }
 }
@@ -151,7 +157,7 @@ export function resetChildren(
     if (size === 0) {
       deleteItem(child)
     } else {
-      reCalculateAncestors(child, redis.smembers(parentKey))
+      reCalculateAncestors(child)
     }
   }
   redis.del(setKey)
@@ -161,6 +167,6 @@ export function resetChildren(
 export function removeFromChildren(id: string, value: Id[]): void {
   for (const child of value) {
     redis.srem(child + '.parents', id)
-    reCalculateAncestors(child, redis.smembers(child + '.parents'))
+    reCalculateAncestors(child)
   }
 }

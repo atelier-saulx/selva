@@ -10,7 +10,7 @@ import {
   joinString
 } from '../util'
 import { resetSet, addToSet, removeFromSet } from './setOperations'
-import { ModifyOptions } from '../modifyTypes'
+import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
 import { DeleteOptions } from '~selva/deleteTypes'
 import { deleteItem } from './delete'
 
@@ -72,6 +72,7 @@ function setInternalArrayStructure(
 ): void {
   const hierarchy = value.$hierarchy === false ? false : true
 
+  redis.debug('SETTING SPECIAL FIELD: ' + field)
   if (isArray(value)) {
     resetSet(id, field, value, update, hierarchy)
     return
@@ -88,7 +89,7 @@ function setInternalArrayStructure(
   }
   if (value.$delete) {
     value.$delete = ensureArray(value.$delete)
-    removeFromSet(id, field, value.$add, hierarchy)
+    removeFromSet(id, field, value.$delete, hierarchy)
   }
 }
 
@@ -97,7 +98,7 @@ function setObject(id: string, field: string, item: any) {
     setField(id, field, item, false)
   } else if (item.$default) {
     if (item.$increment) {
-      const result = redis.hsetnx(id, field, item)
+      const result = redis.hsetnx(id, field, item.$default)
       if (result === 0) {
         redis.hincrby(id, field, item.$increment)
       }
@@ -193,7 +194,7 @@ function update(payload: SetOptions & { $id: string }): Id {
 // We always set an $id property before passing to redis
 // returns Id for updates, boolean for deletes
 
-export default function modify(payload: ModifyOptions[]): (Id | boolean)[] {
+export default function modify(payload: ModifyOptions[]): ModifyResult[] {
   const results: (Id | boolean)[] = []
   for (let i = 0; i < payload.length; i++) {
     let operation = payload[i]

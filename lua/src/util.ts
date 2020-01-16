@@ -36,6 +36,8 @@ export function splitString(str: string, delim: string): string[] {
       strings[idx] = current
       idx++
       current = ''
+    } else {
+      current += str[i]
     }
   }
   strings[idx] = current
@@ -45,7 +47,7 @@ export function splitString(str: string, delim: string): string[] {
 export function joinString(strs: string[], delim: string): string {
   let str = ''
   for (let i = 0; i < strs.length - 1; i++) {
-    str += strs[i]
+    str += strs[i] + delim
   }
 
   str += strs[strs.length - 1]
