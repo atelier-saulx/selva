@@ -7,7 +7,7 @@ test('Connect and re-connect', async t => {
   let current = { port: 6066 }
 
   const client = await connect(async () => {
-    console.log('ASYNC connect it')
+    // console.log('ASYNC connect it')
     return current
   })
 
@@ -35,10 +35,7 @@ test('Connect and re-connect', async t => {
     { title: { en: 'lurkert' } }
   )
 
-  console.log('destroy!')
   await server.destroy()
-
-  console.log('destroyed!')
 
   await wait(1e3)
   current = { port: 6067 }
@@ -51,4 +48,6 @@ test('Connect and re-connect', async t => {
     }),
     {}
   )
+
+  server2.destroy()
 })
