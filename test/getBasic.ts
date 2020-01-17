@@ -186,6 +186,21 @@ test.serial('get - hierarchy', async t => {
 test.serial('get - $inherit', async t => {
   const client = connect({ port: 6062 })
 
+  /*
+    root
+      |_ cuA
+      |  |_cuC
+      |  |_cuB
+      |    |_cuD <---
+      |      |_cuC      
+      |_clClub
+      | |_cuB
+      |_cuDfp
+      | |_cuD
+      |_cuMrsnurfels
+        |_cuD
+  */
+
   await Promise.all([
     client.set({
       $id: 'cuA',
