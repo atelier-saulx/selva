@@ -145,9 +145,38 @@ export default class RedisClient extends RedisMethods {
     }
   }
 
-  private execBatch(slice: RedisCommand[]): Promise<void> {
+  private execBatch(origSlice: RedisCommand[]): Promise<void> {
     return new Promise((resolve, reject) => {
       const batch = this.client.batch()
+
+      // combine single modify commands to one
+      const slice: RedisCommand[] = []
+      const modifyArgs = []
+      const modifyResolves = []
+      const modifyRejects = []
+      for (const cmd of origSlice) {
+        if (cmd.command === 'evalsha' && cmd.args[0] === this.scripts.modify) {
+          modifyArgs.push(...cmd.args.slice(2)) // push all args after sha and numKeys
+          modifyResolves.push(cmd.resolve)
+          modifyRejects.push(cmd.reject)
+        } else {
+          slice.push(cmd)
+        }
+      }
+
+      if (modifyArgs.length) {
+        slice.push({
+          command: 'evalsha',
+          args: [this.scripts.modify, 0, ...modifyArgs],
+          resolve: (x: any) => {
+            modifyResolves.forEach(resolve => resolve(x))
+          },
+          reject: (x: Error) => {
+            modifyRejects.forEach(reject => reject(x))
+          }
+        })
+      }
+
       slice.forEach(({ command, args }) => {
         batch[command](...args)
       })
