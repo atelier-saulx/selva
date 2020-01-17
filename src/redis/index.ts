@@ -1,19 +1,5 @@
-import { readFileSync } from 'fs'
-import { join as pathJoin } from 'path'
 import { createClient, RedisClient as Redis } from 'redis'
-import { ModifyOptions, ModifyResult } from '../modifyTypes'
 import RedisMethods from './methods'
-
-// FIXME: this is pretty shit
-let MODIFY_SCRIPT
-try {
-  MODIFY_SCRIPT = readFileSync(
-    pathJoin(process.cwd(), 'dist', 'lua', 'modify.lua')
-  )
-} catch (e) {
-  console.error(`Failed to read modify.lua ${e.stack}`)
-  process.exit(1)
-}
 
 export type ConnectOptions = {
   port: number
@@ -51,6 +37,20 @@ export default class RedisClient extends RedisMethods {
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
     this.buffer = []
     this.connect()
+  }
+
+  async loadAndEvalScript(
+    scriptName: string,
+    script: string,
+    numKeys: number,
+    keys: string[],
+    args: string[]
+  ): Promise<any> {
+    if (!this.scripts[scriptName]) {
+      this.scripts.modify = await this.loadScript(script)
+    }
+
+    return this.evalSha(this.scripts.modify, numKeys, ...keys, ...args)
   }
 
   destroy() {
@@ -189,14 +189,6 @@ export default class RedisClient extends RedisMethods {
     // default 500ms or something
     // this.bufferedGet = {}
     this.inProgress = false
-  }
-
-  async modify(opts: ModifyOptions): Promise<ModifyResult> {
-    if (!this.scripts.modify) {
-      this.scripts.modify = await this.loadScript(MODIFY_SCRIPT)
-    }
-
-    return this.evalSha(this.scripts.modify, 0, JSON.stringify([opts]))
   }
 
   // subscriber stuff fix it needs to become better!
