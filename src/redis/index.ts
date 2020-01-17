@@ -40,6 +40,7 @@ export default class RedisClient extends RedisMethods {
   private buffer: RedisCommand[]
   private connected: boolean
   private inProgress: boolean
+  private retryTimer: number
   private scripts: {
     modify?: string
   } = {}
@@ -62,9 +63,19 @@ export default class RedisClient extends RedisMethods {
     const opts = await this.connector()
 
     // even if the db does not exists should not crash!
+    this.retryTimer = 100
     if (!opts.retryStrategy) {
       opts.retryStrategy = () => {
-        return 1e3
+        console.log('retry')
+        this.connector().then(newOpts => {
+          if (newOpts.host !== opts.host || newOpts.port !== opts.port) {
+            console.log('OPTS CHANGED')
+          }
+        })
+        if (this.retryTimer < 1e3) {
+          this.retryTimer += 100
+        }
+        return this.retryTimer
       }
     }
 
@@ -72,6 +83,7 @@ export default class RedisClient extends RedisMethods {
     this.client = createClient(opts)
 
     this.client.on('error', err => {
+      console.log('ERRRRR')
       if (err.code === 'ECONNREFUSED') {
         console.info(`Connecting to ${err.address}:${err.port}`)
       } else {
@@ -79,12 +91,14 @@ export default class RedisClient extends RedisMethods {
       }
     })
 
-    // this.client.on('connect', a => {
-    //   console.log('connect it', a)
-    // })
+    this.client.on('connect', a => {
+      console.log('connect it', a)
+    })
 
     this.client.on('ready', () => {
       // also set connected to false
+      console.log('READY')
+      this.retryTimer = 100
       this.connected = true
       this.flushBuffered()
     })
