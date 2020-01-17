@@ -188,6 +188,8 @@ const ancestors = async (
   return true
 }
 
+// ancestors generation
+
 const getDescendants = async (
   client: SelvaClient,
   id: Id,

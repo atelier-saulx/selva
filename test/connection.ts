@@ -7,25 +7,17 @@ test('Connect and re-connect', async t => {
   let current = { port: 6066 }
 
   const client = await connect(async () => {
-    // console.log('ASYNC connect it')
     return current
   })
 
   const server = await start({ port: 6066, modules: ['redisearch'] })
 
-  client.set({
+  await client.set({
     $id: 'cuflap',
     title: {
       en: 'lurkert'
     }
   })
-
-  // add these!!!
-  // client.isConnected
-  // client.on('connect', () => {})
-  // normally use subscribe for this kind of stuff
-
-  await wait(500)
 
   t.deepEqual(
     await client.get({

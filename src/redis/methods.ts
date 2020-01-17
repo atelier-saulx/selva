@@ -350,6 +350,12 @@ abstract class RedisMethods {
       this.queue('evalsha', [sha, numKeys, ...keysAndArgs], resolve, reject)
     })
   }
+
+  async ftInfo(index: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('ft_index', [index], resolve, reject)
+    })
+  }
 }
 
 export default RedisMethods

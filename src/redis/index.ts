@@ -1,5 +1,6 @@
 import { createClient, RedisClient as Redis } from 'redis'
 import RedisMethods from './methods'
+import createIndex from './createIndex'
 
 export type ConnectOptions = {
   port: number
@@ -106,6 +107,7 @@ export default class RedisClient extends RedisMethods {
     })
 
     this.client.on('ready', () => {
+      createIndex(this)
       this.retryTimer = 100
       this.connected = true
       this.flushBuffered()
