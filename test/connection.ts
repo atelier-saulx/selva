@@ -7,7 +7,7 @@ test('Connect and re-connect', async t => {
   let current = { port: 6066 }
 
   const client = await connect(async () => {
-    console.log('ASYNC connect it')
+    // console.log('ASYNC connect it')
     return current
   })
 
@@ -22,11 +22,10 @@ test('Connect and re-connect', async t => {
 
   // add these!!!
   // client.isConnected
-
-  //   client.on('connect', () => {})
-
+  // client.on('connect', () => {})
   // normally use subscribe for this kind of stuff
-  await wait(2e3)
+
+  await wait(500)
 
   t.deepEqual(
     await client.get({
@@ -36,12 +35,19 @@ test('Connect and re-connect', async t => {
     { title: { en: 'lurkert' } }
   )
 
-  console.log('destroy!')
   await server.destroy()
-
-  console.log('destroyed!')
 
   await wait(1e3)
   current = { port: 6067 }
   const server2 = await start({ port: 6067, modules: ['redisearch'] })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'cuflap',
+      title: true
+    }),
+    {}
+  )
+
+  server2.destroy()
 })
