@@ -15,7 +15,7 @@ export function isString(val: any): val is string {
   return type(val) === 'string'
 }
 
-export function isArray<T>(value: T | T[]): boolean {
+export function isArray<T>(value: T | T[]): value is T[] {
   if (type(value) === 'table') {
     if ((<T[]>value).length > 0 && value[0] !== null) {
       return true
