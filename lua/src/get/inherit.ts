@@ -1,29 +1,26 @@
-import { Id, Language, Type, getTypeFromId } from '../schema'
-import { SelvaClient } from '..'
-import { GetResult, getInner } from './'
-import { GetItem } from './types'
+import * as redis from '../redis'
+import { Id, Language, Type, getTypeFromId } from '~selva/schema'
+import { GetResult, GetItem } from '~selva/get/types'
 import { setNestedResult } from './nestedFields'
-import getField from './getField'
+import getByType from './getByType'
+import { ensureArray } from '../util'
 
 type Ancestor = [Ancestor[], number]
+
 // memoize this in lua (within one batch of gets)
 // const ancestorMap = {} etc
-const createAncestorsInner = async (
-  client: SelvaClient,
-  id: Id,
-  s: Record<Id, Ancestor>
-): Promise<Ancestor> => {
+function createAncestorsInner(id: Id, s: Record<Id, Ancestor>): Ancestor {
   // if memoized[id] -> get it
   if (s[id]) {
     return s[id]
   }
-  const parents = await client.redis.smembers(id + '.parents')
+  const parents = redis.smembers(id + '.parents')
   const ancestor: Ancestor = [[], 0]
   if (parents.length) {
     ancestor[1] = 1
     let pd = 0
     for (let pId of parents) {
-      const a = await createAncestorsInner(client, pId, s)
+      const a = createAncestorsInner(pId, s)
       if (a[1] > pd) {
         pd = a[1]
         a[0].unshift(a)
@@ -37,12 +34,9 @@ const createAncestorsInner = async (
   return ancestor
 }
 
-const createAncestors = async (
-  client: SelvaClient,
-  targetId: Id
-): Promise<Id[]> => {
+function createAncestors(targetId: Id): Id[] {
   const s = {}
-  await createAncestorsInner(client, targetId, s)
+  createAncestorsInner(targetId, s)
   const result = []
   // binary insert
   for (let id in s) {
@@ -66,20 +60,19 @@ const createAncestors = async (
       }
     }
     // replace with insert
-    result.splice(l, 0, id)
+    result.splice(l, 0, id) // FIXME: table.insert
   }
   return result
 }
 
-const createAncestorsFromFields = async (
-  client: SelvaClient,
+function createAncestorsFromFields(
   targetId: Id,
   fields: string[],
   // not async in lua
-  parse: (client: SelvaClient, id: Id) => Promise<string>
-): Promise<Id[]> => {
+  parse: (id: Id) => string
+): Id[] {
   const s = {}
-  await createAncestorsInner(client, targetId, s)
+  createAncestorsInner(targetId, s)
   const result = []
   for (let id in s) {
     if (targetId === id) {
@@ -88,7 +81,7 @@ const createAncestorsFromFields = async (
     const ancestor = s[id]
     // get type/name index , store it for faster lookup
     if (ancestor.length === 2) {
-      const value = await parse(client, id)
+      const value = parse(id)
       if (!value) {
         continue
       }
@@ -138,136 +131,91 @@ const createAncestorsFromFields = async (
         }
       }
     }
-    result.splice(l, 0, id)
+    result.splice(l, 0, id) // TODO: replace with table.insert
   }
   return result
 }
 
-const setFromAncestors = async (
-  client: SelvaClient,
+function setFromAncestors(
+  result: GetResult,
   ancestors: Id[],
   field: string,
-  result: GetResult,
   language?: Language,
   version?: string
-) => {
+) {
   for (let i = 0, len = ancestors.length; i < len; i++) {
-    if (
-      await getField(client, ancestors[i], field, result, language, version)
-    ) {
+    if (getByType(result, ancestors[i], field, language, version)) {
       break
     }
   }
 }
 
-const parseName = async (client: SelvaClient, id: Id): Promise<string> => {
-  return await client.redis.hget(id, 'name')
+function parseName(id: Id): string {
+  return redis.hget(id, 'name')
 }
 
-const parseType = async (client: SelvaClient, id: Id): Promise<string> => {
+function parseType(id: Id): string {
   return getTypeFromId(id)
 }
 
-const inheritItem = async (
-  client: SelvaClient,
-  id: Id,
-  field: string,
+function inheritItem(
   props: GetItem,
   result: GetResult,
+  id: Id,
+  field: string,
   item: Type[],
   language?: Language,
   version?: string
-) => {
-  const ancestors = await createAncestorsFromFields(client, id, item, parseType)
+) {
+  const ancestors = createAncestorsFromFields(id, item, parseType)
   const len = ancestors.length
   if (len === 0) {
     setNestedResult(result, field, {})
   } else {
     for (let i = 0; i < len; i++) {
       const intermediateResult = {}
-      const isComplete = await getInner(
-        client,
-        props,
-        intermediateResult,
-        ancestors[i],
-        '',
-        language,
-        version,
-        '$inherit'
-      )
-      if (isComplete || i === len - 1) {
-        setNestedResult(result, field, intermediateResult)
-        break
-      }
+      // const isComplete = getField(
+      //   props,
+      //   intermediateResult,
+      //   ancestors[i],
+      //   '',
+      //   language,
+      //   version,
+      //   '$inherit'
+      // )
+      // if (isComplete || i === len - 1) {
+      //   setNestedResult(result, field, intermediateResult)
+      //   break
+      // }
     }
   }
 }
 
-const inherit = async (
-  client: SelvaClient,
-  id: Id,
-  field: string,
+function inherit(
   props: GetItem,
   result: GetResult,
+  id: Id,
+  field: string,
   language?: Language,
   version?: string
-) => {
+) {
   const inherit = props.$inherit
   if (inherit) {
     if (inherit === true) {
-      await setFromAncestors(
-        client,
-        await createAncestors(client, id),
-        field,
-        result,
-        language,
-        version
-      )
+      setFromAncestors(result, createAncestors(id), field, language, version)
     } else if (inherit.$type || inherit.$name) {
       let ancestors: Id[]
       if (inherit.$name) {
-        if (!Array.isArray(inherit.$name)) {
-          inherit.$name = [inherit.$name]
-        }
-        ancestors = await createAncestorsFromFields(
-          client,
-          id,
-          inherit.$name,
-          parseName
-        )
+        inherit.$name = ensureArray(inherit.$name)
+        ancestors = createAncestorsFromFields(id, inherit.$name, parseName)
       } else {
-        if (!Array.isArray(inherit.$type)) {
-          inherit.$type = [inherit.$type]
-        }
-        ancestors = await createAncestorsFromFields(
-          client,
-          id,
-          inherit.$type,
-          parseType
-        )
+        inherit.$type = ensureArray(inherit.$type)
+        ancestors = createAncestorsFromFields(id, inherit.$type, parseType)
       }
-      await setFromAncestors(
-        client,
-        ancestors,
-        field,
-        result,
-        language,
-        version
-      )
+      setFromAncestors(result, ancestors, field, language, version)
     } else if (inherit.$item) {
-      if (!Array.isArray(inherit.$item)) {
-        inherit.$item = [inherit.$item]
-      }
-      await inheritItem(
-        client,
-        id,
-        field,
-        props,
-        result,
-        inherit.$item,
-        language,
-        version
-      )
+      inherit.$item = ensureArray(inherit.$item)
+      inheritItem(props, result, id, field, inherit.$item, language, version)
     }
   }
 }
