@@ -49,7 +49,7 @@ export class SelvaClient {
       MODIFY_SCRIPT,
       0,
       [],
-      [JSON.stringify([opts])]
+      [JSON.stringify(opts)]
     )
   }
 
