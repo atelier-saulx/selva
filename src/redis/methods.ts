@@ -353,9 +353,15 @@ abstract class RedisMethods {
 
   async ftInfo(index: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.queue('ft_index', [index], resolve, reject)
+      this.queue('FT.INFO', [index], resolve, reject)
     })
   }
+
+  // async ftIndex(index: string): Promise<any> {
+  //   return new Promise((resolve, reject) => {
+  //     this.queue('FT.INDEX', [index], resolve, reject)
+  //   })
+  // }
 }
 
 export default RedisMethods

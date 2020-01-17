@@ -166,10 +166,11 @@ for (let i = 0; i < itemTypes.length; i++) {
   createPrefix(<Type>itemTypes[i], 0)
 }
 
+export const searchSchema = {}
+
 /*  
   // json ld it
 */
-
 export type BaseItem = {
   id?: string
   type?: Type

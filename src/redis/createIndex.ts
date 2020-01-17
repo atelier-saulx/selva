@@ -1,4 +1,4 @@
-import RedisClient from './'
+import RedisClient from '.'
 import { searchSchema } from '../schema'
 
 // const create = async (index, schema) => {
@@ -12,33 +12,36 @@ import { searchSchema } from '../schema'
 // }
 
 // ftInfo
-const makeSchema = async (client: RedisClient) => {
-  const index = 'selvaIndex'
+const createIndex = async (client: RedisClient) => {
+  const index = 'selva'
   try {
     const info = await client.ftInfo(index)
-    console.log('info', info)
-    const fields = info[info.indexOf('fields') + 1]
-    const set = new Set()
-    let changed = fields.find(([field, x, ...type]) => {
-      const scheme = searchSchema[field]
-      set.add(field)
-      return scheme && scheme.find((key, i) => type[i] !== key)
-    })
-    if (!changed) {
-      for (const field in searchSchema) {
-        // console.log('!!', field, set.has(field))
-        if (!set.has(field)) {
-          changed = true
-          break
-        }
-      }
-    }
-    if (changed) {
-      // return alter(index, searchSchema)
-    }
+    console.log('info')
+    // const fields = info[info.indexOf('fields') + 1]
+    // const set = new Set()
+    // let changed = fields.find(([field, x, ...type]) => {
+    //   const scheme = searchSchema[field]
+    //   set.add(field)
+    //   return scheme && scheme.find((key, i) => type[i] !== key)
+    // })
+    // if (!changed) {
+    //   for (const field in searchSchema) {
+    //     // console.log('!!', field, set.has(field))
+    //     if (!set.has(field)) {
+    //       changed = true
+    //       break
+    //     }
+    //   }
+    // }
+    // if (changed) {
+    //   // return alter(index, searchSchema)
+    // }
   } catch (e) {
     if (/Unknown Index name/.test(e)) {
+      console.log('yesh')
       // return create(index, searchSchema)
     }
   }
 }
+
+export default createIndex

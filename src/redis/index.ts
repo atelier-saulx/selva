@@ -1,6 +1,12 @@
+import * as redis from 'redis'
 import { createClient, RedisClient as Redis } from 'redis'
 import RedisMethods from './methods'
 import createIndex from './createIndex'
+
+// @ts-ignore
+redis.add_command(`FT.INDEX`)
+// @ts-ignore
+redis.add_command(`FT.INFO`)
 
 export type ConnectOptions = {
   port: number
@@ -237,11 +243,20 @@ export default class RedisClient extends RedisMethods {
           reject(err)
         } else {
           reply.forEach((v, i) => {
-            slice[i].resolve(v)
-            if (slice[i].nested) {
-              slice[i].nested.forEach(({ resolve }) => {
-                resolve(v)
-              })
+            if (v instanceof Error) {
+              slice[i].reject(v)
+              if (slice[i].nested) {
+                slice[i].nested.forEach(({ reject }) => {
+                  reject(v)
+                })
+              }
+            } else {
+              slice[i].resolve(v)
+              if (slice[i].nested) {
+                slice[i].nested.forEach(({ resolve }) => {
+                  resolve(v)
+                })
+              }
             }
           })
           resolve()
