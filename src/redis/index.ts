@@ -1,19 +1,5 @@
-import { readFileSync } from 'fs'
-import { join as pathJoin } from 'path'
 import { createClient, RedisClient as Redis } from 'redis'
-import { ModifyOptions, ModifyResult } from '../modifyTypes'
 import RedisMethods from './methods'
-
-// FIXME: this is pretty shit
-let MODIFY_SCRIPT
-try {
-  MODIFY_SCRIPT = readFileSync(
-    pathJoin(process.cwd(), 'dist', 'lua', 'modify.lua')
-  )
-} catch (e) {
-  console.error(`Failed to read modify.lua ${e.stack}`)
-  process.exit(1)
-}
 
 export type ConnectOptions = {
   port: number
@@ -41,8 +27,11 @@ export default class RedisClient extends RedisMethods {
   private connected: boolean
   private inProgress: boolean
   private retryTimer: number
-  private scripts: {
-    modify?: string
+  private scriptShas: {
+    [scriptName: string]: string
+  } = {}
+  private scriptBatchingEnabled: {
+    [scriptSha: string]: boolean
   } = {}
   // private bufferedGet: Record<number, RedisCommand>
 
@@ -52,6 +41,25 @@ export default class RedisClient extends RedisMethods {
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
     this.buffer = []
     this.connect()
+  }
+
+  async loadAndEvalScript(
+    scriptName: string,
+    script: string,
+    numKeys: number,
+    keys: string[],
+    args: string[],
+    opts?: { batchingEnabled?: boolean }
+  ): Promise<any> {
+    if (!this.scriptShas[scriptName]) {
+      this.scriptShas[scriptName] = await this.loadScript(script)
+    }
+
+    if (opts && opts.batchingEnabled) {
+      this.scriptBatchingEnabled[this.scriptShas[scriptName]] = true
+    }
+
+    return this.evalSha(this.scriptShas[scriptName], numKeys, ...keys, ...args)
   }
 
   destroy() {
@@ -66,7 +74,7 @@ export default class RedisClient extends RedisMethods {
     this.retryTimer = 100
     if (!opts.retryStrategy) {
       opts.retryStrategy = () => {
-        console.log('retry')
+        // console.log('retry')
         this.connector().then(newOpts => {
           if (newOpts.host !== opts.host || newOpts.port !== opts.port) {
             console.log('OPTS CHANGED')
@@ -83,7 +91,7 @@ export default class RedisClient extends RedisMethods {
     this.client = createClient(opts)
 
     this.client.on('error', err => {
-      console.log('ERRRRR')
+      // console.log('ERRRRR')
       if (err.code === 'ECONNREFUSED') {
         console.info(`Connecting to ${err.address}:${err.port}`)
       } else {
@@ -92,12 +100,12 @@ export default class RedisClient extends RedisMethods {
     })
 
     this.client.on('connect', a => {
-      console.log('connect it', a)
+      // console.log('connect it', a)
     })
 
     this.client.on('ready', () => {
       // also set connected to false
-      console.log('READY')
+      // console.log('READY')
       this.retryTimer = 100
       this.connected = true
       this.flushBuffered()
@@ -159,9 +167,65 @@ export default class RedisClient extends RedisMethods {
     }
   }
 
-  private execBatch(slice: RedisCommand[]): Promise<void> {
+  private batchEvalScriptArgs(origSlice: RedisCommand[]): RedisCommand[] {
+    const slice: RedisCommand[] = []
+    const batchedModifyArgs: { [scriptSha: string]: any[] } = {}
+    const batchedModifyResolves: { [scriptSha: string]: any[] } = {}
+    const batchedModifyRejects: { [scriptSha: string]: any[] } = {}
+
+    for (const sha in this.scriptBatchingEnabled) {
+      if (this.scriptBatchingEnabled[sha] === true) {
+        batchedModifyArgs[sha] = []
+        batchedModifyResolves[sha] = []
+        batchedModifyRejects[sha] = []
+      }
+    }
+
+    for (const cmd of origSlice) {
+      if (cmd.command !== 'evalsha') {
+        slice.push(cmd)
+        continue
+      }
+
+      const scriptSha = cmd.args[0]
+      if (this.scriptBatchingEnabled[scriptSha]) {
+        batchedModifyArgs[scriptSha].push(...cmd.args.slice(2)) // push all args after sha and numKeys
+        batchedModifyResolves[scriptSha].push(cmd.resolve)
+        batchedModifyRejects[scriptSha].push(cmd.reject)
+      } else {
+        slice.push(cmd)
+      }
+    }
+
+    for (let sha in batchedModifyArgs) {
+      const modifyArgs = batchedModifyArgs[sha]
+      const modifyResolves = batchedModifyResolves[sha]
+      const modifyRejects = batchedModifyRejects[sha]
+      if (modifyArgs.length) {
+        slice.push({
+          command: 'evalsha',
+          args: [sha, 0, ...modifyArgs],
+          resolve: (x: any) => {
+            modifyResolves.forEach(resolve => resolve(x))
+          },
+          reject: (x: Error) => {
+            modifyRejects.forEach(reject => reject(x))
+          }
+        })
+      }
+    }
+
+    return slice
+  }
+
+  private execBatch(origSlice: RedisCommand[]): Promise<void> {
     return new Promise((resolve, reject) => {
       const batch = this.client.batch()
+
+      const slice = Object.values(this.scriptBatchingEnabled).some(x => x)
+        ? this.batchEvalScriptArgs(origSlice)
+        : origSlice
+
       slice.forEach(({ command, args }) => {
         batch[command](...args)
       })
@@ -203,14 +267,6 @@ export default class RedisClient extends RedisMethods {
     // default 500ms or something
     // this.bufferedGet = {}
     this.inProgress = false
-  }
-
-  async modify(opts: ModifyOptions): Promise<ModifyResult> {
-    if (!this.scripts.modify) {
-      this.scripts.modify = await this.loadScript(MODIFY_SCRIPT)
-    }
-
-    return this.evalSha(this.scripts.modify, 0, JSON.stringify([opts]))
   }
 
   // subscriber stuff fix it needs to become better!

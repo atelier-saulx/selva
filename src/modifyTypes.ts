@@ -1,6 +1,6 @@
 import { Id } from './schema'
-import { SetOptions } from './setTypes'
-import { DeleteOptions } from './deleteTypes'
+import { SetOptions } from './set/types'
+import { DeleteOptions } from './delete/types'
 
 export type ModifyOptionsUpdate = {
   kind: 'update'

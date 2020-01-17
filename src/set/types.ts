@@ -1,4 +1,4 @@
-import { BaseItem, Field, ExternalId, UserType, Id } from './schema'
+import { BaseItem, Field, ExternalId, UserType, Id } from '../schema'
 
 export type RedisSetParams =
   | Id[]

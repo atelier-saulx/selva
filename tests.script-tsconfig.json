@@ -1,0 +1,17 @@
+{
+  "extends": "./lua-tsconfig.json",
+  "files": ["./luaScripts/tests.ts"],
+  "include": [
+    "./lua/src/util.ts",
+    "./lua/tests/*.ts",
+    "./lua/types/*.d.ts",
+    "./src/schema.ts",
+    "./src/setTypes.ts"
+  ],
+  "tstl": {
+    "luaTarget": "5.3",
+    "luaLibImport": "require",
+    "luaBundle": "./dist/lua/tests.lua",
+    "luaBundleEntry": "./luaScripts/tests.ts"
+  }
+}

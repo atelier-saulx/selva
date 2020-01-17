@@ -6,8 +6,9 @@
     "start": "tsc && node dist/index.js",
     "test": "yarn buildLua && ava --verbose",
     "watch": "ava --watch --verbose",
-    "testLua": "yarn buildLua && redis-cli --ldb --eval dist/lua/scratchpad.lua",
-    "buildLua": "scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ./bin/transpileScript $script; done"
+    "scratchpad": "yarn buildLua && redis-cli --ldb --eval dist/lua/scratchpad.lua",
+    "testLua": "yarn buildLua && ./lua/testy.lua dist/lua/tests.lua",
+    "buildLua": "scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ./bin/transpileScript $script; done && node ./lua/postprocessLuaTests.js"
   },
   "husky": {
     "hooks": {

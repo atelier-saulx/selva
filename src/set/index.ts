@@ -1,6 +1,6 @@
-import { Id } from './schema'
-import { SetOptions } from './setTypes'
-import { SelvaClient } from './'
+import { Id } from '../schema'
+import { SetOptions } from './types'
+import { SelvaClient } from '..'
 
 // ---------------------------------------------------------------
 async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
@@ -24,7 +24,7 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {
     }
   }
 
-  const modifyResult = await redis.modify({
+  const modifyResult = await client.modify({
     kind: 'update',
     payload: <SetOptions & { $id: string }>payload // assure TS that id is actually set :|
   })
