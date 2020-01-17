@@ -166,11 +166,22 @@ for (let i = 0; i < itemTypes.length; i++) {
   createPrefix(<Type>itemTypes[i], 0)
 }
 
-export const searchSchema = {}
+export type SearchSchema = Record<string, string[]>
 
-/*  
-  // json ld it
-*/
+export const searchSchema: SearchSchema = {
+  ancestors: ['TAG'],
+  relatedAncestors: ['TAG'],
+  externalId: ['TAG'], // comma sperated
+  name: ['TAG'],
+  date: ['NUMERIC', 'SORTABLE'],
+  start: ['NUMERIC', 'SORTABLE'],
+  end: ['NUMERIC', 'SORTABLE'],
+  value: ['NUMERIC', 'SORTABLE'],
+  published: ['TAG'],
+  status: ['TAG'],
+  version: ['TAG']
+}
+
 export type BaseItem = {
   id?: string
   type?: Type

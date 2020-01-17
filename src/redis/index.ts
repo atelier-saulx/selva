@@ -3,10 +3,15 @@ import { createClient, RedisClient as Redis } from 'redis'
 import RedisMethods from './methods'
 import createIndex from './createIndex'
 
+// type definition is wrong its not on the client
 // @ts-ignore
 redis.add_command(`FT.INDEX`)
 // @ts-ignore
 redis.add_command(`FT.INFO`)
+// @ts-ignore
+redis.add_command(`FT.CREATE`)
+// @ts-ignore
+redis.add_command(`FT.ALTER`)
 
 export type ConnectOptions = {
   port: number
@@ -284,38 +289,6 @@ export default class RedisClient extends RedisMethods {
     // default 500ms or something
     // this.bufferedGet = {}
     this.inProgress = false
-  }
-
-  // subscriber stuff fix it needs to become better!
-  // do it next week
-  async psubscribe(...pattern: string[]): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.queue('psubscribe', pattern, resolve, reject, true)
-    })
-  }
-
-  async punsubscribe(...pattern: string[]): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.queue('punsubscribe', pattern, resolve, reject, true)
-    })
-  }
-
-  async unsubscribe(...channel: string[]): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.queue('unsubscribe', channel, resolve, reject, true)
-    })
-  }
-
-  async subscribe(...channel: string[]): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.queue('subscribe', channel, resolve, reject, true)
-    })
-  }
-
-  async publish(channel: string, message?: string): Promise<BigInteger> {
-    return new Promise((resolve, reject) => {
-      this.queue('publish', [channel, message], resolve, reject, true)
-    })
   }
 }
 
