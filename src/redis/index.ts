@@ -75,7 +75,6 @@ export default class RedisClient extends RedisMethods {
     if (!opts.retryStrategy) {
       opts.retryStrategy = () => {
         this.connected = false
-
         this.connector().then(async newOpts => {
           if (newOpts.host !== opts.host || newOpts.port !== opts.port) {
             this.client.quit()
