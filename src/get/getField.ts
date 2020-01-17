@@ -2,7 +2,6 @@ import { SelvaClient } from '..'
 import { Id, Language, languages, itemTypes, getTypeFromId } from '../schema'
 import { GetResult, getInner, GetOptions, get } from './'
 import { setNestedResult, getNestedField } from './nestedFields'
-import { Verify } from 'crypto'
 
 const number = async (
   client: SelvaClient,

@@ -212,10 +212,12 @@ export type BaseItem = {
     address?: string
     industry?: string
   }
+  data?: {
+    [key: string]: any // stringified shady
+  }
   value?: number
   age?: number // only for person and wine and whiskey
-  price?: number
-  discount?: number
+  price?: Record<Type | 'default', number>
   tax?: number
   location?: Location
   theme?: Theme
