@@ -74,10 +74,13 @@ export default class RedisClient extends RedisMethods {
     this.retryTimer = 100
     if (!opts.retryStrategy) {
       opts.retryStrategy = () => {
-        // console.log('retry')
-        this.connector().then(newOpts => {
+        this.connected = false
+
+        this.connector().then(async newOpts => {
           if (newOpts.host !== opts.host || newOpts.port !== opts.port) {
-            console.log('OPTS CHANGED')
+            this.client.quit()
+            this.connected = false
+            await this.connect()
           }
         })
         if (this.retryTimer < 1e3) {
@@ -95,7 +98,7 @@ export default class RedisClient extends RedisMethods {
       if (err.code === 'ECONNREFUSED') {
         console.info(`Connecting to ${err.address}:${err.port}`)
       } else {
-        console.log('ERR', err)
+        // console.log('ERR', err)
       }
     })
 
@@ -104,8 +107,6 @@ export default class RedisClient extends RedisMethods {
     })
 
     this.client.on('ready', () => {
-      // also set connected to false
-      // console.log('READY')
       this.retryTimer = 100
       this.connected = true
       this.flushBuffered()
