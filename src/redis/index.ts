@@ -26,8 +26,11 @@ export default class RedisClient extends RedisMethods {
   private buffer: RedisCommand[]
   private connected: boolean
   private inProgress: boolean
-  private scripts: {
-    modify?: string
+  private scriptShas: {
+    [scriptName: string]: string
+  } = {}
+  private scriptBatchingEnabled: {
+    [scriptSha: string]: boolean
   } = {}
   // private bufferedGet: Record<number, RedisCommand>
 
@@ -44,13 +47,18 @@ export default class RedisClient extends RedisMethods {
     script: string,
     numKeys: number,
     keys: string[],
-    args: string[]
+    args: string[],
+    opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
-    if (!this.scripts[scriptName]) {
-      this.scripts.modify = await this.loadScript(script)
+    if (!this.scriptShas[scriptName]) {
+      this.scriptShas[scriptName] = await this.loadScript(script)
     }
 
-    return this.evalSha(this.scripts.modify, numKeys, ...keys, ...args)
+    if (opts && opts.batchingEnabled) {
+      this.scriptBatchingEnabled[this.scriptShas[scriptName]] = true
+    }
+
+    return this.evalSha(this.scriptShas[scriptName], numKeys, ...keys, ...args)
   }
 
   destroy() {
@@ -145,29 +153,44 @@ export default class RedisClient extends RedisMethods {
     }
   }
 
-  private execBatch(origSlice: RedisCommand[]): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const batch = this.client.batch()
+  private batchEvalScriptArgs(origSlice: RedisCommand[]): RedisCommand[] {
+    const slice: RedisCommand[] = []
+    const batchedModifyArgs: { [scriptSha: string]: any[] } = {}
+    const batchedModifyResolves: { [scriptSha: string]: any[] } = {}
+    const batchedModifyRejects: { [scriptSha: string]: any[] } = {}
 
-      // combine single modify commands to one
-      const slice: RedisCommand[] = []
-      const modifyArgs = []
-      const modifyResolves = []
-      const modifyRejects = []
-      for (const cmd of origSlice) {
-        if (cmd.command === 'evalsha' && cmd.args[0] === this.scripts.modify) {
-          modifyArgs.push(...cmd.args.slice(2)) // push all args after sha and numKeys
-          modifyResolves.push(cmd.resolve)
-          modifyRejects.push(cmd.reject)
-        } else {
-          slice.push(cmd)
-        }
+    for (const sha in this.scriptBatchingEnabled) {
+      if (this.scriptBatchingEnabled[sha] === true) {
+        batchedModifyArgs[sha] = []
+        batchedModifyResolves[sha] = []
+        batchedModifyRejects[sha] = []
+      }
+    }
+
+    for (const cmd of origSlice) {
+      if (cmd.command !== 'evalsha') {
+        slice.push(cmd)
+        continue
       }
 
+      const scriptSha = cmd.args[0]
+      if (this.scriptBatchingEnabled[scriptSha]) {
+        batchedModifyArgs[scriptSha].push(...cmd.args.slice(2)) // push all args after sha and numKeys
+        batchedModifyResolves[scriptSha].push(cmd.resolve)
+        batchedModifyRejects[scriptSha].push(cmd.reject)
+      } else {
+        slice.push(cmd)
+      }
+    }
+
+    for (let sha in batchedModifyArgs) {
+      const modifyArgs = batchedModifyArgs[sha]
+      const modifyResolves = batchedModifyResolves[sha]
+      const modifyRejects = batchedModifyRejects[sha]
       if (modifyArgs.length) {
         slice.push({
           command: 'evalsha',
-          args: [this.scripts.modify, 0, ...modifyArgs],
+          args: [sha, 0, ...modifyArgs],
           resolve: (x: any) => {
             modifyResolves.forEach(resolve => resolve(x))
           },
@@ -176,6 +199,18 @@ export default class RedisClient extends RedisMethods {
           }
         })
       }
+    }
+
+    return slice
+  }
+
+  private execBatch(origSlice: RedisCommand[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const batch = this.client.batch()
+
+      const slice = Object.values(this.scriptBatchingEnabled).some(x => x)
+        ? this.batchEvalScriptArgs(origSlice)
+        : origSlice
 
       slice.forEach(({ command, args }) => {
         batch[command](...args)
