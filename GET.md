@@ -430,3 +430,5 @@ $traverse: 'ancestors', // closeAncestors
 
 // get type in parents thats closest to me dont do the other
 // descendants --> relatedDescendants
+
+## Hierarchy rules
