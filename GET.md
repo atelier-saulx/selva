@@ -405,4 +405,4 @@ match,
 │       └──matchB
 ```
 
-This case is impossible and arbitrary to fix without making custom rules. Imagine adding a `comptetition` or `tournament` no system will make this work. This means we will need to allow adding types and rules in the cms (first select some good defaults).
+This case is impossible and arbitrary to fix without making custom rules. Imagine adding a `competition` or `tournament` no system will make this work. This means we will need to allow adding types and rules in the cms (first select some good defaults).
