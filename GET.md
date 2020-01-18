@@ -425,7 +425,7 @@ const schema = {
 }
 ```
 
-These schemas are stored on the db it self and when ancestors get updated , or inherit gets fired it reads this file.
+These schemas are stored on the db itself and when ancestors get updated , or inherit gets fired it reads this file. Schemas are also used to do dynamic input validation.
 
 ```javascript
 client.setSchema({
