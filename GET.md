@@ -380,58 +380,12 @@ match,
 }
 ```
 
-### special behaviour
+### Special behaviours
 
 - decendants, does not exists just a colleciton of all children (deep) - gaurd against circulair stuff
-- ancestors, string for indexing, returns array
+- ancestors, returns array
 
-### \$traverse close / different
-
-### SHOW EXAMPLE
-
-root -> tag (folder)
-
-- Show x (Tag sci-fi)
-
-  - Episode y (Tag horror, flurp)
-  - Episode C
-
-  // ancestors Y - horror,sci-fi,x,flurp
-  // closeAncestors Y - horror,x,flurp
-
-$traverse: descendants tag sci-fi gets all show x episodes
-$traverse: closeDescendants tag sci-fi gets all show x not the episode y (since it has a tag)
-
-ACTOR EXAMPLE
-
-- Movies
-  \$traverse: closeAncestors get movies will get all movies that are direct parents if there is 1 that is a direct parent
-
-- Movies , and a folder in movies named ‘cast’ with the actor
-  \$traverse: ancestors also get movies in the folder cast of a movie
-
-LEAGUE EXAMPLE
-
-League - season - match - team
-
-$traverse: descendants match -> will get all matches of teams play in the league
-$traverse: closeDescendants match -> will get all matches in season (shortest path to items)
-
-// give me all clubs in the leage
-id: league,
-$find: {
-   $traverse: 'closeDescendants',
-$filter: { type === 'team' }
-   $find: {
-$traverse: 'ancestors', // closeAncestors
-     $filter: { type: 'club' }
-}
-}
-
-// get type in parents thats closest to me dont do the other
-// descendants --> relatedDescendants
-
-## Hierarchy rules / schema
+## Rules
 
 - Hierarchies need to be configurable
 - Custom types (no type custom)
@@ -450,3 +404,5 @@ $traverse: 'ancestors', // closeAncestors
 │       ├──matchA
 │       └──matchB
 ```
+
+This case is impossible and arbitrary to fix without making custom rules. Imagine adding a `comptetition` or `tournament` no system will make this work. This means we will need to allow adding types and rules in the cms (first select some good defaults).
