@@ -1,3 +1,11 @@
+export function id(externalIdStr?: string): string {
+  if (externalIdStr) {
+    return redis.call('selva.id', externalIdStr)
+  }
+
+  return redis.call('selva.id')
+}
+
 export function hexists(key: string, field: string): boolean {
   const result = redis.call('hexists', key, field)
   return result === 1

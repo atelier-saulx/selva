@@ -1,3 +1,4 @@
+import { id as genId } from '../id'
 import * as redis from '../redis'
 import { Id } from '~selva/schema'
 import { SetOptions } from '~selva/setTypes'
@@ -175,6 +176,27 @@ function remove(payload: DeleteOptions): boolean {
 }
 
 function update(payload: SetOptions & { $id: string }): Id {
+  if (!payload.$id) {
+    if (!payload.type) {
+      throw new Error('Cannot create an item if type is not provided')
+    }
+    const itemType =
+      type(payload.type) === 'string'
+        ? payload.type
+        : (<any>payload.type).$value
+    if (
+      (payload.externalId && type(payload.externalId) === 'string') ||
+      isArray(<any>payload.externalId)
+    ) {
+      payload.$id = genId({
+        type: itemType,
+        externalId: <any>payload.externalId
+      })
+    } else {
+      payload.$id = genId({ type: itemType })
+    }
+  }
+
   const exists = !!payload.$id ? redis.hexists(payload.$id, 'type') : false
 
   if (!exists) {

@@ -1,7 +1,7 @@
+import { id as genId } from '../id'
 import { SetOptions } from '~selva/setTypes'
 import { Id } from '~selva/schema'
 import * as redis from '../redis'
-import { arrayIsEqual } from '../util'
 import { reCalculateAncestors } from './ancestors'
 import { deleteItem } from './delete'
 
@@ -124,12 +124,25 @@ export function removeFromParents(id: string, value: Id[]): void {
     redis.srem(parent + '.children', id)
   }
 
-  const parents = redis.smembers(id + '.parents')
   reCalculateAncestors(id)
 }
 
 export function addToChildren(id: string, value: Id[], modify: FnModify): void {
-  for (const child of value) {
+  for (let child of value) {
+    // if the child is an object
+    // automatic creation is attempted
+    if (type(child) === 'table') {
+      if (!(<any>child).$id) {
+        modify(<any>child)
+      } else if ((<any>child).type !== null) {
+        ;(<any>child).$id = genId({ type: (<any>child).type })
+        modify(<any>child)
+      } else {
+        throw new Error('No type or id provided for dynamically created child')
+      }
+      child = child = (child as any).$id
+    }
+
     if (!redis.exists(child)) {
       modify({ $id: child, parents: { $add: id } })
     } else {
