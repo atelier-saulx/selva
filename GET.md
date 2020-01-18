@@ -406,3 +406,21 @@ match,
 ```
 
 This case is impossible and arbitrary to fix without making custom rules. Imagine adding a `competition` or `tournament` no system will make this work. This means we will need to allow adding types and rules in the cms (first select some good defaults).
+
+- Type indexing dynamic (think about typescrip as well)
+- Id map of prefixes for types stable (so extra characters)
+- Rule system for hierarchies
+- Select fields for types using a json object
+
+```javascript
+const schema = {
+  match: {
+    hierarchy: {
+      team: { ignore: [ 'league' ]}
+    }
+    fields: [
+      'start', 'end', 'video', 'image', 'title', 'description'
+    ]
+  }
+}
+```

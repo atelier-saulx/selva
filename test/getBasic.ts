@@ -382,12 +382,18 @@ test.serial('get - $field (basic)', async t => {
 
   await client.set({
     $id: 'maA',
+    parents: ['reDe']
+  })
+
+  await client.get({
+    $id: 'maA',
     layout: {
+      $inherit: true,
       $field: ['layout.$type', 'layout.default']
     }
   })
 
-  console.log(await client.get({ $id: 'root', children: true }))
+  console.log(await client.get({ $id: 'reDe', children: true }))
 })
 
 // ADD FIELD
