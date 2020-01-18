@@ -412,15 +412,26 @@ This case is impossible and arbitrary to fix without making custom rules. Imagin
 - Rule system for hierarchies
 - Select fields for types using a json object
 
+Schema example
+
 ```javascript
 const schema = {
   match: {
     hierarchy: {
-      team: { ignore: [ 'league' ]}
-    }
-    fields: [
-      'start', 'end', 'video', 'image', 'title', 'description'
-    ]
+      team: { ignore: ['league'] }
+    },
+    fields: ['start', 'end', 'video', 'image', 'title', 'description']
   }
 }
+```
+
+These schemas are stored on the db it self and when ancestors get updated , or inherit gets fired it reads this file.
+
+```javascript
+client.setSchema({
+  flurp: {
+    fields: ['value'],
+    hierarchy: false
+  }
+})
 ```
