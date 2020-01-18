@@ -188,18 +188,45 @@ test.serial('get - $inherit', async t => {
 
   /*
     root
-      |_ cuA
-      |  |_cuC
-      |  |_cuB
-      |    |_cuD <---
-      |      |_cuC      
+      |_ cuX
+          |_cuC
+      |_cuA
+          |_cuC
+          |_cuB
+              |_cuD <---
+                |_cuC  
+                
+      |_cuFlap
+        |_cuFlurp
+          |_cuD <---
+
+
       |_clClub
-      | |_cuB
+        |_cuB
       |_cuDfp
-      | |_cuD
+        |_cuD
       |_cuMrsnurfels
         |_cuD
+
+  
+      root
+      |_ leA
+          |_seasonA
+             |_matchA
+             |_teamA //ignoe ancestor from cut of point outside of my hierarchy
+                |_matchA
+          
+      |_ leB
+          |_seasonB
+             |_teamA
+                |_matchA
+
   */
+
+  // close ancestors [ cuMrsnurfels, cuDfp, cuB, clClub, root ]
+
+  // close ancestors of cuD
+  // dfp, cub, cuD
 
   await Promise.all([
     client.set({
@@ -213,6 +240,10 @@ test.serial('get - $inherit', async t => {
     client.set({
       $id: 'cuB',
       children: ['cuC', 'cuD']
+    }),
+    client.set({
+      $id: 'cuX',
+      children: ['cuC']
     }),
     client.set({
       $id: 'clClub',
@@ -339,6 +370,25 @@ test.serial('get - $inherit', async t => {
   client.destroy()
 })
 
-// ADD FIELD
+test.serial('get - $field (basic)', async t => {
+  const client = connect({ port: 6062 })
 
-// ADD REF
+  await client.set({
+    $id: 'reDe',
+    layout: {
+      match: { components: [{ type: 'list', blurf: true }] }
+    }
+  })
+
+  await client.set({
+    $id: 'maA',
+    layout: {
+      $field: ['layout.$type', 'layout.default']
+    }
+  })
+
+  console.log(await client.get({ $id: 'root', children: true }))
+})
+
+// ADD FIELD
+// ADD REF <-- ref mucho ikportante

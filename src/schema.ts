@@ -95,6 +95,7 @@ export type Type =
   | 'article'
   | 'product'
   | 'animal'
+  | 'region'
 
 // not the place to define the component type - too much limitation for front end
 export type Component = {
@@ -134,7 +135,8 @@ export const itemTypes = [
   'custom',
   'article',
   'product',
-  'animal'
+  'animal',
+  'region'
 ]
 
 export const typePrefix: Record<string, Type> = {}
