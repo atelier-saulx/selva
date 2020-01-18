@@ -431,4 +431,22 @@ $traverse: 'ancestors', // closeAncestors
 // get type in parents thats closest to me dont do the other
 // descendants --> relatedDescendants
 
-## Hierarchy rules
+## Hierarchy rules / schema
+
+- Hierarchies need to be configurable
+- Custom types (no type custom)
+- Pick allowed fields
+
+```bash
+.
+├── leagueA
+│   ├── matchA
+│   └── teamA
+│       └──matchA
+│       └──matchB
+├── leagueB
+│   ├── matchB
+│   └── teamA
+│       ├──matchA
+│       └──matchB
+```
