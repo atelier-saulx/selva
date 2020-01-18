@@ -3,15 +3,37 @@ import { createClient, RedisClient as Redis } from 'redis'
 import RedisMethods from './methods'
 import createIndex from './createIndex'
 
-// type definition is wrong its not on the client
-// @ts-ignore
-redis.add_command(`FT.INDEX`)
-// @ts-ignore
-redis.add_command(`FT.INFO`)
-// @ts-ignore
-redis.add_command(`FT.CREATE`)
-// @ts-ignore
-redis.add_command(`FT.ALTER`)
+const redisSearchCommands = [
+  'CREATE',
+  'ADD',
+  'ADDHASH',
+  'ALTER',
+  'INFO',
+  'SEARCH',
+  'AGGREGATE',
+  'EXPLAIN',
+  'DEL',
+  'GET',
+  'DROP',
+  'SUGADD',
+  'SUGGET',
+  'SUGDEL',
+  'SUGLEN',
+  'SYNADD',
+  'SYNUPDATE',
+  'SYNDUMP',
+  'SPELLCHECK',
+  'DICTADD',
+  'DICTDEL',
+  'DICTDUMP',
+  'CONFIG'
+]
+
+redisSearchCommands.forEach(cmd => {
+  // type definition is wrong its not on the client
+  // @ts-ignore
+  redis.add_command(`FT.${cmd}`)
+})
 
 export type ConnectOptions = {
   port: number
