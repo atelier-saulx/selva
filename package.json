@@ -64,7 +64,7 @@
     "husky": "^3.0.8",
     "lint-staged": "^9.4.2",
     "prettier": "^1.18.2",
-    "selva-server": "0.0.6",
+    "selva-server": "0.0.7",
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3",
     "typescript-to-lua": "^0.30.1"
