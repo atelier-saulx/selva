@@ -370,31 +370,29 @@ test.serial('get - $inherit', async t => {
   client.destroy()
 })
 
-test.serial('get - $field (basic)', async t => {
-  const client = connect({ port: 6062 })
+// test.serial('get - $field (basic)', async t => {
+//   const client = connect({ port: 6062 })
 
-  await client.set({
-    $id: 'reDe',
-    layout: {
-      match: { components: [{ type: 'list', blurf: true }] }
-    }
-  })
+//   await client.set({
+//     $id: 'reDe',
+//     layout: {
+//       match: { components: [{ type: 'list', blurf: true }] }
+//     }
+//   })
 
-  await client.set({
-    $id: 'maA',
-    parents: ['reDe']
-  })
+//   await client.set({
+//     $id: 'maA',
+//     parents: ['reDe']
+//   })
 
-  await client.get({
-    $id: 'maA',
-    layout: {
-      $inherit: true,
-      $field: ['layout.$type', 'layout.default']
-    }
-  })
-
-  console.log(await client.get({ $id: 'reDe', children: true }))
-})
+//   await client.get({
+//     $id: 'maA',
+//     layout: {
+//       $inherit: true,
+//       $field: ['layout.$type', 'layout.default']
+//     }
+//   })
+// })
 
 // ADD FIELD
-// ADD REF <-- ref mucho ikportante
+// ADD REF <-- ref mucho importante
