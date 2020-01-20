@@ -9,7 +9,7 @@ test('Connect and re-connect', async t => {
     return { port: 6066 }
   })
 
-  const server = await start({ port: 6066, modules: ['redisearch'] })
+  const server = await start({ port: 6066, modules: ['redisearch', 'selva'] })
 
   client.set({
     $id: 'cuflap',

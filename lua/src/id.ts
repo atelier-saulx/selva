@@ -1,6 +1,6 @@
 import * as redis from './redis'
 import { isArray } from './util'
-import { Id, Type, ExternalId, inverseTypePrefix } from '~selva/schema'
+import { Id, Type, ExternalId, inverseTypePrefix } from '../../src/schema'
 
 function hash(str?: string): string {
   return redis.id(str)
@@ -11,11 +11,11 @@ type IdOptions = {
   externalId?: ExternalId | ExternalId[]
 }
 
-export function id({ type, externalId }: IdOptions): Id {
+export function id({ type, externalId }: IdOptions): Id | undefined {
   const prefix = inverseTypePrefix[type]
 
   if (!prefix) {
-    throw new Error(`Type not pre-defined ${type}`)
+    return undefined
   }
 
   if (externalId) {

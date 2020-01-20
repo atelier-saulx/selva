@@ -5,7 +5,7 @@ import * as redis from '../redis'
 import { reCalculateAncestors } from './ancestors'
 import { deleteItem } from './delete'
 
-type FnModify = (payload: SetOptions & { $id: string }) => Id
+type FnModify = (payload: SetOptions) => Id | null
 
 function getSetKey(id: string, field: string): string {
   return id + '.' + field
@@ -138,7 +138,7 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): void {
         ;(<any>child).$id = genId({ type: (<any>child).type })
         modify(<any>child)
       } else {
-        throw new Error('No type or id provided for dynamically created child')
+        // FIXME: throw new Error('No type or id provided for dynamically created child')
       }
       child = child = (child as any).$id
     }

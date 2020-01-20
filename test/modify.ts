@@ -12,7 +12,7 @@ function ancestorEquals(t: ExecutionContext, a: string, b: string): boolean {
 }
 
 test.before(async t => {
-  await start({ port: 6061, modules: ['redisearch'] })
+  await start({ port: 6061, modules: ['redisearch', 'selva'] })
 })
 
 test.serial('basic', async t => {

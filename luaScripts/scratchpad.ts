@@ -1,4 +1,7 @@
+import * as redis from '../lua/src/redis'
+
 import modify from '../lua/src/modify/index'
+redis.debug('ID TESTING: ' + redis.id())
 let a = modify([
   {
     kind: 'update',

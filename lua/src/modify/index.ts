@@ -175,10 +175,10 @@ function remove(payload: DeleteOptions): boolean {
   return deleteItem(payload.$id, payload.$hierarchy)
 }
 
-function update(payload: SetOptions & { $id: string }): Id {
+function update(payload: SetOptions): Id | null {
   if (!payload.$id) {
     if (!payload.type) {
-      throw new Error('Cannot create an item if type is not provided')
+      return null
     }
     const itemType =
       type(payload.type) === 'string'
@@ -197,7 +197,11 @@ function update(payload: SetOptions & { $id: string }): Id {
     }
   }
 
-  const exists = !!payload.$id ? redis.hexists(payload.$id, 'type') : false
+  if (!payload.$id) {
+    return null
+  }
+
+  const exists = redis.hexists(payload.$id, 'type')
 
   if (!exists) {
     if (!payload.type) {
@@ -216,12 +220,18 @@ function update(payload: SetOptions & { $id: string }): Id {
 // We always set an $id property before passing to redis
 // returns Id for updates, boolean for deletes
 
-export default function modify(payload: ModifyOptions[]): ModifyResult[] {
-  const results: (Id | boolean)[] = []
+export default function modify(
+  payload: ModifyOptions[]
+): (ModifyResult | null)[] {
+  const results: (Id | boolean | null)[] = []
   for (let i = 0; i < payload.length; i++) {
     let operation = payload[i]
     if (operation.kind === 'update') {
       results[i] = update(operation.payload)
+      // TODO: how do we want to handle errors here?
+      // if (!results[i]) {
+      //   return redis.Error(`Unable to update`)
+      // }
     } else {
       results[i] = remove(operation.payload)
     }

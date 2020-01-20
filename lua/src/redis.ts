@@ -1,3 +1,7 @@
+export function Error(errorMsg: string): Error {
+  return redis.error_reply(errorMsg)
+}
+
 export function id(externalIdStr?: string): string {
   if (externalIdStr) {
     return redis.call('selva.id', externalIdStr)

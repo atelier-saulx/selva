@@ -138,13 +138,13 @@ export const itemTypes = [
 ]
 
 export const typePrefix: Record<string, Type> = {}
-export const inverseTypePrefix = {}
+export const inverseTypePrefix: { [k: string]: string } = {}
 
 export const getTypeFromId = (id: Id) => {
   if (id === 'root') {
     return 'root'
   } else {
-    return typePrefix[id.slice(0, 2)]
+    return typePrefix[id.substring(0, 2)]
   }
 }
 
@@ -153,7 +153,7 @@ const createPrefix = (type: Type, index: number): string => {
   if (index > type.length) {
     return createPrefix(type, 0)
   }
-  let prefix = type.slice(index, index + 2)
+  let prefix = type.substring(index, index + 2)
   if (typePrefix[prefix]) {
     return createPrefix(type, ++index)
   }
