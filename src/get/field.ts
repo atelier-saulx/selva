@@ -40,6 +40,8 @@ hierarchy: {
 
 hierarchy: false // no inheritance ancestors whatsoever
 
+// "required": [ "productId", "productName", "price" ]
+
 const schema = {
   match: {
     hierarchy: {
@@ -53,9 +55,74 @@ const schema = {
       'title',
       'description',
       { field: 'value', type: 'number' }
+      { 
+          field: 'video', 
+          type: 'object', 
+          properties: {
+            mp4: {
+                type: 'url
+            }
+          
+
+          }
+      }
     ]
   }
 }
+
+
+/*
+
+Overlay = {
+  interval?: number[]
+  src: Url
+}
+
+{
+  "video": {
+    "type": "object",
+    "properties": {
+        "mp4": {
+          "type": "url"
+        },
+        "hls": {
+          "type": "url",
+        },
+        "overlays": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "interval": { type: "array", "items": {
+                        type: "timestamp"
+                    }},
+                    "url": { type: "url" }
+                }
+            }
+        }
+    }
+  }
+}
+*/
+
+// TYPES
+// float
+// int
+// json
+// array (stored as json)
+// references (set of ids)
+// string
+// object
+// text
+// id
+// digest (password etc)
+// timestamp (ms)
+// url
+// email
+// phone 
+// geo
+
+// *array <--- can do it but later
 
 // client.getSchema()
 ```
