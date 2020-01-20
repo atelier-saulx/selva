@@ -465,6 +465,53 @@ test.serial('$merge = false', async t => {
   await client.delete('root')
 })
 
+test.serial('automatic child creation', async t => {
+  const client = connect({
+    port: 6061
+  })
+
+  const parent = await client.set({
+    $id: 'parent',
+    title: {
+      nl: 'nl'
+    },
+    children: [
+      {
+        type: 'match',
+        title: {
+          nl: 'child1'
+        }
+      },
+      {
+        type: 'match',
+        title: {
+          nl: 'child2'
+        }
+      },
+      {
+        type: 'match',
+        title: {
+          nl: 'child3'
+        }
+      }
+    ]
+  })
+
+  const children = await client.redis.smembers(parent + '.children')
+  t.is(children.length, 3, 'Should have 3 children created')
+
+  const titles = (
+    await Promise.all(
+      children.map(child => {
+        return client.redis.hget(child, 'title.nl')
+      })
+    )
+  ).sort()
+  for (let i = 0; i < titles.length; i++) {
+    t.is(titles[i], 'child' + (i + 1), `Child ${i} title should match`)
+  }
+})
+
 // test.serial('Reference field', async t => {
 //   const client = connect({
 //     port: 6061

@@ -66,7 +66,26 @@ let d = modify([
     // @ts-ignore
     payload: {
       $id: 'match',
-      children: []
+      children: [
+        {
+          type: 'match',
+          title: {
+            nl: 'child1'
+          }
+        },
+        {
+          type: 'match',
+          title: {
+            nl: 'child2'
+          }
+        },
+        {
+          type: 'match',
+          title: {
+            nl: 'child3'
+          }
+        }
+      ]
     }
   },
   {
