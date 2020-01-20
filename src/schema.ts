@@ -95,6 +95,7 @@ export type Type =
   | 'article'
   | 'product'
   | 'animal'
+  | 'region'
 
 // not the place to define the component type - too much limitation for front end
 export type Component = {
@@ -134,7 +135,8 @@ export const itemTypes = [
   'custom',
   'article',
   'product',
-  'animal'
+  'animal',
+  'region'
 ]
 
 export const typePrefix: Record<string, Type> = {}
@@ -166,9 +168,21 @@ for (let i = 0; i < itemTypes.length; i++) {
   createPrefix(<Type>itemTypes[i], 0)
 }
 
-/*  
-  // json ld it
-*/
+export type SearchSchema = Record<string, string[]>
+
+export const searchSchema: SearchSchema = {
+  ancestors: ['TAG'],
+  relatedAncestors: ['TAG'],
+  externalId: ['TAG'], // comma sperated
+  name: ['TAG'],
+  date: ['NUMERIC', 'SORTABLE'],
+  start: ['NUMERIC', 'SORTABLE'],
+  end: ['NUMERIC', 'SORTABLE'],
+  value: ['NUMERIC', 'SORTABLE'],
+  published: ['TAG'],
+  status: ['TAG'],
+  version: ['TAG']
+}
 
 export type BaseItem = {
   id?: string
@@ -212,10 +226,12 @@ export type BaseItem = {
     address?: string
     industry?: string
   }
+  data?: {
+    [key: string]: any // stringified shady
+  }
   value?: number
   age?: number // only for person and wine and whiskey
-  price?: number
-  discount?: number
+  price?: Record<Type | 'default', number>
   tax?: number
   location?: Location
   theme?: Theme

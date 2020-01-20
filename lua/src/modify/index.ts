@@ -1,7 +1,7 @@
 import { id as genId } from '../id'
 import * as redis from '../redis'
 import { Id } from '~selva/schema'
-import { SetOptions } from '~selva/setTypes'
+import { SetOptions } from '~selva/set/types'
 import getTypeFromId from '../getTypeFromId'
 import {
   isString,
@@ -12,7 +12,7 @@ import {
 } from '../util'
 import { resetSet, addToSet, removeFromSet } from './setOperations'
 import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
-import { DeleteOptions } from '~selva/deleteTypes'
+import { DeleteOptions } from '~selva/delete/types'
 import { deleteItem } from './delete'
 
 function removeFields(

@@ -1,6 +1,6 @@
-import { Id } from './schema'
-import { DeleteOptions } from './deleteTypes'
-import { SelvaClient } from '.'
+import { Id } from '../schema'
+import { DeleteOptions } from './types'
+import { SelvaClient } from '..'
 
 async function deleteItem(
   client: SelvaClient,

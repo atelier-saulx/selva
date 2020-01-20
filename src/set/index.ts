@@ -1,6 +1,6 @@
-import { Id } from './schema'
-import { SetOptions } from './setTypes'
-import { SelvaClient } from './'
+import { Id } from '../schema'
+import { SetOptions } from './types'
+import { SelvaClient } from '..'
 
 // ---------------------------------------------------------------
 async function set(client: SelvaClient, payload: SetOptions): Promise<Id> {

@@ -380,53 +380,68 @@ match,
 }
 ```
 
-### special behaviour
+### Special behaviours
 
 - decendants, does not exists just a colleciton of all children (deep) - gaurd against circulair stuff
-- ancestors, string for indexing, returns array
+- ancestors, returns array
 
-### \$traverse close / different
+## Rules
 
-### SHOW EXAMPLE
+- Hierarchies need to be configurable
+- Custom types (no type custom)
+- Pick allowed fields
 
-root -> tag (folder)
+```bash
+.
+├── leagueA
+│   ├── matchA
+│   └── teamA
+│       └──matchA
+│       └──matchB
+├── leagueB
+│   ├── matchB
+│   └── teamA
+│       ├──matchA
+│       └──matchB
+```
 
-- Show x (Tag sci-fi)
+This case is impossible and arbitrary to fix without making custom rules. Imagine adding a `competition` or `tournament` no system will make this work. This means we will need to allow adding types and rules in the cms (first select some good defaults).
 
-  - Episode y (Tag horror, flurp)
-  - Episode C
+- Type indexing dynamic (think about typescrip as well)
+- Id map of prefixes for types stable (so extra characters)
+- Rule system for hierarchies
+- Select fields for types using a json object
 
-  // ancestors Y - horror,sci-fi,x,flurp
-  // closeAncestors Y - horror,x,flurp
+Schema example
 
-$traverse: descendants tag sci-fi gets all show x episodes
-$traverse: closeDescendants tag sci-fi gets all show x not the episode y (since it has a tag)
-
-ACTOR EXAMPLE
-
-- Movies
-  \$traverse: closeAncestors get movies will get all movies that are direct parents if there is 1 that is a direct parent
-
-- Movies , and a folder in movies named ‘cast’ with the actor
-  \$traverse: ancestors also get movies in the folder cast of a movie
-
-LEAGUE EXAMPLE
-
-League - season - match - team
-
-$traverse: descendants match -> will get all matches of teams play in the league
-$traverse: closeDescendants match -> will get all matches in season (shortest path to items)
-
-// give me all clubs in the leage
-id: league,
-$find: {
-   $traverse: 'closeDescendants',
-$filter: { type === 'team' }
-   $find: {
-$traverse: 'ancestors', // closeAncestors
-     $filter: { type: 'club' }
+```javascript
+const schema = {
+  match: {
+    hierarchy: {
+      team: { ignore: ['league'] }
+    },
+    fields: [
+      'start',
+      'end',
+      'video',
+      'image',
+      'title',
+      'description',
+      { field: 'value', type: 'number' }
+    ]
+  }
 }
-}
 
-// get type in parents thats closest to me dont do the other
-// descendants --> relatedDescendants
+// client.getSchema()
+```
+
+These schemas are stored on the db itself and when ancestors get updated , or inherit gets fired it reads this file. Schemas are also used to do dynamic input validation.
+
+```javascript
+client.setSchema({
+  flurp: {
+    fields: ['value'],
+    hierarchy: false
+  }
+})
+```

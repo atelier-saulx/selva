@@ -1,5 +1,5 @@
 import { id as genId } from '../id'
-import { SetOptions } from '~selva/setTypes'
+import { SetOptions } from '~selva/set/types'
 import { Id } from '~selva/schema'
 import * as redis from '../redis'
 import { reCalculateAncestors } from './ancestors'

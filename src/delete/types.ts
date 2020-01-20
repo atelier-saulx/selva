@@ -1,4 +1,4 @@
-import { Id } from './schema'
+import { Id } from '../schema'
 
 export type DeleteOptions =
   | Id

@@ -4,33 +4,42 @@ import { start } from 'selva-server'
 import { wait } from './assertions'
 
 test('Connect and re-connect', async t => {
+  let current = { port: 6066 }
+
   const client = await connect(async () => {
-    console.log('connect it')
-    return { port: 6066 }
+    return current
   })
 
   const server = await start({ port: 6066, modules: ['redisearch', 'selva'] })
 
-  client.set({
+  await client.set({
     $id: 'cuflap',
     title: {
       en: 'lurkert'
     }
   })
 
-  // add these!!!
-  // client.isConnected
+  t.deepEqual(
+    await client.get({
+      $id: 'cuflap',
+      title: true
+    }),
+    { title: { en: 'lurkert' } }
+  )
 
-  // client.on('connect', () => {})
+  await server.destroy()
 
   await wait(1e3)
-  const result = await client.get({
-    $id: 'cuflap',
-    title: true
-  })
+  current = { port: 6067 }
+  const server2 = await start({ port: 6067, modules: ['redisearch'] })
 
-  // FIXME: real assertion
-  t.is(true, true)
+  t.deepEqual(
+    await client.get({
+      $id: 'cuflap',
+      title: true
+    }),
+    {}
+  )
 
-  console.info('???', result)
+  server2.destroy()
 })

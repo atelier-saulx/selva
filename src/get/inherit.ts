@@ -5,8 +5,14 @@ import { setNestedResult } from './nestedFields'
 import getField from './getField'
 
 type Ancestor = [Ancestor[], number]
+
+// only shortest ancestor
+
 // memoize this in lua (within one batch of gets)
 // const ancestorMap = {} etc
+
+// can prob just use the ancestors field (store )
+
 const createAncestorsInner = async (
   client: SelvaClient,
   id: Id,

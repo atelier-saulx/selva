@@ -1,8 +1,11 @@
 import { SelvaClient } from '..'
 import { Id, Language, languages, itemTypes, getTypeFromId } from '../schema'
-import { GetResult, getInner, GetOptions, get } from './'
+import { GetResult } from './'
 import { setNestedResult, getNestedField } from './nestedFields'
-import { Verify } from 'crypto'
+
+// make ref as a wrapper here
+
+// will all become dynamic
 
 const number = async (
   client: SelvaClient,
@@ -188,6 +191,8 @@ const ancestors = async (
   result.ancestors = ((await client.redis.hget(id, field)) || '').split(',')
   return true
 }
+
+// ancestors generation
 
 const getDescendants = async (
   client: SelvaClient,
