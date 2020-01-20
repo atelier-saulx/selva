@@ -13,8 +13,6 @@
 
 // reference and fields
 
-// $cache: 1000
-
 // then queries
 // subscription etc
 
@@ -26,6 +24,9 @@
 // when we are bored we can add version
 
 // actual search database <--- make make!
+
+// createClient({ cache: 1000ms (caches gets)
+// $noCache: true
 /*
 
 All hierarchy options
