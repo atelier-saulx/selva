@@ -6,7 +6,7 @@ import { wait } from './assertions'
 test('Connect and re-connect', async t => {
   let current = { port: 6066 }
 
-  const client = await connect(async () => {
+  const client = connect(async () => {
     return current
   })
 

@@ -12,7 +12,16 @@ function ancestorEquals(t: ExecutionContext, a: string, b: string): boolean {
 }
 
 test.before(async t => {
-  await start({ port: 6061, modules: ['redisearch', 'selva'] })
+  await start({
+    port: 6061,
+    modules: ['redisearch', 'selva'],
+    developmentLogging: true,
+    loglevel: 'info'
+  })
+
+  await new Promise((resolve, reject) => {
+    setTimeout(resolve, 200)
+  })
 })
 
 test.serial('basic', async t => {

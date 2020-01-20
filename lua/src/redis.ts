@@ -1,5 +1,11 @@
+import { LogLevel } from './logger'
+
 export function Error(errorMsg: string): Error {
   return redis.error_reply(errorMsg)
+}
+
+export function log(loglevel: LogLevel, msg: any): void {
+  redis.call('PUBLISH', '___selva_lua_logs', `[${loglevel}] ${msg}`)
 }
 
 export function id(externalIdStr?: string): string {
@@ -89,6 +95,10 @@ export function srem(key: string, ...members: string[]): boolean {
 
 export function exists(...keys: string[]): number {
   return redis.call('exists', ...keys)
+}
+
+export function get(key: string): string {
+  return redis.call('get', key)
 }
 
 export function del(key: string, ...keys: string[]): number {

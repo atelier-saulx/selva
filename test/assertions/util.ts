@@ -38,11 +38,15 @@ export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
     await Promise.all(
       ids
         .filter(id => id.indexOf('idx:') !== 0)
-        .map(id =>
-          id.indexOf('.') > -1
+        .map(id => {
+          if (id.startsWith('___')) {
+            return null
+          }
+          return id.indexOf('.') > -1
             ? client.redis.smembers(id)
             : client.redis.hgetall(id)
-        )
+        })
+        .filter(x => !!x)
     )
   ).map((v, i) => {
     return [ids[i], v]
