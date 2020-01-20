@@ -13,6 +13,8 @@
 
 // reference and fields
 
+// $cache: 1000
+
 // then queries
 // subscription etc
 
@@ -21,6 +23,9 @@
 
 // version!
 
+// when we are bored we can add version
+
+// actual search database <--- make make!
 /*
 
 All hierarchy options
@@ -45,37 +50,41 @@ hierarchy: false // no inheritance ancestors whatsoever
 // "required": [ "productId", "productName", "price" ]
 
 const schema = {
-  match: {
+  languages: ['nl', 'en'],
+  types: [
+    match: {
     hierarchy: {
-      team: { ignoreAncestryWith: ['league'] },
-      video: false,
-      person: { includeAncestryWith: ['family'] },
-      '$default': { ignoreAncestryWith: ['vehicle'] }
+        team: { ignoreAncestryWith: ['league'] },
+        video: false,
+        person: { includeAncestryWith: ['family'] },
+        '$default': { ignoreAncestryWith: ['vehicle'] }
     },
-   "fields": {  
-    "video":  {
-        "type": "object",
-        "properties": {
-            "mp4": {
-            "type": "url"
-            },
-            "hls": {
-            "type": "url",
-            },
-            "overlays": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "interval": { type: "array", "items": {
-                            type: "timestamp"
-                        }},
-                        "url": { type: "url" }
+    "fields": {  
+        "video":  {
+            "search": { ("index": "default"), "type":  ["TAG"] },
+            "type": "object",
+            "properties": {
+                "mp4": {
+                "type": "url"
+                },
+                "hls": {
+                "type": "url",
+                },
+                "overlays": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "interval": { type: "array", "items": {
+                                type: "timestamp"
+                            }},
+                            "url": { type: "url" }
+                        }
                     }
                 }
             }
         }
-    }
+   ]
 }
 
 // stringified is json (array or json)
