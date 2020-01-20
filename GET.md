@@ -420,9 +420,19 @@ const schema = {
     hierarchy: {
       team: { ignore: ['league'] }
     },
-    fields: ['start', 'end', 'video', 'image', 'title', 'description']
+    fields: [
+      'start',
+      'end',
+      'video',
+      'image',
+      'title',
+      'description',
+      { field: 'value', type: 'number' }
+    ]
   }
 }
+
+// client.getSchema()
 ```
 
 These schemas are stored on the db itself and when ancestors get updated , or inherit gets fired it reads this file. Schemas are also used to do dynamic input validation.
