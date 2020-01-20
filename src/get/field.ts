@@ -7,7 +7,7 @@
 
 // maybe some pair programming to start
 
-// schema needs to update indexes !
+// schema needs to update indexes!
 
 /*
 
@@ -15,9 +15,21 @@ All hierarchy options
 
 // omit and pick?
 hierarchy: {
-  team: { ignore: ['league'] }
+    team: { ignore: ['league'] }
 },
 
+// ignores team as an ancestor
+hierarchy: {
+    team: { ignore: true }
+},
+
+
+// specific for certain fields :/? e.g where to inherit al from
+hierarchy: {
+    team: { ignore: ['league'] }
+},
+
+hierarchy: false // no inheritance ancestors whatsoever
 
 const schema = {
   match: {
