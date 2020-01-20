@@ -5,6 +5,8 @@ import { setNestedResult, getNestedField } from './nestedFields'
 
 // make ref as a wrapper here
 
+// will all become dynamic
+
 const number = async (
   client: SelvaClient,
   id: Id,

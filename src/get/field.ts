@@ -3,11 +3,21 @@
 // in inherit (looks up)
 // not in inherit does not use the field when looking up
 
-// make that dynamic schema everywhere - will make a big impact
+// make that dynamic schema everywhere - will make a big impact (types!)
 
-// maybe some pair programming to start
+// auto generate validators
+
+// back up solution db-server
 
 // schema needs to update indexes!
+
+// reference and fields
+
+// then queries
+
+// subscription etc
+
+// version!
 
 /*
 
@@ -22,7 +32,6 @@ hierarchy: {
 hierarchy: {
     team: { ignore: true }
 },
-
 
 // specific for certain fields :/? e.g where to inherit al from
 hierarchy: {
