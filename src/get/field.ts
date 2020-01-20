@@ -14,8 +14,10 @@
 // reference and fields
 
 // then queries
-
 // subscription etc
+
+// --> .client.observe({ }) // (DATA, [where did it change]) => {}
+// kill observation
 
 // version!
 
@@ -45,76 +47,51 @@ hierarchy: false // no inheritance ancestors whatsoever
 const schema = {
   match: {
     hierarchy: {
-      team: { ignore: ['league'] }
+      team: { ignoreAncestryWith: ['league'] },
+      video: false,
+      person: { includeAncestryWith: ['family'] },
+      '$default': { ignoreAncestryWith: ['vehicle'] }
     },
-    fields: [
-      'start',
-      'end',
-      'video',
-      'image',
-      'title',
-      'description',
-      { field: 'value', type: 'number' }
-      { 
-          field: 'video', 
-          type: 'object', 
-          properties: {
-            mp4: {
-                type: 'url
-            }
-          
-
-          }
-      }
-    ]
-  }
-}
-
-
-/*
-
-Overlay = {
-  interval?: number[]
-  src: Url
-}
-
-{
-  "video": {
-    "type": "object",
-    "properties": {
-        "mp4": {
-          "type": "url"
-        },
-        "hls": {
-          "type": "url",
-        },
-        "overlays": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "interval": { type: "array", "items": {
-                        type: "timestamp"
-                    }},
-                    "url": { type: "url" }
+   "fields": {  
+    "video":  {
+        "type": "object",
+        "properties": {
+            "mp4": {
+            "type": "url"
+            },
+            "hls": {
+            "type": "url",
+            },
+            "overlays": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "interval": { type: "array", "items": {
+                            type: "timestamp"
+                        }},
+                        "url": { type: "url" }
+                    }
                 }
             }
         }
     }
-  }
 }
-*/
 
+// stringified is json (array or json)
+ 
 // TYPES
 // float
 // int
+// number
 // json
 // array (stored as json)
 // references (set of ids)
+// set
 // string
 // object
 // text
-// id
+// id // reasonable length etc
 // digest (password etc)
 // timestamp (ms)
 // url
