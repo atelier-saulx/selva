@@ -71,14 +71,14 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
     }
   }
   if (changed) {
-    await client.redis.set('types', JSON.stringify(types))
+    await client.redis.hset('schema', 'types', JSON.stringify(types))
     const prefixes = {}
     for (let key in types) {
       if (key !== 'idSize') {
         prefixes[types[key]] = key
       }
     }
-    await client.redis.set('prefixes', JSON.stringify(prefixes))
+    await client.redis.hset('schema', 'prefixes', JSON.stringify(prefixes))
   }
 }
 

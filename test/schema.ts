@@ -146,5 +146,16 @@ test('schemas - basic', async t => {
       }
     }
   })
+
+  console.log('xxxx---------------')
+  await client.updateSchema({
+    types: {
+      flap: {
+        fields: {
+          ...defaultFields
+        }
+      }
+    }
+  })
   server.destroy()
 })

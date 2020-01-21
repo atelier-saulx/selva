@@ -4,53 +4,71 @@ import updateTypes from './updateTypes'
 import updateTypeSchema from './updateTypeSchema'
 
 async function getFields(client: SelvaClient) {
-  const typesRaw = await client.redis.get('types')
-  const schemaRaw = await client.redis.get('schema')
-  const searchIndexesRaw = await client.redis.get('searchIndexes')
+  const [types, languages, searchIndexes] = await Promise.all(
+    [
+      {
+        field: 'types',
+        def: { idSize: 0 }
+      },
+      {
+        field: 'languages',
+        def: []
+      },
+      {
+        field: 'searchIndexes',
+        def: {}
+      }
+    ].map(async ({ field, def }) => {
+      const result = await client.redis.hget('schema', field)
+      return result === null ? def : JSON.parse(result)
+    })
+  )
 
-  const types: TypesDb =
-    typesRaw === null ? { idSize: 0 } : JSON.parse(typesRaw)
+  const schema: Schema = {
+    languages,
+    types: {}
+  }
 
-  const schema: Schema =
-    schemaRaw === null
-      ? {
-          languages: [],
-          types: {}
-        }
-      : JSON.parse(schemaRaw)
+  const schemas = await client.redis.hgetall('types')
 
-  const searchIndexes: SearchIndexes =
-    searchIndexesRaw === null ? {} : JSON.parse(searchIndexesRaw)
+  if (schemas) {
+    for (const type in schemas) {
+      schema.types[type] = JSON.parse(schemas[type])
+    }
+    console.log('fun previous schemas', schema)
+  }
 
   return { types, schema, searchIndexes }
 }
 
-async function updateSchema(
-  client: SelvaClient,
-  props: Schema
-): Promise<boolean> {
+async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
   const { types, schema, searchIndexes } = await getFields(client)
-  let changed = false
+  let changedSchema = false
   // languages
   if (props.languages) {
+    let changedLanguages: boolean = false
     props.languages.forEach(lang => {
+      // cannot remove languages for now!
       if (schema.languages.indexOf(lang) === -1) {
         schema.languages.push(lang)
+        changedLanguages = true
       }
     })
-  }
-  //types
-  if (props.types) {
-    await updateTypes(client, props.types, types)
-    if (
-      await updateTypeSchema(client, props.types, schema.types, searchIndexes)
-    ) {
-      changed = true
+    if (changedLanguages) {
+      await client.redis.hset(
+        'schema',
+        'languages',
+        JSON.stringify(props.languages)
+      )
     }
   }
 
+  if (props.types) {
+    await updateTypes(client, props.types, types)
+    await updateTypeSchema(client, props.types, schema.types, searchIndexes)
+  }
+
   // if change return true
-  return true
 }
 
 export { updateSchema }
