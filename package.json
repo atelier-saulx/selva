@@ -33,7 +33,7 @@
   },
   "ava": {
     "files": [
-      "test/*",
+      "test/connection",
       "!test/assertions"
     ],
     "compileEnhancements": false,
