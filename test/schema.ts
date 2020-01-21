@@ -1,7 +1,7 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
-import { wait } from './assertions'
+// import { wait } from './assertions'
 import { FieldType, Fields } from '../src/schema'
 // id map
 // fields

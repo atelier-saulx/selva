@@ -34,7 +34,7 @@ async function updateSchema(
   if (props.types) {
     for (let type in props.types) {
       if (!types[type]) {
-        console.log('new type go', type)
+        console.log('New type go', type)
       }
     }
   }
