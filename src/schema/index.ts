@@ -1,5 +1,10 @@
 export type Id = string | number
 
+export type TypesDb = {
+  idSize: number
+  [key: string]: string
+}
+
 export type FieldType =
   | 'float'
   | 'number'

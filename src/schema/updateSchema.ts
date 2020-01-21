@@ -1,17 +1,16 @@
 import { SelvaClient } from '../'
-import { Schema } from '.'
+import { Schema, TypesDb } from '.'
 import updateTypes from './updateTypes'
 
 async function getFields(client: SelvaClient) {
   const typesRaw = await client.redis.get('types')
   const schemaRaw = await client.redis.get('schema')
-  const types: Record<string, string> =
-    typesRaw === null ? {} : JSON.parse(typesRaw)
+  const types: TypesDb = typesRaw === null ? {} : JSON.parse(typesRaw)
   const schema: Schema =
     schemaRaw === null
       ? {
           languages: ['en'],
-          types: {}
+          types: { idSize: 0 }
         }
       : JSON.parse(schemaRaw)
 
@@ -25,7 +24,6 @@ async function updateSchema(
   const { types, schema } = await getFields(client)
 
   console.log('types:', types, 'schema:', schema)
-
   console.log(props)
 
   // languages

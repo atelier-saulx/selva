@@ -1,4 +1,4 @@
-import { Types } from './'
+import { Types, TypesDb } from './'
 
 // small caps counter (2 spaces)
 const uid = num => {
@@ -14,6 +14,12 @@ const uid = num => {
   return str
 }
 
+// - means id seperator
+// else first 2 letters
+//check if - in id else use first 2
+// [flurp-] (this becomes the id)
+// ids cant have - in them!
+
 const findKey = (obj: { [key: string]: any }, value: any): false | string => {
   for (let k in obj) {
     if (obj[k] === value) {
@@ -23,12 +29,22 @@ const findKey = (obj: { [key: string]: any }, value: any): false | string => {
   return false
 }
 
-async function parseTypes(props: Types, types: Record<string, string>) {
+const validate = id => {
+  return /[a-z]{1,10}/.test(id)
+}
+
+async function parseTypes(props: Types, types: TypesDb) {
   // types
   for (let type in props.types) {
     const definition = props.types[type]
     if (!types[type]) {
       if (definition.prefix) {
+        if (!validate(definition.pefix)) {
+          throw new Error(
+            `Prefix wrongly formatted ${definition.prefix} make it lower case letters and not longer then 10 chars`
+          )
+        }
+
         const exists = findKey(types, definition.prefix)
         if (exists) {
           throw new Error(
@@ -37,6 +53,8 @@ async function parseTypes(props: Types, types: Record<string, string>) {
         }
         types[type] = definition.prefix
       } else {
+        types.idSize++
+        // uid()
         // generate one your self
       }
     } else {
