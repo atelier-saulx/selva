@@ -39,7 +39,6 @@ async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
     for (const type in schemas) {
       schema.types[type] = JSON.parse(schemas[type])
     }
-    console.log('Fun Previous Schemas ', schema)
   }
   return { types, schema, searchIndexes }
 }
