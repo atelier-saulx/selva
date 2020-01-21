@@ -6,11 +6,14 @@ type Schemas = Record<string, TypeSchema>
 
 const verifySimple = payload => {
   if (Array.isArray(payload)) {
-    return !payload.find(v => typeof v !== 'string')
+    if (payload.find(v => typeof v !== 'string')) {
+      throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
+    }
+    return payload
   } else if (typeof payload === 'string') {
-    return true
+    return [payload]
   } else {
-    return false
+    throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
   }
 }
 
@@ -28,18 +31,7 @@ export default (
   fields: FieldSchemaArrayLike,
   type: string
 ): void => {
-  if (Array.isArray(payload)) {
-    const parsed = parseObjectArray(payload, schemas)
-    if (parsed) {
-      result[field] = parsed
-    } else if (verifySimple(payload)) {
-      result[field] = payload
-    } else {
-      throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
-    }
-  } else if (typeof payload === 'string') {
-    result[field] = payload
-  } else if (typeof payload === 'object') {
+  if (typeof payload === 'object' && !Array.isArray(payload)) {
     result[field] = {}
     for (let k in payload) {
       if (k === '$add') {
@@ -51,24 +43,21 @@ export default (
           !Array.isArray(payload[k])
         ) {
           result[field].$add = parseSetObject(payload[k], schemas)
-        } else if (verifySimple(payload[k])) {
-          result[field].$add = payload[k]
         } else {
-          throw new Error(`Wrong payload for ${k}`)
+          result[field].$add = verifySimple(payload[k])
         }
       } else if (k === '$remove') {
-        if (!verifySimple(payload[k])) {
-          throw new Error(`Wrong payload for ${k}`)
-        }
+        result[field].$remove = verifySimple(payload[k])
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
           throw new Error(`Wrong payload for ${k}`)
         }
+        result[field].$hierarchy = payload[k]
       } else {
         throw new Error(`Wrong key for references ${k}`)
       }
     }
   } else {
-    throw new Error(`Wrong type for references ${JSON.stringify(payload)}`)
+    result[field] = parseObjectArray(payload, schemas) || verifySimple(payload)
   }
 }
