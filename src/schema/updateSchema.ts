@@ -1,25 +1,11 @@
 import { SelvaClient } from '../'
-
-// advanced type
-
-type FieldSchema = {
-  search?: { index?: string; type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[] }
-}
-
-type TypeSchema = {}
-
-type SchemaOptions = {
-  languages?: string[]
-  types?: {
-    [key: string]: any
-  }
-}
+import { Schema } from './types'
 
 async function updateSchema(
   client: SelvaClient,
-  props: SchemaOptions
+  props: Schema
 ): Promise<boolean> {
   return true
 }
 
-export { updateSchema, SchemaOptions, FieldSchema, TypeSchema }
+export { updateSchema }
