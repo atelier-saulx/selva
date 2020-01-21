@@ -24,6 +24,8 @@ export type FieldType =
 
 export type SearchSchema = Record<string, string[]>
 
+export type SearchIndexes = Record<string, SearchSchema>
+
 export type FieldSchemaObject = {
   type: 'object'
   properties: {

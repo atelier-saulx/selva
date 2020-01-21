@@ -1,6 +1,6 @@
 import { Types, TypesDb } from './'
 import { SelvaClient } from '../'
-// small caps counter (2 spaces)
+
 const uid = (num: number): string => {
   const div = (num / 26) | 0
   var str = String.fromCharCode(97 + (num % 26))
@@ -25,7 +25,7 @@ const findKey = (obj: { [key: string]: any }, value: any): false | string => {
 }
 
 const validate = id => {
-  return /[a-z]{1,10}/.test(id)
+  return /[a-z]{2}/.test(id)
 }
 
 const genId = (types: TypesDb, type: string): string => {
@@ -48,7 +48,7 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
       if (definition.prefix) {
         if (!validate(definition.prefix)) {
           throw new Error(
-            `Prefix wrongly formatted ${definition.prefix} make it lower case letters and not longer then 10 chars`
+            `Prefix wrongly formatted ${definition.prefix} make it lower case letters and not longer then 2 chars`
           )
         }
         const exists = findKey(types, definition.prefix)
@@ -57,10 +57,7 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
             `Prefix allready exists ${definition.prefix} ${exists}`
           )
         }
-        types[type] =
-          definition.prefix.length > 2
-            ? definition.prefix + '-' // store the exact match!
-            : definition.prefix
+        types[type] = definition.prefix
       } else {
         types[type] = genId(types, type)
       }
