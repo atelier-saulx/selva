@@ -1,6 +1,6 @@
 import { SelvaClient } from '../'
 import { Schema, TypesDb, SearchIndexes } from '.'
-import updateTypes from './updateTypesId'
+import updateTypesId from './updateTypesId'
 import updateTypeSchema from './updateTypeSchema'
 import { getSchema } from './getSchema'
 
@@ -27,7 +27,7 @@ async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
   }
 
   if (props.types) {
-    await updateTypes(client, props.types, types)
+    await updateTypesId(client, props.types, types)
     await updateTypeSchema(client, props.types, schema.types, searchIndexes)
   }
 

@@ -63,7 +63,7 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
       }
       changed = true
     } else {
-      if (definition.prefix !== types[type]) {
+      if (definition.prefix && definition.prefix !== types[type]) {
         throw new Error(
           `Trying to change prefix of ${type} from ${types[type]} to ${definition.prefix}`
         )

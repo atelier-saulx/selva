@@ -3,8 +3,18 @@ import { Types, SearchIndexes, FieldSchema, Search } from './'
 import updateIndex from './updateIndex'
 
 const searchChanged = (newSearch: Search, oldSearch: Search): boolean => {
-  console.log('check difference', newSearch, oldSearch)
-  return true
+  if (newSearch.index !== oldSearch.index) {
+    return true
+  }
+  if (newSearch.type.length !== oldSearch.type.length) {
+    return true
+  }
+  for (let i = 0; i < newSearch.type.length; i++) {
+    if (newSearch.type[i] !== oldSearch.type[i]) {
+      return true
+    }
+  }
+  return false
 }
 
 const parseField = (

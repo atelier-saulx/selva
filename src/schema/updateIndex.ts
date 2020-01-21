@@ -24,9 +24,17 @@ export const alter = async (
 ) => {
   try {
     return Promise.all(
-      Object.keys(schema).map(field =>
-        client.ftAlter(index, 'SCHEMA', 'ADD', field, ...schema[field])
-      )
+      Object.keys(schema).map(async field => {
+        try {
+          return await client.ftAlter(
+            index,
+            'SCHEMA',
+            'ADD',
+            field,
+            ...schema[field]
+          )
+        } catch (e) {}
+      })
     )
   } catch (e) {}
 }
@@ -40,6 +48,7 @@ const updateIndex = async (
   try {
     const info = await client.ftInfo(index)
     const fields = info[info.indexOf('fields') + 1]
+
     const set = new Set()
     let changed = fields.find(([field, _, ...type]) => {
       const scheme = schema[field]
@@ -55,6 +64,7 @@ const updateIndex = async (
       }
     }
     if (changed) {
+      // if super different (e.g. fields differently indexed) then drop the index
       return alter(client, index, schema)
     }
   } catch (e) {

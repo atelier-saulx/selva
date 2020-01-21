@@ -95,6 +95,7 @@ test('schemas - basic', async t => {
           $default: { excludeAncestryWith: ['vehicle'] }
         },
         fields: {
+          ...defaultFields,
           smurky: {
             type: 'set',
             items: {
@@ -192,20 +193,88 @@ test('schemas - basic', async t => {
     'made redis-search index for hls'
   )
 
-  // console.log(
-  //   JSON.stringify((await client.getSchema()).schema.types.match, void 0, 2)
-  // )
+  await client.updateSchema({
+    types: {
+      match: {
+        fields: {
+          ...defaultFields
+        }
+      }
+    }
+  })
 
-  // console.log('xxxx---------------')
-  // await client.updateSchema({
-  //   types: {
-  //     flap: {
-  //       fields: {
-  //         ...defaultFields
-  //       }
-  //     }
-  //   }
-  // })
+  t.deepEqual(
+    (await client.getSchema()).schema,
+    schema,
+    'correct schema after setting the same'
+  )
+
+  // replace search schema do later
+  await client.updateSchema({
+    types: {
+      match: {
+        fields: {
+          flurpy: {
+            type: 'object',
+            properties: {
+              snurkels: {
+                type: 'string',
+                search: { type: ['TEXT'] }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  const info2 = await client.redis.ftInfo('default')
+  const fields2 = info2[info2.indexOf('fields') + 1]
+
+  // does not drop and create a new one for now...
+  t.deepEqual(
+    fields2,
+    [
+      ['type', 'type', 'TAG', 'SEPARATOR', ','],
+      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ',']
+    ],
+    'change fields in the index - does not drop index yet so stays the same!'
+  )
+
+  await client.updateSchema({
+    types: {
+      match: {
+        fields: {
+          flurpy: {
+            type: 'object',
+            properties: {
+              snurpie: {
+                type: 'string',
+                search: { type: ['TEXT'] }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  const info = await client.redis.ftInfo('default')
+  const fields = info[info.indexOf('fields') + 1]
+
+  t.deepEqual(
+    fields,
+    [
+      ['type', 'type', 'TAG', 'SEPARATOR', ','],
+      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
+      ['flurpy.snurpie', 'type', 'TEXT', 'WEIGHT', '1']
+    ],
+    'add fields to the index'
+  )
+
+  // console.log(
+  // JSON.stringify((await client.getSchema()).schema.types.match, void 0, 2)
+  // )
 
   server.destroy()
 })
