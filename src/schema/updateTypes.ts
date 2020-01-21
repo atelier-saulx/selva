@@ -28,11 +28,14 @@ const validate = id => {
   return /[a-z]{1,10}/.test(id)
 }
 
-const genId = (types: TypesDb): string => {
+const genId = (types: TypesDb, type: string): string => {
   types.idSize++
-  const id = uid(types.idSize)
+  let id = uid(types.idSize)
+  if (id.length === 1) {
+    id = type[0] + id
+  }
   if (findKey(types, id)) {
-    return genId(types)
+    return genId(types, type)
   }
   return id
 }
@@ -40,11 +43,11 @@ const genId = (types: TypesDb): string => {
 async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
   let changed: boolean = false
 
-  for (let type in props.types) {
-    const definition = props.types[type]
+  for (let type in props) {
+    const definition = props[type]
     if (!types[type]) {
       if (definition.prefix) {
-        if (!validate(definition.pefix)) {
+        if (!validate(definition.prefix)) {
           throw new Error(
             `Prefix wrongly formatted ${definition.prefix} make it lower case letters and not longer then 10 chars`
           )
@@ -61,7 +64,7 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
             ? definition.prefix + '-' // store the exact match!
             : definition.prefix
       } else {
-        types[type] = genId(types)
+        types[type] = genId(types, type)
       }
       changed = true
     } else {
@@ -74,13 +77,16 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
   }
 
   if (changed) {
+    console.log('??? types', types)
     // store types
     await client.redis.set('types', JSON.stringify(types))
     const prefixes = {}
     for (let key in types) {
-      prefixes[types[key]] = key
+      if (key !== 'idSize') {
+        prefixes[types[key]] = key
+      }
     }
-    await client.redis.set('prefixes', JSON.stringify(types))
+    await client.redis.set('prefixes', JSON.stringify(prefixes))
   }
 }
 
