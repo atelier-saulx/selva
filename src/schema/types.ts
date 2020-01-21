@@ -22,13 +22,27 @@ export type SearchSchema = {
   [key: string]: string[]
 }
 
-export type FieldSchema = {
-  search?: { index?: string; type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[] }
-  type: FieldType
-  properties?: {
+export type FieldSchemaObject = {
+  type: 'object'
+  properties: {
     [key: string]: FieldSchema
   }
 }
+
+export type FieldSchemaArrayLike = {
+  type: 'set' | 'array'
+  item: FieldSchema
+}
+
+export type FieldSchemaOther = {
+  search?: { index?: string; type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[] }
+  type: FieldType
+}
+
+export type FieldSchema =
+  | FieldSchemaObject
+  | FieldSchemaObject
+  | FieldSchemaArrayLike
 
 export type TypeSchema = {
   hierarchy?:

@@ -10,10 +10,8 @@ const getTypeFromId = (id: string): string => {
 type Ancestor = [Ancestor[], number]
 
 // only shortest ancestor
-
 // memoize this in lua (within one batch of gets)
 // const ancestorMap = {} etc
-
 // can prob just use the ancestors field (store )
 
 const createAncestorsInner = async (
@@ -21,7 +19,6 @@ const createAncestorsInner = async (
   id: string,
   s: Record<string, Ancestor>
 ): Promise<Ancestor> => {
-  // if memoized[id] -> get it
   if (s[id]) {
     return s[id]
   }
