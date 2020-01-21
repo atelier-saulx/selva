@@ -42,7 +42,6 @@ const genId = (types: TypesDb, type: string): string => {
 
 async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
   let changed: boolean = false
-
   for (let type in props) {
     const definition = props[type]
     if (!types[type]) {
@@ -52,7 +51,6 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
             `Prefix wrongly formatted ${definition.prefix} make it lower case letters and not longer then 10 chars`
           )
         }
-
         const exists = findKey(types, definition.prefix)
         if (exists) {
           throw new Error(
@@ -75,7 +73,6 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
       }
     }
   }
-
   if (changed) {
     await client.redis.set('types', JSON.stringify(types))
     const prefixes = {}
