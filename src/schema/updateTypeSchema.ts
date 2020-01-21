@@ -51,7 +51,13 @@ const parseField = (
         if (!searchIndexes[index]) {
           searchIndexes[index] = {}
         }
-        searchIndexes[index][path[path.join('.')]] = field.search.type
+        searchIndexes[index][
+          path
+            .filter(v => {
+              return v !== 'properties' && v !== 'items'
+            })
+            .join('.')
+        ] = field.search.type
         changedIndexes.add(index)
       }
       segment.search = field.search

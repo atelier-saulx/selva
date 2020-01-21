@@ -1,7 +1,7 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
-// import { wait } from './assertions'
+import './assertions'
 import { FieldType, Fields, Schema } from '../src/schema'
 // id map
 // fields
@@ -110,6 +110,15 @@ test('schemas - basic', async t => {
               }
             }
           },
+          flurpy: {
+            type: 'object',
+            properties: {
+              snurkels: {
+                type: 'string',
+                search: { type: ['TAG'] }
+              }
+            }
+          },
           flapperdrol: {
             type: 'json'
           },
@@ -149,9 +158,29 @@ test('schemas - basic', async t => {
 
   await client.updateSchema(schema)
 
-  const { types, schema: schemaResult } = await client.getSchema()
+  const {
+    types,
+    schema: schemaResult,
+    searchIndexes
+  } = await client.getSchema()
 
-  t.deepEqual(schemaResult, schema)
+  t.deepEqual(schemaResult, schema, 'correct schema')
+
+  t.deepEqualIgnoreOrder(
+    Object.keys(types),
+    ['idSize', 'league', 'person', 'video', 'vehicle', 'family', 'match'],
+    'correct type map'
+  )
+
+  t.deepEqual(
+    searchIndexes,
+    {
+      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'] }
+    },
+    'searchIndexes are equal'
+  )
+
+  console.log(searchIndexes, types)
 
   // console.log(
   //   JSON.stringify((await client.getSchema()).schema.types.match, void 0, 2)

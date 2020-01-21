@@ -4,7 +4,7 @@ import { logDb, dumpDb, idExists, wait } from './util'
 
 declare module 'ava' {
   export interface Assertions {
-    deepEqualIgnoreOrder(a: any, b: any): boolean
+    deepEqualIgnoreOrder(a: any, b: any, message?: string): boolean
   }
 }
 
