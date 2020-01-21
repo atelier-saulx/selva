@@ -77,8 +77,6 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
   }
 
   if (changed) {
-    console.log('??? types', types)
-    // store types
     await client.redis.set('types', JSON.stringify(types))
     const prefixes = {}
     for (let key in types) {
