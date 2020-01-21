@@ -129,7 +129,8 @@ test('schemas - basic', async t => {
                 type: 'url'
               },
               hls: {
-                type: 'url'
+                type: 'url',
+                search: { index: 'hls', type: ['TEXT'] }
               },
               pano: {
                 type: 'url'
@@ -137,7 +138,7 @@ test('schemas - basic', async t => {
               overlays: {
                 type: 'array',
                 items: {
-                  type: 'object',
+                  type: 'json', // needs to be json!
                   properties: {
                     interval: {
                       type: 'array',
@@ -175,12 +176,21 @@ test('schemas - basic', async t => {
   t.deepEqual(
     searchIndexes,
     {
-      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'] }
+      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'] },
+      hls: { 'video.hls': ['TEXT'] }
     },
     'searchIndexes are equal'
   )
 
-  console.log(searchIndexes, types)
+  t.true(
+    (await client.redis.keys('*')).includes('idx:default'),
+    'made redis-search index for default'
+  )
+
+  t.true(
+    (await client.redis.keys('*')).includes('idx:hls'),
+    'made redis-search index for hls'
+  )
 
   // console.log(
   //   JSON.stringify((await client.getSchema()).schema.types.match, void 0, 2)
