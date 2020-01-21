@@ -20,9 +20,7 @@ export type FieldType =
   | 'geo'
   | 'type'
 
-export type SearchSchema = {
-  [key: string]: string[]
-}
+export type SearchSchema = Record<string, string[]>
 
 export type FieldSchemaObject = {
   type: 'object'
@@ -31,38 +29,37 @@ export type FieldSchemaObject = {
   }
 }
 
-export type FieldSchemaArrayLike = {
-  type: 'set' | 'array'
-  item: FieldSchema
-}
-
 export type FieldSchemaOther = {
   search?: { index?: string; type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[] }
   type: FieldType
 }
 
+export type FieldSchemaArrayLike = {
+  search?: { index?: string; type: 'TAG'[] }
+  type: 'set' | 'array'
+  items?: FieldSchema
+}
+
 export type FieldSchema =
   | FieldSchemaObject
-  | FieldSchemaObject
   | FieldSchemaArrayLike
+  | FieldSchemaOther
+
+export type Fields = Record<string, FieldSchema>
 
 export type TypeSchema = {
   hierarchy?:
-    | false
+    | false // has to be false but does not work...
     | {
         [key: string]:
-          | false
+          | false // has to be false but does not work...
           | { excludeAncestryWith: string[] }
           | { includeAncestryWith: string[] }
       }
-  fields?: {
-    [key: string]: FieldSchema
-  }
+  fields?: Fields
 }
 
 export type Schema = {
   languages?: string[]
-  types?: {
-    [key: string]: TypeSchema
-  }
+  types?: Record<string, TypeSchema>
 }
