@@ -48,6 +48,7 @@ export type FieldSchema =
 export type Fields = Record<string, FieldSchema>
 
 export type TypeSchema = {
+  prefix?: string
   hierarchy?:
     | false // has to be false but does not work...
     | {
@@ -59,7 +60,9 @@ export type TypeSchema = {
   fields?: Fields
 }
 
+export type Types = Record<string, TypeSchema>
+
 export type Schema = {
   languages?: string[]
-  types?: Record<string, TypeSchema>
+  types?: Types
 }

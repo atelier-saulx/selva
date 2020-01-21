@@ -87,6 +87,7 @@ test('schemas - basic', async t => {
         }
       },
       match: {
+        prefix: 'ma',
         hierarchy: {
           team: { excludeAncestryWith: ['league'] },
           video: false,
