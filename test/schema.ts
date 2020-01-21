@@ -307,6 +307,16 @@ test('schemas - basic', async t => {
     }
   })
 
+  t.deepEqual(
+    (await client.getSchema()).schema.types.match.hierarchy,
+    {
+      team: { excludeAncestryWith: ['league'] },
+      video: false,
+      $default: { excludeAncestryWith: ['vehicle'] }
+    },
+    'updated hierarchy schema'
+  )
+
   // add some tests for it
 
   server.destroy()
