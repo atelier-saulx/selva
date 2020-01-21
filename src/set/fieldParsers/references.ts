@@ -2,18 +2,21 @@ import { SetOptions } from '../types'
 import { TypeSchema, FieldSchemaArrayLike } from '../../schema'
 import { parseSetObject } from '../'
 
-// make this nice
-const checkArrayLikeField = payload => {
+type Schemas = Record<string, TypeSchema>
+
+const verifySimple = payload => {
   if (Array.isArray(payload)) {
-    if (payload.find(ref => typeof ref !== 'string')) {
-      throw new Error(
-        `Incorrect payload for references  ${JSON.stringify(payload)}`
-      )
-    }
-  } else if (typeof payload !== 'string') {
-    throw new Error(
-      `Incorrect payload for references  ${JSON.stringify(payload)}`
-    )
+    return !payload.find(v => typeof v !== 'string')
+  } else if (typeof payload === 'string') {
+    return true
+  } else {
+    return false
+  }
+}
+
+const parseObjectArray = (payload, schemas: Schemas) => {
+  if (Array.isArray(payload) && typeof payload[0] === 'object') {
+    return payload.map(ref => parseSetObject(ref, schemas))
   }
 }
 
@@ -26,41 +29,46 @@ export default (
   type: string
 ): void => {
   if (Array.isArray(payload)) {
-    if (typeof payload[0] === 'object') {
-      result[field] = []
-      payload.forEach(ref => {
-        result[field].push(parseSetObject(ref, schemas))
-      })
-    } else {
-      checkArrayLikeField(payload)
+    const parsed = parseObjectArray(payload, schemas)
+    if (parsed) {
+      result[field] = parsed
+    } else if (verifySimple(payload)) {
       result[field] = payload
+    } else {
+      throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
     }
-  } else if (typeof payload === 'object') {
-    // check if its correct
-
-    if (payload.$remove) {
-      checkArrayLikeField(payload.$remove)
-    }
-
-    if (payload.$add) {
-      if (typeof payload.$add === 'object') {
-        payload.$add = parseSetObject(payload.$add, schemas)
-        for (let key in payload) {
-          if (key !== '$add') {
-            result[field][key] = payload[key]
-          }
-        }
-      } else {
-        checkArrayLikeField(payload.$add)
-      }
-    }
-
-    result[field] = payload
   } else if (typeof payload === 'string') {
     result[field] = payload
+  } else if (typeof payload === 'object') {
+    result[field] = {}
+    for (let k in payload) {
+      if (k === '$add') {
+        const parsed = parseObjectArray(payload[k], schemas)
+        if (parsed) {
+          result[field].$add = parsed
+        } else if (
+          typeof payload[k] === 'object' &&
+          !Array.isArray(payload[k])
+        ) {
+          result[field].$add = parseSetObject(payload[k], schemas)
+        } else if (verifySimple(payload[k])) {
+          result[field].$add = payload[k]
+        } else {
+          throw new Error(`Wrong payload for ${k}`)
+        }
+      } else if (k === '$remove') {
+        if (!verifySimple(payload[k])) {
+          throw new Error(`Wrong payload for ${k}`)
+        }
+      } else if (k === '$hierarchy') {
+        if (payload[k] !== false && payload[k] !== true) {
+          throw new Error(`Wrong payload for ${k}`)
+        }
+      } else {
+        throw new Error(`Wrong key for references ${k}`)
+      }
+    }
   } else {
-    throw new Error(
-      `Incorrect payload for references ${field} ${JSON.stringify(payload)}`
-    )
+    throw new Error(`Wrong type for references ${JSON.stringify(payload)}`)
   }
 }
