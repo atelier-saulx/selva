@@ -3,7 +3,9 @@ import { GetResult, GetItem, getInner } from './'
 import { setNestedResult } from './nestedFields'
 import getField from './getField'
 
-const getTypeFromId = () => {}
+const getTypeFromId = (id: string): string => {
+  return 'lulllz'
+}
 
 type Ancestor = [Ancestor[], number]
 
@@ -166,11 +168,11 @@ const setFromAncestors = async (
   }
 }
 
-const parseName = async (client: SelvaClient, id: Id): Promise<string> => {
+const parseName = async (client: SelvaClient, id: string): Promise<string> => {
   return await client.redis.hget(id, 'name')
 }
 
-const parseType = async (client: SelvaClient, id: Id): Promise<string> => {
+const parseType = async (client: SelvaClient, id: string): Promise<string> => {
   return getTypeFromId(id)
 }
 
@@ -230,7 +232,7 @@ const inherit = async (
         version
       )
     } else if (inherit.$type || inherit.$name) {
-      let ancestors: Id[]
+      let ancestors: string[]
       if (inherit.$name) {
         if (!Array.isArray(inherit.$name)) {
           inherit.$name = [inherit.$name]

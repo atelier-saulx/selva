@@ -6,7 +6,9 @@ import { setNestedResult, getNestedField } from './nestedFields'
 
 const languages = ['en']
 
-const getTypeFromId = () => {}
+const getTypeFromId = (id: string): string => {
+  return id
+}
 // will all become dynamic
 
 const number = async (
