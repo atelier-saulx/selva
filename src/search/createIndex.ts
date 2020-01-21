@@ -1,23 +1,25 @@
-import RedisClient from './'
+import RedisClient from '../redis'
 import { SearchSchema } from '../schema'
 
 const searchSchema = {}
 
-const create = async (
+export const create = async (
   client: RedisClient,
   index: string,
   schema: SearchSchema
 ) => {
-  const args = [index, 'SCHEMA']
-  for (const field in schema) {
-    args.push(field, ...schema[field])
+  if (Object.keys(schema).length) {
+    const args = [index, 'SCHEMA']
+    for (const field in schema) {
+      args.push(field, ...schema[field])
+    }
+    try {
+      return client.ftCreate(...args)
+    } catch (e) {}
   }
-  try {
-    return client.ftCreate(...args)
-  } catch (e) {}
 }
 
-const alter = async (
+export const alter = async (
   client: RedisClient,
   index: string,
   schema: SearchSchema
@@ -31,8 +33,8 @@ const alter = async (
   } catch (e) {}
 }
 
-const createIndex = async (client: RedisClient) => {
-  const index = 'selva'
+// index is a string here
+const createIndex = async (client: RedisClient, index: string = 'selva') => {
   try {
     const info = await client.ftInfo(index)
     const fields = info[info.indexOf('fields') + 1]

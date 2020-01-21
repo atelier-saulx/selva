@@ -1,7 +1,7 @@
 import * as redis from 'redis'
 import { createClient, RedisClient as Redis } from 'redis'
 import RedisMethods from './methods'
-import createIndex from './createIndex'
+import createIndex from '../search/createIndex'
 
 const redisSearchCommands = [
   'CREATE',
