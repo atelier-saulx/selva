@@ -1,20 +1,17 @@
 import { SelvaClient } from '..'
-import {
-  Types,
-  SearchIndexes,
-  FieldSchema,
-  FieldSchemaJson,
-  FieldSchemaObject
-} from './'
+import { Types, SearchIndexes, FieldSchema, Search } from './'
 import updateIndex from './updateIndex'
 
-// if types dont exist
+const searchChanged = (newSearch: Search, oldSearch: Search): boolean => {
+  console.log('check difference')
+  return true
+}
 
 const parseField = (
   type: string,
   field: FieldSchema,
   searchIndexes: SearchIndexes,
-  changedIndexes: string[],
+  changedIndexes: Set<string>,
   props: FieldSchema | { [key: string]: FieldSchema },
   path: string[]
   // previous
@@ -51,10 +48,13 @@ const parseField = (
     segment.type === field.type // weird typescript check
   ) {
     if (field.search) {
-      if (segment.search) {
-        console.log('CHANGING INDEX')
-      } else {
-        // console.log('--->', field.search)
+      const index = field.search.index || 'default'
+      if (!segment.search || searchChanged(field.search, segment.search)) {
+        if (!searchIndexes[index]) {
+          searchIndexes[index] = {}
+        }
+        searchIndexes[index][path[path.join('.')]] = field.search.type
+        changedIndexes.add(index)
       }
     }
   }
@@ -101,7 +101,7 @@ async function updateTypeSchema(
   searchIndexes: SearchIndexes
 ): Promise<void> {
   const changedTypes: string[] = []
-  const changedIndexes: string[] = []
+  const changedIndexes: Set<string> = new Set()
 
   for (const type in props) {
     let changed: boolean = false
@@ -136,14 +136,14 @@ async function updateTypeSchema(
     })
   )
 
-  if (changedIndexes.length) {
+  if (changedIndexes.size) {
     await client.redis.hset(
       'schema',
       'searchIndexes',
       JSON.stringify(searchIndexes)
     )
     await Promise.all(
-      changedIndexes.map(index => {
+      Array.from(changedIndexes).map(index => {
         return updateIndex(client.redis, index, searchIndexes[index])
       })
     )
