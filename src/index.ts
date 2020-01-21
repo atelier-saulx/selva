@@ -6,9 +6,10 @@ import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions } from './get'
 import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
-import { Schema } from './schema'
+import { Schema, Id } from './schema'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
+import getTypeFromId from './getTypeFromId'
 
 // FIXME: this is pretty shit
 let MODIFY_SCRIPT
@@ -34,23 +35,23 @@ export class SelvaClient {
 
   // need client.destroy (at least for tests)
 
-  id(props: any) {
+  async id(props: any) {
     // return id(this, props)
   }
 
-  set(props: SetOptions) {
+  async set(props: SetOptions) {
     return set(this, props)
   }
 
-  get(props: GetOptions) {
+  async get(props: GetOptions) {
     return get(this, props)
   }
 
-  updateSchema(props: Schema) {
+  async updateSchema(props: Schema) {
     return updateSchema(this, props)
   }
 
-  getSchema() {
+  async getSchema() {
     return getSchema(this)
   }
 
@@ -65,7 +66,11 @@ export class SelvaClient {
     )
   }
 
-  delete(props: DeleteOptions) {
+  async getTypeFromId(id: Id) {
+    return getTypeFromId(this, id)
+  }
+
+  async delete(props: DeleteOptions) {
     let hierarchy = true
     let id: string
     if (typeof props == 'object') {

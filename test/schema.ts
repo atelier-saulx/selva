@@ -317,6 +317,25 @@ test('schemas - basic', async t => {
     'updated hierarchy schema'
   )
 
+  t.is(await client.getTypeFromId('maflurpy'), 'match')
+
+  await client.set({
+    type: 'match',
+    video: {
+      mp4: 'https://flappie.com/clowns.mp4'
+    },
+    title: {
+      en: 'best match'
+    },
+    children: [
+      {
+        type: 'person',
+        parents: { $add: 'root' }
+      }
+    ],
+    flapperdrol: { smurky: true }
+  })
+
   // add some tests for it
 
   server.destroy()
