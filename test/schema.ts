@@ -294,5 +294,20 @@ test('schemas - basic', async t => {
     'added field to object schema'
   )
 
+  // sends hierarchy update
+  await client.updateSchema({
+    types: {
+      match: {
+        hierarchy: {
+          team: { excludeAncestryWith: ['league'] },
+          video: false,
+          $default: { excludeAncestryWith: ['vehicle'] }
+        }
+      }
+    }
+  })
+
+  // add some tests for it
+
   server.destroy()
 })

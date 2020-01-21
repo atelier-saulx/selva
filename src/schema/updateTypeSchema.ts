@@ -135,7 +135,7 @@ const isEqual = (a: any, b: any): boolean => {
 }
 
 const luaUpdateAncestorsForType = async (client: SelvaClient, type: string) => {
-  console.log('SEND UPDATE ANCESTORS FOR TYPE!', type)
+  console.log('  🥶 SEND UPDATE ANCESTORS FOR TYPE!', type)
 }
 
 // needs to potentially re-index everything
@@ -164,14 +164,16 @@ async function updateTypeSchema(
 
   for (const type in props) {
     let changed: boolean = false
+    let newType: boolean = false
     if (!types[type]) {
       types[type] = {}
+      newType = true
     }
 
     if (props[type].hierarchy || props[type].hierarchy === false) {
       if (await updateHierarchy(client, types[type], props[type].hierarchy)) {
         changed = true
-        changedTypesHierachies.push(type)
+        if (!newType) changedTypesHierachies.push(type)
       }
     }
 
