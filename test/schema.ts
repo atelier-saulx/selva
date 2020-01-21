@@ -115,6 +115,6 @@ test('schemas - basic', async t => {
   const server = await start({ port: 6066, modules: ['redisearch'] })
   const client = await connect({ port: 6066 })
 
-  await client.setSchema({})
+  await client.updateSchema(schema)
   server.destroy()
 })
