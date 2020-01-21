@@ -1,5 +1,7 @@
 import RedisClient from './'
-import { searchSchema, SearchSchema } from '../schema'
+import { SearchSchema } from '../schema/types'
+
+const searchSchema = {}
 
 const create = async (
   client: RedisClient,

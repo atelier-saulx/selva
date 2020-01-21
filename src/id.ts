@@ -1,7 +1,9 @@
 // type list is important may need to be stored in the db (other types)
-import { Type, ExternalId, Id, inverseTypePrefix } from './schema'
+// import { Type, ExternalId, Id, inverseTypePrefix } from './schema'
 import uuid from 'uuid'
 import { SelvaClient } from './'
+
+const inverseTypePrefix = {}
 
 const hash = (str: string): string => {
   let hash = 5381
@@ -11,11 +13,11 @@ const hash = (str: string): string => {
 }
 
 type IdOptions = {
-  type: Type
-  externalId?: ExternalId | ExternalId[]
+  type: string
+  externalId?: string | string[]
 }
 
-function id(client: SelvaClient, { type, externalId }: IdOptions): Id {
+function id(client: SelvaClient, { type, externalId }: IdOptions): string {
   const prefix = inverseTypePrefix[type]
 
   if (!prefix) {

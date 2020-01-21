@@ -18,6 +18,10 @@ export type FieldType =
   | 'geo'
   | 'type'
 
+export type SearchSchema = {
+  [key: string]: string[]
+}
+
 export type FieldSchema = {
   search?: { index?: string; type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[] }
   type: FieldType

@@ -1,8 +1,6 @@
-import { Id } from '../schema'
-
 export type DeleteOptions =
-  | Id
+  | string
   | {
-      $id: Id
+      $id: string
       $hierarchy?: boolean
     }

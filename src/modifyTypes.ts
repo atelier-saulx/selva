@@ -1,4 +1,3 @@
-import { Id } from './schema'
 import { SetOptions } from './set/types'
 import { DeleteOptions } from './delete/types'
 
@@ -14,4 +13,4 @@ export type ModifyOptionsDelete = {
 
 export type ModifyOptions = ModifyOptionsUpdate | ModifyOptionsDelete
 
-export type ModifyResult = Id | boolean
+export type ModifyResult = string | boolean
