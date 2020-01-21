@@ -1,5 +1,5 @@
-import { Types, TypesDb } from './'
-import { SelvaClient } from '../'
+import { Types, TypesDb } from '.'
+import { SelvaClient } from '..'
 
 const uid = (num: number): string => {
   const div = (num / 26) | 0

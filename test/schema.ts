@@ -2,7 +2,7 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
 // import { wait } from './assertions'
-import { FieldType, Fields } from '../src/schema'
+import { FieldType, Fields, Schema } from '../src/schema'
 // id map
 // fields
 // hierarchy
@@ -58,7 +58,7 @@ test('schemas - basic', async t => {
     }
   }
 
-  await client.updateSchema({
+  const schema: Schema = {
     languages: ['nl', 'en'],
     types: {
       league: {
@@ -145,11 +145,18 @@ test('schemas - basic', async t => {
         }
       }
     }
-  })
+  }
 
-  console.log(
-    JSON.stringify((await client.getSchema()).schema.types.match, void 0, 2)
-  )
+  await client.updateSchema(schema)
+
+  const { types, schema: schemaResult } = await client.getSchema()
+
+  t.deepEqual(schemaResult, schema)
+
+  // console.log(
+  //   JSON.stringify((await client.getSchema()).schema.types.match, void 0, 2)
+  // )
+
   // console.log('xxxx---------------')
   // await client.updateSchema({
   //   types: {

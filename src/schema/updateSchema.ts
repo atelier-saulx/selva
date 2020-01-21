@@ -1,6 +1,6 @@
 import { SelvaClient } from '../'
 import { Schema, TypesDb, SearchIndexes } from '.'
-import updateTypes from './updateTypes'
+import updateTypes from './updateTypesId'
 import updateTypeSchema from './updateTypeSchema'
 import { getSchema } from './getSchema'
 

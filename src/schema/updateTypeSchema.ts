@@ -3,7 +3,7 @@ import { Types, SearchIndexes, FieldSchema, Search } from './'
 import updateIndex from './updateIndex'
 
 const searchChanged = (newSearch: Search, oldSearch: Search): boolean => {
-  console.log('check difference')
+  console.log('check difference', newSearch, oldSearch)
   return true
 }
 
@@ -40,8 +40,6 @@ const parseField = (
     }
   }
 
-  //   console.log('look -->', type, path, segment, path)
-
   if (
     field.type !== 'object' &&
     field.type !== 'set' &&
@@ -56,6 +54,7 @@ const parseField = (
         searchIndexes[index][path[path.join('.')]] = field.search.type
         changedIndexes.add(index)
       }
+      segment.search = field.search
     }
   }
 
@@ -91,7 +90,7 @@ const parseField = (
   return changed
 }
 
-// needs to potentially re-index everythign
+// needs to potentially re-index everything
 const updateHierarchy = async () => {}
 
 async function updateTypeSchema(
@@ -105,11 +104,26 @@ async function updateTypeSchema(
 
   for (const type in props) {
     let changed: boolean = false
-    const fields = props[type].fields
-    types[type] = {
-      fields: {}
+    if (!types[type]) {
+      types[type] = {}
     }
+
+    if (props[type].hierarchy) {
+      // parse it!
+      types[type].hierarchy = props[type].hierarchy
+    }
+
+    if (props[type].prefix) {
+      // this is just fine (allrdy checked in id)
+      types[type].prefix = props[type].prefix
+    }
+
+    const fields = props[type].fields
     if (fields) {
+      if (!types[type].fields) {
+        types[type].fields = {}
+      }
+
       for (let field in fields) {
         if (
           parseField(
