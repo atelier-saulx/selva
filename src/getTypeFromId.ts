@@ -12,6 +12,14 @@ export const getPrefixes = async (client): Promise<Record<string, string>> => {
   return prefixes
 }
 
+export const getTypeFromIdSync = (
+  client: SelvaClient,
+  id: Id,
+  prefixes: Record<string, string>
+): string => {
+  return prefixes[id.slice(0, 2)]
+}
+
 const getTypeFromId = async (
   client: SelvaClient,
   id: Id,

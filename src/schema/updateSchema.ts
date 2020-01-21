@@ -3,10 +3,14 @@ import { Schema, TypesDb, SearchIndexes } from '.'
 import updateTypesId from './updateTypesId'
 import updateTypeSchema from './updateTypeSchema'
 import { getSchema } from './getSchema'
+import { schemaCache, prefixesCache } from '../set/collectSchemas'
 
 async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
   const { types, schema, searchIndexes } = await getSchema(client)
-  let changedSchema = false
+
+  // reset 5 second caches
+  schemaCache.cache = {}
+  prefixesCache.prefixes = false
 
   if (props.languages) {
     let changedLanguages: boolean = false

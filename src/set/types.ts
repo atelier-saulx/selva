@@ -1,4 +1,8 @@
+import { Id } from '../schema'
+
 export type BaseItem = { [key: string]: any }
+
+export type ExternalId = string
 
 export type RedisSetParams =
   | Id[]

@@ -3,9 +3,9 @@ export type Id = string
 export type TypesDb = { idSize: number } & { [key: string]: string }
 
 export type FieldType =
-  | 'float'
+  // | 'float'
   | 'number'
-  | 'int'
+  // | 'int'
   // | 'json'
   // | 'array'
   | 'references'

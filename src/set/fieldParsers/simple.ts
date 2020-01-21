@@ -1,0 +1,64 @@
+import { SetOptions } from '../types'
+import { TypeSchema, FieldSchemaOther } from '../../schema'
+
+const verifiers = {
+  string: (payload: string) => {
+    return typeof payload === 'string'
+  },
+  url: (payload: string) => {
+    return typeof payload === 'string'
+  },
+  number: (payload: number) => {
+    return typeof payload === 'number'
+  }
+}
+
+const parsers = {
+  type: (
+    schemas: Record<string, TypeSchema>,
+    field: string,
+    payload: string,
+    result: SetOptions,
+    fields: FieldSchemaOther,
+    type: string
+  ): void => {
+    if (typeof payload === 'string' && payload.length < 20) {
+      result[field] = payload
+    } else {
+      throw new Error(
+        `Type needs to be a string no longer then 20 chars ${payload}`
+      )
+    }
+  }
+}
+
+for (const key in verifiers) {
+  const verify = verifiers[key]
+  parsers[key] = (
+    schemas: Record<string, TypeSchema>,
+    field: string,
+    payload: SetOptions,
+    result: SetOptions,
+    fields: FieldSchemaOther,
+    type: string
+  ) => {
+    if (typeof payload === 'object') {
+      for (let k in payload) {
+        if (k === '$default' || k === '$value') {
+          if (!verify(payload[k])) {
+            throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
+          }
+        } else {
+          throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
+        }
+      }
+      result[field] = payload
+    } else if (verify(payload)) {
+      result[field] = payload
+    } else {
+      throw new Error(`Incorrect payload for ${key} ${payload}`)
+    }
+  }
+}
+
+export default parsers
