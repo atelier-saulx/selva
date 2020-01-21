@@ -1,8 +1,9 @@
-import { Id, Language, Type, getTypeFromId } from '../schema'
 import { SelvaClient } from '..'
 import { GetResult, GetItem, getInner } from './'
 import { setNestedResult } from './nestedFields'
 import getField from './getField'
+
+const getTypeFromId = () => {}
 
 type Ancestor = [Ancestor[], number]
 
@@ -15,8 +16,8 @@ type Ancestor = [Ancestor[], number]
 
 const createAncestorsInner = async (
   client: SelvaClient,
-  id: Id,
-  s: Record<Id, Ancestor>
+  id: string,
+  s: Record<string, Ancestor>
 ): Promise<Ancestor> => {
   // if memoized[id] -> get it
   if (s[id]) {
@@ -44,8 +45,8 @@ const createAncestorsInner = async (
 
 const createAncestors = async (
   client: SelvaClient,
-  targetId: Id
-): Promise<Id[]> => {
+  targetId: string
+): Promise<string[]> => {
   const s = {}
   await createAncestorsInner(client, targetId, s)
   const result = []
@@ -78,11 +79,11 @@ const createAncestors = async (
 
 const createAncestorsFromFields = async (
   client: SelvaClient,
-  targetId: Id,
+  targetId: string,
   fields: string[],
   // not async in lua
-  parse: (client: SelvaClient, id: Id) => Promise<string>
-): Promise<Id[]> => {
+  parse: (client: SelvaClient, id: string) => Promise<string>
+): Promise<string[]> => {
   const s = {}
   await createAncestorsInner(client, targetId, s)
   const result = []
@@ -150,10 +151,10 @@ const createAncestorsFromFields = async (
 
 const setFromAncestors = async (
   client: SelvaClient,
-  ancestors: Id[],
+  ancestors: string[],
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ) => {
   for (let i = 0, len = ancestors.length; i < len; i++) {
@@ -175,12 +176,12 @@ const parseType = async (client: SelvaClient, id: Id): Promise<string> => {
 
 const inheritItem = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   props: GetItem,
   result: GetResult,
-  item: Type[],
-  language?: Language,
+  item: string[],
+  language?: string,
   version?: string
 ) => {
   const ancestors = await createAncestorsFromFields(client, id, item, parseType)
@@ -210,11 +211,11 @@ const inheritItem = async (
 
 const inherit = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   props: GetItem,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ) => {
   const inherit = props.$inherit

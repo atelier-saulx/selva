@@ -1,4 +1,3 @@
-import { Item, Id, Language, Type, Text, Field, languages } from '../schema'
 import { SelvaClient } from '..'
 import getField from './getField'
 import { setNestedResult } from './nestedFields'
@@ -7,10 +6,9 @@ import inherit from './inherit'
 export type Inherit =
   | boolean
   | {
-      $type?: Type | Type[]
+      $type?: string | string[]
       $name?: string | string[]
-      // id?: Id | Id[]
-      $item?: Type | Type[]
+      $item?: string | string[]
     }
 
 type Find = {
@@ -23,10 +21,14 @@ type List = {
 }
 
 type GetField<T> = {
-  $field?: Field
+  $field?: string | string[]
   $inherit?: Inherit
   $list?: List
   $default?: T
+}
+
+type Item = {
+  [key: string]: any
 }
 
 // update $language for default + text (algebraic)
@@ -63,24 +65,15 @@ export type GetItem<T = Item> = {
 // }
 
 type GetOptions = GetItem & {
-  $id?: Id
+  $id?: string
   $version?: string
-  $language?: Language
+  $language?: string
 }
 
 // tmp be able to return anything
 // this is the result
 // we can also make something else e.g. GetApi (All), Get (Item)
-type GetResult<T = Item> = {
-  [P in keyof T]?: T[P] extends Item[]
-    ? GetResult<T>[]
-    : T[P] extends Text
-    ? T[P] | string
-    : T[P] extends object
-    ? GetResult<T[P]>
-    : T[P]
-} & {
-  // $keys?: string[]
+type GetResult = {
   [key: string]: any
 }
 
@@ -88,9 +81,9 @@ export async function getInner(
   client: SelvaClient,
   props: GetItem,
   result: GetResult,
-  id: Id,
+  id: string,
   field?: string,
-  language?: Language,
+  language?: string,
   version?: string,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): Promise<boolean> {

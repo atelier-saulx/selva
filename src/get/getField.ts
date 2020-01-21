@@ -1,18 +1,20 @@
 import { SelvaClient } from '..'
-import { Id, Language, languages, itemTypes, getTypeFromId } from '../schema'
 import { GetResult } from './'
 import { setNestedResult, getNestedField } from './nestedFields'
 
 // make ref as a wrapper here
 
+const languages = ['en']
+
+const getTypeFromId = () => {}
 // will all become dynamic
 
 const number = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result?: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const v = await client.redis.hget(id, field)
@@ -23,10 +25,10 @@ const number = async (
 
 const boolean = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result?: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   setNestedResult(result, field, !!(await client.redis.hget(id, field)))
@@ -35,10 +37,10 @@ const boolean = async (
 
 const string = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result?: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const value = (await client.redis.hget(id, field)) || ''
@@ -48,10 +50,10 @@ const string = async (
 
 const set = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result?: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const value = await client.redis.smembers(id + '.' + field)
@@ -61,10 +63,10 @@ const set = async (
 
 const stringified = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const value = await client.redis.hget(id, field)
@@ -74,10 +76,10 @@ const stringified = async (
 
 const object = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const keys = await client.redis.hkeys(id)
@@ -96,10 +98,10 @@ const object = async (
 
 const text = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   if (!language) {
@@ -145,10 +147,10 @@ const text = async (
 
 const authObject = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   const r = await object(client, id, field, result)
@@ -158,10 +160,10 @@ const authObject = async (
 
 const id = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   result.id = id
@@ -170,10 +172,10 @@ const id = async (
 
 const type = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   result.type = getTypeFromId(id)
@@ -182,10 +184,10 @@ const type = async (
 
 const ancestors = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   result.ancestors = ((await client.redis.hget(id, field)) || '').split(',')
@@ -196,10 +198,10 @@ const ancestors = async (
 
 const getDescendants = async (
   client: SelvaClient,
-  id: Id,
-  results: Record<Id, true>,
-  passedId: Record<Id, true>
-): Promise<Record<Id, true>> => {
+  id: string,
+  results: Record<string, true>,
+  passedId: Record<string, true>
+): Promise<Record<string, true>> => {
   if (!passedId[id]) {
     const children = await client.redis.smembers(id + '.children')
     for (const id of children) {
@@ -215,10 +217,10 @@ const getDescendants = async (
 
 const descendants = async (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   const s = await getDescendants(client, id, {}, {})
@@ -232,10 +234,10 @@ const descendants = async (
 
 type Reader = (
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ) => Promise<boolean>
 
@@ -270,16 +272,16 @@ const types: Record<string, Reader> = {
   'layout.default': stringified
 }
 
-for (const type of itemTypes) {
-  types['layout.' + type] = stringified
-}
+// for (const type of itemTypes) {
+//   types['layout.' + type] = stringified
+// }
 
 async function getField(
   client: SelvaClient,
-  id: Id,
+  id: string,
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> {
   // version still missing!
