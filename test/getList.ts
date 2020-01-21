@@ -3,6 +3,10 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
 
+test.before(async t => {
+  await start({ port: 6062, modules: ['redisearch', 'selva'] })
+})
+
 test.serial('get - simple $list', async t => {
   const client = connect({ port: 6062 })
 

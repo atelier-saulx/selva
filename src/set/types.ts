@@ -41,7 +41,7 @@ export type SetOptions = SetItem & {
   $id?: Id
   $merge?: boolean
   $version?: string
-  children?: HierarchySet
+  children?: HierarchySet | SetItem[]
   parents?: HierarchySet
   externalId?:
     | ExternalId[]

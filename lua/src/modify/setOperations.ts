@@ -1,11 +1,11 @@
+import { id as genId } from '../id'
 import { SetOptions } from '~selva/set/types'
 import { Id } from '~selva/schema'
 import * as redis from '../redis'
-import { arrayIsEqual } from '../util'
 import { reCalculateAncestors } from './ancestors'
 import { deleteItem } from './delete'
 
-type FnModify = (payload: SetOptions & { $id: string }) => Id
+type FnModify = (payload: SetOptions) => Id | null
 
 function getSetKey(id: string, field: string): string {
   return id + '.' + field
@@ -24,7 +24,7 @@ export function resetSet(
     if (field === 'parents') {
       resetParents(id, setKey, value, modify)
     } else if (field === 'children') {
-      resetChildren(id, setKey, value, modify)
+      value = resetChildren(id, setKey, value, modify)
     }
   } else {
     redis.del(setKey)
@@ -124,19 +124,43 @@ export function removeFromParents(id: string, value: Id[]): void {
     redis.srem(parent + '.children', id)
   }
 
-  const parents = redis.smembers(id + '.parents')
   reCalculateAncestors(id)
 }
 
-export function addToChildren(id: string, value: Id[], modify: FnModify): void {
-  for (const child of value) {
-    if (!redis.exists(child)) {
-      modify({ $id: child, parents: { $add: id } })
-    } else {
-      redis.sadd(child + '.parents', id)
-      reCalculateAncestors(child)
+export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
+  const result: string[] = []
+  for (let i = 0; i < value.length; i++) {
+    let child = value[i]
+    // if the child is an object
+    // automatic creation is attempted
+    if (type(child) === 'table') {
+      if (!(<any>child).$id && (<any>child).type !== null) {
+        ;(<any>child).$id = genId({ type: (<any>child).type })
+        child = modify(<any>child) || ''
+
+        redis.debug('HELLOO ' + child)
+      } else {
+        // FIXME: throw new Error('No type or id provided for dynamically created child')
+        child = ''
+      }
+    }
+
+    result[i] = child
+
+    if (child !== '') {
+      redis.debug('CHIIIILD: ' + child)
+      redis.debug('IIIIID: ' + id)
+
+      if (!redis.exists(child)) {
+        modify({ $id: child, parents: { $add: id } })
+      } else {
+        redis.sadd(child + '.parents', id)
+        reCalculateAncestors(child)
+      }
     }
   }
+
+  return result
 }
 
 export function resetChildren(
@@ -144,7 +168,7 @@ export function resetChildren(
   setKey: string,
   value: Id[],
   modify: FnModify
-): void {
+): Id[] {
   const children = redis.smembers(setKey)
   // if (arrayIsEqual(children, value)) {
   //   return
@@ -160,7 +184,7 @@ export function resetChildren(
     }
   }
   redis.del(setKey)
-  addToChildren(id, value, modify)
+  return addToChildren(id, value, modify)
 }
 
 export function removeFromChildren(id: string, value: Id[]): void {

@@ -1,4 +1,7 @@
+import * as redis from '../lua/src/redis'
+
 import modify from '../lua/src/modify/index'
+redis.debug('ID TESTING: ' + redis.id())
 let a = modify([
   {
     kind: 'update',
@@ -63,7 +66,26 @@ let d = modify([
     // @ts-ignore
     payload: {
       $id: 'match',
-      children: []
+      children: [
+        {
+          type: 'match',
+          title: {
+            nl: 'child1'
+          }
+        },
+        {
+          type: 'match',
+          title: {
+            nl: 'child2'
+          }
+        },
+        {
+          type: 'match',
+          title: {
+            nl: 'child3'
+          }
+        }
+      ]
     }
   },
   {

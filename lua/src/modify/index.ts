@@ -1,3 +1,4 @@
+import { id as genId } from '../id'
 import * as redis from '../redis'
 import { Id } from '~selva/schema'
 import { SetOptions } from '~selva/set/types'
@@ -13,6 +14,7 @@ import { resetSet, addToSet, removeFromSet } from './setOperations'
 import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
 import { DeleteOptions } from '~selva/delete/types'
 import { deleteItem } from './delete'
+import * as logger from '../logger'
 
 function removeFields(
   id: string,
@@ -174,8 +176,33 @@ function remove(payload: DeleteOptions): boolean {
   return deleteItem(payload.$id, payload.$hierarchy)
 }
 
-function update(payload: SetOptions & { $id: string }): Id {
-  const exists = !!payload.$id ? redis.hexists(payload.$id, 'type') : false
+function update(payload: SetOptions): Id | null {
+  if (!payload.$id) {
+    if (!payload.type) {
+      return null
+    }
+    const itemType =
+      type(payload.type) === 'string'
+        ? payload.type
+        : (<any>payload.type).$value
+    if (
+      (payload.externalId && type(payload.externalId) === 'string') ||
+      isArray(<any>payload.externalId)
+    ) {
+      payload.$id = genId({
+        type: itemType,
+        externalId: <any>payload.externalId
+      })
+    } else {
+      payload.$id = genId({ type: itemType })
+    }
+  }
+
+  if (!payload.$id) {
+    return null
+  }
+
+  const exists = redis.hexists(payload.$id, 'type')
 
   if (!exists) {
     if (!payload.type) {
@@ -194,12 +221,19 @@ function update(payload: SetOptions & { $id: string }): Id {
 // We always set an $id property before passing to redis
 // returns Id for updates, boolean for deletes
 
-export default function modify(payload: ModifyOptions[]): ModifyResult[] {
-  const results: (Id | boolean)[] = []
+export default function modify(
+  payload: ModifyOptions[]
+): (ModifyResult | null)[] {
+  const results: (Id | boolean | null)[] = []
+  logger.info(`Running modify with batch of ${payload.length}`)
   for (let i = 0; i < payload.length; i++) {
     let operation = payload[i]
     if (operation.kind === 'update') {
       results[i] = update(operation.payload)
+      // TODO: how do we want to handle errors here?
+      // if (!results[i]) {
+      //   return redis.Error(`Unable to update`)
+      // }
     } else {
       results[i] = remove(operation.payload)
     }

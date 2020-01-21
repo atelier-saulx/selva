@@ -6,11 +6,11 @@ import { wait } from './assertions'
 test('Connect and re-connect', async t => {
   let current = { port: 6066 }
 
-  const client = await connect(async () => {
+  const client = connect(async () => {
     return current
   })
 
-  const server = await start({ port: 6066, modules: ['redisearch'] })
+  const server = await start({ port: 6066, modules: ['redisearch', 'selva'] })
 
   await client.set({
     $id: 'cuflap',
