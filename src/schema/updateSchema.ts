@@ -32,7 +32,7 @@ async function updateSchema(
 
   //types
   if (props.types) {
-    await updateTypes(props.types, types)
+    await updateTypes(client, props.types, types)
   }
 
   // if change return true

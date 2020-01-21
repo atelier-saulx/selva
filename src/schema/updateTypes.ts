@@ -1,5 +1,5 @@
 import { Types, TypesDb } from './'
-
+import { SelvaClient } from '../'
 // small caps counter (2 spaces)
 const uid = (num: number): string => {
   const div = (num / 26) | 0
@@ -15,10 +15,6 @@ const uid = (num: number): string => {
 }
 
 // - means id seperator
-// else first 2 letters
-//check if - in id else use first 2
-// [flurp-] (this becomes the id)
-// ids cant have - in them!
 const findKey = (obj: { [key: string]: any }, value: any): false | string => {
   for (let k in obj) {
     if (obj[k] === value) {
@@ -41,7 +37,9 @@ const genId = (types: TypesDb): string => {
   return id
 }
 
-async function parseTypes(props: Types, types: TypesDb) {
+async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
+  let changed: boolean = false
+
   for (let type in props.types) {
     const definition = props.types[type]
     if (!types[type]) {
@@ -58,10 +56,14 @@ async function parseTypes(props: Types, types: TypesDb) {
             `Prefix allready exists ${definition.prefix} ${exists}`
           )
         }
-        types[type] = definition.prefix
+        types[type] =
+          definition.prefix.length > 2
+            ? definition.prefix + '-' // store the exact match!
+            : definition.prefix
       } else {
         types[type] = genId(types)
       }
+      changed = true
     } else {
       if (definition.prefix !== types[type]) {
         throw new Error(
@@ -69,6 +71,16 @@ async function parseTypes(props: Types, types: TypesDb) {
         )
       }
     }
+  }
+
+  if (changed) {
+    // store types
+    await client.redis.set('types', JSON.stringify(types))
+    const prefixes = {}
+    for (let key in types) {
+      prefixes[types[key]] = key
+    }
+    await client.redis.set('prefixes', JSON.stringify(types))
   }
 }
 
