@@ -1,5 +1,12 @@
 import { SelvaClient } from '..'
-import { Types, SearchIndexes, FieldSchema, Search } from './'
+import {
+  Types,
+  SearchIndexes,
+  FieldSchema,
+  Search,
+  TypeSchema,
+  HierarchySchema
+} from './'
 import updateIndex from './updateIndex'
 
 const searchChanged = (newSearch: Search, oldSearch: Search): boolean => {
@@ -106,8 +113,44 @@ const parseField = (
   return changed
 }
 
+const isEqual = (a: any, b: any): boolean => {
+  const type = typeof a
+  if (type !== typeof b) {
+    return false
+  }
+  if (type === 'object') {
+    for (let key in a) {
+      if (!b[key]) {
+        return false
+      } else {
+        if (!isEqual(a[key], b[key])) {
+          return false
+        }
+      }
+    }
+  } else if (a !== b) {
+    return false
+  }
+  return true
+}
+
+const luaUpdateAncestorsForType = async (client: SelvaClient, type: string) => {
+  console.log('SEND UPDATE ANCESTORS FOR TYPE!', type)
+}
+
 // needs to potentially re-index everything
-const updateHierarchy = async () => {}
+const updateHierarchy = async (
+  client: SelvaClient,
+  prev: TypeSchema,
+  newHierarchy: HierarchySchema
+): Promise<boolean> => {
+  let changed: boolean = false
+  if (!isEqual(prev.hierarchy, newHierarchy)) {
+    prev.hierarchy = newHierarchy
+    changed = true
+  }
+  return changed
+}
 
 async function updateTypeSchema(
   client: SelvaClient,
@@ -117,6 +160,7 @@ async function updateTypeSchema(
 ): Promise<void> {
   const changedTypes: string[] = []
   const changedIndexes: Set<string> = new Set()
+  const changedTypesHierachies: string[] = []
 
   for (const type in props) {
     let changed: boolean = false
@@ -124,9 +168,11 @@ async function updateTypeSchema(
       types[type] = {}
     }
 
-    if (props[type].hierarchy) {
-      // parse it!
-      types[type].hierarchy = props[type].hierarchy
+    if (props[type].hierarchy || props[type].hierarchy === false) {
+      if (await updateHierarchy(client, types[type], props[type].hierarchy)) {
+        changed = true
+        changedTypesHierachies.push(type)
+      }
     }
 
     if (props[type].prefix) {
@@ -178,6 +224,12 @@ async function updateTypeSchema(
       })
     )
   }
+
+  await Promise.all(
+    changedTypesHierachies.map(type => {
+      return luaUpdateAncestorsForType(client, type)
+    })
+  )
 }
 
 export default updateTypeSchema

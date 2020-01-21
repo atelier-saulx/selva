@@ -66,16 +66,18 @@ export type FieldSchema =
 
 export type Fields = Record<string, FieldSchema>
 
+export type HierarchySchema =
+  | false // has to be false but does not work...
+  | {
+      [key: string]:
+        | false // has to be false but does not work...
+        | { excludeAncestryWith: string[] }
+        | { includeAncestryWith: string[] }
+    }
+
 export type TypeSchema = {
   prefix?: string
-  hierarchy?:
-    | false // has to be false but does not work...
-    | {
-        [key: string]:
-          | false // has to be false but does not work...
-          | { excludeAncestryWith: string[] }
-          | { includeAncestryWith: string[] }
-      }
+  hierarchy?: HierarchySchema
   fields?: Fields
 }
 

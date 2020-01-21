@@ -209,7 +209,7 @@ test('schemas - basic', async t => {
     'correct schema after setting the same'
   )
 
-  // replace search schema do later
+  // drop search index in this case (NOT SUPPORTED YET!)
   await client.updateSchema({
     types: {
       match: {
