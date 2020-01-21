@@ -24,6 +24,12 @@ const verifiers = {
   },
   number: (payload: number) => {
     return typeof payload === 'number'
+  },
+  float: (payload: number) => {
+    return typeof payload === 'number'
+  },
+  int: (payload: number) => {
+    return typeof payload === 'number'
   }
 }
 
@@ -48,6 +54,7 @@ const parsers = {
 
 for (const key in verifiers) {
   const verify = verifiers[key]
+  const isNumber = key === 'float' || key === 'number' || key === 'int'
   parsers[key] = (
     schemas: Record<string, TypeSchema>,
     field: string,
@@ -58,7 +65,11 @@ for (const key in verifiers) {
   ) => {
     if (typeof payload === 'object') {
       for (let k in payload) {
-        if (k === '$default' || k === '$value') {
+        if (
+          k === '$default' ||
+          k === '$value' ||
+          (isNumber && k === '$increment')
+        ) {
           if (!verify(payload[k])) {
             throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
           }
