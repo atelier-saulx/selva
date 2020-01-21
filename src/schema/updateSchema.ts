@@ -2,47 +2,10 @@ import { SelvaClient } from '../'
 import { Schema, TypesDb, SearchIndexes } from '.'
 import updateTypes from './updateTypes'
 import updateTypeSchema from './updateTypeSchema'
-
-async function getFields(client: SelvaClient) {
-  const [types, languages, searchIndexes] = await Promise.all(
-    [
-      {
-        field: 'types',
-        def: { idSize: 0 }
-      },
-      {
-        field: 'languages',
-        def: []
-      },
-      {
-        field: 'searchIndexes',
-        def: {}
-      }
-    ].map(async ({ field, def }) => {
-      const result = await client.redis.hget('schema', field)
-      return result === null ? def : JSON.parse(result)
-    })
-  )
-
-  const schema: Schema = {
-    languages,
-    types: {}
-  }
-
-  const schemas = await client.redis.hgetall('types')
-
-  if (schemas) {
-    for (const type in schemas) {
-      schema.types[type] = JSON.parse(schemas[type])
-    }
-    console.log('Fun Previous Schemas ', schema)
-  }
-
-  return { types, schema, searchIndexes }
-}
+import { getSchema } from './getSchema'
 
 async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
-  const { types, schema, searchIndexes } = await getFields(client)
+  const { types, schema, searchIndexes } = await getSchema(client)
   let changedSchema = false
 
   if (props.languages) {

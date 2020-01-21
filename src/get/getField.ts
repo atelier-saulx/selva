@@ -1,6 +1,7 @@
 import { SelvaClient } from '..'
 import { GetResult } from './'
 import { setNestedResult, getNestedField } from './nestedFields'
+import { Id } from '../schema'
 
 // make ref as a wrapper here
 
@@ -13,7 +14,7 @@ const getTypeFromId = (id: string): string => {
 
 const number = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result?: GetResult,
   language?: string,
@@ -27,7 +28,7 @@ const number = async (
 
 const boolean = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result?: GetResult,
   language?: string,
@@ -39,7 +40,7 @@ const boolean = async (
 
 const string = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result?: GetResult,
   language?: string,
@@ -52,7 +53,7 @@ const string = async (
 
 const set = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result?: GetResult,
   language?: string,
@@ -65,7 +66,7 @@ const set = async (
 
 const stringified = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -78,7 +79,7 @@ const stringified = async (
 
 const object = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -100,7 +101,7 @@ const object = async (
 
 const text = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -149,7 +150,7 @@ const text = async (
 
 const authObject = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -162,7 +163,7 @@ const authObject = async (
 
 const id = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -174,7 +175,7 @@ const id = async (
 
 const type = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -186,7 +187,7 @@ const type = async (
 
 const ancestors = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -200,7 +201,7 @@ const ancestors = async (
 
 const getDescendants = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   results: Record<string, true>,
   passedId: Record<string, true>
 ): Promise<Record<string, true>> => {
@@ -219,7 +220,7 @@ const getDescendants = async (
 
 const descendants = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -236,7 +237,7 @@ const descendants = async (
 
 type Reader = (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,
@@ -280,7 +281,7 @@ const types: Record<string, Reader> = {
 
 async function getField(
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   result: GetResult,
   language?: string,

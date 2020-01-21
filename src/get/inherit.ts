@@ -1,24 +1,28 @@
+import { Id } from '../schema'
 import { SelvaClient } from '..'
 import { GetResult, GetItem, getInner } from './'
 import { setNestedResult } from './nestedFields'
 import getField from './getField'
 
-const getTypeFromId = (id: string): string => {
-  return 'lulllz'
-}
-
 type Ancestor = [Ancestor[], number]
 
+const getTypeFromId = (id: Id): string => {
+  return 'x'
+}
+
 // only shortest ancestor
+
 // memoize this in lua (within one batch of gets)
 // const ancestorMap = {} etc
+
 // can prob just use the ancestors field (store )
 
 const createAncestorsInner = async (
   client: SelvaClient,
-  id: string,
-  s: Record<string, Ancestor>
+  id: Id,
+  s: Record<Id, Ancestor>
 ): Promise<Ancestor> => {
+  // if memoized[id] -> get it
   if (s[id]) {
     return s[id]
   }
@@ -44,8 +48,8 @@ const createAncestorsInner = async (
 
 const createAncestors = async (
   client: SelvaClient,
-  targetId: string
-): Promise<string[]> => {
+  targetId: Id
+): Promise<Id[]> => {
   const s = {}
   await createAncestorsInner(client, targetId, s)
   const result = []
@@ -78,11 +82,11 @@ const createAncestors = async (
 
 const createAncestorsFromFields = async (
   client: SelvaClient,
-  targetId: string,
+  targetId: Id,
   fields: string[],
   // not async in lua
-  parse: (client: SelvaClient, id: string) => Promise<string>
-): Promise<string[]> => {
+  parse: (client: SelvaClient, id: Id) => Promise<string>
+): Promise<Id[]> => {
   const s = {}
   await createAncestorsInner(client, targetId, s)
   const result = []
@@ -150,7 +154,7 @@ const createAncestorsFromFields = async (
 
 const setFromAncestors = async (
   client: SelvaClient,
-  ancestors: string[],
+  ancestors: Id[],
   field: string,
   result: GetResult,
   language?: string,
@@ -165,17 +169,17 @@ const setFromAncestors = async (
   }
 }
 
-const parseName = async (client: SelvaClient, id: string): Promise<string> => {
+const parseName = async (client: SelvaClient, id: Id): Promise<string> => {
   return await client.redis.hget(id, 'name')
 }
 
-const parseType = async (client: SelvaClient, id: string): Promise<string> => {
+const parseType = async (client: SelvaClient, id: Id): Promise<string> => {
   return getTypeFromId(id)
 }
 
 const inheritItem = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   props: GetItem,
   result: GetResult,
@@ -210,7 +214,7 @@ const inheritItem = async (
 
 const inherit = async (
   client: SelvaClient,
-  id: string,
+  id: Id,
   field: string,
   props: GetItem,
   result: GetResult,
@@ -229,7 +233,7 @@ const inherit = async (
         version
       )
     } else if (inherit.$type || inherit.$name) {
-      let ancestors: string[]
+      let ancestors: Id[]
       if (inherit.$name) {
         if (!Array.isArray(inherit.$name)) {
           inherit.$name = [inherit.$name]

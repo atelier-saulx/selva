@@ -147,6 +147,9 @@ test('schemas - basic', async t => {
     }
   })
 
+  console.log(
+    JSON.stringify((await client.getSchema()).schema.types.match, void 0, 2)
+  )
   // console.log('xxxx---------------')
   // await client.updateSchema({
   //   types: {

@@ -1,4 +1,4 @@
-export type Id = string | number
+export type Id = string
 
 export type TypesDb = { idSize: number } & { [key: string]: string }
 
@@ -6,12 +6,12 @@ export type FieldType =
   | 'float'
   | 'number'
   | 'int'
-  | 'json'
-  | 'array'
+  // | 'json'
+  // | 'array'
   | 'references'
-  | 'set'
+  // | 'set'
   | 'string'
-  | 'object'
+  // | 'object'
   | 'text'
   | 'id'
   | 'digest'
@@ -26,6 +26,11 @@ export type SearchSchema = Record<string, string[]>
 
 export type SearchIndexes = Record<string, SearchSchema>
 
+export type Search = {
+  index?: string
+  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[]
+}
+
 export type FieldSchemaObject = {
   type: 'object'
   properties: {
@@ -33,14 +38,9 @@ export type FieldSchemaObject = {
   }
 }
 
-export type Search = {
-  index?: string
-  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[]
-}
-
 export type FieldSchemaJson = {
   type: 'json'
-  properties: {
+  properties?: {
     [key: string]: FieldSchema
   }
   search?: Search
@@ -54,11 +54,13 @@ export type FieldSchemaOther = {
 export type FieldSchemaArrayLike = {
   search?: { index?: string; type: 'TAG'[] }
   type: 'set' | 'array'
-  items?: FieldSchema
+  // cannot have nested object - needs to be json for set
+  items: FieldSchema
 }
 
 export type FieldSchema =
   | FieldSchemaObject
+  | FieldSchemaJson
   | FieldSchemaArrayLike
   | FieldSchemaOther
 

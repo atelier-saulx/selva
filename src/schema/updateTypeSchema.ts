@@ -1,6 +1,14 @@
 import { SelvaClient } from '..'
-import { Types, SearchIndexes, FieldSchema } from './'
+import {
+  Types,
+  SearchIndexes,
+  FieldSchema,
+  FieldSchemaJson,
+  FieldSchemaObject
+} from './'
 import updateIndex from './updateIndex'
+
+// if types dont exist
 
 const parseField = (
   type: string,
@@ -14,41 +22,72 @@ const parseField = (
   let changed = false
   let segment = props
   for (let i = 0; i < path.length; i++) {
-    if (path.length - 1) {
-      if (props[path[i]]) {
-        // type exists
-        if (field.type !== props[path[i]].type) {
+    const key = path[i]
+    if (i === path.length - 1) {
+      const prev = segment[key]
+      if (prev) {
+        if (field.type !== prev.type) {
           throw new Error(
-            `Cannot change existing type for ${type} field ${path} changing from ${
-              props[path[i]].type
-            } to ${field.type}`
+            `Cannot change existing type for ${type} field ${path} changing from ${prev.type} to ${field.type}`
           )
         }
       } else {
         changed = true
-        props[path[i]] = {
+        segment[key] = {
           type: field.type
         }
       }
+      segment = segment[key]
+    } else {
+      segment = segment[key] || (segment[key] = {})
     }
-    segment = props[path[i]] || {}
   }
 
-  console.log('look -->', type, path, segment)
+  //   console.log('look -->', type, path, segment, path)
 
-  if (field.type !== 'object' && field.type !== 'set') {
+  if (
+    field.type !== 'object' &&
+    field.type !== 'set' &&
+    segment.type === field.type // weird typescript check
+  ) {
     if (field.search) {
-      // -- do it
+      if (segment.search) {
+        console.log('CHANGING INDEX')
+      } else {
+        // console.log('--->', field.search)
+      }
     }
   }
 
   if (field.type === 'object' || field.type === 'json') {
-    // not only string allow properties on this
+    if (field.properties) {
+      for (let key in field.properties) {
+        if (
+          parseField(
+            type,
+            field.properties[key],
+            searchIndexes,
+            changedIndexes,
+            props,
+            [...path, 'properties', key]
+          )
+        ) {
+          changed = true
+        }
+      }
+    }
   } else if (field.type === 'set' || field.type === 'array') {
+    if (
+      parseField(type, field.items, searchIndexes, changedIndexes, props, [
+        ...path,
+        'items'
+      ])
+    ) {
+      changed = true
+    }
   }
 
   // if object or json or array or set
-
   return changed
 }
 
@@ -65,9 +104,6 @@ async function updateTypeSchema(
   const changedIndexes: string[] = []
 
   for (const type in props) {
-    if (types[type]) {
-      console.log('TYPE exists tricky!', type)
-    }
     let changed: boolean = false
     const fields = props[type].fields
     types[type] = {
@@ -75,9 +111,6 @@ async function updateTypeSchema(
     }
     if (fields) {
       for (let field in fields) {
-        types[type].fields[field] = {
-          type: fields[field].type
-        }
         if (
           parseField(
             type,
@@ -92,7 +125,9 @@ async function updateTypeSchema(
         }
       }
     }
-    changedTypes.push(type)
+    if (changed) {
+      changedTypes.push(type)
+    }
   }
 
   await Promise.all(

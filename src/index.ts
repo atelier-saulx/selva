@@ -8,6 +8,7 @@ import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
 import { Schema } from './schema'
 import { updateSchema } from './schema/updateSchema'
+import { getSchema } from './schema/getSchema'
 
 // FIXME: this is pretty shit
 let MODIFY_SCRIPT
@@ -47,6 +48,10 @@ export class SelvaClient {
 
   updateSchema(props: Schema) {
     return updateSchema(this, props)
+  }
+
+  getSchema() {
+    return getSchema(this)
   }
 
   async modify(opts: ModifyOptions): Promise<ModifyResult> {

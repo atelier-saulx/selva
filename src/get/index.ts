@@ -2,13 +2,16 @@ import { SelvaClient } from '..'
 import getField from './getField'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
+import { Id } from '../schema'
+
+// re-add id
 
 export type Inherit =
   | boolean
   | {
       $type?: string | string[]
       $name?: string | string[]
-      $item?: string | string[]
+      $item?: Id | Id[]
     }
 
 type Find = {
@@ -64,7 +67,7 @@ export type GetItem<T = Item> = {
 // }
 
 type GetOptions = GetItem & {
-  $id?: string
+  $id?: Id
   $version?: string
   $language?: string
 }
@@ -80,7 +83,7 @@ export async function getInner(
   client: SelvaClient,
   props: GetItem,
   result: GetResult,
-  id: string,
+  id: Id,
   field?: string,
   language?: string,
   version?: string,
