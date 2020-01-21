@@ -27,6 +27,7 @@ type GetField<T> = {
   $default?: T
 }
 
+// want with $ come on :D
 type Item = {
   [key: string]: any
 }
@@ -35,8 +36,6 @@ type Item = {
 export type GetItem<T = Item> = {
   [P in keyof T]?: T[P] extends Item[]
     ? GetItem<T>[] | true
-    : T[P] extends Text
-    ? (GetItem<T[P]> & GetField<T | string>) | true
     : T[P] extends object
     ? (GetItem<T[P]> & GetField<T>) | true
     : T[P] extends number

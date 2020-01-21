@@ -1,9 +1,9 @@
-import { BaseItem, Field, ExternalId, UserType, Id } from '../schema'
+export type BaseItem = { [key: string]: any }
 
 export type RedisSetParams =
   | Id[]
   | {
-      $value?: Id[] | Id
+      $value?: string[] | Id
       $add?: Id[] | Id
       $delete?: Id[] | Id
     }
@@ -16,7 +16,7 @@ export type SetExtraOptions<T> = {
   $default?: T
   $value?: T
   $merge?: boolean
-  $field?: Field
+  $field?: string | string[]
 }
 
 export type SetExtraCounterOptions = {

@@ -1,3 +1,5 @@
+export type Id = string | number
+
 export type FieldType =
   | 'float'
   | 'number'

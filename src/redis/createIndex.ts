@@ -1,5 +1,5 @@
 import RedisClient from './'
-import { SearchSchema } from '../schema/types'
+import { SearchSchema } from '../schema'
 
 const searchSchema = {}
 

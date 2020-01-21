@@ -1,5 +1,5 @@
 import { SelvaClient } from '../'
-import { Schema } from './types'
+import { Schema } from '.'
 
 async function updateSchema(
   client: SelvaClient,

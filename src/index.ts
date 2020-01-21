@@ -6,7 +6,7 @@ import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions } from './get'
 import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
-import { Schema } from './schema/types'
+import { Schema } from './schema'
 import { updateSchema } from './schema/updateSchema'
 
 // FIXME: this is pretty shit
