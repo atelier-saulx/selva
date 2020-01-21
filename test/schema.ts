@@ -32,7 +32,7 @@ import { wait } from './assertions'
 
 const schema = {
   languages: ['nl', 'en'],
-  types: {
+  type: {
     match: {
       hierarchy: {
         team: { excludeAncestryWith: ['league'] },

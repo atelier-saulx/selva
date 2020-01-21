@@ -6,6 +6,8 @@ import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions } from './get'
 import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
+import { Schema } from './schema/types'
+import { updateSchema } from './schema/updateSchema'
 
 // FIXME: this is pretty shit
 let MODIFY_SCRIPT
@@ -41,6 +43,10 @@ export class SelvaClient {
 
   get(props: GetOptions) {
     return get(this, props)
+  }
+
+  updateSchema(props: Schema) {
+    return updateSchema(this, props)
   }
 
   async modify(opts: ModifyOptions): Promise<ModifyResult> {

@@ -27,7 +27,17 @@ export type FieldSchema = {
 }
 
 export type TypeSchema = {
-  [key: string]: FieldSchema
+  hierarchy?:
+    | false
+    | {
+        [key: string]:
+          | false
+          | { excludeAncestryWith: string[] }
+          | { includeAncestryWith: string[] }
+      }
+  fields?: {
+    [key: string]: FieldSchema
+  }
 }
 
 export type Schema = {
