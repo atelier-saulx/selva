@@ -35,7 +35,7 @@ async function getFields(client: SelvaClient) {
     for (const type in schemas) {
       schema.types[type] = JSON.parse(schemas[type])
     }
-    console.log('fun previous schemas', schema)
+    console.log('Fun Previous Schemas ', schema)
   }
 
   return { types, schema, searchIndexes }
@@ -44,7 +44,7 @@ async function getFields(client: SelvaClient) {
 async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
   const { types, schema, searchIndexes } = await getFields(client)
   let changedSchema = false
-  // languages
+
   if (props.languages) {
     let changedLanguages: boolean = false
     props.languages.forEach(lang => {

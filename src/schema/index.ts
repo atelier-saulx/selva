@@ -33,8 +33,21 @@ export type FieldSchemaObject = {
   }
 }
 
+export type Search = {
+  index?: string
+  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[]
+}
+
+export type FieldSchemaJson = {
+  type: 'json'
+  properties: {
+    [key: string]: FieldSchema
+  }
+  search?: Search
+}
+
 export type FieldSchemaOther = {
-  search?: { index?: string; type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[] }
+  search?: Search
   type: FieldType
 }
 

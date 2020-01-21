@@ -6,9 +6,50 @@ const parseField = (
   type: string,
   field: FieldSchema,
   searchIndexes: SearchIndexes,
-  changedIndexes: string[]
-) => {
-  // here we go!
+  changedIndexes: string[],
+  props: FieldSchema | { [key: string]: FieldSchema },
+  path: string[]
+  // previous
+): boolean => {
+  let changed = false
+  let segment = props
+  for (let i = 0; i < path.length; i++) {
+    if (path.length - 1) {
+      if (props[path[i]]) {
+        // type exists
+        if (field.type !== props[path[i]].type) {
+          throw new Error(
+            `Cannot change existing type for ${type} field ${path} changing from ${
+              props[path[i]].type
+            } to ${field.type}`
+          )
+        }
+      } else {
+        changed = true
+        props[path[i]] = {
+          type: field.type
+        }
+      }
+    }
+    segment = props[path[i]] || {}
+  }
+
+  console.log('look -->', type, path, segment)
+
+  if (field.type !== 'object' && field.type !== 'set') {
+    if (field.search) {
+      // -- do it
+    }
+  }
+
+  if (field.type === 'object' || field.type === 'json') {
+    // not only string allow properties on this
+  } else if (field.type === 'set' || field.type === 'array') {
+  }
+
+  // if object or json or array or set
+
+  return changed
 }
 
 // needs to potentially re-index everythign
@@ -20,25 +61,38 @@ async function updateTypeSchema(
   types: Types,
   searchIndexes: SearchIndexes
 ): Promise<void> {
-  // need to know if new!
-  let changedTypes: string[] = []
-  let changedIndexes: string[] = []
+  const changedTypes: string[] = []
+  const changedIndexes: string[] = []
 
-  for (let type in props) {
-    if (!types[type]) {
-      const fields = props[type].fields
-      types[type] = {}
-      if (fields) {
-        for (let field in fields) {
-          //   console.info(field)
-          parseField(type, fields[field], searchIndexes, changedIndexes)
+  for (const type in props) {
+    if (types[type]) {
+      console.log('TYPE exists tricky!', type)
+    }
+    let changed: boolean = false
+    const fields = props[type].fields
+    types[type] = {
+      fields: {}
+    }
+    if (fields) {
+      for (let field in fields) {
+        types[type].fields[field] = {
+          type: fields[field].type
+        }
+        if (
+          parseField(
+            type,
+            fields[field],
+            searchIndexes,
+            changedIndexes,
+            types[type].fields,
+            [field]
+          )
+        ) {
+          changed = true
         }
       }
-      changedTypes.push(type)
-    } else {
-      console.log('type exists tricky!')
-      // never change type, only make new (merge merge)
     }
+    changedTypes.push(type)
   }
 
   await Promise.all(
