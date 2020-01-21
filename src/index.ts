@@ -33,7 +33,7 @@ export class SelvaClient {
 
   // need client.destroy (at least for tests)
 
-  id(props: IdOptions) {
+  id(props: any) {
     // return id(this, props)
   }
 
