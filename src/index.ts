@@ -1,5 +1,5 @@
 import { default as RedisClient, ConnectOptions } from './redis'
-import { id, IdOptions } from './id'
+// import { id, IdOptions } from './id'
 import { set, SetOptions } from './set'
 import { ModifyOptions, ModifyResult } from './modifyTypes'
 import { deleteItem, DeleteOptions } from './delete'
@@ -34,7 +34,7 @@ export class SelvaClient {
   // need client.destroy (at least for tests)
 
   id(props: IdOptions) {
-    return id(this, props)
+    // return id(this, props)
   }
 
   set(props: SetOptions) {
