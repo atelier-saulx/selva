@@ -272,9 +272,27 @@ test('schemas - basic', async t => {
     'add fields to the index'
   )
 
-  // console.log(
-  // JSON.stringify((await client.getSchema()).schema.types.match, void 0, 2)
-  // )
+  t.deepEqual(
+    (await client.getSchema()).schema.types.match.fields.flurpy,
+    {
+      type: 'object',
+      properties: {
+        snurkels: {
+          type: 'string',
+          search: {
+            type: ['TAG']
+          }
+        },
+        snurpie: {
+          type: 'string',
+          search: {
+            type: ['TEXT']
+          }
+        }
+      }
+    },
+    'added field to object schema'
+  )
 
   server.destroy()
 })
