@@ -1,18 +1,20 @@
 import * as redis from './redis'
 import { isArray } from './util'
-import { Id, Type, ExternalId, inverseTypePrefix } from '../../src/schema'
+import { Id } from '../../src/schema/index'
+import { ExternalId } from '../../src/set/types'
+import { getPrefixFromType } from './typeIdMapping'
 
 function hash(str?: string): string {
   return redis.id(str)
 }
 
 type IdOptions = {
-  type: Type
+  type: string
   externalId?: ExternalId | ExternalId[]
 }
 
 export function id({ type, externalId }: IdOptions): Id | undefined {
-  const prefix = inverseTypePrefix[type]
+  const prefix = getPrefixFromType(type)
 
   if (!prefix) {
     return undefined

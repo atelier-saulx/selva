@@ -1,4 +1,4 @@
-import { Id } from '~selva/schema'
+import { Id } from '~selva/schema/index'
 import { reCalculateAncestors } from './ancestors'
 import * as redis from '../redis'
 
