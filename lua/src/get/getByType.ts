@@ -5,6 +5,7 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { TypeSchema } from '../../../src/schema/index'
+import { splitString } from '../util'
 
 const id = (
   result: GetResult,
@@ -259,7 +260,7 @@ function getByType(
     return true
   }
 
-  const paths = field.split('.')
+  const paths = splitString(field, '.')
   let prop = schema.fields[paths[0]]
   for (let i = 1; i < paths.length; i++) {
     if (!prop || prop.type !== 'object') {

@@ -3,6 +3,7 @@ import { Id } from '~selva/schema/index'
 import getByType from './getByType'
 import * as redis from '../redis'
 import { TypeSchema } from '../../../src/schema/index'
+import * as logger from '../logger'
 
 function getField(
   props: GetItem,

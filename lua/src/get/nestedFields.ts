@@ -1,7 +1,8 @@
 import { GetResult } from '~selva/get/types'
+import { splitString } from '../util'
 
 export const getNestedField = (result: GetResult, field: string): any => {
-  const fields = field.split('.')
+  const fields = splitString(field, '.')
   const len = fields.length
   if (len > 1) {
     let segment = result
@@ -22,7 +23,7 @@ export const setNestedResult = (
   field: string,
   value: any
 ) => {
-  const fields = field.split('.')
+  const fields = splitString(field, '.')
   const len = fields.length
   if (len > 1) {
     let segment = result

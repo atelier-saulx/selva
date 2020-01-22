@@ -4,11 +4,47 @@ import { start } from 'selva-server'
 import './assertions'
 
 test.before(async t => {
-  await start({ port: 6062, modules: ['redisearch', 'selva'] })
+  await start({
+    port: 6072,
+    modules: ['redisearch', 'selva'],
+    developmentLogging: true,
+    loglevel: 'info'
+  })
+  await new Promise((resolve, _reject) => {
+    setTimeout(resolve, 100)
+  })
+
+  const client = connect({ port: 6072 })
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    types: {
+      lekkerType: {
+        prefix: 'vi',
+        fields: {
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  await client.destroy()
 })
 
-test.serial('get - basic', async t => {
-  const client = connect({ port: 6062 })
+test.serial.only('get - basic', async t => {
+  const client = connect({ port: 6072 })
 
   await client.set({
     $id: 'viA',
@@ -67,7 +103,7 @@ test.serial('get - basic', async t => {
 })
 
 test.serial('get - $default', async t => {
-  const client = connect({ port: 6062 })
+  const client = connect({ port: 6072 })
 
   await client.set({
     $id: 'viflap',
@@ -101,7 +137,7 @@ test.serial('get - $default', async t => {
 })
 
 test.serial('get - $language', async t => {
-  const client = connect({ port: 6062 })
+  const client = connect({ port: 6072 })
   await client.set({
     $id: 'viflap',
     title: { en: 'flap', nl: 'flurp' },
@@ -141,7 +177,7 @@ test.serial('get - $language', async t => {
 })
 
 test.serial('get - hierarchy', async t => {
-  const client = connect({ port: 6062 })
+  const client = connect({ port: 6072 })
 
   await Promise.all([
     client.set({
@@ -184,7 +220,7 @@ test.serial('get - hierarchy', async t => {
 })
 
 test.serial('get - $inherit', async t => {
-  const client = connect({ port: 6062 })
+  const client = connect({ port: 6072 })
 
   /*
     root
@@ -371,7 +407,7 @@ test.serial('get - $inherit', async t => {
 })
 
 // test.serial('get - $field (basic)', async t => {
-//   const client = connect({ port: 6062 })
+//   const client = connect({ port: 6072 })
 
 //   await client.set({
 //     $id: 'reDe',
