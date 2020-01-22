@@ -1,26 +1,15 @@
 import { Types, TypesDb } from '.'
 import { SelvaClient } from '..'
 
-const arr = []
-
-const fillArray = () => {
-  for (let i = 48; i < 62 + 48; i++) {
-    let n = i
-    if (n > 57) {
-      n += 7
-    }
-    if (n > 90) {
-      n += 6
-    }
-    arr.unshift(String.fromCharCode(n))
+const fromCharCode = n => {
+  n += 48
+  if (n > 57) {
+    n += 7
   }
-}
-
-const fromCharCode = num => {
-  if (!arr.length) {
-    fillArray()
+  if (n > 90) {
+    n += 6
   }
-  return arr[num]
+  return String.fromCharCode(n)
 }
 
 const uid = (num: number): string => {
