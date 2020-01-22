@@ -4,6 +4,7 @@ import references from './references'
 import set from './set'
 import json from './json'
 import object from './object'
+import array from './array'
 
 const fieldParsers = {
   ...simple,
@@ -11,7 +12,8 @@ const fieldParsers = {
   set,
   references,
   json,
-  object
+  object,
+  array
 }
 
 export default fieldParsers

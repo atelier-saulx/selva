@@ -27,14 +27,6 @@ export function isArray<T>(value: T | T[]): value is T[] {
   return false
 }
 
-export function ensureArray<T>(value: T | T[]): T[] {
-  if (isArray(value)) {
-    return <T[]>value
-  }
-
-  return [<T>value]
-}
-
 export function splitString(str: string, delim: string): string[] {
   let strings: string[] = []
   let idx = 0

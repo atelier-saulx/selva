@@ -9,5 +9,6 @@ export default (
   fields: FieldSchemaJson,
   type: string
 ): void => {
+  // lullz :D
   result[field] = JSON.stringify(payload[field])
 }
