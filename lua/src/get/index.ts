@@ -1,10 +1,13 @@
 import { GetOptions, GetResult } from '~selva/get'
 import { GetItem } from '~selva/get/types'
-import { Id } from '~selva/schema'
+import { Id, Schema } from '~selva/schema'
 import getByType from './getByType'
+import * as redis from '../redis'
+import { TypeSchema } from '../../../src/schema/index'
 
 function getField(
   props: GetItem,
+  schemas: Record<string, TypeSchema>,
   result: GetResult,
   id: Id,
   field?: string,
@@ -23,7 +26,7 @@ function getField(
           isComplete = false
         }
       } else {
-        if (getField(props[key], result, id, f, language, version)) {
+        if (getField(props[key], schemas, result, id, f, language, version)) {
           isComplete = false
         }
       }
@@ -58,10 +61,18 @@ function getField(
 }
 
 export default function get(opts: GetOptions): Promise<GetResult> {
+  const types: Record<string, TypeSchema> = {]}
+  const reply = redis.hgetall('___selva_types')
+  for (let i = 0; i < reply.length; i += 2) {
+    const type = reply[i]
+    const typeSchema: TypeSchema = JSON.parse(reply[i + 1])
+    types[type] = typeSchema
+  }
+
   const result: GetResult = {}
   const { $version: version, $id: id, $language: language } = opts
   if (id) {
-    getField(opts, result, id, null, language, version)
+    getField(opts, types, result, id, null, language, version)
   } else {
     // TODO: queries
   }
