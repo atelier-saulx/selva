@@ -1,5 +1,6 @@
 import { SetOptions } from '../types'
 import { TypeSchema, FieldSchemaOther } from '../../schema'
+import crypto from 'crypto'
 
 const isUrlRe = new RegExp(
   '^(https?:\\/\\/)?' + // protocol
@@ -15,12 +16,40 @@ const validURL = (str: string): boolean => {
   return isUrlRe.test(str)
 }
 
+/*
+ | 'id'
+  | 'digest'
+  | 'timestamp'
+  | 'url'
+  | 'email'
+  | 'phone'
+  | 'geo' - still missing
+  | 'type'
+*/
+
 const verifiers = {
+  digest: (payload: string) => {
+    return typeof payload === 'string'
+  },
   string: (payload: string) => {
     return typeof payload === 'string'
   },
+  phone: (payload: string) => {
+    // phone is wrong
+    return typeof payload === 'string'
+  },
+  timestamp: (payload: 'now' | number) => {
+    return (
+      payload === 'now' ||
+      (typeof payload === 'number' && payload > 0 && payload < 9999999999)
+    )
+  },
   url: (payload: string) => {
     return typeof payload === 'string' && validURL(payload)
+  },
+  email: (payload: string) => {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    return re.test(payload.toLowerCase())
   },
   number: (payload: number) => {
     return typeof payload === 'number'
@@ -30,31 +59,40 @@ const verifiers = {
   },
   int: (payload: number) => {
     return typeof payload === 'number'
+  },
+  type: (payload: string) => {
+    return typeof payload === 'string' && payload.length < 20
+  },
+  id: (payload: string) => {
+    return typeof payload === 'string' && payload.length < 20
   }
 }
 
-const parsers = {
-  type: (
-    schemas: Record<string, TypeSchema>,
-    field: string,
-    payload: string,
-    result: SetOptions,
-    fields: FieldSchemaOther,
-    type: string
-  ): void => {
-    if (typeof payload === 'string' && payload.length < 20) {
-      result[field] = payload
+const converters = {
+  digest: (payload: string) => {
+    // think about this secret (how to configure)
+    return crypto
+      .createHmac('sha256', '@somesecret')
+      .update(payload)
+      .digest('hex')
+  },
+  timestamp: payload => {
+    if (payload === 'now') {
+      return Date.now()
     } else {
-      throw new Error(
-        `Type needs to be a string no longer then 20 chars ${payload}`
-      )
+      return payload
     }
   }
 }
 
+const parsers = {}
+
 for (const key in verifiers) {
   const verify = verifiers[key]
   const isNumber = key === 'float' || key === 'number' || key === 'int'
+  const noOptions = key === 'type' || key === 'id' || key === 'digest'
+  const converter = converters[key]
+
   parsers[key] = (
     schemas: Record<string, TypeSchema>,
     field: string,
@@ -63,7 +101,7 @@ for (const key in verifiers) {
     fields: FieldSchemaOther,
     type: string
   ) => {
-    if (typeof payload === 'object') {
+    if (!noOptions && typeof payload === 'object') {
       for (let k in payload) {
         if (
           k === '$default' ||
@@ -72,6 +110,8 @@ for (const key in verifiers) {
         ) {
           if (!verify(payload[k])) {
             throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
+          } else if (converter) {
+            payload[k] = converter(payload[k])
           }
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
@@ -80,8 +120,11 @@ for (const key in verifiers) {
       result[field] = payload
     } else if (verify(payload)) {
       result[field] = payload
+      if (converter) {
+        result[field] = converter(payload)
+      }
     } else {
-      throw new Error(`Incorrect payload for ${key} ${payload}`)
+      throw new Error(`Incorrect payload for type "${key}" "${payload}"`)
     }
   }
 }
