@@ -3,7 +3,7 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 
 test('generates a unique id from type', async t => {
-  const server = await start({ port: 6067, modules: ['redisearch'] })
+  const server = await start({ port: 6067, modules: ['redisearch', 'selva'] })
 
   const client = connect({
     port: 6067
