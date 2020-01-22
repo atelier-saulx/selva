@@ -1,6 +1,6 @@
 import { SetOptions } from '../types'
 import { TypeSchema, FieldSchemaOther } from '../../schema'
-import crypto from 'crypto'
+import digest from '../../digest'
 
 const isUrlRe = new RegExp(
   '^(https?:\\/\\/)?' + // protocol
@@ -68,14 +68,9 @@ const verifiers = {
   }
 }
 
+// also need to make this accessable
 const converters = {
-  digest: (payload: string) => {
-    // think about this secret (how to configure)
-    return crypto
-      .createHmac('sha256', '@somesecret')
-      .update(payload)
-      .digest('hex')
-  },
+  digest,
   timestamp: payload => {
     if (payload === 'now') {
       return Date.now()

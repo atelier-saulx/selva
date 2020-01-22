@@ -10,6 +10,7 @@ import { Schema, Id } from './schema'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import getTypeFromId from './getTypeFromId'
+import digest from './digest'
 
 // FIXME: this is pretty shit
 let MODIFY_SCRIPT
@@ -27,6 +28,10 @@ export class SelvaClient {
 
   constructor(opts: ConnectOptions | (() => Promise<ConnectOptions>)) {
     this.redis = new RedisClient(opts)
+  }
+
+  digest(payload: string) {
+    return digest(payload)
   }
 
   async destroy() {
