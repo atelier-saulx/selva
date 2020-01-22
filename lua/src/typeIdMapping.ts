@@ -11,7 +11,7 @@ export function getTypeFromId(id: Id): string {
   }
 
   if (!typePrefix) {
-    typePrefix = cjson.decode(redis.hget('schema', 'prefixes'))
+    typePrefix = cjson.decode(redis.hget('___selva_schema', 'prefixes'))
   }
 
   return typePrefix[id.substring(0, 2)]
@@ -19,7 +19,7 @@ export function getTypeFromId(id: Id): string {
 
 export function getPrefixFromType(prefix: string): string {
   if (!inverseTypePrefix) {
-    inverseTypePrefix = cjson.decode(redis.hget('schema', 'types'))
+    inverseTypePrefix = cjson.decode(redis.hget('___selva_schema', 'types'))
   }
 
   return inverseTypePrefix[prefix]

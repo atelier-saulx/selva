@@ -23,7 +23,7 @@ async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
         def: {}
       }
     ].map(async ({ field, def }) => {
-      const result = await client.redis.hget('schema', field)
+      const result = await client.redis.hget('___selva_schema', field)
       return result === null ? def : JSON.parse(result)
     })
   )
@@ -33,7 +33,7 @@ async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
     types: {}
   }
 
-  const schemas = await client.redis.hgetall('types')
+  const schemas = await client.redis.hgetall('___selva_types')
 
   if (schemas) {
     for (const type in schemas) {

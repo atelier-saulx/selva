@@ -3,7 +3,7 @@ import { Id } from './schema'
 
 export const getPrefixes = async (client): Promise<Record<string, string>> => {
   let prefixes
-  const r = await client.redis.hget('schema', 'prefixes')
+  const r = await client.redis.hget('___selva_schema', 'prefixes')
   if (!r) {
     prefixes = {}
   } else {

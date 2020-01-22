@@ -219,13 +219,17 @@ async function updateTypeSchema(
 
   await Promise.all(
     changedTypes.map(type => {
-      return client.redis.hset('types', type, JSON.stringify(types[type]))
+      return client.redis.hset(
+        '___selva_types',
+        type,
+        JSON.stringify(types[type])
+      )
     })
   )
 
   if (changedIndexes.size) {
     await client.redis.hset(
-      'schema',
+      '___selva_schema',
       'searchIndexes',
       JSON.stringify(searchIndexes)
     )
