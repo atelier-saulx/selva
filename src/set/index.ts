@@ -45,8 +45,7 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
     payload: <SetOptions & { $id: string }>payload // assure TS that id is actually set :|
   })
 
-  // return modifyResult[0]
-  return 'ok'
+  return modifyResult[0]
 }
 
 export { set, SetOptions }
