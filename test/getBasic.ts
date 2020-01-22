@@ -36,6 +36,13 @@ test.before(async t => {
             }
           }
         }
+      },
+      match: {
+        prefix: 'ma',
+        fields: {
+          title: { type: 'text' },
+          description: { type: 'text' }
+        }
       }
     }
   })
@@ -176,7 +183,7 @@ test.serial('get - $language', async t => {
   client.destroy()
 })
 
-test.serial.only('get - hierarchy', async t => {
+test.serial('get - hierarchy', async t => {
   const client = connect({ port: 6072 })
 
   await Promise.all([

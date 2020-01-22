@@ -101,5 +101,11 @@ export const defaultFields: Record<string, FieldSchema> = {
   },
   parents: {
     type: 'references'
+  },
+  ancestors: {
+    type: 'references'
+  },
+  descendants: {
+    type: 'references'
   }
 }

@@ -92,6 +92,12 @@ const arrayLike = (
   language?: string,
   version?: string
 ): boolean => {
+  if (field === 'ancestors') {
+    return ancestors(result, schemas, id, field, language, version)
+  } else if (field === 'descendants') {
+    return descendants(result, id, field, language, version)
+  }
+
   const value = redis.smembers(id + '.' + field)
   setNestedResult(result, field, value)
   return !!value.length
@@ -187,13 +193,16 @@ const text = (
 
 const ancestors = (
   result: GetResult,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
 ): true => {
-  // result.ancestors = (redis.hget(id, field) || '').split(',')
-  result.ancestors = redis.hget(id, field) || ''
+  logger.info(`KEYS ${cjson.encode(redis.hkeys(id))}`)
+  logger.info(`ANCESTORS: ${redis.hget(id, field) || ''}`)
+  result.ancestors = splitString(redis.hget(id, field) || '', ',')
+  // result.ancestors = redis.hget(id, field) || ''
   return true
 }
 
@@ -204,6 +213,7 @@ const getDescendants = (
 ): Record<Id, true> => {
   if (!passedId[id]) {
     const children = redis.smembers(id + '.children')
+    logger.info(`getDescendants() children: ${cjson.encode(children)}`)
     for (const id of children) {
       results[id] = true
     }
@@ -212,6 +222,7 @@ const getDescendants = (
       getDescendants(c, results, passedId)
     }
   }
+  logger.info('done with descendants')
   return results
 }
 
@@ -222,6 +233,7 @@ const descendants = (
   language?: string,
   version?: string
 ): true => {
+  logger.info('DESCENDANTS')
   const s = getDescendants(id, {}, {})
   const r: string[] = []
   let idx = 0
@@ -289,7 +301,7 @@ function getByType(
   }
 
   if (!prop) {
-    logger.info(`No type for field ${field}`)
+    logger.info(`No type for field ${field} in schema ${cjson.encode(schema)}`)
     return true
   }
 
