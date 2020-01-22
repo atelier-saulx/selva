@@ -42,6 +42,7 @@ export class SelvaClient {
   }
 
   async id(props: IdOptions): Promise<string> {
+    // move to js
     return this.redis.loadAndEvalScript(
       'modify',
       ID_SCRIPT,
