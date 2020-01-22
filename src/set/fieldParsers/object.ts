@@ -20,7 +20,7 @@ export default (
     if (key[0] === '$') {
       r[key] = payload[key]
     } else if (!fields.properties[key]) {
-      throw new Error(`Cannot find field ${key} in ${type}`)
+      throw new Error(`Cannot find field ${key} in ${type} for object`)
     } else {
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]

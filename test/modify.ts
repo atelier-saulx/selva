@@ -28,7 +28,7 @@ test.before(async t => {
   })
 
   await client.updateSchema({
-    languages: ['en', 'nl', 'dl'],
+    languages: ['en', 'nl', 'de'],
     types: {
       match: {
         prefix: 'ma',
@@ -57,6 +57,9 @@ test.before(async t => {
       someTestThing: {
         prefix: 'vi',
         fields: {
+          title: {
+            type: 'text'
+          },
           value: {
             type: 'number'
           }
@@ -368,7 +371,7 @@ test.serial('basic', async t => {
   await client.destroy()
 })
 
-test('deep hierarchy manipulation', async t => {
+test.serial('deep hierarchy manipulation', async t => {
   const client = connect({
     port: 6061
   })

@@ -11,10 +11,17 @@ export const parseSetObject = (
   const result: SetOptions = {}
   const type = payload.type
   const schema = schemas[type]
+
+  if (!schema) {
+    throw new Error(`Cannot find type ${type} from set-object`)
+  }
+
   let fields = schema.fields
   for (let key in payload) {
-    if (!fields[key]) {
-      throw new Error(`Cannot find field ${key} in ${type}`)
+    if (key[0] === '$') {
+      result[key] = payload[key]
+    } else if (!fields[key]) {
+      throw new Error(`Cannot find field ${key} in ${type} from set-object`)
     } else {
       const fn = fieldParsers[fields[key].type]
       fn(schemas, key, payload[key], result, fields[key], type)
@@ -26,12 +33,13 @@ export const parseSetObject = (
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   let schemas
   try {
-    schemas = await collectSchemas(client, payload)
+    schemas = await collectSchemas(client, payload, {})
   } catch (err) {
     throw err
   }
+
   const parsed = parseSetObject(payload, schemas)
-  console.log('result', JSON.stringify(parsed, void 0, 2))
+  // console.log('result', JSON.stringify(parsed, void 0, 2))
   // const modifyResult = await client.modify({
   //   kind: 'update',
   //   payload: <SetOptions & { $id: string }>payload // assure TS that id is actually set :|

@@ -38,7 +38,7 @@ const getPrefixesCache = async (client: SelvaClient) => {
 const collectSchemas = async (
   client: SelvaClient,
   payload: SetOptions,
-  schemas: Record<string, TypeSchema> = {},
+  schemas: Record<string, TypeSchema>,
   prefixes?: Record<string, string>
 ): Promise<Record<string, TypeSchema>> => {
   if (!payload.type) {
@@ -48,9 +48,10 @@ const collectSchemas = async (
 
   // not using cached for async deep children while a set happens on the schemas...
   // maybe not nessecary
+
   const schema =
     schemas[payload.type] ||
-    schemaCache.cache[payload.type] ||
+    (schemas[payload.type] = schemaCache.cache[payload.type]) ||
     (schemas[payload.type] = await getSchema(client, payload.type))
 
   if (!schema) {
