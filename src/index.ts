@@ -14,15 +14,22 @@ import digest from './digest'
 import { IdOptions } from '../lua/src/id'
 
 // FIXME: this is pretty shit
-let MODIFY_SCRIPT
-let GET_SCRIPT
-let ID_SCRIPT
+let MODIFY_SCRIPT: string
+let FETCH_SCRIPT: string
+let ID_SCRIPT: string
 try {
   MODIFY_SCRIPT = readFileSync(
-    pathJoin(process.cwd(), 'dist', 'lua', 'modify.lua')
+    pathJoin(process.cwd(), 'dist', 'lua', 'modify.lua'),
+    'utf8'
   )
-  GET_SCRIPT = readFileSync(pathJoin(process.cwd(), 'dist', 'lua', 'get.lua'))
-  ID_SCRIPT = readFileSync(pathJoin(process.cwd(), 'dist', 'lua', 'id.lua'))
+  FETCH_SCRIPT = readFileSync(
+    pathJoin(process.cwd(), 'dist', 'lua', 'fetch.lua'),
+    'utf8'
+  )
+  ID_SCRIPT = readFileSync(
+    pathJoin(process.cwd(), 'dist', 'lua', 'id.lua'),
+    'utf8'
+  )
 } catch (e) {
   console.error(`Failed to read modify.lua ${e.stack}`)
   process.exit(1)
@@ -83,8 +90,8 @@ export class SelvaClient {
 
   async fetch(opts: GetOptions): Promise<GetResult> {
     return this.redis.loadAndEvalScript(
-      'get',
-      GET_SCRIPT,
+      'fetch',
+      FETCH_SCRIPT,
       0,
       [],
       [JSON.stringify(opts)]
