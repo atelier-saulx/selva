@@ -89,13 +89,15 @@ export class SelvaClient {
   }
 
   async fetch(opts: GetOptions): Promise<GetResult> {
-    return this.redis.loadAndEvalScript(
+    const str = await this.redis.loadAndEvalScript(
       'fetch',
       FETCH_SCRIPT,
       0,
       [],
       [JSON.stringify(opts)]
     )
+
+    return JSON.parse(str)
   }
 
   async getTypeFromId(id: Id) {

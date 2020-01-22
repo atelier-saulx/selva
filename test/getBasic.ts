@@ -75,27 +75,27 @@ test.serial.only('get - basic', async t => {
     }
   )
 
-  t.deepEqual(
-    await client.get({
-      $id: 'viA',
-      auth: true
-    }),
-    {
-      auth: { role: { id: ['root'], type: 'admin' } }
-    },
-    'get role'
-  )
+  // t.deepEqual(
+  //   await client.get({
+  //     $id: 'viA',
+  //     auth: true
+  //   }),
+  //   {
+  //     auth: { role: { id: ['root'], type: 'admin' } }
+  //   },
+  //   'get role'
+  // )
 
-  t.deepEqual(
-    await client.get({
-      $id: 'viA',
-      auth: { role: { id: true } }
-    }),
-    {
-      auth: { role: { id: ['root'] } }
-    },
-    'get role nested'
-  )
+  // t.deepEqual(
+  //   await client.get({
+  //     $id: 'viA',
+  //     auth: { role: { id: true } }
+  //   }),
+  //   {
+  //     auth: { role: { id: ['root'] } }
+  //   },
+  //   'get role nested'
+  // )
 
   await client.delete('root')
 

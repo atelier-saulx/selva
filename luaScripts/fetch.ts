@@ -7,4 +7,4 @@ logger.info('GET WITH: ' + ARGV[0])
 const opts: GetOptions = cjson.decode(ARGV[0])
 let a = get(opts)
 // @ts-ignore
-return a
+return cjson.encode(a)

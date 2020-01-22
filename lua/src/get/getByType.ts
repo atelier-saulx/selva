@@ -80,7 +80,9 @@ const string = (
   version?: string
 ): boolean => {
   const value = redis.hget(id, field) || ''
+  logger.info(`SETTING STRING RESULT ${field}`)
   setNestedResult(result, field, value)
+  logger.info(`RESULT AFTER SETTING ${field}: ${cjson.encode(result)}`)
   return !!value
 }
 
@@ -118,17 +120,20 @@ const object = (
   language?: string,
   version?: string
 ): boolean => {
+  logger.info(`object() with id ${id} and field ${field}`)
   const keys = redis.hkeys(id)
   let isComplete = true
   let noKeys = true
   for (const key of keys) {
     if (key.indexOf(field) === 0) {
+      logger.info(`object() matching keys for ${field}, key ${key} is a match`)
       noKeys = false
-      if (getByType(result, schemas, id, `${field}.${key}`, language)) {
+      if (getByType(result, schemas, id, key, language)) {
         isComplete = false
       }
     }
   }
+  logger.info(`object() matching keys for ${field}, no match`)
   return noKeys ? false : isComplete
 }
 
@@ -165,6 +170,7 @@ const text = (
       return true
     } else {
       const keys = redis.hkeys(id)
+      logger.info('keys: ' + cjson.encode(keys))
       for (let i = 0; i < keys.length; i++) {
         if (stringStartsWith(keys[i], field + '.')) {
           const value = redis.hget(id, keys[i])
@@ -265,20 +271,27 @@ function getByType(
   const type = getTypeFromId(id)
   const schema = schemas[type]
   if (!schema || !schema.fields) {
+    logger.info(`No schema`)
     return true
   }
 
   const paths = splitString(field, '.')
   let prop = schema.fields[paths[0]]
   for (let i = 1; i < paths.length; i++) {
-    if (!prop || prop.type !== 'object') {
-      return true
-    }
+    if (prop && prop.type === 'text' && i === paths.length - 1) {
+      prop = { type: 'string' }
+    } else {
+      if (!prop || prop.type !== 'object') {
+        logger.info(`Field ${field} has no path for ${paths[i]}`)
+        return true
+      }
 
-    prop = prop.properties[paths[i]]
+      prop = prop.properties[paths[i]]
+    }
   }
 
   if (!prop) {
+    logger.info(`No type for field ${field}`)
     return true
   }
 

@@ -74,7 +74,7 @@ function getField(
   return isComplete
 }
 
-export default function get(opts: GetOptions): Promise<GetResult> {
+export default function get(opts: GetOptions): GetResult {
   const types: Record<string, TypeSchema> = {}
   const reply = redis.hgetall('___selva_types')
   for (let i = 0; i < reply.length; i += 2) {
@@ -87,6 +87,7 @@ export default function get(opts: GetOptions): Promise<GetResult> {
   const { $version: version, $id: id, $language: language } = opts
   if (id) {
     getField(opts, types, result, id, undefined, language, version)
+    logger.info(`FINAL RESULT ${cjson.encode(result)}`)
   } else {
     // TODO: queries
   }
