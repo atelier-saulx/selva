@@ -80,10 +80,8 @@ const string = (
   version?: string
 ): boolean => {
   const value = redis.hget(id, field) || ''
-  logger.info(`SETTING STRING RESULT ${field}`)
   setNestedResult(result, field, value)
-  logger.info(`RESULT AFTER SETTING ${field}: ${cjson.encode(result)}`)
-  return !!value
+  return value !== null && value.length > 0
 }
 
 const arrayLike = (

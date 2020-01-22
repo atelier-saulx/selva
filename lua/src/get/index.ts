@@ -69,7 +69,10 @@ function getField(
       version
     )
     if (!complete) {
-      setNestedResult(result, field, props.$default)
+      logger.info(
+        `NOT COMPLETE FOR ${field}, USING THE DEFAULT ${props.$default}`
+      )
+      setNestedResult(result, <string>field, props.$default)
     }
   }
 

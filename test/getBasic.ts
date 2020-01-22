@@ -102,7 +102,7 @@ test.serial('get - basic', async t => {
   client.destroy()
 })
 
-test.serial.only('get - $default', async t => {
+test.serial('get - $default', async t => {
   const client = connect({ port: 6072 })
 
   await client.set({
@@ -118,18 +118,18 @@ test.serial.only('get - $default', async t => {
     { age: 100 }
   )
 
-  // t.deepEqual(
-  //   await client.get({
-  //     $id: 'viflap',
-  //     title: {
-  //       en: { $default: 'untitled' },
-  //       nl: { $default: 'naamloos' }
-  //     }
-  //   }),
-  //   {
-  //     title: { en: 'flap', nl: 'naamloos' }
-  //   }
-  // )
+  t.deepEqual(
+    await client.get({
+      $id: 'viflap',
+      title: {
+        en: { $default: 'untitled' },
+        nl: { $default: 'naamloos' }
+      }
+    }),
+    {
+      title: { en: 'flap', nl: 'naamloos' }
+    }
+  )
 
   await client.delete('root')
 
@@ -176,7 +176,7 @@ test.serial('get - $language', async t => {
   client.destroy()
 })
 
-test.serial('get - hierarchy', async t => {
+test.serial.only('get - hierarchy', async t => {
   const client = connect({ port: 6072 })
 
   await Promise.all([
