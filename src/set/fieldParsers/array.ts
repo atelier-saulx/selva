@@ -1,14 +1,14 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaOther } from '../../schema'
+import { TypeSchema, FieldSchemaArrayLike } from '../../schema'
 
 export default (
   schemas: Record<string, TypeSchema>,
   field: string,
   payload: SetOptions,
   result: SetOptions,
-  fields: FieldSchemaOther,
+  fields: FieldSchemaArrayLike,
   type: string
 ): void => {
-  // languages verification
-  result[field] = payload
+  // lullz :D
+  result[field] = JSON.stringify(payload[field])
 }
