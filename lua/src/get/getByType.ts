@@ -8,6 +8,7 @@ import { TypeSchema } from '../../../src/schema/index'
 
 const id = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -19,6 +20,7 @@ const id = async (
 
 const number = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -32,6 +34,7 @@ const number = async (
 
 const float = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -45,16 +48,18 @@ const float = async (
 
 const int = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
 ): Promise<boolean> => {
-  return number(result, id, field, language, version)
+  return number(result, schemas, id, field, language, version)
 }
 
 const boolean = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -66,6 +71,7 @@ const boolean = async (
 
 const string = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -78,6 +84,7 @@ const string = async (
 
 const arrayLike = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -90,6 +97,7 @@ const arrayLike = async (
 
 const json = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -102,6 +110,7 @@ const json = async (
 
 const object = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -113,7 +122,7 @@ const object = async (
   for (const key of keys) {
     if (key.indexOf(field) === 0) {
       noKeys = false
-      if (getByType(result, id, key, language)) {
+      if (getByType(result, schemas, id, `${field}.${key}`, language)) {
         isComplete = false
       }
     }
@@ -123,13 +132,21 @@ const object = async (
 
 const text = async (
   result: GetResult | null,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
 ): Promise<boolean> => {
   if (!language) {
-    const isComplete = await object(result, id, field, language, version)
+    const isComplete = await object(
+      result,
+      schemas,
+      id,
+      field,
+      language,
+      version
+    )
     if (!isComplete) {
       const value = getNestedField(result, field)
       for (const key in value) {
@@ -260,7 +277,7 @@ async function getByType(
   }
 
   const fn = types[prop.type] || string
-  return await fn(result, id, field, language, version)
+  return await fn(result, schemas, id, field, language, version)
 }
 
 export default getByType
