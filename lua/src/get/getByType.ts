@@ -4,6 +4,7 @@ import * as redis from '../redis'
 import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
+import { TypeSchema } from '../../../src/schema/index'
 
 const id = async (
   result: GetResult | null,
@@ -230,6 +231,7 @@ const types = {
 
 async function getByType(
   result: GetResult,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
@@ -237,7 +239,27 @@ async function getByType(
 ): Promise<boolean> {
   // version still missing!
 
-  const fn = types[field] || string
+  const type = getTypeFromId(id)
+  const schema = schemas[type]
+  if (!schema) {
+    return true
+  }
+
+  const paths = field.split('.')
+  let prop = schema.fields[paths[0]]
+  for (let i = 1; i < paths.length; i++) {
+    if (!prop || prop.type !== 'object') {
+      return true
+    }
+
+    prop = prop.properties[paths[i]]
+  }
+
+  if (!prop) {
+    return true
+  }
+
+  const fn = types[prop.type] || string
   return await fn(result, id, field, language, version)
 }
 

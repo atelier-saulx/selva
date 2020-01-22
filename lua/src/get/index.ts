@@ -22,7 +22,7 @@ function getField(
       hasKeys = true
       const f = field ? field + '.' + key : key
       if (props[key] === true) {
-        if (!getByType(result, id, f, language, version)) {
+        if (!getByType(result, schemas, id, f, language, version)) {
           isComplete = false
         }
       } else {
@@ -41,7 +41,7 @@ function getField(
     (!isComplete || !hasKeys)
   ) {
     if (!hasKeys) {
-      const complete = getByType(result, id, field, language, version)
+      const complete = getByType(result, schemas, id, field, language, version)
       if (!complete) {
         // await inherit(client, id, field || '', props, result, language, version)
       }
@@ -51,7 +51,7 @@ function getField(
   }
 
   if (props.$default) {
-    const complete = getByType(result, id, field, language, version)
+    const complete = getByType(result, schemas, id, field, language, version)
     if (!complete) {
       // setNestedResult(result, field, props.$default)
     }
@@ -61,7 +61,7 @@ function getField(
 }
 
 export default function get(opts: GetOptions): Promise<GetResult> {
-  const types: Record<string, TypeSchema> = {]}
+  const types: Record<string, TypeSchema> = {}
   const reply = redis.hgetall('___selva_types')
   for (let i = 0; i < reply.length; i += 2) {
     const type = reply[i]
