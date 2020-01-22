@@ -71,7 +71,7 @@ const verifiers = {
 // also need to make this accessable
 const converters = {
   digest,
-  timestamp: payload => {
+  timestamp: (payload: 'now' | number): number => {
     if (payload === 'now') {
       return Date.now()
     } else {
