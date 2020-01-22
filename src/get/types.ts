@@ -1,4 +1,4 @@
-import { Id } from '../schema'
+import { Id } from '../schema/index'
 
 export type Inherit =
   | boolean
@@ -49,4 +49,10 @@ export type GetItem<T = Item> = {
 
 export type GetResult = {
   [key: string]: any
+}
+
+export type GetOptions = GetItem & {
+  $id?: Id
+  $version?: string
+  $language?: string
 }

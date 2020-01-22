@@ -3,7 +3,7 @@ import { default as RedisClient, ConnectOptions } from './redis'
 import { set, SetOptions } from './set'
 import { ModifyOptions, ModifyResult } from './modifyTypes'
 import { deleteItem, DeleteOptions } from './delete'
-import { get, GetOptions } from './get'
+import { get, GetOptions, GetResult } from './get'
 import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
 import { Schema, Id } from './schema'
@@ -15,11 +15,13 @@ import { IdOptions } from '../lua/src/id'
 
 // FIXME: this is pretty shit
 let MODIFY_SCRIPT
+let GET_SCRIPT
 let ID_SCRIPT
 try {
   MODIFY_SCRIPT = readFileSync(
     pathJoin(process.cwd(), 'dist', 'lua', 'modify.lua')
   )
+  GET_SCRIPT = readFileSync(pathJoin(process.cwd(), 'dist', 'lua', 'get.lua'))
   ID_SCRIPT = readFileSync(pathJoin(process.cwd(), 'dist', 'lua', 'id.lua'))
 } catch (e) {
   console.error(`Failed to read modify.lua ${e.stack}`)
@@ -76,6 +78,16 @@ export class SelvaClient {
       [],
       [JSON.stringify(opts)],
       { batchingEnabled: true }
+    )
+  }
+
+  async fetch(opts: GetOptions): Promise<GetResult> {
+    return this.redis.loadAndEvalScript(
+      'get',
+      GET_SCRIPT,
+      0,
+      [],
+      [JSON.stringify(opts)]
     )
   }
 

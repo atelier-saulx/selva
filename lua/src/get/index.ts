@@ -1,6 +1,5 @@
-import { GetOptions, GetResult } from '~selva/get'
-import { GetItem } from '~selva/get/types'
-import { Id, Schema } from '~selva/schema'
+import { GetItem, GetResult, GetOptions } from '~selva/get/types'
+import { Id } from '~selva/schema/index'
 import getByType from './getByType'
 import * as redis from '../redis'
 import { TypeSchema } from '../../../src/schema/index'
@@ -41,7 +40,14 @@ function getField(
     (!isComplete || !hasKeys)
   ) {
     if (!hasKeys) {
-      const complete = getByType(result, schemas, id, field, language, version)
+      const complete = getByType(
+        result,
+        schemas,
+        id,
+        <string>field,
+        language,
+        version
+      )
       if (!complete) {
         // await inherit(client, id, field || '', props, result, language, version)
       }
@@ -51,7 +57,14 @@ function getField(
   }
 
   if (props.$default) {
-    const complete = getByType(result, schemas, id, field, language, version)
+    const complete = getByType(
+      result,
+      schemas,
+      id,
+      <string>field,
+      language,
+      version
+    )
     if (!complete) {
       // setNestedResult(result, field, props.$default)
     }
@@ -72,7 +85,7 @@ export default function get(opts: GetOptions): Promise<GetResult> {
   const result: GetResult = {}
   const { $version: version, $id: id, $language: language } = opts
   if (id) {
-    getField(opts, types, result, id, null, language, version)
+    getField(opts, types, result, id, undefined, language, version)
   } else {
     // TODO: queries
   }

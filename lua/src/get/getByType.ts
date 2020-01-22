@@ -1,4 +1,4 @@
-import { Id } from '~selva/schema'
+import { Id } from '~selva/schema/index'
 
 import * as redis from '../redis'
 import { getTypeFromId } from '../typeIdMapping'
@@ -6,116 +6,116 @@ import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { TypeSchema } from '../../../src/schema/index'
 
-const id = async (
-  result: GetResult | null,
+const id = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   result.id = id
   return true
 }
 
-const number = async (
-  result: GetResult | null,
+const number = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   const v = redis.hget(id, field)
   const value = v === null ? null : tonumber(v)
   setNestedResult(result, field, value)
   return value !== null
 }
 
-const float = async (
-  result: GetResult | null,
+const float = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   const v = redis.hget(id, field)
   const value = v === null ? null : Math.floor(tonumber(v))
   setNestedResult(result, field, value)
   return value !== null
 }
 
-const int = async (
-  result: GetResult | null,
+const int = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   return number(result, schemas, id, field, language, version)
 }
 
-const boolean = async (
-  result: GetResult | null,
+const boolean = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<true> => {
+): true => {
   setNestedResult(result, field, !!redis.hget(id, field))
   return true
 }
 
-const string = async (
-  result: GetResult | null,
+const string = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   const value = redis.hget(id, field) || ''
   setNestedResult(result, field, value)
   return !!value
 }
 
-const arrayLike = async (
-  result: GetResult | null,
+const arrayLike = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   const value = redis.smembers(id + '.' + field)
   setNestedResult(result, field, value)
   return !!value.length
 }
 
-const json = async (
-  result: GetResult | null,
+const json = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   const value = redis.hget(id, field)
   setNestedResult(result, field, value === null ? value : JSON.parse(value))
   return value !== null
 }
 
-const object = async (
-  result: GetResult | null,
+const object = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   const keys = redis.hkeys(id)
   let isComplete = true
   let noKeys = true
@@ -130,23 +130,16 @@ const object = async (
   return noKeys ? false : isComplete
 }
 
-const text = async (
-  result: GetResult | null,
+const text = (
+  result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> => {
+): boolean => {
   if (!language) {
-    const isComplete = await object(
-      result,
-      schemas,
-      id,
-      field,
-      language,
-      version
-    )
+    const isComplete = object(result, schemas, id, field, language, version)
     if (!isComplete) {
       const value = getNestedField(result, field)
       for (const key in value) {
@@ -179,45 +172,49 @@ const text = async (
   }
 }
 
-const ancestors = async (
+const ancestors = (
   result: GetResult,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<true> => {
+): true => {
   // result.ancestors = (redis.hget(id, field) || '').split(',')
   result.ancestors = redis.hget(id, field) || ''
   return true
 }
 
-const getDescendants = async (
+const getDescendants = (
   id: Id,
   results: Record<Id, true>,
   passedId: Record<Id, true>
-): Promise<Record<Id, true>> => {
+): Record<Id, true> => {
   if (!passedId[id]) {
     const children = redis.smembers(id + '.children')
     for (const id of children) {
       results[id] = true
     }
     passedId[id] = true
-    await Promise.all(children.map(c => getDescendants(c, results, passedId)))
+    for (const c of children) {
+      getDescendants(c, results, passedId)
+    }
   }
   return results
 }
 
-const descendants = async (
+const descendants = (
   result: GetResult,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<true> => {
-  const s = await getDescendants(id, {}, {})
-  const r = []
+): true => {
+  const s = getDescendants(id, {}, {})
+  const r: string[] = []
+  let idx = 0
   for (let key in s) {
-    r.push(key)
+    r[idx] = key
+    idx++
   }
   result.descendants = r
   return true
@@ -246,19 +243,19 @@ const types = {
   ancestors
 }
 
-async function getByType(
+function getByType(
   result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
   language?: string,
   version?: string
-): Promise<boolean> {
+): boolean {
   // version still missing!
 
   const type = getTypeFromId(id)
   const schema = schemas[type]
-  if (!schema) {
+  if (!schema || !schema.fields) {
     return true
   }
 
@@ -277,7 +274,7 @@ async function getByType(
   }
 
   const fn = types[prop.type] || string
-  return await fn(result, schemas, id, field, language, version)
+  return fn(result, schemas, id, field, language, version)
 }
 
 export default getByType

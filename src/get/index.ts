@@ -67,7 +67,7 @@ export type GetItem<T = Item> = {
 //   $default?: any
 // }
 
-type GetOptions = GetItem & {
+export type GetOptions = GetItem & {
   $id?: Id
   $version?: string
   $language?: string
@@ -160,14 +160,16 @@ export async function getInner(
 }
 
 async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
-  const result: GetResult = {}
-  const { $version: version, $id: id, $language: language } = props
-  if (id) {
-    await getInner(client, props, result, id, undefined, language, version)
-  } else {
-    // only find
-  }
-  return result
+  // const result: GetResult = {}
+  // const { $version: version, $id: id, $language: language } = props
+  // if (id) {
+  //   await getInner(client, props, result, id, undefined, language, version)
+  // } else {
+  //   // only find
+  // }
+  // return result
+  const getResult = await client.fetch(props)
+  return getResult
 }
 
-export { get, GetOptions, GetResult }
+export { get, GetResult }
