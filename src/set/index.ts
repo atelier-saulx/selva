@@ -12,11 +12,9 @@ export const parseSetObject = (
   const result: SetOptions = {}
   const type = payload.type
   const schema = schemas[type]
-
   if (!schema) {
     throw new Error(`Cannot find type ${type} from set-object`)
   }
-
   let fields = schema.fields
   for (let key in payload) {
     if (key[0] === '$') {
@@ -34,7 +32,7 @@ export const parseSetObject = (
         if (typeof payload[key] !== 'string') {
           throw new Error('Wrong type for $version')
         }
-        console.warn('Warning $version not implemented yet!')
+        console.warn('$version is not implemented yet!')
         result[key] = payload[key]
       } else {
         throw new Error(`Wrong option on set object ${key}`)
@@ -56,9 +54,7 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   } catch (err) {
     throw err
   }
-
   const parsed = parseSetObject(payload, schemas)
-  // console.log('result', JSON.stringify(parsed, void 0, 2))
   const modifyResult = await client.modify({
     kind: 'update',
     payload: <SetOptions & { $id: string }>parsed // assure TS that id is actually set :|
