@@ -1,6 +1,6 @@
 import { id as genId } from '../id'
 import { SetOptions } from '~selva/set/types'
-import { Id } from '~selva/schema'
+import { Id } from '~selva/schema/index'
 import * as redis from '../redis'
 import { reCalculateAncestors } from './ancestors'
 import { deleteItem } from './delete'
@@ -137,8 +137,6 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
       if (!(<any>child).$id && (<any>child).type !== null) {
         ;(<any>child).$id = genId({ type: (<any>child).type })
         child = modify(<any>child) || ''
-
-        redis.debug('HELLOO ' + child)
       } else {
         // FIXME: throw new Error('No type or id provided for dynamically created child')
         child = ''
@@ -148,9 +146,6 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     result[i] = child
 
     if (child !== '') {
-      redis.debug('CHIIIILD: ' + child)
-      redis.debug('IIIIID: ' + id)
-
       if (!redis.exists(child)) {
         modify({ $id: child, parents: { $add: id } })
       } else {

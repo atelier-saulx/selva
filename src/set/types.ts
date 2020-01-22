@@ -1,4 +1,4 @@
-import { Id } from '../schema'
+import { Id } from '../schema/index'
 
 export type BaseItem = { [key: string]: any }
 
@@ -60,7 +60,7 @@ export type SetOptions = SetItem & {
     facebook?: string
     role?: {
       id?: RedisSetParams
-      type?: UserType
+      type?: 'admin' | 'owner' | 'user' // old UserType
     }
   }
 }

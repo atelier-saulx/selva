@@ -11,13 +11,16 @@ import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import getTypeFromId from './getTypeFromId'
 import digest from './digest'
+import { IdOptions } from '../lua/src/id'
 
 // FIXME: this is pretty shit
 let MODIFY_SCRIPT
+let ID_SCRIPT
 try {
   MODIFY_SCRIPT = readFileSync(
     pathJoin(process.cwd(), 'dist', 'lua', 'modify.lua')
   )
+  ID_SCRIPT = readFileSync(pathJoin(process.cwd(), 'dist', 'lua', 'id.lua'))
 } catch (e) {
   console.error(`Failed to read modify.lua ${e.stack}`)
   process.exit(1)
@@ -38,8 +41,17 @@ export class SelvaClient {
     this.redis.destroy()
   }
 
-  async id(props: any) {
-    // return id(this, props)
+  async id(props: IdOptions): Promise<string> {
+    return this.redis.loadAndEvalScript(
+      'modify',
+      ID_SCRIPT,
+      0,
+      [],
+      [JSON.stringify(props)],
+      {
+        batchingEnabled: true
+      }
+    )
   }
 
   async set(props: SetOptions) {

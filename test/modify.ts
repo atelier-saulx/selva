@@ -22,6 +22,64 @@ test.before(async t => {
   await new Promise((resolve, reject) => {
     setTimeout(resolve, 200)
   })
+
+  const client = connect({
+    port: 6061
+  })
+
+  await client.updateSchema({
+    languages: ['en', 'nl', 'dl'],
+    types: {
+      match: {
+        prefix: 'ma',
+        fields: {
+          title: {
+            type: 'text'
+          }
+        }
+      },
+      league: {
+        prefix: 'cu',
+        fields: {
+          title: {
+            type: 'text'
+          }
+        }
+      },
+      person: {
+        prefix: 'pe',
+        fields: {
+          title: {
+            type: 'text'
+          }
+        }
+      },
+      someTestThing: {
+        prefix: 'vi',
+        fields: {
+          value: {
+            type: 'number'
+          }
+        }
+      },
+      otherTestThing: {
+        prefix: 'ar',
+        fields: {
+          title: {
+            type: 'text'
+          },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  await client.destroy()
 })
 
 test.serial('basic', async t => {
@@ -480,7 +538,7 @@ test.serial('automatic child creation', async t => {
   })
 
   const parent = await client.set({
-    $id: 'parent',
+    $id: 'viParent',
     title: {
       nl: 'nl'
     },

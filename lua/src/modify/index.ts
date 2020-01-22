@@ -1,8 +1,8 @@
 import { id as genId } from '../id'
 import * as redis from '../redis'
-import { Id } from '~selva/schema'
+import { Id } from '~selva/schema/index'
 import { SetOptions } from '~selva/set/types'
-import getTypeFromId from '../getTypeFromId'
+import { getTypeFromId } from '../typeIdMapping'
 import {
   isString,
   isArray,
