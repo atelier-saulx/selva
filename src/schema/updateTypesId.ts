@@ -6,11 +6,9 @@ const arr = []
 const fillArray = () => {
   for (let i = 48; i < 62 + 48; i++) {
     let n = i
-
     if (n > 57) {
       n += 7
     }
-
     if (n > 90) {
       n += 6
     }
