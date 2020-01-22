@@ -1,14 +1,38 @@
 import { Types, TypesDb } from '.'
 import { SelvaClient } from '..'
 
+const arr = []
+
+const fillArray = () => {
+  for (let i = 48; i < 62 + 48; i++) {
+    let n = i
+
+    if (n > 57) {
+      n += 7
+    }
+
+    if (n > 90) {
+      n += 6
+    }
+    arr.unshift(String.fromCharCode(n))
+  }
+}
+
+const fromCharCode = num => {
+  if (!arr.length) {
+    fillArray()
+  }
+  return arr[num]
+}
+
 const uid = (num: number): string => {
-  const div = (num / 26) | 0
-  var str = String.fromCharCode(97 + (num % 26))
+  const div = (num / 62) | 0
+  var str = fromCharCode(num % 62)
   if (div) {
-    if ((div / 26) | 0) {
+    if ((div / 62) | 0) {
       str = str + uid(div)
     } else {
-      str = str + String.fromCharCode(97 + (div % 26))
+      str = str + fromCharCode(div % 62)
     }
   }
   return str
@@ -24,7 +48,7 @@ const findKey = (obj: { [key: string]: any }, value: any): false | string => {
   return false
 }
 
-const validate = id => {
+const validate = (id: string): boolean => {
   return /[a-z]{2}/.test(id)
 }
 
@@ -54,7 +78,7 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
         const exists = findKey(types, definition.prefix)
         if (exists) {
           throw new Error(
-            `Prefix allready exists ${definition.prefix} ${exists}`
+            `Prefix already exists ${definition.prefix} ${exists}`
           )
         }
         types[type] = definition.prefix
