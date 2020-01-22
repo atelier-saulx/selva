@@ -70,9 +70,13 @@ export function stringStartsWith(str: string, slice: string): boolean {
   return true
 }
 
-export function ensureArray<T>(value: T | T[]): T[] {
+export function ensureArray<T>(value: (T | T[] | null | undefined) | T[]): T[] {
   if (isArray(value)) {
     return <T[]>value
+  }
+
+  if (value === null) {
+    return <T[]>[]
   }
 
   return [<T>value]

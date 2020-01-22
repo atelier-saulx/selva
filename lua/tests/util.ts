@@ -75,3 +75,15 @@ export function test_ensureArrayWithNonArrays() {
   const objAry = ensureArray(obj)
   testy_assert(objAry.length === 1 && objAry[0] === obj)
 }
+
+export function test_ensureArrayWithNullAndUndefined() {
+  testy_assert(
+    ensureArray(null).length === 0,
+    'ensureArray(null) should result in an empty array'
+  )
+
+  testy_assert(
+    ensureArray(undefined).length === 0,
+    'ensureArray(undefined) should result in an empty array'
+  )
+}

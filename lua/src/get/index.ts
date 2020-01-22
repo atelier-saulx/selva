@@ -5,6 +5,7 @@ import * as redis from '../redis'
 import { TypeSchema } from '../../../src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult } from './nestedFields'
+import inherit from './inherit'
 
 function getField(
   props: GetItem,
@@ -51,10 +52,28 @@ function getField(
         version
       )
       if (!complete) {
-        // await inherit(client, id, field || '', props, result, language, version)
+        inherit(
+          getField,
+          props,
+          schemas,
+          result,
+          id,
+          <string>field,
+          language,
+          version
+        )
       }
     } else {
-      // await inherit(client, id, field || '', props, result, language, version)
+      inherit(
+        getField,
+        props,
+        schemas,
+        result,
+        id,
+        <string>field,
+        language,
+        version
+      )
     }
   }
 
