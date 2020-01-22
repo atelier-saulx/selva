@@ -43,7 +43,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.serial.only('get - basic', async t => {
+test.serial('get - basic', async t => {
   const client = connect({ port: 6072 })
 
   await client.set({
@@ -75,34 +75,34 @@ test.serial.only('get - basic', async t => {
     }
   )
 
-  // t.deepEqual(
-  //   await client.get({
-  //     $id: 'viA',
-  //     auth: true
-  //   }),
-  //   {
-  //     auth: { role: { id: ['root'], type: 'admin' } }
-  //   },
-  //   'get role'
-  // )
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      auth: true
+    }),
+    {
+      auth: { role: { id: ['root'], type: 'admin' } }
+    },
+    'get role'
+  )
 
-  // t.deepEqual(
-  //   await client.get({
-  //     $id: 'viA',
-  //     auth: { role: { id: true } }
-  //   }),
-  //   {
-  //     auth: { role: { id: ['root'] } }
-  //   },
-  //   'get role nested'
-  // )
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      auth: { role: { id: true } }
+    }),
+    {
+      auth: { role: { id: ['root'] } }
+    },
+    'get role nested'
+  )
 
   await client.delete('root')
 
   client.destroy()
 })
 
-test.serial('get - $default', async t => {
+test.serial.only('get - $default', async t => {
   const client = connect({ port: 6072 })
 
   await client.set({
@@ -118,18 +118,18 @@ test.serial('get - $default', async t => {
     { age: 100 }
   )
 
-  t.deepEqual(
-    await client.get({
-      $id: 'viflap',
-      title: {
-        en: { $default: 'untitled' },
-        nl: { $default: 'naamloos' }
-      }
-    }),
-    {
-      title: { en: 'flap', nl: 'naamloos' }
-    }
-  )
+  // t.deepEqual(
+  //   await client.get({
+  //     $id: 'viflap',
+  //     title: {
+  //       en: { $default: 'untitled' },
+  //       nl: { $default: 'naamloos' }
+  //     }
+  //   }),
+  //   {
+  //     title: { en: 'flap', nl: 'naamloos' }
+  //   }
+  // )
 
   await client.delete('root')
 

@@ -4,6 +4,7 @@ import getByType from './getByType'
 import * as redis from '../redis'
 import { TypeSchema } from '../../../src/schema/index'
 import * as logger from '../logger'
+import { setNestedResult } from './nestedFields'
 
 function getField(
   props: GetItem,
@@ -58,6 +59,7 @@ function getField(
   }
 
   if (props.$default) {
+    logger.info(`has a $default for field ${field || ''}`)
     const complete = getByType(
       result,
       schemas,
@@ -67,7 +69,7 @@ function getField(
       version
     )
     if (!complete) {
-      // setNestedResult(result, field, props.$default)
+      setNestedResult(result, field, props.$default)
     }
   }
 
