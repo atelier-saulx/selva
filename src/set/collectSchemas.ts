@@ -15,7 +15,9 @@ const getSchema = async (
   type: string
 ): Promise<TypeSchema> => {
   if (!schemaCache.cache[type]) {
-    schemaCache.cache[type] = JSON.parse(await client.redis.hget('types', type))
+    schemaCache.cache[type] = JSON.parse(
+      await client.redis.hget('___selva_types', type)
+    )
     if (!schemaCacheTimer) {
       schemaCacheTimer = true
       setTimeout(() => {

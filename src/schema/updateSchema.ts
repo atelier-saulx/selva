@@ -23,7 +23,7 @@ async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
     })
     if (changedLanguages) {
       await client.redis.hset(
-        'schema',
+        '___selva_schema',
         'languages',
         JSON.stringify(props.languages)
       )

@@ -46,8 +46,8 @@ export default (
         } else {
           result[field].$add = verifySimple(payload[k])
         }
-      } else if (k === '$remove') {
-        result[field].$remove = verifySimple(payload[k])
+      } else if (k === '$delete') {
+        result[field].$delete = verifySimple(payload[k])
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
           throw new Error(

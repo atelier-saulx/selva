@@ -162,9 +162,9 @@ function setField(
   }
 
   if (fromDefault) {
-    redis.hsetnx(id, field, value)
+    redis.hsetnx(id, field, tostring(value))
   } else {
-    redis.hset(id, field, value)
+    redis.hset(id, field, tostring(value))
   }
 }
 

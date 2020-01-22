@@ -4,6 +4,30 @@ import modify from '../lua/src/modify/index'
 redis.debug('ID TESTING: ' + redis.id())
 let a = modify([
   {
+    // @ts-ignore
+    kind: 'update',
+    // @ts-ignore
+    payload: {
+      type: 'match',
+      video: {
+        mp4: 'https://flappie.com/clowns.mp4'
+      },
+      flurpbird: 'hello',
+      date: 100000,
+      title: {
+        en: 'best match'
+      },
+      children: [
+        {
+          type: 'person',
+          parents: { $add: 'root' }
+        }
+      ],
+      flapperdrol: { smurky: true }
+    }
+  },
+  {
+    // @ts-ignore
     kind: 'update',
     payload: {
       $id: 'match',
@@ -11,7 +35,9 @@ let a = modify([
     }
   },
   {
+    // @ts-ignore
     kind: 'update',
+    // @ts-ignore
     payload: {
       $id: 'viA',
       title: {
@@ -28,6 +54,7 @@ let a = modify([
     }
   },
   {
+    // @ts-ignore
     kind: 'update',
     payload: {
       $id: 'test_deleted',
@@ -36,6 +63,7 @@ let a = modify([
     }
   },
   {
+    // @ts-ignore
     kind: 'delete',
     payload: 'test_deleted'
   }
