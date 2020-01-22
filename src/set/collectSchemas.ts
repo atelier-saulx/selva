@@ -57,26 +57,28 @@ const collectSchemas = async (
     throw new Error(`No schema defined for ${payload.type}`)
   }
   for (const key in payload) {
-    if (!schema.fields[key]) {
-      throw new Error(`Field ${key} not in schema ${payload.type}`)
-    } else if (schema.fields[key].type === 'references') {
-      if (Array.isArray(payload[key])) {
-        if (typeof payload[key][0] === 'object') {
-          try {
-            await Promise.all(
-              payload[key].map(child =>
-                collectSchemas(client, child, schemas, prefixes)
+    if (key[0] !== '$') {
+      if (!schema.fields[key]) {
+        throw new Error(`Field ${key} not in schema ${payload.type}`)
+      } else if (schema.fields[key].type === 'references') {
+        if (Array.isArray(payload[key])) {
+          if (typeof payload[key][0] === 'object') {
+            try {
+              await Promise.all(
+                payload[key].map(child =>
+                  collectSchemas(client, child, schemas, prefixes)
+                )
               )
-            )
+            } catch (err) {
+              throw err
+            }
+          }
+        } else if (payload[key].$add && typeof payload[key].$add === 'object') {
+          try {
+            await collectSchemas(client, payload[key].$add, schemas, prefixes)
           } catch (err) {
             throw err
           }
-        }
-      } else if (payload[key].$add && typeof payload[key].$add === 'object') {
-        try {
-          await collectSchemas(client, payload[key].$add, schemas, prefixes)
-        } catch (err) {
-          throw err
         }
       }
     }
