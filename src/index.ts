@@ -38,8 +38,6 @@ export class SelvaClient {
     this.redis.destroy()
   }
 
-  // need client.destroy (at least for tests)
-
   async id(props: any) {
     // return id(this, props)
   }
