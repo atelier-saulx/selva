@@ -56,6 +56,14 @@ const collectSchemas = async (
     (schemas[payload.type] = schemaCache.cache[payload.type]) ||
     (schemas[payload.type] = await getSchema(client, payload.type))
 
+  if (!schemaCache.cache._languages) {
+    schemaCache.cache._languages = JSON.parse(
+      await client.redis.hget('___selva_schema', 'languages')
+    )
+  }
+
+  schemas._languages = schemaCache.cache._languages
+
   if (!schema) {
     throw new Error(`No schema defined for ${payload.type}`)
   }
