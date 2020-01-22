@@ -69,3 +69,11 @@ export function stringStartsWith(str: string, slice: string): boolean {
 
   return true
 }
+
+export function ensureArray<T>(value: T | T[]): T[] {
+  if (isArray(value)) {
+    return <T[]>value
+  }
+
+  return [<T>value]
+}

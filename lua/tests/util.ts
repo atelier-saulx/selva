@@ -1,4 +1,10 @@
-import { arrayIsEqual, isArray, joinString, splitString } from '../src/util'
+import {
+  arrayIsEqual,
+  isArray,
+  joinString,
+  splitString,
+  ensureArray
+} from '../src/util'
 
 export function test_arrayIsEqual() {
   testy_assert(arrayIsEqual([1, 2, 3], [1, 2, 3]), '[1,2,3] === [1,2,3]')
@@ -45,4 +51,27 @@ export function test_splitString() {
     'can split string with nothing to split but has data'
   )
   testy_assert(arrayIsEqual(splitString('', ' '), []), 'can split empty string')
+}
+
+export function test_ensureArrayWithArray() {
+  const ary1 = [1]
+  const ary2 = [1, 2]
+
+  testy_assert(ensureArray(ary1) === ary1)
+  testy_assert(ensureArray(ary2) === ary2)
+}
+
+export function test_ensureArrayWithNonArrays() {
+  const str = ensureArray('lekker man')
+  testy_assert(str.length === 1 && str[0] === 'lekker man')
+
+  const num = ensureArray(12)
+  testy_assert(num.length === 1 && num[0] === 12)
+
+  const bool = ensureArray(false)
+  testy_assert(bool.length === 1 && bool[0] === false)
+
+  const obj = { a: 1, b: 2 }
+  const objAry = ensureArray(obj)
+  testy_assert(objAry.length === 1 && objAry[0] === obj)
 }
