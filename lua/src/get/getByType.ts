@@ -155,7 +155,7 @@ const text = (
       const value = getNestedField(result, field)
       if (!value) {
         logger.info(`No value for field ${field}`)
-        return true
+        return false
       }
 
       for (const key in value) {
