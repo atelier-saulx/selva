@@ -1,4 +1,4 @@
-import { Id, Language, Type, getTypeFromId } from '../schema'
+import { Id } from '../schema'
 import { SelvaClient } from '..'
 import { GetResult, getInner } from './'
 import { GetItem } from './types'
@@ -6,8 +6,18 @@ import { setNestedResult } from './nestedFields'
 import getField from './getField'
 
 type Ancestor = [Ancestor[], number]
+
+const getTypeFromId = (id: Id): string => {
+  return 'x'
+}
+
+// only shortest ancestor
+
 // memoize this in lua (within one batch of gets)
 // const ancestorMap = {} etc
+
+// can prob just use the ancestors field (store )
+
 const createAncestorsInner = async (
   client: SelvaClient,
   id: Id,
@@ -148,7 +158,7 @@ const setFromAncestors = async (
   ancestors: Id[],
   field: string,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ) => {
   for (let i = 0, len = ancestors.length; i < len; i++) {
@@ -174,8 +184,8 @@ const inheritItem = async (
   field: string,
   props: GetItem,
   result: GetResult,
-  item: Type[],
-  language?: Language,
+  item: string[],
+  language?: string,
   version?: string
 ) => {
   const ancestors = await createAncestorsFromFields(client, id, item, parseType)
@@ -209,7 +219,7 @@ const inherit = async (
   field: string,
   props: GetItem,
   result: GetResult,
-  language?: Language,
+  language?: string,
   version?: string
 ) => {
   const inherit = props.$inherit

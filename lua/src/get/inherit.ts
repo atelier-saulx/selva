@@ -1,5 +1,6 @@
 import * as redis from '../redis'
-import { Id, Language, Type, getTypeFromId } from '~selva/schema'
+import { Id } from '~selva/schema'
+import { getTypeFromId } from '../typeIdMapping'
 import { GetResult, GetItem } from '~selva/get/types'
 import { setNestedResult } from './nestedFields'
 import getByType from './getByType'

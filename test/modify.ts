@@ -12,7 +12,78 @@ function ancestorEquals(t: ExecutionContext, a: string, b: string): boolean {
 }
 
 test.before(async t => {
-  await start({ port: 6061, modules: ['redisearch'] })
+  await start({
+    port: 6061,
+    modules: ['redisearch', 'selva'],
+    developmentLogging: true,
+    loglevel: 'info'
+  })
+
+  await new Promise((resolve, reject) => {
+    setTimeout(resolve, 200)
+  })
+
+  const client = connect({
+    port: 6061
+  })
+
+  await client.updateSchema({
+    languages: ['en', 'nl', 'de'],
+    types: {
+      match: {
+        prefix: 'ma',
+        fields: {
+          title: {
+            type: 'text'
+          }
+        }
+      },
+      league: {
+        prefix: 'cu',
+        fields: {
+          title: {
+            type: 'text'
+          }
+        }
+      },
+      person: {
+        prefix: 'pe',
+        fields: {
+          title: {
+            type: 'text'
+          }
+        }
+      },
+      someTestThing: {
+        prefix: 'vi',
+        fields: {
+          title: {
+            type: 'text'
+          },
+          value: {
+            type: 'number'
+          }
+        }
+      },
+      otherTestThing: {
+        prefix: 'ar',
+        fields: {
+          title: {
+            type: 'text'
+          },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  await client.destroy()
 })
 
 test.serial('basic', async t => {
@@ -301,7 +372,7 @@ test.serial('basic', async t => {
   await client.destroy()
 })
 
-test('deep hierarchy manipulation', async t => {
+test.serial('deep hierarchy manipulation', async t => {
   const client = connect({
     port: 6061
   })
@@ -463,6 +534,53 @@ test.serial('$merge = false', async t => {
   t.is(await client.redis.hget('arPower', 'image.thumb'), null)
 
   await client.delete('root')
+})
+
+test.serial('automatic child creation', async t => {
+  const client = connect({
+    port: 6061
+  })
+
+  const parent = await client.set({
+    $id: 'viParent',
+    title: {
+      nl: 'nl'
+    },
+    children: [
+      {
+        type: 'match',
+        title: {
+          nl: 'child1'
+        }
+      },
+      {
+        type: 'match',
+        title: {
+          nl: 'child2'
+        }
+      },
+      {
+        type: 'match',
+        title: {
+          nl: 'child3'
+        }
+      }
+    ]
+  })
+
+  const children = await client.redis.smembers(parent + '.children')
+  t.is(children.length, 3, 'Should have 3 children created')
+
+  const titles = (
+    await Promise.all(
+      children.map(child => {
+        return client.redis.hget(child, 'title.nl')
+      })
+    )
+  ).sort()
+  for (let i = 0; i < titles.length; i++) {
+    t.is(titles[i], 'child' + (i + 1), `Child ${i} title should match`)
+  }
 })
 
 // test.serial('Reference field', async t => {

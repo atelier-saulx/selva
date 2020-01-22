@@ -1,4 +1,4 @@
-import { Id } from '../../../src/schema'
+import { Id } from '../../../src/schema/index'
 import * as redis from '../redis'
 import { splitString, joinString } from '../util'
 

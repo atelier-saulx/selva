@@ -1,9 +1,84 @@
-import { Id, Language } from '../schema'
-import { GetItem, GetResult, GetOptions } from './types'
+import { Id } from '../schema'
+// import { GetItem, GetResult, GetOptions } from './types'
 import { SelvaClient } from '..'
 import getField from './getField'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
+
+// re-add id
+
+export type Inherit =
+  | boolean
+  | {
+      $type?: string | string[]
+      $name?: string | string[]
+      $item?: Id | Id[]
+    }
+
+type Find = {
+  $traverse?: 'descendants' | 'ancestors' | 'children' | 'parents'
+}
+
+type List = {
+  $range?: [number, number]
+  $find?: Find
+}
+
+type GetField<T> = {
+  $field?: string | string[]
+  $inherit?: Inherit
+  $list?: List
+  $default?: T
+}
+
+// want with $ come on :D
+type Item = {
+  [key: string]: any
+}
+
+// update $language for default + text (algebraic)
+export type GetItem<T = Item> = {
+  [P in keyof T]?: T[P] extends Item[]
+    ? GetItem<T>[] | true
+    : T[P] extends object
+    ? (GetItem<T[P]> & GetField<T>) | true
+    : T[P] extends number
+    ? T[P] | GetField<T[P]> | true
+    : T[P] extends string
+    ? T[P] | GetField<T[P]> | true
+    : T[P] extends boolean
+    ? T[P] | GetField<T[P]>
+    : (T[P] & GetField<T[P]>) | true
+} &
+  GetField<T> & {
+    [key: string]: any
+  }
+
+// but explodes :D missing true somwhere
+
+// type Get<T> =
+//   | (GetField & {
+//       $default?: T // inherit
+//     })
+//   | true
+
+// & MapField
+// type MapField = GetField & {
+//   $default?: any
+// }
+
+type GetOptions = GetItem & {
+  $id?: Id
+  $version?: string
+  $language?: string
+}
+
+// tmp be able to return anything
+// this is the result
+// we can also make something else e.g. GetApi (All), Get (Item)
+type GetResult = {
+  [key: string]: any
+}
 
 export async function getInner(
   client: SelvaClient,
@@ -11,7 +86,7 @@ export async function getInner(
   result: GetResult,
   id: Id,
   field?: string,
-  language?: Language,
+  language?: string,
   version?: string,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): Promise<boolean> {

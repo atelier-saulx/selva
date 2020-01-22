@@ -1,12 +1,11 @@
-import { Language, Field, Item, Type, Id } from '../schema'
+import { Id } from '../schema'
 
 export type Inherit =
   | boolean
   | {
-      $type?: Type | Type[]
+      $type?: string | string[]
       $name?: string | string[]
-      // id?: Id | Id[]
-      $item?: Type | Type[]
+      $item?: Id | Id[]
     }
 
 export type Find = {
@@ -19,18 +18,21 @@ export type List = {
 }
 
 export type GetField<T> = {
-  $field?: Field
+  $field?: string | string[]
   $inherit?: Inherit
   $list?: List
   $default?: T
+}
+
+// want with $ come on :D
+export type Item = {
+  [key: string]: any
 }
 
 // update $language for default + text (algebraic)
 export type GetItem<T = Item> = {
   [P in keyof T]?: T[P] extends Item[]
     ? GetItem<T>[] | true
-    : T[P] extends Text
-    ? (GetItem<T[P]> & GetField<T | string>) | true
     : T[P] extends object
     ? (GetItem<T[P]> & GetField<T>) | true
     : T[P] extends number
@@ -45,37 +47,6 @@ export type GetItem<T = Item> = {
     [key: string]: any
   }
 
-// but explodes :D missing true somwhere
-
-// type Get<T> =
-//   | (GetField & {
-//       $default?: T // inherit
-//     })
-//   | true
-
-// & MapField
-// type MapField = GetField & {
-//   $default?: any
-// }
-
-export type GetOptions = GetItem & {
-  $id?: Id
-  $version?: string
-  $language?: Language
-}
-
-// tmp be able to return anything
-// this is the result
-// we can also make something else e.g. GetApi (All), Get (Item)
-export type GetResult<T = Item> = {
-  [P in keyof T]?: T[P] extends Item[]
-    ? GetResult<T>[]
-    : T[P] extends Text
-    ? T[P] | string
-    : T[P] extends object
-    ? GetResult<T[P]>
-    : T[P]
-} & {
-  // $keys?: string[]
+export type GetResult = {
   [key: string]: any
 }

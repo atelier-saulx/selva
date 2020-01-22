@@ -1,0 +1,11 @@
+{
+  "extends": "./lua-tsconfig.json",
+  "files": ["./luaScripts/id.ts"],
+  "include": ["./lua/src/id.ts", "./lua/types/*.d.ts"],
+  "tstl": {
+    "luaTarget": "5.1",
+    "luaLibImport": "require",
+    "luaBundle": "./dist/lua/id.lua",
+    "luaBundleEntry": "./luaScripts/id.ts"
+  }
+}

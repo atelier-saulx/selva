@@ -1,9 +1,13 @@
-import { BaseItem, Field, ExternalId, UserType, Id } from './schema'
+import { Id } from '../schema/index'
+
+export type BaseItem = { [key: string]: any }
+
+export type ExternalId = string
 
 export type RedisSetParams =
   | Id[]
   | {
-      $value?: Id[] | Id
+      $value?: string[] | Id
       $add?: Id[] | Id
       $delete?: Id[] | Id
     }
@@ -16,7 +20,7 @@ export type SetExtraOptions<T> = {
   $default?: T
   $value?: T
   $merge?: boolean
-  $field?: Field
+  $field?: string | string[]
 }
 
 export type SetExtraCounterOptions = {
@@ -41,7 +45,7 @@ export type SetOptions = SetItem & {
   $id?: Id
   $merge?: boolean
   $version?: string
-  children?: HierarchySet
+  children?: HierarchySet | SetItem[]
   parents?: HierarchySet
   externalId?:
     | ExternalId[]
@@ -56,7 +60,7 @@ export type SetOptions = SetItem & {
     facebook?: string
     role?: {
       id?: RedisSetParams
-      type?: UserType
+      type?: 'admin' | 'owner' | 'user' // old UserType
     }
   }
 }

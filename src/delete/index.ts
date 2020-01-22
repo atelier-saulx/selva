@@ -1,13 +1,12 @@
-import { Id } from './schema'
-import { DeleteOptions } from './deleteTypes'
-import { SelvaClient } from '.'
+import { DeleteOptions } from './types'
+import { SelvaClient } from '..'
 
 async function deleteItem(
   client: SelvaClient,
-  id: Id,
+  id: string,
   hierarchy: boolean = true
 ): Promise<boolean> {
-  const modifyResult = await client.redis.modify({
+  const modifyResult = await client.modify({
     kind: 'delete',
     payload: { $id: id, $hierarchy: hierarchy }
   })
