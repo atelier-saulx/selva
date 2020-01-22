@@ -40,6 +40,26 @@ test.before(async t => {
       ookEenLekkerType: {
         prefix: 'cu',
         fields: {
+          name: { type: 'string' },
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      },
+      club: {
+        prefix: 'cl',
+        fields: {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
