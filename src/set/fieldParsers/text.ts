@@ -9,5 +9,5 @@ export default (
   fields: FieldSchemaOther,
   type: string
 ): void => {
-  result[field] = payload[field]
+  result[field] = payload
 }

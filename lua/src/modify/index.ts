@@ -202,7 +202,7 @@ function update(payload: SetOptions): Id | null {
     }
 
     if (!payload.parents && payload.$id !== 'root') {
-      payload.parents = { $add: 'root' }
+      payload.parents = { $add: ['root'] }
     }
   }
 
