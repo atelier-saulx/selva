@@ -50,7 +50,9 @@ export default (
         result[field].$remove = verifySimple(payload[k])
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
-          throw new Error(`Wrong payload for ${k}`)
+          throw new Error(
+            `Wrong payload for references ${JSON.stringify(payload)}`
+          )
         }
         result[field].$hierarchy = payload[k]
       } else {
