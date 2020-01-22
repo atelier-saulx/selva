@@ -40,15 +40,16 @@ test('schemas - basic', async t => {
   const client = await connect({ port: 6066 })
 
   const defaultFields: Fields = {
+    title: {
+      type: 'text'
+    },
+
     id: {
       type: 'id'
     },
     type: {
       search: { index: 'default', type: ['TAG'] },
       type: 'type'
-    },
-    title: {
-      type: 'text'
     },
     children: {
       type: 'references'
