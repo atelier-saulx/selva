@@ -319,11 +319,24 @@ test('schemas - basic', async t => {
 
   t.is(await client.getTypeFromId('maflurpy'), 'match')
 
+  await client.updateSchema({
+    types: {
+      match: {
+        fields: {
+          flurpbird: { type: 'digest' },
+          date: { type: 'timestamp' }
+        }
+      }
+    }
+  })
+
   await client.set({
     type: 'match',
     video: {
       mp4: 'https://flappie.com/clowns.mp4'
     },
+    flurpbird: 'hello',
+    date: 100000,
     title: {
       en: 'best match'
     },

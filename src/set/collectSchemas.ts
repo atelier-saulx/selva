@@ -57,6 +57,9 @@ const collectSchemas = async (
     throw new Error(`No schema defined for ${payload.type}`)
   }
   for (const key in payload) {
+    if (key[0] === '$') {
+      continue
+    }
     if (!schema.fields[key]) {
       throw new Error(`Field ${key} not in schema ${payload.type}`)
     } else if (schema.fields[key].type === 'references') {

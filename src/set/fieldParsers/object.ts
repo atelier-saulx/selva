@@ -17,7 +17,9 @@ export default (
   }
   const r = (result[field] = {})
   for (let key in payload) {
-    if (!fields.properties[key]) {
+    if (key[0] === '$') {
+      r[key] = payload[key]
+    } else if (!fields.properties[key]) {
       throw new Error(`Cannot find field ${key} in ${type}`)
     } else {
       const item = fields.properties[key]
