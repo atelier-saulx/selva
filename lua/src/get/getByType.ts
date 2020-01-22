@@ -105,7 +105,7 @@ const json = (
   version?: string
 ): boolean => {
   const value = redis.hget(id, field)
-  setNestedResult(result, field, value === null ? value : JSON.parse(value))
+  setNestedResult(result, field, value === null ? value : cjson.decode(value))
   return value !== null
 }
 

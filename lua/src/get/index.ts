@@ -79,7 +79,7 @@ export default function get(opts: GetOptions): Promise<GetResult> {
   const reply = redis.hgetall('___selva_types')
   for (let i = 0; i < reply.length; i += 2) {
     const type = reply[i]
-    const typeSchema: TypeSchema = JSON.parse(reply[i + 1])
+    const typeSchema: TypeSchema = cjson.decode(reply[i + 1])
     types[type] = typeSchema
   }
 
