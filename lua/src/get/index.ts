@@ -43,6 +43,7 @@ function getField(
     (!isComplete || !hasKeys)
   ) {
     if (!hasKeys) {
+      logger.info(`getByType on ${field}`)
       const complete = getByType(
         result,
         schemas,
@@ -51,6 +52,7 @@ function getField(
         language,
         version
       )
+      logger.info(`NEEDS INHERIT? COMPLETE: ${tostring(complete)}}`)
       if (!complete) {
         inherit(
           getField,

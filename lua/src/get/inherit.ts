@@ -5,6 +5,7 @@ import { GetResult, GetItem } from '~selva/get/types'
 import { setNestedResult } from './nestedFields'
 import getByType from './getByType'
 import { ensureArray } from '../util'
+import * as logger from '../logger'
 
 type Ancestor = [Ancestor[], number]
 
@@ -36,9 +37,9 @@ function createAncestorsInner(id: Id, s: Record<Id, Ancestor>): Ancestor {
 }
 
 function createAncestors(targetId: Id): Id[] {
-  const s = {}
+  const s: Record<string, Ancestor> = {}
   createAncestorsInner(targetId, s)
-  const result = []
+  const result: Id[] = []
   // binary insert
   for (let id in s) {
     if (targetId !== id) {
@@ -68,7 +69,6 @@ function createAncestors(targetId: Id): Id[] {
 function createAncestorsFromFields(
   targetId: Id,
   fields: string[],
-  // not async in lua
   parse: (id: Id) => string
 ): Id[] {
   const s = {}
@@ -79,48 +79,49 @@ function createAncestorsFromFields(
       const ancestor = s[id]
       // get type/name index , store it for faster lookup
       if (ancestor.length === 2) {
-        let value = parse(id)
+        const value = parse(id)
         if (!value) {
           let ignore = false
           for (let i = 0, len = fields.length; i < len; i++) {
             if (fields[i] === value) {
-              ancestor.push(i, value)
+              ancestor[ancestor.length] = i
+              ancestor[ancestor.length] = value
               break
             } else if (i === len - 1) {
               ignore = true
             }
           }
           if (!ignore) {
-          }
-          const depth = ancestor[1]
-          const index = ancestor[2]
-          value = ancestor[3]
-          // binary insert
-          let l = 0,
-            r = result.length - 1,
-            m = 0
-          while (l <= r) {
-            m = Math.floor((l + r) / 2)
-            const prev = s[result[m]]
-            const prevValue = prev[3]
-            if (value === prevValue) {
-              const prevDepth = prev[1]
-              if (prevDepth < depth) {
-                r = m - 1
-              } else {
-                l = m + 1
-                if (prevDepth === depth) {
-                  break
+            const depth = ancestor[1]
+            const index = ancestor[2]
+            const v = ancestor[3]
+            // binary insert
+            let l = 0,
+              r = result.length - 1,
+              m = 0
+            while (l <= r) {
+              m = Math.floor((l + r) / 2)
+              const prev = s[result[m]]
+              const prevValue = prev[3]
+              if (v === prevValue) {
+                const prevDepth = prev[1]
+                if (prevDepth < depth) {
+                  r = m - 1
+                } else {
+                  l = m + 1
+                  if (prevDepth === depth) {
+                    break
+                  }
                 }
-              }
-            } else {
-              const prevIndex = prev[2]
-              if (prevIndex > index) {
-                r = m - 1
               } else {
-                l = m + 1
-                if (prevIndex === index) {
-                  break
+                const prevIndex = prev[2]
+                if (prevIndex > index) {
+                  r = m - 1
+                } else {
+                  l = m + 1
+                  if (prevIndex === index) {
+                    break
+                  }
                 }
               }
             }
@@ -213,6 +214,7 @@ export default function inherit(
   language?: string,
   version?: string
 ) {
+  logger.info(`INHERITING FIELD ${field}`)
   const inherit = props.$inherit
   if (inherit) {
     if (inherit === true) {
