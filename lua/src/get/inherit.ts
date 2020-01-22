@@ -141,7 +141,7 @@ function setFromAncestors(
   result: GetResult,
   ancestors: Id[],
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ) {
   for (let i = 0, len = ancestors.length; i < len; i++) {
@@ -164,8 +164,8 @@ function inheritItem(
   result: GetResult,
   id: Id,
   field: string,
-  item: Type[],
-  language?: Language,
+  item: string[],
+  language?: string,
   version?: string
 ) {
   const ancestors = createAncestorsFromFields(id, item, parseType)
@@ -197,7 +197,7 @@ function inherit(
   result: GetResult,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ) {
   const inherit = props.$inherit

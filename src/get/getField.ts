@@ -246,7 +246,7 @@ type Reader = (
 
 const types: Record<string, Reader> = {
   id: id,
-  type: type,
+  type: string,
   title: text,
   description: text,
   article: text,

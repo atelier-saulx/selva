@@ -1,6 +1,6 @@
 import { GetOptions, GetResult } from '~selva/get'
 import { GetItem } from '~selva/get/types'
-import { Language, Id } from '~selva/schema'
+import { Id } from '~selva/schema'
 import getByType from './getByType'
 
 function getField(
@@ -8,7 +8,7 @@ function getField(
   result: GetResult,
   id: Id,
   field?: string,
-  language?: Language,
+  language?: string,
   version?: string,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {

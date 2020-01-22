@@ -1,10 +1,5 @@
-import {
-  Id,
-  Language,
-  languages,
-  itemTypes,
-  getTypeFromId
-} from '~selva/schema'
+import { Id } from '~selva/schema'
+
 import * as redis from '../redis'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
@@ -13,7 +8,7 @@ const number = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const v = redis.hget(id, field)
@@ -26,7 +21,7 @@ const boolean = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   setNestedResult(result, field, !!redis.hget(id, field))
@@ -37,7 +32,7 @@ const string = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const value = redis.hget(id, field) || ''
@@ -49,7 +44,7 @@ const set = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const value = redis.smembers(id + '.' + field)
@@ -61,7 +56,7 @@ const stringified = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const value = redis.hget(id, field)
@@ -73,7 +68,7 @@ const object = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   const keys = redis.hkeys(id)
@@ -94,7 +89,7 @@ const text = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> => {
   if (!language) {
@@ -135,7 +130,7 @@ const authObject = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   const r = object(result, id, field)
@@ -147,7 +142,7 @@ const id = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   result.id = id
@@ -158,7 +153,7 @@ const type = async (
   result: GetResult | null,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   result.type = getTypeFromId(id)
@@ -169,7 +164,7 @@ const ancestors = async (
   result: GetResult,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   // result.ancestors = (redis.hget(id, field) || '').split(',')
@@ -197,7 +192,7 @@ const descendants = async (
   result: GetResult,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<true> => {
   const s = await getDescendants(id, {}, {})
@@ -213,13 +208,13 @@ type Reader = (
   result: GetResult,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ) => Promise<boolean>
 
 const types: Record<string, Reader> = {
   id: id,
-  type: type,
+  type: string,
   title: text,
   description: text,
   article: text,
@@ -256,7 +251,7 @@ async function getByType(
   result: GetResult,
   id: Id,
   field: string,
-  language?: Language,
+  language?: string,
   version?: string
 ): Promise<boolean> {
   // version still missing!

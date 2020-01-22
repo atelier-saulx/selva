@@ -13,15 +13,15 @@ async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
   prefixesCache.prefixes = false
 
   if (props.languages) {
-    let changedLanguages: boolean = false
+    let changedstrings: boolean = false
     props.languages.forEach(lang => {
       // cannot remove languages for now!
       if (schema.languages.indexOf(lang) === -1) {
         schema.languages.push(lang)
-        changedLanguages = true
+        changedstrings = true
       }
     })
-    if (changedLanguages) {
+    if (changedstrings) {
       await client.redis.hset(
         '___selva_schema',
         'languages',
