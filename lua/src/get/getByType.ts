@@ -1,8 +1,20 @@
 import { Id } from '~selva/schema'
 
 import * as redis from '../redis'
+import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
+
+const id = async (
+  result: GetResult | null,
+  id: Id,
+  field: string,
+  language?: string,
+  version?: string
+): Promise<boolean> => {
+  result.id = id
+  return true
+}
 
 const number = async (
   result: GetResult | null,
@@ -12,9 +24,32 @@ const number = async (
   version?: string
 ): Promise<boolean> => {
   const v = redis.hget(id, field)
-  const value = v === null ? null : v * 1
+  const value = v === null ? null : tonumber(v)
   setNestedResult(result, field, value)
   return value !== null
+}
+
+const float = async (
+  result: GetResult | null,
+  id: Id,
+  field: string,
+  language?: string,
+  version?: string
+): Promise<boolean> => {
+  const v = redis.hget(id, field)
+  const value = v === null ? null : Math.floor(tonumber(v))
+  setNestedResult(result, field, value)
+  return value !== null
+}
+
+const int = async (
+  result: GetResult | null,
+  id: Id,
+  field: string,
+  language?: string,
+  version?: string
+): Promise<boolean> => {
+  return number(result, id, field, language, version)
 }
 
 const boolean = async (
@@ -40,7 +75,7 @@ const string = async (
   return !!value
 }
 
-const set = async (
+const arrayLike = async (
   result: GetResult | null,
   id: Id,
   field: string,
@@ -52,7 +87,7 @@ const set = async (
   return !!value.length
 }
 
-const stringified = async (
+const json = async (
   result: GetResult | null,
   id: Id,
   field: string,
@@ -111,53 +146,19 @@ const text = async (
       setNestedResult(result, field, value)
       return true
     } else {
-      for (const lang of languages) {
-        if (lang !== language) {
-          const value = redis.hget(id, field + '.' + lang)
-          if (value) {
-            setNestedResult(result, field, value)
-            return true
-          }
-        }
-      }
+      // for (const lang of languages) {
+      //   if (lang !== language) {
+      //     const value = redis.hget(id, field + '.' + lang)
+      //     if (value) {
+      //       setNestedResult(result, field, value)
+      //       return true
+      //     }
+      //   }
+      // }
       setNestedResult(result, field, '')
       return false
     }
   }
-}
-
-const authObject = async (
-  result: GetResult | null,
-  id: Id,
-  field: string,
-  language?: string,
-  version?: string
-): Promise<true> => {
-  const r = object(result, id, field)
-  result.auth.role.id = redis.smembers(id + '.auth.role.id')
-  return true
-}
-
-const id = async (
-  result: GetResult | null,
-  id: Id,
-  field: string,
-  language?: string,
-  version?: string
-): Promise<true> => {
-  result.id = id
-  return true
-}
-
-const type = async (
-  result: GetResult | null,
-  id: Id,
-  field: string,
-  language?: string,
-  version?: string
-): Promise<true> => {
-  result.type = getTypeFromId(id)
-  return true
 }
 
 const ancestors = async (
@@ -204,47 +205,27 @@ const descendants = async (
   return true
 }
 
-type Reader = (
-  result: GetResult,
-  id: Id,
-  field: string,
-  language?: string,
-  version?: string
-) => Promise<boolean>
-
-const types: Record<string, Reader> = {
-  id: id,
+const types = {
+  id,
+  string,
+  digest: string,
+  number,
+  float,
+  int,
+  boolean,
+  set: arrayLike,
+  references: arrayLike,
+  json,
+  array: json,
+  text,
+  timestamp: number,
+  url: string,
+  email: string,
+  phone: string,
+  geo: object,
   type: string,
-  title: text,
-  description: text,
-  article: text,
-  video: object, // stringified for overlayArray
-  image: object,
-  contact: object,
-  'contact.phone': number,
-  value: number,
-  age: number,
-  status: number,
-  date: number,
-  start: number,
-  price: number,
-  discount: number,
-  tax: number,
-  end: number,
-  published: boolean,
-  children: set,
-  parents: set,
-  auth: authObject,
-  'auth.role': authObject,
-  'auth.role.id': set,
-  ancestors,
   descendants,
-  layout: object,
-  'layout.default': stringified
-}
-
-for (const type of itemTypes) {
-  types['layout.' + type] = stringified
+  ancestors
 }
 
 async function getByType(
@@ -255,6 +236,7 @@ async function getByType(
   version?: string
 ): Promise<boolean> {
   // version still missing!
+
   const fn = types[field] || string
   return await fn(result, id, field, language, version)
 }
