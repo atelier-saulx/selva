@@ -5,7 +5,8 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { TypeSchema } from '../../../src/schema/index'
-import { splitString } from '../util'
+import { splitString, stringStartsWith } from '../util'
+import * as logger from '../logger'
 
 const id = (
   result: GetResult,
@@ -143,6 +144,11 @@ const text = (
     const isComplete = object(result, schemas, id, field, language, version)
     if (!isComplete) {
       const value = getNestedField(result, field)
+      if (!value) {
+        logger.info(`No value for field ${field}`)
+        return true
+      }
+
       for (const key in value) {
         if (value[key]) {
           return true
@@ -158,15 +164,17 @@ const text = (
       setNestedResult(result, field, value)
       return true
     } else {
-      // for (const lang of languages) {
-      //   if (lang !== language) {
-      //     const value = redis.hget(id, field + '.' + lang)
-      //     if (value) {
-      //       setNestedResult(result, field, value)
-      //       return true
-      //     }
-      //   }
-      // }
+      const keys = redis.hkeys(id)
+      for (let i = 0; i < keys.length; i++) {
+        if (stringStartsWith(keys[i], field + '.')) {
+          const value = redis.hget(id, keys[i])
+          if (value) {
+            setNestedResult(result, field, value)
+            return true
+          }
+        }
+      }
+
       setNestedResult(result, field, '')
       return false
     }
@@ -273,6 +281,8 @@ function getByType(
   if (!prop) {
     return true
   }
+
+  logger.info(`GETTING FIELD ${field} WITH TYPE ${prop.type}`)
 
   const fn = types[prop.type] || string
   return fn(result, schemas, id, field, language, version)

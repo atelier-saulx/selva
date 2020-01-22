@@ -55,3 +55,17 @@ export function joinString(strs: string[], delim: string): string {
   str += strs[strs.length - 1] || ''
   return str
 }
+
+export function stringStartsWith(str: string, slice: string): boolean {
+  if (slice.length > str.length) {
+    return false
+  }
+
+  for (let i = 0; i < slice.length; i++) {
+    if (str[i] !== slice[i]) {
+      return false
+    }
+  }
+
+  return true
+}
