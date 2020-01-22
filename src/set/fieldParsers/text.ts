@@ -9,6 +9,5 @@ export default (
   fields: FieldSchemaOther,
   type: string
 ): void => {
-  console.log('😘  text', field, type)
-  // ---
+  result[field] = payload[field]
 }

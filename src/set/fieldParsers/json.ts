@@ -9,6 +9,5 @@ export default (
   fields: FieldSchemaJson,
   type: string
 ): void => {
-  console.log('😘  json', field)
-  // ---
+  result[field] = JSON.stringify(payload[field])
 }

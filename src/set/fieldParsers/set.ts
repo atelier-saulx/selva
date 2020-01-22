@@ -9,6 +9,5 @@ export default (
   fields: FieldSchemaArrayLike,
   type: string
 ): void => {
-  console.log('😘  set', field, type)
-  // ---
+  result[field] = payload[field]
 }

@@ -74,7 +74,8 @@ test.before(async t => {
           image: {
             type: 'object',
             properties: {
-              thumb: { type: 'string' }
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
             }
           }
         }
