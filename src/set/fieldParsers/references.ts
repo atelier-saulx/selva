@@ -42,7 +42,7 @@ export default (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
-          result[field].$add = parseSetObject(payload[k], schemas)
+          result[field].$add = [parseSetObject(payload[k], schemas)]
         } else {
           result[field].$add = verifySimple(payload[k])
         }
