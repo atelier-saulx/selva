@@ -44,14 +44,11 @@ export class SelvaClient {
   async id(props: IdOptions): Promise<string> {
     // move to js
     return this.redis.loadAndEvalScript(
-      'modify',
+      'id',
       ID_SCRIPT,
       0,
       [],
-      [JSON.stringify(props)],
-      {
-        batchingEnabled: true
-      }
+      [JSON.stringify(props)]
     )
   }
 
