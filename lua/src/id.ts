@@ -8,7 +8,7 @@ function hash(str?: string): string {
   return redis.id(str)
 }
 
-type IdOptions = {
+export type IdOptions = {
   type: string
   externalId?: ExternalId | ExternalId[]
 }

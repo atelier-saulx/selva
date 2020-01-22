@@ -12,20 +12,14 @@ export function getTypeFromId(id: Id): string {
 
   if (!typePrefix) {
     typePrefix = cjson.decode(redis.hget('schema', 'prefixes'))
-    for (const key in typePrefix) {
-      inverseTypePrefix[typePrefix[key]] = key
-    }
   }
 
   return typePrefix[id.substring(0, 2)]
 }
 
 export function getPrefixFromType(prefix: string): string {
-  if (!typePrefix) {
-    typePrefix = cjson.decode(redis.hget('schema', 'prefixes'))
-    for (const key in typePrefix) {
-      inverseTypePrefix[typePrefix[key]] = key
-    }
+  if (!inverseTypePrefix) {
+    inverseTypePrefix = cjson.decode(redis.hget('schema', 'types'))
   }
 
   return inverseTypePrefix[prefix]
