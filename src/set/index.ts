@@ -3,6 +3,7 @@ import { SelvaClient } from '..'
 import { TypeSchema } from '../schema'
 import collectSchemas from './collectSchemas'
 import fieldParsers from './fieldParsers'
+import { verifiers } from './fieldParsers/simple'
 
 export const parseSetObject = (
   payload: SetOptions,
@@ -19,7 +20,25 @@ export const parseSetObject = (
   let fields = schema.fields
   for (let key in payload) {
     if (key[0] === '$') {
-      result[key] = payload[key]
+      if (key === '$merge') {
+        if (!(payload[key] === true || payload[key] === false)) {
+          throw new Error(`$merge needs to be a a boolean `)
+        }
+        result[key] = payload[key]
+      } else if (key === '$id') {
+        if (!verifiers.id(payload[key])) {
+          throw new Error('Wrong type for $id')
+        }
+        result[key] = payload[key]
+      } else if (key === '$version') {
+        if (typeof payload[key] !== 'string') {
+          throw new Error('Wrong type for $version')
+        }
+        console.warn('Warning $version not implemented yet!')
+        result[key] = payload[key]
+      } else {
+        throw new Error(`Wrong option on set object ${key}`)
+      }
     } else if (!fields[key]) {
       throw new Error(`Cannot find field ${key} in ${type} from set-object`)
     } else {

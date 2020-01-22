@@ -27,7 +27,7 @@ const validURL = (str: string): boolean => {
   | 'type'
 */
 
-const verifiers = {
+export const verifiers = {
   digest: (payload: string) => {
     return typeof payload === 'string'
   },
