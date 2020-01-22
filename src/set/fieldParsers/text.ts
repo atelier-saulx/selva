@@ -9,5 +9,6 @@ export default (
   fields: FieldSchemaOther,
   type: string
 ): void => {
+  // languages verification
   result[field] = payload[field]
 }

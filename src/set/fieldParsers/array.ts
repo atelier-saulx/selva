@@ -1,12 +1,12 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaJson } from '../../schema'
+import { TypeSchema, FieldSchemaArrayLike } from '../../schema'
 
 export default (
   schemas: Record<string, TypeSchema>,
   field: string,
   payload: SetOptions,
   result: SetOptions,
-  fields: FieldSchemaJson,
+  fields: FieldSchemaArrayLike,
   type: string
 ): void => {
   // lullz :D
