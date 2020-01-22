@@ -8,7 +8,7 @@ import { schemaCache, prefixesCache } from '../set/collectSchemas'
 async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
   const { types, schema, searchIndexes } = await getSchema(client)
 
-  // reset 5 second caches
+  // reset 5 second
   schemaCache.cache = {}
   prefixesCache.prefixes = false
 

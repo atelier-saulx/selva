@@ -5,7 +5,8 @@ import {
   FieldSchema,
   Search,
   TypeSchema,
-  HierarchySchema
+  HierarchySchema,
+  defaultFields
 } from './'
 import updateIndex from './updateIndex'
 
@@ -182,7 +183,15 @@ async function updateTypeSchema(
       types[type].prefix = props[type].prefix
     }
 
-    const fields = props[type].fields
+    let fields = props[type].fields
+
+    if (newType) {
+      if (!fields) {
+        fields = {}
+      }
+      props[type].fields = fields = { ...defaultFields, ...fields }
+    }
+
     if (fields) {
       if (!types[type].fields) {
         types[type].fields = {}

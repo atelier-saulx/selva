@@ -42,20 +42,6 @@ test('schemas - basic', async t => {
   const defaultFields: Fields = {
     title: {
       type: 'text'
-    },
-
-    id: {
-      type: 'id'
-    },
-    type: {
-      search: { index: 'default', type: ['TAG'] },
-      type: 'type'
-    },
-    children: {
-      type: 'references'
-    },
-    parents: {
-      type: 'references'
     }
   }
 

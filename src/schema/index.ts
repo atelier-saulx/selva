@@ -87,3 +87,19 @@ export type Schema = {
   languages?: string[]
   types?: Types
 }
+
+export const defaultFields: Record<string, FieldSchema> = {
+  id: {
+    type: 'id'
+  },
+  type: {
+    search: { index: 'default', type: ['TAG'] },
+    type: 'type'
+  },
+  children: {
+    type: 'references'
+  },
+  parents: {
+    type: 'references'
+  }
+}
