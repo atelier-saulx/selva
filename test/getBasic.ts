@@ -392,22 +392,22 @@ test.serial.only('get - $inherit', async t => {
   //   }
   // )
 
-  t.deepEqualIgnoreOrder(
-    await client.get({
-      $id: 'cuC',
-      flapdrol: {
-        $inherit: { $item: ['custom', 'club'] },
-        image: true,
-        id: true
-      }
-    }),
-    {
-      flapdrol: {
-        image: { thumb: 'flurp.jpg' },
-        id: 'cuA'
-      }
-    }
-  )
+  // t.deepEqualIgnoreOrder(
+  //   await client.get({
+  //     $id: 'cuC',
+  //     flapdrol: {
+  //       $inherit: { $item: ['custom', 'club'] },
+  //       image: true,
+  //       id: true
+  //     }
+  //   }),
+  //   {
+  //     flapdrol: {
+  //       image: { thumb: 'flurp.jpg' },
+  //       id: 'cuA'
+  //     }
+  //   }
+  // )
 
   // t.deepEqualIgnoreOrder(
   //   await client.get({
@@ -423,7 +423,6 @@ test.serial.only('get - $inherit', async t => {
   //   }
   // )
 
-  // FIXME
   // t.deepEqualIgnoreOrder(
   //   await client.get({
   //     $id: 'cuC',
@@ -436,19 +435,19 @@ test.serial.only('get - $inherit', async t => {
   //   }
   // )
 
-  // t.deepEqualIgnoreOrder(
-  //   await client.get({
-  //     $id: 'cuD',
-  //     image: {
-  //       $inherit: { $name: ['dfp', 'MrSnurfels'] }
-  //     }
-  //   }),
-  //   {
-  //     image: { thumb: 'dfp.jpg' }
-  //   }
-  // )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuD',
+      image: {
+        $inherit: { $name: ['dfp', 'MrSnurfels'] }
+      }
+    }),
+    {
+      image: { thumb: 'dfp.jpg' }
+    }
+  )
 
-  // await client.delete('root')
+  await client.delete('root')
 
   client.destroy()
 })

@@ -139,7 +139,7 @@ const object = (
     if (key.indexOf(field) === 0) {
       logger.info(`object() matching keys for ${field}, key ${key} is a match`)
       noKeys = false
-      if (getByType(result, schemas, id, key, language)) {
+      if (!getByType(result, schemas, id, key, language)) {
         isComplete = false
       }
     }
