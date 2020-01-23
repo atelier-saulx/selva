@@ -14,7 +14,7 @@ function ancestorEquals(t: ExecutionContext, a: string, b: string): boolean {
 test.before(async t => {
   await start({
     port: 6061,
-    developmentLogging: true,
+    // developmentLogging: true,
     loglevel: 'info'
   })
 
@@ -34,21 +34,6 @@ test.before(async t => {
         fields: {
           title: {
             type: 'text'
-          }
-        }
-      },
-      flurp: {
-        prefix: 'FU',
-        fields: {
-          flap: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                gurk: { type: 'string' },
-                flap: { type: 'digest' }
-              }
-            }
           }
         }
       },
@@ -427,6 +412,61 @@ test.serial('deep hierarchy manipulation', async t => {
 
   ancestorEquals(t, await client.redis.hget('cuD', 'ancestors'), 'root')
   ancestorEquals(t, await client.redis.hget('cuE', 'ancestors'), 'root,cuD')
+})
+
+test.serial('array, json and set', async t => {
+  const client = connect({
+    port: 6061
+  })
+
+  await client.updateSchema({
+    types: {
+      flurp: {
+        prefix: 'FU',
+        fields: {
+          flurpy: {
+            type: 'json',
+            properties: {
+              hello: {
+                // need to check if you are allready
+                // in json or array and then you need to  strip default options etc
+                type: 'array',
+                items: {
+                  type: 'string'
+                }
+              }
+            }
+          },
+          flap: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                gurk: { type: 'string' },
+                flap: { type: 'digest' }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  const id = await client.set({
+    type: 'flurp',
+    flap: [
+      {
+        gurk: 'hello',
+        flap: 'smurpy'
+      }
+    ]
+  })
+  const r = JSON.parse(await client.redis.hget(id, 'flap'))
+  t.deepEqual(r, [
+    {
+      gurk: 'hello',
+      flap: '6734082360af7f0c5aef4123f43abc44c4fbf19e8b251a316d7b9da95fde448e'
+    }
+  ])
 })
 
 test.serial('$increment, $default', async t => {

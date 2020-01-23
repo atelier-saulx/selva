@@ -11,17 +11,21 @@ export default (
   type: string
 ): void => {
   if (fields.properties) {
+    const obj = {}
     fieldParsers.object(
       schemas,
       field,
       payload,
-      result,
+      obj,
       {
         type: 'object',
         properties: fields.properties
       },
       type
     )
+    result[field] = JSON.stringify(obj)
+  } else {
+    result[field] = JSON.stringify(payload)
   }
-  result[field] = JSON.stringify(payload)
+  // needs nested json without casting to for exampe, json again
 }

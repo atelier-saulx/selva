@@ -11,9 +11,7 @@ export default (
   type: string
 ): void => {
   if (typeof payload !== 'object' || Array.isArray(payload)) {
-    throw new Error(
-      `Incorrect payload for object ${field} ${JSON.stringify(payload)}`
-    )
+    throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
   const r = (result[field] = {})
   for (let key in payload) {

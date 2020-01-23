@@ -12,13 +12,15 @@ export default (
 ): void => {
   const arr = payload
   if (!Array.isArray(arr)) {
-    throw new Error(`Array is not an array ${JSON.stringify(arr)}`)
+    throw new Error(`Array is not an array ${JSON.stringify(payload)}`)
   }
   const itemsFields = fields.items
   const parser = fieldParsers[itemsFields.type]
-  arr.forEach(payload => {
+  const arrayResult = []
+  arr.forEach((payload, index) => {
     // need to remove all options from nested fields!
-    parser(schemas, itemsFields, payload, result, fields, type)
+    parser(schemas, index, payload, arrayResult, itemsFields, type)
   })
-  result[field] = JSON.stringify(arr)
+  // nested json special!
+  result[field] = JSON.stringify(arrayResult)
 }
