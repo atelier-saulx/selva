@@ -91,6 +91,16 @@ export function emptyArray(): never[] {
 }
 
 export function markEmptyArraysInJSON(str: string): string {
-  globals.NEEDS_GSUB = true
-  return string.gsub(str, '(%s*:%s*)%[%]', '%1["___selva_empty_array"]')
+  const [marked, replaceCount] = string.gsub(
+    str,
+    '(%s*:%s*)%[%]',
+    '%1["___selva_empty_array"]'
+  )
+
+  if (replaceCount > 0) {
+    globals.NEEDS_GSUB = true
+    return marked
+  }
+
+  return str
 }
