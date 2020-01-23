@@ -131,6 +131,7 @@ const object = (
   version?: string
 ): boolean => {
   logger.info(`object() with id ${id} and field ${field}`)
+  logger.info(`object() with id ${id} and field ${field}`)
   const keys = redis.hkeys(id)
   let isComplete = true
   let noKeys = true
@@ -259,6 +260,7 @@ const types = {
   float,
   int,
   boolean,
+  object,
   set: arrayLike,
   references: arrayLike,
   json,
@@ -283,16 +285,16 @@ function getByType(
   version?: string
 ): boolean {
   // version still missing!
-  logger.info(`getting field ${field} by type`)
-
   const type = getTypeFromId(id)
+  logger.info(
+    `getting field with id ${id} for field ${field} from type ${type}`
+  )
   const schema = schemas[type]
   if (!schema || !schema.fields) {
-    logger.info(`No schema`)
+    logger.info(`No schema for type ${type}`)
     return true
   }
 
-  logger.info(`Schema: ${cjson.encode(schema)}`)
   const paths = splitString(field, '.')
   logger.info(`paths ${cjson.encode(paths)}`)
   let prop = schema.fields[paths[0]]

@@ -60,7 +60,7 @@ function createAncestors(targetId: Id): Id[] {
         }
       }
 
-      table.insert(result, 1, id)
+      table.insert(result, l + 1, id)
     }
   }
   return result
@@ -71,7 +71,7 @@ function createAncestorsFromFields(
   fields: string[],
   parse: (id: Id) => string
 ): Id[] {
-  const s = {}
+  const s: Record<Id, Ancestor> = {}
   logger.info('inherit from fields')
   createAncestorsInner(targetId, s)
   const result = []
@@ -80,56 +80,59 @@ function createAncestorsFromFields(
       const ancestor = s[id]
       // get type/name index , store it for faster lookup
       logger.info(`ancestors.length ${ancestor.length}`)
+      let ignore = false
+      let value: string | null = null
+      const iterCtx: any[] = ancestor
       if (ancestor.length === 2) {
-        const value = parse(id)
+        value = parse(id)
+        logger.info(`PARSED ${tostring(value)}`)
         if (value) {
-          let ignore = false
           for (let i = 0, len = fields.length; i < len; i++) {
             if (fields[i] === value) {
-              ancestor[ancestor.length] = i
-              ancestor[ancestor.length] = value
+              iterCtx[iterCtx.length] = i
+              iterCtx[iterCtx.length] = value
               break
             } else if (i === len - 1) {
               ignore = true
             }
           }
-          if (!ignore) {
-            const depth = ancestor[1]
-            const index = ancestor[2]
-            const v = ancestor[3]
-            // binary insert
-            let l = 0,
-              r = result.length - 1,
-              m = 0
-            while (l <= r) {
-              m = Math.floor((l + r) / 2)
-              const prev = s[result[m]]
-              const prevValue = prev[3]
-              if (v === prevValue) {
-                const prevDepth = prev[1]
-                if (prevDepth < depth) {
-                  r = m - 1
-                } else {
-                  l = m + 1
-                  if (prevDepth === depth) {
-                    break
-                  }
-                }
-              } else {
-                const prevIndex = prev[2]
-                if (prevIndex > index) {
-                  r = m - 1
-                } else {
-                  l = m + 1
-                  if (prevIndex === index) {
-                    break
-                  }
-                }
+        }
+      }
+      if (!ignore && value) {
+        const depth = iterCtx[1]
+        const index = iterCtx[2]
+        const v = iterCtx[3]
+        // binary insert
+        let l = 0,
+          r = result.length - 1,
+          m = 0
+        while (l <= r) {
+          m = Math.floor((l + r) / 2)
+          const prev: any = s[result[m]]
+          const prevValue = prev[3]
+          if (v === prevValue) {
+            const prevDepth = prev[1]
+            if (prevDepth < depth) {
+              r = m - 1
+            } else {
+              l = m + 1
+              if (prevDepth === depth) {
+                break
+              }
+            }
+          } else {
+            const prevIndex = prev[2]
+            if (prevIndex > index) {
+              r = m - 1
+            } else {
+              l = m + 1
+              if (prevIndex === index) {
+                break
               }
             }
           }
-          table.insert(result, 1, id)
         }
+        table.insert(result, l + 1, id)
       }
     }
   }
@@ -245,8 +248,8 @@ export default function inherit(
       inheritItem(
         getField,
         props,
-        result,
         schemas,
+        result,
         id,
         field,
         inherit.$item,
@@ -256,4 +259,3 @@ export default function inherit(
     }
   }
 }
-

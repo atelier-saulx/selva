@@ -37,7 +37,7 @@ test.before(async t => {
           }
         }
       },
-      ookEenLekkerType: {
+      custom: {
         prefix: 'cu',
         fields: {
           name: { type: 'string' },
@@ -375,39 +375,39 @@ test.serial.only('get - $inherit', async t => {
   //   }
   // )
 
-  t.deepEqualIgnoreOrder(
-    await client.get({
-      $id: 'cuC',
-      club: {
-        $inherit: { $item: 'club' },
-        image: true,
-        id: true
-      }
-    }),
-    {
-      club: {
-        image: { thumb: 'bla.jpg' },
-        id: 'clClub'
-      }
-    }
-  )
-
   // t.deepEqualIgnoreOrder(
   //   await client.get({
   //     $id: 'cuC',
-  //     flapdrol: {
-  //       $inherit: { $item: ['custom', 'club'] },
+  //     club: {
+  //       $inherit: { $item: 'club' },
   //       image: true,
   //       id: true
   //     }
   //   }),
   //   {
-  //     flapdrol: {
-  //       image: { thumb: 'flurp.jpg' },
-  //       id: 'cuA'
+  //     club: {
+  //       image: { thumb: 'bla.jpg' },
+  //       id: 'clClub'
   //     }
   //   }
   // )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      flapdrol: {
+        $inherit: { $item: ['custom', 'club'] },
+        image: true,
+        id: true
+      }
+    }),
+    {
+      flapdrol: {
+        image: { thumb: 'flurp.jpg' },
+        id: 'cuA'
+      }
+    }
+  )
 
   // t.deepEqualIgnoreOrder(
   //   await client.get({
@@ -423,6 +423,7 @@ test.serial.only('get - $inherit', async t => {
   //   }
   // )
 
+  // FIXME
   // t.deepEqualIgnoreOrder(
   //   await client.get({
   //     $id: 'cuC',
@@ -447,7 +448,7 @@ test.serial.only('get - $inherit', async t => {
   //   }
   // )
 
-  await client.delete('root')
+  // await client.delete('root')
 
   client.destroy()
 })

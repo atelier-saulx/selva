@@ -22,7 +22,7 @@ function getField(
   for (const key in props) {
     if (key[0] !== '$') {
       hasKeys = true
-      const f = field ? field + '.' + key : key
+      const f = field && field.length > 0 ? field + '.' + key : key
       if (props[key] === true) {
         if (!getByType(result, schemas, id, f, language, version)) {
           isComplete = false
@@ -42,6 +42,8 @@ function getField(
     props.$inherit &&
     (!isComplete || !hasKeys)
   ) {
+    logger.info(`IGNORE ${tostring(ignore)}`)
+    logger.info(`getField from inheritItem()`)
     if (!hasKeys) {
       logger.info(`getByType on ${field}`)
       const complete = getByType(
