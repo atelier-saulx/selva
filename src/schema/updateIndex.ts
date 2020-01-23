@@ -67,9 +67,11 @@ const updateIndex = async (
       // if super different (e.g. fields differently indexed) then drop the index
       return alter(client, index, schema)
     }
-  } catch (e) {
-    if (/Unknown Index name/.test(e)) {
+  } catch (err) {
+    if (/Unknown Index name/.test(err)) {
       return create(client, index, schema)
+    } else {
+      console.log(err)
     }
   }
 }
