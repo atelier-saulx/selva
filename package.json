@@ -33,9 +33,7 @@
   },
   "ava": {
     "files": [
-      "test/schema.ts",
-      "test/id.ts",
-      "test/modify.ts",
+      "test/**/*.ts",
       "!test/assertions"
     ],
     "compileEnhancements": false,

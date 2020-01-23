@@ -10,6 +10,32 @@ test.before(async t => {
 test.serial('get - simple $list', async t => {
   const client = connect({ port: 6062 })
 
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    types: {
+      custom: {
+        prefix: 'cu',
+        fields: {
+          name: { type: 'string' },
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+
   await Promise.all([
     client.set({
       $id: 'cuA',
