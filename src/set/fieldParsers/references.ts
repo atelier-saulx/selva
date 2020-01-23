@@ -1,16 +1,18 @@
 import { SetOptions } from '../types'
 import { TypeSchema, FieldSchemaArrayLike } from '../../schema'
 import { parseSetObject } from '../'
+import { verifiers } from './simple'
 
+const id = verifiers.id
 type Schemas = Record<string, TypeSchema>
 
 const verifySimple = payload => {
   if (Array.isArray(payload)) {
-    if (payload.find(v => typeof v !== 'string')) {
+    if (payload.find(v => !id(v))) {
       throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
     }
     return payload
-  } else if (typeof payload === 'string') {
+  } else if (id(payload)) {
     return [payload]
   } else {
     throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
