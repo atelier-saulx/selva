@@ -10,11 +10,11 @@ import * as logger from '../logger'
 
 const id = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  _schemas: Record<string, TypeSchema>,
   id: Id,
-  field: string,
-  language?: string,
-  version?: string
+  _field: string,
+  _language?: string,
+  _version?: string
 ): boolean => {
   result.id = id
   return true
@@ -22,14 +22,14 @@ const id = (
 
 const number = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  _schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  language?: string,
-  version?: string
+  _language?: string,
+  _version?: string
 ): boolean => {
   const v = redis.hget(id, field)
-  const value = v === null ? null : tonumber(v)
+  const value = !v ? null : tonumber(v)
   setNestedResult(result, field, value)
   return value !== null
 }
@@ -42,42 +42,44 @@ const float = (
   language?: string,
   version?: string
 ): boolean => {
-  const v = redis.hget(id, field)
-  const value = v === null ? null : Math.floor(tonumber(v))
-  setNestedResult(result, field, value)
-  return value !== null
+  return number(result, schemas, id, field, language, version)
 }
 
 const int = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  _schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  language?: string,
-  version?: string
+  _language?: string,
+  _version?: string
 ): boolean => {
-  return number(result, schemas, id, field, language, version)
+  const v = redis.hget(id, field)
+  const value = !v ? null : Math.floor(tonumber(v))
+  setNestedResult(result, field, value)
+  return value !== null
 }
 
 const boolean = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  _schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  language?: string,
-  version?: string
+  _language?: string,
+  _version?: string
 ): true => {
-  setNestedResult(result, field, !!redis.hget(id, field))
+  const v = redis.hget(id, field)
+  const value = v === 'true' ? true : false
+  setNestedResult(result, field, value)
   return true
 }
 
 const string = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  _schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  language?: string,
-  version?: string
+  _language?: string,
+  _version?: string
 ): boolean => {
   const value = redis.hget(id, field) || ''
   setNestedResult(result, field, value)
@@ -98,18 +100,18 @@ const arrayLike = (
     return descendants(result, id, field, language, version)
   }
 
-  const value = redis.smembers(id + '.' + field)
+  const value = redis.smembers(id + '.' + field) || []
   setNestedResult(result, field, value)
   return !!value.length
 }
 
 const json = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  _schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  language?: string,
-  version?: string
+  _language?: string,
+  _version?: string
 ): boolean => {
   const value = redis.hget(id, field)
   setNestedResult(
@@ -126,7 +128,7 @@ const object = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  _version?: string
 ): boolean => {
   const keys = redis.hkeys(id)
   let isComplete = true
@@ -192,11 +194,11 @@ const text = (
 
 const ancestors = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  _schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  language?: string,
-  version?: string
+  _language?: string,
+  _version?: string
 ): true => {
   result.ancestors = splitString(redis.hget(id, field) || '', ',')
   // result.ancestors = redis.hget(id, field) || ''
@@ -224,9 +226,9 @@ const getDescendants = (
 const descendants = (
   result: GetResult,
   id: Id,
-  field: string,
-  language?: string,
-  version?: string
+  _field: string,
+  _language?: string,
+  _version?: string
 ): true => {
   const s = getDescendants(id, {}, {})
   const r: string[] = []
