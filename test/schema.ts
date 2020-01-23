@@ -36,7 +36,7 @@ import { FieldType, Fields, Schema } from '../src/schema'
 test('schemas - basic', async t => {
   let current = { port: 6066 }
 
-  const server = await start({ port: 6066, modules: ['redisearch', 'selva'] })
+  const server = await start({ port: 6066 })
   const client = await connect({ port: 6066 })
 
   const defaultFields: Fields = {

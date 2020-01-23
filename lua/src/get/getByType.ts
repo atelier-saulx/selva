@@ -5,7 +5,13 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { TypeSchema } from '../../../src/schema/index'
-import { splitString, stringStartsWith, joinString, ensureArray } from '../util'
+import {
+  splitString,
+  stringStartsWith,
+  joinString,
+  ensureArray,
+  emptyArray
+} from '../util'
 import * as logger from '../logger'
 
 const id = (
@@ -100,7 +106,13 @@ const arrayLike = (
     return descendants(result, id, field, language, version)
   }
 
-  const value = ensureArray(redis.smembers(id + '.' + field))
+  let value = ensureArray(redis.smembers(id + '.' + field))
+  if (value.length === 0 || !value.length) {
+    value = emptyArray()
+    setNestedResult(result, field, value)
+    return false
+  }
+
   setNestedResult(result, field, value)
   return !!value.length
 }
@@ -120,6 +132,27 @@ const json = (
     type(value) === 'string' ? cjson.decode(value) : null
   )
   return value !== null
+}
+
+const array = (
+  result: GetResult,
+  _schemas: Record<string, TypeSchema>,
+  id: Id,
+  field: string,
+  _language?: string,
+  _version?: string
+): boolean => {
+  const value = redis.hget(id, field)
+  let decoded: never[] | null =
+    type(value) === 'string' ? cjson.decode(value) : null
+  if (decoded === null || decoded.length === 0 || !decoded.length) {
+    decoded = emptyArray()
+    setNestedResult(result, field, decoded)
+    return false
+  }
+
+  setNestedResult(result, field, decoded)
+  return true
 }
 
 const object = (
@@ -231,12 +264,17 @@ const descendants = (
   _version?: string
 ): true => {
   const s = getDescendants(id, {}, {})
-  const r: string[] = []
+  let r: string[] = []
   let idx = 0
   for (let key in s) {
     r[idx] = key
     idx++
   }
+
+  if (r.length === 0 || !r.length) {
+    r = emptyArray()
+  }
+
   result.descendants = r
   return true
 }
@@ -253,7 +291,7 @@ const types = {
   set: arrayLike,
   references: arrayLike,
   json,
-  array: json,
+  array,
   text,
   timestamp: number,
   url: string,

@@ -4,7 +4,7 @@ import { start } from 'selva-server'
 import './assertions'
 
 test.before(async t => {
-  await start({ port: 6062, modules: ['redisearch', 'selva'] })
+  await start({ port: 6062 })
 })
 
 test.serial('get - simple $list', async t => {

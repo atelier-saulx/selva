@@ -10,7 +10,7 @@ test('Connect and re-connect', async t => {
     return current
   })
 
-  const server = await start({ port: 6068, modules: ['redisearch', 'selva'] })
+  const server = await start({ port: 6068 })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],

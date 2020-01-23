@@ -14,7 +14,6 @@ function ancestorEquals(t: ExecutionContext, a: string, b: string): boolean {
 test.before(async t => {
   await start({
     port: 6061,
-    modules: ['redisearch', 'selva'],
     developmentLogging: true,
     loglevel: 'info'
   })
