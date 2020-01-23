@@ -18,7 +18,14 @@ export default (
   const r = (result[field] = {})
   for (let key in payload) {
     if (key[0] === '$') {
-      r[key] = payload[key]
+      if (key === '$merge') {
+        if (!(payload[key] === true || payload[key] === false)) {
+          throw new Error(`$merge needs to be a a boolean `)
+        }
+        r[key] = payload[key]
+      } else {
+        throw new Error(`Wrong option on object ${key}`)
+      }
     } else if (!fields.properties[key]) {
       throw new Error(`Cannot find field ${key} in ${type} for object`)
     } else {
