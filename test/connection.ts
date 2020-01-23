@@ -4,13 +4,13 @@ import { start } from 'selva-server'
 import { wait } from './assertions'
 
 test('Connect and re-connect', async t => {
-  let current = { port: 6066 }
+  let current = { port: 6068 }
 
   const client = connect(async () => {
     return current
   })
 
-  const server = await start({ port: 6066, modules: ['redisearch', 'selva'] })
+  const server = await start({ port: 6068, modules: ['redisearch', 'selva'] })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -56,8 +56,8 @@ test('Connect and re-connect', async t => {
   await server.destroy()
 
   await wait(1e3)
-  current = { port: 6067 }
-  const server2 = await start({ port: 6067, modules: ['redisearch'] })
+  current = { port: 6068 }
+  const server2 = await start({ port: 6068, modules: ['redisearch'] })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
