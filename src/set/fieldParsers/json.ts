@@ -10,5 +10,5 @@ export default (
   type: string
 ): void => {
   // lullz :D
-  result[field] = JSON.stringify(payload[field])
+  result[field] = JSON.stringify(payload)
 }

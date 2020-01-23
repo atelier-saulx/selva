@@ -352,17 +352,17 @@ test.serial.only('get - $inherit', async t => {
     })
   ])
 
-  t.deepEqualIgnoreOrder(
-    await client.get({
-      $id: 'cuD',
-      title: { $inherit: true }
-    }),
-    {
-      title: {
-        en: 'snurf'
-      }
-    }
-  )
+  // t.deepEqualIgnoreOrder(
+  //   await client.get({
+  //     $id: 'cuD',
+  //     title: { $inherit: true }
+  //   }),
+  //   {
+  //     title: {
+  //       en: 'snurf'
+  //     }
+  //   }
+  // )
 
   // t.deepEqualIgnoreOrder(
   //   await client.get({
@@ -375,22 +375,22 @@ test.serial.only('get - $inherit', async t => {
   //   }
   // )
 
-  // t.deepEqualIgnoreOrder(
-  //   await client.get({
-  //     $id: 'cuC',
-  //     club: {
-  //       $inherit: { $item: 'club' },
-  //       image: true,
-  //       id: true
-  //     }
-  //   }),
-  //   {
-  //     club: {
-  //       image: { thumb: 'bla.jpg' },
-  //       id: 'clClub'
-  //     }
-  //   }
-  // )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      club: {
+        $inherit: { $item: 'club' },
+        image: true,
+        id: true
+      }
+    }),
+    {
+      club: {
+        image: { thumb: 'bla.jpg' },
+        id: 'clClub'
+      }
+    }
+  )
 
   // t.deepEqualIgnoreOrder(
   //   await client.get({

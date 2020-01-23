@@ -5,7 +5,7 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { TypeSchema } from '../../../src/schema/index'
-import { splitString, stringStartsWith } from '../util'
+import { splitString, stringStartsWith, joinString } from '../util'
 import * as logger from '../logger'
 
 const id = (
@@ -111,8 +111,14 @@ const json = (
   language?: string,
   version?: string
 ): boolean => {
+  logger.info(`GETTING JSON ${field}`)
   const value = redis.hget(id, field)
-  setNestedResult(result, field, value === null ? value : cjson.decode(value))
+  logger.info(`JSON BODY ${tostring(value)}`)
+  setNestedResult(
+    result,
+    field,
+    type(value) === 'string' ? cjson.decode(value) : null
+  )
   return value !== null
 }
 
@@ -277,6 +283,7 @@ function getByType(
   version?: string
 ): boolean {
   // version still missing!
+  logger.info(`getting field ${field} by type`)
 
   const type = getTypeFromId(id)
   const schema = schemas[type]
@@ -285,21 +292,43 @@ function getByType(
     return true
   }
 
+  logger.info(`Schema: ${cjson.encode(schema)}`)
   const paths = splitString(field, '.')
+  logger.info(`paths ${cjson.encode(paths)}`)
   let prop = schema.fields[paths[0]]
+  logger.info(`prop ${cjson.encode(prop)}`)
   for (let i = 1; i < paths.length; i++) {
     if (prop && prop.type === 'text' && i === paths.length - 1) {
       prop = { type: 'string' }
+    } else if (prop && prop.type === 'json') {
+      const json = types.json
+      const intermediateResult = {}
+      const pathToJson: string[] = []
+      for (let j = 0; j < i; j++) {
+        pathToJson[j] = paths[j]
+      }
+
+      json(
+        intermediateResult,
+        schemas,
+        id,
+        joinString(pathToJson, '.'),
+        language,
+        version
+      )
+      setNestedResult(result, field, getNestedField(intermediateResult, field))
+      return true
     } else {
       if (!prop || prop.type !== 'object') {
         logger.info(`Field ${field} has no path for ${paths[i]}`)
-        return true
+        return false
       }
 
       prop = prop.properties[paths[i]]
     }
   }
 
+  logger.info(`final prop ${cjson.encode(prop)}`)
   if (!prop) {
     logger.info(`No type for field ${field} in schema ${cjson.encode(schema)}`)
     return true

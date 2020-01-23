@@ -72,15 +72,17 @@ function createAncestorsFromFields(
   parse: (id: Id) => string
 ): Id[] {
   const s = {}
+  logger.info('inherit from fields')
   createAncestorsInner(targetId, s)
   const result = []
   for (let id in s) {
     if (targetId !== id) {
       const ancestor = s[id]
       // get type/name index , store it for faster lookup
+      logger.info(`ancestors.length ${ancestor.length}`)
       if (ancestor.length === 2) {
         const value = parse(id)
-        if (!value) {
+        if (value) {
           let ignore = false
           for (let i = 0, len = fields.length; i < len; i++) {
             if (fields[i] === value) {
@@ -168,6 +170,7 @@ function inheritItem(
   language?: string,
   version?: string
 ) {
+  logger.info(`INHERIT ITEM FOR FIELD ${field}`)
   const ancestors = createAncestorsFromFields(id, item, parseType)
   const len = ancestors.length
   if (len === 0) {
@@ -237,6 +240,7 @@ export default function inherit(
       }
       setFromAncestors(result, schemas, ancestors, field, language, version)
     } else if (inherit.$item) {
+      logger.info('inheriting with $item')
       inherit.$item = ensureArray(inherit.$item)
       inheritItem(
         getField,
