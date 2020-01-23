@@ -87,6 +87,7 @@ function createAncestorsFromFields(
         value = parse(id)
         logger.info(`PARSED ${tostring(value)}`)
         if (value) {
+          logger.info(`Found value ${tostring(value)}`)
           for (let i = 0, len = fields.length; i < len; i++) {
             if (fields[i] === value) {
               iterCtx[iterCtx.length] = i
@@ -99,6 +100,7 @@ function createAncestorsFromFields(
         }
       }
       if (!ignore && value) {
+        logger.info(`Processing ${value}`)
         const depth = iterCtx[1]
         const index = iterCtx[2]
         const v = iterCtx[3]
@@ -132,6 +134,7 @@ function createAncestorsFromFields(
             }
           }
         }
+        logger.info(`Storing ${value} in index ${l}`)
         table.insert(result, l + 1, id)
       }
     }
