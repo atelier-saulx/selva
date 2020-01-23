@@ -36,7 +36,7 @@ const findKey = (obj: { [key: string]: any }, value: any): false | string => {
 }
 
 const validate = (id: string): boolean => {
-  return /[a-z]{2}/.test(id)
+  return /[a-zA-Z0-9]{2}/.test(id)
 }
 
 const genId = (types: TypesDb, type: string): string => {
@@ -59,7 +59,7 @@ async function parseTypes(client: SelvaClient, props: Types, types: TypesDb) {
       if (definition.prefix) {
         if (!validate(definition.prefix)) {
           throw new Error(
-            `Prefix wrongly formatted ${definition.prefix} make it lower case letters and not longer then 2 chars`
+            `Prefix wrongly formatted ${definition.prefix} make it longer then 2 chars and a combination of (a-z A-Z 0-9)`
           )
         }
         const exists = findKey(types, definition.prefix)

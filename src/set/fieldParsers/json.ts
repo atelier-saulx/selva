@@ -1,5 +1,6 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaJson } from '../../schema'
+import { TypeSchema, FieldSchemaJson, FieldSchemaObject } from '../../schema'
+import fieldParsers from '.'
 
 export default (
   schemas: Record<string, TypeSchema>,
@@ -9,6 +10,18 @@ export default (
   fields: FieldSchemaJson,
   type: string
 ): void => {
-  // lullz :D
+  if (fields.properties) {
+    fieldParsers.object(
+      schemas,
+      field,
+      payload,
+      result,
+      {
+        type: 'object',
+        properties: fields.properties
+      },
+      type
+    )
+  }
   result[field] = JSON.stringify(payload)
 }

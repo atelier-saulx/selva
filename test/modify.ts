@@ -37,6 +37,21 @@ test.before(async t => {
           }
         }
       },
+      flurp: {
+        prefix: 'FU',
+        fields: {
+          flap: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                gurk: { type: 'string' },
+                flap: { type: 'digest' }
+              }
+            }
+          }
+        }
+      },
       league: {
         prefix: 'cu',
         fields: {

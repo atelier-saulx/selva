@@ -1,21 +1,6 @@
 import { SetOptions } from '../types'
 import { TypeSchema, FieldSchemaArrayLike } from '../../schema'
-
-/*
-const verifySimple = payload => {
-  if (Array.isArray(payload)) {
-    if (payload.find(v => typeof v !== 'string')) {
-      throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
-    }
-    return payload
-  } else if (typeof payload === 'string') {
-    return [payload]
-  } else {
-    throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
-  }
-}
-// check items
-*/
+import fieldParsers from '.'
 
 export default (
   schemas: Record<string, TypeSchema>,
@@ -25,6 +10,15 @@ export default (
   fields: FieldSchemaArrayLike,
   type: string
 ): void => {
-  // ensure array
-  result[field] = payload[field]
+  // const arr = payload
+  // if (!Array.isArray(arr)) {
+  //   throw new Error(`Array is not an array ${JSON.stringify(arr)}`)
+  // }
+  // const itemsFields = fields.items
+  // const parser = fieldParsers[itemsFields.type]
+  // arr.forEach(payload => {
+  //   // need to remove all options from nested fields!
+  //   parser(schemas, itemsFields, payload, result, fields, type)
+  // })
+  result[field] = payload
 }
