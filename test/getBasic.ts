@@ -6,7 +6,6 @@ import './assertions'
 test.before(async t => {
   await start({
     port: 6072,
-    modules: ['redisearch', 'selva'],
     developmentLogging: true,
     loglevel: 'info'
   })
