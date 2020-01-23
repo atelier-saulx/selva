@@ -1,3 +1,5 @@
+import globals from './globals'
+
 export const arrayIsEqual = (a: any[], b: any[]): boolean => {
   const len = a.length
   if (len !== b.length) {
@@ -80,4 +82,10 @@ export function ensureArray<T>(value: (T | T[] | null | undefined) | T[]): T[] {
   }
 
   return [<T>value]
+}
+
+export function emptyArray(): never[] {
+  globals.NEEDS_GSUB = true
+  // @ts-ignore
+  return ['___selva_empty_array']
 }

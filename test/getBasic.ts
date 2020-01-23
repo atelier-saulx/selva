@@ -21,6 +21,16 @@ test.before(async t => {
       lekkerType: {
         prefix: 'vi',
         fields: {
+          thing: { type: 'set', items: { type: 'string' } },
+          ding: {
+            type: 'object',
+            properties: {
+              dong: { type: 'set', items: { type: 'string' } }
+            }
+          },
+          dong: { type: 'json' },
+          dingdongs: { type: 'array', items: { type: 'string' } },
+          refs: { type: 'references' },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
@@ -218,6 +228,41 @@ test.serial('get - $language', async t => {
   )
 
   await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - field with empty array', async t => {
+  const client = connect({ port: 6072 })
+
+  const id = await client.set({
+    type: 'lekkerType',
+    thing: [],
+    ding: { dong: [] },
+    dingdongs: [],
+    refs: []
+  })
+
+  const result = await client.get({
+    $id: id,
+    thing: true,
+    // dong: true, // FIXME
+    ding: { dong: true },
+    dingdongs: true,
+    children: true,
+    descendants: true,
+    refs: true
+  })
+
+  t.deepEqual(result, {
+    thing: [],
+    children: [],
+    descendants: [],
+    dingdongs: [],
+    refs: [],
+    ding: { dong: [] }
+    //    dong: [],
+  })
 
   client.destroy()
 })
