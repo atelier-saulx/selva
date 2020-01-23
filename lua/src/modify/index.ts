@@ -231,6 +231,5 @@ export default function modify(
     }
   }
 
-  logger.info('Modify complete')
   return results
 }

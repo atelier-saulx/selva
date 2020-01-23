@@ -42,10 +42,7 @@ function getField(
     props.$inherit &&
     (!isComplete || !hasKeys)
   ) {
-    logger.info(`IGNORE ${tostring(ignore)}`)
-    logger.info(`getField from inheritItem()`)
     if (!hasKeys) {
-      logger.info(`getByType on ${field}`)
       const complete = getByType(
         result,
         schemas,
@@ -54,7 +51,6 @@ function getField(
         language,
         version
       )
-      logger.info(`NEEDS INHERIT? COMPLETE: ${tostring(complete)}}`)
       if (!complete) {
         inherit(
           getField,
@@ -82,7 +78,6 @@ function getField(
   }
 
   if (props.$default) {
-    logger.info(`has a $default for field ${field || ''}`)
     const complete = getByType(
       result,
       schemas,
@@ -92,9 +87,6 @@ function getField(
       version
     )
     if (!complete) {
-      logger.info(
-        `NOT COMPLETE FOR ${field}, USING THE DEFAULT ${props.$default}`
-      )
       setNestedResult(result, <string>field, props.$default)
     }
   }
@@ -115,7 +107,6 @@ export default function get(opts: GetOptions): GetResult {
   const { $version: version, $id: id, $language: language } = opts
   if (id) {
     getField(opts, types, result, id, undefined, language, version)
-    logger.info(`FINAL RESULT ${cjson.encode(result)}`)
   } else {
     // TODO: queries
   }

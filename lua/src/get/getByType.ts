@@ -111,9 +111,7 @@ const json = (
   language?: string,
   version?: string
 ): boolean => {
-  logger.info(`GETTING JSON ${field}`)
   const value = redis.hget(id, field)
-  logger.info(`JSON BODY ${tostring(value)}`)
   setNestedResult(
     result,
     field,
@@ -130,21 +128,17 @@ const object = (
   language?: string,
   version?: string
 ): boolean => {
-  logger.info(`object() with id ${id} and field ${field}`)
-  logger.info(`object() with id ${id} and field ${field}`)
   const keys = redis.hkeys(id)
   let isComplete = true
   let noKeys = true
   for (const key of keys) {
     if (key.indexOf(field) === 0) {
-      logger.info(`object() matching keys for ${field}, key ${key} is a match`)
       noKeys = false
       if (!getByType(result, schemas, id, key, language)) {
         isComplete = false
       }
     }
   }
-  logger.info(`object() matching keys for ${field}, no match`)
   return noKeys ? false : isComplete
 }
 
@@ -161,7 +155,6 @@ const text = (
     if (!isComplete) {
       const value = getNestedField(result, field)
       if (!value) {
-        logger.info(`No value for field ${field}`)
         return false
       }
 
@@ -181,7 +174,6 @@ const text = (
       return true
     } else {
       const keys = redis.hkeys(id)
-      logger.info('keys: ' + cjson.encode(keys))
       for (let i = 0; i < keys.length; i++) {
         if (stringStartsWith(keys[i], field + '.')) {
           const value = redis.hget(id, keys[i])
@@ -206,8 +198,6 @@ const ancestors = (
   language?: string,
   version?: string
 ): true => {
-  logger.info(`KEYS ${cjson.encode(redis.hkeys(id))}`)
-  logger.info(`ANCESTORS: ${redis.hget(id, field) || ''}`)
   result.ancestors = splitString(redis.hget(id, field) || '', ',')
   // result.ancestors = redis.hget(id, field) || ''
   return true
@@ -220,7 +210,6 @@ const getDescendants = (
 ): Record<Id, true> => {
   if (!passedId[id]) {
     const children = redis.smembers(id + '.children')
-    logger.info(`getDescendants() children: ${cjson.encode(children)}`)
     for (const id of children) {
       results[id] = true
     }
@@ -229,7 +218,6 @@ const getDescendants = (
       getDescendants(c, results, passedId)
     }
   }
-  logger.info('done with descendants')
   return results
 }
 
@@ -240,7 +228,6 @@ const descendants = (
   language?: string,
   version?: string
 ): true => {
-  logger.info('DESCENDANTS')
   const s = getDescendants(id, {}, {})
   const r: string[] = []
   let idx = 0
@@ -296,9 +283,7 @@ function getByType(
   }
 
   const paths = splitString(field, '.')
-  logger.info(`paths ${cjson.encode(paths)}`)
   let prop = schema.fields[paths[0]]
-  logger.info(`prop ${cjson.encode(prop)}`)
   for (let i = 1; i < paths.length; i++) {
     if (prop && prop.type === 'text' && i === paths.length - 1) {
       prop = { type: 'string' }
@@ -322,7 +307,6 @@ function getByType(
       return true
     } else {
       if (!prop || prop.type !== 'object') {
-        logger.info(`Field ${field} has no path for ${paths[i]}`)
         return false
       }
 
@@ -330,7 +314,6 @@ function getByType(
     }
   }
 
-  logger.info(`final prop ${cjson.encode(prop)}`)
   if (!prop) {
     logger.info(`No type for field ${field} in schema ${cjson.encode(schema)}`)
     return true
