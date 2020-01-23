@@ -5,7 +5,7 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { TypeSchema } from '../../../src/schema/index'
-import { splitString, stringStartsWith, joinString } from '../util'
+import { splitString, stringStartsWith, joinString, ensureArray } from '../util'
 import * as logger from '../logger'
 
 const id = (
@@ -100,7 +100,7 @@ const arrayLike = (
     return descendants(result, id, field, language, version)
   }
 
-  const value = redis.smembers(id + '.' + field) || []
+  const value = ensureArray(redis.smembers(id + '.' + field))
   setNestedResult(result, field, value)
   return !!value.length
 }
