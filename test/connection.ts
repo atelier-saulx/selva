@@ -12,6 +12,32 @@ test('Connect and re-connect', async t => {
 
   const server = await start({ port: 6066, modules: ['redisearch', 'selva'] })
 
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    types: {
+      custom: {
+        prefix: 'cu',
+        fields: {
+          name: { type: 'string' },
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+
   await client.set({
     $id: 'cuflap',
     title: {
@@ -32,6 +58,32 @@ test('Connect and re-connect', async t => {
   await wait(1e3)
   current = { port: 6067 }
   const server2 = await start({ port: 6067, modules: ['redisearch'] })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    types: {
+      custom: {
+        prefix: 'cu',
+        fields: {
+          name: { type: 'string' },
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
 
   t.deepEqual(
     await client.get({

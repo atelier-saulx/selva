@@ -76,6 +76,11 @@ export default class RedisClient extends RedisMethods {
     this.connect()
   }
 
+  private resetScripts() {
+    this.scriptBatchingEnabled = {}
+    this.scriptShas = {}
+  }
+
   async loadAndEvalScript(
     scriptName: string,
     script: string,
@@ -107,6 +112,7 @@ export default class RedisClient extends RedisMethods {
     this.retryTimer = 100
     if (!opts.retryStrategy) {
       opts.retryStrategy = () => {
+        this.resetScripts()
         this.connected = false
         this.connector().then(async newOpts => {
           if (newOpts.host !== opts.host || newOpts.port !== opts.port) {
