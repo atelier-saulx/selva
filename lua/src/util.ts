@@ -89,3 +89,8 @@ export function emptyArray(): never[] {
   // @ts-ignore
   return ['___selva_empty_array']
 }
+
+export function markEmptyArraysInJSON(str: string): string {
+  globals.NEEDS_GSUB = true
+  return string.gsub(str, '(%s*:%s*)%[%]', '%1["___selva_empty_array"]')
+}

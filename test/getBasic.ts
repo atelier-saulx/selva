@@ -237,6 +237,7 @@ test.serial('get - field with empty array', async t => {
   const id = await client.set({
     type: 'lekkerType',
     thing: [],
+    dong: { dingdong: [] },
     ding: { dong: [] },
     dingdongs: [],
     refs: []
@@ -245,7 +246,7 @@ test.serial('get - field with empty array', async t => {
   const result = await client.get({
     $id: id,
     thing: true,
-    // dong: true, // FIXME
+    dong: true,
     ding: { dong: true },
     dingdongs: true,
     children: true,
@@ -259,8 +260,8 @@ test.serial('get - field with empty array', async t => {
     descendants: [],
     dingdongs: [],
     refs: [],
-    ding: { dong: [] }
-    //    dong: [],
+    ding: { dong: [] },
+    dong: { dingdong: [] }
   })
 
   client.destroy()

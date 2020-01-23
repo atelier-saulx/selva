@@ -10,7 +10,8 @@ import {
   stringStartsWith,
   joinString,
   ensureArray,
-  emptyArray
+  emptyArray,
+  markEmptyArraysInJSON
 } from '../util'
 import * as logger from '../logger'
 
@@ -125,12 +126,15 @@ const json = (
   _language?: string,
   _version?: string
 ): boolean => {
-  const value = redis.hget(id, field)
-  setNestedResult(
-    result,
-    field,
-    type(value) === 'string' ? cjson.decode(value) : null
-  )
+  let value = redis.hget(id, field)
+  let isString = true
+  if (type(value) === 'string') {
+    value = markEmptyArraysInJSON(value)
+  } else {
+    isString = false
+  }
+
+  setNestedResult(result, field, isString ? cjson.decode(value) : null)
   return value !== null
 }
 
