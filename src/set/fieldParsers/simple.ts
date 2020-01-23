@@ -36,7 +36,7 @@ export const verifiers = {
   },
   phone: (payload: string) => {
     // phone is wrong
-    return typeof payload === 'string'
+    return typeof payload === 'string' && payload.length < 30
   },
   timestamp: (payload: 'now' | number) => {
     return (

@@ -1,5 +1,6 @@
 import { SetOptions } from '../types'
 import { TypeSchema, FieldSchemaArrayLike } from '../../schema'
+import fieldParsers from '.'
 
 export default (
   schemas: Record<string, TypeSchema>,
@@ -9,6 +10,18 @@ export default (
   fields: FieldSchemaArrayLike,
   type: string
 ): void => {
-  // lullz :D
-  result[field] = JSON.stringify(payload[field])
+  const arr = payload[field]
+
+  if (!Array.isArray(arr)) {
+    throw new Error(`Array is not an array ${JSON.stringify(arr)}`)
+  }
+
+  const itemsFields = fields.items
+  const parser = fieldParsers[itemsFields.type]
+
+  arr.forEach(payload => {
+    parser(schemas, itemsFields, payload, result, fields, type)
+  })
+
+  result[field] = JSON.stringify(arr)
 }
