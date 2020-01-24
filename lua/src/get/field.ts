@@ -48,7 +48,7 @@ function resolveVariables(
   return str
 }
 
-function resolveAll(
+export function resolveAll(
   id: Id,
   schemas: Record<string, TypeSchema>,
   fieldAry: string[],
@@ -72,17 +72,9 @@ export default function getWithField(
   language?: string,
   version?: string
 ): boolean {
-  const fieldDefinitions: string[] = resolveAll(
-    id,
-    schemas,
-    ensureArray($field),
-    language,
-    version
-  )
-
   const intermediateResult: object = {}
   let fromNested: any
-  for (const fieldDefinition of fieldDefinitions) {
+  for (const fieldDefinition of $field) {
     if (
       getByType(
         intermediateResult,

@@ -6,7 +6,8 @@ import { TypeSchema } from '../../../src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
-import getWithField from './field'
+import getWithField, { resolveAll } from './field'
+import { ensureArray } from 'lua/src/util'
 
 function getField(
   props: GetItem,
@@ -18,35 +19,44 @@ function getField(
   version?: string,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {
+  let hasAlias = false
   if (props.$field && field) {
-    logger.info(
-      `$field is set, GETTING from ${props.$field} for field ${field}`
-    )
-    return getWithField(
-      result,
-      schemas,
+    hasAlias = true
+
+    props.$field = resolveAll(
       id,
-      field,
-      props.$field,
+      schemas,
+      ensureArray(props.$field),
       language,
       version
     )
+
+    logger.info(
+      `$field is set, GETTING from ${props.$field} for field ${field}`
+    )
+    if (
+      getWithField(result, schemas, id, field, props.$field, language, version)
+    ) {
+      return true
+    }
   }
 
   let isComplete = true
   let hasKeys = false
-  for (const key in props) {
-    if (key[0] !== '$') {
-      hasKeys = true
-      const f = field && field.length > 0 ? field + '.' + key : key
-      if (props[key] === true) {
-        logger.info(`key: ${key} field ${f}`)
-        if (!getByType(result, schemas, id, f, language, version)) {
-          isComplete = false
-        }
-      } else {
-        if (getField(props[key], schemas, result, id, f, language, version)) {
-          isComplete = false
+  if (!hasAlias) {
+    for (const key in props) {
+      if (key[0] !== '$') {
+        hasKeys = true
+        const f = field && field.length > 0 ? field + '.' + key : key
+        if (props[key] === true) {
+          logger.info(`key: ${key} field ${f}`)
+          if (!getByType(result, schemas, id, f, language, version)) {
+            isComplete = false
+          }
+        } else {
+          if (getField(props[key], schemas, result, id, f, language, version)) {
+            isComplete = false
+          }
         }
       }
     }
@@ -59,7 +69,7 @@ function getField(
     props.$inherit &&
     (!isComplete || !hasKeys)
   ) {
-    if (!hasKeys) {
+    if (!hasAlias && !hasKeys) {
       const complete = getByType(
         result,
         schemas,
@@ -77,7 +87,8 @@ function getField(
           id,
           <string>field,
           language,
-          version
+          version,
+          hasAlias ? props.$field : undefined
         )
       }
     } else {
@@ -89,12 +100,18 @@ function getField(
         id,
         <string>field,
         language,
-        version
+        version,
+        hasAlias ? props.$field : undefined
       )
     }
   }
 
   if (props.$default) {
+    if (hasAlias) {
+      setNestedResult(result, <string>field, props.$default)
+      return true
+    }
+
     const complete = getByType(
       result,
       schemas,

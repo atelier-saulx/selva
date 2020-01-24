@@ -6,6 +6,7 @@ import { setNestedResult } from './nestedFields'
 import getByType from './getByType'
 import { ensureArray } from '../util'
 import * as logger from '../logger'
+import getWithField from 'lua/src/get/field'
 
 type Ancestor = [Ancestor[], number]
 
@@ -142,11 +143,28 @@ function setFromAncestors(
   ancestors: Id[],
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  fieldFrom?: string | string[]
 ) {
   for (let i = 0, len = ancestors.length; i < len; i++) {
-    if (getByType(result, schemas, ancestors[i], field, language, version)) {
-      break
+    if (fieldFrom && fieldFrom.length > 0) {
+      if (
+        getWithField(
+          result,
+          schemas,
+          ancestors[i],
+          field,
+          fieldFrom,
+          language,
+          version
+        )
+      ) {
+        break
+      }
+    } else {
+      if (getByType(result, schemas, ancestors[i], field, language, version)) {
+        break
+      }
     }
   }
 }
@@ -215,7 +233,8 @@ export default function inherit(
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  fieldFrom?: string | string[]
 ) {
   logger.info(`INHERITING FIELD ${field}`)
   const inherit = props.$inherit
@@ -227,7 +246,8 @@ export default function inherit(
         createAncestors(id),
         field,
         language,
-        version
+        version,
+        fieldFrom
       )
     } else if (inherit.$type || inherit.$name) {
       let ancestors: Id[]
@@ -238,7 +258,15 @@ export default function inherit(
         inherit.$type = ensureArray(inherit.$type)
         ancestors = createAncestorsFromFields(id, inherit.$type, parseType)
       }
-      setFromAncestors(result, schemas, ancestors, field, language, version)
+      setFromAncestors(
+        result,
+        schemas,
+        ancestors,
+        field,
+        language,
+        version,
+        fieldFrom
+      )
     } else if (inherit.$item) {
       logger.info('inheriting with $item')
       inherit.$item = ensureArray(inherit.$item)

@@ -20,6 +20,7 @@ test.before(async t => {
       lekkerType: {
         prefix: 'vi',
         fields: {
+          name: { type: 'string' },
           nice: {
             type: 'object',
             properties: {
@@ -369,3 +370,163 @@ test.serial(
     )
   }
 )
+
+test.serial('get - simple $field with $inherit: true', async t => {
+  const client = connect({ port: 7072 })
+
+  await client.set({
+    $id: 'viH',
+    title: {
+      en: 'extranice',
+      de: 'Ja, auf Deutsch'
+    },
+    nice: { complexNice: {} },
+    lekkerType: {
+      thingydingy: 'Thing-y Ding-y'
+    },
+    age: 62,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'viI',
+    title: {
+      en: 'nice'
+    },
+    parents: ['viH'],
+    age: 62,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viI',
+      id: true,
+      germanTitle: {
+        $field: 'title.de',
+        $inherit: true
+      }
+    }),
+    {
+      id: 'viI',
+      germanTitle: 'Ja, auf Deutsch'
+    }
+  )
+})
+
+test.serial('get - simple $field with $inherit: $type', async t => {
+  const client = connect({ port: 7072 })
+
+  await client.set({
+    $id: 'cuA',
+    name: 'customA',
+    title: {
+      en: 'extraextranice',
+      de: 'Ja, auf Deutsch 2'
+    }
+  })
+
+  await client.set({
+    $id: 'viJ',
+    name: 'lekkerJ',
+    title: {
+      en: 'extranice',
+      de: 'Ja, auf Deutsch'
+    },
+    parents: ['cuA']
+  })
+
+  await client.set({
+    $id: 'viK',
+    title: {
+      en: 'nice'
+    },
+    parents: ['viJ'],
+    age: 62,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viK',
+      id: true,
+      germanTitle: {
+        $field: 'title.de',
+        $inherit: { $type: 'custom' }
+      }
+    }),
+    {
+      id: 'viK',
+      germanTitle: 'Ja, auf Deutsch 2'
+    }
+  )
+})
+
+test.serial('get - more complex $field with $inherit: $name', async t => {
+  const client = connect({ port: 7072 })
+
+  await client.set({
+    $id: 'cuB',
+    name: 'customB',
+    title: {
+      de: 'Ja, auf Deutsch 2'
+    },
+    image: {
+      thumb: 'parent'
+    }
+  })
+
+  await client.set({
+    $id: 'viL',
+    name: 'lekkerL',
+    title: {
+      de: 'Ja, auf Deutsch'
+    },
+    image: {
+      thumb: 'child'
+    },
+    parents: ['cuB']
+  })
+
+  await client.set({
+    $id: 'viM',
+    title: {
+      en: 'image'
+    },
+    parents: ['viL'],
+    age: 62
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viM',
+      id: true,
+      thumby: {
+        $field: '${title.en}.thumb',
+        $inherit: { $name: 'customB' }
+      }
+    }),
+    {
+      id: 'viM',
+      thumby: 'parent'
+    }
+  )
+})
