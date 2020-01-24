@@ -1,13 +1,10 @@
-import { GetItem, GetResult, GetOptions } from '~selva/get/types'
+import { GetResult } from '~selva/get/types'
 import { Id } from '~selva/schema/index'
 import getByType from './getByType'
-import * as redis from '../redis'
 import { TypeSchema } from '../../../src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult, getNestedField } from './nestedFields'
-import inherit from './inherit'
 import { ensureArray } from 'lua/src/util'
-import { getTypeFromId } from '../typeIdMapping'
 
 function resolveVariable(
   id: Id,
@@ -33,14 +30,16 @@ function resolveVariables(
   let inVariableDef = false
   let variable = ''
   for (let i = 0; i < fieldDefinition.length; i++) {
-    if (fieldDefinition[i] === '$') {
+    if (!inVariableDef && fieldDefinition[i] === '$') {
       inVariableDef = true
-    } else if (fieldDefinition === '{' && inVariableDef) {
+    } else if (fieldDefinition[i] === '{' && inVariableDef) {
       // skip
-    } else if (fieldDefinition === '}') {
+    } else if (inVariableDef && fieldDefinition[i] === '}') {
       str += resolveVariable(id, schemas, variable, language, version)
       variable = ''
       inVariableDef = false
+    } else if (inVariableDef) {
+      variable += fieldDefinition[i]
     } else {
       str += fieldDefinition[i]
     }
@@ -84,7 +83,16 @@ export default function getWithField(
   const intermediateResult: object = {}
   let fromNested: any
   for (const fieldDefinition of fieldDefinitions) {
-    if (getByType(result, schemas, id, fieldDefinition, language, version)) {
+    if (
+      getByType(
+        intermediateResult,
+        schemas,
+        id,
+        fieldDefinition,
+        language,
+        version
+      )
+    ) {
       fromNested = getNestedField(intermediateResult, fieldDefinition)
       break
     }

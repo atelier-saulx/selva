@@ -6,13 +6,8 @@ import { TypeSchema } from '../../../src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
+import getWithField from './field'
 
-/*
- * TODO: $field
- * $field will have its own function that calls getByType
- * getByType will need a new parameter added for resultPath, so that
- * field can be set to an individual field path (resolved variables starting with $) from the array set in $field
- */
 function getField(
   props: GetItem,
   schemas: Record<string, TypeSchema>,
@@ -23,6 +18,21 @@ function getField(
   version?: string,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {
+  if (props.$field && field) {
+    logger.info(
+      `$field is set, GETTING from ${props.$field} for field ${field}`
+    )
+    return getWithField(
+      result,
+      schemas,
+      id,
+      field,
+      props.$field,
+      language,
+      version
+    )
+  }
+
   let isComplete = true
   let hasKeys = false
   for (const key in props) {
