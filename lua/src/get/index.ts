@@ -7,6 +7,12 @@ import * as logger from '../logger'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
 
+/*
+ * TODO: $field
+ * $field will have its own function that calls getByType
+ * getByType will need a new parameter added for resultPath, so that
+ * field can be set to an individual field path (resolved variables starting with $) from the array set in $field
+ */
 function getField(
   props: GetItem,
   schemas: Record<string, TypeSchema>,
