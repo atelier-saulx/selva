@@ -94,7 +94,9 @@ export default function getWithField(
       )
     ) {
       fromNested = getNestedField(intermediateResult, fieldDefinition)
-      break
+      if (fromNested) {
+        break
+      }
     }
   }
 

@@ -151,7 +151,7 @@ test.serial('get - simple alias with variable', async t => {
   const client = connect({ port: 7072 })
 
   await client.set({
-    $id: 'viA',
+    $id: 'viB',
     title: {
       en: 'nice!'
     },
@@ -170,7 +170,7 @@ test.serial('get - simple alias with variable', async t => {
 
   t.deepEqual(
     await client.get({
-      $id: 'viA',
+      $id: 'viB',
       id: true,
       somethingWithVariable: {
         $field: '${type}.thingydingy'
@@ -178,7 +178,7 @@ test.serial('get - simple alias with variable', async t => {
       value: true
     }),
     {
-      id: 'viA',
+      id: 'viB',
       somethingWithVariable: 'Thing-y Ding-y',
       value: 25
     }
@@ -189,7 +189,7 @@ test.serial('get - alias with nested structure variable', async t => {
   const client = connect({ port: 7072 })
 
   await client.set({
-    $id: 'viA',
+    $id: 'viC',
     title: {
       en: 'nice'
     },
@@ -208,7 +208,7 @@ test.serial('get - alias with nested structure variable', async t => {
 
   t.deepEqual(
     await client.get({
-      $id: 'viA',
+      $id: 'viC',
       id: true,
       nestedFun: {
         $field: '${title.en}.ecin'
@@ -216,7 +216,7 @@ test.serial('get - alias with nested structure variable', async t => {
       value: true
     }),
     {
-      id: 'viA',
+      id: 'viC',
       nestedFun: 'lekker man, het werkt',
       value: 25
     }
@@ -227,7 +227,7 @@ test.serial('get - alias with variables', async t => {
   const client = connect({ port: 7072 })
 
   await client.set({
-    $id: 'viA',
+    $id: 'viD',
     title: {
       en: 'nice'
     },
@@ -247,7 +247,7 @@ test.serial('get - alias with variables', async t => {
 
   t.deepEqual(
     await client.get({
-      $id: 'viA',
+      $id: 'viD',
       id: true,
       niceFromJson: {
         $field: '${title.en}.complexNice.${type}.superSecret'
@@ -255,9 +255,117 @@ test.serial('get - alias with variables', async t => {
       value: true
     }),
     {
-      id: 'viA',
+      id: 'viD',
       niceFromJson: 'yesh!',
       value: 25
     }
   )
 })
+
+test.serial('get - $field with multiple options, taking the first', async t => {
+  const client = connect({ port: 7072 })
+
+  await client.set({
+    $id: 'viE',
+    title: {
+      en: 'nice'
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viE',
+      id: true,
+      valueOrAge: { $field: ['value', 'age'] }
+    }),
+    {
+      id: 'viE',
+      valueOrAge: 25
+    }
+  )
+})
+
+test.serial(
+  'get - $field with multiple options, taking the second',
+  async t => {
+    const client = connect({ port: 7072 })
+
+    await client.set({
+      $id: 'viF',
+      title: {
+        en: 'nice'
+      },
+      age: 62,
+      auth: {
+        // role needs to be different , different roles per scope should be possible
+        role: {
+          id: ['root'],
+          type: 'admin'
+        }
+      }
+    })
+
+    t.deepEqual(
+      await client.get({
+        $id: 'viF',
+        id: true,
+        valueOrAge: { $field: ['value', 'age'] }
+      }),
+      {
+        id: 'viF',
+        valueOrAge: 62
+      }
+    )
+  }
+)
+
+test.serial(
+  'get - $field with multiple options complex. taking the second',
+  async t => {
+    const client = connect({ port: 7072 })
+
+    await client.set({
+      $id: 'viG',
+      title: {
+        en: 'nice'
+      },
+      nice: { complexNice: {} },
+      lekkerType: {
+        thingydingy: 'Thing-y Ding-y'
+      },
+      age: 62,
+      auth: {
+        // role needs to be different , different roles per scope should be possible
+        role: {
+          id: ['root'],
+          type: 'admin'
+        }
+      }
+    })
+
+    t.deepEqual(
+      await client.get({
+        $id: 'viG',
+        id: true,
+        complexOr: {
+          $field: [
+            '${title.en}.complexNice.${type}.superSecret',
+            '${type}.thingydingy'
+          ]
+        }
+      }),
+      {
+        id: 'viG',
+        complexOr: 'Thing-y Ding-y'
+      }
+    )
+  }
+)
