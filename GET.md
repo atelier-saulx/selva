@@ -48,16 +48,6 @@ const { data: myItem } = await db.get({
 // { speshTitle: 'NO TITLE FUN' }
 // { speshTitle: 'XXX }
 
-
-const { data: myItem } = await db.get({
-  $id: 'mydingdong',
-  speshTitle: {
-    $inherit: {
-      $field: ['title', 'description']
-    }
-  }
-})
-
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
   layout: {
