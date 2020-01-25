@@ -13,7 +13,7 @@ export default (
   if (typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
-  const r = (result[field] = {})
+  const r: SetOptions = (result[field] = {})
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
@@ -21,6 +21,9 @@ export default (
           throw new Error(`$merge needs to be a a boolean `)
         }
         r[key] = payload[key]
+      } else if (key === '$field') {
+        r.$field = payload[key]
+        return
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }

@@ -108,6 +108,9 @@ for (const key in verifiers) {
           } else if (converter) {
             payload[k] = converter(payload[k])
           }
+        } else if (k === '$ref') {
+          // TODO: verify it references the same type
+          result[field] = `___selva_$ref:${payload[k]}`
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }

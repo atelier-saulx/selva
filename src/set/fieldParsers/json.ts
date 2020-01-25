@@ -10,6 +10,12 @@ export default (
   fields: FieldSchemaJson,
   type: string
 ): void => {
+  if (payload.$field) {
+    // TODO: verify that it references a json field
+    result[field] = `___selva_$ref:${payload[field]}`
+    return
+  }
+
   if (fields.properties) {
     const obj = {}
     fieldParsers.object(

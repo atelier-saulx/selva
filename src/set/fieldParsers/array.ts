@@ -12,6 +12,11 @@ export default (
 ): void => {
   const arr = payload
   if (!Array.isArray(arr)) {
+    if (payload.$field) {
+      // TODO: verify that it references an array field
+      result[field] = `___selva_$ref:${payload[field]}`
+      return
+    }
     throw new Error(`Array is not an array ${JSON.stringify(payload)}`)
   }
   const itemsFields = fields.items
