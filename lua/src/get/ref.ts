@@ -1,16 +1,25 @@
 import { Id, TypeSchema } from '~selva/schema/index'
 import { GetResult } from '~selva/get/types'
 import * as redis from '../redis'
-import getByType from '../get/getByType'
 import { setNestedResult, getNestedField } from '../get/nestedFields'
 
 const REF_SIMPLE_FIELD_PREFIX = '___selva_$ref:'
+
+type GetByTypeFn = (
+  result: GetResult,
+  schemas: Record<string, TypeSchema>,
+  id: Id,
+  field: string,
+  language?: string,
+  version?: string
+) => boolean
 
 export function resolveObjectRef(
   result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
+  getByType: GetByTypeFn,
   language?: string,
   version?: string
 ) {
@@ -19,7 +28,16 @@ export function resolveObjectRef(
     return false
   }
 
-  return resolveRef(result, schemas, id, field, ref, language, version)
+  return resolveRef(
+    result,
+    schemas,
+    id,
+    field,
+    ref,
+    getByType,
+    language,
+    version
+  )
 }
 
 export function tryResolveSimpleRef(
@@ -28,6 +46,7 @@ export function tryResolveSimpleRef(
   id: Id,
   field: string,
   value: string,
+  getByType: GetByTypeFn,
   language?: string,
   version?: string
 ): boolean {
@@ -36,7 +55,16 @@ export function tryResolveSimpleRef(
   }
 
   const ref = value.substring(REF_SIMPLE_FIELD_PREFIX.length)
-  return resolveRef(result, schemas, id, field, ref, language, version)
+  return resolveRef(
+    result,
+    schemas,
+    id,
+    field,
+    ref,
+    getByType,
+    language,
+    version
+  )
 }
 
 function resolveRef(
@@ -45,6 +73,7 @@ function resolveRef(
   id: Id,
   field: string,
   ref: string,
+  getByType: GetByTypeFn,
   language?: string,
   version?: string
 ): boolean {

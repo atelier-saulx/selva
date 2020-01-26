@@ -37,7 +37,18 @@ const number = (
   version?: string
 ): boolean => {
   const v = redis.hget(id, field)
-  if (tryResolveSimpleRef(result, schemas, id, field, v, language, version)) {
+  if (
+    tryResolveSimpleRef(
+      result,
+      schemas,
+      id,
+      field,
+      v,
+      getByType,
+      language,
+      version
+    )
+  ) {
     return true
   }
 
@@ -67,7 +78,18 @@ const int = (
 ): boolean => {
   const v = redis.hget(id, field)
 
-  if (tryResolveSimpleRef(result, schemas, id, field, v, language, version)) {
+  if (
+    tryResolveSimpleRef(
+      result,
+      schemas,
+      id,
+      field,
+      v,
+      getByType,
+      language,
+      version
+    )
+  ) {
     return true
   }
 
@@ -86,7 +108,18 @@ const boolean = (
 ): true => {
   const v = redis.hget(id, field)
 
-  if (tryResolveSimpleRef(result, schemas, id, field, v, language, version)) {
+  if (
+    tryResolveSimpleRef(
+      result,
+      schemas,
+      id,
+      field,
+      v,
+      getByType,
+      language,
+      version
+    )
+  ) {
     return true
   }
   const value = v === 'true' ? true : false
@@ -105,7 +138,16 @@ const string = (
   const value = redis.hget(id, field) || ''
 
   if (
-    tryResolveSimpleRef(result, schemas, id, field, value, language, version)
+    tryResolveSimpleRef(
+      result,
+      schemas,
+      id,
+      field,
+      value,
+      getByType,
+      language,
+      version
+    )
   ) {
     return true
   }
@@ -159,6 +201,7 @@ const json = (
         id,
         field,
         value,
+        getByType,
         language,
         version
       )
@@ -202,7 +245,7 @@ const object = (
   id: Id,
   field: string,
   language?: string,
-  _version?: string
+  version?: string
 ): boolean => {
   const keys = redis.hkeys(id)
   let isComplete = true
@@ -221,7 +264,15 @@ const object = (
   }
 
   if (isRef) {
-    resolveObjectRef(result, id, field)
+    return resolveObjectRef(
+      result,
+      schemas,
+      id,
+      field,
+      getByType,
+      language,
+      version
+    )
   }
 
   return noKeys ? false : isComplete
