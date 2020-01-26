@@ -24,12 +24,14 @@ test.before(async t => {
           strVal: { type: 'string' },
           value: { type: 'number' },
           age: { type: 'number' },
+          price: { type: 'number' },
           blob: { type: 'json' },
           auth: {
             type: 'json'
           },
           title: { type: 'text' },
           description: { type: 'text' },
+          textThing: { type: 'text' },
           image: {
             type: 'object',
             properties: {
@@ -44,6 +46,12 @@ test.before(async t => {
             }
           },
           yesh: {
+            type: 'object',
+            properties: {
+              test: { type: 'string' }
+            }
+          },
+          test: {
             type: 'object',
             properties: {
               test: { type: 'string' }
@@ -396,6 +404,149 @@ test.serial('string field ref with $default', async t => {
       value: 25,
       name: 'yesh',
       strVal: 'yesh'
+    }
+  )
+
+  client.destroy()
+})
+
+test.serial('number field ref with $default', async t => {
+  const client = connect({ port: 7073 })
+
+  await client.set({
+    $id: 'viF',
+    name: 'yesh',
+    age: 25,
+    value: { $default: { $ref: 'age' } }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viF',
+      id: true,
+      value: true,
+      age: true
+    }),
+    {
+      id: 'viF',
+      value: 25,
+      age: 25
+    }
+  )
+
+  await client.set({
+    $id: 'viF',
+    age: 25,
+    price: 35,
+    value: { $default: { $ref: 'price' } }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viF',
+      id: true,
+      value: true,
+      age: true
+    }),
+    {
+      id: 'viF',
+      value: 25,
+      age: 25
+    }
+  )
+
+  client.destroy()
+})
+
+test.serial('object nested field ref with $default', async t => {
+  const client = connect({ port: 7073 })
+
+  await client.set({
+    $id: 'viG',
+    name: 'yes',
+    image: {
+      thumb: 'hello',
+      poster: { $default: { $ref: 'image.thumb' } }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viG',
+      id: true,
+      image: true
+    }),
+    {
+      id: 'viG',
+      image: {
+        thumb: 'hello',
+        poster: 'hello'
+      }
+    }
+  )
+
+  await client.set({
+    $id: 'viG',
+    image: {
+      thumb: 'hello',
+      poster: { $default: { $ref: 'name' } }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viG',
+      id: true,
+      image: true
+    }),
+    {
+      id: 'viG',
+      image: {
+        thumb: 'hello',
+        poster: 'hello'
+      }
+    }
+  )
+
+  client.destroy()
+})
+
+test.serial('text field ref with $default', async t => {
+  const client = connect({ port: 7073 })
+
+  await client.set({
+    $id: 'viH',
+    title: { nl: 'lekker title' },
+    description: { nl: { $default: { $ref: 'title.nl' } } }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viH',
+      id: true,
+      description: true
+    }),
+    {
+      id: 'viH',
+      description: { nl: 'lekker title' }
+    }
+  )
+
+  await client.set({
+    $id: 'viH',
+    textThing: { en: 'should not be this one' },
+    description: { nl: { $default: { $ref: 'textThing.en' } } }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viH',
+      id: true,
+      description: true
+    }),
+    {
+      id: 'viH',
+      description: { nl: 'lekker title' }
     }
   )
 

@@ -11,8 +11,12 @@ function refs(field: string, payload: SetOptions, langs?: string[]): void {
   }
 
   for (const lang of langs) {
-    if (payload[lang] && payload[lang].$ref) {
-      payload[lang] = `___selva_$ref:${payload[lang].$ref}`
+    if (payload[lang]) {
+      if (payload[lang].$ref) {
+        payload[lang] = `___selva_$ref:${payload[lang].$ref}`
+      } else if (payload[lang].$default && payload[lang].$default.$ref) {
+        payload[lang].$default = `___selva_$ref:${payload[lang].$default.$ref}`
+      }
     }
   }
 }
