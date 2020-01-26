@@ -34,7 +34,19 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
+              poster: { type: 'string' },
+              yesh: {
+                type: 'object',
+                properties: {
+                  test: { type: 'string' }
+                }
+              }
+            }
+          },
+          yesh: {
+            type: 'object',
+            properties: {
+              test: { type: 'string' }
             }
           },
           thumb: { type: 'string' },
@@ -166,7 +178,7 @@ test.serial('json field ref', async t => {
   )
 })
 
-test.serial.only('whole object field ref', async t => {
+test.serial('whole object ref', async t => {
   const client = connect({ port: 7073 })
 
   await client.set({
@@ -195,7 +207,65 @@ test.serial.only('whole object field ref', async t => {
   )
 })
 
-test.serial('text field ref', async t => {
+test.serial('simple object field ref', async t => {
+  const client = connect({ port: 7073 })
+
+  await client.set({
+    $id: 'viC',
+    image: {
+      thumb: 'thumbs up'
+    },
+    thumb: { $ref: 'image.thumb' },
+    value: 25
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viC',
+      id: true,
+      value: true,
+      thumb: true
+    }),
+    {
+      id: 'viC',
+      thumb: 'thumbs up',
+      value: 25
+    }
+  )
+})
+
+test.serial('nested object in object field ref', async t => {
+  const client = connect({ port: 7073 })
+
+  await client.set({
+    $id: 'viX',
+    image: {
+      yesh: { test: 'testytest' }
+    },
+    yesh: { $ref: 'image.yesh' },
+    value: 25
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viX',
+      id: true,
+      value: true,
+      image: true,
+      yesh: true
+    }),
+    {
+      id: 'viX',
+      image: {
+        yesh: { test: 'testytest' }
+      },
+      yesh: { test: 'testytest' },
+      value: 25
+    }
+  )
+})
+
+test.serial.only('text field ref', async t => {
   const client = connect({ port: 7073 })
 
   await client.set({
