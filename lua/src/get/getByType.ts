@@ -5,6 +5,7 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { TypeSchema } from '../../../src/schema/index'
+import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
   splitString,
   stringStartsWith,
@@ -36,6 +37,10 @@ const number = (
   _version?: string
 ): boolean => {
   const v = redis.hget(id, field)
+  if (tryResolveSimpleRef(result, id, field, v)) {
+    return true
+  }
+
   const value = !v ? null : tonumber(v)
   setNestedResult(result, field, value)
   return value !== null
@@ -61,6 +66,11 @@ const int = (
   _version?: string
 ): boolean => {
   const v = redis.hget(id, field)
+
+  if (tryResolveSimpleRef(result, id, field, v)) {
+    return true
+  }
+
   const value = !v ? null : Math.floor(tonumber(v))
   setNestedResult(result, field, value)
   return value !== null
@@ -75,6 +85,10 @@ const boolean = (
   _version?: string
 ): true => {
   const v = redis.hget(id, field)
+
+  if (tryResolveSimpleRef(result, id, field, v)) {
+    return true
+  }
   const value = v === 'true' ? true : false
   setNestedResult(result, field, value)
   return true
@@ -89,6 +103,11 @@ const string = (
   _version?: string
 ): boolean => {
   const value = redis.hget(id, field) || ''
+
+  if (tryResolveSimpleRef(result, id, field, value)) {
+    return true
+  }
+
   setNestedResult(result, field, value)
   return value !== null && value.length > 0
 }
@@ -127,8 +146,14 @@ const json = (
   _version?: string
 ): boolean => {
   let value = redis.hget(id, field)
+
   let isString = true
   if (type(value) === 'string') {
+    const intermediateResult = {}
+    if (tryResolveSimpleRef(intermediateResult, id, field, value)) {
+      value = getNestedField(intermediateResult, field)
+    }
+
     value = markEmptyArraysInJSON(value)
   } else {
     isString = false
@@ -170,14 +195,23 @@ const object = (
   const keys = redis.hkeys(id)
   let isComplete = true
   let noKeys = true
+  let isRef = false
   for (const key of keys) {
     if (key.indexOf(field) === 0) {
       noKeys = false
       if (!getByType(result, schemas, id, key, language)) {
         isComplete = false
       }
+    } else if (key === '$ref') {
+      isRef = true
+      break
     }
   }
+
+  if (isRef) {
+    resolveObjectRef(result, id, field)
+  }
+
   return noKeys ? false : isComplete
 }
 
