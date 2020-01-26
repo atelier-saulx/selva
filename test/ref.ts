@@ -282,7 +282,8 @@ test.serial.only('text field ref', async t => {
     await client.get({
       $id: 'viD',
       id: true,
-      value: true
+      value: true,
+      title: true
     }),
     {
       id: 'viD',

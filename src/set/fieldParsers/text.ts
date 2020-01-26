@@ -1,6 +1,22 @@
 import { SetOptions } from '../types'
 import { TypeSchema, FieldSchemaOther } from '../../schema'
 
+function refs(field: string, payload: SetOptions, langs?: string[]): void {
+  if (payload.$ref && Object.keys(payload).length !== 1) {
+    throw new Error(`$ref only allow without other fields ${field} ${payload}`)
+  }
+
+  if (!langs) {
+    return
+  }
+
+  for (const lang of langs) {
+    if (payload[lang] && payload[lang].$ref) {
+      payload[lang] = `___selva_$ref:${payload[lang].$ref}`
+    }
+  }
+}
+
 const verify = (payload: SetOptions, nested?: boolean, lang?: string[]) => {
   for (let key in payload) {
     if (key === '$merge') {
@@ -18,6 +34,8 @@ const verify = (payload: SetOptions, nested?: boolean, lang?: string[]) => {
       } else {
         verify(payload[key], false, lang)
       }
+    } else if (key === '$ref') {
+      // $refs are allowed
     } else if (lang && lang.indexOf(key) !== -1) {
       if (typeof payload[key] === 'object') {
         verify(payload[key], true)
@@ -39,6 +57,7 @@ export default (
   type: string
 ): void => {
   const lang: string[] = <string[]>schemas._languages
+  refs(field, payload, lang)
   verify(payload, false, lang)
   result[field] = payload
 }
