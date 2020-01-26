@@ -1,5 +1,6 @@
 import { GetResult } from '~selva/get/types'
 import { splitString } from '../util'
+import * as logger from '../logger'
 
 export const getNestedField = (result: GetResult, field: string): any => {
   const fields = splitString(field, '.')

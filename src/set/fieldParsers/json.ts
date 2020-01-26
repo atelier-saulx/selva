@@ -10,9 +10,9 @@ export default (
   fields: FieldSchemaJson,
   type: string
 ): void => {
-  if (payload.$field) {
+  if (payload.$ref) {
     // TODO: verify that it references a json field
-    result[field] = `___selva_$ref:${payload[field]}`
+    result[field] = `___selva_$ref:${payload.$ref}`
     return
   }
 

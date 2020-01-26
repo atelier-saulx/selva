@@ -2,6 +2,7 @@ import { Id, TypeSchema } from '~selva/schema/index'
 import { GetResult } from '~selva/get/types'
 import * as redis from '../redis'
 import { setNestedResult, getNestedField } from '../get/nestedFields'
+import * as logger from '../logger'
 
 const REF_SIMPLE_FIELD_PREFIX = '___selva_$ref:'
 

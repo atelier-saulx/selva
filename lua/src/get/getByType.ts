@@ -136,7 +136,6 @@ const string = (
   version?: string
 ): boolean => {
   const value = redis.hget(id, field) || ''
-  logger.info(`raw value ${value}`)
 
   if (
     tryResolveSimpleRef(
@@ -194,10 +193,9 @@ const json = (
 
   let isString = true
   if (type(value) === 'string') {
-    const intermediateResult = {}
     if (
       tryResolveSimpleRef(
-        intermediateResult,
+        result,
         schemas,
         id,
         field,
