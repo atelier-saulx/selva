@@ -4,6 +4,8 @@ import * as redis from '../redis'
 import getByType from '../get/getByType'
 import { setNestedResult, getNestedField } from '../get/nestedFields'
 
+const REF_SIMPLE_FIELD_PREFIX = '___selva_$ref:'
+
 export function resolveObjectRef(
   result: GetResult,
   schemas: Record<string, TypeSchema>,
@@ -17,34 +19,52 @@ export function resolveObjectRef(
     return false
   }
 
+  return resolveRef(result, schemas, id, field, ref, language, version)
+}
+
+export function tryResolveSimpleRef(
+  result: GetResult,
+  schemas: Record<string, TypeSchema>,
+  id: Id,
+  field: string,
+  value: string,
+  language?: string,
+  version?: string
+): boolean {
+  if (!value || value.indexOf(REF_SIMPLE_FIELD_PREFIX) !== 0) {
+    return false
+  }
+
+  const ref = value.substring(REF_SIMPLE_FIELD_PREFIX.length)
+  return resolveRef(result, schemas, id, field, ref, language, version)
+}
+
+function resolveRef(
+  result: GetResult,
+  schemas: Record<string, TypeSchema>,
+  id: Id,
+  field: string,
+  ref: string,
+  language?: string,
+  version?: string
+): boolean {
   const intermediateResult = {}
   const found = getByType(
     intermediateResult,
     schemas,
     id,
-    field,
+    ref,
     language,
     version
   )
 
   if (found) {
-    setNestedResult(result, field, getNestedField(intermediateResult, ref))
-    return true
+    const nested = getNestedField(intermediateResult, ref)
+    if (nested) {
+      setNestedResult(result, field, nested)
+      return true
+    }
   }
 
   return false
-}
-
-export function tryResolveSimpleRef(
-  result: GetResult,
-  id: Id,
-  field: string,
-  value: string
-): boolean {
-  if (!value || value.indexOf('___selva_$ref:') !== 0) {
-    return false
-  }
-
-  const intermediateResult = {}
-  return true
 }

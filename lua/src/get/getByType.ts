@@ -30,14 +30,14 @@ const id = (
 
 const number = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): boolean => {
   const v = redis.hget(id, field)
-  if (tryResolveSimpleRef(result, id, field, v)) {
+  if (tryResolveSimpleRef(result, schemas, id, field, v, language, version)) {
     return true
   }
 
@@ -59,15 +59,15 @@ const float = (
 
 const int = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): boolean => {
   const v = redis.hget(id, field)
 
-  if (tryResolveSimpleRef(result, id, field, v)) {
+  if (tryResolveSimpleRef(result, schemas, id, field, v, language, version)) {
     return true
   }
 
@@ -78,15 +78,15 @@ const int = (
 
 const boolean = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): true => {
   const v = redis.hget(id, field)
 
-  if (tryResolveSimpleRef(result, id, field, v)) {
+  if (tryResolveSimpleRef(result, schemas, id, field, v, language, version)) {
     return true
   }
   const value = v === 'true' ? true : false
@@ -96,15 +96,17 @@ const boolean = (
 
 const string = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): boolean => {
   const value = redis.hget(id, field) || ''
 
-  if (tryResolveSimpleRef(result, id, field, value)) {
+  if (
+    tryResolveSimpleRef(result, schemas, id, field, value, language, version)
+  ) {
     return true
   }
 
@@ -139,19 +141,29 @@ const arrayLike = (
 
 const json = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): boolean => {
   let value = redis.hget(id, field)
 
   let isString = true
   if (type(value) === 'string') {
     const intermediateResult = {}
-    if (tryResolveSimpleRef(intermediateResult, id, field, value)) {
-      value = getNestedField(intermediateResult, field)
+    if (
+      tryResolveSimpleRef(
+        intermediateResult,
+        schemas,
+        id,
+        field,
+        value,
+        language,
+        version
+      )
+    ) {
+      return true
     }
 
     value = markEmptyArraysInJSON(value)
