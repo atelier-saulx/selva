@@ -9,6 +9,7 @@ import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
   splitString,
   stringStartsWith,
+  stringEndsWith,
   joinString,
   ensureArray,
   emptyArray,
@@ -249,29 +250,26 @@ const object = (
   const keys = redis.hkeys(id)
   let isComplete = true
   let noKeys = true
-  let isRef = false
   for (const key of keys) {
     if (key.indexOf(field) === 0) {
       noKeys = false
+
+      if (stringEndsWith(key, '$ref')) {
+        return resolveObjectRef(
+          result,
+          schemas,
+          id,
+          field,
+          getByType,
+          language,
+          version
+        )
+      }
+
       if (!getByType(result, schemas, id, key, language)) {
         isComplete = false
       }
-    } else if (key === '$ref') {
-      isRef = true
-      break
     }
-  }
-
-  if (isRef) {
-    return resolveObjectRef(
-      result,
-      schemas,
-      id,
-      field,
-      getByType,
-      language,
-      version
-    )
   }
 
   return noKeys ? false : isComplete

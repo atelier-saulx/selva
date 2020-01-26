@@ -72,6 +72,20 @@ export function stringStartsWith(str: string, slice: string): boolean {
   return true
 }
 
+export function stringEndsWith(str: string, slice: string): boolean {
+  if (slice.length > str.length) {
+    return false
+  }
+
+  for (let i = 0; i < slice.length; i++) {
+    if (str[str.length - 1 - i] !== slice[slice.length - 1 - i]) {
+      return false
+    }
+  }
+
+  return true
+}
+
 export function ensureArray<T>(value: (T | T[] | null | undefined) | T[]): T[] {
   if (isArray(value)) {
     return <T[]>value

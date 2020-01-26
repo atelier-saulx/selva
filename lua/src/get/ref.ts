@@ -24,7 +24,7 @@ export function resolveObjectRef(
   language?: string,
   version?: string
 ) {
-  const ref = redis.hget(id, '$ref')
+  const ref = redis.hget(id, `${field}.$ref`)
   if (!ref || ref.length === 0) {
     return false
   }
