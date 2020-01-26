@@ -343,3 +343,61 @@ test.serial('text object ref', async t => {
   )
   client.destroy()
 })
+
+test.serial('string field ref with $default', async t => {
+  const client = connect({ port: 7073 })
+
+  await client.set({
+    $id: 'viE',
+    name: 'yesh',
+    title: {
+      en: 'nice!'
+    },
+    strVal: { $default: { $ref: 'name' } },
+    value: 25
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viE',
+      id: true,
+      value: true,
+      name: true,
+      strVal: true
+    }),
+    {
+      id: 'viE',
+      value: 25,
+      name: 'yesh',
+      strVal: 'yesh'
+    }
+  )
+
+  await client.set({
+    $id: 'viE',
+    name: 'yesh',
+    title: {
+      en: 'nice!'
+    },
+    strVal: { $default: { $ref: 'title.en' } },
+    value: 25
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viE',
+      id: true,
+      value: true,
+      name: true,
+      strVal: true
+    }),
+    {
+      id: 'viE',
+      value: 25,
+      name: 'yesh',
+      strVal: 'yesh'
+    }
+  )
+
+  client.destroy()
+})

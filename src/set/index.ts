@@ -5,11 +5,6 @@ import collectSchemas from './collectSchemas'
 import fieldParsers from './fieldParsers'
 import { verifiers } from './fieldParsers/simple'
 
-/*
- * TODO: $ref
- * stored as $ref:layout.theme
- */
-
 export const parseSetObject = (
   payload: SetOptions,
   schemas: Record<string, TypeSchema>

@@ -103,10 +103,17 @@ for (const key in verifiers) {
           k === '$value' ||
           (isNumber && k === '$increment')
         ) {
-          if (!verify(payload[k])) {
-            throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
-          } else if (converter) {
-            payload[k] = converter(payload[k])
+          if (payload[k].$ref) {
+            if (typeof payload[k].$ref !== 'string') {
+              throw new Error(`Non-string ref provided for ${key}.${k}`)
+            }
+            payload[k] = `___selva_$ref:${payload[k].$ref}`
+          } else {
+            if (!verify(payload[k])) {
+              throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
+            } else if (converter) {
+              payload[k] = converter(payload[k])
+            }
           }
         } else if (k === '$ref') {
           // TODO: verify it references the same type
