@@ -136,6 +136,7 @@ const string = (
   version?: string
 ): boolean => {
   const value = redis.hget(id, field) || ''
+  logger.info(`raw value ${value}`)
 
   if (
     tryResolveSimpleRef(
