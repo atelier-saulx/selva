@@ -139,6 +139,8 @@ test.serial('string field ref', async t => {
       strVal: 'yesh'
     }
   )
+
+  client.destroy()
 })
 
 test.serial('json field ref', async t => {
@@ -176,6 +178,7 @@ test.serial('json field ref', async t => {
       }
     }
   )
+  client.destroy()
 })
 
 test.serial('whole object ref', async t => {
@@ -205,6 +208,7 @@ test.serial('whole object ref', async t => {
       value: 25
     }
   )
+  client.destroy()
 })
 
 test.serial('simple object field ref', async t => {
@@ -232,6 +236,7 @@ test.serial('simple object field ref', async t => {
       value: 25
     }
   )
+  client.destroy()
 })
 
 test.serial('nested object in object field ref', async t => {
@@ -263,9 +268,10 @@ test.serial('nested object in object field ref', async t => {
       value: 25
     }
   )
+  client.destroy()
 })
 
-test.serial.only('text field ref', async t => {
+test.serial('text field ref', async t => {
   const client = connect({ port: 7073 })
 
   await client.set({
@@ -295,4 +301,45 @@ test.serial.only('text field ref', async t => {
       value: 25
     }
   )
+  client.destroy()
+})
+
+test.serial('text object ref', async t => {
+  const client = connect({ port: 7073 })
+
+  await client.set({
+    $id: 'viD',
+    title: {
+      en: 'nice!',
+      en_uk: { $ref: 'title.en' },
+      en_us: { $ref: 'title.en' }
+    },
+    description: { $ref: 'title' },
+    value: 25
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viD',
+      id: true,
+      value: true,
+      title: true,
+      description: true
+    }),
+    {
+      id: 'viD',
+      title: {
+        en: 'nice!',
+        en_uk: 'nice!',
+        en_us: 'nice!'
+      },
+      description: {
+        en: 'nice!',
+        en_uk: 'nice!',
+        en_us: 'nice!'
+      },
+      value: 25
+    }
+  )
+  client.destroy()
 })
