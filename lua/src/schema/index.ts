@@ -8,11 +8,50 @@ import {
 } from '../../../src/schema/index'
 import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
+import updateHierarchies from './hierarchies'
 import * as r from '../redis'
 import { isEqual } from '../util'
 
 export function getSchema(): Schema {
-  return cjson.decode(r.get('___selva_schema'))
+  return cjson.decode(r.hget('___selva_schema', 'types'))
+}
+
+export function getSearchIndexes(): SearchIndexes {
+  return cjson.decode(r.hget('___selva_schema', 'searchIndexes'))
+}
+
+function savePrefixMap(schema: Schema): Record<string, string> {
+  const prefixMap: Record<string, string> = {}
+  for (const typeName in schema.types) {
+    prefixMap[schema.types[typeName].prefix] = typeName
+  }
+
+  const encoded = cjson.encode(prefixMap)
+  r.hset('___selva_schema', 'prefixes', encoded)
+}
+
+export function saveSchema(
+  schema: Schema,
+  searchIndexes?: SearchIndexes
+): string {
+  if (searchIndexes) {
+    // FIXME: should we include this in the SHA1?
+    saveSearchIndexes(searchIndexes)
+  }
+
+  savePrefixMap(schema)
+
+  const encoded = cjson.encode(schema)
+  const sha = redis.sha1hex(encoded)
+  schema.sha = sha
+  r.hset('___selva_schema', 'types', encoded) // TODO: is this where we actually want to set it?
+  return encoded
+}
+
+export function saveSearchIndexes(searchIndexes: SearchIndexes): string {
+  const encoded = cjson.encode(searchIndexes)
+  r.hset('___selva_schema', 'searchIndexes', encoded) // TODO: is this where we actually want to set it?
+  return encoded
 }
 
 function verifyLanguages(oldSchema: Schema, newSchema: Schema): string | null {
@@ -190,14 +229,6 @@ export function verifyAndEnsureRequiredFields(
   return null
 }
 
-export function saveSchema(schema: Schema): string {
-  const encoded = cjson.encode(schema)
-  const sha = redis.sha1hex(encoded)
-  schema.sha = sha
-  r.set('___selva_schema', encoded) // TODO: is this where we actually want to set it?
-  return encoded
-}
-
 // TODO: handle hset ___selva_schema, prefixes equivalent
 // TODO: handle search index changes
 export function updateSchema(newSchema: Schema): string | null {
@@ -214,7 +245,7 @@ export function updateSchema(newSchema: Schema): string | null {
   }
 
   updateSearchIndexes(changedSearchIndexes, {}) // TODO: get indexes
-  // TODO: update ancestors on hierarchy updates
+  updateHierarchies(oldSchema, newSchema)
   saveSchema(newSchema)
   return null
 }
