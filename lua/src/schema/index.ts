@@ -20,7 +20,7 @@ export function getSearchIndexes(): SearchIndexes {
   return cjson.decode(r.hget('___selva_schema', 'searchIndexes'))
 }
 
-function savePrefixMap(schema: Schema): Record<string, string> {
+function savePrefixMap(schema: Schema): string {
   const prefixMap: Record<string, string> = {}
   for (const typeName in schema.types) {
     prefixMap[schema.types[typeName].prefix] = typeName
@@ -28,6 +28,7 @@ function savePrefixMap(schema: Schema): Record<string, string> {
 
   const encoded = cjson.encode(prefixMap)
   r.hset('___selva_schema', 'prefixes', encoded)
+  return encoded
 }
 
 export function saveSchema(
