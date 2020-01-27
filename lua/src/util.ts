@@ -118,3 +118,25 @@ export function markEmptyArraysInJSON(str: string): string {
 
   return str
 }
+
+export const isEqual = (a: any, b: any): boolean => {
+  const typeA = type(a)
+  if (typeA !== type(b)) {
+    return false
+  }
+
+  if (typeA === 'table') {
+    for (let key in a) {
+      if (!b[key]) {
+        return false
+      } else {
+        if (!isEqual(a[key], b[key])) {
+          return false
+        }
+      }
+    }
+  } else if (a !== b) {
+    return false
+  }
+  return true
+}

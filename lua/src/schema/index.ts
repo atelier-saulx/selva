@@ -9,6 +9,7 @@ import {
 import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
 import * as r from '../redis'
+import { isEqual } from '../util'
 
 export function getSchema(): Schema {
   return cjson.decode(r.get('___selva_schema'))
@@ -22,28 +23,6 @@ function verifyLanguages(oldSchema: Schema, newSchema: Schema): string | null {
   }
 
   return null
-}
-
-const isEqual = (a: any, b: any): boolean => {
-  const typeA = type(a)
-  if (typeA !== type(b)) {
-    return false
-  }
-
-  if (typeA === 'table') {
-    for (let key in a) {
-      if (!b[key]) {
-        return false
-      } else {
-        if (!isEqual(a[key], b[key])) {
-          return false
-        }
-      }
-    }
-  } else if (a !== b) {
-    return false
-  }
-  return true
 }
 
 const searchChanged = (newSearch: Search, oldSearch: Search): boolean => {
