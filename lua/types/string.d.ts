@@ -1,5 +1,6 @@
 declare module string {
-  function byte(this: void, str: string, idx: number): number
+  function byte(this: void, str: string): number
+  function char(this: void, byte: number): string
   /** @tupleReturn */
   function gsub(
     this: void,

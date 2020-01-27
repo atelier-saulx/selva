@@ -81,9 +81,10 @@ export type TypeSchema = {
   fields?: Fields
 }
 
-export type Types = Record<string, TypeSchema>
+export type Types = Record<string, TypeSchema> & { idSize: number }
 
 export type Schema = {
+  sha?: string
   languages?: string[]
   types?: Types
 }
