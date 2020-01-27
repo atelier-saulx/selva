@@ -234,7 +234,7 @@ export function updateSchema(newSchema: Schema): string | null {
     return err
   }
 
-  updateSearchIndexes(changedIndexes) // TODO
+  updateSearchIndexes(changedSearchIndexes, {}) // TODO: get indexes
   // TODO: update ancestors on hierarchy updates
   saveSchema(newSchema)
   return null

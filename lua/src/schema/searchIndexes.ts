@@ -1,8 +1,41 @@
 import { SearchIndexes, SearchSchema } from '~selva/schema/index'
+import * as logger from '../logger'
+
+function createIndex(index: string, schema: SearchSchema): void {
+  const args = [index, 'SCHEMA']
+  for (const field in schema) {
+    args[args.length] = field
+    for (const f in schema[field]) {
+      args[args.length] = f
+    }
+  }
+
+  const result = redis.pcall('ftCreate', ...args)
+  if (result.err) {
+    logger.error(`Error creating index ${index}: ${result.err}`)
+  }
+}
+
+function alterIndex(index: string, schema: SearchSchema): void {
+  for (const field in schema) {
+    const result = redis.pcall(
+      'ftAlter',
+      index,
+      'SCHEMA',
+      'ADD',
+      field,
+      ...schema[field]
+    )
+    if (result.err) {
+      logger.error(`Error altering index ${index}: ${result.err}`)
+    }
+  }
+}
 
 function updateIndex(index: string, schema: SearchSchema): void {
-  const info: string[] = redis.call('ftInfo', index)
-  if (!info) {
+  const info: string[] = redis.pcall('ftInfo', index)
+  if (!info || (<any>info).err) {
+    logger.error(`Error fetch info for index ${index}: ${(<any>info).err}`)
     return createIndex(index, schema)
   }
   const fields = info[info.indexOf('fields') + 1]
