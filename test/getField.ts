@@ -3,8 +3,9 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
 
+let srv
 test.before(async t => {
-  await start({
+  srv = await start({
     port: 7072,
     developmentLogging: true,
     loglevel: 'info'
@@ -111,6 +112,13 @@ test.before(async t => {
   })
 
   await client.destroy()
+})
+
+test.after(async _t => {
+  const client = connect({ port: 7072 })
+  await client.delete('root')
+  await client.destroy()
+  await srv.destroy()
 })
 
 test.serial('get - simple alias', async t => {
