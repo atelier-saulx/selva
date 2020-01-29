@@ -15,6 +15,7 @@ test.serial('get - queryParser', async t => {
         $filter: [
           // in the array is an AND
           {
+            // $or: {}, $and: {} if field is not the same thencgo crazy
             $operator: '=',
             $field: 'type',
             $value: ['match', 'video'] // this is an OR
