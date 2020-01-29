@@ -129,7 +129,10 @@ function newFieldDefinition(
       }
     }
 
-    return { type: newField.type, properties: props }
+    return {
+      type: newField.type,
+      properties: props
+    }
   } else if (
     (oldField.type === 'set' || oldField.type === 'array') &&
     oldField.items.type !== (<any>newField).items.type
@@ -139,6 +142,10 @@ function newFieldDefinition(
         oldField.items.type
       } to type ${(<any>newField).items.type}`
     )
+  }
+
+  if (!(<any>newField).search) {
+    ;(<any>newField).search = oldField.search
   }
 
   return newField

@@ -16,14 +16,20 @@ async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
     idSeedCounter: 0
   }
 
-  const fetched = await client.redis.hget('___selva_schema', 'types')
-  const searchIndexes = await client.redis.hget(
+  let searchIndexes: SearchIndexes = {}
+
+  const fetchedTypes = await client.redis.hget('___selva_schema', 'types')
+  const fetchedIndexes = await client.redis.hget(
     '___selva_schema',
     'searchIndexes'
   )
 
-  if (fetched) {
-    schema = JSON.parse(fetched)
+  if (fetchedTypes) {
+    schema = JSON.parse(fetchedTypes)
+  }
+
+  if (fetchedIndexes) {
+    searchIndexes = JSON.parse(fetchedIndexes)
   }
 
   this.schema = schema

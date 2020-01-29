@@ -36,8 +36,16 @@ import { FieldType, Fields, Schema } from '../src/schema'
 test('schemas - basic', async t => {
   let current = { port: 6066 }
 
-  const server = await start({ port: 6066, developmentLogging: true })
+  const server = await start({
+    port: 6066,
+    developmentLogging: true,
+    loglevel: 'info'
+  })
   const client = connect({ port: 6066 })
+
+  await new Promise((resolve, _reject) => {
+    setTimeout(resolve, 100)
+  })
 
   const defaultFields: Fields = {
     title: {

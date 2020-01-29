@@ -10,7 +10,7 @@ function createIndex(index: string, schema: SearchSchema): void {
     }
   }
 
-  const result = redis.pcall('ftCreate', ...args)
+  const result = redis.pcall('ft.create', ...args)
   if (result.err) {
     logger.error(`Error creating index ${index}: ${result.err}`)
   }
@@ -19,7 +19,7 @@ function createIndex(index: string, schema: SearchSchema): void {
 function alterIndex(index: string, schema: SearchSchema): void {
   for (const field in schema) {
     const result = redis.pcall(
-      'ftAlter',
+      'ft.alter',
       index,
       'SCHEMA',
       'ADD',
@@ -43,7 +43,7 @@ function findFieldsFromInfoReply(info: string[]): string | null {
 }
 
 function updateIndex(index: string, schema: SearchSchema): void {
-  const info: string[] = redis.pcall('ftInfo', index)
+  const info: string[] = redis.pcall('ft.info', index)
   if (!info || (<any>info).err) {
     logger.error(`Error fetch info for index ${index}: ${(<any>info).err}`)
     return createIndex(index, schema)
@@ -62,6 +62,7 @@ export default function updateSearchIndexes(
   changedSearchIndexes: Record<string, boolean>,
   indexes: SearchIndexes
 ): void {
+  logger.info(`Updating search indexes ${cjson.encode(changedSearchIndexes)}`)
   for (const index in changedSearchIndexes) {
     updateIndex(index, indexes[index])
   }

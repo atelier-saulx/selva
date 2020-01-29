@@ -118,6 +118,11 @@ function checkField(
   oldField: FieldSchema,
   newField: FieldSchema
 ): string | null {
+  logger.info(
+    `SEARCH: ${cjson.encode((<any>oldField).search)} ${cjson.encode(
+      (<any>newField).search
+    )}`
+  )
   if (oldField.type !== newField.type) {
     return `Cannot change existing type for ${type} field ${path} changing from ${oldField.type} to ${newField.type}`
   }
@@ -125,11 +130,15 @@ function checkField(
   if (newField.type !== 'object' && newField.type !== 'set') {
     const index = (newField.search && newField.search.index) || 'default'
     if (
-      newField.search &&
+      !newField.search ||
       searchChanged(newField.search, (<any>oldField).search) // they are actually the same type, casting
     ) {
+      logger.info(
+        `Updating search for index ${index}: ${cjson.encode(newField.search)}`
+      )
       searchIndexes[index] = searchIndexes[index] || {}
-      searchIndexes[index][path] = newField.search.type
+      searchIndexes[index][path] =
+        (<any>newField).search.type || (<any>oldField).search.type
       changedSearchIndexes[index] = true
     }
   }
@@ -173,6 +182,12 @@ function checkNestedChanges(
     // ensure default fields are set on new types
     if (!oldType[field]) {
       newType.fields = objectAssign({}, defaultFields, newType.fields || {})
+      findSearchConfigurations(
+        newType.fields[field],
+        field,
+        searchIndexes,
+        changedIndexes
+      )
     } else {
       const err = checkField(
         type,
@@ -203,7 +218,26 @@ function verifyTypes(
       return `New schema definition missing existing type ${type}`
     }
 
+    logger.info(`matching schemas for type ${type}`)
+    // make sure that we're not changing type schemas that already exist
+    // Note: prefix equality is verified in ensurePrefixes()
+    const err = checkNestedChanges(
+      type,
+      oldSchema[type],
+      newSchema[type],
+      searchIndexes,
+      changedSearchIndexes
+    )
+
+    if (err) {
+      return err
+    }
+    // Note: hierarchies need not be the same, they can be overwritten
+  }
+
+  for (const type in newSchema.types) {
     if (newSchema.types[type] && oldSchema.types[type]) {
+      logger.info(`matching schemas for type ${type}`)
       // make sure that we're not changing type schemas that already exist
       // Note: prefix equality is verified in ensurePrefixes()
       const err = checkNestedChanges(
@@ -218,10 +252,65 @@ function verifyTypes(
         return err
       }
       // Note: hierarchies need not be the same, they can be overwritten
+    } else {
+      logger.info(`new type  ${type}`)
+      findSearchConfigurations(
+        newSchema.types[type],
+        '',
+        searchIndexes,
+        changedSearchIndexes
+      )
     }
   }
 
   return null
+}
+
+function findSearchConfigurations(
+  obj: TypeSchema | FieldSchema,
+  path: string,
+  searchIndexes: SearchIndexes,
+  changedSearchIndexes: Record<string, boolean>
+): void {
+  logger.info(`findSearchConfigurations`)
+  if ((<any>obj).type) {
+    const field = <FieldSchema>obj
+    if (
+      field.type === 'object' ||
+      (field.type === 'json' && field.properties)
+    ) {
+      for (const propName in field.properties) {
+        findSearchConfigurations(
+          field.properties[propName],
+          `${path}.${propName}`,
+          searchIndexes,
+          changedSearchIndexes
+        )
+      }
+    } else {
+      if (field.search) {
+        logger.info(
+          `Found search configuration in ${path}: ${cjson.encode(field.search)}`
+        )
+        const index = field.search.index || 'default'
+        searchIndexes[index] = searchIndexes[index] || {}
+        searchIndexes[index][path] = field.search.type
+        changedSearchIndexes[index] = true
+      }
+    }
+  } else {
+    const type = <TypeSchema>obj
+    if (type.fields) {
+      for (const fieldName in type.fields) {
+        findSearchConfigurations(
+          type.fields[fieldName],
+          fieldName,
+          searchIndexes,
+          changedSearchIndexes
+        )
+      }
+    }
+  }
 }
 
 export function verifyAndEnsureRequiredFields(
@@ -257,6 +346,7 @@ export function verifyAndEnsureRequiredFields(
 export function updateSchema(
   newSchema: Schema
 ): [string | null, string | null] {
+  logger.info('yesh')
   const changedSearchIndexes: Record<string, boolean> = {}
   const oldSchema = getSchema() || { types: {} }
   const searchIndexes = getSearchIndexes()
@@ -273,7 +363,7 @@ export function updateSchema(
 
   updateSearchIndexes(changedSearchIndexes, searchIndexes)
   updateHierarchies(oldSchema, newSchema)
-  const saved = saveSchema(newSchema)
+  const saved = saveSchema(newSchema, searchIndexes)
   return [saved, null]
 }
 
