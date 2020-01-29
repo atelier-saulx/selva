@@ -1,4 +1,5 @@
 import { SearchIndexes, SearchSchema } from '~selva/schema/index'
+import * as r from '../redis'
 import * as logger from '../logger'
 
 function createIndex(index: string, schema: SearchSchema): void {
@@ -81,7 +82,13 @@ export default function updateSearchIndexes(
   changedSearchIndexes: Record<string, boolean>,
   indexes: SearchIndexes
 ): void {
+  let hasUpdates = false
   for (const index in changedSearchIndexes) {
+    hasUpdates = true
     updateIndex(index, indexes[index])
+  }
+
+  if (hasUpdates) {
+    r.hset('___selva_schema', 'searchIndexes', cjson.encode(indexes))
   }
 }
