@@ -1,5 +1,4 @@
 import { SearchIndexes, SearchSchema } from '~selva/schema/index'
-import * as r from '../redis'
 import * as logger from '../logger'
 
 function createIndex(index: string, schema: SearchSchema): void {
