@@ -87,7 +87,7 @@ export type Schema = {
   sha?: string
   languages?: string[]
   types?: Types
-  idSeedCounter: number
+  idSeedCounter?: number
 }
 
 export const defaultFields: Record<string, FieldSchema> = {

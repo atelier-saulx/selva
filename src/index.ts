@@ -6,7 +6,7 @@ import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions, GetResult } from './get'
 import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
-import { Schema, Id } from './schema'
+import { Schema, SearchIndexes, Id } from './schema'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import getTypeFromId from './getTypeFromId'
@@ -36,7 +36,8 @@ try {
 }
 
 export class SelvaClient {
-  private schema: Schema
+  public schema: Schema
+  public searchIndexes: SearchIndexes
   public redis: RedisClient
 
   constructor(opts: ConnectOptions | (() => Promise<ConnectOptions>)) {

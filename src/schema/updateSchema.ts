@@ -1,45 +1,123 @@
 import { SelvaClient } from '../'
-import { Schema, TypesDb, SearchIndexes } from '.'
-import updateTypesId from './updateTypesId'
-import updateTypeSchema from './updateTypeSchema'
-import { getSchema } from './getSchema'
-import { schemaCache, prefixesCache } from '../set/collectSchemas'
+import { Schema, TypeSchema, FieldSchema } from '.'
 
 async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
-  const { types, schema, searchIndexes } = await getSchema(client)
+  const newSchema = newSchemaDefinition(client.schema, props)
+  // TODO: update using script
+  console.log('UPDATING SCHEMA WITH', JSON.stringify(newSchema))
+}
 
-  // reset 5 second
-  schemaCache.cache = {}
-  prefixesCache.prefixes = false
+function newSchemaDefinition(oldSchema: Schema, newSchema: Schema): Schema {
+  const schema: Schema = {
+    sha: oldSchema.sha
+    // languages: newLanguages(oldSchema, newSchema)
+  }
 
-  if (props.languages) {
-    let changedstrings: boolean = false
-    props.languages.forEach(lang => {
-      // cannot remove languages for now!
-      if (schema.languages.indexOf(lang) === -1) {
-        schema.languages.push(lang)
-        changedstrings = true
-      }
-    })
-    if (changedstrings) {
-      await client.redis.hset(
-        '___selva_schema',
-        'languages',
-        JSON.stringify(props.languages)
+  for (const typeName in oldSchema.types) {
+    if (newSchema.types[typeName]) {
+      schema.types[typeName] = newTypeDefinition(
+        typeName,
+        oldSchema[typeName],
+        newSchema[typeName]
       )
+    } else {
+      schema.types[typeName] = oldSchema[typeName]
     }
   }
 
-  if (props.types) {
-    await updateTypesId(client, props.types, types)
-    await updateTypeSchema(client, props.types, schema.types, searchIndexes)
+  for (const typeName in newSchema.types) {
+    if (!oldSchema.types[typeName]) {
+      schema.types[typeName] = newSchema.types[typeName]
+    }
   }
-
-  // if change return true
+  return newSchema
 }
 
-function updateSchemaDefinition(schema: Schema, newSchema: Schema): void {
-  // TODO: merge things from newSchema to schema for maintaining the same nice api that only adds stuff and doesn't need to be a full copy of the old schema
+function newTypeDefinition(
+  typeName: string,
+  oldType: TypeSchema,
+  newType: TypeSchema
+): TypeSchema {
+  const typeDef: TypeSchema = {
+    fields: {},
+    prefix: oldType.prefix,
+    hierarchy: newType.hierarchy || oldType.hierarchy
+  }
+
+  if (oldType.prefix && newType.prefix && oldType.prefix !== newType.prefix) {
+    throw new Error(
+      `Type ${typeName} has a changed prefix from ${oldType.prefix} to ${newType.prefix}`
+    )
+  }
+
+  for (const fieldName in oldType.fields) {
+    if (newType.fields[fieldName]) {
+      typeDef[fieldName] = newFieldDefinition(
+        `${typeName}.${fieldName}`,
+        oldType.fields[fieldName],
+        newType.fields[fieldName]
+      )
+    } else {
+      typeDef[fieldName] = oldType.fields[fieldName]
+    }
+  }
+
+  for (const fieldName in newType.fields) {
+    if (!oldType.fields[fieldName]) {
+      typeDef.fields[fieldName] = newType.fields[fieldName]
+    }
+  }
+
+  return typeDef
+}
+
+function newFieldDefinition(
+  fieldPath: string,
+  oldField: FieldSchema,
+  newField: FieldSchema
+) {
+  if (oldField.type !== newField.type) {
+    throw new Error(
+      `Path ${fieldPath} has mismatching types, trying to change ${oldField.type} to ${newField.type}`
+    )
+  }
+
+  if (
+    oldField.type === 'object' ||
+    (oldField.type === 'json' && oldField.properties)
+  ) {
+    const props = {}
+    for (const fieldName in oldField.properties) {
+      if ((<any>newField).properties[fieldName]) {
+        props[fieldName] = newFieldDefinition(
+          `${fieldPath}.${fieldName}`,
+          oldField.properties[fieldName],
+          (<any>newField).properties[fieldName]
+        )
+      } else {
+        props[fieldName] = oldField.properties[fieldName]
+      }
+    }
+
+    for (const fieldName in (<any>newField).properties) {
+      if (!oldField.properties[fieldName]) {
+        props[fieldName] = (<any>newField).properties[fieldName]
+      }
+    }
+
+    return { type: newField.type, properties: props }
+  } else if (
+    (oldField.type === 'set' || oldField.type === 'array') &&
+    oldField.items.type !== (<any>newField).items.type
+  ) {
+    throw new Error(
+      `Path ${fieldPath} has mismatching types, trying to change collection with type ${
+        oldField.items.type
+      } to type ${(<any>newField).items.type}`
+    )
+  }
+
+  return newField
 }
 
 export { updateSchema }
