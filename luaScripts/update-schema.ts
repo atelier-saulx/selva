@@ -1,5 +1,5 @@
 import { Schema } from '../src/schema/index'
-import { getSchema, updateSchema } from '../lua/src/schema/index'
+import { updateSchema } from '../lua/src/schema/index'
 
 const newSchema: Schema = cjson.decode(ARGV[0])
 
