@@ -9,8 +9,9 @@ async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
 
 function newSchemaDefinition(oldSchema: Schema, newSchema: Schema): Schema {
   const schema: Schema = {
-    sha: oldSchema.sha
-    // languages: newLanguages(oldSchema, newSchema)
+    sha: oldSchema.sha,
+    languages: newLanguages(oldSchema.languages, newSchema.languages),
+    types: {}
   }
 
   for (const typeName in oldSchema.types) {
@@ -31,6 +32,19 @@ function newSchemaDefinition(oldSchema: Schema, newSchema: Schema): Schema {
     }
   }
   return newSchema
+}
+
+function newLanguages(oldLangs: string[], newLangs: string[]): string[] {
+  const langs: Set<string> = new Set()
+  for (const lang of oldLangs) {
+    langs.add(lang)
+  }
+
+  for (const lang of newLangs) {
+    langs.add(lang)
+  }
+
+  return [...langs.values()]
 }
 
 function newTypeDefinition(
