@@ -140,3 +140,7 @@ export const isEqual = (a: any, b: any): boolean => {
   }
   return true
 }
+
+export function testString(str: string, regex: string): boolean {
+  return string.find(str, regex) !== null
+}

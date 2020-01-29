@@ -63,6 +63,7 @@ function updateIndex(index: string, schema: SearchSchema): void {
     }
   }
 
+  // TODO: for now we can remove this
   if (!changed) {
     for (const field in schema) {
       if (!set[field]) {

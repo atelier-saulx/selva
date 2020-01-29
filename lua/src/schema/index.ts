@@ -10,7 +10,6 @@ import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
 import updateHierarchies from './hierarchies'
 import * as r from '../redis'
-import { isEqual } from '../util'
 
 export function getSchema(): Schema {
   return cjson.decode(r.hget('___selva_schema', 'types'))

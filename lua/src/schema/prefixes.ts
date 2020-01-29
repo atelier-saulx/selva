@@ -1,7 +1,8 @@
 import { Schema, Types } from '~selva/schema/index'
+import { testString } from '../util'
 
 const validate = (id: string): boolean => {
-  return /[a-zA-Z0-9]{2}/.test(id)
+  return testString(id, '[%a%d][%a%d]')
 }
 
 // - means id seperator

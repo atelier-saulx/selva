@@ -8,4 +8,5 @@ declare module string {
     regex: string,
     replace: string
   ): [string, number]
+  function find(this: void, str: string, regex: string): null | number
 }
