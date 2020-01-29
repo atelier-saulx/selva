@@ -22,7 +22,7 @@ export function getSearchIndexes(): SearchIndexes {
 function savePrefixMap(schema: Schema): string {
   const prefixMap: Record<string, string> = {}
   for (const typeName in schema.types) {
-    prefixMap[schema.types[typeName].prefix] = typeName
+    prefixMap[<string>schema.types[typeName].prefix] = typeName
   }
 
   const encoded = cjson.encode(prefixMap)
@@ -55,9 +55,19 @@ export function saveSearchIndexes(searchIndexes: SearchIndexes): string {
 }
 
 function verifyLanguages(oldSchema: Schema, newSchema: Schema): string | null {
-  for (const lang of oldSchema.languages) {
-    if (newSchema.languages.indexOf(lang) === -1) {
-      return `New schema definition missing existing language option ${lang}`
+  if (oldSchema.languages === undefined && newSchema.languages === undefined) {
+    return null
+  } else if (newSchema.languages === undefined) {
+    return `Languages missing from the new schema ${cjson.encode(
+      oldSchema.languages
+    )}`
+  }
+
+  if (oldSchema.languages) {
+    for (const lang of oldSchema.languages) {
+      if (newSchema.languages.indexOf(lang) === -1) {
+        return `New schema definition missing existing language option ${lang}`
+      }
     }
   }
 
@@ -84,7 +94,7 @@ function checkField(
   path: string,
   searchIndexes: SearchIndexes,
   changedSearchIndexes: Record<string, boolean>,
-  oldField: FieldSchema | null,
+  oldField: FieldSchema,
   newField: FieldSchema
 ): string | null {
   if (oldField.type !== newField.type) {
@@ -92,9 +102,9 @@ function checkField(
   }
 
   if (newField.type !== 'object' && newField.type !== 'set') {
-    const index = newField.search.index || 'default'
+    const index = (newField.search && newField.search.index) || 'default'
     if (
-      newField.search ||
+      newField.search &&
       searchChanged(newField.search, (<any>oldField).search) // they are actually the same type, casting
     ) {
       searchIndexes[index] = searchIndexes[index] || {}
@@ -199,7 +209,7 @@ export function verifyAndEnsureRequiredFields(
   oldSchema: Schema,
   newSchema: Schema
 ): string | null {
-  let err: string
+  let err: string | null
 
   if ((err = verifyLanguages(oldSchema, newSchema))) {
     return err
@@ -227,8 +237,9 @@ export function updateSchema(
   newSchema: Schema
 ): [string | null, string | null] {
   const changedSearchIndexes: Record<string, boolean> = {}
-  const oldSchema = getSchema() || {}
+  const oldSchema = getSchema() || { types: {} }
   const searchIndexes = getSearchIndexes()
+
   const err = verifyAndEnsureRequiredFields(
     searchIndexes,
     changedSearchIndexes,

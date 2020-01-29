@@ -86,7 +86,7 @@ export type Types = { [key: string]: TypeSchema }
 export type Schema = {
   sha?: string
   languages?: string[]
-  types?: Types
+  types: Types
   idSeedCounter?: number
 }
 

@@ -17,12 +17,12 @@ const findKey = (obj: Types, value: any): false | string => {
 
 const hasDuplicates = (obj: Types, value: string): false | [string, string] => {
   let found = false
-  let result = []
+  let result: [string, string] = <[string, string]>(<unknown>[]) // force tuple typecheck for nicer code to build result value
   for (let k in obj) {
     if (obj[k].prefix === value) {
       if (found) {
         result[1] = k
-        return <[string, string]>result
+        return result
       }
 
       result[0] = k
@@ -44,10 +44,10 @@ function fromCharCode(n: number): string {
 }
 
 function rndStr(seed: number): string {
-  const div = (seed / 62) | 0
-  var str = fromCharCode(seed % 62)
+  const div = Math.floor(seed / 62)
+  let str = fromCharCode(seed % 62)
   if (div) {
-    if ((div / 62) | 0) {
+    if (Math.floor(div / 62)) {
       str = str + rndStr(div)
     } else {
       str = str + fromCharCode(div % 62)
@@ -57,7 +57,7 @@ function rndStr(seed: number): string {
 }
 
 function genPrefix(schema: Schema, type: string): string {
-  schema.idSeedCounter++
+  schema.idSeedCounter = schema.idSeedCounter ? schema.idSeedCounter + 1 : 1
   let id = rndStr(schema.idSeedCounter)
   if (id.length === 1) {
     id = type[0] + id

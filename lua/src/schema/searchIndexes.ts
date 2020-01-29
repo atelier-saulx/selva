@@ -5,7 +5,7 @@ function createIndex(index: string, schema: SearchSchema): void {
   const args = [index, 'SCHEMA']
   for (const field in schema) {
     args[args.length] = field
-    for (const f in schema[field]) {
+    for (const f of schema[field]) {
       args[args.length] = f
     }
   }
