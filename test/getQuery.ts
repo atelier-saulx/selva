@@ -13,10 +13,17 @@ test.serial('get - queryParser', async t => {
       $find: {
         $traverse: 'descendants',
         $filter: [
+          // in the array is an AND
           {
             $operator: '=',
             $field: 'type',
-            $value: ['match']
+            $value: ['match', 'video'] // this is an OR
+            // dont support nested ORS or ands for now
+          },
+          {
+            $operator: '=',
+            $field: 'name',
+            $value: ['flurp', 'flap']
           }
         ],
         $find: {
@@ -25,8 +32,14 @@ test.serial('get - queryParser', async t => {
               $operator: '=',
               $field: 'id',
               $value: ['de']
+            },
+            {
+              $operator: '=',
+              $field: 'type',
+              $value: ['region', 'match']
             }
           ],
+          // anything else is a bit harder
           $traverse: 'ancestors'
         }
       }
