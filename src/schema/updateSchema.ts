@@ -4,11 +4,25 @@ export function newSchemaDefinition(
   oldSchema: Schema,
   newSchema: Schema
 ): Schema {
+  if (!oldSchema) {
+    if (!newSchema.languages) {
+      newSchema.languages = []
+    }
+
+    if (!newSchema.types) {
+      newSchema.types = {}
+    }
+
+    return newSchema
+  }
+
   const schema: Schema = {
     sha: oldSchema.sha,
     languages: newLanguages(oldSchema.languages, newSchema.languages),
     types: {}
   }
+
+  console.log('first result', schema)
 
   for (const typeName in oldSchema.types) {
     if (newSchema.types[typeName]) {

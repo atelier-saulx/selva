@@ -11,13 +11,28 @@ import updateSearchIndexes from './searchIndexes'
 import updateHierarchies from './hierarchies'
 import * as r from '../redis'
 import { objectAssign } from '../util'
+import * as logger from '../logger'
 
 export function getSchema(): Schema {
-  return cjson.decode(r.hget('___selva_schema', 'types'))
+  const schemaStr = r.hget('___selva_schema', 'types')
+  if (!schemaStr) {
+    return {
+      idSeedCounter: 0,
+      types: {},
+      languages: []
+    }
+  }
+
+  return cjson.decode(schemaStr)
 }
 
 export function getSearchIndexes(): SearchIndexes {
-  return cjson.decode(r.hget('___selva_schema', 'searchIndexes'))
+  const searchIndexStr = r.hget('___selva_schema', 'searchIndexes')
+  if (!searchIndexStr) {
+    return {}
+  }
+
+  return cjson.decode(searchIndexStr)
 }
 
 function savePrefixMap(schema: Schema): string {

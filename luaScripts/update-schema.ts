@@ -1,5 +1,6 @@
 import { Schema } from '../src/schema/index'
 import { updateSchema } from '../lua/src/schema/index'
+import * as logger from '../lua/src/logger'
 
 const newSchema: Schema = cjson.decode(ARGV[0])
 

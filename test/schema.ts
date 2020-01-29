@@ -36,8 +36,8 @@ import { FieldType, Fields, Schema } from '../src/schema'
 test('schemas - basic', async t => {
   let current = { port: 6066 }
 
-  const server = await start({ port: 6066 })
-  const client = await connect({ port: 6066 })
+  const server = await start({ port: 6066, developmentLogging: true })
+  const client = connect({ port: 6066 })
 
   const defaultFields: Fields = {
     title: {
@@ -147,17 +147,19 @@ test('schemas - basic', async t => {
 
   await client.updateSchema(schema)
 
-  const {
-    types,
-    schema: schemaResult,
-    searchIndexes
-  } = await client.getSchema()
+  const { schema: schemaResult, searchIndexes } = await client.getSchema()
+  for (const type in schemaResult.types) {
+    if (!schema.types[type].prefix) {
+      delete schemaResult.types[type].prefix
+    }
+  }
+  delete schemaResult.idSeedCounter
 
   t.deepEqual(schemaResult, schema, 'correct schema')
 
   t.deepEqualIgnoreOrder(
-    Object.keys(types),
-    ['idSize', 'league', 'person', 'video', 'vehicle', 'family', 'match'],
+    Object.keys(schema.types),
+    ['league', 'person', 'video', 'vehicle', 'family', 'match'],
     'correct type map'
   )
 

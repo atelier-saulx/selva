@@ -17,13 +17,12 @@ let SCRIPTS
 try {
   SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
     (obj, scriptName) => {
-      return Object.assign(
-        obj,
-        readFileSync(
+      return Object.assign(obj, {
+        [scriptName]: readFileSync(
           pathJoin(process.cwd(), 'dist', 'lua', `${scriptName}.lua`),
           'utf8'
         )
-      )
+      })
     },
     {}
   )
@@ -81,6 +80,7 @@ export class SelvaClient {
 
       this.schema = updated
     } catch (e) {
+      console.error('Error updating schema', e)
       // TODO: only catch and refetch schema and try again with very specific error about mismatching SHA
     }
   }

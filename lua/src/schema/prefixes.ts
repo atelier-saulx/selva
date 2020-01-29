@@ -1,5 +1,6 @@
 import { Schema, Types } from '~selva/schema/index'
 import { testString } from '../util'
+import * as logger from '../logger'
 
 const validate = (id: string): boolean => {
   return testString(id, '[%a%d][%a%d]')
@@ -47,7 +48,7 @@ function rndStr(seed: number): string {
   const div = Math.floor(seed / 62)
   let str = fromCharCode(seed % 62)
   if (div) {
-    if (Math.floor(div / 62)) {
+    if (Math.floor(div / 62) !== 0) {
       str = str + rndStr(div)
     } else {
       str = str + fromCharCode(div % 62)
