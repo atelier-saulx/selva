@@ -51,6 +51,8 @@ const collectSchemas = async (
   // not using cached for async deep children while a set happens on the schemas...
   // maybe not nessecary
 
+  // make it nice
+
   const schema =
     schemas[payload.type] ||
     (schemas[payload.type] = schemaCache.cache[payload.type]) ||
@@ -95,6 +97,8 @@ const collectSchemas = async (
       }
     }
   }
+  // updateSchemaVersion send to mr lua
+  // make on monday
   return schemas
 }
 
