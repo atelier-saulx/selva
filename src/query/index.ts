@@ -25,13 +25,7 @@ const parseFilterDescendants = (operators, filter) => {
 
   for (let i = 0, len = filter.length; i < len; i++) {
     const segment = filter[i]
-    let { $operator, $field, $value } = segment
-
-    const isType = $field === 'type'
-
-    if (isType) {
-      $field = 'id'
-    }
+    const { $operator, $field, $value } = segment
 
     if (!operators[$operator]) {
       operators[$operator] = { fields: {} }
@@ -55,10 +49,6 @@ const parseFilterDescendants = (operators, filter) => {
     }
 
     if (!isEqual) {
-      if (isType) {
-        $value = parseType($value)
-      }
-
       if (Array.isArray($value)) {
         // storing a nested array is an AND
         fields[$field].push(...$value)

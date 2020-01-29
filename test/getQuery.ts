@@ -27,6 +27,8 @@ test.serial('get - queryParser', async t => {
           }
         ],
         $find: {
+          // anything else is a bit harder
+          $traverse: 'ancestors',
           $filter: [
             {
               $operator: '=',
@@ -38,9 +40,7 @@ test.serial('get - queryParser', async t => {
               $field: 'type',
               $value: ['region', 'match']
             }
-          ],
-          // anything else is a bit harder
-          $traverse: 'ancestors'
+          ]
         }
       }
     }
