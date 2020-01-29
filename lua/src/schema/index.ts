@@ -10,6 +10,7 @@ import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
 import updateHierarchies from './hierarchies'
 import * as r from '../redis'
+import { objectAssign } from '../util'
 
 export function getSchema(): Schema {
   return cjson.decode(r.hget('___selva_schema', 'types'))
@@ -65,9 +66,14 @@ function verifyLanguages(oldSchema: Schema, newSchema: Schema): string | null {
 
   if (oldSchema.languages) {
     for (const lang of oldSchema.languages) {
-      if (newSchema.languages.indexOf(lang) === -1) {
-        return `New schema definition missing existing language option ${lang}`
+      // check if found in new schema
+      for (const newSchemaLang of newSchema.languages) {
+        if (newSchemaLang === lang) {
+          return null
+        }
       }
+
+      return `New schema definition missing existing language option ${lang}`
     }
   }
 
@@ -151,7 +157,7 @@ function checkNestedChanges(
   for (const field in newType) {
     // ensure default fields are set on new types
     if (!oldType[field]) {
-      newType.fields = { ...defaultFields, ...newType.fields }
+      newType.fields = objectAssign({}, defaultFields, newType.fields || {})
     } else {
       const err = checkField(
         type,

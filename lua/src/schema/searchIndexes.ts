@@ -32,50 +32,30 @@ function alterIndex(index: string, schema: SearchSchema): void {
   }
 }
 
+function findFieldsFromInfoReply(info: string[]): string | null {
+  for (let i = 0; i < info.length; i++) {
+    if (info[i] === 'fields') {
+      return info[i + 1]
+    }
+  }
+
+  return null
+}
+
 function updateIndex(index: string, schema: SearchSchema): void {
   const info: string[] = redis.pcall('ftInfo', index)
   if (!info || (<any>info).err) {
     logger.error(`Error fetch info for index ${index}: ${(<any>info).err}`)
     return createIndex(index, schema)
   }
-  const fields = info[info.indexOf('fields') + 1]
+  const fields = findFieldsFromInfoReply(info)
 
   if (!fields) {
     return createIndex(index, schema)
   }
 
-  const set: Record<string, boolean> = {}
-  let changed: boolean = false
-  for (const field of fields) {
-    const scheme = schema[field]
-    set[field] = true
-    if (scheme) {
-      for (let i = 0; i < scheme.length; i++) {
-        if (scheme[i] !== type[i]) {
-          changed = true
-          break
-        }
-      }
-
-      if (changed) {
-        break
-      }
-    }
-  }
-
-  // TODO: for now we can remove this
-  if (!changed) {
-    for (const field in schema) {
-      if (!set[field]) {
-        changed = true
-        break
-      }
-    }
-  }
-  if (changed) {
-    // if super different (e.g. fields differently indexed) then drop the index
-    return alterIndex(index, schema)
-  }
+  // FIXME: if super different (e.g. fields differently indexed) then drop the index
+  return alterIndex(index, schema)
 }
 
 export default function updateSearchIndexes(

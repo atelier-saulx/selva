@@ -144,3 +144,16 @@ export const isEqual = (a: any, b: any): boolean => {
 export function testString(str: string, regex: string): boolean {
   return string.find(str, regex) !== null
 }
+
+export function objectAssign(
+  base: Record<string, any>,
+  ...others: Record<string, any>[]
+): Record<string, any> {
+  for (const obj of others) {
+    for (const key in obj) {
+      base[key] = obj[key]
+    }
+  }
+
+  return base
+}
