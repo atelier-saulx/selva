@@ -45,7 +45,7 @@ export function saveSchema(
   const encoded = cjson.encode(schema)
   const sha = redis.sha1hex(encoded)
   schema.sha = sha
-  r.hset('___selva_schema', 'types', encoded) // TODO: is this where we actually want to set it?
+  r.hset('___selva_schema', 'types', encoded)
   return encoded
 }
 
@@ -230,11 +230,11 @@ export function verifyAndEnsureRequiredFields(
   return null
 }
 
-// TODO: handle hset ___selva_schema, prefixes equivalent
-// TODO: handle search index changes
-export function updateSchema(newSchema: Schema): string | null {
+export function updateSchema(
+  newSchema: Schema
+): [string | null, string | null] {
   const changedSearchIndexes: Record<string, boolean> = {}
-  const oldSchema = getSchema()
+  const oldSchema = getSchema() || {}
   const searchIndexes = getSearchIndexes()
   const err = verifyAndEnsureRequiredFields(
     searchIndexes,
@@ -243,12 +243,12 @@ export function updateSchema(newSchema: Schema): string | null {
     newSchema
   )
   if (err) {
-    return err
+    return [null, err]
   }
 
   updateSearchIndexes(changedSearchIndexes, searchIndexes)
   updateHierarchies(oldSchema, newSchema)
-  saveSchema(newSchema)
-  return null
+  const saved = saveSchema(newSchema)
+  return [saved, null]
 }
 

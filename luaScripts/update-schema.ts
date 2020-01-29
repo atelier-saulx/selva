@@ -1,13 +1,13 @@
 import { Schema } from '../src/schema/index'
-import { getSchema, saveSchema } from '../lua/src/schema/index'
+import { getSchema, updateSchema } from '../lua/src/schema/index'
 
 const newSchema: Schema = cjson.decode(ARGV[0])
-const oldSchema: Schema = getSchema()
 
-if (!oldSchema || type(oldSchema) !== 'table') {
+const [updated, err] = updateSchema(newSchema)
+if (err && type(err) === 'string') {
   // @ts-ignore
-  return saveSchema(newSchema)
+  return redis.error_reply(err)
 }
 
 // @ts-ignore
-return saveSchema('') // TODO
+return updated
