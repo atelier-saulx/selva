@@ -82,13 +82,7 @@ export default function updateSearchIndexes(
   changedSearchIndexes: Record<string, boolean>,
   indexes: SearchIndexes
 ): void {
-  let hasUpdates = false
   for (const index in changedSearchIndexes) {
-    hasUpdates = true
     updateIndex(index, indexes[index])
-  }
-
-  if (hasUpdates) {
-    r.hset('___selva_schema', 'searchIndexes', cjson.encode(indexes))
   }
 }

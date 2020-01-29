@@ -235,17 +235,18 @@ export function verifyAndEnsureRequiredFields(
 export function updateSchema(newSchema: Schema): string | null {
   const changedSearchIndexes: Record<string, boolean> = {}
   const oldSchema = getSchema()
+  const searchIndexes = getSearchIndexes()
   const err = verifyAndEnsureRequiredFields(
-    {},
+    searchIndexes,
     changedSearchIndexes,
     oldSchema,
     newSchema
-  ) // TODO: load search indexes
+  )
   if (err) {
     return err
   }
 
-  updateSearchIndexes(changedSearchIndexes, {}) // TODO: get indexes
+  updateSearchIndexes(changedSearchIndexes, searchIndexes)
   updateHierarchies(oldSchema, newSchema)
   saveSchema(newSchema)
   return null
