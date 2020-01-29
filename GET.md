@@ -201,6 +201,7 @@ const { data: items } = await db.get({
 {
 $id: 'volleyball',
   items: {
+    title: true,
     $list: {
       $find: {
         // non redis search if id and direct ancestors
