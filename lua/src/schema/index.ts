@@ -176,24 +176,18 @@ function verifyTypes(
     if (newSchema.types[type] && oldSchema.types[type]) {
       // make sure that we're not changing type schemas that already exist
       // Note: prefix equality is verified in ensurePrefixes()
-      if (
-        !isEqual(oldSchema.types[type].fields, newSchema.types[type].fields)
-      ) {
-        const err = checkNestedChanges(
-          type,
-          oldSchema[type],
-          newSchema[type],
-          searchIndexes,
-          changedSearchIndexes
-        )
+      const err = checkNestedChanges(
+        type,
+        oldSchema[type],
+        newSchema[type],
+        searchIndexes,
+        changedSearchIndexes
+      )
 
-        if (err) {
-          return err
-        }
+      if (err) {
+        return err
       }
       // Note: hierarchies need not be the same, they can be overwritten
-    } else {
-      // TODO: new type
     }
   }
 
