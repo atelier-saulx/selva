@@ -36,6 +36,7 @@ try {
 }
 
 export class SelvaClient {
+  private schema: Schema
   public redis: RedisClient
 
   constructor(opts: ConnectOptions | (() => Promise<ConnectOptions>)) {

@@ -38,4 +38,8 @@ async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
   // if change return true
 }
 
+function updateSchemaDefinition(schema: Schema, newSchema: Schema): void {
+  // TODO: merge things from newSchema to schema for maintaining the same nice api that only adds stuff and doesn't need to be a full copy of the old schema
+}
+
 export { updateSchema }

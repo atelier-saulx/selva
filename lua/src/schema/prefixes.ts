@@ -55,14 +55,14 @@ function rndStr(seed: number): string {
   return str
 }
 
-function genPrefix(types: Types, type: string): string {
-  types.idSize++
-  let id = rndStr(types.idSize)
+function genPrefix(schema: Schema, type: string): string {
+  schema.idSeedCounter++
+  let id = rndStr(schema.idSeedCounter)
   if (id.length === 1) {
     id = type[0] + id
   }
-  if (findKey(types, id)) {
-    return genPrefix(types, type)
+  if (findKey(schema.types, id)) {
+    return genPrefix(schema, type)
   }
   return id
 }
@@ -96,7 +96,7 @@ export default function ensurePrefixes(
           return `Duplicate types found for prefix ${definition.prefix}: ${duplicates[0]} and ${duplicates[1]}`
         }
       } else {
-        definition.prefix = genPrefix(newSchema.types, type)
+        definition.prefix = genPrefix(newSchema, type)
       }
     }
   }
