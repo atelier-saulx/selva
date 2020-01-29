@@ -11,7 +11,7 @@ let a = get(opts)
 
 let encoded: string = cjson.encode(a)
 if (globals.NEEDS_GSUB) {
-  encoded = string.gsub(encoded, '"___selva_empty_array"', '')
+  ;[encoded] = string.gsub(encoded, '"___selva_empty_array"', '')
 }
 
 // @ts-ignore

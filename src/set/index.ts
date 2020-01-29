@@ -55,6 +55,7 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
     throw err
   }
   const parsed = parseSetObject(payload, schemas)
+  console.log(`sending parsed ${JSON.stringify(parsed)}`)
   const modifyResult = await client.modify({
     kind: 'update',
     payload: <SetOptions & { $id: string }>parsed // assure TS that id is actually set :|

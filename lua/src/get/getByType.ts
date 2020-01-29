@@ -5,12 +5,15 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { TypeSchema } from '../../../src/schema/index'
+import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
   splitString,
   stringStartsWith,
+  stringEndsWith,
   joinString,
   ensureArray,
-  emptyArray
+  emptyArray,
+  markEmptyArraysInJSON
 } from '../util'
 import * as logger from '../logger'
 
@@ -28,13 +31,28 @@ const id = (
 
 const number = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): boolean => {
   const v = redis.hget(id, field)
+  if (
+    tryResolveSimpleRef(
+      result,
+      schemas,
+      id,
+      field,
+      v,
+      getByType,
+      language,
+      version
+    )
+  ) {
+    return true
+  }
+
   const value = !v ? null : tonumber(v)
   setNestedResult(result, field, value)
   return value !== null
@@ -53,13 +71,29 @@ const float = (
 
 const int = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): boolean => {
   const v = redis.hget(id, field)
+
+  if (
+    tryResolveSimpleRef(
+      result,
+      schemas,
+      id,
+      field,
+      v,
+      getByType,
+      language,
+      version
+    )
+  ) {
+    return true
+  }
+
   const value = !v ? null : Math.floor(tonumber(v))
   setNestedResult(result, field, value)
   return value !== null
@@ -67,13 +101,28 @@ const int = (
 
 const boolean = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): true => {
   const v = redis.hget(id, field)
+
+  if (
+    tryResolveSimpleRef(
+      result,
+      schemas,
+      id,
+      field,
+      v,
+      getByType,
+      language,
+      version
+    )
+  ) {
+    return true
+  }
   const value = v === 'true' ? true : false
   setNestedResult(result, field, value)
   return true
@@ -81,13 +130,29 @@ const boolean = (
 
 const string = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): boolean => {
   const value = redis.hget(id, field) || ''
+
+  if (
+    tryResolveSimpleRef(
+      result,
+      schemas,
+      id,
+      field,
+      value,
+      getByType,
+      language,
+      version
+    )
+  ) {
+    return true
+  }
+
   setNestedResult(result, field, value)
   return value !== null && value.length > 0
 }
@@ -119,18 +184,37 @@ const arrayLike = (
 
 const json = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  schemas: Record<string, TypeSchema>,
   id: Id,
   field: string,
-  _language?: string,
-  _version?: string
+  language?: string,
+  version?: string
 ): boolean => {
-  const value = redis.hget(id, field)
-  setNestedResult(
-    result,
-    field,
-    type(value) === 'string' ? cjson.decode(value) : null
-  )
+  let value = redis.hget(id, field)
+
+  let isString = true
+  if (type(value) === 'string') {
+    if (
+      tryResolveSimpleRef(
+        result,
+        schemas,
+        id,
+        field,
+        value,
+        getByType,
+        language,
+        version
+      )
+    ) {
+      return true
+    }
+
+    value = markEmptyArraysInJSON(value)
+  } else {
+    isString = false
+  }
+
+  setNestedResult(result, field, isString ? cjson.decode(value) : null)
   return value !== null
 }
 
@@ -161,7 +245,7 @@ const object = (
   id: Id,
   field: string,
   language?: string,
-  _version?: string
+  version?: string
 ): boolean => {
   const keys = redis.hkeys(id)
   let isComplete = true
@@ -169,11 +253,25 @@ const object = (
   for (const key of keys) {
     if (key.indexOf(field) === 0) {
       noKeys = false
+
+      if (stringEndsWith(key, '$ref')) {
+        return resolveObjectRef(
+          result,
+          schemas,
+          id,
+          field,
+          getByType,
+          language,
+          version
+        )
+      }
+
       if (!getByType(result, schemas, id, key, language)) {
         isComplete = false
       }
     }
   }
+
   return noKeys ? false : isComplete
 }
 

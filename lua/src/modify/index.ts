@@ -101,6 +101,8 @@ function setObject(id: string, field: string, item: any) {
     setField(id, field, item.$default, true)
   } else if (item.$increment) {
     redis.hincrby(id, field, item.$increment)
+  } else if (item.$ref) {
+    redis.hset(id, `${field}.$ref`, item.$ref)
   } else {
     setField(id, field, item, false)
   }

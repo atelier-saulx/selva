@@ -3,8 +3,16 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
 
+let srv
 test.before(async t => {
-  await start({ port: 6062 })
+  srv = await start({ port: 6062 })
+})
+
+test.after(async _t => {
+  const client = connect({ port: 6062 })
+  await client.delete('root')
+  await client.destroy()
+  await srv.destroy()
 })
 
 test.serial('get - simple $list', async t => {

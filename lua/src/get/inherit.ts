@@ -6,6 +6,7 @@ import { setNestedResult } from './nestedFields'
 import getByType from './getByType'
 import { ensureArray } from '../util'
 import * as logger from '../logger'
+import getWithField from 'lua/src/get/field'
 
 type Ancestor = [Ancestor[], number]
 
@@ -72,22 +73,18 @@ function createAncestorsFromFields(
   parse: (id: Id) => string
 ): Id[] {
   const s: Record<Id, Ancestor> = {}
-  logger.info('inherit from fields')
   createAncestorsInner(targetId, s)
   const result = []
   for (let id in s) {
     if (targetId !== id) {
       const ancestor = s[id]
       // get type/name index , store it for faster lookup
-      logger.info(`ancestors.length ${ancestor.length}`)
       let ignore = false
       let value: string | null = null
       const iterCtx: any[] = ancestor
       if (ancestor.length === 2) {
         value = parse(id)
-        logger.info(`PARSED ${tostring(value)}`)
         if (value) {
-          logger.info(`Found value ${tostring(value)}`)
           for (let i = 0, len = fields.length; i < len; i++) {
             if (fields[i] === value) {
               iterCtx[iterCtx.length] = i
@@ -100,7 +97,6 @@ function createAncestorsFromFields(
         }
       }
       if (!ignore && value) {
-        logger.info(`Processing ${value}`)
         const depth = iterCtx[1]
         const index = iterCtx[2]
         const v = iterCtx[3]
@@ -134,7 +130,6 @@ function createAncestorsFromFields(
             }
           }
         }
-        logger.info(`Storing ${value} in index ${l}`)
         table.insert(result, l + 1, id)
       }
     }
@@ -148,11 +143,28 @@ function setFromAncestors(
   ancestors: Id[],
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  fieldFrom?: string | string[]
 ) {
   for (let i = 0, len = ancestors.length; i < len; i++) {
-    if (getByType(result, schemas, ancestors[i], field, language, version)) {
-      break
+    if (fieldFrom && fieldFrom.length > 0) {
+      if (
+        getWithField(
+          result,
+          schemas,
+          ancestors[i],
+          field,
+          fieldFrom,
+          language,
+          version
+        )
+      ) {
+        break
+      }
+    } else {
+      if (getByType(result, schemas, ancestors[i], field, language, version)) {
+        break
+      }
     }
   }
 }
@@ -221,7 +233,8 @@ export default function inherit(
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  fieldFrom?: string | string[]
 ) {
   logger.info(`INHERITING FIELD ${field}`)
   const inherit = props.$inherit
@@ -233,7 +246,8 @@ export default function inherit(
         createAncestors(id),
         field,
         language,
-        version
+        version,
+        fieldFrom
       )
     } else if (inherit.$type || inherit.$name) {
       let ancestors: Id[]
@@ -244,7 +258,15 @@ export default function inherit(
         inherit.$type = ensureArray(inherit.$type)
         ancestors = createAncestorsFromFields(id, inherit.$type, parseType)
       }
-      setFromAncestors(result, schemas, ancestors, field, language, version)
+      setFromAncestors(
+        result,
+        schemas,
+        ancestors,
+        field,
+        language,
+        version,
+        fieldFrom
+      )
     } else if (inherit.$item) {
       logger.info('inheriting with $item')
       inherit.$item = ensureArray(inherit.$item)

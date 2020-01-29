@@ -89,12 +89,12 @@ for (const key in verifiers) {
   const converter = converters[key]
 
   parsers[key] = (
-    schemas: Record<string, TypeSchema>,
+    _schemas: Record<string, TypeSchema>,
     field: string,
     payload: SetOptions,
     result: SetOptions,
-    fields: FieldSchemaOther,
-    type: string
+    _fields: FieldSchemaOther,
+    _type: string
   ) => {
     if (!noOptions && typeof payload === 'object') {
       for (let k in payload) {
@@ -103,11 +103,22 @@ for (const key in verifiers) {
           k === '$value' ||
           (isNumber && k === '$increment')
         ) {
-          if (!verify(payload[k])) {
-            throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
-          } else if (converter) {
-            payload[k] = converter(payload[k])
+          if (payload[k].$ref) {
+            if (typeof payload[k].$ref !== 'string') {
+              throw new Error(`Non-string ref provided for ${key}.${k}`)
+            }
+            payload[k] = `___selva_$ref:${payload[k].$ref}`
+          } else {
+            if (!verify(payload[k])) {
+              throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
+            } else if (converter) {
+              payload[k] = converter(payload[k])
+            }
           }
+        } else if (k === '$ref') {
+          // TODO: verify it references the same type
+          result[field] = `___selva_$ref:${payload[k]}`
+          return
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }

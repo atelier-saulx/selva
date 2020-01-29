@@ -3,8 +3,10 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
 
+let srv
+
 test.before(async t => {
-  await start({
+  srv = await start({
     port: 6072,
     developmentLogging: true,
     loglevel: 'info'
@@ -96,6 +98,13 @@ test.before(async t => {
   })
 
   await client.destroy()
+})
+
+test.after(async _t => {
+  const client = connect({ port: 6072 })
+  await client.delete('root')
+  await client.destroy()
+  await srv.destroy()
 })
 
 test.serial('get - basic', async t => {
@@ -237,6 +246,7 @@ test.serial('get - field with empty array', async t => {
   const id = await client.set({
     type: 'lekkerType',
     thing: [],
+    dong: { dingdong: [] },
     ding: { dong: [] },
     dingdongs: [],
     refs: []
@@ -245,7 +255,7 @@ test.serial('get - field with empty array', async t => {
   const result = await client.get({
     $id: id,
     thing: true,
-    // dong: true, // FIXME
+    dong: true,
     ding: { dong: true },
     dingdongs: true,
     children: true,
@@ -259,8 +269,8 @@ test.serial('get - field with empty array', async t => {
     descendants: [],
     dingdongs: [],
     refs: [],
-    ding: { dong: [] }
-    //    dong: [],
+    ding: { dong: [] },
+    dong: { dingdong: [] }
   })
 
   client.destroy()
@@ -523,3 +533,4 @@ test.serial('get - $inherit', async t => {
 
 // ADD FIELD
 // ADD REF <-- ref mucho importante
+//
