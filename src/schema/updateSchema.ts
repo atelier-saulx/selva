@@ -1,13 +1,9 @@
-import { SelvaClient } from '../'
 import { Schema, TypeSchema, FieldSchema } from '.'
 
-async function updateSchema(client: SelvaClient, props: Schema): Promise<void> {
-  const newSchema = newSchemaDefinition(client.schema, props)
-  // TODO: update using script
-  console.log('UPDATING SCHEMA WITH', JSON.stringify(newSchema))
-}
-
-function newSchemaDefinition(oldSchema: Schema, newSchema: Schema): Schema {
+export function newSchemaDefinition(
+  oldSchema: Schema,
+  newSchema: Schema
+): Schema {
   const schema: Schema = {
     sha: oldSchema.sha,
     languages: newLanguages(oldSchema.languages, newSchema.languages),
@@ -133,5 +129,3 @@ function newFieldDefinition(
 
   return newField
 }
-
-export { updateSchema }

@@ -7,28 +7,25 @@ import { get, GetOptions, GetResult } from './get'
 import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
 import { Schema, SearchIndexes, Id } from './schema'
-import { updateSchema } from './schema/updateSchema'
+import { newSchemaDefinition } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import getTypeFromId from './getTypeFromId'
 import digest from './digest'
 import { IdOptions } from '../lua/src/id'
 
-// FIXME: this is pretty shit
-let MODIFY_SCRIPT: string
-let FETCH_SCRIPT: string
-let ID_SCRIPT: string
+let SCRIPTS
 try {
-  MODIFY_SCRIPT = readFileSync(
-    pathJoin(process.cwd(), 'dist', 'lua', 'modify.lua'),
-    'utf8'
-  )
-  FETCH_SCRIPT = readFileSync(
-    pathJoin(process.cwd(), 'dist', 'lua', 'fetch.lua'),
-    'utf8'
-  )
-  ID_SCRIPT = readFileSync(
-    pathJoin(process.cwd(), 'dist', 'lua', 'id.lua'),
-    'utf8'
+  SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
+    (obj, scriptName) => {
+      return Object.assign(
+        obj,
+        readFileSync(
+          pathJoin(process.cwd(), 'dist', 'lua', `${scriptName}.lua`),
+          'utf8'
+        )
+      )
+    },
+    {}
   )
 } catch (e) {
   console.error(`Failed to read modify.lua ${e.stack}`)
@@ -56,7 +53,7 @@ export class SelvaClient {
     // move to js
     return this.redis.loadAndEvalScript(
       'id',
-      ID_SCRIPT,
+      SCRIPTS.id,
       0,
       [],
       [JSON.stringify(props)]
@@ -72,7 +69,20 @@ export class SelvaClient {
   }
 
   async updateSchema(props: Schema) {
-    return updateSchema(this, props)
+    const newSchema = newSchemaDefinition(this.schema, props)
+    try {
+      const updated = await this.redis.loadAndEvalScript(
+        'update-schema',
+        SCRIPTS['update-schema'],
+        0,
+        [],
+        [JSON.stringify(newSchema)]
+      )
+
+      this.schema = updated
+    } catch (e) {
+      // TODO: only catch and refetch schema and try again with very specific error about mismatching SHA
+    }
   }
 
   async getSchema() {
@@ -82,7 +92,7 @@ export class SelvaClient {
   async modify(opts: ModifyOptions): Promise<ModifyResult> {
     return this.redis.loadAndEvalScript(
       'modify',
-      MODIFY_SCRIPT,
+      SCRIPTS.modify,
       0,
       [],
       [JSON.stringify(opts)],
@@ -93,7 +103,7 @@ export class SelvaClient {
   async fetch(opts: GetOptions): Promise<GetResult> {
     const str = await this.redis.loadAndEvalScript(
       'fetch',
-      FETCH_SCRIPT,
+      SCRIPTS.fetch,
       0,
       [],
       [JSON.stringify(opts)]
