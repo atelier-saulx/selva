@@ -91,6 +91,19 @@ export default class RedisClient extends RedisMethods {
     opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
     if (!this.scriptShas[scriptName]) {
+      /*
+       * Node is really fucking nice
+       * If I change this to
+       * this.scriptShas[scriptName] = await this.loadScript(script)
+       *
+       * the whole functions shits the bed like this line doesn't even exist
+       * and this.scriptShas is an empty object ({})...
+       * which means that even if the promise was resolved wrong
+       * the key doesn't exist at all, which it would if you did
+       * this.scriptShas['hello'] = undefined // becomes { hello: undefined }
+       *
+       * Thaaaanks!
+       */
       const r = await this.loadScript(script)
       this.scriptShas[scriptName] = r
     }
