@@ -13,6 +13,8 @@ import getTypeFromId from './getTypeFromId'
 import digest from './digest'
 import { IdOptions } from '../lua/src/id'
 
+const MAX_SCHEMA_UPDATE_RETRIES = 5
+
 let SCRIPTS
 try {
   SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
@@ -67,7 +69,9 @@ export class SelvaClient {
     return get(this, props)
   }
 
-  async updateSchema(props: Schema) {
+  async updateSchema(props: Schema, retry?: number) {
+    retry = retry || 0
+
     const newSchema = newSchemaDefinition(this.schema, props)
     try {
       const updated = await this.redis.loadAndEvalScript(
@@ -80,8 +84,21 @@ export class SelvaClient {
 
       this.schema = updated
     } catch (e) {
-      console.error('Error updating schema', e)
-      // TODO: only catch and refetch schema and try again with very specific error about mismatching SHA
+      console.error('Error updating schema', e.stack)
+      if (
+        e.stack.includes(
+          'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
+        )
+      ) {
+      }
+      if (retry >= MAX_SCHEMA_UPDATE_RETRIES) {
+        throw new Error(
+          `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
+        )
+      }
+
+      await this.getSchema()
+      await this.updateSchema(props, retry + 1)
     }
   }
 

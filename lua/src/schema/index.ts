@@ -359,6 +359,13 @@ export function updateSchema(
   logger.info('yesh')
   const changedSearchIndexes: Record<string, boolean> = {}
   const oldSchema = getSchema() || { types: {} }
+  if (oldSchema.sha && newSchema.sha !== oldSchema.sha) {
+    return [
+      null,
+      'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
+    ]
+  }
+
   const searchIndexes = getSearchIndexes()
 
   const err = verifyAndEnsureRequiredFields(
