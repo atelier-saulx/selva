@@ -90,18 +90,15 @@ export default class RedisClient extends RedisMethods {
     args: string[],
     opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
-    console.log(`RUNNING SCRIPT ${scriptName}`)
     if (!this.scriptShas[scriptName]) {
       const r = await this.loadScript(script)
       this.scriptShas[scriptName] = r
-      console.log(`LOADED SCRIPT ${scriptName}`, this.scriptShas)
     }
 
     if (opts && opts.batchingEnabled) {
       this.scriptBatchingEnabled[this.scriptShas[scriptName]] = true
     }
 
-    console.log(`EVALLING`, this.scriptShas)
     return this.evalSha(this.scriptShas[scriptName], numKeys, ...keys, ...args)
   }
 
