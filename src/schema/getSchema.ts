@@ -32,8 +32,8 @@ async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
     searchIndexes = JSON.parse(fetchedIndexes)
   }
 
-  this.schema = schema
-  this.searchIndexes = searchIndexes // FIXME: do we need this?
+  client.schema = schema
+  client.searchIndexes = searchIndexes // FIXME: do we need this?
 
   return { schema, searchIndexes }
 }

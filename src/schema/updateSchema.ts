@@ -18,7 +18,10 @@ export function newSchemaDefinition(
 
   const schema: Schema = {
     sha: oldSchema.sha,
-    languages: newLanguages(oldSchema.languages, newSchema.languages),
+    languages: newLanguages(
+      oldSchema.languages || [],
+      newSchema.languages || []
+    ),
     types: {}
   }
 
@@ -64,8 +67,14 @@ function newTypeDefinition(
 ): TypeSchema {
   const typeDef: TypeSchema = {
     fields: {},
-    prefix: oldType.prefix,
-    hierarchy: newType.hierarchy || oldType.hierarchy
+    prefix: (oldType && oldType.prefix) || (newType && newType.prefix),
+    hierarchy: (newType && newType.hierarchy) || (oldType && oldType.hierarchy)
+  }
+
+  if (!oldType) {
+    return newType
+  } else if (!newType) {
+    return oldType
   }
 
   if (oldType.prefix && newType.prefix && oldType.prefix !== newType.prefix) {

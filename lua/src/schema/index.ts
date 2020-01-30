@@ -119,9 +119,9 @@ function checkField(
   newField: FieldSchema
 ): string | null {
   logger.info(
-    `SEARCH: ${cjson.encode((<any>oldField).search)} ${cjson.encode(
-      (<any>newField).search
-    )}`
+    `SEARCH for type ${type}, for path ${path}: ${cjson.encode(
+      (<any>oldField).search
+    )} ${cjson.encode((<any>newField).search)}`
   )
   if (oldField.type !== newField.type) {
     return `Cannot change existing type for ${type} field ${path} changing from ${oldField.type} to ${newField.type}`
@@ -178,10 +178,8 @@ function checkNestedChanges(
   searchIndexes: SearchIndexes,
   changedIndexes: Record<string, boolean>
 ): null | string {
-  for (const field in newType) {
-    // ensure default fields are set on new types
-    if (!oldType[field]) {
-      newType.fields = objectAssign({}, defaultFields, newType.fields || {})
+  for (const field in newType.fields) {
+    if (!oldType.fields || !oldType.fields[field]) {
       findSearchConfigurations(
         newType.fields[field],
         field,
@@ -253,7 +251,19 @@ function verifyTypes(
       }
       // Note: hierarchies need not be the same, they can be overwritten
     } else {
-      logger.info(`new type  ${type}`)
+      logger.info(
+        `new type  ${type}: ${cjson.encode(newSchema.types[type].fields)}`
+      )
+      newSchema.types[type].fields = objectAssign(
+        {},
+        defaultFields,
+        newSchema.types[type].fields || {}
+      )
+      logger.info(
+        `new type with default fileds ${type}: ${cjson.encode(
+          newSchema.types[type].fields
+        )}`
+      )
       findSearchConfigurations(
         newSchema.types[type],
         '',
@@ -366,4 +376,3 @@ export function updateSchema(
   const saved = saveSchema(newSchema, searchIndexes)
   return [saved, null]
 }
-

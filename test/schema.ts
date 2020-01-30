@@ -33,6 +33,15 @@ import { FieldType, Fields, Schema } from '../src/schema'
 // maybe add this somewhere
 // same for image, video etc
 
+const mangleResults = (correctSchema: Schema, schemaResult: Schema) => {
+  for (const type in schemaResult.types) {
+    if (!correctSchema.types[type].prefix) {
+      delete schemaResult.types[type].prefix
+    }
+  }
+  delete schemaResult.idSeedCounter
+}
+
 test('schemas - basic', async t => {
   let current = { port: 6066 }
 
@@ -48,8 +57,30 @@ test('schemas - basic', async t => {
   })
 
   const defaultFields: Fields = {
+    id: {
+      type: 'id'
+    },
+    type: {
+      type: 'type',
+      search: {
+        index: 'default',
+        type: ['TAG']
+      }
+    },
     title: {
       type: 'text'
+    },
+    parents: {
+      type: 'references'
+    },
+    children: {
+      type: 'references'
+    },
+    ancestors: {
+      type: 'references'
+    },
+    descendants: {
+      type: 'references'
     }
   }
 
@@ -156,13 +187,8 @@ test('schemas - basic', async t => {
   await client.updateSchema(schema)
 
   const { schema: schemaResult, searchIndexes } = await client.getSchema()
-  for (const type in schemaResult.types) {
-    if (!schema.types[type].prefix) {
-      delete schemaResult.types[type].prefix
-    }
-  }
-  delete schemaResult.idSeedCounter
 
+  mangleResults(schema, schemaResult)
   t.deepEqual(schemaResult, schema, 'correct schema')
 
   t.deepEqualIgnoreOrder(
@@ -200,11 +226,9 @@ test('schemas - basic', async t => {
     }
   })
 
-  t.deepEqual(
-    (await client.getSchema()).schema,
-    schema,
-    'correct schema after setting the same'
-  )
+  const newResult = (await client.getSchema()).schema
+  mangleResults(schema, newResult)
+  t.deepEqual(newResult, schema, 'correct schema after setting the same')
 
   // drop search index in this case (NOT SUPPORTED YET!)
   await client.updateSchema({
@@ -232,8 +256,8 @@ test('schemas - basic', async t => {
   t.deepEqual(
     fields2,
     [
-      ['type', 'type', 'TAG', 'SEPARATOR', ','],
-      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ',']
+      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
+      ['type', 'type', 'TAG', 'SEPARATOR', ',']
     ],
     'change fields in the index - does not drop index yet so stays the same!'
   )
@@ -258,6 +282,7 @@ test('schemas - basic', async t => {
 
   const info = await client.redis.ftInfo('default')
   const fields = info[info.indexOf('fields') + 1]
+  console.log('FIELDSSSS', fields)
 
   t.deepEqual(
     fields,
