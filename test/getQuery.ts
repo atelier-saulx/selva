@@ -13,39 +13,87 @@ test.serial('get - queryParser', async t => {
       $find: {
         $traverse: 'descendants',
         $filter: [
-          // in the array is an AND
           {
             // $or: {}, $and: {} if field is not the same thencgo crazy
             $operator: '=',
             $field: 'type',
-            $value: ['match', 'video'] // this is an OR
-            // dont support nested ORS or ands for now
+            $value: 'match' // this is an OR
+          },
+          // in the array is an AND
+          {
+            $operator: '=',
+            $field: 'flup',
+            $value: ['flap', 'snurfy'], // this is an OR
+            $or: {
+              $operator: '=',
+              $value: ['snurkyshine'],
+              $field: 'name',
+              $and: {
+                $operator: '=',
+                $value: ['snurx'],
+                $field: 'flurpe'
+              },
+              $or: {
+                $operator: '=',
+                $value: ['flurpeshine'],
+                $field: 'type'
+              }
+            },
+            $and: {
+              $operator: '=',
+              $value: 300,
+              $field: 'status',
+              $or: {
+                $operator: '=',
+                $value: 100,
+                $field: 'weirdStatus',
+                $and: {
+                  $operator: '=',
+                  $value: 100,
+                  $field: 'strangeStatus'
+                }
+              }
+            }
           },
           {
             $operator: '=',
             $field: 'name',
-            $value: ['flurp', 'flap']
-          }
-        ],
-        $find: {
-          // anything else is a bit harder
-          $traverse: 'ancestors',
-          $filter: [
-            {
-              $operator: '=',
-              $field: 'id',
-              $value: ['de']
-            },
-            {
+            $value: ['flurp', 'flap'],
+            $and: {
               $operator: '=',
               $field: 'type',
-              $value: ['region', 'match']
+              $value: ['match', 'video']
             }
-          ]
-        }
+          }
+        ]
+        // $find: {
+        //   // this must return the ancestors not children
+        //   // any other field else is a bit harder (nested qeury)
+
+        //   // ALLWAYS NESTED AGAIN
+        //   $traverse: 'ancestors',
+        //   $filter: [
+        //     {
+        //       $operator: '=',
+        //       $field: 'id',
+        //       $value: ['de']
+        //     },
+        //     {
+        //       $operator: '=',
+        //       $field: 'type',
+        //       $value: ['region', 'match']
+        //     }
+        //   ]
+
+        //   //   $find: {
+        //   //       $traverse: 'descendants'
+        //   //   }
+        // }
       }
     }
   }
+
+  //   `@ancestors:volleyball @type:{match|video} ((@flup:{flap|snurfy} (@status:300|(@weirdStatus:100 @strangeStatus:100)))|(@name:{snurkyshine} @flurpe:{snurx})|@type:{flurpeshine}) @name:{flurp|flap}`
 
   console.log(queryParser(simpleQeury, 'volleyball'))
 
