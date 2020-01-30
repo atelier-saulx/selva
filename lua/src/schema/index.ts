@@ -19,7 +19,8 @@ export function getSchema(): Schema {
     return {
       idSeedCounter: 0,
       types: {},
-      languages: []
+      languages: [],
+      prefixToTypeMapping: {}
     }
   }
 
@@ -35,15 +36,13 @@ export function getSearchIndexes(): SearchIndexes {
   return cjson.decode(searchIndexStr)
 }
 
-function savePrefixMap(schema: Schema): string {
+function constructPrefixMap(schema: Schema): void {
   const prefixMap: Record<string, string> = {}
   for (const typeName in schema.types) {
     prefixMap[<string>schema.types[typeName].prefix] = typeName
   }
 
-  const encoded = cjson.encode(prefixMap)
-  r.hset('___selva_schema', 'prefixes', encoded)
-  return encoded
+  schema.prefixToTypeMapping = prefixMap
 }
 
 export function saveSchema(
@@ -55,7 +54,7 @@ export function saveSchema(
     saveSearchIndexes(searchIndexes)
   }
 
-  savePrefixMap(schema)
+  constructPrefixMap(schema)
 
   let encoded = cjson.encode(schema)
   const sha = redis.sha1hex(encoded)

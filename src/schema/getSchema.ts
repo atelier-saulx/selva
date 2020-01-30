@@ -13,7 +13,8 @@ async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
   let schema: Schema = {
     languages: [],
     types: {},
-    idSeedCounter: 0
+    idSeedCounter: 0,
+    prefixToTypeMapping: {}
   }
 
   let searchIndexes: SearchIndexes = {}

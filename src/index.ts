@@ -110,15 +110,39 @@ export class SelvaClient {
     return getSchema(this)
   }
 
-  async modify(opts: ModifyOptions): Promise<ModifyResult> {
-    return this.redis.loadAndEvalScript(
-      'modify',
-      SCRIPTS.modify,
-      0,
-      [],
-      [JSON.stringify(opts)],
-      { batchingEnabled: true }
-    )
+  async modify(opts: ModifyOptions, retry: number = 0): Promise<ModifyResult> {
+    if (!this.schema || !this.schema.sha) {
+      await this.getSchema()
+    }
+
+    try {
+      return await this.redis.loadAndEvalScript(
+        'modify',
+        SCRIPTS.modify,
+        0,
+        [],
+        [this.schema.sha, JSON.stringify(opts)],
+        { batchingEnabled: true }
+      )
+    } catch (e) {
+      console.error('Error updating schema', e.stack)
+      if (
+        e.stack.includes(
+          'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
+        )
+      ) {
+        if (retry >= MAX_SCHEMA_UPDATE_RETRIES) {
+          throw new Error(
+            `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
+          )
+        }
+
+        await this.getSchema()
+        await this.modify(opts, retry + 1)
+      } else {
+        throw e
+      }
+    }
   }
 
   async fetch(opts: GetOptions): Promise<GetResult> {

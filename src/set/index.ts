@@ -47,8 +47,17 @@ export const parseSetObject = (
 }
 
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
+  if (!client.schema) {
+    await client.getSchema()
+  }
+
   let schema = client.schema
   console.log('!!schemas', schema)
+  console.log('!!!payload', payload)
+  if (schema.prefixToTypeMapping && payload.$id && !payload.type) {
+    payload.type = schema.prefixToTypeMapping[payload.$id.substring(0, 2)]
+  }
+
   const parsed = parseSetObject(payload, schema)
   console.log(`sending parsed ${JSON.stringify(parsed)}`)
   const modifyResult = await client.modify({

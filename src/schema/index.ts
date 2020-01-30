@@ -88,6 +88,7 @@ export type Schema = {
   languages?: string[]
   types: Types
   idSeedCounter?: number
+  prefixToTypeMapping?: Record<string, string>
 }
 
 export const defaultFields: Record<string, FieldSchema> = {
