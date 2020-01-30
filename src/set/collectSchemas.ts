@@ -98,7 +98,6 @@ const collectSchemas = async (
     }
   }
   // updateSchemaVersion send to mr lua
-  // make on monday
   return schemas
 }
 
