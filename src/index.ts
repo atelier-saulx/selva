@@ -96,10 +96,12 @@ export class SelvaClient {
             `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
           )
         }
-      }
 
-      await this.getSchema()
-      await this.updateSchema(props, retry + 1)
+        await this.getSchema()
+        await this.updateSchema(props, retry + 1)
+      } else {
+        throw e
+      }
     }
   }
 
