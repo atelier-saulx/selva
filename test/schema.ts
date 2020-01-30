@@ -34,6 +34,10 @@ import { FieldType, Fields, Schema } from '../src/schema'
 // same for image, video etc
 
 const mangleResults = (correctSchema: Schema, schemaResult: Schema) => {
+  if (!correctSchema.sha) {
+    delete schemaResult.sha
+  }
+
   for (const type in schemaResult.types) {
     if (!correctSchema.types[type].prefix) {
       delete schemaResult.types[type].prefix
@@ -228,6 +232,7 @@ test('schemas - basic', async t => {
 
   const newResult = (await client.getSchema()).schema
   mangleResults(schema, newResult)
+  console.log(`newResult`, newResult)
   t.deepEqual(newResult, schema, 'correct schema after setting the same')
 
   // drop search index in this case (NOT SUPPORTED YET!)

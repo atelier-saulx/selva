@@ -13,7 +13,10 @@ export default function updateHierarchies(
   for (const typeName in newSchema.types) {
     if (
       oldSchema.types[typeName] &&
-      !isEqual(oldSchema[typeName].hierarchy, newSchema[typeName].hierarchy)
+      !isEqual(
+        oldSchema.types[typeName].hierarchy,
+        newSchema.types[typeName].hierarchy
+      )
     ) {
       updateHierarchiesForType(typeName)
     }

@@ -73,7 +73,6 @@ export class SelvaClient {
     retry = retry || 0
 
     const newSchema = newSchemaDefinition(this.schema, props)
-    console.log('newSchema', JSON.stringify(newSchema))
     try {
       const updated = await this.redis.loadAndEvalScript(
         'update-schema',
@@ -83,7 +82,9 @@ export class SelvaClient {
         [JSON.stringify(newSchema)]
       )
 
-      this.schema = updated
+      if (updated) {
+        this.schema = JSON.parse(updated)
+      }
     } catch (e) {
       console.error('Error updating schema', e.stack)
       if (

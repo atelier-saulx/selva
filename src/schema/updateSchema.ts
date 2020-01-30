@@ -4,6 +4,7 @@ export function newSchemaDefinition(
   oldSchema: Schema,
   newSchema: Schema
 ): Schema {
+  console.log('OLD SCHEMA:', oldSchema)
   if (!oldSchema) {
     if (!newSchema.languages) {
       newSchema.languages = []
@@ -24,17 +25,19 @@ export function newSchemaDefinition(
     ),
     types: {}
   }
-
-  console.log('first result', schema)
+  console.log(`CURRENT SCHEMA ${schema.sha}`)
 
   for (const typeName in oldSchema.types) {
+    console.log(`OLD SCHEMA TYPE ${typeName}`)
     if (newSchema.types[typeName]) {
+      console.log(`newTypeDefinition() ${typeName}`)
       schema.types[typeName] = newTypeDefinition(
         typeName,
-        oldSchema[typeName],
-        newSchema[typeName]
+        oldSchema.types[typeName],
+        newSchema.types[typeName]
       )
     } else {
+      console.log(`OLD TYPE ASSIGNED ${typeName}`)
       schema.types[typeName] = oldSchema.types[typeName]
     }
   }
@@ -85,18 +88,21 @@ function newTypeDefinition(
 
   for (const fieldName in oldType.fields) {
     if (newType.fields[fieldName]) {
-      typeDef[fieldName] = newFieldDefinition(
+      console.log(`Both have field for type ${typeName}: ${fieldName}`)
+      typeDef.fields[fieldName] = newFieldDefinition(
         `${typeName}.${fieldName}`,
         oldType.fields[fieldName],
         newType.fields[fieldName]
       )
     } else {
-      typeDef[fieldName] = oldType.fields[fieldName]
+      console.log(`Only old type has field ${fieldName} for type ${typeName}`)
+      typeDef.fields[fieldName] = oldType.fields[fieldName]
     }
   }
 
   for (const fieldName in newType.fields) {
     if (!oldType.fields[fieldName]) {
+      console.log(`Only new type has field ${fieldName} for type ${typeName}`)
       typeDef.fields[fieldName] = newType.fields[fieldName]
     }
   }
@@ -108,7 +114,7 @@ function newFieldDefinition(
   fieldPath: string,
   oldField: FieldSchema,
   newField: FieldSchema
-) {
+): FieldSchema {
   if (oldField.type !== newField.type) {
     throw new Error(
       `Path ${fieldPath} has mismatching types, trying to change ${oldField.type} to ${newField.type}`
@@ -138,7 +144,7 @@ function newFieldDefinition(
       }
     }
 
-    return {
+    return <any>{
       type: newField.type,
       properties: props
     }
@@ -154,7 +160,9 @@ function newFieldDefinition(
   }
 
   if (!(<any>newField).search) {
-    ;(<any>newField).search = oldField.search
+    if (oldField.search) {
+      ;(<any>newField).search = oldField.search
+    }
   }
 
   return newField

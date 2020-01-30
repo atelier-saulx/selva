@@ -57,9 +57,10 @@ export function saveSchema(
 
   savePrefixMap(schema)
 
-  const encoded = cjson.encode(schema)
+  let encoded = cjson.encode(schema)
   const sha = redis.sha1hex(encoded)
   schema.sha = sha
+  encoded = cjson.encode(schema)
   r.hset('___selva_schema', 'types', encoded)
   return encoded
 }
@@ -118,11 +119,12 @@ function checkField(
   oldField: FieldSchema,
   newField: FieldSchema
 ): string | null {
-  logger.info(
-    `SEARCH for type ${type}, for path ${path}: ${cjson.encode(
-      (<any>oldField).search
-    )} ${cjson.encode((<any>newField).search)}`
-  )
+  if (!oldField) {
+    return null
+  } else if (!newField) {
+    return `New schema missing field ${path} for type ${type}`
+  }
+
   if (oldField.type !== newField.type) {
     return `Cannot change existing type for ${type} field ${path} changing from ${oldField.type} to ${newField.type}`
   }
@@ -138,7 +140,8 @@ function checkField(
       )
       searchIndexes[index] = searchIndexes[index] || {}
       searchIndexes[index][path] =
-        (<any>newField).search.type || (<any>oldField).search.type
+        (newField.search && newField.search.type) ||
+        ((<any>oldField).search && (<any>oldField).search.type)
       changedSearchIndexes[index] = true
     }
   }
@@ -192,8 +195,8 @@ function checkNestedChanges(
         field,
         searchIndexes,
         changedIndexes,
-        oldType[field],
-        newType[field]
+        oldType.fields[field],
+        newType.fields[field]
       )
 
       if (err) {
@@ -221,8 +224,8 @@ function verifyTypes(
     // Note: prefix equality is verified in ensurePrefixes()
     const err = checkNestedChanges(
       type,
-      oldSchema[type],
-      newSchema[type],
+      oldSchema.types[type],
+      newSchema.types[type],
       searchIndexes,
       changedSearchIndexes
     )
@@ -240,8 +243,8 @@ function verifyTypes(
       // Note: prefix equality is verified in ensurePrefixes()
       const err = checkNestedChanges(
         type,
-        oldSchema[type],
-        newSchema[type],
+        oldSchema.types[type],
+        newSchema.types[type],
         searchIndexes,
         changedSearchIndexes
       )
