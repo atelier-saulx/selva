@@ -18,7 +18,5 @@ for (let i = 0, j = 0; i < ARGV.length; i += 2, j++) {
   modifyArgs[j] = cjson.decode(ARGV[i + 1])
 }
 let a = modify(modifyArgs)
-logger.info('mod args: ' + cjson.encode(modifyArgs))
-logger.info('mod results: ' + cjson.encode(a))
 // @ts-ignore
 return a
