@@ -44,6 +44,7 @@ const mangleResults = (correctSchema: Schema, schemaResult: Schema) => {
     }
   }
   delete schemaResult.idSeedCounter
+  delete schemaResult.prefixToTypeMapping
 }
 
 test('schemas - basic', async t => {

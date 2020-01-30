@@ -77,6 +77,7 @@ export default class RedisClient extends RedisMethods {
   }
 
   private resetScripts() {
+    console.log(`RESETTING SCRIPTS`)
     this.scriptBatchingEnabled = {}
     this.scriptShas = {}
   }
@@ -89,14 +90,18 @@ export default class RedisClient extends RedisMethods {
     args: string[],
     opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
+    console.log(`RUNNING SCRIPT ${scriptName}`)
     if (!this.scriptShas[scriptName]) {
-      this.scriptShas[scriptName] = await this.loadScript(script)
+      const r = await this.loadScript(script)
+      this.scriptShas[scriptName] = r
+      console.log(`LOADED SCRIPT ${scriptName}`, this.scriptShas)
     }
 
     if (opts && opts.batchingEnabled) {
       this.scriptBatchingEnabled[this.scriptShas[scriptName]] = true
     }
 
+    console.log(`EVALLING`, this.scriptShas)
     return this.evalSha(this.scriptShas[scriptName], numKeys, ...keys, ...args)
   }
 
@@ -265,16 +270,25 @@ export default class RedisClient extends RedisMethods {
         ? this.batchEvalScriptArgs(origSlice)
         : origSlice
 
+      console.log(
+        `executing slice`,
+        slice.map(x => x.command)
+      )
+
       slice.forEach(({ command, args }) => {
         batch[command](...args)
       })
       batch.exec((err, reply) => {
         if (err) {
           // if set returns error then do some stuff!
+          console.error(err)
           reject(err)
         } else {
+          console.log(`reply`, reply)
           reply.forEach((v, i) => {
+            console.log(`v`, v)
             if (v instanceof Error) {
+              console.log(`rejecting`)
               slice[i].reject(v)
               if (slice[i].nested) {
                 slice[i].nested.forEach(({ reject }) => {
@@ -283,8 +297,10 @@ export default class RedisClient extends RedisMethods {
               }
             } else {
               slice[i].resolve(v)
+              console.log(`resolving`, v)
               if (slice[i].nested) {
                 slice[i].nested.forEach(({ resolve }) => {
+                  console.log(`resolving`)
                   resolve(v)
                 })
               }
