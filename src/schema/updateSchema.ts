@@ -35,7 +35,7 @@ export function newSchemaDefinition(
         newSchema[typeName]
       )
     } else {
-      schema.types[typeName] = oldSchema[typeName]
+      schema.types[typeName] = oldSchema.types[typeName]
     }
   }
 
@@ -44,7 +44,7 @@ export function newSchemaDefinition(
       schema.types[typeName] = newSchema.types[typeName]
     }
   }
-  return newSchema
+  return schema
 }
 
 function newLanguages(oldLangs: string[], newLangs: string[]): string[] {

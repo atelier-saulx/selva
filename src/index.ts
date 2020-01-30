@@ -73,6 +73,7 @@ export class SelvaClient {
     retry = retry || 0
 
     const newSchema = newSchemaDefinition(this.schema, props)
+    console.log('newSchema', JSON.stringify(newSchema))
     try {
       const updated = await this.redis.loadAndEvalScript(
         'update-schema',
@@ -90,11 +91,11 @@ export class SelvaClient {
           'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
         )
       ) {
-      }
-      if (retry >= MAX_SCHEMA_UPDATE_RETRIES) {
-        throw new Error(
-          `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
-        )
+        if (retry >= MAX_SCHEMA_UPDATE_RETRIES) {
+          throw new Error(
+            `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
+          )
+        }
       }
 
       await this.getSchema()
