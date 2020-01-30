@@ -96,37 +96,47 @@ function verifyLanguages(oldSchema: Schema, newSchema: Schema): string | null {
   return null
 }
 
+function searchTypeChanged(
+  a: string[] | undefined,
+  b: string[] | undefined
+): boolean {
+  if (!a || !b) {
+    return true
+  }
+
+  if (a.length !== b.length) {
+    return true
+  }
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return true
+    }
+  }
+
+  return false
+}
+
 const searchChanged = (
   newSearch: Search | undefined,
   oldSearch: Search | undefined
 ): boolean => {
-  logger.info('searchChanged()')
   if (!newSearch) {
-    logger.info('NO NEW SEARCH CONFIG')
     return false
   }
 
   if (!oldSearch) {
-    logger.info('NO OLD SEARCH CONFIG')
     return true
   }
 
   if (newSearch.index !== oldSearch.index) {
-    logger.info('INDEX CHANGED')
     return true
   }
   if (newSearch.type.length !== oldSearch.type.length) {
-    logger.info('TYPE LENGTH DIFFERS')
     return true
   }
-  for (let i = 0; i < newSearch.type.length; i++) {
-    if (newSearch.type[i] !== oldSearch.type[i]) {
-      logger.info('TYPE DIFFERS')
-      return true
-    }
-  }
-  logger.info('UNCHANGED')
-  return false
+
+  return searchTypeChanged(newSearch.type, oldSearch.type)
 }
 
 function checkField(
@@ -137,7 +147,6 @@ function checkField(
   oldField: FieldSchema,
   newField: FieldSchema
 ): string | null {
-  logger.info(`CHECKING FIELD ${path}`)
   if (!oldField) {
     findSearchConfigurations(
       newField,
@@ -156,13 +165,20 @@ function checkField(
 
   if (newField.type !== 'object' && newField.type !== 'set') {
     const index = (newField.search && newField.search.index) || 'default'
-    logger.info(`Checking for search updates in ${cjson.encode(newField)}`)
     if (
       searchChanged(newField.search, (<any>oldField).search) // they are actually the same type, casting
     ) {
-      logger.info(
-        `Updating search for index ${index}: ${cjson.encode(newField.search)}`
-      )
+      if (
+        // @ts-ignore
+        searchTypeChanged(newField.search.type, oldField.search.type)
+      ) {
+        return `Can not change existing search types for ${path} in type ${type}, changing from ${cjson.encode(
+          // @ts-ignore
+          oldField.search.type
+          // @ts-ignore
+        )} to ${cjson.encode(newField.search.type)}`
+      }
+
       searchIndexes[index] = searchIndexes[index] || {}
       searchIndexes[index][path] =
         (newField.search && newField.search.type) ||
@@ -176,24 +192,34 @@ function checkField(
     (newField.type === 'json' && newField.properties)
   ) {
     for (const key in newField.properties) {
-      checkField(
-        type,
-        path + '.' + key,
-        searchIndexes,
-        changedSearchIndexes,
-        (<any>oldField).properties[key],
-        newField.properties[key]
-      )
+      let err: string | null
+      if (
+        (err = checkField(
+          type,
+          path + '.' + key,
+          searchIndexes,
+          changedSearchIndexes,
+          (<any>oldField).properties[key],
+          newField.properties[key]
+        ))
+      ) {
+        return err
+      }
     }
   } else if (newField.type === 'set' || newField.type === 'array') {
-    checkField(
-      type,
-      path,
-      searchIndexes,
-      changedSearchIndexes,
-      (<any>oldField).items,
-      newField.items
-    )
+    let err: string | null
+    if (
+      (err = checkField(
+        type,
+        path,
+        searchIndexes,
+        changedSearchIndexes,
+        (<any>oldField).items,
+        newField.items
+      ))
+    ) {
+      return err
+    }
   }
 
   return null
@@ -244,7 +270,6 @@ function verifyTypes(
       return `New schema definition missing existing type ${type}`
     }
 
-    logger.info(`matching schemas for type ${type}`)
     // make sure that we're not changing type schemas that already exist
     // Note: prefix equality is verified in ensurePrefixes()
     const err = checkNestedChanges(
@@ -263,7 +288,6 @@ function verifyTypes(
 
   for (const type in newSchema.types) {
     if (newSchema.types[type] && oldSchema.types[type]) {
-      logger.info(`matching schemas for type ${type}`)
       // make sure that we're not changing type schemas that already exist
       // Note: prefix equality is verified in ensurePrefixes()
       const err = checkNestedChanges(
@@ -279,18 +303,10 @@ function verifyTypes(
       }
       // Note: hierarchies need not be the same, they can be overwritten
     } else {
-      logger.info(
-        `new type  ${type}: ${cjson.encode(newSchema.types[type].fields)}`
-      )
       newSchema.types[type].fields = objectAssign(
         {},
         defaultFields,
         newSchema.types[type].fields || {}
-      )
-      logger.info(
-        `new type with default fileds ${type}: ${cjson.encode(
-          newSchema.types[type].fields
-        )}`
       )
       findSearchConfigurations(
         newSchema.types[type],
@@ -310,7 +326,6 @@ function findSearchConfigurations(
   searchIndexes: SearchIndexes,
   changedSearchIndexes: Record<string, boolean>
 ): void {
-  logger.info(`findSearchConfigurations`)
   if ((<any>obj).type) {
     const field = <FieldSchema>obj
     if (
@@ -327,9 +342,6 @@ function findSearchConfigurations(
       }
     } else {
       if (field.search) {
-        logger.info(
-          `Found search configuration in ${path}: ${cjson.encode(field.search)}`
-        )
         const index = field.search.index || 'default'
         searchIndexes[index] = searchIndexes[index] || {}
         searchIndexes[index][path] = field.search.type
@@ -384,7 +396,6 @@ export function verifyAndEnsureRequiredFields(
 export function updateSchema(
   newSchema: Schema
 ): [string | null, string | null] {
-  logger.info('yesh')
   const changedSearchIndexes: Record<string, boolean> = {}
   const oldSchema = getSchema() || { types: {} }
   if (oldSchema.sha && newSchema.sha !== oldSchema.sha) {
