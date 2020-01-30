@@ -32,9 +32,15 @@ function alterIndex(index: string, schema: SearchSchema): void {
   }
 }
 
-function findFieldsFromInfoReply(info: string[]): string | null {
+function findFieldsFromInfoReply(
+  info: ({ ok: string; err: string } | { ok: string }[])[]
+): string | null {
   for (let i = 0; i < info.length; i++) {
-    if (info[i] === 'fields') {
+    // @ts-ignore
+    logger.info('info[i].ok: ' + info[i].ok)
+    // @ts-ignore
+    if (info[i].ok === 'fields') {
+      // @ts-ignore
       return info[i + 1]
     }
   }
@@ -43,11 +49,12 @@ function findFieldsFromInfoReply(info: string[]): string | null {
 }
 
 function updateIndex(index: string, schema: SearchSchema): void {
-  const info: string[] = redis.pcall('ft.info', index)
+  const info: { ok: string; err: string }[] = redis.pcall('ft.info', index)
   if (!info || (<any>info).err) {
     logger.error(`Error fetch info for index ${index}: ${(<any>info).err}`)
     return createIndex(index, schema)
   }
+  logger.info('INFO: ' + cjson.encode(info))
   const fields = findFieldsFromInfoReply(info)
 
   if (!fields) {

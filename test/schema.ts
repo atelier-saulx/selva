@@ -287,9 +287,8 @@ test('schemas - basic', async t => {
 
   const info = await client.redis.ftInfo('default')
   const fields = info[info.indexOf('fields') + 1]
-  console.log('FIELDSSSS', fields)
 
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     fields,
     [
       ['type', 'type', 'TAG', 'SEPARATOR', ','],

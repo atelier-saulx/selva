@@ -96,18 +96,36 @@ function verifyLanguages(oldSchema: Schema, newSchema: Schema): string | null {
   return null
 }
 
-const searchChanged = (newSearch: Search, oldSearch: Search): boolean => {
+const searchChanged = (
+  newSearch: Search | undefined,
+  oldSearch: Search | undefined
+): boolean => {
+  logger.info('searchChanged()')
+  if (!newSearch) {
+    logger.info('NO NEW SEARCH CONFIG')
+    return false
+  }
+
+  if (!oldSearch) {
+    logger.info('NO OLD SEARCH CONFIG')
+    return true
+  }
+
   if (newSearch.index !== oldSearch.index) {
+    logger.info('INDEX CHANGED')
     return true
   }
   if (newSearch.type.length !== oldSearch.type.length) {
+    logger.info('TYPE LENGTH DIFFERS')
     return true
   }
   for (let i = 0; i < newSearch.type.length; i++) {
     if (newSearch.type[i] !== oldSearch.type[i]) {
+      logger.info('TYPE DIFFERS')
       return true
     }
   }
+  logger.info('UNCHANGED')
   return false
 }
 
@@ -119,7 +137,14 @@ function checkField(
   oldField: FieldSchema,
   newField: FieldSchema
 ): string | null {
+  logger.info(`CHECKING FIELD ${path}`)
   if (!oldField) {
+    findSearchConfigurations(
+      newField,
+      path,
+      searchIndexes,
+      changedSearchIndexes
+    )
     return null
   } else if (!newField) {
     return `New schema missing field ${path} for type ${type}`
@@ -131,8 +156,8 @@ function checkField(
 
   if (newField.type !== 'object' && newField.type !== 'set') {
     const index = (newField.search && newField.search.index) || 'default'
+    logger.info(`Checking for search updates in ${cjson.encode(newField)}`)
     if (
-      !newField.search ||
       searchChanged(newField.search, (<any>oldField).search) // they are actually the same type, casting
     ) {
       logger.info(
