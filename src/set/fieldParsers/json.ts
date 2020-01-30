@@ -1,9 +1,14 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaJson, FieldSchemaObject } from '../../schema'
+import {
+  Schema,
+  TypeSchema,
+  FieldSchemaJson,
+  FieldSchemaObject
+} from '../../schema'
 import fieldParsers from '.'
 
 export default (
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   field: string,
   payload: SetOptions,
   result: SetOptions,
@@ -19,7 +24,7 @@ export default (
   if (fields.properties) {
     const obj = {}
     fieldParsers.object(
-      schemas,
+      schema,
       field,
       payload,
       obj,

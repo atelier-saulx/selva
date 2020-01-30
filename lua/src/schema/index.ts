@@ -172,6 +172,7 @@ function checkField(
         // @ts-ignore
         searchTypeChanged(newField.search.type, oldField.search.type)
       ) {
+        // TODO: add support for changing schema types', which means recreating index
         return `Can not change existing search types for ${path} in type ${type}, changing from ${cjson.encode(
           // @ts-ignore
           oldField.search.type

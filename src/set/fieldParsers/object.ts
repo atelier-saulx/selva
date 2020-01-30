@@ -1,9 +1,9 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaObject } from '../../schema'
+import { Schema, TypeSchema, FieldSchemaObject } from '../../schema'
 import fieldParsers from '.'
 
 export default (
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   field: string,
   payload: SetOptions,
   result: SetOptions,
@@ -35,7 +35,7 @@ export default (
     } else {
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
-      fn(schemas, key, payload[key], r, fields.properties[key], type)
+      fn(schema, key, payload[key], r, fields.properties[key], type)
     }
   }
 }

@@ -1,14 +1,14 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaArrayLike } from '../../schema'
+import { Schema, TypeSchema, FieldSchemaArrayLike } from '../../schema'
 import fieldParsers from '.'
 
 export default (
-  schemas: Record<string, TypeSchema>,
+  _schema: Schema,
   field: string,
   payload: SetOptions,
   result: SetOptions,
-  fields: FieldSchemaArrayLike,
-  type: string
+  _fields: FieldSchemaArrayLike,
+  _type: string
 ): void => {
   // const arr = payload
   // if (!Array.isArray(arr)) {

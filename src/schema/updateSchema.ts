@@ -87,7 +87,7 @@ function newTypeDefinition(
   }
 
   for (const fieldName in oldType.fields) {
-    if (newType.fields[fieldName]) {
+    if (newType.fields && newType.fields[fieldName]) {
       console.log(`Both have field for type ${typeName}: ${fieldName}`)
       typeDef.fields[fieldName] = newFieldDefinition(
         `${typeName}.${fieldName}`,
@@ -101,7 +101,7 @@ function newTypeDefinition(
   }
 
   for (const fieldName in newType.fields) {
-    if (!oldType.fields[fieldName]) {
+    if (oldType.fields && !oldType.fields[fieldName]) {
       console.log(`Only new type has field ${fieldName} for type ${typeName}`)
       typeDef.fields[fieldName] = newType.fields[fieldName]
     }
