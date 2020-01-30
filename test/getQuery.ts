@@ -66,7 +66,12 @@ test.serial('get - queryParser', async t => {
             }
           }
         ]
-        // $find: {
+      }
+    }
+  }
+
+  /*
+ // $find: {
         //   // this must return the ancestors not children
         //   // any other field else is a bit harder (nested qeury)
 
@@ -89,9 +94,7 @@ test.serial('get - queryParser', async t => {
         //   //       $traverse: 'descendants'
         //   //   }
         // }
-      }
-    }
-  }
+  */
 
   //   `@ancestors:volleyball @type:{match|video} ((@flup:{flap|snurfy} (@status:300|(@weirdStatus:100 @strangeStatus:100)))|(@name:{snurkyshine} @flurpe:{snurx})|@type:{flurpeshine}) @name:{flurp|flap}`
 
