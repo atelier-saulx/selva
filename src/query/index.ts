@@ -21,9 +21,8 @@ const getPrefix = type => {
 
 const exampleSchema = {}
 
-const filterExists = (a, b, schema = exampleSchema) => {
+const filterExists = (a, b, schema) => {
   // can check for impossible combinations here as well
-
   if (a.$or) {
     return false
   }
@@ -50,7 +49,7 @@ const filterExists = (a, b, schema = exampleSchema) => {
   return false
 }
 
-const compareFilters = (result, filter) => {
+const compareFilters = (result, filter, schema) => {
   const a = result.reverseMap[filter.$field]
   if (!a) {
     result.reverseMap[filter.$field] = []
@@ -62,13 +61,15 @@ const compareFilters = (result, filter) => {
   }
   // double check if this is ok - means we dont allow arrays for $and, $or
   for (let i = 0; i < a.length; i++) {
-    if (filterExists(a[i], filter)) {
+    if (filterExists(a[i], filter, schema)) {
       return false
       break
     } else {
       // compare for impossiblities , or merger or changes in types
       // e.g. > , <
       if (!filter.$or) {
+        // compare for for example ancestors + set here
+        // if ()
         // else we cant compare too hard
       }
     }
@@ -93,16 +94,17 @@ const reduceFilter = (filter, $filter) => {
   }
 }
 
-const parseFilters = (result, $filter) => {
+const parseFilters = (result, $filter, schema) => {
   for (let i = 0; i < $filter.length; i++) {
     let filter = $filter[i]
     reduceFilter(filter, $filter)
-    filter = compareFilters(result, filter)
+    filter = compareFilters(result, filter, schema)
     if (filter) {
       if (filter.$or) {
         const or = parseFilters(
           { filters: { $and: [], $or: [] }, reverseMap: {} },
-          [filter.$or]
+          [filter.$or],
+          schema
         )
 
         let r
@@ -116,7 +118,8 @@ const parseFilters = (result, $filter) => {
         if (filter.$and) {
           const and = parseFilters(
             { filters: { $and: [filter], $or: [] }, reverseMap: {} },
-            [filter.$and]
+            [filter.$and],
+            schema
           )
           delete filter.$and
           filter = and
@@ -151,20 +154,24 @@ const parseFilters = (result, $filter) => {
   return result
 }
 
-const parseFind = (result, opts, id, field) => {
+const parseFind = (result, opts, id, field, schema) => {
   const { $traverse, $filter, $find } = opts
   if ($traverse) {
     if ($traverse === 'descendants') {
       if ($filter) {
-        const ancestorFilter = compareFilters(result, {
-          $field: 'ancestors',
-          $value: id,
-          $operator: '='
-        })
+        const ancestorFilter = compareFilters(
+          result,
+          {
+            $field: 'ancestors',
+            $value: id,
+            $operator: '='
+          },
+          schema
+        )
         if (ancestorFilter) {
           addToResult(result, ancestorFilter, '$and')
         }
-        parseFilters(result, $filter)
+        parseFilters(result, $filter, schema)
       }
     } else if ($traverse === 'ancestors') {
       if ($filter) {
@@ -177,23 +184,23 @@ const parseFind = (result, opts, id, field) => {
     }
 
     if ($find) {
-      parseFind(result, $find, id, field)
+      parseFind(result, $find, id, field, schema)
     }
   } else {
     throw new Error('Need to allways define $traverse for now')
   }
 }
 
-const parseNested = (result, opts, id, field) => {
+const parseNested = (result, opts, id, field, schema) => {
   if (opts.$list) {
     if (opts.$list.$find) {
-      parseFind(result, opts.$list.$find, id, field)
+      parseFind(result, opts.$list.$find, id, field, schema)
     } else if (opts.$sort) {
       console.log('sort not implemented yet')
       // not yet!
     }
   } else if (opts.$find) {
-    parseFind(result, opts.$find, id, field)
+    parseFind(result, opts.$find, id, field, schema)
   } else {
     throw new Error('should not come here no valid query')
     // sort perhaps?
@@ -210,6 +217,8 @@ const parseNested = (result, opts, id, field) => {
 
 const parseQuery = (getOptions, id = 'root', field?) => {
   const result = { filters: { $and: [] }, reverseMap: {} }
+
+  const schema = exampleSchema
 
   // field needs to be included together with id
   if (getOptions.$list && !getOptions.$list.$find && !getOptions.$list.$sort) {
@@ -230,7 +239,7 @@ const parseQuery = (getOptions, id = 'root', field?) => {
   }
 
   if (getOptions.$list || getOptions.$find) {
-    parseNested(result, getOptions, id, field)
+    parseNested(result, getOptions, id, field, schema)
   }
 
   // now lets make it into redis search
