@@ -93,10 +93,8 @@ test.before(async t => {
     })
   ])
 
-  console.log('IDS', ids)
-
   await wait(500)
-  t.true(ids[0].slice(0, 2) === 'le' && ids[1].slice(0, 2) === 'cl')
+  t.true(ids[0].slice(0, 2) === 'cl' && ids[1].slice(0, 2) === 'le')
 
   await client.destroy()
 })
