@@ -8,12 +8,28 @@ export type Inherit =
       $item?: Id | Id[]
     }
 
+export type Filter = {
+  $operator: '=' | '!=' | '>' | '<' | '<=' | '>='
+  $field: string
+  $value: string | number | (string | number)[]
+  $and?: Filter
+  $or?: Filter
+}
+
+// can also use find with just filters...
 export type Find = {
   $traverse?: 'descendants' | 'ancestors' | 'children' | 'parents'
+  $filter?: Filter | Filter[]
+}
+
+export type Sort = {
+  $field: string
+  $order: 'asc' | 'desc'
 }
 
 export type List = {
   $range?: [number, number]
+  $sort?: Sort | Sort[]
   $find?: Find
 }
 
@@ -21,6 +37,7 @@ export type GetField<T> = {
   $field?: string | string[]
   $inherit?: Inherit
   $list?: List
+  $find?: Find
   $default?: T
 }
 

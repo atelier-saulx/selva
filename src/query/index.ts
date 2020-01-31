@@ -3,6 +3,7 @@ import createSearchString from './createSearchString'
 import parseFilters from './parseFilters'
 import addResult from './addResult'
 import { SelvaClient } from '../'
+import { GetOptions } from '~selva/get'
 
 // need this from lua
 const parseType = type => {
@@ -29,7 +30,7 @@ const get = getOptions => {
   console.log('GET', getOptions)
 }
 
-const parseFind = (result, opts, id, field, schema) => {
+const parseFind = async (result, opts, id, field, schema) => {
   const { $traverse, $filter, $find } = opts
   if ($traverse) {
     if ($traverse === 'descendants') {
@@ -66,7 +67,7 @@ const parseFind = (result, opts, id, field, schema) => {
   }
 }
 
-const parseNested = (result, opts, id, field, schema) => {
+const parseNested = async (result, opts, id, field, schema) => {
   if (opts.$list) {
     if (opts.$list.$find) {
       parseFind(result, opts.$list.$find, id, field, schema)
@@ -82,9 +83,11 @@ const parseNested = (result, opts, id, field, schema) => {
   }
 }
 
+const parseGet = async () => {}
+
 const parseQuery = async (
   client: SelvaClient,
-  getOptions,
+  getOptions: GetOptions,
   id = 'root',
   field?
 ): Promise<any> => {

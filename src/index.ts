@@ -12,6 +12,7 @@ import { getSchema } from './schema/getSchema'
 import getTypeFromId from './getTypeFromId'
 import digest from './digest'
 import { IdOptions } from '../lua/src/id'
+import query from './query'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 5
 
@@ -67,6 +68,10 @@ export class SelvaClient {
 
   async get(props: GetOptions) {
     return get(this, props)
+  }
+
+  async query(props: GetOptions) {
+    return query(this, props)
   }
 
   async updateSchema(props: Schema, retry?: number) {

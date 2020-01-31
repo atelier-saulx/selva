@@ -60,7 +60,7 @@ test.before(async t => {
       ch.push({
         type: 'match',
         name: 'match' + i,
-        status: 300,
+        status: i > 10 ? 100 : 300,
         parents: { $add: team1 }
       })
     }
@@ -108,43 +108,44 @@ test.after(async _t => {
 
 test.serial('get - queryParser', async t => {
   // simple nested - single query
+  const client = connect({ port: 6072 })
 
   // extra option in find is index or auto from fields
-  const simpleQuery = {
+  await client.query({
     title: true,
     $list: {
       $find: {
-        $traverse: 'descendants',
-        $filter: [
-          {
-            $operator: '!=',
-            $field: 'type',
-            $and: {
-              $operator: '!=',
-              $field: 'name',
-              $value: ['match1', 'match3']
-            },
-            $value: 'match'
-          },
-          {
-            $operator: '!=',
-            $field: 'name',
-            $value: ['match1', 'match2']
-          },
-          {
-            $operator: '=',
-            $field: 'status',
-            $value: 300,
-            $and: {
-              $operator: '!=',
-              $field: 'type',
-              $value: 'video' //bit weird merge but ok
-            }
-          }
-        ]
+        $traverse: 'descendants'
+        // $filter: [
+        //   {
+        //     $operator: '!=',
+        //     $field: 'type',
+        //     $and: {
+        //       $operator: '!=',
+        //       $field: 'name',
+        //       $value: ['match1', 'match3']
+        //     },
+        //     $value: 'match'
+        //   },
+        //   {
+        //     $operator: '!=',
+        //     $field: 'name',
+        //     $value: ['match1', 'match2']
+        //   },
+        //   {
+        //     $operator: '=',
+        //     $field: 'status',
+        //     $value: 300,
+        //     $and: {
+        //       $operator: '!=',
+        //       $field: 'type',
+        //       $value: 'video' //bit weird merge but ok
+        //     }
+        //   }
+        // ]
       }
     }
-  }
+  })
 
   // console.log(queryParser(simpleQeury4, 'root'))
 
