@@ -64,24 +64,24 @@ function setDepth(id: Id, depth: number): void {
 function updateDepths(id: Id): void {
   // update self depth
   const parents = redis.smembers(id + '.parents')
-  let minParentDepth: number | null = null
+  let maxParentDepth: number | null = null
   for (const parent of parents) {
     let parentDepth = getDepth(parent)
     if (!parentDepth) {
       parentDepth = 0
     }
 
-    if (parentDepth && (!minParentDepth || minParentDepth > parentDepth)) {
-      minParentDepth = parentDepth
+    if (parentDepth && (!maxParentDepth || maxParentDepth < parentDepth)) {
+      maxParentDepth = parentDepth
     }
   }
 
-  if (!minParentDepth) {
-    minParentDepth = 0
+  if (!maxParentDepth) {
+    maxParentDepth = 0
   }
-  logger.info(`minParentDepth for id ${id} = ${minParentDepth}`)
+  logger.info(`maxParentDepth for id ${id} = ${maxParentDepth}`)
 
-  setDepth(id, 1 + minParentDepth)
+  setDepth(id, 1 + maxParentDepth)
   logger.info(`depth updated ${cjson.encode(depthMap)}`)
 
   // update depth of all children
@@ -93,7 +93,7 @@ function updateDepths(id: Id): void {
   for (const child of children) {
     updateDepths(child)
     // update the depth of self in child ancestors
-    redis.zAddReplaceScore(child + '.ancestors', 1 + minParentDepth, id)
+    redis.zAddReplaceScore(child + '.ancestors', 1 + maxParentDepth, id)
   }
 }
 
