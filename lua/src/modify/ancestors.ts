@@ -63,6 +63,7 @@ export function getNewAncestors(parents: Id[], from?: Id[]): string[] {
 //
 
 const batch = {}
+const executed = {}
 
 export function reCalculateAncestors(id: Id, parents?: Id[]) {
   // batch.push(id)
