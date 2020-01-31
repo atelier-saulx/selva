@@ -46,8 +46,7 @@ test.before(async t => {
         prefix: 'vi',
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
+          value: { type: 'number', search: { type: ['NUMERIC'] } }
         }
       }
     }
@@ -56,8 +55,24 @@ test.before(async t => {
   const ids = await Promise.all([
     client.set({
       type: 'league',
-      name: 'league 1'
-      // children : []
+      name: 'league 1',
+      children: [
+        {
+          type: 'match',
+          name: 'match1',
+          status: 300
+        },
+        {
+          type: 'match',
+          name: 'match2',
+          status: 300
+        },
+        {
+          type: 'match',
+          name: 'match3',
+          status: 100
+        }
+      ]
     }),
     client.set({
       type: 'club',
@@ -65,7 +80,13 @@ test.before(async t => {
       children: [
         {
           type: 'team',
-          name: 'team 1'
+          name: 'team 1',
+          children: [
+            {
+              type: 'video',
+              name: 'suprise video'
+            }
+          ]
         }
       ]
     })
@@ -101,14 +122,14 @@ test.serial('get - queryParser', async t => {
             $and: {
               $operator: '!=',
               $field: 'name',
-              $value: ['pietje', 'flappie']
+              $value: ['match1', 'match3']
             },
             $value: 'match'
           },
           {
             $operator: '!=',
             $field: 'name',
-            $value: ['pietje', 'mr snurfels']
+            $value: ['match1', 'match2']
           },
           {
             $operator: '=',
