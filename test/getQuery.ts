@@ -52,7 +52,7 @@ test.before(async t => {
     }
   })
 
-  const team1 = await client.id({ type: 'team ' })
+  const team1 = await client.id({ type: 'team' })
 
   const genMatches = () => {
     const ch = []
