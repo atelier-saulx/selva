@@ -93,6 +93,18 @@ export function srem(key: string, ...members: string[]): boolean {
   return redis.call('srem', key, ...members)
 }
 
+export function zAddMultipleNew(key: string, ...rest: string[]): number {
+  return redis.call('zadd', key, 'NX', ...rest)
+}
+
+export function zrangeWithScores(
+  key: string,
+  start: number = 0,
+  end: number = -1
+): string[] {
+  return redis.call('zrange', key, tostring(start), tostring(end), 'WITHSCORES')
+}
+
 export function exists(...keys: string[]): number {
   return redis.call('exists', ...keys)
 }
