@@ -2,6 +2,7 @@ import compareFilters from './compareFilters'
 import createSearchString from './createSearchString'
 import parseFilters from './parseFilters'
 import addResult from './addResult'
+import { SelvaClient } from '../'
 
 // need this from lua
 const parseType = type => {
@@ -81,7 +82,12 @@ const parseNested = (result, opts, id, field, schema) => {
   }
 }
 
-const parseQuery = (getOptions, id = 'root', field?) => {
+const parseQuery = async (
+  client: SelvaClient,
+  getOptions,
+  id = 'root',
+  field?
+): Promise<any> => {
   const result = { filters: {}, reverseMap: {} }
 
   const schema = exampleSchema
