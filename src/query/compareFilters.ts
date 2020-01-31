@@ -65,6 +65,15 @@ const isNotEqual = (a, b, schema) => {
   return false
 }
 
+const isNotEqualAndIsEqual = (a, b, schema) => {
+  if (a.$value === b.$value) {
+    throw new Error(
+      `Cannot have something equal and inequal @${a.$field} (${a.$operator}${a.$value}) and (${b.$operator}${b.$value})`
+    )
+  }
+  return false
+}
+
 const compareFilters = (result, filter, schema) => {
   const a = result.reverseMap[filter.$field]
   if (!a) {
@@ -91,8 +100,9 @@ const compareFilters = (result, filter, schema) => {
       fn = isEqual
     } else if ($a === '!=' && $b === '!=') {
       fn = isNotEqual
+    } else if (($a === '=' && $b === '!=') || ($a === '!=' && $b === '=')) {
+      fn = isNotEqualAndIsEqual
     }
-
     if (fn(prevFilter, filter, schema) === false) {
       return false
     }
