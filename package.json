@@ -33,7 +33,7 @@
   },
   "ava": {
     "files": [
-      "test/getQuery.ts",
+      "test/**/*.ts",
       "!test/assertions"
     ],
     "compileEnhancements": false,
