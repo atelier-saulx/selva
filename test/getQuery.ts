@@ -3,16 +3,17 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 import queryParser from '../src/query'
 import './assertions'
+import { wait } from './assertions'
 
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6072,
+    port: 6088,
     developmentLogging: true,
     loglevel: 'info'
   })
 
-  const client = connect({ port: 6072 })
+  const client = connect({ port: 6088 })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -92,15 +93,16 @@ test.before(async t => {
     })
   ])
 
-  console.log(ids)
+  console.log('IDS', ids)
 
+  await wait(500)
   t.true(ids[0].slice(0, 2) === 'le' && ids[1].slice(0, 2) === 'cl')
 
   await client.destroy()
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port: 6088 })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()

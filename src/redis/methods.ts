@@ -347,7 +347,12 @@ abstract class RedisMethods {
     ...keysAndArgs: string[]
   ): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.queue('evalsha', [sha, numKeys, ...keysAndArgs], resolve, reject)
+      this.queue(
+        'evalsha',
+        [sha, numKeys, ...keysAndArgs],
+        x => resolve(x),
+        reject
+      )
     })
   }
 

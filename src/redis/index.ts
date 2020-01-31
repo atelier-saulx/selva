@@ -259,10 +259,10 @@ export default class RedisClient extends RedisMethods {
           command: 'evalsha',
           args: [sha, 0, ...modifyArgs],
           resolve: (x: any) => {
-            modifyResolves.forEach(resolve => resolve(x))
+            modifyResolves.forEach((resolve, i: number) => resolve(x[i]))
           },
           reject: (x: Error) => {
-            modifyRejects.forEach(reject => reject(x))
+            modifyRejects.forEach((reject, i: number) => reject(x[i]))
           }
         })
       }
