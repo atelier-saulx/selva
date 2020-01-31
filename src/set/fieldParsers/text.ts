@@ -1,5 +1,5 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaOther } from '../../schema'
+import { Schema, TypeSchema, FieldSchemaOther } from '../../schema'
 
 function refs(field: string, payload: SetOptions, langs?: string[]): void {
   if (payload.$ref && Object.keys(payload).length !== 1) {
@@ -47,20 +47,20 @@ const verify = (payload: SetOptions, nested?: boolean, lang?: string[]) => {
         throw new Error(`Incorrect type for string ${key}`)
       }
     } else {
-      throw new Error(`Incorrect field for text ${key} ${payload}`)
+      throw new Error(`Incorrect field for text ${key} ${payload[key]}`)
     }
   }
 }
 
 export default (
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   field: string,
   payload: SetOptions,
   result: SetOptions,
-  fields: FieldSchemaOther,
-  type: string
+  _fields: FieldSchemaOther,
+  _type: string
 ): void => {
-  const lang: string[] = <string[]>schemas._languages
+  const lang: string[] = schema.languages
   refs(field, payload, lang)
   verify(payload, false, lang)
   result[field] = payload

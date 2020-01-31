@@ -118,3 +118,42 @@ export function markEmptyArraysInJSON(str: string): string {
 
   return str
 }
+
+export const isEqual = (a: any, b: any): boolean => {
+  const typeA = type(a)
+  if (typeA !== type(b)) {
+    return false
+  }
+
+  if (typeA === 'table') {
+    for (let key in a) {
+      if (!b[key]) {
+        return false
+      } else {
+        if (!isEqual(a[key], b[key])) {
+          return false
+        }
+      }
+    }
+  } else if (a !== b) {
+    return false
+  }
+  return true
+}
+
+export function testString(str: string, regex: string): boolean {
+  return string.find(str, regex) !== null
+}
+
+export function objectAssign(
+  base: Record<string, any>,
+  ...others: Record<string, any>[]
+): Record<string, any> {
+  for (const obj of others) {
+    for (const key in obj) {
+      base[key] = obj[key]
+    }
+  }
+
+  return base
+}

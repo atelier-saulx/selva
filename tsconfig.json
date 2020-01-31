@@ -4,7 +4,7 @@
     "paths": {
       "~selva/*": ["src/*"]
     },
-    "target": "es2015",
+    "target": "es2017",
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true,

@@ -97,6 +97,10 @@ export function exists(...keys: string[]): number {
   return redis.call('exists', ...keys)
 }
 
+export function set(key: string, val: string): boolean {
+  return redis.call('set', key, val)
+}
+
 export function get(key: string): string {
   return redis.call('get', key)
 }

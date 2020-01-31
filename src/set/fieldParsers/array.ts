@@ -1,9 +1,9 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaArrayLike } from '../../schema'
+import { Schema, TypeSchema, FieldSchemaArrayLike } from '../../schema'
 import fieldParsers from '.'
 
 export default (
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   field: string,
   payload: SetOptions,
   result: SetOptions,
@@ -24,7 +24,7 @@ export default (
   const arrayResult = []
   arr.forEach((payload, index) => {
     // need to remove all options from nested fields!
-    parser(schemas, index, payload, arrayResult, itemsFields, type)
+    parser(schema, index, payload, arrayResult, itemsFields, type)
   })
   // nested json special!
   result[field] = JSON.stringify(arrayResult)

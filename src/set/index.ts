@@ -1,17 +1,16 @@
 import { SetOptions } from './types'
 import { SelvaClient } from '..'
-import { TypeSchema } from '../schema'
-import collectSchemas from './collectSchemas'
+import { Types, Schema } from '../schema'
 import fieldParsers from './fieldParsers'
 import { verifiers } from './fieldParsers/simple'
 
 export const parseSetObject = (
   payload: SetOptions,
-  schemas: Record<string, TypeSchema>
+  schemas: Schema
 ): SetOptions => {
   const result: SetOptions = {}
   const type = payload.type
-  const schema = schemas[type]
+  const schema = schemas.types[type]
   if (!schema) {
     throw new Error(`Cannot find type ${type} from set-object`)
   }
@@ -48,14 +47,16 @@ export const parseSetObject = (
 }
 
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
-  let schemas
-  try {
-    schemas = await collectSchemas(client, payload, {})
-  } catch (err) {
-    throw err
+  if (!client.schema) {
+    await client.getSchema()
   }
-  const parsed = parseSetObject(payload, schemas)
-  console.log(`sending parsed ${JSON.stringify(parsed)}`)
+
+  let schema = client.schema
+  if (schema.prefixToTypeMapping && payload.$id && !payload.type) {
+    payload.type = schema.prefixToTypeMapping[payload.$id.substring(0, 2)]
+  }
+
+  const parsed = parseSetObject(payload, schema)
   const modifyResult = await client.modify({
     kind: 'update',
     payload: <SetOptions & { $id: string }>parsed // assure TS that id is actually set :|

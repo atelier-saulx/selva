@@ -81,11 +81,14 @@ export type TypeSchema = {
   fields?: Fields
 }
 
-export type Types = Record<string, TypeSchema>
+export type Types = { [key: string]: TypeSchema }
 
 export type Schema = {
+  sha?: string
   languages?: string[]
-  types?: Types
+  types: Types
+  idSeedCounter?: number
+  prefixToTypeMapping?: Record<string, string>
 }
 
 export const defaultFields: Record<string, FieldSchema> = {
