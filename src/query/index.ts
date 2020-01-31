@@ -106,7 +106,7 @@ const parseQuery = async (
 ): Promise<any> => {
   const result = { filters: {}, reverseMap: {} }
   let resultGet = {}
-  // field needs to be included together with id
+
   if (getOptions.$list && !getOptions.$list.$find && !getOptions.$list.$sort) {
     console.log('just normal list no query needed')
     return false
@@ -134,33 +134,38 @@ const parseQuery = async (
     }
   }
 
-  // console.dir(result.filters, { depth: 10 })
-
-  // const qeury = createSearchString(result.filters, schema).slice(1, -1)
-
   const qeury = createSearchString(result.filters, schema)
 
-  const getParameters = resultGet
-  console.log(getParameters, qeury)
-  // test '@type:{match}'
-  // LIMIT 0 99999
+  const $list = getOptions.$list
+  let lo = 0
+  let hi = 99999
 
-  // @ancestors:{"root"}
-  let queryResult = await client.redis.ftSearch(
-    'default',
-    qeury,
-    'LIMIT',
-    0,
-    99999,
-    'NOCONTENT'
-  )
-
-  if (queryResult.length === 1 && queryResult[0] === 0) {
-    // means is empty...
-    queryResult = []
+  if ($list.$range) {
+    lo = $list.$range[0]
+    hi = $list.$range[1]
   }
 
-  // console.log(await client.redis.ftInfo('default'))
+  const sort = []
+
+  if ($list.$sort) {
+    sort.push('SORTBY')
+    if (!Array.isArray($list.$sort)) {
+      $list.$sort = [$list.$sort]
+    }
+    for (let i = 0; i < $list.$sort.length; i++) {
+      let { $field, $order } = $list.$sort[i]
+      if (!$order) {
+        $order = 'asc'
+      }
+      sort.push($field, $order.toUpperCase())
+    }
+  }
+
+  const searchArgs = [qeury, 'NOCONTENT', ...sort, 'LIMIT', lo, hi]
+
+  console.log('SEARCH:', searchArgs)
+
+  const queryResult = await client.redis.ftSearch('default', ...searchArgs)
 
   const r = await Promise.all(
     queryResult.slice(1).map((id: string) => {
@@ -170,11 +175,6 @@ const parseQuery = async (
   )
 
   return r
-
-  // console.log('\n\n')
-  // console.log(r)
-
-  // field just means get it for this field - only relevant for $sort
 }
 
 const queryGet = async (
@@ -185,7 +185,6 @@ const queryGet = async (
   const schema = await client.getSchema()
 
   // identify if its part of a query here
-
   return await parseQuery(client, getOptions, schema, id)
 }
 

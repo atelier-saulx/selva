@@ -24,7 +24,7 @@ export type Find = {
 
 export type Sort = {
   $field: string
-  $order: 'asc' | 'desc'
+  $order?: 'asc' | 'desc'
 }
 
 export type List = {

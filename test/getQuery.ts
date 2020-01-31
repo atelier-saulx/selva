@@ -48,9 +48,9 @@ test.before(async t => {
       video: {
         prefix: 'vi',
         fields: {
-          date: { type: 'number', search: { type: ['NUMERIC'] } },
+          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC'] } }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       }
     }
@@ -85,7 +85,7 @@ test.before(async t => {
       ch.push({
         type: 'video',
         name: 'video',
-        date: Date.now() + (i > 5 ? 1000000 : -100000),
+        date: Date.now() + i + (i > 5 ? 1000000 : -100000),
         value: i
       })
     }
@@ -201,8 +201,6 @@ test.serial('get - queryParser', async t => {
   t.is(videos.length, 3, 'query result videos')
   t.is(league.length, 1, 'query result league')
 
-  console.log('!!!', results)
-
   const team = await client.query({
     id: true,
     $list: {
@@ -216,8 +214,6 @@ test.serial('get - queryParser', async t => {
       }
     }
   })
-
-  console.log(team)
 
   t.true(/te/.test(team[0].id), 'got id from team')
 
@@ -237,6 +233,41 @@ test.serial('get - queryParser', async t => {
   })
 
   t.is(teamMatches.length, 100)
+
+  const teamMatchesRange = await client.query({
+    $id: team[0].id,
+    id: true,
+    $list: {
+      $range: [0, 5],
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'match'
+        }
+      }
+    }
+  })
+
+  t.is(teamMatchesRange.length, 5)
+
+  const videosSorted = await client.query({
+    value: true,
+    $list: {
+      $sort: [{ $field: 'value', $order: 'desc' }],
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'video'
+        }
+      }
+    }
+  })
+
+  console.log(videosSorted.map(v => v.value))
 
   t.true(true)
 })
