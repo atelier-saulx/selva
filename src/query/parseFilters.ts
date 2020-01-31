@@ -1,5 +1,6 @@
 import compareFilters from './compareFilters'
 import addResult from './addResult'
+import { GetSchemaResult } from '~selva/schema/getSchema'
 
 const reduceFilter = (filter, $filter) => {
   // reduces $and statement
@@ -10,12 +11,38 @@ const reduceFilter = (filter, $filter) => {
 }
 
 // reduce the filter to an easier to parse intermediate format
-const parseFilters = (result, $filter, schema) => {
+const parseFilters = (result, $filter, schema: GetSchemaResult) => {
   for (let i = 0; i < $filter.length; i++) {
     let filter = $filter[i]
     reduceFilter(filter, $filter)
     filter = compareFilters(result, filter, schema)
+
     if (filter) {
+      const search =
+        schema.searchIndexes.default &&
+        schema.searchIndexes.default[filter.$field]
+      if (search) {
+        filter.$search = search
+        const operator = filter.$operator
+
+        if (
+          search[0] !== 'NUMERIC' &&
+          (operator === '>' ||
+            operator === '<' ||
+            operator === '<=' ||
+            operator === '..' ||
+            operator === '>=')
+        ) {
+          throw new Error(
+            `Cannot have numeric comparisons on other search types then NUMERIC ${filter.$field}`
+          )
+        }
+      } else {
+        throw new Error(
+          `Cannot search fields that are not indexed ${filter.$field}`
+        )
+      }
+
       if (filter.$or) {
         const or = parseFilters(
           { filters: {}, reverseMap: {} },

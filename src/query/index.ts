@@ -43,21 +43,17 @@ const parseFind = async (
   if (!$filter) {
     $filter = opts.$filter = []
   }
+  if (!Array.isArray($filter)) {
+    $filter = opts.$filter = [$filter]
+  }
   if ($traverse) {
     if ($traverse === 'descendants') {
       if ($filter) {
-        const ancestorFilter = compareFilters(
-          result,
-          {
-            $field: 'ancestors',
-            $value: id,
-            $operator: '='
-          },
-          schema
-        )
-        if (ancestorFilter) {
-          addResult(result, ancestorFilter, '$and')
-        }
+        $filter.push({
+          $field: 'ancestors',
+          $value: id,
+          $operator: '='
+        })
         parseFilters(result, $filter, schema)
       }
     } else if ($traverse === 'ancestors') {
@@ -165,10 +161,9 @@ const parseQuery = async (
   }
 
   // console.log(await client.redis.ftInfo('default'))
-  console.log(queryResult.length)
 
   const r = await Promise.all(
-    queryResult.map((id: string) => {
+    queryResult.slice(1).map((id: string) => {
       const opts = Object.assign({}, getOptions, { $id: id })
       return client.get(opts)
     })

@@ -93,9 +93,9 @@ export type Schema = {
 
 export const defaultFields: Record<string, FieldSchema> = {
   id: {
-    type: 'id'
-    // can allways use get for this :/ only nice for or in id
-    // search: { index: 'default', type: ['TAG'] }
+    type: 'id',
+    // can allways use get for this :/ only nice for or in filter id
+    search: { index: 'default', type: ['TAG'] }
   },
   type: {
     search: { index: 'default', type: ['TAG'] },

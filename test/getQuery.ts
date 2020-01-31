@@ -42,7 +42,7 @@ test.before(async t => {
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC'] } },
-          status: { type: 'number', search: { type: ['TAG'] } }
+          status: { type: 'number', search: { type: ['NUMERIC'] } }
         }
       },
       video: {
@@ -63,7 +63,7 @@ test.before(async t => {
       ch.push({
         type: 'match',
         name: 'match' + i,
-        status: i > 10 ? 100 : 300,
+        status: i === 0 ? 2 : i > 10 ? 100 : 300,
         parents: { $add: team1 }
       })
     }
@@ -125,13 +125,13 @@ test.after(async _t => {
 test.serial('get - queryParser', async t => {
   // simple nested - single query
   const client = connect({ port: 6088 })
-
   // extra option in find is index or auto from fields
   const results = await client.query({
     name: true,
     value: true,
     status: true,
     id: true,
+    type: true,
     $list: {
       $find: {
         $traverse: 'descendants',
@@ -139,39 +139,39 @@ test.serial('get - queryParser', async t => {
           {
             $operator: '=',
             $field: 'type',
-
             $value: 'match',
             $and: {
+              // 'range'
               $operator: '=',
               $field: 'status',
-              $value: 300
+              $value: [300, 2] // handle or
             },
             $or: {
               $operator: '=',
               $field: 'name',
-              $value: 'video'
+              $value: 'league 1',
+              $or: {
+                $operator: '>',
+                $field: 'value',
+                $value: 4,
+                $and: {
+                  $operator: '>',
+                  $field: 'value',
+                  $value: 6,
+                  $and: {
+                    $operator: '<',
+                    $field: 'value',
+                    $value: 8
+                  }
+                }
+              }
             }
           },
           {
             $operator: '!=',
             $field: 'name',
-            $value: ['match1', 'match3']
+            $value: ['match1', 'match2', 'match3']
           }
-          // {
-          //   $operator: '=',
-          //   $field: 'name',
-          //   $value: 'video'
-          // }
-          // {
-          //   $operator: '=',
-          //   $field: 'status',
-          //   $value: 300,
-          //   $and: {
-          //     $operator: '!=',
-          //     $field: 'type',
-          //     $value: 'video'
-          //   }
-          // }
         ]
       }
     }
