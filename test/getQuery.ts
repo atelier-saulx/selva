@@ -41,6 +41,7 @@ test.before(async t => {
         prefix: 'ma',
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
+          // need to warn if you change this!!!
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC'] } }
         }
@@ -50,6 +51,7 @@ test.before(async t => {
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
           date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          // making it different here should tell you something or at least take it over
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       }
@@ -268,9 +270,10 @@ test.serial('get - queryParser', async t => {
     }
   })
 
-  console.log(videosSorted.map(v => v.value))
-
-  // console.log(await client.redis.ftInfo('default'))
+  t.deepEqual(
+    videosSorted.map(v => v.value),
+    [99, 98, 97, 96, 95]
+  )
 
   t.true(true)
 })
