@@ -176,7 +176,9 @@ function checkField(
           // @ts-ignore
           oldField.search.type
           // @ts-ignore
-        )} to ${cjson.encode(newField.search.type)}`
+        )} to ${cjson.encode(
+          newField.search.type
+        )}. This will be supported in the future.`
       }
 
       searchIndexes[index] = searchIndexes[index] || {}
