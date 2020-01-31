@@ -4,12 +4,19 @@ import { splitString, joinString } from '../util'
 
 // order by depth (highest depth first)
 
-// ancestoryWith: []
-
 // 2league,1root,1tag   //put
 
 // zadd
 // if 2 thing with same depth use sort
+
+// includeAncestryWith
+// excludeAncestryWith
+
+// hierachy: false
+
+// going trough all
+
+// -- zSet keys
 
 export function getNewAncestors(parents: Id[], from?: Id[]): string[] {
   let allAncestors: { [k: string]: boolean } = {}
@@ -48,7 +55,18 @@ export function getNewAncestors(parents: Id[], from?: Id[]): string[] {
 }
 
 // change this .ancestor
+
+// map {[id]}
+
+// get an array of ids
+
+//
+
+const batch = {}
+
 export function reCalculateAncestors(id: Id, parents?: Id[]) {
+  // batch.push(id)
+
   if (!parents) {
     parents = redis.smembers(id + '.parents')
   }
@@ -59,4 +77,8 @@ export function reCalculateAncestors(id: Id, parents?: Id[]) {
   for (let child of children) {
     reCalculateAncestors(child)
   }
+}
+
+export function exec() {
+  // batch
 }

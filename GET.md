@@ -409,7 +409,7 @@ Schema example
 const schema = {
   match: {
     hierarchy: {
-      team: { ignore: ['league'] }
+      team: { ignoreAncestoryWith: ['league'] }
     },
     fields: [
       'start',
