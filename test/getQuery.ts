@@ -59,7 +59,7 @@ test.before(async t => {
 
   const genMatches = () => {
     const ch = []
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 1000; i++) {
       ch.push({
         type: 'match',
         name: 'match' + i,
@@ -103,7 +103,11 @@ test.before(async t => {
 
 test.after(async _t => {
   const client = connect({ port: 6088 })
-  await client.delete('root')
+  // handing if 1000 ???? not really a lot
+  console.log('hello')
+  const d = Date.now()
+  // await client.delete('root')
+  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
 })

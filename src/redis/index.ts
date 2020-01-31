@@ -59,6 +59,7 @@ export default class RedisClient extends RedisMethods {
   private buffer: RedisCommand[]
   private connected: boolean
   private inProgress: boolean
+  private isDestroyed: boolean
   private retryTimer: number
   private scriptShas: {
     [scriptName: string]: string
@@ -115,13 +116,21 @@ export default class RedisClient extends RedisMethods {
   }
 
   destroy() {
-    this.client.quit()
-    this.client = null
+    this.isDestroyed = true
+    if (this.client) {
+      this.client.quit()
+      this.client = null
+    } else {
+      this.client = null
+    }
   }
 
   private async connect() {
     const opts = await this.connector()
 
+    if (this.isDestroyed) {
+      return
+    }
     // even if the db does not exists should not crash!
     this.retryTimer = 100
     if (!opts.retryStrategy) {
