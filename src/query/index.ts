@@ -89,7 +89,7 @@ const parseNested = (result, opts, id, field, schema) => {
 // @ancestors: [] (@y:flap|@x:bar)
 
 const parseQuery = (getOptions, id = 'root', field?) => {
-  const result = { filters: { $and: [] }, reverseMap: {} }
+  const result = { filters: {}, reverseMap: {} }
 
   const schema = exampleSchema
 

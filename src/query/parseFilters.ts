@@ -18,20 +18,20 @@ const parseFilters = (result, $filter, schema) => {
     if (filter) {
       if (filter.$or) {
         const or = parseFilters(
-          { filters: { $and: [], $or: [] }, reverseMap: {} },
+          { filters: {}, reverseMap: {} },
           [filter.$or],
           schema
         )
         let r
         if (or.filters.$and.length === 1) {
-          r = { $or: [filter, or.filters.$and[0]], $and: [] }
+          r = { $or: [filter, or.filters.$and[0]] }
         } else {
-          r = { $or: [filter, or.filters], $and: [] }
+          r = { $or: [filter, or.filters] }
         }
         delete filter.$or
         if (filter.$and) {
           const and = parseFilters(
-            { filters: { $and: [filter], $or: [] }, reverseMap: {} },
+            { filters: { $and: [filter] }, reverseMap: {} },
             [filter.$and],
             schema
           )
@@ -39,18 +39,11 @@ const parseFilters = (result, $filter, schema) => {
           filter = and
           r.$or[0] = and.filters
         }
-        if (r.$and.length === 0) {
-          delete r.$and
-        }
         for (let i = 0; i < r.$or.length; i++) {
           const f = r.$or[i]
           if (f.$or) {
-            if (f.$or.length === 0) {
-              delete f.$or
-            } else {
-              if (f.$and) {
-                f.$or = [{ $and: r.$and }, ...f.$or]
-              }
+            if (f.$and) {
+              f.$or = [{ $and: r.$and }, ...f.$or]
             }
           }
         }
