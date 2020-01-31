@@ -7,9 +7,6 @@ type GetSchemaResult = {
 }
 
 async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
-  // TODO: this needs to use the new structure of schemas
-  // only change I think needed is we drop langauges from here and we just
-  // get types and searchIndexes -- unless we want to rename 'types' key to say 'typeSchema' or 'schema'
   let schema: Schema = {
     languages: [],
     types: {},

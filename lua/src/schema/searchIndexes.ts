@@ -37,8 +37,6 @@ function findFieldsFromInfoReply(
 ): string | null {
   for (let i = 0; i < info.length; i++) {
     // @ts-ignore
-    logger.info('info[i].ok: ' + info[i].ok)
-    // @ts-ignore
     if (info[i].ok === 'fields') {
       // @ts-ignore
       return info[i + 1]
@@ -54,7 +52,7 @@ function updateIndex(index: string, schema: SearchSchema): void {
     logger.error(`Error fetch info for index ${index}: ${(<any>info).err}`)
     return createIndex(index, schema)
   }
-  logger.info('INFO: ' + cjson.encode(info))
+
   const fields = findFieldsFromInfoReply(info)
 
   if (!fields) {

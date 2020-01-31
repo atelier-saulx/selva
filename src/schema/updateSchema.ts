@@ -4,7 +4,6 @@ export function newSchemaDefinition(
   oldSchema: Schema,
   newSchema: Schema
 ): Schema {
-  console.log('OLD SCHEMA:', oldSchema)
   if (!oldSchema) {
     if (!newSchema.languages) {
       newSchema.languages = []
@@ -25,19 +24,15 @@ export function newSchemaDefinition(
     ),
     types: {}
   }
-  console.log(`CURRENT SCHEMA ${schema.sha}`)
 
   for (const typeName in oldSchema.types) {
-    console.log(`OLD SCHEMA TYPE ${typeName}`)
     if (newSchema.types[typeName]) {
-      console.log(`newTypeDefinition() ${typeName}`)
       schema.types[typeName] = newTypeDefinition(
         typeName,
         oldSchema.types[typeName],
         newSchema.types[typeName]
       )
     } else {
-      console.log(`OLD TYPE ASSIGNED ${typeName}`)
       schema.types[typeName] = oldSchema.types[typeName]
     }
   }
@@ -88,21 +83,18 @@ function newTypeDefinition(
 
   for (const fieldName in oldType.fields) {
     if (newType.fields && newType.fields[fieldName]) {
-      console.log(`Both have field for type ${typeName}: ${fieldName}`)
       typeDef.fields[fieldName] = newFieldDefinition(
         `${typeName}.${fieldName}`,
         oldType.fields[fieldName],
         newType.fields[fieldName]
       )
     } else {
-      console.log(`Only old type has field ${fieldName} for type ${typeName}`)
       typeDef.fields[fieldName] = oldType.fields[fieldName]
     }
   }
 
   for (const fieldName in newType.fields) {
     if (oldType.fields && !oldType.fields[fieldName]) {
-      console.log(`Only new type has field ${fieldName} for type ${typeName}`)
       typeDef.fields[fieldName] = newType.fields[fieldName]
     }
   }

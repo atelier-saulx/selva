@@ -8,7 +8,6 @@ const currentSchema = getSchema()
 const modifyArgs: ModifyOptions[] = []
 for (let i = 0, j = 0; i < ARGV.length; i += 2, j++) {
   const sha = ARGV[i]
-  logger.info(`SHA ${j}: ${sha}`)
   if (currentSchema.sha && sha !== currentSchema.sha) {
     // @ts-ignore
     return redis.error_reply(

@@ -12,7 +12,6 @@ test('Connect and re-connect', async t => {
 
   const server = await start({ port: 6068 })
 
-  console.log('first schema update')
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     types: {
@@ -64,7 +63,6 @@ test('Connect and re-connect', async t => {
   const server2 = await start({ port: 6068 })
   await wait(1e3)
 
-  console.log('second schema update')
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     types: {

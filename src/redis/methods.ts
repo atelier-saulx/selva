@@ -336,9 +336,7 @@ abstract class RedisMethods {
   }
 
   async loadScript(script: string): Promise<string> {
-    console.log(`RETURING PROMISE LOL`)
     return new Promise((resolve, reject) => {
-      console.log(`LOADING SCRIPT`)
       this.queue('script', ['load', script], resolve, reject)
     })
   }
