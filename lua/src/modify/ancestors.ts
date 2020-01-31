@@ -33,7 +33,7 @@ export function markForAncestorRecalculation(id: Id) {
   needAncestorUpdates[id] = true
 }
 
-export function getDepth(id: Id): number | false {
+function getDepth(id: Id): number | false {
   if (id === 'root') {
     return 0
   }
@@ -50,7 +50,7 @@ export function getDepth(id: Id): number | false {
   return depth
 }
 
-export function setDepth(id: Id, depth: number): void {
+function setDepth(id: Id, depth: number): void {
   if (depthMap[id] === depth) {
     // cache not changed, bail
     return
@@ -61,7 +61,7 @@ export function setDepth(id: Id, depth: number): void {
 }
 
 // we need to treat depth as the min depth of all ancestors + 1
-export function updateDepths(id: Id): void {
+function updateDepths(id: Id): void {
   // update self depth
   const parents = redis.smembers(id + '.parents')
   let minParentDepth: number | null = null
@@ -97,23 +97,16 @@ export function updateDepths(id: Id): void {
   }
 }
 
-export function reCalculateAncestors() {
-  logger.info(`reCalculateAncestors`)
-  const ids: Id[] = []
-  for (const id in needAncestorUpdates) {
-    updateDepths(id)
-    ids[ids.length] = id
-  }
-
-  logger.info(`depth map ${cjson.encode(depthMap)}`)
+function reCalculateAncestorsFor(ids: Id[]): void {
+  logger.info(`reCalculateAncestors ${cjson.encode(ids)}`)
 
   // we want to update ancestors frow lowest to deepest
   table.sort(ids, (a, b) => {
-    return depthMap[a] <= depthMap[b]
+    return (getDepth(a) || 0) <= (getDepth(b) || 0)
   })
   logger.info(`sorted ids by depth ${cjson.encode(ids)}`)
 
-  for (const id in needAncestorUpdates) {
+  for (const id of ids) {
     // clear the ancestors in case of any removed ancestors
     redis.del(id + '.ancestors')
 
@@ -125,12 +118,13 @@ export function reCalculateAncestors() {
         const parentAncestors: string[] = redis.zrangeWithScores(
           parentAncestorKey
         )
-        logger.info('parent ancestors')
+        logger.info(`parent ancestors for ${parent}`)
         logger.info(parentAncestors)
 
         const reversed: string[] = []
         for (let i = 0; i < parentAncestors.length; i += 2) {
-          reversed[i] = tostring(1 + tonumber(parentAncestors[i + 1]))
+          // reversed[i] = tostring(1 + tonumber(parentAncestors[i + 1]))
+          reversed[i] = parentAncestors[i + 1]
           reversed[i + 1] = parentAncestors[i]
         }
 
@@ -154,5 +148,21 @@ export function reCalculateAncestors() {
         }
       }
     }
+
+    const children = redis.smembers(id + '.children')
+    if (children) {
+      reCalculateAncestorsFor(children)
+    }
   }
+}
+
+export function reCalculateAncestors(): void {
+  const ids: Id[] = []
+  for (const id in needAncestorUpdates) {
+    updateDepths(id)
+    ids[ids.length] = id
+  }
+  logger.info(`depth map ${cjson.encode(depthMap)}`)
+
+  reCalculateAncestorsFor(ids)
 }

@@ -16,12 +16,14 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
       if (size === 0) {
         deleteItem(child)
       } else {
-        markForAncestorRecalculation(id)
+        markForAncestorRecalculation(child)
       }
     }
   }
   redis.del(id + '.children')
   redis.del(id + '.parents')
+  redis.del(id + '.ancestors')
+  redis.del(id + '._depth')
   // returns true if it existed
   return redis.del(id) > 0
 }

@@ -430,6 +430,7 @@ test.serial('deep hierarchy manipulation', async t => {
     'root'
   ])
 
+  console.log('!!!', await client.redis.zrange('cuE.ancestors', 0, -1))
   t.deepEqualIgnoreOrder(await client.redis.zrange('cuE.ancestors', 0, -1), [
     'root',
     'cuD'
