@@ -4,6 +4,7 @@ import parseFilters from './parseFilters'
 import addResult from './addResult'
 import { SelvaClient } from '../'
 import { GetOptions } from '~selva/get'
+import { GetSchemaResult } from '~selva/schema/getSchema'
 
 // need this from lua
 const parseType = type => {
@@ -36,9 +37,12 @@ const parseFind = async (
   opts,
   id,
   field,
-  schema
-) => {
-  const { $traverse, $filter, $find } = opts
+  schema: GetSchemaResult
+): Promise<void> => {
+  let { $traverse, $filter, $find } = opts
+  if (!$filter) {
+    $filter = opts.$filter = []
+  }
   if ($traverse) {
     if ($traverse === 'descendants') {
       if ($filter) {
@@ -80,8 +84,8 @@ const parseNested = async (
   opts,
   id,
   field,
-  schema
-) => {
+  schema: GetSchemaResult
+): Promise<void> => {
   if (opts.$list) {
     if (opts.$list.$find) {
       await parseFind(client, result, opts.$list.$find, id, field, schema)
@@ -100,13 +104,12 @@ const parseNested = async (
 const parseQuery = async (
   client: SelvaClient,
   getOptions: GetOptions,
+  schema: GetSchemaResult,
   id = 'root',
   field?
 ): Promise<any> => {
   const result = { filters: {}, reverseMap: {} }
-
-  const schema = exampleSchema
-
+  let resultGet = {}
   // field needs to be included together with id
   if (getOptions.$list && !getOptions.$list.$find && !getOptions.$list.$sort) {
     console.log('just normal list no query needed')
@@ -127,14 +130,43 @@ const parseQuery = async (
 
   if (getOptions.$list || getOptions.$find) {
     await parseNested(client, result, getOptions, id, field, schema)
+
+    for (let key in getOptions) {
+      if (key !== '$list' && key !== '$find') {
+        resultGet[key] = getOptions[key]
+      }
+    }
   }
 
-  console.dir(result.filters, { depth: 10 })
+  // console.dir(result.filters, { depth: 10 })
 
-  const r = createSearchString(result.filters, schema).slice(1, -1)
+  const qeury = createSearchString(result.filters, schema).slice(1, -1)
 
-  console.log('\n\n')
-  console.log(r)
+  const getParameters = resultGet
+  console.log(getParameters, qeury)
+  // test '@type:{match}'
+  // LIMIT 0 99999
+
+  // @ancestors:{"root"}
+  let queryResult = await client.redis.ftSearch(
+    'default',
+    '@ancestors:{root}',
+    'LIMIT',
+    0,
+    99999,
+    'NOCONTENT'
+  )
+
+  if (queryResult.length === 1 && queryResult[0] === 0) {
+    // means is empty...
+    queryResult = []
+  }
+
+  // console.log(await client.redis.ftInfo('default'))
+  console.log(queryResult.length)
+
+  // console.log('\n\n')
+  // console.log(r)
 
   // field just means get it for this field - only relevant for $sort
 }
@@ -143,18 +175,12 @@ const queryGet = async (
   client: SelvaClient,
   getOptions: GetOptions
 ): Promise<any> => {
-  // parse dat get
-  // check if !$id else id is root
-
-  // if (!getOptions.$id) {
-  //   getOptions.$id = 'root'
-  // }
   const id = getOptions.$id || 'root'
-  // passed along to nested items
+  const schema = await client.getSchema()
 
   // identify if its part of a query here
 
-  console.log(getOptions)
+  await parseQuery(client, getOptions, schema, id)
 }
 
 export default queryGet

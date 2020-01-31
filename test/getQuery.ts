@@ -13,6 +13,8 @@ test.before(async t => {
     loglevel: 'info'
   })
 
+  await wait(500)
+
   const client = connect({ port: 6088 })
   await client.updateSchema({
     languages: ['en'],
@@ -108,7 +110,7 @@ test.after(async _t => {
 
 test.serial('get - queryParser', async t => {
   // simple nested - single query
-  const client = connect({ port: 6072 })
+  const client = connect({ port: 6088 })
 
   // extra option in find is index or auto from fields
   const results = await client.query({
@@ -118,30 +120,30 @@ test.serial('get - queryParser', async t => {
         $traverse: 'descendants',
         $filter: [
           {
-            $operator: '!=',
-            $field: 'type',
-            $and: {
-              $operator: '!=',
-              $field: 'name',
-              $value: ['match1', 'match3']
-            },
-            $value: 'match'
-          },
-          {
-            $operator: '!=',
-            $field: 'name',
-            $value: ['match1', 'match2']
-          },
-          {
             $operator: '=',
-            $field: 'status',
-            $value: 300,
-            $and: {
-              $operator: '!=',
-              $field: 'type',
-              $value: 'video'
-            }
+            $field: 'type',
+            // $and: {
+            //   $operator: '!=',
+            //   $field: 'name',
+            //   $value: ['match1', 'match3']
+            // },
+            $value: 'match'
           }
+          // {
+          //   $operator: '!=',
+          //   $field: 'name',
+          //   $value: ['match1', 'match2']
+          // },
+          // {
+          //   $operator: '=',
+          //   $field: 'status',
+          //   $value: 300,
+          //   $and: {
+          //     $operator: '!=',
+          //     $field: 'type',
+          //     $value: 'video'
+          //   }
+          // }
         ]
       }
     }

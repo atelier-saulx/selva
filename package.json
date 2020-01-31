@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@types/redis": "^2.8.14",
-    "ava": "^2.4.0",
+    "ava": "2.4.0",
     "babel-eslint": "^10.0.3",
     "eslint": "^6.5.1",
     "eslint-config-prettier": "^6.4.0",

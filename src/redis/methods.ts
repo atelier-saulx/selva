@@ -362,6 +362,12 @@ abstract class RedisMethods {
     })
   }
 
+  async ftSearch(index: string, ...args: args): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('FT.SEARCH', [index, ...args], resolve, reject)
+    })
+  }
+
   async ftAlter(...args: args): Promise<any> {
     return new Promise((resolve, reject) => {
       this.queue('FT.ALTER', args, resolve, reject)

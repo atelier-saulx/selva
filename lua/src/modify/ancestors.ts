@@ -1,6 +1,7 @@
 import { Id } from '../../../src/schema/index'
 import * as redis from '../redis'
 import { splitString, joinString } from '../util'
+import { addFieldToSearch } from './search'
 
 // order by depth (highest depth first)
 
@@ -73,7 +74,9 @@ export function reCalculateAncestors(id: Id, parents?: Id[]) {
   }
 
   let ancestors = getNewAncestors(parents)
-  redis.hset(id, 'ancestors', joinString(ancestors, ','))
+  const stringAncestors = joinString(ancestors, ',')
+  redis.hset(id, 'ancestors', stringAncestors)
+  addFieldToSearch(id, 'ancestors', stringAncestors)
   const children = redis.smembers(id + '.children')
   for (let child of children) {
     reCalculateAncestors(child)

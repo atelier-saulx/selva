@@ -101,12 +101,15 @@ export const defaultFields: Record<string, FieldSchema> = {
   },
   children: {
     type: 'references'
+    // search: { index: 'default', type: ['TAG'] }
   },
   parents: {
     type: 'references'
+    // search: { index: 'default', type: ['TAG'] }
   },
   ancestors: {
-    type: 'references'
+    type: 'references',
+    search: { index: 'default', type: ['TAG'] }
   },
   descendants: {
     type: 'references'

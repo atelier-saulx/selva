@@ -9,6 +9,7 @@ import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
 import { DeleteOptions } from '~selva/delete/types'
 import { deleteItem } from './delete'
 import * as logger from '../logger'
+import { addFieldToSearch } from './search'
 
 function removeFields(
   id: string,
@@ -155,11 +156,13 @@ function setField(
     return
   }
 
+  const strValue = tostring(value)
   if (fromDefault) {
-    redis.hsetnx(id, field, tostring(value))
+    redis.hsetnx(id, field, strValue)
   } else {
-    redis.hset(id, field, tostring(value))
+    redis.hset(id, field, strValue)
   }
+  addFieldToSearch(id, field, strValue)
 }
 
 function remove(payload: DeleteOptions): boolean {
