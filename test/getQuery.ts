@@ -274,6 +274,4 @@ test.serial('get - queryParser', async t => {
     videosSorted.map(v => v.value),
     [99, 98, 97, 96, 95]
   )
-
-  t.true(true)
 })
