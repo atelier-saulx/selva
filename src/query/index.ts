@@ -67,7 +67,19 @@ const compareFilters = (result, filter, schema) => {
     } else {
       // compare for impossiblities , or merger or changes in types
       // e.g. > , <
+      const prevFilter = a[i]
       if (!filter.$or) {
+        if (prevFilter.$operator === '=' && filter.$operator === '=') {
+          // if schema is set && tag is the real check
+          if (filter.$field === 'ancestors') {
+            if (!Array.isArray(prevFilter.$value)) {
+              prevFilter.$value = [prevFilter.$value]
+            }
+            prevFilter.$value.push(filter.$value)
+            return false
+          }
+        }
+
         // compare for for example ancestors + set here
         // if ()
         // else we cant compare too hard
