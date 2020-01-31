@@ -2,6 +2,15 @@ import { Id } from '../../../src/schema/index'
 import * as redis from '../redis'
 import { splitString, joinString } from '../util'
 
+// order by depth (highest depth first)
+
+// ancestoryWith: []
+
+// 2league,1root,1tag   //put
+
+// zadd
+// if 2 thing with same depth use sort
+
 export function getNewAncestors(parents: Id[], from?: Id[]): string[] {
   let allAncestors: { [k: string]: boolean } = {}
   for (let i = 0; i < parents.length; i++) {
