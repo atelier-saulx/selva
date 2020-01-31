@@ -2,14 +2,7 @@ import test, { ExecutionContext } from 'ava'
 import './assertions'
 import { connect, SelvaClient } from '../src/index'
 import { start } from 'selva-server'
-import { dumpDb, idExists } from './assertions'
-
-function ancestorEquals(t: ExecutionContext, a: string, b: string): boolean {
-  const splitA = a.split(',')
-  const splitB = b.split(',')
-
-  return t.deepEqualIgnoreOrder(splitA, splitB)
-}
+import { dumpDb, idExists, wait } from './assertions'
 
 let srv
 test.before(async t => {
@@ -88,10 +81,10 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6061 })
-  await client.delete('root')
-  await client.destroy()
-  await srv.destroy()
+  // const client = connect({ port: 6061 })
+  // await client.delete('root')
+  // await client.destroy()
+  // await srv.destroy()
 })
 
 test.serial('basic', async t => {
@@ -137,11 +130,18 @@ test.serial('basic', async t => {
     'Title of person is correctly set'
   )
 
-  ancestorEquals(t, await client.redis.hget(match, 'ancestors'), 'root')
+  console.log('!!!', await client.redis.zrange(match + '.ancestors', 0, -1))
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match + '.ancestors', 0, -1),
+    ['root']
+  )
 
-  ancestorEquals(t, await client.redis.hget(league, 'ancestors'), 'root')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(league + '.ancestors', 0, -1),
+    ['root']
+  )
 
-  // move person from match to league
+  // // move person from match to league
   await client.set({
     $id: person,
     parents: [league]
@@ -159,13 +159,12 @@ test.serial('basic', async t => {
     'match has no children after move'
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(person, 'ancestors'),
-    ['root', league].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(person + '.ancestors', 0, -1),
+    ['root', league]
   )
 
-  // add extra parent using $add
+  // // add extra parent using $add
   await client.set({
     $id: person,
     parents: {
@@ -185,10 +184,9 @@ test.serial('basic', async t => {
     'person has correct parents after $add'
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(person, 'ancestors'),
-    ['root', league, match].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(person + '.ancestors', 0, -1),
+    ['root', league, match]
   )
 
   // remove league from person
@@ -211,10 +209,9 @@ test.serial('basic', async t => {
     'person has correct parents after $delete'
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(person, 'ancestors'),
-    ['root', match].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(person + '.ancestors', 0, -1),
+    ['root', match]
   )
 
   // add parent again
@@ -245,10 +242,9 @@ test.serial('basic', async t => {
     'person has correct parents after 2nd $add'
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(person, 'ancestors'),
-    ['root', match, league].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(person + '.ancestors', 0, -1),
+    ['root', match, league]
   )
 
   // reset children
@@ -269,10 +265,9 @@ test.serial('basic', async t => {
     'person has correct parents after reset of children of match'
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(person, 'ancestors'),
-    ['root', league].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(person + '.ancestors', 0, -1),
+    ['root', league]
   )
 
   // add person to match using children
@@ -293,10 +288,9 @@ test.serial('basic', async t => {
     'person has correct parents after adding person to match using children'
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(person, 'ancestors'),
-    ['root', league, match].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(person + '.ancestors', 0, -1),
+    ['root', league, match]
   )
 
   // add match to league using $add
@@ -317,16 +311,14 @@ test.serial('basic', async t => {
     'league has correct children after setting ancestors'
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(person, 'ancestors'),
-    ['root', league, match].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(person + '.ancestors', 0, -1),
+    ['root', league, match]
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(match, 'ancestors'),
-    ['root', league].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match + '.ancestors', 0, -1),
+    ['root', league]
   )
 
   // delete match from league
@@ -341,10 +333,9 @@ test.serial('basic', async t => {
     'person has correct parents after removing match from league'
   )
 
-  ancestorEquals(
-    t,
-    await client.redis.hget(person, 'ancestors'),
-    ['root', league, match].join(',')
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(person + '.ancestors', 0, -1),
+    ['root', league, match]
   )
 
   t.deepEqual(
@@ -353,9 +344,9 @@ test.serial('basic', async t => {
     'match has correct parents after removing match from league'
   )
 
-  t.is(
-    await client.redis.hget(match, 'ancestors'),
-    ['root'].join(','),
+  t.deepEqual(
+    await client.redis.zrange(match + '.ancestors', 0, -1),
+    ['root'],
     'match has correct ancestors after removing match from league'
   )
 
@@ -405,22 +396,44 @@ test.serial('deep hierarchy manipulation', async t => {
     parents: { $add: 'root' }
   })
 
-  ancestorEquals(t, await client.redis.hget('cuB', 'ancestors'), 'root,cuX,cuA')
-  ancestorEquals(t, await client.redis.hget('cuC', 'ancestors'), 'root,cuX,cuA')
-  ancestorEquals(t, await client.redis.hget('cuD', 'ancestors'), 'root,cuX,cuA')
-  ancestorEquals(
-    t,
-    await client.redis.hget('cuE', 'ancestors'),
-    'root,cuX,cuA,cuD'
-  )
+  t.deepEqualIgnoreOrder(await client.redis.zrange('cuB.ancestors', 0, -1), [
+    'root',
+    'cuX',
+    'cuA'
+  ])
+
+  t.deepEqualIgnoreOrder(await client.redis.zrange('cuC.ancestors', 0, -1), [
+    'root',
+    'cuX',
+    'cuA'
+  ])
+
+  t.deepEqualIgnoreOrder(await client.redis.zrange('cuD.ancestors', 0, -1), [
+    'root',
+    'cuX',
+    'cuA'
+  ])
+
+  t.deepEqualIgnoreOrder(await client.redis.zrange('cuE.ancestors', 0, -1), [
+    'root',
+    'cuX',
+    'cuA',
+    'cuD'
+  ])
 
   await client.set({
     $id: 'cuD',
     parents: { $delete: 'cuA' }
   })
 
-  ancestorEquals(t, await client.redis.hget('cuD', 'ancestors'), 'root')
-  ancestorEquals(t, await client.redis.hget('cuE', 'ancestors'), 'root,cuD')
+  t.deepEqualIgnoreOrder(await client.redis.zrange('cuD.ancestors', 0, -1), [
+    'root'
+  ])
+
+  t.deepEqualIgnoreOrder(await client.redis.zrange('cuE.ancestors', 0, -1), [
+    'root',
+    'cuD'
+  ])
 })
 
 test.serial('array, json and set', async t => {

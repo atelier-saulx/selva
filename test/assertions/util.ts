@@ -42,6 +42,12 @@ export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
           if (id.startsWith('___')) {
             return null
           }
+          if (id.endsWith('._depth')) {
+            return null
+          }
+          if (id.endsWith('.ancestors')) {
+            return null
+          }
           return id.indexOf('.') > -1
             ? client.redis.smembers(id)
             : client.redis.hgetall(id)

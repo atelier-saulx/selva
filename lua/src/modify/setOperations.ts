@@ -2,7 +2,7 @@ import { id as genId } from '../id'
 import { SetOptions } from '~selva/set/types'
 import { Id } from '~selva/schema/index'
 import * as redis from '../redis'
-import { reCalculateAncestors } from './ancestors'
+import { markForAncestorRecalculation } from './ancestors'
 import { deleteItem } from './delete'
 
 type FnModify = (payload: SetOptions) => Id | null
@@ -104,7 +104,7 @@ export function resetParents(
     }
   }
 
-  reCalculateAncestors(id, value)
+  markForAncestorRecalculation(id)
 }
 
 export function addToParents(id: string, value: Id[], modify: FnModify): void {
@@ -116,7 +116,7 @@ export function addToParents(id: string, value: Id[], modify: FnModify): void {
     }
   }
 
-  reCalculateAncestors(id)
+  markForAncestorRecalculation(id)
 }
 
 export function removeFromParents(id: string, value: Id[]): void {
@@ -124,7 +124,7 @@ export function removeFromParents(id: string, value: Id[]): void {
     redis.srem(parent + '.children', id)
   }
 
-  reCalculateAncestors(id)
+  markForAncestorRecalculation(id)
 }
 
 export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
@@ -150,7 +150,7 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
         modify({ $id: child, parents: { $add: id } })
       } else {
         redis.sadd(child + '.parents', id)
-        reCalculateAncestors(child)
+        markForAncestorRecalculation(child)
       }
     }
   }
@@ -175,7 +175,7 @@ export function resetChildren(
     if (size === 0) {
       deleteItem(child)
     } else {
-      reCalculateAncestors(child)
+      markForAncestorRecalculation(child)
     }
   }
   redis.del(setKey)
@@ -185,6 +185,6 @@ export function resetChildren(
 export function removeFromChildren(id: string, value: Id[]): void {
   for (const child of value) {
     redis.srem(child + '.parents', id)
-    reCalculateAncestors(child)
+    markForAncestorRecalculation(child)
   }
 }

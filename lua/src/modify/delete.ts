@@ -1,5 +1,5 @@
 import { Id } from '~selva/schema/index'
-import { reCalculateAncestors } from './ancestors'
+import { markForAncestorRecalculation } from './ancestors'
 import * as redis from '../redis'
 
 export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
@@ -16,7 +16,7 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
       if (size === 0) {
         deleteItem(child)
       } else {
-        reCalculateAncestors(id, parents)
+        markForAncestorRecalculation(id)
       }
     }
   }

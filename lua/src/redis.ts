@@ -97,6 +97,10 @@ export function zAddMultipleNew(key: string, ...rest: string[]): number {
   return redis.call('zadd', key, 'NX', ...rest)
 }
 
+export function zaddNew(key: string, score: number, value: string): number {
+  return redis.call('zadd', key, 'NX', tostring(score), value)
+}
+
 export function zAddReplaceScore(
   key: string,
   score: number | string,
@@ -111,6 +115,14 @@ export function zrangeWithScores(
   end: number = -1
 ): string[] {
   return redis.call('zrange', key, tostring(start), tostring(end), 'WITHSCORES')
+}
+
+export function zrange(
+  key: string,
+  start: number = 0,
+  end: number = -1
+): string[] {
+  return redis.call('zrange', key, tostring(start), tostring(end))
 }
 
 export function exists(...keys: string[]): number {

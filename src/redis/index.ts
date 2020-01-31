@@ -262,7 +262,7 @@ export default class RedisClient extends RedisMethods {
             modifyResolves.forEach((resolve, i: number) => resolve(x[i]))
           },
           reject: (x: Error) => {
-            modifyRejects.forEach((reject, i: number) => reject(x[i]))
+            modifyRejects.forEach(reject => reject(x))
           }
         })
       }

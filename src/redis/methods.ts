@@ -335,6 +335,12 @@ abstract class RedisMethods {
     })
   }
 
+  async zrange(key: string, start: number, end: number): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+      this.queue('zrange', [key, start, end], resolve, reject)
+    })
+  }
+
   async loadScript(script: string): Promise<string> {
     return new Promise((resolve, reject) => {
       this.queue('script', ['load', script], resolve, reject)

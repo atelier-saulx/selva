@@ -327,12 +327,11 @@ const ancestors = (
   result: GetResult,
   _schemas: Record<string, TypeSchema>,
   id: Id,
-  field: string,
+  _field: string,
   _language?: string,
   _version?: string
 ): true => {
-  result.ancestors = splitString(redis.hget(id, field) || '', ',')
-  // result.ancestors = redis.hget(id, field) || ''
+  result.ancestors = redis.zrange(id + '.ancestors', 0, -1) || []
   return true
 }
 

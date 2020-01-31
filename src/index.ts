@@ -130,8 +130,9 @@ export class SelvaClient {
         { batchingEnabled: true }
       )
     } catch (e) {
-      console.error('Error updating schema', e.stack)
+      console.error('Error running modify', e)
       if (
+        e.stack &&
         e.stack.includes(
           'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
         )

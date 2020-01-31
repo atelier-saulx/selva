@@ -8,6 +8,7 @@ import { resetSet, addToSet, removeFromSet } from './setOperations'
 import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
 import { DeleteOptions } from '~selva/delete/types'
 import { deleteItem } from './delete'
+import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
 
 function removeFields(
@@ -231,6 +232,8 @@ export default function modify(
       results[i] = remove(operation.payload)
     }
   }
+
+  reCalculateAncestors()
 
   return results
 }
