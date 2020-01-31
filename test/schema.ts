@@ -236,38 +236,42 @@ test('schemas - basic', async t => {
   console.log(`newResult`, newResult)
   t.deepEqual(newResult, schema, 'correct schema after setting the same')
 
-  // TODO
   // drop search index in this case (NOT SUPPORTED YET!)
-  // await client.updateSchema({
-  //   types: {
-  //     match: {
-  //       fields: {
-  //         flurpy: {
-  //           type: 'object',
-  //           properties: {
-  //             snurkels: {
-  //               type: 'string',
-  //               search: { type: ['TEXT'] }
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // })
+  // throws for now
+  try {
+    await client.updateSchema({
+      types: {
+        match: {
+          fields: {
+            flurpy: {
+              type: 'object',
+              properties: {
+                snurkels: {
+                  type: 'string',
+                  search: { type: ['TEXT'] }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+  } catch (e) {
+    console.error(e)
+  }
 
-  // const info2 = await client.redis.ftInfo('default')
-  // const fields2 = info2[info2.indexOf('fields') + 1]
+  const info2 = await client.redis.ftInfo('default')
+  const fields2 = info2[info2.indexOf('fields') + 1]
 
-  // // does not drop and create a new one for now...
-  // t.deepEqual(
-  //   fields2,
-  //   [
-  //     ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
-  //     ['type', 'type', 'TAG', 'SEPARATOR', ',']
-  //   ],
-  //   'change fields in the index - does not drop index yet so stays the same!'
-  // )
+  // does not drop and create a new one for now...
+  t.deepEqual(
+    fields2,
+    [
+      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
+      ['type', 'type', 'TAG', 'SEPARATOR', ',']
+    ],
+    'change fields in the index - does not drop index yet so stays the same!'
+  )
 
   await client.updateSchema({
     types: {

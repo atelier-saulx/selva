@@ -175,8 +175,8 @@ function checkField(
         return `Can not change existing search types for ${path} in type ${type}, changing from ${cjson.encode(
           // @ts-ignore
           oldField.search.type
-          // @ts-ignore
         )} to ${cjson.encode(
+          // @ts-ignore
           newField.search.type
         )}. This will be supported in the future.`
       }
