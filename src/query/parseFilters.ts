@@ -9,6 +9,7 @@ const reduceFilter = (filter, $filter) => {
   }
 }
 
+// reduce the filter to an easier to parse intermediate format
 const parseFilters = (result, $filter, schema) => {
   for (let i = 0; i < $filter.length; i++) {
     let filter = $filter[i]
@@ -37,9 +38,6 @@ const parseFilters = (result, $filter, schema) => {
           delete filter.$and
           filter = and
           r.$or[0] = and.filters
-          if (and.filters.$or.length === 0) {
-            delete and.filters.$or
-          }
         }
         if (r.$and.length === 0) {
           delete r.$and

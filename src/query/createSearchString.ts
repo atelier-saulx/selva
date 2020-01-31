@@ -1,8 +1,11 @@
 const createSearchString = (filters, schema) => {
   const searchString = []
   if (filters.$and && filters.$or) {
-    throw new Error('cannot have $or and $and')
+    throw new Error('cannot have $or and $and on one intermediate result level')
   }
+
+  // need to check the schema and operator you are using
+  // can also throw for things that are not possible
 
   if (filters.$and) {
     for (let filter of filters.$and) {
