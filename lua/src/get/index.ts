@@ -32,9 +32,9 @@ function getField(
       version
     )
 
-    logger.info(
-      `$field is set, GETTING from ${props.$field} for field ${field}`
-    )
+    // logger.info(
+    //   `$field is set, GETTING from ${props.$field} for field ${field}`
+    // )
     if (
       getWithField(result, schemas, id, field, props.$field, language, version)
     ) {
@@ -50,7 +50,7 @@ function getField(
         hasKeys = true
         const f = field && field.length > 0 ? field + '.' + key : key
         if (props[key] === true) {
-          logger.info(`key: ${key} field ${f}`)
+          // logger.info(`key: ${key} field ${f}`)
           if (!getByType(result, schemas, id, f, language, version)) {
             isComplete = false
           }

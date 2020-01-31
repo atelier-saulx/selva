@@ -8,9 +8,9 @@ import { wait } from './assertions'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6088
-    // developmentLogging: true,
-    // loglevel: 'info'
+    port: 6088,
+    developmentLogging: true,
+    loglevel: 'info'
   })
 
   await wait(500)
@@ -41,15 +41,15 @@ test.before(async t => {
         prefix: 'ma',
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC'] } },
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC'] } }
         }
       },
       video: {
         prefix: 'vi',
         fields: {
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           name: { type: 'string', search: { type: ['TAG'] } },
+          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       }
@@ -255,7 +255,8 @@ test.serial('get - queryParser', async t => {
   const videosSorted = await client.query({
     value: true,
     $list: {
-      $sort: [{ $field: 'value', $order: 'desc' }],
+      $sort: { $field: 'value', $order: 'desc' },
+      $range: [0, 5],
       $find: {
         $traverse: 'descendants',
         $filter: {
@@ -268,6 +269,8 @@ test.serial('get - queryParser', async t => {
   })
 
   console.log(videosSorted.map(v => v.value))
+
+  // console.log(await client.redis.ftInfo('default'))
 
   t.true(true)
 })

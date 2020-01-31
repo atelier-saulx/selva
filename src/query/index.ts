@@ -6,31 +6,6 @@ import { SelvaClient } from '../'
 import { GetOptions } from '~selva/get'
 import { GetSchemaResult } from '~selva/schema/getSchema'
 
-// need this from lua
-const parseType = type => {
-  if (!Array.isArray(type)) {
-    type = [type]
-  }
-  return type.map(v => {
-    if (typeof v === 'string') {
-      return getPrefix(v) + '*'
-    } else if (Array.isArray(v)) {
-      return v.map(v => getPrefix(v) + '*')
-    }
-  })
-}
-
-const getPrefix = type => {
-  return type.slice(0, 2)
-}
-
-const exampleSchema = {}
-
-// parse get options
-const get = getOptions => {
-  console.log('GET', getOptions)
-}
-
 const parseFind = async (
   client: SelvaClient,
   result,
@@ -63,7 +38,9 @@ const parseFind = async (
         // just return the ancestors
       }
     } else if ($traverse === 'children') {
+      // easier
     } else if ($traverse === 'parents') {
+      // easier
     }
 
     if ($find) {
@@ -161,7 +138,7 @@ const parseQuery = async (
     }
   }
 
-  const searchArgs = [qeury, 'NOCONTENT', ...sort, 'LIMIT', lo, hi]
+  const searchArgs = [qeury, 'NOCONTENT', 'LIMIT', lo, hi, ...sort]
 
   console.log('SEARCH:', searchArgs)
 

@@ -156,13 +156,12 @@ function setField(
     return
   }
 
-  const strValue = tostring(value)
   if (fromDefault) {
-    redis.hsetnx(id, field, strValue)
+    redis.hsetnx(id, field, tostring(value))
   } else {
-    redis.hset(id, field, strValue)
+    redis.hset(id, field, tostring(value))
   }
-  addFieldToSearch(id, field, strValue)
+  addFieldToSearch(id, field, value)
 }
 
 function remove(payload: DeleteOptions): boolean {

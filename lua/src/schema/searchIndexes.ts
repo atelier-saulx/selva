@@ -10,6 +10,8 @@ function createIndex(index: string, schema: SearchSchema): void {
     }
   }
 
+  logger.info(args)
+
   const result = redis.pcall('ft.create', ...args)
   if (result.err) {
     logger.error(`Error creating index ${index}: ${result.err}`)
@@ -18,6 +20,7 @@ function createIndex(index: string, schema: SearchSchema): void {
 
 function alterIndex(index: string, schema: SearchSchema): void {
   for (const field in schema) {
+    logger.info(schema[field])
     const result = redis.pcall(
       'ft.alter',
       index,
