@@ -11,7 +11,7 @@ async function deleteItem(
     payload: { $id: id, $hierarchy: hierarchy }
   })
 
-  return modifyResult[0]
+  return <boolean>modifyResult
 }
 
 export { deleteItem, DeleteOptions }
