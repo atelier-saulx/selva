@@ -95,7 +95,6 @@ const compareFilters = (result, filter, schema) => {
     const $b = filter.$operator
 
     let fn
-
     if ($a === '=' && $b === '=') {
       fn = isEqual
     } else if ($a === '!=' && $b === '!=') {
