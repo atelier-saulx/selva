@@ -140,7 +140,9 @@ const parseQuery = async (
 
   // console.dir(result.filters, { depth: 10 })
 
-  const qeury = createSearchString(result.filters, schema).slice(1, -1)
+  // const qeury = createSearchString(result.filters, schema).slice(1, -1)
+
+  const qeury = createSearchString(result.filters, schema)
 
   const getParameters = resultGet
   console.log(getParameters, qeury)
@@ -150,7 +152,7 @@ const parseQuery = async (
   // @ancestors:{"root"}
   let queryResult = await client.redis.ftSearch(
     'default',
-    '@ancestors:{root}',
+    qeury,
     'LIMIT',
     0,
     99999,

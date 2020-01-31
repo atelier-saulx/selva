@@ -70,6 +70,18 @@ test.before(async t => {
     return ch
   }
 
+  const genVideos = () => {
+    const ch = []
+    for (let i = 0; i < 200; i++) {
+      ch.push({
+        type: 'video',
+        name: 'video',
+        value: i
+      })
+    }
+    return ch
+  }
+
   const ids = await Promise.all([
     client.set({
       type: 'club',
@@ -78,20 +90,15 @@ test.before(async t => {
         {
           $id: team1,
           name: 'team 1',
-          children: [
-            {
-              type: 'video',
-              name: 'suprise video'
-            }
-          ]
+          children: genVideos()
         }
       ]
     }),
     client.set({
       type: 'league',
-      name: 'league 1',
+      name: 'league 1'
       // @ts-ignore
-      children: genMatches()
+      // children: genMatches()
     })
   ])
 
@@ -106,6 +113,9 @@ test.after(async _t => {
   // handing if 1000 ???? not really a lot
   console.log('hello')
   const d = Date.now()
+
+  // delete crashes because 1k things...
+
   // await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
@@ -123,21 +133,27 @@ test.serial('get - queryParser', async t => {
       $find: {
         $traverse: 'descendants',
         $filter: [
+          // {
+          //   $operator: '=',
+          //   $field: 'type',
+          //   // $and: {
+          //   //   $operator: '!=',
+          //   //   $field: 'name',
+          //   //   $value: ['match1', 'match3']
+          //   // },
+          //   $value: 'match',
+          //   $or: {
+          //     $operator: '=',
+          //     $field: 'name',
+          //     $value: 'video'
+          //   }
+          // },
           {
             $operator: '=',
-            $field: 'type',
-            // $and: {
-            //   $operator: '!=',
-            //   $field: 'name',
-            //   $value: ['match1', 'match3']
-            // },
-            $value: 'match'
+            $field: 'name',
+            $value: 'video'
           }
-          // {
-          //   $operator: '!=',
-          //   $field: 'name',
-          //   $value: ['match1', 'match2']
-          // },
+
           // {
           //   $operator: '=',
           //   $field: 'status',

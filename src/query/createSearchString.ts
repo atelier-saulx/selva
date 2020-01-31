@@ -20,9 +20,10 @@ const transformValue = (filter, fn) => {
 }
 
 const transformOperator = (filter, schema: GetSchemaResult) => {
+  // depends on tye
   if (filter.$operator === '!=') {
-    transformValue(filter, (v: string | number) => `-${v}`)
-    return ' '
+    transformValue(filter, (v: string | number) => `${v}`)
+    return '|'
   } else if (filter.$operator === '=') {
     transformValue(filter, (v: string | number) => `${v}`)
     return '|'
@@ -30,7 +31,11 @@ const transformOperator = (filter, schema: GetSchemaResult) => {
 }
 
 const addField = (filter, schema: GetSchemaResult): string => {
-  return `@${filter.$field}:{${filter.$value}}`
+  if (filter.$operator === '!=') {
+    return `(-(@${filter.$field}:{${filter.$value}}))`
+  } else {
+    return `(@${filter.$field}:{${filter.$value}})`
+  }
 }
 
 const createSearchString = (filters, schema: GetSchemaResult) => {
@@ -46,7 +51,7 @@ const createSearchString = (filters, schema: GetSchemaResult) => {
       if (!filter.$or) {
         const seperator = transformOperator(filter, schema)
         if (Array.isArray(filter.$value)) {
-          filter.$value = `(${filter.$value.join(seperator)})`
+          filter.$value = `${filter.$value.join(seperator)}`
         }
         searchString.push(addField(filter, schema))
       } else {
@@ -64,7 +69,7 @@ const createSearchString = (filters, schema: GetSchemaResult) => {
         } else {
           const seperator = transformOperator(filter, schema)
           if (Array.isArray(filter.$value)) {
-            filter.$value = `(${filter.$value.join(seperator)})`
+            filter.$value = `${filter.$value.join(seperator)}`
           }
           searchString.push(addField(filter, schema))
         }
