@@ -1,3 +1,6 @@
+import compareFilters from './compareFilters'
+import createSearchString from './createSearchString'
+
 const get = getOptions => {
   console.log('GET', getOptions)
 }
@@ -20,74 +23,6 @@ const getPrefix = type => {
 }
 
 const exampleSchema = {}
-
-const filterExists = (a, b, schema) => {
-  // can check for impossible combinations here as well
-  if (a.$or) {
-    return false
-  }
-
-  const operatorIsEqual = a.$operator === b.$operator
-  const fieldIsEqual = a.$field === b.$field
-  let valueIsEqual = a.$value === b.$value
-  if (!valueIsEqual && typeof a.$value !== typeof b.$value) {
-    if (Array.isArray(a.$value)) {
-      if (a.$value.indexOf(b.$value) !== -1) {
-        valueIsEqual = true
-      }
-    } else if (Array.isArray(b.$value)) {
-      if (b.$value.indexOf(a.$value) !== -1) {
-        a.$value = b.$value
-        valueIsEqual = true
-      }
-    }
-  }
-
-  if (operatorIsEqual && fieldIsEqual && valueIsEqual) {
-    return true
-  }
-  return false
-}
-
-const compareFilters = (result, filter, schema) => {
-  const a = result.reverseMap[filter.$field]
-  if (!a) {
-    result.reverseMap[filter.$field] = []
-    return filter
-  }
-
-  if (a.reverseMap) {
-    return filter
-  }
-  // double check if this is ok - means we dont allow arrays for $and, $or
-  for (let i = 0; i < a.length; i++) {
-    if (filterExists(a[i], filter, schema)) {
-      return false
-      break
-    } else {
-      // compare for impossiblities , or merger or changes in types
-      // e.g. > , <
-      const prevFilter = a[i]
-      if (!filter.$or) {
-        if (prevFilter.$operator === '=' && filter.$operator === '=') {
-          // if schema is set && tag is the real check
-          if (filter.$field === 'ancestors') {
-            if (!Array.isArray(prevFilter.$value)) {
-              prevFilter.$value = [prevFilter.$value]
-            }
-            prevFilter.$value.push(filter.$value)
-            return false
-          }
-        }
-
-        // compare for for example ancestors + set here
-        // if ()
-        // else we cant compare too hard
-      }
-    }
-  }
-  return filter
-}
 
 const addToResult = (result, filter, type) => {
   const field = filter.$field
@@ -224,7 +159,6 @@ const parseNested = (result, opts, id, field, schema) => {
 // https://oss.redislabs.com/redisearch/Query_Syntax.html
 // FT.SEARCH cars "@country:korea @engine:(diesel|hybrid) @class:suv"
 // FT.EXPLAIN {index} {query}
-
 // @ancestors: [] (@y:flap|@x:bar)
 
 const parseQuery = (getOptions, id = 'root', field?) => {
@@ -254,56 +188,9 @@ const parseQuery = (getOptions, id = 'root', field?) => {
     parseNested(result, getOptions, id, field, schema)
   }
 
-  // now lets make it into redis search
-  // result // need to run result on or blocks
-
-  //   delete result.reverseMap
-
   console.dir(result.filters, { depth: 10 })
 
-  const parseFilters = filters => {
-    const searchString = []
-    if (filters.$and && filters.$or) {
-      throw new Error('cannot have $or and $and')
-    }
-
-    if (filters.$and) {
-      for (let filter of filters.$and) {
-        if (!filter.$or) {
-          if (Array.isArray(filter.$value)) {
-            filter.$value = `{${filter.$value.join('|')}}`
-          }
-          searchString.push(`@${filter.$field}:${filter.$value}`)
-        } else {
-          const nestedSearch = parseFilters(filter)
-          //   console.log('OR --->', nestedSearch)
-          searchString.push(nestedSearch)
-        }
-      }
-      return `(${searchString.join(' ')})`
-    } else if (filters.$or) {
-      for (let filter of filters.$or) {
-        if (!filter.$and) {
-          if (filter.$or) {
-            const nestedSearch = parseFilters(filter)
-            searchString.push(nestedSearch)
-          } else {
-            if (Array.isArray(filter.$value)) {
-              filter.$value = `{${filter.$value.join('|')}}`
-            }
-            searchString.push(`@${filter.$field}:${filter.$value}`)
-          }
-        } else {
-          const nestedSearch = parseFilters(filter)
-          //   console.log('AND --->', nestedSearch)
-          searchString.push(nestedSearch)
-        }
-      }
-      return `(${searchString.join('|')})`
-    }
-  }
-
-  const r = parseFilters(result.filters).slice(1, -1)
+  const r = createSearchString(result.filters, schema).slice(1, -1)
 
   console.log('\n\n')
   console.log(r)
