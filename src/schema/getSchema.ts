@@ -1,47 +1,39 @@
 import { SelvaClient } from '../'
-import { Schema, TypesDb, SearchIndexes } from '.'
+import { Schema, SearchIndexes } from '.'
 
 type GetSchemaResult = {
-  types: TypesDb
   schema: Schema
   searchIndexes: SearchIndexes
 }
 
 async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
-  const [types, languages, searchIndexes] = await Promise.all(
-    [
-      {
-        field: 'types',
-        def: { idSize: 0 }
-      },
-      {
-        field: 'languages',
-        def: []
-      },
-      {
-        field: 'searchIndexes',
-        def: {}
-      }
-    ].map(async ({ field, def }) => {
-      const result = await client.redis.hget('___selva_schema', field)
-      return result === null ? def : JSON.parse(result)
-    })
+  let schema: Schema = {
+    languages: [],
+    types: {},
+    idSeedCounter: 0,
+    prefixToTypeMapping: {}
+  }
+
+  let searchIndexes: SearchIndexes = {}
+
+  const fetchedTypes = await client.redis.hget('___selva_schema', 'types')
+  const fetchedIndexes = await client.redis.hget(
+    '___selva_schema',
+    'searchIndexes'
   )
 
-  const schema: Schema = {
-    languages,
-    types: {}
+  if (fetchedTypes) {
+    schema = JSON.parse(fetchedTypes)
   }
 
-  const schemas = await client.redis.hgetall('___selva_types')
-
-  if (schemas) {
-    for (const type in schemas) {
-      schema.types[type] = JSON.parse(schemas[type])
-    }
+  if (fetchedIndexes) {
+    searchIndexes = JSON.parse(fetchedIndexes)
   }
 
-  return { types, schema, searchIndexes }
+  client.schema = schema
+  client.searchIndexes = searchIndexes // FIXME: do we need this?
+
+  return { schema, searchIndexes }
 }
 
 export { getSchema, GetSchemaResult }

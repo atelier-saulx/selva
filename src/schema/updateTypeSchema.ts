@@ -64,6 +64,7 @@ const parseField = (
     segment.type === field.type // weird typescript check
   ) {
     if (field.search) {
+      console.log(type, path, field, searchIndexes)
       const index = field.search.index || 'default'
       if (!segment.search || searchChanged(field.search, segment.search)) {
         if (!searchIndexes[index]) {

@@ -7,6 +7,7 @@ import * as logger from '../logger'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
 import getWithField, { resolveAll } from './field'
+import { getSchema } from '../schema/index'
 import { ensureArray } from 'lua/src/util'
 
 function getField(
@@ -129,15 +130,10 @@ function getField(
 }
 
 export default function get(opts: GetOptions): GetResult {
-  const types: Record<string, TypeSchema> = {}
-  const reply = redis.hgetall('___selva_types')
-  for (let i = 0; i < reply.length; i += 2) {
-    const type = reply[i]
-    const typeSchema: TypeSchema = cjson.decode(reply[i + 1])
-    types[type] = typeSchema
-  }
-
+  const schema = getSchema()
+  const types: Record<string, TypeSchema> = schema.types
   const result: GetResult = {}
+
   const { $version: version, $id: id, $language: language } = opts
   if (id) {
     getField(opts, types, result, id, undefined, language, version)

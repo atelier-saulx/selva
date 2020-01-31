@@ -1,0 +1,16 @@
+{
+  "extends": "./lua-tsconfig.json",
+  "files": ["./luaScripts/update-schema.ts"],
+  "include": [
+    "./lua/src/schema/*.ts",
+    "./lua/types/*.d.ts",
+    "./src/schema.ts",
+    "./src/setTypes.ts"
+  ],
+  "tstl": {
+    "luaTarget": "5.1",
+    "luaLibImport": "require",
+    "luaBundle": "./dist/lua/update-schema.lua",
+    "luaBundleEntry": "./luaScripts/update-schema.ts"
+  }
+}

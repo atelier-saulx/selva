@@ -16,7 +16,8 @@ test.before(async t => {
   srv = await start({
     port: 6061,
     // developmentLogging: true,
-    loglevel: 'info'
+    loglevel: 'info',
+    developmentLogging: true
   })
 
   await new Promise((resolve, reject) => {

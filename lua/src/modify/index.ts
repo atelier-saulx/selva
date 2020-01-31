@@ -219,7 +219,6 @@ export default function modify(
   payload: ModifyOptions[]
 ): (ModifyResult | null)[] {
   const results: (Id | boolean | null)[] = []
-  logger.info(`Running modify with batch of ${payload.length}`)
   for (let i = 0; i < payload.length; i++) {
     let operation = payload[i]
     if (operation.kind === 'update') {

@@ -53,11 +53,15 @@ test('Connect and re-connect', async t => {
     { title: { en: 'lurkert' } }
   )
 
+  await wait(1e3)
+  console.log('destroying server')
   await server.destroy()
+  console.log('server destroyed')
 
   await wait(1e3)
   current = { port: 6068 }
-  const server2 = await start({ port: 6068, modules: ['redisearch'] })
+  const server2 = await start({ port: 6068 })
+  await wait(1e3)
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],

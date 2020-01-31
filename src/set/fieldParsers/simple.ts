@@ -1,5 +1,5 @@
 import { SetOptions } from '../types'
-import { TypeSchema, FieldSchemaOther } from '../../schema'
+import { TypeSchema, Schema, FieldSchemaOther } from '../../schema'
 import digest from '../../digest'
 
 const isUrlRe = new RegExp(
@@ -89,7 +89,7 @@ for (const key in verifiers) {
   const converter = converters[key]
 
   parsers[key] = (
-    _schemas: Record<string, TypeSchema>,
+    _schemas: Schema,
     field: string,
     payload: SetOptions,
     result: SetOptions,
