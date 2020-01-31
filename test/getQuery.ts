@@ -48,6 +48,7 @@ test.before(async t => {
       video: {
         prefix: 'vi',
         fields: {
+          date: { type: 'number', search: { type: ['NUMERIC'] } },
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC'] } }
         }
@@ -72,10 +73,11 @@ test.before(async t => {
 
   const genVideos = () => {
     const ch = []
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 100; i++) {
       ch.push({
         type: 'video',
         name: 'video',
+        date: Date.now() + (i > 5 ? 1000000 : -100000),
         value: i
       })
     }
@@ -130,6 +132,7 @@ test.serial('get - queryParser', async t => {
     name: true,
     value: true,
     status: true,
+    date: true,
     id: true,
     type: true,
     $list: {
@@ -161,7 +164,12 @@ test.serial('get - queryParser', async t => {
                   $and: {
                     $operator: '<',
                     $field: 'value',
-                    $value: 8
+                    $value: 8,
+                    $and: {
+                      $operator: '>',
+                      $field: 'date',
+                      $value: 'now'
+                    }
                   }
                 }
               }

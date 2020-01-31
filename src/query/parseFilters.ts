@@ -14,35 +14,49 @@ const reduceFilter = (filter, $filter) => {
 const parseFilters = (result, $filter, schema: GetSchemaResult) => {
   for (let i = 0; i < $filter.length; i++) {
     let filter = $filter[i]
+    const search =
+      schema.searchIndexes.default &&
+      schema.searchIndexes.default[filter.$field]
+
+    if (search) {
+      filter.$search = search
+      const operator = filter.$operator
+      if (
+        search[0] !== 'NUMERIC' &&
+        (operator === '>' ||
+          operator === '<' ||
+          operator === '<=' ||
+          operator === '..' ||
+          operator === '>=')
+      ) {
+        throw new Error(
+          `Cannot have numeric comparisons on other search types then NUMERIC ${filter.$field}`
+        )
+      }
+    } else {
+      throw new Error(
+        `Cannot search fields that are not indexed ${filter.$field}`
+      )
+    }
+
+    if (filter.$search[0] === 'NUMERIC') {
+      if (Array.isArray(filter.$value)) {
+        for (let i = 0; i < filter.$value.length; i++) {
+          if (filter.$value[i] === 'now') {
+            filter.$value[i] = Date.now()
+          }
+        }
+      }
+      if (filter.$value === 'now') {
+        filter.$value = Date.now()
+      }
+    }
+
     reduceFilter(filter, $filter)
+
     filter = compareFilters(result, filter, schema)
 
     if (filter) {
-      const search =
-        schema.searchIndexes.default &&
-        schema.searchIndexes.default[filter.$field]
-      if (search) {
-        filter.$search = search
-        const operator = filter.$operator
-
-        if (
-          search[0] !== 'NUMERIC' &&
-          (operator === '>' ||
-            operator === '<' ||
-            operator === '<=' ||
-            operator === '..' ||
-            operator === '>=')
-        ) {
-          throw new Error(
-            `Cannot have numeric comparisons on other search types then NUMERIC ${filter.$field}`
-          )
-        }
-      } else {
-        throw new Error(
-          `Cannot search fields that are not indexed ${filter.$field}`
-        )
-      }
-
       if (filter.$or) {
         const or = parseFilters(
           { filters: {}, reverseMap: {} },
