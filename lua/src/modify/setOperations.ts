@@ -134,7 +134,9 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     // if the child is an object
     // automatic creation is attempted
     if (type(child) === 'table') {
-      if (!(<any>child).$id && (<any>child).type !== null) {
+      if ((<any>child).$id) {
+        child = modify(<any>child) || ''
+      } else if (!(<any>child).$id && (<any>child).type !== null) {
         ;(<any>child).$id = genId({ type: (<any>child).type })
         child = modify(<any>child) || ''
       } else {

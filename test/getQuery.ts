@@ -96,9 +96,9 @@ test.before(async t => {
     }),
     client.set({
       type: 'league',
-      name: 'league 1'
+      name: 'league 1',
       // @ts-ignore
-      // children: genMatches()
+      children: genMatches()
     })
   ])
 
@@ -133,27 +133,26 @@ test.serial('get - queryParser', async t => {
       $find: {
         $traverse: 'descendants',
         $filter: [
-          // {
-          //   $operator: '=',
-          //   $field: 'type',
-          //   // $and: {
-          //   //   $operator: '!=',
-          //   //   $field: 'name',
-          //   //   $value: ['match1', 'match3']
-          //   // },
-          //   $value: 'match',
-          //   $or: {
-          //     $operator: '=',
-          //     $field: 'name',
-          //     $value: 'video'
-          //   }
-          // },
           {
             $operator: '=',
-            $field: 'name',
-            $value: 'video'
+            $field: 'type',
+            // $and: {
+            //   $operator: '!=',
+            //   $field: 'name',
+            //   $value: ['match1', 'match3']
+            // },
+            $value: 'match',
+            $or: {
+              $operator: '=',
+              $field: 'name',
+              $value: 'video'
+            }
           }
-
+          // {
+          //   $operator: '=',
+          //   $field: 'name',
+          //   $value: 'video'
+          // }
           // {
           //   $operator: '=',
           //   $field: 'status',
