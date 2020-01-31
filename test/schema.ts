@@ -238,8 +238,8 @@ test('schemas - basic', async t => {
 
   // drop search index in this case (NOT SUPPORTED YET!)
   // throws for now
-  try {
-    await client.updateSchema({
+  const e = await t.throwsAsync(
+    client.updateSchema({
       types: {
         match: {
           fields: {
@@ -256,9 +256,13 @@ test('schemas - basic', async t => {
         }
       }
     })
-  } catch (e) {
-    console.error(e)
-  }
+  )
+
+  t.true(
+    e.stack.includes(
+      'Can not change existing search types for flurpy.snurkels in type match, changing from ["TAG"] to ["TEXT"]. This will be supported in the future.'
+    )
+  )
 
   const info2 = await client.redis.ftInfo('default')
   const fields2 = info2[info2.indexOf('fields') + 1]
