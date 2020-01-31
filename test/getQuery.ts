@@ -8,9 +8,9 @@ import { wait } from './assertions'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6088,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6088
+    // developmentLogging: true,
+    // loglevel: 'info'
   })
 
   await wait(500)
@@ -63,7 +63,7 @@ test.before(async t => {
       ch.push({
         type: 'match',
         name: 'match' + i,
-        status: i > 900 ? 100 : 300,
+        status: i > 10 ? 100 : 300,
         parents: { $add: team1 }
       })
     }
@@ -72,7 +72,7 @@ test.before(async t => {
 
   const genVideos = () => {
     const ch = []
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 10; i++) {
       ch.push({
         type: 'video',
         name: 'video',
@@ -128,7 +128,10 @@ test.serial('get - queryParser', async t => {
 
   // extra option in find is index or auto from fields
   const results = await client.query({
-    title: true,
+    name: true,
+    value: true,
+    status: true,
+    id: true,
     $list: {
       $find: {
         $traverse: 'descendants',
@@ -136,11 +139,7 @@ test.serial('get - queryParser', async t => {
           {
             $operator: '=',
             $field: 'type',
-            // $and: {
-            //   $operator: '!=',
-            //   $field: 'name',
-            //   $value: ['match1', 'match3']
-            // },
+
             $value: 'match',
             $and: {
               $operator: '=',
@@ -152,6 +151,11 @@ test.serial('get - queryParser', async t => {
               $field: 'name',
               $value: 'video'
             }
+          },
+          {
+            $operator: '!=',
+            $field: 'name',
+            $value: ['match1', 'match3']
           }
           // {
           //   $operator: '=',
@@ -173,7 +177,7 @@ test.serial('get - queryParser', async t => {
     }
   })
 
-  console.log(results)
+  console.log('!!!', results)
 
   t.true(true)
 })

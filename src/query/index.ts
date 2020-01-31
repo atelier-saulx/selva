@@ -167,6 +167,15 @@ const parseQuery = async (
   // console.log(await client.redis.ftInfo('default'))
   console.log(queryResult.length)
 
+  const r = await Promise.all(
+    queryResult.map((id: string) => {
+      const opts = Object.assign({}, getOptions, { $id: id })
+      return client.get(opts)
+    })
+  )
+
+  return r
+
   // console.log('\n\n')
   // console.log(r)
 
@@ -182,7 +191,7 @@ const queryGet = async (
 
   // identify if its part of a query here
 
-  await parseQuery(client, getOptions, schema, id)
+  return await parseQuery(client, getOptions, schema, id)
 }
 
 export default queryGet
