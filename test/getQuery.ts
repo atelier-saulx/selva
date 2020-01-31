@@ -47,28 +47,49 @@ test.before(async t => {
         prefix: 'vi',
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
+          value: { type: 'number', search: { type: ['NUMERIC'] } }
         }
       }
     }
   })
 
+  const team1 = await client.id({ type: 'team' })
+
+  const genMatches = () => {
+    const ch = []
+    for (let i = 0; i < 100; i++) {
+      ch.push({
+        type: 'match',
+        name: 'match' + i,
+        status: 300,
+        parents: { $add: team1 }
+      })
+    }
+    return ch
+  }
+
   const ids = await Promise.all([
-    client.set({
-      type: 'league',
-      name: 'league 1'
-      // children : []
-    }),
     client.set({
       type: 'club',
       name: 'club 1',
       children: [
         {
-          type: 'team',
-          name: 'team 1'
+          $id: team1,
+          name: 'team 1',
+          children: [
+            {
+              type: 'video',
+              name: 'suprise video'
+            }
+          ]
         }
       ]
+    }),
+    client.set({
+      type: 'league',
+      name: 'league 1',
+      // @ts-ignore
+      children: genMatches()
     })
   ])
 
@@ -103,14 +124,14 @@ test.serial('get - queryParser', async t => {
             $and: {
               $operator: '!=',
               $field: 'name',
-              $value: ['pietje', 'flappie']
+              $value: ['match1', 'match3']
             },
             $value: 'match'
           },
           {
             $operator: '!=',
             $field: 'name',
-            $value: ['pietje', 'mr snurfels']
+            $value: ['match1', 'match2']
           },
           {
             $operator: '=',
