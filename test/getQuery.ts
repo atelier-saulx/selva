@@ -111,43 +111,43 @@ test.serial('get - queryParser', async t => {
   const client = connect({ port: 6072 })
 
   // extra option in find is index or auto from fields
-  await client.query({
+  const results = await client.query({
     title: true,
     $list: {
       $find: {
-        $traverse: 'descendants'
-        // $filter: [
-        //   {
-        //     $operator: '!=',
-        //     $field: 'type',
-        //     $and: {
-        //       $operator: '!=',
-        //       $field: 'name',
-        //       $value: ['match1', 'match3']
-        //     },
-        //     $value: 'match'
-        //   },
-        //   {
-        //     $operator: '!=',
-        //     $field: 'name',
-        //     $value: ['match1', 'match2']
-        //   },
-        //   {
-        //     $operator: '=',
-        //     $field: 'status',
-        //     $value: 300,
-        //     $and: {
-        //       $operator: '!=',
-        //       $field: 'type',
-        //       $value: 'video' //bit weird merge but ok
-        //     }
-        //   }
-        // ]
+        $traverse: 'descendants',
+        $filter: [
+          {
+            $operator: '!=',
+            $field: 'type',
+            $and: {
+              $operator: '!=',
+              $field: 'name',
+              $value: ['match1', 'match3']
+            },
+            $value: 'match'
+          },
+          {
+            $operator: '!=',
+            $field: 'name',
+            $value: ['match1', 'match2']
+          },
+          {
+            $operator: '=',
+            $field: 'status',
+            $value: 300,
+            $and: {
+              $operator: '!=',
+              $field: 'type',
+              $value: 'video'
+            }
+          }
+        ]
       }
     }
   })
 
-  // console.log(queryParser(simpleQeury4, 'root'))
+  console.log(results)
 
   t.true(true)
 })

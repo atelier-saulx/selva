@@ -9,11 +9,18 @@ export const parseSetObject = (
   schemas: Schema
 ): SetOptions => {
   const result: SetOptions = {}
+
+  if (!payload.type && schemas.prefixToTypeMapping && payload.$id) {
+    payload.type = schemas.prefixToTypeMapping[payload.$id.substring(0, 2)]
+  }
+
   const type = payload.type
+
   const schema = schemas.types[type]
   if (!schema) {
     throw new Error(`Cannot find type ${type} from set-object`)
   }
+
   let fields = schema.fields
   for (let key in payload) {
     if (key[0] === '$') {
@@ -52,9 +59,6 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   }
 
   let schema = client.schema
-  if (schema.prefixToTypeMapping && payload.$id && !payload.type) {
-    payload.type = schema.prefixToTypeMapping[payload.$id.substring(0, 2)]
-  }
 
   const parsed = parseSetObject(payload, schema)
   const modifyResult = await client.modify({
