@@ -185,6 +185,14 @@ test.serial('get - queryParser', async t => {
     }
   })
 
+  const matches = results.filter(v => v.type === 'match')
+  const videos = results.filter(v => v.type === 'video')
+  const league = results.filter(v => v.type === 'league')
+
+  t.is(matches.length, 8, 'query result matches')
+  t.is(videos.length, 3, 'query result videos')
+  t.is(league.length, 1, 'query result league')
+
   console.log('!!!', results)
 
   t.true(true)
