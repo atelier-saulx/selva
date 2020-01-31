@@ -122,12 +122,11 @@ test.before(async t => {
 
 test.after(async _t => {
   const client = connect({ port: 6088 })
-  // handing if 1000 ???? not really a lot
+  // handing if 1000 ???? not really a lot - hangs
+  // maybe logger?
   console.log('hello')
   const d = Date.now()
-
   // delete crashes because 1k things...
-
   // await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
