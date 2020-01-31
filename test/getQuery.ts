@@ -61,12 +61,20 @@ test.before(async t => {
   const genMatches = () => {
     const ch = []
     for (let i = 0; i < 1000; i++) {
-      ch.push({
-        type: 'match',
-        name: 'match' + i,
-        status: i === 0 ? 2 : i > 10 ? 100 : 300,
-        parents: { $add: team1 }
-      })
+      if (i < 100) {
+        ch.push({
+          type: 'match',
+          name: 'match' + i,
+          status: i === 0 ? 2 : i > 10 ? 100 : 300,
+          parents: { $add: team1 }
+        })
+      } else {
+        ch.push({
+          type: 'match',
+          name: 'match' + i,
+          status: i === 0 ? 2 : i > 10 ? 100 : 300
+        })
+      }
     }
     return ch
   }
@@ -194,6 +202,41 @@ test.serial('get - queryParser', async t => {
   t.is(league.length, 1, 'query result league')
 
   console.log('!!!', results)
+
+  const team = await client.query({
+    id: true,
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'team'
+        }
+      }
+    }
+  })
+
+  console.log(team)
+
+  t.true(/te/.test(team[0].id), 'got id from team')
+
+  const teamMatches = await client.query({
+    $id: team[0].id,
+    id: true,
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'match'
+        }
+      }
+    }
+  })
+
+  t.is(teamMatches.length, 100)
 
   t.true(true)
 })
