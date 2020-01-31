@@ -15,7 +15,10 @@ export function addFieldToSearch(
   for (const indexKey in searchIndex) {
     const index = searchIndex[indexKey]
     if (index[field]) {
-      logger.info('add to index ' + id + ' ' + field)
+      //   logger.info('add to index ' + id + ' ' + field)
+
+      // prob want to call this at the end of a set (all fields)
+      // but ok for now
       redis.call(
         'ft.add',
         indexKey,
