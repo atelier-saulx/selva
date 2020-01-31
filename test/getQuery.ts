@@ -52,34 +52,28 @@ test.before(async t => {
     }
   })
 
+  const team1 = await client.id({ type: 'team ' })
+
+  const genMatches = () => {
+    const ch = []
+    for (let i = 0; i < 100; i++) {
+      ch.push({
+        type: 'match',
+        name: 'match' + i,
+        status: 300,
+        parents: { $add: team1 }
+      })
+    }
+    return ch
+  }
+
   const ids = await Promise.all([
-    client.set({
-      type: 'league',
-      name: 'league 1',
-      children: [
-        {
-          type: 'match',
-          name: 'match1',
-          status: 300
-        },
-        {
-          type: 'match',
-          name: 'match2',
-          status: 300
-        },
-        {
-          type: 'match',
-          name: 'match3',
-          status: 100
-        }
-      ]
-    }),
     client.set({
       type: 'club',
       name: 'club 1',
       children: [
         {
-          type: 'team',
+          $id: team1,
           name: 'team 1',
           children: [
             {
@@ -89,6 +83,12 @@ test.before(async t => {
           ]
         }
       ]
+    }),
+    client.set({
+      type: 'league',
+      name: 'league 1',
+      // @ts-ignore
+      children: genMatches()
     })
   ])
 
