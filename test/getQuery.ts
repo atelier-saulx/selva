@@ -42,7 +42,7 @@ test.before(async t => {
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
+          status: { type: 'number', search: { type: ['TAG'] } }
         }
       },
       video: {
@@ -63,7 +63,7 @@ test.before(async t => {
       ch.push({
         type: 'match',
         name: 'match' + i,
-        status: i > 10 ? 100 : 300,
+        status: i > 900 ? 100 : 300,
         parents: { $add: team1 }
       })
     }
