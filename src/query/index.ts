@@ -81,13 +81,6 @@ const parseNested = (result, opts, id, field, schema) => {
   }
 }
 
-// (@x:foo)|(@y:bar)
-// double the fields
-// https://oss.redislabs.com/redisearch/Query_Syntax.html
-// FT.SEARCH cars "@country:korea @engine:(diesel|hybrid) @class:suv"
-// FT.EXPLAIN {index} {query}
-// @ancestors: [] (@y:flap|@x:bar)
-
 const parseQuery = (getOptions, id = 'root', field?) => {
   const result = { filters: {}, reverseMap: {} }
 

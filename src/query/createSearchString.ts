@@ -7,6 +7,12 @@ const createSearchString = (filters, schema) => {
   // need to check the schema and operator you are using
   // can also throw for things that are not possible
 
+  // (@x:foo)|(@y:bar)
+  // double the fields
+  // https://oss.redislabs.com/redisearch/Query_Syntax.html
+  // FT.SEARCH cars "@country:korea @engine:(diesel|hybrid) @class:suv"
+  // FT.EXPLAIN {index} {query}
+  // @ancestors: [] (@y:flap|@x:bar)
   if (filters.$and) {
     for (let filter of filters.$and) {
       if (!filter.$or) {
@@ -16,7 +22,6 @@ const createSearchString = (filters, schema) => {
         searchString.push(`@${filter.$field}:${filter.$value}`)
       } else {
         const nestedSearch = createSearchString(filter, schema)
-        //   console.log('OR --->', nestedSearch)
         searchString.push(nestedSearch)
       }
     }
@@ -35,7 +40,6 @@ const createSearchString = (filters, schema) => {
         }
       } else {
         const nestedSearch = createSearchString(filter, schema)
-        //   console.log('AND --->', nestedSearch)
         searchString.push(nestedSearch)
       }
     }

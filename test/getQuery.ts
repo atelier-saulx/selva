@@ -106,6 +106,78 @@ test.serial('get - queryParser', async t => {
 
   console.log(queryParser(simpleQeury2, 'root'))
 
+  // simple nested - single query
+  const simpleQeury3 = {
+    title: true,
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: [
+          {
+            $operator: '=',
+            $field: 'type',
+            $value: 'match' // this is an OR
+          },
+          {
+            $operator: '=',
+            $field: 'name',
+            $value: 'gurk',
+            $and: {
+              $operator: '=',
+              $field: 'type',
+              $value: 'video' //bit weird merge but ok
+            }
+          }
+        ]
+      }
+    }
+  }
+
+  try {
+    console.log(queryParser(simpleQeury3, 'root'))
+  } catch (err) {
+    console.log(err.message)
+  }
+
+  // simple nested - single query
+  const simpleQeury4 = {
+    title: true,
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: [
+          {
+            $operator: '!=',
+            $field: 'type',
+            $and: {
+              $operator: '!=',
+              $field: 'name',
+              $value: ['pietje', 'flappie'] // this is an OR
+            },
+            $value: 'match' // this is an OR
+          },
+          {
+            $operator: '!=',
+            $field: 'name',
+            $value: ['pietje', 'mr snurfels'] // this is an OR
+          },
+          {
+            $operator: '=',
+            $field: 'status',
+            $value: 'gurk',
+            $and: {
+              $operator: '!=',
+              $field: 'type',
+              $value: 'video' //bit weird merge but ok
+            }
+          }
+        ]
+      }
+    }
+  }
+
+  console.log(queryParser(simpleQeury4, 'root'))
+
   /*
  // $find: {
         //   // this must return the ancestors not children
