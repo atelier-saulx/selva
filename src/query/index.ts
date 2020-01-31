@@ -30,7 +30,14 @@ const get = getOptions => {
   console.log('GET', getOptions)
 }
 
-const parseFind = async (result, opts, id, field, schema) => {
+const parseFind = async (
+  client: SelvaClient,
+  result,
+  opts,
+  id,
+  field,
+  schema
+) => {
   const { $traverse, $filter, $find } = opts
   if ($traverse) {
     if ($traverse === 'descendants') {
@@ -60,30 +67,35 @@ const parseFind = async (result, opts, id, field, schema) => {
     }
 
     if ($find) {
-      parseFind(result, $find, id, field, schema)
+      await parseFind(client, result, $find, id, field, schema)
     }
   } else {
     throw new Error('Need to allways define $traverse for now')
   }
 }
 
-const parseNested = async (result, opts, id, field, schema) => {
+const parseNested = async (
+  client: SelvaClient,
+  result,
+  opts,
+  id,
+  field,
+  schema
+) => {
   if (opts.$list) {
     if (opts.$list.$find) {
-      parseFind(result, opts.$list.$find, id, field, schema)
+      await parseFind(client, result, opts.$list.$find, id, field, schema)
     } else if (opts.$sort) {
       console.log('sort not implemented yet')
       // not yet!
     }
   } else if (opts.$find) {
-    parseFind(result, opts.$find, id, field, schema)
+    await parseFind(client, result, opts.$find, id, field, schema)
   } else {
     throw new Error('should not come here no valid query')
     // sort perhaps?
   }
 }
-
-const parseGet = async () => {}
 
 const parseQuery = async (
   client: SelvaClient,
@@ -114,7 +126,7 @@ const parseQuery = async (
   }
 
   if (getOptions.$list || getOptions.$find) {
-    parseNested(result, getOptions, id, field, schema)
+    await parseNested(client, result, getOptions, id, field, schema)
   }
 
   console.dir(result.filters, { depth: 10 })
@@ -127,4 +139,22 @@ const parseQuery = async (
   // field just means get it for this field - only relevant for $sort
 }
 
-export default parseQuery
+const queryGet = async (
+  client: SelvaClient,
+  getOptions: GetOptions
+): Promise<any> => {
+  // parse dat get
+  // check if !$id else id is root
+
+  // if (!getOptions.$id) {
+  //   getOptions.$id = 'root'
+  // }
+  const id = getOptions.$id || 'root'
+  // passed along to nested items
+
+  // identify if its part of a query here
+
+  console.log(getOptions)
+}
+
+export default queryGet
