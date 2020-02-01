@@ -470,6 +470,11 @@ test('schemas - search indexes', async t => {
   )
 
   try {
+    /*
+    supported languages
+    "arabic", "danish", "dutch", "english", "finnish", "french", "german", "hungarian", "italian", "norwegian", "portuguese", "romanian", "russian", "spanish", "swedish", "tamil", "turkish" "chinese"
+    */
+
     await client.updateSchema({
       types: {
         flurp: {
@@ -477,19 +482,20 @@ test('schemas - search indexes', async t => {
             // every nested field need to be indexed
             // if languages are added need to add those indexes automaticly
             // hard case
-            title: { type: 'text', search: { type: ['TEXT'] } }
+            flux: { type: 'text', search: { type: ['TEXT'] } }
+            // title: { type: 'text', search: { type: ['TEXT'] } }
           }
         }
       }
     })
   } catch (err) {
-    // this should not throw at all
+    // This should not throw at all !!! wrong
     console.log('>>>>', err)
   }
 
   const { searchIndexes: searchIndexes3 } = await client.getSchema()
 
-  console.log(searchIndexes)
+  console.log(searchIndexes3)
 
   await wait()
 
