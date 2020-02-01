@@ -164,6 +164,7 @@ function checkField(
 
   if (newField.type !== 'object' && newField.type !== 'set') {
     const index = (newField.search && newField.search.index) || 'default'
+
     if (
       searchChanged(newField.search, (<any>oldField).search) // they are actually the same type, casting
     ) {
