@@ -509,6 +509,8 @@ test('schemas - search indexes', async t => {
 
   console.log(searchIndexes3)
 
+  // then add geo case
+
   await wait()
 
   server.destroy()
