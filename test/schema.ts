@@ -470,27 +470,39 @@ test('schemas - search indexes', async t => {
   )
 
   try {
-    /*
-    supported languages
-    "arabic", "danish", "dutch", "english", "finnish", "french", "german", "hungarian", "italian", "norwegian", "portuguese", "romanian", "russian", "spanish", "swedish", "tamil", "turkish" "chinese"
-    */
-
     await client.updateSchema({
       types: {
         flurp: {
           fields: {
-            // every nested field need to be indexed
-            // if languages are added need to add those indexes automaticly
-            // hard case
-            flux: { type: 'text', search: { type: ['TEXT'] } }
-            // title: { type: 'text', search: { type: ['TEXT'] } }
+            flux: { type: 'string' }
           }
         }
       }
     })
   } catch (err) {
+    t.fail('Adding a field should not throw')
+  }
+
+  try {
+    /*
+    supported languages
+    "arabic", "danish", "dutch", "english", "finnish", "french", "german", "hungarian", "italian", "norwegian", "portuguese", "romanian", "russian", "spanish", "swedish", "tamil", "turkish" "chinese"
+    */
+    await client.updateSchema({
+      types: {
+        flurp: {
+          fields: {
+            title: { type: 'text', search: { type: ['TEXT'] } }
+          }
+        }
+      }
+    })
+  } catch (err) {
+    // , search: { type: ['TEXT']
     // This should not throw at all !!! wrong
+    t.fail('Adding a field should not throw')
     console.log('>>>>', err)
+    // hard to fix needs to index the nested fields if type text
   }
 
   const { searchIndexes: searchIndexes3 } = await client.getSchema()
