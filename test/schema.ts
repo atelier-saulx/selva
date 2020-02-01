@@ -489,6 +489,14 @@ test('schemas - search indexes', async t => {
       types: {
         flurp: {
           fields: {
+            // find defaults
+            // e.g. if text do this
+            // if value is number make numeric
+            // etc
+            // indexes text languages
+
+            // so allow search: true as a field
+            // 'TEXT-LANGUAGE'
             title: { type: 'text', search: { type: ['TEXT'] } }
           }
         }
