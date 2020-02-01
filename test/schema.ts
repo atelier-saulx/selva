@@ -469,6 +469,28 @@ test('schemas - search indexes', async t => {
     'Sort will be added even if type is allready defined'
   )
 
+  try {
+    await client.updateSchema({
+      types: {
+        flurp: {
+          fields: {
+            // every nested field need to be indexed
+            // if languages are added need to add those indexes automaticly
+            // hard case
+            title: { type: 'text', search: { type: ['TEXT'] } }
+          }
+        }
+      }
+    })
+  } catch (err) {
+    // this should not throw at all
+    console.log('>>>>', err)
+  }
+
+  const { searchIndexes: searchIndexes3 } = await client.getSchema()
+
+  console.log(searchIndexes)
+
   await wait()
 
   server.destroy()
