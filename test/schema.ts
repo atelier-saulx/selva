@@ -415,10 +415,8 @@ test('schemas - search indexes', async t => {
     }
   })
 
-  const { searchIndexes } = await client.getSchema()
-
   t.deepEqual(
-    searchIndexes,
+    (await client.getSchema()).searchIndexes,
     {
       default: {
         type: ['TAG'],
@@ -452,9 +450,8 @@ test('schemas - search indexes', async t => {
     { instanceOf: Error }
   )
 
-  const { searchIndexes: searchIndexes2 } = await client.getSchema()
   t.deepEqual(
-    searchIndexes2,
+    (await client.getSchema()).searchIndexes,
     {
       default: {
         type: ['TAG'],
@@ -505,9 +502,14 @@ test('schemas - search indexes', async t => {
     // hard to fix needs to index the nested fields if type text
   }
 
-  const { searchIndexes: searchIndexes3 } = await client.getSchema()
+  await client.updateSchema({
+    languages: ['nl', 'en', 'de']
+  })
+  // this now has to update the TEXT schemas it can find
 
-  console.log(searchIndexes3)
+  const { searchIndexes } = await client.getSchema()
+
+  console.log(searchIndexes)
 
   // then add geo case
 

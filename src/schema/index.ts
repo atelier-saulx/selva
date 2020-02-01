@@ -91,6 +91,14 @@ export type Schema = {
   prefixToTypeMapping?: Record<string, string>
 }
 
+export type SchemaOptions = {
+  sha?: string
+  languages?: string[]
+  types?: Types
+  idSeedCounter?: number
+  prefixToTypeMapping?: Record<string, string>
+}
+
 export const defaultFields: Record<string, FieldSchema> = {
   id: {
     type: 'id',
