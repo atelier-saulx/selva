@@ -34,12 +34,16 @@ export const idExists = async (
 
 export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
   const ids = await client.redis.keys('*')
+  console.log(ids)
   return (
     await Promise.all(
       ids
         .filter(id => id.indexOf('idx:') !== 0)
         .map(id => {
           if (id.startsWith('___')) {
+            return null
+          }
+          if (id.startsWith(`tag:`)) {
             return null
           }
           return id.indexOf('.') > -1
