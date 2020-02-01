@@ -140,33 +140,109 @@ function createAncestorsFromFields(
 function setFromAncestors(
   result: GetResult,
   schemas: Record<string, TypeSchema>,
-  ancestors: Id[],
+  id: Id,
   field: string,
   language?: string,
   version?: string,
   fieldFrom?: string | string[]
-) {
-  for (let i = 0, len = ancestors.length; i < len; i++) {
-    if (fieldFrom && fieldFrom.length > 0) {
-      if (
-        getWithField(
-          result,
-          schemas,
-          ancestors[i],
-          field,
-          fieldFrom,
-          language,
-          version
-        )
-      ) {
+): boolean {
+  const ancestorKey = id + '.ancestors'
+  const parents = redis.smembers(id + '.parents')
+
+  const queue: { id: Id; depthOffset: number }[] = []
+  for (const parent of parents) {
+    queue[queue.length] = { id: parent, depthOffset: 1 }
+  }
+
+  let currentDepthOffset: number = 1
+  let currentMaxDepth: number = 0
+  let currentMax: Id
+  while (queue.length > 0) {
+    // Array.prototype.unshift
+    const ancestor = queue[0]
+    table.remove(queue, 1)
+
+    if (ancestor.depthOffset > currentDepthOffset) {
+      if (currentMax) {
+        // TODO: we're done
         break
+      } else {
+        currentDepthOffset = ancestor.depthOffset
       }
-    } else {
-      if (getByType(result, schemas, ancestors[i], field, language, version)) {
-        break
+    }
+
+    const zscore = redis.zscore(ancestorKey, ancestor.id)
+    if (zscore && zscore > currentMaxDepth) {
+      currentMaxDepth = zscore
+      currentMax = ancestor.id
+    }
+
+    const parentsOfParent = redis.smembers(ancestor.id + '.parents')
+    for (const parentOfParent of parentsOfParent) {
+      queue[queue.length] = {
+        id: parentOfParent,
+        depthOffset: currentDepthOffset + 1
       }
     }
   }
+
+  return false
+
+  // shit
+  // let deepestParent: Id
+  // let deepestParentScore: number = 0
+  // for (const parent of parents) {
+  //   const parentScore = redis.zscore(ancestorKey, parent)
+  //   if (parentScore > deepestParentScore) {
+  //     deepestParent = parent
+  //     deepestParentScore = parentScore
+  //   }
+  // }
+
+  // if (deepestParent) {
+  //   // TODO: set from this and check if true, and then return (if had what looking for)
+  //   return true
+  // }
+
+  // // TODO: BFS recurse
+  // for (const parent of parents) {
+  //   if (
+  //     setFromAncestors(
+  //       result,
+  //       schemas,
+  //       parent,
+  //       field,
+  //       language,
+  //       version,
+  //       fieldFrom
+  //     )
+  //   ) {
+  //     return true
+  //   }
+  // }
+
+  // old
+  // for (let i = 0, len = ancestors.length; i < len; i++) {
+  //   if (fieldFrom && fieldFrom.length > 0) {
+  //     if (
+  //       getWithField(
+  //         result,
+  //         schemas,
+  //         ancestors[i],
+  //         field,
+  //         fieldFrom,
+  //         language,
+  //         version
+  //       )
+  //     ) {
+  //       break
+  //     }
+  //   } else {
+  //     if (getByType(result, schemas, ancestors[i], field, language, version)) {
+  //       break
+  //     }
+  //   }
+  // }
 }
 
 function parseName(id: Id): string {
@@ -240,15 +316,7 @@ export default function inherit(
   const inherit = props.$inherit
   if (inherit) {
     if (inherit === true) {
-      setFromAncestors(
-        result,
-        schemas,
-        createAncestors(id),
-        field,
-        language,
-        version,
-        fieldFrom
-      )
+      setFromAncestors(result, schemas, id, field, language, version, fieldFrom)
     } else if (inherit.$type || inherit.$name) {
       let ancestors: Id[]
       if (inherit.$name) {
@@ -258,15 +326,7 @@ export default function inherit(
         inherit.$type = ensureArray(inherit.$type)
         ancestors = createAncestorsFromFields(id, inherit.$type, parseType)
       }
-      setFromAncestors(
-        result,
-        schemas,
-        ancestors,
-        field,
-        language,
-        version,
-        fieldFrom
-      )
+      setFromAncestors(result, schemas, id, field, language, version, fieldFrom)
     } else if (inherit.$item) {
       logger.info('inheriting with $item')
       inherit.$item = ensureArray(inherit.$item)

@@ -125,6 +125,10 @@ export function zrange(
   return redis.call('zrange', key, tostring(start), tostring(end))
 }
 
+export function zscore(key: string, member: string): number {
+  return tonumber(redis.call('zscore', key, member))
+}
+
 export function exists(...keys: string[]): number {
   return redis.call('exists', ...keys)
 }
