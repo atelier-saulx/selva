@@ -500,7 +500,7 @@ test('schemas - search indexes', async t => {
   } catch (err) {
     // , search: { type: ['TEXT']
     // This should not throw at all !!! wrong
-    t.fail('Adding a field should not throw')
+    t.fail('Adding a field "text" and adding search indexing should not throw')
     console.log('>>>>', err)
     // hard to fix needs to index the nested fields if type text
   }
