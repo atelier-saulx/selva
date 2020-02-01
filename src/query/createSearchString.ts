@@ -43,6 +43,12 @@ const returnNumber = (filter, value) => {
   }
 }
 
+// ADD TEXT AND GEO
+// SEARCH DB
+// LEVEN STEIN DISTANCE index language
+// SEARCH PREFIXES
+// also incolude language in searching REAL SEARCH
+
 const addField = (filter, schema: GetSchemaResult): string => {
   // depends on field type
   const type = filter.$search[0]
@@ -64,6 +70,10 @@ const addField = (filter, schema: GetSchemaResult): string => {
     } else {
       return returnNumber(filter, filter.$value)
     }
+  } else if (type === 'TEXT') {
+    // DO THINGS
+    // INCLUDE LANGUAGE ETC
+  } else if (type === 'GEO') {
   }
 }
 

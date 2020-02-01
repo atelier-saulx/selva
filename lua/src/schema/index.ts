@@ -346,8 +346,21 @@ function findSearchConfigurations(
       if (field.search) {
         const index = field.search.index || 'default'
         searchIndexes[index] = searchIndexes[index] || {}
-        searchIndexes[index][path] = field.search.type
-        changedSearchIndexes[index] = true
+        if (searchIndexes[index][path]) {
+          if (
+            <any>searchIndexes[index][path].length < field.search.type.length
+          ) {
+            searchIndexes[index][path] = field.search.type
+            changedSearchIndexes[index] = true
+          } else if (field.search.type[0] !== searchIndexes[index][path][0]) {
+            logger.error(
+              `Search index for "${path}" type is ${searchIndexes[index][path][0]} want to change to ${field.search.type[0]}`
+            )
+          }
+        } else {
+          searchIndexes[index][path] = field.search.type
+          changedSearchIndexes[index] = true
+        }
       }
     }
   } else {

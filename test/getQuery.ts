@@ -153,7 +153,6 @@ test.serial('get - queryParser', async t => {
             $field: 'type',
             $value: 'match',
             $and: {
-              // 'range'
               $operator: '=',
               $field: 'status',
               $value: [300, 2] // handle or

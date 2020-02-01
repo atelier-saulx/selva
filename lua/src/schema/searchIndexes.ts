@@ -3,14 +3,15 @@ import * as logger from '../logger'
 
 function createIndex(index: string, schema: SearchSchema): void {
   const args = [index, 'SCHEMA']
+
+  const fields = {}
+
   for (const field in schema) {
     args[args.length] = field
     for (const f of schema[field]) {
       args[args.length] = f
     }
   }
-
-  logger.info(args)
 
   const result = redis.pcall('ft.create', ...args)
   if (result.err) {
@@ -20,7 +21,8 @@ function createIndex(index: string, schema: SearchSchema): void {
 
 function alterIndex(index: string, schema: SearchSchema): void {
   for (const field in schema) {
-    logger.info(schema[field])
+    // also here
+
     const result = redis.pcall(
       'ft.alter',
       index,
@@ -52,7 +54,9 @@ function findFieldsFromInfoReply(
 function updateIndex(index: string, schema: SearchSchema): void {
   const info: { ok: string; err: string }[] = redis.pcall('ft.info', index)
   if (!info || (<any>info).err) {
-    logger.error(`Error fetch info for index ${index}: ${(<any>info).err}`)
+    if ((<any>info).err !== 'Unknown Index name') {
+      logger.error(`Error fetch info for index ${index}: ${(<any>info).err}`)
+    }
     return createIndex(index, schema)
   }
 

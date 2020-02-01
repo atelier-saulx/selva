@@ -3,6 +3,7 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
 import { FieldType, Fields, Schema } from '../src/schema'
+import { wait } from './assertions'
 // id map
 // fields
 // hierarchy
@@ -47,7 +48,7 @@ const mangleResults = (correctSchema: Schema, schemaResult: Schema) => {
   delete schemaResult.prefixToTypeMapping
 }
 
-test('schemas - basic', async t => {
+test.skip('schemas - basic', async t => {
   let current = { port: 6066 }
 
   const server = await start({
@@ -388,4 +389,89 @@ test('schemas - basic', async t => {
   // add some tests for it
 
   server.destroy()
+})
+
+test('schemas - search indexes', async t => {
+  const server = await start({
+    port: 6091,
+    developmentLogging: true,
+    loglevel: 'info'
+  })
+  const client = connect({ port: 6091 })
+
+  await client.updateSchema({
+    languages: ['nl', 'en'],
+    types: {
+      league: {
+        fields: {
+          value: { type: 'number', search: { type: ['NUMERIC'] } }
+        }
+      },
+      person: {
+        fields: {
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
+        }
+      }
+    }
+  })
+
+  const { searchIndexes } = await client.getSchema()
+
+  t.deepEqual(
+    searchIndexes,
+    {
+      default: {
+        type: ['TAG'],
+        ancestors: ['TAG'],
+        value: ['NUMERIC', 'SORTABLE'],
+        parents: ['TAG'],
+        children: ['TAG'],
+        id: ['TAG']
+      }
+    },
+    'Sort will be added even if type is allready defined'
+  )
+
+  t.throwsAsync(
+    async () => {
+      await client.updateSchema({
+        types: {
+          flurp: {
+            fields: {
+              x: { type: 'string', search: { type: ['TEXT'] } }
+            }
+          },
+          flap: {
+            fields: {
+              x: { type: 'string', search: { type: ['NUMERIC'] } }
+            }
+          }
+        }
+      })
+    },
+    { instanceOf: Error }
+  )
+
+  const { searchIndexes: searchIndexes2 } = await client.getSchema()
+  t.deepEqual(
+    searchIndexes2,
+    {
+      default: {
+        type: ['TAG'],
+        ancestors: ['TAG'],
+        value: ['NUMERIC', 'SORTABLE'],
+        parents: ['TAG'],
+        children: ['TAG'],
+        id: ['TAG'],
+        x: ['NUMERIC']
+      }
+    },
+    'Sort will be added even if type is allready defined'
+  )
+
+  await wait()
+
+  server.destroy()
+
+  t.true(true)
 })
