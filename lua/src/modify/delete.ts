@@ -1,18 +1,18 @@
 import { Id } from '~selva/schema/index'
 import { markForAncestorRecalculation } from './ancestors'
-import * as redis from '../redis'
+import * as r from '../redis'
 
 export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   if (hierarchy) {
-    const children = redis.smembers(id + '.children')
-    const parents = redis.smembers(id + '.parents')
+    const children = r.smembers(id + '.children')
+    const parents = r.smembers(id + '.parents')
     for (let parent of parents) {
-      redis.srem(parent + '.children', id)
+      r.srem(parent + '.children', id)
     }
     for (let child of children) {
       const key = child + '.parents'
-      redis.srem(key, id)
-      const size = redis.scard(key)
+      r.srem(key, id)
+      const size = r.scard(key)
       if (size === 0) {
         deleteItem(child)
       } else {
@@ -20,10 +20,12 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
       }
     }
   }
-  redis.del(id + '.children')
-  redis.del(id + '.parents')
-  redis.del(id + '.ancestors')
-  redis.del(id + '._depth')
+
+  redis.pcall('FT.DEL', 'default', id)
+  r.del(id + '.children')
+  r.del(id + '.parents')
+  r.del(id + '.ancestors')
+  r.del(id + '._depth')
   // returns true if it existed
-  return redis.del(id) > 0
+  return r.del(id) > 0
 }

@@ -60,9 +60,9 @@ test.before(async t => {
 
   const team1 = await client.id({ type: 'team' })
 
-  const genMatches = () => {
+  const genMatches = (s = 0) => {
     const ch = []
-    for (let i = 0; i < 7500; i++) {
+    for (let i = s; i < s + 7500; i++) {
       if (i < 100) {
         ch.push({
           type: 'match',
@@ -112,9 +112,15 @@ test.before(async t => {
       name: 'league 1',
       // @ts-ignore
       children: genMatches()
+    }),
+    client.set({
+      type: 'league',
+      name: 'league 2',
+      // @ts-ignore
+      children: genMatches(7500)
     })
   ])
-  console.log('Set 7.5k nested', Date.now() - d, 'ms')
+  console.log('Set 15k nested', Date.now() - d, 'ms')
 
   await wait(500)
   t.true(ids[0].slice(0, 2) === 'cl' && ids[1].slice(0, 2) === 'le')
