@@ -163,7 +163,8 @@ function setFromAncestors(
   field: string,
   language?: string,
   version?: string,
-  fieldFrom?: string | string[]
+  fieldFrom?: string | string[],
+  condition?: (ancestor: Id) => boolean
 ): boolean {
   logger.info(`setFromAncestors for id ${id}`)
   const parents = redis.smembers(id + '.parents')
@@ -197,30 +198,33 @@ function setFromAncestors(
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
-      if (fieldFrom && fieldFrom.length > 0) {
-        if (
-          getWithField(
-            result,
-            schemas,
-            parent,
-            field,
-            fieldFrom,
-            language,
-            version
-          )
-        ) {
-          return true
-        }
-      } else {
-        if (getByType(result, schemas, parent, field, language, version)) {
-          return true
+      if (!condition || (condition && condition(parent))) {
+        if (fieldFrom && fieldFrom.length > 0) {
+          if (
+            getWithField(
+              result,
+              schemas,
+              parent,
+              field,
+              fieldFrom,
+              language,
+              version
+            )
+          ) {
+            return true
+          }
+        } else {
+          if (getByType(result, schemas, parent, field, language, version)) {
+            return true
+          }
         }
       }
 
       const parentsOfParents = redis.smembers(parent + '.parents')
       for (const parentOfParents of parentsOfParents) {
-        if (parentOfParents !== 'root' && ancestorDepthMap[parentOfParents])
+        if (parentOfParents !== 'root' && ancestorDepthMap[parentOfParents]) {
           next[next.length] = parentOfParents
+        }
       }
     }
 
@@ -230,7 +234,7 @@ function setFromAncestors(
   return false
 }
 
-function parseName(id: Id): string {
+function getName(id: Id): string {
   return redis.hget(id, 'name')
 }
 
@@ -297,26 +301,47 @@ export default function inherit(
   const inherit = props.$inherit
   if (inherit) {
     if (inherit === true) {
-      setFromAncestors(result, schemas, id, field, language, version, fieldFrom)
-    } else if (inherit.$type || inherit.$name) {
-      let ancestors: Id[]
-      if (inherit.$name) {
-        inherit.$name = ensureArray(inherit.$name)
-        ancestors = createAncestorsFromFields(id, inherit.$name, parseName)
-      } else {
-        inherit.$type = ensureArray(inherit.$type)
-        return setFromAncestorsByType(
-          result,
-          schemas,
-          id,
-          inherit.$type,
-          field,
-          language,
-          version,
-          fieldFrom
-        )
-      }
-      setFromAncestors(result, schemas, id, field, language, version, fieldFrom)
+      return setFromAncestors(
+        result,
+        schemas,
+        id,
+        field,
+        language,
+        version,
+        fieldFrom
+      )
+    } else if (inherit.$type) {
+      inherit.$type = ensureArray(inherit.$type)
+      return setFromAncestorsByType(
+        result,
+        schemas,
+        id,
+        inherit.$type,
+        field,
+        language,
+        version,
+        fieldFrom
+      )
+    } else if (inherit.$name) {
+      const names: string[] = ensureArray(inherit.$name)
+      return setFromAncestors(
+        result,
+        schemas,
+        id,
+        field,
+        language,
+        version,
+        fieldFrom,
+        (ancestor: Id) => {
+          for (const name of names) {
+            if (name === getName(ancestor)) {
+              return true
+            }
+          }
+
+          return false
+        }
+      )
     } else if (inherit.$item) {
       logger.info('INHERITING with $item')
       inherit.$item = ensureArray(inherit.$item)
@@ -332,5 +357,7 @@ export default function inherit(
         version
       )
     }
+
+    return false
   }
 }
