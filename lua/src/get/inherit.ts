@@ -146,103 +146,69 @@ function setFromAncestors(
   version?: string,
   fieldFrom?: string | string[]
 ): boolean {
-  const ancestorKey = id + '.ancestors'
+  logger.info(`setFromAncestors for id ${id}`)
   const parents = redis.smembers(id + '.parents')
 
-  const queue: { id: Id; depthOffset: number }[] = []
-  for (const parent of parents) {
-    queue[queue.length] = { id: parent, depthOffset: 1 }
+  const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+  const ancestorDepthMap: Record<Id, number> = {}
+
+  for (let i = 0; i < ancestorsWithScores.length; i += 2) {
+    ancestorDepthMap[ancestorsWithScores[i]] =
+      tonumber(ancestorsWithScores[i + 1]) || 0
   }
 
-  let currentDepthOffset: number = 1
-  let currentMaxDepth: number = 0
-  let currentMax: Id
-  while (queue.length > 0) {
-    // Array.prototype.unshift
-    const ancestor = queue[0]
-    table.remove(queue, 1)
+  let validParents: Id[] = []
+  for (let i = 0; i < parents.length; i++) {
+    if (parents[i] !== 'root' && ancestorDepthMap[parents[i]]) {
+      validParents[validParents.length] = parents[i]
+    }
+  }
 
-    if (ancestor.depthOffset > currentDepthOffset) {
-      if (currentMax) {
-        // TODO: we're done
-        break
+  // we want to check parents from deepest to lowest depth
+  table.sort(validParents, (a, b) => {
+    if (!a) {
+      return false
+    } else if (!b) {
+      return true
+    }
+
+    return ancestorDepthMap[a] > ancestorDepthMap[b]
+  })
+
+  while (validParents.length > 0) {
+    const next: Id[] = []
+    for (const parent of validParents) {
+      if (fieldFrom && fieldFrom.length > 0) {
+        if (
+          getWithField(
+            result,
+            schemas,
+            parent,
+            field,
+            fieldFrom,
+            language,
+            version
+          )
+        ) {
+          return true
+        }
       } else {
-        currentDepthOffset = ancestor.depthOffset
+        if (getByType(result, schemas, parent, field, language, version)) {
+          return true
+        }
+      }
+
+      const parentsOfParents = redis.smembers(parent + '.parents')
+      for (const parentOfParents of parentsOfParents) {
+        if (parentOfParents !== 'root' && ancestorDepthMap[parentOfParents])
+          next[next.length] = parentOfParents
       }
     }
 
-    const zscore = redis.zscore(ancestorKey, ancestor.id)
-    if (zscore && zscore > currentMaxDepth) {
-      currentMaxDepth = zscore
-      currentMax = ancestor.id
-    }
-
-    const parentsOfParent = redis.smembers(ancestor.id + '.parents')
-    for (const parentOfParent of parentsOfParent) {
-      queue[queue.length] = {
-        id: parentOfParent,
-        depthOffset: currentDepthOffset + 1
-      }
-    }
+    validParents = next
   }
 
   return false
-
-  // shit
-  // let deepestParent: Id
-  // let deepestParentScore: number = 0
-  // for (const parent of parents) {
-  //   const parentScore = redis.zscore(ancestorKey, parent)
-  //   if (parentScore > deepestParentScore) {
-  //     deepestParent = parent
-  //     deepestParentScore = parentScore
-  //   }
-  // }
-
-  // if (deepestParent) {
-  //   // TODO: set from this and check if true, and then return (if had what looking for)
-  //   return true
-  // }
-
-  // // TODO: BFS recurse
-  // for (const parent of parents) {
-  //   if (
-  //     setFromAncestors(
-  //       result,
-  //       schemas,
-  //       parent,
-  //       field,
-  //       language,
-  //       version,
-  //       fieldFrom
-  //     )
-  //   ) {
-  //     return true
-  //   }
-  // }
-
-  // old
-  // for (let i = 0, len = ancestors.length; i < len; i++) {
-  //   if (fieldFrom && fieldFrom.length > 0) {
-  //     if (
-  //       getWithField(
-  //         result,
-  //         schemas,
-  //         ancestors[i],
-  //         field,
-  //         fieldFrom,
-  //         language,
-  //         version
-  //       )
-  //     ) {
-  //       break
-  //     }
-  //   } else {
-  //     if (getByType(result, schemas, ancestors[i], field, language, version)) {
-  //       break
-  //     }
-  //   }
-  // }
 }
 
 function parseName(id: Id): string {
@@ -328,7 +294,7 @@ export default function inherit(
       }
       setFromAncestors(result, schemas, id, field, language, version, fieldFrom)
     } else if (inherit.$item) {
-      logger.info('inheriting with $item')
+      logger.info('INHERITING with $item')
       inherit.$item = ensureArray(inherit.$item)
       inheritItem(
         getField,

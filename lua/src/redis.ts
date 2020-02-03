@@ -81,6 +81,11 @@ export function sadd(key: string, ...members: string[]): boolean {
   return result === 1
 }
 
+export function sismember(key: string, value: string): boolean {
+  const result = redis.call('sismember', key, value)
+  return result === 1
+}
+
 export function smembers(key: string): string[] {
   return redis.call('smembers', key)
 }
