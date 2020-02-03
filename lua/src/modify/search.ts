@@ -1,12 +1,7 @@
 import { getSchema, getSearchIndexes } from '../schema/index'
 import * as logger from '../logger'
 
-const mapLanguages = (lang: string) => {
-  /*
-    supported languages
-  "romanian", "russian", "spanish", "swedish", "tamil", "turkish" "chinese"
-    */
-
+const mapLanguages = (lang: string): string => {
   if (lang === 'en') {
     return 'english'
   } else if (lang === 'de') {
@@ -15,20 +10,36 @@ const mapLanguages = (lang: string) => {
     return 'danish'
   } else if (lang === 'it') {
     return 'italian'
-  } else if (lang === 'fi') {
-    return 'finnish'
   } else if (lang === 'fr') {
     return 'french'
   } else if (lang === 'nl') {
     return 'dutch'
   } else if (lang === 'no') {
     return 'norwegian'
+  } else if (lang === 'ru') {
+    return 'russian'
   } else if (lang === 'hu') {
     return 'hungarian'
   } else if (lang === 'pt') {
     return 'portuguese'
   } else if (lang === 'ar') {
     return 'arabic'
+  } else if (lang === 'ron') {
+    return 'romanian'
+  } else if (lang === 'fi') {
+    return 'finnish'
+  } else if (lang === 'es') {
+    return 'spanish'
+  } else if (lang === 'se') {
+    return 'swedish'
+  } else if (lang === 'ta') {
+    return 'tamil'
+  } else if (lang === 'tr') {
+    return 'turkish'
+  } else if (lang === 'zh') {
+    return 'chinese'
+  } else {
+    return 'en'
   }
 }
 
@@ -47,7 +58,6 @@ export function addFieldToSearch(
   value: string
 ): void {
   const searchIndex = getSearchIndexes()
-
   for (const indexKey in searchIndex) {
     const index = searchIndex[indexKey]
     if (index[field]) {
@@ -70,7 +80,8 @@ export function addFieldToSearch(
         if (index[fieldToCheck]) {
           if (index[fieldToCheck][0] === 'TEXT-LANGUAGE') {
             const lang = field.substring(lastDotIndex + 1)
-            logger.info(`index for language!! ${lang}`)
+            const mapped = mapLanguages(lang)
+            logger.info(`index for language!! ${lang} ${mapped}`)
           }
         }
       }
