@@ -34,6 +34,7 @@ export const idExists = async (
 
 export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
   const ids = await client.redis.keys('*')
+  console.log(ids)
   return (
     await Promise.all(
       ids
@@ -46,6 +47,9 @@ export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
             return null
           }
           if (id.endsWith('.ancestors')) {
+            return null
+          }
+          if (id.startsWith(`tag:`)) {
             return null
           }
           return id.indexOf('.') > -1

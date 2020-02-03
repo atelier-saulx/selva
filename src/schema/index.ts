@@ -26,9 +26,16 @@ export type SearchSchema = Record<string, string[]>
 
 export type SearchIndexes = Record<string, SearchSchema>
 
-export type Search = {
+export type Search =
+  | {
+      index?: string
+      type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE' | 'TEXT-LANGUAGE')[]
+    }
+  | true
+
+export type SearchRaw = {
   index?: string
-  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[]
+  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE' | 'TEXT-LANGUAGE')[]
 }
 
 export type FieldSchemaObject = {
@@ -43,11 +50,11 @@ export type FieldSchemaJson = {
   properties?: {
     [key: string]: FieldSchema
   }
-  search?: Search
+  search?: SearchRaw | Search
 }
 
 export type FieldSchemaOther = {
-  search?: Search
+  search?: SearchRaw | Search
   type: FieldType
 }
 
@@ -91,22 +98,35 @@ export type Schema = {
   prefixToTypeMapping?: Record<string, string>
 }
 
+export type SchemaOptions = {
+  sha?: string
+  languages?: string[]
+  types?: Types
+  idSeedCounter?: number
+  prefixToTypeMapping?: Record<string, string>
+}
+
 export const defaultFields: Record<string, FieldSchema> = {
   id: {
-    type: 'id'
+    type: 'id',
+    // can allways use get for this :/ only nice for or in filter id
+    search: { index: 'default', type: ['TAG'] }
   },
   type: {
     search: { index: 'default', type: ['TAG'] },
     type: 'type'
   },
   children: {
-    type: 'references'
+    type: 'references',
+    search: { index: 'default', type: ['TAG'] }
   },
   parents: {
-    type: 'references'
+    type: 'references',
+    search: { index: 'default', type: ['TAG'] }
   },
   ancestors: {
-    type: 'references'
+    type: 'references',
+    search: { index: 'default', type: ['TAG'] }
   },
   descendants: {
     type: 'references'

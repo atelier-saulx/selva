@@ -83,23 +83,19 @@ export default function ensurePrefixes(
       ) {
         return `Can not change prefix of type ${type}`
       }
-
-      return null
     }
 
-    if (!oldSchema.types[type]) {
-      if (definition.prefix) {
-        if (!validate(definition.prefix)) {
-          return `Prefix wrongly formatted ${definition.prefix} make it longer then 2 chars and a combination of (a-z A-Z 0-9)`
-        }
-
-        let duplicates: false | [string, string]
-        if ((duplicates = hasDuplicates(newSchema.types, definition.prefix))) {
-          return `Duplicate types found for prefix ${definition.prefix}: ${duplicates[0]} and ${duplicates[1]}`
-        }
-      } else {
-        definition.prefix = genPrefix(newSchema, type)
+    if (definition.prefix) {
+      if (!validate(definition.prefix)) {
+        return `Prefix wrongly formatted ${definition.prefix} make it longer then 2 chars and a combination of (a-z A-Z 0-9)`
       }
+
+      let duplicates: false | [string, string]
+      if ((duplicates = hasDuplicates(newSchema.types, definition.prefix))) {
+        return `Duplicate types found for prefix ${definition.prefix}: ${duplicates[0]} and ${duplicates[1]}`
+      }
+    } else {
+      definition.prefix = genPrefix(newSchema, type)
     }
   }
 

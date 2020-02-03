@@ -410,9 +410,9 @@ function getByType(
 ): boolean {
   // version still missing!
   const type = getTypeFromId(id)
-  logger.info(
-    `getting field with id ${id} for field ${field} from type ${type}`
-  )
+  // logger.info(
+  //   `getting field with id ${id} for field ${field} from type ${type}`
+  // )
   const schema = schemas[type]
   if (!schema || !schema.fields) {
     logger.info(`No schema for type ${type}`)
@@ -452,11 +452,9 @@ function getByType(
   }
 
   if (!prop) {
-    logger.info(`No type for field ${field} in schema ${cjson.encode(schema)}`)
+    // logger.info(`No type for field ${field} in schema ${cjson.encode(schema)}`)
     return true
   }
-
-  logger.info(`GETTING FIELD ${field} WITH TYPE ${prop.type}`)
 
   const fn = types[prop.type] || string
   return fn(result, schemas, id, field, language, version)

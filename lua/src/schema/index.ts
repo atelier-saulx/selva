@@ -4,6 +4,7 @@ import {
   FieldSchema,
   SearchIndexes,
   Search,
+  SearchRaw,
   defaultFields
 } from '../../../src/schema/index'
 import ensurePrefixes from './prefixes'
@@ -117,8 +118,8 @@ function searchTypeChanged(
 }
 
 const searchChanged = (
-  newSearch: Search | undefined,
-  oldSearch: Search | undefined
+  newSearch: SearchRaw | undefined,
+  oldSearch: SearchRaw | undefined
 ): boolean => {
   if (!newSearch) {
     return false
@@ -163,13 +164,19 @@ function checkField(
   }
 
   if (newField.type !== 'object' && newField.type !== 'set') {
-    const index = (newField.search && newField.search.index) || 'default'
+    let searchRaw: SearchRaw | undefined = undefined
+    if (newField.search) {
+      searchRaw = newField.search = convertSearch(newField)
+    }
+
+    const index = (searchRaw && searchRaw.index) || 'default'
     if (
-      searchChanged(newField.search, (<any>oldField).search) // they are actually the same type, casting
+      newField.search &&
+      searchChanged(searchRaw, (<any>oldField).search) // they are actually the same type, casting
     ) {
       if (
         // @ts-ignore
-        searchTypeChanged(newField.search.type, oldField.search.type)
+        searchTypeChanged(searchRaw.type, oldField.search.type)
       ) {
         // TODO: add support for changing schema types', which means recreating index
         return `Can not change existing search types for ${path} in type ${type}, changing from ${cjson.encode(
@@ -177,13 +184,13 @@ function checkField(
           oldField.search.type
         )} to ${cjson.encode(
           // @ts-ignore
-          newField.search.type
+          searchRaw && searchRaw.type
         )}. This will be supported in the future.`
       }
 
       searchIndexes[index] = searchIndexes[index] || {}
       searchIndexes[index][path] =
-        (newField.search && newField.search.type) ||
+        (searchRaw && searchRaw.type) ||
         ((<any>oldField).search && (<any>oldField).search.type)
       changedSearchIndexes[index] = true
     }
@@ -322,6 +329,30 @@ function verifyTypes(
   return null
 }
 
+function convertSearch(f: FieldSchema): SearchRaw {
+  const field = <any>f
+  if (field.search === true) {
+    if (
+      field.type === 'json' ||
+      field.type === 'string' ||
+      field.type === 'array'
+    ) {
+      return { type: ['TEXT'] }
+    } else if (
+      field.type === 'number' ||
+      field.type === 'float' ||
+      field.type === 'int'
+    ) {
+      return { type: ['NUMERIC', 'SORTABLE'] }
+    } else if (field.type === 'text') {
+      return { type: ['TEXT-LANGUAGE'] }
+    } else if (field.type === 'set') {
+      return { type: ['TAG'] }
+    }
+  }
+  return field.search
+}
+
 function findSearchConfigurations(
   obj: TypeSchema | FieldSchema,
   path: string,
@@ -343,11 +374,27 @@ function findSearchConfigurations(
         )
       }
     } else {
+      // changes actual index
       if (field.search) {
+        field.search = convertSearch(field)
+
         const index = field.search.index || 'default'
         searchIndexes[index] = searchIndexes[index] || {}
-        searchIndexes[index][path] = field.search.type
-        changedSearchIndexes[index] = true
+        if (searchIndexes[index][path]) {
+          if (
+            <any>searchIndexes[index][path].length < field.search.type.length
+          ) {
+            searchIndexes[index][path] = field.search.type
+            changedSearchIndexes[index] = true
+          } else if (field.search.type[0] !== searchIndexes[index][path][0]) {
+            logger.error(
+              `Search index for "${path}" type is ${searchIndexes[index][path][0]} want to change to ${field.search.type[0]}`
+            )
+          }
+        } else {
+          searchIndexes[index][path] = field.search.type
+          changedSearchIndexes[index] = true
+        }
       }
     }
   } else {
@@ -395,6 +442,47 @@ export function verifyAndEnsureRequiredFields(
   return null
 }
 
+function checkLanguageChange(
+  changedSearchIndexes: Record<string, boolean>,
+  searchIndexes: SearchIndexes,
+  oldSchema: Schema,
+  newSchema: Schema
+) {
+  if (newSchema.languages) {
+    const addedLanguages: string[] = []
+    for (let i = 0; i < newSchema.languages.length; i++) {
+      const lang = newSchema.languages[i]
+      if (oldSchema.languages) {
+        let found = false
+        for (let i = 0; i < oldSchema.languages.length; i++) {
+          if (oldSchema.languages[i] === lang) {
+            found = true
+            break
+          }
+        }
+        if (!found) {
+          addedLanguages[addedLanguages.length] = lang
+        }
+      } else {
+        addedLanguages[addedLanguages.length] = lang
+      }
+    }
+    if (addedLanguages.length !== 0) {
+      logger.info(`Added languages ${cjson.encode(addedLanguages)}`)
+      for (const index in searchIndexes) {
+        const searchIndex = searchIndexes[index]
+        for (const field in searchIndex) {
+          if (searchIndex[field][0] === 'TEXT-LANGUAGE') {
+            logger.info(`Language added update ${index} ${field}`)
+            changedSearchIndexes[index] = true
+            break
+          }
+        }
+      }
+    }
+  }
+}
+
 export function updateSchema(
   newSchema: Schema
 ): [string | null, string | null] {
@@ -419,7 +507,8 @@ export function updateSchema(
     return [null, err]
   }
 
-  updateSearchIndexes(changedSearchIndexes, searchIndexes)
+  checkLanguageChange(changedSearchIndexes, searchIndexes, oldSchema, newSchema)
+  updateSearchIndexes(changedSearchIndexes, searchIndexes, newSchema)
   updateHierarchies(oldSchema, newSchema)
   const saved = saveSchema(newSchema, searchIndexes)
   return [saved, null]

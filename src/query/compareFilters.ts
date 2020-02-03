@@ -37,6 +37,62 @@ const isEqual = (a, b, schema) => {
   }
 }
 
+const isLargerThenAndSmallerThen = (a, b, schema) => {
+  let $lo, $hi
+  if (a.$operator === '>') {
+    $lo = a
+    $hi = b
+  } else {
+    $lo = b
+    $hi = a
+  }
+  a.$value = [$lo.$value, $hi.$value]
+  a.$operator = '..'
+  return false
+}
+
+const isLargerThenAndLargerThen = (a, b, schema) => {
+  if (b.$value > a.$value) {
+    a.$value = b.$value
+  }
+  return false
+}
+
+const isSmallerThenAndSmallerThen = (a, b, schema) => {
+  if (b.$value < a.$value) {
+    a.$value = b.$value
+  }
+  return false
+}
+
+const isRangeAndLargerOrSmaller = (a, b, schema) => {
+  let range = a
+  let other = b
+  if (b.$operator === '..') {
+    range = b
+    other = a
+  }
+  if (other.$operator === '>') {
+    if (other.$value > range.$value[1]) {
+      throw new Error(
+        `Out of bounds range filter ${other.$value} < ${range.$value}`
+      )
+    }
+  }
+  if (other.$operator === '<') {
+    if (other.$value > range.$value[0]) {
+      throw new Error(
+        `Out of bounds range filter ${other.$value} > ${range.$value}`
+      )
+    }
+  }
+  if (b.$operator === '..') {
+    a.$operator = '..'
+    a.$value = b.$value
+  }
+  return false
+}
+
 const isNotEqual = (a, b, schema) => {
   if (a.$value !== b.$value) {
     if (!Array.isArray(b.$value)) {
@@ -101,6 +157,19 @@ const compareFilters = (result, filter, schema) => {
       fn = isNotEqual
     } else if (($a === '=' && $b === '!=') || ($a === '!=' && $b === '=')) {
       fn = isNotEqualAndIsEqual
+    } else if (($a === '>' && $b === '<') || ($a === '<' && $b === '>')) {
+      fn = isLargerThenAndSmallerThen
+    } else if ($a === '>' && $b === '>') {
+      fn = isLargerThenAndLargerThen
+    } else if ($a === '<' && $b === '<') {
+      fn = isSmallerThenAndSmallerThen
+    } else if (
+      // auto merge smaller then and equal then arrays or just dont allow them
+      ($a === '..' && ($b === '>' || $b === '<')) ||
+      ($b === '..' && ($a === '>' || $a === '<'))
+    ) {
+      console.log('RANGE', $a, $b)
+      fn = isRangeAndLargerOrSmaller
     }
     if (fn(prevFilter, filter, schema) === false) {
       return false

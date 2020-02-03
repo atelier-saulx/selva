@@ -6,7 +6,7 @@ import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions, GetResult } from './get'
 import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
-import { Schema, SearchIndexes, Id } from './schema'
+import { Schema, SearchIndexes, SchemaOptions, Id } from './schema'
 import { newSchemaDefinition } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import getTypeFromId from './getTypeFromId'
@@ -74,10 +74,14 @@ export class SelvaClient {
     return query(this, props)
   }
 
-  async updateSchema(props: Schema, retry?: number) {
+  async updateSchema(props: SchemaOptions, retry?: number) {
     retry = retry || 0
 
-    const newSchema = newSchemaDefinition(this.schema, props)
+    if (!props.types) {
+      props.types = {}
+    }
+
+    const newSchema = newSchemaDefinition(this.schema, <Schema>props)
     try {
       const updated = await this.redis.loadAndEvalScript(
         'update-schema',

@@ -5,7 +5,7 @@ import globals from '../lua/src/globals'
 
 globals.NEEDS_GSUB = false
 
-logger.info('GET WITH: ' + ARGV[0])
+// logger.info('GET WITH: ' + ARGV[0])
 const opts: GetOptions = cjson.decode(ARGV[0])
 let a = get(opts)
 

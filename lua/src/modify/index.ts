@@ -10,6 +10,7 @@ import { DeleteOptions } from '~selva/delete/types'
 import { deleteItem } from './delete'
 import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
+import { addFieldToSearch } from './search'
 
 function removeFields(
   id: string,
@@ -161,6 +162,7 @@ function setField(
   } else {
     redis.hset(id, field, tostring(value))
   }
+  addFieldToSearch(id, field, value)
 }
 
 function remove(payload: DeleteOptions): boolean {
