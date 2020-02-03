@@ -34,33 +34,39 @@ export const idExists = async (
 
 export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
   const ids = await client.redis.keys('*')
-  console.log(ids)
   return (
     await Promise.all(
-      ids
-        .filter(id => id.indexOf('idx:') !== 0)
-        .map(id => {
-          if (id.startsWith('___')) {
-            return null
-          }
-          if (id.endsWith('._depth')) {
-            return null
-          }
-          if (id.endsWith('.ancestors')) {
-            return null
-          }
-          if (id.startsWith(`tag:`)) {
-            return null
-          }
-          return id.indexOf('.') > -1
-            ? client.redis.smembers(id)
-            : client.redis.hgetall(id)
-        })
-        .filter(x => !!x)
+      ids.map(id => {
+        if (id.startsWith('___')) {
+          return null
+        }
+        if (id.startsWith('nm:')) {
+          return null
+        }
+
+        if (id.startsWith('idx:')) {
+          return null
+        }
+
+        if (id.endsWith('._depth')) {
+          return null
+        }
+        if (id.endsWith('.ancestors')) {
+          return null
+        }
+        if (id.startsWith(`tag:`)) {
+          return null
+        }
+        return id.indexOf('.') > -1
+          ? client.redis.smembers(id)
+          : client.redis.hgetall(id)
+      })
     )
-  ).map((v, i) => {
-    return [ids[i], v]
-  })
+  )
+    .map((v, i) => {
+      return [ids[i], v]
+    })
+    .filter(x => !!x[1])
 }
 
 export const logDb = async (client: SelvaClient) => {

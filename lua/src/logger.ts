@@ -16,36 +16,38 @@ function logLevelToNumber(loglevel: LogLevel): number {
   return 0
 }
 
-export function log(loglevel: LogLevel, msg: any): void {
+export function log(loglevel: LogLevel, ...args: any[]): void {
   const enabled = logLevelToNumber(enabledLogLevel)
   const used = logLevelToNumber(loglevel)
 
   if (used >= enabled) {
-    let asStr: string
-    if (type(msg) === 'table') {
-      asStr = cjson.encode(msg)
-    } else if (type(msg) !== 'string') {
-      asStr = tostring(msg)
-    } else {
-      asStr = msg
+    for (let i = 0; i < args.length; i++) {
+      const msg = args[i]
+      let asStr: string
+      if (type(msg) === 'table') {
+        asStr = cjson.encode(msg)
+      } else if (type(msg) !== 'string') {
+        asStr = tostring(msg)
+      } else {
+        asStr = msg
+      }
+      redis.log(loglevel, asStr)
     }
-
-    redis.log(loglevel, asStr)
   }
 }
 
-export function info(msg: any): void {
-  log('info', msg)
+export function info(...msg: any[]): void {
+  log('info', ...msg)
 }
 
-export function notice(msg: any): void {
-  log('notice', msg)
+export function notice(...msg: any[]): void {
+  log('notice', ...msg)
 }
 
-export function warn(msg: any): void {
-  log('warning', msg)
+export function warn(...msg: any[]): void {
+  log('warning', ...msg)
 }
 
-export function error(msg: any): void {
-  log('error', msg)
+export function error(...msg: any[]): void {
+  log('error', ...msg)
 }

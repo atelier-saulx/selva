@@ -151,11 +151,11 @@ function reCalculateAncestorsFor(ids: Id[]): void {
     // if ancestors are the same as before, stop recursion and don't index search
     let eql = true
 
-    if (
-      ancestors &&
-      currentAncestors &&
-      ancestors.length === currentAncestors.length
-    ) {
+    if (!ancestors || !currentAncestors) {
+      eql = false
+    } else if (ancestors.length === 0 || currentAncestors.length === 0) {
+      eql = false
+    } else if (ancestors.length === currentAncestors.length) {
       for (let i = 0; i < ancestors.length; i++) {
         if (ancestors[i] !== currentAncestors[i]) {
           eql = false
@@ -171,14 +171,15 @@ function reCalculateAncestorsFor(ids: Id[]): void {
       return
     }
 
+    // FIXME: tony fix fixmake
+    // alreadyUpdated[id] = true
+
     // add to search
-    if (ancestors && ancestors.length > 0) {
+    if (ancestors) {
       const searchStr = joinString(ancestors, ',')
       redis.hset(id, 'ancestors', searchStr)
       addFieldToSearch(id, 'ancestors', searchStr)
     }
-
-    alreadyUpdated[id] = true
 
     // recurse down the tree if ancestors updated
     const children = redis.smembers(id + '.children')

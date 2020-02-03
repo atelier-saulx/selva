@@ -3,7 +3,8 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 import queryParser from '../src/query'
 import './assertions'
-import { wait } from './assertions'
+import { wait, dumpDb } from './assertions'
+import { RedisClient } from 'redis'
 
 let srv
 test.before(async t => {
@@ -59,10 +60,10 @@ test.before(async t => {
   })
 
   const team1 = await client.id({ type: 'team' })
-
+  const amount = 200
   const genMatches = (s = 0) => {
     const ch = []
-    for (let i = s; i < s + 7500; i++) {
+    for (let i = s; i < s + amount; i++) {
       if (i < 100) {
         ch.push({
           type: 'match',
@@ -117,13 +118,22 @@ test.before(async t => {
       type: 'league',
       name: 'league 2',
       // @ts-ignore
-      children: genMatches(7500)
+      children: genMatches(amount)
     })
   ])
   console.log('Set 15k nested', Date.now() - d, 'ms')
 
-  await wait(500)
+  await wait(600)
   t.true(ids[0].slice(0, 2) === 'cl' && ids[1].slice(0, 2) === 'le')
+
+  // const matches = (await dumpDb(client)).filter(v => {
+  //   if (typeof v[1] === 'object' && v[1].type === 'match') {
+  //     return true
+  //   }
+  //   return false
+  // })
+
+  // console.log(matches, matches.length)
 
   await client.destroy()
 })
