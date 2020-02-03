@@ -134,7 +134,7 @@ export default function get(opts: GetOptions): GetResult {
   const types: Record<string, TypeSchema> = schema.types
   const result: GetResult = {}
 
-  logger.info(`GET ${cjson.encode(opts)}`)
+  // logger.info(`GET ${cjson.encode(opts)}`)
   const { $version: version, $id: id, $language: language } = opts
   if (id) {
     getField(opts, types, result, id, undefined, language, version)

@@ -392,8 +392,12 @@ abstract class RedisMethods {
     })
   }
 
-  // subscriber stuff fix it needs to become better!
-  // do it next week
+  async ftTagVals(index: string, tagField: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('FT.TAGVALS', [index, tagField], resolve, reject)
+    })
+  }
+
   async psubscribe(...pattern: string[]): Promise<any> {
     return new Promise((resolve, reject) => {
       this.queue('psubscribe', pattern, resolve, reject, true)

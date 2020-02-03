@@ -49,6 +49,7 @@ const returnNumber = (filter, value) => {
 // SEARCH PREFIXES
 // also incolude language in searching REAL SEARCH
 
+// needs language here
 const addField = (filter, schema: GetSchemaResult): string => {
   // depends on field type
   const type = filter.$search[0]
@@ -71,6 +72,7 @@ const addField = (filter, schema: GetSchemaResult): string => {
       return returnNumber(filter, filter.$value)
     }
   } else if (type === 'TEXT') {
+    // equals will be a partial here
     // DO THINGS
     // INCLUDE LANGUAGE ETC
   } else if (type === 'GEO') {

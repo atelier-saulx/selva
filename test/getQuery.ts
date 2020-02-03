@@ -62,12 +62,8 @@ test.before(async t => {
 
   const genMatches = () => {
     const ch = []
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 7500; i++) {
       if (i < 100) {
-        if (i < 10) {
-          console.log('match ' + i)
-        }
-
         ch.push({
           type: 'match',
           name: 'match' + i,
@@ -98,6 +94,7 @@ test.before(async t => {
     return ch
   }
 
+  const d = Date.now()
   const ids = await Promise.all([
     client.set({
       type: 'club',
@@ -117,6 +114,7 @@ test.before(async t => {
       children: genMatches()
     })
   ])
+  console.log('Set 7.5k nested', Date.now() - d, 'ms')
 
   await wait(500)
   t.true(ids[0].slice(0, 2) === 'cl' && ids[1].slice(0, 2) === 'le')
@@ -126,12 +124,8 @@ test.before(async t => {
 
 test.after(async _t => {
   const client = connect({ port: 6088 })
-  // handing if 1000 ???? not really a lot - hangs
-  // maybe logger?
-  console.log('hello')
   const d = Date.now()
-  // delete crashes because 1k things...
-  // await client.delete('root')
+  await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()

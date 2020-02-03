@@ -6,7 +6,7 @@ function createIndex(
   schema: SearchSchema,
   languages: string[]
 ): void {
-  const args = [index, 'SCHEMA']
+  const args = [index, 'NOHL', 'NOFREQS', 'SCHEMA']
 
   for (const field in schema) {
     const value = schema[field]
