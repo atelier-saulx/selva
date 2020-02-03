@@ -21,6 +21,7 @@ export function log(loglevel: LogLevel, ...args: any[]): void {
   const used = logLevelToNumber(loglevel)
 
   if (used >= enabled) {
+    let log: string = ''
     for (let i = 0; i < args.length; i++) {
       const msg = args[i]
       let asStr: string
@@ -31,8 +32,10 @@ export function log(loglevel: LogLevel, ...args: any[]): void {
       } else {
         asStr = msg
       }
-      redis.log(loglevel, asStr)
+      log += asStr + ' '
     }
+
+    redis.log(loglevel, log)
   }
 }
 

@@ -114,7 +114,21 @@ function reCalculateAncestorsFor(ids: Id[]): void {
     redis.del(id + '.ancestors')
 
     const parents = redis.smembers(id + '.parents')
-    if (parents) {
+
+    let skipAncestorUpdate = false
+    if (!parents) {
+      skipAncestorUpdate = true
+    }
+
+    for (const parent of parents) {
+      if (needAncestorUpdates[parent] && !alreadyUpdated[parent]) {
+        // if we have a parent that we are about to update later, bail and leave it to them
+        skipAncestorUpdate = true
+        break
+      }
+    }
+
+    if (!skipAncestorUpdate) {
       for (const parent of parents) {
         // add all ancestors of parent
         const parentAncestorKey = parent + '.ancestors'
@@ -144,47 +158,47 @@ function reCalculateAncestorsFor(ids: Id[]): void {
           redis.zaddNew(id + '.ancestors', parentDepth, parent)
         }
       }
-    }
 
-    const ancestors = redis.zrange(id + '.ancestors')
+      const ancestors = redis.zrange(id + '.ancestors')
 
-    // if ancestors are the same as before, stop recursion and don't index search
-    let eql = true
+      // if ancestors are the same as before, stop recursion and don't index search
+      let eql = true
 
-    if (!ancestors || !currentAncestors) {
-      eql = false
-    } else if (ancestors.length === 0 || currentAncestors.length === 0) {
-      eql = false
-    } else if (ancestors.length === currentAncestors.length) {
-      for (let i = 0; i < ancestors.length; i++) {
-        if (ancestors[i] !== currentAncestors[i]) {
-          eql = false
+      if (!ancestors || !currentAncestors) {
+        eql = false
+      } else if (ancestors.length === 0 || currentAncestors.length === 0) {
+        eql = false
+      } else if (ancestors.length === currentAncestors.length) {
+        for (let i = 0; i < ancestors.length; i++) {
+          if (ancestors[i] !== currentAncestors[i]) {
+            eql = false
+          }
+        }
+      } else {
+        eql = false
+      }
+
+      if (!needAncestorUpdates[id] && eql) {
+        // do nothing
+      } else if (needAncestorUpdates[id] && alreadyUpdated[id] && eql) {
+        // do nothing
+      } else {
+        // FIXME: tony fix fixmake
+        alreadyUpdated[id] = true
+
+        // add to search
+        if (ancestors) {
+          const searchStr = joinString(ancestors, ',')
+          redis.hset(id, 'ancestors', searchStr)
+          addFieldToSearch(id, 'ancestors', searchStr)
+        }
+
+        // recurse down the tree if ancestors updated
+        const children = redis.smembers(id + '.children')
+        if (children && children.length > 0) {
+          reCalculateAncestorsFor(children)
         }
       }
-    } else {
-      eql = false
-    }
-
-    if (!needAncestorUpdates[id] && eql) {
-      return
-    } else if (needAncestorUpdates[id] && alreadyUpdated[id] && eql) {
-      return
-    }
-
-    // FIXME: tony fix fixmake
-    // alreadyUpdated[id] = true
-
-    // add to search
-    if (ancestors) {
-      const searchStr = joinString(ancestors, ',')
-      redis.hset(id, 'ancestors', searchStr)
-      addFieldToSearch(id, 'ancestors', searchStr)
-    }
-
-    // recurse down the tree if ancestors updated
-    const children = redis.smembers(id + '.children')
-    if (children && children.length > 0) {
-      reCalculateAncestorsFor(children)
     }
   }
 }
