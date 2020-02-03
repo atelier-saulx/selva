@@ -28,7 +28,7 @@ export type SearchIndexes = Record<string, SearchSchema>
 
 export type Search = {
   index?: string
-  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[]
+  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[] | true
 }
 
 export type FieldSchemaObject = {

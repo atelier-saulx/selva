@@ -343,6 +343,7 @@ function findSearchConfigurations(
         )
       }
     } else {
+      // changes actual index
       if (field.search) {
         const index = field.search.index || 'default'
         searchIndexes[index] = searchIndexes[index] || {}

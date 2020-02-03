@@ -481,6 +481,20 @@ test('schemas - search indexes', async t => {
   }
 
   try {
+    await client.updateSchema({
+      types: {
+        flurp: {
+          fields: {
+            flarp: { type: 'string', search: true }
+          }
+        }
+      }
+    })
+  } catch (err) {
+    t.fail('Adding a field should not throw')
+  }
+
+  try {
     /*
     supported languages
     "arabic", "danish", "dutch", "english", "finnish", "french", "german", "hungarian", "italian", "norwegian", "portuguese", "romanian", "russian", "spanish", "swedish", "tamil", "turkish" "chinese"
