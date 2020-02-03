@@ -107,55 +107,6 @@ function createAncestorsFromFields(
   return result
 }
 
-function setFromAncestorsByType(
-  result: GetResult,
-  schemas: Record<string, TypeSchema>,
-  id: Id,
-  types: string[],
-  field: string,
-  language?: string,
-  version?: string,
-  fieldFrom?: string | string[]
-): boolean {
-  const ancestors = redis.zrange(id + '.ancestors')
-  for (let i = ancestors.length - 1; i >= 0; i--) {
-    const ancestorType = getTypeFromId(ancestors[i])
-
-    let isType = false
-    for (const type of types) {
-      if (ancestorType === type) {
-        isType = true
-      }
-    }
-
-    if (isType) {
-      if (fieldFrom && fieldFrom.length > 0) {
-        if (
-          getWithField(
-            result,
-            schemas,
-            ancestors[i],
-            field,
-            fieldFrom,
-            language,
-            version
-          )
-        ) {
-          return true
-        }
-      } else {
-        if (
-          getByType(result, schemas, ancestors[i], field, language, version)
-        ) {
-          return true
-        }
-      }
-    }
-  }
-
-  return false
-}
-
 function setFromAncestors(
   result: GetResult,
   schemas: Record<string, TypeSchema>,
@@ -311,16 +262,24 @@ export default function inherit(
         fieldFrom
       )
     } else if (inherit.$type) {
-      inherit.$type = ensureArray(inherit.$type)
-      return setFromAncestorsByType(
+      const types: string[] = ensureArray(inherit.$type)
+      return setFromAncestors(
         result,
         schemas,
         id,
-        inherit.$type,
         field,
         language,
         version,
-        fieldFrom
+        fieldFrom,
+        (ancestor: Id) => {
+          for (const type of types) {
+            if (type === getTypeFromId(ancestor)) {
+              return true
+            }
+          }
+
+          return false
+        }
       )
     } else if (inherit.$name) {
       const names: string[] = ensureArray(inherit.$name)

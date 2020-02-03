@@ -81,10 +81,8 @@ function updateDepths(id: Id): void {
   if (!maxParentDepth) {
     maxParentDepth = 0
   }
-  logger.info(`maxParentDepth for id ${id} = ${maxParentDepth}`)
 
   setDepth(id, 1 + maxParentDepth)
-  logger.info(`depth updated ${cjson.encode(depthMap)}`)
 
   // update depth of all children
   const children = redis.smembers(id + '.children')
@@ -100,13 +98,10 @@ function updateDepths(id: Id): void {
 }
 
 function reCalculateAncestorsFor(ids: Id[]): void {
-  logger.info(`reCalculateAncestors ${cjson.encode(ids)}`)
-
   // we want to update ancestors frow lowest to deepest
   table.sort(ids, (a, b) => {
     return (getDepth(a) || 0) <= (getDepth(b) || 0)
   })
-  logger.info(`sorted ids by depth ${cjson.encode(ids)}`)
 
   for (const id of ids) {
     // clear the ancestors in case of any removed ancestors
@@ -120,8 +115,6 @@ function reCalculateAncestorsFor(ids: Id[]): void {
         const parentAncestors: string[] = redis.zrangeWithScores(
           parentAncestorKey
         )
-        logger.info(`parent ancestors for ${parent}`)
-        logger.info(parentAncestors)
 
         const reversed: string[] = []
         for (let i = 0; i < parentAncestors.length; i += 2) {
@@ -136,10 +129,6 @@ function reCalculateAncestorsFor(ids: Id[]): void {
           reversed[1] = 'root'
         }
 
-        logger.info(`yesh`)
-        logger.info(
-          `zAddMultipleNew ${id + '.ancestors'}, ${cjson.encode(reversed)}`
-        )
         redis.zAddMultipleNew(id + '.ancestors', ...reversed)
 
         // set parent itself into the ancestry
@@ -154,9 +143,13 @@ function reCalculateAncestorsFor(ids: Id[]): void {
     const children = redis.smembers(id + '.children')
     if (children && children.length > 0) {
       reCalculateAncestorsFor(children)
+    }
 
-      // add to search
-      const searchStr = joinString(children, ',')
+    // add to search
+    const ancestors = redis.zrange(id + '.ancestors')
+    if (ancestors && ancestors.length > 0) {
+      const searchStr = joinString(ancestors, ',')
+      // logger.info(`searchStr for ${id} with ${searchStr}`)
       addFieldToSearch(id, 'ancestors', searchStr)
     }
   }
@@ -168,7 +161,6 @@ export function reCalculateAncestors(): void {
     updateDepths(id)
     ids[ids.length] = id
   }
-  logger.info(`depth map ${cjson.encode(depthMap)}`)
 
   reCalculateAncestorsFor(ids)
 }
