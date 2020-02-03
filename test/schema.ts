@@ -558,8 +558,6 @@ test('schemas - search indexes', async t => {
     title: { de: 'Gutten morgen' }
   })
 
-  console.log(id)
-
   console.log(await client.get({ $id: id, title: true }))
 
   await wait()
