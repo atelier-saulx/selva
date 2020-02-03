@@ -50,7 +50,7 @@ function alterIndex(
           langField,
           ...args
         )
-        if (result.err) {
+        if (result.err && result.err !== 'Duplicate field in schema') {
           logger.error(
             `Error altering index for language ${index} ${langField}: ${result.err}`
           )
@@ -66,10 +66,8 @@ function alterIndex(
         ...schema[field]
       )
 
-      if (result.err) {
-        if (result.err !== 'Duplicate field in schema') {
-          logger.error(`Error altering index ${index} ${field}: ${result.err}`)
-        }
+      if (result.err && result.err !== 'Duplicate field in schema') {
+        logger.error(`Error altering index ${index} ${field}: ${result.err}`)
       }
     }
   }

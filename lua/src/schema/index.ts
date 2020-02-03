@@ -442,6 +442,47 @@ export function verifyAndEnsureRequiredFields(
   return null
 }
 
+function checkLanguageChange(
+  changedSearchIndexes: Record<string, boolean>,
+  searchIndexes: SearchIndexes,
+  oldSchema: Schema,
+  newSchema: Schema
+) {
+  if (newSchema.languages) {
+    const addedLanguages: string[] = []
+    for (let i = 0; i < newSchema.languages.length; i++) {
+      const lang = newSchema.languages[i]
+      if (oldSchema.languages) {
+        let found = false
+        for (let i = 0; i < oldSchema.languages.length; i++) {
+          if (oldSchema.languages[i] === lang) {
+            found = true
+            break
+          }
+        }
+        if (!found) {
+          addedLanguages[addedLanguages.length] = lang
+        }
+      } else {
+        addedLanguages[addedLanguages.length] = lang
+      }
+    }
+    if (addedLanguages.length !== 0) {
+      logger.info(`Added languages ${cjson.encode(addedLanguages)}`)
+      for (const index in searchIndexes) {
+        const searchIndex = searchIndexes[index]
+        for (const field in searchIndex) {
+          if (searchIndex[field][0] === 'TEXT-LANGUAGE') {
+            logger.info(`Language added update ${index} ${field}`)
+            changedSearchIndexes[index] = true
+            break
+          }
+        }
+      }
+    }
+  }
+}
+
 export function updateSchema(
   newSchema: Schema
 ): [string | null, string | null] {
@@ -466,6 +507,7 @@ export function updateSchema(
     return [null, err]
   }
 
+  checkLanguageChange(changedSearchIndexes, searchIndexes, oldSchema, newSchema)
   updateSearchIndexes(changedSearchIndexes, searchIndexes, newSchema)
   updateHierarchies(oldSchema, newSchema)
   const saved = saveSchema(newSchema, searchIndexes)

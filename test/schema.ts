@@ -506,13 +506,6 @@ test('schemas - search indexes', async t => {
     types: {
       flurp: {
         fields: {
-          // find defaults
-          // e.g. if text do this
-          // if value is number make numeric
-          // etc
-          // indexes text languages
-          // so allow search: true as a field
-          // 'TEXT-LANGUAGE'
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE'] } }
         }
       }
@@ -539,14 +532,30 @@ test('schemas - search indexes', async t => {
 
   const { searchIndexes } = await client.getSchema()
 
-  console.log(searchIndexes)
-
   await client.updateSchema({
     languages: ['nl', 'en', 'de']
   })
-  // this now has to update the TEXT schemas it can find
 
-  // const { searchIndexes } = await client.getSchema()
+  const info = await client.redis.ftInfo('default')
+  const fields = info[info.indexOf('fields') + 1]
+
+  t.deepEqual(
+    fields,
+    [
+      ['type', 'type', 'TAG', 'SEPARATOR', ','],
+      ['ancestors', 'type', 'TAG', 'SEPARATOR', ','],
+      ['value', 'type', 'NUMERIC', 'SORTABLE'],
+      ['parents', 'type', 'TAG', 'SEPARATOR', ','],
+      ['children', 'type', 'TAG', 'SEPARATOR', ','],
+      ['id', 'type', 'TAG', 'SEPARATOR', ','],
+      ['x', 'type', 'NUMERIC'],
+      ['flarp', 'type', 'TEXT', 'WEIGHT', '1'],
+      ['title.nl', 'type', 'TEXT', 'WEIGHT', '1'],
+      ['title.en', 'type', 'TEXT', 'WEIGHT', '1'],
+      ['title.de', 'type', 'TEXT', 'WEIGHT', '1']
+    ],
+    'Index includes language fields'
+  )
 
   // then add geo case
 
