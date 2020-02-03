@@ -26,9 +26,16 @@ export type SearchSchema = Record<string, string[]>
 
 export type SearchIndexes = Record<string, SearchSchema>
 
-export type Search = {
+export type Search =
+  | {
+      index?: string
+      type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE' | 'TEXT-LANGUAGE')[]
+    }
+  | true
+
+export type SearchRaw = {
   index?: string
-  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE')[] | true
+  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE' | 'TEXT-LANGUAGE')[]
 }
 
 export type FieldSchemaObject = {
@@ -43,11 +50,11 @@ export type FieldSchemaJson = {
   properties?: {
     [key: string]: FieldSchema
   }
-  search?: Search
+  search?: SearchRaw | Search
 }
 
 export type FieldSchemaOther = {
-  search?: Search
+  search?: SearchRaw | Search
   type: FieldType
 }
 

@@ -4,6 +4,7 @@ import {
   FieldSchema,
   SearchIndexes,
   Search,
+  SearchRaw,
   defaultFields
 } from '../../../src/schema/index'
 import ensurePrefixes from './prefixes'
@@ -117,8 +118,8 @@ function searchTypeChanged(
 }
 
 const searchChanged = (
-  newSearch: Search | undefined,
-  oldSearch: Search | undefined
+  newSearch: SearchRaw | undefined,
+  oldSearch: SearchRaw | undefined
 ): boolean => {
   if (!newSearch) {
     return false
@@ -163,13 +164,19 @@ function checkField(
   }
 
   if (newField.type !== 'object' && newField.type !== 'set') {
-    const index = (newField.search && newField.search.index) || 'default'
+    let searchRaw: SearchRaw | undefined = undefined
+    if (newField.search) {
+      searchRaw = newField.search = convertSearch(newField)
+    }
+
+    const index = (searchRaw && searchRaw.index) || 'default'
     if (
-      searchChanged(newField.search, (<any>oldField).search) // they are actually the same type, casting
+      newField.search &&
+      searchChanged(searchRaw, (<any>oldField).search) // they are actually the same type, casting
     ) {
       if (
         // @ts-ignore
-        searchTypeChanged(newField.search.type, oldField.search.type)
+        searchTypeChanged(searchRaw.type, oldField.search.type)
       ) {
         // TODO: add support for changing schema types', which means recreating index
         return `Can not change existing search types for ${path} in type ${type}, changing from ${cjson.encode(
@@ -177,13 +184,13 @@ function checkField(
           oldField.search.type
         )} to ${cjson.encode(
           // @ts-ignore
-          newField.search.type
+          searchRaw && searchRaw.type
         )}. This will be supported in the future.`
       }
 
       searchIndexes[index] = searchIndexes[index] || {}
       searchIndexes[index][path] =
-        (newField.search && newField.search.type) ||
+        (searchRaw && searchRaw.type) ||
         ((<any>oldField).search && (<any>oldField).search.type)
       changedSearchIndexes[index] = true
     }
@@ -322,6 +329,24 @@ function verifyTypes(
   return null
 }
 
+function convertSearch(f: FieldSchema): SearchRaw {
+  const field = <any>f
+  if (field.search === true) {
+    if (field.type === 'json' || field.type === 'string') {
+      return { type: ['TEXT'] }
+    } else if (
+      field.type === 'number' ||
+      field.type === 'float' ||
+      field.type === 'int'
+    ) {
+      return { type: ['NUMERIC', 'SORTABLE'] }
+    } else if (field.type === 'text') {
+      return { type: ['TEXT-LANGUAGE'] }
+    }
+  }
+  return field.search
+}
+
 function findSearchConfigurations(
   obj: TypeSchema | FieldSchema,
   path: string,
@@ -345,6 +370,8 @@ function findSearchConfigurations(
     } else {
       // changes actual index
       if (field.search) {
+        field.search = convertSearch(field)
+
         const index = field.search.index || 'default'
         searchIndexes[index] = searchIndexes[index] || {}
         if (searchIndexes[index][path]) {
