@@ -29,6 +29,7 @@ import { addFieldToSearch } from './search'
 //
 
 const needAncestorUpdates: Record<Id, true> = {}
+const alreadyUpdated: Record<Id, true> = {}
 const depthMap: Record<Id, number> = {}
 
 export function markForAncestorRecalculation(id: Id) {
@@ -52,14 +53,15 @@ function getDepth(id: Id): number | false {
   return depth
 }
 
-function setDepth(id: Id, depth: number): void {
+function setDepth(id: Id, depth: number): boolean {
   if (depthMap[id] === depth) {
     // cache not changed, bail
-    return
+    return false
   }
 
   depthMap[id] = depth
   redis.set(id + '._depth', tostring(depth))
+  return true
 }
 
 // we need to treat depth as the min depth of all ancestors + 1
@@ -82,7 +84,11 @@ function updateDepths(id: Id): void {
     maxParentDepth = 0
   }
 
-  setDepth(id, 1 + maxParentDepth)
+  const updated = setDepth(id, 1 + maxParentDepth)
+
+  if (!updated) {
+    return
+  }
 
   // update depth of all children
   const children = redis.smembers(id + '.children')
@@ -104,6 +110,7 @@ function reCalculateAncestorsFor(ids: Id[]): void {
 
   for (const id of ids) {
     // clear the ancestors in case of any removed ancestors
+    const currentAncestors = redis.zrange(id + '.ancestors')
     redis.del(id + '.ancestors')
 
     const parents = redis.smembers(id + '.parents')
@@ -139,17 +146,49 @@ function reCalculateAncestorsFor(ids: Id[]): void {
       }
     }
 
-    const children = redis.smembers(id + '.children')
-    if (children && children.length > 0) {
-      reCalculateAncestorsFor(children)
+    const ancestors = redis.zrange(id + '.ancestors')
+
+    // if ancestors are the same as before, stop recursion and don't index search
+    let eql = true
+    logger.info(
+      `comparing ancestors of ${id}, current ${cjson.encode(
+        currentAncestors
+      )}, new ${cjson.encode(ancestors)}`
+    )
+    if (
+      ancestors &&
+      currentAncestors &&
+      ancestors.length === currentAncestors.length
+    ) {
+      for (let i = 0; i < ancestors.length; i++) {
+        if (ancestors[i] !== currentAncestors[i]) {
+          eql = false
+        }
+      }
+    } else {
+      eql = false
+    }
+
+    logger.info(`ancestors of ${id} eql? ${tostring(eql)}`)
+    if (!needAncestorUpdates[id] && eql) {
+      return
+    } else if (needAncestorUpdates[id] && alreadyUpdated[id] && eql) {
+      return
     }
 
     // add to search
-    const ancestors = redis.zrange(id + '.ancestors')
     if (ancestors && ancestors.length > 0) {
       const searchStr = joinString(ancestors, ',')
       redis.hset(id, 'ancestors', searchStr)
       addFieldToSearch(id, 'ancestors', searchStr)
+    }
+
+    alreadyUpdated[id] = true
+
+    // recurse down the tree if ancestors updated
+    const children = redis.smembers(id + '.children')
+    if (children && children.length > 0) {
+      reCalculateAncestorsFor(children)
     }
   }
 }
