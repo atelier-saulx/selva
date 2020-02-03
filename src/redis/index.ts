@@ -25,6 +25,7 @@ const redisSearchCommands = [
   'DICTADD',
   'DICTDEL',
   'DICTDUMP',
+  'TAGVALS',
   'CONFIG'
 ]
 
