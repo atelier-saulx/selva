@@ -152,19 +152,14 @@ function reCalculateAncestorsFor(ids: Id[]): void {
     }
 
     const children = redis.smembers(id + '.children')
-    if (children) {
+    if (children && children.length > 0) {
       reCalculateAncestorsFor(children)
+
+      // add to search
+      const searchStr = joinString(children, ',')
+      addFieldToSearch(id, 'ancestors', searchStr)
     }
   }
-  // TODO: add this functionality
-  // let ancestors = getNewAncestors(parents)
-  // const stringAncestors = joinString(ancestors, ',')
-  // redis.hset(id, 'ancestors', stringAncestors)
-  // addFieldToSearch(id, 'ancestors', stringAncestors)
-  // const children = redis.smembers(id + '.children')
-  // for (let child of children) {
-  //   reCalculateAncestors(child)
-  // }
 }
 
 export function reCalculateAncestors(): void {
