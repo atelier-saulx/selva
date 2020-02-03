@@ -183,7 +183,6 @@ function reCalculateAncestorsFor(ids: Id[]): void {
       } else if (needAncestorUpdates[id] && alreadyUpdated[id] && eql) {
         // do nothing
       } else {
-        // FIXME: tony fix fixmake
         alreadyUpdated[id] = true
 
         // add to search
