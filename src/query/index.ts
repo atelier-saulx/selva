@@ -140,8 +140,6 @@ const parseQuery = async (
 
   const searchArgs = [qeury, 'NOCONTENT', 'LIMIT', lo, hi, ...sort]
 
-  console.log('SEARCH:', searchArgs)
-
   const queryResult = await client.redis.ftSearch('default', ...searchArgs)
 
   const r = await Promise.all(

@@ -64,6 +64,10 @@ test.before(async t => {
     const ch = []
     for (let i = 0; i < 1000; i++) {
       if (i < 100) {
+        if (i < 10) {
+          console.log('match ' + i)
+        }
+
         ch.push({
           type: 'match',
           name: 'match' + i,
@@ -74,7 +78,7 @@ test.before(async t => {
         ch.push({
           type: 'match',
           name: 'match' + i,
-          status: i === 0 ? 2 : i > 10 ? 100 : 300
+          status: 100
         })
       }
     }

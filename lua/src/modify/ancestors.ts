@@ -98,7 +98,6 @@ function updateDepths(id: Id): void {
 }
 
 function reCalculateAncestorsFor(ids: Id[]): void {
-  // we want to update ancestors frow lowest to deepest
   table.sort(ids, (a, b) => {
     return (getDepth(a) || 0) <= (getDepth(b) || 0)
   })
@@ -149,7 +148,7 @@ function reCalculateAncestorsFor(ids: Id[]): void {
     const ancestors = redis.zrange(id + '.ancestors')
     if (ancestors && ancestors.length > 0) {
       const searchStr = joinString(ancestors, ',')
-      // logger.info(`searchStr for ${id} with ${searchStr}`)
+      redis.hset(id, 'ancestors', searchStr)
       addFieldToSearch(id, 'ancestors', searchStr)
     }
   }

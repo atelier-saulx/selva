@@ -2,10 +2,12 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
+import { wait } from './assertions'
 
 let srv
 test.before(async t => {
   srv = await start({ port: 6062, developmentLogging: true, loglevel: 'info' })
+  await wait(500)
 })
 
 test.after(async _t => {
@@ -44,6 +46,7 @@ test.serial('get - simple $list', async t => {
     }
   })
 
+  // Should not come here once LUA: [info] searchStr for cuB with root,cuA
   await Promise.all([
     client.set({
       $id: 'cuA',

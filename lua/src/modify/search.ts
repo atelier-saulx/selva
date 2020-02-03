@@ -58,10 +58,11 @@ export function addFieldToSearch(
   value: string
 ): void {
   const searchIndex = getSearchIndexes()
+
   for (const indexKey in searchIndex) {
     const index = searchIndex[indexKey]
     if (index[field]) {
-      redis.call(
+      redis.pcall(
         'ft.add',
         indexKey,
         id,
@@ -81,7 +82,7 @@ export function addFieldToSearch(
           if (index[fieldToCheck][0] === 'TEXT-LANGUAGE') {
             const lang = field.substring(lastDotIndex + 1)
             const mapped = mapLanguages(lang)
-            redis.call(
+            redis.pcall(
               'ft.add',
               indexKey,
               id,
