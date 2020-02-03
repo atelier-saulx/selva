@@ -150,11 +150,7 @@ function reCalculateAncestorsFor(ids: Id[]): void {
 
     // if ancestors are the same as before, stop recursion and don't index search
     let eql = true
-    logger.info(
-      `comparing ancestors of ${id}, current ${cjson.encode(
-        currentAncestors
-      )}, new ${cjson.encode(ancestors)}`
-    )
+
     if (
       ancestors &&
       currentAncestors &&
@@ -169,7 +165,6 @@ function reCalculateAncestorsFor(ids: Id[]): void {
       eql = false
     }
 
-    logger.info(`ancestors of ${id} eql? ${tostring(eql)}`)
     if (!needAncestorUpdates[id] && eql) {
       return
     } else if (needAncestorUpdates[id] && alreadyUpdated[id] && eql) {
