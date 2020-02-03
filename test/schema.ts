@@ -498,10 +498,6 @@ test('schemas - search indexes', async t => {
     }
   })
 
-  /*
-    supported languages
-    "arabic", "danish", "dutch", "english", "finnish", "french", "german", "hungarian", "italian", "norwegian", "portuguese", "romanian", "russian", "spanish", "swedish", "tamil", "turkish" "chinese"
-    */
   await client.updateSchema({
     types: {
       flurp: {
@@ -557,7 +553,14 @@ test('schemas - search indexes', async t => {
     'Index includes language fields'
   )
 
-  // then add geo case
+  const id = await client.set({
+    type: 'flurp',
+    title: { de: 'Gutten morgen' }
+  })
+
+  console.log(id)
+
+  console.log(await client.get({ $id: id, title: true }))
 
   await wait()
 
