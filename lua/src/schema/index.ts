@@ -466,7 +466,7 @@ export function updateSchema(
     return [null, err]
   }
 
-  updateSearchIndexes(changedSearchIndexes, searchIndexes)
+  updateSearchIndexes(changedSearchIndexes, searchIndexes, newSchema)
   updateHierarchies(oldSchema, newSchema)
   const saved = saveSchema(newSchema, searchIndexes)
   return [saved, null]

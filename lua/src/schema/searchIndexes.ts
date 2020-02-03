@@ -1,15 +1,28 @@
-import { SearchIndexes, SearchSchema } from '~selva/schema/index'
+import { SearchIndexes, SearchSchema, Schema } from '~selva/schema/index'
 import * as logger from '../logger'
 
-function createIndex(index: string, schema: SearchSchema): void {
+function createIndex(
+  index: string,
+  schema: SearchSchema,
+  languages: string[]
+): void {
   const args = [index, 'SCHEMA']
 
-  const fields = {}
-
   for (const field in schema) {
-    args[args.length] = field
-    for (const f of schema[field]) {
-      args[args.length] = f
+    const value = schema[field]
+    if (value[0] === 'TEXT-LANGUAGE') {
+      for (let i = 0; i < languages.length; i++) {
+        args[args.length] = field + '.' + languages[i]
+        args[args.length] = 'TEXT'
+        for (let i = 1; i < value.length; i++) {
+          args[args.length] = value[i]
+        }
+      }
+    } else {
+      args[args.length] = field
+      for (const f of schema[field]) {
+        args[args.length] = f
+      }
     }
   }
 
@@ -19,20 +32,45 @@ function createIndex(index: string, schema: SearchSchema): void {
   }
 }
 
-function alterIndex(index: string, schema: SearchSchema): void {
+function alterIndex(
+  index: string,
+  schema: SearchSchema,
+  languages: string[]
+): void {
   for (const field in schema) {
-    // also here
+    if (schema[field][0] === 'TEXT-LANGUAGE') {
+      const args = schema[field][1] ? ['TEXT', schema[field][1]] : ['TEXT']
+      for (let i = 0; i < languages.length; i++) {
+        const langField = field + '.' + languages[i]
+        const result = redis.pcall(
+          'ft.alter',
+          index,
+          'SCHEMA',
+          'ADD',
+          langField,
+          ...args
+        )
+        if (result.err) {
+          logger.error(
+            `Error altering index for language ${index} ${langField}: ${result.err}`
+          )
+        }
+      }
+    } else {
+      const result = redis.pcall(
+        'ft.alter',
+        index,
+        'SCHEMA',
+        'ADD',
+        field,
+        ...schema[field]
+      )
 
-    const result = redis.pcall(
-      'ft.alter',
-      index,
-      'SCHEMA',
-      'ADD',
-      field,
-      ...schema[field]
-    )
-    if (result.err) {
-      logger.error(`Error altering index ${index}: ${result.err}`)
+      if (result.err) {
+        if (result.err !== 'Duplicate field in schema') {
+          logger.error(`Error altering index ${index} ${field}: ${result.err}`)
+        }
+      }
     }
   }
 }
@@ -51,31 +89,41 @@ function findFieldsFromInfoReply(
   return null
 }
 
-function updateIndex(index: string, schema: SearchSchema): void {
+function updateIndex(
+  index: string,
+  schema: SearchSchema,
+  languages: string[]
+): void {
   const info: { ok: string; err: string }[] = redis.pcall('ft.info', index)
   if (!info || (<any>info).err) {
     if ((<any>info).err !== 'Unknown Index name') {
       logger.error(`Error fetch info for index ${index}: ${(<any>info).err}`)
     }
-    return createIndex(index, schema)
+    return createIndex(index, schema, languages)
   }
 
   const fields = findFieldsFromInfoReply(info)
 
   if (!fields) {
-    return createIndex(index, schema)
+    return createIndex(index, schema, languages)
   }
 
   // FIXME: if super different (e.g. fields differently indexed) then drop the index
-  return alterIndex(index, schema)
+  return alterIndex(index, schema, languages)
 }
 
 export default function updateSearchIndexes(
   changedSearchIndexes: Record<string, boolean>,
-  indexes: SearchIndexes
+  indexes: SearchIndexes,
+  schema: Schema
 ): void {
-  logger.info(`Updating search indexes ${cjson.encode(changedSearchIndexes)}`)
+  const languages = schema.languages || ['en']
+  logger.info(
+    `Updating search indexes ${cjson.encode(
+      changedSearchIndexes
+    )} ${cjson.encode(languages)}`
+  )
   for (const index in changedSearchIndexes) {
-    updateIndex(index, indexes[index])
+    updateIndex(index, indexes[index], languages)
   }
 }
