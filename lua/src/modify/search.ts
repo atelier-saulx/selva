@@ -81,7 +81,20 @@ export function addFieldToSearch(
           if (index[fieldToCheck][0] === 'TEXT-LANGUAGE') {
             const lang = field.substring(lastDotIndex + 1)
             const mapped = mapLanguages(lang)
-            logger.info(`index for language!! ${lang} ${mapped}`)
+            redis.call(
+              'ft.add',
+              indexKey,
+              id,
+              '1',
+              'LANGUAGE',
+              mapped,
+              'NOSAVE',
+              'REPLACE',
+              'PARTIAL',
+              'FIELDS',
+              field,
+              value
+            )
           }
         }
       }
