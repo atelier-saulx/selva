@@ -37,36 +37,6 @@ function createAncestorsInner(id: Id, s: Record<Id, Ancestor>): Ancestor {
   return ancestor
 }
 
-function createAncestors(targetId: Id): Id[] {
-  const s: Record<string, Ancestor> = {}
-  createAncestorsInner(targetId, s)
-  const result: Id[] = []
-  // binary insert
-  for (let id in s) {
-    if (targetId !== id) {
-      const depth = s[id][1]
-      let l = 0,
-        r = result.length - 1,
-        m = 0
-      while (l <= r) {
-        m = Math.floor((l + r) / 2)
-        const prevDepth = s[result[m]][1]
-        if (prevDepth < depth) {
-          r = m - 1
-        } else {
-          l = m + 1
-          if (prevDepth === depth) {
-            break
-          }
-        }
-      }
-
-      table.insert(result, l + 1, id)
-    }
-  }
-  return result
-}
-
 function createAncestorsFromFields(
   targetId: Id,
   fields: string[],
@@ -135,6 +105,55 @@ function createAncestorsFromFields(
     }
   }
   return result
+}
+
+function setFromAncestorsByType(
+  result: GetResult,
+  schemas: Record<string, TypeSchema>,
+  id: Id,
+  types: string[],
+  field: string,
+  language?: string,
+  version?: string,
+  fieldFrom?: string | string[]
+): boolean {
+  const ancestors = redis.zrange(id + '.ancestors')
+  for (let i = ancestors.length - 1; i >= 0; i--) {
+    const ancestorType = getTypeFromId(ancestors[i])
+
+    let isType = false
+    for (const type of types) {
+      if (ancestorType === type) {
+        isType = true
+      }
+    }
+
+    if (isType) {
+      if (fieldFrom && fieldFrom.length > 0) {
+        if (
+          getWithField(
+            result,
+            schemas,
+            ancestors[i],
+            field,
+            fieldFrom,
+            language,
+            version
+          )
+        ) {
+          return true
+        }
+      } else {
+        if (
+          getByType(result, schemas, ancestors[i], field, language, version)
+        ) {
+          return true
+        }
+      }
+    }
+  }
+
+  return false
 }
 
 function setFromAncestors(
@@ -215,10 +234,6 @@ function parseName(id: Id): string {
   return redis.hget(id, 'name')
 }
 
-function parseType(id: Id): string {
-  return getTypeFromId(id)
-}
-
 function inheritItem(
   getField: GetFieldFn,
   props: GetItem,
@@ -231,7 +246,7 @@ function inheritItem(
   version?: string
 ) {
   logger.info(`INHERIT ITEM FOR FIELD ${field}`)
-  const ancestors = createAncestorsFromFields(id, item, parseType)
+  const ancestors = createAncestorsFromFields(id, item, getTypeFromId)
   const len = ancestors.length
   if (len === 0) {
     setNestedResult(result, field, {})
@@ -290,7 +305,16 @@ export default function inherit(
         ancestors = createAncestorsFromFields(id, inherit.$name, parseName)
       } else {
         inherit.$type = ensureArray(inherit.$type)
-        ancestors = createAncestorsFromFields(id, inherit.$type, parseType)
+        return setFromAncestorsByType(
+          result,
+          schemas,
+          id,
+          inherit.$type,
+          field,
+          language,
+          version,
+          fieldFrom
+        )
       }
       setFromAncestors(result, schemas, id, field, language, version, fieldFrom)
     } else if (inherit.$item) {
