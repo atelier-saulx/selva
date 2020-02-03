@@ -81,10 +81,10 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  // const client = connect({ port: 6061 })
-  // await client.delete('root')
-  // await client.destroy()
-  // await srv.destroy()
+  const client = connect({ port: 6061 })
+  await client.delete('root')
+  await client.destroy()
+  await srv.destroy()
 })
 
 test.serial('basic', async t => {
