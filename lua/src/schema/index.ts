@@ -332,7 +332,11 @@ function verifyTypes(
 function convertSearch(f: FieldSchema): SearchRaw {
   const field = <any>f
   if (field.search === true) {
-    if (field.type === 'json' || field.type === 'string') {
+    if (
+      field.type === 'json' ||
+      field.type === 'string' ||
+      field.type === 'array'
+    ) {
       return { type: ['TEXT'] }
     } else if (
       field.type === 'number' ||
@@ -342,6 +346,8 @@ function convertSearch(f: FieldSchema): SearchRaw {
       return { type: ['NUMERIC', 'SORTABLE'] }
     } else if (field.type === 'text') {
       return { type: ['TEXT-LANGUAGE'] }
+    } else if (field.type === 'set') {
+      return { type: ['TAG'] }
     }
   }
   return field.search

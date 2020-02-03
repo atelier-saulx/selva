@@ -430,25 +430,20 @@ test('schemas - search indexes', async t => {
     'Sort will be added even if type is allready defined'
   )
 
-  t.throwsAsync(
-    async () => {
-      await client.updateSchema({
-        types: {
-          flurp: {
-            fields: {
-              x: { type: 'string', search: { type: ['TEXT'] } }
-            }
-          },
-          flap: {
-            fields: {
-              x: { type: 'string', search: { type: ['NUMERIC'] } }
-            }
-          }
+  await client.updateSchema({
+    types: {
+      flurp: {
+        fields: {
+          x: { type: 'string', search: { type: ['TEXT'] } }
         }
-      })
-    },
-    { instanceOf: Error }
-  )
+      },
+      flap: {
+        fields: {
+          x: { type: 'string', search: { type: ['NUMERIC'] } }
+        }
+      }
+    }
+  })
 
   t.deepEqual(
     (await client.getSchema()).searchIndexes,
@@ -466,72 +461,92 @@ test('schemas - search indexes', async t => {
     'Sort will be added even if type is allready defined'
   )
 
-  try {
-    await client.updateSchema({
-      types: {
-        flurp: {
-          fields: {
-            flux: { type: 'string' }
-          }
+  await client.updateSchema({
+    types: {
+      flurp: {
+        fields: {
+          flarp: { type: 'string', search: true }
         }
       }
-    })
-  } catch (err) {
-    t.fail('Adding a field should not throw')
-  }
+    }
+  })
 
-  try {
-    await client.updateSchema({
-      types: {
-        flurp: {
-          fields: {
-            flarp: { type: 'string', search: true }
-          }
+  t.deepEqual(
+    (await client.getSchema()).searchIndexes,
+    {
+      default: {
+        value: ['NUMERIC', 'SORTABLE'],
+        x: ['NUMERIC'],
+        type: ['TAG'],
+        id: ['TAG'],
+        parents: ['TAG'],
+        flarp: ['TEXT'],
+        children: ['TAG'],
+        ancestors: ['TAG']
+      }
+    },
+    'Search:true auto casts'
+  )
+
+  await client.updateSchema({
+    types: {
+      flurp: {
+        fields: {
+          flux: { type: 'string' }
         }
       }
-    })
-  } catch (err) {
-    t.fail('Adding a field should not throw')
-  }
+    }
+  })
 
-  try {
-    /*
+  /*
     supported languages
     "arabic", "danish", "dutch", "english", "finnish", "french", "german", "hungarian", "italian", "norwegian", "portuguese", "romanian", "russian", "spanish", "swedish", "tamil", "turkish" "chinese"
     */
-    await client.updateSchema({
-      types: {
-        flurp: {
-          fields: {
-            // find defaults
-            // e.g. if text do this
-            // if value is number make numeric
-            // etc
-            // indexes text languages
-
-            // so allow search: true as a field
-            // 'TEXT-LANGUAGE'
-            title: { type: 'text', search: { type: ['TEXT'] } }
-          }
+  await client.updateSchema({
+    types: {
+      flurp: {
+        fields: {
+          // find defaults
+          // e.g. if text do this
+          // if value is number make numeric
+          // etc
+          // indexes text languages
+          // so allow search: true as a field
+          // 'TEXT-LANGUAGE'
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE'] } }
         }
       }
-    })
-  } catch (err) {
-    // , search: { type: ['TEXT']
-    // This should not throw at all !!! wrong
-    t.fail('Adding a field "text" and adding search indexing should not throw')
-    console.log('>>>>', err)
-    // hard to fix needs to index the nested fields if type text
-  }
+    }
+  })
+
+  t.deepEqual(
+    (await client.getSchema()).searchIndexes,
+    {
+      default: {
+        ancestors: ['TAG'],
+        parents: ['TAG'],
+        x: ['NUMERIC'],
+        title: ['TEXT-LANGUAGE'],
+        type: ['TAG'],
+        value: ['NUMERIC', 'SORTABLE'],
+        flarp: ['TEXT'],
+        children: ['TAG'],
+        id: ['TAG']
+      }
+    },
+    'Includes text-language'
+  )
+
+  const { searchIndexes } = await client.getSchema()
+
+  console.log(searchIndexes)
 
   await client.updateSchema({
     languages: ['nl', 'en', 'de']
   })
   // this now has to update the TEXT schemas it can find
 
-  const { searchIndexes } = await client.getSchema()
-
-  console.log(searchIndexes)
+  // const { searchIndexes } = await client.getSchema()
 
   // then add geo case
 
