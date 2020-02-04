@@ -1,8 +1,10 @@
-import { Id } from '../../../src/schema/index'
+import { Id, Schema } from '../../../src/schema/index'
 import * as redis from '../redis'
 import * as logger from '../logger'
 import { splitString, joinString } from '../util'
 import { addFieldToSearch } from './search'
+import { getSchema } from '../schema/index'
+import { getTypeFromId } from '../typeIdMapping'
 
 // order by depth (highest depth first)
 
@@ -28,9 +30,106 @@ import { addFieldToSearch } from './search'
 
 //
 
+const schema: Schema = getSchema()
 const needAncestorUpdates: Record<Id, true> = {}
 const alreadyUpdated: Record<Id, true> = {}
 const depthMap: Record<Id, number> = {}
+
+type IncludeAncestryRule = { includeAncestryWith: string[] }
+type ExcludeAncestryWith = { excludeAncestryWith: string[] }
+type AncestryRule = IncludeAncestryRule | ExcludeAncestryWith | false
+
+function isIncludeAncestryRule(
+  rule: AncestryRule | null
+): rule is IncludeAncestryRule {
+  if (!rule) {
+    return false
+  }
+
+  return !!(<any>rule).includeAncestryWith
+}
+
+function isExcludeAncestryRule(
+  rule: AncestryRule | null
+): rule is IncludeAncestryRule {
+  if (!rule) {
+    return false
+  }
+
+  return !!(<any>rule).includeAncestryWith
+}
+
+function includeAncestors(
+  includedTypes: string[],
+  ancestors: string[]
+): string[] {
+  for (let i = 0; i < ancestors.length; i++) {
+    for (const includedTypeName of includedTypes) {
+      if (getTypeFromId(ancestors[i]) === includedTypeName) {
+        return ancestors
+      }
+    }
+  }
+
+  return []
+}
+
+function excludeAncestors(
+  excludedTypes: string[],
+  ancestors: string[]
+): string[] {
+  for (let i = 0; i < ancestors.length; i++) {
+    for (const excludedTypeName of excludedTypes) {
+      if (getTypeFromId(ancestors[i]) === excludedTypeName) {
+        return []
+      }
+    }
+  }
+
+  return ancestors
+}
+
+function ancestryFromHierarchy(id: Id, parent: Id): string[] {
+  const ancestors = redis.zrangeWithScores(parent + '.ancestors')
+
+  // can't map, should never happen though
+  if (!schema.prefixToTypeMapping) {
+    return ancestors
+  }
+
+  const typeName: string = schema.prefixToTypeMapping[id.substring(0, 2)]
+  const hierarchy = schema.types[typeName].hierarchy
+
+  if (!hierarchy) {
+    return ancestors
+  }
+
+  let foundRule: AncestryRule | null = null
+
+  for (const ruleTypeName in hierarchy) {
+    if (ruleTypeName === typeName) {
+      foundRule = hierarchy[ruleTypeName]
+      break
+    }
+  }
+
+  if (foundRule === false) {
+    return []
+  } else if (isIncludeAncestryRule(foundRule)) {
+    return includeAncestors(foundRule.includeAncestryWith, ancestors)
+  } else if (isExcludeAncestryRule(foundRule)) {
+    excludeAncestors(foundRule.excludeAncestryWith, ancestors)
+  } else if (hierarchy.$default) {
+    const rule = hierarchy.$default
+    if (isIncludeAncestryRule(rule)) {
+      return includeAncestors(rule.includeAncestryWith, ancestors)
+    }
+
+    return excludeAncestors(rule.excludeAncestryWith, ancestors)
+  }
+
+  return ancestors
+}
 
 export function markForAncestorRecalculation(id: Id) {
   needAncestorUpdates[id] = true
@@ -132,10 +231,7 @@ function reCalculateAncestorsFor(ids: Id[]): void {
 
       for (const parent of parents) {
         // add all ancestors of parent
-        const parentAncestorKey = parent + '.ancestors'
-        const parentAncestors: string[] = redis.zrangeWithScores(
-          parentAncestorKey
-        )
+        const parentAncestors: string[] = ancestryFromHierarchy(id, parent)
 
         const reversed: string[] = []
         for (let i = 0; i < parentAncestors.length; i += 2) {
