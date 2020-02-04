@@ -60,7 +60,7 @@ test.before(async t => {
   })
 
   const team1 = await client.id({ type: 'team' })
-  const amount = 7500
+  const amount = 5000
   const genMatches = (s = 0) => {
     const ch = []
     for (let i = s; i < s + amount; i++) {
@@ -121,7 +121,7 @@ test.before(async t => {
       children: genMatches(amount)
     })
   ])
-  console.log('Set 15k nested', Date.now() - d, 'ms')
+  console.log('Set 10k nested', Date.now() - d, 'ms')
 
   await wait(600)
   t.true(ids[0].slice(0, 2) === 'cl' && ids[1].slice(0, 2) === 'le')
