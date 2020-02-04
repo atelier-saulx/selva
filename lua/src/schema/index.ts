@@ -3,7 +3,6 @@ import {
   TypeSchema,
   FieldSchema,
   SearchIndexes,
-  Search,
   SearchRaw,
   defaultFields
 } from '../../../src/schema/index'
@@ -14,7 +13,14 @@ import * as r from '../redis'
 import { objectAssign } from '../util'
 import * as logger from '../logger'
 
+let CACHED_SCHEMA: Schema | null = null
+let CACHED_SEARCH_INDEXES: SearchIndexes | null = null
+
 export function getSchema(): Schema {
+  if (CACHED_SCHEMA) {
+    return CACHED_SCHEMA
+  }
+
   const schemaStr = r.hget('___selva_schema', 'types')
   if (!schemaStr) {
     return {
@@ -25,16 +31,24 @@ export function getSchema(): Schema {
     }
   }
 
-  return cjson.decode(schemaStr)
+  const schema: Schema = cjson.decode(schemaStr)
+  CACHED_SCHEMA = schema
+  return schema
 }
 
 export function getSearchIndexes(): SearchIndexes {
+  if (CACHED_SEARCH_INDEXES) {
+    return CACHED_SEARCH_INDEXES
+  }
+
   const searchIndexStr = r.hget('___selva_schema', 'searchIndexes')
   if (!searchIndexStr) {
     return {}
   }
 
-  return cjson.decode(searchIndexStr)
+  const searchIndexes: SearchIndexes = cjson.decode(searchIndexStr)
+  CACHED_SEARCH_INDEXES = searchIndexes
+  return searchIndexes
 }
 
 function constructPrefixMap(schema: Schema): void {
@@ -50,7 +64,9 @@ export function saveSchema(
   schema: Schema,
   searchIndexes?: SearchIndexes
 ): string {
+  CACHED_SCHEMA = null
   if (searchIndexes) {
+    CACHED_SEARCH_INDEXES = null
     // FIXME: should we include this in the SHA1?
     saveSearchIndexes(searchIndexes)
   }
