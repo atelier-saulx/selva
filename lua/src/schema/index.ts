@@ -64,9 +64,7 @@ export function saveSchema(
   schema: Schema,
   searchIndexes?: SearchIndexes
 ): string {
-  CACHED_SCHEMA = null
   if (searchIndexes) {
-    CACHED_SEARCH_INDEXES = null
     // FIXME: should we include this in the SHA1?
     saveSearchIndexes(searchIndexes)
   }
@@ -76,12 +74,14 @@ export function saveSchema(
   let encoded = cjson.encode(schema)
   const sha = redis.sha1hex(encoded)
   schema.sha = sha
+  CACHED_SCHEMA = schema
   encoded = cjson.encode(schema)
   r.hset('___selva_schema', 'types', encoded)
   return encoded
 }
 
 export function saveSearchIndexes(searchIndexes: SearchIndexes): string {
+  CACHED_SEARCH_INDEXES = searchIndexes
   const encoded = cjson.encode(searchIndexes)
   r.hset('___selva_schema', 'searchIndexes', encoded) // TODO: is this where we actually want to set it?
   return encoded
