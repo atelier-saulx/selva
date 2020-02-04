@@ -4,9 +4,40 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult, GetItem } from '~selva/get/types'
 import { setNestedResult } from './nestedFields'
 import getByType from './getByType'
-import { ensureArray } from '../util'
+import { ensureArray, splitString } from '../util'
 import * as logger from '../logger'
 import getWithField from 'lua/src/get/field'
+
+function getAncestorsByType(
+  types: string[],
+  ancestorsWithScores: string[]
+): Record<string, Id[]> {
+  let results: Record<string, Id[]> = {}
+  for (const itemType of types) {
+    results[itemType] = []
+  }
+
+  for (let i = ancestorsWithScores.length - 2; i >= 0; i -= 2) {
+    const ancestorType = getTypeFromId(ancestorsWithScores[i])
+    if (results[ancestorType]) {
+      const matches = results[ancestorType]
+      matches[matches.length] = ancestorsWithScores[i]
+    }
+  }
+
+  return results
+}
+
+function prepareRequiredFieldSegments(fields: string[]): string[][] {
+  const requiredFields: string[][] = []
+  for (let i = 0; i < fields.length; i++) {
+    const r = fields[i]
+    const segments: string[] = splitString(r, '.')
+    requiredFields[i] = segments
+  }
+
+  return requiredFields
+}
 
 function setFromAncestors(
   getField: GetFieldFn,
@@ -17,7 +48,8 @@ function setFromAncestors(
   language?: string,
   version?: string,
   fieldFrom?: string | string[],
-  condition?: (ancestor: Id) => boolean,
+  tryAncestorCondition?: (ancestor: Id) => boolean,
+  acceptAncestorCondition?: (result: any) => boolean,
   ancestorsWithScores?: Id[],
   props?: GetItem
 ): boolean {
@@ -49,7 +81,10 @@ function setFromAncestors(
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
-      if (!condition || (condition && condition(parent))) {
+      if (
+        !tryAncestorCondition ||
+        (tryAncestorCondition && tryAncestorCondition(parent))
+      ) {
         if (fieldFrom && fieldFrom.length > 0) {
           if (
             getWithField(
@@ -65,16 +100,28 @@ function setFromAncestors(
             return true
           }
         } else if (field === '') {
-          return getField(
+          const intermediateResult = !acceptAncestorCondition ? result : {}
+          getField(
             props || {},
             schemas,
-            result,
+            intermediateResult,
             parent,
             '',
             language,
             version,
             '$inherit'
           )
+
+          if (!acceptAncestorCondition) {
+            return true
+          }
+
+          if (acceptAncestorCondition(intermediateResult)) {
+            for (const k in intermediateResult) {
+              result[k] = intermediateResult[k]
+            }
+            return true
+          }
         } else {
           if (getByType(result, schemas, parent, field, language, version)) {
             return true
@@ -108,11 +155,12 @@ function inheritItem(
   id: Id,
   field: string,
   item: string[],
+  required: string[],
   language?: string,
   version?: string
 ) {
-  // old stuff
-  // const ancestors = createAncestorsFromFields(id, item, getTypeFromId)
+  const requiredFields: string[][] = prepareRequiredFieldSegments(required)
+
   const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
   const len = ancestorsWithScores.length
   if (len === 0) {
@@ -120,22 +168,11 @@ function inheritItem(
     return
   }
 
-  let results: Record<string, Id[]> = {}
-  for (const itemType of item) {
-    results[itemType] = []
-  }
-
-  for (let i = ancestorsWithScores.length - 2; i >= 0; i -= 2) {
-    const ancestorType = getTypeFromId(ancestorsWithScores[i])
-    if (results[ancestorType]) {
-      const matches = results[ancestorType]
-      matches[matches.length] = ancestorsWithScores[i]
-    }
-  }
+  const ancestorsByType = getAncestorsByType(item, ancestorsWithScores)
 
   const intermediateResult = {}
   for (const itemType of item) {
-    const matches = results[itemType]
+    const matches = ancestorsByType[itemType]
     if (matches.length === 1) {
       const intermediateResult = {}
       getField(
@@ -168,6 +205,23 @@ function inheritItem(
           }
 
           return false
+        },
+        (result: any) => {
+          if (required.length === 0) {
+            return true
+          }
+
+          for (const requiredField of requiredFields) {
+            let prop: any = result
+            for (const segment of requiredField) {
+              prop = prop[segment]
+              if (!prop) {
+                return false
+              }
+            }
+          }
+
+          return true
         },
         ancestorsWithScores,
         props || {}
@@ -262,7 +316,6 @@ export default function inherit(
       )
     } else if (inherit.$item) {
       logger.info('INHERITING with $item')
-      inherit.$item = ensureArray(inherit.$item)
       inheritItem(
         getField,
         props,
@@ -270,7 +323,8 @@ export default function inherit(
         result,
         id,
         field,
-        inherit.$item,
+        ensureArray(inherit.$item),
+        ensureArray(inherit.$required),
         language,
         version
       )
