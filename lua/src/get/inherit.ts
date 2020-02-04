@@ -108,6 +108,7 @@ function createAncestorsFromFields(
 }
 
 function setFromAncestors(
+  getField: GetFieldFn,
   result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
@@ -115,12 +116,16 @@ function setFromAncestors(
   language?: string,
   version?: string,
   fieldFrom?: string | string[],
-  condition?: (ancestor: Id) => boolean
+  condition?: (ancestor: Id) => boolean,
+  ancestorsWithScores?: Id[],
+  props?: GetItem
 ): boolean {
-  logger.info(`setFromAncestors for id ${id}`)
   const parents = redis.smembers(id + '.parents')
 
-  const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+  if (!ancestorsWithScores) {
+    ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+  }
+
   const ancestorDepthMap: Record<Id, number> = {}
 
   for (let i = 0; i < ancestorsWithScores.length; i += 2) {
@@ -164,6 +169,21 @@ function setFromAncestors(
           ) {
             return true
           }
+        } else if (field === '') {
+          if (
+            getField(
+              props || {},
+              schemas,
+              result,
+              parent,
+              '',
+              language,
+              version,
+              '$inherit'
+            )
+          ) {
+            return true
+          }
         } else {
           if (getByType(result, schemas, parent, field, language, version)) {
             return true
@@ -200,30 +220,75 @@ function inheritItem(
   language?: string,
   version?: string
 ) {
-  logger.info(`INHERIT ITEM FOR FIELD ${field}`)
-  const ancestors = createAncestorsFromFields(id, item, getTypeFromId)
-  const len = ancestors.length
+  // old stuff
+  // const ancestors = createAncestorsFromFields(id, item, getTypeFromId)
+  const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+  const len = ancestorsWithScores.length
   if (len === 0) {
     setNestedResult(result, field, {})
-  } else {
-    for (let i = 0; i < len; i++) {
+    return
+  }
+
+  let results: Record<string, Id[]> = {}
+  for (const itemType of item) {
+    results[itemType] = []
+  }
+
+  for (let i = ancestorsWithScores.length - 2; i >= 0; i -= 2) {
+    const ancestorType = getTypeFromId(ancestorsWithScores[i])
+    if (results[ancestorType]) {
+      const matches = results[ancestorType]
+      matches[matches.length] = ancestorsWithScores[i]
+    }
+  }
+
+  const intermediateResult = {}
+  for (const itemType of item) {
+    const matches = results[itemType]
+    if (matches.length === 1) {
       const intermediateResult = {}
-      const isComplete = getField(
+      getField(
         props,
         schemas,
         intermediateResult,
-        ancestors[i],
+        matches[0],
         '',
         language,
         version,
         '$inherit'
       )
-      if (isComplete || i === len - 1) {
-        setNestedResult(result, field, intermediateResult)
-        break
-      }
+      setNestedResult(result, field, intermediateResult)
+      return
+    } else if (matches.length > 1) {
+      setFromAncestors(
+        getField,
+        intermediateResult,
+        schemas,
+        id,
+        '',
+        language,
+        version,
+        '',
+        (ancestor: Id) => {
+          for (const match of matches) {
+            if (match === ancestor) {
+              return true
+            }
+          }
+
+          return false
+        },
+        ancestorsWithScores,
+        props || {}
+      )
+
+      setNestedResult(result, field, intermediateResult)
+      return
     }
   }
+
+  // set empty result
+  setNestedResult(result, field, {})
 }
 
 type GetFieldFn = (
@@ -253,6 +318,7 @@ export default function inherit(
   if (inherit) {
     if (inherit === true) {
       return setFromAncestors(
+        getField,
         result,
         schemas,
         id,
@@ -264,6 +330,7 @@ export default function inherit(
     } else if (inherit.$type) {
       const types: string[] = ensureArray(inherit.$type)
       return setFromAncestors(
+        getField,
         result,
         schemas,
         id,
@@ -284,6 +351,7 @@ export default function inherit(
     } else if (inherit.$name) {
       const names: string[] = ensureArray(inherit.$name)
       return setFromAncestors(
+        getField,
         result,
         schemas,
         id,
