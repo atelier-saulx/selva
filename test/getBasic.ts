@@ -446,20 +446,6 @@ test.serial('get - $inherit', async t => {
     }
   )
 
-  console.log(
-    'yeshyesh',
-    'ancestors',
-    await client.redis.zrange('cuC.ancestors', 0, -1),
-    await client.get({
-      $id: 'cuC',
-      flapdrol: {
-        $inherit: { $item: ['custom', 'club'] },
-        image: true,
-        id: true
-      }
-    })
-  )
-
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'cuC',
@@ -489,7 +475,7 @@ test.serial('get - $inherit', async t => {
     }),
     {
       flapdrol: {
-        image: { thumb: 'flurp.jpg' }, // image is not required
+        image: { thumb: 'flurp.jpg' },
         id: 'cuA'
       }
     }
