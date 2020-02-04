@@ -105,7 +105,7 @@ function updateDepths(id: Id): void {
 
 function reCalculateAncestorsFor(ids: Id[]): void {
   table.sort(ids, (a, b) => {
-    return (getDepth(a) || 0) <= (getDepth(b) || 0)
+    return (getDepth(a) || 0) < (getDepth(b) || 0)
   })
 
   for (const id of ids) {

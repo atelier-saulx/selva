@@ -43,12 +43,6 @@ function setFromAncestors(
 
   // we want to check parents from deepest to lowest depth
   table.sort(validParents, (a, b) => {
-    if (!a) {
-      return false
-    } else if (!b) {
-      return true
-    }
-
     return ancestorDepthMap[a] > ancestorDepthMap[b]
   })
 
@@ -71,20 +65,16 @@ function setFromAncestors(
             return true
           }
         } else if (field === '') {
-          if (
-            getField(
-              props || {},
-              schemas,
-              result,
-              parent,
-              '',
-              language,
-              version,
-              '$inherit'
-            )
-          ) {
-            return true
-          }
+          return getField(
+            props || {},
+            schemas,
+            result,
+            parent,
+            '',
+            language,
+            version,
+            '$inherit'
+          )
         } else {
           if (getByType(result, schemas, parent, field, language, version)) {
             return true
