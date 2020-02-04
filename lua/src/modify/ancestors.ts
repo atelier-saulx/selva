@@ -110,8 +110,6 @@ function reCalculateAncestorsFor(ids: Id[]): void {
 
   for (const id of ids) {
     // clear the ancestors in case of any removed ancestors
-    const currentAncestors = redis.zrange(id + '.ancestors')
-    redis.del(id + '.ancestors')
 
     const parents = redis.smembers(id + '.parents')
 
@@ -129,6 +127,9 @@ function reCalculateAncestorsFor(ids: Id[]): void {
     }
 
     if (!skipAncestorUpdate) {
+      const currentAncestors = redis.zrange(id + '.ancestors')
+      redis.del(id + '.ancestors')
+
       for (const parent of parents) {
         // add all ancestors of parent
         const parentAncestorKey = parent + '.ancestors'
