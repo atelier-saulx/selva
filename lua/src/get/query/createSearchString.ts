@@ -59,7 +59,9 @@ function createSearchString(filters: Fork): [string, string | null] {
   if (filters.$and) {
     for (let filter of filters.$and) {
       if (!isFork(filter)) {
-        searchString[searchString.length] = addField(filter)
+        if (filter.$field !== 'id') {
+          searchString[searchString.length] = addField(filter)
+        }
       } else {
         const [nestedSearch, err] = createSearchString(filter)
         if (err) {
@@ -78,7 +80,9 @@ function createSearchString(filters: Fork): [string, string | null] {
         }
         searchString[searchString.length] = nestedSearch
       } else if (!isFork(filter)) {
-        searchString[searchString.length] = addField(filter)
+        if (filter.$field !== 'id') {
+          searchString[searchString.length] = addField(filter)
+        }
       } else {
         const [nestedSearch, err] = createSearchString(filter)
         if (err) {

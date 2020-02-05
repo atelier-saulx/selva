@@ -193,30 +193,32 @@ test.serial('find - ancestors', async t => {
     'find ancestors without redis search and without filters'
   )
 
-  t.deepEqualIgnoreOrder(
-    (
-      await client.query({
-        $id: teams[0].$id,
-        name: true,
-        $list: {
-          $find: {
-            $traverse: 'ancestors',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'league'
-              },
-              {
-                $field: 'value',
-                $operator: '..',
-                $value: [2, 4]
-              }
-            ]
+  const r = await client.query({
+    $id: teams[0].$id,
+    name: true,
+    $list: {
+      $find: {
+        $traverse: 'ancestors',
+        $filter: [
+          {
+            $field: 'type',
+            $operator: '=',
+            $value: 'league'
+          },
+          {
+            $field: 'value',
+            $operator: '..',
+            $value: [2, 4]
           }
-        }
-      })
-    ).map(v => v.name),
+        ]
+      }
+    }
+  })
+
+  console.log(r)
+
+  t.deepEqualIgnoreOrder(
+    r.map(v => v.name),
     ['league2', 'league3', 'league4'],
     'find ancestors redis search'
   )
