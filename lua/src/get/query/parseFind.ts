@@ -34,10 +34,10 @@ function parseFind(
         logger.info('return all desc')
       }
     } else if ($traverse === 'ancestors') {
-      if ($filter.length) {
+      const ancestors = redis.zrange(id + '.ancestors')
+      if ($filter.length !== 0) {
         if ($filter.length === 1 && $filter[0].$field === 'type') {
           const filter = $filter[0]
-          const ancestors = redis.zrange(id + '.ancestors')
           const r: string[] = ['']
           if (isArray(filter.$value)) {
             const v: string[] = []
@@ -62,16 +62,21 @@ function parseFind(
           }
           return [r, null]
         } else {
-          const ancestors = redis.zrange(id + '.ancestors')
-          const r: string[] = ['']
+          // FIXME: check if type field - reuse same logic
+          const a: string[] = []
           for (let i = 0; i < ancestors.length; i++) {
-            r[r.length] = ancestors[i]
+            a[a.length] = ancestors[i]
           }
-          return [r, null]
+          $filter[$filter.length] = {
+            $field: 'ancestors',
+            $value: a,
+            $operator: '='
+          }
+          const r = parseFilters($filter)
+          logger.info(r)
+          return r
         }
-        // if id or type can do something smart - else nested query on the results
       } else {
-        const ancestors = redis.zrange(id + '.ancestors')
         table.insert(ancestors, 1, '')
         return [ancestors, null]
       }

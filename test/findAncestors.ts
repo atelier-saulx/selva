@@ -188,14 +188,37 @@ test.serial('find - ancestors', async t => {
         }
       })
     ).map(v => v.name || v.id),
-    ['league0', 'season1-0', 'team0', 'team1', 'root'],
+    ['league0', 'season1-0', 'team0', 'team1', undefined], // for now undefined
     'find ancestors without redis search and without filters'
   )
 
-  // const matches = results.filter(v => v.type === 'match')
-  // const videos = results.filter(v => v.type === 'video')
-  // const league = results.filter(v => v.type === 'league')
-  // t.is(matches.length, 997, 'query result matches')
-  // t.is(videos.length, 3, 'query result videos')
-  // t.is(league.length, 1, 'query result league')
+  t.deepEqualIgnoreOrder(
+    (
+      await client.query({
+        $id: teams[0].$id,
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              },
+              {
+                $field: 'value',
+                $operator: '..',
+                $value: [2, 4]
+              }
+            ]
+          }
+        }
+      })
+    ).map(v => v.name),
+    ['league2', 'league3', 'league4'],
+    'find ancestors redis search'
+  )
+
+  // root
 })
