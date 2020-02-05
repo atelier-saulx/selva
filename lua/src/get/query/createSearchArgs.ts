@@ -1,4 +1,5 @@
 import { GetOptions } from '~selva/get/types'
+import { isArray } from '../../util'
 
 function createSearchArgs(getOptions: GetOptions, qeury: string): string[] {
   const $list = getOptions.$list
@@ -13,12 +14,11 @@ function createSearchArgs(getOptions: GetOptions, qeury: string): string[] {
   }
   const sort: string[] = []
   if ($list.$sort) {
-    const $sort: string[] = (<any>$list).$sort
     sort[sort.length] = 'SORTBY'
-    if (!Array.isArray($sort)) {
-      $list.$sort = [$sort]
+    if (!isArray($list.$sort)) {
+      $list.$sort = [$list.$sort]
     }
-    for (let i = 0; i < $sort.length; i++) {
+    for (let i = 0; i < $list.$sort.length; i++) {
       let { $field, $order } = $list.$sort[i]
       if (!$order) {
         $order = 'asc'

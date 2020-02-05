@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
-import queryParser from '../src/query'
 import './assertions'
 import { wait, dumpDb } from './assertions'
 import { RedisClient } from 'redis'
@@ -240,77 +239,77 @@ test.serial('get - queryParser', async t => {
   t.is(videos.length, 3, 'query result videos')
   t.is(league.length, 1, 'query result league')
 
-  // const team = await client.query({
-  //   id: true,
-  //   $list: {
-  //     $find: {
-  //       $traverse: 'descendants',
-  //       $filter: {
-  //         $field: 'type',
-  //         $operator: '=',
-  //         $value: 'team'
-  //       }
-  //     }
-  //   }
-  // })
+  const team = await client.query({
+    id: true,
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'team'
+        }
+      }
+    }
+  })
 
-  // t.true(/te/.test(team[0].id), 'got id from team')
+  t.true(/te/.test(team[0].id), 'got id from team')
 
-  // const teamMatches = await client.query({
-  //   $id: team[0].id,
-  //   id: true,
-  //   $list: {
-  //     $find: {
-  //       $traverse: 'descendants',
-  //       $filter: {
-  //         $field: 'type',
-  //         $operator: '=',
-  //         $value: 'match'
-  //       }
-  //     }
-  //   }
-  // })
+  const teamMatches = await client.query({
+    $id: team[0].id,
+    id: true,
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'match'
+        }
+      }
+    }
+  })
 
-  // t.is(teamMatches.length, 1000)
+  t.is(teamMatches.length, 1000)
 
-  // const teamMatchesRange = await client.query({
-  //   $id: team[0].id,
-  //   id: true,
-  //   $list: {
-  //     $range: [0, 5],
-  //     $find: {
-  //       $traverse: 'descendants',
-  //       $filter: {
-  //         $field: 'type',
-  //         $operator: '=',
-  //         $value: 'match'
-  //       }
-  //     }
-  //   }
-  // })
+  const teamMatchesRange = await client.query({
+    $id: team[0].id,
+    id: true,
+    $list: {
+      $range: [0, 5],
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'match'
+        }
+      }
+    }
+  })
 
-  // t.is(teamMatchesRange.length, 5)
+  t.is(teamMatchesRange.length, 5)
 
-  // const videosSorted = await client.query({
-  //   value: true,
-  //   $list: {
-  //     $sort: { $field: 'value', $order: 'desc' },
-  //     $range: [0, 5],
-  //     $find: {
-  //       $traverse: 'descendants',
-  //       $filter: {
-  //         $field: 'type',
-  //         $operator: '=',
-  //         $value: 'video'
-  //       }
-  //     }
-  //   }
-  // })
+  const videosSorted = await client.query({
+    value: true,
+    $list: {
+      $sort: { $field: 'value', $order: 'desc' },
+      $range: [0, 5],
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'video'
+        }
+      }
+    }
+  })
 
-  // t.deepEqual(
-  //   videosSorted.map(v => v.value),
-  //   [99, 98, 97, 96, 95]
-  // )
+  t.deepEqual(
+    videosSorted.map(v => v.value),
+    [99, 98, 97, 96, 95]
+  )
 })
 
 const x = {
