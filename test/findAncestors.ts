@@ -21,6 +21,7 @@ test.before(async t => {
       league: {
         prefix: 'le',
         fields: {
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           name: { type: 'string', search: { type: ['TAG'] } }
         }
       },
@@ -85,12 +86,12 @@ test.serial('find - ancestors', async t => {
   const leagues = []
   for (let i = 0; i < 10; i++) {
     const matches = []
-    for (let j = 0; j < 10; i++) {
+    for (let j = 0; j < 10; j++) {
       const match = {
         $id: await client.id({ type: 'match' }),
         type: 'match',
         name: 'match' + j,
-        parents: { $add: [teams[i], teams[i + 1]] }
+        parents: { $add: [teams[i].$id, teams[i + 1].$id] }
       }
       matches.push(match)
       globMatches.push(match)
@@ -98,6 +99,7 @@ test.serial('find - ancestors', async t => {
     leagues.push({
       type: 'league',
       name: 'league' + i,
+      value: i,
       children: [
         {
           type: 'season',
@@ -110,34 +112,85 @@ test.serial('find - ancestors', async t => {
 
   await Promise.all([...teams, ...leagues].map(v => client.set(v)))
 
-  const all = (await dumpDb(client)).filter(v => {
-    if (typeof v[1] === 'object') {
-      return true
-    }
-    return false
-  })
+  t.deepEqualIgnoreOrder(
+    (
+      await client.query({
+        $id: teams[0].$id,
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              // special case does not traverse
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              }
+            ]
+          }
+        }
+      })
+    ).map(v => v.name),
+    [
+      { name: 'league1' },
+      { name: 'league7' },
+      { name: 'league9' },
+      { name: 'league0' },
+      { name: 'league4' },
+      { name: 'league6' },
+      { name: 'league5' },
+      { name: 'league2' },
+      { name: 'league3' },
+      { name: 'league8' }
+    ].map(v => v.name),
+    'find ancestors without redis search TYPE'
+  )
 
-  console.log(all)
+  t.deepEqualIgnoreOrder(
+    (
+      await client.query({
+        $id: globMatches[0].$id,
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: ['season', 'team', 'league']
+              }
+            ]
+          }
+        }
+      })
+    ).map(v => v.name),
+    [
+      { name: 'league0' },
+      { name: 'season1-0' },
+      { name: 'team0' },
+      { name: 'team1' }
+    ].map(v => v.name),
+    'find ancestors without redis search TYPE or'
+  )
 
-  let d = Date.now()
-  const results = await client.query({
-    $id: teams[0],
-    name: true,
-    value: true,
-    status: true,
-    date: true,
-    id: true,
-    type: true,
-    $list: {
-      $sort: { $field: 'status', $order: 'desc' },
-      $find: {
-        $traverse: 'ancestors',
-        $filter: []
-      }
-    }
-  })
-
-  console.log('Executing query (1100 resuls)', Date.now() - d, 'ms')
+  t.deepEqualIgnoreOrder(
+    (
+      await client.query({
+        $id: globMatches[0].$id,
+        name: true,
+        id: true,
+        $list: {
+          $find: {
+            $traverse: 'ancestors'
+          }
+        }
+      })
+    ).map(v => v.name || v.id),
+    ['league0', 'season1-0', 'team0', 'team1', 'root'],
+    'find ancestors without redis search and without filters'
+  )
 
   // const matches = results.filter(v => v.type === 'match')
   // const videos = results.filter(v => v.type === 'video')

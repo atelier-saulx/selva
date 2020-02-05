@@ -162,7 +162,7 @@ export class SelvaClient {
     return JSON.parse(str)
   }
 
-  async query(opts: GetOptions): Promise<GetResult> {
+  async query(opts: GetOptions): Promise<GetResult[]> {
     const str = await this.redis.loadAndEvalScript(
       'query',
       SCRIPTS.query,

@@ -6,12 +6,13 @@ import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
 import get from '../index'
+import isFork from './isFork'
 
 const parseNested = (
   opts: GetOptions,
   id: string,
   field?: string
-): [Fork, string | null] => {
+): [Fork | string[], string | null] => {
   if (opts.$list) {
     if (opts.$list.$find) {
       return parseFind(opts.$list.$find, id, field)
@@ -47,9 +48,10 @@ const parseQuery = (
     return [null, 'If using $list put $find in list']
   }
 
+  let ids: any[] | undefined = []
   let resultFork: Fork | undefined
   if (getOptions.$list || getOptions.$find) {
-    const [fork, err] = parseNested(getOptions, id, field)
+    const [r, err] = parseNested(getOptions, id, field)
     if (err) {
       return [null, err]
     }
@@ -58,35 +60,40 @@ const parseQuery = (
         resultGet[key] = getOptions[key]
       }
     }
-    resultFork = fork
+    if (isFork(r)) {
+      resultFork = r
+    } else {
+      ids = r
+    }
   }
 
   if (resultFork) {
     const [q, err] = createSearchString(resultFork)
     const query: string = q.substring(1, q.length - 1)
-
     printAst(resultFork, query)
-
     if (err) {
       return [null, err]
     }
-
     const args = createSearchArgs(getOptions, query)
-
     const queryResult: string[] = redis.call('ft.search', 'default', ...args)
+    ids = queryResult
+  }
 
-    const results: any[] = []
-    for (let i = 1; i < queryResult.length; i++) {
-      const opts: GetOptions = { $id: queryResult[i] }
+  const results: any[] = []
+
+  if (ids) {
+    for (let i = 1; i < ids.length; i++) {
+      const opts: GetOptions = { $id: ids[i] }
       for (let key in getOptions) {
-        opts[key] = getOptions[key]
+        if (key !== '$find' && key !== '$list' && key !== '$id') {
+          opts[key] = getOptions[key]
+        }
       }
       results[results.length] = get(opts)
     }
-
-    return [results, null]
   }
-  return [[], null]
+
+  return [results, null]
 }
 
 const queryGet = (getOptions: GetOptions, id?: string): any[] => {
