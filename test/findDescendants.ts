@@ -311,5 +311,7 @@ test.serial('find - descendants', async t => {
       }
     }
   })
+
+  //@ts-ignore
   t.deepEqual(empty, {}, 'does not throw for TAG fields')
 })
