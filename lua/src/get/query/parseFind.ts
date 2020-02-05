@@ -1,16 +1,14 @@
 import { Schema } from '~selva/schema/index'
 import parseFilters from './parseFilters'
-import { QeuryResult } from './types'
+import { Fork } from './types'
 import { isArray } from '../../util'
 import { Find, Filter } from '~selva/get/types'
 
 function parseFind(
-  result: QeuryResult,
   opts: Find,
   id: string,
-  schema: Schema,
   field?: string
-): string | null {
+): [Fork, string | null] {
   let { $traverse, $filter: filterRaw, $find } = opts
   if (!filterRaw) {
     filterRaw = opts.$filter = []
@@ -18,9 +16,7 @@ function parseFind(
   if (!isArray(filterRaw)) {
     filterRaw = opts.$filter = [filterRaw]
   }
-
-  let $filter: Filter[] = filterRaw
-
+  const $filter: Filter[] = filterRaw
   if ($traverse) {
     if ($traverse === 'descendants') {
       if ($filter) {
@@ -29,10 +25,7 @@ function parseFind(
           $value: id,
           $operator: '='
         }
-        const [_, err] = parseFilters(result, $filter, schema)
-        if (err) {
-          return err
-        }
+        return parseFilters($filter)
       }
     } else if ($traverse === 'ancestors') {
       if ($filter) {
@@ -46,15 +39,12 @@ function parseFind(
       // easier
     }
     if ($find) {
-      const err = parseFind(result, $find, id, schema, field)
-      if (err) {
-        return err
-      }
+      return parseFind($find, id, field)
     }
   } else {
-    return 'Need to allways define $traverse for now'
+    return [{ isFork: true }, 'Need to allways define $traverse for now']
   }
-  return null
+  return [{ isFork: true }, 'No valid options in find to parse']
 }
 
 export default parseFind

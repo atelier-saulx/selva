@@ -5,54 +5,37 @@ import { Schema } from '~selva/schema/index'
 import { getSchema } from '../../schema/index'
 import parseFind from './parseFind'
 // import createSearchArgs from './createSearchArgs'
-import { QeuryResult } from './types'
+import { Fork } from './types'
+import printAst from './printAst'
 
 const parseNested = (
-  result: QeuryResult,
   opts: GetOptions,
   id: string,
-  schema: Schema,
   field?: string
-): string | null => {
+): [Fork, string | null] => {
   if (opts.$list) {
     if (opts.$list.$find) {
-      const err = parseFind(result, opts.$list.$find, id, schema, field)
-      if (err) {
-        return err
-      }
-    } else if (opts.$sort) {
-      // not yet!
-      return 'Sort not implemented yet!'
+      return parseFind(opts.$list.$find, id, field)
+    } else if (opts.$list.$sort) {
+      return [{ isFork: true }, 'Sort without find not implemented yet!']
     }
+    // same for range
   } else if (opts.$find) {
-    const err = parseFind(result, opts.$find, id, schema, field)
-    if (err) {
-      return err
-    }
-  } else {
-    return 'Should not come here no valid query'
+    return parseFind(opts.$find, id, field)
   }
-  return null
+  return [{ isFork: true }, 'Not a valid query']
 }
 
 const parseQuery = (
   getOptions: GetOptions,
-  schema: Schema,
   id: string = 'root',
   field?: string
 ): [any, string | null] => {
   // top level result
-  const result: QeuryResult = {
-    filters: { $and: [], isFork: true },
-    reverseMap: {}
-  }
-
   const resultGet = {}
-
   if (getOptions.$list && !getOptions.$list.$find && !getOptions.$list.$sort) {
     return [null, 'Not implemented $list without $find']
   }
-
   if (getOptions.$list && !getOptions.$list.$find && getOptions.$list.$sort) {
     if (!field && !id) {
       return [null, 'Need field and id for a filtered list + $sort']
@@ -66,7 +49,10 @@ const parseQuery = (
   }
 
   if (getOptions.$list || getOptions.$find) {
-    const err = parseNested(result, getOptions, id, schema, field)
+    const [fork, err] = parseNested(getOptions, id, field)
+
+    printAst(fork)
+
     if (err) {
       return [null, err]
     }
@@ -77,7 +63,7 @@ const parseQuery = (
     }
   }
 
-  logger.info('got result!', result.filters)
+  // logger.info('got result!', fork)
 
   // const [qeury, err] = createSearchString(result.filters, schema)
 
@@ -112,8 +98,7 @@ const parseQuery = (
 
 const queryGet = (getOptions: GetOptions): any => {
   const id = getOptions.$id || 'root'
-  const schema = getSchema()
-  const [result, err] = parseQuery(getOptions, schema, id)
+  const [result, err] = parseQuery(getOptions, id)
   if (err) {
     logger.error(err)
   }

@@ -1,48 +1,96 @@
-// import compareFilters from './compareFilters'
-// import addResult from './addResult'
-import { Schema } from '~selva/schema/index'
-import { QeuryResult, FilterAST, Fork } from './types'
+import { FilterAST, Fork } from './types'
 import addSearch from './addSearch'
-import * as logger from '../../logger'
-import { ensureArray } from '../../util'
 import { Filter } from '~selva/get/types'
-import printAst from './printAst'
+import isFork from './isFork'
+import reduceAnd from './reduceAnd'
+
+const addToOption = (
+  prevList: (FilterAST | Fork)[],
+  newList: (FilterAST | Fork)[]
+) => {
+  for (let i = 0; i < newList.length; i++) {
+    const t = newList[i]
+    if (isFork(t) && t.$and && t.$and.length === 1) {
+      prevList[prevList.length] = t.$and[0]
+    } else {
+      prevList[prevList.length] = t
+    }
+  }
+}
 
 const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   const [search, err] = addSearch(filterOpt)
-
+  if (err) {
+    return [{ isFork: true }, err]
+  }
   const filter: FilterAST = {
     $value: filterOpt.$value,
     $operator: filterOpt.$operator,
     $field: filterOpt.$field,
     $search: search
   }
-
-  if (err) {
-    return [{ isFork: true }, err]
-  }
-
   if (filterOpt.$or && filterOpt.$and) {
-    const fork: Fork = { isFork: true, $or: [] }
+    const fork: Fork & { $or: (Fork | FilterAST)[] } = { isFork: true, $or: [] }
+    const [orFork, err] = convertFilter(filterOpt.$or)
+    if (err) {
+      return [{ isFork: true }, err]
+    }
+    const [andFork, err2] = convertFilter(filterOpt.$and)
+    if (err2) {
+      return [{ isFork: true }, err2]
+    }
+    if (andFork.$and) {
+      andFork.$and[andFork.$and.length] = filter
+      fork.$or[fork.$or.length] = andFork
+    } else {
+      fork.$or[fork.$or.length] = filter
+    }
+    if (orFork.$or) {
+      addToOption(fork.$or, orFork.$or)
+    }
     return [fork, null]
   } else if (filterOpt.$or) {
-    const fork: Fork = { isFork: true, $or: [] }
+    const [nestedFork, err] = convertFilter(filterOpt.$or)
+    if (err) {
+      return [{ isFork: true }, err]
+    }
+    const fork: Fork & { $or: (Fork | FilterAST)[] } = {
+      isFork: true,
+      $or: [filter]
+    }
+    if (nestedFork.$and) {
+      fork.$or[fork.$or.length] = nestedFork
+    } else if (nestedFork.$or) {
+      for (let i = 0; i < nestedFork.$or.length; i++) {
+        fork.$or[fork.$or.length] = nestedFork.$or[i]
+      }
+    }
     return [fork, null]
   } else if (filterOpt.$and) {
-    const fork: Fork = { isFork: true, $and: [] }
-    fork.$and = [filter]
-    return [fork, null]
+    const [nestedFork, err] = convertFilter(filterOpt.$and)
+    if (err) {
+      return [{ isFork: true }, err]
+    }
+    const fork: Fork & { $and: (Fork | FilterAST)[] } = {
+      isFork: true,
+      $and: [filter]
+    }
+    if (nestedFork.$and) {
+      addToOption(fork.$and, nestedFork.$and)
+    }
+    if (nestedFork.$or) {
+      fork.$and[fork.$and.length] = nestedFork
+    }
+    const reduceErr = reduceAnd(fork)
+    return [fork, reduceErr]
   } else {
-    const fork: Fork = { isFork: true, $and: [] }
-    fork.$and = [filter]
+    const fork: Fork = { isFork: true, $and: [filter] }
     return [fork, null]
   }
 }
 
-// only for top level
-const convertFilters = ($filter: Filter[]): [Fork, string | null] => {
+const parseFilters = ($filter: Filter[]): [Fork, string | null] => {
   const fork: Fork & { $and: (Fork | FilterAST)[] } = { isFork: true, $and: [] }
-
   for (let i = 0; i < $filter.length; i++) {
     const [nestedFork, err] = convertFilter($filter[i])
     if (err) {
@@ -50,29 +98,14 @@ const convertFilters = ($filter: Filter[]): [Fork, string | null] => {
     }
     if (nestedFork.$and) {
       for (let j = 0; j < nestedFork.$and.length; j++) {
-        // flatten it
         fork.$and[fork.$and.length] = nestedFork.$and[j]
       }
     } else if (nestedFork.$or) {
       fork.$and[fork.$and.length] = nestedFork
     }
   }
-
-  printAst(fork)
-
-  return [fork, null]
-}
-
-const parseFilters = (
-  result: QeuryResult,
-  $filter: Filter[],
-  schema: Schema
-): [QeuryResult, string | null] => {
-  const [filters, err] = convertFilters($filter)
-  if (err) {
-    return [result, err]
-  }
-  return [result, null]
+  const err = reduceAnd(fork)
+  return [fork, err]
 }
 
 export default parseFilters
