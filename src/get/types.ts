@@ -6,6 +6,7 @@ export type Inherit =
       $type?: string | string[]
       $name?: string | string[]
       $item?: Id | Id[]
+      $required?: Id | Id[]
     }
 
 export type Filter = {

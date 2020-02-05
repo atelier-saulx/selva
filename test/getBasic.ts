@@ -457,6 +457,23 @@ test.serial('get - $inherit', async t => {
     }),
     {
       flapdrol: {
+        // image: { thumb: 'flurp.jpg' }, // image is not required
+        id: 'cuB'
+      }
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      flapdrol: {
+        $inherit: { $item: ['custom', 'club'], $required: ['image'] },
+        image: true,
+        id: true
+      }
+    }),
+    {
+      flapdrol: {
         image: { thumb: 'flurp.jpg' },
         id: 'cuA'
       }
@@ -481,11 +498,27 @@ test.serial('get - $inherit', async t => {
     await client.get({
       $id: 'cuC',
       image: {
-        $inherit: { $type: ['custom', 'club'] }
+        $inherit: { $type: ['custom', 'club'], $required: ['image.thumb'] }
       }
     }),
     {
       image: { thumb: 'flurp.jpg' }
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'cuC',
+      id: true,
+      flapdrol: {
+        $inherit: { $item: ['custom', 'club'], $required: ['image.icon'] },
+        image: true,
+        id: true
+      }
+    }),
+    {
+      id: 'cuC',
+      flapdrol: {}
     }
   )
 

@@ -4,110 +4,43 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult, GetItem } from '~selva/get/types'
 import { setNestedResult } from './nestedFields'
 import getByType from './getByType'
-import { ensureArray } from '../util'
+import { ensureArray, splitString } from '../util'
 import * as logger from '../logger'
 import getWithField from 'lua/src/get/field'
 
-type Ancestor = [Ancestor[], number]
+function getAncestorsByType(
+  types: string[],
+  ancestorsWithScores: string[]
+): Record<string, Id[]> {
+  let results: Record<string, Id[]> = {}
+  for (const itemType of types) {
+    results[itemType] = []
+  }
 
-// memoize this in lua (within one batch of gets)
-// const ancestorMap = {} etc
-function createAncestorsInner(id: Id, s: Record<Id, Ancestor>): Ancestor {
-  // if memoized[id] -> get it
-  if (s[id]) {
-    return s[id]
-  }
-  const parents = redis.smembers(id + '.parents')
-  const ancestor: Ancestor = [[], 0]
-  if (parents.length) {
-    ancestor[1] = 1
-    let pd = 0
-    for (let pId of parents) {
-      const a = createAncestorsInner(pId, s)
-      if (a[1] > pd) {
-        pd = a[1]
-        table.insert(a[0], 1, a)
-      } else {
-        a[0][a[0].length] = a
-      }
+  for (let i = ancestorsWithScores.length - 2; i >= 0; i -= 2) {
+    const ancestorType = getTypeFromId(ancestorsWithScores[i])
+    if (results[ancestorType]) {
+      const matches = results[ancestorType]
+      matches[matches.length] = ancestorsWithScores[i]
     }
-    ancestor[1] += pd
   }
-  s[id] = ancestor
-  return ancestor
+
+  return results
 }
 
-function createAncestorsFromFields(
-  targetId: Id,
-  fields: string[],
-  parse: (id: Id) => string
-): Id[] {
-  const s: Record<Id, Ancestor> = {}
-  createAncestorsInner(targetId, s)
-  const result = []
-  for (let id in s) {
-    if (targetId !== id) {
-      const ancestor = s[id]
-      // get type/name index , store it for faster lookup
-      let ignore = false
-      let value: string | null = null
-      const iterCtx: any[] = ancestor
-      if (ancestor.length === 2) {
-        value = parse(id)
-        if (value) {
-          for (let i = 0, len = fields.length; i < len; i++) {
-            if (fields[i] === value) {
-              iterCtx[iterCtx.length] = i
-              iterCtx[iterCtx.length] = value
-              break
-            } else if (i === len - 1) {
-              ignore = true
-            }
-          }
-        }
-      }
-      if (!ignore && value) {
-        const depth = iterCtx[1]
-        const index = iterCtx[2]
-        const v = iterCtx[3]
-        // binary insert
-        let l = 0,
-          r = result.length - 1,
-          m = 0
-        while (l <= r) {
-          m = Math.floor((l + r) / 2)
-          const prev: any = s[result[m]]
-          const prevValue = prev[3]
-          if (v === prevValue) {
-            const prevDepth = prev[1]
-            if (prevDepth < depth) {
-              r = m - 1
-            } else {
-              l = m + 1
-              if (prevDepth === depth) {
-                break
-              }
-            }
-          } else {
-            const prevIndex = prev[2]
-            if (prevIndex > index) {
-              r = m - 1
-            } else {
-              l = m + 1
-              if (prevIndex === index) {
-                break
-              }
-            }
-          }
-        }
-        table.insert(result, l + 1, id)
-      }
-    }
+function prepareRequiredFieldSegments(fields: string[]): string[][] {
+  const requiredFields: string[][] = []
+  for (let i = 0; i < fields.length; i++) {
+    const r = fields[i]
+    const segments: string[] = splitString(r, '.')
+    requiredFields[i] = segments
   }
-  return result
+
+  return requiredFields
 }
 
 function setFromAncestors(
+  getField: GetFieldFn,
   result: GetResult,
   schemas: Record<string, TypeSchema>,
   id: Id,
@@ -115,12 +48,17 @@ function setFromAncestors(
   language?: string,
   version?: string,
   fieldFrom?: string | string[],
-  condition?: (ancestor: Id) => boolean
+  tryAncestorCondition?: (ancestor: Id) => boolean,
+  acceptAncestorCondition?: (result: any) => boolean,
+  ancestorsWithScores?: Id[],
+  props?: GetItem
 ): boolean {
-  logger.info(`setFromAncestors for id ${id}`)
   const parents = redis.smembers(id + '.parents')
 
-  const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+  if (!ancestorsWithScores) {
+    ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+  }
+
   const ancestorDepthMap: Record<Id, number> = {}
 
   for (let i = 0; i < ancestorsWithScores.length; i += 2) {
@@ -137,19 +75,16 @@ function setFromAncestors(
 
   // we want to check parents from deepest to lowest depth
   table.sort(validParents, (a, b) => {
-    if (!a) {
-      return false
-    } else if (!b) {
-      return true
-    }
-
     return ancestorDepthMap[a] > ancestorDepthMap[b]
   })
 
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
-      if (!condition || (condition && condition(parent))) {
+      if (
+        !tryAncestorCondition ||
+        (tryAncestorCondition && tryAncestorCondition(parent))
+      ) {
         if (fieldFrom && fieldFrom.length > 0) {
           if (
             getWithField(
@@ -162,6 +97,29 @@ function setFromAncestors(
               version
             )
           ) {
+            return true
+          }
+        } else if (field === '') {
+          const intermediateResult = !acceptAncestorCondition ? result : {}
+          getField(
+            props || {},
+            schemas,
+            intermediateResult,
+            parent,
+            '',
+            language,
+            version,
+            '$inherit'
+          )
+
+          if (!acceptAncestorCondition) {
+            return true
+          }
+
+          if (acceptAncestorCondition(intermediateResult)) {
+            for (const k in intermediateResult) {
+              result[k] = intermediateResult[k]
+            }
             return true
           }
         } else {
@@ -197,33 +155,85 @@ function inheritItem(
   id: Id,
   field: string,
   item: string[],
+  required: string[],
   language?: string,
   version?: string
 ) {
-  logger.info(`INHERIT ITEM FOR FIELD ${field}`)
-  const ancestors = createAncestorsFromFields(id, item, getTypeFromId)
-  const len = ancestors.length
+  const requiredFields: string[][] = prepareRequiredFieldSegments(required)
+
+  const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+  const len = ancestorsWithScores.length
   if (len === 0) {
     setNestedResult(result, field, {})
-  } else {
-    for (let i = 0; i < len; i++) {
+    return
+  }
+
+  const ancestorsByType = getAncestorsByType(item, ancestorsWithScores)
+
+  const intermediateResult = {}
+  for (const itemType of item) {
+    const matches = ancestorsByType[itemType]
+    if (matches.length === 1) {
       const intermediateResult = {}
-      const isComplete = getField(
+      getField(
         props,
         schemas,
         intermediateResult,
-        ancestors[i],
+        matches[0],
         '',
         language,
         version,
         '$inherit'
       )
-      if (isComplete || i === len - 1) {
-        setNestedResult(result, field, intermediateResult)
-        break
-      }
+      setNestedResult(result, field, intermediateResult)
+      return
+    } else if (matches.length > 1) {
+      setFromAncestors(
+        getField,
+        intermediateResult,
+        schemas,
+        id,
+        '',
+        language,
+        version,
+        '',
+        (ancestor: Id) => {
+          for (const match of matches) {
+            if (match === ancestor) {
+              return true
+            }
+          }
+
+          return false
+        },
+        (result: any) => {
+          if (required.length === 0) {
+            return true
+          }
+
+          for (const requiredField of requiredFields) {
+            let prop: any = result
+            for (const segment of requiredField) {
+              prop = prop[segment]
+              if (!prop) {
+                return false
+              }
+            }
+          }
+
+          return true
+        },
+        ancestorsWithScores,
+        props || {}
+      )
+
+      setNestedResult(result, field, intermediateResult)
+      return
     }
   }
+
+  // set empty result
+  setNestedResult(result, field, {})
 }
 
 type GetFieldFn = (
@@ -253,6 +263,7 @@ export default function inherit(
   if (inherit) {
     if (inherit === true) {
       return setFromAncestors(
+        getField,
         result,
         schemas,
         id,
@@ -264,6 +275,7 @@ export default function inherit(
     } else if (inherit.$type) {
       const types: string[] = ensureArray(inherit.$type)
       return setFromAncestors(
+        getField,
         result,
         schemas,
         id,
@@ -284,6 +296,7 @@ export default function inherit(
     } else if (inherit.$name) {
       const names: string[] = ensureArray(inherit.$name)
       return setFromAncestors(
+        getField,
         result,
         schemas,
         id,
@@ -303,7 +316,6 @@ export default function inherit(
       )
     } else if (inherit.$item) {
       logger.info('INHERITING with $item')
-      inherit.$item = ensureArray(inherit.$item)
       inheritItem(
         getField,
         props,
@@ -311,7 +323,8 @@ export default function inherit(
         result,
         id,
         field,
-        inherit.$item,
+        ensureArray(inherit.$item),
+        ensureArray(inherit.$required),
         language,
         version
       )
