@@ -120,7 +120,7 @@ test.before(async t => {
       children: genMatches(amount)
     })
   ])
-  console.log('Set 10k nested', Date.now() - d, 'ms')
+  console.log('Set 15.2k nested', Date.now() - d, 'ms')
 
   await wait(600)
   t.true(ids[0].slice(0, 2) === 'cl' && ids[1].slice(0, 2) === 'le')
