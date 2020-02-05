@@ -33,6 +33,7 @@ export default (
   _fields: FieldSchemaArrayLike,
   _type: string
 ): void => {
+  console.log(field)
   if (typeof payload === 'object' && !Array.isArray(payload)) {
     result[field] = {}
     for (let k in payload) {

@@ -2,8 +2,10 @@ import parseFilters from '../parseFilters'
 import { Fork } from '../types'
 import { isArray } from '../../../util'
 import { Find, Filter } from '~selva/get/types'
+import parseFindIds from './ids'
+import * as redis from '../../../redis'
 import * as logger from '../../../logger'
-import parseFindAncestors from './ancestors'
+import get from '../../index'
 
 function parseFind(opts: Find, id: string): [Fork | string[], string | null] {
   let { $traverse, $filter: filterRaw, $find } = opts
@@ -24,23 +26,23 @@ function parseFind(opts: Find, id: string): [Fork | string[], string | null] {
         }
         return parseFilters(filters)
       } else {
-        // return all descendants
-        logger.info('return all desc')
+        // really heavy operation - also weird location...
+        const { descendants } = get({ $id: id, descendants: true })
+        table.insert(descendants, 1, '')
+        return [descendants, null]
       }
     } else if ($traverse === 'ancestors') {
-      return parseFindAncestors(filters, id)
-    } else if ($traverse === 'children') {
-      // easier just make this use another set of functions
-    } else if ($traverse === 'parents') {
-      // easier
-    }
-    if ($find) {
-      return parseFind($find, id)
+      const ancestors = redis.zrange(id + '.ancestors')
+      return parseFindIds(filters, ancestors)
+    } else {
+      logger.info(id + '.' + $traverse)
+      const ids = redis.smembers(id + '.' + $traverse)
+      logger.info(ids)
+      return parseFindIds(filters, ids)
     }
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']
   }
-  return [{ isFork: true }, 'No valid options in find to parse']
 }
 
 export default parseFind

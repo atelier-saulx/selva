@@ -11,7 +11,6 @@ test.before(async t => {
     developmentLogging: true,
     loglevel: 'info'
   })
-
   await wait(500)
 
   const client = connect({ port: 6089 })
