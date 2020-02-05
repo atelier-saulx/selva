@@ -150,6 +150,28 @@ test.after(async _t => {
 test.serial('get - queryParser', async t => {
   // simple nested - single query
   const client = connect({ port: 6088 })
+
+  // await client.query({
+  //   name: true,
+  //   $list: {
+  //     $find: {
+  //       $traverse: 'descendants',
+  //       $filter: [
+  //         {
+  //           $operator: '=',
+  //           $field: 'name',
+  //           $value: 'gurk'
+  //         },
+  //         {
+  //           $operator: '=',
+  //           $field: 'name',
+  //           $value: ['flap', 'gurk']
+  //         }
+  //       ]
+  //     }
+  //   }
+  // })
+
   // extra option in find is index or auto from fields
   let d = Date.now()
   const results = await client.query({

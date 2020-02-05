@@ -23,9 +23,26 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   if (err) {
     return [{ isFork: true }, err]
   }
+
+  // validate operator
+  const o = filterOpt.$operator
+  if (
+    !(
+      o === '=' ||
+      o === '>' ||
+      o === '<' ||
+      o === '..' ||
+      o === '!=' ||
+      o === '<=' ||
+      o === '>='
+    )
+  ) {
+    return [{ isFork: true }, `Invalid filter operator ${o}`]
+  }
+
   const filter: FilterAST = {
     $value: filterOpt.$value,
-    $operator: filterOpt.$operator,
+    $operator: o,
     $field: filterOpt.$field,
     $search: search
   }
