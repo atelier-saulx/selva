@@ -146,7 +146,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('get - queryParser', async t => {
+test.serial('find - descendants', async t => {
   // simple nested - single query
   const client = connect({ port: 6088 })
 
