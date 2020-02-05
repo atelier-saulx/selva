@@ -43,7 +43,7 @@ test.before(async t => {
           name: { type: 'string', search: { type: ['TAG'] } },
           // need to warn if you change this!!!
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
+          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       },
       video: {
