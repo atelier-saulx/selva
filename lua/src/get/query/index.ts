@@ -5,6 +5,7 @@ import parseFind from './parseFind'
 import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
+import get from '../index'
 
 const parseNested = (
   opts: GetOptions,
@@ -62,26 +63,28 @@ const parseQuery = (
 
   if (resultFork) {
     const [q, err] = createSearchString(resultFork)
-    const qeury: string = q.substring(1, q.length - 1)
+    const query: string = q.substring(1, q.length - 1)
 
-    printAst(resultFork, qeury)
+    printAst(resultFork, query)
 
     if (err) {
       return [null, err]
     }
 
-    const args = createSearchArgs(getOptions, qeury)
+    const args = createSearchArgs(getOptions, query)
 
-    const queryResult = redis.call('ft.search', 'default', ...args)
+    const queryResult: string[] = redis.call('ft.search', 'default', ...args)
 
-    logger.info(queryResult)
-    // const r = await Promise.all(
-    //   queryResult.slice(1).map((id: string) => {
-    //     const opts = Object.assign({}, getOptions, { $id: id })
-    //     return client.get(opts)
-    //   })
-    // )
-    // return [queryResult, null]
+    const results: any[] = []
+    for (let i = 1; i < queryResult.length; i++) {
+      const opts: GetOptions = { $id: queryResult[i] }
+      for (let key in getOptions) {
+        opts[key] = getOptions[key]
+      }
+      results[results.length] = get(opts)
+    }
+
+    return [results, null]
   }
   return [[], null]
 }

@@ -1,8 +1,6 @@
 import { isArray, joinAny, joinString } from '../../util'
 import { FilterAST, Fork, Value } from './types'
 import isFork from './isFork'
-import * as logger from '../../logger'
-import printAst from './printAst'
 
 const returnNumber = (filter, value: Value): string => {
   if (filter.$operator === '>') {
@@ -14,7 +12,6 @@ const returnNumber = (filter, value: Value): string => {
   } else if (filter.$operator === '=') {
     return `(@${filter.$field}:[${tostring(value)},${tostring(value)}])`
   }
-  logger.info('WRONG', filter)
   return ''
 }
 // ADD TEXT AND GEO
@@ -57,10 +54,6 @@ const addField = (filter: FilterAST): string => {
   return ''
 }
 
-// for of
-
-// type Filters = Filter[]
-
 function createSearchString(filters: Fork): [string, string | null] {
   const searchString: string[] = []
   if (filters.$and) {
@@ -91,7 +84,6 @@ function createSearchString(filters: Fork): [string, string | null] {
         if (err) {
           return ['', err]
         }
-        logger.info(nestedSearch)
         searchString[searchString.length] = nestedSearch
       }
     }
