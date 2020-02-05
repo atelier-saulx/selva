@@ -1,34 +1,10 @@
 import { Id, Schema } from '../../../src/schema/index'
 import * as redis from '../redis'
-import * as logger from '../logger'
-import { splitString, joinString } from '../util'
+import { joinString } from '../util'
 import { addFieldToSearch } from './search'
 import { getSchema } from '../schema/index'
 import { getTypeFromId } from '../typeIdMapping'
-
-// order by depth (highest depth first)
-
-// 2league,1root,1tag   //put
-
-// zadd
-// if 2 thing with same depth use sort
-
-// includeAncestryWith
-// excludeAncestryWith
-
-// hierachy: false
-
-// going trough all
-
-// -- zSet keys
-
-// change this .ancestor
-
-// map {[id]}
-
-// get an array of ids
-
-//
+import * as logger from '../logger'
 
 const schema: Schema = getSchema()
 const needAncestorUpdates: Record<Id, true> = {}
@@ -36,8 +12,8 @@ const alreadyUpdated: Record<Id, true> = {}
 const depthMap: Record<Id, number> = {}
 
 type IncludeAncestryRule = { includeAncestryWith: string[] }
-type ExcludeAncestryWith = { excludeAncestryWith: string[] }
-type AncestryRule = IncludeAncestryRule | ExcludeAncestryWith | false
+type ExcludeAncestryRule = { excludeAncestryWith: string[] }
+type AncestryRule = IncludeAncestryRule | ExcludeAncestryRule | false
 
 function isIncludeAncestryRule(
   rule: AncestryRule | null
@@ -51,19 +27,19 @@ function isIncludeAncestryRule(
 
 function isExcludeAncestryRule(
   rule: AncestryRule | null
-): rule is IncludeAncestryRule {
+): rule is ExcludeAncestryRule {
   if (!rule) {
     return false
   }
 
-  return !!(<any>rule).includeAncestryWith
+  return !!(<any>rule).excludeAncestryWith
 }
 
 function includeAncestors(
   includedTypes: string[],
   ancestors: string[]
 ): string[] {
-  for (let i = 0; i < ancestors.length; i++) {
+  for (let i = 0; i < ancestors.length; i += 2) {
     for (const includedTypeName of includedTypes) {
       if (getTypeFromId(ancestors[i]) === includedTypeName) {
         return ancestors
@@ -78,7 +54,7 @@ function excludeAncestors(
   excludedTypes: string[],
   ancestors: string[]
 ): string[] {
-  for (let i = 0; i < ancestors.length; i++) {
+  for (let i = 0; i < ancestors.length; i += 2) {
     for (const excludedTypeName of excludedTypes) {
       if (getTypeFromId(ancestors[i]) === excludedTypeName) {
         return []
@@ -90,45 +66,79 @@ function excludeAncestors(
 }
 
 function ancestryFromHierarchy(id: Id, parent: Id): string[] {
-  const ancestors = redis.zrangeWithScores(parent + '.ancestors')
+  if (parent === 'root') {
+    return ['root', '0']
+  }
 
   // can't map, should never happen though
   if (!schema.prefixToTypeMapping) {
-    return ancestors
+    const finalAncestors = redis.zrangeWithScores(parent + '.ancestors')
+    const depth = getDepth(parent)
+    finalAncestors[finalAncestors.length] = parent
+    finalAncestors[finalAncestors.length] = tostring(depth)
+    return finalAncestors
   }
 
   const typeName: string = schema.prefixToTypeMapping[id.substring(0, 2)]
+  const parentTypeName: string =
+    schema.prefixToTypeMapping[parent.substring(0, 2)]
+
   const hierarchy = schema.types[typeName].hierarchy
 
   if (!hierarchy) {
-    return ancestors
+    const finalAncestors = redis.zrangeWithScores(parent + '.ancestors')
+    const depth = getDepth(parent)
+    finalAncestors[finalAncestors.length] = parent
+    finalAncestors[finalAncestors.length] = tostring(depth)
+    return finalAncestors
   }
 
   let foundRule: AncestryRule | null = null
 
   for (const ruleTypeName in hierarchy) {
-    if (ruleTypeName === typeName) {
+    if (ruleTypeName === parentTypeName) {
       foundRule = hierarchy[ruleTypeName]
       break
     }
   }
 
-  if (foundRule === false) {
-    return []
-  } else if (isIncludeAncestryRule(foundRule)) {
-    return includeAncestors(foundRule.includeAncestryWith, ancestors)
-  } else if (isExcludeAncestryRule(foundRule)) {
-    excludeAncestors(foundRule.excludeAncestryWith, ancestors)
-  } else if (hierarchy.$default) {
-    const rule = hierarchy.$default
-    if (isIncludeAncestryRule(rule)) {
-      return includeAncestors(rule.includeAncestryWith, ancestors)
+  let finalAncestors: string[] = []
+  const parentsOfParent = redis.smembers(parent + '.parents')
+  for (const parentOfParent of parentsOfParent) {
+    let ancestors = redis.zrangeWithScores(parentOfParent + '.ancestors')
+
+    // set parent of parent itself into the ancestry
+    const depth = getDepth(parentOfParent)
+    ancestors[ancestors.length] = parentOfParent
+    ancestors[ancestors.length] = tostring(depth)
+
+    if (foundRule === false) {
+      ancestors = []
+    } else if (isIncludeAncestryRule(foundRule)) {
+      ancestors = includeAncestors(foundRule.includeAncestryWith, ancestors)
+    } else if (isExcludeAncestryRule(foundRule)) {
+      ancestors = excludeAncestors(foundRule.excludeAncestryWith, ancestors)
+    } else if (hierarchy.$default) {
+      const rule = hierarchy.$default
+      if (isIncludeAncestryRule(rule)) {
+        ancestors = includeAncestors(rule.includeAncestryWith, ancestors)
+      } else {
+        ancestors = excludeAncestors(rule.excludeAncestryWith, ancestors)
+      }
     }
 
-    return excludeAncestors(rule.excludeAncestryWith, ancestors)
+    // include ancestors in result
+    for (let i = 0; i < ancestors.length; i++) {
+      finalAncestors[finalAncestors.length] = ancestors[i]
+    }
   }
 
-  return ancestors
+  // set parent itself into the ancestry
+  const depth = getDepth(parent)
+  finalAncestors[finalAncestors.length] = parent
+  finalAncestors[finalAncestors.length] = tostring(depth)
+
+  return finalAncestors
 }
 
 export function markForAncestorRecalculation(id: Id) {
@@ -249,11 +259,11 @@ function reCalculateAncestorsFor(ids: Id[]): void {
         redis.zAddMultipleNew(id + '.ancestors', ...reversed)
 
         // set parent itself into the ancestry
-        const parentDepth = getDepth(parent)
-        if (parentDepth) {
-          // if not root
-          redis.zaddNew(id + '.ancestors', parentDepth, parent)
-        }
+        // const parentDepth = getDepth(parent)
+        // if (parentDepth) {
+        //   // if not root
+        //   redis.zaddNew(id + '.ancestors', parentDepth, parent)
+        // }
       }
 
       const ancestors = redis.zrange(id + '.ancestors')
