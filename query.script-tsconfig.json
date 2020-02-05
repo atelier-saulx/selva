@@ -1,0 +1,17 @@
+{
+  "extends": "./lua-tsconfig.json",
+  "files": ["./luaScripts/query.ts"],
+  "include": [
+    "./lua/src/query/*.ts",
+    "./lua/src/get/*.ts",
+    "./lua/types/*.d.ts",
+    "./src/schema.ts",
+    "./src/setTypes.ts"
+  ],
+  "tstl": {
+    "luaTarget": "5.1",
+    "luaLibImport": "require",
+    "luaBundle": "./dist/lua/query.lua",
+    "luaBundleEntry": "./luaScripts/query.ts"
+  }
+}

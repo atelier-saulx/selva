@@ -12,13 +12,12 @@ import { getSchema } from './schema/getSchema'
 import getTypeFromId from './getTypeFromId'
 import digest from './digest'
 import { IdOptions } from '../lua/src/id'
-import query from './query'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 5
 
 let SCRIPTS
 try {
-  SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
+  SCRIPTS = ['modify', 'fetch', 'id', 'update-schema', 'query'].reduce(
     (obj, scriptName) => {
       return Object.assign(obj, {
         [scriptName]: readFileSync(
@@ -68,10 +67,6 @@ export class SelvaClient {
 
   async get(props: GetOptions) {
     return get(this, props)
-  }
-
-  async query(props: GetOptions) {
-    return query(this, props)
   }
 
   async updateSchema(props: SchemaOptions, retry?: number) {
@@ -159,6 +154,18 @@ export class SelvaClient {
     const str = await this.redis.loadAndEvalScript(
       'fetch',
       SCRIPTS.fetch,
+      0,
+      [],
+      [JSON.stringify(opts)]
+    )
+
+    return JSON.parse(str)
+  }
+
+  async query(opts: GetOptions): Promise<GetResult> {
+    const str = await this.redis.loadAndEvalScript(
+      'query',
+      SCRIPTS.query,
       0,
       [],
       [JSON.stringify(opts)]

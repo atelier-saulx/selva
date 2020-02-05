@@ -25,7 +25,6 @@ export function isArray<T>(value: T | T[]): value is T[] {
       return true
     }
   }
-
   return false
 }
 
@@ -52,6 +51,16 @@ export function joinString(strs: string[], delim: string): string {
   let str = ''
   for (let i = 0; i < strs.length - 1; i++) {
     str += strs[i] + delim
+  }
+
+  str += strs[strs.length - 1] || ''
+  return str
+}
+
+export function joinAny(strs: any[], delim: string): string {
+  let str = ''
+  for (let i = 0; i < strs.length - 1; i++) {
+    str += tostring(strs[i]) + delim
   }
 
   str += strs[strs.length - 1] || ''
@@ -156,4 +165,18 @@ export function objectAssign(
   }
 
   return base
+}
+
+export function indexOf(a: any[], b: any): number {
+  for (let i = 0, len = a.length; i < len; i++) {
+    if (a[i] === b) {
+      return i
+    }
+  }
+  return -1
+}
+
+export function now(): number {
+  const [sec, micro] = redis.call('time')
+  return Math.floor(tonumber(sec) / 1000 + tonumber(micro) * 1000)
 }

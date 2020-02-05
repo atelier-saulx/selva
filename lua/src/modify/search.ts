@@ -1,4 +1,4 @@
-import { getSchema, getSearchIndexes } from '../schema/index'
+import { getSearchIndexes } from '../schema/index'
 import * as logger from '../logger'
 
 const mapLanguages = (lang: string): string => {

@@ -6,51 +6,6 @@ import { SelvaClient } from '../'
 import { GetOptions } from '~selva/get'
 import { GetSchemaResult } from '~selva/schema/getSchema'
 
-const parseFind = async (
-  client: SelvaClient,
-  result,
-  opts,
-  id,
-  field,
-  schema: GetSchemaResult
-): Promise<void> => {
-  let { $traverse, $filter, $find } = opts
-  if (!$filter) {
-    $filter = opts.$filter = []
-  }
-  if (!Array.isArray($filter)) {
-    $filter = opts.$filter = [$filter]
-  }
-  if ($traverse) {
-    if ($traverse === 'descendants') {
-      if ($filter) {
-        $filter.push({
-          $field: 'ancestors',
-          $value: id,
-          $operator: '='
-        })
-        parseFilters(result, $filter, schema)
-      }
-    } else if ($traverse === 'ancestors') {
-      if ($filter) {
-        // if id or type can do something smart - else nested query on the results
-      } else {
-        // just return the ancestors
-      }
-    } else if ($traverse === 'children') {
-      // easier
-    } else if ($traverse === 'parents') {
-      // easier
-    }
-
-    if ($find) {
-      await parseFind(client, result, $find, id, field, schema)
-    }
-  } else {
-    throw new Error('Need to allways define $traverse for now')
-  }
-}
-
 const parseNested = async (
   client: SelvaClient,
   result,

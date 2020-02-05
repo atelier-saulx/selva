@@ -156,3 +156,7 @@ export function del(key: string, ...keys: string[]): number {
 export function ping(): 'PONG' {
   return redis.call('ping')
 }
+
+// export function ftSearch(index: string, ...args: string[]): any[] {
+//   return redis.call('ft.search', index, ...args)
+// }

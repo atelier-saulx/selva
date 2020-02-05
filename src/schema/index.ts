@@ -2,6 +2,11 @@ export type Id = string
 
 export type TypesDb = { idSize: number } & { [key: string]: string }
 
+export type GetSchemaResult = {
+  schema: Schema
+  searchIndexes: SearchIndexes
+}
+
 export type FieldType =
   | 'float'
   | 'number'

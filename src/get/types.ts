@@ -9,7 +9,7 @@ export type Inherit =
     }
 
 export type Filter = {
-  $operator: '=' | '!=' | '>' | '<' | '<=' | '>='
+  $operator: '=' | '!=' | '>' | '<' | '<=' | '>=' | '..'
   $field: string
   $value: string | number | (string | number)[]
   $and?: Filter
@@ -20,6 +20,7 @@ export type Filter = {
 export type Find = {
   $traverse?: 'descendants' | 'ancestors' | 'children' | 'parents'
   $filter?: Filter | Filter[]
+  $find?: Find
 }
 
 export type Sort = {

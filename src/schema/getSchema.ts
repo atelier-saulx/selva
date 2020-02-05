@@ -1,10 +1,5 @@
 import { SelvaClient } from '../'
-import { Schema, SearchIndexes } from '.'
-
-type GetSchemaResult = {
-  schema: Schema
-  searchIndexes: SearchIndexes
-}
+import { Schema, SearchIndexes, GetSchemaResult } from '.'
 
 async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
   let schema: Schema = {

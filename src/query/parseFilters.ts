@@ -88,6 +88,8 @@ const parseFilters = (result, $filter, schema: GetSchemaResult) => {
             }
           }
         }
+
+        // this is different
         addResult(result, r, '$and')
       } else {
         addResult(result, filter, '$and')
