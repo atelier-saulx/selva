@@ -1,5 +1,5 @@
 import * as redis from '../redis'
-import { Id, TypeSchema } from '~selva/schema/index'
+import { Id, Schema } from '~selva/schema/index'
 import { getTypeFromId } from '../typeIdMapping'
 import { GetResult, GetItem } from '~selva/get/types'
 import { setNestedResult } from './nestedFields'
@@ -42,7 +42,7 @@ function prepareRequiredFieldSegments(fields: string[]): string[][] {
 function setFromAncestors(
   getField: GetFieldFn,
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -89,7 +89,7 @@ function setFromAncestors(
           if (
             getWithField(
               result,
-              schemas,
+              schema.types,
               parent,
               field,
               fieldFrom,
@@ -103,7 +103,7 @@ function setFromAncestors(
           const intermediateResult = !acceptAncestorCondition ? result : {}
           getField(
             props || {},
-            schemas,
+            schema,
             intermediateResult,
             parent,
             '',
@@ -123,7 +123,9 @@ function setFromAncestors(
             return true
           }
         } else {
-          if (getByType(result, schemas, parent, field, language, version)) {
+          if (
+            getByType(result, schema.types, parent, field, language, version)
+          ) {
             return true
           }
         }
@@ -150,7 +152,7 @@ function getName(id: Id): string {
 function inheritItem(
   getField: GetFieldFn,
   props: GetItem,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   result: GetResult,
   id: Id,
   field: string,
@@ -177,7 +179,7 @@ function inheritItem(
       const intermediateResult = {}
       getField(
         props,
-        schemas,
+        schema,
         intermediateResult,
         matches[0],
         '',
@@ -191,7 +193,7 @@ function inheritItem(
       setFromAncestors(
         getField,
         intermediateResult,
-        schemas,
+        schema,
         id,
         '',
         language,
@@ -238,7 +240,7 @@ function inheritItem(
 
 type GetFieldFn = (
   props: GetItem,
-  schemas: Record<string, TypeSchema>,
+  schemas: Schema,
   result: GetResult,
   id: Id,
   field?: string,
@@ -250,7 +252,7 @@ type GetFieldFn = (
 export default function inherit(
   getField: GetFieldFn,
   props: GetItem,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   result: GetResult,
   id: Id,
   field: string,
@@ -265,7 +267,7 @@ export default function inherit(
       return setFromAncestors(
         getField,
         result,
-        schemas,
+        schema,
         id,
         field,
         language,
@@ -277,7 +279,7 @@ export default function inherit(
       return setFromAncestors(
         getField,
         result,
-        schemas,
+        schema,
         id,
         field,
         language,
@@ -298,7 +300,7 @@ export default function inherit(
       return setFromAncestors(
         getField,
         result,
-        schemas,
+        schema,
         id,
         field,
         language,
@@ -319,7 +321,7 @@ export default function inherit(
       inheritItem(
         getField,
         props,
-        schemas,
+        schema,
         result,
         id,
         field,
