@@ -10,6 +10,8 @@ export default (
   _fields: FieldSchemaArrayLike,
   _type: string
 ): void => {
+  // SET fix
+
   // const arr = payload
   // if (!Array.isArray(arr)) {
   //   throw new Error(`Array is not an array ${JSON.stringify(arr)}`)
