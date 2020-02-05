@@ -89,8 +89,10 @@ const parseQuery = (
   return [[], null]
 }
 
-const queryGet = (getOptions: GetOptions): any => {
-  const id = getOptions.$id || 'root'
+const queryGet = (getOptions: GetOptions, id?: string): any[] => {
+  if (!id) {
+    id = getOptions.$id || 'root'
+  }
   const [result, err] = parseQuery(getOptions, id)
   if (err) {
     logger.error(err)

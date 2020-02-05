@@ -143,33 +143,12 @@ test.after(async _t => {
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
-  // await srv.destroy()
+  await srv.destroy()
 })
 
 test.serial('get - queryParser', async t => {
   // simple nested - single query
   const client = connect({ port: 6088 })
-
-  // await client.query({
-  //   name: true,
-  //   $list: {
-  //     $find: {
-  //       $traverse: 'descendants',
-  //       $filter: [
-  //         {
-  //           $operator: '=',
-  //           $field: 'name',
-  //           $value: 'gurk'
-  //         },
-  //         {
-  //           $operator: '=',
-  //           $field: 'name',
-  //           $value: ['flap', 'gurk']
-  //         }
-  //       ]
-  //     }
-  //   }
-  // })
 
   // extra option in find is index or auto from fields
   let d = Date.now()
@@ -181,6 +160,7 @@ test.serial('get - queryParser', async t => {
     id: true,
     type: true,
     $list: {
+      $sort: { $field: 'status', $order: 'desc' },
       $find: {
         $traverse: 'descendants',
         $filter: [
@@ -310,16 +290,26 @@ test.serial('get - queryParser', async t => {
     videosSorted.map(v => v.value),
     [99, 98, 97, 96, 95]
   )
-})
 
-const x = {
-  $and: [
-    {
-      $field: 'name',
-      $search: ['TAG'],
-      $value: ['match1', 'match2', 'match3'],
-      $operator: '!='
-    },
-    { $field: 'ancestors', $search: ['TAG'], $operator: '=', $value: 'root' }
-  ]
-}
+  const empty = await client.query({
+    name: true,
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: [
+          {
+            $operator: '=',
+            $field: 'name',
+            $value: 'gurk'
+          },
+          {
+            $operator: '=',
+            $field: 'name',
+            $value: ['flap', 'gurk']
+          }
+        ]
+      }
+    }
+  })
+  t.deepEqual(empty, {}, 'does not throw for TAG fields')
+})
