@@ -5,37 +5,36 @@ import { Filter } from '~selva/get/types'
 import { Fork } from '../types'
 import parseFilters from '../parseFilters'
 
-const parseTypeFilter = (filter: Filter, ancestors: string[]): string[] => {
+const parseTypeFilter = (filter: Filter, ids: string[]): string[] => {
   const r: string[] = []
   if (isArray(filter.$value)) {
     const v: string[] = []
-    for (let i = 0; i < ancestors.length; i++) {
+    for (let i = 0; i < ids.length; i++) {
       for (let j = 0; j < filter.$value.length; j++) {
         if (!v[j]) {
           v[j] = getPrefixFromType(<string>filter.$value[j])
         }
-        if (stringStartsWith(ancestors[i], v[j])) {
-          r[r.length] = ancestors[i]
+        if (stringStartsWith(ids[i], v[j])) {
+          r[r.length] = ids[i]
           break
         }
       }
     }
   } else {
     const v = getPrefixFromType(<string>filter.$value)
-    for (let i = 0; i < ancestors.length; i++) {
-      if (stringStartsWith(ancestors[i], v)) {
-        r[r.length] = ancestors[i]
+    for (let i = 0; i < ids.length; i++) {
+      if (stringStartsWith(ids[i], v)) {
+        r[r.length] = ids[i]
       }
     }
   }
   return r
 }
 
-function parseFindAncestors(
+function parseIds(
   filters: Filter[],
-  id: string
+  ids: string[]
 ): [Fork | string[], string | null] {
-  let ancestors = redis.zrange(id + '.ancestors')
   if (filters.length !== 0) {
     let typeFilter: Filter | undefined
     for (let i = 0; i < filters.length; i++) {
@@ -46,25 +45,25 @@ function parseFindAncestors(
       }
     }
     if (typeFilter) {
-      ancestors = parseTypeFilter(typeFilter, ancestors)
+      ids = parseTypeFilter(typeFilter, ids)
     }
     if (filters.length === 0) {
       // empty first arg to get unified response with redisSearch
-      table.insert(ancestors, 1, '')
-      return [ancestors, null]
+      table.insert(ids, 1, '')
+      return [ids, null]
     } else {
       filters[filters.length] = {
         $field: 'id',
-        $value: ancestors,
+        $value: ids,
         $operator: '='
       }
       return parseFilters(filters)
     }
   } else {
     // empty first arg to get unified response with redisSearc
-    table.insert(ancestors, 1, '')
-    return [ancestors, null]
+    table.insert(ids, 1, '')
+    return [ids, null]
   }
 }
 
-export default parseFindAncestors
+export default parseIds
