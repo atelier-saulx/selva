@@ -101,6 +101,7 @@ test.serial('find - references', async t => {
     name: true,
     value: true,
     $list: {
+      $sort: { $field: 'value', $order: 'desc' },
       $find: {
         $traverse: 'children',
         $filter: [
@@ -125,6 +126,7 @@ test.serial('find - references', async t => {
     name: true,
     value: true,
     $list: {
+      $sort: { $field: 'value', $order: 'desc' },
       $find: {
         $traverse: 'related',
         $filter: [
@@ -132,6 +134,16 @@ test.serial('find - references', async t => {
             $field: 'value',
             $operator: '<',
             $value: 20
+          },
+          {
+            $field: 'value',
+            $operator: '<',
+            $value: 'now'
+          },
+          {
+            $field: 'value',
+            $operator: '>',
+            $value: 2
           }
         ]
       }
