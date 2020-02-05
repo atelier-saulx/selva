@@ -26,7 +26,13 @@ test.before(async t => {
           ding: {
             type: 'object',
             properties: {
-              dong: { type: 'set', items: { type: 'string' } }
+              dong: { type: 'set', items: { type: 'string' } },
+              dang: {
+                type: 'object',
+                properties: {
+                  dung: { type: 'number' }
+                }
+              }
             }
           },
           dong: { type: 'json' },
@@ -159,6 +165,150 @@ test.serial('get - basic', async t => {
       auth: { role: { id: ['root'] } }
     },
     'get role nested'
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - $all simple', async t => {
+  const client = connect({ port: 6072 })
+
+  await client.set({
+    $id: 'maA',
+    title: {
+      en: 'nice!'
+    },
+    description: {
+      en: 'yesh'
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'maA',
+      $all: true
+    }),
+    {
+      id: 'maA',
+      type: 'match',
+      title: {
+        en: 'nice!'
+      },
+      description: {
+        en: 'yesh'
+      }
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - $all nested', async t => {
+  const client = connect({ port: 6072 })
+
+  await client.set({
+    $id: 'maA',
+    title: {
+      en: 'nice!'
+    },
+    description: {
+      en: 'yesh'
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: {
+        $all: true
+      },
+      description: {
+        $all: true
+      }
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'nice!',
+        de: '',
+        nl: ''
+      },
+      description: {
+        en: 'yesh',
+        de: '',
+        nl: ''
+      }
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - $all deeply nested', async t => {
+  const client = connect({ port: 6072 })
+
+  const entry = await client.set({
+    type: 'lekkerType',
+    title: {
+      en: 'nice!'
+    },
+    ding: {
+      dang: {
+        dung: 115
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: entry,
+      id: true,
+      title: {
+        en: true
+      },
+      ding: { $all: true }
+    }),
+    {
+      id: entry,
+      title: {
+        en: 'nice!'
+      },
+      ding: {
+        dang: {
+          dung: 115
+        },
+        dong: []
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: entry,
+      id: true,
+      title: {
+        en: true
+      },
+      ding: { dang: { $all: true } }
+    }),
+    {
+      id: entry,
+      title: {
+        en: 'nice!'
+      },
+      ding: {
+        dang: {
+          dung: 115
+        }
+      }
+    }
   )
 
   await client.delete('root')
