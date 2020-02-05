@@ -232,20 +232,6 @@ test.serial(
       parents: [team]
     })
 
-    // club -> team -> league -> season
-    // season -> team
-    // season -> match
-    // trying to inherit layout
-    console.log(
-      `ancestors of team`,
-      await client.redis.zrange(team + '.ancestors', 0, -1)
-    )
-
-    console.log(
-      `ancestors of match`,
-      await client.redis.zrange(match + '.ancestors', 0, -1)
-    )
-
     // check inheritance
     t.deepEqual(
       await client.get({
@@ -432,16 +418,6 @@ test.serial(
       value: 90
     })
 
-    console.log(
-      `ancestors of team`,
-      await client.redis.zrange(team + '.ancestors', 0, -1)
-    )
-
-    console.log(
-      `ancestors of match`,
-      await client.redis.zrange(match + '.ancestors', 0, -1)
-    )
-
     // check inheritance
     t.deepEqual(
       await client.get({
@@ -584,16 +560,6 @@ test.serial('more complex hierarchies', async t => {
     value: 90
   })
 
-  console.log(
-    `ancestors of team`,
-    await client.redis.zrange(team + '.ancestors', 0, -1)
-  )
-
-  console.log(
-    `ancestors of match`,
-    await client.redis.zrange(match + '.ancestors', 0, -1)
-  )
-
   // check ancestors
   // families
   t.deepEqualIgnoreOrder(
@@ -662,7 +628,6 @@ test.serial('more complex hierarchies', async t => {
   )
 
   // match
-  console.log(await client.redis.zrange(match + '.ancestors', 0, -1))
   t.deepEqualIgnoreOrder(
     await client.redis.zrange(match + '.ancestors', 0, -1),
     [
@@ -683,3 +648,92 @@ test.serial('more complex hierarchies', async t => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial(
+  'inheriting item while excluding league from match through setting match as child',
+  async t => {
+    const client = connect({ port: 8082 })
+
+    const match = await client.set({
+      type: 'match',
+      title: { en: 'match1' }
+    })
+
+    const team = await client.set({
+      type: 'team',
+      title: { en: 'team1' },
+      children: [match]
+    })
+
+    const club = await client.set({
+      type: 'club',
+      title: { en: 'club1' },
+      children: [team],
+      value: 22
+    })
+
+    const season = await client.set({
+      type: 'season',
+      title: { en: 'season1' },
+      children: [team],
+      value: 12
+    })
+
+    // club -> team -> league -> season
+    // season -> team
+    // season -> match
+    // trying to inherit layout
+    const league = await client.set({
+      type: 'league',
+      title: { en: 'league1' },
+      children: [season],
+      value: 90
+    })
+
+    // check inheritance
+    t.deepEqual(
+      await client.get({
+        $id: match,
+        id: true,
+        title: true,
+        thing: {
+          id: true,
+          $inherit: { $item: ['club', 'season'] }
+        }
+      }),
+      {
+        id: match,
+        title: { en: 'match1' },
+        thing: {
+          id: club
+        }
+      }
+    )
+
+    // check ancestors
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(league + '.ancestors', 0, -1),
+      ['root']
+    )
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(season + '.ancestors', 0, -1),
+      ['root', league]
+    )
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(club + '.ancestors', 0, -1),
+      ['root']
+    )
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(team + '.ancestors', 0, -1),
+      ['root', club, season, league]
+    )
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(match + '.ancestors', 0, -1),
+      [team, club, 'root']
+    )
+
+    // cleanup
+    await client.delete('root')
+    await client.destroy()
+  }
+)
