@@ -423,8 +423,7 @@ test('schemas - search indexes', async t => {
         ancestors: ['TAG'],
         value: ['NUMERIC', 'SORTABLE'],
         parents: ['TAG'],
-        children: ['TAG'],
-        id: ['TAG']
+        children: ['TAG']
       }
     },
     'Sort will be added even if type is allready defined'
@@ -454,7 +453,6 @@ test('schemas - search indexes', async t => {
         value: ['NUMERIC', 'SORTABLE'],
         parents: ['TAG'],
         children: ['TAG'],
-        id: ['TAG'],
         x: ['NUMERIC']
       }
     },
@@ -478,7 +476,6 @@ test('schemas - search indexes', async t => {
         value: ['NUMERIC', 'SORTABLE'],
         x: ['NUMERIC'],
         type: ['TAG'],
-        id: ['TAG'],
         parents: ['TAG'],
         flarp: ['TEXT'],
         children: ['TAG'],
@@ -519,8 +516,7 @@ test('schemas - search indexes', async t => {
         type: ['TAG'],
         value: ['NUMERIC', 'SORTABLE'],
         flarp: ['TEXT'],
-        children: ['TAG'],
-        id: ['TAG']
+        children: ['TAG']
       }
     },
     'Includes text-language'
@@ -539,11 +535,10 @@ test('schemas - search indexes', async t => {
     fields,
     [
       ['type', 'type', 'TAG', 'SEPARATOR', ','],
-      ['ancestors', 'type', 'TAG', 'SEPARATOR', ','],
       ['value', 'type', 'NUMERIC', 'SORTABLE'],
-      ['parents', 'type', 'TAG', 'SEPARATOR', ','],
+      ['ancestors', 'type', 'TAG', 'SEPARATOR', ','],
       ['children', 'type', 'TAG', 'SEPARATOR', ','],
-      ['id', 'type', 'TAG', 'SEPARATOR', ','],
+      ['parents', 'type', 'TAG', 'SEPARATOR', ','],
       ['x', 'type', 'NUMERIC'],
       ['flarp', 'type', 'TEXT', 'WEIGHT', '1'],
       ['title.nl', 'type', 'TEXT', 'WEIGHT', '1'],

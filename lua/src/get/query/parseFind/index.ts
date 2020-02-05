@@ -1,14 +1,11 @@
-import { Schema } from '~selva/schema/index'
-import parseFilters from './parseFilters'
-import { Fork } from './types'
-import { isArray } from '../../util'
+import parseFilters from '../parseFilters'
+import { Fork } from '../types'
+import { isArray } from '../../../util'
 import { Find, Filter } from '~selva/get/types'
+import * as logger from '../../../logger'
+import parseFindAncestors from './ancestors'
 
-function parseFind(
-  opts: Find,
-  id: string,
-  field?: string
-): [Fork, string | null] {
+function parseFind(opts: Find, id: string): [Fork | string[], string | null] {
   let { $traverse, $filter: filterRaw, $find } = opts
   if (!filterRaw) {
     filterRaw = opts.$filter = []
@@ -16,30 +13,29 @@ function parseFind(
   if (!isArray(filterRaw)) {
     filterRaw = opts.$filter = [filterRaw]
   }
-  const $filter: Filter[] = filterRaw
+  const filters: Filter[] = filterRaw
   if ($traverse) {
     if ($traverse === 'descendants') {
-      if ($filter) {
-        $filter[$filter.length] = {
+      if (filters) {
+        filters[filters.length] = {
           $field: 'ancestors',
           $value: id,
           $operator: '='
         }
-        return parseFilters($filter)
+        return parseFilters(filters)
+      } else {
+        // return all descendants
+        logger.info('return all desc')
       }
     } else if ($traverse === 'ancestors') {
-      if ($filter) {
-        // if id or type can do something smart - else nested query on the results
-      } else {
-        // just return the ancestors
-      }
+      return parseFindAncestors(filters, id)
     } else if ($traverse === 'children') {
-      // easier
+      // easier just make this use another set of functions
     } else if ($traverse === 'parents') {
       // easier
     }
     if ($find) {
-      return parseFind($find, id, field)
+      return parseFind($find, id)
     }
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']

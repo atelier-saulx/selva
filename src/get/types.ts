@@ -17,9 +17,8 @@ export type Filter = {
   $or?: Filter
 }
 
-// can also use find with just filters...
 export type Find = {
-  $traverse?: 'descendants' | 'ancestors' | 'children' | 'parents'
+  $traverse?: 'descendants' | 'ancestors' | string
   $filter?: Filter | Filter[]
   $find?: Find
 }

@@ -3,6 +3,10 @@ import { Filter } from '~selva/get/types'
 import { getSearchIndexes } from '../../schema/index'
 
 function addSearch(filter: Filter): [string[], null | string] {
+  if (filter.$field === 'id') {
+    return [['TAG'], null]
+  }
+
   const searchIndexes = getSearchIndexes()
   const search = searchIndexes.default && searchIndexes.default[filter.$field]
   if (search) {
