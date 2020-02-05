@@ -229,7 +229,7 @@ test.serial('get - queryParser', async t => {
     }
   })
 
-  console.log('Executing query', Date.now() - d, 'ms')
+  console.log('Executing query (1100 resuls)', Date.now() - d, 'ms')
 
   const matches = results.filter(v => v.type === 'match')
   const videos = results.filter(v => v.type === 'video')
