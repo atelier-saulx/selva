@@ -37,10 +37,12 @@ test.before(async t => {
         }
       },
       match: {
+        hierarchy: {
+          team: { excludeAncestryWith: ['league'] }
+        },
         prefix: 'ma',
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
-          // need to warn if you change this!!!
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC'] } }
         }
@@ -84,11 +86,10 @@ test.serial('find - ancestors', async t => {
 
   console.log('Executing query (1100 resuls)', Date.now() - d, 'ms')
 
-  //   const matches = results.filter(v => v.type === 'match')
-  //   const videos = results.filter(v => v.type === 'video')
-  //   const league = results.filter(v => v.type === 'league')
-
-  //   t.is(matches.length, 997, 'query result matches')
-  //   t.is(videos.length, 3, 'query result videos')
-  //   t.is(league.length, 1, 'query result league')
+  // const matches = results.filter(v => v.type === 'match')
+  // const videos = results.filter(v => v.type === 'video')
+  // const league = results.filter(v => v.type === 'league')
+  // t.is(matches.length, 997, 'query result matches')
+  // t.is(videos.length, 3, 'query result videos')
+  // t.is(league.length, 1, 'query result league')
 })
