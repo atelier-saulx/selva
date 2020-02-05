@@ -12,6 +12,8 @@ export default (
 ): void => {
   // SET fix
 
+  // FIXME: make this work
+
   // const arr = payload
   // if (!Array.isArray(arr)) {
   //   throw new Error(`Array is not an array ${JSON.stringify(arr)}`)
