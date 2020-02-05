@@ -162,7 +162,7 @@ const isSmallerThenAndSmallerThen = (
   return [false, null]
 }
 
-function reduceAnd(fork: Fork & { $and: (Fork | FilterAST)[] }): string | null {
+function reduceAnd(fork: WithRequired<Fork, '$and'>): string | null {
   const reduced: Record<string, FilterAST[]> = {}
   const forks: Fork[] = []
   for (let i = 0; i < fork.$and.length; i++) {

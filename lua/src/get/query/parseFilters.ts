@@ -47,7 +47,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
     $search: search
   }
   if (filterOpt.$or && filterOpt.$and) {
-    const fork: Fork & { $or: (Fork | FilterAST)[] } = { isFork: true, $or: [] }
+    const fork: WithRequired<Fork, '$or'> = { isFork: true, $or: [] }
     const [orFork, err] = convertFilter(filterOpt.$or)
     if (err) {
       return [{ isFork: true }, err]
@@ -71,7 +71,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
     if (err) {
       return [{ isFork: true }, err]
     }
-    const fork: Fork & { $or: (Fork | FilterAST)[] } = {
+    const fork: WithRequired<Fork, '$or'> = {
       isFork: true,
       $or: [filter]
     }
@@ -88,7 +88,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
     if (err) {
       return [{ isFork: true }, err]
     }
-    const fork: Fork & { $and: (Fork | FilterAST)[] } = {
+    const fork: WithRequired<Fork, '$and'> = {
       isFork: true,
       $and: [filter]
     }
@@ -107,7 +107,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
 }
 
 const parseFilters = ($filter: Filter[]): [Fork, string | null] => {
-  const fork: Fork & { $and: (Fork | FilterAST)[] } = { isFork: true, $and: [] }
+  const fork: WithRequired<Fork, '$and'> = { isFork: true, $and: [] }
   for (let i = 0; i < $filter.length; i++) {
     const [nestedFork, err] = convertFilter($filter[i])
     if (err) {
