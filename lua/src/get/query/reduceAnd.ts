@@ -1,5 +1,4 @@
 import { Fork, FilterAST, Value } from './types'
-import printAst from './printAst'
 import { isArray, indexOf } from '../../util'
 import isFork from './isFork'
 

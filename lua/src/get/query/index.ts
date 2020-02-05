@@ -1,10 +1,8 @@
 import * as logger from '../../logger'
 import { GetOptions } from '~selva/get/types'
-import { Schema } from '~selva/schema/index'
-// import createSearchString from './createSearchString'
-import { getSchema } from '../../schema/index'
+import createSearchString from './createSearchString'
 import parseFind from './parseFind'
-// import createSearchArgs from './createSearchArgs'
+import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
 
@@ -48,11 +46,9 @@ const parseQuery = (
     return [null, 'If using $list put $find in list']
   }
 
+  let resultFork: Fork | undefined
   if (getOptions.$list || getOptions.$find) {
     const [fork, err] = parseNested(getOptions, id, field)
-
-    printAst(fork)
-
     if (err) {
       return [null, err]
     }
@@ -61,39 +57,33 @@ const parseQuery = (
         resultGet[key] = getOptions[key]
       }
     }
+    resultFork = fork
   }
 
-  // logger.info('got result!', fork)
+  if (resultFork) {
+    const [q, err] = createSearchString(resultFork)
+    const qeury: string = q.substring(1, q.length - 1)
 
-  // const [qeury, err] = createSearchString(result.filters, schema)
+    printAst(resultFork, qeury)
 
-  // if (err) {
-  //   return [null, err]
-  // }
+    if (err) {
+      return [null, err]
+    }
 
-  // logger.info('got search string', qeury)
+    const args = createSearchArgs(getOptions, qeury)
 
-  // const args = createSearchArgs(getOptions, qeury)
+    const queryResult = redis.call('ft.search', 'default', ...args)
 
-  // logger.info(args)
-  // const queryResult = redis.call('ft.search', 'default', ...args)
-
-  // ftSearch(
-  //   'default',
-  //   ...createSearchArgs(getOptions, qeury)
-  // )
-
-  // logger.info(queryResult[0])
-  // const r = await Promise.all(
-  //   queryResult.slice(1).map((id: string) => {
-  //     const opts = Object.assign({}, getOptions, { $id: id })
-  //     return client.get(opts)
-  //   })
-  // )
-
+    logger.info(queryResult)
+    // const r = await Promise.all(
+    //   queryResult.slice(1).map((id: string) => {
+    //     const opts = Object.assign({}, getOptions, { $id: id })
+    //     return client.get(opts)
+    //   })
+    // )
+    // return [queryResult, null]
+  }
   return [[], null]
-
-  // return [queryResult, null]
 }
 
 const queryGet = (getOptions: GetOptions): any => {

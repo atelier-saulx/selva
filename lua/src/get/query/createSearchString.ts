@@ -1,113 +1,103 @@
-// import { Schema } from '~selva/schema/index'
-// import { isArray, joinString } from '../../util'
-// import { FilterAST } from './types'
-// import * as logger from '../../logger'
+import { isArray, joinAny, joinString } from '../../util'
+import { FilterAST, Fork, Value } from './types'
+import isFork from './isFork'
+import * as logger from '../../logger'
+import printAst from './printAst'
 
-// // do this last
-// const returnNumber = (filter, value: string): string => {
-//   if (filter.$operator === '>') {
-//     // depending on schema...
-//     return `(@${filter.$field}:[${value},inf])`
-//   } else if (filter.$operator === '..') {
-//     return `(@${filter.$field}:[${value[0]},${value[1]}])`
-//   } else if (filter.$operator === '!=') {
-//     return `(-(@${filter.$field}:[${value},${value}]))`
-//   } else if (filter.$operator === '=') {
-//     return `(@${filter.$field}:[${value},${value}])`
-//   }
-//   return ''
-// }
+const returnNumber = (filter, value: Value): string => {
+  if (filter.$operator === '>') {
+    return `(@${filter.$field}:[${tostring(value)},inf])`
+  } else if (filter.$operator === '..') {
+    return `(@${filter.$field}:[${tostring(value[0])},${tostring(value[1])}])`
+  } else if (filter.$operator === '!=') {
+    return `(-(@${filter.$field}:[${tostring(value)},${tostring(value)}]))`
+  } else if (filter.$operator === '=') {
+    return `(@${filter.$field}:[${tostring(value)},${tostring(value)}])`
+  }
+  logger.info('WRONG', filter)
+  return ''
+}
+// ADD TEXT AND GEO
+// SEARCH DB
+// LEVEN STEIN DISTANCE index language
+// SEARCH PREFIXES
+// also incolude language in searching REAL SEARCH
 
-// // ADD TEXT AND GEO
-// // SEARCH DB
-// // LEVEN STEIN DISTANCE index language
-// // SEARCH PREFIXES
-// // also incolude language in searching REAL SEARCH
+const addField = (filter: FilterAST): string => {
+  // depends on field type
+  const type = filter.$search && filter.$search[0]
+  const operator = filter.$operator
+  if (type === 'TAG') {
+    if (isArray(filter.$value)) {
+      filter.$value = `${joinAny(filter.$value, '|')}`
+    }
+    if (operator === '!=') {
+      return `(-(@${filter.$field}:{${filter.$value}}))`
+    } else if (operator === '=') {
+      return `(@${filter.$field}:{${filter.$value}})`
+    }
+  } else if (type === 'NUMERIC') {
+    if (isArray(filter.$value) && filter.$operator !== '..') {
+      let value = ''
+      for (let i = 0, len = filter.$value.length; i < len; i++) {
+        const v = returnNumber(filter, filter.$value[i])
+        value += value !== '' ? '|' + v : v
+      }
+      return `(${value})`
+    } else {
+      return returnNumber(filter, filter.$value)
+    }
+  } else if (type === 'TEXT') {
+    // equals will be a partial here
+    // DO THINGS
+    // INCLUDE LANGUAGE ETC
+  } else if (type === 'GEO') {
+    // later
+  }
+  return ''
+}
 
-// const addField = (filter: FilterAST, _schema: Schema): string => {
-//   // depends on field type
-//   const type = filter.$search && filter.$search[0]
-//   const operator = filter.$operator
-//   if (type === 'TAG') {
-//     if (isArray(filter.$value)) {
-//       filter.$value = `${joinString(<string[]>filter.$value, '|')}`
-//     }
-//     if (operator === '!=') {
-//       return `(-(@${filter.$field}:{${filter.$value}}))`
-//     } else if (operator === '=') {
-//       return `(@${filter.$field}:{${filter.$value}})`
-//     }
-//   } else if (type === 'NUMERIC') {
-//     if (isArray(filter.$value) && filter.$operator !== '..') {
-//       let value = ''
-//       for (let i = 0, len = filter.$value.length; i < len; i++) {
-//         const v = returnNumber(filter, tostring(filter.$value[i]))
-//         value += value ? '|' + v : v
-//       }
-//       return `(${value})`
-//     } else {
-//       return returnNumber(filter, tostring(filter.$value))
-//     }
-//   } else if (type === 'TEXT') {
-//     // equals will be a partial here
-//     // DO THINGS
-//     // INCLUDE LANGUAGE ETC
-//   } else if (type === 'GEO') {
-//     // later
-//   }
-//   return ''
-// }
+// for of
 
-// // for of
+// type Filters = Filter[]
 
-// // type Filters = Filter[]
+function createSearchString(filters: Fork): [string, string | null] {
+  const searchString: string[] = []
+  if (filters.$and) {
+    for (let filter of filters.$and) {
+      if (!isFork(filter)) {
+        searchString[searchString.length] = addField(filter)
+      } else {
+        const [nestedSearch, err] = createSearchString(filter)
+        if (err) {
+          return ['', err]
+        }
+        searchString[searchString.length] = nestedSearch
+      }
+    }
+    return [`(${joinString(searchString, ' ')})`, null]
+  } else if (filters.$or) {
+    for (let filter of filters.$or) {
+      if (isFork(filter) && filter.$or) {
+        const [nestedSearch, err] = createSearchString(filter)
+        if (err) {
+          return ['', err]
+        }
+        searchString[searchString.length] = nestedSearch
+      } else if (!isFork(filter)) {
+        searchString[searchString.length] = addField(filter)
+      } else {
+        const [nestedSearch, err] = createSearchString(filter)
+        if (err) {
+          return ['', err]
+        }
+        logger.info(nestedSearch)
+        searchString[searchString.length] = nestedSearch
+      }
+    }
+    return [`(${joinString(searchString, '|')})`, null]
+  }
+  return ['', 'No valid cases for createSearchString']
+}
 
-// function createSearchString(
-//   filters: FilterAST,
-//   schema: Schema
-// ): [string, string | null] {
-//   const searchString: string[] = []
-
-//   if (filters.$and && filters.$or) {
-//     return ['', 'cannot have $or and $and on one intermediate result level']
-//   }
-
-//   if (filters.$and) {
-//     for (let filter of filters.$and) {
-//       if (!filter.$or) {
-//         searchString[searchString.length] = addField(filter, schema)
-//       } else {
-//         const [nestedSearch, err] = createSearchString(filter, schema)
-//         if (err) {
-//           return ['', err]
-//         }
-//         searchString[searchString.length] = nestedSearch
-//       }
-//     }
-//     return [`(${joinString(searchString, ' ')})`, null]
-//   } else if (filters.$or) {
-//     for (let filter of filters.$or) {
-//       if (!filter.$and) {
-//         if (filter.$or) {
-//           const [nestedSearch, err] = createSearchString(filter, schema)
-//           if (err) {
-//             return ['', err]
-//           }
-//           searchString[searchString.length] = nestedSearch
-//         } else {
-//           searchString[searchString.length] = addField(filter, schema)
-//         }
-//       } else {
-//         const [nestedSearch, err] = createSearchString(filter, schema)
-//         if (err) {
-//           return ['', err]
-//         }
-//         searchString[searchString.length] = nestedSearch
-//       }
-//     }
-//     return [`(${joinString(searchString, '|')})`, null]
-//   }
-//   return ['', 'No valid cases for createSearchString']
-// }
-
-// export default createSearchString
+export default createSearchString
