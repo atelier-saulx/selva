@@ -41,6 +41,7 @@ function includeAncestors(
 ): string[] {
   for (let i = 0; i < ancestors.length; i += 2) {
     for (const includedTypeName of includedTypes) {
+      // TODO: we can compare just the prefixes here
       if (getTypeFromId(ancestors[i]) === includedTypeName) {
         return ancestors
       }
@@ -102,6 +103,10 @@ function ancestryFromHierarchy(id: Id, parent: Id): string[] {
     }
   }
 
+  if (type(foundRule) === 'boolean' && foundRule === false) {
+    return []
+  }
+
   let finalAncestors: string[] = []
   const parentsOfParent = redis.smembers(parent + '.parents')
   for (const parentOfParent of parentsOfParent) {
@@ -112,9 +117,7 @@ function ancestryFromHierarchy(id: Id, parent: Id): string[] {
     ancestors[ancestors.length] = parentOfParent
     ancestors[ancestors.length] = tostring(depth)
 
-    if (foundRule === false) {
-      ancestors = []
-    } else if (isIncludeAncestryRule(foundRule)) {
+    if (isIncludeAncestryRule(foundRule)) {
       ancestors = includeAncestors(foundRule.includeAncestryWith, ancestors)
     } else if (isExcludeAncestryRule(foundRule)) {
       ancestors = excludeAncestors(foundRule.excludeAncestryWith, ancestors)
@@ -173,6 +176,7 @@ function setDepth(id: Id, depth: number): boolean {
   return true
 }
 
+// TODO: maybe we can do this as a part of the main recursion
 // we need to treat depth as the min depth of all ancestors + 1
 function updateDepths(id: Id): void {
   // update self depth
@@ -236,6 +240,7 @@ function reCalculateAncestorsFor(ids: Id[]): void {
     }
 
     if (!skipAncestorUpdate) {
+      // TODO: compare ancestor string maybe for extra fast?
       const currentAncestors = redis.zrange(id + '.ancestors')
       redis.del(id + '.ancestors')
 
@@ -257,13 +262,6 @@ function reCalculateAncestorsFor(ids: Id[]): void {
         }
 
         redis.zAddMultipleNew(id + '.ancestors', ...reversed)
-
-        // set parent itself into the ancestry
-        // const parentDepth = getDepth(parent)
-        // if (parentDepth) {
-        //   // if not root
-        //   redis.zaddNew(id + '.ancestors', parentDepth, parent)
-        // }
       }
 
       const ancestors = redis.zrange(id + '.ancestors')

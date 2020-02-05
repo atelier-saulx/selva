@@ -50,6 +50,9 @@ test.before(async t => {
         }
       },
       team: {
+        hierarchy: {
+          club: { excludeAncestryWith: ['video'] }
+        },
         prefix: 'te',
         fields: {
           value: { type: 'number' },
@@ -90,15 +93,94 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         hierarchy: {
-          team: { excludeAncestryWith: ['league'] },
+          team: {
+            excludeAncestryWith: ['league']
+          },
           video: false,
+          club: { excludeAncestryWith: ['video'] },
           person: { includeAncestryWith: ['family'] },
-          $default: { excludeAncestryWith: ['vehicle'] }
+          $default: { excludeAncestryWith: ['vehicle', 'video'] }
         },
         fields: {
           title: { type: 'text' },
           value: { type: 'number' },
           description: { type: 'text' }
+        }
+      },
+      person: {
+        prefix: 'pe',
+        fields: {
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      },
+      vehicle: {
+        prefix: 've',
+        fields: {
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      },
+      video: {
+        prefix: 'vi',
+        fields: {
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
+        }
+      },
+      family: {
+        prefix: 'fa',
+        fields: {
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json'
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' }
+            }
+          }
         }
       }
     }
@@ -112,6 +194,201 @@ test.after(async _t => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+})
+
+test.serial(
+  'inheriting while excluding league from match through setting match as parent',
+  async t => {
+    const client = connect({ port: 8082 })
+
+    const league = await client.set({
+      type: 'league',
+      title: { en: 'league1' },
+      value: 90
+    })
+
+    const season = await client.set({
+      type: 'season',
+      title: { en: 'season1' },
+      parents: [league],
+      value: 12
+    })
+
+    const club = await client.set({
+      type: 'club',
+      title: { en: 'club1' },
+      value: 22
+    })
+
+    const team = await client.set({
+      type: 'team',
+      title: { en: 'team1' },
+      parents: [club, season]
+    })
+
+    const match = await client.set({
+      type: 'match',
+      title: { en: 'match1' },
+      parents: [team]
+    })
+
+    // club -> team -> league -> season
+    // season -> team
+    // season -> match
+    // trying to inherit layout
+    console.log(
+      `ancestors of team`,
+      await client.redis.zrange(team + '.ancestors', 0, -1)
+    )
+
+    console.log(
+      `ancestors of match`,
+      await client.redis.zrange(match + '.ancestors', 0, -1)
+    )
+
+    // check inheritance
+    t.deepEqual(
+      await client.get({
+        $id: match,
+        id: true,
+        title: true,
+        value: { $inherit: true }
+      }),
+      {
+        id: match,
+        title: { en: 'match1' },
+        value: 22
+      }
+    )
+
+    // check ancestors
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(league + '.ancestors', 0, -1),
+      ['root']
+    )
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(season + '.ancestors', 0, -1),
+      ['root', league]
+    )
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(club + '.ancestors', 0, -1),
+      ['root']
+    )
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(team + '.ancestors', 0, -1),
+      ['root', club, season, league]
+    )
+    t.deepEqualIgnoreOrder(
+      await client.redis.zrange(match + '.ancestors', 0, -1),
+      [team, club, 'root']
+    )
+
+    // cleanup
+    await client.delete('root')
+    await client.destroy()
+  }
+)
+
+test.serial('ancestry has only one season in real world setting', async t => {
+  const client = connect({ port: 8082 })
+
+  const match1 = await client.set({
+    type: 'match',
+    title: { en: 'match1' }
+  })
+
+  const match2 = await client.set({
+    type: 'match',
+    title: { en: 'match2' }
+  })
+
+  const match3 = await client.set({
+    type: 'match',
+    title: { en: 'match3' }
+  })
+
+  const match4 = await client.set({
+    type: 'match',
+    title: { en: 'match4' }
+  })
+
+  const team1 = await client.set({
+    type: 'team',
+    title: { en: 'team1' },
+    children: [match1, match2, match3, match4]
+  })
+
+  const team2 = await client.set({
+    type: 'team',
+    title: { en: 'team2' },
+    children: [match1, match2, match3, match4]
+  })
+
+  const season1 = await client.set({
+    type: 'season',
+    title: { en: 'season1' },
+    children: [team1, team2, match1],
+    value: 12
+  })
+
+  const season2 = await client.set({
+    type: 'season',
+    title: { en: 'season1' },
+    children: [team1, team2, match2],
+    value: 12
+  })
+
+  const season3 = await client.set({
+    type: 'season',
+    title: { en: 'season3' },
+    children: [team1, team2, match3],
+    value: 12
+  })
+
+  const season4 = await client.set({
+    type: 'season',
+    title: { en: 'season4' },
+    children: [team1, team2, match4],
+    value: 12
+  })
+
+  const league1 = await client.set({
+    type: 'league',
+    title: { en: 'league1' },
+    children: [season1, season2],
+    value: 90
+  })
+
+  const league2 = await client.set({
+    type: 'league',
+    title: { en: 'league1' },
+    children: [season3, season4],
+    value: 90
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match1 + '.ancestors', 0, -1),
+    ['root', league1, season1, team1, team2]
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match2 + '.ancestors', 0, -1),
+    ['root', league1, season2, team1, team2]
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match3 + '.ancestors', 0, -1),
+    ['root', league2, season3, team1, team2]
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match4 + '.ancestors', 0, -1),
+    ['root', league2, season4, team1, team2]
+  )
+
+  // cleanup
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial(
@@ -208,200 +485,201 @@ test.serial(
   }
 )
 
-test.serial(
-  'inheriting while excluding league from match through setting match as parent',
-  async t => {
-    const client = connect({ port: 8082 })
+test.serial('more complex hierarchies', async t => {
+  const client = connect({ port: 8082 })
 
-    const league = await client.set({
-      type: 'league',
-      title: { en: 'league1' },
-      value: 90
-    })
+  const match = await client.set({
+    type: 'match',
+    title: { en: 'match1' }
+  })
 
-    const season = await client.set({
-      type: 'season',
-      title: { en: 'season1' },
-      parents: [league],
-      value: 12
-    })
+  const porche = await client.set({
+    type: 'vehicle',
+    title: { en: 'extra nice porche' }
+  })
 
-    const club = await client.set({
-      type: 'club',
-      title: { en: 'club1' },
-      value: 22
-    })
+  const coownedFerrari = await client.set({
+    type: 'vehicle',
+    title: { en: 'vroomvroom' }
+  })
 
-    const team = await client.set({
-      type: 'team',
-      title: { en: 'team1' },
-      parents: [club, season]
-    })
+  const player1 = await client.set({
+    type: 'person',
+    title: { en: 'player1' },
+    children: [match, porche]
+  })
 
-    const match = await client.set({
-      type: 'match',
-      title: { en: 'match1' },
-      parents: [team]
-    })
+  const player2 = await client.set({
+    type: 'person',
+    title: { en: 'player2' },
+    children: [match, coownedFerrari]
+  })
 
-    // club -> team -> league -> season
-    // season -> team
-    // season -> match
-    // trying to inherit layout
-    console.log(
-      `ancestors of team`,
-      await client.redis.zrange(team + '.ancestors', 0, -1)
-    )
+  const player = await client.set({
+    type: 'person',
+    title: { en: 'team2 player' },
+    children: [match]
+  })
 
-    console.log(
-      `ancestors of match`,
-      await client.redis.zrange(match + '.ancestors', 0, -1)
-    )
+  const player3 = await client.set({
+    type: 'person',
+    title: { en: 'player3' },
+    children: [match, coownedFerrari]
+  })
 
-    // check inheritance
-    t.deepEqual(
-      await client.get({
-        $id: match,
-        id: true,
-        title: true,
-        value: { $inherit: true }
-      }),
-      {
-        id: match,
-        title: { en: 'match1' },
-        value: 22
-      }
-    )
+  const team = await client.set({
+    type: 'team',
+    title: { en: 'team1' },
+    children: [match]
+  })
 
-    // check ancestors
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(league + '.ancestors', 0, -1),
-      ['root']
-    )
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(season + '.ancestors', 0, -1),
-      ['root', league]
-    )
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(club + '.ancestors', 0, -1),
-      ['root']
-    )
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(team + '.ancestors', 0, -1),
-      ['root', club, season, league]
-    )
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(match + '.ancestors', 0, -1),
-      [team, club, 'root']
-    )
+  const team2 = await client.set({
+    type: 'team',
+    title: { en: 'team2' },
+    children: [player]
+  })
 
-    // cleanup
-    // await client.delete('root')
-    await client.destroy()
-  }
-)
+  const club = await client.set({
+    type: 'club',
+    title: { en: 'club1' },
+    children: [team],
+    value: 22
+  })
 
-test.serial(
-  'ancestry has only one team when match in season and league',
-  async t => {
-    const client = connect({ port: 8082 })
+  const weirdCommercial = await client.set({
+    type: 'video',
+    title: { en: 'random stuff in video' },
+    children: [player2, player3, match, club]
+  })
 
-    const match1 = await client.set({
-      type: 'match',
-      title: { en: 'match1' }
-    })
+  const teamCommercial = await client.set({
+    type: 'video',
+    title: { en: 'random stuff in video' },
+    children: [match]
+  })
 
-    const match2 = await client.set({
-      type: 'match',
-      title: { en: 'match2' }
-    })
+  const family1 = await client.set({
+    type: 'family',
+    title: { en: 'family1' },
+    children: [player1, player2, porche, coownedFerrari]
+  })
 
-    const match3 = await client.set({
-      type: 'match',
-      title: { en: 'match3' }
-    })
+  const family2 = await client.set({
+    type: 'family',
+    title: { en: 'family2' },
+    children: [player, player3] // ferrari not family car
+  })
 
-    const match4 = await client.set({
-      type: 'match',
-      title: { en: 'match4' }
-    })
+  const season = await client.set({
+    type: 'season',
+    title: { en: 'season1' },
+    children: [team],
+    value: 12
+  })
 
-    const team1 = await client.set({
-      type: 'team',
-      title: { en: 'team1' },
-      children: [match1, match2, match3, match4]
-    })
+  const league = await client.set({
+    type: 'league',
+    title: { en: 'league1' },
+    children: [season],
+    value: 90
+  })
 
-    const team2 = await client.set({
-      type: 'team',
-      title: { en: 'team2' },
-      children: [match1, match2, match3, match4]
-    })
+  console.log(
+    `ancestors of team`,
+    await client.redis.zrange(team + '.ancestors', 0, -1)
+  )
 
-    const season1 = await client.set({
-      type: 'season',
-      title: { en: 'season1' },
-      children: [team1, team2, match1],
-      value: 12
-    })
+  console.log(
+    `ancestors of match`,
+    await client.redis.zrange(match + '.ancestors', 0, -1)
+  )
 
-    const season2 = await client.set({
-      type: 'season',
-      title: { en: 'season1' },
-      children: [team1, team2, match2],
-      value: 12
-    })
+  // check ancestors
+  // families
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(family1 + '.ancestors', 0, -1),
+    ['root']
+  )
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(family2 + '.ancestors', 0, -1),
+    ['root']
+  )
 
-    const season3 = await client.set({
-      type: 'season',
-      title: { en: 'season3' },
-      children: [team1, team2, match3],
-      value: 12
-    })
+  // players
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(player1 + '.ancestors', 0, -1),
+    ['root', family1]
+  )
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(player2 + '.ancestors', 0, -1),
+    ['root', family1, weirdCommercial]
+  )
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(player3 + '.ancestors', 0, -1),
+    ['root', family2, weirdCommercial]
+  )
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(player + '.ancestors', 0, -1),
+    ['root', family2, team2]
+  )
 
-    const season4 = await client.set({
-      type: 'season',
-      title: { en: 'season4' },
-      children: [team1, team2, match4],
-      value: 12
-    })
+  // cars
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(porche + '.ancestors', 0, -1),
+    ['root', family1, player1]
+  )
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(coownedFerrari + '.ancestors', 0, -1),
+    ['root', family1, family2, player2, player3, weirdCommercial]
+  )
 
-    const league1 = await client.set({
-      type: 'league',
-      title: { en: 'league1' },
-      children: [season1, season2],
-      value: 90
-    })
+  // league
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(league + '.ancestors', 0, -1),
+    ['root']
+  )
 
-    const league2 = await client.set({
-      type: 'league',
-      title: { en: 'league1' },
-      children: [season3, season4],
-      value: 90
-    })
+  // season
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(season + '.ancestors', 0, -1),
+    ['root', league]
+  )
 
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(match1 + '.ancestors', 0, -1),
-      ['root', league1, season1, team1, team2]
-    )
+  // club
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(club + '.ancestors', 0, -1),
+    ['root', weirdCommercial]
+  )
 
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(match2 + '.ancestors', 0, -1),
-      ['root', league1, season2, team1, team2]
-    )
+  // teams
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(team + '.ancestors', 0, -1),
+    ['root', season, league, club]
+  )
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(team2 + '.ancestors', 0, -1),
+    ['root']
+  )
 
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(match3 + '.ancestors', 0, -1),
-      ['root', league2, season3, team1, team2]
-    )
+  // match
+  console.log(await client.redis.zrange(match + '.ancestors', 0, -1))
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match + '.ancestors', 0, -1),
+    [
+      'root',
+      club,
+      team,
+      player,
+      player1,
+      player2,
+      family1,
+      family2,
+      player3,
+      weirdCommercial
+    ]
+  )
 
-    t.deepEqualIgnoreOrder(
-      await client.redis.zrange(match4 + '.ancestors', 0, -1),
-      ['root', league2, season4, team1, team2]
-    )
-
-    // cleanup
-    await client.delete('root')
-    await client.destroy()
-  }
-)
+  // cleanup
+  await client.delete('root')
+  await client.destroy()
+})
