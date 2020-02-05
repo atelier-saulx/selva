@@ -1,7 +1,7 @@
 import * as logger from '../../logger'
 import { GetOptions } from '~selva/get/types'
 import createSearchString from './createSearchString'
-import parseFind from './parseFind'
+import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
@@ -13,15 +13,16 @@ const parseNested = (
   id: string,
   field?: string
 ): [Fork | string[], string | null] => {
+  // field is different will create its own find
   if (opts.$list) {
     if (opts.$list.$find) {
-      return parseFind(opts.$list.$find, id, field)
+      return parseFind(opts.$list.$find, id)
     } else if (opts.$list.$sort) {
       return [{ isFork: true }, 'Sort without find not implemented yet!']
     }
     // same for range
   } else if (opts.$find) {
-    return parseFind(opts.$find, id, field)
+    return parseFind(opts.$find, id)
   }
   return [{ isFork: true }, 'Not a valid query']
 }
