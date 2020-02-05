@@ -252,6 +252,51 @@ test.serial('get - $all root level whitelist + $all', async t => {
   client.destroy()
 })
 
+test.serial('get - $all root level whitelist + blacklists + $all', async t => {
+  const client = connect({ port: 6072 })
+
+  await client.set({
+    $id: 'clA',
+    title: {
+      en: 'nice!'
+    },
+    description: {
+      en: 'yesh'
+    },
+    image: {
+      thumb: 'thumb',
+      poster: 'poster'
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'clA',
+      image: {
+        $all: true,
+        thumb: true,
+        poster: false
+      },
+      description: false,
+      $all: true
+    }),
+    {
+      id: 'clA',
+      type: 'club',
+      title: {
+        en: 'nice!'
+      },
+      image: {
+        thumb: 'thumb'
+      }
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
 test.serial('get - $all nested', async t => {
   const client = connect({ port: 6072 })
 

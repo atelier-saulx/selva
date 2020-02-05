@@ -25,7 +25,10 @@ export default function makeNewGetOptions(
 
   if (path.length === 0) {
     for (const field in typeSchema.fields) {
-      if (!newOpts[field] && typeSchema.fields[field].type !== 'references') {
+      if (
+        newOpts[field] === undefined &&
+        typeSchema.fields[field].type !== 'references'
+      ) {
         newOpts[field] = true
       }
     }
@@ -53,15 +56,21 @@ export default function makeNewGetOptions(
 
   if (prop.type === 'text' && schema.languages) {
     for (const lang of schema.languages) {
-      newOpts[lang] = true
+      if (newOpts[lang] === undefined) {
+        newOpts[lang] = true
+      }
     }
   } else if (prop.type === 'object') {
     for (const property in prop.properties) {
-      newOpts[property] = true
+      if (newOpts[property] === undefined) {
+        newOpts[property] = true
+      }
     }
   } else if (prop.type === 'json' && prop.properties) {
     for (const property in prop.properties) {
-      newOpts[property] = true
+      if (newOpts[property] === undefined) {
+        newOpts[property] = true
+      }
     }
   }
 

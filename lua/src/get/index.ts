@@ -68,6 +68,8 @@ function getField(
           if (!getByType(result, schema.types, id, f, language, version)) {
             isComplete = false
           }
+        } else if (props[key] === false) {
+          // skip
         } else {
           if (getField(props[key], schema, result, id, f, language, version)) {
             isComplete = false
@@ -145,7 +147,6 @@ function getField(
 
 export default function get(opts: GetOptions): GetResult {
   const schema = getSchema()
-  const types: Record<string, TypeSchema> = schema.types
   const result: GetResult = {}
 
   // logger.info(`GET ${cjson.encode(opts)}`)
