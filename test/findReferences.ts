@@ -2,7 +2,7 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
-import { wait, dumpDb } from './assertions'
+import { wait } from './assertions'
 
 let srv
 test.before(async t => {
@@ -177,23 +177,31 @@ test.serial('find - references', async t => {
   const relatedMatchesLeagues = await client.query({
     $id: matches[0].id,
     name: true,
-    value: true,
     $list: {
       $find: {
         $traverse: 'related',
         $find: {
           $traverse: 'ancestors',
-          $filter: {
-            $field: 'type',
-            $operator: '=',
-            $value: 'league'
-          }
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league'
+            },
+            {
+              $field: 'value',
+              $operator: '<',
+              $value: 3
+            }
+          ]
         }
       }
     }
   })
 
-  console.log(relatedMatchesLeagues)
-
-  // now nested
+  t.deepEqualIgnoreOrder(
+    relatedMatchesLeagues.map(v => v.name),
+    ['league3', 'league2', 'league1', 'league0'],
+    'Nested query'
+  )
 })

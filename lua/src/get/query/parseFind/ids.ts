@@ -1,9 +1,9 @@
-import * as redis from '../../../redis'
 import { getPrefixFromType } from '../../../typeIdMapping'
 import { isArray, stringStartsWith } from '../../../util'
 import { Filter } from '~selva/get/types'
 import { Fork } from '../types'
 import parseFilters from '../parseFilters'
+import * as logger from '../../../logger'
 
 const parseTypeFilter = (filter: Filter, ids: string[]): string[] => {
   const r: string[] = []
@@ -14,21 +14,17 @@ const parseTypeFilter = (filter: Filter, ids: string[]): string[] => {
         if (!v[j]) {
           v[j] = getPrefixFromType(<string>filter.$value[j])
         }
-        if (v[j]) {
-          if (stringStartsWith(ids[i], v[j])) {
-            r[r.length] = ids[i]
-            break
-          }
+        if (stringStartsWith(ids[i], v[j])) {
+          r[r.length] = ids[i]
+          break
         }
       }
     }
   } else {
     const v = getPrefixFromType(<string>filter.$value)
     for (let i = 0; i < ids.length; i++) {
-      if (v) {
-        if (stringStartsWith(ids[i], v)) {
-          r[r.length] = ids[i]
-        }
+      if (stringStartsWith(ids[i], v)) {
+        r[r.length] = ids[i]
       }
     }
   }
@@ -45,7 +41,13 @@ function parseIds(
     for (let i = 0; i < filters.length; i++) {
       if (filters[i].$field === 'type') {
         typeFilter = filters[i]
-        table.remove(filters, i + 1)
+        const oldFilters = filters
+        filters = []
+        for (let j = 0; j < oldFilters.length; j++) {
+          if (j !== i) {
+            filters[filters.length] = oldFilters[j]
+          }
+        }
         break
       }
     }

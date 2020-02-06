@@ -13,11 +13,7 @@ function addSearch(filter: Filter): [string[], null | string] {
     const operator = filter.$operator
     if (
       search[0] !== 'NUMERIC' &&
-      (operator === '>' ||
-        operator === '<' ||
-        operator === '<=' ||
-        operator === '..' ||
-        operator === '>=')
+      (operator === '>' || operator === '<' || operator === '..')
     ) {
       return [
         [],

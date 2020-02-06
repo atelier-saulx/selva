@@ -1,10 +1,13 @@
 import { isArray, joinAny, joinString } from '../../util'
 import { FilterAST, Fork, Value } from './types'
 import { isFork } from './util'
+import * as logger from '../../logger'
 
 const returnNumber = (filter, value: Value): string => {
   if (filter.$operator === '>') {
     return `(@${filter.$field}:[${tostring(value)},inf])`
+  } else if (filter.$operator === '<') {
+    return `(@${filter.$field}:[-inf,${tostring(value)}])`
   } else if (filter.$operator === '..') {
     return `(@${filter.$field}:[${tostring(value[0])},${tostring(value[1])}])`
   } else if (filter.$operator === '!=') {
