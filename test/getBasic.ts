@@ -18,6 +18,17 @@ test.before(async t => {
   const client = connect({ port: 6072 })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: {
+        value: { type: 'number' },
+        nested: {
+          type: 'object',
+          properties: {
+            fun: { type: 'string' }
+          }
+        }
+      }
+    },
     types: {
       lekkerType: {
         prefix: 'vi',
@@ -111,6 +122,54 @@ test.after(async _t => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+})
+
+test.serial('get - root', async t => {
+  const client = connect({ port: 6072 })
+
+  const match = await client.set({
+    $id: 'maTest'
+  })
+
+  await client.set({
+    $id: 'root',
+    value: 2555
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      id: true,
+      value: true,
+      children: true
+    }),
+    {
+      id: 'root',
+      value: 2555,
+      children: [match]
+    }
+  )
+
+  await client.set({
+    $id: 'root',
+    nested: { fun: 'yes fun' }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      id: true,
+      nested: { $all: true }
+    }),
+    {
+      id: 'root',
+      nested: { fun: 'yes fun' }
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
 })
 
 test.serial('get - basic', async t => {

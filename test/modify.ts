@@ -23,6 +23,9 @@ test.before(async t => {
 
   await client.updateSchema({
     languages: ['en', 'nl', 'de'],
+    rootType: {
+      fields: { value: { type: 'number' } }
+    },
     types: {
       match: {
         prefix: 'ma',
@@ -85,6 +88,30 @@ test.after(async _t => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+})
+
+test.serial('root', async t => {
+  const client = connect({
+    port: 6061
+  })
+
+  const match = await client.set({
+    type: 'match'
+  })
+
+  const root = await client.set({
+    $id: 'root',
+    value: 9001
+  })
+
+  t.deepEqual(root, 'root')
+  t.deepEqual(await client.redis.hget('root', 'value'), '9001')
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.delete('root')
+  t.deepEqual(await dumpDb(client), [])
+
+  await client.destroy()
 })
 
 test.serial('basic', async t => {

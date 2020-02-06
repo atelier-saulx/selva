@@ -19,7 +19,8 @@ export default function makeNewGetOptions(
   delete newOpts.$all
 
   const typeName = getTypeFromId(id)
-  const typeSchema = schema.types[typeName]
+  const typeSchema =
+    typeName === 'root' ? schema.rootType : schema.types[typeName]
 
   const path: string[] = splitString(field, '.')
 

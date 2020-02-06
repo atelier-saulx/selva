@@ -2,7 +2,7 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
-import { FieldType, Fields, Schema } from '../src/schema'
+import { FieldType, Fields, Schema, SchemaOptions } from '../src/schema'
 import { wait } from './assertions'
 // id map
 // fields
@@ -34,7 +34,10 @@ import { wait } from './assertions'
 // maybe add this somewhere
 // same for image, video etc
 
-const mangleResults = (correctSchema: Schema, schemaResult: Schema) => {
+const mangleResults = (
+  correctSchema: Schema | SchemaOptions,
+  schemaResult: Schema
+) => {
   if (!correctSchema.sha) {
     delete schemaResult.sha
   }
@@ -48,9 +51,7 @@ const mangleResults = (correctSchema: Schema, schemaResult: Schema) => {
   delete schemaResult.prefixToTypeMapping
 }
 
-test.skip('schemas - basic', async t => {
-  let current = { port: 6066 }
-
+test.serial.only('schemas - basic', async t => {
   const server = await start({
     port: 6066,
     developmentLogging: true,
@@ -90,8 +91,13 @@ test.skip('schemas - basic', async t => {
     }
   }
 
-  const schema: Schema = {
+  const schema: SchemaOptions = {
     languages: ['nl', 'en'],
+    rootType: {
+      fields: {
+        value: { type: 'number' }
+      }
+    },
     types: {
       league: {
         fields: {
@@ -234,7 +240,6 @@ test.skip('schemas - basic', async t => {
 
   const newResult = (await client.getSchema()).schema
   mangleResults(schema, newResult)
-  console.log(`newResult`, newResult)
   t.deepEqual(newResult, schema, 'correct schema after setting the same')
 
   // drop search index in this case (NOT SUPPORTED YET!)
@@ -386,12 +391,17 @@ test.skip('schemas - basic', async t => {
     flapperdrol: { smurky: true }
   })
 
+  await client.set({
+    $id: 'root',
+    value: 9001
+  })
+
   // add some tests for it
 
   server.destroy()
 })
 
-test('schemas - search indexes', async t => {
+test.serial('schemas - search indexes', async t => {
   const server = await start({
     port: 6091,
     developmentLogging: true,

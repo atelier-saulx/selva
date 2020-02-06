@@ -99,6 +99,7 @@ export type Schema = {
   sha?: string
   languages?: string[]
   types: Types
+  rootType: Pick<TypeSchema, 'fields'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }
@@ -107,6 +108,7 @@ export type SchemaOptions = {
   sha?: string
   languages?: string[]
   types?: Types
+  rootType?: Pick<TypeSchema, 'fields'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }
@@ -134,6 +136,18 @@ export const defaultFields: Record<string, FieldSchema> = {
     search: { index: 'default', type: ['TAG'] }
   },
   descendants: {
+    type: 'references'
+  }
+}
+
+export const rootDefaultFields: Record<string, FieldSchema> = {
+  id: {
+    type: 'id'
+  },
+  type: {
+    type: 'type'
+  },
+  children: {
     type: 'references'
   }
 }

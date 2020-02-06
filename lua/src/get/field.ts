@@ -1,26 +1,26 @@
 import { GetResult } from '~selva/get/types'
 import { Id } from '~selva/schema/index'
 import getByType from './getByType'
-import { TypeSchema } from '../../../src/schema/index'
+import { Schema } from '../../../src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { ensureArray } from 'lua/src/util'
 
 function resolveVariable(
   id: Id,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   variable: string,
   language?: string,
   version?: string
 ): string {
   const intermediateResult: object = {}
-  getByType(intermediateResult, schemas, id, variable, language, version)
+  getByType(intermediateResult, schema, id, variable, language, version)
   return getNestedField(intermediateResult, variable)
 }
 
 function resolveVariables(
   id: Id,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   fieldDefinition: string,
   language?: string,
   version?: string
@@ -35,7 +35,7 @@ function resolveVariables(
     } else if (fieldDefinition[i] === '{' && inVariableDef) {
       // skip
     } else if (inVariableDef && fieldDefinition[i] === '}') {
-      str += resolveVariable(id, schemas, variable, language, version)
+      str += resolveVariable(id, schema, variable, language, version)
       variable = ''
       inVariableDef = false
     } else if (inVariableDef) {
@@ -50,14 +50,14 @@ function resolveVariables(
 
 export function resolveAll(
   id: Id,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   fieldAry: string[],
   language?: string,
   version?: string
 ): string[] {
   const result: string[] = []
   for (let i = 0; i < fieldAry.length; i++) {
-    result[i] = resolveVariables(id, schemas, fieldAry[i], language, version)
+    result[i] = resolveVariables(id, schema, fieldAry[i], language, version)
   }
 
   return result
@@ -65,7 +65,7 @@ export function resolveAll(
 
 export default function getWithField(
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   $field: string | string[],
@@ -78,7 +78,7 @@ export default function getWithField(
     if (
       getByType(
         intermediateResult,
-        schemas,
+        schema,
         id,
         fieldDefinition,
         language,

@@ -89,7 +89,7 @@ function setFromAncestors(
           if (
             getWithField(
               result,
-              schema.types,
+              schema,
               parent,
               field,
               fieldFrom,
@@ -123,9 +123,7 @@ function setFromAncestors(
             return true
           }
         } else {
-          if (
-            getByType(result, schema.types, parent, field, language, version)
-          ) {
+          if (getByType(result, schema, parent, field, language, version)) {
             return true
           }
         }

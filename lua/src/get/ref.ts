@@ -1,4 +1,4 @@
-import { Id, TypeSchema } from '~selva/schema/index'
+import { Id, Schema } from '~selva/schema/index'
 import { GetResult } from '~selva/get/types'
 import * as redis from '../redis'
 import { setNestedResult, getNestedField } from '../get/nestedFields'
@@ -8,7 +8,7 @@ const REF_SIMPLE_FIELD_PREFIX = '___selva_$ref:'
 
 type GetByTypeFn = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -17,7 +17,7 @@ type GetByTypeFn = (
 
 export function resolveObjectRef(
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   getByType: GetByTypeFn,
@@ -31,7 +31,7 @@ export function resolveObjectRef(
 
   return resolveRef(
     result,
-    schemas,
+    schema,
     id,
     field,
     ref,
@@ -43,7 +43,7 @@ export function resolveObjectRef(
 
 export function tryResolveSimpleRef(
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   value: string,
@@ -58,7 +58,7 @@ export function tryResolveSimpleRef(
   const ref = value.substring(REF_SIMPLE_FIELD_PREFIX.length)
   return resolveRef(
     result,
-    schemas,
+    schema,
     id,
     field,
     ref,
@@ -70,7 +70,7 @@ export function tryResolveSimpleRef(
 
 function resolveRef(
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   ref: string,
@@ -81,7 +81,7 @@ function resolveRef(
   const intermediateResult = {}
   const found = getByType(
     intermediateResult,
-    schemas,
+    schema,
     id,
     ref,
     language,

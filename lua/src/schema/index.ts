@@ -4,7 +4,8 @@ import {
   FieldSchema,
   SearchIndexes,
   SearchRaw,
-  defaultFields
+  defaultFields,
+  rootDefaultFields
 } from '../../../src/schema/index'
 import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
@@ -26,6 +27,7 @@ export function getSchema(): Schema {
     return {
       idSeedCounter: 0,
       types: {},
+      rootType: { fields: rootDefaultFields },
       languages: [],
       prefixToTypeMapping: {}
     }
@@ -257,14 +259,13 @@ function checkNestedChanges(
   searchIndexes: SearchIndexes,
   changedIndexes: Record<string, boolean>
 ): null | string {
-  for (const field in newType.fields) {
-    if (!oldType.fields || !oldType.fields[field]) {
-      findSearchConfigurations(
-        newType.fields[field],
-        field,
-        searchIndexes,
-        changedIndexes
-      )
+  for (const field in oldType.fields) {
+    if (!newType.fields) {
+      return `Can not reset fields to empty for type ${type}`
+    }
+
+    if (!newType.fields[field]) {
+      return `Field ${field} for type ${type} missing in new schema`
     } else {
       const err = checkField(
         type,
@@ -281,6 +282,17 @@ function checkNestedChanges(
     }
   }
 
+  for (const field in newType.fields) {
+    if (!oldType.fields || !oldType.fields[field]) {
+      findSearchConfigurations(
+        newType.fields[field],
+        field,
+        searchIndexes,
+        changedIndexes
+      )
+    }
+  }
+
   return null
 }
 
@@ -290,6 +302,7 @@ function verifyTypes(
   oldSchema: Schema,
   newSchema: Schema
 ): string | null {
+  // make sure that new schema has all the old fields and that their nested changes don't change existing fields
   for (const type in oldSchema.types) {
     if (!newSchema.types[type]) {
       return `New schema definition missing existing type ${type}`
@@ -311,23 +324,9 @@ function verifyTypes(
     // Note: hierarchies need not be the same, they can be overwritten
   }
 
+  // Ensure default fields on new types
   for (const type in newSchema.types) {
-    if (newSchema.types[type] && oldSchema.types[type]) {
-      // make sure that we're not changing type schemas that already exist
-      // Note: prefix equality is verified in ensurePrefixes()
-      const err = checkNestedChanges(
-        type,
-        oldSchema.types[type],
-        newSchema.types[type],
-        searchIndexes,
-        changedSearchIndexes
-      )
-
-      if (err) {
-        return err
-      }
-      // Note: hierarchies need not be the same, they can be overwritten
-    } else {
+    if (!oldSchema.types[type]) {
       newSchema.types[type].fields = objectAssign(
         {},
         defaultFields,
@@ -340,6 +339,23 @@ function verifyTypes(
         changedSearchIndexes
       )
     }
+  }
+
+  // crheck root type
+  if (!newSchema.rootType) {
+    return `New schema definition missing existing type for root (schema.rootType)`
+  }
+
+  const err = checkNestedChanges(
+    'root',
+    oldSchema.rootType,
+    newSchema.rootType,
+    {}, // skip indexing for root
+    {}
+  )
+
+  if (err) {
+    return err
   }
 
   return null
@@ -503,7 +519,7 @@ export function updateSchema(
   newSchema: Schema
 ): [string | null, string | null] {
   const changedSearchIndexes: Record<string, boolean> = {}
-  const oldSchema = getSchema() || { types: {} }
+  const oldSchema: Schema = getSchema()
   if (oldSchema.sha && newSchema.sha !== oldSchema.sha) {
     return [
       null,

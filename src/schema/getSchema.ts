@@ -1,10 +1,11 @@
 import { SelvaClient } from '../'
-import { Schema, SearchIndexes, GetSchemaResult } from '.'
+import { Schema, SearchIndexes, GetSchemaResult, rootDefaultFields } from '.'
 
 async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
   let schema: Schema = {
     languages: [],
     types: {},
+    rootType: { fields: rootDefaultFields },
     idSeedCounter: 0,
     prefixToTypeMapping: {}
   }

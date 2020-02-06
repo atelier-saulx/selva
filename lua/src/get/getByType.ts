@@ -4,7 +4,7 @@ import * as redis from '../redis'
 import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
-import { TypeSchema } from '../../../src/schema/index'
+import { Schema } from '../../../src/schema/index'
 import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
   splitString,
@@ -19,7 +19,7 @@ import * as logger from '../logger'
 
 const id = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  _schema: Schema,
   id: Id,
   _field: string,
   _language?: string,
@@ -31,7 +31,7 @@ const id = (
 
 const number = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -41,7 +41,7 @@ const number = (
   if (
     tryResolveSimpleRef(
       result,
-      schemas,
+      schema,
       id,
       field,
       v,
@@ -60,18 +60,18 @@ const number = (
 
 const float = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
   version?: string
 ): boolean => {
-  return number(result, schemas, id, field, language, version)
+  return number(result, schema, id, field, language, version)
 }
 
 const int = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -82,7 +82,7 @@ const int = (
   if (
     tryResolveSimpleRef(
       result,
-      schemas,
+      schema,
       id,
       field,
       v,
@@ -101,7 +101,7 @@ const int = (
 
 const boolean = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -112,7 +112,7 @@ const boolean = (
   if (
     tryResolveSimpleRef(
       result,
-      schemas,
+      schema,
       id,
       field,
       v,
@@ -130,7 +130,7 @@ const boolean = (
 
 const string = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -141,7 +141,7 @@ const string = (
   if (
     tryResolveSimpleRef(
       result,
-      schemas,
+      schema,
       id,
       field,
       value,
@@ -159,14 +159,14 @@ const string = (
 
 const arrayLike = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
   version?: string
 ): boolean => {
   if (field === 'ancestors') {
-    return ancestors(result, schemas, id, field, language, version)
+    return ancestors(result, schema, id, field, language, version)
   } else if (field === 'descendants') {
     return descendants(result, id, field, language, version)
   }
@@ -184,7 +184,7 @@ const arrayLike = (
 
 const json = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -197,7 +197,7 @@ const json = (
     if (
       tryResolveSimpleRef(
         result,
-        schemas,
+        schema,
         id,
         field,
         value,
@@ -220,7 +220,7 @@ const json = (
 
 const array = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  _schema: Schema,
   id: Id,
   field: string,
   _language?: string,
@@ -241,7 +241,7 @@ const array = (
 
 const object = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -257,7 +257,7 @@ const object = (
       if (stringEndsWith(key, '$ref')) {
         return resolveObjectRef(
           result,
-          schemas,
+          schema,
           id,
           field,
           getByType,
@@ -266,7 +266,7 @@ const object = (
         )
       }
 
-      if (!getByType(result, schemas, id, key, language)) {
+      if (!getByType(result, schema, id, key, language)) {
         isComplete = false
       }
     }
@@ -277,14 +277,14 @@ const object = (
 
 const text = (
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
   version?: string
 ): boolean => {
   if (!language) {
-    const isComplete = object(result, schemas, id, field, language, version)
+    const isComplete = object(result, schema, id, field, language, version)
     if (!isComplete) {
       const value = getNestedField(result, field)
       if (!value) {
@@ -325,7 +325,7 @@ const text = (
 
 const ancestors = (
   result: GetResult,
-  _schemas: Record<string, TypeSchema>,
+  _schema: Schema,
   id: Id,
   _field: string,
   _language?: string,
@@ -402,7 +402,7 @@ const types = {
 
 function getByType(
   result: GetResult,
-  schemas: Record<string, TypeSchema>,
+  schema: Schema,
   id: Id,
   field: string,
   language?: string,
@@ -413,14 +413,14 @@ function getByType(
   // logger.info(
   //   `getting field with id ${id} for field ${field} from type ${type}`
   // )
-  const schema = schemas[type]
-  if (!schema || !schema.fields) {
+  const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
+  if (!typeSchema || !typeSchema.fields) {
     logger.info(`No schema for type ${type}`)
     return true
   }
 
   const paths = splitString(field, '.')
-  let prop = schema.fields[paths[0]]
+  let prop = typeSchema.fields[paths[0]]
   for (let i = 1; i < paths.length; i++) {
     if (prop && prop.type === 'text' && i === paths.length - 1) {
       prop = { type: 'string' }
@@ -434,7 +434,7 @@ function getByType(
 
       json(
         intermediateResult,
-        schemas,
+        schema,
         id,
         joinString(pathToJson, '.'),
         language,
@@ -457,7 +457,7 @@ function getByType(
   }
 
   const fn = types[prop.type] || string
-  return fn(result, schemas, id, field, language, version)
+  return fn(result, schema, id, field, language, version)
 }
 
 export default getByType

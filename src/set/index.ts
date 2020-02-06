@@ -14,9 +14,13 @@ export const parseSetObject = (
     payload.type = schemas.prefixToTypeMapping[payload.$id.substring(0, 2)]
   }
 
+  if (!payload.type && payload.$id === 'root') {
+    payload.type = 'root'
+  }
+
   const type = payload.type
 
-  const schema = schemas.types[type]
+  const schema = type === 'root' ? schemas.rootType : schemas.types[type]
   if (!schema) {
     throw new Error(`Cannot find type ${type} from set-object`)
   }

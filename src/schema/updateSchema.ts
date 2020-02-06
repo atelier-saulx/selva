@@ -1,4 +1,4 @@
-import { Schema, TypeSchema, FieldSchema } from '.'
+import { Schema, TypeSchema, FieldSchema, rootDefaultFields } from '.'
 
 export function newSchemaDefinition(
   oldSchema: Schema,
@@ -13,11 +13,19 @@ export function newSchemaDefinition(
       newSchema.types = {}
     }
 
+    newSchema.rootType = {
+      fields: {
+        ...rootDefaultFields,
+        ...((newSchema.rootType && newSchema.rootType.fields) || {})
+      }
+    }
+
     return newSchema
   }
 
   const schema: Schema = {
     sha: oldSchema.sha,
+    rootType: oldSchema.rootType,
     languages: newLanguages(
       oldSchema.languages || [],
       newSchema.languages || []
@@ -42,6 +50,30 @@ export function newSchemaDefinition(
       schema.types[typeName] = newSchema.types[typeName]
     }
   }
+
+  if (newSchema.rootType) {
+    const typeDef = { fields: {} }
+    for (const fieldName in oldSchema.rootType.fields) {
+      if (newSchema.rootType.fields && newSchema.rootType.fields[fieldName]) {
+        typeDef.fields[fieldName] = newFieldDefinition(
+          `root.${fieldName}`,
+          oldSchema.rootType.fields[fieldName],
+          newSchema.rootType.fields[fieldName]
+        )
+      } else {
+        typeDef.fields[fieldName] = oldSchema.rootType.fields[fieldName]
+      }
+    }
+
+    for (const fieldName in newSchema.rootType.fields) {
+      if (oldSchema.rootType.fields && !oldSchema.rootType.fields[fieldName]) {
+        typeDef.fields[fieldName] = newSchema.rootType.fields[fieldName]
+      }
+    }
+  } else {
+    schema.rootType = oldSchema.rootType
+  }
+
   return schema
 }
 

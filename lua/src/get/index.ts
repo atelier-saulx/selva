@@ -28,7 +28,7 @@ function getField(
 
     props.$field = resolveAll(
       id,
-      schema.types,
+      schema,
       ensureArray(props.$field),
       language,
       version
@@ -38,15 +38,7 @@ function getField(
     //   `$field is set, GETTING from ${props.$field} for field ${field}`
     // )
     if (
-      getWithField(
-        result,
-        schema.types,
-        id,
-        field,
-        props.$field,
-        language,
-        version
-      )
+      getWithField(result, schema, id, field, props.$field, language, version)
     ) {
       return true
     }
@@ -65,7 +57,7 @@ function getField(
         const f = field && field.length > 0 ? field + '.' + key : key
         if (props[key] === true) {
           // logger.info(`key: ${key} field ${f}`)
-          if (!getByType(result, schema.types, id, f, language, version)) {
+          if (!getByType(result, schema, id, f, language, version)) {
             isComplete = false
           }
         } else if (props[key] === false) {
@@ -89,7 +81,7 @@ function getField(
     if (!hasAlias && !hasKeys) {
       const complete = getByType(
         result,
-        schema.types,
+        schema,
         id,
         <string>field,
         language,
@@ -131,7 +123,7 @@ function getField(
 
     const complete = getByType(
       result,
-      schema.types,
+      schema,
       id,
       <string>field,
       language,
