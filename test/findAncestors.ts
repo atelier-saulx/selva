@@ -213,8 +213,6 @@ test.serial('find - ancestors', async t => {
     }
   })
 
-  console.log(r)
-
   t.deepEqualIgnoreOrder(
     r.map(v => v.name),
     ['league2', 'league3', 'league4'],
