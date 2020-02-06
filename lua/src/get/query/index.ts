@@ -6,23 +6,36 @@ import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
 import get from '../index'
-import isFork from './isFork'
+import { isFork } from './util'
+
+// make a function hasQuery
+
+// get find
 
 const parseNested = (
   opts: GetOptions,
   id: string,
-  field?: string
+  traverse?: string
 ): [Fork | string[], string | null] => {
-  // field is different will create its own find
   if (opts.$list) {
+    const needsQeury: boolean = !!opts.$list.$sort
     if (opts.$list.$find) {
-      return parseFind(opts.$list.$find, id)
-    } else if (opts.$list.$sort) {
-      return [{ isFork: true }, 'Sort without find not implemented yet!']
+      return parseFind(opts.$list.$find, id, needsQeury)
+    } else {
+      if (!traverse) {
+        return [{ isFork: true }, '$list without find needs traverse']
+      } else {
+        const find = {
+          $traverse: traverse
+        }
+        // if sort need a query
+        return parseFind(find, id, needsQeury)
+      }
     }
-    // same for range
   } else if (opts.$find) {
-    return parseFind(opts.$find, id)
+    // single find
+    return [{ isFork: true }, 'Find outside of a list not supported']
+    // return parseFind(opts.$find, id)
   }
   return [{ isFork: true }, 'Not a valid query']
 }
@@ -30,29 +43,19 @@ const parseNested = (
 const parseQuery = (
   getOptions: GetOptions,
   id: string = 'root',
-  field?: string
+  traverse?: string
 ): [any, string | null] => {
-  // top level result
-  const resultGet = {}
-  if (getOptions.$list && !getOptions.$list.$find && !getOptions.$list.$sort) {
-    return [null, 'Not implemented $list without $find']
-  }
-  if (getOptions.$list && !getOptions.$list.$find && getOptions.$list.$sort) {
-    if (!field && !id) {
-      return [null, 'Need field and id for a filtered list + $sort']
-    }
-    // field can be nested (using . notation)
-    // will only work for indexed fields - read schema!
-  }
-
   if (getOptions.$list && getOptions.$find) {
     return [null, 'If using $list put $find in list']
   }
 
+  // get object
+  const resultGet = {}
+
   let ids: any[] | undefined = []
   let resultFork: Fork | undefined
   if (getOptions.$list || getOptions.$find) {
-    const [r, err] = parseNested(getOptions, id, field)
+    const [r, err] = parseNested(getOptions, id, traverse)
     if (err) {
       return [null, err]
     }
@@ -93,6 +96,8 @@ const parseQuery = (
       }
       results[results.length] = get(opts)
     }
+
+    // if nested $find
   }
 
   return [results, null]

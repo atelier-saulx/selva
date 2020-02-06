@@ -1,8 +1,7 @@
 import * as logger from '../../logger'
 import { Fork, FilterAST } from './types'
-import { Filter } from '~selva/get/types'
 import { isArray, joinAny } from '../../util'
-import isFork from './isFork'
+import { isFork } from './util'
 
 const colors = {
   red: '\u001b[31m',

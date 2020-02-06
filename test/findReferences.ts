@@ -28,6 +28,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          fun: { type: 'set', items: { type: 'string' } },
           related: { type: 'references', search: { type: ['TAG'] } },
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
@@ -101,6 +102,7 @@ test.serial('find - references', async t => {
     name: true,
     value: true,
     $list: {
+      $sort: { $field: 'value', $order: 'desc' },
       $find: {
         $traverse: 'children',
         $filter: [
@@ -125,6 +127,7 @@ test.serial('find - references', async t => {
     name: true,
     value: true,
     $list: {
+      $sort: { $field: 'value', $order: 'desc' },
       $find: {
         $traverse: 'related',
         $filter: [
@@ -132,11 +135,23 @@ test.serial('find - references', async t => {
             $field: 'value',
             $operator: '<',
             $value: 20
+          },
+          {
+            $field: 'value',
+            $operator: '<',
+            $value: 'now'
+          },
+          {
+            $field: 'value',
+            $operator: '>',
+            $value: 2
           }
         ]
       }
     }
   })
+
+  console.log('xxx', await client.get({ $id: matches[0].id, related: true }))
 
   // const m = (await dumpDb(client)).filter(v => {
   //   if (typeof v[1] === 'object') {
