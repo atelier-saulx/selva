@@ -2,7 +2,7 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
 import './assertions'
-import { wait, dumpDb } from './assertions'
+import { wait } from './assertions'
 
 let srv
 test.before(async t => {
