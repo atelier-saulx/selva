@@ -12,6 +12,18 @@ import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
 import { addFieldToSearch } from './search'
 
+function isSetPayload(value: any): boolean {
+  if (isArray(value)) {
+    return true
+  } else if (type(value) === 'table') {
+    if (value.$add || value.$delete || value.$value) {
+      return true
+    }
+  }
+
+  return false
+}
+
 function removeFields(
   id: string,
   field: string | null,
@@ -116,18 +128,9 @@ function setField(
   value: any,
   fromDefault: boolean
 ): void {
-  if (
-    field === 'parents' ||
-    field === 'children' ||
-    field === 'externalId' ||
-    field === 'auth.role.id'
-  ) {
+  if (isSetPayload(value) && field) {
     setInternalArrayStructure(id, field, value)
     return
-  }
-
-  if (isArray(value)) {
-    value = cjson.encode(value)
   }
 
   if (type(value) === 'table') {
