@@ -177,7 +177,6 @@ test.serial('find - references', async t => {
   const relatedMatchesLeagues = await client.query({
     $id: matches[0].id,
     name: true,
-    value: true,
     $list: {
       $find: {
         $traverse: 'related',
@@ -200,9 +199,9 @@ test.serial('find - references', async t => {
     }
   })
 
-  // t.deepEqual(relatedMatchesLeagues)
-
-  console.log(relatedMatchesLeagues)
-
-  // now nested
+  t.deepEqualIgnoreOrder(
+    relatedMatchesLeagues.map(v => v.name),
+    ['league3', 'league2', 'league1', 'league0'],
+    'Nested query'
+  )
 })
