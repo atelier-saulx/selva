@@ -30,7 +30,6 @@ function parseFind(
         }
         return parseFilters(filters)
       } else {
-        // really heavy operation - also weird location...
         const { descendants } = get({ $id: id, descendants: true })
         table.insert(descendants, 1, '')
         return [descendants, null]
