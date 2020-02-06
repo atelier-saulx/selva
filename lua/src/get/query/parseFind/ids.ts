@@ -14,17 +14,21 @@ const parseTypeFilter = (filter: Filter, ids: string[]): string[] => {
         if (!v[j]) {
           v[j] = getPrefixFromType(<string>filter.$value[j])
         }
-        if (stringStartsWith(ids[i], v[j])) {
-          r[r.length] = ids[i]
-          break
+        if (v[j]) {
+          if (stringStartsWith(ids[i], v[j])) {
+            r[r.length] = ids[i]
+            break
+          }
         }
       }
     }
   } else {
     const v = getPrefixFromType(<string>filter.$value)
     for (let i = 0; i < ids.length; i++) {
-      if (stringStartsWith(ids[i], v)) {
-        r[r.length] = ids[i]
+      if (v) {
+        if (stringStartsWith(ids[i], v)) {
+          r[r.length] = ids[i]
+        }
       }
     }
   }

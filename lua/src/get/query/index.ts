@@ -120,9 +120,17 @@ const parseQuery = (
         for (let key in nestedFind) {
           opts[key] = nestedFind[key]
         }
+        opts.id = true
         const arr = queryGet(opts)
         // if sort do this smarter
+        logger.info(arr)
+
         for (let j = 0; j < arr.length; j++) {
+          // need id to compare
+          if (!getOptions.id) {
+            delete arr[j].id
+          }
+
           results[results.length] = arr[j]
         }
       } else {

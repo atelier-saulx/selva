@@ -62,7 +62,7 @@ test.serial('find - references', async t => {
         $id: await client.id({ type: 'match' }),
         type: 'match',
         name: 'match' + j,
-        value: j + i,
+        value: Number(i + '.' + j),
         related: globMatches.map(v => v.$id)
       }
       matches.push(match)
@@ -123,7 +123,6 @@ test.serial('find - references', async t => {
 
   const relatedMatches = await client.query({
     $id: matches[0].id,
-    id: true,
     name: true,
     value: true,
     $list: {
@@ -134,7 +133,7 @@ test.serial('find - references', async t => {
           {
             $field: 'value',
             $operator: '<',
-            $value: 20
+            $value: 4
           },
           {
             $field: 'value',
@@ -151,16 +150,50 @@ test.serial('find - references', async t => {
     }
   })
 
-  console.log('xxx', await client.get({ $id: matches[0].id, related: true }))
+  t.deepEqual(relatedMatches, [
+    { value: 4, name: 'match0' },
+    { value: 3.9, name: 'match9' },
+    { value: 3.8, name: 'match8' },
+    { value: 3.7, name: 'match7' },
+    { value: 3.6, name: 'match6' },
+    { value: 3.5, name: 'match5' },
+    { value: 3.4, name: 'match4' },
+    { value: 3.3, name: 'match3' },
+    { value: 3.2, name: 'match2' },
+    { value: 3.1, name: 'match1' },
+    { value: 3, name: 'match0' },
+    { value: 2.9, name: 'match9' },
+    { value: 2.8, name: 'match8' },
+    { value: 2.7, name: 'match7' },
+    { value: 2.6, name: 'match6' },
+    { value: 2.5, name: 'match5' },
+    { value: 2.4, name: 'match4' },
+    { value: 2.3, name: 'match3' },
+    { value: 2.2, name: 'match2' },
+    { value: 2.1, name: 'match1' },
+    { value: 2, name: 'match0' }
+  ])
 
-  // const m = (await dumpDb(client)).filter(v => {
-  //   if (typeof v[1] === 'object') {
-  //     return true
-  //   }
-  //   return false
-  // })
+  const relatedMatchesLeagues = await client.query({
+    $id: matches[0].id,
+    name: true,
+    value: true,
+    $list: {
+      $find: {
+        $traverse: 'related',
+        $find: {
+          $traverse: 'ancestors',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'league'
+          }
+        }
+      }
+    }
+  })
 
-  // console.log(m, m.length)
+  console.log(relatedMatchesLeagues)
 
-  console.log('RELATED', relatedMatches)
+  // now nested
 })
