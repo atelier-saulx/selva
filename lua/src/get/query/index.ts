@@ -33,9 +33,7 @@ const parseNested = (
       }
     }
   } else if (opts.$find) {
-    // single find
     return [{ isFork: true }, 'Find outside of a list not supported']
-    // return parseFind(opts.$find, id)
   }
   return [{ isFork: true }, 'Not a valid query']
 }
@@ -88,63 +86,53 @@ const parseQuery = (
   if (ids) {
     const find = getFind(getOptions)
     let nestedFind: GetOptions | undefined
+    let nestedMap: Record<string, boolean> | undefined
     if (find && find.$find) {
       // if nestedFind
+      nestedMap = {}
       if (getOptions.$list) {
         nestedFind = {
           $list: {
             $find: find.$find
           }
         }
-        // WILL NOT WORK YET - NEED TO SORT YOURSELF
-        // if (getOptions.$list.$sort) {
-        //   nestedFind.$list.$sort = getOptions.$list.$sort
-        // }
-        // if (getOptions.$list.$range) {
-        //   nestedFind.$list.$range = getOptions.$list.$range
-        // }
-      } else {
-        nestedFind = { $find: find.$find }
+
+        // FIXME: nested sort and range
+        if (getOptions.$list.$sort) {
+          return [results, 'Nested find sort is not supported yet!']
+        }
       }
     }
 
-    logger.info('IDS', ids)
     for (let i = 1; i < ids.length; i++) {
-      logger.info('xxx', ids[i])
-
       const opts: GetOptions = { $id: ids[i] }
       for (let key in getOptions) {
         if (key !== '$find' && key !== '$list' && key !== '$id') {
           opts[key] = getOptions[key]
         }
       }
-      if (nestedFind) {
+      if (nestedFind && nestedMap) {
         for (let key in nestedFind) {
           opts[key] = nestedFind[key]
         }
         opts.id = true
         const [arr, err] = parseQuery(opts, ids[i])
-
-        logger.info('result', arr)
-
         if (err) {
           return [results, err]
         }
-
         for (let j = 0; j < arr.length; j++) {
-          // need id to compare
           const item = arr[j]
-          // if (!getOptions.id && item.id) {
-          //   delete item.id
-          // }
-
+          // if (!nestedMap[item.id]) {
+          // nestedMap[item.id] = true
+          if (!getOptions.id && item.id) {
+            delete item.id
+          }
           results[results.length] = item
+          // }
         }
       } else {
         results[results.length] = get(opts)
       }
-      // WILL NOT WORK YET - RANGE - also if not a query need to do range yourself
-      // if (nestedFind) and range
     }
   }
 

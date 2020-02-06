@@ -25,18 +25,11 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   }
 
   // validate operator
+
+  // need to remove equal then
+
   const o = filterOpt.$operator
-  if (
-    !(
-      o === '=' ||
-      o === '>' ||
-      o === '<' ||
-      o === '..' ||
-      o === '!=' ||
-      o === '<=' ||
-      o === '>='
-    )
-  ) {
+  if (!(o === '=' || o === '>' || o === '<' || o === '..' || o === '!=')) {
     return [{ isFork: true }, `Invalid filter operator ${o}`]
   }
 

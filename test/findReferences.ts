@@ -183,15 +183,24 @@ test.serial('find - references', async t => {
         $traverse: 'related',
         $find: {
           $traverse: 'ancestors',
-          $filter: {
-            $field: 'type',
-            $operator: '=',
-            $value: 'league'
-          }
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league'
+            },
+            {
+              $field: 'value',
+              $operator: '<',
+              $value: 3
+            }
+          ]
         }
       }
     }
   })
+
+  // t.deepEqual(relatedMatchesLeagues)
 
   console.log(relatedMatchesLeagues)
 

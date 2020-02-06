@@ -20,6 +20,8 @@ function parseFind(
     filterRaw = opts.$filter = [filterRaw]
   }
   const filters: Filter[] = filterRaw
+
+  // if $traverse is an array use that array
   if ($traverse) {
     if ($traverse === 'descendants') {
       if (filters) {
@@ -37,10 +39,10 @@ function parseFind(
     } else if ($traverse === 'ancestors') {
       const ancestors = redis.zrange(id + '.ancestors')
       return parseFindIds(filters, ancestors, needsQeury)
+    } else if (isArray($traverse)) {
+      return parseFindIds(filters, $traverse, needsQeury)
     } else {
-      logger.info(id + '.' + $traverse)
       const ids = redis.smembers(id + '.' + $traverse)
-      logger.info(ids)
       return parseFindIds(filters, ids, needsQeury)
     }
   } else {
