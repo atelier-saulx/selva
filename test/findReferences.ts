@@ -150,6 +150,8 @@ test.serial('find - references', async t => {
     }
   })
 
+  console.log('xxx', await client.get({ $id: matches[0].id, related: true }))
+
   // const m = (await dumpDb(client)).filter(v => {
   //   if (typeof v[1] === 'object') {
   //     return true
