@@ -28,6 +28,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          fun: { type: 'set', items: { type: 'string' } },
           related: { type: 'references', search: { type: ['TAG'] } },
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
