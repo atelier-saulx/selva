@@ -1,5 +1,5 @@
 import * as logger from '../../logger'
-import { GetOptions, Find } from '~selva/get/types'
+import { GetOptions, Find, GetResult } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
@@ -44,20 +44,21 @@ const parseQuery = (
   getOptions: GetOptions,
   id: string = 'root',
   traverse?: string
-): [any, string | null] => {
-  if (getOptions.$list && getOptions.$find) {
-    return [null, 'If using $list put $find in list']
-  }
-
+): [GetResult[], string | null] => {
   // get object
   const resultGet = {}
+  const results: GetResult[] = []
+
+  if (getOptions.$list && getOptions.$find) {
+    return [results, 'If using $list put $find in list']
+  }
 
   let ids: any[] | undefined = []
   let resultFork: Fork | undefined
   if (getOptions.$list || getOptions.$find) {
     const [r, err] = parseNested(getOptions, id, traverse)
     if (err) {
-      return [null, err]
+      return [results, err]
     }
     for (let key in getOptions) {
       if (key !== '$list' && key !== '$find') {
@@ -75,7 +76,7 @@ const parseQuery = (
     const [q, err] = createSearchString(resultFork)
     const query: string = q.substring(1, q.length - 1)
     if (err) {
-      return [null, err]
+      return [results, err]
     }
     const args = createSearchArgs(getOptions, query, resultFork)
     printAst(resultFork, args)
@@ -83,8 +84,6 @@ const parseQuery = (
     const queryResult: string[] = redis.call('ft.search', 'default', ...args)
     ids = queryResult
   }
-
-  const results: any[] = []
 
   if (ids) {
     const find = getFind(getOptions)
@@ -109,7 +108,10 @@ const parseQuery = (
       }
     }
 
+    logger.info('IDS', ids)
     for (let i = 1; i < ids.length; i++) {
+      logger.info('xxx', ids[i])
+
       const opts: GetOptions = { $id: ids[i] }
       for (let key in getOptions) {
         if (key !== '$find' && key !== '$list' && key !== '$id') {
@@ -121,17 +123,22 @@ const parseQuery = (
           opts[key] = nestedFind[key]
         }
         opts.id = true
-        const arr = queryGet(opts)
-        // if sort do this smarter
-        logger.info(arr)
+        const [arr, err] = parseQuery(opts, ids[i])
+
+        logger.info('result', arr)
+
+        if (err) {
+          return [results, err]
+        }
 
         for (let j = 0; j < arr.length; j++) {
           // need id to compare
-          if (!getOptions.id) {
-            delete arr[j].id
-          }
+          const item = arr[j]
+          // if (!getOptions.id && item.id) {
+          //   delete item.id
+          // }
 
-          results[results.length] = arr[j]
+          results[results.length] = item
         }
       } else {
         results[results.length] = get(opts)
