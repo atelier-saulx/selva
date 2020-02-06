@@ -1,12 +1,12 @@
 import * as logger from '../../logger'
-import { GetOptions } from '~selva/get/types'
+import { GetOptions, Find } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
 import get from '../index'
-import { isFork } from './util'
+import { isFork, getFind } from './util'
 
 // make a function hasQuery
 
@@ -87,6 +87,28 @@ const parseQuery = (
   const results: any[] = []
 
   if (ids) {
+    const find = getFind(getOptions)
+    let nestedFind: GetOptions | undefined
+    if (find && find.$find) {
+      // if nestedFind
+      if (getOptions.$list) {
+        nestedFind = {
+          $list: {
+            $find: find.$find
+          }
+        }
+        // WILL NOT WORK YET - NEED TO SORT YOURSELF
+        // if (getOptions.$list.$sort) {
+        //   nestedFind.$list.$sort = getOptions.$list.$sort
+        // }
+        // if (getOptions.$list.$range) {
+        //   nestedFind.$list.$range = getOptions.$list.$range
+        // }
+      } else {
+        nestedFind = { $find: find.$find }
+      }
+    }
+
     for (let i = 1; i < ids.length; i++) {
       const opts: GetOptions = { $id: ids[i] }
       for (let key in getOptions) {
@@ -94,16 +116,28 @@ const parseQuery = (
           opts[key] = getOptions[key]
         }
       }
-      results[results.length] = get(opts)
+      if (nestedFind) {
+        for (let key in nestedFind) {
+          opts[key] = nestedFind[key]
+        }
+        const arr = queryGet(opts)
+        // if sort do this smarter
+        for (let j = 0; j < arr.length; j++) {
+          results[results.length] = arr[j]
+        }
+      } else {
+        results[results.length] = get(opts)
+      }
+      // WILL NOT WORK YET - RANGE - also if not a query need to do range yourself
+      // if (nestedFind) and range
     }
-
-    // if nested $find
   }
 
   return [results, null]
 }
 
 const queryGet = (getOptions: GetOptions, id?: string): any[] => {
+  // check if query
   if (!id) {
     id = getOptions.$id || 'root'
   }

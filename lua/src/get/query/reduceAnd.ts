@@ -1,6 +1,6 @@
 import { Fork, FilterAST, Value } from './types'
 import { isArray, indexOf } from '../../util'
-import isFork from './isFork'
+import { isFork } from './util'
 
 const valueIsEqual = (a: Value, b: Value, strict: boolean): boolean => {
   if (a === b) {
