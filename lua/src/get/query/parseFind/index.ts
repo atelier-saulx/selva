@@ -7,8 +7,12 @@ import * as redis from '../../../redis'
 import * as logger from '../../../logger'
 import get from '../../index'
 
-function parseFind(opts: Find, id: string): [Fork | string[], string | null] {
-  let { $traverse, $filter: filterRaw, $find } = opts
+function parseFind(
+  opts: Find,
+  id: string,
+  needsQeury?: boolean
+): [Fork | string[], string | null] {
+  let { $traverse, $filter: filterRaw } = opts
   if (!filterRaw) {
     filterRaw = opts.$filter = []
   }
@@ -33,12 +37,12 @@ function parseFind(opts: Find, id: string): [Fork | string[], string | null] {
       }
     } else if ($traverse === 'ancestors') {
       const ancestors = redis.zrange(id + '.ancestors')
-      return parseFindIds(filters, ancestors)
+      return parseFindIds(filters, ancestors, needsQeury)
     } else {
       logger.info(id + '.' + $traverse)
       const ids = redis.smembers(id + '.' + $traverse)
       logger.info(ids)
-      return parseFindIds(filters, ids)
+      return parseFindIds(filters, ids, needsQeury)
     }
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']
