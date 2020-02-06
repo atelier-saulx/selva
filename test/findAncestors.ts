@@ -187,8 +187,7 @@ test.serial('find - ancestors', async t => {
         }
       })
     ).map(v => v.name || v.id),
-    // root may need to be managed
-    ['league0', 'season1-0', 'team0', 'team1', undefined], // for now undefined
+    ['league0', 'season1-0', 'team0', 'team1', 'root'],
     'find ancestors without redis search and without filters'
   )
 
