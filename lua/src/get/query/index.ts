@@ -14,22 +14,24 @@ import { isFork, getFind } from './util'
 
 const parseNested = (
   opts: GetOptions,
-  id: string,
+  ids: string[],
   traverse?: string
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
     const needsQeury: boolean = !!opts.$list.$sort
     if (opts.$list.$find) {
-      return parseFind(opts.$list.$find, id, needsQeury)
+      return parseFind(opts.$list.$find, ids, needsQeury)
     } else {
       if (!traverse) {
         return [{ isFork: true }, '$list without find needs traverse']
       } else {
-        const find = {
-          $traverse: traverse
-        }
-        // if sort need a query
-        return parseFind(find, id, needsQeury)
+        return parseFind(
+          {
+            $traverse: traverse
+          },
+          ids,
+          needsQeury
+        )
       }
     }
   } else if (opts.$find) {
@@ -40,21 +42,18 @@ const parseNested = (
 
 const parseQuery = (
   getOptions: GetOptions,
-  id: string = 'root',
+  ids: string[],
   traverse?: string
 ): [GetResult[], string | null] => {
-  // get object
   const resultGet = {}
   const results: GetResult[] = []
-
   if (getOptions.$list && getOptions.$find) {
     return [results, 'If using $list put $find in list']
   }
-
-  let ids: any[] | undefined = []
+  let resultIds: any[] | undefined = []
   let resultFork: Fork | undefined
   if (getOptions.$list || getOptions.$find) {
-    const [r, err] = parseNested(getOptions, id, traverse)
+    const [r, err] = parseNested(getOptions, ids, traverse)
     if (err) {
       return [results, err]
     }
@@ -66,10 +65,9 @@ const parseQuery = (
     if (isFork(r)) {
       resultFork = r
     } else {
-      ids = r
+      resultIds = r
     }
   }
-
   if (resultFork) {
     const [q, err] = createSearchString(resultFork)
     const query: string = q.substring(1, q.length - 1)
@@ -78,59 +76,50 @@ const parseQuery = (
     }
     const args = createSearchArgs(getOptions, query, resultFork)
     printAst(resultFork, args)
-
     const queryResult: string[] = redis.call('ft.search', 'default', ...args)
-    ids = queryResult
+    resultIds = queryResult
   }
 
-  if (ids) {
+  if (resultIds) {
     const find = getFind(getOptions)
-    let nestedFind: GetOptions | undefined
-    let nestedMap: Record<string, boolean> | undefined
     if (find && find.$find) {
-      // if nestedFind
-      nestedMap = {}
       if (getOptions.$list) {
-        nestedFind = {
-          $list: {
-            $find: find.$find
-          }
-        }
-
+        table.remove(resultIds, 1)
         // FIXME: nested sort and range
         if (getOptions.$list.$sort) {
           return [results, 'Nested find sort is not supported yet!']
         }
       }
-    }
-
-    for (let i = 1; i < ids.length; i++) {
-      const opts: GetOptions = { $id: ids[i] }
+      const opts: GetOptions = { id: true }
       for (let key in getOptions) {
         if (key !== '$find' && key !== '$list' && key !== '$id') {
           opts[key] = getOptions[key]
         }
       }
-      if (nestedFind && nestedMap) {
-        for (let key in nestedFind) {
-          opts[key] = nestedFind[key]
-        }
-        opts.id = true
-        const [arr, err] = parseQuery(opts, ids[i])
-        if (err) {
-          return [results, err]
-        }
-        for (let j = 0; j < arr.length; j++) {
-          const item = arr[j]
-          // if (!nestedMap[item.id]) {
-          // nestedMap[item.id] = true
-          if (!getOptions.id && item.id) {
+      opts.$list = { $find: find.$find }
+      const [nestedResults, err] = parseQuery(opts, resultIds)
+      if (err) {
+        return [results, err]
+      }
+      const nestedMap: Record<string, boolean> = {}
+      for (let i = 0; i < nestedResults.length; i++) {
+        const item = nestedResults[i]
+        if (!nestedMap[item.id]) {
+          nestedMap[item.id] = true
+          if (!getOptions.id) {
             delete item.id
           }
           results[results.length] = item
-          // }
         }
-      } else {
+      }
+    } else {
+      for (let i = 1; i < resultIds.length; i++) {
+        const opts: GetOptions = { $id: resultIds[i] }
+        for (let key in getOptions) {
+          if (key !== '$find' && key !== '$list' && key !== '$id') {
+            opts[key] = getOptions[key]
+          }
+        }
         results[results.length] = get(opts)
       }
     }
@@ -139,12 +128,16 @@ const parseQuery = (
   return [results, null]
 }
 
-const queryGet = (getOptions: GetOptions, id?: string): any[] => {
+const queryGet = (
+  getOptions: GetOptions,
+  ids?: string[],
+  traverse?: string
+): any[] => {
   // check if query
-  if (!id) {
-    id = getOptions.$id || 'root'
+  if (!ids) {
+    ids = [getOptions.$id || 'root']
   }
-  const [result, err] = parseQuery(getOptions, id)
+  const [result, err] = parseQuery(getOptions, ids, traverse)
   if (err) {
     logger.error(err)
   }

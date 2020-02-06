@@ -90,6 +90,10 @@ export function smembers(key: string): string[] {
   return redis.call('smembers', key)
 }
 
+export function sunion(args: string[]): string[] {
+  return redis.call('sunion', ...args)
+}
+
 export function scard(key: string): number {
   return redis.call('scard', key)
 }
