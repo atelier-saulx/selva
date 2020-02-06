@@ -1,6 +1,6 @@
 import { isArray, joinAny, joinString } from '../../util'
 import { FilterAST, Fork, Value } from './types'
-import isFork from './isFork'
+import { isFork } from './util'
 
 const returnNumber = (filter, value: Value): string => {
   if (filter.$operator === '>') {

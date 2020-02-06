@@ -6,21 +6,24 @@ import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
 import get from '../index'
-import isFork from './isFork'
+import { isFork } from './util'
+
+// make a function hasQuery
+
+// get find
 
 const parseNested = (
   opts: GetOptions,
   id: string,
   traverse?: string
 ): [Fork | string[], string | null] => {
-  // parse traverse here
   if (opts.$list) {
     const needsQeury: boolean = !!opts.$list.$sort
     if (opts.$list.$find) {
       return parseFind(opts.$list.$find, id, needsQeury)
     } else {
       if (!traverse) {
-        return [{ isFork: true }, 'Need traverse']
+        return [{ isFork: true }, '$list without find needs traverse']
       } else {
         const find = {
           $traverse: traverse
@@ -31,7 +34,8 @@ const parseNested = (
     }
   } else if (opts.$find) {
     // single find
-    return parseFind(opts.$find, id)
+    return [{ isFork: true }, 'Find outside of a list not supported']
+    // return parseFind(opts.$find, id)
   }
   return [{ isFork: true }, 'Not a valid query']
 }
@@ -92,6 +96,8 @@ const parseQuery = (
       }
       results[results.length] = get(opts)
     }
+
+    // if nested $find
   }
 
   return [results, null]

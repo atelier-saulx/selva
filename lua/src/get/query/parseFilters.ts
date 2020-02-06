@@ -1,7 +1,7 @@
 import { FilterAST, Fork } from './types'
 import addSearch from './addSearch'
 import { Filter } from '~selva/get/types'
-import isFork from './isFork'
+import { isFork } from './util'
 import reduceAnd from './reduceAnd'
 
 const addToOption = (
