@@ -1,6 +1,7 @@
 {
   "name": "selva-client",
   "version": "0.0.1",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
     "start": "tsc && node dist/index.js",

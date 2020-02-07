@@ -93,7 +93,7 @@ abstract class RedisMethods {
     })
   }
 
-  async hgetall(hash: string): Promise<any[]> {
+  async hgetall(hash: string): Promise<Record<string, string>> {
     return new Promise((resolve, reject) => {
       this.queue('hgetall', [hash], resolve, reject)
     })
