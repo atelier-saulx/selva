@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events'
+import Observable from '../observe/observable'
 import * as redis from 'redis'
 import { createClient, RedisClient as Redis } from 'redis'
 import RedisMethods from './methods'
@@ -54,10 +56,18 @@ type RedisCommand = Resolvable & {
   nested?: Resolvable[]
 }
 
+type RedisSubsription = {
+  channel: string
+  active: boolean
+  emitter: EventEmitter
+}
+
 export default class RedisClient extends RedisMethods {
   private connector: () => Promise<ConnectOptions>
   private client: Redis
+  private subClient: Redis
   private buffer: RedisCommand[]
+  private subscriptions: { [channel: string]: RedisSubsription }
   private connected: boolean
   private inProgress: boolean
   private isDestroyed: boolean
@@ -75,6 +85,7 @@ export default class RedisClient extends RedisMethods {
     this.connector =
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
     this.buffer = []
+    this.subscriptions = {}
     this.connect()
   }
 
@@ -124,6 +135,13 @@ export default class RedisClient extends RedisMethods {
     } else {
       this.client = null
     }
+
+    if (this.subClient) {
+      this.subClient.quit()
+      this.subClient = null
+    } else {
+      this.subClient = null
+    }
   }
 
   private async connect() {
@@ -138,10 +156,13 @@ export default class RedisClient extends RedisMethods {
       opts.retryStrategy = () => {
         this.resetScripts()
         this.connected = false
+        this.markSubscriptionsClosed()
         this.connector().then(async newOpts => {
           if (newOpts.host !== opts.host || newOpts.port !== opts.port) {
             this.client.quit()
+            this.subClient.quit()
             this.connected = false
+            this.markSubscriptionsClosed()
             await this.connect()
           }
         })
@@ -154,6 +175,7 @@ export default class RedisClient extends RedisMethods {
 
     // on dc needs to re run connector - if different reconnect
     this.client = createClient(opts)
+    this.subClient = this.client.duplicate()
 
     this.client.on('error', err => {
       // console.log('ERRRRR')
@@ -172,6 +194,74 @@ export default class RedisClient extends RedisMethods {
       this.retryTimer = 100
       this.connected = true
       this.flushBuffered()
+    })
+
+    this.subClient.on('error', err => {
+      // console.log('ERRRRR')
+      if (err.code === 'ECONNREFUSED') {
+        console.info(`Connecting to ${err.address}:${err.port}`)
+      } else {
+        // console.log('ERR', err)
+      }
+    })
+
+    this.subClient.on('connect', a => {
+      // console.log('connect it', a)
+    })
+
+    this.subClient.on('ready', () => {
+      this.retryTimer = 100
+      this.connected = true
+      this.ensureSubscriptions()
+    })
+  }
+
+  subscribe(channel: string): Observable<string> {
+    const current = this.subscriptions[channel]
+    if (current && current.active) {
+      return
+    }
+
+    const emitter = new EventEmitter()
+    this.client.subscribe(channel)
+    this.subscriptions[channel] = {
+      channel,
+      active: this.connected,
+      emitter: emitter
+    }
+
+    return new Observable(observer => {
+      emitter.on('publish', str => {
+        observer.next(str)
+      })
+
+      return () => {
+        this.subClient.unsubscribe('channel')
+        delete this.subscriptions[channel]
+      }
+    })
+  }
+
+  private async markSubscriptionsClosed() {
+    for (const channel in this.subscriptions) {
+      this.subscriptions[channel].active = false
+    }
+  }
+
+  private async ensureSubscriptions() {
+    for (const channel in this.subscriptions) {
+      if (!this.subscriptions[channel].active) {
+        this.subClient.subscribe(channel)
+        this.subscriptions[channel].active = true
+      }
+    }
+
+    // ensure old listener is gone
+    this.subClient.removeAllListeners('message')
+
+    this.subClient.on('message', (channel, message) => {
+      const sub = this.subscriptions[channel]
+      sub.emitter.emit('publish', message)
     })
   }
 
