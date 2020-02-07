@@ -7,7 +7,7 @@ type SubscriptionObserver<T> = {
 
 type Observer<T> = {
   start?: (subscription: Subscription<T>) => void
-  next?: (value: any) => void
+  next?: (value: T) => void
   error?: (err: Error) => void
   complete?: () => void
 }
@@ -124,7 +124,7 @@ export default class Observable<T> {
   // [Symbol.observable](): Observable
 
   subscribe(
-    onNext: ((x: any) => void) | Observer<T>,
+    onNext: ((x: T) => void) | Observer<T>,
     onError?: (e: Error) => void,
     onComplete?: () => void
   ): Subscription<T> {

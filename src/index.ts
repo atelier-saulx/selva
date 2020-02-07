@@ -4,6 +4,7 @@ import { set, SetOptions } from './set'
 import { ModifyOptions, ModifyResult } from './modifyTypes'
 import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions, GetResult } from './get'
+import { observe } from './observe/index'
 import { readFileSync } from 'fs'
 import { join as pathJoin } from 'path'
 import { Schema, SearchIndexes, SchemaOptions, Id } from './schema'
@@ -67,6 +68,10 @@ export class SelvaClient {
 
   async get(props: GetOptions) {
     return get(this, props)
+  }
+
+  async observe(props: GetOptions) {
+    return observe(this, props)
   }
 
   async updateSchema(props: SchemaOptions, retry?: number) {
