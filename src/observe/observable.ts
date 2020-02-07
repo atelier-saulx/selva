@@ -139,32 +139,3 @@ export default class Observable<T> {
     return new Subscription(this.observe, onNext)
   }
 }
-
-// const obs = new Observable(observer => {
-//   let i = 0
-//   const interval = setInterval(() => {
-//     i++
-//
-//     observer.next(i)
-//     if (i >= 5) {
-//       observer.complete()
-//     }
-//   }, 1000)
-//
-//   return () => {
-//     clearInterval(interval)
-//   }
-// })
-
-// obs.subscribe({
-//   next: console.log,
-//   start: sub => {
-//     sub.observer.next(0)
-//   }
-// })
-
-// obs.subscribe(
-//   (x: any) => console.log(x),
-//   (e: Error) => console.error(e),
-//   () => console.log('done!')
-// )

@@ -223,11 +223,14 @@ export default class RedisClient extends RedisMethods {
     }
 
     const emitter = new EventEmitter()
-    this.client.subscribe(channel)
     this.subscriptions[channel] = {
       channel,
       active: this.connected,
       emitter: emitter
+    }
+
+    if (this.connected) {
+      this.subClient.subscribe(channel)
     }
 
     return new Observable(observer => {
@@ -261,7 +264,9 @@ export default class RedisClient extends RedisMethods {
 
     this.subClient.on('message', (channel, message) => {
       const sub = this.subscriptions[channel]
-      sub.emitter.emit('publish', message)
+      if (sub) {
+        sub.emitter.emit('publish', message)
+      }
     })
   }
 
