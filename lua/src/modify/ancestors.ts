@@ -2,6 +2,7 @@ import { Id, Schema } from '../../../src/schema/index'
 import * as redis from '../redis'
 import { joinString } from '../util'
 import { addFieldToSearch } from './search'
+import sendEvent from './events'
 import { getSchema } from '../schema/index'
 import { getTypeFromId } from '../typeIdMapping'
 import * as logger from '../logger'
@@ -296,6 +297,9 @@ function reCalculateAncestorsFor(ids: Id[]): void {
           redis.hset(id, 'ancestors', searchStr)
           addFieldToSearch(id, 'ancestors', searchStr)
         }
+
+        // send event
+        sendEvent(id, 'ancestors')
 
         // recurse down the tree if ancestors updated
         const children = redis.smembers(id + '.children')
