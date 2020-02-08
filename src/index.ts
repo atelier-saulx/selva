@@ -20,9 +20,14 @@ let SCRIPTS
 try {
   SCRIPTS = ['modify', 'fetch', 'id', 'update-schema', 'query'].reduce(
     (obj, scriptName) => {
+      let distPath = pathJoin(__dirname, '..')
+      if (!distPath.endsWith('dist')) {
+        distPath = pathJoin(distPath, 'dist')
+      }
+
       return Object.assign(obj, {
         [scriptName]: readFileSync(
-          pathJoin(process.cwd(), 'dist', 'lua', `${scriptName}.lua`),
+          pathJoin(distPath, 'lua', `${scriptName}.lua`),
           'utf8'
         )
       })
