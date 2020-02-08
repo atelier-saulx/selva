@@ -59,7 +59,7 @@ export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
         }
         return id.indexOf('.') > -1
           ? client.redis.smembers(id)
-          : client.redis.hgetall(id)
+          : <any>client.redis.hgetall(id)
       })
     )
   )
