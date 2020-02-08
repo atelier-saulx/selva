@@ -13,13 +13,13 @@ export async function observe(
   opts: ObserveOptions = { getLatest: true }
 ): Promise<Observable<GetResult>> {
   const subscriptionId = uuid()
-  await client.redis.hsetnx(
+  await client.redis.hset(
     '___selva_subscriptions',
     subscriptionId,
     JSON.stringify(props)
   )
 
-  const obs = client.redis.subscribe(`__selva_subscription:${subscriptionId}`)
+  const obs = client.redis.subscribe(`___selva_subscription:${subscriptionId}`)
   return new Observable<GetResult>(observe => {
     const sub = obs.subscribe({
       next: (x: string) => {
