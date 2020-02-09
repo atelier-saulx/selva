@@ -1,5 +1,6 @@
 import Observable from './observe/observable'
 import { createClient, RedisClient as Redis } from 'redis'
+import { GetResult } from './get/types'
 import { EventEmitter } from 'events'
 import { ConnectOptions } from './redis'
 
@@ -8,6 +9,17 @@ type RedisSubsription = {
   active: boolean
   emitter: EventEmitter
 }
+
+type UpdateEvent = {
+  type: 'update'
+  payload: GetResult
+}
+
+type HeartBeatEvent = {
+  type: 'heartbeat'
+}
+
+type Event = UpdateEvent | HeartBeatEvent
 
 export default class SelvaPubSub {
   private subscriptions: { [channel: string]: RedisSubsription } = {}
@@ -85,7 +97,12 @@ export default class SelvaPubSub {
 
     return new Observable(observer => {
       emitter.on('publish', str => {
-        observer.next(str)
+        const event: Event = JSON.parse(str)
+        if (event.type === 'update') {
+          observer.next(event.payload)
+        } else if (event.type === 'heartbeat') {
+          console.log('server side heartbeat')
+        }
       })
 
       return () => {

@@ -185,7 +185,7 @@ export default class RedisClient extends RedisMethods {
     })
   }
 
-  subscribe(channel: string): Observable<string> {
+  subscribe<T>(channel: string): Observable<T> {
     console.log('redis subsribe')
     return this.subscriptionManager.subscribe(channel)
   }
