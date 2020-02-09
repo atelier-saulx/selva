@@ -24,7 +24,7 @@ type Event = UpdateEvent | HeartBeatEvent
 
 export default class SelvaPubSub {
   private subscriptions: { [channel: string]: RedisSubsription } = {}
-  private lastHeartbeat: { [channel: string]: Date } = {}
+  private lastHeartbeat: { [channel: string]: number } = {}
   private pub: Redis
   private sub: Redis
   private heartbeatTimer: NodeJS.Timeout
@@ -98,7 +98,7 @@ export default class SelvaPubSub {
 
     if (this.connected) {
       this.sub.subscribe(channel)
-      this.lastHeartbeat[channel] = new Date()
+      this.lastHeartbeat[channel] = Date.now()
       this.setSubcriptionData(channel)
     }
 
@@ -108,7 +108,7 @@ export default class SelvaPubSub {
         if (event.type === 'update') {
           observer.next(event.payload)
         } else if (event.type === 'heartbeat') {
-          this.lastHeartbeat[channel] = new Date()
+          this.lastHeartbeat[channel] = Date.now()
           console.log('server side heartbeat')
         }
       })
@@ -137,8 +137,7 @@ export default class SelvaPubSub {
         for (const channel in this.lastHeartbeat) {
           if (
             this.lastHeartbeat[channel] &&
-            new Date().getTime() - this.lastHeartbeat[channel].getTime() >
-              1000 * 60
+            Date.now() - this.lastHeartbeat[channel] > 1000 * 60
           ) {
             // it's been too long since latest server heartbeat, disconnecting and connecting again in a second
             this.attemptReconnect()
