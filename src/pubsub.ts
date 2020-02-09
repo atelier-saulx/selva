@@ -1,6 +1,6 @@
 import Observable from './observe/observable'
 import { createClient, RedisClient as Redis } from 'redis'
-import { GetResult } from './get/types'
+import { GetResult, GetOptions } from './get/types'
 import { EventEmitter } from 'events'
 import { ConnectOptions } from './redis'
 
@@ -8,6 +8,7 @@ type RedisSubsription = {
   channel: string
   active: boolean
   emitter: EventEmitter
+  getOpts: GetOptions
 }
 
 type UpdateEvent = {
@@ -23,12 +24,15 @@ type Event = UpdateEvent | HeartBeatEvent
 
 export default class SelvaPubSub {
   private subscriptions: { [channel: string]: RedisSubsription } = {}
+  private lastHeartbeat: { [channel: string]: Date } = {}
   private pub: Redis
   private sub: Redis
   private heartbeatTimer: NodeJS.Timeout
+  private opts: ConnectOptions
   private connected: boolean = false
 
   connect(opts: ConnectOptions) {
+    this.opts = opts
     this.pub = createClient(opts)
     this.sub = createClient(opts)
 
@@ -77,7 +81,7 @@ export default class SelvaPubSub {
     this.pub = this.sub = undefined
   }
 
-  subscribe(channel: string) {
+  subscribe(channel: string, getOpts: GetOptions) {
     const current = this.subscriptions[channel]
     if (current && current.active) {
       return
@@ -88,11 +92,14 @@ export default class SelvaPubSub {
     this.subscriptions[channel] = {
       channel,
       active: this.connected,
-      emitter
+      emitter,
+      getOpts
     }
 
     if (this.connected) {
       this.sub.subscribe(channel)
+      this.lastHeartbeat[channel] = new Date()
+      this.setSubcriptionData(channel)
     }
 
     return new Observable(observer => {
@@ -101,6 +108,7 @@ export default class SelvaPubSub {
         if (event.type === 'update') {
           observer.next(event.payload)
         } else if (event.type === 'heartbeat') {
+          this.lastHeartbeat[channel] = new Date()
           console.log('server side heartbeat')
         }
       })
@@ -108,14 +116,31 @@ export default class SelvaPubSub {
       return () => {
         this.sub.unsubscribe('channel')
         delete this.subscriptions[channel]
+        delete this.lastHeartbeat[channel]
       }
     })
+  }
+
+  private attemptReconnect() {
+    this.disconnect()
+    setTimeout(() => this.connect(this.opts), 1000)
   }
 
   private startHeartbeats() {
     const timeout = () => {
       console.log('heartbeats')
       this.heartbeatTimer = setTimeout(() => {
+        for (const channel in this.lastHeartbeat) {
+          if (
+            this.lastHeartbeat[channel] &&
+            new Date().getTime() - this.lastHeartbeat[channel].getTime() >
+              1000 * 60
+          ) {
+            // it's been too long since latest server heartbeat, disconnecting and connecting again in a second
+            this.attemptReconnect()
+          }
+        }
+
         if (this.connected && this.pub) {
           for (const channel in this.subscriptions) {
             this.pub.publish('___selva_subscription:client_heartbeats', channel)
@@ -144,6 +169,8 @@ export default class SelvaPubSub {
       if (!this.subscriptions[channel].active) {
         this.sub.subscribe(channel)
         this.subscriptions[channel].active = true
+
+        await this.setSubcriptionData(channel)
       }
     }
 
@@ -156,6 +183,31 @@ export default class SelvaPubSub {
         sub.emitter.emit('publish', message)
       }
     })
+  }
+
+  private async setSubcriptionData(channel: string) {
+    console.log(`setSubscriptionData`)
+    try {
+      await new Promise((resolve, reject) => {
+        this.pub.hset(
+          '___selva_subscriptions',
+          channel.substr('___selva_subscription:'.length),
+          JSON.stringify(this.subscriptions[channel].getOpts),
+          (err, _reply) => {
+            console.log('set something', _reply)
+            if (err) {
+              this.attemptReconnect()
+              return reject(err)
+            }
+
+            resolve()
+          }
+        )
+      })
+    } catch (e) {
+      console.error(e)
+      return
+    }
   }
 
   async markSubscriptionsClosed() {

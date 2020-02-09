@@ -1,4 +1,5 @@
 import Observable from '../observe/observable'
+import { GetOptions } from '../get/types'
 import * as redis from 'redis'
 import { createClient, RedisClient as Redis } from 'redis'
 import RedisMethods from './methods'
@@ -185,9 +186,9 @@ export default class RedisClient extends RedisMethods {
     })
   }
 
-  subscribe<T>(channel: string): Observable<T> {
+  subscribe<T>(channel: string, getOpts: GetOptions): Observable<T> {
     console.log('redis subsribe')
-    return this.subscriptionManager.subscribe(channel)
+    return this.subscriptionManager.subscribe(channel, getOpts)
   }
 
   async queue(
