@@ -127,6 +127,10 @@ export default class SelvaPubSub {
   }
 
   private startHeartbeats() {
+    if (this.heartbeatTimer) {
+      return
+    }
+
     const timeout = () => {
       console.log('heartbeats')
       this.heartbeatTimer = setTimeout(() => {
@@ -194,7 +198,6 @@ export default class SelvaPubSub {
           channel.substr('___selva_subscription:'.length),
           JSON.stringify(this.subscriptions[channel].getOpts),
           (err, _reply) => {
-            console.log('set something', _reply)
             if (err) {
               this.attemptReconnect()
               return reject(err)
