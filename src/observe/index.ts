@@ -7,6 +7,13 @@ type ObserveOptions = {
   getLatest: boolean
 }
 
+type UpdateEvent = {
+  type: 'update'
+  payload: GetResult
+}
+
+type Event = UpdateEvent
+
 export async function observe(
   client: SelvaClient,
   props: GetOptions,
@@ -23,7 +30,11 @@ export async function observe(
   return new Observable<GetResult>(observe => {
     const sub = obs.subscribe({
       next: (x: string) => {
-        observe.next(<GetResult>JSON.parse(x))
+        const event: Event = JSON.parse(x)
+
+        if (event.type === 'update') {
+          observe.next(event.payload)
+        }
       },
       error: observe.error,
       complete: observe.complete
