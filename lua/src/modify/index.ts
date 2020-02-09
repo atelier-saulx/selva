@@ -100,7 +100,7 @@ function setInternalArrayStructure(
     removeFromSet(id, field, value.$delete, hierarchy)
   }
 
-  sendEvent(id, field)
+  sendEvent(id, field, 'update')
 }
 
 function setObject(id: string, field: string, item: any) {
@@ -111,7 +111,7 @@ function setObject(id: string, field: string, item: any) {
       const result = redis.hsetnx(id, field, item.$default)
       if (result === 0) {
         redis.hincrby(id, field, item.$increment)
-        sendEvent(id, field)
+        sendEvent(id, field, 'update')
       }
       return
     }
@@ -119,7 +119,7 @@ function setObject(id: string, field: string, item: any) {
     setField(id, field, item.$default, true)
   } else if (item.$increment) {
     redis.hincrby(id, field, item.$increment)
-    sendEvent(id, field)
+    sendEvent(id, field, 'update')
   } else if (item.$ref) {
     redis.hset(id, `${field}.$ref`, item.$ref)
   } else {
@@ -171,7 +171,7 @@ function setField(
     redis.hset(id, field, tostring(value))
   }
   addFieldToSearch(id, field, value)
-  sendEvent(id, field)
+  sendEvent(id, field, 'update')
 }
 
 function remove(payload: DeleteOptions): boolean {

@@ -1,6 +1,7 @@
 import { Id } from '~selva/schema/index'
 import { markForAncestorRecalculation } from './ancestors'
 import * as r from '../redis'
+import sendEvent from './events'
 
 export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   if (hierarchy) {
@@ -26,6 +27,8 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   r.del(id + '.parents')
   r.del(id + '.ancestors')
   r.del(id + '._depth')
+  sendEvent(id, '', 'delete')
+
   // returns true if it existed
   return r.del(id) > 0
 }

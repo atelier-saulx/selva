@@ -16,11 +16,15 @@ type UpdateEvent = {
   payload: GetResult
 }
 
+type DeleteEvent = {
+  type: 'delete'
+}
+
 type HeartBeatEvent = {
   type: 'heartbeat'
 }
 
-type Event = UpdateEvent | HeartBeatEvent
+type Event = UpdateEvent | HeartBeatEvent | DeleteEvent
 
 export default class SelvaPubSub {
   private subscriptions: { [channel: string]: RedisSubsription } = {}
@@ -107,6 +111,8 @@ export default class SelvaPubSub {
         const event: Event = JSON.parse(str)
         if (event.type === 'update') {
           observer.next(event.payload)
+        } else if (event.type === 'delete') {
+          observer.next(null)
         } else if (event.type === 'heartbeat') {
           this.lastHeartbeat[channel] = Date.now()
           console.log('server side heartbeat')
