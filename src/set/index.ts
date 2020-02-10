@@ -1,6 +1,6 @@
 import { SetOptions } from './types'
 import { SelvaClient } from '..'
-import { Types, Schema } from '../schema'
+import { Schema } from '../schema'
 import fieldParsers from './fieldParsers'
 import { verifiers } from './fieldParsers/simple'
 

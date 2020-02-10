@@ -17,16 +17,16 @@ const parseObjectArray = (payload: any, schema: Schema) => {
   }
 }
 
-function isArrayLike(x: any): x is FieldSchemaArrayLike {
-  return x && !!x.items
-}
+// function isArrayLike(x: any): x is FieldSchemaArrayLike {
+//   return x && !!x.items
+// }
 
 export default (
   schema: Schema,
   field: string,
   payload: SetOptions,
   result: SetOptions,
-  _fields: FieldSchemaArrayLike,
+  fields: FieldSchemaArrayLike,
   type: string
 ): void => {
   const typeSchema = schema.types[type]
@@ -34,16 +34,10 @@ export default (
     throw new Error('Cannot find type schema ' + typeSchema)
   }
 
-  const fieldSchema = typeSchema.fields[field]
-
-  if (!isArrayLike(fieldSchema)) {
-    throw new Error('not a correct set schema')
-  }
-
-  if (!fieldSchema || !fieldSchema.items) {
+  if (!fields || !fields.items) {
     throw new Error(`Cannot find field ${field} on ${type}`)
   }
-  const fieldType = fieldSchema.items.type
+  const fieldType = fields.items.type
   const parser = parsers[fieldType]
   if (!parser) {
     throw new Error(`Cannot find parser for ${fieldType}`)
@@ -51,7 +45,7 @@ export default (
 
   const verify = v => {
     const r: { value: any } = { value: undefined }
-    parser(schema, 'value', v, r, _fields, type)
+    parser(schema, 'value', v, r, fields, type)
     return r.value
   }
 

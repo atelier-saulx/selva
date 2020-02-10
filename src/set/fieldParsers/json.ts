@@ -1,10 +1,5 @@
 import { SetOptions } from '../types'
-import {
-  Schema,
-  TypeSchema,
-  FieldSchemaJson,
-  FieldSchemaObject
-} from '../../schema'
+import { Schema, FieldSchemaJson } from '../../schema'
 import fieldParsers from '.'
 
 export default (

@@ -14,6 +14,7 @@ export default (
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
   const r: SetOptions = (result[field] = {})
+
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
@@ -35,6 +36,7 @@ export default (
     } else {
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
+
       fn(schema, key, payload[key], r, fields.properties[key], type)
     }
   }
