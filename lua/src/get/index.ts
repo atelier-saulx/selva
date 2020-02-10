@@ -161,7 +161,6 @@ function get(opts: GetOptions): GetResult {
   const { $version: version, $id: id = 'root', $language: language } = opts
 
   // default root
-  logger.info('flapdrol')
   getField(opts, schema, result, id, undefined, language, version)
 
   return <any>result

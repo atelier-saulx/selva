@@ -7,6 +7,8 @@ import { Fork } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
 
+// call get field directly here
+
 const parseNested = (
   opts: GetOptions,
   ids: string[],
