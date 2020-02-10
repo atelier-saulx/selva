@@ -3,14 +3,20 @@ import { connect } from '../src/index'
 import { start } from 'selva-server'
 import { wait } from './assertions'
 
+let srv
+test.before(async () => {
+  srv = await start({
+    port: 5051,
+    loglevel: 'info'
+  })
+})
+
+test.after(async () => {
+  await srv.destroy()
+})
+
 test.serial('basic id based subscriptions', async t => {
   const client = connect({ port: 5051 })
-
-  const server = await start({
-    port: 5051,
-    loglevel: 'info',
-    developmentLogging: true
-  })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -90,17 +96,10 @@ test.serial('basic id based subscriptions', async t => {
   sub2.unsubscribe()
 
   await client.delete('root')
-  server.destroy()
 })
 
 test.serial('using $field works', async t => {
   const client = connect({ port: 5051 })
-
-  const server = await start({
-    port: 5051,
-    loglevel: 'info',
-    developmentLogging: true
-  })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -151,17 +150,10 @@ test.serial('using $field works', async t => {
   sub.unsubscribe()
 
   await client.delete('root')
-  server.destroy()
 })
 
 test.serial('basic $inherit when ancestors change', async t => {
   const client = connect({ port: 5051 })
-
-  const server = await start({
-    port: 5051,
-    loglevel: 'info',
-    developmentLogging: true
-  })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -217,19 +209,17 @@ test.serial('basic $inherit when ancestors change', async t => {
   sub.unsubscribe()
 
   await client.delete('root')
-  server.destroy()
 })
 
 test.serial(
   'subscription client side reconnection test -- no event if no changes',
   async t => {
-    const client = connect({ port: 5051 })
-
     const server = await start({
-      port: 5051,
-      loglevel: 'info',
-      developmentLogging: true
+      port: 5052,
+      loglevel: 'info'
     })
+
+    const client = connect({ port: 5052 })
 
     await client.updateSchema({
       languages: ['en', 'de', 'nl'],
@@ -291,19 +281,18 @@ test.serial(
     sub.unsubscribe()
 
     await client.delete('root')
-    server.destroy()
+    await server.destroy()
   }
 )
 
 test.serial(
   'subscription client side reconnection test -- event if pending changes',
   async t => {
-    const client = connect({ port: 5051 })
+    const client = connect({ port: 5053 })
 
     const server = await start({
-      port: 5051,
-      loglevel: 'info',
-      developmentLogging: true
+      port: 5053,
+      loglevel: 'info'
     })
 
     await client.updateSchema({
@@ -362,6 +351,76 @@ test.serial(
     sub.unsubscribe()
 
     await client.delete('root')
-    server.destroy()
+    await server.destroy()
+  }
+)
+
+test.serial(
+  'subscription server side reconnection test -- event if pending changes',
+  async t => {
+    const client = connect({ port: 5054 })
+
+    const server = await start({
+      port: 5054,
+      loglevel: 'info'
+    })
+
+    await client.updateSchema({
+      languages: ['en', 'de', 'nl'],
+      rootType: {
+        fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      },
+      types: {
+        yeshType: {
+          fields: {
+            yesh: { type: 'string' }
+          }
+        }
+      }
+    })
+
+    t.plan(2)
+
+    const observable = await client.observe({ $id: 'root', yesh: true })
+    let o1counter = 0
+    const sub = observable.subscribe(d => {
+      if (o1counter === 0) {
+        // gets start event
+        t.deepEqualIgnoreOrder(d, { yesh: '' })
+      } else if (o1counter === 1) {
+        // gets update event
+        t.deepEqualIgnoreOrder(d, { yesh: 'so nice!!!' })
+      } else {
+        // doesn't get any more events
+        t.fail()
+      }
+      o1counter++
+    })
+
+    await wait(1000 * 5)
+    // should get no event after reconnection
+    server.closeSubscriptions()
+    await wait(1000 * 5)
+
+    await client.set({
+      $id: 'root',
+      yesh: 'so nice'
+    })
+
+    await wait(1000 * 1)
+
+    await client.set({
+      $id: 'root',
+      yesh: 'so nice!!!'
+    })
+
+    await wait(1000 * 1)
+    server.openSubscriptions()
+    await wait(1000 * 5)
+
+    sub.unsubscribe()
+
+    await client.delete('root')
+    await server.destroy()
   }
 )
