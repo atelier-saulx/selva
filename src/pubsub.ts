@@ -201,23 +201,31 @@ export default class SelvaPubSub {
     console.log(`setSubscriptionData`)
     try {
       await new Promise((resolve, reject) => {
-        this.pub.hset(
+        const tx = this.pub.multi()
+        tx.hset(
           '___selva_subscriptions',
           channel.substr('___selva_subscription:'.length),
-          JSON.stringify(this.subscriptions[channel].getOpts),
-          (err, _reply) => {
-            if (err) {
-              this.attemptReconnect()
-              return reject(err)
-            }
-
-            this.pub.publish(
-              '___selva_subscription:client_heartbeats',
-              JSON.stringify({ channel, refresh: true })
-            )
-            resolve()
-          }
+          JSON.stringify(this.subscriptions[channel].getOpts)
         )
+
+        tx.hset(
+          '___selva_subscriptions',
+          '___lastEdited',
+          new Date().toISOString()
+        )
+
+        tx.exec((err, _replies) => {
+          if (err) {
+            this.attemptReconnect()
+            return reject(err)
+          }
+
+          this.pub.publish(
+            '___selva_subscription:client_heartbeats',
+            JSON.stringify({ channel, refresh: true })
+          )
+          resolve()
+        })
       })
     } catch (e) {
       console.error(e)
