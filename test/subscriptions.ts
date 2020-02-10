@@ -219,3 +219,149 @@ test.serial('basic $inherit when ancestors change', async t => {
   await client.delete('root')
   server.destroy()
 })
+
+test.serial(
+  'subscription client side reconnection test -- no event if no changes',
+  async t => {
+    const client = connect({ port: 5051 })
+
+    const server = await start({
+      port: 5051,
+      loglevel: 'info',
+      developmentLogging: true
+    })
+
+    await client.updateSchema({
+      languages: ['en', 'de', 'nl'],
+      rootType: {
+        fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      },
+      types: {
+        yeshType: {
+          fields: {
+            yesh: { type: 'string' }
+          }
+        }
+      }
+    })
+
+    t.plan(4)
+
+    const observable = await client.observe({ $id: 'root', yesh: true })
+    let o1counter = 0
+    const sub = observable.subscribe(d => {
+      if (o1counter === 0) {
+        // gets start event
+        t.deepEqualIgnoreOrder(d, { yesh: '' })
+      } else if (o1counter === 1) {
+        // reconnect event
+        t.deepEqualIgnoreOrder(d, { yesh: '' })
+      } else if (o1counter === 2) {
+        // gets update event
+        t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })
+      } else if (o1counter === 3) {
+        t.deepEqualIgnoreOrder(d, { yesh: 'so nice!!!' })
+      } else {
+        // doesn't get any more events
+        t.fail()
+      }
+      o1counter++
+    })
+
+    await wait(1000 * 5)
+    // should get no event after reconnection
+    ;(<any>client).redis.subscriptionManager.disconnect()
+    await wait(1000 * 5)
+    ;(<any>client).redis.subscriptionManager.attemptReconnect()
+    await wait(1000 * 5)
+
+    await client.set({
+      $id: 'root',
+      yesh: 'so nice'
+    })
+
+    await wait(1000 * 1)
+
+    await client.set({
+      $id: 'root',
+      yesh: 'so nice!!!'
+    })
+
+    await wait(1000 * 1)
+    sub.unsubscribe()
+
+    await client.delete('root')
+    server.destroy()
+  }
+)
+
+test.serial(
+  'subscription client side reconnection test -- event if pending changes',
+  async t => {
+    const client = connect({ port: 5051 })
+
+    const server = await start({
+      port: 5051,
+      loglevel: 'info',
+      developmentLogging: true
+    })
+
+    await client.updateSchema({
+      languages: ['en', 'de', 'nl'],
+      rootType: {
+        fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      },
+      types: {
+        yeshType: {
+          fields: {
+            yesh: { type: 'string' }
+          }
+        }
+      }
+    })
+
+    t.plan(2)
+
+    const observable = await client.observe({ $id: 'root', yesh: true })
+    let o1counter = 0
+    const sub = observable.subscribe(d => {
+      if (o1counter === 0) {
+        // gets start event
+        t.deepEqualIgnoreOrder(d, { yesh: '' })
+      } else if (o1counter === 1) {
+        // gets update event
+        t.deepEqualIgnoreOrder(d, { yesh: 'so nice!!!' })
+      } else {
+        // doesn't get any more events
+        t.fail()
+      }
+      o1counter++
+    })
+
+    await wait(1000 * 5)
+    // should get no event after reconnection
+    ;(<any>client).redis.subscriptionManager.disconnect()
+    await wait(1000 * 5)
+
+    await client.set({
+      $id: 'root',
+      yesh: 'so nice'
+    })
+
+    await wait(1000 * 1)
+
+    await client.set({
+      $id: 'root',
+      yesh: 'so nice!!!'
+    })
+
+    await wait(1000 * 1)
+    ;(<any>client).redis.subscriptionManager.attemptReconnect()
+    await wait(1000 * 5)
+
+    sub.unsubscribe()
+
+    await client.delete('root')
+    server.destroy()
+  }
+)

@@ -115,7 +115,6 @@ export default class SelvaPubSub {
           observer.next(null)
         } else if (event.type === 'heartbeat') {
           this.lastHeartbeat[channel] = Date.now()
-          console.log('server side heartbeat')
         }
       })
 
@@ -138,7 +137,6 @@ export default class SelvaPubSub {
     }
 
     const timeout = () => {
-      console.log('heartbeats')
       this.heartbeatTimer = setTimeout(() => {
         for (const channel in this.lastHeartbeat) {
           if (
@@ -198,7 +196,6 @@ export default class SelvaPubSub {
   }
 
   private async setSubcriptionData(channel: string) {
-    console.log(`setSubscriptionData`)
     try {
       await new Promise((resolve, reject) => {
         const tx = this.pub.multi()
