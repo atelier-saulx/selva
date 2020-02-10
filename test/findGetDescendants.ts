@@ -36,13 +36,14 @@ test.before(async t => {
   })
 })
 
-test.serial('get decandatns using get', async t => {
+test.serial('get decendants using get syntax', async t => {
   const client = connect({ port: 6088 })
 
   const matches = []
   for (let i = 0; i < 10; i++) {
     matches.push({
       name: 'match ' + i,
+      type: 'match',
       value: i,
       status: i < 5 ? 100 : 300
     })
