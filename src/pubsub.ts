@@ -152,7 +152,10 @@ export default class SelvaPubSub {
 
         if (this.connected && this.pub) {
           for (const channel in this.subscriptions) {
-            this.pub.publish('___selva_subscription:client_heartbeats', channel)
+            this.pub.publish(
+              '___selva_subscription:client_heartbeats',
+              JSON.stringify({ channel })
+            )
           }
         } else {
           this.stopHeartbeats()
@@ -208,6 +211,10 @@ export default class SelvaPubSub {
               return reject(err)
             }
 
+            this.pub.publish(
+              '___selva_subscription:client_heartbeats',
+              JSON.stringify({ channel, refresh: true })
+            )
             resolve()
           }
         )
