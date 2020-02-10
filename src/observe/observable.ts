@@ -74,7 +74,9 @@ class Subscription<T> {
     try {
       const cleanup = this.observe(subObserver)
       this.cleanup =
-        typeof cleanup === 'function' ? cleanup : cleanup.unsubscribe
+        typeof cleanup === 'function'
+          ? cleanup
+          : cleanup.unsubscribe.bind(cleanup)
 
       if (this.closed) {
         this.runCleanup()
