@@ -69,7 +69,7 @@ test.serial('get decandatns using get', async t => {
     }
   })
 
-  console.log(result)
+  console.log('-->', result)
 
   t.true(true)
 })
