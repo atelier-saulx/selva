@@ -5,7 +5,6 @@ import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
-import get from '../index'
 import { isFork, getFind } from './util'
 
 const parseNested = (
@@ -37,6 +36,7 @@ const parseNested = (
 }
 
 const parseQuery = (
+  get: Function,
   getOptions: GetOptions,
   ids: string[],
   traverse?: string
@@ -93,7 +93,7 @@ const parseQuery = (
         }
       }
       opts.$list = { $find: find.$find }
-      const [nestedResults, err] = parseQuery(opts, resultIds)
+      const [nestedResults, err] = parseQuery(get, opts, resultIds)
       if (err) {
         return [results, err]
       }
@@ -125,6 +125,7 @@ const parseQuery = (
 }
 
 const queryGet = (
+  get: Function,
   result: GetResult,
   getOptions: GetOptions,
   ids?: string[],
@@ -134,12 +135,18 @@ const queryGet = (
 
   logger.info('fuck>?')
 
+  if (!get) {
+    logger.info('hello???')
+  }
+
+  // logger.info(get)
+
   logger.info(getOptions)
 
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
-  const [r, err] = parseQuery(getOptions, ids, traverse)
+  const [r, err] = parseQuery(get, getOptions, ids, traverse)
 
   if (traverse) {
     logger.info(getOptions, traverse)

@@ -27,7 +27,7 @@ function getField(
 
   if (props.$list) {
     logger.info('this is query teritory!')
-    const [_r, err] = getQuery(result, props, [id], field)
+    const [_r, err] = getQuery(get, result, props, [id], field)
 
     if (err) {
       // can return an error now
@@ -153,7 +153,7 @@ function getField(
   }
 }
 
-export default function get(opts: GetOptions): GetResult {
+function get(opts: GetOptions): GetResult {
   const schema = getSchema()
   const result: GetResult = {}
 
@@ -166,3 +166,5 @@ export default function get(opts: GetOptions): GetResult {
 
   return <any>result
 }
+
+export default get

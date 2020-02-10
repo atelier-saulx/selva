@@ -5,7 +5,6 @@ import { Find, Filter } from '~selva/get/types'
 import parseFindIds from './ids'
 import * as redis from '../../../redis'
 import * as logger from '../../../logger'
-import get from '../../index'
 
 const getIds = (traverse: string, ids: string[]): string[] => {
   if (traverse === 'ancestors') {
@@ -63,15 +62,12 @@ function parseFind(
         }
         return parseFilters(filters)
       } else {
-        if (ids.length > 1) {
-          return [
-            [],
-            'Descendants without a filter cannot have multiple ids yet'
-          ]
-        }
-        const { descendants } = get({ $id: ids[0], descendants: true })
-        table.insert(descendants, 1, '')
-        return [descendants, null]
+        // if (ids.length > 1) {
+        return [[], 'Descendants without a filter cannot have multiple ids yet']
+        // }
+        // const { descendants } = get({ $id: ids[0], descendants: true })
+        // table.insert(descendants, 1, '')
+        // return [descendants, null]
       }
     } else if ($traverse === 'ancestors') {
       // for loop here

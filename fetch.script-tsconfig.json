@@ -3,7 +3,6 @@
   "files": ["./luaScripts/fetch.ts"],
   "include": [
     "./lua/src/get/*.ts",
-    "./lua/src/query/*.ts",
     "./lua/types/*.d.ts",
     "./src/schema.ts",
     "./src/setTypes.ts"
