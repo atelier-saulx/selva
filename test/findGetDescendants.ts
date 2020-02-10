@@ -13,7 +13,7 @@ test.before(async t => {
     developmentLogging: true,
     loglevel: 'info'
   })
-  await wait(500)
+  await wait(1500)
   const client = connect({ port: 6088 })
   await client.updateSchema({
     languages: ['en'],
@@ -57,20 +57,26 @@ test.serial('get decendants using get syntax', async t => {
 
   // if not id id = root
   const result = await client.get({
-    $list: {
-      $find: {
-        $filter: [
-          {
-            $field: 'type',
-            $operator: '=',
-            $value: 'match'
-          }
-        ]
+    items: {
+      name: true,
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
+            }
+          ]
+        }
       }
     }
   })
 
-  console.log('-->', result)
+  console.log('RESULT -->', result)
 
   t.true(true)
+  await wait(1500)
 })

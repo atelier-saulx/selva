@@ -1,5 +1,5 @@
 import * as logger from '../../logger'
-import { GetOptions, Find, GetResult } from '~selva/get/types'
+import { GetOptions, GetResult } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
@@ -7,10 +7,6 @@ import { Fork } from './types'
 import printAst from './printAst'
 import get from '../index'
 import { isFork, getFind } from './util'
-
-// make a function hasQuery
-
-// get find
 
 const parseNested = (
   opts: GetOptions,
@@ -129,19 +125,33 @@ const parseQuery = (
 }
 
 const queryGet = (
+  result: GetResult,
   getOptions: GetOptions,
   ids?: string[],
   traverse?: string
 ): any[] => {
   // check if query
+
+  logger.info('fuck>?')
+
+  logger.info(getOptions)
+
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
-  const [result, err] = parseQuery(getOptions, ids, traverse)
+  const [r, err] = parseQuery(getOptions, ids, traverse)
+
+  if (traverse) {
+    logger.info(getOptions, traverse)
+
+    // needs to check field here!
+    result[traverse] = r
+  }
+
   if (err) {
     logger.error(err)
   }
-  return result
+  return r
 }
 
 export default queryGet
