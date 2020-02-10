@@ -24,6 +24,12 @@ test.before(async t => {
           name: { type: 'string', search: { type: ['TAG'] } }
         }
       },
+      team: {
+        prefix: 'te',
+        fields: {
+          name: { type: 'string', search: { type: ['TAG'] } }
+        }
+      },
       match: {
         prefix: 'ma',
         fields: {
@@ -36,18 +42,45 @@ test.before(async t => {
   })
 })
 
+test.after(async _t => {
+  const client = connect({ port: 6088 })
+  const d = Date.now()
+  await client.delete('root')
+  console.log('removed', Date.now() - d, 'ms')
+  await client.destroy()
+  await srv.destroy()
+})
+
 test.serial('get decendants using get syntax', async t => {
   const client = connect({ port: 6088 })
 
   const matches = []
+  const teams = []
+
+  for (let i = 0; i < 100; i++) {
+    teams.push({
+      $id: await client.id({ type: 'team' }),
+      name: 'team ' + i,
+      type: 'team'
+    })
+  }
+
   for (let i = 0; i < 10; i++) {
     matches.push({
       name: 'match ' + i,
       type: 'match',
       value: i,
+      parents: {
+        $add: [
+          teams[~~(Math.random() * teams.length)].$id,
+          teams[~~(Math.random() * teams.length)].$id
+        ]
+      },
       status: i < 5 ? 100 : 300
     })
   }
+
+  await Promise.all(teams.map(t => client.set(t)))
 
   await client.set({
     type: 'league',
@@ -60,6 +93,22 @@ test.serial('get decendants using get syntax', async t => {
     items: {
       name: true,
       id: true,
+      teams: {
+        id: true,
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'team'
+              }
+            ]
+          }
+        }
+      },
       $list: {
         $find: {
           $traverse: 'descendants',
@@ -75,8 +124,7 @@ test.serial('get decendants using get syntax', async t => {
     }
   })
 
-  console.log('RESULT -->', result)
+  console.dir(result, { depth: 100 })
 
   t.true(true)
-  await wait(1500)
 })
