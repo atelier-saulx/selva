@@ -53,7 +53,7 @@ function parseIds(
     if (typeFilter) {
       ids = parseTypeFilter(typeFilter, ids)
     }
-    if (filters.length === 0 && !needsQeury) {
+    if (filters.length === 0) {
       table.insert(ids, 1, '')
       return [ids, null]
     } else {

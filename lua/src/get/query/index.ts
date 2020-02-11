@@ -9,6 +9,7 @@ import { isFork, getFind } from './util'
 import { emptyArray } from '../../util'
 import { getSchema } from '../../schema/index'
 import { GetFieldFn } from '../types'
+import parseList from './parseList'
 
 const parseNested = (
   opts: GetOptions,
@@ -78,22 +79,9 @@ const parseQuery = (
     const queryResult: string[] = redis.call('ft.search', 'default', ...args)
     resultIds = queryResult
   } else if (getOptions.$list) {
-    const list = getOptions.$list
-    if (list.$sort) {
-      const sort = list.$sort
-      // table.sort(ids, (a, b) => {
-      //   return (getDepth(a) || 0) < (getDepth(b) || 0)
-      // })
-
-      // use this in nested as well
-    }
-
-    if (list.$range) {
-      const newResults: string[] = []
-      const [start, end] = list.$range
-      for (let i = start; i < end && i < resultIds.length; i++) {
-        newResults[newResults.length] = resultIds[i]
-      }
+    resultIds = parseList(resultIds, getOptions.$list)
+    if (resultIds.length === 0) {
+      resultIds = []
     }
   }
 
