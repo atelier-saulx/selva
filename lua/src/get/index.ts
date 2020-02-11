@@ -35,8 +35,6 @@ function getField(
     }
 
     return true
-
-    // also need to do other shit here e.g. field
   } else {
     if (props.$field && field) {
       hasAlias = true
@@ -48,10 +46,6 @@ function getField(
         language,
         version
       )
-
-      // logger.info(
-      //   `$field is set, GETTING from ${props.$field} for field ${field}`
-      // )
 
       if (
         getWithField(result, schema, id, field, props.$field, language, version)
