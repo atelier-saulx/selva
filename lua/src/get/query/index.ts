@@ -16,9 +16,8 @@ const parseNested = (
   traverse?: string
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
-    const needsQeury: boolean = !!opts.$list.$sort
     if (opts.$list.$find) {
-      return parseFind(opts.$list.$find, ids, needsQeury)
+      return parseFind(opts.$list.$find, ids)
     } else {
       if (!traverse) {
         return [{ isFork: true }, '$list without find needs traverse']
@@ -27,8 +26,7 @@ const parseNested = (
           {
             $traverse: traverse
           },
-          ids,
-          needsQeury
+          ids
         )
       }
     }
@@ -79,11 +77,23 @@ const parseQuery = (
     printAst(resultFork, args)
     const queryResult: string[] = redis.call('ft.search', 'default', ...args)
     resultIds = queryResult
-  } else if (getOptions.$list && getOptions.$list.$range) {
-    const newResults: string[] = []
-    const [start, end] = getOptions.$list.$range
-    for (let i = start; i < end && i < resultIds.length; i++) {
-      newResults[newResults.length] = resultIds[i]
+  } else if (getOptions.$list) {
+    const list = getOptions.$list
+    if (list.$sort) {
+      const sort = list.$sort
+      // table.sort(ids, (a, b) => {
+      //   return (getDepth(a) || 0) < (getDepth(b) || 0)
+      // })
+
+      // use this in nested as well
+    }
+
+    if (list.$range) {
+      const newResults: string[] = []
+      const [start, end] = list.$range
+      for (let i = start; i < end && i < resultIds.length; i++) {
+        newResults[newResults.length] = resultIds[i]
+      }
     }
   }
 

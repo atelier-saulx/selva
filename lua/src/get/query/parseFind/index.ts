@@ -39,8 +39,7 @@ const getIds = (traverse: string, ids: string[]): string[] => {
 
 function parseFind(
   opts: Find,
-  ids: string[],
-  needsQeury?: boolean
+  ids: string[]
 ): [Fork | string[], string | null] {
   let { $traverse, $filter: filterRaw } = opts
   if (!filterRaw) {
@@ -72,13 +71,13 @@ function parseFind(
     } else if ($traverse === 'ancestors') {
       // for loop here
       const ancestors = getIds($traverse, ids)
-      return parseFindIds(filters, ancestors, ids, needsQeury)
+      return parseFindIds(filters, ancestors)
     } else if (isArray($traverse)) {
       // short hand to do iteration over multiple ids
-      return parseFindIds(filters, $traverse, ids, needsQeury)
+      return parseFindIds(filters, $traverse)
     } else {
       const resultIds = getIds($traverse, ids)
-      return parseFindIds(filters, resultIds, ids, needsQeury)
+      return parseFindIds(filters, resultIds)
     }
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']
