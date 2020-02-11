@@ -8,8 +8,6 @@ import printAst from './printAst'
 import { isFork, getFind } from './util'
 import { emptyArray } from '../../util'
 
-// call get field directly here
-
 const parseNested = (
   opts: GetOptions,
   ids: string[],
@@ -139,12 +137,10 @@ const queryGet = (
     ids = [getOptions.$id || 'root']
   }
   let [r, err] = parseQuery(get, getOptions, ids, traverse)
-
   if (!r.length || r.length === 0) {
     r = emptyArray()
   }
   result[resultField] = r
-
   if (err) {
     return err
   }
