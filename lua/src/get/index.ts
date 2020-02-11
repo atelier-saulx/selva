@@ -29,6 +29,20 @@ function getField(
     // field that needs to get the result
 
     if (field) {
+      let sourceField: string | string[] = field
+      if (!props.$list.$find && props.$field) {
+        sourceField = resolveAll(
+          id,
+          schema,
+          ensureArray(props.$field),
+          language,
+          version
+        )
+      }
+
+      // clean up this property so we don't use it in gets with lists
+      delete props.$field
+
       // allways need a field for getQuery
       const err = getQuery(
         getField,
@@ -37,7 +51,7 @@ function getField(
         props,
         field,
         [id],
-        field,
+        sourceField,
         language,
         version,
         includeMeta

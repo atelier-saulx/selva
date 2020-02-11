@@ -6,7 +6,7 @@ import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
-import { emptyArray } from '../../util'
+import { emptyArray, ensureArray } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
@@ -14,7 +14,7 @@ import { Schema } from '../../../../src/schema/index'
 const parseNested = (
   opts: GetOptions,
   ids: string[],
-  traverse?: string
+  traverse?: string | string[]
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
     if (opts.$list.$find) {
@@ -29,7 +29,7 @@ const parseNested = (
       } else {
         return parseFind(
           {
-            $traverse: traverse
+            $fields: ensureArray(traverse)
           },
           ids
         )
@@ -46,7 +46,7 @@ const parseQuery = (
   schema: Schema,
   getOptions: GetOptions,
   ids: string[],
-  traverse?: string,
+  traverse?: string | string[],
   language?: string,
   version?: string,
   includeMeta?: boolean
@@ -180,7 +180,7 @@ const queryGet = (
   getOptions: GetOptions,
   resultField: string,
   ids?: string[],
-  traverse?: string,
+  traverse?: string | string[],
   language?: string,
   version?: string,
   includeMeta?: boolean
@@ -188,6 +188,7 @@ const queryGet = (
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
+
   const [r, err] = parseQuery(
     getField,
     schema,

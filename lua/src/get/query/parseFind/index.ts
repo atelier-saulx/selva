@@ -1,6 +1,6 @@
 import parseFilters from '../parseFilters'
 import { Fork } from '../types'
-import { isArray } from '../../../util'
+import { isArray, ensureArray } from '../../../util'
 import { Find, Filter } from '~selva/get/types'
 import parseFindIds from './ids'
 import * as redis from '../../../redis'
@@ -38,10 +38,10 @@ const getIds = (traverse: string, ids: string[]): string[] => {
 }
 
 function parseFind(
-  opts: Find,
+  opts: Find & { $fields?: string[] },
   ids: string[]
 ): [Fork | string[], string | null] {
-  let { $traverse, $filter: filterRaw } = opts
+  let { $traverse, $filter: filterRaw, $fields } = opts
   if (!filterRaw) {
     filterRaw = opts.$filter = []
   }
@@ -79,6 +79,17 @@ function parseFind(
       const resultIds = getIds($traverse, ids)
       return parseFindIds(filters, resultIds)
     }
+  } else if ($fields) {
+    let resultIds: string[] = []
+    for (const field of $fields) {
+      let res = getIds(field, ids)
+      if (res && res.length > 0) {
+        resultIds = res
+        break
+      }
+    }
+
+    return parseFindIds(filters, resultIds)
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']
   }
