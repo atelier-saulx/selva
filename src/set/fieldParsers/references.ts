@@ -1,10 +1,9 @@
 import { SetOptions } from '../types'
-import { Schema, TypeSchema, FieldSchemaArrayLike } from '../../schema'
+import { Schema, FieldSchemaArrayLike } from '../../schema'
 import { parseSetObject } from '../'
 import { verifiers } from './simple'
 
 const id = verifiers.id
-type Schemas = Record<string, TypeSchema>
 
 const verifySimple = payload => {
   if (Array.isArray(payload)) {

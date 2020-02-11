@@ -66,7 +66,6 @@ export type FieldSchemaOther = {
 export type FieldSchemaArrayLike = {
   search?: { index?: string; type: 'TAG'[] }
   type: 'set' | 'array'
-  // cannot have nested object - needs to be json for set
   items: FieldSchema
 }
 

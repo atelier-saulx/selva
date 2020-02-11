@@ -1,28 +1,77 @@
 import { SetOptions } from '../types'
-import { Schema, TypeSchema, FieldSchemaArrayLike } from '../../schema'
-import fieldParsers from '.'
+import { Schema, FieldSchemaArrayLike } from '../../schema'
+import { parseSetObject } from '../'
+import parsers from './simple'
+
+const verifySimple = (payload, verify) => {
+  if (Array.isArray(payload)) {
+    return payload.map(v => verify(v))
+  } else {
+    return [verify(payload)]
+  }
+}
+
+const parseObjectArray = (payload: any, schema: Schema) => {
+  if (Array.isArray(payload) && typeof payload[0] === 'object') {
+    return payload.map(ref => parseSetObject(ref, schema))
+  }
+}
+
+// function isArrayLike(x: any): x is FieldSchemaArrayLike {
+//   return x && !!x.items
+// }
 
 export default (
-  _schema: Schema,
+  schema: Schema,
   field: string,
   payload: SetOptions,
   result: SetOptions,
-  _fields: FieldSchemaArrayLike,
-  _type: string
+  fields: FieldSchemaArrayLike,
+  type: string
 ): void => {
-  // SET fix
+  const typeSchema = schema.types[type]
+  if (!typeSchema) {
+    throw new Error('Cannot find type schema ' + typeSchema)
+  }
 
-  // FIXME: make this work
+  if (!fields || !fields.items) {
+    throw new Error(`Cannot find field ${field} on ${type}`)
+  }
+  const fieldType = fields.items.type
+  const parser = parsers[fieldType]
+  if (!parser) {
+    throw new Error(`Cannot find parser for ${fieldType}`)
+  }
 
-  // const arr = payload
-  // if (!Array.isArray(arr)) {
-  //   throw new Error(`Array is not an array ${JSON.stringify(arr)}`)
-  // }
-  // const itemsFields = fields.items
-  // const parser = fieldParsers[itemsFields.type]
-  // arr.forEach(payload => {
-  //   // need to remove all options from nested fields!
-  //   parser(schemas, itemsFields, payload, result, fields, type)
-  // })
-  result[field] = payload
+  const verify = v => {
+    const r: { value: any } = { value: undefined }
+    parser(schema, 'value', v, r, fields, type)
+    return r.value
+  }
+
+  if (typeof payload === 'object' && !Array.isArray(payload)) {
+    result[field] = {}
+    for (let k in payload) {
+      if (k === '$add') {
+        const parsed = parseObjectArray(payload[k], schema)
+        if (parsed) {
+          result[field].$add = parsed
+        } else if (
+          typeof payload[k] === 'object' &&
+          !Array.isArray(payload[k])
+        ) {
+          result[field].$add = [parseSetObject(payload[k], schema)]
+        } else {
+          result[field].$add = verifySimple(payload[k], verify)
+        }
+      } else if (k === '$delete') {
+        result[field].$delete = verifySimple(payload[k], verify)
+      } else {
+        throw new Error(`Wrong key for set ${k}`)
+      }
+    }
+  } else {
+    result[field] =
+      parseObjectArray(payload, schema) || verifySimple(payload, verify)
+  }
 }

@@ -77,18 +77,20 @@ test.serial('find - references', async t => {
   }
   await Promise.all(leaguesSet.map(v => client.set(v)))
 
-  const leagues = await client.query({
-    id: true,
-    name: true,
-    value: true,
-    $list: {
-      $sort: { $field: 'value', $order: 'desc' },
-      $find: {
-        $traverse: 'descendants',
-        $filter: {
-          $field: 'type',
-          $operator: '=',
-          $value: 'league'
+  const { items: leagues } = await client.get({
+    items: {
+      id: true,
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'desc' },
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'league'
+          }
         }
       }
     }
@@ -96,56 +98,60 @@ test.serial('find - references', async t => {
 
   const league = leagues[0].id
 
-  const matches = await client.query({
+  const { items: matches } = await client.get({
     $id: league,
-    id: true,
-    name: true,
-    value: true,
-    $list: {
-      $sort: { $field: 'value', $order: 'desc' },
-      $find: {
-        $traverse: 'children',
-        $filter: [
-          {
-            $field: 'type',
-            $operator: '=',
-            $value: 'match'
-          },
-          {
-            $field: 'value',
-            $operator: '..',
-            $value: [5, 10]
-          }
-        ]
+    items: {
+      id: true,
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'desc' },
+        $find: {
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
+            },
+            {
+              $field: 'value',
+              $operator: '..',
+              $value: [5, 10]
+            }
+          ]
+        }
       }
     }
   })
 
-  const relatedMatches = await client.query({
+  const { items: relatedMatches } = await client.get({
     $id: matches[0].id,
-    name: true,
-    value: true,
-    $list: {
-      $sort: { $field: 'value', $order: 'desc' },
-      $find: {
-        $traverse: 'related',
-        $filter: [
-          {
-            $field: 'value',
-            $operator: '<',
-            $value: 4
-          },
-          {
-            $field: 'value',
-            $operator: '<',
-            $value: 'now'
-          },
-          {
-            $field: 'value',
-            $operator: '>',
-            $value: 2
-          }
-        ]
+    items: {
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'desc' },
+        $find: {
+          $traverse: 'related',
+          $filter: [
+            {
+              $field: 'value',
+              $operator: '<',
+              $value: 4
+            },
+            {
+              $field: 'value',
+              $operator: '<',
+              $value: 'now'
+            },
+            {
+              $field: 'value',
+              $operator: '>',
+              $value: 2
+            }
+          ]
+        }
       }
     }
   })
@@ -174,34 +180,100 @@ test.serial('find - references', async t => {
     { value: 2, name: 'match0' }
   ])
 
-  const relatedMatchesLeagues = await client.query({
+  const { items: relatedMatchesLeagues } = await client.get({
     $id: matches[0].id,
-    name: true,
-    $list: {
-      $find: {
-        $traverse: 'related',
+    items: {
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'asc' },
         $find: {
-          $traverse: 'ancestors',
-          $filter: [
-            {
-              $field: 'type',
-              $operator: '=',
-              $value: 'league'
-            },
-            {
-              $field: 'value',
-              $operator: '<',
-              $value: 3
-            }
-          ]
+          $traverse: 'related',
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              },
+              {
+                $field: 'value',
+                $operator: '<',
+                $value: 10
+              }
+            ]
+          }
         }
       }
     }
   })
 
   t.deepEqualIgnoreOrder(
-    relatedMatchesLeagues.map(v => v.name),
-    ['league3', 'league2', 'league1', 'league0'],
+    relatedMatchesLeagues,
+    [
+      { value: 0, name: 'league0' },
+      { value: 1, name: 'league1' },
+      { value: 2, name: 'league2' },
+      { value: 3, name: 'league3' },
+      { value: 4, name: 'league4' },
+      { value: 5, name: 'league5' },
+      { value: 6, name: 'league6' },
+      { value: 7, name: 'league7' },
+      { value: 8, name: 'league8' },
+      { value: 9, name: 'league9' }
+    ],
     'Nested query'
   )
+
+  await wait(1000)
+
+  console.log('HERE HERE HERE')
+
+  const { related: relatedMatchesLeaguesNoTraverse } = await client.get({
+    $id: matches[0].id,
+    related: {
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'asc' },
+        $find: {
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              },
+              {
+                $field: 'value',
+                $operator: '<',
+                $value: 10
+              }
+            ]
+          }
+        }
+      }
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    relatedMatchesLeaguesNoTraverse,
+    [
+      { value: 0, name: 'league0' },
+      { value: 1, name: 'league1' },
+      { value: 2, name: 'league2' },
+      { value: 3, name: 'league3' },
+      { value: 4, name: 'league4' },
+      { value: 5, name: 'league5' },
+      { value: 6, name: 'league6' },
+      { value: 7, name: 'league7' },
+      { value: 8, name: 'league8' },
+      { value: 9, name: 'league9' }
+    ],
+    'Nested query'
+  )
+
+  await wait(1000)
 })

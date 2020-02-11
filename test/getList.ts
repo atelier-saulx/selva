@@ -27,7 +27,7 @@ test.serial('get - simple $list', async t => {
         prefix: 'cu',
         fields: {
           name: { type: 'string' },
-          value: { type: 'number' },
+          value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
             type: 'json'
@@ -46,7 +46,16 @@ test.serial('get - simple $list', async t => {
     }
   })
 
-  // Should not come here once LUA: [info] searchStr for cuB with root,cuA
+  const children = []
+
+  for (let i = 0; i < 100; i++) {
+    children.push({
+      type: 'custom',
+      value: i,
+      name: 'flurp' + i
+    })
+  }
+
   await Promise.all([
     client.set({
       $id: 'cuA',
@@ -54,13 +63,51 @@ test.serial('get - simple $list', async t => {
         thumb: 'flurp.jpg'
       },
       title: { en: 'snurf' },
-      children: ['cuB', 'cuC']
+      children
     })
   ])
 
-  t.true(true)
+  const c = await client.get({
+    $id: 'cuA',
+    children: {
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'asc' },
+        $range: [0, 10]
+      }
+    }
+  })
 
-  await client.delete('root')
+  t.deepEqual(
+    c,
+    {
+      children: [
+        { value: 0, name: 'flurp0' },
+        { value: 1, name: 'flurp1' },
+        { value: 2, name: 'flurp2' },
+        { value: 3, name: 'flurp3' },
+        { value: 4, name: 'flurp4' },
+        { value: 5, name: 'flurp5' },
+        { value: 6, name: 'flurp6' },
+        { value: 7, name: 'flurp7' },
+        { value: 8, name: 'flurp8' },
+        { value: 9, name: 'flurp9' }
+      ]
+    },
+    'non redis search sort'
+  )
 
-  client.destroy()
+  const { children: rangeResult } = await client.get({
+    $id: 'cuA',
+    children: {
+      name: true,
+      value: true,
+      $list: {
+        $range: [0, 10]
+      }
+    }
+  })
+
+  t.is(rangeResult.length, 10, 'non redis search range')
 })

@@ -9,7 +9,9 @@ import getWithField, { resolveAll } from './field'
 import { getSchema } from '../schema/index'
 import { ensureArray } from 'lua/src/util'
 import makeNewGetOptions from 'lua/src/get/all'
+import getQuery from './query/index'
 
+// add error handling
 function getField(
   props: GetItem,
   schema: Schema,
@@ -22,94 +24,128 @@ function getField(
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {
   let hasAlias = false
-  if (props.$field && field) {
-    hasAlias = true
 
-    props.$field = resolveAll(
-      id,
-      schema,
-      ensureArray(props.$field),
-      language,
-      version
-    )
+  if (props.$list && ignore !== '$list' && ignore !== '$') {
+    // field that needs to get the result
 
-    // logger.info(
-    //   `$field is set, GETTING from ${props.$field} for field ${field}`
-    // )
-    if (
-      getWithField(
-        result,
+    if (field) {
+      // allways need a field for getQuery
+      const err = getQuery(
+        getField,
         schema,
-        id,
+        result,
+        props,
         field,
-        props.$field,
+        [id],
+        field,
         language,
         version,
         includeMeta
       )
-    ) {
-      return true
+      if (err) {
+        // can return an error now
+        logger.error(err)
+      }
     }
-  }
+    return true
+  } else {
+    if (props.$field && field) {
+      hasAlias = true
 
-  let isComplete = true
-  let hasKeys = false
-  if (!hasAlias) {
-    if (props.$all) {
-      props = makeNewGetOptions(id, field || '', schema, props)
+      props.$field = resolveAll(
+        id,
+        schema,
+        ensureArray(props.$field),
+        language,
+        version
+      )
+
+      if (
+        getWithField(
+          result,
+          schema,
+          id,
+          field,
+          props.$field,
+          language,
+          version,
+          includeMeta
+        )
+      ) {
+        return true
+      }
     }
 
-    for (const key in props) {
-      if (key[0] !== '$') {
-        hasKeys = true
-        const f = field && field.length > 0 ? field + '.' + key : key
-        if (props[key] === true) {
-          // logger.info(`key: ${key} field ${f}`)
-          if (
-            !getByType(result, schema, id, f, language, version, includeMeta)
-          ) {
-            isComplete = false
-          }
-        } else if (props[key] === false) {
-          // skip
-        } else {
-          if (
-            getField(
-              props[key],
-              schema,
-              result,
-              id,
-              f,
-              language,
-              version,
-              includeMeta
-            )
-          ) {
-            isComplete = false
+    let isComplete = true
+    let hasKeys = false
+    if (!hasAlias) {
+      if (props.$all) {
+        props = makeNewGetOptions(id, field || '', schema, props)
+      }
+
+      for (const key in props) {
+        if (key[0] !== '$') {
+          hasKeys = true
+          const f = field && field.length > 0 ? field + '.' + key : key
+          if (props[key] === true) {
+            // logger.info(`key: ${key} field ${f}`)
+            if (
+              !getByType(result, schema, id, f, language, version, includeMeta)
+            ) {
+              isComplete = false
+            }
+          } else if (props[key] === false) {
+            // skip
+          } else {
+            if (
+              getField(
+                props[key],
+                schema,
+                result,
+                id,
+                f,
+                language,
+                version,
+                includeMeta
+              )
+            ) {
+              isComplete = false
+            }
           }
         }
       }
     }
-  }
 
-  // make no inherit a field - ignore field
-  //
-  if (
-    (!ignore || (ignore !== '$' && ignore !== '$inherit')) &&
-    props.$inherit &&
-    (!isComplete || !hasKeys)
-  ) {
-    if (!hasAlias && !hasKeys) {
-      const complete = getByType(
-        result,
-        schema,
-        id,
-        <string>field,
-        language,
-        version,
-        includeMeta
-      )
-      if (!complete) {
+    if (
+      (!ignore || (ignore !== '$' && ignore !== '$inherit')) &&
+      props.$inherit &&
+      (!isComplete || !hasKeys)
+    ) {
+      if (!hasAlias && !hasKeys) {
+        const complete = getByType(
+          result,
+          schema,
+          id,
+          <string>field,
+          language,
+          version,
+          includeMeta
+        )
+        if (!complete) {
+          inherit(
+            getField,
+            props,
+            schema,
+            result,
+            id,
+            <string>field,
+            language,
+            version,
+            includeMeta,
+            hasAlias ? props.$field : undefined
+          )
+        }
+      } else {
         inherit(
           getField,
           props,
@@ -123,53 +159,40 @@ function getField(
           hasAlias ? props.$field : undefined
         )
       }
-    } else {
-      inherit(
-        getField,
-        props,
-        schema,
+    }
+
+    if (props.$default) {
+      if (hasAlias) {
+        setNestedResult(result, <string>field, props.$default)
+        return true
+      }
+
+      const complete = getByType(
         result,
+        schema,
         id,
         <string>field,
         language,
         version,
-        includeMeta,
-        hasAlias ? props.$field : undefined
+        includeMeta
       )
+      if (!complete) {
+        setNestedResult(result, <string>field, props.$default)
+      }
     }
+
+    return isComplete
   }
-
-  if (props.$default) {
-    if (hasAlias) {
-      setNestedResult(result, <string>field, props.$default)
-      return true
-    }
-
-    const complete = getByType(
-      result,
-      schema,
-      id,
-      <string>field,
-      language,
-      version,
-      includeMeta
-    )
-    if (!complete) {
-      setNestedResult(result, <string>field, props.$default)
-    }
-  }
-
-  return isComplete
 }
 
-export default function get(opts: GetOptions): GetResult {
+function get(opts: GetOptions): GetResult {
   const schema = getSchema()
   const result: GetResult = {}
 
   // logger.info(`GET ${cjson.encode(opts)}`)
   const {
     $version: version,
-    $id: id,
+    $id: id = 'root',
     $language: language,
     $includeMeta: includeMeta
   } = opts
@@ -178,20 +201,9 @@ export default function get(opts: GetOptions): GetResult {
     result.$meta = { $refs: {} }
   }
 
-  if (id) {
-    getField(
-      opts,
-      schema,
-      result,
-      id,
-      undefined,
-      language,
-      version,
-      includeMeta
-    )
-  } else {
-    // TODO: queries
-  }
+  getField(opts, schema, result, id, undefined, language, version, includeMeta)
 
   return <any>result
 }
+
+export default get

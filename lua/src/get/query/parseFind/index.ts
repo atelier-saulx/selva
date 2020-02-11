@@ -5,7 +5,6 @@ import { Find, Filter } from '~selva/get/types'
 import parseFindIds from './ids'
 import * as redis from '../../../redis'
 import * as logger from '../../../logger'
-import get from '../../index'
 
 const getIds = (traverse: string, ids: string[]): string[] => {
   if (traverse === 'ancestors') {
@@ -40,8 +39,7 @@ const getIds = (traverse: string, ids: string[]): string[] => {
 
 function parseFind(
   opts: Find,
-  ids: string[],
-  needsQeury?: boolean
+  ids: string[]
 ): [Fork | string[], string | null] {
   let { $traverse, $filter: filterRaw } = opts
   if (!filterRaw) {
@@ -63,27 +61,23 @@ function parseFind(
         }
         return parseFilters(filters)
       } else {
-        if (ids.length > 1) {
-          return [
-            [],
-            'Descendants without a filter cannot have multiple ids yet'
-          ]
-        }
-        const { descendants } = get({ $id: ids[0], descendants: true })
-        table.insert(descendants, 1, '')
-        return [descendants, null]
+        // if (ids.length > 1) {
+        return [[], 'Descendants without a filter cannot have multiple ids yet']
+        // }
+        // const { descendants } = get({ $id: ids[0], descendants: true })
+        // table.insert(descendants, 1, '')
+        // return [descendants, null]
       }
     } else if ($traverse === 'ancestors') {
       // for loop here
       const ancestors = getIds($traverse, ids)
-      return parseFindIds(filters, ancestors, needsQeury)
+      return parseFindIds(filters, ancestors)
     } else if (isArray($traverse)) {
       // short hand to do iteration over multiple ids
-      return parseFindIds(filters, $traverse, needsQeury)
+      return parseFindIds(filters, $traverse)
     } else {
-      // for loop here
       const resultIds = getIds($traverse, ids)
-      return parseFindIds(filters, resultIds, needsQeury)
+      return parseFindIds(filters, resultIds)
     }
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']

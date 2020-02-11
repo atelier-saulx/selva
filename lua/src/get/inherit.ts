@@ -7,6 +7,7 @@ import getByType from './getByType'
 import { ensureArray, splitString } from '../util'
 import * as logger from '../logger'
 import getWithField from 'lua/src/get/field'
+import { GetFieldFn } from './types'
 
 function getAncestorsByType(
   types: string[],
@@ -243,18 +244,6 @@ function inheritItem(
   // set empty result
   setNestedResult(result, field, {})
 }
-
-type GetFieldFn = (
-  props: GetItem,
-  schemas: Schema,
-  result: GetResult,
-  id: Id,
-  field?: string,
-  language?: string,
-  version?: string,
-  includeMeta?: boolean,
-  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
-) => boolean
 
 export default function inherit(
   getField: GetFieldFn,

@@ -1,16 +1,15 @@
 import * as logger from '../../logger'
-import { GetOptions, Find, GetResult } from '~selva/get/types'
+import { GetOptions, GetResult } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
-import get from '../index'
 import { isFork, getFind } from './util'
-
-// make a function hasQuery
-
-// get find
+import { emptyArray } from '../../util'
+import { GetFieldFn } from '../types'
+import parseList from './parseList'
+import { Schema } from '../../../../src/schema/index'
 
 const parseNested = (
   opts: GetOptions,
@@ -18,9 +17,12 @@ const parseNested = (
   traverse?: string
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
-    const needsQeury: boolean = !!opts.$list.$sort
     if (opts.$list.$find) {
-      return parseFind(opts.$list.$find, ids, needsQeury)
+      if (!opts.$list.$find.$traverse) {
+        opts.$list.$find.$traverse = traverse
+      }
+
+      return parseFind(opts.$list.$find, ids)
     } else {
       if (!traverse) {
         return [{ isFork: true }, '$list without find needs traverse']
@@ -29,8 +31,7 @@ const parseNested = (
           {
             $traverse: traverse
           },
-          ids,
-          needsQeury
+          ids
         )
       }
     }
@@ -41,9 +42,14 @@ const parseNested = (
 }
 
 const parseQuery = (
+  getField: GetFieldFn,
+  schema: Schema,
   getOptions: GetOptions,
   ids: string[],
-  traverse?: string
+  traverse?: string,
+  language?: string,
+  version?: string,
+  includeMeta?: boolean
 ): [GetResult[], string | null] => {
   const resultGet = {}
   const results: GetResult[] = []
@@ -78,17 +84,19 @@ const parseQuery = (
     printAst(resultFork, args)
     const queryResult: string[] = redis.call('ft.search', 'default', ...args)
     resultIds = queryResult
+  } else if (getOptions.$list) {
+    resultIds = parseList(resultIds, getOptions.$list)
+    if (resultIds.length === 0) {
+      resultIds = []
+    }
   }
 
+  const find = getFind(getOptions)
+
   if (resultIds) {
-    const find = getFind(getOptions)
     if (find && find.$find) {
       if (getOptions.$list) {
         table.remove(resultIds, 1)
-        // FIXME: nested sort and range
-        if (getOptions.$list.$sort) {
-          return [results, 'Nested find sort is not supported yet!']
-        }
       }
       const opts: GetOptions = { id: true }
       for (let key in getOptions) {
@@ -96,8 +104,27 @@ const parseQuery = (
           opts[key] = getOptions[key]
         }
       }
-      opts.$list = { $find: find.$find }
-      const [nestedResults, err] = parseQuery(opts, resultIds)
+      opts.$list = {
+        $find: find.$find
+      }
+
+      if (getOptions.$list && getOptions.$list.$sort) {
+        opts.$list.$sort = getOptions.$list.$sort
+      }
+
+      if (getOptions.$list && getOptions.$list.$range) {
+        opts.$list.$range = getOptions.$list.$range
+      }
+
+      const [nestedResults, err] = parseQuery(
+        getField,
+        schema,
+        opts,
+        resultIds,
+        undefined,
+        language,
+        version
+      )
       if (err) {
         return [results, err]
       }
@@ -114,13 +141,19 @@ const parseQuery = (
       }
     } else {
       for (let i = 1; i < resultIds.length; i++) {
-        const opts: GetOptions = { $id: resultIds[i] }
-        for (let key in getOptions) {
-          if (key !== '$find' && key !== '$list' && key !== '$id') {
-            opts[key] = getOptions[key]
-          }
-        }
-        results[results.length] = get(opts)
+        const result: GetResult = {}
+        getField(
+          getOptions,
+          schema,
+          result,
+          resultIds[i],
+          '',
+          language,
+          version,
+          includeMeta,
+          '$'
+        )
+        results[results.length] = result
       }
     }
   }
@@ -129,19 +162,38 @@ const parseQuery = (
 }
 
 const queryGet = (
+  getField: GetFieldFn,
+  schema: Schema,
+  result: GetResult,
   getOptions: GetOptions,
+  resultField: string,
   ids?: string[],
-  traverse?: string
-): any[] => {
-  // check if query
+  traverse?: string,
+  language?: string,
+  version?: string,
+  includeMeta?: boolean
+): string | null => {
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
-  const [result, err] = parseQuery(getOptions, ids, traverse)
-  if (err) {
-    logger.error(err)
+  let [r, err] = parseQuery(
+    getField,
+    schema,
+    getOptions,
+    ids,
+    traverse,
+    language,
+    version,
+    includeMeta
+  )
+  if (!r.length || r.length === 0) {
+    r = emptyArray()
   }
-  return result
+  result[resultField] = r
+  if (err) {
+    return err
+  }
+  return null
 }
 
 export default queryGet

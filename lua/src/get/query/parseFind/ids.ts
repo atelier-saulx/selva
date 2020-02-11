@@ -33,8 +33,7 @@ const parseTypeFilter = (filter: Filter, ids: string[]): string[] => {
 
 function parseIds(
   filters: Filter[],
-  ids: string[],
-  needsQeury?: boolean
+  ids: string[]
 ): [Fork | string[], string | null] {
   if (filters.length !== 0) {
     let typeFilter: Filter | undefined
@@ -54,8 +53,7 @@ function parseIds(
     if (typeFilter) {
       ids = parseTypeFilter(typeFilter, ids)
     }
-    if (filters.length === 0 && !needsQeury) {
-      // empty first arg to get unified response with redisSearch
+    if (filters.length === 0) {
       table.insert(ids, 1, '')
       return [ids, null]
     } else {

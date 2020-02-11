@@ -3,6 +3,12 @@ script=$1
 
 tstl -p $script
 # move scripts that suffer from weird bundle path bug
+
+mkdir -p ./dist/dist/lua
+mkdir -p ./dist/lua
+mkdir -p ./dist/lua/lua
+mkdir -p ./dist/lua/dist/scripts
+
 mv ./dist/lua/dist/scripts/* ./dist/lua
 mv ./dist/dist/lua/* ./dist/lua
 mv ./dist/lua/lua/* ./dist/lua
