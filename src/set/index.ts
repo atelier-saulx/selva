@@ -22,7 +22,13 @@ export const parseSetObject = (
 
   const schema = type === 'root' ? schemas.rootType : schemas.types[type]
   if (!schema) {
-    throw new Error(`Cannot find type ${type} from set-object`)
+    throw new Error(
+      `Cannot find type ${type} from set-object ${JSON.stringify(
+        payload,
+        null,
+        2
+      )}`
+    )
   }
 
   let fields = schema.fields

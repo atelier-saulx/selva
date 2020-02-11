@@ -1,16 +1,12 @@
 import * as logger from '../../logger'
-import { GetOptions, Find, GetResult } from '~selva/get/types'
+import { GetOptions, GetResult } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
-import get from '../index'
 import { isFork, getFind } from './util'
-
-// make a function hasQuery
-
-// get find
+import { emptyArray } from '../../util'
 
 const parseNested = (
   opts: GetOptions,
@@ -41,6 +37,7 @@ const parseNested = (
 }
 
 const parseQuery = (
+  get: Function,
   getOptions: GetOptions,
   ids: string[],
   traverse?: string
@@ -97,7 +94,7 @@ const parseQuery = (
         }
       }
       opts.$list = { $find: find.$find }
-      const [nestedResults, err] = parseQuery(opts, resultIds)
+      const [nestedResults, err] = parseQuery(get, opts, resultIds)
       if (err) {
         return [results, err]
       }
@@ -129,19 +126,25 @@ const parseQuery = (
 }
 
 const queryGet = (
+  get: Function,
+  result: GetResult,
   getOptions: GetOptions,
+  resultField: string,
   ids?: string[],
   traverse?: string
-): any[] => {
-  // check if query
+): string | null => {
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
-  const [result, err] = parseQuery(getOptions, ids, traverse)
-  if (err) {
-    logger.error(err)
+  let [r, err] = parseQuery(get, getOptions, ids, traverse)
+  if (!r.length || r.length === 0) {
+    r = emptyArray()
   }
-  return result
+  result[resultField] = r
+  if (err) {
+    return err
+  }
+  return null
 }
 
 export default queryGet

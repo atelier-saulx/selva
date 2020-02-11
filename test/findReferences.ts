@@ -77,18 +77,20 @@ test.serial('find - references', async t => {
   }
   await Promise.all(leaguesSet.map(v => client.set(v)))
 
-  const leagues = await client.query({
-    id: true,
-    name: true,
-    value: true,
-    $list: {
-      $sort: { $field: 'value', $order: 'desc' },
-      $find: {
-        $traverse: 'descendants',
-        $filter: {
-          $field: 'type',
-          $operator: '=',
-          $value: 'league'
+  const { items: leagues } = await client.get({
+    items: {
+      id: true,
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'desc' },
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'league'
+          }
         }
       }
     }
@@ -96,56 +98,60 @@ test.serial('find - references', async t => {
 
   const league = leagues[0].id
 
-  const matches = await client.query({
+  const { items: matches } = await client.get({
     $id: league,
-    id: true,
-    name: true,
-    value: true,
-    $list: {
-      $sort: { $field: 'value', $order: 'desc' },
-      $find: {
-        $traverse: 'children',
-        $filter: [
-          {
-            $field: 'type',
-            $operator: '=',
-            $value: 'match'
-          },
-          {
-            $field: 'value',
-            $operator: '..',
-            $value: [5, 10]
-          }
-        ]
+    items: {
+      id: true,
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'desc' },
+        $find: {
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
+            },
+            {
+              $field: 'value',
+              $operator: '..',
+              $value: [5, 10]
+            }
+          ]
+        }
       }
     }
   })
 
-  const relatedMatches = await client.query({
+  const { items: relatedMatches } = await client.get({
     $id: matches[0].id,
-    name: true,
-    value: true,
-    $list: {
-      $sort: { $field: 'value', $order: 'desc' },
-      $find: {
-        $traverse: 'related',
-        $filter: [
-          {
-            $field: 'value',
-            $operator: '<',
-            $value: 4
-          },
-          {
-            $field: 'value',
-            $operator: '<',
-            $value: 'now'
-          },
-          {
-            $field: 'value',
-            $operator: '>',
-            $value: 2
-          }
-        ]
+    items: {
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'desc' },
+        $find: {
+          $traverse: 'related',
+          $filter: [
+            {
+              $field: 'value',
+              $operator: '<',
+              $value: 4
+            },
+            {
+              $field: 'value',
+              $operator: '<',
+              $value: 'now'
+            },
+            {
+              $field: 'value',
+              $operator: '>',
+              $value: 2
+            }
+          ]
+        }
       }
     }
   })
@@ -174,26 +180,28 @@ test.serial('find - references', async t => {
     { value: 2, name: 'match0' }
   ])
 
-  const relatedMatchesLeagues = await client.query({
+  const { items: relatedMatchesLeagues } = await client.get({
     $id: matches[0].id,
-    name: true,
-    $list: {
-      $find: {
-        $traverse: 'related',
+    items: {
+      name: true,
+      $list: {
         $find: {
-          $traverse: 'ancestors',
-          $filter: [
-            {
-              $field: 'type',
-              $operator: '=',
-              $value: 'league'
-            },
-            {
-              $field: 'value',
-              $operator: '<',
-              $value: 3
-            }
-          ]
+          $traverse: 'related',
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              },
+              {
+                $field: 'value',
+                $operator: '<',
+                $value: 3
+              }
+            ]
+          }
         }
       }
     }
