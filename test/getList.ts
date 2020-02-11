@@ -27,7 +27,7 @@ test.serial('get - simple $list', async t => {
         prefix: 'cu',
         fields: {
           name: { type: 'string' },
-          value: { type: 'number' },
+          value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
             type: 'json'
@@ -46,7 +46,16 @@ test.serial('get - simple $list', async t => {
     }
   })
 
-  // Should not come here once LUA: [info] searchStr for cuB with root,cuA
+  const children = []
+
+  for (let i = 0; i < 20; i++) {
+    children.push({
+      $id: await client.id({ type: 'custom' }),
+      value: i,
+      name: 'flurp' + i
+    })
+  }
+
   await Promise.all([
     client.set({
       $id: 'cuA',
@@ -54,13 +63,11 @@ test.serial('get - simple $list', async t => {
         thumb: 'flurp.jpg'
       },
       title: { en: 'snurf' },
-      children: ['cuB', 'cuC']
+      children
     })
   ])
 
   t.true(true)
 
-  await client.delete('root')
-
-  client.destroy()
+  await client.get({})
 })
