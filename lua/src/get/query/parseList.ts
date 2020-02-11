@@ -12,10 +12,7 @@ function parseList(results: string[], list: List): string[] {
     const searchIndexes = getSearchIndexes()
 
     // FIXME: multiple
-    // FIXME: string sort
     const field = sort[0].$field
-
-    logger.info(searchIndexes.default)
 
     const type = searchIndexes.default[field]
 
