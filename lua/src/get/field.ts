@@ -73,7 +73,11 @@ export default function getWithField(
   version?: string,
   includeMeta?: boolean
 ): boolean {
-  const intermediateResult: object = {}
+  const intermediateResult: any = {}
+  if (includeMeta) {
+    intermediateResult.$meta = { $ref: {} }
+  }
+
   let fromNested: any
   for (const fieldDefinition of $field) {
     if (

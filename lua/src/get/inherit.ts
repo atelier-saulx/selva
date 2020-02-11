@@ -111,7 +111,8 @@ function setFromAncestors(
             '',
             language,
             version,
-            includeMeta,
+            //includeMeta,
+            false, // FIXME: maybe need to support this here too?
             '$inherit'
           )
 
@@ -187,7 +188,8 @@ function inheritItem(
         '',
         language,
         version,
-        includeMeta,
+        // includeMeta, // FIXME: do we need to support this? don't think so
+        false,
         '$inherit'
       )
       setNestedResult(result, field, intermediateResult)

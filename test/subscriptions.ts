@@ -153,18 +153,17 @@ test.serial('using $field works', async t => {
   await client.delete('root')
 })
 
-test.serial.only('refs resolve and get tracked correctly', async t => {
+test.serial('refs resolve and get tracked correctly', async t => {
   const client = connect({ port: 5051 })
 
+  await client.getSchema()
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
-    rootType: {
-      fields: { yesh: { type: 'string' }, yeeesh: { type: 'string' } }
-    },
     types: {
       yeshType: {
         fields: {
-          yesh: { type: 'string' }
+          yesh: { type: 'string' },
+          yeeesh: { type: 'string' }
         }
       }
     }
@@ -172,15 +171,15 @@ test.serial.only('refs resolve and get tracked correctly', async t => {
 
   t.plan(2)
 
-  await client.set({
-    $id: 'root',
+  const yesh = await client.set({
+    type: 'yeshType',
     yesh: { $ref: 'yeeesh' }
   })
 
   await wait(1000 * 1)
 
   const observable = await client.observe({
-    $id: 'root',
+    $id: yesh,
     id: true,
     yesh: true
   })
@@ -189,10 +188,10 @@ test.serial.only('refs resolve and get tracked correctly', async t => {
   const sub = observable.subscribe(d => {
     if (o1counter === 0) {
       // gets start event
-      t.deepEqualIgnoreOrder(d, { id: 'root' })
+      t.deepEqualIgnoreOrder(d, { id: yesh })
     } else if (o1counter === 1) {
       // gets update event
-      t.deepEqualIgnoreOrder(d, { id: 'root', yesh: 'siiick' })
+      t.deepEqualIgnoreOrder(d, { id: yesh, yesh: 'siiick' })
     } else {
       // doesn't get any more events
       t.fail()
@@ -203,7 +202,7 @@ test.serial.only('refs resolve and get tracked correctly', async t => {
   await wait(1000 * 1)
 
   await client.set({
-    $id: 'root',
+    $id: yesh,
     yeeesh: 'siiick'
   })
 
