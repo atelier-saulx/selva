@@ -4,9 +4,11 @@ import { emptyArray, isArray } from '../../util'
 import * as logger from '../../logger'
 
 function parseList(results: string[], list: List): string[] {
-  logger.info('???????????????????????', list)
   if (list.$sort) {
     const sort: Sort[] = !isArray(list.$sort) ? [list.$sort] : list.$sort
+
+    // FIXME: multiple
+    // FIXME: string sort
 
     const field = sort[0].$field
     if (sort[0].$order === 'asc') {
