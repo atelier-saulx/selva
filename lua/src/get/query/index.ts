@@ -96,10 +96,11 @@ const parseQuery = (
     }
   }
 
-  const find = getFind(getOptions)
-
   if (resultIds) {
+    const find = getFind(getOptions)
+
     if (find && find.$find) {
+      // nested find
       if (getOptions.$list) {
         table.remove(resultIds, 1)
       }
@@ -133,7 +134,7 @@ const parseQuery = (
         version
       )
       if (err) {
-        return [{ results, meta: { ast: resultFork } }, err]
+        return [{ results }, err]
       }
       const nestedMap: Record<string, boolean> = {}
       for (let i = 0; i < nestedResults.length; i++) {
@@ -164,7 +165,10 @@ const parseQuery = (
     }
   }
 
-  return [results, null]
+  // need stuff for nested!!!
+  // also for search
+  // also for range
+  return [{ results, meta: { ast: resultFork } }, null]
 }
 
 const queryGet = (
@@ -181,7 +185,7 @@ const queryGet = (
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
-  let [r, err] = parseQuery(
+  const [r, err] = parseQuery(
     getField,
     schema,
     getOptions,
@@ -190,10 +194,20 @@ const queryGet = (
     language,
     version
   )
-  if (!r.length || r.length === 0) {
-    r = emptyArray()
+
+  let { results, meta } = r
+
+  if (!results.length || results.length === 0) {
+    results = emptyArray()
   }
-  result[resultField] = r
+  if (getOptions.$includeMeta) {
+    if (result.$meta) {
+      result.$meta.query = meta
+    } else {
+      result.$meta = { query: meta }
+    }
+  }
+  result[resultField] = results
   if (err) {
     return err
   }
