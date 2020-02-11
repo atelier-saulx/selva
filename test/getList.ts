@@ -110,4 +110,19 @@ test.serial('get - simple $list', async t => {
   })
 
   t.is(rangeResult.length, 10, 'non redis search range')
+
+  /*
+  const x = await client.get({
+    $id: 'cuA',
+    related: {
+      $inherit: true,
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'asc' },
+        $range: [0, 10]
+      }
+    }
+  })
+  */
 })
