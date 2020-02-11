@@ -91,10 +91,6 @@ const parseQuery = (
     if (find && find.$find) {
       if (getOptions.$list) {
         table.remove(resultIds, 1)
-        // FIXME: nested sort and range
-        if (getOptions.$list.$sort) {
-          return [results, 'Nested find sort is not supported yet!']
-        }
       }
       const opts: GetOptions = { id: true }
       for (let key in getOptions) {
@@ -102,7 +98,18 @@ const parseQuery = (
           opts[key] = getOptions[key]
         }
       }
-      opts.$list = { $find: find.$find }
+      opts.$list = {
+        $find: find.$find
+      }
+
+      if (getOptions.$list && getOptions.$list.$sort) {
+        opts.$list.$sort = getOptions.$list.$sort
+      }
+
+      if (getOptions.$list && getOptions.$list.$range) {
+        opts.$list.$range = getOptions.$list.$range
+      }
+
       const [nestedResults, err] = parseQuery(
         getField,
         opts,
