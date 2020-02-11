@@ -9,12 +9,12 @@ import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6088,
+    port: 6122,
     developmentLogging: true,
     loglevel: 'info'
   })
   await wait(1500)
-  const client = connect({ port: 6088 })
+  const client = connect({ port: 6122 })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -43,7 +43,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6088 })
+  const client = connect({ port: 6122 })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -51,8 +51,8 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('get decendants using get syntax', async t => {
-  const client = connect({ port: 6088 })
+test.serial('get nested results', async t => {
+  const client = connect({ port: 6122 })
 
   const matches = []
   const teams = []

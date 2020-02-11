@@ -152,59 +152,61 @@ test.serial('find - descendants', async t => {
 
   // extra option in find is index or auto from fields
   let d = Date.now()
-  const results = await client.get({
-    name: true,
-    value: true,
-    status: true,
-    date: true,
-    id: true,
-    type: true,
-    $list: {
-      $sort: { $field: 'status', $order: 'desc' },
-      $find: {
-        $traverse: 'descendants',
-        $filter: [
-          {
-            $operator: '=',
-            $field: 'type',
-            $value: 'match',
-            $and: {
+  const { items: results } = await client.get({
+    items: {
+      name: true,
+      value: true,
+      status: true,
+      date: true,
+      id: true,
+      type: true,
+      $list: {
+        $sort: { $field: 'status', $order: 'desc' },
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
               $operator: '=',
-              $field: 'status',
-              $value: [300, 2] // handle or
-            },
-            $or: {
-              $operator: '=',
-              $field: 'name',
-              $value: 'league 1',
+              $field: 'type',
+              $value: 'match',
+              $and: {
+                $operator: '=',
+                $field: 'status',
+                $value: [300, 2] // handle or
+              },
               $or: {
-                $operator: '>',
-                $field: 'value',
-                $value: 4,
-                $and: {
+                $operator: '=',
+                $field: 'name',
+                $value: 'league 1',
+                $or: {
                   $operator: '>',
                   $field: 'value',
-                  $value: 6,
+                  $value: 4,
                   $and: {
-                    $operator: '<',
+                    $operator: '>',
                     $field: 'value',
-                    $value: 8,
+                    $value: 6,
                     $and: {
-                      $operator: '>',
-                      $field: 'date',
-                      $value: 'now'
+                      $operator: '<',
+                      $field: 'value',
+                      $value: 8,
+                      $and: {
+                        $operator: '>',
+                        $field: 'date',
+                        $value: 'now'
+                      }
                     }
                   }
                 }
               }
+            },
+            {
+              $operator: '!=',
+              $field: 'name',
+              $value: ['match1', 'match2', 'match3']
             }
-          },
-          {
-            $operator: '!=',
-            $field: 'name',
-            $value: ['match1', 'match2', 'match3']
-          }
-        ]
+          ]
+        }
       }
     }
   })
@@ -219,32 +221,38 @@ test.serial('find - descendants', async t => {
   t.is(videos.length, 3, 'query result videos')
   t.is(league.length, 1, 'query result league')
 
-  const team = await client.get({
-    id: true,
-    $list: {
-      $find: {
-        $traverse: 'descendants',
-        $filter: {
-          $field: 'type',
-          $operator: '=',
-          $value: 'team'
+  const team = (
+    await client.get({
+      items: {
+        id: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: {
+              $field: 'type',
+              $operator: '=',
+              $value: 'team'
+            }
+          }
         }
       }
-    }
-  })
+    })
+  ).items
 
   t.true(/te/.test(team[0].id), 'got id from team')
 
-  const teamMatches = await client.get({
+  const { items: teamMatches } = await client.get({
     $id: team[0].id,
-    id: true,
-    $list: {
-      $find: {
-        $traverse: 'descendants',
-        $filter: {
-          $field: 'type',
-          $operator: '=',
-          $value: 'match'
+    items: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match'
+          }
         }
       }
     }
@@ -252,17 +260,19 @@ test.serial('find - descendants', async t => {
 
   t.is(teamMatches.length, 1000)
 
-  const teamMatchesRange = await client.get({
+  const { items: teamMatchesRange } = await client.get({
     $id: team[0].id,
-    id: true,
-    $list: {
-      $range: [0, 5],
-      $find: {
-        $traverse: 'descendants',
-        $filter: {
-          $field: 'type',
-          $operator: '=',
-          $value: 'match'
+    items: {
+      id: true,
+      $list: {
+        $range: [0, 5],
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match'
+          }
         }
       }
     }
@@ -270,17 +280,19 @@ test.serial('find - descendants', async t => {
 
   t.is(teamMatchesRange.length, 5)
 
-  const videosSorted = await client.get({
-    value: true,
-    $list: {
-      $sort: { $field: 'value', $order: 'desc' },
-      $range: [0, 5],
-      $find: {
-        $traverse: 'descendants',
-        $filter: {
-          $field: 'type',
-          $operator: '=',
-          $value: 'video'
+  const { items: videosSorted } = await client.get({
+    items: {
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'desc' },
+        $range: [0, 5],
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'video'
+          }
         }
       }
     }
@@ -291,27 +303,33 @@ test.serial('find - descendants', async t => {
     [99, 98, 97, 96, 95]
   )
 
-  const empty = await client.get({
-    name: true,
-    $list: {
-      $find: {
-        $traverse: 'descendants',
-        $filter: [
-          {
-            $operator: '=',
-            $field: 'name',
-            $value: 'gurk'
-          },
-          {
-            $operator: '=',
-            $field: 'name',
-            $value: ['flap', 'gurk']
-          }
-        ]
+  const { items: empty } = await client.get({
+    items: {
+      name: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $operator: '=',
+              $field: 'name',
+              $value: 'gurk'
+            },
+            {
+              $operator: '=',
+              $field: 'name',
+              $value: ['flap', 'gurk']
+            }
+          ]
+        }
       }
     }
   })
 
+  await wait(1000)
+
   //@ts-ignore
-  t.deepEqual(empty, {}, 'does not throw for TAG fields')
+  t.deepEqual(empty, [], 'does not throw for TAG fields')
+
+  await wait(1000)
 })

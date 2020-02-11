@@ -11,6 +11,7 @@ import { ensureArray } from 'lua/src/util'
 import makeNewGetOptions from 'lua/src/get/all'
 import getQuery from './query/index'
 
+// add error handling
 function getField(
   props: GetItem,
   schema: Schema,
@@ -24,16 +25,16 @@ function getField(
   let hasAlias = false
 
   if (props.$list) {
-    logger.info('this is query teritory!')
-
     // field that needs to get the result
-    const [_r, err] = getQuery(get, result, props, field, [id], field)
 
-    if (err) {
-      // can return an error now
-      // logger.error(err)
+    if (field) {
+      // allways need a field for getQuery
+      const err = getQuery(get, result, props, field, [id], field)
+      if (err) {
+        // can return an error now
+        logger.error(err)
+      }
     }
-
     return true
   } else {
     if (props.$field && field) {

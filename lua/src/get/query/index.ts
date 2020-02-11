@@ -6,6 +6,7 @@ import createSearchArgs from './createSearchArgs'
 import { Fork } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
+import { emptyArray } from '../../util'
 
 // call get field directly here
 
@@ -133,18 +134,21 @@ const queryGet = (
   resultField: string,
   ids?: string[],
   traverse?: string
-): any[] => {
+): string | null => {
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
-  const [r, err] = parseQuery(get, getOptions, ids, traverse)
+  let [r, err] = parseQuery(get, getOptions, ids, traverse)
 
+  if (!r.length || r.length === 0) {
+    r = emptyArray()
+  }
   result[resultField] = r
 
   if (err) {
-    logger.error(err)
+    return err
   }
-  return r
+  return null
 }
 
 export default queryGet
