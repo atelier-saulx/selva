@@ -18,6 +18,10 @@ const parseNested = (
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
     if (opts.$list.$find) {
+      if (!opts.$list.$find.$traverse) {
+        opts.$list.$find.$traverse = traverse
+      }
+
       return parseFind(opts.$list.$find, ids)
     } else {
       if (!traverse) {
