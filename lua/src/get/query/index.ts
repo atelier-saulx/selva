@@ -49,18 +49,24 @@ const parseQuery = (
   traverse?: string,
   language?: string,
   version?: string
-): [GetResult[], string | null] => {
+): [
+  {
+    results: GetResult[]
+    meta?: { ast: Fork | undefined }
+  },
+  string | null
+] => {
   const resultGet = {}
   const results: GetResult[] = []
   if (getOptions.$list && getOptions.$find) {
-    return [results, 'If using $list put $find in list']
+    return [{ results }, 'If using $list put $find in list']
   }
   let resultIds: any[] | undefined = []
   let resultFork: Fork | undefined
   if (getOptions.$list || getOptions.$find) {
     const [r, err] = parseNested(getOptions, ids, traverse)
     if (err) {
-      return [results, err]
+      return [{ results }, err]
     }
     for (let key in getOptions) {
       if (key !== '$list' && key !== '$find') {
@@ -77,7 +83,7 @@ const parseQuery = (
     const [q, err] = createSearchString(resultFork)
     const query: string = q.substring(1, q.length - 1)
     if (err) {
-      return [results, err]
+      return [{ results }, err]
     }
     const args = createSearchArgs(getOptions, query, resultFork)
     printAst(resultFork, args)
@@ -115,7 +121,9 @@ const parseQuery = (
         opts.$list.$range = getOptions.$list.$range
       }
 
-      const [nestedResults, err] = parseQuery(
+      // meta is harder here..
+
+      const [{ results: nestedResults }, err] = parseQuery(
         getField,
         schema,
         opts,
@@ -125,7 +133,7 @@ const parseQuery = (
         version
       )
       if (err) {
-        return [results, err]
+        return [{ results, meta: { ast: resultFork } }, err]
       }
       const nestedMap: Record<string, boolean> = {}
       for (let i = 0; i < nestedResults.length; i++) {
