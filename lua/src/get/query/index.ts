@@ -123,24 +123,6 @@ const parseQuery = (
     } else {
       const schema = getSchema()
       for (let i = 1; i < resultIds.length; i++) {
-        // for (let key in getOptions) {
-        //   if (key !== '$find' && key !== '$list' && key !== '$id') {
-        //     opts[key] = getOptions[key]
-        //   }
-        // }
-        /*
-         props: GetItem,
-        schema: Schema,
-        result: GetResult,
-        id: Id,
-        field?: string,
-        language?: string,
-        version?: string,
-        ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit, or from find
-
-        */
-        //  $id: resultIds[i]
-        // opts
         const result: GetResult = {}
         getField(
           getOptions,
