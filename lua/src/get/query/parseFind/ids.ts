@@ -34,6 +34,7 @@ const parseTypeFilter = (filter: Filter, ids: string[]): string[] => {
 function parseIds(
   filters: Filter[],
   ids: string[],
+  fromId: string[],
   needsQeury?: boolean
 ): [Fork | string[], string | null] {
   if (filters.length !== 0) {
@@ -55,10 +56,17 @@ function parseIds(
       ids = parseTypeFilter(typeFilter, ids)
     }
     if (filters.length === 0 && !needsQeury) {
-      // empty first arg to get unified response with redisSearch
       table.insert(ids, 1, '')
       return [ids, null]
     } else {
+      if (filters.length === 0) {
+        filters[filters.length] = {
+          $field: 'ancestors',
+          $value: fromId,
+          $operator: '='
+        }
+      }
+
       filters[filters.length] = {
         $field: 'id',
         $value: ids,
@@ -67,9 +75,23 @@ function parseIds(
       return parseFilters(filters)
     }
   } else {
-    // empty first arg to get unified response with redisSearc
-    table.insert(ids, 1, '')
-    return [ids, null]
+    if (needsQeury) {
+      filters[filters.length] = {
+        $field: 'ancestors',
+        $value: fromId,
+        $operator: '='
+      }
+      filters[filters.length] = {
+        $field: 'id',
+        $value: ids,
+        $operator: '='
+      }
+      return parseFilters(filters)
+    } else {
+      // empty first arg to get unified response with redisSearc
+      table.insert(ids, 1, '')
+      return [ids, null]
+    }
   }
 }
 

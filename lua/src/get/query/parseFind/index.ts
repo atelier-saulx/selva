@@ -72,14 +72,13 @@ function parseFind(
     } else if ($traverse === 'ancestors') {
       // for loop here
       const ancestors = getIds($traverse, ids)
-      return parseFindIds(filters, ancestors, needsQeury)
+      return parseFindIds(filters, ancestors, ids, needsQeury)
     } else if (isArray($traverse)) {
       // short hand to do iteration over multiple ids
-      return parseFindIds(filters, $traverse, needsQeury)
+      return parseFindIds(filters, $traverse, ids, needsQeury)
     } else {
-      // for loop here
       const resultIds = getIds($traverse, ids)
-      return parseFindIds(filters, resultIds, needsQeury)
+      return parseFindIds(filters, resultIds, ids, needsQeury)
     }
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']
