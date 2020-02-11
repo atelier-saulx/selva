@@ -17,18 +17,41 @@ function parseList(results: string[], list: List): string[] {
 
     logger.info(searchIndexes.default)
 
-    if (sort[0].$order === 'asc') {
-      table.sort(results, (a, b) => {
-        const x = hget(a, field)
-        const y = hget(b, field)
-        return (tonumber(x) || 0) < (tonumber(y) || 0)
-      })
+    const type = searchIndexes.default[field]
+
+    if (!field) {
+      logger.info(`${field} is not sortable`)
+      return results
+    }
+
+    if (type[0] === 'NUMERIC') {
+      if (sort[0].$order === 'asc') {
+        table.sort(results, (a, b) => {
+          const x = hget(a, field)
+          const y = hget(b, field)
+          return (tonumber(x) || 0) < (tonumber(y) || 0)
+        })
+      } else {
+        table.sort(results, (a, b) => {
+          const x = hget(a, field)
+          const y = hget(b, field)
+          return (tonumber(x) || 0) > (tonumber(y) || 0)
+        })
+      }
     } else {
-      table.sort(results, (a, b) => {
-        const x = hget(a, field)
-        const y = hget(b, field)
-        return (tonumber(x) || 0) > (tonumber(y) || 0)
-      })
+      if (sort[0].$order === 'asc') {
+        table.sort(results, (a, b) => {
+          const x = hget(a, field)
+          const y = hget(b, field)
+          return (tostring(x) || 0) < (tostring(y) || 0)
+        })
+      } else {
+        table.sort(results, (a, b) => {
+          const x = hget(a, field)
+          const y = hget(b, field)
+          return (tostring(x) || 0) > (tostring(y) || 0)
+        })
+      }
     }
   }
 
