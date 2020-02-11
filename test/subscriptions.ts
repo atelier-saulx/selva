@@ -156,7 +156,6 @@ test.serial('using $field works', async t => {
 test.serial('refs resolve and get tracked correctly', async t => {
   const client = connect({ port: 5051 })
 
-  await client.getSchema()
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     types: {
