@@ -76,14 +76,20 @@ const parseQuery = (
       return [results, err]
     }
     const args = createSearchArgs(getOptions, query, resultFork)
-    logger.info(args)
     printAst(resultFork, args)
     const queryResult: string[] = redis.call('ft.search', 'default', ...args)
     resultIds = queryResult
+  } else if (getOptions.$list && getOptions.$list.$range) {
+    const newResults: string[] = []
+    const [start, end] = getOptions.$list.$range
+    for (let i = start; i < end && i < resultIds.length; i++) {
+      newResults[newResults.length] = resultIds[i]
+    }
   }
 
+  const find = getFind(getOptions)
+
   if (resultIds) {
-    const find = getFind(getOptions)
     if (find && find.$find) {
       if (getOptions.$list) {
         table.remove(resultIds, 1)
