@@ -67,7 +67,34 @@ test.serial('get - simple $list', async t => {
     })
   ])
 
-  t.true(true)
+  t.deepEqual(
+    await client.get({
+      $id: 'cuA',
+      children: {
+        name: true,
+        value: true,
+        $list: {
+          $sort: { $field: 'value', $order: 'asc' },
+          $range: [0, 10]
+        }
+      }
+    }),
+    {
+      children: [
+        { value: 0, name: 'flurp0' },
+        { value: 1, name: 'flurp1' },
+        { value: 2, name: 'flurp2' },
+        { value: 3, name: 'flurp3' },
+        { value: 4, name: 'flurp4' },
+        { value: 5, name: 'flurp5' },
+        { value: 6, name: 'flurp6' },
+        { value: 7, name: 'flurp7' },
+        { value: 8, name: 'flurp8' },
+        { value: 9, name: 'flurp9' }
+      ]
+    },
+    'use redis search for sort'
+  )
 
   const x = await client.get({
     $id: 'cuA',
@@ -81,5 +108,5 @@ test.serial('get - simple $list', async t => {
     }
   })
 
-  console.log(x)
+  console.log('flupy')
 })

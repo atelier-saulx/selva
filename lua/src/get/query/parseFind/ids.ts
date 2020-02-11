@@ -60,6 +60,7 @@ function parseIds(
       return [ids, null]
     } else {
       if (filters.length === 0) {
+        // does not allways apply - does not work for references...
         filters[filters.length] = {
           $field: 'ancestors',
           $value: fromId,
@@ -76,6 +77,7 @@ function parseIds(
     }
   } else {
     if (needsQeury) {
+      // does not allways apply - does not work for references...
       filters[filters.length] = {
         $field: 'ancestors',
         $value: fromId,
