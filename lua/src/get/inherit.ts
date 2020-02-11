@@ -47,6 +47,7 @@ function setFromAncestors(
   field: string,
   language?: string,
   version?: string,
+  includeMeta?: boolean,
   fieldFrom?: string | string[],
   tryAncestorCondition?: (ancestor: Id) => boolean,
   acceptAncestorCondition?: (result: any) => boolean,
@@ -94,7 +95,8 @@ function setFromAncestors(
               field,
               fieldFrom,
               language,
-              version
+              version,
+              includeMeta
             )
           ) {
             return true
@@ -109,6 +111,7 @@ function setFromAncestors(
             '',
             language,
             version,
+            includeMeta,
             '$inherit'
           )
 
@@ -157,7 +160,8 @@ function inheritItem(
   item: string[],
   required: string[],
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ) {
   const requiredFields: string[][] = prepareRequiredFieldSegments(required)
 
@@ -183,6 +187,7 @@ function inheritItem(
         '',
         language,
         version,
+        includeMeta,
         '$inherit'
       )
       setNestedResult(result, field, intermediateResult)
@@ -196,6 +201,7 @@ function inheritItem(
         '',
         language,
         version,
+        includeMeta,
         '',
         (ancestor: Id) => {
           for (const match of matches) {
@@ -244,6 +250,7 @@ type GetFieldFn = (
   field?: string,
   language?: string,
   version?: string,
+  includeMeta?: boolean,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ) => boolean
 
@@ -256,6 +263,7 @@ export default function inherit(
   field: string,
   language?: string,
   version?: string,
+  includeMeta?: boolean,
   fieldFrom?: string | string[]
 ) {
   logger.info(`INHERITING FIELD ${field}`)
@@ -270,6 +278,7 @@ export default function inherit(
         field,
         language,
         version,
+        includeMeta,
         fieldFrom
       )
     } else if (inherit.$type) {
@@ -282,6 +291,7 @@ export default function inherit(
         field,
         language,
         version,
+        includeMeta,
         fieldFrom,
         (ancestor: Id) => {
           for (const type of types) {
@@ -303,6 +313,7 @@ export default function inherit(
         field,
         language,
         version,
+        includeMeta,
         fieldFrom,
         (ancestor: Id) => {
           for (const name of names) {
@@ -326,7 +337,8 @@ export default function inherit(
         ensureArray(inherit.$item),
         ensureArray(inherit.$required),
         language,
-        version
+        version,
+        includeMeta
       )
     }
 

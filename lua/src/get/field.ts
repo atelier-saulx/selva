@@ -70,7 +70,8 @@ export default function getWithField(
   field: string,
   $field: string | string[],
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean {
   const intermediateResult: object = {}
   let fromNested: any
@@ -82,7 +83,8 @@ export default function getWithField(
         id,
         fieldDefinition,
         language,
-        version
+        version,
+        includeMeta
       )
     ) {
       fromNested = getNestedField(intermediateResult, fieldDefinition)

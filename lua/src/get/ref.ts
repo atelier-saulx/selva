@@ -12,7 +12,8 @@ type GetByTypeFn = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ) => boolean
 
 export function resolveObjectRef(
@@ -22,7 +23,8 @@ export function resolveObjectRef(
   field: string,
   getByType: GetByTypeFn,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ) {
   const ref = redis.hget(id, `${field}.$ref`)
   if (!ref || ref.length === 0) {
@@ -37,7 +39,8 @@ export function resolveObjectRef(
     ref,
     getByType,
     language,
-    version
+    version,
+    includeMeta
   )
 }
 
@@ -49,14 +52,15 @@ export function tryResolveSimpleRef(
   value: string,
   getByType: GetByTypeFn,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean {
   if (!value || value.indexOf(REF_SIMPLE_FIELD_PREFIX) !== 0) {
     return false
   }
 
   const ref = value.substring(REF_SIMPLE_FIELD_PREFIX.length)
-  return resolveRef(
+  resolveRef(
     result,
     schema,
     id,
@@ -64,8 +68,11 @@ export function tryResolveSimpleRef(
     ref,
     getByType,
     language,
-    version
+    version,
+    includeMeta
   )
+
+  return true
 }
 
 function resolveRef(
@@ -76,8 +83,20 @@ function resolveRef(
   ref: string,
   getByType: GetByTypeFn,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean {
+  if (includeMeta) {
+    let current = result.$meta.$refs[ref]
+    if (!current) {
+      current = [field]
+    } else {
+      current[current.length] = field
+    }
+
+    result.$meta.$refs[ref] = current
+  }
+
   const intermediateResult = {}
   const found = getByType(
     intermediateResult,
@@ -85,7 +104,8 @@ function resolveRef(
     id,
     ref,
     language,
-    version
+    version,
+    includeMeta
   )
 
   if (found) {

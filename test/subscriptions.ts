@@ -7,7 +7,8 @@ let srv
 test.before(async () => {
   srv = await start({
     port: 5051,
-    loglevel: 'info'
+    loglevel: 'info',
+    developmentLogging: true
   })
 })
 
@@ -143,6 +144,67 @@ test.serial('using $field works', async t => {
   await client.set({
     $id: 'root',
     yesh: 'so nice'
+  })
+
+  await wait(1000 * 1)
+
+  sub.unsubscribe()
+
+  await client.delete('root')
+})
+
+test.serial.only('refs resolve and get tracked correctly', async t => {
+  const client = connect({ port: 5051 })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: { yesh: { type: 'string' }, yeeesh: { type: 'string' } }
+    },
+    types: {
+      yeshType: {
+        fields: {
+          yesh: { type: 'string' }
+        }
+      }
+    }
+  })
+
+  t.plan(2)
+
+  await client.set({
+    $id: 'root',
+    yesh: { $ref: 'yeeesh' }
+  })
+
+  await wait(1000 * 1)
+
+  const observable = await client.observe({
+    $id: 'root',
+    id: true,
+    yesh: true
+  })
+
+  let o1counter = 0
+  const sub = observable.subscribe(d => {
+    if (o1counter === 0) {
+      // gets start event
+      t.deepEqualIgnoreOrder(d, { id: 'root' })
+    } else if (o1counter === 1) {
+      // gets update event
+      t.deepEqualIgnoreOrder(d, { id: 'root', yesh: 'siiick' })
+    } else {
+      // doesn't get any more events
+      t.fail()
+    }
+    o1counter++
+  })
+
+  await wait(1000 * 1)
+
+  await client.set({
+    $id: 'root',
+    yeeesh: 'siiick'
   })
 
   await wait(1000 * 1)

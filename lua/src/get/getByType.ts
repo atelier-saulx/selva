@@ -23,7 +23,8 @@ const id = (
   id: Id,
   _field: string,
   _language?: string,
-  _version?: string
+  _version?: string,
+  _includeMeta?: boolean
 ): boolean => {
   result.id = id
   return true
@@ -35,7 +36,8 @@ const number = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean => {
   const v = redis.hget(id, field)
   if (
@@ -47,7 +49,8 @@ const number = (
       v,
       getByType,
       language,
-      version
+      version,
+      includeMeta
     )
   ) {
     return true
@@ -64,9 +67,10 @@ const float = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean => {
-  return number(result, schema, id, field, language, version)
+  return number(result, schema, id, field, language, version, includeMeta)
 }
 
 const int = (
@@ -75,7 +79,8 @@ const int = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean => {
   const v = redis.hget(id, field)
 
@@ -88,7 +93,8 @@ const int = (
       v,
       getByType,
       language,
-      version
+      version,
+      includeMeta
     )
   ) {
     return true
@@ -105,7 +111,8 @@ const boolean = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): true => {
   const v = redis.hget(id, field)
 
@@ -118,7 +125,8 @@ const boolean = (
       v,
       getByType,
       language,
-      version
+      version,
+      includeMeta
     )
   ) {
     return true
@@ -134,7 +142,8 @@ const string = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean => {
   const value = redis.hget(id, field) || ''
 
@@ -147,7 +156,8 @@ const string = (
       value,
       getByType,
       language,
-      version
+      version,
+      includeMeta
     )
   ) {
     return true
@@ -163,7 +173,8 @@ const arrayLike = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  _includeMeta?: boolean
 ): boolean => {
   if (field === 'ancestors') {
     return ancestors(result, schema, id, field, language, version)
@@ -188,7 +199,8 @@ const json = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean => {
   let value = redis.hget(id, field)
 
@@ -203,7 +215,8 @@ const json = (
         value,
         getByType,
         language,
-        version
+        version,
+        includeMeta
       )
     ) {
       return true
@@ -224,7 +237,8 @@ const array = (
   id: Id,
   field: string,
   _language?: string,
-  _version?: string
+  _version?: string,
+  _includeMeta?: boolean
 ): boolean => {
   const value = redis.hget(id, field)
   let decoded: never[] | null =
@@ -245,7 +259,8 @@ const object = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean => {
   const keys = redis.hkeys(id)
   let isComplete = true
@@ -262,11 +277,12 @@ const object = (
           field,
           getByType,
           language,
-          version
+          version,
+          includeMeta
         )
       }
 
-      if (!getByType(result, schema, id, key, language)) {
+      if (!getByType(result, schema, id, key, language, version, includeMeta)) {
         isComplete = false
       }
     }
@@ -281,10 +297,19 @@ const text = (
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean => {
   if (!language) {
-    const isComplete = object(result, schema, id, field, language, version)
+    const isComplete = object(
+      result,
+      schema,
+      id,
+      field,
+      language,
+      version,
+      includeMeta
+    )
     if (!isComplete) {
       const value = getNestedField(result, field)
       if (!value) {
@@ -406,7 +431,8 @@ function getByType(
   id: Id,
   field: string,
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean {
   // version still missing!
   const type = getTypeFromId(id)
@@ -457,7 +483,7 @@ function getByType(
   }
 
   const fn = types[prop.type] || string
-  return fn(result, schema, id, field, language, version)
+  return fn(result, schema, id, field, language, version, includeMeta)
 }
 
 export default getByType
