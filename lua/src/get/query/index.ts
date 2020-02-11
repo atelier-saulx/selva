@@ -130,32 +130,16 @@ const queryGet = (
   get: Function,
   result: GetResult,
   getOptions: GetOptions,
+  resultField: string,
   ids?: string[],
   traverse?: string
 ): any[] => {
-  // check if query
-
-  logger.info('fuck>?')
-
-  if (!get) {
-    logger.info('hello???')
-  }
-
-  // logger.info(get)
-
-  logger.info(getOptions)
-
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
   const [r, err] = parseQuery(get, getOptions, ids, traverse)
 
-  if (traverse) {
-    logger.info(getOptions, traverse)
-
-    // needs to check field here!
-    result[traverse] = r
-  }
+  result[resultField] = r
 
   if (err) {
     logger.error(err)

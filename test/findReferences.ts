@@ -77,7 +77,7 @@ test.serial('find - references', async t => {
   }
   await Promise.all(leaguesSet.map(v => client.set(v)))
 
-  const leagues = await client.query({
+  const leagues = await client.get({
     id: true,
     name: true,
     value: true,
@@ -96,7 +96,7 @@ test.serial('find - references', async t => {
 
   const league = leagues[0].id
 
-  const matches = await client.query({
+  const matches = await client.get({
     $id: league,
     id: true,
     name: true,
@@ -121,7 +121,7 @@ test.serial('find - references', async t => {
     }
   })
 
-  const relatedMatches = await client.query({
+  const relatedMatches = await client.get({
     $id: matches[0].id,
     name: true,
     value: true,
@@ -174,7 +174,7 @@ test.serial('find - references', async t => {
     { value: 2, name: 'match0' }
   ])
 
-  const relatedMatchesLeagues = await client.query({
+  const relatedMatchesLeagues = await client.get({
     $id: matches[0].id,
     name: true,
     $list: {

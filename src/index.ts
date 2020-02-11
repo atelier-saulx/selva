@@ -17,7 +17,7 @@ const MAX_SCHEMA_UPDATE_RETRIES = 5
 
 let SCRIPTS
 try {
-  SCRIPTS = ['modify', 'fetch', 'id', 'update-schema', 'query'].reduce(
+  SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
     (obj, scriptName) => {
       return Object.assign(obj, {
         [scriptName]: readFileSync(
@@ -154,18 +154,6 @@ export class SelvaClient {
     const str = await this.redis.loadAndEvalScript(
       'fetch',
       SCRIPTS.fetch,
-      0,
-      [],
-      [JSON.stringify(opts)]
-    )
-
-    return JSON.parse(str)
-  }
-
-  async query(opts: GetOptions): Promise<GetResult[]> {
-    const str = await this.redis.loadAndEvalScript(
-      'query',
-      SCRIPTS.query,
       0,
       [],
       [JSON.stringify(opts)]

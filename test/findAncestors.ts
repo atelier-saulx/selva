@@ -111,22 +111,25 @@ test.serial('find - ancestors', async t => {
 
   await Promise.all([...teams, ...leagues].map(v => client.set(v)))
 
+  // needs an array
   t.deepEqualIgnoreOrder(
     (
-      await client.query({
+      await client.get({
         $id: teams[0].$id,
-        name: true,
-        $list: {
-          $find: {
-            $traverse: 'ancestors',
-            $filter: [
-              // special case does not traverse
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'league'
-              }
-            ]
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'ancestors',
+              $filter: [
+                // special case does not traverse
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                }
+              ]
+            }
           }
         }
       })
@@ -148,7 +151,7 @@ test.serial('find - ancestors', async t => {
 
   t.deepEqualIgnoreOrder(
     (
-      await client.query({
+      await client.get({
         $id: globMatches[0].$id,
         name: true,
         $list: {
@@ -176,7 +179,7 @@ test.serial('find - ancestors', async t => {
 
   t.deepEqualIgnoreOrder(
     (
-      await client.query({
+      await client.get({
         $id: globMatches[0].$id,
         name: true,
         id: true,
@@ -191,7 +194,7 @@ test.serial('find - ancestors', async t => {
     'find ancestors without redis search and without filters'
   )
 
-  const r = await client.query({
+  const r = await client.get({
     $id: teams[0].$id,
     name: true,
     $list: {

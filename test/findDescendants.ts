@@ -152,7 +152,7 @@ test.serial('find - descendants', async t => {
 
   // extra option in find is index or auto from fields
   let d = Date.now()
-  const results = await client.query({
+  const results = await client.get({
     name: true,
     value: true,
     status: true,
@@ -219,7 +219,7 @@ test.serial('find - descendants', async t => {
   t.is(videos.length, 3, 'query result videos')
   t.is(league.length, 1, 'query result league')
 
-  const team = await client.query({
+  const team = await client.get({
     id: true,
     $list: {
       $find: {
@@ -235,7 +235,7 @@ test.serial('find - descendants', async t => {
 
   t.true(/te/.test(team[0].id), 'got id from team')
 
-  const teamMatches = await client.query({
+  const teamMatches = await client.get({
     $id: team[0].id,
     id: true,
     $list: {
@@ -252,7 +252,7 @@ test.serial('find - descendants', async t => {
 
   t.is(teamMatches.length, 1000)
 
-  const teamMatchesRange = await client.query({
+  const teamMatchesRange = await client.get({
     $id: team[0].id,
     id: true,
     $list: {
@@ -270,7 +270,7 @@ test.serial('find - descendants', async t => {
 
   t.is(teamMatchesRange.length, 5)
 
-  const videosSorted = await client.query({
+  const videosSorted = await client.get({
     value: true,
     $list: {
       $sort: { $field: 'value', $order: 'desc' },
@@ -291,7 +291,7 @@ test.serial('find - descendants', async t => {
     [99, 98, 97, 96, 95]
   )
 
-  const empty = await client.query({
+  const empty = await client.get({
     name: true,
     $list: {
       $find: {

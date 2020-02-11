@@ -23,11 +23,11 @@ function getField(
 ): boolean {
   let hasAlias = false
 
-  // need to checxk for field as well!
-
   if (props.$list) {
     logger.info('this is query teritory!')
-    const [_r, err] = getQuery(get, result, props, [id], field)
+
+    // field that needs to get the result
+    const [_r, err] = getQuery(get, result, props, field, [id], field)
 
     if (err) {
       // can return an error now
@@ -52,6 +52,7 @@ function getField(
       // logger.info(
       //   `$field is set, GETTING from ${props.$field} for field ${field}`
       // )
+
       if (
         getWithField(result, schema, id, field, props.$field, language, version)
       ) {
