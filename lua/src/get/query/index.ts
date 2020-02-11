@@ -7,9 +7,9 @@ import { Fork } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
 import { emptyArray } from '../../util'
-import { getSchema } from '../../schema/index'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
+import { Schema } from '../../../../src/schema/index'
 
 const parseNested = (
   opts: GetOptions,
@@ -39,6 +39,7 @@ const parseNested = (
 
 const parseQuery = (
   getField: GetFieldFn,
+  schema: Schema,
   getOptions: GetOptions,
   ids: string[],
   traverse?: string,
@@ -112,6 +113,7 @@ const parseQuery = (
 
       const [nestedResults, err] = parseQuery(
         getField,
+        schema,
         opts,
         resultIds,
         undefined,
@@ -133,7 +135,6 @@ const parseQuery = (
         }
       }
     } else {
-      const schema = getSchema()
       for (let i = 1; i < resultIds.length; i++) {
         const result: GetResult = {}
         getField(
@@ -156,6 +157,7 @@ const parseQuery = (
 
 const queryGet = (
   getField: GetFieldFn,
+  schema: Schema,
   result: GetResult,
   getOptions: GetOptions,
   resultField: string,
@@ -169,6 +171,7 @@ const queryGet = (
   }
   let [r, err] = parseQuery(
     getField,
+    schema,
     getOptions,
     ids,
     traverse,

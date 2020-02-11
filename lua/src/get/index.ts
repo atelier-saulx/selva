@@ -31,6 +31,7 @@ function getField(
       // allways need a field for getQuery
       const err = getQuery(
         getField,
+        schema,
         result,
         props,
         field,

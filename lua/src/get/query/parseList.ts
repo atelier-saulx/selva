@@ -2,15 +2,21 @@ import { GetOptions, GetResult, Sort, List } from '~selva/get/types'
 import { hget } from '../../redis'
 import { emptyArray, isArray } from '../../util'
 import * as logger from '../../logger'
+import { Schema } from '../../../../src/schema/index'
+import { getSearchIndexes } from '../../schema/index'
 
 function parseList(results: string[], list: List): string[] {
   if (list.$sort) {
     const sort: Sort[] = !isArray(list.$sort) ? [list.$sort] : list.$sort
 
+    const searchIndexes = getSearchIndexes()
+
     // FIXME: multiple
     // FIXME: string sort
-
     const field = sort[0].$field
+
+    logger.info(searchIndexes.default)
+
     if (sort[0].$order === 'asc') {
       table.sort(results, (a, b) => {
         const x = hget(a, field)

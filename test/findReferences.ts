@@ -209,13 +209,20 @@ test.serial('find - references', async t => {
     }
   })
 
-  console.log(relatedMatchesLeagues)
-
-  // await wait(1000)
-
-  // t.deepEqualIgnoreOrder(
-  //   relatedMatchesLeagues.map(v => v.name),
-  //   ['league3', 'league2', 'league1', 'league0'],
-  //   'Nested query'
-  // )
+  t.deepEqualIgnoreOrder(
+    relatedMatchesLeagues,
+    [
+      { value: 0, name: 'league0' },
+      { value: 1, name: 'league1' },
+      { value: 2, name: 'league2' },
+      { value: 3, name: 'league3' },
+      { value: 4, name: 'league4' },
+      { value: 5, name: 'league5' },
+      { value: 6, name: 'league6' },
+      { value: 7, name: 'league7' },
+      { value: 8, name: 'league8' },
+      { value: 9, name: 'league9' }
+    ],
+    'Nested query'
+  )
 })
