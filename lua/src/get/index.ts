@@ -20,7 +20,7 @@ function getField(
   field?: string,
   language?: string,
   version?: string,
-  ignore?: '$' | '$inherit' | '$list' // when from inherit, or from find
+  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit, or from find
 ): boolean {
   let hasAlias = false
 

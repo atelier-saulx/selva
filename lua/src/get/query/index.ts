@@ -145,13 +145,13 @@ const parseQuery = (
         getField(
           getOptions,
           schema,
+          result,
           resultIds[i],
-          undefined,
+          '',
           language,
           version,
           '$'
         )
-        logger.info(result)
         results[results.length] = result
       }
     }
