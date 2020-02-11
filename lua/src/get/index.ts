@@ -20,16 +20,25 @@ function getField(
   field?: string,
   language?: string,
   version?: string,
-  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit, or from find
+  ignore?: '$' | '$inherit' | '$list' // when from inherit, or from find
 ): boolean {
   let hasAlias = false
 
-  if (props.$list) {
+  if (props.$list && ignore !== '$list' && ignore !== '$') {
     // field that needs to get the result
 
     if (field) {
       // allways need a field for getQuery
-      const err = getQuery(get, result, props, field, [id], field)
+      const err = getQuery(
+        getField,
+        result,
+        props,
+        field,
+        [id],
+        field,
+        language,
+        version
+      )
       if (err) {
         // can return an error now
         logger.error(err)

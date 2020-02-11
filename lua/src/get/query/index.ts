@@ -7,6 +7,8 @@ import { Fork } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
 import { emptyArray } from '../../util'
+import { getSchema } from '../../schema/index'
+import { GetFieldFn } from '../types'
 
 const parseNested = (
   opts: GetOptions,
@@ -37,10 +39,12 @@ const parseNested = (
 }
 
 const parseQuery = (
-  get: Function,
+  getField: GetFieldFn,
   getOptions: GetOptions,
   ids: string[],
-  traverse?: string
+  traverse?: string,
+  language?: string,
+  version?: string
 ): [GetResult[], string | null] => {
   const resultGet = {}
   const results: GetResult[] = []
@@ -94,7 +98,14 @@ const parseQuery = (
         }
       }
       opts.$list = { $find: find.$find }
-      const [nestedResults, err] = parseQuery(get, opts, resultIds)
+      const [nestedResults, err] = parseQuery(
+        getField,
+        opts,
+        resultIds,
+        undefined,
+        language,
+        version
+      )
       if (err) {
         return [results, err]
       }
@@ -110,14 +121,38 @@ const parseQuery = (
         }
       }
     } else {
+      const schema = getSchema()
       for (let i = 1; i < resultIds.length; i++) {
-        const opts: GetOptions = { $id: resultIds[i] }
-        for (let key in getOptions) {
-          if (key !== '$find' && key !== '$list' && key !== '$id') {
-            opts[key] = getOptions[key]
-          }
-        }
-        results[results.length] = get(opts)
+        // for (let key in getOptions) {
+        //   if (key !== '$find' && key !== '$list' && key !== '$id') {
+        //     opts[key] = getOptions[key]
+        //   }
+        // }
+        /*
+         props: GetItem,
+        schema: Schema,
+        result: GetResult,
+        id: Id,
+        field?: string,
+        language?: string,
+        version?: string,
+        ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit, or from find
+
+        */
+        //  $id: resultIds[i]
+        // opts
+        const result: GetResult = {}
+        getField(
+          getOptions,
+          schema,
+          resultIds[i],
+          undefined,
+          language,
+          version,
+          '$'
+        )
+        logger.info(result)
+        results[results.length] = result
       }
     }
   }
@@ -126,17 +161,26 @@ const parseQuery = (
 }
 
 const queryGet = (
-  get: Function,
+  getField: GetFieldFn,
   result: GetResult,
   getOptions: GetOptions,
   resultField: string,
   ids?: string[],
-  traverse?: string
+  traverse?: string,
+  language?: string,
+  version?: string
 ): string | null => {
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
-  let [r, err] = parseQuery(get, getOptions, ids, traverse)
+  let [r, err] = parseQuery(
+    getField,
+    getOptions,
+    ids,
+    traverse,
+    language,
+    version
+  )
   if (!r.length || r.length === 0) {
     r = emptyArray()
   }

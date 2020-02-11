@@ -48,9 +48,9 @@ test.serial('get - simple $list', async t => {
 
   const children = []
 
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 100; i++) {
     children.push({
-      $id: await client.id({ type: 'custom' }),
+      type: 'custom',
       value: i,
       name: 'flurp' + i
     })
@@ -69,5 +69,17 @@ test.serial('get - simple $list', async t => {
 
   t.true(true)
 
-  await client.get({})
+  const x = await client.get({
+    $id: 'cuA',
+    children: {
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'asc' },
+        $range: [0, 10]
+      }
+    }
+  })
+
+  console.log(x)
 })
