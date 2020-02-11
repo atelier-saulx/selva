@@ -79,8 +79,6 @@ test.serial('get - simple $list', async t => {
     }
   })
 
-  await wait(500)
-
   t.deepEqual(
     c,
     {
