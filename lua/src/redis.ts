@@ -5,7 +5,11 @@ export function Error(errorMsg: string): Error {
 }
 
 export function log(clientId: string, loglevel: LogLevel, msg: any): void {
-  redis.call('PUBLISH', `___selva_lua_logs:${clientId}`, `[${loglevel}] ${msg}`)
+  redis.call(
+    'PUBLISH',
+    `___selva_lua_logs:${clientId}`,
+    cjson.encode({ level: loglevel, msg })
+  )
 }
 
 export function id(externalIdStr?: string): string {

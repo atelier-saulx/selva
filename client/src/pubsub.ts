@@ -3,6 +3,7 @@ import { createClient, RedisClient as Redis } from 'redis'
 import { GetResult, GetOptions } from './get/types'
 import { EventEmitter } from 'events'
 import { ConnectOptions } from './redis'
+import { LogFn } from '.'
 
 type RedisSubsription = {
   channel: string
@@ -35,6 +36,7 @@ export default class SelvaPubSub {
   private opts: ConnectOptions
   private connected: boolean = false
   private clientId: string
+  private log: LogFn
 
   connect(opts: ConnectOptions) {
     this.opts = opts
@@ -91,10 +93,12 @@ export default class SelvaPubSub {
     this.sub.subscribe(`___selva_lua_logs:${this.clientId}`)
   }
 
-  configureLogs(clientId: string) {
+  configureLogs(clientId: string, logFn: LogFn) {
     if (clientId) {
       this.clientId = clientId
     }
+
+    this.log = logFn
   }
 
   subscribe(channel: string, getOpts: GetOptions) {
@@ -200,8 +204,8 @@ export default class SelvaPubSub {
     this.sub.removeAllListeners('message')
 
     this.sub.on('message', (channel, message) => {
-      if (channel.startsWith('___selva_lua_logs:')) {
-        console.log('LUA:', message)
+      if (channel.startsWith('___selva_lua_logs:') && this.log) {
+        this.log(JSON.parse(message))
         return
       }
 

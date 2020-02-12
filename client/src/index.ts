@@ -17,10 +17,13 @@ import { v4 as uuid } from 'uuid'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 5
 
-type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
+export type LogEntry = { level: LogLevel; msg: string }
+export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
+export type LogFn = (log: LogEntry) => void
 
 export type SelvaOptions = {
   loglevel?: LogLevel
+  log?: LogFn
 }
 
 let SCRIPTS
@@ -46,6 +49,14 @@ try {
   process.exit(1)
 }
 
+const defaultLogging: LogFn = log => {
+  if (log.level === 'warning') {
+    console.warn('LUA: ' + log.msg)
+  } else {
+    console[log.level]('LUA: ' + log.msg)
+  }
+}
+
 export class SelvaClient {
   public schema: Schema
   public searchIndexes: SearchIndexes
@@ -59,7 +70,11 @@ export class SelvaClient {
   ) {
     this.clientId = uuid()
     this.redis = new RedisClient(opts)
-    this.redis.subscriptionManager.configureLogs(this.clientId)
+
+    this.redis.subscriptionManager.configureLogs(
+      this.clientId,
+      (selvaOpts && selvaOpts.log) || defaultLogging
+    )
 
     if (selvaOpts && selvaOpts.loglevel) {
       this.loglevel = selvaOpts.loglevel
