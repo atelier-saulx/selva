@@ -64,11 +64,11 @@ function parseSubscriptions(
   }
 
   // traverse may be nessecary for fields
-
   // may need to add more here
   // easy for decandants but what about for example, ancestors
   // or other stuff
   // maybe usefull to keep track of the actual ids
+  // now the rest
 
   querySubs[querySubs.length] = sub
 
