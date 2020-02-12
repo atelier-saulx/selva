@@ -22,7 +22,6 @@ const parseNested = (
       if (!opts.$list.$find.$traverse) {
         opts.$list.$find.$traverse = traverse
       }
-
       return parseFind(opts.$list.$find, ids)
     } else {
       if (!traverse) {
@@ -50,7 +49,8 @@ const parseQuery = (
   traverse?: string | string[],
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  getResult?: GetResult
 ): [
   {
     results: GetResult[]
@@ -125,7 +125,6 @@ const parseQuery = (
       }
 
       // meta is harder here..
-
       const [{ results: nestedResults }, err] = parseQuery(
         getField,
         schema,
@@ -133,7 +132,9 @@ const parseQuery = (
         resultIds,
         undefined,
         language,
-        version
+        version,
+        includeMeta,
+        getResult
       )
       if (err) {
         return [{ results }, err]
@@ -151,7 +152,10 @@ const parseQuery = (
       }
     } else {
       for (let i = 1; i < resultIds.length; i++) {
-        const result: GetResult = {}
+        const result: GetResult =
+          includeMeta && getResult && getResult.$meta
+            ? { $meta: getResult.$meta }
+            : {}
         getField(
           getOptions,
           schema,
@@ -169,7 +173,17 @@ const parseQuery = (
   }
 
   const sort = getOptions.$list && getOptions.$list.$sort
-  return [{ results, meta: { ast: resultFork, sort: sort } }, null]
+  const meta: Meta = { ast: resultFork, sort: sort, ids: resultIds }
+
+  if (
+    getOptions.$list &&
+    getOptions.$list.$find &&
+    getOptions.$list.$find.$traverse
+  ) {
+    meta.traverse = getOptions.$list.$find.$traverse
+  }
+
+  return [{ results, meta }, null]
 }
 
 const queryGet = (
@@ -196,7 +210,8 @@ const queryGet = (
     traverse,
     language,
     version,
-    includeMeta
+    includeMeta,
+    result
   )
 
   let { results, meta } = r
@@ -208,7 +223,7 @@ const queryGet = (
     if (!result.$meta.query) {
       result.$meta.query = []
     }
-    parseSubscriptions(result.$meta.query, meta, ids, traverse)
+    parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
   }
   result[resultField] = results
   if (err) {

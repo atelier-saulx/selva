@@ -156,7 +156,6 @@ test.serial('basic', async t => {
     'Title of person is correctly set'
   )
 
-  console.log('!!!', await client.redis.zrange(match + '.ancestors', 0, -1))
   t.deepEqualIgnoreOrder(
     await client.redis.zrange(match + '.ancestors', 0, -1),
     ['root']

@@ -49,7 +49,13 @@ test.after(async _t => {
 })
 
 test.serial('subscription find', async t => {
-  const client = connect({ port: 6123 })
+  const client = connect(
+    {
+      port: 6123
+    },
+    { loglevel: 'info' }
+  )
+
   const matches = []
   const teams = []
 
@@ -78,7 +84,7 @@ test.serial('subscription find', async t => {
 
   await Promise.all(teams.map(t => client.set(t)))
 
-  await client.set({
+  const league = await client.set({
     type: 'league',
     name: 'league 1',
     children: matches
@@ -112,6 +118,40 @@ test.serial('subscription find', async t => {
   })
 
   console.dir(result.$meta, { depth: 100 })
+
+  // teams
+  // league
+
+  const result2 = await client.get({
+    $id: league,
+    $includeMeta: true,
+    items: {
+      name: true,
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
+            },
+            {
+              $field: 'value',
+              $operator: '..',
+              $value: [5, 10]
+            }
+          ]
+        }
+      }
+    }
+  })
+
+  // then nested
+  console.dir(result2.$meta, { depth: 100 })
+
+  await wait(3e3)
 
   t.true(true)
 })
