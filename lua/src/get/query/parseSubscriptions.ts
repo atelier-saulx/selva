@@ -20,7 +20,7 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
         parseFork(item, sub)
       } else {
         if (item.$field === 'type') {
-          // not completely correct unfortunately
+          // FIXME: Not completely correct unfortunately
           if (isArray(item.$value)) {
             for (let j = 0; j < item.$value.length; j++) {
               addType(item.$value[j], sub.type)
@@ -43,6 +43,13 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
           sub.member[sub.member.length] = ancestors
           // add to member
         } else if (item.$field === 'ids') {
+          if (!sub.ids) {
+            sub.ids = {}
+          }
+          const value = !isArray(item.$value) ? [item.$value] : item.$value
+          for (let j = 0; j < value.length; j++) {
+            sub.ids[value[j]] = true
+          }
           // dont even know what to do here :D
           // prob need to add the traverse options and not the ids
         } else {
@@ -65,6 +72,8 @@ function parseSubscriptions(
     fields: {},
     type: []
   }
+
+  // children, related or whatever on specific ids or on ancestors
 
   if (meta.ast) {
     parseFork(meta.ast, sub)
