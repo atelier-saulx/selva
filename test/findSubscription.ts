@@ -33,7 +33,8 @@ test.before(async t => {
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
+          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       }
     }
@@ -118,11 +119,17 @@ test.serial('subscription find', async t => {
 
   // collected for everything
 
+  // start with deceandants
+  // then ancestors
+  // then fields
+
   /*
-    {
+    [{
         // and in value
-       member: [{ field: 'ancestors', value: ['root']}]
+       member: [{ field: 'ancestors', value: ['root']}],
+       time?: [213123, 31123] // if at this time,
        fields: {
+            // type is handled special
             'type': [
                     {
                         $value: 'ma' // make it prefix allready
@@ -134,10 +141,10 @@ test.serial('subscription find', async t => {
                     $value: [5, 10],
             ]
        }
-    }
+    }]
   */
 
-  console.log('yes', result)
+  console.dir(result.$meta, { depth: 100 })
 
   t.true(true)
 })

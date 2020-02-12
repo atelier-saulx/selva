@@ -3,13 +3,14 @@ import { GetOptions, GetResult } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
-import { Fork } from './types'
+import { Fork, Meta } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
 import { emptyArray, ensureArray } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
+import parseSubscriptions from './parseSubscriptions'
 
 const parseNested = (
   opts: GetOptions,
@@ -53,7 +54,7 @@ const parseQuery = (
 ): [
   {
     results: GetResult[]
-    meta?: { ast: Fork | undefined }
+    meta?: Meta
   },
   string | null
 ] => {
@@ -170,7 +171,7 @@ const parseQuery = (
   // need stuff for nested!!!
   // also for search
   // also for range
-  return [{ results, meta: { ast: resultFork } }, null]
+  return [{ results, meta: { ast: resultFork, opts: getOptions } }, null]
 }
 
 const queryGet = (
@@ -206,11 +207,11 @@ const queryGet = (
     results = emptyArray()
   }
   if (includeMeta) {
-    if (result.$meta) {
-      result.$meta.query = meta
-    } else {
-      result.$meta = { query: meta }
+    if (!result.$meta.query) {
+      result.$meta.query = []
     }
+
+    parseSubscriptions(result.$meta.query, meta)
   }
   result[resultField] = results
   if (err) {
