@@ -20,6 +20,7 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
         parseFork(item, sub)
       } else {
         if (item.$field === 'type') {
+          // not completely correct unfortunately
           if (isArray(item.$value)) {
             for (let j = 0; j < item.$value.length; j++) {
               addType(item.$value[j], sub.type)

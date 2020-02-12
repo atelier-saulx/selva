@@ -17,11 +17,6 @@ const returnNumber = (filter, value: Value): string => {
   }
   return ''
 }
-// ADD TEXT AND GEO
-// SEARCH DB
-// LEVEN STEIN DISTANCE index language
-// SEARCH PREFIXES
-// also incolude language in searching REAL SEARCH
 
 const addField = (filter: FilterAST): string => {
   // depends on field type
