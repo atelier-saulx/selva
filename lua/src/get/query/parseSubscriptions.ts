@@ -71,7 +71,8 @@ function parseSubscriptions(
 ) {
   let sub: QuerySubscription | undefined
 
-  const queryId = cjson.encode(getOptions)
+  // FIXME: prob better to just do an isEqual check
+  const queryId = redis.sha1hex(cjson.encode(getOptions))
 
   for (let i = 0; i < querySubs.length; i++) {
     if (querySubs[i].queryId === queryId) {
