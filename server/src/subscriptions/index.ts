@@ -218,7 +218,10 @@ export default class SubscriptionManager {
 
       const eventName = channel.slice('___selva_events:'.length)
 
-      if (message === 'delete') {
+      if (message === 'created') {
+        console.log('created record with id', eventName)
+        // TODO(jim): add query specific handler here
+      } else if (message === 'delete') {
         for (const field in this.subscriptionsByField) {
           if (field.startsWith(eventName)) {
             const subscriptionIds: Set<string> | undefined =
