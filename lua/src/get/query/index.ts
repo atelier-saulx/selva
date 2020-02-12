@@ -171,7 +171,7 @@ const parseQuery = (
   // need stuff for nested!!!
   // also for search
   // also for range
-  return [{ results, meta: { ast: resultFork, opts: getOptions } }, null]
+  return [{ results, meta: { ast: resultFork, getOptions: getOptions } }, null]
 }
 
 const queryGet = (
@@ -206,12 +206,11 @@ const queryGet = (
   if (!results.length || results.length === 0) {
     results = emptyArray()
   }
-  if (includeMeta) {
+  if (includeMeta && meta) {
     if (!result.$meta.query) {
       result.$meta.query = []
     }
-
-    parseSubscriptions(result.$meta.query, meta)
+    parseSubscriptions(result.$meta.query, meta, ids, traverse)
   }
   result[resultField] = results
   if (err) {

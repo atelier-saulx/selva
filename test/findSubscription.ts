@@ -123,6 +123,9 @@ test.serial('subscription find', async t => {
   // then ancestors
   // then fields
 
+  // sort (adds the field)
+  //
+
   /*
     [{
         // and in value
@@ -131,14 +134,11 @@ test.serial('subscription find', async t => {
        fields: {
             // type is handled special
             'type': [
-                    {
-                        $value: 'ma' // make it prefix allready
-                        $operator: '='
-                    }
+                   ['ma'] // make it prefix allready
             ],
             'value': [
-                    $operator: '..',
-                    $value: [5, 10],
+                // operator does not really matter
+                 [5, 10]
             ]
        }
     }]

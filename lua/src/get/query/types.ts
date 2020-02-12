@@ -26,6 +26,9 @@ export type FieldSubscription = {
 }
 
 export type QuerySubscription = {
-  member: { $field: string; $value: (string | number)[] }[]
-  fields: Record<string, []>
+  member: { $field: string; $value: string[] }[] // array is an OR
+  type: string[] // prefixes
+  fields: {
+    [key: string]: true
+  }
 }
