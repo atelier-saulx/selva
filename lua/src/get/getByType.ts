@@ -409,8 +409,8 @@ const geo = (
   _language?: string,
   _version?: string
 ): true => {
-  const lat = redis.hget(id, field + '.lat')
-  const long = redis.hget(id, field + '.long')
+  const coord = redis.hget(id, field)
+  const [lat, lon] = splitString(coord, ',')
 
   setNestedResult(result, field, { lat: tonumber(lat), lon: tonumber(lon) })
   return true
