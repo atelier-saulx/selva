@@ -29,7 +29,16 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   // need to remove equal then
 
   const o = filterOpt.$operator
-  if (!(o === '=' || o === '>' || o === '<' || o === '..' || o === '!=')) {
+  if (
+    !(
+      o === '=' ||
+      o === '>' ||
+      o === '<' ||
+      o === '..' ||
+      o === '!=' ||
+      o === 'distance'
+    )
+  ) {
     return [{ isFork: true }, `Invalid filter operator ${o}`]
   }
 

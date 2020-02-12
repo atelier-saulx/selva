@@ -12,7 +12,7 @@ test.before(async t => {
 
   await wait(500)
 
-  const client = connect({ port: 6099 })
+  const client = connect({ port: 6099 }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -52,7 +52,7 @@ test.after(async _t => {
 test.serial('find - geo', async t => {
   // simple nested - single query
   const client = connect({ port: 6099 }, { loglevel: 'info' })
-  const ma1 = await client.set({
+  await client.set({
     type: 'match',
     name: 'match 1',
     location: {
@@ -61,11 +61,70 @@ test.serial('find - geo', async t => {
     }
   })
 
-  console.log(
+  await client.set({
+    type: 'match',
+    name: 'match 2',
+    location: {
+      lat: 61.12,
+      lon: 122.67
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
     await client.get({
-      $id: ma1,
-      $all: true
-    })
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'location',
+                $operator: 'distance',
+                $value: [120, 60, 100, 'km']
+              }
+            ]
+          }
+        }
+      }
+    }),
+    { id: 'root', items: [{ name: 'match 1' }] }
   )
-  t.true(true)
+
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'match'
+                },
+                {
+                  $field: 'location',
+                  $operator: 'distance',
+                  $value: [120, 60, 1000, 'km']
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(x => x.name),
+    ['match 1', 'match 2']
+  )
 })
