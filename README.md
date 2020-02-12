@@ -1,4 +1,4 @@
-# Selva Client
+# Selva
 
 🌴 Selva is a realtime undirected acyclic graph database.
 
