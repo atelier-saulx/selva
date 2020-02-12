@@ -40,5 +40,5 @@ export default (
 ): void => {
   refs(field, payload)
   verify(payload)
-  result[field] = `${payload.lat},${payload.lon}`
+  result[field] = `${payload.lon},${payload.lat}`
 }

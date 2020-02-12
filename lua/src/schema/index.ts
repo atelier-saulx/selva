@@ -378,6 +378,8 @@ function convertSearch(f: FieldSchema): SearchRaw {
       return { type: ['NUMERIC', 'SORTABLE'] }
     } else if (field.type === 'text') {
       return { type: ['TEXT-LANGUAGE'] }
+    } else if (field.type === 'geo') {
+      return { type: ['GEO'] }
     } else if (field.type === 'set') {
       return { type: ['TAG'] }
     }

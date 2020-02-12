@@ -27,7 +27,7 @@ test.before(async t => {
         prefix: 'ma',
         fields: {
           fun: { type: 'set', items: { type: 'string' } },
-          location: { type: 'geo' },
+          location: { type: 'geo', search: true },
           related: { type: 'references', search: { type: ['TAG'] } },
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
