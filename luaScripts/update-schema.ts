@@ -1,11 +1,13 @@
-import { Schema } from '../src/schema/index'
+import { Schema } from '../client/src/schema/index'
 import { updateSchema } from '../lua/src/schema/index'
 import * as logger from '../lua/src/logger'
+import { splitString } from '../lua/src/util'
 
-const newSchema: Schema = cjson.decode(ARGV[0])
+let [loglevel, clientId = null] = splitString(ARGV[0], ':')
+logger.configureLogger(clientId, <logger.LogLevel>loglevel)
 
-// TODO: check and panic if SHA doesn't match what is currently in database
-// and check for this error in client to re-fetch schema
+const newSchema: Schema = cjson.decode(ARGV[1])
+
 const [updated, err] = updateSchema(newSchema)
 if (err && type(err) === 'string') {
   // @ts-ignore

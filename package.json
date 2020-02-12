@@ -1,6 +1,7 @@
 {
   "name": "selva-client",
   "version": "0.0.1",
+  "main": "dist/client/src/index.js",
   "scripts": {
     "build": "tsc",
     "start": "tsc && node dist/index.js",
@@ -8,7 +9,7 @@
     "watch": "ava --watch --verbose",
     "scratchpad": "yarn buildLua && redis-cli --ldb --eval dist/lua/scratchpad.lua",
     "testLua": "yarn buildLua && ./lua/testy.lua dist/lua/tests.lua",
-    "buildLua": "rm -rf ./dist && scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ./bin/transpileScript $script; done && node ./lua/postprocessLuaTests.js"
+    "buildLua": "rm -rf ./dist && yarn build && scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ./bin/transpileScript $script; done && node ./lua/postprocessLuaTests.js"
   },
   "husky": {
     "hooks": {
@@ -64,7 +65,6 @@
     "husky": "^3.0.8",
     "lint-staged": "^9.4.2",
     "prettier": "^1.18.2",
-    "selva-server": "0.0.12",
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3",
     "typescript-to-lua": "^0.30.1"
@@ -72,6 +72,10 @@
   "dependencies": {
     "@sindresorhus/fnv1a": "^2.0.0",
     "@types/uuid": "^3.4.6",
+    "async-retry": "^1.3.1",
+    "aws-sdk": "^2.616.0",
+    "dropbox": "^4.0.30",
+    "node-fetch": "^2.6.0",
     "redis": "^2.8.0",
     "uuid": "^3.3.3"
   }

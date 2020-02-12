@@ -11,6 +11,7 @@ import { deleteItem } from './delete'
 import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
 import { addFieldToSearch } from './search'
+import sendEvent from './events'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -98,6 +99,8 @@ function setInternalArrayStructure(
   if (value.$delete) {
     removeFromSet(id, field, value.$delete, hierarchy)
   }
+
+  sendEvent(id, field, 'update')
 }
 
 function setObject(id: string, field: string, item: any) {
@@ -108,6 +111,7 @@ function setObject(id: string, field: string, item: any) {
       const result = redis.hsetnx(id, field, item.$default)
       if (result === 0) {
         redis.hincrby(id, field, item.$increment)
+        sendEvent(id, field, 'update')
       }
       return
     }
@@ -115,6 +119,7 @@ function setObject(id: string, field: string, item: any) {
     setField(id, field, item.$default, true)
   } else if (item.$increment) {
     redis.hincrby(id, field, item.$increment)
+    sendEvent(id, field, 'update')
   } else if (item.$ref) {
     redis.hset(id, `${field}.$ref`, item.$ref)
   } else {
@@ -166,6 +171,7 @@ function setField(
     redis.hset(id, field, tostring(value))
   }
   addFieldToSearch(id, field, value)
+  sendEvent(id, field, 'update')
 }
 
 function remove(payload: DeleteOptions): boolean {

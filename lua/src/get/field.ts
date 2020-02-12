@@ -1,7 +1,7 @@
 import { GetResult } from '~selva/get/types'
 import { Id } from '~selva/schema/index'
 import getByType from './getByType'
-import { Schema } from '../../../src/schema/index'
+import { Schema } from '../../../client/src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult, getNestedField } from './nestedFields'
 import { ensureArray } from 'lua/src/util'
@@ -70,9 +70,14 @@ export default function getWithField(
   field: string,
   $field: string | string[],
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): boolean {
-  const intermediateResult: object = {}
+  const intermediateResult: any = {}
+  if (includeMeta) {
+    intermediateResult.$meta = { $ref: {} }
+  }
+
   let fromNested: any
   for (const fieldDefinition of $field) {
     if (
@@ -82,7 +87,8 @@ export default function getWithField(
         id,
         fieldDefinition,
         language,
-        version
+        version,
+        includeMeta
       )
     ) {
       fromNested = getNestedField(intermediateResult, fieldDefinition)

@@ -1,6 +1,6 @@
 import test from 'ava'
-import { connect } from '../src/index'
-import { start } from 'selva-server'
+import { connect } from '../client/src/index'
+import { start } from '../server/src/index'
 import './assertions'
 import { wait, dumpDb } from './assertions'
 import { RedisClient } from 'redis'
@@ -9,11 +9,9 @@ import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6122,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6122
   })
-  await wait(1500)
+
   const client = connect({ port: 6122 })
   await client.updateSchema({
     languages: ['en'],

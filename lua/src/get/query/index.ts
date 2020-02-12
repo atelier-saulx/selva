@@ -3,18 +3,19 @@ import { GetOptions, GetResult } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
-import { Fork } from './types'
+import { Fork, Meta } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
-import { emptyArray } from '../../util'
+import { emptyArray, ensureArray, isArray } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
-import { Schema } from '../../../../src/schema/index'
+import { Schema } from '../../../../client/src/schema/index'
+import parseSubscriptions from './parseSubscriptions'
 
 const parseNested = (
   opts: GetOptions,
   ids: string[],
-  traverse?: string
+  traverse?: string | string[]
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
     if (opts.$list.$find) {
@@ -29,7 +30,7 @@ const parseNested = (
       } else {
         return parseFind(
           {
-            $traverse: traverse
+            $fields: ensureArray(traverse)
           },
           ids
         )
@@ -46,13 +47,14 @@ const parseQuery = (
   schema: Schema,
   getOptions: GetOptions,
   ids: string[],
-  traverse?: string,
+  traverse?: string | string[],
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): [
   {
     results: GetResult[]
-    meta?: { ast: Fork | undefined }
+    meta?: Meta
   },
   string | null
 ] => {
@@ -158,6 +160,7 @@ const parseQuery = (
           '',
           language,
           version,
+          includeMeta,
           '$'
         )
         results[results.length] = result
@@ -165,10 +168,8 @@ const parseQuery = (
     }
   }
 
-  // need stuff for nested!!!
-  // also for search
-  // also for range
-  return [{ results, meta: { ast: resultFork } }, null]
+  const sort = getOptions.$list && getOptions.$list.$sort
+  return [{ results, meta: { ast: resultFork, sort: sort } }, null]
 }
 
 const queryGet = (
@@ -178,13 +179,15 @@ const queryGet = (
   getOptions: GetOptions,
   resultField: string,
   ids?: string[],
-  traverse?: string,
+  traverse?: string | string[],
   language?: string,
-  version?: string
+  version?: string,
+  includeMeta?: boolean
 ): string | null => {
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
+
   const [r, err] = parseQuery(
     getField,
     schema,
@@ -192,7 +195,8 @@ const queryGet = (
     ids,
     traverse,
     language,
-    version
+    version,
+    includeMeta
   )
 
   let { results, meta } = r
@@ -200,12 +204,11 @@ const queryGet = (
   if (!results.length || results.length === 0) {
     results = emptyArray()
   }
-  if (getOptions.$includeMeta) {
-    if (result.$meta) {
-      result.$meta.query = meta
-    } else {
-      result.$meta = { query: meta }
+  if (includeMeta && meta) {
+    if (!result.$meta.query) {
+      result.$meta.query = []
     }
+    parseSubscriptions(result.$meta.query, meta, ids, traverse)
   }
   result[resultField] = results
   if (err) {

@@ -1,5 +1,5 @@
 // only types can be imported with `paths`, not supported by tstl
-import { Id, Schema } from '../../src/schema/index'
+import { Id, Schema } from '../../client/src/schema/index'
 import { getSchema } from '../../lua/src/schema/index'
 import * as logger from './logger'
 

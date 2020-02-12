@@ -1,17 +1,12 @@
 import test from 'ava'
-import { connect } from '../src/index'
-import { start } from 'selva-server'
+import { connect } from '../client/src/index'
+import { start } from '../server/src/index'
 import './assertions'
 
 let srv
 test.before(async t => {
   srv = await start({
-    port: 7073,
-    developmentLogging: true,
-    loglevel: 'info'
-  })
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
+    port: 7073
   })
 
   const client = connect({ port: 7073 })

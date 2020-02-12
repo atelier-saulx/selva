@@ -1,25 +1,21 @@
 import test, { ExecutionContext } from 'ava'
 import './assertions'
-import { connect, SelvaClient } from '../src/index'
-import { start } from 'selva-server'
+import { connect, SelvaClient } from '../client/src/index'
+import { start } from '../server/src/index'
 import { dumpDb, idExists, wait } from './assertions'
 
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6061,
-    // developmentLogging: true,
-    loglevel: 'info',
-    developmentLogging: true
-  })
-
-  await new Promise((resolve, reject) => {
-    setTimeout(resolve, 200)
-  })
-
-  const client = connect({
     port: 6061
   })
+
+  const client = connect(
+    {
+      port: 6061
+    },
+    { loglevel: 'info' }
+  )
 
   await client.updateSchema({
     languages: ['en', 'nl', 'de'],
@@ -91,9 +87,12 @@ test.after(async _t => {
 })
 
 test.serial('root', async t => {
-  const client = connect({
-    port: 6061
-  })
+  const client = connect(
+    {
+      port: 6061
+    },
+    { loglevel: 'info' }
+  )
 
   const match = await client.set({
     type: 'match'

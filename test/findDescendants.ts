@@ -1,6 +1,6 @@
 import test from 'ava'
-import { connect } from '../src/index'
-import { start } from 'selva-server'
+import { connect } from '../client/src/index'
+import { start } from '../server/src/index'
 import './assertions'
 import { wait, dumpDb } from './assertions'
 import { RedisClient } from 'redis'
@@ -8,9 +8,7 @@ import { RedisClient } from 'redis'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6088,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6088
   })
 
   await wait(500)

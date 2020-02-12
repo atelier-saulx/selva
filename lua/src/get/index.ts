@@ -1,7 +1,7 @@
 import { GetItem, GetResult, GetOptions } from '~selva/get/types'
 import { Id } from '~selva/schema/index'
 import getByType from './getByType'
-import { Schema } from '../../../src/schema/index'
+import { Schema } from '../../../client/src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
@@ -20,7 +20,8 @@ function getField(
   field?: string,
   language?: string,
   version?: string,
-  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit, or from find
+  includeMeta?: boolean,
+  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {
   let hasAlias = false
 
@@ -28,6 +29,20 @@ function getField(
     // field that needs to get the result
 
     if (field) {
+      let sourceField: string | string[] = field
+      if (!props.$list.$find && props.$field) {
+        sourceField = resolveAll(
+          id,
+          schema,
+          ensureArray(props.$field),
+          language,
+          version
+        )
+      }
+
+      // clean up this property so we don't use it in gets with lists
+      delete props.$field
+
       // allways need a field for getQuery
       const err = getQuery(
         getField,
@@ -36,9 +51,10 @@ function getField(
         props,
         field,
         [id],
-        field,
+        sourceField,
         language,
-        version
+        version,
+        includeMeta
       )
       if (err) {
         // can return an error now
@@ -59,7 +75,16 @@ function getField(
       )
 
       if (
-        getWithField(result, schema, id, field, props.$field, language, version)
+        getWithField(
+          result,
+          schema,
+          id,
+          field,
+          props.$field,
+          language,
+          version,
+          includeMeta
+        )
       ) {
         return true
       }
@@ -78,14 +103,25 @@ function getField(
           const f = field && field.length > 0 ? field + '.' + key : key
           if (props[key] === true) {
             // logger.info(`key: ${key} field ${f}`)
-            if (!getByType(result, schema, id, f, language, version)) {
+            if (
+              !getByType(result, schema, id, f, language, version, includeMeta)
+            ) {
               isComplete = false
             }
           } else if (props[key] === false) {
             // skip
           } else {
             if (
-              getField(props[key], schema, result, id, f, language, version)
+              getField(
+                props[key],
+                schema,
+                result,
+                id,
+                f,
+                language,
+                version,
+                includeMeta
+              )
             ) {
               isComplete = false
             }
@@ -106,7 +142,8 @@ function getField(
           id,
           <string>field,
           language,
-          version
+          version,
+          includeMeta
         )
         if (!complete) {
           inherit(
@@ -118,6 +155,7 @@ function getField(
             <string>field,
             language,
             version,
+            includeMeta,
             hasAlias ? props.$field : undefined
           )
         }
@@ -131,6 +169,7 @@ function getField(
           <string>field,
           language,
           version,
+          includeMeta,
           hasAlias ? props.$field : undefined
         )
       }
@@ -148,7 +187,8 @@ function getField(
         id,
         <string>field,
         language,
-        version
+        version,
+        includeMeta
       )
       if (!complete) {
         setNestedResult(result, <string>field, props.$default)
@@ -164,10 +204,18 @@ function get(opts: GetOptions): GetResult {
   const result: GetResult = {}
 
   // logger.info(`GET ${cjson.encode(opts)}`)
-  const { $version: version, $id: id = 'root', $language: language } = opts
+  const {
+    $version: version,
+    $id: id = 'root',
+    $language: language,
+    $includeMeta: includeMeta
+  } = opts
 
-  // default root
-  getField(opts, schema, result, id, undefined, language, version)
+  if (includeMeta) {
+    result.$meta = { $refs: {} }
+  }
+
+  getField(opts, schema, result, id, undefined, language, version, includeMeta)
 
   return <any>result
 }

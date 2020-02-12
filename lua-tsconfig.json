@@ -3,7 +3,7 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "~selva/*": ["src/*"]
+      "~selva/*": ["client/src/*"]
     },
     "target": "esnext",
     "lib": ["esnext"],

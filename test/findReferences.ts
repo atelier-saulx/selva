@@ -1,15 +1,13 @@
 import test from 'ava'
-import { connect } from '../src/index'
-import { start } from 'selva-server'
+import { connect } from '../client/src/index'
+import { start } from '../server/src/index'
 import './assertions'
 import { wait } from './assertions'
 
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6090,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6090
   })
 
   await wait(500)

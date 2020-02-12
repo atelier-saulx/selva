@@ -1,5 +1,5 @@
 import test from 'ava'
-import { SelvaClient } from '../../src/index'
+import { SelvaClient } from '../../client/src/index'
 
 export const wait = (timeMs: number = 500): Promise<void> =>
   new Promise(r => setTimeout(r, timeMs))
@@ -59,7 +59,7 @@ export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
         }
         return id.indexOf('.') > -1
           ? client.redis.smembers(id)
-          : client.redis.hgetall(id)
+          : <any>client.redis.hgetall(id)
       })
     )
   )

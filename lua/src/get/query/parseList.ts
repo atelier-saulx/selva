@@ -2,7 +2,7 @@ import { GetOptions, GetResult, Sort, List } from '~selva/get/types'
 import { hget } from '../../redis'
 import { emptyArray, isArray } from '../../util'
 import * as logger from '../../logger'
-import { Schema } from '../../../../src/schema/index'
+import { Schema } from '../../../../client/src/schema/index'
 import { getSearchIndexes } from '../../schema/index'
 
 function parseList(results: string[], list: List): string[] {
