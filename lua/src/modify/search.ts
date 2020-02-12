@@ -1,7 +1,9 @@
 import { getSearchIndexes } from '../schema/index'
 import * as logger from '../logger'
+import { splitString } from '../util'
 
 const mapLanguages = (lang: string): string => {
+  lang = splitString(lang, '_')[0]
   if (lang === 'en') {
     return 'english'
   } else if (lang === 'de') {
