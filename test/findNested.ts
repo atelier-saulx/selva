@@ -90,6 +90,18 @@ test.serial('get nested results', async t => {
   const result = await client.get({
     $includeMeta: true,
     items: {
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
+            }
+          ]
+        }
+      },
       name: true,
       id: true,
       teams: {
@@ -106,18 +118,6 @@ test.serial('get nested results', async t => {
               }
             ]
           }
-        }
-      },
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
-              $field: 'type',
-              $operator: '=',
-              $value: 'match'
-            }
-          ]
         }
       }
     }
