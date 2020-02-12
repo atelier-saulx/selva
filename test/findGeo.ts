@@ -57,7 +57,7 @@ test.serial('find - geo', async t => {
     name: 'match 1',
     location: {
       lat: 60.12,
-      long: 120.67
+      lon: 120.67
     }
   })
 

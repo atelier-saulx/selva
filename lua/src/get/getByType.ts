@@ -412,7 +412,7 @@ const geo = (
   const lat = redis.hget(id, field + '.lat')
   const long = redis.hget(id, field + '.long')
 
-  setNestedResult(result, field, { lat: tonumber(lat), long: tonumber(long) })
+  setNestedResult(result, field, { lat: tonumber(lat), lon: tonumber(lon) })
   return true
 }
 

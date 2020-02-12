@@ -6,7 +6,7 @@ function refs(field: string, payload: SetOptions): void {
     throw new Error(`$ref only allow without other fields ${field} ${payload}`)
   }
 
-  for (const field of ['lat', 'long']) {
+  for (const field of ['lat', 'lon']) {
     if (payload[field].$default && payload[field].$default.$ref) {
       payload[field].$default = `___selva_$ref:${payload[field].$default.$ref}`
     } else if (payload[field].$ref) {
@@ -17,7 +17,7 @@ function refs(field: string, payload: SetOptions): void {
 
 function verify(payload: any) {
   const keys = Object.keys(payload)
-  if (keys.length !== 2 || !payload.lat || !payload.long) {
+  if (keys.length !== 2 || !payload.lat || !payload.lon) {
     return false
   }
 
@@ -25,7 +25,7 @@ function verify(payload: any) {
     return false
   }
 
-  if (payload.long < -180 || payload.long > 180) {
+  if (payload.lon < -180 || payload.lon > 180) {
     return false
   }
 }
@@ -40,5 +40,5 @@ export default (
 ): void => {
   refs(field, payload)
   verify(payload)
-  result[field] = payload
+  result[field] = `${payload.lat},${payload.lon}`
 }
