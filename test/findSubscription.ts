@@ -7,10 +7,10 @@ import { wait, dumpDb } from './assertions'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6122
+    port: 6123
   })
   await wait(1500)
-  const client = connect({ port: 6122 })
+  const client = connect({ port: 6123 })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -31,7 +31,8 @@ test.before(async t => {
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
+          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       }
     }
@@ -39,7 +40,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6122 })
+  const client = connect({ port: 6123 })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -48,7 +49,7 @@ test.after(async _t => {
 })
 
 test.serial('subscription find', async t => {
-  const client = connect({ port: 6122 })
+  const client = connect({ port: 6123 })
 
   const matches = []
   const teams = []
@@ -116,26 +117,32 @@ test.serial('subscription find', async t => {
 
   // collected for everything
 
+  // start with deceandants
+  // then ancestors
+  // then fields
+
+  // sort (adds the field)
+  //
+
   /*
-    {
+    [{
         // and in value
-       member: [{ field: 'ancestors', value: ['root']}]
+       member: [{ field: 'ancestors', value: ['root']}],
+       time?: [213123, 31123] // if at this time,
        fields: {
+            // type is handled special
             'type': [
-                    {
-                        $value: 'ma' // make it prefix allready
-                        $operator: '='
-                    }
+                   ['ma'] // make it prefix allready
             ],
             'value': [
-                    $operator: '..',
-                    $value: [5, 10],
+                // operator does not really matter
+                 [5, 10]
             ]
        }
-    }
+    }]
   */
 
-  console.log('yes', result)
+  console.dir(result.$meta, { depth: 100 })
 
   t.true(true)
 })
