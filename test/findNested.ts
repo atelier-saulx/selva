@@ -9,11 +9,9 @@ import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6122,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6122
   })
-  await wait(1500)
+
   const client = connect({ port: 6122 })
   await client.updateSchema({
     languages: ['en'],

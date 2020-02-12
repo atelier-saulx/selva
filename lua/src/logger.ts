@@ -2,10 +2,20 @@ import * as redis from './redis'
 
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error'
 
-const enabledLogLevel: LogLevel = <LogLevel>redis.get('___selva_lua_loglevel')
+let clientId: string | null = null
+let enabledLogLevel: LogLevel = 'warning'
+
+export function configureLogger(id: string | null = null, loglevel?: LogLevel) {
+  clientId = id
+  if (loglevel) {
+    enabledLogLevel = loglevel
+  }
+}
 
 function logLevelToNumber(loglevel: LogLevel): number {
-  if (loglevel === 'notice') {
+  if (loglevel === 'info') {
+    return 0
+  } else if (loglevel === 'notice') {
     return 1
   } else if (loglevel === 'warning') {
     return 2
@@ -13,10 +23,15 @@ function logLevelToNumber(loglevel: LogLevel): number {
     return 3
   }
 
-  return 0
+  // disable logging by default
+  return 4
 }
 
 export function log(loglevel: LogLevel, ...args: any[]): void {
+  if (!clientId) {
+    return
+  }
+
   const enabled = logLevelToNumber(enabledLogLevel)
   const used = logLevelToNumber(loglevel)
 
@@ -35,7 +50,7 @@ export function log(loglevel: LogLevel, ...args: any[]): void {
       log += asStr + ' '
     }
 
-    redis.log(loglevel, log)
+    redis.log(clientId, loglevel, log)
   }
 }
 

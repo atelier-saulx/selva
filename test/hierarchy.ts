@@ -2,16 +2,14 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from 'selva-server'
 import { wait } from './assertions'
+import './assertions'
 
 let srv
 
 test.before(async t => {
   srv = await start({
-    port: 8082,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 8082
   })
-  await wait(1000)
 
   const client = connect({ port: 8082 })
   await client.updateSchema({

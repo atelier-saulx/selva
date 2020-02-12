@@ -6,9 +6,7 @@ import { wait } from './assertions'
 let srv
 test.before(async () => {
   srv = await start({
-    port: 5051,
-    loglevel: 'info',
-    developmentLogging: true
+    port: 5051
   })
 })
 
@@ -275,8 +273,7 @@ test.serial(
   'subscription client side reconnection test -- no event if no changes',
   async t => {
     const server = await start({
-      port: 5052,
-      loglevel: 'info'
+      port: 5052
     })
 
     const client = connect({ port: 5052 })
@@ -351,8 +348,7 @@ test.serial(
     const client = connect({ port: 5053 })
 
     const server = await start({
-      port: 5053,
-      loglevel: 'info'
+      port: 5053
     })
 
     await client.updateSchema({
@@ -421,8 +417,7 @@ test.serial(
     const client = connect({ port: 5054 })
 
     const server = await start({
-      port: 5054,
-      loglevel: 'info'
+      port: 5054
     })
 
     await client.updateSchema({
