@@ -69,6 +69,8 @@ function parseSubscriptions(
     parseFork(meta.ast, sub)
   }
 
+  // TIME SYSTEM
+
   // only if decendants
   //   sub.member[sub.member.length] = {
   //     $field: 'ancestors',
