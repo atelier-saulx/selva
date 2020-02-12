@@ -9,7 +9,7 @@
     "watch": "ava --watch --verbose",
     "scratchpad": "yarn buildLua && redis-cli --ldb --eval dist/lua/scratchpad.lua",
     "testLua": "yarn buildLua && ./lua/testy.lua dist/lua/tests.lua",
-    "buildLua": "rm -rf ./dist && yarn build && scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ./bin/transpileScript $script; done && node ./lua/postprocessLuaTests.js"
+    "buildLua": "rm -rf ./dist && scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ./bin/transpileScript $script; done && node ./lua/postprocessLuaTests.js"
   },
   "husky": {
     "hooks": {
