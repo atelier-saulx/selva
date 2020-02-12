@@ -1,4 +1,4 @@
-import { Id, Schema } from '../../../src/schema/index'
+import { Id, Schema } from '../../../client/src/schema/index'
 import * as redis from '../redis'
 import { joinString } from '../util'
 import { addFieldToSearch } from './search'

@@ -1,7 +1,7 @@
 import { GetItem, GetResult, GetOptions } from '~selva/get/types'
 import { Id } from '~selva/schema/index'
 import getByType from './getByType'
-import { Schema } from '../../../src/schema/index'
+import { Schema } from '../../../client/src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'

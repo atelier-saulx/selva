@@ -1,8 +1,8 @@
 import test from 'ava'
-import { connect } from '../src/index'
-import { start } from 'selva-server'
+import { connect } from '../client/src/index'
+import { start } from '../server/src/index'
 import './assertions'
-import { FieldType, Fields, Schema, SchemaOptions } from '../src/schema'
+import { Fields, Schema, SchemaOptions } from '../client/src/schema'
 import { wait } from './assertions'
 
 const mangleResults = (

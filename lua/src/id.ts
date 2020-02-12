@@ -1,7 +1,7 @@
 import * as redis from './redis'
 import { isArray } from './util'
-import { Id } from '../../src/schema/index'
-import { ExternalId } from '../../src/set/types'
+import { Id } from '../../client/src/schema/index'
+import { ExternalId } from '../../client/src/set/types'
 import { getPrefixFromType } from './typeIdMapping'
 
 function hash(str?: string): string {

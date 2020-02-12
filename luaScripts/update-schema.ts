@@ -1,4 +1,4 @@
-import { Schema } from '../src/schema/index'
+import { Schema } from '../client/src/schema/index'
 import { updateSchema } from '../lua/src/schema/index'
 import * as logger from '../lua/src/logger'
 import { splitString } from '../lua/src/util'

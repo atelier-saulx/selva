@@ -1,6 +1,6 @@
 import test from 'ava'
-import { connect } from '../src/index'
-import { start } from 'selva-server'
+import { connect } from '../client/src/index'
+import { start } from '../server/src/index'
 
 test('generates a unique id from type', async t => {
   const server = await start({ port: 6067 })

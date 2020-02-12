@@ -4,7 +4,7 @@ import * as redis from '../redis'
 import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import { setNestedResult, getNestedField } from './nestedFields'
-import { Schema } from '../../../src/schema/index'
+import { Schema } from '../../../client/src/schema/index'
 import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
   splitString,

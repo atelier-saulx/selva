@@ -1,7 +1,7 @@
 import test, { ExecutionContext } from 'ava'
 import './assertions'
-import { connect, SelvaClient } from '../src/index'
-import { start } from 'selva-server'
+import { connect, SelvaClient } from '../client/src/index'
+import { start } from '../server/src/index'
 import { dumpDb, idExists, wait } from './assertions'
 
 let srv

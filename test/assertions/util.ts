@@ -1,5 +1,5 @@
 import test from 'ava'
-import { SelvaClient } from '../../src/index'
+import { SelvaClient } from '../../client/src/index'
 
 export const wait = (timeMs: number = 500): Promise<void> =>
   new Promise(r => setTimeout(r, timeMs))

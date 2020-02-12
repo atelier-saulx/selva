@@ -6,7 +6,7 @@ import {
   SearchRaw,
   defaultFields,
   rootDefaultFields
-} from '../../../src/schema/index'
+} from '../../../client/src/schema/index'
 import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
 import updateHierarchies from './hierarchies'

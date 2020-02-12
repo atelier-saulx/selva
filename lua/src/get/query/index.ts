@@ -9,7 +9,7 @@ import { isFork, getFind } from './util'
 import { emptyArray, ensureArray } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
-import { Schema } from '../../../../src/schema/index'
+import { Schema } from '../../../../client/src/schema/index'
 
 const parseNested = (
   opts: GetOptions,
