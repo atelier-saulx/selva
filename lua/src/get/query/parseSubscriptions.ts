@@ -36,7 +36,7 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
           const value = !isArray(item.$value) ? [item.$value] : item.$value
 
           for (let j = 0; j < value.length; j++) {
-            ancestors.$value[ancestors.$value.length] = tostring(value[i])
+            ancestors.$value[ancestors.$value.length] = tostring(value[j])
           }
 
           sub.member[sub.member.length] = ancestors
