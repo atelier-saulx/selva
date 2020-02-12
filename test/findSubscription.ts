@@ -2,7 +2,7 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
-import { wait, dumpDb } from './assertions'
+import { wait } from './assertions'
 
 let srv
 test.before(async t => {
@@ -50,7 +50,6 @@ test.after(async _t => {
 
 test.serial('subscription find', async t => {
   const client = connect({ port: 6123 })
-
   const matches = []
   const teams = []
 
@@ -86,7 +85,6 @@ test.serial('subscription find', async t => {
   })
 
   // if not id id = root
-
   const result = await client.get({
     // add id as well
     $includeMeta: true,
@@ -111,36 +109,7 @@ test.serial('subscription find', async t => {
         }
       }
     }
-    // make deeper things as well
   })
-  // after this nested stuff as well
-
-  // collected for everything
-
-  // start with deceandants
-  // then ancestors
-  // then fields
-
-  // sort (adds the field)
-  //
-
-  /*
-    [{
-        // and in value
-       member: [{ field: 'ancestors', value: ['root']}],
-       time?: [213123, 31123] // if at this time,
-       fields: {
-            // type is handled special
-            'type': [
-                   ['ma'] // make it prefix allready
-            ],
-            'value': [
-                // operator does not really matter
-                 [5, 10]
-            ]
-       }
-    }]
-  */
 
   console.dir(result.$meta, { depth: 100 })
 
