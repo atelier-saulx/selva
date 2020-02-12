@@ -96,6 +96,10 @@ function parseSubscriptions(
 
   querySubs[querySubs.length] = sub
 
+  if (sub.ids) {
+    console.log('GOT IDS SET IDFIELDS')
+  }
+
   let sort = meta.sort
   if (sort) {
     if (!isArray(sort)) {
