@@ -6,7 +6,7 @@ import createSearchArgs from './createSearchArgs'
 import { Fork, Meta } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
-import { emptyArray, ensureArray } from '../../util'
+import { emptyArray, ensureArray, isArray } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
@@ -168,10 +168,8 @@ const parseQuery = (
     }
   }
 
-  // need stuff for nested!!!
-  // also for search
-  // also for range
-  return [{ results, meta: { ast: resultFork, getOptions: getOptions } }, null]
+  const sort = getOptions.$list && getOptions.$list.$sort
+  return [{ results, meta: { ast: resultFork, sort: sort } }, null]
 }
 
 const queryGet = (

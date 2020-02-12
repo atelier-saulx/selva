@@ -1,4 +1,4 @@
-import { GetOptions } from '~selva/get/types'
+import { GetOptions, Sort } from '~selva/get/types'
 
 export type Value = (string | number) | (string | number)[]
 
@@ -17,7 +17,7 @@ export type Fork = {
 
 export type Meta = {
   ast: Fork | undefined
-  getOptions: GetOptions
+  sort?: Sort | Sort[]
 }
 
 export type FieldSubscription = {

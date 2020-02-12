@@ -57,9 +57,10 @@ function parseSubscriptions(
     parseFork(meta.ast, sub)
   }
 
+  // may not be enough
   sub.member[sub.member.length] = {
     $field: 'ancestors',
-    $value: ids
+    $value: ids // needs to be an and potentially
   }
 
   // traverse may be nessecary for fields
@@ -70,6 +71,16 @@ function parseSubscriptions(
   // maybe usefull to keep track of the actual ids
 
   querySubs[querySubs.length] = sub
+
+  let sort = meta.sort
+  if (sort) {
+    if (!isArray(sort)) {
+      sort = [sort]
+    }
+    for (let i = 0; i < sort.length; i++) {
+      sub.fields[sort[i].$field] = true
+    }
+  }
 }
 
 export default parseSubscriptions
