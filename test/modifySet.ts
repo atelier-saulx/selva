@@ -7,12 +7,8 @@ import { wait } from './assertions'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6092,
-    loglevel: 'info',
-    developmentLogging: true
+    port: 6092
   })
-
-  await wait(200)
 
   const client = connect({
     port: 6092

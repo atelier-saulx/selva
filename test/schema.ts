@@ -4,35 +4,6 @@ import { start } from 'selva-server'
 import './assertions'
 import { FieldType, Fields, Schema, SchemaOptions } from '../src/schema'
 import { wait } from './assertions'
-// id map
-// fields
-// hierarchy
-// search index
-
-/*
-// TYPES
-// float
-// int
-// number
-// json
-// array (stored as json)
-// references (set of ids) // children or parents
-// set
-// string
-// object
-// text (with languages)
-// id // reasonable length etc
-// digest (password etc) //crypto hash
-// timestamp (ms) //accepts 'now' as well
-// url
-// email
-// phone 
-// geo
-// type
-*/
-
-// maybe add this somewhere
-// same for image, video etc
 
 const mangleResults = (
   correctSchema: Schema | SchemaOptions,
@@ -53,9 +24,7 @@ const mangleResults = (
 
 test.serial.only('schemas - basic', async t => {
   const server = await start({
-    port: 6066,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6066
   })
   const client = connect({ port: 6066 })
 
@@ -403,9 +372,7 @@ test.serial.only('schemas - basic', async t => {
 
 test.serial('schemas - search indexes', async t => {
   const server = await start({
-    port: 6091,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6091
   })
   const client = connect({ port: 6091 })
 

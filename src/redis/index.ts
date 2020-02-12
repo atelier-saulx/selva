@@ -71,7 +71,7 @@ export default class RedisClient extends RedisMethods {
   private scriptBatchingEnabled: {
     [scriptSha: string]: boolean
   } = {}
-  private subscriptionManager: SelvaPubSub
+  public subscriptionManager: SelvaPubSub
   // private bufferedGet: Record<number, RedisCommand>
 
   constructor(connect: ConnectOptions | (() => Promise<ConnectOptions>)) {
@@ -187,7 +187,6 @@ export default class RedisClient extends RedisMethods {
   }
 
   subscribe<T>(channel: string, getOpts: GetOptions): Observable<T> {
-    console.log('redis subsribe')
     return this.subscriptionManager.subscribe(channel, getOpts)
   }
 

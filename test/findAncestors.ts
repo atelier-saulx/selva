@@ -7,9 +7,7 @@ import { wait, dumpDb } from './assertions'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6089,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6089
   })
   await wait(500)
 

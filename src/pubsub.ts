@@ -34,6 +34,7 @@ export default class SelvaPubSub {
   private heartbeatTimer: NodeJS.Timeout
   private opts: ConnectOptions
   private connected: boolean = false
+  private clientId: string
 
   connect(opts: ConnectOptions) {
     this.opts = opts
@@ -61,6 +62,7 @@ export default class SelvaPubSub {
     this.sub.on('ready', () => {
       this.connected = true
       this.ensureSubscriptions()
+      this.attachLogging()
     })
 
     this.pub.on('ready', () => {
@@ -83,6 +85,16 @@ export default class SelvaPubSub {
     }
 
     this.pub = this.sub = undefined
+  }
+
+  attachLogging() {
+    this.sub.subscribe(`___selva_lua_logs:${this.clientId}`)
+  }
+
+  configureLogs(clientId: string) {
+    if (clientId) {
+      this.clientId = clientId
+    }
   }
 
   subscribe(channel: string, getOpts: GetOptions) {
@@ -188,6 +200,11 @@ export default class SelvaPubSub {
     this.sub.removeAllListeners('message')
 
     this.sub.on('message', (channel, message) => {
+      if (channel.startsWith('___selva_lua_logs:')) {
+        console.log('LUA:', message)
+        return
+      }
+
       const sub = this.subscriptions[channel]
       if (sub) {
         sub.emitter.emit('publish', message)

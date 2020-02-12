@@ -8,9 +8,7 @@ import { RedisClient } from 'redis'
 let srv
 test.before(async t => {
   srv = await start({
-    port: 6088,
-    developmentLogging: true,
-    loglevel: 'info'
+    port: 6088
   })
 
   await wait(500)
