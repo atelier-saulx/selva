@@ -28,6 +28,18 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
             addType(item.$value, sub.type)
           }
         } else if (item.$field === 'ancestors') {
+          const ancestors: { $field: string; $value: string[] } = {
+            $field: 'ancestors',
+            $value: []
+          }
+
+          const value = !isArray(item.$value) ? [item.$value] : item.$value
+
+          for (let j = 0; j < value.length; j++) {
+            ancestors.$value[ancestors.$value.length] = tostring(value[j])
+          }
+
+          sub.member[sub.member.length] = ancestors
           // add to member
         } else if (item.$field === 'ids') {
           // dont even know what to do here :D
@@ -57,11 +69,11 @@ function parseSubscriptions(
     parseFork(meta.ast, sub)
   }
 
-  // may not be enough
-  sub.member[sub.member.length] = {
-    $field: 'ancestors',
-    $value: ids // needs to be an and potentially
-  }
+  // only if decendants
+  //   sub.member[sub.member.length] = {
+  //     $field: 'ancestors',
+  //     $value: ids // needs to be an and potentially
+  //   }
 
   // traverse may be nessecary for fields
   // may need to add more here
