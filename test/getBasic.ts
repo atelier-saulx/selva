@@ -16,7 +16,7 @@ test.before(async t => {
     setTimeout(resolve, 100)
   })
 
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -69,7 +69,6 @@ test.before(async t => {
       custom: {
         prefix: 'cu',
         fields: {
-          name: { type: 'string' },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
@@ -123,6 +122,95 @@ test.after(async _t => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+})
+
+test.serial('get $value', async t => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'maTest',
+    title: { en: 'hello' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maTest',
+      id: true,
+      someField: { $value: 'some value' },
+      title: { $value: 'overwrite title as string' },
+      objectField: {
+        $value: {
+          something: {
+            complex: true
+          }
+        }
+      }
+    }),
+    {
+      id: 'maTest',
+      someField: 'some value',
+      title: 'overwrite title as string',
+      objectField: {
+        something: {
+          complex: true
+        }
+      }
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('get complex with $value and array syntax', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'maTest',
+    title: { en: 'hello' },
+    description: { en: 'yesh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maTest',
+      allMyThings: [
+        {
+          id: true,
+          parents: true,
+          ancestors: true
+        },
+        {
+          name: true,
+          somethingNice: { $value: 'yesh' }
+        },
+        {
+          title: true,
+          description: true
+        }
+      ]
+    }),
+    {
+      allMyThings: [
+        {
+          id: 'maTest',
+          parents: ['root'],
+          ancestors: ['root']
+        },
+        {
+          name: '',
+          somethingNice: 'yesh'
+        },
+        {
+          title: { en: 'hello' },
+          description: { en: 'yesh' }
+        }
+      ]
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
 })
 
 test.serial('get - root', async t => {
@@ -233,7 +321,7 @@ test.serial('get - basic', async t => {
 })
 
 test.serial('get - $all simple', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'maA',
@@ -253,6 +341,7 @@ test.serial('get - $all simple', async t => {
     {
       id: 'maA',
       type: 'match',
+      name: '',
       title: {
         en: 'nice!'
       },
@@ -295,6 +384,7 @@ test.serial('get - $all root level whitelist + $all', async t => {
     {
       id: 'clA',
       type: 'club',
+      name: '',
       title: {
         en: 'nice!'
       },
@@ -343,6 +433,7 @@ test.serial('get - $all root level whitelist + blacklists + $all', async t => {
     {
       id: 'clA',
       type: 'club',
+      name: '',
       title: {
         en: 'nice!'
       },

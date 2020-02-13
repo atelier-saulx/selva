@@ -59,6 +59,13 @@ test.serial.only('schemas - basic', async t => {
     },
     descendants: {
       type: 'references'
+    },
+    name: {
+      type: 'string',
+      search: {
+        index: 'default',
+        type: ['TAG']
+      }
     }
   }
 
@@ -183,7 +190,7 @@ test.serial.only('schemas - basic', async t => {
   t.deepEqual(
     searchIndexes,
     {
-      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'] },
+      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'], name: ['TAG'] },
       hls: { 'video.hls': ['TEXT'] }
     },
     'searchIndexes are equal'
@@ -248,8 +255,9 @@ test.serial.only('schemas - basic', async t => {
   t.deepEqual(
     fields2,
     [
-      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
-      ['type', 'type', 'TAG', 'SEPARATOR', ',']
+      ['type', 'type', 'TAG', 'SEPARATOR', ','],
+      ['name', 'type', 'TAG', 'SEPARATOR', ','],
+      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ',']
     ],
     'change fields in the index - does not drop index yet so stays the same!'
   )
@@ -275,10 +283,11 @@ test.serial.only('schemas - basic', async t => {
   const info = await client.redis.ftInfo('default')
   const fields = info[info.indexOf('fields') + 1]
 
-  t.deepEqualIgnoreOrder(
+  t.deepEqual(
     fields,
     [
       ['type', 'type', 'TAG', 'SEPARATOR', ','],
+      ['name', 'type', 'TAG', 'SEPARATOR', ','],
       ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
       ['flurpy.snurpie', 'type', 'TEXT', 'WEIGHT', '1']
     ],

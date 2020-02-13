@@ -6,8 +6,9 @@ import * as logger from '../logger'
 import { setNestedResult } from './nestedFields'
 import inherit from './inherit'
 import getWithField, { resolveAll } from './field'
+import getArray from './getArray'
 import { getSchema } from '../schema/index'
-import { ensureArray } from 'lua/src/util'
+import { ensureArray, isArray } from 'lua/src/util'
 import makeNewGetOptions from 'lua/src/get/all'
 import getQuery from './query/index'
 
@@ -24,6 +25,11 @@ function getField(
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {
   let hasAlias = false
+
+  if (props.$value) {
+    setNestedResult(result, <string>field, props.$value)
+    return true
+  }
 
   if (props.$list && ignore !== '$list' && ignore !== '$') {
     // field that needs to get the result
@@ -110,6 +116,20 @@ function getField(
             }
           } else if (props[key] === false) {
             // skip
+          } else if (isArray(props[key])) {
+            getArray(
+              getField,
+              props[key],
+              schema,
+              result,
+              id,
+              field || '',
+              f,
+              language,
+              version,
+              includeMeta,
+              ignore
+            )
           } else {
             if (
               getField(

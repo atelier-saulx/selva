@@ -19,7 +19,6 @@ test.before(async t => {
       lekkerType: {
         prefix: 'vi',
         fields: {
-          name: { type: 'string' },
           strVal: { type: 'string' },
           value: { type: 'number' },
           age: { type: 'number' },
@@ -69,7 +68,6 @@ test.before(async t => {
       custom: {
         prefix: 'cu',
         fields: {
-          name: { type: 'string' },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {

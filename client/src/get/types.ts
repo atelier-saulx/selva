@@ -41,6 +41,7 @@ export type GetField<T> = {
   $find?: Find
   $default?: T
   $all?: boolean
+  $value?: any
 }
 
 // want with $ come on :D

@@ -22,8 +22,7 @@ test.before(async t => {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          name: { type: 'string', search: { type: ['TAG'] } }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       },
       match: {
@@ -31,7 +30,6 @@ test.before(async t => {
         fields: {
           fun: { type: 'set', items: { type: 'string' } },
           related: { type: 'references', search: { type: ['TAG'] } },
-          name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC'] } }
         }

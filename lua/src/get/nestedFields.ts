@@ -3,6 +3,10 @@ import { splitString } from '../util'
 import * as logger from '../logger'
 
 export const getNestedField = (result: GetResult, field: string): any => {
+  if (!field || field === '') {
+    return result
+  }
+
   const fields = splitString(field, '.')
   const len = fields.length
   if (len > 1) {
