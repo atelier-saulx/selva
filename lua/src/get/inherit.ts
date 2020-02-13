@@ -50,6 +50,7 @@ function setFromAncestors(
   version?: string,
   includeMeta?: boolean,
   fieldFrom?: string | string[],
+  merge?: boolean,
   tryAncestorCondition?: (ancestor: Id) => boolean,
   acceptAncestorCondition?: (result: any) => boolean,
   ancestorsWithScores?: Id[],
@@ -128,9 +129,30 @@ function setFromAncestors(
             return true
           }
         } else {
-          if (getByType(result, schema, parent, field, language, version)) {
+          logger.info(
+            'inheriting result currently',
+            id,
+            parent,
+            field,
+            result,
+            'MERGING???',
+            merge
+          )
+          if (
+            getByType(
+              result,
+              schema,
+              parent,
+              field,
+              language,
+              version,
+              includeMeta,
+              merge
+            )
+          ) {
             return true
           }
+          logger.info('not done', id, field, result)
         }
       }
 
@@ -206,6 +228,7 @@ function inheritItem(
         version,
         includeMeta,
         '',
+        false,
         (ancestor: Id) => {
           for (const match of matches) {
             if (match === ancestor) {
@@ -270,7 +293,8 @@ export default function inherit(
         language,
         version,
         includeMeta,
-        fieldFrom
+        fieldFrom,
+        true
       )
     } else if (inherit.$type) {
       const types: string[] = ensureArray(inherit.$type)
@@ -284,6 +308,7 @@ export default function inherit(
         version,
         includeMeta,
         fieldFrom,
+        true,
         (ancestor: Id) => {
           for (const type of types) {
             if (type === getTypeFromId(ancestor)) {
@@ -306,6 +331,7 @@ export default function inherit(
         version,
         includeMeta,
         fieldFrom,
+        true,
         (ancestor: Id) => {
           for (const name of names) {
             if (name === getName(ancestor)) {

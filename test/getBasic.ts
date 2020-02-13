@@ -39,6 +39,7 @@ test.before(async t => {
             type: 'object',
             properties: {
               dong: { type: 'set', items: { type: 'string' } },
+              dung: { type: 'number' },
               dang: {
                 type: 'object',
                 properties: {
@@ -930,6 +931,79 @@ test.serial('get - $inherit', async t => {
 
   client.destroy()
 })
+
+test.serial.only(
+  'get - $inherit with object types does shallow merge',
+  async t => {
+    const client = connect({ port }, { loglevel: 'info' })
+
+    const parentOfParent = await client.set({
+      type: 'lekkerType',
+      title: {
+        en: 'nice!',
+        de: 'dont want to inherit this'
+      },
+      ding: {
+        dang: {
+          dung: 9000
+        },
+        dung: 123
+      }
+    })
+
+    const parentEntry = await client.set({
+      type: 'lekkerType',
+      title: {
+        en: 'nice!',
+        de: 'dont want to inherit this'
+      },
+      parents: {
+        $add: [parentOfParent]
+      },
+      ding: {
+        dang: {
+          dung: 115
+        }
+      }
+    })
+
+    const entry = await client.set({
+      type: 'lekkerType',
+      parents: {
+        $add: [parentEntry]
+      },
+      title: {
+        en: 'nice!'
+      }
+    })
+
+    // t.deepEqual(
+    console.log(
+      await client.get({
+        $id: entry,
+        id: true,
+        title: { $inherit: true },
+        ding: { $inherit: true }
+      }),
+      {
+        id: entry,
+        title: {
+          en: 'nice!'
+        },
+        ding: {
+          dang: {
+            dung: 115
+          },
+          dong: ['yesh', 'hello']
+        }
+      }
+    )
+
+    await client.delete('root')
+
+    client.destroy()
+  }
+)
 
 // test.serial('get - $field (basic)', async t => {
 //   const client = connect({ port })
