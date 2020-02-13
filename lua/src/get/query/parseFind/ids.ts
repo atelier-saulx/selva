@@ -38,6 +38,7 @@ function parseIds(
   if (filters.length !== 0) {
     let typeFilter: Filter | undefined
     for (let i = 0; i < filters.length; i++) {
+      // add this to meta!
       if (filters[i].$field === 'type') {
         typeFilter = filters[i]
         const oldFilters = filters

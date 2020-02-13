@@ -37,6 +37,7 @@ const getIds = (traverse: string, ids: string[]): string[] => {
   }
 }
 
+// pass meta along
 function parseFind(
   opts: Find & { $fields?: string[] },
   ids: string[]

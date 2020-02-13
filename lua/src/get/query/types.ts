@@ -32,7 +32,7 @@ export type QuerySubscription = {
   queryId: string
   ids?: Record<string, true>
   member: { $field: string; $value: string[] }[] // array is an OR
-  type: string[]
+  type?: string[]
   fields: {
     [key: string]: true
   }

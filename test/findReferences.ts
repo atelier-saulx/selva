@@ -229,8 +229,6 @@ test.serial('find - references', async t => {
 
   await wait(1000)
 
-  console.log('HERE HERE HERE')
-
   const { related: relatedMatchesLeaguesNoTraverse } = await client.get({
     $id: matches[0].id,
     related: {
