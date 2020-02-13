@@ -16,10 +16,11 @@ export type Fork = {
 }
 
 export type Meta = {
-  ast: Fork | undefined
+  ast?: Fork | undefined
   sort?: Sort | Sort[]
   traverse?: string | string[]
   ids: string[]
+  type?: string[]
 }
 
 export type FieldSubscription = {

@@ -15,6 +15,7 @@ import parseSubscriptions from './parseSubscriptions'
 const parseNested = (
   opts: GetOptions,
   ids: string[],
+  meta: Meta,
   traverse?: string | string[]
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
@@ -22,7 +23,7 @@ const parseNested = (
       if (!opts.$list.$find.$traverse) {
         opts.$list.$find.$traverse = traverse
       }
-      return parseFind(opts.$list.$find, ids)
+      return parseFind(opts.$list.$find, ids, meta)
     } else {
       if (!traverse) {
         return [{ isFork: true }, '$list without find needs traverse']
@@ -31,7 +32,8 @@ const parseNested = (
           {
             $fields: ensureArray(traverse)
           },
-          ids
+          ids,
+          meta
         )
       }
     }
@@ -63,10 +65,13 @@ const parseQuery = (
   if (getOptions.$list && getOptions.$find) {
     return [{ results }, 'If using $list put $find in list']
   }
+
   let resultIds: any[] | undefined = []
   let resultFork: Fork | undefined
+  const meta: Meta = { ids: resultIds }
+
   if (getOptions.$list || getOptions.$find) {
-    const [r, err] = parseNested(getOptions, ids, traverse)
+    const [r, err] = parseNested(getOptions, ids, meta, traverse)
     if (err) {
       return [{ results }, err]
     }
@@ -173,7 +178,10 @@ const parseQuery = (
   }
 
   const sort = getOptions.$list && getOptions.$list.$sort
-  const meta: Meta = { ast: resultFork, sort: sort, ids: resultIds }
+
+  meta.ast = resultFork
+  meta.sort = sort
+  meta.ids = resultIds
 
   if (
     getOptions.$list &&
