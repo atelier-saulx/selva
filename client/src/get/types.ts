@@ -9,13 +9,27 @@ export type Inherit =
       $required?: Id | Id[]
     }
 
-export type Filter = {
-  $operator: '=' | '!=' | '>' | '<' | '..'
+export type GeoFilter = {
+  $operator: 'distance'
   $field: string
-  $value: string | number | (string | number)[]
+  $value: {
+    $lat: number
+    $lon: number
+    $radius: number
+  }
   $and?: Filter
   $or?: Filter
 }
+
+export type Filter =
+  | GeoFilter
+  | {
+      $operator: '=' | '!=' | '>' | '<' | '..'
+      $field: string
+      $value: string | number | (string | number)[]
+      $and?: Filter
+      $or?: Filter
+    }
 
 export type Find = {
   $traverse?: 'descendants' | 'ancestors' | string | string[]

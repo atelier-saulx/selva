@@ -88,7 +88,11 @@ test.serial('find - geo', async t => {
               {
                 $field: 'location',
                 $operator: 'distance',
-                $value: [120, 60, 100, 'km']
+                $value: {
+                  $lon: 120,
+                  $lat: 60,
+                  $radius: 100000
+                }
               }
             ]
           }
@@ -117,7 +121,11 @@ test.serial('find - geo', async t => {
                 {
                   $field: 'location',
                   $operator: 'distance',
-                  $value: [120, 60, 1000, 'km']
+                  $value: {
+                    $lon: 120,
+                    $lat: 60,
+                    $radius: 1000000
+                  }
                 }
               ]
             }

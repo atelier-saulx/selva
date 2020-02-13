@@ -1,6 +1,6 @@
 import { FilterAST, Fork } from './types'
 import addSearch from './addSearch'
-import { Filter } from '~selva/get/types'
+import { Filter, GeoFilter } from '~selva/get/types'
 import { isFork } from './util'
 import reduceAnd from './reduceAnd'
 
@@ -16,6 +16,15 @@ const addToOption = (
       prevList[prevList.length] = t
     }
   }
+}
+
+function isGeoFilterValue(x: any): x is GeoFilter {
+  return !!x && x.$operator === 'distance'
+}
+
+function convertGeoFilterValue(geoFilter: GeoFilter): (string | number)[] {
+  const { $lon, $lat, $radius } = geoFilter.$value
+  return [$lon, $lat, $radius, 'm']
 }
 
 const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
@@ -43,7 +52,9 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   }
 
   const filter: FilterAST = {
-    $value: filterOpt.$value,
+    $value: isGeoFilterValue(filterOpt)
+      ? convertGeoFilterValue(filterOpt)
+      : filterOpt.$value,
     $operator: o,
     $field: filterOpt.$field,
     $search: search

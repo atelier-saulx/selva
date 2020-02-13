@@ -91,7 +91,7 @@ function parseFind(
       }
     }
 
-    return parseFindIds(filters, resultIds, getResult)
+    return parseFindIds(filters, resultIds, meta)
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']
   }
