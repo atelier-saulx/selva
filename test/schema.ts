@@ -4,6 +4,7 @@ import { start } from '../server/src/index'
 import './assertions'
 import { Fields, Schema, SchemaOptions } from '../client/src/schema'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 const mangleResults = (
   correctSchema: Schema | SchemaOptions,
@@ -23,10 +24,11 @@ const mangleResults = (
 }
 
 test.serial.only('schemas - basic', async t => {
+  const port = await getPort()
   const server = await start({
-    port: 6066
+    port
   })
-  const client = connect({ port: 6066 })
+  const client = connect({ port })
 
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
@@ -57,6 +59,13 @@ test.serial.only('schemas - basic', async t => {
     },
     descendants: {
       type: 'references'
+    },
+    name: {
+      type: 'string',
+      search: {
+        index: 'default',
+        type: ['TAG']
+      }
     }
   }
 
@@ -181,7 +190,7 @@ test.serial.only('schemas - basic', async t => {
   t.deepEqual(
     searchIndexes,
     {
-      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'] },
+      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'], name: ['TAG'] },
       hls: { 'video.hls': ['TEXT'] }
     },
     'searchIndexes are equal'
@@ -246,8 +255,9 @@ test.serial.only('schemas - basic', async t => {
   t.deepEqual(
     fields2,
     [
-      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
-      ['type', 'type', 'TAG', 'SEPARATOR', ',']
+      ['type', 'type', 'TAG', 'SEPARATOR', ','],
+      ['name', 'type', 'TAG', 'SEPARATOR', ','],
+      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ',']
     ],
     'change fields in the index - does not drop index yet so stays the same!'
   )
@@ -273,10 +283,11 @@ test.serial.only('schemas - basic', async t => {
   const info = await client.redis.ftInfo('default')
   const fields = info[info.indexOf('fields') + 1]
 
-  t.deepEqualIgnoreOrder(
+  t.deepEqual(
     fields,
     [
       ['type', 'type', 'TAG', 'SEPARATOR', ','],
+      ['name', 'type', 'TAG', 'SEPARATOR', ','],
       ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
       ['flurpy.snurpie', 'type', 'TEXT', 'WEIGHT', '1']
     ],
@@ -371,10 +382,11 @@ test.serial.only('schemas - basic', async t => {
 })
 
 test.serial('schemas - search indexes', async t => {
+  const port = await getPort()
   const server = await start({
-    port: 6091
+    port
   })
-  const client = connect({ port: 6091 })
+  const client = connect({ port })
 
   await client.updateSchema({
     languages: ['nl', 'en'],

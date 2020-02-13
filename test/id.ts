@@ -1,12 +1,14 @@
 import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
+import getPort from 'get-port'
 
 test('generates a unique id from type', async t => {
-  const server = await start({ port: 6067 })
+  const port = await getPort()
+  const server = await start({ port })
 
   const client = connect({
-    port: 6067
+    port
   })
 
   await client.updateSchema({

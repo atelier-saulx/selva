@@ -2,17 +2,22 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
-import { wait, dumpDb } from './assertions'
+import { wait } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6123
+    port
   })
-  await wait(1500)
-  const client = connect({ port: 6123 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
+    rootType: {
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+    },
     types: {
       league: {
         prefix: 'le',
@@ -40,7 +45,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6123 })
+  const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -49,7 +54,12 @@ test.after(async _t => {
 })
 
 test.serial('subscription find', async t => {
-  const client = connect({ port: 6123 })
+  const client = connect(
+    {
+      port
+    }
+    // { loglevel: 'info' }
+  )
 
   const matches = []
   const teams = []
@@ -64,6 +74,7 @@ test.serial('subscription find', async t => {
 
   for (let i = 0; i < 10; i++) {
     matches.push({
+      $id: await client.id({ type: 'match' }),
       name: 'match ' + i,
       type: 'match',
       value: i,
@@ -79,17 +90,17 @@ test.serial('subscription find', async t => {
 
   await Promise.all(teams.map(t => client.set(t)))
 
-  await client.set({
+  const league = await client.set({
     type: 'league',
     name: 'league 1',
     children: matches
   })
 
-  // if not id id = root
-
-  const result = await client.get({
-    // add id as well
-    $includeMeta: true,
+  // teams
+  // league
+  await wait(100)
+  console.log('----------------------------------------')
+  const obs = await client.observe({
     items: {
       name: true,
       id: true,
@@ -111,38 +122,122 @@ test.serial('subscription find', async t => {
         }
       }
     }
-    // make deeper things as well
   })
-  // after this nested stuff as well
+  let cnt = 0
+  const sub = obs.subscribe(d => {
+    cnt++
+    console.log('FIRES!', d, cnt)
+  })
 
-  // collected for everything
+  await wait(500)
+  console.log('----------------------------------------')
 
-  // start with deceandants
-  // then ancestors
-  // then fields
+  await client.set({
+    $id: matches[0].$id,
+    value: 8
+  })
 
-  // sort (adds the field)
-  //
+  await wait(300)
+  sub.unsubscribe()
+  console.log('----------------------------------------')
 
-  /*
-    [{
-        // and in value
-       member: [{ field: 'ancestors', value: ['root']}],
-       time?: [213123, 31123] // if at this time,
-       fields: {
-            // type is handled special
-            'type': [
-                   ['ma'] // make it prefix allready
-            ],
-            'value': [
-                // operator does not really matter
-                 [5, 10]
+  const obs2 = await client.observe({
+    $includeMeta: true,
+    items: {
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
+            }
+          ]
+        }
+      },
+      name: true,
+      id: true,
+      teams: {
+        id: true,
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'team'
+              }
             ]
-       }
-    }]
-  */
+          }
+        }
+      }
+    }
+  })
 
-  console.dir(result.$meta, { depth: 100 })
+  let cnt2 = 0
+  const sub2 = obs2.subscribe(d => {
+    cnt2++
+    console.log('FIRES!2', cnt2)
+  })
+
+  await wait(300)
+  console.log('SET MORE----------------------------------------')
+
+  let matchTeam
+  for (let i = 0; i < 10; i++) {
+    matches.forEach(m => {
+      m.value = 8
+      m.parents = {
+        $add: [
+          (matchTeam = teams[~~(Math.random() * teams.length)].$id),
+          teams[~~(Math.random() * teams.length)].$id
+        ]
+      }
+    })
+  }
+
+  await Promise.all(matches.map(t => client.set(t)))
+
+  await wait(300)
+
+  // type when matching stuff
+
+  // add get fields to fields
+
+  const obs3 = await client.observe({
+    $id: matchTeam,
+    $includeMeta: true,
+    children: {
+      name: true,
+      $list: {
+        $find: {
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
+            },
+            {
+              $field: 'value',
+              $operator: '..',
+              $value: [5, 10]
+            }
+          ]
+        }
+      }
+    }
+  })
+
+  obs3.subscribe(() => {
+    console.log('FIRE 3')
+  })
+
+  await wait(300)
+
+  // add somethign to make it not fire
 
   t.true(true)
 })

@@ -1,7 +1,7 @@
 import { getPrefixFromType } from '../../../typeIdMapping'
 import { isArray, stringStartsWith } from '../../../util'
 import { Filter } from '~selva/get/types'
-import { Fork } from '../types'
+import { Fork, Meta } from '../types'
 import parseFilters from '../parseFilters'
 import * as logger from '../../../logger'
 
@@ -33,11 +33,13 @@ const parseTypeFilter = (filter: Filter, ids: string[]): string[] => {
 
 function parseIds(
   filters: Filter[],
-  ids: string[]
+  ids: string[],
+  meta: Meta
 ): [Fork | string[], string | null] {
   if (filters.length !== 0) {
     let typeFilter: Filter | undefined
     for (let i = 0; i < filters.length; i++) {
+      // add this to meta!
       if (filters[i].$field === 'type') {
         typeFilter = filters[i]
         const oldFilters = filters
@@ -52,6 +54,22 @@ function parseIds(
     }
     if (typeFilter) {
       ids = parseTypeFilter(typeFilter, ids)
+      if (!meta.type) {
+        meta.type = []
+      }
+
+      // FIXME: optimize
+      if (isArray(typeFilter.$value)) {
+        for (let j = 0; j < typeFilter.$value.length; j++) {
+          meta.type[meta.type.length] = getPrefixFromType(
+            <string>typeFilter.$value[j]
+          )
+        }
+      } else {
+        meta.type[meta.type.length] = getPrefixFromType(
+          <string>typeFilter.$value
+        )
+      }
     }
     if (filters.length === 0) {
       table.insert(ids, 1, '')

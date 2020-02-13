@@ -3,23 +3,25 @@ import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
 import { wait, dumpDb } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6089
+    port
   })
   await wait(500)
 
-  const client = connect({ port: 6089 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     types: {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          name: { type: 'string', search: { type: ['TAG'] } }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       },
       club: {
@@ -46,7 +48,6 @@ test.before(async t => {
         },
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC'] } }
         }
@@ -58,7 +59,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6089 })
+  const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -68,7 +69,7 @@ test.after(async _t => {
 
 test.serial('find - ancestors', async t => {
   // simple nested - single query
-  const client = connect({ port: 6089 })
+  const client = connect({ port })
 
   const teams = []
   for (let i = 0; i < 11; i++) {

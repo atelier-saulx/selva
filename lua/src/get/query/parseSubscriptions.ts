@@ -2,7 +2,8 @@ import { Meta, QuerySubscription, Fork } from './types'
 import * as logger from '../../logger'
 import { isFork } from './util'
 import { getPrefixFromType } from '../../typeIdMapping'
-import { indexOf, isArray } from '../../util'
+import { indexOf, isArray, joinString } from '../../util'
+import { GetOptions } from '~selva/get/types'
 
 const addType = (type: string | number, arr: string[]) => {
   const prefix = getPrefixFromType(tostring(type))
@@ -20,7 +21,11 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
         parseFork(item, sub)
       } else {
         if (item.$field === 'type') {
+          if (!sub.type) {
+            sub.type = []
+          }
           // FIXME: Not completely correct unfortunately
+          // -- how to deal with ors?
           if (isArray(item.$value)) {
             for (let j = 0; j < item.$value.length; j++) {
               addType(item.$value[j], sub.type)
@@ -42,7 +47,7 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
 
           sub.member[sub.member.length] = ancestors
           // add to member
-        } else if (item.$field === 'ids') {
+        } else if (item.$field === 'id') {
           if (!sub.ids) {
             sub.ids = {}
           }
@@ -60,41 +65,89 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
   }
 }
 
-// also need field and id here
+const parseGet = (
+  opts: GetOptions,
+  fields: Record<string, true>,
+  field: string[]
+) => {
+  for (let key in opts) {
+    if (key[0] !== '$') {
+      const item = opts[key]
+      if (typeof item === 'object') {
+        const newArray: string[] = []
+        for (let i = 0; i < field.length; i++) {
+          newArray[newArray.length] = field[i]
+        }
+        newArray[newArray.length] = key
+        parseGet(item, fields, newArray)
+      } else {
+        fields[
+          field.length > 0 ? joinString(field, '.') + '.' + key : key
+        ] = true
+      }
+    }
+  }
+}
+
 function parseSubscriptions(
   querySubs: QuerySubscription[],
   meta: Meta,
   ids: string[],
+  getOptions: GetOptions,
   traverse?: string | string[]
 ) {
-  const sub: QuerySubscription = {
-    member: [],
-    fields: {},
-    type: []
+  let sub: QuerySubscription | undefined
+
+  // FIXME: prob better to just do an isEqual check
+  const queryId = redis.sha1hex(cjson.encode(getOptions))
+
+  for (let i = 0; i < querySubs.length; i++) {
+    if (querySubs[i].queryId === queryId) {
+      sub = querySubs[i]
+      break
+    }
+  }
+  if (!sub) {
+    sub = {
+      member: [],
+      fields: {},
+      queryId
+    }
+    querySubs[querySubs.length] = sub
   }
 
-  // children, related or whatever on specific ids or on ancestors
+  parseGet(getOptions, sub.fields, [])
+
+  // getOptions
+  // recurse trough getOptions
 
   if (meta.ast) {
     parseFork(meta.ast, sub)
+    // INVERSE QUERY HERE
+  } else {
+    // need to check if TYPE is there
+    // no qeury on fields etc easy
+    // if (!sub.ids) {
+    //   sub.ids = {}
+    // }
+    // for (let i = 1; i < meta.ids.length; i++) {
+    //   sub.ids[meta.ids[i]] = true
+    // }
   }
 
-  // TIME SYSTEM
-
-  // only if decendants
-  //   sub.member[sub.member.length] = {
-  //     $field: 'ancestors',
-  //     $value: ids // needs to be an and potentially
-  //   }
-
-  // traverse may be nessecary for fields
-  // may need to add more here
-  // easy for decandants but what about for example, ancestors
-  // or other stuff
-  // maybe usefull to keep track of the actual ids
-  // now the rest
-
-  querySubs[querySubs.length] = sub
+  if (sub.ids || !meta.ast) {
+    if (!sub.idFields) {
+      sub.idFields = {}
+    }
+    const field = meta.traverse || traverse
+    if (!field) {
+      logger.error('WRONG MISSING FIELD or TRAVERSE')
+    } else {
+      for (let i = 0; i < ids.length; i++) {
+        sub.idFields[`${ids[i]}.${field}`] = true
+      }
+    }
+  }
 
   let sort = meta.sort
   if (sort) {

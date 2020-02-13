@@ -15,6 +15,7 @@ import parseSubscriptions from './parseSubscriptions'
 const parseNested = (
   opts: GetOptions,
   ids: string[],
+  meta: Meta,
   traverse?: string | string[]
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
@@ -22,8 +23,7 @@ const parseNested = (
       if (!opts.$list.$find.$traverse) {
         opts.$list.$find.$traverse = traverse
       }
-
-      return parseFind(opts.$list.$find, ids)
+      return parseFind(opts.$list.$find, ids, meta)
     } else {
       if (!traverse) {
         return [{ isFork: true }, '$list without find needs traverse']
@@ -32,7 +32,8 @@ const parseNested = (
           {
             $fields: ensureArray(traverse)
           },
-          ids
+          ids,
+          meta
         )
       }
     }
@@ -50,7 +51,8 @@ const parseQuery = (
   traverse?: string | string[],
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  getResult?: GetResult
 ): [
   {
     results: GetResult[]
@@ -63,10 +65,13 @@ const parseQuery = (
   if (getOptions.$list && getOptions.$find) {
     return [{ results }, 'If using $list put $find in list']
   }
+
   let resultIds: any[] | undefined = []
   let resultFork: Fork | undefined
+  const meta: Meta = { ids: resultIds }
+
   if (getOptions.$list || getOptions.$find) {
-    const [r, err] = parseNested(getOptions, ids, traverse)
+    const [r, err] = parseNested(getOptions, ids, meta, traverse)
     if (err) {
       return [{ results }, err]
     }
@@ -125,7 +130,6 @@ const parseQuery = (
       }
 
       // meta is harder here..
-
       const [{ results: nestedResults }, err] = parseQuery(
         getField,
         schema,
@@ -133,7 +137,9 @@ const parseQuery = (
         resultIds,
         undefined,
         language,
-        version
+        version,
+        includeMeta,
+        getResult
       )
       if (err) {
         return [{ results }, err]
@@ -151,7 +157,10 @@ const parseQuery = (
       }
     } else {
       for (let i = 1; i < resultIds.length; i++) {
-        const result: GetResult = {}
+        const result: GetResult =
+          includeMeta && getResult && getResult.$meta
+            ? { $meta: getResult.$meta }
+            : {}
         getField(
           getOptions,
           schema,
@@ -169,7 +178,20 @@ const parseQuery = (
   }
 
   const sort = getOptions.$list && getOptions.$list.$sort
-  return [{ results, meta: { ast: resultFork, sort: sort } }, null]
+
+  meta.ast = resultFork
+  meta.sort = sort
+  meta.ids = resultIds
+
+  if (
+    getOptions.$list &&
+    getOptions.$list.$find &&
+    getOptions.$list.$find.$traverse
+  ) {
+    meta.traverse = getOptions.$list.$find.$traverse
+  }
+
+  return [{ results, meta }, null]
 }
 
 const queryGet = (
@@ -196,7 +218,8 @@ const queryGet = (
     traverse,
     language,
     version,
-    includeMeta
+    includeMeta,
+    result
   )
 
   let { results, meta } = r
@@ -208,7 +231,7 @@ const queryGet = (
     if (!result.$meta.query) {
       result.$meta.query = []
     }
-    parseSubscriptions(result.$meta.query, meta, ids, traverse)
+    parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
   }
   result[resultField] = results
   if (err) {

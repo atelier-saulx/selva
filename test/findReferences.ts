@@ -3,24 +3,26 @@ import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6090
+    port
   })
 
   await wait(500)
 
-  const client = connect({ port: 6090 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     types: {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          name: { type: 'string', search: { type: ['TAG'] } }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       },
       match: {
@@ -28,7 +30,6 @@ test.before(async t => {
         fields: {
           fun: { type: 'set', items: { type: 'string' } },
           related: { type: 'references', search: { type: ['TAG'] } },
-          name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC'] } }
         }
@@ -40,7 +41,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6090 })
+  const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -50,7 +51,7 @@ test.after(async _t => {
 
 test.serial('find - references', async t => {
   // simple nested - single query
-  const client = connect({ port: 6090 })
+  const client = connect({ port })
   const globMatches = []
   const leaguesSet = []
   for (let i = 0; i < 10; i++) {
@@ -225,8 +226,6 @@ test.serial('find - references', async t => {
   )
 
   await wait(1000)
-
-  console.log('HERE HERE HERE')
 
   const { related: relatedMatchesLeaguesNoTraverse } = await client.get({
     $id: matches[0].id,

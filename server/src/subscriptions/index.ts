@@ -1,12 +1,14 @@
 import { createClient, RedisClient } from 'redis'
 import { SelvaClient } from '../../../client/src'
 import { GetOptions } from '../../../client/src/get/types'
+import { QuerySubscription } from '../../../lua/src/get/query/types'
 import {
   Schema,
   FieldSchemaObject,
   FieldSchema
 } from '../../../client/src/schema'
 import { createHash } from 'crypto'
+import query from './query'
 
 function isObjectLike(x: any): x is FieldSchemaObject {
   return !!(x && x.properties)
@@ -104,17 +106,29 @@ function addFields(
 export default class SubscriptionManager {
   private refreshSubscriptionsTimeout: NodeJS.Timeout
   private lastRefreshed: Date
+  private cleanUp: boolean = false
   private lastModifyEvent: number
-
+  public queries: Record<string, QuerySubscription[]> = {}
+  public inProgress: Record<string, true> = {}
   private subscriptions: Record<string, GetOptions> = {}
   private subscriptionsByField: Record<string, Set<string>> = {}
   private refsById: Record<string, Record<string, string>> = {}
   private lastResultHash: Record<string, string> = {}
   private lastHeartbeat: Record<string, number> = {}
 
-  private client: SelvaClient
+  public client: SelvaClient
   private sub: RedisClient
   private pub: RedisClient
+
+  cleanUpProgress() {
+    if (!this.cleanUp) {
+      this.cleanUp = true
+      setTimeout(() => {
+        this.inProgress = {}
+        this.cleanUp = false
+      }, 250)
+    }
+  }
 
   heartbeats() {
     this.pub.publish('___selva_events:heartbeat', '')
@@ -206,7 +220,7 @@ export default class SubscriptionManager {
     })
 
     // lua object change events
-    this.sub.on('pmessage', (_pattern, channel, message) => {
+    this.sub.on('pmessage', async (_pattern, channel, message) => {
       this.lastModifyEvent = Date.now()
       if (channel === '___selva_events:heartbeat') {
         return
@@ -218,7 +232,16 @@ export default class SubscriptionManager {
 
       const eventName = channel.slice('___selva_events:'.length)
 
-      if (message === 'delete') {
+      /*
+        this.queries
+        // also redis
+        // maybe keep in mem a bit
+      */
+
+      if (message === 'created') {
+        // console.log('created record with id', eventName)
+        // TODO(jim): add query specific handler here
+      } else if (message === 'delete') {
         for (const field in this.subscriptionsByField) {
           if (field.startsWith(eventName)) {
             const subscriptionIds: Set<string> | undefined =
@@ -255,9 +278,13 @@ export default class SubscriptionManager {
             })
           }
 
-          field += '.' + parts[i + 1]
+          if (i < parts.length - 1) {
+            field += '.' + parts[i + 1]
+          }
         }
       }
+
+      query(this, message, eventName)
     })
 
     this.sub.psubscribe('___selva_events:*')
@@ -306,7 +333,7 @@ export default class SubscriptionManager {
     return this.sub === undefined
   }
 
-  private async sendUpdate(
+  async sendUpdate(
     subscriptionId: string,
     getOptions?: GetOptions,
     deleteOp: boolean = false
@@ -330,6 +357,7 @@ export default class SubscriptionManager {
     }
 
     getOptions = getOptions || this.subscriptions[subscriptionId]
+
     const payload = await this.client.get(
       Object.assign({}, getOptions, {
         $includeMeta: true
@@ -340,10 +368,13 @@ export default class SubscriptionManager {
     delete this.refsById[getOptions.$id]
 
     let hasRefs = false
+    // check if query is also there
     const newRefs: Record<string, string> = {}
+
+    // needsRefresh
+
     for (const refSource in refs) {
       hasRefs = true
-
       const refTargets = refs[refSource]
       newRefs[refSource] = refTargets
     }
@@ -353,11 +384,26 @@ export default class SubscriptionManager {
       this.refreshSubscription(subscriptionId)
     }
 
+    if (payload.$meta.query) {
+      // what do you need to refresh? just attach
+      this.queries[subscriptionId] = <QuerySubscription[]>payload.$meta.query
+
+      // console.log('ATTACH', subscriptionId, payload.$meta.query)
+    }
+    // need to clear $meta
+
+    if (payload.$meta.query) {
+      // console.log('REMOVE META FROM NESTED FIELDS')
+    }
+
     // clean up refs before we send it to the client
     delete payload.$meta
 
     // hack-ish thing: include the result object in the string
     // so we don't need to encode/decode as many times
+
+    // if query need to remove NESTED meta
+
     const resultStr = JSON.stringify({ type: 'update', payload })
 
     const currentHash = this.lastResultHash[subscriptionId]
@@ -391,6 +437,7 @@ export default class SubscriptionManager {
     stored?: string,
     cleanup: boolean = false
   ) {
+    // add special query stuff here come on do it
     if (!schema) {
       schema = (await this.client.getSchema()).schema
     }
@@ -421,7 +468,6 @@ export default class SubscriptionManager {
       if (!current) {
         fieldMap[getOptions.$id + field] = current = new Set()
       }
-
       current.add(subId)
     }
 
@@ -431,7 +477,6 @@ export default class SubscriptionManager {
         if (!current) {
           fieldMap[getOptions.$id + '.' + refSource] = current = new Set()
         }
-
         current.add(subId)
       }
     }

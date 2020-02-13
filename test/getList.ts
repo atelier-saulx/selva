@@ -3,22 +3,25 @@ import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
-  srv = await start({ port: 6062 })
+  port = await getPort()
+  srv = await start({ port })
   await wait(500)
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6062 })
+  const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
 })
 
 test.serial('get - simple $list', async t => {
-  const client = connect({ port: 6062 })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -26,7 +29,6 @@ test.serial('get - simple $list', async t => {
       custom: {
         prefix: 'cu',
         fields: {
-          name: { type: 'string' },
           value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
@@ -128,7 +130,7 @@ test.serial('get - simple $list', async t => {
 })
 
 test.serial('get - simple $list with $field of one field', async t => {
-  const client = connect({ port: 6062 })
+  const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -211,7 +213,7 @@ test.serial('get - simple $list with $field of one field', async t => {
 })
 
 test.serial('get - simple $list with $field of two field entries', async t => {
-  const client = connect({ port: 6062 })
+  const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],

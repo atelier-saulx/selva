@@ -16,8 +16,11 @@ export type Fork = {
 }
 
 export type Meta = {
-  ast: Fork | undefined
+  ast?: Fork | undefined
   sort?: Sort | Sort[]
+  traverse?: string | string[]
+  ids: string[]
+  type?: string[]
 }
 
 export type FieldSubscription = {
@@ -26,9 +29,11 @@ export type FieldSubscription = {
 }
 
 export type QuerySubscription = {
+  idFields?: Record<string, true>
+  queryId: string
   ids?: Record<string, true>
   member: { $field: string; $value: string[] }[] // array is an OR
-  type: string[] // prefixes
+  type?: string[]
   fields: {
     [key: string]: true
   }

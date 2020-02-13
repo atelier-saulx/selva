@@ -1,6 +1,6 @@
 import parseFilters from '../parseFilters'
-import { Fork } from '../types'
-import { isArray, ensureArray } from '../../../util'
+import { Fork, Meta } from '../types'
+import { isArray } from '../../../util'
 import { Find, Filter } from '~selva/get/types'
 import parseFindIds from './ids'
 import * as redis from '../../../redis'
@@ -37,9 +37,11 @@ const getIds = (traverse: string, ids: string[]): string[] => {
   }
 }
 
+// pass meta along
 function parseFind(
   opts: Find & { $fields?: string[] },
-  ids: string[]
+  ids: string[],
+  meta: Meta
 ): [Fork | string[], string | null] {
   let { $traverse, $filter: filterRaw, $fields } = opts
   if (!filterRaw) {
@@ -71,13 +73,13 @@ function parseFind(
     } else if ($traverse === 'ancestors') {
       // for loop here
       const ancestors = getIds($traverse, ids)
-      return parseFindIds(filters, ancestors)
+      return parseFindIds(filters, ancestors, meta)
     } else if (isArray($traverse)) {
       // short hand to do iteration over multiple ids
-      return parseFindIds(filters, $traverse)
+      return parseFindIds(filters, $traverse, meta)
     } else {
       const resultIds = getIds($traverse, ids)
-      return parseFindIds(filters, resultIds)
+      return parseFindIds(filters, resultIds, meta)
     }
   } else if ($fields) {
     let resultIds: string[] = []
@@ -89,7 +91,7 @@ function parseFind(
       }
     }
 
-    return parseFindIds(filters, resultIds)
+    return parseFindIds(filters, resultIds, getResult)
   } else {
     return [{ isFork: true }, 'Need to allways define $traverse for now']
   }
