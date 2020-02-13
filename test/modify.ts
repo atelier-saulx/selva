@@ -3,16 +3,19 @@ import './assertions'
 import { connect, SelvaClient } from '../client/src/index'
 import { start } from '../server/src/index'
 import { dumpDb, idExists, wait } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6061
+    port
   })
 
   const client = connect(
     {
-      port: 6061
+      port
     },
     { loglevel: 'info' }
   )
@@ -80,7 +83,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6061 })
+  const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
@@ -89,7 +92,7 @@ test.after(async _t => {
 test.serial('root', async t => {
   const client = connect(
     {
-      port: 6061
+      port
     },
     { loglevel: 'info' }
   )
@@ -115,7 +118,7 @@ test.serial('root', async t => {
 
 test.serial('basic', async t => {
   const client = connect({
-    port: 6061
+    port
   })
 
   const match = await client.set({
@@ -398,7 +401,7 @@ test.serial('basic', async t => {
 
 test.serial('deep hierarchy manipulation', async t => {
   const client = connect({
-    port: 6061
+    port
   })
 
   await client.set({
@@ -464,7 +467,7 @@ test.serial('deep hierarchy manipulation', async t => {
 
 test.serial('array, json and set', async t => {
   const client = connect({
-    port: 6061
+    port
   })
 
   await client.updateSchema({
@@ -519,7 +522,7 @@ test.serial('array, json and set', async t => {
 
 test.serial('$increment, $default', async t => {
   const client = connect({
-    port: 6061
+    port
   })
   await client.set({
     $id: 'viDingDong',
@@ -586,7 +589,7 @@ test.serial('$increment, $default', async t => {
 
 test.serial('$merge = false', async t => {
   const client = connect({
-    port: 6061
+    port
   })
 
   await client.set({
@@ -640,7 +643,7 @@ test.serial('$merge = false', async t => {
 
 test.serial('automatic child creation', async t => {
   const client = connect({
-    port: 6061
+    port
   })
 
   const parent = await client.set({
@@ -687,7 +690,7 @@ test.serial('automatic child creation', async t => {
 
 // test.serial('Reference field', async t => {
 //   const client = connect({
-//     port: 6061
+//     port
 //   })
 
 //   client.set({

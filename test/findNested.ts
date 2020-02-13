@@ -5,14 +5,17 @@ import './assertions'
 import { wait, dumpDb } from './assertions'
 import { RedisClient } from 'redis'
 import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6122
+    port
   })
 
-  const client = connect({ port: 6122 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -41,7 +44,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6122 })
+  const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -50,7 +53,7 @@ test.after(async _t => {
 })
 
 test.serial('get nested results', async t => {
-  const client = connect({ port: 6122 }, { loglevel: 'info' })
+  const client = connect({ port }, { loglevel: 'info' })
 
   const matches = []
   const teams = []

@@ -3,14 +3,17 @@ import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6123
+    port
   })
   await wait(1500)
-  const client = connect({ port: 6123 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -40,7 +43,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6123 })
+  const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -51,7 +54,7 @@ test.after(async _t => {
 test.serial('subscription find', async t => {
   const client = connect(
     {
-      port: 6123
+      port
     },
     { loglevel: 'info' }
   )

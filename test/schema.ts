@@ -4,6 +4,7 @@ import { start } from '../server/src/index'
 import './assertions'
 import { Fields, Schema, SchemaOptions } from '../client/src/schema'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 const mangleResults = (
   correctSchema: Schema | SchemaOptions,
@@ -23,10 +24,11 @@ const mangleResults = (
 }
 
 test.serial.only('schemas - basic', async t => {
+  const port = await getPort()
   const server = await start({
-    port: 6066
+    port
   })
-  const client = connect({ port: 6066 })
+  const client = connect({ port })
 
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
@@ -371,10 +373,11 @@ test.serial.only('schemas - basic', async t => {
 })
 
 test.serial('schemas - search indexes', async t => {
+  const port = await getPort()
   const server = await start({
-    port: 6091
+    port
   })
-  const client = connect({ port: 6091 })
+  const client = connect({ port })
 
   await client.updateSchema({
     languages: ['nl', 'en'],

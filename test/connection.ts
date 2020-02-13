@@ -2,15 +2,15 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 test('Connect and re-connect', async t => {
-  let current = { port: 6068 }
-
+  let current = await getPort()
   const client = connect(async () => {
-    return current
+    return { port: current }
   })
 
-  const server = await start({ port: 6068 })
+  const server = await start({ port: current })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -55,12 +55,12 @@ test('Connect and re-connect', async t => {
 
   await wait(1e3)
   console.log('destroying server')
+  current = await getPort()
   await server.destroy()
   console.log('server destroyed')
 
   await wait(1e3)
-  current = { port: 6068 }
-  const server2 = await start({ port: 6068 })
+  const server2 = await start({ port: current })
   await wait(1e3)
 
   await client.updateSchema({
