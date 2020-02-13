@@ -25,6 +25,11 @@ function getField(
 ): boolean {
   let hasAlias = false
 
+  if (props.$value) {
+    setNestedResult(result, <string>field, props.$value)
+    return true
+  }
+
   if (props.$list && ignore !== '$list' && ignore !== '$') {
     // field that needs to get the result
 

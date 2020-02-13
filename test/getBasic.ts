@@ -124,6 +124,44 @@ test.after(async _t => {
   await srv.destroy()
 })
 
+test.serial('get $value', async t => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'maTest',
+    title: { en: 'hello' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maTest',
+      id: true,
+      someField: { $value: 'some value' },
+      title: { $value: 'overwrite title as string' },
+      objectField: {
+        $value: {
+          something: {
+            complex: true
+          }
+        }
+      }
+    }),
+    {
+      id: 'maTest',
+      someField: 'some value',
+      title: 'overwrite title as string',
+      objectField: {
+        something: {
+          complex: true
+        }
+      }
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
+
 test.serial('get - root', async t => {
   const client = connect({ port })
 
