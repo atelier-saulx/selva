@@ -65,6 +65,7 @@ test.serial('basic id based subscriptions', async t => {
       t.deepEqualIgnoreOrder(d, {
         id: thing,
         type: 'yeshType',
+        name: '',
         yesh: 'extra nice'
       })
     } else if (o2counter === 1) {

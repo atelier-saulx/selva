@@ -21,8 +21,7 @@ test.before(async t => {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          name: { type: 'string', search: { type: ['TAG'] } }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       },
       club: {
@@ -49,7 +48,6 @@ test.before(async t => {
         },
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC'] } }
         }

@@ -18,7 +18,6 @@ test('Connect and re-connect', async t => {
       custom: {
         prefix: 'cu',
         fields: {
-          name: { type: 'string' },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
@@ -69,7 +68,6 @@ test('Connect and re-connect', async t => {
       custom: {
         prefix: 'cu',
         fields: {
-          name: { type: 'string' },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {

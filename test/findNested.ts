@@ -21,20 +21,15 @@ test.before(async t => {
     types: {
       league: {
         prefix: 'le',
-        fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+        fields: {}
       },
       team: {
         prefix: 'te',
-        fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+        fields: {}
       },
       match: {
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }

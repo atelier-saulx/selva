@@ -16,7 +16,7 @@ test.before(async t => {
     setTimeout(resolve, 100)
   })
 
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -69,7 +69,6 @@ test.before(async t => {
       custom: {
         prefix: 'cu',
         fields: {
-          name: { type: 'string' },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
@@ -233,7 +232,7 @@ test.serial('get - basic', async t => {
 })
 
 test.serial('get - $all simple', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'maA',
@@ -253,6 +252,7 @@ test.serial('get - $all simple', async t => {
     {
       id: 'maA',
       type: 'match',
+      name: '',
       title: {
         en: 'nice!'
       },
@@ -295,6 +295,7 @@ test.serial('get - $all root level whitelist + $all', async t => {
     {
       id: 'clA',
       type: 'club',
+      name: '',
       title: {
         en: 'nice!'
       },
@@ -343,6 +344,7 @@ test.serial('get - $all root level whitelist + blacklists + $all', async t => {
     {
       id: 'clA',
       type: 'club',
+      name: '',
       title: {
         en: 'nice!'
       },

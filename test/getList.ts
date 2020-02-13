@@ -21,7 +21,7 @@ test.after(async _t => {
 })
 
 test.serial('get - simple $list', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -29,7 +29,6 @@ test.serial('get - simple $list', async t => {
       custom: {
         prefix: 'cu',
         fields: {
-          name: { type: 'string' },
           value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {

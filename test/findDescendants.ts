@@ -41,7 +41,6 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
           // need to warn if you change this!!!
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
@@ -50,7 +49,6 @@ test.before(async t => {
       video: {
         prefix: 'vi',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
           date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           // making it different here should tell you something or at least take it over
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
