@@ -2,9 +2,7 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
-import { wait, dumpDb } from './assertions'
-import { RedisClient } from 'redis'
-import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript'
+import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
