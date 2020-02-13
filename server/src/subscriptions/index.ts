@@ -340,6 +340,7 @@ export default class SubscriptionManager {
     delete this.refsById[getOptions.$id]
 
     let hasRefs = false
+    // check if query is also there
     const newRefs: Record<string, string> = {}
     for (const refSource in refs) {
       hasRefs = true
@@ -391,6 +392,7 @@ export default class SubscriptionManager {
     stored?: string,
     cleanup: boolean = false
   ) {
+    // add special query stuff here come on do it
     if (!schema) {
       schema = (await this.client.getSchema()).schema
     }
