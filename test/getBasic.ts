@@ -162,6 +162,57 @@ test.serial('get $value', async t => {
   client.destroy()
 })
 
+test.serial('get complex with $value and array syntax', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'maTest',
+    title: { en: 'hello' },
+    description: { en: 'yesh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maTest',
+      allMyThings: [
+        {
+          id: true,
+          parents: true,
+          ancestors: true
+        },
+        {
+          name: true,
+          somethingNice: { $value: 'yesh' }
+        },
+        {
+          title: true,
+          description: true
+        }
+      ]
+    }),
+    {
+      allMyThings: [
+        {
+          id: 'maTest',
+          parents: ['root'],
+          ancestors: ['root']
+        },
+        {
+          name: '',
+          somethingNice: 'yesh'
+        },
+        {
+          title: { en: 'hello' },
+          description: { en: 'yesh' }
+        }
+      ]
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
+
 test.serial('get - root', async t => {
   const client = connect({ port })
 
