@@ -2,11 +2,14 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async () => {
+  port = await getPort()
   srv = await start({
-    port: 5051
+    port
   })
 })
 
@@ -15,7 +18,7 @@ test.after(async () => {
 })
 
 test.serial('basic id based subscriptions', async t => {
-  const client = connect({ port: 5051 })
+  const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -98,7 +101,7 @@ test.serial('basic id based subscriptions', async t => {
 })
 
 test.serial('using $field works', async t => {
-  const client = connect({ port: 5051 })
+  const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -152,7 +155,7 @@ test.serial('using $field works', async t => {
 })
 
 test.serial('refs resolve and get tracked correctly', async t => {
-  const client = connect({ port: 5051 })
+  const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -211,7 +214,7 @@ test.serial('refs resolve and get tracked correctly', async t => {
 })
 
 test.serial('basic $inherit when ancestors change', async t => {
-  const client = connect({ port: 5051 })
+  const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -272,11 +275,12 @@ test.serial('basic $inherit when ancestors change', async t => {
 test.serial(
   'subscription client side reconnection test -- no event if no changes',
   async t => {
+    const port = await getPort()
     const server = await start({
-      port: 5052
+      port
     })
 
-    const client = connect({ port: 5052 })
+    const client = connect({ port })
 
     await client.updateSchema({
       languages: ['en', 'de', 'nl'],
@@ -345,10 +349,11 @@ test.serial(
 test.serial(
   'subscription client side reconnection test -- event if pending changes',
   async t => {
-    const client = connect({ port: 5053 })
+    const port = await getPort()
+    const client = connect({ port })
 
     const server = await start({
-      port: 5053
+      port
     })
 
     await client.updateSchema({
@@ -414,10 +419,11 @@ test.serial(
 test.serial(
   'subscription server side reconnection test -- event if pending changes',
   async t => {
-    const client = connect({ port: 5054 })
+    const port = await getPort()
+    const client = connect({ port })
 
     const server = await start({
-      port: 5054
+      port
     })
 
     await client.updateSchema({

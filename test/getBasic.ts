@@ -2,18 +2,21 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6072
+    port
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
 
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -116,14 +119,14 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
 })
 
 test.serial('get - root', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   const match = await client.set({
     $id: 'maTest'
@@ -171,7 +174,7 @@ test.serial('get - root', async t => {
 })
 
 test.serial('get - basic', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viA',
@@ -230,7 +233,7 @@ test.serial('get - basic', async t => {
 })
 
 test.serial('get - $all simple', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'maA',
@@ -265,7 +268,7 @@ test.serial('get - $all simple', async t => {
 })
 
 test.serial('get - $all root level whitelist + $all', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'clA',
@@ -310,7 +313,7 @@ test.serial('get - $all root level whitelist + $all', async t => {
 })
 
 test.serial('get - $all root level whitelist + blacklists + $all', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'clA',
@@ -355,7 +358,7 @@ test.serial('get - $all root level whitelist + blacklists + $all', async t => {
 })
 
 test.serial('get - $all nested', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'maA',
@@ -399,7 +402,7 @@ test.serial('get - $all nested', async t => {
 })
 
 test.serial('get - $all deeply nested', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   const entry = await client.set({
     type: 'lekkerType',
@@ -464,7 +467,7 @@ test.serial('get - $all deeply nested', async t => {
 })
 
 test.serial('get - $default', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viflap',
@@ -498,7 +501,7 @@ test.serial('get - $default', async t => {
 })
 
 test.serial('get - $language', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
   await client.set({
     $id: 'viflap',
     title: { en: 'flap', nl: 'flurp' },
@@ -538,7 +541,7 @@ test.serial('get - $language', async t => {
 })
 
 test.serial('get - field with empty array', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   const id = await client.set({
     type: 'lekkerType',
@@ -574,7 +577,7 @@ test.serial('get - field with empty array', async t => {
 })
 
 test.serial('get - hierarchy', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   await Promise.all([
     client.set({
@@ -617,7 +620,7 @@ test.serial('get - hierarchy', async t => {
 })
 
 test.serial('get - $inherit', async t => {
-  const client = connect({ port: 6072 })
+  const client = connect({ port })
 
   /*
     root
@@ -838,7 +841,7 @@ test.serial('get - $inherit', async t => {
 })
 
 // test.serial('get - $field (basic)', async t => {
-//   const client = connect({ port: 6072 })
+//   const client = connect({ port })
 
 //   await client.set({
 //     $id: 'reDe',

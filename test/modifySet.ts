@@ -3,15 +3,18 @@ import './assertions'
 import { connect, SelvaClient } from '../client/src/index'
 import { start } from '../server/src/index'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6092
+    port
   })
 
   const client = connect({
-    port: 6092
+    port
   })
 
   await client.updateSchema({
@@ -38,7 +41,7 @@ test.before(async t => {
 
 test.serial('basic set', async t => {
   const client = connect({
-    port: 6092
+    port
   })
 
   const id = await client.set({

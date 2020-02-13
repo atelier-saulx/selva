@@ -2,14 +2,17 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 7072
+    port
   })
 
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     types: {
@@ -110,14 +113,14 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
 })
 
 test.serial('get - simple alias', async t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viA',
@@ -152,7 +155,7 @@ test.serial('get - simple alias', async t => {
 })
 
 test.serial('get - simple alias with variable', async t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viB',
@@ -190,7 +193,7 @@ test.serial('get - simple alias with variable', async t => {
 })
 
 test.serial('get - alias with nested structure variable', async t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viC',
@@ -228,7 +231,7 @@ test.serial('get - alias with nested structure variable', async t => {
 })
 
 test.serial('get - alias with variables', async t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viD',
@@ -267,7 +270,7 @@ test.serial('get - alias with variables', async t => {
 })
 
 test.serial('get - $field with multiple options, taking the first', async t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viE',
@@ -300,7 +303,7 @@ test.serial('get - $field with multiple options, taking the first', async t => {
 test.serial(
   'get - $field with multiple options, taking the second',
   async t => {
-    const client = connect({ port: 7072 })
+    const client = connect({ port })
 
     await client.set({
       $id: 'viF',
@@ -334,7 +337,7 @@ test.serial(
 test.serial(
   'get - $field with multiple options complex. taking the second',
   async t => {
-    const client = connect({ port: 7072 })
+    const client = connect({ port })
 
     await client.set({
       $id: 'viG',
@@ -375,7 +378,7 @@ test.serial(
 )
 
 test.serial('get - simple $field with $inherit: true', async t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viH',
@@ -430,7 +433,7 @@ test.serial('get - simple $field with $inherit: true', async t => {
 })
 
 test.serial('get - simple $field with $inherit: $type', async t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'cuA',
@@ -484,7 +487,7 @@ test.serial('get - simple $field with $inherit: $type', async t => {
 })
 
 test.serial('get - more complex $field with $inherit: $name', async t => {
-  const client = connect({ port: 7072 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'cuB',

@@ -4,16 +4,19 @@ import { start } from '../server/src/index'
 import './assertions'
 import { wait, dumpDb } from './assertions'
 import { RedisClient } from 'redis'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6088
+    port
   })
 
   await wait(500)
 
-  const client = connect({ port: 6088 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -136,7 +139,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6088 })
+  const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -146,7 +149,7 @@ test.after(async _t => {
 
 test.serial('find - descendants', async t => {
   // simple nested - single query
-  const client = connect({ port: 6088 })
+  const client = connect({ port })
 
   // extra option in find is index or auto from fields
   let d = Date.now()

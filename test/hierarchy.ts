@@ -3,15 +3,18 @@ import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import { wait } from './assertions'
 import './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 8082
+    port
   })
 
-  const client = connect({ port: 8082 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     types: {
@@ -186,7 +189,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 8082 })
+  const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
@@ -195,7 +198,7 @@ test.after(async _t => {
 test.serial(
   'inheriting while excluding league from match through setting match as parent',
   async t => {
-    const client = connect({ port: 8082 })
+    const client = connect({ port })
 
     const league = await client.set({
       type: 'league',
@@ -272,7 +275,7 @@ test.serial(
 )
 
 test.serial('ancestry has only one season in real world setting', async t => {
-  const client = connect({ port: 8082 })
+  const client = connect({ port })
 
   const match1 = await client.set({
     type: 'match',
@@ -376,7 +379,7 @@ test.serial('ancestry has only one season in real world setting', async t => {
 test.serial(
   'inheriting while excluding league from match through setting match as child',
   async t => {
-    const client = connect({ port: 8082 })
+    const client = connect({ port })
 
     const match = await client.set({
       type: 'match',
@@ -458,7 +461,7 @@ test.serial(
 )
 
 test.serial('more complex hierarchies', async t => {
-  const client = connect({ port: 8082 })
+  const client = connect({ port })
 
   const match = await client.set({
     type: 'match',
@@ -648,7 +651,7 @@ test.serial('more complex hierarchies', async t => {
 test.serial(
   'inheriting item while excluding league from match through setting match as child',
   async t => {
-    const client = connect({ port: 8082 })
+    const client = connect({ port })
 
     const match = await client.set({
       type: 'match',

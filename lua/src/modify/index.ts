@@ -211,6 +211,9 @@ function update(payload: SetOptions): Id | null {
   const exists = redis.hexists(payload.$id, 'type')
 
   if (!exists) {
+    // we always end up here if it's a new record
+    sendEvent(payload.$id, '', 'created')
+
     if (!payload.type) {
       payload.type = getTypeFromId(payload.$id)
     }

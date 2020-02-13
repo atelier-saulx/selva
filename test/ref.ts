@@ -2,14 +2,17 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
+import getPort from 'get-port'
 
 let srv
+let port: number
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 7073
+    port
   })
 
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'en_us', 'en_uk', 'de', 'nl'],
     types: {
@@ -116,14 +119,14 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
 })
 
 test.serial('string field ref', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viA',
@@ -155,7 +158,7 @@ test.serial('string field ref', async t => {
 })
 
 test.serial('json field ref', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viB',
@@ -193,7 +196,7 @@ test.serial('json field ref', async t => {
 })
 
 test.serial('whole object ref', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viC',
@@ -223,7 +226,7 @@ test.serial('whole object ref', async t => {
 })
 
 test.serial('simple object field ref', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viC',
@@ -251,7 +254,7 @@ test.serial('simple object field ref', async t => {
 })
 
 test.serial('nested object in object field ref', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viX',
@@ -283,7 +286,7 @@ test.serial('nested object in object field ref', async t => {
 })
 
 test.serial('text field ref', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viD',
@@ -316,7 +319,7 @@ test.serial('text field ref', async t => {
 })
 
 test.serial('text object ref', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viD',
@@ -356,7 +359,7 @@ test.serial('text object ref', async t => {
 })
 
 test.serial('string field ref with $default', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viE',
@@ -414,7 +417,7 @@ test.serial('string field ref with $default', async t => {
 })
 
 test.serial('number field ref with $default', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viF',
@@ -462,7 +465,7 @@ test.serial('number field ref with $default', async t => {
 })
 
 test.serial('object nested field ref with $default', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viG',
@@ -515,7 +518,7 @@ test.serial('object nested field ref with $default', async t => {
 })
 
 test.serial('text field ref with $default', async t => {
-  const client = connect({ port: 7073 })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viH',
