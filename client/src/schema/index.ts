@@ -40,7 +40,7 @@ export type Search =
 
 export type SearchRaw = {
   index?: string
-  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE' | 'TEXT-LANGUAGE')[]
+  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE' | 'TEXT-LANGUAGE' | 'GEO')[]
 }
 
 export type FieldSchemaObject = {

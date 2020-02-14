@@ -1,6 +1,6 @@
 import { FilterAST, Fork } from './types'
 import addSearch from './addSearch'
-import { Filter } from '~selva/get/types'
+import { Filter, GeoFilter } from '~selva/get/types'
 import { isFork } from './util'
 import reduceAnd from './reduceAnd'
 
@@ -18,6 +18,15 @@ const addToOption = (
   }
 }
 
+function isGeoFilterValue(x: any): x is GeoFilter {
+  return !!x && x.$operator === 'distance'
+}
+
+function convertGeoFilterValue(geoFilter: GeoFilter): (string | number)[] {
+  const { $lon, $lat, $radius } = geoFilter.$value
+  return [$lon, $lat, $radius, 'm']
+}
+
 const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   const [search, err] = addSearch(filterOpt)
   if (err) {
@@ -29,12 +38,23 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   // need to remove equal then
 
   const o = filterOpt.$operator
-  if (!(o === '=' || o === '>' || o === '<' || o === '..' || o === '!=')) {
+  if (
+    !(
+      o === '=' ||
+      o === '>' ||
+      o === '<' ||
+      o === '..' ||
+      o === '!=' ||
+      o === 'distance'
+    )
+  ) {
     return [{ isFork: true }, `Invalid filter operator ${o}`]
   }
 
   const filter: FilterAST = {
-    $value: filterOpt.$value,
+    $value: isGeoFilterValue(filterOpt)
+      ? convertGeoFilterValue(filterOpt)
+      : filterOpt.$value,
     $operator: o,
     $field: filterOpt.$field,
     $search: search

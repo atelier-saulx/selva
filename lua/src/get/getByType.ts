@@ -437,6 +437,21 @@ const descendants = (
   return true
 }
 
+const geo = (
+  result: GetResult,
+  _schema: Schema,
+  id: Id,
+  field: string,
+  _language?: string,
+  _version?: string
+): true => {
+  const coord = redis.hget(id, field)
+  const [lon, lat] = splitString(coord, ',')
+
+  setNestedResult(result, field, { lat: tonumber(lat), lon: tonumber(lon) })
+  return true
+}
+
 const types = {
   id,
   string,
@@ -455,7 +470,7 @@ const types = {
   url: string,
   email: string,
   phone: string,
-  geo: object,
+  geo,
   type: string,
   descendants,
   ancestors

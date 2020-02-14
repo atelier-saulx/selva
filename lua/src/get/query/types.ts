@@ -4,7 +4,7 @@ export type Value = (string | number) | (string | number)[]
 
 export type FilterAST = {
   $field: string
-  $operator: '=' | '>' | '<' | '..' | '!='
+  $operator: '=' | '>' | '<' | '..' | '!=' | 'distance'
   $value: Value
   $search: string[]
 }
@@ -16,10 +16,11 @@ export type Fork = {
 }
 
 export type Meta = {
-  ast: Fork | undefined
+  ast?: Fork | undefined
   sort?: Sort | Sort[]
   traverse?: string | string[]
   ids: string[]
+  type?: string[]
 }
 
 export type FieldSubscription = {
@@ -32,7 +33,7 @@ export type QuerySubscription = {
   queryId: string
   ids?: Record<string, true>
   member: { $field: string; $value: string[] }[] // array is an OR
-  type: string[]
+  type?: string[]
   fields: {
     [key: string]: true
   }

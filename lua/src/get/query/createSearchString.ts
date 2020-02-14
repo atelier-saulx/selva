@@ -47,7 +47,10 @@ const addField = (filter: FilterAST): string => {
     // DO THINGS
     // INCLUDE LANGUAGE ETC
   } else if (type === 'GEO') {
-    // later
+    if (filter.$operator === 'distance' && isArray(filter.$value)) {
+      const [lon, lat, distance, units] = filter.$value
+      return `@${filter.$field}:[${lon} ${lat} ${distance} ${units}]`
+    }
   }
   return ''
 }

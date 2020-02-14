@@ -2,7 +2,7 @@ import { Meta, QuerySubscription, Fork } from './types'
 import * as logger from '../../logger'
 import { isFork } from './util'
 import { getPrefixFromType } from '../../typeIdMapping'
-import { indexOf, isArray } from '../../util'
+import { indexOf, isArray, joinString } from '../../util'
 import { GetOptions } from '~selva/get/types'
 
 const addType = (type: string | number, arr: string[]) => {
@@ -21,6 +21,9 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
         parseFork(item, sub)
       } else {
         if (item.$field === 'type') {
+          if (!sub.type) {
+            sub.type = []
+          }
           // FIXME: Not completely correct unfortunately
           // -- how to deal with ors?
           if (isArray(item.$value)) {
@@ -62,6 +65,30 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
   }
 }
 
+const parseGet = (
+  opts: GetOptions,
+  fields: Record<string, true>,
+  field: string[]
+) => {
+  for (let key in opts) {
+    if (key[0] !== '$') {
+      const item = opts[key]
+      if (typeof item === 'object') {
+        const newArray: string[] = []
+        for (let i = 0; i < field.length; i++) {
+          newArray[newArray.length] = field[i]
+        }
+        newArray[newArray.length] = key
+        parseGet(item, fields, newArray)
+      } else {
+        fields[
+          field.length > 0 ? joinString(field, '.') + '.' + key : key
+        ] = true
+      }
+    }
+  }
+}
+
 function parseSubscriptions(
   querySubs: QuerySubscription[],
   meta: Meta,
@@ -84,15 +111,21 @@ function parseSubscriptions(
     sub = {
       member: [],
       fields: {},
-      type: [],
       queryId
     }
     querySubs[querySubs.length] = sub
   }
 
+  parseGet(getOptions, sub.fields, [])
+
+  // getOptions
+  // recurse trough getOptions
+
   if (meta.ast) {
     parseFork(meta.ast, sub)
+    // INVERSE QUERY HERE
   } else {
+    // need to check if TYPE is there
     // no qeury on fields etc easy
     // if (!sub.ids) {
     //   sub.ids = {}

@@ -5,7 +5,7 @@ import { isFork } from './util'
 
 function createSearchArgs(
   getOptions: GetOptions,
-  qeury: string,
+  query: string,
   fork: Fork
 ): string[] {
   const $list = getOptions.$list
@@ -36,7 +36,7 @@ function createSearchArgs(
     }
   }
   const searchArgs: string[] = [
-    qeury,
+    query,
     'NOCONTENT',
     'LIMIT',
     tostring(lo),
