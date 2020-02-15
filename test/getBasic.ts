@@ -977,8 +977,16 @@ test.serial.only(
       }
     })
 
-    // t.deepEqual(
     console.log(
+      await client.get({
+        $id: entry,
+        id: true,
+        title: { $inherit: true },
+        ding: { $inherit: true }
+      })
+    )
+    // t.deepEqual(
+    t.deepEqual(
       await client.get({
         $id: entry,
         id: true,
@@ -994,7 +1002,7 @@ test.serial.only(
           dang: {
             dung: 115
           },
-          dong: ['yesh', 'hello']
+          dung: 123
         }
       }
     )

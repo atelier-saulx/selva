@@ -1,4 +1,4 @@
-import { Id, FieldSchemaObject, TypeSchema } from '~selva/schema/index'
+import { Id, FieldSchema } from '~selva/schema/index'
 
 import * as redis from '../redis'
 import { getTypeFromId } from '../typeIdMapping'
@@ -25,7 +25,8 @@ const id = (
   _language?: string,
   _version?: string,
   _includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   result.id = id
   return true
@@ -39,7 +40,8 @@ const number = (
   language?: string,
   version?: string,
   includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   const v = redis.hget(id, field)
   if (
@@ -71,7 +73,8 @@ const float = (
   language?: string,
   version?: string,
   includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   return number(result, schema, id, field, language, version, includeMeta)
 }
@@ -84,7 +87,8 @@ const int = (
   language?: string,
   version?: string,
   includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   const v = redis.hget(id, field)
 
@@ -117,7 +121,8 @@ const boolean = (
   language?: string,
   version?: string,
   includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): true => {
   const v = redis.hget(id, field)
 
@@ -149,7 +154,8 @@ const string = (
   language?: string,
   version?: string,
   includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   const value = redis.hget(id, field) || ''
 
@@ -181,7 +187,8 @@ const arrayLike = (
   language?: string,
   version?: string,
   _includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   if (field === 'ancestors') {
     return ancestors(result, schema, id, field, language, version)
@@ -208,7 +215,8 @@ const json = (
   language?: string,
   version?: string,
   includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   let value = redis.hget(id, field)
 
@@ -247,7 +255,8 @@ const array = (
   _language?: string,
   _version?: string,
   _includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   const value = redis.hget(id, field)
   let decoded: never[] | null =
@@ -270,10 +279,10 @@ const object = (
   language?: string,
   version?: string,
   includeMeta?: boolean,
-  merge?: boolean
+  merge?: boolean,
+  mergeProps?: any
 ): boolean => {
   const keys = redis.hkeys(id)
-  logger.info('object() keys', keys, 'result now', result)
   let isComplete = true
   let noKeys = true
 
@@ -294,12 +303,12 @@ const object = (
           includeMeta
         )
       }
-    }
 
-    if (
-      !getByType(usedResult, schema, id, key, language, version, includeMeta)
-    ) {
-      isComplete = false
+      if (
+        !getByType(usedResult, schema, id, key, language, version, includeMeta)
+      ) {
+        isComplete = false
+      }
     }
   }
 
@@ -311,13 +320,26 @@ const object = (
           '.'
         )[0]
         const topLevelPropertyField = field + '.' + keyPartsAfterField
-        logger.info('MERGE', topLevelPropertyField)
 
         const intermediate = getNestedField(usedResult, topLevelPropertyField)
         if (!getNestedField(result, topLevelPropertyField)) {
           setNestedResult(result, topLevelPropertyField, intermediate)
         }
       }
+    }
+
+    if (mergeProps && mergeProps.properties) {
+      logger.info('checking if finished shallow merging', mergeProps)
+      for (const topLevelKey in mergeProps.properties) {
+        logger.info('checking key', topLevelKey)
+        const fullPathToKey = field + '.' + topLevelKey
+        if (!getNestedField(result, fullPathToKey)) {
+          logger.info('not found', topLevelKey)
+          return false
+        }
+      }
+
+      return true
     }
 
     return false
@@ -334,7 +356,8 @@ const text = (
   language?: string,
   version?: string,
   includeMeta?: boolean,
-  _merge?: boolean
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   if (!language) {
     const isComplete = object(
@@ -535,7 +558,17 @@ function getByType(
   }
 
   const fn = types[prop.type] || string
-  return fn(result, schema, id, field, language, version, includeMeta, merge)
+  return fn(
+    result,
+    schema,
+    id,
+    field,
+    language,
+    version,
+    includeMeta,
+    merge,
+    prop
+  )
 }
 
 export default getByType

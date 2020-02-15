@@ -150,9 +150,9 @@ function setFromAncestors(
               merge
             )
           ) {
+            logger.info('done inheriting at', parent)
             return true
           }
-          logger.info('not done', id, field, result)
         }
       }
 
