@@ -329,12 +329,9 @@ const object = (
     }
 
     if (mergeProps && mergeProps.properties) {
-      logger.info('checking if finished shallow merging', mergeProps)
       for (const topLevelKey in mergeProps.properties) {
-        logger.info('checking key', topLevelKey)
         const fullPathToKey = field + '.' + topLevelKey
         if (!getNestedField(result, fullPathToKey)) {
-          logger.info('not found', topLevelKey)
           return false
         }
       }
