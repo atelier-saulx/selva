@@ -373,7 +373,8 @@ function convertSearch(f: FieldSchema): SearchRaw {
     } else if (
       field.type === 'number' ||
       field.type === 'float' ||
-      field.type === 'int'
+      field.type === 'int' ||
+      field.type === 'timestamp'
     ) {
       return { type: ['NUMERIC', 'SORTABLE'] }
     } else if (field.type === 'text') {
