@@ -119,10 +119,10 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port })
-  await client.delete('root')
-  await client.destroy()
-  await srv.destroy()
+  // const client = connect({ port })
+  // await client.delete('root')
+  // await client.destroy()
+  // await srv.destroy()
 })
 
 test.serial('get $value', async t => {
@@ -947,6 +947,7 @@ test.serial.only(
         dang: {
           dung: 9000
         },
+        dong: ['hello', 'yesh'],
         dung: 123
       }
     })
@@ -986,7 +987,7 @@ test.serial.only(
       })
     )
     // t.deepEqual(
-    t.deepEqual(
+    t.deepEqualIgnoreOrder(
       await client.get({
         $id: entry,
         id: true,
@@ -999,6 +1000,7 @@ test.serial.only(
           en: 'nice!'
         },
         ding: {
+          dong: ['hello', 'yesh'],
           dang: {
             dung: 115
           },
@@ -1007,7 +1009,7 @@ test.serial.only(
       }
     )
 
-    await client.delete('root')
+    // await client.delete('root')
 
     client.destroy()
   }
