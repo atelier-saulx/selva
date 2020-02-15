@@ -178,5 +178,5 @@ export function indexOf(a: any[], b: any): number {
 
 export function now(): number {
   const [sec, micro] = redis.call('time')
-  return Math.floor(tonumber(sec) / 1000 + tonumber(micro) * 1000)
+  return Math.floor(tonumber(sec) * 1000 + tonumber(micro) / 1000)
 }
