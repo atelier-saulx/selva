@@ -94,7 +94,9 @@ for (const key in verifiers) {
     _type: string
   ) => {
     if (!noOptions && typeof payload === 'object') {
+      let hasKeys = false
       for (let k in payload) {
+        hasKeys = true
         if (
           k === '$default' ||
           k === '$value' ||
@@ -119,6 +121,10 @@ for (const key in verifiers) {
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }
+      }
+
+      if (!hasKeys) {
+        throw new Error(`Incorrect payload empty object for field ${field}`)
       }
       result[field] = payload
     } else if (verify(payload)) {
