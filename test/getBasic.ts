@@ -1009,7 +1009,7 @@ test.serial.only(
       }
     )
 
-    // await client.delete('root')
+    await client.delete('root')
 
     client.destroy()
   }

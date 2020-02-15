@@ -129,15 +129,6 @@ function setFromAncestors(
             return true
           }
         } else {
-          logger.info(
-            'inheriting result currently',
-            id,
-            parent,
-            field,
-            result,
-            'MERGING???',
-            merge
-          )
           if (
             getByType(
               result,
@@ -150,7 +141,6 @@ function setFromAncestors(
               merge
             )
           ) {
-            logger.info('done inheriting at', parent)
             return true
           }
         }
