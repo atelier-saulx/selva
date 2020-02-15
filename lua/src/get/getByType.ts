@@ -1,4 +1,4 @@
-import { Id } from '~selva/schema/index'
+import { Id, FieldSchema } from '~selva/schema/index'
 
 import * as redis from '../redis'
 import { getTypeFromId } from '../typeIdMapping'
@@ -24,7 +24,9 @@ const id = (
   _field: string,
   _language?: string,
   _version?: string,
-  _includeMeta?: boolean
+  _includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   result.id = id
   return true
@@ -37,7 +39,9 @@ const number = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   const v = redis.hget(id, field)
   if (
@@ -68,7 +72,9 @@ const float = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   return number(result, schema, id, field, language, version, includeMeta)
 }
@@ -80,7 +86,9 @@ const int = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   const v = redis.hget(id, field)
 
@@ -112,7 +120,9 @@ const boolean = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): true => {
   const v = redis.hget(id, field)
 
@@ -143,7 +153,9 @@ const string = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   const value = redis.hget(id, field) || ''
 
@@ -174,7 +186,9 @@ const arrayLike = (
   field: string,
   language?: string,
   version?: string,
-  _includeMeta?: boolean
+  _includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   if (field === 'ancestors') {
     return ancestors(result, schema, id, field, language, version)
@@ -200,7 +214,9 @@ const json = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   let value = redis.hget(id, field)
 
@@ -238,7 +254,9 @@ const array = (
   field: string,
   _language?: string,
   _version?: string,
-  _includeMeta?: boolean
+  _includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   const value = redis.hget(id, field)
   let decoded: never[] | null =
@@ -260,18 +278,22 @@ const object = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  merge?: boolean,
+  mergeProps?: any
 ): boolean => {
   const keys = redis.hkeys(id)
   let isComplete = true
   let noKeys = true
+
+  let usedResult = merge ? {} : result
   for (const key of keys) {
     if (key.indexOf(field) === 0) {
       noKeys = false
 
       if (stringEndsWith(key, '$ref')) {
         return resolveObjectRef(
-          result,
+          usedResult,
           schema,
           id,
           field,
@@ -282,10 +304,42 @@ const object = (
         )
       }
 
-      if (!getByType(result, schema, id, key, language, version, includeMeta)) {
+      if (
+        !getByType(usedResult, schema, id, key, language, version, includeMeta)
+      ) {
         isComplete = false
       }
     }
+  }
+
+  if (merge) {
+    for (const key of keys) {
+      if (key.indexOf(field) === 0) {
+        const keyPartsAfterField = splitString(
+          key.substring(field.length + 1),
+          '.'
+        )[0]
+        const topLevelPropertyField = field + '.' + keyPartsAfterField
+
+        const intermediate = getNestedField(usedResult, topLevelPropertyField)
+        if (!getNestedField(result, topLevelPropertyField)) {
+          setNestedResult(result, topLevelPropertyField, intermediate)
+        }
+      }
+    }
+
+    if (mergeProps && mergeProps.properties) {
+      for (const topLevelKey in mergeProps.properties) {
+        const fullPathToKey = field + '.' + topLevelKey
+        if (!getNestedField(result, fullPathToKey)) {
+          return false
+        }
+      }
+
+      return true
+    }
+
+    return false
   }
 
   return noKeys ? false : isComplete
@@ -298,7 +352,9 @@ const text = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  _merge?: boolean,
+  _mergeProps?: any
 ): boolean => {
   if (!language) {
     const isComplete = object(
@@ -447,7 +503,8 @@ function getByType(
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean
+  includeMeta?: boolean,
+  merge?: boolean
 ): boolean {
   // version still missing!
   const type = getTypeFromId(id)
@@ -498,7 +555,17 @@ function getByType(
   }
 
   const fn = types[prop.type] || string
-  return fn(result, schema, id, field, language, version, includeMeta)
+  return fn(
+    result,
+    schema,
+    id,
+    field,
+    language,
+    version,
+    includeMeta,
+    merge,
+    prop
+  )
 }
 
 export default getByType

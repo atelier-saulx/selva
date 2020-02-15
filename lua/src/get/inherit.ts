@@ -50,6 +50,7 @@ function setFromAncestors(
   version?: string,
   includeMeta?: boolean,
   fieldFrom?: string | string[],
+  merge?: boolean,
   tryAncestorCondition?: (ancestor: Id) => boolean,
   acceptAncestorCondition?: (result: any) => boolean,
   ancestorsWithScores?: Id[],
@@ -128,7 +129,18 @@ function setFromAncestors(
             return true
           }
         } else {
-          if (getByType(result, schema, parent, field, language, version)) {
+          if (
+            getByType(
+              result,
+              schema,
+              parent,
+              field,
+              language,
+              version,
+              includeMeta,
+              merge
+            )
+          ) {
             return true
           }
         }
@@ -206,6 +218,7 @@ function inheritItem(
         version,
         includeMeta,
         '',
+        false,
         (ancestor: Id) => {
           for (const match of matches) {
             if (match === ancestor) {
@@ -270,7 +283,8 @@ export default function inherit(
         language,
         version,
         includeMeta,
-        fieldFrom
+        fieldFrom,
+        true
       )
     } else if (inherit.$type) {
       const types: string[] = ensureArray(inherit.$type)
@@ -284,6 +298,7 @@ export default function inherit(
         version,
         includeMeta,
         fieldFrom,
+        inherit.$merge !== undefined ? inherit.$merge : true,
         (ancestor: Id) => {
           for (const type of types) {
             if (type === getTypeFromId(ancestor)) {
@@ -306,6 +321,7 @@ export default function inherit(
         version,
         includeMeta,
         fieldFrom,
+        inherit.$merge !== undefined ? inherit.$merge : true,
         (ancestor: Id) => {
           for (const name of names) {
             if (name === getName(ancestor)) {
@@ -330,6 +346,20 @@ export default function inherit(
         language,
         version,
         includeMeta
+      )
+    } else if (inherit.$merge !== undefined) {
+      // if only merge specified, same as inherit: true with merge off
+      return setFromAncestors(
+        getField,
+        result,
+        schema,
+        id,
+        field,
+        language,
+        version,
+        includeMeta,
+        fieldFrom,
+        inherit.$merge
       )
     }
 

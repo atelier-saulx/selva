@@ -108,7 +108,6 @@ function getField(
           hasKeys = true
           const f = field && field.length > 0 ? field + '.' + key : key
           if (props[key] === true) {
-            // logger.info(`key: ${key} field ${f}`)
             if (
               !getByType(result, schema, id, f, language, version, includeMeta)
             ) {

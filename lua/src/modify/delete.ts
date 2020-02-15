@@ -29,6 +29,14 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   r.del(id + '._depth')
   sendEvent(id, '', 'delete')
 
+  const vals = r.hgetall(id)
+  for (let i = 0; i < vals.length; i += 2) {
+    // found a set value, cleaning up the set key
+    if (vals[i + 1] === '___selva_$set') {
+      r.del(id + '.' + vals[i])
+    }
+  }
+
   // returns true if it existed
   return r.del(id) > 0
 }

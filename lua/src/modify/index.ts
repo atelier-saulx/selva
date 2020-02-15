@@ -85,19 +85,20 @@ function setInternalArrayStructure(
 
   if (isArray(value)) {
     resetSet(id, field, value, update, hierarchy)
-    return
-  }
-
-  if (value.$value) {
+  } else if (value.$value) {
     resetSet(id, field, value, update, hierarchy)
-    return
+  } else {
+    if (value.$add) {
+      addToSet(id, field, value.$add, update, hierarchy)
+    }
+    if (value.$delete) {
+      removeFromSet(id, field, value.$delete, hierarchy)
+    }
   }
 
-  if (value.$add) {
-    addToSet(id, field, value.$add, update, hierarchy)
-  }
-  if (value.$delete) {
-    removeFromSet(id, field, value.$delete, hierarchy)
+  // if it's an object field, also set a set marker
+  if (field.indexOf('.') !== -1) {
+    redis.hset(id, field, '___selva_$set')
   }
 
   sendEvent(id, field, 'update')
