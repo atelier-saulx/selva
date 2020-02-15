@@ -7,6 +7,7 @@ export type FilterAST = {
   $operator: '=' | '>' | '<' | '..' | '!=' | 'distance'
   $value: Value
   $search: string[]
+  hasNow?: true
 }
 
 export type Fork = {

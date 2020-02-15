@@ -96,6 +96,7 @@ function parseSubscriptions(
   getOptions: GetOptions,
   traverse?: string | string[]
 ) {
+  logger.info('PARSE SUBSCRIPTIONS')
   let sub: QuerySubscription | undefined
 
   // FIXME: prob better to just do an isEqual check
@@ -121,6 +122,7 @@ function parseSubscriptions(
   // getOptions
   // recurse trough getOptions
 
+  logger.info('META.AST', meta.ast)
   if (meta.ast) {
     parseFork(meta.ast, sub)
     // INVERSE QUERY HERE
