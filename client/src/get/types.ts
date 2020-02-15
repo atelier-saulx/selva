@@ -6,6 +6,7 @@ export type Inherit =
       $type?: string | string[]
       $name?: string | string[]
       $item?: Id | Id[]
+      $merge: boolean
       $required?: Id | Id[]
     }
 

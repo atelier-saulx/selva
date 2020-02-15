@@ -298,7 +298,7 @@ export default function inherit(
         version,
         includeMeta,
         fieldFrom,
-        true,
+        inherit.$merge !== undefined ? inherit.$merge : true,
         (ancestor: Id) => {
           for (const type of types) {
             if (type === getTypeFromId(ancestor)) {
@@ -321,7 +321,7 @@ export default function inherit(
         version,
         includeMeta,
         fieldFrom,
-        true,
+        inherit.$merge !== undefined ? inherit.$merge : true,
         (ancestor: Id) => {
           for (const name of names) {
             if (name === getName(ancestor)) {
@@ -346,6 +346,20 @@ export default function inherit(
         language,
         version,
         includeMeta
+      )
+    } else if (inherit.$merge !== undefined) {
+      // if only merge specified, same as inherit: true with merge off
+      return setFromAncestors(
+        getField,
+        result,
+        schema,
+        id,
+        field,
+        language,
+        version,
+        includeMeta,
+        fieldFrom,
+        inherit.$merge
       )
     }
 
