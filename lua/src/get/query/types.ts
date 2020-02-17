@@ -38,4 +38,5 @@ export type QuerySubscription = {
   fields: {
     [key: string]: true
   }
+  time?: { nextRefresh: number }
 }

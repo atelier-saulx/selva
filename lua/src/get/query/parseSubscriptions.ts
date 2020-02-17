@@ -215,6 +215,10 @@ function parseSubscriptions(
       if (earliestId) {
         const time = redis.call('hget', earliestId, timestampFilters[0].$field)
         logger.info('NEXT TIMESTAMP', time)
+
+        sub.time = {
+          nextRefresh: tonumber(time)
+        }
       }
     }
   } else {
