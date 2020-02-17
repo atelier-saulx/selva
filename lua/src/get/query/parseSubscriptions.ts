@@ -162,12 +162,10 @@ function parseSubscriptions(
   // getOptions
   // recurse trough getOptions
 
-  logger.info('META.AST', meta.ast)
   if (meta.ast) {
     const invertedAst: Fork = { isFork: meta.ast.isFork }
     const timestampFilters: FilterAST[] = []
     parseFork(meta.ast, sub, invertedAst, timestampFilters)
-    logger.info('INVERTED', invertedAst)
     // TODO: the more I think about this,
     // the less senes query inversion actually starts to make
     // we could make it much more general if we just change all conditions to > where 'now' is used
@@ -201,20 +199,14 @@ function parseSubscriptions(
         invertedSearch,
         invertedAst
       )
-      logger.info('GET OPTIONS', getOptions)
-      logger.info('INVERTED SEARCH STRING', invertedSearch)
-      logger.info('SEARCH ARGS', invertedArgs)
-      logger.info('TS FIELD', timestampFilters[0].$field)
       const invertedSearchResults: string[] = redis.call(
         'ft.search',
         'default',
         ...invertedArgs
       )
-      logger.info('RESULTS', invertedSearchResults)
       const earliestId = invertedSearchResults[1]
       if (earliestId) {
         const time = redis.call('hget', earliestId, timestampFilters[0].$field)
-        logger.info('NEXT TIMESTAMP', time)
 
         sub.time = {
           nextRefresh: tonumber(time)
