@@ -66,7 +66,7 @@ const addField = (filter: FilterAST, language: string = 'en'): string => {
         const suggestion: string[] = redis.pcall(
           'ft.sugget',
           `sug_${language}`,
-          words[i],
+          words[i].toLowerCase(),
           'MAX',
           '20'
         )

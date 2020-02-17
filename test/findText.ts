@@ -168,7 +168,7 @@ test.serial.only('find - find with suggestion', async t => {
     type: 'league',
     name: 'league 1',
     title: {
-      en: 'nice league'
+      en: 'a nice league'
     }
   })
 

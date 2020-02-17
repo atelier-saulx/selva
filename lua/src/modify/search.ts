@@ -103,7 +103,7 @@ export function addFieldToSearch(
 
           if (index[fieldToCheck][0] === 'TEXT-LANGUAGE-SUG') {
             // if suggestion, also add to dictionary
-            const words = splitString(value, ' ')
+            const words = splitString(value.toLowerCase(), ' ')
             for (let i = words.length - 1; i >= 0; i--) {
               let searchTerms: string = ''
               for (let j = 0; j <= i; j++) {
@@ -122,6 +122,8 @@ export function addFieldToSearch(
                 searchTerms.substr(0, searchTerms.length - 1),
                 tostring(i + 1)
               )
+
+              redis.pcall('ft.sugadd', `sug_${lang}`, words[i], '1')
             }
           }
         }
