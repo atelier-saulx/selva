@@ -1,9 +1,11 @@
-import { Meta, QuerySubscription, Fork } from './types'
+import { FilterAST, Meta, QuerySubscription, Fork } from './types'
 import * as logger from '../../logger'
 import { isFork } from './util'
 import { getPrefixFromType } from '../../typeIdMapping'
 import { indexOf, isArray, joinString } from '../../util'
 import { GetOptions } from '~selva/get/types'
+import createSearchString from './createSearchString'
+import createSearchArgs from './createSearchArgs'
 
 const addType = (type: string | number, arr: string[]) => {
   const prefix = getPrefixFromType(tostring(type))
@@ -12,14 +14,31 @@ const addType = (type: string | number, arr: string[]) => {
   }
 }
 
-function parseFork(ast: Fork, sub: QuerySubscription) {
-  const list = ast.$and || ast.$or
+function parseFork(
+  ast: Fork,
+  sub: QuerySubscription,
+  invertedAst: Fork,
+  timestampFilters: FilterAST[]
+) {
+  let list: (Fork | FilterAST)[] = []
+  let invertedAstList: (Fork | FilterAST)[] = []
+  if (ast.$and) {
+    list = ast.$and
+    invertedAst.$and = invertedAstList = list = ast.$and
+  } else if (ast.$or) {
+    list = ast.$or
+    invertedAst.$or = invertedAstList
+  }
+
   if (list) {
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
       if (isFork(item)) {
-        parseFork(item, sub)
+        const inverted: Fork = { isFork: true }
+        invertedAstList[i] = inverted
+        parseFork(item, sub, inverted, timestampFilters)
       } else {
+        let inverted = item
         if (item.$field === 'type') {
           if (!sub.type) {
             sub.type = []
@@ -51,15 +70,36 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
           if (!sub.ids) {
             sub.ids = {}
           }
+
           const value = !isArray(item.$value) ? [item.$value] : item.$value
           for (let j = 0; j < value.length; j++) {
             sub.ids[value[j]] = true
           }
+        } else if (item.hasNow) {
+          timestampFilters[timestampFilters.length] = item
+
+          // invert ast change
+          inverted = {
+            $field: item.$field,
+            $operator:
+              item.$operator === '<'
+                ? '>'
+                : item.$operator === '>'
+                ? '<'
+                : item.$operator,
+            $value: item.$value,
+            $search: item.$search,
+            hasNow: true
+          }
+
+          sub.fields[item.$field] = true
           // dont even know what to do here :D
           // prob need to add the traverse options and not the ids
         } else {
           sub.fields[item.$field] = true
         }
+
+        invertedAstList[i] = inverted
       }
     }
   }
@@ -124,8 +164,56 @@ function parseSubscriptions(
 
   logger.info('META.AST', meta.ast)
   if (meta.ast) {
-    parseFork(meta.ast, sub)
+    const invertedAst: Fork = { isFork: meta.ast.isFork }
+    const timestampFilters: FilterAST[] = []
+    parseFork(meta.ast, sub, invertedAst, timestampFilters)
+    logger.info('INVERTED', invertedAst)
+    // TODO: the more I think about this,
+    // the less senes query inversion actually starts to make
+    // we could make it much more general if we just change all conditions to > where 'now' is used
+    // and look up the closest item
+    // that way we also don't really need to invert the conditions and don't have to worry
+    // about nesting as much at least
+    // or more complex logical operators
+    // TODO:
+    // create search string from the inverted ast
+    // create search args with sort by nearest time
+    // range [0, 1]
     // INVERSE QUERY HERE
+    if (timestampFilters.length >= 1) {
+      const [invertedSearch] = createSearchString(invertedAst)
+      // TODO: when multiple timestamp columns need to invert logical operator in their context
+      // also need to do something about the sort in that case
+      // like maybe we can just preserve whatever condition has > 'now'
+      const invertedArgs = createSearchArgs(
+        {
+          $list: {
+            $sort: {
+              $field: timestampFilters[0].$field, // it's actually not so easy to decide which timestamp field should be the basis of sorting
+              $order: 'asc'
+            },
+            $range: [0, 1]
+          }
+        },
+        invertedSearch,
+        invertedAst
+      )
+      logger.info('GET OPTIONS', getOptions)
+      logger.info('INVERTED SEARCH STRING', invertedSearch)
+      logger.info('SEARCH ARGS', invertedArgs)
+      logger.info('TS FIELD', timestampFilters[0].$field)
+      const invertedSearchResults: string[] = redis.call(
+        'ft.search',
+        'default',
+        ...invertedArgs
+      )
+      logger.info('RESULTS', invertedSearchResults)
+      const earliestId = invertedSearchResults[1]
+      if (earliestId) {
+        const time = redis.call('hget', earliestId, timestampFilters[0].$field)
+        logger.info('NEXT TIMESTAMP', time)
+      }
+    }
   } else {
     // need to check if TYPE is there
     // no qeury on fields etc easy

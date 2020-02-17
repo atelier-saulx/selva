@@ -57,7 +57,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('find - live', async t => {
+test.serial.skip('find - live', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
@@ -111,6 +111,87 @@ test.serial('find - live', async t => {
                 {
                   $field: 'endTime',
                   $operator: '>',
+                  $value: 'now'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).$meta.query
+  )
+})
+
+test.serial('find - already started', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    type: 'match',
+    name: 'started 5m ago',
+    startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
+    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+  })
+
+  await client.set({
+    type: 'match',
+    name: 'started 2m ago',
+    startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
+    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+  })
+
+  await client.set({
+    type: 'match',
+    name: 'started 2h ago',
+    startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
+    endTime: Date.now() - 60 * 60 * 1000 // ended 1 hour ago
+  })
+
+  await client.set({
+    $id: 'maFuture',
+    type: 'match',
+    name: 'starts in 1h',
+    startTime: Date.now() + 1 * 60 * 60 * 1000, // starts in 1 hour
+    endTime: Date.now() + 2 * 60 * 60 * 1000 // ends in 2 hours
+  })
+
+  await client.set({
+    $id: 'maLaterFuture',
+    type: 'match',
+    name: 'starts in 2h',
+    startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 1 hour
+    endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
+  })
+
+  console.log(await client.redis.hgetall(match1))
+
+  console.log(
+    await client.get({
+      $id: 'root',
+      children: {
+        name: true,
+        startTime: true,
+        endTime: true,
+        $list: {}
+      }
+    })
+  )
+
+  console.log(
+    (
+      await client.get({
+        $includeMeta: true,
+        $id: 'root',
+        items: {
+          name: true,
+          value: true,
+          $list: {
+            $sort: { $field: 'startTime', $order: 'desc' },
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'startTime',
+                  $operator: '<',
                   $value: 'now'
                 }
               ]
