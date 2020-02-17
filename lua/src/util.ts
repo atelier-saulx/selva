@@ -180,3 +180,12 @@ export function now(): number {
   const [sec, micro] = redis.call('time')
   return Math.floor(tonumber(sec) / 1000 + tonumber(micro) * 1000)
 }
+
+export function isTextIndex(x: string[]) {
+  if (x[0] === 'TEXT-LANGUAGE' || x[0] === 'TEXT-LANGUAGE-SUG') {
+    return true
+  }
+
+  return false
+}
+

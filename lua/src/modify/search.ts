@@ -1,6 +1,6 @@
 import { getSearchIndexes } from '../schema/index'
 import * as logger from '../logger'
-import { splitString } from '../util'
+import { splitString, isTextIndex, joinString } from '../util'
 
 const mapLanguages = (lang: string): string => {
   lang = splitString(lang, '_')[0]
@@ -81,8 +81,9 @@ export function addFieldToSearch(
       if (lastDotIndex) {
         const fieldToCheck = field.substring(0, lastDotIndex)
         if (index[fieldToCheck]) {
-          if (index[fieldToCheck][0] === 'TEXT-LANGUAGE') {
-            const lang = field.substring(lastDotIndex + 1)
+          const lang = field.substring(lastDotIndex + 1)
+
+          if (isTextIndex(index[fieldToCheck])) {
             const mapped = mapLanguages(lang)
             redis.pcall(
               'ft.add',
@@ -98,6 +99,24 @@ export function addFieldToSearch(
               field,
               value
             )
+          }
+
+          if (index[fieldToCheck][0] === 'TEXT-LANGUAGE-SUG') {
+            // if suggestion, also add to dictionary
+            const words = splitString('value', ' ')
+            for (let i = words.length - 1; i >= 0; i--) {
+              const searchTerms: string[] = []
+              for (let j = 0; j <= i; j++) {
+                searchTerms[i] = words[i]
+              }
+
+              redis.pcall(
+                'ft.sugadd',
+                `sug_${lang}`,
+                joinString(searchTerms, ' '),
+                '1'
+              )
+            }
           }
         }
       }

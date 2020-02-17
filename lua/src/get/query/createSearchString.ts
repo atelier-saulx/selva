@@ -50,6 +50,14 @@ const addField = (filter: FilterAST, language: string = 'en'): string => {
 
       return `(@${filter.$field}\\.${language}:(${filter.$value}))`
     }
+  } else if (type === 'TEXT-LANGUAGE-SUG') {
+    if (filter.$operator === '=') {
+      if (isArray(filter.$value)) {
+        filter.$value = `${joinAny(filter.$value, ' ')}`
+      }
+
+      return `(@${filter.$field}\\.${language}:(${filter.$value}))`
+    }
   } else if (type === 'GEO') {
     if (filter.$operator === 'distance' && isArray(filter.$value)) {
       const [lon, lat, distance, units] = filter.$value

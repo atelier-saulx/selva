@@ -34,13 +34,28 @@ export type SearchIndexes = Record<string, SearchSchema>
 export type Search =
   | {
       index?: string
-      type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE' | 'TEXT-LANGUAGE')[]
+      type: (
+        | 'TAG'
+        | 'TEXT'
+        | 'NUMERIC'
+        | 'SORTABLE'
+        | 'TEXT-LANGUAGE'
+        | 'TEXT-LANGUAGE-SUG'
+      )[]
     }
   | true
 
 export type SearchRaw = {
   index?: string
-  type: ('TAG' | 'TEXT' | 'NUMERIC' | 'SORTABLE' | 'TEXT-LANGUAGE' | 'GEO')[]
+  type: (
+    | 'TAG'
+    | 'TEXT'
+    | 'NUMERIC'
+    | 'SORTABLE'
+    | 'TEXT-LANGUAGE'
+    | 'GEO'
+    | 'TEXT-LANGUAGE-SUG'
+  )[]
 }
 
 export type FieldSchemaObject = {
