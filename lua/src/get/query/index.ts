@@ -87,7 +87,7 @@ const parseQuery = (
     }
   }
   if (resultFork) {
-    const [q, err] = createSearchString(resultFork)
+    const [q, err] = createSearchString(resultFork, language)
     const query: string = q.substring(1, q.length - 1)
     if (err) {
       return [{ results }, err]

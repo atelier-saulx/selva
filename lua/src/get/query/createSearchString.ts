@@ -18,7 +18,7 @@ const returnNumber = (filter, value: Value): string => {
   return ''
 }
 
-const addField = (filter: FilterAST): string => {
+const addField = (filter: FilterAST, language: string = 'en'): string => {
   // depends on field type
   const type = filter.$search && filter.$search[0]
   const operator = filter.$operator
@@ -42,10 +42,14 @@ const addField = (filter: FilterAST): string => {
     } else {
       return returnNumber(filter, filter.$value)
     }
-  } else if (type === 'TEXT') {
-    // equals will be a partial here
-    // DO THINGS
-    // INCLUDE LANGUAGE ETC
+  } else if (type === 'TEXT-LANGUAGE') {
+    if (filter.$operator === '=') {
+      if (isArray(filter.$value)) {
+        filter.$value = `${joinAny(filter.$value, ' ')}`
+      }
+
+      return `(@${filter.$field}\\.${language}:(${filter.$value}))`
+    }
   } else if (type === 'GEO') {
     if (filter.$operator === 'distance' && isArray(filter.$value)) {
       const [lon, lat, distance, units] = filter.$value
@@ -55,13 +59,16 @@ const addField = (filter: FilterAST): string => {
   return ''
 }
 
-function createSearchString(filters: Fork): [string, string | null] {
+function createSearchString(
+  filters: Fork,
+  language?: string
+): [string, string | null] {
   const searchString: string[] = []
   if (filters.$and) {
     for (let filter of filters.$and) {
       if (!isFork(filter)) {
         if (filter.$field !== 'id') {
-          searchString[searchString.length] = addField(filter)
+          searchString[searchString.length] = addField(filter, language)
         }
       } else {
         const [nestedSearch, err] = createSearchString(filter)
@@ -82,7 +89,7 @@ function createSearchString(filters: Fork): [string, string | null] {
         searchString[searchString.length] = nestedSearch
       } else if (!isFork(filter)) {
         if (filter.$field !== 'id') {
-          searchString[searchString.length] = addField(filter)
+          searchString[searchString.length] = addField(filter, language)
         }
       } else {
         const [nestedSearch, err] = createSearchString(filter)
