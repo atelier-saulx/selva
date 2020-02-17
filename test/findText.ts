@@ -29,7 +29,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text', search: true },
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       }
@@ -168,7 +168,7 @@ test.serial.only('find - find with suggestion', async t => {
     type: 'league',
     name: 'league 1',
     title: {
-      en: 'a nice league'
+      en: 'nice league'
     }
   })
 
@@ -200,7 +200,7 @@ test.serial.only('find - find with suggestion', async t => {
                 {
                   $field: 'title',
                   $operator: '=',
-                  $value: 'greatest league'
+                  $value: 'great'
                 }
               ]
             }
@@ -231,7 +231,7 @@ test.serial.only('find - find with suggestion', async t => {
                 {
                   $field: 'title',
                   $operator: '=',
-                  $value: 'nice league'
+                  $value: 'nic'
                 }
               ]
             }
