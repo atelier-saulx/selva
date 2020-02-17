@@ -176,11 +176,6 @@ function parseSubscriptions(
     // might end up invalidating too quickly, but at least it works
     // and can be optimized if we do a better job figuring out which field
     // is the important one, which we'd need to do anyways
-    // TODO:
-    // create search string from the inverted ast
-    // create search args with sort by nearest time
-    // range [0, 1]
-    // INVERSE QUERY HERE
     if (timestampFilters.length >= 1) {
       const [invertedSearch] = createSearchString(invertedAst)
       // TODO: when multiple timestamp columns need to invert logical operator in their context
