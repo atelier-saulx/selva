@@ -114,13 +114,13 @@ export function addFieldToSearch(
                 'ft.sugadd',
                 `sug_${lang}`,
                 searchTerms.substr(0, searchTerms.length - 1),
-                i
+                '1'
               )
               redis.pcall(
                 'ft.sugadd',
                 `sug_${lang}`,
                 searchTerms.substr(0, searchTerms.length - 1),
-                tostring(i + 1)
+                '1'
               )
 
               redis.pcall('ft.sugadd', `sug_${lang}`, words[i], '1')
