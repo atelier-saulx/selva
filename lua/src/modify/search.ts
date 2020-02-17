@@ -110,20 +110,28 @@ export function addFieldToSearch(
                 searchTerms += words[j] + ' '
               }
 
-              logger.info(
-                'ft.sugadd',
-                `sug_${lang}`,
-                searchTerms.substr(0, searchTerms.length - 1),
-                '1'
-              )
-              redis.pcall(
-                'ft.sugadd',
-                `sug_${lang}`,
-                searchTerms.substr(0, searchTerms.length - 1),
+              const str = searchTerms.substr(0, searchTerms.length - 1)
+
+              const current: number = redis.call(
+                'hincrby',
+                `sug_${lang}_counts`,
+                str,
                 '1'
               )
 
-              redis.pcall('ft.sugadd', `sug_${lang}`, words[i], '1')
+              if (current === 1) {
+                logger.info('ft.sugadd', `sug_${lang}`, str, '1')
+                redis.pcall('ft.sugadd', `sug_${lang}`, str, '1')
+
+                redis.pcall('ft.sugadd', `sug_${lang}`, words[i], '1')
+              } else {
+                logger.info(
+                  `ft.sugadd -- exists, incrementing to ${current}`,
+                  `sug_${lang}`,
+                  str,
+                  '1'
+                )
+              }
             }
           }
         }
