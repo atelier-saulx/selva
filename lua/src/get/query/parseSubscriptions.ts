@@ -175,6 +175,9 @@ function parseSubscriptions(
     // that way we also don't really need to invert the conditions and don't have to worry
     // about nesting as much at least
     // or more complex logical operators
+    // might end up invalidating too quickly, but at least it works
+    // and can be optimized if we do a better job figuring out which field
+    // is the important one, which we'd need to do anyways
     // TODO:
     // create search string from the inverted ast
     // create search args with sort by nearest time
