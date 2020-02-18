@@ -87,16 +87,31 @@ const parseQuery = (
     }
   }
   if (resultFork) {
-    const [q, err] = createSearchString(resultFork, language)
-    const query: string = q.substring(1, q.length - 1)
-    if (err) {
-      return [{ results }, err]
+    const idMap: Record<string, true> = {}
+    const [queries, err] = createSearchString(resultFork, language)
+    logger.info('QUERIES', queries)
+    for (const q of queries) {
+      const query: string = q.substring(1, q.length - 1)
+      if (err) {
+        return [{ results }, err]
+      }
+
+      const args = createSearchArgs(getOptions, query, resultFork)
+      printAst(resultFork, args)
+      const queryResult: string[] = redis.call('ft.search', 'default', ...args)
+
+      if (queryResult) {
+        logger.info('RESULT', queryResult)
+        for (let i = 1; i < queryResult.length; i++) {
+          logger.info('yesh', queryResult[i])
+          idMap[queryResult[i]] = true
+        }
+      }
     }
-    // TODO: make this createSearch and returns an array, we run all the queries (only for suggestions really)
-    const args = createSearchArgs(getOptions, query, resultFork)
-    printAst(resultFork, args)
-    const queryResult: string[] = redis.call('ft.search', 'default', ...args)
-    resultIds = queryResult
+
+    for (const id in idMap) {
+      resultIds[resultIds.length] = id
+    }
   } else if (getOptions.$list) {
     resultIds = parseList(resultIds, getOptions.$list)
     if (resultIds.length === 0) {
@@ -110,7 +125,7 @@ const parseQuery = (
     if (find && find.$find) {
       // nested find
       if (getOptions.$list) {
-        table.remove(resultIds, 1)
+        // table.remove(resultIds, 1)
       }
       const opts: GetOptions = { id: true }
       for (let key in getOptions) {
@@ -157,7 +172,7 @@ const parseQuery = (
         }
       }
     } else {
-      for (let i = 1; i < resultIds.length; i++) {
+      for (let i = 0; i < resultIds.length; i++) {
         const result: GetResult =
           includeMeta && getResult && getResult.$meta
             ? { $meta: getResult.$meta }

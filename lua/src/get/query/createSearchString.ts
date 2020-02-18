@@ -24,7 +24,10 @@ const returnNumber = (filter, value: Value): string => {
   return ''
 }
 
-const addField = (filter: FilterAST, language: string = 'en'): string => {
+const addField = (
+  filter: FilterAST,
+  language: string = 'en'
+): string | string[] => {
   // depends on field type
   const type = filter.$search && filter.$search[0]
   const operator = filter.$operator
@@ -78,6 +81,7 @@ const addField = (filter: FilterAST, language: string = 'en'): string => {
           'MAX',
           '20'
         )
+        logger.info('sugget', suggestion)
 
         for (let j = 0; j < suggestion.length; j++) {
           suggestions[suggestions.length] = suggestion[j]
@@ -85,13 +89,16 @@ const addField = (filter: FilterAST, language: string = 'en'): string => {
       }
 
       if (suggestions.length > 0) {
-        let searchStr = ''
-        for (const suggestion of suggestions) {
-          searchStr +=
-            `(@___escaped\\:${filter.$field}\\.${language}:(${suggestion}))` +
-            '|'
+        let searchStrs: string[] = []
+        for (let i = 0; i < suggestions.length; i++) {
+          const suggestion = suggestions[i]
+
+          searchStrs[
+            i
+          ] = `(@___escaped\\:${filter.$field}\\.${language}:(${suggestion}))`
         }
-        return searchStr.substr(0, searchStr.length - 1)
+
+        return searchStrs
       }
 
       return `(@${filter.$field}\\.${language}:(${filter.$value}))`
@@ -108,8 +115,8 @@ const addField = (filter: FilterAST, language: string = 'en'): string => {
 function createSearchString(
   filters: Fork,
   language?: string
-): [string, string | null] {
-  const searchString: string[] = []
+): [string[], string | null] {
+  const searchString: (string | string[])[] = []
   if (filters.$and) {
     for (let filter of filters.$and) {
       if (!isFork(filter)) {
@@ -119,18 +126,51 @@ function createSearchString(
       } else {
         const [nestedSearch, err] = createSearchString(filter)
         if (err) {
-          return ['', err]
+          return [[], err]
         }
         searchString[searchString.length] = nestedSearch
       }
     }
-    return [`(${joinString(searchString, ' ')})`, null]
+
+    let results: string[] = ['']
+    let hasArrayComponent = false
+    for (let i = 0; i < searchString.length; i++) {
+      const component = searchString[i]
+
+      if (isArray(component)) {
+        if (hasArrayComponent) {
+          return [[], 'Only one suggestion index allowed per query']
+        }
+
+        hasArrayComponent = true
+        const before = results[0]
+        for (let j = 0; j < component.length; j++) {
+          if (!results[j]) {
+            results[j] = before
+          }
+
+          results[j] =
+            results[j] +
+            component[j] +
+            (i === searchString.length - 1 ? '' : ' ')
+        }
+      } else {
+        for (let j = 0; j < results.length; j++) {
+          results[j] =
+            results[j] +
+            searchString[i] +
+            (i === searchString.length - 1 ? '' : ' ')
+        }
+      }
+    }
+
+    return [results, null]
   } else if (filters.$or) {
     for (let filter of filters.$or) {
       if (isFork(filter) && filter.$or) {
         const [nestedSearch, err] = createSearchString(filter)
         if (err) {
-          return ['', err]
+          return [[], err]
         }
         searchString[searchString.length] = nestedSearch
       } else if (!isFork(filter)) {
@@ -140,14 +180,47 @@ function createSearchString(
       } else {
         const [nestedSearch, err] = createSearchString(filter)
         if (err) {
-          return ['', err]
+          return [[], err]
         }
         searchString[searchString.length] = nestedSearch
       }
     }
-    return [`(${joinString(searchString, '|')})`, null]
+
+    let hasArrayComponent = false
+    let results: string[] = ['']
+    for (let i = 0; i < searchString.length; i++) {
+      const component = searchString[i]
+
+      if (isArray(component)) {
+        if (hasArrayComponent) {
+          return [[], 'Only one suggestion index allowed per query']
+        }
+        hasArrayComponent = true
+
+        const before = results[0]
+        for (let j = 0; j < component.length; j++) {
+          if (!results[j]) {
+            results[j] = before
+          }
+
+          results[j] =
+            results[j] +
+            component[j] +
+            (i === searchString.length - 1 ? '' : '|')
+        }
+      } else {
+        for (let j = 0; j < results.length; j++) {
+          results[j] =
+            results[j] +
+            searchString[i] +
+            (i === searchString.length - 1 ? '' : '|')
+        }
+      }
+    }
+
+    return [results, null]
   }
-  return ['', 'No valid cases for createSearchString']
+  return [[], 'No valid cases for createSearchString']
 }
 
 export default createSearchString
