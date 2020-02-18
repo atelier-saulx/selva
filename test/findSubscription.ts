@@ -123,6 +123,7 @@ test.serial('subscription find', async t => {
   let cnt = 0
   const sub = obs.subscribe(d => {
     cnt++
+    console.log('furpy!', cnt, d)
   })
 
   await wait(300)
@@ -135,6 +136,13 @@ test.serial('subscription find', async t => {
 
   await wait(300)
   t.is(cnt, 2)
+
+  await client.set({
+    $id: matches[1].$id,
+    value: 8
+  })
+  await wait(300)
+  t.is(cnt, 3)
 
   sub.unsubscribe()
 

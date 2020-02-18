@@ -2,8 +2,7 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
-import { wait, dumpDb } from './assertions'
-import { RedisClient } from 'redis'
+import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -150,7 +149,12 @@ test.after(async _t => {
 
 test.serial('find - descendants', async t => {
   // simple nested - single query
-  const client = connect({ port })
+  const client = connect(
+    { port },
+    {
+      loglevel: 'info'
+    }
+  )
 
   // extra option in find is index or auto from fields
   let d = Date.now()
@@ -174,7 +178,7 @@ test.serial('find - descendants', async t => {
               $and: {
                 $operator: '=',
                 $field: 'status',
-                $value: [300, 2] // handle or
+                $value: [300, 2]
               },
               $or: {
                 $operator: '=',
