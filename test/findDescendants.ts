@@ -41,6 +41,8 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          flupriflu: { type: 'string' },
+          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           // need to warn if you change this!!!
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
@@ -65,6 +67,7 @@ test.before(async t => {
       if (i < 1000) {
         ch.push({
           type: 'match',
+          flupriflu: 'true',
           name: 'match' + i,
           status: i === 0 ? 2 : i > 1000 ? 100 : 300,
           parents: { $add: team1 }

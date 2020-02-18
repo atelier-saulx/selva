@@ -20,7 +20,6 @@ export type FieldType =
   | 'text'
   | 'id'
   | 'digest'
-  | 'timestamp'
   | 'url'
   | 'email'
   | 'phone'
