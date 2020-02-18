@@ -2,7 +2,7 @@ import { Id, FieldSchemaOther } from '~selva/schema/index'
 import { markForAncestorRecalculation } from './ancestors'
 import * as r from '../redis'
 import sendEvent from './events'
-import { stringEndsWith, splitString } from 'lua/src/util'
+import { stringEndsWith, splitString, stringStartsWith } from 'lua/src/util'
 import { getSchema } from 'lua/src/schema/index'
 import { getTypeFromId } from 'lua/src/typeIdMapping'
 import * as logger from '../logger'
@@ -94,7 +94,10 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   const vals = r.hgetall(id)
   for (let i = 0; i < vals.length; i += 2) {
     // FIXME: a bit hacky, always assumes we have english enabled
-    if (stringEndsWith(vals[i], '.en')) {
+    if (
+      stringEndsWith(vals[i], '.en') &&
+      !stringStartsWith(vals[i], '___escaped:')
+    ) {
       cleanUpSuggestions(id, vals[i])
     }
 

@@ -48,7 +48,8 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('find - exact text match on exact field', async t => {
+// TODO: this needs to use a non-TEXT-lANGUAGE-SUG field
+test.serial.skip('find - exact text match on exact field', async t => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({
@@ -161,7 +162,7 @@ test.serial('find - exact text match on exact field', async t => {
   )
 })
 
-test.serial.only('find - find with suggestion', async t => {
+test.serial('find - find with suggestion', async t => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({
@@ -273,3 +274,119 @@ test.serial.only('find - find with suggestion', async t => {
     ['league 1', 'league 2']
   )
 })
+
+test.serial(
+  'find - find with suggestion containing special characters',
+  async t => {
+    // simple nested - single query
+    const client = connect({ port }, { loglevel: 'info' })
+    await client.set({
+      type: 'league',
+      name: 'league 1',
+      title: {
+        en: 'äitin mussukoiden nappula liiga 😂👌'
+      }
+    })
+
+    await client.set({
+      type: 'league',
+      name: 'league 2',
+      title: {
+        en: '🐂 münchen mädness liiga 💥'
+      }
+    })
+
+    t.deepEqualIgnoreOrder(
+      (
+        await client.get({
+          $id: 'root',
+          $language: 'en',
+          id: true,
+          items: {
+            name: true,
+            $list: {
+              $find: {
+                $traverse: 'children',
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'league'
+                  },
+                  {
+                    $field: 'title',
+                    $operator: '=',
+                    $value: 'munch'
+                  }
+                ]
+              }
+            }
+          }
+        })
+      ).items.map(x => x.name),
+      ['league 2']
+    )
+
+    t.deepEqualIgnoreOrder(
+      (
+        await client.get({
+          $id: 'root',
+          $language: 'en',
+          id: true,
+          items: {
+            name: true,
+            $list: {
+              $find: {
+                $traverse: 'children',
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'league'
+                  },
+                  {
+                    $field: 'title',
+                    $operator: '=',
+                    $value: 'aiti'
+                  }
+                ]
+              }
+            }
+          }
+        })
+      ).items.map(x => x.name),
+      ['league 1']
+    )
+
+    t.deepEqualIgnoreOrder(
+      (
+        await client.get({
+          $id: 'root',
+          $language: 'en',
+          id: true,
+          items: {
+            name: true,
+            $list: {
+              $find: {
+                $traverse: 'children',
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'league'
+                  },
+                  {
+                    $field: 'title',
+                    $operator: '=',
+                    $value: 'liiga'
+                  }
+                ]
+              }
+            }
+          }
+        })
+      ).items.map(x => x.name),
+      ['league 1', 'league 2']
+    )
+  }
+)

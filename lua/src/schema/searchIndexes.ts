@@ -13,7 +13,7 @@ function createIndex(
     const value = schema[field]
     if (isTextIndex(value)) {
       for (let i = 0; i < languages.length; i++) {
-        args[args.length] = field + '.' + languages[i]
+        args[args.length] = '___escaped:' + field + '.' + languages[i]
         args[args.length] = 'TEXT'
         for (let i = 1; i < value.length; i++) {
           args[args.length] = value[i]
@@ -42,7 +42,7 @@ function alterIndex(
     if (isTextIndex(schema[field])) {
       const args = schema[field][1] ? ['TEXT', schema[field][1]] : ['TEXT']
       for (let i = 0; i < languages.length; i++) {
-        const langField = field + '.' + languages[i]
+        const langField = '___escaped:' + field + '.' + languages[i]
         const result = redis.pcall(
           'ft.alter',
           index,

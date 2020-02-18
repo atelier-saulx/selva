@@ -1,4 +1,10 @@
-import { isArray, joinAny, joinString, splitString } from '../../util'
+import {
+  isArray,
+  joinAny,
+  joinString,
+  splitString,
+  escapeSpecial
+} from '../../util'
 import { FilterAST, Fork, Value } from './types'
 import { isFork } from './util'
 import * as logger from '../../logger'
@@ -48,16 +54,18 @@ const addField = (filter: FilterAST, language: string = 'en'): string => {
         filter.$value = `${joinAny(filter.$value, ' ')}`
       }
 
-      return `(@${filter.$field}\\.${language}:(${filter.$value}))`
+      return `(@___escaped\\:${filter.$field}\\.${language}:(${filter.$value}))`
     }
   } else if (type === 'TEXT-LANGUAGE-SUG') {
     if (filter.$operator === '=') {
       let words: string[] = []
       if (!isArray(filter.$value)) {
         // filter.$value = `${joinAny(filter.$value, ' ')}`
-        words = splitString(tostring(filter.$value), ' ')
+        words = splitString(escapeSpecial(tostring(filter.$value)), ' ')
       } else {
-        words = <string[]>filter.$value
+        for (let i = 0; i < filter.$value.length; i++) {
+          words[i] = escapeSpecial(tostring(filter.$value[i]))
+        }
       }
 
       let suggestions: string[] = []
@@ -66,7 +74,7 @@ const addField = (filter: FilterAST, language: string = 'en'): string => {
         const suggestion: string[] = redis.pcall(
           'ft.sugget',
           `sug_${language}`,
-          words[i].toLowerCase(),
+          words[i],
           'MAX',
           '20'
         )
@@ -79,7 +87,9 @@ const addField = (filter: FilterAST, language: string = 'en'): string => {
       if (suggestions.length > 0) {
         let searchStr = ''
         for (const suggestion of suggestions) {
-          searchStr += `(@${filter.$field}\\.${language}:(${suggestion}))` + '|'
+          searchStr +=
+            `(@___escaped\\:${filter.$field}\\.${language}:(${suggestion}))` +
+            '|'
         }
         return searchStr.substr(0, searchStr.length - 1)
       }
