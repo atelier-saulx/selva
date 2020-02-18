@@ -89,7 +89,6 @@ const parseQuery = (
   if (resultFork) {
     const idMap: Record<string, true> = {}
     const [queries, err] = createSearchString(resultFork, language)
-    logger.info('QUERIES', queries)
     for (const q of queries) {
       const query: string = q.substring(1, q.length - 1)
       if (err) {
@@ -107,9 +106,7 @@ const parseQuery = (
           break
         }
 
-        logger.info('RESULT', queryResult)
         for (let i = 1; i < queryResult.length; i++) {
-          logger.info('yesh', queryResult[i])
           idMap[queryResult[i]] = true
         }
       }
@@ -131,7 +128,7 @@ const parseQuery = (
     if (find && find.$find) {
       // nested find
       if (getOptions.$list) {
-        // table.remove(resultIds, 1)
+        table.remove(resultIds, 1)
       }
       const opts: GetOptions = { id: true }
       for (let key in getOptions) {

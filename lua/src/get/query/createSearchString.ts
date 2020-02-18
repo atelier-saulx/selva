@@ -128,7 +128,7 @@ function createSearchString(
         if (err) {
           return [[], err]
         }
-        searchString[searchString.length] = nestedSearch
+        searchString[searchString.length] = nestedSearch[0]
       }
     }
 
@@ -172,7 +172,7 @@ function createSearchString(
         if (err) {
           return [[], err]
         }
-        searchString[searchString.length] = nestedSearch
+        searchString[searchString.length] = nestedSearch[0]
       } else if (!isFork(filter)) {
         if (filter.$field !== 'id') {
           searchString[searchString.length] = addField(filter, language)
@@ -182,12 +182,12 @@ function createSearchString(
         if (err) {
           return [[], err]
         }
-        searchString[searchString.length] = nestedSearch
+        searchString[searchString.length] = nestedSearch[0]
       }
     }
 
     let hasArrayComponent = false
-    let results: string[] = [')']
+    let results: string[] = ['(']
     for (let i = 0; i < searchString.length; i++) {
       const component = searchString[i]
 
