@@ -96,10 +96,7 @@ test.serial('subscription find', async t => {
     children: matches
   })
 
-  // teams
-  // league
   await wait(100)
-  console.log('----------------------------------------')
   const obs = await client.observe({
     items: {
       name: true,
@@ -126,11 +123,10 @@ test.serial('subscription find', async t => {
   let cnt = 0
   const sub = obs.subscribe(d => {
     cnt++
-    console.log('FIRES!', d, cnt)
   })
 
-  await wait(500)
-  console.log('----------------------------------------')
+  await wait(300)
+  t.is(cnt, 1)
 
   await client.set({
     $id: matches[0].$id,
@@ -138,8 +134,9 @@ test.serial('subscription find', async t => {
   })
 
   await wait(300)
+  t.is(cnt, 2)
+
   sub.unsubscribe()
-  console.log('----------------------------------------')
 
   const obs2 = await client.observe({
     $includeMeta: true,
@@ -180,11 +177,10 @@ test.serial('subscription find', async t => {
   let cnt2 = 0
   const sub2 = obs2.subscribe(d => {
     cnt2++
-    console.log('FIRES!2', cnt2)
   })
 
   await wait(300)
-  console.log('SET MORE----------------------------------------')
+  t.is(cnt2, 1)
 
   let matchTeam
   for (let i = 0; i < 10; i++) {
@@ -202,10 +198,9 @@ test.serial('subscription find', async t => {
   await Promise.all(matches.map(t => client.set(t)))
 
   await wait(300)
+  t.is(cnt2, 2)
 
-  // type when matching stuff
-
-  // add get fields to fields
+  sub2.unsubscribe()
 
   const obs3 = await client.observe({
     $id: matchTeam,
@@ -231,13 +226,11 @@ test.serial('subscription find', async t => {
     }
   })
 
+  let cnt3 = 0
   obs3.subscribe(() => {
-    console.log('FIRE 3')
+    cnt3++
   })
 
   await wait(300)
-
-  // add somethign to make it not fire
-
-  t.true(true)
+  t.is(cnt3, 1)
 })

@@ -2,17 +2,10 @@ import { createClient, RedisClient } from 'redis'
 import { SelvaClient } from '../../../client/src'
 import { GetOptions } from '../../../client/src/get/types'
 import { QuerySubscription } from '../../../lua/src/get/query/types'
-import {
-  Schema,
-  FieldSchemaObject,
-  FieldSchema
-} from '../../../client/src/schema'
+import { Schema, FieldSchema } from '../../../client/src/schema'
 import { createHash } from 'crypto'
 import query from './query'
-
-function isObjectLike(x: any): x is FieldSchemaObject {
-  return !!(x && x.properties)
-}
+import { isObjectLike } from './util'
 
 function makeAll(path: string, schema: Schema, opts: GetOptions): GetOptions {
   const newOpts: GetOptions = { ...opts }
