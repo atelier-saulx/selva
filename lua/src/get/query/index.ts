@@ -92,6 +92,7 @@ const parseQuery = (
     if (err) {
       return [{ results }, err]
     }
+    // TODO: make this createSearch and returns an array, we run all the queries (only for suggestions really)
     const args = createSearchArgs(getOptions, query, resultFork)
     printAst(resultFork, args)
     const queryResult: string[] = redis.call('ft.search', 'default', ...args)
