@@ -101,6 +101,12 @@ const parseQuery = (
       const queryResult: string[] = redis.call('ft.search', 'default', ...args)
 
       if (queryResult) {
+        if (queries.length === 1) {
+          table.remove(queryResult, 1)
+          resultIds = queryResult
+          break
+        }
+
         logger.info('RESULT', queryResult)
         for (let i = 1; i < queryResult.length; i++) {
           logger.info('yesh', queryResult[i])

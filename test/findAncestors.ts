@@ -69,7 +69,7 @@ test.after(async _t => {
 
 test.serial('find - ancestors', async t => {
   // simple nested - single query
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   const teams = []
   for (let i = 0; i < 11; i++) {

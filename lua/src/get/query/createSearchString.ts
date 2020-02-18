@@ -132,7 +132,7 @@ function createSearchString(
       }
     }
 
-    let results: string[] = ['']
+    let results: string[] = ['(']
     let hasArrayComponent = false
     for (let i = 0; i < searchString.length; i++) {
       const component = searchString[i]
@@ -152,14 +152,14 @@ function createSearchString(
           results[j] =
             results[j] +
             component[j] +
-            (i === searchString.length - 1 ? '' : ' ')
+            (i === searchString.length - 1 ? ')' : ' ')
         }
       } else {
         for (let j = 0; j < results.length; j++) {
           results[j] =
             results[j] +
             searchString[i] +
-            (i === searchString.length - 1 ? '' : ' ')
+            (i === searchString.length - 1 ? ')' : ' ')
         }
       }
     }
@@ -187,7 +187,7 @@ function createSearchString(
     }
 
     let hasArrayComponent = false
-    let results: string[] = ['']
+    let results: string[] = [')']
     for (let i = 0; i < searchString.length; i++) {
       const component = searchString[i]
 
@@ -206,14 +206,14 @@ function createSearchString(
           results[j] =
             results[j] +
             component[j] +
-            (i === searchString.length - 1 ? '' : '|')
+            (i === searchString.length - 1 ? ')' : '|')
         }
       } else {
         for (let j = 0; j < results.length; j++) {
           results[j] =
             results[j] +
             searchString[i] +
-            (i === searchString.length - 1 ? '' : '|')
+            (i === searchString.length - 1 ? ')' : '|')
         }
       }
     }

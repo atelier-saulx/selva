@@ -147,7 +147,7 @@ test.after(async _t => {
 
 test.serial('find - descendants', async t => {
   // simple nested - single query
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   // extra option in find is index or auto from fields
   let d = Date.now()
