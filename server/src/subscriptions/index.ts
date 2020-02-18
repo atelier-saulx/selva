@@ -225,16 +225,7 @@ export default class SubscriptionManager {
 
       const eventName = channel.slice('___selva_events:'.length)
 
-      /*
-        this.queries
-        // also redis
-        // maybe keep in mem a bit
-      */
-
-      if (message === 'created') {
-        // console.log('created record with id', eventName)
-        // TODO(jim): add query specific handler here
-      } else if (message === 'delete') {
+      if (message === 'delete') {
         for (const field in this.subscriptionsByField) {
           if (field.startsWith(eventName)) {
             const subscriptionIds: Set<string> | undefined =
@@ -277,6 +268,7 @@ export default class SubscriptionManager {
         }
       }
 
+      // parses the query part (if it has queries)
       query(this, message, eventName)
     })
 
@@ -340,7 +332,9 @@ export default class SubscriptionManager {
         `___selva_subscription:${subscriptionId}`,
         JSON.stringify({ type: 'delete' }),
         (err, _reply) => {
-          console.error(err)
+          if (err) {
+            console.error(err)
+          }
         }
       )
 
@@ -417,7 +411,7 @@ export default class SubscriptionManager {
       `___selva_subscription:${subscriptionId}`,
       resultStr,
       (err, _reply) => {
-        console.error(err)
+        // console.error(err)
       }
     )
   }
