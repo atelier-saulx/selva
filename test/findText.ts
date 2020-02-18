@@ -347,6 +347,37 @@ test.serial(
                   {
                     $field: 'title',
                     $operator: '=',
+                    $value: 'madn'
+                  }
+                ]
+              }
+            }
+          }
+        })
+      ).items.map(x => x.name),
+      ['league 2']
+    )
+
+    t.deepEqualIgnoreOrder(
+      (
+        await client.get({
+          $id: 'root',
+          $language: 'en',
+          id: true,
+          items: {
+            name: true,
+            $list: {
+              $find: {
+                $traverse: 'children',
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'league'
+                  },
+                  {
+                    $field: 'title',
+                    $operator: '=',
                     $value: 'aiti'
                   }
                 ]
