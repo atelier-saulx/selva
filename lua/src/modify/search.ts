@@ -107,38 +107,37 @@ export function addFieldToSearch(
           if (index[fieldToCheck][0] === 'TEXT-LANGUAGE-SUG') {
             // if suggestion, also add to dictionary
             const words = splitString(escaped, ' ')
-            for (let i = words.length - 1; i >= 0; i--) {
+            for (let i = words.length - 2; i >= 0; i--) {
               let searchTerms: string = ''
-              for (let j = 0; j <= i; j++) {
+              for (let j = i; j < words.length; j++) {
                 searchTerms += words[j] + ' '
               }
 
               const str = searchTerms.substr(0, searchTerms.length - 1)
+              addSuggestion(str, lang)
+            }
 
-              const current: number = redis.call(
-                'hincrby',
-                `sug_${lang}_counts`,
-                str,
-                '1'
-              )
-
-              if (current === 1) {
-                logger.info('ft.sugadd', `sug_${lang}`, str, '1')
-                redis.pcall('ft.sugadd', `sug_${lang}`, str, '1')
-
-                redis.pcall('ft.sugadd', `sug_${lang}`, words[i], '1')
-              } else {
-                logger.info(
-                  `ft.sugadd -- exists, incrementing to ${current}`,
-                  `sug_${lang}`,
-                  str,
-                  '1'
-                )
-              }
+            for (const word of words) {
+              addSuggestion(word, lang)
             }
           }
         }
       }
     }
+  }
+}
+
+function addSuggestion(sug: string, lang: string) {
+  const current: number = redis.call('hincrby', `sug_${lang}_counts`, sug, '1')
+  if (current === 1) {
+    logger.info('ft.sugadd', `sug_${lang}`, sug, '1')
+    redis.pcall('ft.sugadd', `sug_${lang}`, sug, '1')
+  } else {
+    logger.info(
+      `ft.sugadd -- exists, incrementing to ${current}`,
+      `sug_${lang}`,
+      sug,
+      '1'
+    )
   }
 }
