@@ -9,4 +9,5 @@ declare module string {
     replace: string
   ): [string, number]
   function find(this: void, str: string, regex: string): null | number
+  function sub(this: void, str: string, start: number, end: number): string
 }

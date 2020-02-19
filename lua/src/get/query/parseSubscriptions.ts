@@ -17,28 +17,28 @@ const addType = (type: string | number, arr: string[]) => {
 function parseFork(
   ast: Fork,
   sub: QuerySubscription,
-  invertedAst: Fork,
+  newAst: Fork,
   timestampFilters: FilterAST[]
 ) {
   let list: (Fork | FilterAST)[] = []
-  let invertedAstList: (Fork | FilterAST)[] = []
+  let newAstList: (Fork | FilterAST)[] = []
   if (ast.$and) {
     list = ast.$and
-    invertedAst.$and = invertedAstList = list = ast.$and
+    newAst.$and = newAstList
   } else if (ast.$or) {
     list = ast.$or
-    invertedAst.$or = invertedAstList
+    newAst.$or = newAstList
   }
 
   if (list) {
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
       if (isFork(item)) {
-        const inverted: Fork = { isFork: true }
-        invertedAstList[i] = inverted
-        parseFork(item, sub, inverted, timestampFilters)
+        const newNode: Fork = { isFork: true }
+        newAstList[i] = newNode
+        parseFork(item, sub, newNode, timestampFilters)
       } else {
-        let inverted = item
+        let newNode: FilterAST | null = item
         if (item.$field === 'type') {
           if (!sub.type) {
             sub.type = []
@@ -76,22 +76,10 @@ function parseFork(
             sub.ids[value[j]] = true
           }
         } else if (item.hasNow) {
+          // add to filters and omit from new ast
+          newNode = null
+
           timestampFilters[timestampFilters.length] = item
-
-          // invert ast change
-          inverted = {
-            $field: item.$field,
-            $operator:
-              item.$operator === '<'
-                ? '>'
-                : item.$operator === '>'
-                ? '<'
-                : item.$operator,
-            $value: item.$value,
-            $search: item.$search,
-            hasNow: true
-          }
-
           sub.fields[item.$field] = true
           // dont even know what to do here :D
           // prob need to add the traverse options and not the ids
@@ -99,7 +87,9 @@ function parseFork(
           sub.fields[item.$field] = true
         }
 
-        invertedAstList[i] = inverted
+        if (newNode) {
+          newAstList[i] = newNode
+        }
       }
     }
   }
@@ -163,25 +153,34 @@ function parseSubscriptions(
   // recurse trough getOptions
 
   if (meta.ast) {
-    const invertedAst: Fork = { isFork: meta.ast.isFork }
+    const newAst: Fork = { isFork: meta.ast.isFork }
     const timestampFilters: FilterAST[] = []
-    parseFork(meta.ast, sub, invertedAst, timestampFilters)
-    // TODO: the more I think about this,
-    // the less senes query inversion actually starts to make
-    // we could make it much more general if we just change all conditions to > where 'now' is used
-    // and look up the closest item
-    // that way we also don't really need to invert the conditions and don't have to worry
-    // about nesting as much at least
-    // or more complex logical operators
-    // might end up invalidating too quickly, but at least it works
-    // and can be optimized if we do a better job figuring out which field
-    // is the important one, which we'd need to do anyways
+    parseFork(meta.ast, sub, newAst, timestampFilters)
+
     if (timestampFilters.length >= 1) {
-      const [invertedSearch] = createSearchString(invertedAst)
+      const tsFork: WithRequired<Fork, '$or'> = { isFork: true, $or: [] }
+      for (let i = 0; i < timestampFilters.length; i++) {
+        const filter = timestampFilters[i]
+        tsFork.$or[i] = {
+          $field: filter.$field,
+          $search: filter.$search,
+          $value: filter.$value,
+          $operator: '>'
+        }
+      }
+
+      const withTime: WithRequired<Fork, '$and'> = {
+        isFork: true,
+        $and: [tsFork, newAst]
+      }
+
+      let [q] = createSearchString(withTime)
+
+      const search = string.sub(q, 2, q.length - 1)
       // TODO: when multiple timestamp columns need to invert logical operator in their context
       // also need to do something about the sort in that case
       // like maybe we can just preserve whatever condition has > 'now'
-      const invertedArgs = createSearchArgs(
+      const newArgs = createSearchArgs(
         {
           $list: {
             $sort: {
@@ -191,15 +190,17 @@ function parseSubscriptions(
             $range: [0, 1]
           }
         },
-        invertedSearch,
-        invertedAst
+        search,
+        withTime
       )
-      const invertedSearchResults: string[] = redis.call(
+
+      const newSearchResults: string[] = redis.pcall(
         'ft.search',
         'default',
-        ...invertedArgs
+        ...newArgs
       )
-      const earliestId = invertedSearchResults[1]
+
+      const earliestId = newSearchResults[1]
       if (earliestId) {
         const time = redis.call('hget', earliestId, timestampFilters[0].$field)
 

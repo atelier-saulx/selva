@@ -1,4 +1,4 @@
-import { isArray, joinAny, joinString } from '../../util'
+import { isArray, joinAny } from '../../util'
 import { FilterAST, Fork, Value } from './types'
 import { isFork } from './util'
 import * as logger from '../../logger'
@@ -49,13 +49,29 @@ const addField = (filter: FilterAST): string => {
   } else if (type === 'GEO') {
     if (filter.$operator === 'distance' && isArray(filter.$value)) {
       const [lon, lat, distance, units] = filter.$value
-      return `@${filter.$field}:[${lon} ${lat} ${distance} ${units}]`
+      return `(@${filter.$field}:[${lon} ${lat} ${distance} ${units}])`
     }
   }
   return ''
 }
 
-function createSearchString(filters: Fork): [string, string | null] {
+function joinSearchStrings(searchString: string[], delim: string): string {
+  let result: string = ''
+  for (let i = 0; i < searchString.length - 1; i++) {
+    if (searchString[i] !== '') {
+      result += searchString[i] + delim
+    }
+  }
+
+  result += searchString[searchString.length - 1]
+
+  return result
+}
+
+function createSearchString(
+  filters: Fork,
+  nested: boolean = false
+): [string, string | null] {
   const searchString: string[] = []
   if (filters.$and) {
     for (let filter of filters.$and) {
@@ -64,35 +80,65 @@ function createSearchString(filters: Fork): [string, string | null] {
           searchString[searchString.length] = addField(filter)
         }
       } else {
-        const [nestedSearch, err] = createSearchString(filter)
+        const [nestedSearch, err] = createSearchString(filter, true)
         if (err) {
           return ['', err]
         }
-        searchString[searchString.length] = nestedSearch
+
+        if (nestedSearch !== '') {
+          logger.info('nested', nestedSearch)
+          searchString[searchString.length] = nestedSearch
+        }
       }
     }
-    return [`(${joinString(searchString, ' ')})`, null]
+
+    if (searchString.length === 0) {
+      return ['', null]
+    }
+
+    if (searchString.length === 1) {
+      return [searchString[0], null]
+    }
+
+    return [`(${joinSearchStrings(searchString, ' ')})`, null]
   } else if (filters.$or) {
     for (let filter of filters.$or) {
       if (isFork(filter) && filter.$or) {
-        const [nestedSearch, err] = createSearchString(filter)
+        const [nestedSearch, err] = createSearchString(filter, true)
         if (err) {
           return ['', err]
         }
-        searchString[searchString.length] = nestedSearch
+
+        if (nestedSearch !== '') {
+          logger.info('nested', nestedSearch)
+          searchString[searchString.length] = nestedSearch
+        }
       } else if (!isFork(filter)) {
         if (filter.$field !== 'id') {
           searchString[searchString.length] = addField(filter)
         }
       } else {
-        const [nestedSearch, err] = createSearchString(filter)
+        const [nestedSearch, err] = createSearchString(filter, true)
         if (err) {
           return ['', err]
         }
-        searchString[searchString.length] = nestedSearch
+
+        if (nestedSearch !== '') {
+          logger.info('nested', nestedSearch)
+          searchString[searchString.length] = nestedSearch
+        }
       }
     }
-    return [`(${joinString(searchString, '|')})`, null]
+
+    if (searchString.length === 0) {
+      return ['', null]
+    }
+
+    if (searchString.length === 1) {
+      return [searchString[0], null]
+    }
+
+    return [`(${joinSearchStrings(searchString, '|')})`, null]
   }
   return ['', 'No valid cases for createSearchString']
 }
