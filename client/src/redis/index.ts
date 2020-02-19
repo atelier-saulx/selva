@@ -59,7 +59,7 @@ type RedisCommand = Resolvable & {
 
 export default class RedisClient extends RedisMethods {
   private connector: () => Promise<ConnectOptions>
-  private client: Redis
+  public client: Redis
   private buffer: RedisCommand[]
   private connected: boolean
   private inProgress: boolean

@@ -5,12 +5,8 @@ const attach = async (
   subsManager: SubscriptionManager,
   port: number
 ): Promise<void> => {
-  subsManager.sub.on('error', e => {
-    // console.error(e)
-  })
-  subsManager.pub.on('error', e => {
-    // console.error(e)
-  })
+  subsManager.sub.on('error', () => {})
+  subsManager.pub.on('error', () => {})
 
   let tm: NodeJS.Timeout
   try {
@@ -23,7 +19,6 @@ const attach = async (
             if (tm) {
               clearTimeout(tm)
             }
-
             resolve()
           }
         })
@@ -77,7 +72,11 @@ const attach = async (
   })
 
   // lua object change events
-  subsManager.sub.on('pmessage', async (_pattern, channel, message) => {
+
+  const prefixLength = '___selva_events:'.length
+
+  subsManager.sub.on('pmessage', (_pattern, channel, message) => {
+    // adds 2ms on
     subsManager.lastModifyEvent = Date.now()
     if (channel === '___selva_events:heartbeat') {
       return
@@ -87,21 +86,18 @@ const attach = async (
     // firing only once if multiple fields in subscription are changed
     const updatedSubscriptions: Record<string, true> = {}
 
-    const eventName = channel.slice('___selva_events:'.length)
+    const eventName = channel.slice(prefixLength)
 
     if (message === 'delete') {
       for (const field in subsManager.subscriptionsByField) {
         if (field.startsWith(eventName)) {
           const subscriptionIds: Set<string> | undefined =
             subsManager.subscriptionsByField[field] || new Set()
-
           for (const subscriptionId of subscriptionIds) {
             if (updatedSubscriptions[subscriptionId]) {
               continue
             }
-
             updatedSubscriptions[subscriptionId] = true
-
             subsManager.sendUpdate(subscriptionId, null, true)
           }
         }
@@ -113,26 +109,21 @@ const attach = async (
       for (let i = 0; i < parts.length; i++) {
         const subscriptionIds: Set<string> | undefined =
           subsManager.subscriptionsByField[field] || new Set()
-
         for (const subscriptionId of subscriptionIds) {
           if (updatedSubscriptions[subscriptionId]) {
             continue
           }
-
           updatedSubscriptions[subscriptionId] = true
-
           subsManager.sendUpdate(subscriptionId).catch(e => {
             console.error(e)
           })
         }
-
         if (i < parts.length - 1) {
           field += '.' + parts[i + 1]
         }
       }
     }
 
-    // parses the query part (if it has queries)
     query(subsManager, message, eventName)
   })
 
