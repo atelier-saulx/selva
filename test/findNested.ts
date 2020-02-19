@@ -84,7 +84,6 @@ test.serial('get nested results', async t => {
     children: matches
   })
 
-  // if not id id = root
   const result = await client.get({
     $includeMeta: true,
     items: {
@@ -101,12 +100,12 @@ test.serial('get nested results', async t => {
                 $field: 'type',
                 $operator: '=',
                 $value: 'team'
+              },
+              {
+                $field: 'value',
+                $operator: '!=',
+                $value: 2
               }
-              // {
-              //   $field: 'value',
-              //   $operator: '!=',
-              //   $value: 2
-              // }
             ]
           }
         }

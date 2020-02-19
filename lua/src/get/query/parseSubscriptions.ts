@@ -98,7 +98,6 @@ function parseSubscriptions(
 ) {
   let sub: QuerySubscription | undefined
 
-  // FIXME: prob better to just do an isEqual check
   const queryId = redis.sha1hex(cjson.encode(getOptions))
 
   for (let i = 0; i < querySubs.length; i++) {
@@ -123,7 +122,6 @@ function parseSubscriptions(
 
   if (meta.ast) {
     parseFork(meta.ast, sub)
-    // INVERSE QUERY HERE
   } else {
     // need to check if TYPE is there
     // no qeury on fields etc easy

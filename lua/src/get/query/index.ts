@@ -106,6 +106,9 @@ const parseQuery = (
   if (resultIds) {
     const find = getFind(getOptions)
 
+    logger.info(getOptions.$meta)
+
+    // need to do something here for nested queries
     if (find && find.$find) {
       // nested find
       if (getOptions.$list) {
@@ -129,7 +132,6 @@ const parseQuery = (
         opts.$list.$range = getOptions.$list.$range
       }
 
-      // meta is harder here..
       const [{ results: nestedResults }, err] = parseQuery(
         getField,
         schema,

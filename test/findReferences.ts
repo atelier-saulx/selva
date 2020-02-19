@@ -207,29 +207,11 @@ test.serial('find - references', async t => {
                 $value: 10
               }
             ]
-            // $find: {
-            //   $traverse: 'children',
-            //   $filter: {
-            //     $field: 'type',
-            //     $operator: '=',
-            //     $value: 'match'
-            //   },
-            //   $find: {
-            //     $traverse: 'related',
-            //     $filter: {
-            //       $field: 'type',
-            //       $operator: '=',
-            //       $value: 'match'
-            //     }
-            //   }
-            // }
           }
         }
       }
     }
   })
-
-  console.log(relatedMatchesLeagues)
 
   t.deepEqualIgnoreOrder(
     relatedMatchesLeagues,
