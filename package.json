@@ -1,5 +1,5 @@
 {
-  "name": "selva-client",
+  "name": "selva",
   "version": "0.0.1",
   "main": "dist/client/src/index.js",
   "scripts": {
