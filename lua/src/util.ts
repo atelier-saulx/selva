@@ -248,6 +248,8 @@ export function hasExistsIndex(search?: SearchRaw | string[]): boolean {
       return true
     }
   }
+
+  return false
 }
 
 export function isTextIndex(x: string[]) {
