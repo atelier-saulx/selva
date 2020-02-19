@@ -8,7 +8,8 @@ export default (
   payload: SetOptions,
   result: SetOptions,
   fields: FieldSchemaJson,
-  type: string
+  type: string,
+  $lang?: string
 ): void => {
   if (payload.$ref) {
     // TODO: verify that it references a json field
@@ -27,7 +28,8 @@ export default (
         type: 'object',
         properties: fields.properties
       },
-      type
+      type,
+      $lang
     )
     result[field] = JSON.stringify(obj)
   } else {

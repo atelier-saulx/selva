@@ -8,7 +8,8 @@ export default (
   payload: SetOptions,
   result: SetOptions,
   fields: FieldSchemaObject,
-  type: string
+  type: string,
+  $lang?: string
 ): void => {
   if (typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
@@ -37,7 +38,7 @@ export default (
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
 
-      fn(schema, key, payload[key], r, fields.properties[key], type)
+      fn(schema, key, payload[key], r, fields.properties[key], type, $lang)
     }
   }
 }

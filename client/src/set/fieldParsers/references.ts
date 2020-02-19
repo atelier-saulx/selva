@@ -18,9 +18,9 @@ const verifySimple = payload => {
   }
 }
 
-const parseObjectArray = (payload: any, schema: Schema) => {
+const parseObjectArray = (payload: any, schema: Schema, $lang?: string) => {
   if (Array.isArray(payload) && typeof payload[0] === 'object') {
-    return payload.map(ref => parseSetObject(ref, schema))
+    return payload.map(ref => parseSetObject(ref, schema, $lang))
   }
 }
 
@@ -30,20 +30,21 @@ export default (
   payload: SetOptions,
   result: SetOptions,
   _fields: FieldSchemaArrayLike,
-  _type: string
+  _type: string,
+  $lang?: string
 ): void => {
   if (typeof payload === 'object' && !Array.isArray(payload)) {
     result[field] = {}
     for (let k in payload) {
       if (k === '$add') {
-        const parsed = parseObjectArray(payload[k], schema)
+        const parsed = parseObjectArray(payload[k], schema, $lang)
         if (parsed) {
           result[field].$add = parsed
         } else if (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
-          result[field].$add = [parseSetObject(payload[k], schema)]
+          result[field].$add = [parseSetObject(payload[k], schema, $lang)]
         } else {
           result[field].$add = verifySimple(payload[k])
         }
@@ -61,6 +62,7 @@ export default (
       }
     }
   } else {
-    result[field] = parseObjectArray(payload, schema) || verifySimple(payload)
+    result[field] =
+      parseObjectArray(payload, schema, $lang) || verifySimple(payload)
   }
 }

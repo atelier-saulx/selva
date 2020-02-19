@@ -6,7 +6,8 @@ import { verifiers } from './fieldParsers/simple'
 
 export const parseSetObject = (
   payload: SetOptions,
-  schemas: Schema
+  schemas: Schema,
+  $lang?: string
 ): SetOptions => {
   const result: SetOptions = {}
 
@@ -18,6 +19,9 @@ export const parseSetObject = (
     payload.type = 'root'
   }
 
+  if (payload.$language) {
+    $lang = payload.$language
+  }
   const type = payload.type
 
   const schema = type === 'root' ? schemas.rootType : schemas.types[type]
@@ -50,6 +54,13 @@ export const parseSetObject = (
         }
         console.warn('$version is not implemented yet!')
         result[key] = payload[key]
+      } else if (key === '$language') {
+        if (
+          typeof payload[key] !== 'string' ||
+          String(payload[key]).length > 100
+        ) {
+          throw new Error(`Wrong type for language ${payload[key]}`)
+        }
       } else {
         throw new Error(`Wrong option on set object ${key}`)
       }
@@ -57,7 +68,7 @@ export const parseSetObject = (
       throw new Error(`Cannot find field ${key} in ${type} from set-object`)
     } else {
       const fn = fieldParsers[fields[key].type]
-      fn(schemas, key, payload[key], result, fields[key], type)
+      fn(schemas, key, payload[key], result, fields[key], type, $lang)
     }
   }
   return result
