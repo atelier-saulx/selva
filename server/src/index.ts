@@ -12,9 +12,6 @@ import {
 
 import SubscriptionManager from './subscriptions'
 
-// const persist = require('./persistent')
-// const cleanExit = require('./cleanExit')
-
 type Service = {
   port: number
   host: string

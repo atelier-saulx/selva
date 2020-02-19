@@ -240,5 +240,6 @@ test.serial('subscription find', async t => {
   })
 
   await wait(300)
+
   t.is(cnt3, 1)
 })

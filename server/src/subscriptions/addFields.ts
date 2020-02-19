@@ -23,10 +23,8 @@ function addFields(
         } else {
           fields.add('.' + opts.$field)
         }
-
         return
       }
-
       // FIXME: other special options missing? -- $ref needs to be handled on lua side
       continue
     }

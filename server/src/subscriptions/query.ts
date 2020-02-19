@@ -14,6 +14,10 @@ const membersContainsId = async (
       // make this a lua script perhaps -- very heavy
       for (let k = 0; k < value.length; k++) {
         const v = value[k]
+        if (v === 'root') {
+          return true
+        }
+        // prob beyyer to just get ancetors
         // becomes async shitty - much better to do this loop in lua...
         const x = await subsManager.client.redis.command(
           'zscore',
