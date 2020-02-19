@@ -1,5 +1,38 @@
 import globals from './globals'
 import { SearchRaw } from '../../client/src/schema/index'
+import * as logger from './logger'
+
+const SPECIAL_CHARS = {
+  165: 'a', // å
+  182: 'o', // ö
+  164: 'a', // ä
+  188: 'u', // ü
+  159: 'ss' // ß
+}
+
+function transformSupportedSpecialChars(str: string): string {
+  let maybeSpecial = false
+
+  let result: string = ''
+  for (let i = 0; i < str.length; i++) {
+    const charCode = string.byte(str[i])
+    if (charCode === 195) {
+      maybeSpecial = true
+    } else if (maybeSpecial && SPECIAL_CHARS[charCode]) {
+      result += SPECIAL_CHARS[charCode]
+      maybeSpecial = false
+    } else {
+      if (maybeSpecial) {
+        maybeSpecial = false
+        result += str[i - 1]
+      }
+
+      result += str[i]
+    }
+  }
+
+  return result
+}
 
 export const arrayIsEqual = (a: any[], b: any[]): boolean => {
   const len = a.length
@@ -129,6 +162,15 @@ export function markEmptyArraysInJSON(str: string): string {
   return str
 }
 
+export function escapeSpecial(str: string): string {
+  const transformed = transformSupportedSpecialChars(str.toLowerCase())
+  console.log('transformed', transformed)
+
+  // remove all unsupported alphanumerics
+  const [replaced] = string.gsub(transformed, '[^%w ]', '')
+  return replaced
+}
+
 export const isEqual = (a: any, b: any): boolean => {
   const typeA = type(a)
   if (typeA !== type(b)) {
@@ -205,6 +247,12 @@ export function hasExistsIndex(search?: SearchRaw | string[]): boolean {
     if (search[i] === 'EXISTS') {
       return true
     }
+  }
+}
+
+export function isTextIndex(x: string[]) {
+  if (x[0] === 'TEXT-LANGUAGE' || x[0] === 'TEXT-LANGUAGE-SUG') {
+    return true
   }
 
   return false

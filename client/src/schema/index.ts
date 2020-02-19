@@ -40,6 +40,7 @@ export type Search =
         | 'NUMERIC'
         | 'SORTABLE'
         | 'TEXT-LANGUAGE'
+        | 'TEXT-LANGUAGE-SUG'
       )[]
     }
   | true
@@ -54,6 +55,7 @@ export type SearchRaw = {
     | 'SORTABLE'
     | 'TEXT-LANGUAGE'
     | 'GEO'
+    | 'TEXT-LANGUAGE-SUG'
   )[]
 }
 

@@ -1,6 +1,7 @@
 import { SearchIndexes, SearchSchema, Schema } from '~selva/schema/index'
 import { hasExistsIndex } from '../util'
 import * as logger from '../logger'
+import { isTextIndex } from '../util'
 
 function createIndex(
   index: string,
@@ -11,9 +12,9 @@ function createIndex(
 
   for (const field in schema) {
     const value = schema[field]
-    if (value[0] === 'TEXT-LANGUAGE') {
+    if (isTextIndex(value)) {
       for (let i = 0; i < languages.length; i++) {
-        args[args.length] = field + '.' + languages[i]
+        args[args.length] = '___escaped:' + field + '.' + languages[i]
         args[args.length] = 'TEXT'
         for (let i = 1; i < value.length; i++) {
           if (value[i] !== 'EXISTS') {
@@ -48,10 +49,10 @@ function alterIndex(
   languages: string[]
 ): void {
   for (const field in schema) {
-    if (schema[field][0] === 'TEXT-LANGUAGE') {
+    if (isTextIndex(schema[field])) {
       const args = schema[field][1] ? ['TEXT', schema[field][1]] : ['TEXT']
       for (let i = 0; i < languages.length; i++) {
-        const langField = field + '.' + languages[i]
+        const langField = '___escaped:' + field + '.' + languages[i]
         const result = redis.pcall(
           'ft.alter',
           index,
