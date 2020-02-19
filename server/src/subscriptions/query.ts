@@ -3,7 +3,7 @@ import { QuerySubscription } from '../../../lua/src/get/query/types'
 import { Multi } from 'redis'
 import { performance } from 'perf_hooks'
 
-// do we have multiple subsmanagers?
+// FIXME: do we have multiple subsmanagers?
 let memberMemCache = {}
 let batchUpdates: string[] = []
 let inProgress: boolean = false
@@ -102,8 +102,6 @@ const addMembersToBatch = (
     createBatch(subsManager)
   }
   if (!fieldsProgress[field]) {
-    // can check for length here
-    console.log('GET FIELD')
     execBatch.smembers(field)
     fieldsInBatch.push(field)
     fieldsProgress[field] = [key, v]
@@ -175,7 +173,6 @@ const handleQuery = (
         for (let i = 0; i < q.length; i++) {
           const item = q[i]
           const idFields = item.idFields
-          //   const type = item.
 
           if (idFields && idFields[field]) {
             needsUpdate = true
