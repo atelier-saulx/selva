@@ -18,7 +18,7 @@
       "/post-merge": "lerna bootstrap --since $(git rev-parse HEAD) --include-filtered-dependencies"
     }
   },
-  "repository": "https://github.com/atelier-saulx/selva/tree/now-queries",
+  "repository": "https://github.com/atelier-saulx/selva",
   "lint-staged": {
     "{js,json}": [
       "prettier --write",
