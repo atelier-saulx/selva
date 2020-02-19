@@ -51,6 +51,10 @@ const attach = async (
   await subsManager.refreshSubscriptions()
   subsManager.recalculateUpdates()
 
+  // make it better
+
+  let clearTm: NodeJS.Timeout | undefined
+
   // client heartbeat events
   subsManager.sub.on('message', (_channel, message) => {
     const payload: { channel: string; refresh?: boolean } = JSON.parse(message)
@@ -76,7 +80,15 @@ const attach = async (
   const prefixLength = '___selva_events:'.length
 
   subsManager.sub.on('pmessage', (_pattern, channel, message) => {
-    // adds 2ms on
+    subsManager.incomingCount++
+
+    if (!clearTm) {
+      clearTm = setTimeout(() => {
+        clearTm = undefined
+        subsManager.incomingCount = 0
+      }, 1e3)
+    }
+
     subsManager.lastModifyEvent = Date.now()
     if (channel === '___selva_events:heartbeat') {
       return

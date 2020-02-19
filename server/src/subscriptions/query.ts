@@ -17,22 +17,29 @@ const addToUpdateQueue = (subsManager: SubscriptionManager, key: string) => {
     batchUpdates.push(key)
     if (!inProgress) {
       inProgress = true
-      setTimeout(() => {
-        // maybe check amount and slowly drain
-        console.log('QUERIES TO EXEC', batchUpdates.length)
-        // check size for drainage
-        for (let i = 0; i < batchUpdates.length; i++) {
-          const key = batchUpdates[i]
-          subsManager.sendUpdate(key).catch(err => {
-            console.error(`Error query update from subscription ${key}`, err)
-          })
-        }
-        batchUpdates = []
-        inProgress = false
-        subsManager.cleanUpProgress()
-        memberMemCache = {}
-        // play with the 100ms number
-      }, 100)
+      // want to manage the time update based on amount of things
+      setTimeout(
+        () => {
+          // maybe check amount and slowly drain
+          console.log('QUERIES TO EXEC', batchUpdates.length)
+          // check size for drainage
+          for (let i = 0; i < batchUpdates.length; i++) {
+            const key = batchUpdates[i]
+            subsManager.sendUpdate(key).catch(err => {
+              console.error(`Error query update from subscription ${key}`, err)
+            })
+          }
+          batchUpdates = []
+          inProgress = false
+          subsManager.cleanUpProgress()
+          memberMemCache = {}
+        },
+        subsManager.incomingCount > 1000
+          ? 1000
+          : subsManager.incomingCount > 500
+          ? 500
+          : 100
+      )
     }
   }
 }
@@ -149,9 +156,7 @@ const handleQuery = (
   eventName: string
 ) => {
   // TYPE needs to be fixed
-
   const checkFields = message === 'update'
-
   const parts = eventName.split('.')
   const endField = parts.slice(1).join('.')
   const field = eventName

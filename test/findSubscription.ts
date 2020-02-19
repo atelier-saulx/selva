@@ -271,7 +271,7 @@ test.serial('subscription find', async t => {
   // t.is(cnt3, 1)
 
   const x = []
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 10000; i++) {
     x.push(
       client.set({
         type: 'match',

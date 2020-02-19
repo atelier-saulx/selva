@@ -22,6 +22,7 @@ export default class SubscriptionManager {
   public client: SelvaClient
   public sub: RedisClient
   public pub: RedisClient
+  public incomingCount: number = 0
 
   cleanUpProgress() {
     if (!this.cleanUp) {
@@ -48,6 +49,7 @@ export default class SubscriptionManager {
     this.client = new SelvaClient({ port }, { loglevel: 'off' })
     this.sub = createClient({ port })
     this.pub = createClient({ port })
+
     try {
       attach(this, port)
     } catch (err) {
