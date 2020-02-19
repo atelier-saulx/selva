@@ -10,7 +10,7 @@ import { DeleteOptions } from '~selva/delete/types'
 import { deleteItem } from './delete'
 import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
-import { addFieldToSearch } from './search'
+import { addFieldToSearch, indexMissingWithExists } from './search'
 import sendEvent from './events'
 
 function isSetPayload(value: any): boolean {
@@ -222,6 +222,8 @@ function update(payload: SetOptions): Id | null {
     if (!payload.parents && payload.$id !== 'root') {
       payload.parents = { $add: ['root'] }
     }
+
+    // indexMissingWithExists(<WithRequired<SetOptions, 'id'>>payload)
   }
 
   setField(payload.$id, null, payload, false)

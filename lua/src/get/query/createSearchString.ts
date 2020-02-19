@@ -22,6 +22,11 @@ const addField = (filter: FilterAST): string => {
   // depends on field type
   const type = filter.$search && filter.$search[0]
   const operator = filter.$operator
+
+  if (operator === 'exists') {
+    return `@_exists_${filter.$field}:{T}`
+  }
+
   if (type === 'TAG') {
     if (isArray(filter.$value)) {
       filter.$value = `${joinAny(filter.$value, '|')}`

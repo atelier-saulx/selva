@@ -22,6 +22,14 @@ export type GeoFilter = {
   $or?: Filter
 }
 
+export type ExistsFilter = {
+  $operator: 'distance'
+  $field: string
+  $value: undefined // makes copmiling this easier, nice...
+  $and?: Filter
+  $or?: Filter
+}
+
 export type Filter =
   | GeoFilter
   | {

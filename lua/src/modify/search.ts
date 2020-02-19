@@ -1,6 +1,8 @@
-import { getSearchIndexes } from '../schema/index'
+import { getSearchIndexes, getSchema } from '../schema/index'
 import * as logger from '../logger'
-import { splitString } from '../util'
+import { splitString, hasExistsIndex } from '../util'
+import { SetOptions } from '~selva/set/types'
+import { getTypeFromId } from 'lua/src/typeIdMapping'
 
 const mapLanguages = (lang: string): string => {
   lang = splitString(lang, '_')[0]
@@ -76,6 +78,23 @@ export function addFieldToSearch(
         field,
         value
       )
+
+      if (hasExistsIndex(index[field])) {
+        logger.info('INDEXING EXISTS', id, field)
+        redis.call('hset', id, '_exists_' + field, 'T')
+        redis.pcall(
+          'ft.add',
+          indexKey,
+          id,
+          '1',
+          'NOSAVE',
+          'REPLACE',
+          'PARTIAL',
+          'FIELDS',
+          '_exists_' + field,
+          'T'
+        )
+      }
     } else {
       const lastDotIndex = getDotIndex(field)
       if (lastDotIndex) {
@@ -98,7 +117,61 @@ export function addFieldToSearch(
               field,
               value
             )
+
+            if (hasExistsIndex(index[field])) {
+              logger.info('INDEXING EXISTS', id, field)
+              redis.call('hset', id, '_exists_' + field, 'T')
+              redis.pcall(
+                'ft.add',
+                indexKey,
+                id,
+                '1',
+                'NOSAVE',
+                'REPLACE',
+                'PARTIAL',
+                'FIELDS',
+                '_exists_' + field,
+                'T'
+              )
+            }
           }
+        }
+      }
+    }
+  }
+}
+
+export function indexMissingWithExists(
+  payload: WithRequired<SetOptions, 'id'>
+) {
+  const schema = getSchema()
+
+  logger.info('PAYLOAD', payload)
+  const typeSchema =
+    payload.$id === 'root'
+      ? schema.rootType
+      : schema.types[getTypeFromId(payload.$id)]
+
+  for (const fieldName in typeSchema.fields) {
+    const field = typeSchema.fields[fieldName]
+    if (field.type !== 'object' && field.search) {
+      const search = field.search
+      if (search !== true) {
+        if (hasExistsIndex(search) && !payload[fieldName]) {
+          logger.info('INDEXING EXISTS', fieldName)
+          const index = search.index || 'default'
+          redis.pcall(
+            'ft.add',
+            index,
+            payload.$id,
+            '1',
+            'NOSAVE',
+            'REPLACE',
+            'PARTIAL',
+            'FIELDS',
+            '_exists_' + fieldName,
+            'F'
+          )
         }
       }
     }
