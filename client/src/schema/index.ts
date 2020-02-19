@@ -25,6 +25,7 @@ export type FieldType =
   | 'phone'
   | 'geo'
   | 'type'
+  | 'timestamp'
 
 export type SearchSchema = Record<string, string[]>
 
