@@ -92,6 +92,7 @@ test.serial('get nested results', async t => {
       teams: {
         id: true,
         name: true,
+        flurpy: true,
         $list: {
           $find: {
             $traverse: 'ancestors',

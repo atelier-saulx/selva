@@ -74,12 +74,14 @@ const parseGet = (
     if (key[0] !== '$') {
       const item = opts[key]
       if (typeof item === 'object') {
-        const newArray: string[] = []
-        for (let i = 0; i < field.length; i++) {
-          newArray[newArray.length] = field[i]
+        if (!item.$list) {
+          const newArray: string[] = []
+          for (let i = 0; i < field.length; i++) {
+            newArray[newArray.length] = field[i]
+          }
+          newArray[newArray.length] = key
+          parseGet(item, fields, newArray)
         }
-        newArray[newArray.length] = key
-        parseGet(item, fields, newArray)
       } else {
         fields[
           field.length > 0 ? joinString(field, '.') + '.' + key : key
