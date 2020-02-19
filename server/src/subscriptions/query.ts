@@ -34,7 +34,9 @@ const addToUpdateQueue = (subsManager: SubscriptionManager, key: string) => {
           subsManager.cleanUpProgress()
           memberMemCache = {}
         },
-        subsManager.incomingCount > 1000
+        subsManager.incomingCount > 15000
+          ? 1500
+          : subsManager.incomingCount > 1000
           ? 1000
           : subsManager.incomingCount > 500
           ? 500
