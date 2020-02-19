@@ -157,6 +157,7 @@ test.serial('layout query', async t => {
     ]
   })
 
+  console.log(Date.now())
   console.dir(result, { depth: 100 })
 
   t.true(true)
