@@ -69,26 +69,19 @@ test.serial('layout query', async t => {
 
   await client.set({
     $id: 'league1',
-    title: {
-      en: '🌊 mr flurpels 🌊'
-    },
-    description: {
-      en: 'I like fancy 🌊'
-    },
+    $language: 'en',
+    title: '🌊 mr flurpels 🌊',
+    description: 'I like fancy 🌊',
     children: [
       {
         type: 'team',
         name: 'team!',
-        title: {
-          en: '🌊 TEAM 🌊'
-        },
+        title: '🌊 TEAM 🌊',
         children: [
           {
             type: 'match',
             name: 'match time',
-            title: {
-              en: '🌊 MATCH 🌊'
-            },
+            title: '🌊 MATCH 🌊',
             start: Date.now() - 10000,
             end: Date.now() + 60 * 60 * 1000 * 2
           }
@@ -99,9 +92,8 @@ test.serial('layout query', async t => {
 
   await client.set({
     $id: 'spfootball',
-    title: {
-      en: 'flurp football'
-    },
+    $language: 'en',
+    title: 'flurp football',
     children: ['league1']
   })
 
