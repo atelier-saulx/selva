@@ -25,7 +25,7 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
             sub.type = []
           }
           // FIXME: Not completely correct unfortunately
-          // -- how to deal with ors?
+          // for now it just checks if one of the types matches (bit slower but fine)
           if (isArray(item.$value)) {
             for (let j = 0; j < item.$value.length; j++) {
               addType(item.$value[j], sub.type)
@@ -119,20 +119,8 @@ function parseSubscriptions(
 
   parseGet(getOptions, sub.fields, [])
 
-  // getOptions
-  // recurse trough getOptions
-
   if (meta.ast) {
     parseFork(meta.ast, sub)
-  } else {
-    // need to check if TYPE is there
-    // no qeury on fields etc easy
-    // if (!sub.ids) {
-    //   sub.ids = {}
-    // }
-    // for (let i = 1; i < meta.ids.length; i++) {
-    //   sub.ids[meta.ids[i]] = true
-    // }
   }
 
   if (sub.ids || !meta.ast) {

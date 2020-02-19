@@ -208,6 +208,9 @@ const parseQuery = (
           includeMeta,
           '$'
         )
+        if (result.$meta) {
+          delete result.$meta
+        }
         results[results.length] = result
       }
     }

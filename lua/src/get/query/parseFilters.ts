@@ -33,10 +33,6 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
     return [{ isFork: true }, err]
   }
 
-  // validate operator
-
-  // need to remove equal then
-
   const o = filterOpt.$operator
   if (
     !(
