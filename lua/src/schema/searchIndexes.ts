@@ -1,5 +1,7 @@
 import { SearchIndexes, SearchSchema, Schema } from '~selva/schema/index'
+import { hasExistsIndex } from '../util'
 import * as logger from '../logger'
+import { isTextIndex } from '../util'
 
 function createIndex(
   index: string,
@@ -10,19 +12,28 @@ function createIndex(
 
   for (const field in schema) {
     const value = schema[field]
-    if (value[0] === 'TEXT-LANGUAGE') {
+    if (isTextIndex(value)) {
       for (let i = 0; i < languages.length; i++) {
-        args[args.length] = field + '.' + languages[i]
+        args[args.length] = '___escaped:' + field + '.' + languages[i]
         args[args.length] = 'TEXT'
         for (let i = 1; i < value.length; i++) {
-          args[args.length] = value[i]
+          if (value[i] !== 'EXISTS') {
+            args[args.length] = value[i]
+          }
         }
       }
-    } else {
+    } else if (value[0] !== 'EXISTS') {
       args[args.length] = field
       for (const f of schema[field]) {
-        args[args.length] = f
+        if (f !== 'EXISTS') {
+          args[args.length] = f
+        }
       }
+    }
+
+    if (hasExistsIndex(value)) {
+      args[args.length] = '_exists_' + field
+      args[args.length] = 'TAG'
     }
   }
 
@@ -38,10 +49,10 @@ function alterIndex(
   languages: string[]
 ): void {
   for (const field in schema) {
-    if (schema[field][0] === 'TEXT-LANGUAGE') {
+    if (isTextIndex(schema[field])) {
       const args = schema[field][1] ? ['TEXT', schema[field][1]] : ['TEXT']
       for (let i = 0; i < languages.length; i++) {
-        const langField = field + '.' + languages[i]
+        const langField = '___escaped:' + field + '.' + languages[i]
         const result = redis.pcall(
           'ft.alter',
           index,
@@ -56,14 +67,36 @@ function alterIndex(
           )
         }
       }
-    } else {
+    } else if (schema[field][0] !== 'EXISTS') {
+      const indexArgs: string[] = []
+      for (const a of schema[field]) {
+        if (a !== 'EXISTS') {
+          indexArgs[indexArgs.length] = a
+        }
+      }
+
       const result = redis.pcall(
         'ft.alter',
         index,
         'SCHEMA',
         'ADD',
         field,
-        ...schema[field]
+        ...indexArgs
+      )
+
+      if (result.err && result.err !== 'Duplicate field in schema') {
+        logger.error(`Error altering index ${index} ${field}: ${result.err}`)
+      }
+    }
+
+    if (hasExistsIndex(schema[field])) {
+      const result = redis.pcall(
+        'ft.alter',
+        index,
+        'SCHEMA',
+        'ADD',
+        '_exists_' + field,
+        'TAG'
       )
 
       if (result.err && result.err !== 'Duplicate field in schema') {

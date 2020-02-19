@@ -87,15 +87,49 @@ const parseQuery = (
     }
   }
   if (resultFork) {
-    const [q, err] = createSearchString(resultFork)
-    const query: string = q.substring(1, q.length - 1)
-    if (err) {
-      return [{ results }, err]
+    const idMap: Record<string, true> = {}
+    const [queries, err] = createSearchString(resultFork, language)
+    if (queries.length === 1) {
+      const query: string = queries[0].substring(1, queries[0].length - 1)
+      if (err) {
+        return [{ results }, err]
+      }
+
+      const args = createSearchArgs(getOptions, query, resultFork)
+      printAst(resultFork, args)
+      const queryResult: string[] = redis.call('ft.search', 'default', ...args)
+      if (queryResult) {
+        if (queries.length === 1) {
+          table.remove(queryResult, 1)
+          resultIds = queryResult
+        }
+      }
+    } else {
+      for (const q of queries) {
+        const query: string = q.substring(1, q.length - 1)
+        if (err) {
+          return [{ results }, err]
+        }
+
+        const args = createSearchArgs(getOptions, query, resultFork)
+        printAst(resultFork, args)
+        const queryResult: string[] = redis.call(
+          'ft.search',
+          'default',
+          ...args
+        )
+
+        if (queryResult) {
+          for (let i = 1; i < queryResult.length; i++) {
+            idMap[queryResult[i]] = true
+          }
+        }
+      }
     }
-    const args = createSearchArgs(getOptions, query, resultFork)
-    printAst(resultFork, args)
-    const queryResult: string[] = redis.call('ft.search', 'default', ...args)
-    resultIds = queryResult
+
+    for (const id in idMap) {
+      resultIds[resultIds.length] = id
+    }
   } else if (getOptions.$list) {
     resultIds = parseList(resultIds, getOptions.$list)
     if (resultIds.length === 0) {
@@ -156,7 +190,7 @@ const parseQuery = (
         }
       }
     } else {
-      for (let i = 1; i < resultIds.length; i++) {
+      for (let i = 0; i < resultIds.length; i++) {
         const result: GetResult =
           includeMeta && getResult && getResult.$meta
             ? { $meta: getResult.$meta }
