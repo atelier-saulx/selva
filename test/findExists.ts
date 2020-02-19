@@ -90,3 +90,45 @@ test.serial('find - numeric exists field', async t => {
     { id: 'root', items: [{ name: 'match 1' }] }
   )
 })
+
+test.serial('find - string field only exists indexed', async t => {
+  // simple nested - single query
+  const client = connect({ port: 6099 }, { loglevel: 'info' })
+  await client.set({
+    type: 'league',
+    name: 'league 1'
+  })
+
+  await client.set({
+    type: 'league',
+    name: 'league 2',
+    thing: 'yes some value here'
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              },
+              {
+                $field: 'thing',
+                $operator: 'exists'
+              }
+            ]
+          }
+        }
+      }
+    }),
+    { id: 'root', items: [{ name: 'league 2' }] }
+  )
+})
