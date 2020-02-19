@@ -35,6 +35,11 @@ function addSearch(filter: Filter): [string[], null | string] {
       filter.$value = now()
     }
   }
+
+  if (search[0] === 'TEXT-LANGUAGE-SUG') {
+    // TODO: verify we don't have one already?
+  }
+
   return [search, null]
 }
 

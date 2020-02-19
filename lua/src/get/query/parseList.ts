@@ -55,7 +55,7 @@ function parseList(results: string[], list: List): string[] {
   if (list.$range) {
     const newResults: string[] = []
     const [start, end] = list.$range
-    for (let i = start; i < end + 1 && i < results.length; i++) {
+    for (let i = start; i < end && i < results.length; i++) {
       newResults[newResults.length] = results[i]
     }
     return newResults
