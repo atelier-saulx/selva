@@ -23,6 +23,13 @@ test.before(async t => {
           description: { type: 'text', search: true }
         }
       },
+      sport: {
+        prefix: 'sp',
+        fields: {
+          title: { type: 'text', search: true },
+          name: { type: 'string', search: { type: ['TAG'] } }
+        }
+      },
       club: {
         prefix: 'cl',
         fields: {
@@ -39,6 +46,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          title: { type: 'text', search: true },
           end: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           start: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
@@ -78,12 +86,23 @@ test.serial('layout query', async t => {
           {
             type: 'match',
             name: 'match time',
+            title: {
+              en: '🌊 MATCH 🌊'
+            },
             start: Date.now() - 10000,
             end: Date.now() + 60 * 60 * 1000 * 2
           }
         ]
       }
     ]
+  })
+
+  await client.set({
+    $id: 'spfootball',
+    title: {
+      en: 'flurp football'
+    },
+    children: ['league1']
   })
 
   const result = await client.get({
@@ -106,7 +125,6 @@ test.serial('layout query', async t => {
         component: { $value: 'gridLarge' },
         showall: { $value: true },
         children: {
-          id: true,
           title: true,
           $list: {
             $range: [0, 100],
@@ -128,7 +146,7 @@ test.serial('layout query', async t => {
         children: {
           title: true,
           image: { icon: true, thumb: true },
-          sport: { title: true, id: true, $inherit: { $item: 'sport' } },
+          sport: { title: true, $inherit: { $item: 'sport' } },
           $list: {
             $sort: { $field: 'start', $order: 'asc' },
             $find: {
@@ -160,5 +178,23 @@ test.serial('layout query', async t => {
   console.log(Date.now())
   console.dir(result, { depth: 100 })
 
-  t.true(true)
+  t.deepEqualIgnoreOrder(result, {
+    id: 'league1',
+    components: [
+      {
+        component: 'description',
+        title: '🌊 mr flurpels 🌊',
+        description: 'I like fancy 🌊'
+      },
+      {
+        component: 'gridLarge',
+        showall: true,
+        children: [{ title: '🌊 TEAM 🌊' }]
+      },
+      {
+        component: 'list',
+        children: [{ sport: { title: 'flurp football' }, title: '🌊 MATCH 🌊' }]
+      }
+    ]
+  })
 })
