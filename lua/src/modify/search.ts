@@ -86,7 +86,6 @@ export function addFieldToSearch(
       )
 
       if (hasExistsIndex(index[field])) {
-        logger.info('INDEXING EXISTS', id, field)
         redis.call('hset', id, '_exists_' + field, 'T')
         redis.pcall(
           'ft.add',
@@ -129,7 +128,6 @@ export function addFieldToSearch(
             )
 
             if (hasExistsIndex(index[field])) {
-              logger.info('INDEXING EXISTS', id, field)
               redis.call('hset', id, '_exists_' + field, 'T')
               redis.pcall(
                 'ft.add',
