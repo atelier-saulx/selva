@@ -169,43 +169,6 @@ export function addFieldToSearch(
   }
 }
 
-export function indexMissingWithExists(
-  payload: WithRequired<SetOptions, 'id'>
-) {
-  const schema = getSchema()
-
-  logger.info('PAYLOAD', payload)
-  const typeSchema =
-    payload.$id === 'root'
-      ? schema.rootType
-      : schema.types[getTypeFromId(payload.$id)]
-
-  for (const fieldName in typeSchema.fields) {
-    const field = typeSchema.fields[fieldName]
-    if (field.type !== 'object' && field.search) {
-      const search = field.search
-      if (search !== true) {
-        if (hasExistsIndex(search) && !payload[fieldName]) {
-          logger.info('INDEXING EXISTS', fieldName)
-          const index = search.index || 'default'
-          redis.pcall(
-            'ft.add',
-            index,
-            payload.$id,
-            '1',
-            'NOSAVE',
-            'REPLACE',
-            'PARTIAL',
-            'FIELDS',
-            '_exists_' + fieldName,
-            'F'
-          )
-        }
-      }
-    }
-  }
-}
-
 function addSuggestion(sug: string, lang: string) {
   const current: number = redis.call('hincrby', `sug_${lang}_counts`, sug, '1')
   if (current === 1) {
