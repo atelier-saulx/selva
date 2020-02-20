@@ -1,7 +1,7 @@
 {
   "name": "@saulx/selva",
-  "version": "0.0.4",
-  "main": "dist/client/src/index.js",
+  "version": "0.0.5",
+  "main": "dist",
   "scripts": {
     "build": "tsc",
     "start": "tsc && node dist/index.js",
