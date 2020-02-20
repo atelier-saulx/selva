@@ -15,6 +15,7 @@ function addFields(
         addFields(path, fields, schema, makeAll(path, schema, opts))
         return
       } else if (key === '$inherit') {
+        // TODO(jim): mystical subscription things
         fields.add('.ancestors')
         return
       } else if (key === '$field') {
