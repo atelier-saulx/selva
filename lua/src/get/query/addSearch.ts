@@ -23,22 +23,6 @@ function addSearch(filter: Filter): [string[], null | string] {
   } else {
     return [[], `Cannot search fields that are not indexed ${filter.$field}`]
   }
-  if (search[0] === 'NUMERIC') {
-    if (isArray(filter.$value)) {
-      for (let i = 0; i < filter.$value.length; i++) {
-        if (filter.$value[i] === 'now') {
-          filter.$value[i] = now()
-        }
-      }
-    }
-    if (filter.$value === 'now') {
-      filter.$value = now()
-    }
-  }
-
-  if (search[0] === 'TEXT-LANGUAGE-SUG') {
-    // TODO: verify we don't have one already?
-  }
 
   return [search, null]
 }
