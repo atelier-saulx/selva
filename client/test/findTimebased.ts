@@ -272,7 +272,8 @@ test.serial.only('find - already started subscription', async t => {
   })
 
   const nextRefresh = Date.now() + 5 * 1000
-  console.log('NEXTNEXT', nextRefresh)
+  const nextNextRefresh = Date.now() + 7 * 1000
+
   await client.set({
     $id: 'maFuture',
     type: 'match',
@@ -284,12 +285,12 @@ test.serial.only('find - already started subscription', async t => {
   await client.set({
     $id: 'maLaterFuture',
     type: 'match',
-    name: 'starts in 2h',
-    startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 1 hour
+    name: 'starts in 7s',
+    startTime: nextNextRefresh,
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
   })
 
-  t.plan(2)
+  t.plan(5)
   const observable = await client.observe({
     $includeMeta: true,
     $id: 'root',
@@ -321,6 +322,10 @@ test.serial.only('find - already started subscription', async t => {
     } else if (o1counter === 1) {
       // gets update event
       t.true(d.items.length === 4)
+      t.true(d.items.map(i => i.name).includes('starts in 5s'))
+    } else if (o1counter === 2) {
+      t.true(d.items.length === 5)
+      t.true(d.items.map(i => i.name).includes('starts in 7s'))
     } else {
       // doesn't get any more events
       t.fail()

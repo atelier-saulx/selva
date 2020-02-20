@@ -3,7 +3,6 @@ import SubscriptionManager from './index'
 const MAX_TIMEOUT = 10 * 60 * 60 * 1000 // 10 minutes
 
 export function updateTimeout(subsManager: SubscriptionManager) {
-  console.log('UPDATING TIMEOUT')
   if (subsManager.refreshNowQueriesTimeout) {
     clearTimeout(subsManager.refreshNowQueriesTimeout)
     subsManager.refreshNowQueriesTimeout = undefined
@@ -13,11 +12,6 @@ export function updateTimeout(subsManager: SubscriptionManager) {
     subsManager.nowBasedQueries = { nextRefresh: MAX_TIMEOUT, queries: [] }
   }
 
-  console.log(
-    subsManager.nowBasedQueries.nextRefresh - Date.now() + 10,
-    MAX_TIMEOUT
-  )
-
   let tm = Math.min(
     subsManager.nowBasedQueries.nextRefresh - Date.now() + 10,
     MAX_TIMEOUT
@@ -26,9 +20,7 @@ export function updateTimeout(subsManager: SubscriptionManager) {
     tm = 0
   }
 
-  console.log('tm', tm)
   subsManager.refreshNowQueriesTimeout = setTimeout(() => {
-    console.log('TIMEOUT RESOLVING')
     const updates: Promise<void>[] = []
 
     if (!subsManager.nowBasedQueries.queries.length) {
@@ -37,7 +29,6 @@ export function updateTimeout(subsManager: SubscriptionManager) {
     }
 
     const now = Date.now()
-    console.log('HMM', subsManager.nowBasedQueries)
     while (
       subsManager.nowBasedQueries.queries.length &&
       subsManager.nowBasedQueries.queries[0].nextRefresh <= now
@@ -46,23 +37,19 @@ export function updateTimeout(subsManager: SubscriptionManager) {
       updates.push(subsManager.sendUpdate(entry.subId))
     }
 
-    console.log('QUERIES AFTER RESOLVE', subsManager.nowBasedQueries)
-
     Promise.all(updates)
       .catch(e => {
         console.error('Failed to update now queries', e)
       })
       .finally(() => {
-        if (!subsManager.refreshNowQueriesTimeout) {
-          if (subsManager.nowBasedQueries.queries.length) {
-            subsManager.nowBasedQueries.nextRefresh =
-              subsManager.nowBasedQueries.queries[0].nextRefresh
-          } else {
-            subsManager.nowBasedQueries.nextRefresh = MAX_TIMEOUT
-          }
-
-          updateTimeout(subsManager)
+        if (subsManager.nowBasedQueries.queries.length) {
+          subsManager.nowBasedQueries.nextRefresh =
+            subsManager.nowBasedQueries.queries[0].nextRefresh
+        } else {
+          subsManager.nowBasedQueries.nextRefresh = Date.now() + MAX_TIMEOUT
         }
+
+        updateTimeout(subsManager)
       })
   }, tm)
 }
@@ -72,7 +59,6 @@ export function updateQueries(
   entry: { subId: string; nextRefresh: number }
 ) {
   const nextRefresh = entry.nextRefresh
-  console.log('UPDATING TIME WITH', nextRefresh)
 
   if (!subsManager.nowBasedQueries) {
     subsManager.nowBasedQueries = {
@@ -105,6 +91,5 @@ export function updateQueries(
     subsManager.nowBasedQueries.queries.splice(idx, 0, entry)
   }
 
-  console.log('nowQueries', subsManager.nowBasedQueries)
   updateTimeout(subsManager)
 }
