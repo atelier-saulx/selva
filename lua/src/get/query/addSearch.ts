@@ -30,18 +30,18 @@ function addSearch(filter: Filter): [string[], boolean, null | string] {
       `Cannot search fields that are not indexed ${filter.$field}`
     ]
   }
+
   if (search[0] === 'NUMERIC') {
     if (isArray(filter.$value)) {
       for (let i = 0; i < filter.$value.length; i++) {
         if (filter.$value[i] === 'now') {
-          filter.$value[i] = now()
+          hasNow = true
         }
       }
     }
+
     if (filter.$value === 'now') {
-      logger.info('NOWNOWNOW')
       hasNow = true
-      filter.$value = now()
     }
   }
 

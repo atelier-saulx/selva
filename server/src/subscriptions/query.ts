@@ -3,7 +3,6 @@ import { QuerySubscription } from '../../../lua/src/get/query/types'
 import { Multi } from 'redis'
 import { performance } from 'perf_hooks'
 
-// FIXME: do we have multiple subsmanagers?
 let memberMemCache = {}
 let batchUpdates: string[] = []
 let inProgress: boolean = false

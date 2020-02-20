@@ -1,19 +1,33 @@
-import { isArray, joinAny, splitString, escapeSpecial } from '../../util'
+import { isArray, joinAny, splitString, escapeSpecial, now } from '../../util'
 import { FilterAST, Fork, Value } from './types'
 import { isFork } from './util'
 import * as logger from '../../logger'
 
+function toNumberValue(value: Value): string {
+  if (value === 'now') {
+    return tostring(now())
+  } else {
+    return tostring(value)
+  }
+}
+
 const returnNumber = (filter, value: Value): string => {
   if (filter.$operator === '>') {
-    return `(@${filter.$field}:[${tostring(value)},inf])`
+    return `(@${filter.$field}:[${toNumberValue(value)},inf])`
   } else if (filter.$operator === '<') {
-    return `(@${filter.$field}:[-inf,${tostring(value)}])`
+    return `(@${filter.$field}:[-inf,${toNumberValue(value)}])`
   } else if (filter.$operator === '..') {
-    return `(@${filter.$field}:[${tostring(value[0])},${tostring(value[1])}])`
+    return `(@${filter.$field}:[${toNumberValue(value[0])},${toNumberValue(
+      value[1]
+    )}])`
   } else if (filter.$operator === '!=') {
-    return `(-(@${filter.$field}:[${tostring(value)},${tostring(value)}]))`
+    return `(-(@${filter.$field}:[${toNumberValue(value)},${toNumberValue(
+      value
+    )}]))`
   } else if (filter.$operator === '=') {
-    return `(@${filter.$field}:[${tostring(value)},${tostring(value)}])`
+    return `(@${filter.$field}:[${toNumberValue(value)},${toNumberValue(
+      value
+    )}])`
   }
   return ''
 }
