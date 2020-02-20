@@ -52,7 +52,6 @@ export function updateQueries(
   } else {
     if (this.nowBasedQueries.nextRefresh > nextRefresh) {
       this.nowBasedQueries.nextRefresh = nextRefresh
-      updateTimeout(subsManager)
     }
 
     // binary search insert
@@ -73,4 +72,6 @@ export function updateQueries(
 
     this.nowBasedQueries.queries.splice(idx, 0, entry)
   }
+
+  updateTimeout(subsManager)
 }
