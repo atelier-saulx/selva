@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
@@ -81,7 +81,7 @@
     "dropbox": "^4.0.30",
     "node-fetch": "^2.6.0",
     "redis": "^2.8.0",
-    "@saulx/selva-server": "0.0.6",
+    "@saulx/selva-server": "0.0.7",
     "uuid": "^3.3.3"
   }
 }
