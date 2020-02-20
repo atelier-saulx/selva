@@ -128,7 +128,6 @@ function parseSubscriptions(
   getOptions: GetOptions,
   traverse?: string | string[]
 ) {
-  logger.info('PARSE SUBSCRIPTIONS')
   let sub: QuerySubscription | undefined
 
   const queryId = redis.sha1hex(cjson.encode(getOptions))
@@ -175,8 +174,8 @@ function parseSubscriptions(
       let [qs] = createSearchString(withTime)
       const q = qs[0]
 
-      // TODO: when multiple timestamp columns need to invert logical operator in their context
-      // also need to do something about the sort in that case
+      // TODO: when multiple timestamp columns need to
+      // do something about the sort in that case
       // like maybe we can just preserve whatever condition has > 'now'
       const newArgs = createSearchArgs(
         {

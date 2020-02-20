@@ -137,7 +137,6 @@ export default class SubscriptionManager {
     }
 
     if (payload.$meta.query) {
-      console.log('META', payload.$meta.query)
       // what do you need to refresh? just attach
       this.queries[subscriptionId] = <QuerySubscription[]>payload.$meta.query
 
