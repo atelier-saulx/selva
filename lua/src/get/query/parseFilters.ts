@@ -59,7 +59,6 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   }
 
   if (hasNow) {
-    logger.info('HAS NOW FILTER AST')
     filter.hasNow = true
   }
 

@@ -1,6 +1,7 @@
 import { Fork, FilterAST, Value } from './types'
 import { isArray, indexOf } from '../../util'
 import { isFork } from './util'
+import * as logger from '../../logger'
 
 const valueIsEqual = (a: Value, b: Value, strict: boolean): boolean => {
   if (a === b) {
@@ -97,7 +98,16 @@ const isRangeAndLargerOrSmaller = (
     range = b
     other = a
   }
+
+  if (other.$value === 'now') {
+    return [false, null]
+  }
+
   if (other.$operator === '>') {
+    if (range.$value[1] === 'now') {
+      return [false, null]
+    }
+
     if (other.$value > range.$value[1]) {
       return [
         false,
@@ -106,6 +116,10 @@ const isRangeAndLargerOrSmaller = (
     }
   }
   if (other.$operator === '<') {
+    if (range.$value[0] === 'now') {
+      return [false, null]
+    }
+
     if (other.$value > range.$value[0]) {
       return [
         false,
@@ -146,6 +160,10 @@ const isLargerThenAndLargerThen = (
   a: FilterAST,
   b: FilterAST
 ): [boolean, null | string] => {
+  if (a.$value === 'now' || b.$value === 'now') {
+    return [false, null]
+  }
+
   if (b.$value > a.$value) {
     a.$value = b.$value
   }
@@ -156,6 +174,10 @@ const isSmallerThenAndSmallerThen = (
   a: FilterAST,
   b: FilterAST
 ): [boolean, null | string] => {
+  if (a.$value === 'now' || b.$value === 'now') {
+    return [false, null]
+  }
+
   if (b.$value < a.$value) {
     a.$value = b.$value
   }
