@@ -2,8 +2,7 @@ import test from 'ava'
 import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
-import { wait, dumpDb } from './assertions'
-import { RedisClient } from 'redis'
+import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -41,6 +40,8 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          flupriflu: { type: 'string' },
+          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           // need to warn if you change this!!!
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
@@ -65,6 +66,7 @@ test.before(async t => {
       if (i < 1000) {
         ch.push({
           type: 'match',
+          flupriflu: 'true',
           name: 'match' + i,
           status: i === 0 ? 2 : i > 1000 ? 100 : 300,
           parents: { $add: team1 }
@@ -147,7 +149,7 @@ test.after(async _t => {
 
 test.serial('find - descendants', async t => {
   // simple nested - single query
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   // extra option in find is index or auto from fields
   let d = Date.now()
@@ -171,7 +173,7 @@ test.serial('find - descendants', async t => {
               $and: {
                 $operator: '=',
                 $field: 'status',
-                $value: [300, 2] // handle or
+                $value: [300, 2]
               },
               $or: {
                 $operator: '=',

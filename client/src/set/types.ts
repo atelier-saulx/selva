@@ -43,6 +43,7 @@ export type SetItem<T = BaseItem> = {
 
 export type SetOptions = SetItem & {
   $id?: Id
+  $language?: string
   $merge?: boolean
   $version?: string
   children?: HierarchySet | SetItem[]

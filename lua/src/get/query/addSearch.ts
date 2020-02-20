@@ -44,6 +44,7 @@ function addSearch(filter: Filter): [string[], boolean, null | string] {
       filter.$value = now()
     }
   }
+
   return [search, hasNow, null]
 }
 

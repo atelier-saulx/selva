@@ -8,7 +8,8 @@ export default (
   payload: SetOptions,
   result: SetOptions,
   fields: FieldSchemaArrayLike,
-  type: string
+  type: string,
+  $lang?: string
 ): void => {
   const arr = payload
   if (!Array.isArray(arr)) {
@@ -24,7 +25,7 @@ export default (
   const arrayResult = []
   arr.forEach((payload, index) => {
     // need to remove all options from nested fields!
-    parser(schema, index, payload, arrayResult, itemsFields, type)
+    parser(schema, index, payload, arrayResult, itemsFields, type, $lang)
   })
   // nested json special!
   result[field] = JSON.stringify(arrayResult)

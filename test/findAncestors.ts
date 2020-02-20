@@ -18,6 +18,13 @@ test.before(async t => {
   await client.updateSchema({
     languages: ['en'],
     types: {
+      region: {
+        prefix: 're',
+        fields: {
+          name: { type: 'string', search: { type: ['TAG'] } },
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
+        }
+      },
       league: {
         prefix: 'le',
         fields: {
@@ -69,7 +76,7 @@ test.after(async _t => {
 
 test.serial('find - ancestors', async t => {
   // simple nested - single query
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   const teams = []
   for (let i = 0; i < 11; i++) {
@@ -225,5 +232,71 @@ test.serial('find - ancestors', async t => {
     r.items.map(v => v.name),
     ['league2', 'league3', 'league4'],
     'find ancestors redis search'
+  )
+})
+
+test.serial('find - ancestors - regions', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+  const teams = []
+
+  const regions = await Promise.all([
+    client.set({
+      type: 'region',
+      name: 'REGION De'
+    }),
+    client.set({
+      type: 'region',
+      name: 'REGION Nl'
+    })
+  ])
+
+  console.log(regions)
+
+  for (let i = 0; i < 11; i++) {
+    await client.set({
+      type: 'team',
+      name: 'team region ' + i,
+      parents: {
+        $add: i < 6 ? regions[0] : regions[1]
+      }
+    })
+  }
+
+  const dutchteams = await client.get({
+    teams: {
+      name: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'ancestors',
+              $operator: '=',
+              $value: regions[0]
+            },
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'team'
+            }
+          ]
+        }
+      }
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    dutchteams,
+    {
+      teams: [
+        { name: 'team region 5' },
+        { name: 'team region 4' },
+        { name: 'team region 3' },
+        { name: 'team region 2' },
+        { name: 'team region 1' },
+        { name: 'team region 0' }
+      ]
+    },
+    'hello'
   )
 })

@@ -5,6 +5,34 @@ import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
+import { performance, PerformanceObserver } from 'perf_hooks'
+
+let totalTime = 0
+let t
+let cnt = 0
+const obs = new PerformanceObserver(items => {
+  totalTime += items.getEntries()[0].duration
+  performance.clearMarks()
+  cnt++
+  clearTimeout(t)
+  t = setTimeout(() => {
+    console.log(
+      'SPEND',
+      totalTime,
+      'ms in publish parser',
+      'called ',
+      cnt,
+      'times',
+      'avg',
+      totalTime / cnt,
+      'ms'
+    )
+    cnt = 0
+    totalTime = 0
+  }, 500)
+})
+obs.observe({ entryTypes: ['measure'] })
+
 let srv
 let port: number
 test.before(async t => {
@@ -96,10 +124,7 @@ test.serial('subscription find', async t => {
     children: matches
   })
 
-  // teams
-  // league
   await wait(100)
-  console.log('----------------------------------------')
   const obs = await client.observe({
     items: {
       name: true,
@@ -126,11 +151,11 @@ test.serial('subscription find', async t => {
   let cnt = 0
   const sub = obs.subscribe(d => {
     cnt++
-    console.log('FIRES!', d, cnt)
+    console.log('furpy!', cnt, d)
   })
 
-  await wait(500)
-  console.log('----------------------------------------')
+  await wait(300)
+  // t.is(cnt, 1)
 
   await client.set({
     $id: matches[0].$id,
@@ -138,8 +163,16 @@ test.serial('subscription find', async t => {
   })
 
   await wait(300)
+  // t.is(cnt, 2)
+
+  await client.set({
+    $id: matches[1].$id,
+    value: 8
+  })
+  await wait(300)
+  // t.is(cnt, 3)
+
   sub.unsubscribe()
-  console.log('----------------------------------------')
 
   const obs2 = await client.observe({
     $includeMeta: true,
@@ -180,11 +213,10 @@ test.serial('subscription find', async t => {
   let cnt2 = 0
   const sub2 = obs2.subscribe(d => {
     cnt2++
-    console.log('FIRES!2', cnt2)
   })
 
   await wait(300)
-  console.log('SET MORE----------------------------------------')
+  // t.is(cnt2, 1)
 
   let matchTeam
   for (let i = 0; i < 10; i++) {
@@ -202,10 +234,9 @@ test.serial('subscription find', async t => {
   await Promise.all(matches.map(t => client.set(t)))
 
   await wait(300)
+  // t.is(cnt2, 2)
 
-  // type when matching stuff
-
-  // add get fields to fields
+  sub2.unsubscribe()
 
   const obs3 = await client.observe({
     $id: matchTeam,
@@ -231,13 +262,29 @@ test.serial('subscription find', async t => {
     }
   })
 
+  let cnt3 = 0
   obs3.subscribe(() => {
-    console.log('FIRE 3')
+    cnt3++
   })
 
   await wait(300)
+  // t.is(cnt3, 1)
 
-  // add somethign to make it not fire
+  const x = []
+  for (let i = 0; i < 10000; i++) {
+    x.push(
+      client.set({
+        type: 'match',
+        value: i,
+        parents: { $add: matchTeam }
+      })
+    )
+  }
 
+  var d = Date.now()
+  await Promise.all(x)
+  console.log('SET 10k', Date.now() - d, 'ms')
+
+  await wait(1000)
   t.true(true)
 })

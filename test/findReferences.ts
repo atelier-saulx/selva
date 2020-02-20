@@ -188,6 +188,11 @@ test.serial('find - references', async t => {
         $sort: { $field: 'value', $order: 'asc' },
         $find: {
           $traverse: 'related',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match'
+          },
           $find: {
             $traverse: 'ancestors',
             $filter: [

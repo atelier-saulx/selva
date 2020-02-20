@@ -72,7 +72,6 @@ function parseIds(
       }
     }
     if (filters.length === 0) {
-      table.insert(ids, 1, '')
       return [ids, null]
     } else {
       filters[filters.length] = {
@@ -84,7 +83,6 @@ function parseIds(
     }
   } else {
     // empty first arg to get unified response with redisSearc
-    table.insert(ids, 1, '')
     return [ids, null]
   }
 }

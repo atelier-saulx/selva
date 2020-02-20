@@ -13,7 +13,7 @@ test.before(async t => {
     port
   })
 
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -23,7 +23,9 @@ test.before(async t => {
       },
       team: {
         prefix: 'te',
-        fields: {}
+        fields: {
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
+        }
       },
       match: {
         prefix: 'ma',
@@ -82,10 +84,33 @@ test.serial('get nested results', async t => {
     children: matches
   })
 
-  // if not id id = root
   const result = await client.get({
     $includeMeta: true,
     items: {
+      name: true,
+      id: true,
+      teams: {
+        id: true,
+        name: true,
+        flurpy: true,
+        $list: {
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'team'
+              },
+              {
+                $field: 'value',
+                $operator: '!=',
+                $value: 2
+              }
+            ]
+          }
+        }
+      },
       $list: {
         $find: {
           $traverse: 'descendants',
@@ -96,24 +121,6 @@ test.serial('get nested results', async t => {
               $value: 'match'
             }
           ]
-        }
-      },
-      name: true,
-      id: true,
-      teams: {
-        id: true,
-        name: true,
-        $list: {
-          $find: {
-            $traverse: 'ancestors',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'team'
-              }
-            ]
-          }
         }
       }
     }

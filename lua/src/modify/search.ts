@@ -1,6 +1,14 @@
-import { getSearchIndexes } from '../schema/index'
+import { getSearchIndexes, getSchema } from '../schema/index'
 import * as logger from '../logger'
-import { splitString } from '../util'
+import { SetOptions } from '~selva/set/types'
+import { getTypeFromId } from 'lua/src/typeIdMapping'
+import {
+  splitString,
+  isTextIndex,
+  joinString,
+  escapeSpecial,
+  hasExistsIndex
+} from '../util'
 
 const mapLanguages = (lang: string): string => {
   lang = splitString(lang, '_')[0]
@@ -76,13 +84,33 @@ export function addFieldToSearch(
         field,
         value
       )
+
+      if (hasExistsIndex(index[field])) {
+        redis.call('hset', id, '_exists_' + field, 'T')
+        redis.pcall(
+          'ft.add',
+          indexKey,
+          id,
+          '1',
+          'NOSAVE',
+          'REPLACE',
+          'PARTIAL',
+          'FIELDS',
+          '_exists_' + field,
+          'T'
+        )
+      }
     } else {
       const lastDotIndex = getDotIndex(field)
       if (lastDotIndex) {
         const fieldToCheck = field.substring(0, lastDotIndex)
         if (index[fieldToCheck]) {
-          if (index[fieldToCheck][0] === 'TEXT-LANGUAGE') {
-            const lang = field.substring(lastDotIndex + 1)
+          const escaped = escapeSpecial(value)
+          const lang = field.substring(lastDotIndex + 1)
+
+          if (isTextIndex(index[fieldToCheck])) {
+            redis.call('hset', id, '___escaped:' + field, escaped)
+
             const mapped = mapLanguages(lang)
             redis.pcall(
               'ft.add',
@@ -95,12 +123,61 @@ export function addFieldToSearch(
               'REPLACE',
               'PARTIAL',
               'FIELDS',
-              field,
-              value
+              '___escaped:' + field,
+              escaped
             )
+
+            if (hasExistsIndex(index[field])) {
+              redis.call('hset', id, '_exists_' + field, 'T')
+              redis.pcall(
+                'ft.add',
+                indexKey,
+                id,
+                '1',
+                'NOSAVE',
+                'REPLACE',
+                'PARTIAL',
+                'FIELDS',
+                '_exists_' + field,
+                'T'
+              )
+            }
+
+            if (index[fieldToCheck][0] === 'TEXT-LANGUAGE-SUG') {
+              // if suggestion, also add to dictionary
+              const words = splitString(escaped, ' ')
+              for (let i = words.length - 2; i >= 0; i--) {
+                let searchTerms: string = ''
+                for (let j = i; j < words.length; j++) {
+                  searchTerms += words[j] + ' '
+                }
+
+                const str = searchTerms.substr(0, searchTerms.length - 1)
+                addSuggestion(str, lang)
+              }
+
+              for (const word of words) {
+                addSuggestion(word, lang)
+              }
+            }
           }
         }
       }
     }
+  }
+}
+
+function addSuggestion(sug: string, lang: string) {
+  const current: number = redis.call('hincrby', `sug_${lang}_counts`, sug, '1')
+  if (current === 1) {
+    logger.info('ft.sugadd', `sug_${lang}`, sug, '1')
+    redis.pcall('ft.sugadd', `sug_${lang}`, sug, '1')
+  } else {
+    logger.info(
+      `ft.sugadd -- exists, incrementing to ${current}`,
+      `sug_${lang}`,
+      sug,
+      '1'
+    )
   }
 }

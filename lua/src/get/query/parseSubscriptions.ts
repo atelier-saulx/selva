@@ -44,7 +44,7 @@ function parseFork(
             sub.type = []
           }
           // FIXME: Not completely correct unfortunately
-          // -- how to deal with ors?
+          // for now it just checks if one of the types matches (bit slower but fine)
           if (isArray(item.$value)) {
             for (let j = 0; j < item.$value.length; j++) {
               addType(item.$value[j], sub.type)
@@ -104,12 +104,14 @@ const parseGet = (
     if (key[0] !== '$') {
       const item = opts[key]
       if (typeof item === 'object') {
-        const newArray: string[] = []
-        for (let i = 0; i < field.length; i++) {
-          newArray[newArray.length] = field[i]
+        if (!item.$list) {
+          const newArray: string[] = []
+          for (let i = 0; i < field.length; i++) {
+            newArray[newArray.length] = field[i]
+          }
+          newArray[newArray.length] = key
+          parseGet(item, fields, newArray)
         }
-        newArray[newArray.length] = key
-        parseGet(item, fields, newArray)
       } else {
         fields[
           field.length > 0 ? joinString(field, '.') + '.' + key : key
@@ -129,7 +131,6 @@ function parseSubscriptions(
   logger.info('PARSE SUBSCRIPTIONS')
   let sub: QuerySubscription | undefined
 
-  // FIXME: prob better to just do an isEqual check
   const queryId = redis.sha1hex(cjson.encode(getOptions))
 
   for (let i = 0; i < querySubs.length; i++) {
@@ -148,9 +149,6 @@ function parseSubscriptions(
   }
 
   parseGet(getOptions, sub.fields, [])
-
-  // getOptions
-  // recurse trough getOptions
 
   if (meta.ast) {
     const newAst: Fork = { isFork: meta.ast.isFork }
@@ -174,7 +172,8 @@ function parseSubscriptions(
         $and: [tsFork, newAst]
       }
 
-      let [q] = createSearchString(withTime)
+      let [qs] = createSearchString(withTime)
+      const q = qs[0]
 
       const search = string.sub(q, 2, q.length - 1)
       // TODO: when multiple timestamp columns need to invert logical operator in their context

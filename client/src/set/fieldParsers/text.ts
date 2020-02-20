@@ -58,9 +58,16 @@ export default (
   payload: SetOptions,
   result: SetOptions,
   _fields: FieldSchemaOther,
-  _type: string
+  _type: string,
+  $lang?: string
 ): void => {
   const lang: string[] = schema.languages
+
+  if ($lang) {
+    payload = { [$lang]: payload }
+  }
+
+  console.log('--->', payload)
   refs(field, payload, lang)
   verify(payload, false, lang)
   result[field] = payload
