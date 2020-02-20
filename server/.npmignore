@@ -2,3 +2,4 @@
 !README.md
 !package.json
 !dist/**/*
+!modules/binaries/**/*
