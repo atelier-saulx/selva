@@ -175,7 +175,6 @@ function parseSubscriptions(
       let [qs] = createSearchString(withTime)
       const q = qs[0]
 
-      const search = string.sub(q, 2, q.length - 1)
       // TODO: when multiple timestamp columns need to invert logical operator in their context
       // also need to do something about the sort in that case
       // like maybe we can just preserve whatever condition has > 'now'
@@ -189,7 +188,7 @@ function parseSubscriptions(
             $range: [0, 1]
           }
         },
-        search,
+        string.sub(q, 2, q.length - 1),
         withTime
       )
 

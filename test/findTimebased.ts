@@ -146,11 +146,12 @@ test.serial('find - already started', async t => {
     endTime: Date.now() - 60 * 60 * 1000 // ended 1 hour ago
   })
 
+  const nextRefresh = Date.now() + 1 * 60 * 60 * 1000
   await client.set({
     $id: 'maFuture',
     type: 'match',
     name: 'starts in 1h',
-    startTime: Date.now() + 1 * 60 * 60 * 1000, // starts in 1 hour
+    startTime: nextRefresh, // starts in 1 hour
     endTime: Date.now() + 2 * 60 * 60 * 1000 // ends in 2 hours
   })
 
@@ -176,7 +177,7 @@ test.serial('find - already started', async t => {
     })
   )
 
-  console.log(
+  t.deepEqualIgnoreOrder(
     (
       await client.get({
         $includeMeta: true,
@@ -199,6 +200,7 @@ test.serial('find - already started', async t => {
           }
         }
       })
-    ).$meta.query
+    ).$meta.query[0].time,
+    { nextRefresh }
   )
 })

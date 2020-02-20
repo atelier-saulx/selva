@@ -111,19 +111,6 @@ const addField = (
   return ''
 }
 
-function joinSearchStrings(searchString: string[], delim: string): string {
-  let result: string = ''
-  for (let i = 0; i < searchString.length - 1; i++) {
-    if (searchString[i] !== '') {
-      result += searchString[i] + delim
-    }
-  }
-
-  result += searchString[searchString.length - 1]
-
-  return result
-}
-
 function createSearchString(
   filters: Fork,
   language?: string
@@ -255,7 +242,7 @@ function createSearchString(
 
     if (searchString.length === 1) {
       for (let i = 0; i < results.length; i++) {
-        results[i] = string.sub(results[i], 2, results.length - 1)
+        results[i] = string.sub(results[i], 2, results[i].length - 1)
       }
     }
 

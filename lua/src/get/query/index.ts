@@ -110,7 +110,11 @@ const parseQuery = (
           return [{ results }, err]
         }
 
-        const args = createSearchArgs(getOptions, q, resultFork)
+        const args = createSearchArgs(
+          getOptions,
+          string.sub(q, 2, q.length - 1),
+          resultFork
+        )
         printAst(resultFork, args)
         const queryResult: string[] = redis.call(
           'ft.search',
