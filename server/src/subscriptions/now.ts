@@ -60,9 +60,9 @@ export function updateQueries(
     let idx = 0
     while (l <= r) {
       idx = Math.floor((l + r) / 2)
-      if (this.nowBasedQueries.queries[idx] < nextRefresh) {
+      if (this.nowBasedQueries.queries[idx].nextRefresh < nextRefresh) {
         l = idx + 1
-      } else if (this.nowBasedQueries.queries[idx] > nextRefresh) {
+      } else if (this.nowBasedQueries.queries[idx].nextRefresh > nextRefresh) {
         r = idx - 1
       } else {
         break
