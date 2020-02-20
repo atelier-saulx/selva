@@ -9,9 +9,18 @@ export function updateTimeout(subsManager: SubscriptionManager) {
     subsManager.refreshNowQueriesTimeout = undefined
   }
 
+  if (!subsManager.nowBasedQueries) {
+    subsManager.nowBasedQueries = { nextRefresh: MAX_TIMEOUT, queries: [] }
+  }
+
   const tm = Math.min(subsManager.nowBasedQueries.nextRefresh, MAX_TIMEOUT)
   subsManager.refreshNowQueriesTimeout = setTimeout(() => {
     const updates: Promise<void>[] = []
+
+    if (!subsManager.nowBasedQueries.queries.length) {
+      subsManager.nowBasedQueries.nextRefresh = MAX_TIMEOUT
+      return updateTimeout(subsManager)
+    }
 
     const now = Date.now()
     while (subsManager.nowBasedQueries.queries[0].nextRefresh <= now) {
