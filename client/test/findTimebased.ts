@@ -120,6 +120,8 @@ test.serial.skip('find - live', async t => {
       })
     ).$meta.query
   )
+
+  await client.delete('root')
 })
 
 test.serial('find - already started', async t => {
@@ -245,9 +247,12 @@ test.serial('find - already started', async t => {
   //   ).items.map(i => i.name),
   //   ['started 2m ago', 'started 5m ago', 'started 2h ago']
   // )
+
+  await client.delete('root')
+  await client.destroy()
 })
 
-test.serial.only('find - already started subscription', async t => {
+test.serial('find - already started subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
