@@ -4,6 +4,7 @@ import { QuerySubscription } from '../../../lua/src/get/query/types'
 const MAX_TIMEOUT = 10 * 60 * 60 * 1000 // 10 minutes
 
 export function updateTimeout(subsManager: SubscriptionManager) {
+  console.log('UPDATING TIMEOUT')
   if (subsManager.refreshNowQueriesTimeout) {
     clearTimeout(subsManager.refreshNowQueriesTimeout)
     subsManager.refreshNowQueriesTimeout = undefined
@@ -13,8 +14,22 @@ export function updateTimeout(subsManager: SubscriptionManager) {
     subsManager.nowBasedQueries = { nextRefresh: MAX_TIMEOUT, queries: [] }
   }
 
-  const tm = Math.min(subsManager.nowBasedQueries.nextRefresh, MAX_TIMEOUT)
+  console.log(
+    subsManager.nowBasedQueries.nextRefresh - Date.now() + 10,
+    MAX_TIMEOUT
+  )
+
+  let tm = Math.min(
+    subsManager.nowBasedQueries.nextRefresh - Date.now() + 10,
+    MAX_TIMEOUT
+  )
+  if (tm < 0) {
+    tm = 0
+  }
+
+  console.log('tm', tm)
   subsManager.refreshNowQueriesTimeout = setTimeout(() => {
+    console.log('TIMEOUT RESOLVING')
     const updates: Promise<void>[] = []
 
     if (!subsManager.nowBasedQueries.queries.length) {
@@ -23,10 +38,16 @@ export function updateTimeout(subsManager: SubscriptionManager) {
     }
 
     const now = Date.now()
-    while (subsManager.nowBasedQueries.queries[0].nextRefresh <= now) {
+    console.log('HMM', subsManager.nowBasedQueries)
+    while (
+      subsManager.nowBasedQueries.queries.length &&
+      subsManager.nowBasedQueries.queries[0].nextRefresh <= now
+    ) {
       const entry = subsManager.nowBasedQueries.queries.shift()
       updates.push(subsManager.sendUpdate(entry.subId))
     }
+
+    console.log('QUERIES AFTER RESOLVE', subsManager.nowBasedQueries)
 
     Promise.all(updates)
       .catch(e => {
@@ -52,26 +73,29 @@ export function updateQueries(
   entry: { subId: string; nextRefresh: number }
 ) {
   const nextRefresh = entry.nextRefresh
+  console.log('UPDATING TIME WITH', nextRefresh)
 
-  if (!this.nowBasedQueries) {
-    this.nowBasedQueries = {
+  if (!subsManager.nowBasedQueries) {
+    subsManager.nowBasedQueries = {
       nextRefresh,
       queries: [entry]
     }
   } else {
-    if (this.nowBasedQueries.nextRefresh > nextRefresh) {
-      this.nowBasedQueries.nextRefresh = nextRefresh
+    if (subsManager.nowBasedQueries.nextRefresh > nextRefresh) {
+      subsManager.nowBasedQueries.nextRefresh = nextRefresh
     }
 
     // binary search insert
     let l = 0
-    let r = this.nowBasedQueries.queries.length - 1
+    let r = subsManager.nowBasedQueries.queries.length - 1
     let idx = 0
     while (l <= r) {
       idx = Math.floor((l + r) / 2)
-      if (this.nowBasedQueries.queries[idx].nextRefresh < nextRefresh) {
+      if (subsManager.nowBasedQueries.queries[idx].nextRefresh < nextRefresh) {
         l = idx + 1
-      } else if (this.nowBasedQueries.queries[idx].nextRefresh > nextRefresh) {
+      } else if (
+        subsManager.nowBasedQueries.queries[idx].nextRefresh > nextRefresh
+      ) {
         r = idx - 1
       } else {
         break
@@ -79,8 +103,9 @@ export function updateQueries(
     }
     idx++
 
-    this.nowBasedQueries.queries.splice(idx, 0, entry)
+    subsManager.nowBasedQueries.queries.splice(idx, 0, entry)
   }
 
+  console.log('nowQueries', subsManager.nowBasedQueries)
   updateTimeout(subsManager)
 }

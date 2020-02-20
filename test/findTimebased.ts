@@ -165,18 +165,6 @@ test.serial('find - already started', async t => {
 
   console.log(await client.redis.hgetall(match1))
 
-  console.log(
-    await client.get({
-      $id: 'root',
-      children: {
-        name: true,
-        startTime: true,
-        endTime: true,
-        $list: {}
-      }
-    })
-  )
-
   t.deepEqualIgnoreOrder(
     (
       await client.get({
@@ -203,4 +191,145 @@ test.serial('find - already started', async t => {
     ).$meta.query[0].time,
     { nextRefresh }
   )
+
+  console.log(
+    (
+      await client.get({
+        $includeMeta: true,
+        $id: 'root',
+        items: {
+          name: true,
+          value: true,
+          $list: {
+            $sort: { $field: 'startTime', $order: 'asc' },
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'startTime',
+                  $operator: '<',
+                  $value: 'now'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(i => i.name)
+  )
+
+  // FIXME: wft ASC sort broken?
+  // t.deepEqual(
+  //   (
+  //     await client.get({
+  //       $includeMeta: true,
+  //       $id: 'root',
+  //       items: {
+  //         name: true,
+  //         value: true,
+  //         $list: {
+  //           $sort: { $field: 'startTime', $order: 'asc' },
+  //           $find: {
+  //             $traverse: 'children',
+  //             $filter: [
+  //               {
+  //                 $field: 'startTime',
+  //                 $operator: '<',
+  //                 $value: 'now'
+  //               }
+  //             ]
+  //           }
+  //         }
+  //       }
+  //     })
+  //   ).items.map(i => i.name),
+  //   ['started 2m ago', 'started 5m ago', 'started 2h ago']
+  // )
+})
+
+test.serial.only('find - already started subscription', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    type: 'match',
+    name: 'started 5m ago',
+    startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
+    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+  })
+
+  await client.set({
+    type: 'match',
+    name: 'started 2m ago',
+    startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
+    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+  })
+
+  await client.set({
+    type: 'match',
+    name: 'started 2h ago',
+    startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
+    endTime: Date.now() - 60 * 60 * 1000 // ended 1 hour ago
+  })
+
+  const nextRefresh = Date.now() + 5 * 1000
+  console.log('NEXTNEXT', nextRefresh)
+  await client.set({
+    $id: 'maFuture',
+    type: 'match',
+    name: 'starts in 5s',
+    startTime: nextRefresh,
+    endTime: Date.now() + 2 * 60 * 60 * 1000 // ends in 2 hours
+  })
+
+  await client.set({
+    $id: 'maLaterFuture',
+    type: 'match',
+    name: 'starts in 2h',
+    startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 1 hour
+    endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
+  })
+
+  t.plan(2)
+  const observable = await client.observe({
+    $includeMeta: true,
+    $id: 'root',
+    items: {
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'startTime', $order: 'asc' },
+        $find: {
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'startTime',
+              $operator: '<',
+              $value: 'now'
+            }
+          ]
+        }
+      }
+    }
+  })
+
+  let o1counter = 0
+  const sub = observable.subscribe(d => {
+    console.log('d', d)
+    if (o1counter === 0) {
+      // gets start event
+      t.true(d.items.length === 3)
+    } else if (o1counter === 1) {
+      // gets update event
+      t.true(d.items.length === 4)
+    } else {
+      // doesn't get any more events
+      t.fail()
+    }
+    o1counter++
+  })
+
+  await wait(10 * 1000)
+
+  sub.unsubscribe()
+  await client.delete('root')
 })

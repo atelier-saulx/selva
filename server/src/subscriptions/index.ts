@@ -17,7 +17,7 @@ export default class SubscriptionManager {
   public queries: Record<string, QuerySubscription[]> = {}
   public nowBasedQueries: {
     nextRefresh: number
-    queries: { subId: string; sub: QuerySubscription[]; nextRefresh: number }[]
+    queries: { subId: string; nextRefresh: number }[]
   }
   public inProgress: Record<string, true> = {}
   public subscriptions: Record<string, GetOptions> = {}
@@ -137,15 +137,18 @@ export default class SubscriptionManager {
     }
 
     if (payload.$meta.query) {
+      console.log('META', payload.$meta.query)
       // what do you need to refresh? just attach
       this.queries[subscriptionId] = <QuerySubscription[]>payload.$meta.query
 
       // console.log('ATTACH', subscriptionId, payload.$meta.query)
-      if (payload.$meta.query.time) {
-        updateNowQueries(this, {
-          subId: subscriptionId,
-          nextRefresh: payload.$meta.query.time.nextRefresh
-        })
+      for (const queryMeta of payload.$meta.query) {
+        if (queryMeta.time) {
+          updateNowQueries(this, {
+            subId: subscriptionId,
+            nextRefresh: queryMeta.time.nextRefresh
+          })
+        }
       }
     }
     // need to clear $meta
