@@ -27,7 +27,7 @@ Launches a Selva server instance.
   <tr>
     <td valign="top"><code>options</code></td>
     <td valign="top">object</td>
-    <td valign="top">&lt;optional&gt;></td>
+    <td valign="top">&lt;optional&gt;</td>
     <td>
       Server options  
       <br>Properties
@@ -41,7 +41,7 @@ Launches a Selva server instance.
           </tr>
         </thead>
         <tr>
-          <td valign="top">`port`</td>
+          <td valign="top"><code>port</code></td>
           <td valign="top">number</td>
           <td valign="top"></td>
           <td valign="top">
@@ -49,9 +49,9 @@ Launches a Selva server instance.
           </td>
         </tr>
         <tr>
-          <td valign="top">`service`</td>
+          <td valign="top"><code>service</code></td>
           <td valign="top">string</td>
-          <td valign="top">\<optional\></td>
+          <td valign="top">&lt;optional&gt;</td>
           <td valign="top">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam ut efficitur nunc, vitae facilisis arcu. Donec faucibus nibh ex, non aliquet mi rhoncus finibus. Suspendisse dapibus, odio nec aliquet molestie, nunc nisi vulputate odio, eget porttitor erat tellus eu nunc. Phasellus venenatis massa id velit elementum, quis bibendum dolor lobortis. Quisque rutrum arcu quam, et scelerisque mauris iaculis a. Donec vehicula sem vel congue pharetra.
           </td>
@@ -99,9 +99,9 @@ Connects to a server
     </tr>
   </thead>
   <tr>
-    <td valign="top">`options`</td>
+    <td valign="top"><code>options</code></td>
     <td valign="top">object</td>
-    <td valign="top">\<optional\></td>
+    <td valign="top">&lt;optional&gt;</td>
     <td>
       Connection options  
       <br>Properties
@@ -115,7 +115,7 @@ Connects to a server
           </tr>
         </thead>
         <tr>
-          <td valign="top">`port`</td>
+          <td valign="top"><code>port</code></td>
           <td valign="top">number</td>
           <td valign="top"></td>
           <td valign="top">
@@ -123,9 +123,9 @@ Connects to a server
           </td>
         </tr>
         <tr>
-          <td valign="top">`option2`</td>
+          <td valign="top"><code>option2</code></td>
           <td valign="top">string</td>
-          <td valign="top">\<optional\></td>
+          <td valign="top">&lt;optional&gt;</td>
           <td valign="top">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam ut efficitur nunc, vitae facilisis arcu. Donec faucibus nibh ex, non aliquet mi rhoncus finibus. Suspendisse dapibus, odio nec aliquet molestie, nunc nisi vulputate odio, eget porttitor erat tellus eu nunc. Phasellus venenatis massa id velit elementum, quis bibendum dolor lobortis. Quisque rutrum arcu quam, et scelerisque mauris iaculis a. Donec vehicula sem vel congue pharetra.
           </td>
