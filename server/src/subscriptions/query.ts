@@ -1,7 +1,5 @@
-import SubscriptionManager from './index'
-import { QuerySubscription } from '../../../lua/src/get/query/types'
+import SubscriptionManager, { QuerySubscription } from './index'
 import { Multi } from 'redis'
-import { performance } from 'perf_hooks'
 
 let memberMemCache = {}
 let batchUpdates: string[] = []

@@ -1,12 +1,21 @@
 import { createClient, RedisClient } from 'redis'
-import { SelvaClient } from '../../../client/src'
-import { GetOptions } from '../../../client/src/get/types'
-import { QuerySubscription } from '../../../lua/src/get/query/types'
-import { Schema } from '../../../client/src/schema'
+import { SelvaClient, GetOptions, Schema } from '@selva/client'
 import { createHash } from 'crypto'
 import addFields from './addFields'
 import attach from './attach'
 import { updateQueries as updateNowQueries } from './now'
+
+export type QuerySubscription = {
+  idFields?: Record<string, true>
+  queryId: string
+  ids?: Record<string, true>
+  member: { $field: string; $value: string[] }[] // array is an OR
+  type?: string[]
+  fields: {
+    [key: string]: true
+  }
+  time?: { nextRefresh: number }
+}
 
 export default class SubscriptionManager {
   public refreshSubscriptionsTimeout: NodeJS.Timeout
