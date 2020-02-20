@@ -141,7 +141,7 @@ function createSearchString(
           return [[], err]
         }
 
-        if (nestedSearch.length == 1) {
+        if (nestedSearch.length === 1) {
           searchString[searchString.length] = nestedSearch[0]
         }
       }
@@ -185,7 +185,7 @@ function createSearchString(
 
     if (searchString.length === 1) {
       for (let i = 0; i < results.length; i++) {
-        results[i] = string.sub(results[i], 2, results.length - 1)
+        results[i] = string.sub(results[i], 2, results[i].length - 1)
       }
     }
 
