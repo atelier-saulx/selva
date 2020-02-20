@@ -1,11 +1,4 @@
-import {
-  isArray,
-  joinAny,
-  joinString,
-  splitString,
-  escapeSpecial,
-  now
-} from '../../util'
+import { isArray, joinAny, splitString, escapeSpecial, now } from '../../util'
 import { FilterAST, Fork, Value } from './types'
 import { isFork } from './util'
 import * as logger from '../../logger'
@@ -126,7 +119,7 @@ const addField = (
   } else if (type === 'GEO') {
     if (filter.$operator === 'distance' && isArray(filter.$value)) {
       const [lon, lat, distance, units] = filter.$value
-      return `@${filter.$field}:[${lon} ${lat} ${distance} ${units}]`
+      return `(@${filter.$field}:[${lon} ${lat} ${distance} ${units}])`
     }
   }
   return ''
@@ -144,12 +137,19 @@ function createSearchString(
           searchString[searchString.length] = addField(filter, language)
         }
       } else {
-        const [nestedSearch, err] = createSearchString(filter)
+        const [nestedSearch, err] = createSearchString(filter, language)
         if (err) {
           return [[], err]
         }
-        searchString[searchString.length] = nestedSearch[0]
+
+        if (nestedSearch.length === 1) {
+          searchString[searchString.length] = nestedSearch[0]
+        }
       }
+    }
+
+    if (searchString.length === 0) {
+      return [[], null]
     }
 
     let results: string[] = ['(']
@@ -181,6 +181,12 @@ function createSearchString(
             searchString[i] +
             (i === searchString.length - 1 ? ')' : ' ')
         }
+      }
+    }
+
+    if (searchString.length === 1) {
+      for (let i = 0; i < results.length; i++) {
+        results[i] = string.sub(results[i], 2, results[i].length - 1)
       }
     }
 
@@ -188,22 +194,32 @@ function createSearchString(
   } else if (filters.$or) {
     for (let filter of filters.$or) {
       if (isFork(filter) && filter.$or) {
-        const [nestedSearch, err] = createSearchString(filter)
+        const [nestedSearch, err] = createSearchString(filter, language)
         if (err) {
           return [[], err]
         }
-        searchString[searchString.length] = nestedSearch[0]
+
+        if (nestedSearch.length == 1) {
+          searchString[searchString.length] = nestedSearch[0]
+        }
       } else if (!isFork(filter)) {
         if (filter.$field !== 'id') {
           searchString[searchString.length] = addField(filter, language)
         }
       } else {
-        const [nestedSearch, err] = createSearchString(filter)
+        const [nestedSearch, err] = createSearchString(filter, language)
         if (err) {
           return [[], err]
         }
-        searchString[searchString.length] = nestedSearch[0]
+
+        if (nestedSearch.length == 1) {
+          searchString[searchString.length] = nestedSearch[0]
+        }
       }
+    }
+
+    if (searchString.length === 0) {
+      return [[], null]
     }
 
     let hasArrayComponent = false
@@ -235,6 +251,12 @@ function createSearchString(
             searchString[i] +
             (i === searchString.length - 1 ? ')' : '|')
         }
+      }
+    }
+
+    if (searchString.length === 1) {
+      for (let i = 0; i < results.length; i++) {
+        results[i] = string.sub(results[i], 2, results[i].length - 1)
       }
     }
 

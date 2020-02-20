@@ -90,7 +90,7 @@ const parseQuery = (
     const idMap: Record<string, true> = {}
     const [queries, err] = createSearchString(resultFork, language)
     if (queries.length === 1) {
-      const query: string = queries[0].substring(1, queries[0].length - 1)
+      const query: string = queries[0]
       if (err) {
         return [{ results }, err]
       }
@@ -106,12 +106,15 @@ const parseQuery = (
       }
     } else {
       for (const q of queries) {
-        const query: string = q.substring(1, q.length - 1)
         if (err) {
           return [{ results }, err]
         }
 
-        const args = createSearchArgs(getOptions, query, resultFork)
+        const args = createSearchArgs(
+          getOptions,
+          string.sub(q, 2, q.length - 1),
+          resultFork
+        )
         printAst(resultFork, args)
         const queryResult: string[] = redis.call(
           'ft.search',

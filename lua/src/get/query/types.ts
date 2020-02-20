@@ -7,6 +7,7 @@ export type FilterAST = {
   $operator: '=' | '>' | '<' | '..' | '!=' | 'distance' | 'exists'
   $value: Value
   $search: string[]
+  hasNow?: true
 }
 
 export type Fork = {
@@ -37,4 +38,5 @@ export type QuerySubscription = {
   fields: {
     [key: string]: true
   }
+  time?: { nextRefresh: number }
 }

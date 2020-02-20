@@ -6,13 +6,19 @@ import { Schema } from '../../../client/src/schema'
 import { createHash } from 'crypto'
 import addFields from './addFields'
 import attach from './attach'
+import { updateQueries as updateNowQueries } from './now'
 
 export default class SubscriptionManager {
   public refreshSubscriptionsTimeout: NodeJS.Timeout
+  public refreshNowQueriesTimeout: NodeJS.Timeout
   public lastRefreshed: Date
   public cleanUp: boolean = false
   public lastModifyEvent: number
   public queries: Record<string, QuerySubscription[]> = {}
+  public nowBasedQueries: {
+    nextRefresh: number
+    queries: { subId: string; nextRefresh: number }[]
+  }
   public inProgress: Record<string, true> = {}
   public subscriptions: Record<string, GetOptions> = {}
   public subscriptionsByField: Record<string, Set<string>> = {}
@@ -135,6 +141,14 @@ export default class SubscriptionManager {
       this.queries[subscriptionId] = <QuerySubscription[]>payload.$meta.query
 
       // console.log('ATTACH', subscriptionId, payload.$meta.query)
+      for (const queryMeta of payload.$meta.query) {
+        if (queryMeta.time) {
+          updateNowQueries(this, {
+            subId: subscriptionId,
+            nextRefresh: queryMeta.time.nextRefresh
+          })
+        }
+      }
     }
     // need to clear $meta
 

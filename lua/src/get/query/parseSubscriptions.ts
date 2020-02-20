@@ -1,9 +1,11 @@
-import { Meta, QuerySubscription, Fork } from './types'
+import { FilterAST, Meta, QuerySubscription, Fork } from './types'
 import * as logger from '../../logger'
 import { isFork } from './util'
 import { getPrefixFromType } from '../../typeIdMapping'
 import { indexOf, isArray, joinString } from '../../util'
 import { GetOptions } from '~selva/get/types'
+import createSearchString from './createSearchString'
+import createSearchArgs from './createSearchArgs'
 
 const addType = (type: string | number, arr: string[]) => {
   const prefix = getPrefixFromType(tostring(type))
@@ -12,14 +14,31 @@ const addType = (type: string | number, arr: string[]) => {
   }
 }
 
-function parseFork(ast: Fork, sub: QuerySubscription) {
-  const list = ast.$and || ast.$or
+function parseFork(
+  ast: Fork,
+  sub: QuerySubscription,
+  newAst: Fork,
+  timestampFilters: FilterAST[]
+) {
+  let list: (Fork | FilterAST)[] = []
+  let newAstList: (Fork | FilterAST)[] = []
+  if (ast.$and) {
+    list = ast.$and
+    newAst.$and = newAstList
+  } else if (ast.$or) {
+    list = ast.$or
+    newAst.$or = newAstList
+  }
+
   if (list) {
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
       if (isFork(item)) {
-        parseFork(item, sub)
+        const newNode: Fork = { isFork: true }
+        newAstList[i] = newNode
+        parseFork(item, sub, newNode, timestampFilters)
       } else {
+        let newNode: FilterAST | null = item
         if (item.$field === 'type') {
           if (!sub.type) {
             sub.type = []
@@ -51,14 +70,25 @@ function parseFork(ast: Fork, sub: QuerySubscription) {
           if (!sub.ids) {
             sub.ids = {}
           }
+
           const value = !isArray(item.$value) ? [item.$value] : item.$value
           for (let j = 0; j < value.length; j++) {
             sub.ids[value[j]] = true
           }
+        } else if (item.hasNow) {
+          // add to filters and omit from new ast
+          newNode = null
+
+          timestampFilters[timestampFilters.length] = item
+          sub.fields[item.$field] = true
           // dont even know what to do here :D
           // prob need to add the traverse options and not the ids
         } else {
           sub.fields[item.$field] = true
+        }
+
+        if (newNode) {
+          newAstList[i] = newNode
         }
       }
     }
@@ -120,7 +150,71 @@ function parseSubscriptions(
   parseGet(getOptions, sub.fields, [])
 
   if (meta.ast) {
-    parseFork(meta.ast, sub)
+    const newAst: Fork = { isFork: meta.ast.isFork }
+    const timestampFilters: FilterAST[] = []
+    parseFork(meta.ast, sub, newAst, timestampFilters)
+
+    if (timestampFilters.length >= 1) {
+      const tsFork: WithRequired<Fork, '$or'> = { isFork: true, $or: [] }
+      for (let i = 0; i < timestampFilters.length; i++) {
+        const filter = timestampFilters[i]
+        tsFork.$or[i] = {
+          $field: filter.$field,
+          $search: filter.$search,
+          $value: filter.$value,
+          $operator: '>'
+        }
+      }
+
+      const withTime: WithRequired<Fork, '$and'> = {
+        isFork: true,
+        $and: [tsFork, newAst]
+      }
+
+      let [qs] = createSearchString(withTime)
+      const q = qs[0]
+
+      // TODO: when multiple timestamp columns need to
+      // do something about the sort in that case
+      // like maybe we can just preserve whatever condition has > 'now'
+      const newArgs = createSearchArgs(
+        {
+          $list: {
+            $sort: {
+              $field: timestampFilters[0].$field, // it's actually not so easy to decide which timestamp field should be the basis of sorting
+              $order: 'asc'
+            },
+            $range: [0, 1]
+          }
+        },
+        string.sub(q, 2, q.length - 1),
+        withTime
+      )
+
+      const newSearchResults: string[] = redis.pcall(
+        'ft.search',
+        'default',
+        ...newArgs
+      )
+
+      const earliestId = newSearchResults[1]
+      if (earliestId) {
+        const time = redis.call('hget', earliestId, timestampFilters[0].$field)
+
+        sub.time = {
+          nextRefresh: tonumber(time)
+        }
+      }
+    }
+  } else {
+    // need to check if TYPE is there
+    // no qeury on fields etc easy
+    // if (!sub.ids) {
+    //   sub.ids = {}
+    // }
+    // for (let i = 1; i < meta.ids.length; i++) {
+    //   sub.ids[meta.ids[i]] = true
+    // }
   }
 
   if (sub.ids || !meta.ast) {
