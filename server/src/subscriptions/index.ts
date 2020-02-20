@@ -1,5 +1,5 @@
 import { createClient, RedisClient } from 'redis'
-import { SelvaClient, GetOptions, Schema } from '@selva/client'
+import { SelvaClient, GetOptions, Schema } from '@saulx/selva'
 import { createHash } from 'crypto'
 import addFields from './addFields'
 import attach from './attach'

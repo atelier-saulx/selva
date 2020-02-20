@@ -1,4 +1,4 @@
-import { Schema, GetOptions } from '@selva/client'
+import { Schema, GetOptions } from '@saulx/selva'
 import makeAll from './makeAll'
 
 function addFields(

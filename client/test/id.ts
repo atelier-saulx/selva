@@ -1,6 +1,7 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { start } from '@selva/server'
+import { start } from '@saulx/selva-server'
+
 import getPort from 'get-port'
 
 test('generates a unique id from type', async t => {
