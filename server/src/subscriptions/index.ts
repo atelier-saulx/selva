@@ -144,7 +144,6 @@ export default class SubscriptionManager {
       if (payload.$meta.query.time) {
         updateNowQueries(this, {
           subId: subscriptionId,
-          sub: <QuerySubscription[]>payload.$meta.query,
           nextRefresh: payload.$meta.query.time.nextRefresh
         })
       }

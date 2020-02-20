@@ -11,28 +11,36 @@ export function updateTimeout(subsManager: SubscriptionManager) {
 
   const tm = Math.min(subsManager.nowBasedQueries.nextRefresh, MAX_TIMEOUT)
   subsManager.refreshNowQueriesTimeout = setTimeout(() => {
+    const updates: Promise<void>[] = []
+
     const now = Date.now()
     while (subsManager.nowBasedQueries.queries[0].nextRefresh <= now) {
       const entry = subsManager.nowBasedQueries.queries.shift()
-      // TODO: run invalidation for query
+      updates.push(subsManager.sendUpdate(entry.subId))
     }
 
-    if (!subsManager.refreshNowQueriesTimeout) {
-      if (subsManager.nowBasedQueries.queries.length) {
-        subsManager.nowBasedQueries.nextRefresh =
-          subsManager.nowBasedQueries.queries[0].nextRefresh
-      } else {
-        subsManager.nowBasedQueries.nextRefresh = MAX_TIMEOUT
-      }
+    Promise.all(updates)
+      .catch(e => {
+        console.error('Failed to update now queries', e)
+      })
+      .finally(() => {
+        if (!subsManager.refreshNowQueriesTimeout) {
+          if (subsManager.nowBasedQueries.queries.length) {
+            subsManager.nowBasedQueries.nextRefresh =
+              subsManager.nowBasedQueries.queries[0].nextRefresh
+          } else {
+            subsManager.nowBasedQueries.nextRefresh = MAX_TIMEOUT
+          }
 
-      updateTimeout(subsManager)
-    }
+          updateTimeout(subsManager)
+        }
+      })
   }, tm)
 }
 
 export function updateQueries(
   subsManager: SubscriptionManager,
-  entry: { subId: string; sub: QuerySubscription[]; nextRefresh: number }
+  entry: { subId: string; nextRefresh: number }
 ) {
   const nextRefresh = entry.nextRefresh
 
