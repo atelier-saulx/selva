@@ -3,16 +3,19 @@ import { connect } from '../client/src/index'
 import { start } from '../server/src/index'
 import './assertions'
 import { wait } from './assertions'
+import getPort from 'get-port'
 
 let srv
+let port
 test.before(async t => {
+  port = await getPort()
   srv = await start({
-    port: 6099
+    port
   })
 
   await wait(500)
 
-  const client = connect({ port: 6099 }, { loglevel: 'info' })
+  const client = connect({ port: port }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -41,7 +44,7 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  const client = connect({ port: 6099 })
+  const client = connect({ port: port })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
@@ -51,7 +54,7 @@ test.after(async _t => {
 
 test.serial('find - numeric exists field', async t => {
   // simple nested - single query
-  const client = connect({ port: 6099 }, { loglevel: 'info' })
+  const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
     type: 'match',
     name: 'match 1',
@@ -93,7 +96,7 @@ test.serial('find - numeric exists field', async t => {
 
 test.serial('find - string field only exists indexed', async t => {
   // simple nested - single query
-  const client = connect({ port: 6099 }, { loglevel: 'info' })
+  const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
     type: 'league',
     name: 'league 1'
