@@ -25,9 +25,9 @@ Launches a Selva server instance.
     </tr>
   </thead>
   <tr>
-    <td valign="top">`options`</td>
+    <td valign="top"><code>options</code></td>
     <td valign="top">object</td>
-    <td valign="top">\<optional\></td>
+    <td valign="top">&lt;optional&gt;></td>
     <td>
       Server options  
       <br>Properties
