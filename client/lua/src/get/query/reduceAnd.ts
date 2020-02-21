@@ -99,7 +99,7 @@ const isRangeAndLargerOrSmaller = (
     other = a
   }
 
-  const otherVal = other.$value === 'now' ? now() : range.$value
+  const otherVal = other.$value === 'now' ? now() : other.$value
 
   if (other.$operator === '>') {
     const rangeVal = range.$value[1] === 'now' ? now() : range.$value[1]
