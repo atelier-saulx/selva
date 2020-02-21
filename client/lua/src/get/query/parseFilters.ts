@@ -2,6 +2,7 @@ import { FilterAST, Fork } from './types'
 import addSearch from './addSearch'
 import { Filter, GeoFilter } from '~selva/get/types'
 import { isFork } from './util'
+import { isArray } from '../../util'
 import reduceAnd from './reduceAnd'
 import * as logger from '../../logger'
 
@@ -29,7 +30,7 @@ function convertGeoFilterValue(geoFilter: GeoFilter): (string | number)[] {
 }
 
 const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
-  const [search, hasNow, err] = addSearch(filterOpt)
+  const [search, err] = addSearch(filterOpt)
   if (err) {
     return [{ isFork: true }, err]
   }
@@ -56,6 +57,20 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
     $operator: o,
     $field: filterOpt.$field,
     $search: search
+  }
+
+  let hasNow = false
+  if (isArray(filter.$value)) {
+    for (const val of filter.$value) {
+      if (val === 'now') {
+        hasNow = true
+        break
+      }
+    }
+  } else {
+    if (filter.$value === 'now') {
+      hasNow = true
+    }
   }
 
   if (hasNow) {

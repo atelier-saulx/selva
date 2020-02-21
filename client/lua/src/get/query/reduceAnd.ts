@@ -1,5 +1,5 @@
 import { Fork, FilterAST, Value } from './types'
-import { isArray, indexOf } from '../../util'
+import { isArray, indexOf, now } from '../../util'
 import { isFork } from './util'
 import * as logger from '../../logger'
 
@@ -99,16 +99,12 @@ const isRangeAndLargerOrSmaller = (
     other = a
   }
 
-  if (other.$value === 'now') {
-    return [false, null]
-  }
+  const otherVal = other.$value === 'now' ? now() : range.$value
 
   if (other.$operator === '>') {
-    if (range.$value[1] === 'now') {
-      return [false, null]
-    }
+    const rangeVal = range.$value[1] === 'now' ? now() : range.$value[1]
 
-    if (other.$value > range.$value[1]) {
+    if (otherVal > rangeVal) {
       return [
         false,
         `Out of bounds range filter ${other.$value} < ${range.$value}`
@@ -116,11 +112,9 @@ const isRangeAndLargerOrSmaller = (
     }
   }
   if (other.$operator === '<') {
-    if (range.$value[0] === 'now') {
-      return [false, null]
-    }
+    const rangeVal = range.$value[0] === 'now' ? now() : range.$value[0]
 
-    if (other.$value > range.$value[0]) {
+    if (otherVal > rangeVal) {
       return [
         false,
         `Out of bounds range filter ${other.$value} > ${range.$value}`

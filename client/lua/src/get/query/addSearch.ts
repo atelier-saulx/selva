@@ -3,12 +3,11 @@ import { Filter } from '~selva/get/types'
 import { getSearchIndexes } from '../../schema/index'
 import * as logger from '../../logger'
 
-function addSearch(filter: Filter): [string[], boolean, null | string] {
+function addSearch(filter: Filter): [string[], null | string] {
   if (filter.$field === 'id') {
-    return [['TAG'], false, null]
+    return [['TAG'], null]
   }
 
-  let hasNow = false
   const searchIndexes = getSearchIndexes()
   const search = searchIndexes.default && searchIndexes.default[filter.$field]
   if (search) {
@@ -19,33 +18,14 @@ function addSearch(filter: Filter): [string[], boolean, null | string] {
     ) {
       return [
         [],
-        false,
         `Cannot have numeric comparisons on other search types then NUMERIC ${filter.$field}`
       ]
     }
   } else {
-    return [
-      [],
-      false,
-      `Cannot search fields that are not indexed ${filter.$field}`
-    ]
+    return [[], `Cannot search fields that are not indexed ${filter.$field}`]
   }
 
-  if (search[0] === 'NUMERIC') {
-    if (isArray(filter.$value)) {
-      for (let i = 0; i < filter.$value.length; i++) {
-        if (filter.$value[i] === 'now') {
-          hasNow = true
-        }
-      }
-    }
-
-    if (filter.$value === 'now') {
-      hasNow = true
-    }
-  }
-
-  return [search, hasNow, null]
+  return [search, null]
 }
 
 export default addSearch
