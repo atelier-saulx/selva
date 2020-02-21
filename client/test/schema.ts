@@ -219,15 +219,67 @@ test.serial.only('schemas - basic', async t => {
     types: {
       match: {
         fields: {
-          ...defaultFields
+          ...defaultFields,
+          smurky: {
+            type: 'set',
+            items: {
+              type: 'object', // stored as json in this case (scince you start with a set)
+              properties: {
+                interval: {
+                  type: 'array',
+                  items: {
+                    type: 'timestamp'
+                  }
+                },
+                url: { type: 'url' }
+              }
+            }
+          }
         }
       }
     }
   })
 
-  const newResult = (await client.getSchema()).schema
+  let newResult = (await client.getSchema()).schema
+
   mangleResults(schema, newResult)
-  t.deepEqual(newResult, schema, 'correct schema after setting the same')
+  t.deepEqual(
+    newResult,
+    schema,
+    'correct schema after setting the same without meta'
+  )
+
+  await client.updateSchema({
+    types: {
+      match: {
+        fields: {
+          smurky: {
+            meta: 'overriden with string',
+            type: 'set',
+            items: {
+              type: 'object', // stored as json in this case (scince you start with a set)
+              properties: {
+                interval: {
+                  type: 'array',
+                  items: {
+                    type: 'timestamp'
+                  }
+                },
+                url: { type: 'url' }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  newResult = (await client.getSchema()).schema
+  t.deepEqual(
+    newResult.types.match.fields.smurky.meta,
+    'overriden with string',
+    'can overwrite meta'
+  )
 
   // drop search index in this case (NOT SUPPORTED YET!)
   // throws for now
