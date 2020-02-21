@@ -61,6 +61,7 @@ export type FieldSchemaObject = {
   properties: {
     [key: string]: FieldSchema
   }
+  meta?: any
 }
 
 export type FieldSchemaJson = {
@@ -69,17 +70,20 @@ export type FieldSchemaJson = {
     [key: string]: FieldSchema
   }
   search?: SearchRaw | Search
+  meta?: any
 }
 
 export type FieldSchemaOther = {
   search?: SearchRaw | Search
   type: FieldType
+  meta?: any
 }
 
 export type FieldSchemaArrayLike = {
   search?: { index?: string; type: 'TAG'[] }
   type: 'set' | 'array'
   items: FieldSchema
+  meta?: any
 }
 
 export type FieldSchema =

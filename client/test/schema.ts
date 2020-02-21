@@ -112,6 +112,10 @@ test.serial.only('schemas - basic', async t => {
         fields: {
           ...defaultFields,
           smurky: {
+            meta: {
+              yesh: 'a meta value',
+              data: ['in an array']
+            },
             type: 'set',
             items: {
               type: 'object', // stored as json in this case (scince you start with a set)
@@ -176,6 +180,12 @@ test.serial.only('schemas - basic', async t => {
   await client.updateSchema(schema)
 
   const { schema: schemaResult, searchIndexes } = await client.getSchema()
+
+  // make sure meta is accessible
+  t.deepEqual(schemaResult.types.match.fields.smurky.meta, {
+    yesh: 'a meta value',
+    data: ['in an array']
+  })
 
   mangleResults(schema, schemaResult)
   t.deepEqual(schemaResult, schema, 'correct schema')
