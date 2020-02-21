@@ -12,6 +12,7 @@ import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
 import { addFieldToSearch } from './search'
 import sendEvent from './events'
+import { setUpdatedAt, setCreatedAt } from './timestamps'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -222,6 +223,10 @@ function update(payload: SetOptions): Id | null {
     if (!payload.parents && payload.$id !== 'root') {
       payload.parents = { $add: ['root'] }
     }
+
+    setCreatedAt(payload, payload.$id, payload.type)
+  } else {
+    setUpdatedAt(payload, payload.$id, payload.type)
   }
 
   setField(payload.$id, null, payload, false)
