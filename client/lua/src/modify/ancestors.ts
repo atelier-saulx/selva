@@ -177,46 +177,6 @@ function setDepth(id: Id, depth: number): boolean {
   return true
 }
 
-// TODO: maybe we can do this as a part of the main recursion
-// we need to treat depth as the min depth of all ancestors + 1
-function updateDepths(id: Id): void {
-  // update self depth
-  const parents = redis.smembers(id + '.parents')
-  let maxParentDepth: number | null = null
-  for (const parent of parents) {
-    let parentDepth = getDepth(parent)
-    if (!parentDepth) {
-      parentDepth = 0
-    }
-
-    if (parentDepth && (!maxParentDepth || maxParentDepth < parentDepth)) {
-      maxParentDepth = parentDepth
-    }
-  }
-
-  if (!maxParentDepth) {
-    maxParentDepth = 0
-  }
-
-  const updated = setDepth(id, 1 + maxParentDepth)
-
-  if (!updated) {
-    return
-  }
-
-  // update depth of all children
-  const children = redis.smembers(id + '.children')
-  if (!children) {
-    return
-  }
-
-  for (const child of children) {
-    updateDepths(child)
-    // update the depth of self in child ancestors
-    redis.zAddReplaceScore(child + '.ancestors', 1 + maxParentDepth, id)
-  }
-}
-
 function reCalculateAncestorsFor(ids: Id[]): void {
   for (const id of ids) {
     // clear the ancestors in case of any removed ancestors
@@ -236,12 +196,18 @@ function reCalculateAncestorsFor(ids: Id[]): void {
       }
     }
 
+    let maxParentDepth = 0
     if (!skipAncestorUpdate) {
       // TODO: compare ancestor string maybe for extra fast?
       const currentAncestors = redis.zrange(id + '.ancestors')
       redis.del(id + '.ancestors')
 
       for (const parent of parents) {
+        const parentDepth = getDepth(parent)
+        if (parentDepth && parentDepth > maxParentDepth) {
+          maxParentDepth = parentDepth
+        }
+
         // add all ancestors of parent
         const parentAncestors: string[] = ancestryFromHierarchy(id, parent)
 
@@ -260,6 +226,8 @@ function reCalculateAncestorsFor(ids: Id[]): void {
 
         redis.zAddMultipleNew(id + '.ancestors', ...reversed)
       }
+
+      setDepth(id, maxParentDepth + 1)
 
       const ancestors = redis.zrange(id + '.ancestors')
 
@@ -310,7 +278,6 @@ function reCalculateAncestorsFor(ids: Id[]): void {
 export function reCalculateAncestors(): void {
   const ids: Id[] = []
   for (const id in needAncestorUpdates) {
-    updateDepths(id)
     ids[ids.length] = id
   }
 
