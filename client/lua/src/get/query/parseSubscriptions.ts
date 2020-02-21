@@ -174,35 +174,48 @@ function parseSubscriptions(
       let [qs] = createSearchString(withTime)
       const q = qs[0]
 
-      // TODO: when multiple timestamp columns need to
-      // do something about the sort in that case
-      // like maybe we can just preserve whatever condition has > 'now'
-      const newArgs = createSearchArgs(
-        {
-          $list: {
-            $sort: {
-              $field: timestampFilters[0].$field, // it's actually not so easy to decide which timestamp field should be the basis of sorting
-              $order: 'asc'
-            },
-            $range: [0, 1]
+      let earliestTime: number | undefined = undefined
+      for (let i = 0; i < timestampFilters.length; i++) {
+        const newArgs = createSearchArgs(
+          {
+            $list: {
+              $sort: {
+                $field: timestampFilters[i].$field, // it's actually not so easy to decide which timestamp field should be the basis of sorting
+                $order: 'asc'
+              },
+              $range: [0, 1]
+            }
+          },
+          string.sub(q, 2, q.length - 1),
+          withTime
+        )
+
+        const newSearchResults: string[] = redis.pcall(
+          'ft.search',
+          'default',
+          ...newArgs
+        )
+
+        const earliestId = newSearchResults[1]
+        if (earliestId) {
+          const timeResp = redis.call(
+            'hget',
+            earliestId,
+            timestampFilters[i].$field
+          )
+
+          if (timeResp) {
+            const time = tonumber(timeResp)
+            if (!earliestTime || earliestTime > time) {
+              earliestTime = time
+            }
           }
-        },
-        string.sub(q, 2, q.length - 1),
-        withTime
-      )
+        }
+      }
 
-      const newSearchResults: string[] = redis.pcall(
-        'ft.search',
-        'default',
-        ...newArgs
-      )
-
-      const earliestId = newSearchResults[1]
-      if (earliestId) {
-        const time = redis.call('hget', earliestId, timestampFilters[0].$field)
-
+      if (earliestTime) {
         sub.time = {
-          nextRefresh: tonumber(time)
+          nextRefresh: earliestTime
         }
       }
     }
