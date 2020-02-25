@@ -8,6 +8,11 @@
     - **[connect()](#connect)**
     - **[set()](#set)**
     - **[get()](#get)**
+    - **[observe()](#observe)**
+    - **[getSchema()](#getschema)**
+    - **[updateSchema()](#updateschema)**
+    - **[getTypeFromId()](#gettypefromid)**
+    - **[delete()](#delete)**
 
 ## Server
 
@@ -29,10 +34,9 @@ Launches a Selva server instance.
   <tr>
     <td valign="top"><code>options</code></td>
     <td valign="top">object</td>
-    <td valign="top">&lt;optional&gt;</td>
+    <td valign="top"></td>
     <td>
-      Server options  
-      <br>Properties
+      Server options.<br>
       <table>
         <thead>
           <tr>
@@ -44,7 +48,7 @@ Launches a Selva server instance.
         </thead>
         <tr>
           <td valign="top"><code>port</code></td>
-          <td valign="top">number</td>
+          <td valign="top">number, Promise&lt;number&gt;</td>
           <td valign="top"></td>
           <td valign="top">
             Server port number to use
@@ -52,11 +56,36 @@ Launches a Selva server instance.
         </tr>
         <tr>
           <td valign="top"><code>service</code></td>
-          <td valign="top">string</td>
-          <td valign="top">&lt;optional&gt;</td>
+          <td valign="top">object, Promise&lt;object&gt;</td>
+          <td valign="top">optional</td>
           <td valign="top">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam ut efficitur nunc, vitae facilisis arcu. Donec faucibus nibh ex, non aliquet mi rhoncus finibus. Suspendisse dapibus, odio nec aliquet molestie, nunc nisi vulputate odio, eget porttitor erat tellus eu nunc. Phasellus venenatis massa id velit elementum, quis bibendum dolor lobortis. Quisque rutrum arcu quam, et scelerisque mauris iaculis a. Donec vehicula sem vel congue pharetra.
+            Alternative notation for host and port.
+            <pre lang="javascript">{ port: 1234, host: 'localhost' }</pre>
           </td>
+        </tr>
+        <tr>
+          <td valign="top"><code>modules</code></td>
+          <td valign="top">string[]</td>
+          <td valign="top">optional</td>
+          <td valign="top">Redis modules to load</td>
+        </tr>
+        <tr>
+          <td valign="top"><code>verbode</code></td>
+          <td valign="top">boolean</td>
+          <td valign="top">optional</td>
+          <td valign="top">Log debugging information.</td>
+        </tr>
+        <tr>
+          <td valign="top"><code>backups</code></td>
+          <td valign="top">object</td>
+          <td valign="top">optional</td>
+          <td valign="top">?</td>
+        </tr>
+        <tr>
+          <td valign="top"><code>subscriptions</code></td>
+          <td valign="top">boolean</td>
+          <td valign="top">optional</td>
+          <td valign="top">Use subscriptions. Defaults to `true`.</td>
         </tr>
       </table>
     </td>
@@ -102,11 +131,11 @@ Connects to a server
   </thead>
   <tr>
     <td valign="top"><code>options</code></td>
-    <td valign="top">object</td>
-    <td valign="top">&lt;optional&gt;</td>
+    <td valign="top">object, Promise&lt;object&gt;</td>
+    <td valign="top"></td>
     <td>
-      Connection options  
-      <br>Properties
+      Connection options.
+      <br>
       <table>
         <thead>
           <tr>
@@ -121,16 +150,22 @@ Connects to a server
           <td valign="top">number</td>
           <td valign="top"></td>
           <td valign="top">
-            Port to connect to.
+            Server port to connect to.
           </td>
         </tr>
         <tr>
-          <td valign="top"><code>option2</code></td>
+          <td valign="top"><code>host</code></td>
           <td valign="top">string</td>
-          <td valign="top">&lt;optional&gt;</td>
+          <td valign="top">optional</td>
           <td valign="top">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam ut efficitur nunc, vitae facilisis arcu. Donec faucibus nibh ex, non aliquet mi rhoncus finibus. Suspendisse dapibus, odio nec aliquet molestie, nunc nisi vulputate odio, eget porttitor erat tellus eu nunc. Phasellus venenatis massa id velit elementum, quis bibendum dolor lobortis. Quisque rutrum arcu quam, et scelerisque mauris iaculis a. Donec vehicula sem vel congue pharetra.
+            Server host to connect to.
           </td>
+        </tr>
+        <tr>
+          <td valign="top"><code>retryStrategy</code></td>
+          <td valign="top">string</td>
+          <td valign="top">optional</td>
+          <td valign="top">(?)</td>
         </tr>
       </table>
     </td>
@@ -158,7 +193,7 @@ Sets data in the database.
     <td valign="top"></td>
     <td>
       Data to store in the database.  
-      <br>Properties:
+      <br>
       <table>
         <thead>
           <tr>
@@ -259,3 +294,162 @@ Retrieves data from the database.
     </td>
   </tr>
 </table>
+
+#### Returns
+
+Promise resolving to the fetched data.
+
+### observe(_query_)
+
+Retrieves and sets a subscription to data.
+
+#### Parameters
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Attributes</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tr>
+    <td valign="top"><code>query</code></td>
+    <td valign="top">object</td>
+    <td valign="top"></td>
+    <td>
+      [Query](query.md) to be executed.
+    </td>
+  </tr>
+</table>
+
+#### Returns
+
+Promise resolving to an observable (?? needs better definition)
+
+### getSchema()
+
+Gets the database schema.
+
+#### Returns
+
+Promise resolving to the [schema](schemas.md) currently in use.
+
+### updateSchema(_schema_)
+
+Updates the database [schema](schemas.md)
+
+#### Parameters
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Attributes</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tr>
+    <td valign="top"><code>schema</code></td>
+    <td valign="top">object</td>
+    <td valign="top"></td>
+    <td>
+      [Schema](schemas.md) changes. The new schema is merged with the existing one.<br>Schema fields cannot be removed.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top"><code>retry</code></td>
+    <td valign="top">number</td>
+    <td valign="top">optional</td>
+    <td>Times to retry. Defaults to `0`</td>
+  </tr>
+</table>
+
+#### Returns
+
+Promise resolving to an observable (?? needs better definition)
+
+### getTypeFromId(_id_)
+
+Gets the type of a document.
+
+#### Parameters
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Attributes</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tr>
+    <td valign="top"><code>id</code></td>
+    <td valign="top">string</td>
+    <td valign="top"></td>
+    <td>Id of the document.</td>
+  </tr>
+</table>
+
+#### Returns
+
+Promise resolving to the type of the document.
+
+### delete(_id_)
+
+Gets the type of a document.
+
+#### Parameters
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Attributes</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tr>
+    <td valign="top"><code>id</code></td>
+    <td valign="top">string, object</td>
+    <td valign="top"></td>
+    <td>
+      Id of the document to delete or an object which includes the following properties:
+      <br>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Attributes</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tr>
+          <td valign="top"><code>$id</code></td>
+          <td valign="top">string</td>
+          <td valign="top">optional</td>
+          <td valign="top">
+            Id of the document to delete.
+          </td>
+        </tr>
+        <tr>
+          <td valign="top"><code>$hierarchy</code></td>
+          <td valign="top">boolean</td>
+          <td valign="top">optional</td>
+          <td valign="top">
+            Defaults to false. Also removes the document children, if any, and removes it's reference from any parents.
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+#### Returns
+
+Promise resolving to the type of the document.
