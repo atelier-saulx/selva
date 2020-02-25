@@ -1,57 +1,84 @@
-# Selva Query Documentation
+# Selva Query DSL Documentation
 
 Selva uses a JSON query DSL to specify the data to be retrieved from the database.
 
-  - [_root_ object](#rootobject)
-  - [Types](#types)
-    - [Available field data types](#avilablefielddatatypes)
-
-### _root_ object
-
-#### Properties
-
-| Name | type | atributes | description |
-| ---  | ---  | ---       | ---         |
-| `$id` | string | optional | Id of the document to get |
-| `types` | Object | | Defines the [types](#types). Each object key is the type name and it's value the type definition. |
+  - [**&lt;any field name&gt;**](#any-field-name)
+  - [**$id**](#id)
+  - [**$all**](#all)
+  - [**$value**](#id)
+  - [**$default**](#default)
 
 
-### Types
+[Available data types](#available-data-types)
+
+## Field properties
+
+### `<any field name>`: _boolean_, _object_
+
+When truthly, includes the field named as the key. Ovjects can be nested. 
 
 ```javascript
-{
-  //...
-  types: {
-    league: { // type name
-      prefix: 'le', // type prefix
-      fields: { 
-        name: { type: 'string', search: { type: ['TAG'] } }
-      }
-    }
+const result = await get({
+  $id: 'muASxsd3',
+  title: true,
+  director: true,
+  technicalData: {
+    runtime: true,
+    color: true,
+    aspectRatio: true
   }
-}
+})
 ```
 
-#### Properties
+### `$id`: _string_
 
-| Name | type | atributes | description |
-| ---  | ---  | ---       | ---         |
-| `prefix` | string | optional | Two character string that identifies the type. Used as a prefix for each object/id |
-| `fields` | Object | | Defines the [fields](#typefields) for the type. Each object key is a field name and its value the field difinition. |
+Id of the object to get.  
+If omited, the _root_ object is returned. Can only be used at the root of the query object.
 
-### Type Fields
+```javascript
+const result = await get({
+  $id: 'muASxsd3'
+})
+```
 
-Defines the fields available to each type.
+### `$all`: _boolean_
 
-#### Properties
+Includes all the fields from the parent object 
 
-| Name | type | atributes | description |
-| ---  | ---  | ---       | ---         |
-| `type` | string | | Two character string that identifies the type. Used as a prefix for each object/id |
-| `fields` | Object | | [Data type](#avilablefielddatatypes) for the field.
-| `search` | Object | optional | Indexing info blabla
+```javascript
+const result = await get({
+  $id: 'muASxsd3',
+  title: true,
+  director: true,
+  technicalData: {
+    $all: true
+  }
+})
+```
 
-##### Avilable field data types
+### `$value`: _any_
+
+Overrides the field value.
+
+```javascript
+const result = await get({
+  $id: 'muASxsd3',
+  title: { $value'Amazing movie' }
+})
+```
+
+### `$default`: _any_
+
+Default value in case the field has no value set.
+
+```javascript
+const result = await get({
+  $id: 'muASxsd3',
+  director: { $default: 'Unknown director' }
+})
+```
+
+## Avilable field data types
 
 - **string**: `"flurpy"`, `"pants"`  
 - **integer**: `123`, `666`
