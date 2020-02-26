@@ -9,7 +9,6 @@ export type GetSchemaResult = {
 
 export type FieldType =
   | 'float'
-  | 'boolean'
   | 'number'
   | 'int'
   | 'references'

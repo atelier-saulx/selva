@@ -119,13 +119,6 @@ test.before(async t => {
           title: { type: 'text' },
           description: { type: 'text' }
         }
-      },
-      yesno: {
-        prefix: 'yn',
-        fields: {
-          bolYes: { type: 'boolean' },
-          bolNo: { type: 'boolean' }
-        }
       }
     }
   })
@@ -171,33 +164,6 @@ test.serial('get $value', async t => {
           complex: true
         }
       }
-    }
-  )
-
-  await client.delete('root')
-  client.destroy()
-})
-
-test.serial('get boolean value', async t => {
-  const client = connect({ port })
-
-  await client.set({
-    $id: 'ynTest',
-    bolYes: true,
-    bolNo: false
-  })
-
-  t.deepEqualIgnoreOrder(
-    await client.get({
-      $id: 'ynTest',
-      id: true,
-      bolYes: true,
-      bolNo: true
-    }),
-    {
-      id: 'ynTest',
-      bolYes: true,
-      bolNo: false
     }
   )
 
