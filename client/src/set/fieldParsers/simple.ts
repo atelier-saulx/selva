@@ -39,10 +39,7 @@ export const verifiers = {
     return typeof payload === 'string' && payload.length < 30
   },
   timestamp: (payload: 'now' | number) => {
-    return (
-      payload === 'now' ||
-      (typeof payload === 'number' && payload > 0 && payload < 9999999999)
-    )
+    return payload === 'now' || (typeof payload === 'number' && payload > 0)
   },
   url: (payload: string) => {
     return typeof payload === 'string' && validURL(payload)
@@ -53,6 +50,9 @@ export const verifiers = {
   },
   number: (payload: number) => {
     return typeof payload === 'number'
+  },
+  boolean: (payload: boolean) => {
+    return typeof payload === 'boolean'
   },
   float: (payload: number) => {
     return typeof payload === 'number'
@@ -97,7 +97,9 @@ for (const key in verifiers) {
     _type: string
   ) => {
     if (!noOptions && typeof payload === 'object') {
+      let hasKeys = false
       for (let k in payload) {
+        hasKeys = true
         if (
           k === '$default' ||
           k === '$value' ||
@@ -122,6 +124,10 @@ for (const key in verifiers) {
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }
+      }
+
+      if (!hasKeys) {
+        throw new Error(`Incorrect payload empty object for field ${field}`)
       }
       result[field] = payload
     } else if (verify(payload)) {

@@ -1,18 +1,33 @@
 import { createClient, RedisClient } from 'redis'
-import { SelvaClient } from '../../../client/src'
-import { GetOptions } from '../../../client/src/get/types'
-import { QuerySubscription } from '../../../lua/src/get/query/types'
-import { Schema } from '../../../client/src/schema'
+import { SelvaClient, GetOptions, Schema } from '@saulx/selva'
 import { createHash } from 'crypto'
 import addFields from './addFields'
 import attach from './attach'
+import { updateQueries as updateNowQueries } from './now'
+
+export type QuerySubscription = {
+  idFields?: Record<string, true>
+  queryId: string
+  ids?: Record<string, true>
+  member: { $field: string; $value: string[] }[] // array is an OR
+  type?: string[]
+  fields: {
+    [key: string]: true
+  }
+  time?: { nextRefresh: number }
+}
 
 export default class SubscriptionManager {
   public refreshSubscriptionsTimeout: NodeJS.Timeout
+  public refreshNowQueriesTimeout: NodeJS.Timeout
   public lastRefreshed: Date
   public cleanUp: boolean = false
   public lastModifyEvent: number
   public queries: Record<string, QuerySubscription[]> = {}
+  public nowBasedQueries: {
+    nextRefresh: number
+    queries: { subId: string; nextRefresh: number }[]
+  }
   public inProgress: Record<string, true> = {}
   public subscriptions: Record<string, GetOptions> = {}
   public subscriptionsByField: Record<string, Set<string>> = {}
@@ -135,6 +150,14 @@ export default class SubscriptionManager {
       this.queries[subscriptionId] = <QuerySubscription[]>payload.$meta.query
 
       // console.log('ATTACH', subscriptionId, payload.$meta.query)
+      for (const queryMeta of payload.$meta.query) {
+        if (queryMeta.time) {
+          updateNowQueries(this, {
+            subId: subscriptionId,
+            nextRefresh: queryMeta.time.nextRefresh
+          })
+        }
+      }
     }
     // need to clear $meta
 

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "~selva/*": ["src/*"]
+    },
+    "target": "esnext",
+    "lib": ["esnext"],
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strict": true,
+    "outDir": "./dist"
+  }
+}

@@ -168,10 +168,18 @@ function newFieldDefinition(
       }
     }
 
-    return <any>{
+    const result = <any>{
       type: newField.type,
       properties: props
     }
+
+    if (newField.meta) {
+      result.meta = newField.meta
+    } else if (oldField.meta) {
+      result.meta = oldField.meta
+    }
+
+    return result
   } else if (
     (oldField.type === 'set' || oldField.type === 'array') &&
     oldField.items.type !== (<any>newField).items.type
@@ -187,6 +195,10 @@ function newFieldDefinition(
     if (oldField.search) {
       ;(<any>newField).search = oldField.search
     }
+  }
+
+  if (!newField.meta && oldField.meta) {
+    newField.meta = oldField.meta
   }
 
   return newField

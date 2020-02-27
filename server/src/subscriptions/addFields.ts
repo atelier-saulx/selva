@@ -1,6 +1,5 @@
-import { Schema } from '../../../client/src/schema'
+import { Schema, GetOptions } from '@saulx/selva'
 import makeAll from './makeAll'
-import { GetOptions } from '../../../client/src/get/types'
 
 function addFields(
   path: string,
@@ -15,6 +14,7 @@ function addFields(
         addFields(path, fields, schema, makeAll(path, schema, opts))
         return
       } else if (key === '$inherit') {
+        // TODO(jim): mystical subscription things
         fields.add('.ancestors')
         return
       } else if (key === '$field') {

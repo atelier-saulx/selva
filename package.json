@@ -1,84 +1,12 @@
 {
-  "name": "@saulx/selva",
-  "version": "0.0.4",
-  "main": "dist/client/src/index.js",
+  "name": "selva",
+  "private": true,
+  "workspaces": ["client", "server"],
   "scripts": {
-    "build": "tsc",
-    "start": "tsc && node dist/index.js",
-    "test": "yarn buildLua && ava --verbose",
-    "watch": "ava --watch --verbose",
-    "scratchpad": "yarn buildLua && redis-cli --ldb --eval dist/lua/scratchpad.lua",
-    "testLua": "yarn buildLua && ./lua/testy.lua dist/lua/tests.lua",
-    "buildLua": "rm -rf ./dist && scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ./bin/transpileScript $script; done && node ./lua/postprocessLuaTests.js"
-  },
-  "husky": {
-    "hooks": {
-      "/pre-commit": "lint-staged",
-      "/pre-push": "node services/db/lib/start & lerna run test --parallel --since origin -- -- --fail-fast; kill $!",
-      "/post-merge": "lerna bootstrap --since $(git rev-parse HEAD) --include-filtered-dependencies"
-    }
-  },
-  "repository": "https://github.com/atelier-saulx/selva",
-  "lint-staged": {
-    "{js,json}": [
-      "prettier --write",
-      "git add"
-    ],
-    "*.js": [
-      "eslint --fix",
-      "git add"
-    ],
-    "*.ts": [
-      "eslint --fix",
-      "git add"
-    ]
-  },
-  "ava": {
-    "files": [
-      "test/**/*.ts",
-      "!test/assertions"
-    ],
-    "compileEnhancements": false,
-    "extensions": [
-      "ts"
-    ],
-    "require": [
-      "ts-node/register"
-    ]
-  },
-  "devDependencies": {
-    "@types/redis": "^2.8.14",
-    "ava": "2.4.0",
-    "babel-eslint": "^10.0.3",
-    "eslint": "^6.5.1",
-    "eslint-config-prettier": "^6.4.0",
-    "eslint-config-react-app": "^5.0.2",
-    "eslint-config-standard": "^14.1.0",
-    "eslint-config-standard-react": "^9.2.0",
-    "eslint-plugin-flowtype": "^4.3.0",
-    "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-jsx-a11y": "^6.2.3",
-    "eslint-plugin-node": "^10.0.0",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-react": "^7.16.0",
-    "eslint-plugin-react-hooks": "2.1.2",
-    "eslint-plugin-standard": "^4.0.1",
-    "get-port": "^5.1.1",
-    "husky": "^3.0.8",
-    "lint-staged": "^9.4.2",
-    "prettier": "^1.18.2",
-    "ts-node": "^8.5.4",
-    "typescript": "^3.7.3",
-    "typescript-to-lua": "^0.30.1"
-  },
-  "dependencies": {
-    "@sindresorhus/fnv1a": "^2.0.0",
-    "@types/uuid": "^3.4.6",
-    "async-retry": "^1.3.1",
-    "aws-sdk": "^2.616.0",
-    "dropbox": "^4.0.30",
-    "node-fetch": "^2.6.0",
-    "redis": "^2.8.0",
-    "uuid": "^3.3.3"
+    "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist",
+    "test": "cd client && yarn test",
+    "build": "yarn buildClient && yarn buildServer",
+    "buildClient": "cd client && yarn buildLua && yarn build",
+    "buildServer": "cd server && yarn build"
   }
 }
