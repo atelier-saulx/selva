@@ -14,15 +14,10 @@ let port
 
 test.before(async t => {
   port = await getPort()
-  srv = await start({
-    port
-  })
-  
+  srv = await start({ port })
   await wait(500)
-  
-  const client = connect({ port: port }, { loglevel: 'info' })
+  const client = connect({ port: port })
   await client.updateSchema(schema)
-  
   await client.destroy()
 })
 
@@ -34,7 +29,7 @@ test.after(async _t => {
 })
 
 test.serial('$any', async t => {
-  const client = connect({ port: port }, { loglevel: 'info' })
+  const client = connect({ port: port })
 
   await setDataSet(client)
 
@@ -48,4 +43,18 @@ test.serial('$any', async t => {
     'born',
     'died'
   ].every(key => Object.keys(result).includes(key)))
+})
+
+test.serial('$any with blacklist', async t => {
+  const client = connect({ port: port })
+
+  await setDataSet(client)
+
+  const result = await client.get({
+    $id: 'peCharltonHeston',
+    $all: true,
+    died: false
+  })
+
+  t.false(Object.keys(result).includes('died'))
 })
