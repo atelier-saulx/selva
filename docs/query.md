@@ -11,7 +11,7 @@ Selva uses a JSON query DSL to specify the data to be retrieved from the databas
 
 [Available data types](#available-data-types)
 
-## Field properties
+## Clauses
 
 ### `<any field name>`: _boolean_, _object_
 
@@ -43,7 +43,9 @@ const result = await get({
 
 ### `$all`: _boolean_
 
-Includes all the fields from the parent object 
+Includes all the fields for the obect at the level where the clause is used.
+<!-- TODO: confirm if true -->
+References are not included.
 
 ```javascript
 const result = await get({
@@ -51,29 +53,31 @@ const result = await get({
   $all: true
 })
 ```
-[See test](../client/test/examples/any.ts#L10)
+[See test](../client/test/examples/basic.ts#L29)
 
 ### `$value`: _any_
 
-Overrides the field value.
+Overrides the current value of the field.
 
 ```javascript
 const result = await get({
-  $id: 'muASxsd3',
+  $id: 'moASxsd3',
   title: { $value'Amazing movie' }
 })
 ```
+[See test](../client/test/examples/basic.ts#L46)
 
 ### `$default`: _any_
 
-Default value in case the field has no value set.
+Default value to be returned in case the field has no value set.
 
 ```javascript
 const result = await get({
-  $id: 'muASxsd3',
+  $id: 'moASxsd3',
   director: { $default: 'Unknown director' }
 })
 ```
+[See test](../client/test/examples/basic.ts#L59)
 
 ## Avilable field data types
 

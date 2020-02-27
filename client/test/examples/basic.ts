@@ -42,3 +42,32 @@ test.serial('$any', async t => {
     'died'
   ].every(key => Object.keys(result).includes(key)))
 })
+
+test.serial('$value', async t => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  await setDataSet(client)
+
+  const result = await client.get({
+    $id: 'mo2001ASpaceOdyssey',
+    title: { $value: '2001' }
+  })
+
+  t.true(result.title === '2001')
+})
+
+test.serial('$default', async t => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  await setDataSet(client)
+
+  t.deepEqual(await client.get({
+    $id: 'peCharltonHeston',
+    died: { $default: '---' }
+  }), { died: 2008 })
+  
+  t.deepEqual(await client.get({
+    $id: 'peLeighTaylorYoung',
+    died: { $default: '---' }
+  }), { died: '---' })
+})
