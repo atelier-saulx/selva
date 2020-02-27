@@ -1,6 +1,6 @@
 import test from 'ava'
-import { connect } from '../client/src/index'
-import { start } from '../server/src/index'
+import { connect } from '@saulx/selva'
+import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
 
