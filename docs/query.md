@@ -43,7 +43,7 @@ const result = await get({
 
 ### `$all`: _boolean_
 
-Includes all the fields for the obect at the level where the clause is used.
+Includes all the fields for the obect at the level where the clause is used.  
 [References](./glossary.md#references) are not included. (?)
 
 ```javascript
