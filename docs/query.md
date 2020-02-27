@@ -62,7 +62,7 @@ const result = await get({
   died: false
 })
 ```
-[See test](../client/test/examples/all.ts)
+[See test](../client/test/examples/clauses/all.ts)
 
 ### `$value`: _any_
 
@@ -74,7 +74,7 @@ const result = await get({
   title: { $value'Amazing movie' }
 })
 ```
-[See test](../client/test/examples/value.ts)
+[See test](../client/test/examples/clauses/value.ts)
 
 ### `$default`: _any_
 
@@ -86,7 +86,7 @@ const result = await get({
   director: { $default: 'Unknown director' }
 })
 ```
-[See test](../client/test/examples/default.ts)
+[See test](../client/test/examples/clauses/default.ts)
 
 ## Avilable field data types
 
