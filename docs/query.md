@@ -44,8 +44,7 @@ const result = await get({
 ### `$all`: _boolean_
 
 Includes all the fields for the obect at the level where the clause is used.
-<!-- TODO: confirm if true -->
-References are not included.
+[References](./references.md#references) are not included. <!-- TODO: confirm if true -->
 
 ```javascript
 const result = await get({
