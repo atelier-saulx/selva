@@ -51,6 +51,9 @@ export const verifiers = {
   number: (payload: number) => {
     return typeof payload === 'number'
   },
+  boolean: (payload: boolean) => {
+    return typeof payload === 'boolean'
+  },
   float: (payload: number) => {
     return typeof payload === 'number'
   },
