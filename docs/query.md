@@ -53,7 +53,16 @@ const result = await get({
   $all: true
 })
 ```
-[See test](../client/test/examples/basic.ts#L29)
+
+Fields can be excluded if a false is set to specific fields.
+```javascript
+const result = await get({
+  $id: 'peASxsd3',
+  $all: true,
+  died: false
+})
+```
+[See test](../client/test/examples/all.ts)
 
 ### `$value`: _any_
 
@@ -65,7 +74,7 @@ const result = await get({
   title: { $value'Amazing movie' }
 })
 ```
-[See test](../client/test/examples/basic.ts#L46)
+[See test](../client/test/examples/value.ts)
 
 ### `$default`: _any_
 
@@ -77,7 +86,7 @@ const result = await get({
   director: { $default: 'Unknown director' }
 })
 ```
-[See test](../client/test/examples/basic.ts#L59)
+[See test](../client/test/examples/default.ts)
 
 ## Avilable field data types
 

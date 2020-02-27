@@ -31,7 +31,7 @@ type FnStart = {
   subscriptions?: boolean
 }
 
-type SelvaServer = {
+export type SelvaServer = {
   on: (
     type: 'log' | 'data' | 'close' | 'error',
     cb: (data: any) => void
