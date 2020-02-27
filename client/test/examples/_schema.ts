@@ -1,12 +1,12 @@
 import { SchemaOptions } from '@saulx/selva'
 
 export const schema:SchemaOptions = {
-  languages: ['en'],
+  languages: ['en', 'nl'],
   types: {
     movie: {
       prefix: 'mo',
       fields: {
-        title: { type: 'string' },
+        title: { type: 'text' },
         year: { type: 'int' },
         director: { type: 'string' },
         technicalData: {

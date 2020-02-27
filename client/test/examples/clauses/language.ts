@@ -28,33 +28,20 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('$any', async t => {
+test.serial('$language', async t => {
   const client = connect({ port: port })
 
   await setDataSet(client)
 
-  const result = await client.get({
-    $id: 'peCharltonHeston',
-    $all: true
-  })
+  t.deepEqual(await client.get({
+    $language: 'en',
+    $id: 'mo2001ASpaceOdyssey',
+    title: true
+  }), { title: '2001: A Space Odyssey' })
 
-  t.true([
-    'name',
-    'born',
-    'died'
-  ].every(key => Object.keys(result).includes(key)))
-})
-
-test.serial('$all with blacklist', async t => {
-  const client = connect({ port: port })
-
-  await setDataSet(client)
-
-  const result = await client.get({
-    $id: 'peCharltonHeston',
-    $all: true,
-    died: false
-  })
-
-  t.false(Object.keys(result).includes('died'))
+  t.deepEqual(await client.get({
+    $language: 'nl',
+    $id: 'mo2001ASpaceOdyssey',
+    title: true
+  }), { title: '2001: Een zwerftocht in de ruimte' })
 })

@@ -19,12 +19,15 @@ export const setDataSet = async (client:SelvaClient) => {
       born: 1921,
       died: 1992
     },
-  ].map(person => client.set(person)))
+  ].map(person => client.set({ $language: 'en', ...person})))
 
   await Promise.all([
     {
       $id: 'mo2001ASpaceOdyssey',
-      title: '2001: A Space Odyssey',
+      title: {
+        en: '2001: A Space Odyssey',
+        nl: '2001: Een zwerftocht in de ruimte'
+      },
       year: 1968,
       director: 'Stanley Kubrick',
       technicalData: {
@@ -35,7 +38,10 @@ export const setDataSet = async (client:SelvaClient) => {
     },
     {
       $id: 'moSoylentGreen',
-      title: 'Soylent Green',
+      title: {
+        en: 'Soylent Green',
+        nl: 'Groen Rantsoen'
+      },
       year: 1973,
       director: 'Richard Fleischer',
       technicalData: {
@@ -51,7 +57,7 @@ export const setDataSet = async (client:SelvaClient) => {
     },
     {
       $id: 'moMetropolis',
-      title: 'Metropolis',
+      title: { en: 'Metropolis' },
       year: 1927,
       director: 'Fritz Lang',
       technicalData: {

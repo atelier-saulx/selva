@@ -88,6 +88,19 @@ const result = await get({
 ```
 [See test](../client/test/examples/clauses/default.ts)
 
+### `$language`: _string_
+
+Filters document data to a set language on fields that supoprt it.
+
+```javascript
+const result = await client.get({
+  $language: 'en',
+  $id: 'mo2001ASpaceOdyssey',
+  title: true
+})
+```
+[See test](../client/test/examples/clauses/language.ts)
+
 ## Avilable field data types
 
 - **string**: `"flurpy"`, `"pants"`  
