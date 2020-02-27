@@ -67,7 +67,6 @@ export default (
     payload = { [$lang]: payload }
   }
 
-  console.log('--->', payload)
   refs(field, payload, lang)
   verify(payload, false, lang)
   result[field] = payload

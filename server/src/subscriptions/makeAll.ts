@@ -1,5 +1,4 @@
-import { GetOptions } from '../../../client/src/get/types'
-import { Schema, FieldSchema } from '../../../client/src/schema'
+import { GetOptions, Schema, FieldSchema } from '@saulx/selva'
 import { isObjectLike } from './util'
 
 function makeAll(path: string, schema: Schema, opts: GetOptions): GetOptions {

@@ -12,7 +12,7 @@ import { newSchemaDefinition } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import getTypeFromId from './getTypeFromId'
 import digest from './digest'
-import { IdOptions } from '../../lua/src/id'
+import { IdOptions } from '../lua/src/id'
 import { v4 as uuid } from 'uuid'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 5
@@ -30,7 +30,7 @@ let SCRIPTS
 try {
   SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
     (obj, scriptName) => {
-      let distPath = pathJoin(__dirname, '..', '..')
+      let distPath = pathJoin(__dirname, '..')
       if (!distPath.endsWith('dist')) {
         distPath = pathJoin(distPath, 'dist')
       }
@@ -234,3 +234,6 @@ export function connect(
 ): SelvaClient {
   return new SelvaClient(opts, selvaOpts)
 }
+
+export * from './schema/index'
+export * from './get/types'
