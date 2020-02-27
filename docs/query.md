@@ -15,7 +15,8 @@ Selva uses a JSON query DSL to specify the data to be retrieved from the databas
 
 ### `<any field name>`: _boolean_, _object_
 
-When truthly, includes the field named as the key. Ovjects can be nested. 
+When truthy, includes the named field in the result.  
+Objects can be nested to shape the exact format needed in the result.
 
 ```javascript
 const result = await get({
