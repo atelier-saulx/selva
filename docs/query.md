@@ -47,14 +47,11 @@ Includes all the fields from the parent object
 
 ```javascript
 const result = await get({
-  $id: 'muASxsd3',
-  title: true,
-  director: true,
-  technicalData: {
-    $all: true
-  }
+  $id: 'peASxsd3',
+  $all: true
 })
 ```
+[See test](../client/test/examples/any.ts#L10)
 
 ### `$value`: _any_
 
