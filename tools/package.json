@@ -2,6 +2,9 @@
   "name": "tools",
   "private": true,
   "version": "1.0.0",
+  "bin": {
+    "watch": "index.js"
+   },
   "devDependencies": {},
   "dependencies": {
     "chokidar": "^3.3.1",

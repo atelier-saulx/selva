@@ -1,7 +1,15 @@
+#!/usr/bin/env node
 const chokidar = require('chokidar')
 const cp = require('child_process')
 const execa = require('execa')
 const path = require('path')
+
+function update() {
+  if (!currentlyBuilding) {
+    currentlyBuilding = true
+    ava.stdin.write('r\n', 'utf8')
+  }
+}
 
 const files = process.argv.slice(2).map(f => {
   const parts = f.split(path.sep)
@@ -24,7 +32,7 @@ let currentlyBuilding = true
 
 async function handleLua() {
   await execa('yarn', ['buildLua'])
-  ava.stdin.write('r\n', 'utf8')
+  update()
 }
 
 function attachChokidarHandlers(watcher) {
@@ -55,10 +63,7 @@ server.stdout.on('data', d => {
   console.log('[tsc]', str)
 
   if (str.includes('Found 0 errors. Watching for file changes')) {
-    if (!currentlyBuilding) {
-      currentlyBuilding = true
-      ava.stdin.write('r\n', 'utf8')
-    }
+    update()
   }
 })
 
