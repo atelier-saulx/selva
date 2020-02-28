@@ -1,0 +1,10 @@
+{
+  "name": "tools",
+  "private": true,
+  "version": "1.0.0",
+  "devDependencies": {},
+  "dependencies": {
+    "chokidar": "^3.3.1",
+    "execa": "^4.0.0"
+  }
+}
