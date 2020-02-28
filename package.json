@@ -10,6 +10,7 @@
     "buildLua": "cd client && yarn buildLua && yarn buildLua",
     "buildServer": "cd server && yarn build",
     "watchServer": "cd server && yarn watch",
-    "watchClientTests": "cd client && yarn watch"
+    "watchClientTests": "cd client && yarn watch",
+    "watch": "watch"
   }
 }
