@@ -1,12 +1,16 @@
 {
   "name": "selva",
   "private": true,
-  "workspaces": ["client", "server"],
+  "workspaces": ["client", "server", "tools"],
   "scripts": {
     "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist",
     "test": "cd client && yarn test",
     "build": "yarn buildClient && yarn buildServer",
     "buildClient": "cd client && yarn buildLua && yarn build",
-    "buildServer": "cd server && yarn build"
+    "buildLua": "cd client && yarn buildLua && yarn buildLua",
+    "buildServer": "cd server && yarn build",
+    "watchServer": "cd server && yarn watch",
+    "watchClientTests": "cd client && yarn watch",
+    "watch": "watch"
   }
 }
