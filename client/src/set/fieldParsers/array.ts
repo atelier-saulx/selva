@@ -21,12 +21,17 @@ export default (
     throw new Error(`Array is not an array ${JSON.stringify(payload)}`)
   }
   const itemsFields = fields.items
-  const parser = fieldParsers[itemsFields.type]
-  const arrayResult = []
-  arr.forEach((payload, index) => {
-    // need to remove all options from nested fields!
-    parser(schema, index, payload, arrayResult, itemsFields, type, $lang)
-  })
+  let arrayResult = []
+
+  if (itemsFields.type === 'json') {
+    arrayResult = arr
+  } else {
+    const parser = fieldParsers[itemsFields.type]
+    arr.forEach((payload, index) => {
+      // need to remove all options from nested fields!
+      parser(schema, index, payload, arrayResult, itemsFields, type, $lang)
+    })
+  }
   // nested json special!
   result[field] = JSON.stringify(arrayResult)
 }
