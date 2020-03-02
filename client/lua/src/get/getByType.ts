@@ -551,7 +551,7 @@ function getByType(
 
   if (!prop) {
     // logger.info(`No type for field ${field} in schema ${cjson.encode(schema)}`)
-    return true
+    return false
   }
 
   const fn = types[prop.type] || string
