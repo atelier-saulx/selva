@@ -31,7 +31,12 @@ console.log('FILES', files)
 let currentlyBuilding = true
 
 async function handleLua() {
-  await execa('yarn', ['buildLua'])
+  const { stdout, stderr } = await execa('yarn', ['buildLua'])
+  console.log(stdout)
+  if (stderr && stderr.length) {
+    console.error(stderr)
+  }
+
   update()
 }
 
@@ -71,7 +76,9 @@ server.stderr.on('data', d => {
   console.error('[tsc]', d.toString())
 })
 
-const luaWatcher = chokidar.watch(path.join(__dirname, '..', 'client', 'lua'))
+const luaWatcher = chokidar.watch(
+  path.join(__dirname, '..', 'client', 'lua', 'src')
+)
 const luaScriptsWatcher = chokidar.watch(
   path.join(__dirname, '..', 'client', 'luaScripts')
 )
