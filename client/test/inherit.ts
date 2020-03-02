@@ -1,12 +1,12 @@
 import test from 'ava'
 import { connect } from '@saulx/selva'
-import { start, SelvaServer } from '@saulx/selva-server'
+import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 // @ts-ignore suppressing module can only be default-imported using the 'esModuleInterop' flag
-import getPort from 'get-port' 
+import getPort from 'get-port'
 
-let srv:SelvaServer
+let srv
 let port
 
 test.before(async t => {
@@ -26,8 +26,7 @@ test.before(async t => {
       movie: {
         prefix: 'mo',
         fields: {
-          title: { type: 'string' },
-          icon: { type: 'string' }
+          title: { type: 'string' }
         }
       }
     }
