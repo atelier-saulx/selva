@@ -14,7 +14,7 @@ export const schema:SchemaOptions = {
       prefix: 'mo',
       fields: {
         title: { type: 'text' },
-        year: { type: 'int' },
+        year: { type: 'int', search: true },
         director: { type: 'string' },
         icon: { type: 'string' },
         technicalData: {

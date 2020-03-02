@@ -42,7 +42,8 @@ export const setDataSet = async (client:SelvaClient) => {
         runtime: 149,
         color: 'true',
         aspectRatio: '2.20:1'
-      }
+      },
+      parents: { $add: [ 'geScifi' ] }
     },
     {
       $id: 'moSoylentGreen',
@@ -78,6 +79,7 @@ export const setDataSet = async (client:SelvaClient) => {
       //   'Charlton Heston',
       //   'Leigh Taylor-Young'
       // ]
+      parents: { $add: [ 'geScifi' ] }
     }
   ].map(movie => client.set(movie)))
 }

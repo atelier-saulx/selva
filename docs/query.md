@@ -14,6 +14,12 @@ Selva uses a JSON query DSL to specify the data to be retrieved from the databas
 
 ## Clauses
 
+### Default fields
+
+ - `name`: _string_
+ - `children`: _references_
+ - `parents`: _references_
+
 ### `<any field name>`: _boolean_, _object_
 
 When truthy, includes the named field in the result.  
@@ -154,6 +160,59 @@ const result = await client.get({
 ```
 
 [See test](../client/test/examples/clauses/inherit.ts)
+
+### `$list`: _boolean_, _object_
+
+Sets the field to return a collection of referenced documents.
+
+### `$sort`: _object_
+
+Property of `$list` clause.  
+Sorts the `$list` results according to the following properties:
+
+  - `$field`: _string_ - Name of the field to sort by.
+  - `$order`: _['asc', 'desc']_ - Sort in ascending or descending order.
+
+```javascript
+const result = await client.get({
+  $id: 'geScifi',
+  $language: 'en',
+  children: {
+    title: true,
+    year: true,
+    $list: {
+      $sort: { $field: 'year', $order: 'asc' }
+    }
+  }
+})
+```
+
+[See test](../client/test/examples/clauses/list.ts)
+
+### `$range`: _[offset, limit]_
+
+Property of `$list` clause.  
+Limits the `$list` amount of items returned in a list according to the following properties:
+
+  - `$offset`: _integer_ - index of the starting item.
+  - `$limit`: _integer_ - amount of items to return.
+
+```javascript
+const result = await client.get({
+  $id: 'geScifi',
+  $language: 'en',
+  children: {
+    title: true,
+    year: true,
+    $list: {
+      $sort: { $field: 'year', $order: 'asc' },
+      $range: { $offset: 0, $limit: 2 }
+    }
+  }
+})
+```
+
+[See test](../client/test/examples/clauses/list.ts)
 
 ## Avilable field data types
 
