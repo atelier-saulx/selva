@@ -3,6 +3,14 @@ import { SelvaClient } from '@saulx/selva'
 export const setDataSet = async (client:SelvaClient) => {
   await Promise.all([
     {
+      $id: 'geScifi',
+      name: { en: 'Sci-fi' },
+      icon: 'scifi.png'
+    },
+  ].map(genre => client.set(genre)))
+
+  await Promise.all([
+    {
       $id: 'peCharltonHeston',
       name: 'Charlton Heston',
       born: 1923,
@@ -53,7 +61,8 @@ export const setDataSet = async (client:SelvaClient) => {
         'peCharltonHeston',
         'peLeighTaylorYoung',
         'peChuckConnors'
-      ]
+      ],
+      parents: { $add: [ 'geScifi' ] }
     },
     {
       $id: 'moMetropolis',

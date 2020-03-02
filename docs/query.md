@@ -7,6 +7,7 @@ Selva uses a JSON query DSL to specify the data to be retrieved from the databas
   - [**$all**](#all)
   - [**$value**](#id)
   - [**$default**](#default)
+  - [**language**](#language)
 
 
 [Available data types](#available-data-types)
@@ -100,6 +101,59 @@ const result = await client.get({
 })
 ```
 [See test](../client/test/examples/clauses/language.ts)
+
+### `$field`: _string_, _Array&lt;string&gt;_
+
+The `$field` clause is used to alias a field to another field in the same document.
+
+```javascript
+const result = await client.get({
+  $id: 'mo2001ASpaceOdyssey',
+  directedBy: { $field: 'director' }
+})
+```
+
+Dot notation can be used to create a path and alias a nested field or even specific data inside a _JSON datatype_.
+```javascript
+const result = await client.get({
+  $id: 'mo2001ASpaceOdyssey',
+  ratio: { $field: 'technicalData.aspectRatio' }
+})
+```
+
+Because _text datatype_ fields interanlly are a simple nested object, the `$field` clause can be used to get a specific language from a text field.
+```javascript
+const result = await client.get({
+  $id: 'mo2001ASpaceOdyssey',
+  englishTitle: { $field: 'title.en' }
+})
+```
+
+The `$field` clause can take an Array instead of a string. The array can have several field names or paths for the alias to point to. The first that is defined in the document will be returned.
+
+```javascript
+const = await client.get({
+  $id: 'mo2001ASpaceOdyssey',
+  by: { $field: ['producer', 'director'] }
+})
+```
+
+[See test](../client/test/examples/clauses/field.ts)
+
+### `$inherit`: _boolean_
+
+If the value for the field is not set in the document, search for the field in the ancestors.
+
+```javascript
+// `icon` is not set in the 'moSoylentGreen' document
+// but exists in the parent genre document
+const result = await client.get({
+  $id: 'moSoylentGreen',
+  icon: { $inherit: true },
+})
+```
+
+[See test](../client/test/examples/clauses/inherit.ts)
 
 ## Avilable field data types
 
