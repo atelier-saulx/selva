@@ -3,6 +3,49 @@ import { FilterAST, Fork, Value } from './types'
 import { isFork } from './util'
 import * as logger from '../../logger'
 
+const RESERVED_QUERY_PARSER_LEXONS = {
+  '.': true,
+  ',': true,
+  '(': true,
+  ')': true,
+  '{': true,
+  '}': true,
+  '<': true,
+  '>': true,
+  '[': true,
+  ']': true,
+  '"': true,
+  "'": true,
+  ':': true,
+  ';': true,
+  '!': true,
+  '@': true,
+  '#': true,
+  $: true,
+  '^': true,
+  '&': true,
+  '*': true,
+  '-': true,
+  '+': true,
+  '=': true,
+  '%': true,
+  '~': true
+}
+
+function escapeNonASCII(str: string): string {
+  let result: string = ''
+  for (let i = 0; i < str.length; i++) {
+    const c: string = str[i]
+    if (RESERVED_QUERY_PARSER_LEXONS[c]) {
+      result += '\\' + c
+    } else {
+      result += c
+    }
+  }
+
+  return result
+}
+
 function toNumberValue(value: Value): string {
   if (value === 'now') {
     return tostring(now())
@@ -48,6 +91,9 @@ const addField = (
     if (isArray(filter.$value)) {
       filter.$value = `${joinAny(filter.$value, '|')}`
     }
+
+    filter.$value = escapeNonASCII(<string>filter.$value)
+
     if (operator === '!=') {
       return `(-(@${filter.$field}:{${filter.$value}}))`
     } else if (operator === '=') {
