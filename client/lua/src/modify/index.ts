@@ -113,9 +113,14 @@ function setInternalArrayStructure(
   sendEvent(id, field, 'update')
 }
 
-function setObject(id: string, field: string, item: any) {
+function setObject(
+  id: string,
+  field: string,
+  item: any,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
+) {
   if (item.$value !== null) {
-    setField(id, field, item, false)
+    setField(id, field, item, false, source)
   } else if (item.$default) {
     if (item.$increment) {
       const result = redis.hsetnx(id, field, item.$default)
@@ -126,14 +131,14 @@ function setObject(id: string, field: string, item: any) {
       return
     }
 
-    setField(id, field, item.$default, true)
+    setField(id, field, item.$default, true, source)
   } else if (item.$increment) {
     redis.hincrby(id, field, item.$increment)
     sendEvent(id, field, 'update')
   } else if (item.$ref) {
     redis.hset(id, `${field}.$ref`, item.$ref)
   } else {
-    setField(id, field, item, false)
+    setField(id, field, item, false, source)
   }
 }
 
@@ -141,7 +146,8 @@ function setField(
   id: string,
   field: string | null,
   value: any,
-  fromDefault: boolean
+  fromDefault: boolean,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   if (isSetPayload(value) && field) {
     setInternalArrayStructure(id, field, value)
@@ -160,9 +166,9 @@ function setField(
         const item = value[key]
         const nestedField = field ? field + '.' + key : key
         if (type(item) === 'table') {
-          setObject(id, nestedField, item)
+          setObject(id, nestedField, item, source)
         } else {
-          setField(id, nestedField, item, false)
+          setField(id, nestedField, item, false, source)
         }
       }
     }
@@ -175,11 +181,45 @@ function setField(
     return
   }
 
+  if (source) {
+    const sourceString: string | null = !source
+      ? null
+      : type(source) === 'string'
+      ? source
+      : (<any>source).$name
+
+    if (sourceString && !(<any>source).$overwrite) {
+      const currentSource = redis.hget(id, '$source_' + field)
+      if (currentSource && currentSource !== '' && currentSource !== source) {
+        // ignore updates from different sources
+        return
+      }
+    } else if (sourceString && isArray((<any>source).$overwrite)) {
+      const currentSource = redis.hget(id, '$source_' + field)
+
+      const sourceAry = <string[]>(<any>source).$overwrite
+      let matching = false
+      for (const sourceId of sourceAry) {
+        if (sourceId === currentSource) {
+          matching = true
+        }
+      }
+
+      if (!matching) {
+        // ignore updates from different sources if no overwrite specified for this source
+        return
+      }
+    }
+
+    redis.hset(id, '$source_' + field, sourceString)
+  }
+
   if (fromDefault) {
     redis.hsetnx(id, field, tostring(value))
   } else {
     redis.hset(id, field, tostring(value))
   }
+
   addFieldToSearch(id, field, value)
   sendEvent(id, field, 'update')
 }
@@ -237,7 +277,7 @@ function update(payload: SetOptions): Id | null {
     setUpdatedAt(payload, payload.$id, payload.type)
   }
 
-  setField(payload.$id, null, payload, false)
+  setField(payload.$id, null, payload, false, payload.$source)
   return payload.$id
 }
 

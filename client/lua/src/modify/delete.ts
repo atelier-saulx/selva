@@ -96,7 +96,8 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
     // FIXME: a bit hacky, always assumes we have english enabled
     if (
       stringEndsWith(vals[i], '.en') &&
-      !stringStartsWith(vals[i], '___escaped:')
+      !stringStartsWith(vals[i], '___escaped:') &&
+      !stringStartsWith(vals[i], '$source_')
     ) {
       cleanUpSuggestions(id, vals[i])
     }

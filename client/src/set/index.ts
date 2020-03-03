@@ -48,12 +48,12 @@ export const parseSetObject = (
           throw new Error('Wrong type for $id ' + payload[key])
         }
         result[key] = payload[key]
-      } else if (key === '$alias') {
+      } else if (key === '$source') {
         if (
           typeof payload[key] !== 'string' &&
           typeof payload[key] !== 'object'
         ) {
-          throw new Error('Wrong type for $alias, string required')
+          throw new Error('Wrong type for $source, string or object required')
         }
 
         result[key] = payload[key]
