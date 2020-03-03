@@ -12,11 +12,14 @@ function createSearchArgs(
   if (!$list) {
     return []
   }
-  let lo = 0
-  let hi = 99999
-  if ($list.$range) {
-    lo = $list.$range[0]
-    hi = $list.$range[1]
+  let offset = 0
+  let limit = 99999
+  if ($list.$limit) {
+    limit = $list.$limit
+  }
+
+  if ($list.$offset) {
+    offset = $list.$offset
   }
 
   const sort: string[] = []
@@ -39,8 +42,8 @@ function createSearchArgs(
     query,
     'NOCONTENT',
     'LIMIT',
-    tostring(lo),
-    tostring(hi)
+    tostring(offset),
+    tostring(limit)
   ]
 
   for (let i = 0; i < sort.length; i++) {

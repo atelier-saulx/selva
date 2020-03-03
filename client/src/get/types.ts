@@ -52,7 +52,8 @@ export type Sort = {
 }
 
 export type List = {
-  $range?: [number, number]
+  $offset?: number
+  $limit?: number
   $sort?: Sort | Sort[]
   $find?: Find
 }

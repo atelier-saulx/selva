@@ -76,7 +76,7 @@ test.serial('get - simple $list', async t => {
       value: true,
       $list: {
         $sort: { $field: 'value', $order: 'asc' },
-        $range: [0, 10]
+        $limit: 10
       }
     }
   })
@@ -106,7 +106,7 @@ test.serial('get - simple $list', async t => {
       name: true,
       value: true,
       $list: {
-        $range: [0, 10]
+        $limit: 10
       }
     }
   })
@@ -187,7 +187,7 @@ test.serial('get - simple $list with $field of one field', async t => {
       $field: 'children',
       $list: {
         $sort: { $field: 'value', $order: 'asc' },
-        $range: [0, 10]
+        $limit: 10
       }
     }
   })
@@ -271,7 +271,7 @@ test.serial('get - simple $list with $field of two field entries', async t => {
       $field: ['related', 'children'],
       $list: {
         $sort: { $field: 'value', $order: 'asc' },
-        $range: [0, 10]
+        $limit: 10
       }
     }
   })

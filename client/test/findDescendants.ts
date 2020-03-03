@@ -266,7 +266,7 @@ test.serial('find - descendants', async t => {
     items: {
       id: true,
       $list: {
-        $range: [0, 5],
+        $limit: 5,
         $find: {
           $traverse: 'descendants',
           $filter: {
@@ -286,7 +286,7 @@ test.serial('find - descendants', async t => {
       value: true,
       $list: {
         $sort: { $field: 'value', $order: 'desc' },
-        $range: [0, 5],
+        $limit: 5,
         $find: {
           $traverse: 'descendants',
           $filter: {

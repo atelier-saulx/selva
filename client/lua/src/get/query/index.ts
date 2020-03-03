@@ -165,8 +165,12 @@ const parseQuery = (
         opts.$list.$sort = getOptions.$list.$sort
       }
 
-      if (getOptions.$list && getOptions.$list.$range) {
-        opts.$list.$range = getOptions.$list.$range
+      if (getOptions.$list && getOptions.$list.$offset) {
+        opts.$list.$offset = getOptions.$list.$offset
+      }
+
+      if (getOptions.$list && getOptions.$list.$limit) {
+        opts.$list.$limit = getOptions.$list.$limit
       }
 
       const [{ results: nestedResults }, err] = parseQuery(

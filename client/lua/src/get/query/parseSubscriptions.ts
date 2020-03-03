@@ -183,7 +183,7 @@ function parseSubscriptions(
                 $field: timestampFilters[i].$field, // it's actually not so easy to decide which timestamp field should be the basis of sorting
                 $order: 'asc'
               },
-              $range: [0, 1]
+              $limit: 1
             }
           },
           string.sub(q, 2, q.length - 1),
