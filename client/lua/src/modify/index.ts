@@ -3,7 +3,13 @@ import * as redis from '../redis'
 import { Id } from '~selva/schema/index'
 import { SetOptions } from '~selva/set/types'
 import { getTypeFromId } from '../typeIdMapping'
-import { isString, isArray, splitString, joinString } from '../util'
+import {
+  isString,
+  isArray,
+  splitString,
+  joinString,
+  ensureArray
+} from '../util'
 import { resetSet, addToSet, removeFromSet } from './setOperations'
 import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
 import { DeleteOptions } from '~selva/delete/types'
@@ -86,6 +92,8 @@ function setInternalArrayStructure(
 
   if (isArray(value)) {
     resetSet(id, field, value, update, hierarchy)
+  } else if (type(value) === 'string') {
+    resetSet(id, field, ensureArray(value), update, hierarchy)
   } else if (value.$value) {
     resetSet(id, field, value, update, hierarchy)
   } else {

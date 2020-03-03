@@ -11,6 +11,7 @@ import { getSchema } from '../schema/index'
 import { ensureArray, isArray } from 'lua/src/util'
 import makeNewGetOptions from 'lua/src/get/all'
 import getQuery from './query/index'
+import * as r from '../redis'
 
 // add error handling
 function getField(
@@ -223,12 +224,24 @@ function get(opts: GetOptions): GetResult {
   const result: GetResult = {}
 
   // logger.info(`GET ${cjson.encode(opts)}`)
-  const {
+  let {
     $version: version,
-    $id: id = 'root',
+    $id: id,
+    $alias: alias,
     $language: language,
     $includeMeta: includeMeta
   } = opts
+
+  if (alias) {
+    const aliased = r.hget('___selva_aliases', alias)
+    if (aliased && aliased.length > 0) {
+      id = aliased
+    } else {
+      return {}
+    }
+  } else if (!id) {
+    id = 'root'
+  }
 
   if (includeMeta) {
     result.$meta = { $refs: {} }

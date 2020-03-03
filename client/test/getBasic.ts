@@ -379,7 +379,8 @@ test.serial('get - $all simple', async t => {
   t.deepEqual(
     await client.get({
       $id: 'maA',
-      $all: true
+      $all: true,
+      aliases: false
     }),
     {
       id: 'maA',
@@ -422,7 +423,8 @@ test.serial('get - $all root level whitelist + $all', async t => {
       image: {
         thumb: true
       },
-      $all: true
+      $all: true,
+      aliases: false
     }),
     {
       id: 'clA',
@@ -471,7 +473,8 @@ test.serial('get - $all root level whitelist + blacklists + $all', async t => {
         poster: false
       },
       description: false,
-      $all: true
+      $all: true,
+      aliases: false
     }),
     {
       id: 'clA',

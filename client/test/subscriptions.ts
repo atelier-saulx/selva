@@ -58,7 +58,7 @@ test.serial('basic id based subscriptions', async t => {
   })
 
   let o2counter = 0
-  const other = await client.observe({ $id: thing, $all: true })
+  const other = await client.observe({ $id: thing, $all: true, aliases: false })
   const sub2 = other.subscribe(d => {
     if (o2counter === 0) {
       // gets start event
