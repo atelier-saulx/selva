@@ -1,7 +1,11 @@
 {
   "name": "selva",
   "private": true,
-  "workspaces": ["client", "server", "tools"],
+  "workspaces": [
+    "client",
+    "server",
+    "tools"
+  ],
   "scripts": {
     "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist",
     "test": "cd client && yarn test",
