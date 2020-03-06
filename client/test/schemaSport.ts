@@ -1,5 +1,11 @@
 import test from 'ava'
-import { connect, Fields, Schema, SchemaOptions } from '../src/index'
+import {
+  connect,
+  Fields,
+  Schema,
+  SchemaOptions,
+  FieldSchema
+} from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
@@ -55,10 +61,31 @@ test.serial.only('schemas - sport', async t => {
   ]
 
   const defaultFields: Fields = {
+    createdAt: {
+      type: 'timestamp'
+      // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
+    },
+    updatedAt: {
+      type: 'timestamp'
+      // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
+    },
     title: {
       type: 'text',
       search: { type: ['TEXT'] }
-    },
+    }
+  }
+
+  const price: FieldSchema = {
+    type: 'object',
+    properties: types.reduce((properties, type) => {
+      properties[type] = { type: 'int' }
+      return properties
+    }, {})
+  }
+
+  const contentFields: Fields = {
+    ...defaultFields,
+    price,
     description: {
       type: 'text'
     },
@@ -73,12 +100,8 @@ test.serial.only('schemas - sport', async t => {
     overlay: {
       type: 'string'
     },
-    price: {
-      type: 'object',
-      properties: types.reduce((properties, type) => {
-        properties[type] = { type: 'int' }
-        return properties
-      }, {})
+    article: {
+      type: 'string'
     },
     uuid: {
       type: 'object',
@@ -92,6 +115,10 @@ test.serial.only('schemas - sport', async t => {
           search: { type: ['TAG'] }
         },
         sams: {
+          type: 'string',
+          search: { type: ['TAG'] }
+        },
+        stripe: {
           type: 'string',
           search: { type: ['TAG'] }
         }
@@ -110,32 +137,49 @@ test.serial.only('schemas - sport', async t => {
           type: 'url'
         }
       }
-    }
-  }
-
-  const videoFields: Fields = {
-    date: {
-      type: 'timestamp',
-      search: { type: ['NUMERIC', 'SORTABLE'] }
     },
-    start: {
-      type: 'timestamp',
-      search: { type: ['NUMERIC'] }
-    },
-    end: {
-      type: 'timestamp',
-      search: { type: ['NUMERIC'] }
-    },
-    status: {
-      type: 'string',
-      search: { type: ['TAG'] }
-    },
-    geo: {
+    allowGeo: {
       type: 'set',
       items: {
         type: 'string'
       }
+    }
+  }
+
+  const start: FieldSchema = {
+    type: 'timestamp',
+    search: { type: ['NUMERIC'] }
+  }
+
+  const end: FieldSchema = {
+    type: 'timestamp',
+    search: { type: ['NUMERIC'] }
+  }
+
+  const gender: FieldSchema = {
+    type: 'string'
+  }
+
+  const status: FieldSchema = {
+    type: 'string',
+    search: { type: ['TAG'] }
+  }
+
+  const contact: FieldSchema = {
+    // maybe fixed props?
+    type: 'json'
+  }
+
+  const videoFields: Fields = {
+    ...contentFields,
+    date: {
+      type: 'timestamp',
+      search: { type: ['NUMERIC', 'SORTABLE'] }
     },
+    start,
+    end,
+    gender,
+    status,
     video: {
       type: 'object',
       properties: {
@@ -180,111 +224,153 @@ test.serial.only('schemas - sport', async t => {
     languages: ['nl', 'en'],
     rootType: {
       fields: {
-        ...defaultFields
+        ...contentFields
       }
     },
     types: {
       match: {
         fields: {
-          ...defaultFields,
           ...videoFields,
           highlights: {
-            type: 'json'
-          },
-          gender: {
-            type: 'string'
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                value: { type: 'number' },
+                uuid: { type: 'string' },
+                description: { type: 'string' },
+                type: { type: 'number' },
+                durationMs: { type: 'number' },
+                duration: { type: 'string' },
+                startMs: { type: 'number' },
+                start: { type: 'string' }
+              }
+            }
           }
         }
       },
       video: {
         fields: {
-          ...defaultFields,
           ...videoFields
         }
       },
-      vehicle: {
+      club: {
         fields: {
-          ...defaultFields
+          ...contentFields,
+          cameras: {
+            type: 'boolean'
+          },
+          discountCodes: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string'
+                },
+                amount: {
+                  type: 'number'
+                }
+              }
+            }
+          },
+          contact
         }
       },
-      family: {
+      team: {
         fields: {
-          ...defaultFields
+          ...contentFields
+        }
+      },
+      season: {
+        fields: {
+          ...contentFields,
+          start,
+          end
+        }
+      },
+      league: {
+        fields: {
+          ...contentFields
+        }
+      },
+      show: {
+        fields: {
+          ...contentFields
+        }
+      },
+      custom: {
+        fields: {
+          ...videoFields
+        }
+      },
+      sport: {
+        fields: {
+          ...contentFields
+        }
+      },
+      event: {
+        fields: {
+          ...videoFields
+        }
+      },
+      federation: {
+        fields: {
+          ...contentFields
+        }
+      },
+      product: {
+        fields: {
+          ...defaultFields,
+          value: {
+            type: 'number'
+          },
+          price,
+          start,
+          end
+        }
+      },
+      ad: {
+        fields: {
+          ...contentFields,
+          start,
+          end,
+          user: {
+            type: 'string'
+          },
+          seller: {
+            type: 'string'
+          },
+          thirdParty: {
+            type: 'boolean'
+          },
+          status,
+          paymentData: {
+            type: 'json'
+          },
+          contact
+        }
+      },
+      series: {
+        fields: {
+          ...contentFields
+        }
+      },
+      category: {
+        fields: {
+          ...contentFields
+        }
+      },
+      class: {
+        fields: {
+          ...contentFields
+        }
+      },
+      article: {
+        fields: {
+          ...contentFields
         }
       }
-      // match: {
-      //   prefix: 'ma',
-      //   hierarchy: {
-      //     team: { excludeAncestryWith: ['league'] },
-      //     video: false,
-      //     person: { includeAncestryWith: ['family'] },
-      //     $default: { excludeAncestryWith: ['vehicle'] }
-      //   },
-      //   fields: {
-      //     ...defaultFields,
-      //     smurky: {
-      //       meta: {
-      //         yesh: 'a meta value',
-      //         data: ['in an array']
-      //       },
-      //       type: 'set',
-      //       items: {
-      //         type: 'object', // stored as json in this case (scince you start with a set)
-      //         properties: {
-      //           interval: {
-      //             type: 'array',
-      //             items: {
-      //               type: 'timestamp'
-      //             }
-      //           },
-      //           url: { type: 'url' }
-      //         }
-      //       }
-      //     },
-      //     flurpy: {
-      //       type: 'object',
-      //       properties: {
-      //         snurkels: {
-      //           type: 'string',
-      //           search: { type: ['TAG'] }
-      //         }
-      //       }
-      //     },
-      //     flapperdrol: {
-      //       type: 'json'
-      //     },
-      //     video: {
-      //       type: 'object',
-      //       properties: {
-      //         mp4: {
-      //           type: 'url'
-      //         },
-      //         hls: {
-      //           type: 'url',
-      //           search: { index: 'hls', type: ['TEXT'] }
-      //         },
-      //         pano: {
-      //           type: 'url'
-      //         },
-      //         overlays: {
-      //           type: 'array',
-      //           items: {
-      //             type: 'json', // needs to be json!
-      //             properties: {
-      //               interval: {
-      //                 type: 'array',
-      //                 items: {
-      //                   type: 'timestamp'
-      //                 }
-      //               },
-      //               url: { type: 'url' }
-      //             }
-      //           }
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
     }
   }
 
