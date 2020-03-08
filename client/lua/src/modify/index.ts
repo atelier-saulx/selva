@@ -8,7 +8,9 @@ import {
   isArray,
   splitString,
   joinString,
-  ensureArray
+  ensureArray,
+  stringStartsWith,
+  stringEndsWith
 } from '../util'
 import { resetSet, addToSet, removeFromSet } from './setOperations'
 import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
@@ -19,6 +21,7 @@ import * as logger from '../logger'
 import { addFieldToSearch } from './search'
 import sendEvent from './events'
 import { setUpdatedAt, setCreatedAt } from './timestamps'
+import { cleanUpSuggestions } from './delete'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -229,7 +232,85 @@ function remove(payload: DeleteOptions): boolean {
     return deleteItem(payload)
   }
 
-  return deleteItem(payload.$id, payload.$hierarchy)
+  let keys = false
+  for (const key in payload) {
+    if (key[0] !== '$') {
+      keys = true
+    }
+  }
+
+  if (!keys) {
+    return deleteItem(payload.$id, payload.$hierarchy)
+  }
+
+  removeSpecified(payload.$id, '', payload)
+  return true
+}
+
+function removeSpecified(
+  id: Id,
+  path: string,
+  payload: Record<string, any>
+): string[] {
+  let falses: string[] = []
+  let onlyFalse = true
+  for (const key in payload) {
+    if (key[0] !== '$') {
+      const keyPath = path === '' ? key : path + '.' + key
+
+      if (payload[key] === true) {
+        onlyFalse = false
+        const val = redis.hget(id, keyPath)
+
+        if (
+          val === '___selva_$set' ||
+          key === 'parents' ||
+          key === 'children'
+        ) {
+          redis.del(id + '.' + keyPath)
+        } else {
+          cleanUpSuggestions(id, keyPath)
+        }
+
+        redis.hdel(id, keyPath)
+      } else if (payload[key] === false) {
+        falses[falses.length] = keyPath
+      } else if (type(payload[key]) === 'table') {
+        const nested = removeSpecified(id, keyPath, payload[key])
+        for (const item of nested) {
+          falses[falses.length] = item
+        }
+      }
+    }
+  }
+
+  // only run this top level
+  if (onlyFalse && path === '') {
+    const allKeys = redis.hkeys(id)
+    logger.info('allKeys', allKeys)
+    logger.info('falses', falses)
+    for (const key of allKeys) {
+      let skip = false
+      for (const setAsFalse of falses) {
+        if (
+          stringStartsWith(key, setAsFalse) ||
+          stringEndsWith(key, '.ancestors') ||
+          key === 'type' ||
+          key === 'createdAt' ||
+          key === 'updatedAt'
+        ) {
+          skip = true
+          break
+        }
+      }
+
+      if (!skip) {
+        redis.hdel(id, key)
+      }
+    }
+  }
+
+  return falses
 }
 
 function update(payload: SetOptions): Id | null {
