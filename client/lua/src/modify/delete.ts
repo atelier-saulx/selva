@@ -7,10 +7,14 @@ import { getSchema } from 'lua/src/schema/index'
 import { getTypeFromId } from 'lua/src/typeIdMapping'
 import * as logger from '../logger'
 
-function cleanUpSuggestions(id: string, field: string) {
+export function cleanUpSuggestions(id: string, field: string) {
   const schema = getSchema()
   const base = field.substr(0, field.length - 3)
-  const type = schema.types[getTypeFromId(id)]
+  const type = id === 'root' ? schema.rootType : schema.types[getTypeFromId(id)]
+
+  if (!type) {
+    return
+  }
 
   const split = splitString(base, '.')
 
@@ -22,6 +26,10 @@ function cleanUpSuggestions(id: string, field: string) {
       }
 
       prop = prop.properties[split[i]]
+    }
+
+    if (!prop) {
+      return
     }
 
     const fieldSchema = <FieldSchemaOther>prop

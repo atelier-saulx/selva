@@ -214,17 +214,7 @@ export class SelvaClient {
   }
 
   async delete(props: DeleteOptions) {
-    let hierarchy = true
-    let id: string
-    if (typeof props == 'object') {
-      id = props.$id
-      if (props.$hierarchy === false) {
-        hierarchy = false
-      }
-    } else {
-      id = props
-    }
-    return deleteItem(this, id, hierarchy)
+    return deleteItem(this, props)
   }
 }
 
