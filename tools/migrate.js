@@ -200,6 +200,12 @@ async function makeSchema(client) {
           ...videoFields
         }
       },
+      region: {
+        prefix: 're',
+        fields: {
+          ...contentFields
+        }
+      },
       club: {
         prefix: 'cl',
         fields: {
@@ -338,14 +344,14 @@ async function makeSchema(client) {
   await client.updateSchema(schema)
 }
 
-function constructSetProps(typeSchema, item) {
+function constructSetProps(prefixToTypeMapping, typeSchema, item) {
   const props = {}
   for (const itemKey in item) {
     if (!item[itemKey] || item[itemKey] === '') {
       continue
     }
 
-    if (itemKey.endsWith(':from')) {
+    if (itemKey === 'ancestors' || itemKey.endsWith(':from')) {
       // skip from keys for now
       continue
     }
@@ -365,6 +371,7 @@ function constructSetProps(typeSchema, item) {
                 fields: typeSchema.fields[itemKey].properties
               }
               props[itemKey] = constructSetProps(
+                prefixToTypeMapping,
                 newSchema,
                 JSON.parse(item[itemKey])
               )
@@ -377,11 +384,14 @@ function constructSetProps(typeSchema, item) {
               )
               process.exit(1)
             }
+            break
           case 'text':
+          case 'references':
           case 'array':
+          case 'set':
           case 'json':
             if (
-              fieldType === 'array' &&
+              (fieldType === 'array' || fieldType === 'set') &&
               typeSchema.fields[itemKey].items.type === 'object'
             ) {
               const newSchema = {
@@ -395,13 +405,32 @@ function constructSetProps(typeSchema, item) {
               }
 
               props[itemKey] = ary.map(x => {
-                return constructSetProps(newSchema, x)
+                return constructSetProps(prefixToTypeMapping, newSchema, x)
               })
               continue
             }
 
             if (!item[itemKey] || item[itemKey] === '') {
               continue
+            }
+
+            if (item[itemKey] === '{}') {
+              continue
+            }
+
+            const parsed = JSON.parse(item[itemKey])
+            if (fieldType === 'references') {
+              let relations = []
+              for (const relation of parsed) {
+                const prefix = relation.slice(0, 2)
+                if (prefixToTypeMapping[prefix]) {
+                  relations.push(relation)
+                }
+              }
+
+              props[itemKey] = relations
+            } else {
+              props[itemKey] = parsed
             }
             break
           case 'boolean':
@@ -420,7 +449,7 @@ function constructSetProps(typeSchema, item) {
           case 'url':
           case 'string':
             if (Array.isArray(item[itemKey])) {
-              if (!item[itemKey].length || item[itemKey][0] === '') {
+              if (item[itemKey] === '{}' || item[itemKey][0] === '') {
                 continue
               }
 
@@ -433,8 +462,6 @@ function constructSetProps(typeSchema, item) {
             break
         }
       }
-    } else if (itemKey === 'parents' || itemKey === 'children') {
-      props[itemKey] = JSON.parse(item[itemKey])
     }
   }
 
@@ -442,7 +469,7 @@ function constructSetProps(typeSchema, item) {
 }
 
 async function migrate() {
-  const srv = await start({ port: 6061 })
+  // const srv = await start({ port: 6061 })
   const client = connect({ port: 6061 }, { loglevel: 'info' })
 
   await makeSchema(client)
@@ -452,6 +479,7 @@ async function migrate() {
   )
 
   const schema = await client.getSchema()
+
   for (const db of dump) {
     for (const key in db) {
       if (key === undefined || key === 'undefined') {
@@ -463,7 +491,7 @@ async function migrate() {
         continue
       }
 
-      console.log('processing key', key, 'type', item.type)
+      console.log('processing key', key, 'type', item.type, item)
 
       const typeSchema =
         key === 'root' ? schema.schema.rootType : schema.schema.types[item.type]
@@ -473,8 +501,11 @@ async function migrate() {
         continue
       }
 
-      const props = constructSetProps(typeSchema, item)
-      console.log('RESULT', props)
+      const props = constructSetProps(
+        schema.schema.prefixToTypeMapping,
+        typeSchema,
+        item
+      )
 
       const initialPayload = {
         $id: key,
@@ -482,12 +513,19 @@ async function migrate() {
       }
 
       const newPayload = await client.conformToSchema(initialPayload)
+
       if (!newPayload) {
         console.error('no payload for key', props, key, item)
         process.exit(1)
       }
+
+      // delete newPayload.title
       console.log('inserting', newPayload)
       await client.set(newPayload)
+      console.log('INSERTED')
+      // await new Promise((resolve, _reject) => {
+      //   setTimeout(resolve, 1)
+      // })
     }
   }
 
@@ -497,7 +535,7 @@ async function migrate() {
 
 migrate()
   .then(() => {
-    process.exit(1)
+    process.exit(0)
   })
   .catch(e => {
     console.error(e)
