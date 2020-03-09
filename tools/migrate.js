@@ -1,44 +1,10 @@
-import test from 'ava'
-import {
-  connect,
-  Fields,
-  Schema,
-  SchemaOptions,
-  FieldSchema
-} from '../src/index'
-import { start } from '@saulx/selva-server'
-import './assertions'
-import { wait } from './assertions'
-import getPort from 'get-port'
+const { connect } = require('@saulx/selva')
+const { start } = require('@saulx/selva-server')
+const fs = require('fs').promises
+const os = require('os')
+const path = require('path')
 
-const mangleResults = (
-  correctSchema: Schema | SchemaOptions,
-  schemaResult: Schema
-) => {
-  if (!correctSchema.sha) {
-    delete schemaResult.sha
-  }
-
-  for (const type in schemaResult.types) {
-    if (!correctSchema.types[type].prefix) {
-      delete schemaResult.types[type].prefix
-    }
-  }
-  delete schemaResult.idSeedCounter
-  delete schemaResult.prefixToTypeMapping
-}
-
-test.serial.only('schemas - sport', async t => {
-  const port = await getPort()
-  const server = await start({
-    port
-  })
-  const client = connect({ port })
-
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
-
+async function makeSchema(client) {
   const types = [
     'ad',
     'article',
@@ -60,7 +26,7 @@ test.serial.only('schemas - sport', async t => {
     'video'
   ]
 
-  const defaultFields: Fields = {
+  const defaultFields = {
     createdAt: {
       type: 'timestamp'
       // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
@@ -75,7 +41,7 @@ test.serial.only('schemas - sport', async t => {
     }
   }
 
-  const price: FieldSchema = {
+  const price = {
     type: 'object',
     properties: types.reduce((properties, type) => {
       properties[type] = { type: 'int' }
@@ -83,7 +49,7 @@ test.serial.only('schemas - sport', async t => {
     }, {})
   }
 
-  const contentFields: Fields = {
+  const contentFields = {
     ...defaultFields,
     price,
     description: {
@@ -102,27 +68,6 @@ test.serial.only('schemas - sport', async t => {
     },
     article: {
       type: 'string'
-    },
-    uuid: {
-      type: 'object',
-      properties: {
-        sas: {
-          type: 'string',
-          search: { type: ['TAG'] }
-        },
-        dfb: {
-          type: 'string',
-          search: { type: ['TAG'] }
-        },
-        sams: {
-          type: 'string',
-          search: { type: ['TAG'] }
-        },
-        stripe: {
-          type: 'string',
-          search: { type: ['TAG'] }
-        }
-      }
     },
     image: {
       type: 'object',
@@ -146,31 +91,31 @@ test.serial.only('schemas - sport', async t => {
     }
   }
 
-  const startTime: FieldSchema = {
+  const startTime = {
     type: 'timestamp',
     search: { type: ['NUMERIC'] }
   }
 
-  const endTime: FieldSchema = {
+  const endTime = {
     type: 'timestamp',
     search: { type: ['NUMERIC'] }
   }
 
-  const gender: FieldSchema = {
+  const gender = {
     type: 'string'
   }
 
-  const status: FieldSchema = {
+  const status = {
     type: 'string',
     search: { type: ['TAG'] }
   }
 
-  const contact: FieldSchema = {
+  const contact = {
     // maybe fixed props?
     type: 'json'
   }
 
-  const videoFields: Fields = {
+  const videoFields = {
     ...contentFields,
     date: {
       type: 'timestamp',
@@ -220,8 +165,8 @@ test.serial.only('schemas - sport', async t => {
     }
   }
 
-  const schema: SchemaOptions = {
-    languages: ['nl', 'en'],
+  const schema = {
+    languages: ['en', 'de', 'fr', 'nl', 'it'],
     rootType: {
       fields: {
         ...contentFields
@@ -238,7 +183,6 @@ test.serial.only('schemas - sport', async t => {
               type: 'object',
               properties: {
                 value: { type: 'number' },
-                uuid: { type: 'string' },
                 description: { type: 'string' },
                 type: { type: 'number' },
                 durationMs: { type: 'number' },
@@ -392,12 +336,106 @@ test.serial.only('schemas - sport', async t => {
   }
 
   await client.updateSchema(schema)
+}
 
-  const { schema: schemaResult, searchIndexes } = await client.getSchema()
+async function migrate() {
+  const srv = await start({ port: 6061 })
+  const client = connect({ port: 6061 }, { loglevel: 'info' })
 
-  console.log(schema)
+  await makeSchema(client)
 
-  server.destroy()
+  const dump = JSON.parse(
+    await fs.readFile(path.join(os.homedir(), 'Downloads', 'dump-last.json'))
+  )
 
-  t.true(true)
-})
+  const schema = await client.getSchema()
+  for (const db of dump) {
+    for (const key in db) {
+      const item = db[key]
+      if (!item.type) {
+        continue
+      }
+
+      console.log('processing key', key, 'type', item.type)
+      const props = {}
+
+      const typeSchema =
+        key === 'root' ? schema.schema.rootType : schema.schema.types[item.type]
+
+      if (!typeSchema) {
+        console.log('No type schema found for', item.type)
+        continue
+      }
+
+      for (const itemKey in item) {
+        if (itemKey.endsWith(':from')) {
+          // skip from keys for now
+          continue
+        }
+
+        if (typeSchema.fields) {
+          if (typeSchema.fields[itemKey]) {
+            const fieldType = typeSchema.fields[itemKey].type
+            console.log('itemkey', itemKey, fieldType)
+            switch (fieldType) {
+              case 'array':
+              case 'text':
+              case 'object':
+              case 'json':
+                if (!item[itemKey] || item[itemKey] === '') {
+                  continue
+                }
+
+                try {
+                  props[itemKey] = JSON.parse(item[itemKey])
+                } catch (e) {
+                  console.error(
+                    'Error processing json field value for',
+                    itemKey,
+                    item,
+                    e
+                  )
+                  process.exit(1)
+                }
+                break
+              case 'boolean':
+                props[itemKey] = !!Number(item[itemKey])
+                break
+              case 'int':
+              case 'float':
+              case 'number':
+              case 'timestamp':
+                props[itemKey] = Number(item[itemKey])
+                break
+              case 'string':
+                props[itemKey] = item[itemKey]
+              default:
+                break
+            }
+          }
+        } else if (itemKey === 'parents' || itemKey === 'children') {
+          props[itemKey] = JSON.parse(item[itemKey])
+        }
+      }
+
+      console.log(props)
+
+      await client.set({
+        $id: key,
+        ...props
+      })
+    }
+  }
+
+  await client.destroy()
+  // await srv.destroy()
+}
+
+migrate()
+  .then(() => {
+    process.exit(1)
+  })
+  .catch(e => {
+    console.error(e)
+    process.exit(1)
+  })
