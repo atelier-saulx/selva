@@ -32,12 +32,13 @@ function getField(
     return true
   }
 
-  if (props.$list && ignore !== '$list' && ignore !== '$') {
+
+  if ((props.$list || props.$find) && ignore !== '$list' && ignore !== '$') {
     // field that needs to get the result
 
     if (field) {
       let sourceField: string | string[] = field
-      if (!props.$list.$find && props.$field) {
+      if (!(props.$list && props.$list.$find) && props.$field) {
         sourceField = resolveAll(
           id,
           schema,

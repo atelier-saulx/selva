@@ -38,7 +38,13 @@ const parseNested = (
       }
     }
   } else if (opts.$find) {
-    return [{ isFork: true }, 'Find outside of a list not supported']
+    // return [{ isFork: true }, 'Find outside of a list not supported']
+    // TODO: disallow $range
+    if (!opts.$find.$traverse) {
+      opts.$find.$traverse = traverse
+    }
+    const result =  parseFind(opts.$find, ids, meta)
+    return result
   }
   return [{ isFork: true }, 'Not a valid query']
 }
@@ -86,6 +92,7 @@ const parseQuery = (
       resultIds = r
     }
   }
+
   if (resultFork) {
     const idMap: Record<string, true> = {}
     const [queries, err] = createSearchString(resultFork, language)
@@ -143,7 +150,7 @@ const parseQuery = (
   if (resultIds) {
     const find = getFind(getOptions)
 
-    logger.info(getOptions.$meta)
+    // logger.info(getOptions.$meta)
 
     // need to do something here for nested queries
     if (find && find.$find) {
@@ -235,6 +242,8 @@ const parseQuery = (
     getOptions.$list.$find.$traverse
   ) {
     meta.traverse = getOptions.$list.$find.$traverse
+  } else if ( getOptions.$find && getOptions.$find.$traverse ) {
+    meta.traverse = getOptions.$find.$traverse
   }
 
   return [{ results, meta }, null]
@@ -279,7 +288,13 @@ const queryGet = (
     }
     parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
   }
-  result[resultField] = results
+
+  if (getOptions.$find) {
+    result[resultField] = results.length ? results[0] : {}
+  } else {
+    result[resultField] = results
+  }
+
   if (err) {
     return err
   }
