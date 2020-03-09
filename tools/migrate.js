@@ -420,10 +420,14 @@ async function migrate() {
 
       console.log(props)
 
-      await client.set({
+      const initialPayload = {
         $id: key,
         ...props
-      })
+      }
+
+      const newPayload = await client.conformToSchema(initialPayload)
+      console.log('inserting', newPayload)
+      await client.set(newPayload)
     }
   }
 
