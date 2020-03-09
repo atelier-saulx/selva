@@ -338,6 +338,109 @@ async function makeSchema(client) {
   await client.updateSchema(schema)
 }
 
+function constructSetProps(typeSchema, item) {
+  const props = {}
+  for (const itemKey in item) {
+    if (!item[itemKey] || item[itemKey] === '') {
+      continue
+    }
+
+    if (itemKey.endsWith(':from')) {
+      // skip from keys for now
+      continue
+    }
+
+    if (typeSchema.fields) {
+      if (typeSchema.fields[itemKey]) {
+        const fieldType = typeSchema.fields[itemKey].type
+        switch (fieldType) {
+          case 'object':
+            if (!item[itemKey] || item[itemKey] === '') {
+              continue
+            }
+
+            try {
+              const newSchema = {
+                type: 'object',
+                fields: typeSchema.fields[itemKey].properties
+              }
+              props[itemKey] = constructSetProps(
+                newSchema,
+                JSON.parse(item[itemKey])
+              )
+            } catch (e) {
+              console.error(
+                'Error processing json field value for',
+                itemKey,
+                item,
+                e
+              )
+              process.exit(1)
+            }
+          case 'text':
+          case 'array':
+          case 'json':
+            if (
+              fieldType === 'array' &&
+              typeSchema.fields[itemKey].items.type === 'object'
+            ) {
+              const newSchema = {
+                type: 'object',
+                fields: typeSchema.fields[itemKey].items.properties
+              }
+
+              const ary = JSON.parse(item[itemKey])
+              if (!Array.isArray(ary)) {
+                continue
+              }
+
+              props[itemKey] = ary.map(x => {
+                return constructSetProps(newSchema, x)
+              })
+              continue
+            }
+
+            if (!item[itemKey] || item[itemKey] === '') {
+              continue
+            }
+            break
+          case 'boolean':
+            props[itemKey] = !!Number(item[itemKey])
+            break
+          case 'int':
+          case 'float':
+          case 'number':
+          case 'timestamp':
+            if (item[itemKey] === '0') {
+              continue
+            }
+
+            props[itemKey] = Number(item[itemKey])
+            break
+          case 'url':
+          case 'string':
+            if (Array.isArray(item[itemKey])) {
+              if (!item[itemKey].length || item[itemKey][0] === '') {
+                continue
+              }
+
+              props[itemKey] = item[itemKey][0]
+            } else {
+              props[itemKey] = item[itemKey]
+            }
+            break
+          default:
+            break
+        }
+      }
+    } else if (itemKey === 'parents' || itemKey === 'children') {
+      props[itemKey] = JSON.parse(item[itemKey])
+    }
+  }
+
+  return props
+}
+
 async function migrate() {
   const srv = await start({ port: 6061 })
   const client = connect({ port: 6061 }, { loglevel: 'info' })
@@ -351,13 +454,16 @@ async function migrate() {
   const schema = await client.getSchema()
   for (const db of dump) {
     for (const key in db) {
+      if (key === undefined || key === 'undefined') {
+        continue
+      }
+
       const item = db[key]
       if (!item.type) {
         continue
       }
 
       console.log('processing key', key, 'type', item.type)
-      const props = {}
 
       const typeSchema =
         key === 'root' ? schema.schema.rootType : schema.schema.types[item.type]
@@ -367,58 +473,8 @@ async function migrate() {
         continue
       }
 
-      for (const itemKey in item) {
-        if (itemKey.endsWith(':from')) {
-          // skip from keys for now
-          continue
-        }
-
-        if (typeSchema.fields) {
-          if (typeSchema.fields[itemKey]) {
-            const fieldType = typeSchema.fields[itemKey].type
-            console.log('itemkey', itemKey, fieldType)
-            switch (fieldType) {
-              case 'array':
-              case 'text':
-              case 'object':
-              case 'json':
-                if (!item[itemKey] || item[itemKey] === '') {
-                  continue
-                }
-
-                try {
-                  props[itemKey] = JSON.parse(item[itemKey])
-                } catch (e) {
-                  console.error(
-                    'Error processing json field value for',
-                    itemKey,
-                    item,
-                    e
-                  )
-                  process.exit(1)
-                }
-                break
-              case 'boolean':
-                props[itemKey] = !!Number(item[itemKey])
-                break
-              case 'int':
-              case 'float':
-              case 'number':
-              case 'timestamp':
-                props[itemKey] = Number(item[itemKey])
-                break
-              case 'string':
-                props[itemKey] = item[itemKey]
-              default:
-                break
-            }
-          }
-        } else if (itemKey === 'parents' || itemKey === 'children') {
-          props[itemKey] = JSON.parse(item[itemKey])
-        }
-      }
-
-      console.log(props)
+      const props = constructSetProps(typeSchema, item)
+      console.log('RESULT', props)
 
       const initialPayload = {
         $id: key,
@@ -426,6 +482,10 @@ async function migrate() {
       }
 
       const newPayload = await client.conformToSchema(initialPayload)
+      if (!newPayload) {
+        console.error('no payload for key', props, key, item)
+        process.exit(1)
+      }
       console.log('inserting', newPayload)
       await client.set(newPayload)
     }

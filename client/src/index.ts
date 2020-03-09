@@ -88,6 +88,7 @@ export class SelvaClient {
   }
 
   async conformToSchema(props: SetOptions): Promise<SetOptions> {
+    console.log('conformToSchema', props)
     if (!props.$id && !props.type && !props.$alias) {
       return null
     }
