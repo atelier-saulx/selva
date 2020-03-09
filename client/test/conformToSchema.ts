@@ -3,6 +3,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 
 import getPort from 'get-port'
+import { wait } from './assertions'
 
 test('can strip all non-schema fields from body', async t => {
   const port = await getPort()
@@ -72,5 +73,6 @@ test('can strip all non-schema fields from body', async t => {
     }
   })
 
-  server.destroy()
+  await wait(100)
+  await server.destroy()
 })
