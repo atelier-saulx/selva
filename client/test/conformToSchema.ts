@@ -22,6 +22,15 @@ test('can strip all non-schema fields from body', async t => {
             type: 'text'
           },
           value: { type: 'number' },
+          ary: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                keyA: { type: 'string' }
+              }
+            }
+          },
           obj: {
             type: 'object',
             properties: {
@@ -71,6 +80,23 @@ test('can strip all non-schema fields from body', async t => {
       keyA: 'yes',
       keyC: { keyA: 'yes' }
     }
+  })
+
+  const payload3 = await client.conformToSchema({
+    type: 'match',
+    ary: [
+      {
+        keyA: 'yes',
+        keyB: 'no'
+      },
+      { keyX: 'no' },
+      { keyX: 'no', keyA: 'yes' }
+    ]
+  })
+
+  t.deepEqualIgnoreOrder(payload3, {
+    type: 'match',
+    ary: [{ keyA: 'yes' }, {}, { keyA: 'yes' }]
   })
 
   await wait(100)
