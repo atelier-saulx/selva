@@ -141,13 +141,16 @@ const parseQuery = (
       resultIds[resultIds.length] = id
     }
   } else if (getOptions.$list) {
+    logger.info('flurp')
     resultIds = parseList(resultIds, getOptions.$list)
+    logger.info('flurp')
+
     if (resultIds.length === 0) {
       resultIds = []
     }
   }
 
-  if (resultIds && resultIds.length !== 0) {
+  if (resultIds) {
     const find = getFind(getOptions)
 
     // logger.info(getOptions.$meta)
@@ -181,31 +184,31 @@ const parseQuery = (
         opts.$list.$limit = getOptions.$list.$limit
       }
 
-      const [{ results: nestedResults }, err] = parseQuery(
-        getField,
-        schema,
-        opts,
-        resultIds,
-        undefined,
-        language,
-        version,
-        includeMeta,
-        getResult
-      )
-
-      if (err) {
-        return [{ results }, err]
-      }
-
-      const nestedMap: Record<string, boolean> = {}
-      for (let i = 0; i < nestedResults.length; i++) {
-        const item = nestedResults[i]
-        if (!nestedMap[item.id]) {
-          nestedMap[item.id] = true
-          if (!getOptions.id) {
-            delete item.id
+      if (resultIds.length !== 0) {
+        const [{ results: nestedResults }, err] = parseQuery(
+          getField,
+          schema,
+          opts,
+          resultIds,
+          undefined,
+          language,
+          version,
+          includeMeta,
+          getResult
+        )
+        if (err) {
+          return [{ results }, err]
+        }
+        const nestedMap: Record<string, boolean> = {}
+        for (let i = 0; i < nestedResults.length; i++) {
+          const item = nestedResults[i]
+          if (!nestedMap[item.id]) {
+            nestedMap[item.id] = true
+            if (!getOptions.id) {
+              delete item.id
+            }
+            results[results.length] = item
           }
-          results[results.length] = item
         }
       }
     } else {
