@@ -22,6 +22,7 @@ const addToUpdateQueue = (subsManager: SubscriptionManager, key: string) => {
           // check size for drainage
           for (let i = 0; i < batchUpdates.length; i++) {
             const key = batchUpdates[i]
+            console.log('GO UPDATE!', key)
             subsManager.sendUpdate(key).catch(err => {
               console.error(`Error query update from subscription ${key}`, err)
             })
@@ -46,7 +47,6 @@ const addToUpdateQueue = (subsManager: SubscriptionManager, key: string) => {
 const createBatch = (subsManager: SubscriptionManager) => {
   execBatch = subsManager.client.redis.client.batch()
   process.nextTick(() => {
-    console.log('EXEC MEMBER BATCH')
     execBatch.exec((err, d) => {
       if (err) {
         console.error(err)
@@ -158,6 +158,7 @@ const handleQuery = (
   const endField = parts.slice(1).join('.')
   const field = eventName
   const id = parts[0]
+
   if (endField !== 'type') {
     for (let key in subsManager.queries) {
       if (!subsManager.inProgress[key]) {
@@ -166,6 +167,7 @@ const handleQuery = (
         }
 
         const q = subsManager.queries[key]
+
         let needsUpdate = false
         for (let i = 0; i < q.length; i++) {
           const item = q[i]

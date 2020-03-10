@@ -188,7 +188,6 @@ export default class SubscriptionManager {
     }
 
     this.lastResultHash[subscriptionId] = newHash
-
     this.pub.publish(
       `___selva_subscription:${subscriptionId}`,
       resultStr,

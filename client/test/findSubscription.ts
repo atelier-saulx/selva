@@ -85,8 +85,8 @@ test.serial('subscription find', async t => {
   const client = connect(
     {
       port
-    }
-    // { loglevel: 'info' }
+    },
+    { loglevel: 'info' }
   )
 
   const matches = []
@@ -125,34 +125,34 @@ test.serial('subscription find', async t => {
   })
 
   await wait(100)
-  const obs = await client.observe({
-    items: {
-      name: true,
-      id: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
-              $field: 'type',
-              $operator: '=',
-              $value: 'match'
-            },
-            {
-              $field: 'value',
-              $operator: '..',
-              $value: [5, 10]
-            }
-          ]
-        }
-      }
-    }
-  })
-  let cnt = 0
-  const sub = obs.subscribe(d => {
-    cnt++
-    console.log('furpy!', cnt, d)
-  })
+  // const obs = await client.observe({
+  //   items: {
+  //     name: true,
+  //     id: true,
+  //     $list: {
+  //       $find: {
+  //         $traverse: 'descendants',
+  //         $filter: [
+  //           {
+  //             $field: 'type',
+  //             $operator: '=',
+  //             $value: 'match'
+  //           },
+  //           {
+  //             $field: 'value',
+  //             $operator: '..',
+  //             $value: [5, 10]
+  //           }
+  //         ]
+  //       }
+  //     }
+  //   }
+  // })
+  // let cnt = 0
+  // const sub = obs.subscribe(d => {
+  //   cnt++
+  //   console.log('furpy!', cnt, d)
+  // })
 
   await wait(300)
   // t.is(cnt, 1)
@@ -172,48 +172,48 @@ test.serial('subscription find', async t => {
   await wait(300)
   // t.is(cnt, 3)
 
-  sub.unsubscribe()
+  // sub.unsubscribe()
 
-  const obs2 = await client.observe({
-    $includeMeta: true,
-    items: {
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
-              $field: 'type',
-              $operator: '=',
-              $value: 'match'
-            }
-          ]
-        }
-      },
-      name: true,
-      id: true,
-      teams: {
-        id: true,
-        name: true,
-        $list: {
-          $find: {
-            $traverse: 'ancestors',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'team'
-              }
-            ]
-          }
-        }
-      }
-    }
-  })
+  // const obs2 = await client.observe({
+  //   $includeMeta: true,
+  //   items: {
+  //     $list: {
+  //       $find: {
+  //         $traverse: 'descendants',
+  //         $filter: [
+  //           {
+  //             $field: 'type',
+  //             $operator: '=',
+  //             $value: 'match'
+  //           }
+  //         ]
+  //       }
+  //     },
+  //     name: true,
+  //     id: true,
+  //     teams: {
+  //       id: true,
+  //       name: true,
+  //       $list: {
+  //         $find: {
+  //           $traverse: 'ancestors',
+  //           $filter: [
+  //             {
+  //               $field: 'type',
+  //               $operator: '=',
+  //               $value: 'team'
+  //             }
+  //           ]
+  //         }
+  //       }
+  //     }
+  //   }
+  // })
 
-  let cnt2 = 0
-  const sub2 = obs2.subscribe(d => {
-    cnt2++
-  })
+  // let cnt2 = 0
+  // const sub2 = obs2.subscribe(d => {
+  //   cnt2++
+  // })
 
   await wait(300)
   // t.is(cnt2, 1)
@@ -236,7 +236,8 @@ test.serial('subscription find', async t => {
   await wait(300)
   // t.is(cnt2, 2)
 
-  sub2.unsubscribe()
+  console.log('go time', matchTeam)
+  // sub2.unsubscribe()
 
   const obs3 = await client.observe({
     $id: matchTeam,
@@ -263,28 +264,46 @@ test.serial('subscription find', async t => {
   })
 
   let cnt3 = 0
-  obs3.subscribe(() => {
+  obs3.subscribe(s => {
+    console.log('fire obs 3', s)
     cnt3++
   })
 
   await wait(300)
   // t.is(cnt3, 1)
+  const amount = 2 // 10000
 
   const x = []
-  for (let i = 0; i < 10000; i++) {
+  for (let i = 0; i < amount; i++) {
     x.push(
       client.set({
         type: 'match',
-        value: i,
+        value: i + 5,
         parents: { $add: matchTeam }
       })
     )
   }
 
   var d = Date.now()
-  await Promise.all(x)
+  const ids = await Promise.all(x)
   console.log('SET 10k', Date.now() - d, 'ms')
 
   await wait(1000)
+  await wait(1000)
+  // await wait(1000)
+
+  console.log('-----------------------------------------')
+  // console.log(ids)
+
+  console.log('GO SET')
+
+  client.set({
+    $id: ids[0],
+    name: 'FLURRRRP'
+  })
+  await wait(1000)
+
+  console.log('FLURPY')
+
   t.true(true)
 })

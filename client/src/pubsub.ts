@@ -125,6 +125,7 @@ export default class SelvaPubSub {
     return new Observable(observer => {
       emitter.on('publish', str => {
         const event: Event = JSON.parse(str)
+
         if (event.type === 'update') {
           observer.next(event.payload)
         } else if (event.type === 'delete') {
@@ -135,7 +136,8 @@ export default class SelvaPubSub {
       })
 
       return () => {
-        this.sub.unsubscribe('channel')
+        console.log('REMOVE', channel)
+        this.sub.unsubscribe(channel)
         delete this.subscriptions[channel]
         delete this.lastHeartbeat[channel]
       }
@@ -210,11 +212,16 @@ export default class SelvaPubSub {
       }
 
       const sub = this.subscriptions[channel]
+
       if (sub) {
         sub.emitter.emit('publish', message)
       }
     })
   }
+
+  // public async unsubscribe (channel: string) {
+
+  // }
 
   private async setSubcriptionData(channel: string) {
     try {

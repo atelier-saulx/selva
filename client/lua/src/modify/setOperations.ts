@@ -4,6 +4,7 @@ import { Id } from '~selva/schema/index'
 import * as redis from '../redis'
 import { markForAncestorRecalculation } from './ancestors'
 import { deleteItem } from './delete'
+import sendEvent from './events'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -104,6 +105,8 @@ export function resetParents(
   // add new parents
   for (const parent of value) {
     redis.sadd(parent + '.children', id)
+    sendEvent(parent, 'children', 'update')
+
     // recurse if necessary
     if (redis.exists(parent)) {
       modify({ $id: parent })
@@ -117,6 +120,7 @@ export function addToParents(id: string, value: Id[], modify: FnModify): void {
   for (const parent of value) {
     const childrenKey = parent + '.children'
     redis.sadd(childrenKey, id)
+    sendEvent(parent, 'children', 'update')
     if (!redis.exists(parent)) {
       modify({ $id: parent })
     }
@@ -158,6 +162,8 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
         modify({ $id: child, parents: { $add: id } })
       } else {
         redis.sadd(child + '.parents', id)
+        sendEvent(child, 'parents', 'update')
+
         markForAncestorRecalculation(child)
       }
     }
