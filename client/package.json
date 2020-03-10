@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
