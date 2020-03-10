@@ -344,7 +344,7 @@ async function makeSchema(client) {
   await client.updateSchema(schema)
 }
 
-function constructSetProps(prefixToTypeMapping, typeSchema, item) {
+function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
   const props = {}
   for (const itemKey in item) {
     if (!item[itemKey] || item[itemKey] === '') {
@@ -371,6 +371,7 @@ function constructSetProps(prefixToTypeMapping, typeSchema, item) {
                 fields: typeSchema.fields[itemKey].properties
               }
               props[itemKey] = constructSetProps(
+                id,
                 prefixToTypeMapping,
                 newSchema,
                 JSON.parse(item[itemKey])
@@ -405,7 +406,7 @@ function constructSetProps(prefixToTypeMapping, typeSchema, item) {
               }
 
               props[itemKey] = ary.map(x => {
-                return constructSetProps(prefixToTypeMapping, newSchema, x)
+                return constructSetProps(id, prefixToTypeMapping, newSchema, x)
               })
               continue
             }
@@ -420,10 +421,20 @@ function constructSetProps(prefixToTypeMapping, typeSchema, item) {
 
             const parsed = JSON.parse(item[itemKey])
             if (fieldType === 'references') {
+              if (id === 'cujpQXzXZ') {
+                props[itemKey] = []
+                continue
+              }
+
               let relations = []
               for (const relation of parsed) {
                 const prefix = relation.slice(0, 2)
-                if (prefixToTypeMapping[prefix]) {
+                if (
+                  prefixToTypeMapping[prefix] &&
+                  /* exclude self references */
+                  relation !== id
+                ) {
+                  console.log('adding relation for', id, relation)
                   relations.push(relation)
                 }
               }
@@ -480,7 +491,8 @@ async function migrate() {
 
   const schema = await client.getSchema()
 
-  for (const db of dump) {
+  for (let db of dump) {
+    // db = { cujpQXzXZ: db.cujpQXzXZ }
     for (const key in db) {
       if (key === undefined || key === 'undefined') {
         continue
@@ -502,6 +514,7 @@ async function migrate() {
       }
 
       const props = constructSetProps(
+        key,
         schema.schema.prefixToTypeMapping,
         typeSchema,
         item
@@ -523,9 +536,9 @@ async function migrate() {
       console.log('inserting', newPayload)
       await client.set(newPayload)
       console.log('INSERTED')
-      // await new Promise((resolve, _reject) => {
-      //   setTimeout(resolve, 1)
-      // })
+      await new Promise((resolve, _reject) => {
+        setTimeout(resolve, 1)
+      })
     }
   }
 

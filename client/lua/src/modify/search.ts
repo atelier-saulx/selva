@@ -82,7 +82,7 @@ export function addFieldToSearch(
         'PARTIAL',
         'FIELDS',
         field,
-        value
+        tostring(value)
       )
 
       if (hasExistsIndex(index[field])) {

@@ -224,6 +224,7 @@ function reCalculateAncestorsFor(ids: Id[]): void {
           reversed[1] = 'root'
         }
 
+        logger.info('YAYAYA', id, ...reversed)
         redis.zAddMultipleNew(id + '.ancestors', ...reversed)
       }
 
