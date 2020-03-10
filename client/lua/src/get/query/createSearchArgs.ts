@@ -1,4 +1,3 @@
-import * as logger from '../../logger'
 import { GetOptions } from '~selva/get/types'
 import { isArray } from '../../util'
 import { Fork } from './types'
@@ -9,19 +8,24 @@ function createSearchArgs(
   query: string,
   fork: Fork
 ): string[] {
-  let $list: any
-  let offset: number
-  let limit: number
-  if (getOptions.$list) {
-    $list = getOptions.$list
-    offset = $list.$offset || 0
-    limit = $list.$limit || 99999
-  } else if (getOptions.$find) {
-    $list = { $find: getOptions.$find }
-    offset = 0
-    limit = 1
-  } else {
-    return []
+  let $list = getOptions.$list
+  let isNoList = false
+  if (!$list) {
+    if (getOptions.$find) {
+      isNoList = true
+      $list = { $find: getOptions.$find }
+    } else {
+      return []
+    }
+  }
+  let offset = 0
+  let limit = isNoList ? 1 : 99999
+  if ($list.$limit) {
+    limit = $list.$limit
+  }
+
+  if ($list.$offset) {
+    offset = $list.$offset
   }
 
   const sort: string[] = []

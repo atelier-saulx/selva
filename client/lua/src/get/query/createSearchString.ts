@@ -81,8 +81,6 @@ const addField = (
 ): string | string[] => {
   // depends on field type
 
-  logger.info('URGH', filter)
-
   const type = filter.$search && filter.$search[0]
   const operator = filter.$operator
 
@@ -126,9 +124,6 @@ const addField = (
       let words: string[] = []
       if (!isArray(filter.$value)) {
         // filter.$value = `${joinAny(filter.$value, ' ')}`
-
-        logger.info('HELLO', filter.$value)
-
         words = splitString(escapeSpecial(tostring(filter.$value)), ' ')
       } else {
         for (let i = 0; i < filter.$value.length; i++) {

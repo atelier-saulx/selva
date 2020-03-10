@@ -32,7 +32,6 @@ function getField(
     return true
   }
 
-
   if ((props.$list || props.$find) && ignore !== '$list' && ignore !== '$') {
     // field that needs to get the result
 

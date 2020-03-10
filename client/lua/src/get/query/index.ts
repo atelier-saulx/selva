@@ -141,10 +141,7 @@ const parseQuery = (
       resultIds[resultIds.length] = id
     }
   } else if (getOptions.$list) {
-    logger.info('flurp')
     resultIds = parseList(resultIds, getOptions.$list)
-    logger.info('flurp')
-
     if (resultIds.length === 0) {
       resultIds = []
     }
