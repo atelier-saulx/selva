@@ -64,56 +64,35 @@ test.serial('find - single', async t => {
       parents: [team]
     })
   }
-  
+
   await Promise.all(matches.map(v => client.set(v)))
 
+  // console.log('r', r)
+  // t.fail()
   const r = await client.get({
     $id: 'te0',
-    matches: {
+    singleMatch: {
       name: true,
-      $list: {
-        $find: {
-          $find: {
-            $traverse: 'children',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'match'
-              }
-            ]
+      $find: {
+        $traverse: 'children',
+        $filter: [
+          {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match'
+          },
+          {
+            $field: 'name',
+            $operator: '=',
+            $value: 'match0'
           }
-        }
+        ]
       }
     }
   })
-  console.log('r', r)
-  t.fail()
-  // const r = await client.get({
-  //   $id: 'te0',
-  //   singleMatch: {
-  //     name: true,
-  //     $find: {
-  //       $traverse: 'children',
-  //       $filter: [
-  //         {
-  //           $field: 'type',
-  //           $operator: '=',
-  //           $value: 'match'
-  //         },
-  //         {
-  //           $field: 'name',
-  //           $operator: '=',
-  //           $value: 'match0'
-  //         }
-  //       ]
-  //     }
-  //   }
-  // })
-  //
-  // console.log('>>', r)
-  // t.deepEqual(r, {
-  //   singleMatch: { name: 'match0' }
-  // })
-})
 
+  console.log('>>', r)
+  t.deepEqual(r, {
+    singleMatch: { name: 'match0' }
+  })
+})
