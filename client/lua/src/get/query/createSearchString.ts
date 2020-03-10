@@ -80,7 +80,6 @@ const addField = (
   language: string = 'en'
 ): string | string[] => {
   // depends on field type
-
   const type = filter.$search && filter.$search[0]
   const operator = filter.$operator
 

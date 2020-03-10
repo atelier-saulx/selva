@@ -149,9 +149,6 @@ const parseQuery = (
 
   if (resultIds) {
     const find = getFind(getOptions)
-
-    // logger.info(getOptions.$meta)
-
     // need to do something here for nested queries
     if (find && find.$find) {
       // nested find
@@ -193,9 +190,11 @@ const parseQuery = (
           includeMeta,
           getResult
         )
+
         if (err) {
           return [{ results }, err]
         }
+
         const nestedMap: Record<string, boolean> = {}
         for (let i = 0; i < nestedResults.length; i++) {
           const item = nestedResults[i]
@@ -231,8 +230,6 @@ const parseQuery = (
         results[results.length] = result
       }
     }
-  } else {
-    logger.info('HELLO')
   }
 
   const sort = getOptions.$list && getOptions.$list.$sort
