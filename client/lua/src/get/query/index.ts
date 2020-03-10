@@ -43,7 +43,7 @@ const parseNested = (
     if (!opts.$find.$traverse) {
       opts.$find.$traverse = traverse
     }
-    const result =  parseFind(opts.$find, ids, meta)
+    const result = parseFind(opts.$find, ids, meta)
     return result
   }
   return [{ isFork: true }, 'Not a valid query']
@@ -147,7 +147,7 @@ const parseQuery = (
     }
   }
 
-  if (resultIds) {
+  if (resultIds && resultIds.length !== 0) {
     const find = getFind(getOptions)
 
     // logger.info(getOptions.$meta)
@@ -164,6 +164,7 @@ const parseQuery = (
           opts[key] = getOptions[key]
         }
       }
+
       opts.$list = {
         $find: find.$find
       }
@@ -191,9 +192,11 @@ const parseQuery = (
         includeMeta,
         getResult
       )
+
       if (err) {
         return [{ results }, err]
       }
+
       const nestedMap: Record<string, boolean> = {}
       for (let i = 0; i < nestedResults.length; i++) {
         const item = nestedResults[i]
@@ -228,6 +231,8 @@ const parseQuery = (
         results[results.length] = result
       }
     }
+  } else {
+    logger.info('HELLO')
   }
 
   const sort = getOptions.$list && getOptions.$list.$sort
@@ -242,7 +247,7 @@ const parseQuery = (
     getOptions.$list.$find.$traverse
   ) {
     meta.traverse = getOptions.$list.$find.$traverse
-  } else if ( getOptions.$find && getOptions.$find.$traverse ) {
+  } else if (getOptions.$find && getOptions.$find.$traverse) {
     meta.traverse = getOptions.$find.$traverse
   }
 
@@ -289,6 +294,7 @@ const queryGet = (
     parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
   }
 
+  // hey smurky boys
   if (getOptions.$find) {
     result[resultField] = results.length ? results[0] : {}
   } else {
