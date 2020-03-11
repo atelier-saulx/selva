@@ -85,8 +85,8 @@ test.serial('subscription find', async t => {
   const client = connect(
     {
       port
-    }
-    // { loglevel: 'info' }
+    },
+    { loglevel: 'info' }
   )
 
   const matches = []
@@ -155,22 +155,22 @@ test.serial('subscription find', async t => {
   })
 
   await wait(300)
-  // t.is(cnt, 1)
+  t.is(cnt, 1)
 
   await client.set({
     $id: matches[0].$id,
     value: 8
   })
 
-  await wait(300)
-  // t.is(cnt, 2)
+  await wait(1000)
+  t.is(cnt, 2)
 
   await client.set({
     $id: matches[1].$id,
     value: 8
   })
   await wait(300)
-  // t.is(cnt, 3)
+  t.is(cnt, 3)
 
   sub.unsubscribe()
 
@@ -216,7 +216,7 @@ test.serial('subscription find', async t => {
   })
 
   await wait(300)
-  // t.is(cnt2, 1)
+  t.is(cnt2, 1)
 
   let matchTeam
   for (let i = 0; i < 10; i++) {
@@ -234,7 +234,7 @@ test.serial('subscription find', async t => {
   await Promise.all(matches.map(t => client.set(t)))
 
   await wait(300)
-  // t.is(cnt2, 2)
+  t.is(cnt2, 2)
 
   sub2.unsubscribe()
 
@@ -263,15 +263,18 @@ test.serial('subscription find', async t => {
   })
 
   let cnt3 = 0
-  obs3.subscribe(() => {
+  obs3.subscribe(s => {
     cnt3++
   })
 
   await wait(300)
-  // t.is(cnt3, 1)
+  // how to handle large responses ???
+
+  // remove unpack
+  const amount = 5000 // 10k wrong 5k fine
 
   const x = []
-  for (let i = 0; i < 10000; i++) {
+  for (let i = 0; i < amount; i++) {
     x.push(
       client.set({
         type: 'match',
@@ -282,9 +285,15 @@ test.serial('subscription find', async t => {
   }
 
   var d = Date.now()
-  await Promise.all(x)
-  console.log('SET 10k', Date.now() - d, 'ms')
+  const ids = await Promise.all(x)
+  console.log('SET 5k', Date.now() - d, 'ms')
 
   await wait(1000)
-  t.true(true)
+  client.set({
+    $id: ids[6],
+    name: 'FLURRRRP'
+  })
+  await wait(1000)
+
+  t.is(cnt3, 3)
 })

@@ -8,12 +8,18 @@ function createSearchArgs(
   query: string,
   fork: Fork
 ): string[] {
-  const $list = getOptions.$list
+  let $list = getOptions.$list
+  let isNoList = false
   if (!$list) {
-    return []
+    if (getOptions.$find) {
+      isNoList = true
+      $list = { $find: getOptions.$find }
+    } else {
+      return []
+    }
   }
   let offset = 0
-  let limit = 99999
+  let limit = isNoList ? 1 : 99999
   if ($list.$limit) {
     limit = $list.$limit
   }
