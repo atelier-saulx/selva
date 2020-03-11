@@ -217,12 +217,23 @@ function setField(
     redis.hset(id, '$source_' + field, sourceString)
   }
 
-  if (fromDefault) {
-    redis.hsetnx(id, field, tostring(value))
-  } else {
-    redis.hset(id, field, tostring(value))
+  const current = redis.hget(id, field)
+  const strVal = tostring(value)
+
+  logger.info('trying to set', strVal, 'for', id, field)
+  console.log('trying to set', strVal, 'for', id, field)
+  if (current === strVal) {
+    return
   }
 
+  if (fromDefault) {
+    redis.hsetnx(id, field, strVal)
+  } else {
+    redis.hset(id, field, strVal)
+  }
+
+  logger.info('trying to index', strVal, 'for', id, field)
+  console.log('trying to index', strVal, 'for', id, field)
   addFieldToSearch(id, field, value)
   sendEvent(id, field, 'update')
 }

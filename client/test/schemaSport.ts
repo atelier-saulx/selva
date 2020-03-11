@@ -103,27 +103,27 @@ test.serial.only('schemas - sport', async t => {
     article: {
       type: 'string'
     },
-    uuid: {
-      type: 'object',
-      properties: {
-        sas: {
-          type: 'string',
-          search: { type: ['TAG'] }
-        },
-        dfb: {
-          type: 'string',
-          search: { type: ['TAG'] }
-        },
-        sams: {
-          type: 'string',
-          search: { type: ['TAG'] }
-        },
-        stripe: {
-          type: 'string',
-          search: { type: ['TAG'] }
-        }
-      }
-    },
+    // uuid: {
+    //   type: 'object',
+    //   properties: {
+    //     sas: {
+    //       type: 'string',
+    //       search: { type: ['TAG'] }
+    //     },
+    //     dfb: {
+    //       type: 'string',
+    //       search: { type: ['TAG'] }
+    //     },
+    //     sams: {
+    //       type: 'string',
+    //       search: { type: ['TAG'] }
+    //     },
+    //     stripe: {
+    //       type: 'string',
+    //       search: { type: ['TAG'] }
+    //     }
+    //   }
+    // },
     image: {
       type: 'object',
       properties: {
