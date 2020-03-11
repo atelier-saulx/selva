@@ -39,7 +39,7 @@ async function makeSchema(client) {
     },
     title: {
       type: 'text',
-      search: { type: ['TEXT'] }
+      search: { type: ['TEXT-LANGUAGE-SUG'] }
     }
   }
 
