@@ -159,6 +159,8 @@ const handleQuery = (
   const field = eventName
   const id = parts[0]
 
+  console.log('go', id, field, subsManager.queries)
+
   if (endField !== 'type') {
     for (let key in subsManager.queries) {
       if (!subsManager.inProgress[key]) {

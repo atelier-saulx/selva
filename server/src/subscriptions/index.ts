@@ -188,6 +188,12 @@ export default class SubscriptionManager {
     }
 
     this.lastResultHash[subscriptionId] = newHash
+
+    // console.log(this)
+
+    // publish
+
+    // if (this.pub) {
     this.pub.publish(
       `___selva_subscription:${subscriptionId}`,
       resultStr,
@@ -195,6 +201,7 @@ export default class SubscriptionManager {
         // console.error(err)
       }
     )
+    // }
   }
 
   public async refreshSubscription(
