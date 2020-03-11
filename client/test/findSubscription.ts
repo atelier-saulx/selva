@@ -264,7 +264,6 @@ test.serial('subscription find', async t => {
 
   let cnt3 = 0
   obs3.subscribe(s => {
-    console.log('fire obs 3', cnt3)
     cnt3++
   })
 
@@ -289,16 +288,12 @@ test.serial('subscription find', async t => {
   const ids = await Promise.all(x)
   console.log('SET 5k', Date.now() - d, 'ms')
 
-  await wait(3000)
-  // await wait(1000)
-
+  await wait(1000)
   client.set({
-    $id: ids[0],
+    $id: ids[6],
     name: 'FLURRRRP'
   })
   await wait(1000)
 
-  console.log(cnt3)
-
-  t.true(true)
+  t.is(cnt3, 3)
 })
