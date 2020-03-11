@@ -4,6 +4,8 @@ const fs = require('fs').promises
 const os = require('os')
 const path = require('path')
 
+const IGNORE_UNTIL = null
+
 async function makeSchema(client) {
   const types = [
     'ad',
@@ -491,9 +493,18 @@ async function migrate() {
 
   const schema = await client.getSchema()
 
+  let ignore = IGNORE_UNTIL ? true : false
   for (let db of dump) {
     // db = { cujpQXzXZ: db.cujpQXzXZ }
     for (const key in db) {
+      if (ignore) {
+        if (key === IGNORE_UNTIL) {
+          ignore = false
+        } else {
+          continue
+        }
+      }
+
       if (key === undefined || key === 'undefined') {
         continue
       }
