@@ -39,12 +39,7 @@ test.after(async _t => {
 })
 
 test.serial('subscription list', async t => {
-  const client = connect(
-    {
-      port
-    },
-    { loglevel: 'info' }
-  )
+  const client = connect({ port }, { loglevel: 'info' })
 
   const matches = []
 
@@ -58,37 +53,33 @@ test.serial('subscription list', async t => {
     })
   }
 
-  await wait(100)
+  await Promise.all(matches.map(v => client.set(v)))
+
+  await wait(500)
+
+  // without sort
   const obs = await client.observe({
-    items: {
+    children: {
       name: true,
       id: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
-              $field: 'type',
-              $operator: '=',
-              $value: 'match'
-            },
-            {
-              $field: 'value',
-              $operator: '..',
-              $value: [5, 10]
-            }
-          ]
-        }
-      }
+      $list: {}
     }
   })
   let cnt = 0
   const sub = obs.subscribe(d => {
     cnt++
-    console.log('furpy!', cnt, d)
+    console.log('FLURPY GO!', cnt, d)
   })
 
   await wait(1000)
+  t.is(cnt, 1)
 
-  t.true(true)
+  console.log('go')
+  client.set({
+    $id: matches[0].$id,
+    name: 'FLURP!'
+  })
+
+  await wait(1000)
+  t.is(cnt, 2)
 })

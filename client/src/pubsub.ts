@@ -136,7 +136,6 @@ export default class SelvaPubSub {
       })
 
       return () => {
-        console.log('REMOVE', channel)
         this.sub.unsubscribe(channel)
         delete this.subscriptions[channel]
         delete this.lastHeartbeat[channel]

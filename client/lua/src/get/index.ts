@@ -32,7 +32,14 @@ function getField(
     return true
   }
 
-  if ((props.$list || props.$find) && ignore !== '$list' && ignore !== '$') {
+  logger.info('GET IT')
+
+  if (
+    (props.$list || props.$find) &&
+    ignore !== '$list' &&
+    ignore !== '$' &&
+    ignore !== '$find'
+  ) {
     // field that needs to get the result
 
     if (field) {

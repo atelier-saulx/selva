@@ -167,6 +167,9 @@ const handleQuery = (
 
         const q = subsManager.queries[key]
 
+        // console.log(q)
+        // missing ids
+
         let needsUpdate = false
         for (let i = 0; i < q.length; i++) {
           const item = q[i]
