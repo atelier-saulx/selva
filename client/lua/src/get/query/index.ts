@@ -246,6 +246,8 @@ const parseQuery = (
     meta.traverse = getOptions.$list.$find.$traverse
   } else if (getOptions.$find && getOptions.$find.$traverse) {
     meta.traverse = getOptions.$find.$traverse
+  } else if (traverse) {
+    meta.traverse = traverse
   }
 
   return [{ results, meta }, null]
@@ -288,6 +290,7 @@ const queryGet = (
     if (!result.$meta.query) {
       result.$meta.query = []
     }
+
     parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
   }
 

@@ -22,7 +22,6 @@ const addToUpdateQueue = (subsManager: SubscriptionManager, key: string) => {
           // check size for drainage
           for (let i = 0; i < batchUpdates.length; i++) {
             const key = batchUpdates[i]
-            console.log('GO UPDATE!', key)
             subsManager.sendUpdate(key).catch(err => {
               console.error(`Error query update from subscription ${key}`, err)
             })
@@ -169,6 +168,9 @@ const handleQuery = (
         }
 
         const q = subsManager.queries[key]
+
+        // console.log(q)
+        // missing ids
 
         let needsUpdate = false
         for (let i = 0; i < q.length; i++) {
