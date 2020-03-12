@@ -5,7 +5,9 @@
   "bin": {
     "watch": "index.js"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/lodash": "^4.14.149"
+  },
   "dependencies": {
     "chokidar": "^3.3.1",
     "execa": "^4.0.0",

@@ -3,6 +3,7 @@ const { start } = require('@saulx/selva-server')
 const fs = require('fs').promises
 const os = require('os')
 const path = require('path')
+const _ = require('lodash')
 
 const IGNORE_UNTIL = null
 
@@ -436,12 +437,14 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
                   /* exclude self references */
                   relation !== id
                 ) {
-                  console.log('adding relation for', id, relation)
+                  // console.log('adding relation for', id, relation)
                   relations.push(relation)
                 }
               }
 
-              props[itemKey] = relations
+              if (relations.length) {
+                props[itemKey] = relations
+              }
             } else {
               props[itemKey] = parsed
             }
@@ -483,7 +486,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
 
 async function migrate() {
   // const srv = await start({ port: 6061 })
-  const client = connect({ port: 6061 }, { loglevel: 'info' })
+  const client = connect({ port: 6061 } /*, { loglevel: 'info' }*/)
 
   await makeSchema(client)
 
@@ -496,82 +499,95 @@ async function migrate() {
   let ignore = IGNORE_UNTIL ? true : false
   for (let db of dump) {
     // db = { cujpQXzXZ: db.cujpQXzXZ }
-    for (const key in db) {
-      if (ignore) {
-        if (key === IGNORE_UNTIL) {
-          ignore = false
-        } else {
+    const keys = Object.keys(db)
+    // const batches = _.chunk(keys, 3000)
+    const batches = [
+      ['leD25oaXJ' /*'feZMYOZZR'*/, , 'sp1ZyDjY0' /*'prbq9nqPk'*/]
+    ]
+    for (const batch of batches) {
+      // console.log('batch', batch)
+      let promises = []
+      for (const key of batch) {
+        if (ignore) {
+          if (key === IGNORE_UNTIL) {
+            ignore = false
+          } else {
+            continue
+          }
+        }
+
+        if (key === undefined || key === 'undefined') {
           continue
         }
-      }
 
-      if (key === undefined || key === 'undefined') {
-        continue
-      }
-
-      const item = db[key]
-      if (!item.type) {
-        continue
-      }
-
-      console.log('processing key', key, 'type', item.type, item)
-
-      const typeSchema =
-        key === 'root' ? schema.schema.rootType : schema.schema.types[item.type]
-
-      if (!typeSchema) {
-        console.log('No type schema found for', item.type)
-        continue
-      }
-
-      const props = constructSetProps(
-        key,
-        schema.schema.prefixToTypeMapping,
-        typeSchema,
-        item
-      )
-
-      const initialPayload = {
-        $id: key,
-        ...props
-      }
-
-      const newPayload = await client.conformToSchema(initialPayload)
-
-      if (!newPayload) {
-        console.error('no payload for key', props, key, item)
-        process.exit(1)
-      }
-
-      const aliases = []
-      if (item.uuid) {
-        aliases.push('sas-' + item.uuid)
-      }
-
-      if (item.url) {
-        try {
-          const obj = JSON.parse(item.url)
-          if (typeof obj == 'object') {
-            for (const key in obj) {
-              aliases.push(obj[key])
-            }
-          }
-        } catch (_e) {
-          aliases.push(item.url)
+        const item = db[key]
+        if (!item.type) {
+          continue
         }
+
+        // console.log('processing key', key, 'type', item.type, item)
+
+        const typeSchema =
+          key === 'root'
+            ? schema.schema.rootType
+            : schema.schema.types[item.type]
+
+        if (!typeSchema) {
+          console.log('No type schema found for', item.type)
+          continue
+        }
+
+        const props = constructSetProps(
+          key,
+          schema.schema.prefixToTypeMapping,
+          typeSchema,
+          item
+        )
+
+        const initialPayload = {
+          $id: key,
+          ...props
+        }
+
+        const newPayload = await client.conformToSchema(initialPayload)
+
+        if (!newPayload) {
+          console.error('no payload for key', props, key, item)
+          process.exit(1)
+        }
+
+        const aliases = []
+        if (item.uuid) {
+          aliases.push('sas-' + item.uuid)
+        }
+
+        if (item.url) {
+          try {
+            const obj = JSON.parse(item.url)
+            if (typeof obj == 'object') {
+              for (const key in obj) {
+                aliases.push(obj[key])
+              }
+            }
+          } catch (_e) {
+            aliases.push(item.url)
+          }
+        }
+
+        if (aliases.length) {
+          newPayload.aliases = (newPayload.aliases || []).concat(aliases)
+        }
+
+        // delete newPayload.title
+        // console.log('inserting', newPayload)
+        promises.push(client.set(newPayload))
+        console.log('INSERTED')
+        await new Promise((resolve, _reject) => {
+          setTimeout(resolve, 1)
+        })
       }
 
-      if (aliases.length) {
-        newPayload.aliases = (newPayload.aliases || []).concat(aliases)
-      }
-
-      // delete newPayload.title
-      console.log('inserting', newPayload)
-      await client.set(newPayload)
-      console.log('INSERTED')
-      await new Promise((resolve, _reject) => {
-        setTimeout(resolve, 1)
-      })
+      await Promise.all(promises)
     }
   }
 

@@ -846,3 +846,44 @@ test.serial('createdAt not set if provided in modify props', async t => {
 
 //   await client.delete('root')
 // })
+
+test.serial.only('yes', async t => {
+  const client = connect({
+    port
+  })
+
+  const league = await client.set({
+    type: 'league',
+    name: 'league'
+  })
+
+  const federation = await client.set({
+    type: 'league',
+    name: 'federation',
+    children: [league]
+  })
+
+  const sport = await client.set({
+    type: 'league',
+    name: 'sport',
+    children: [league, federation]
+  })
+
+  const ancestors = (
+    await client.get({
+      $id: league,
+      ancestors: true
+    })
+  ).ancestors
+
+  console.log(
+    await Promise.all(
+      ancestors.map(async a => {
+        return await client.get({
+          $id: a,
+          name: true
+        })
+      })
+    )
+  )
+})

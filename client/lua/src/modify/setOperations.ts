@@ -108,7 +108,7 @@ export function resetParents(
     sendEvent(parent, 'children', 'update')
 
     // recurse if necessary
-    if (redis.exists(parent)) {
+    if (!redis.exists(parent)) {
       modify({ $id: parent })
     }
   }

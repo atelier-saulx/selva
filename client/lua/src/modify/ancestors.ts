@@ -160,7 +160,7 @@ function getDepth(id: Id): number | false {
 
   const depth = tonumber(redis.get(id + '._depth'))
   if (!depth) {
-    return false
+    return 0
   }
 
   return depth
