@@ -71,6 +71,27 @@ test.serial('subscription list', async t => {
 
   t.is(Object.keys(flap.$meta.query[0].ids).length, 9)
 
+  const ff = await client.get({
+    $includeMeta: true,
+    children: {
+      name: true,
+      id: true,
+      $list: {
+        $find: {
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match' // bit nicer error habndling if you do something weird here
+          }
+        }
+      }
+    }
+  })
+
+  console.log(JSON.stringify(ff.$meta, void 0, 2))
+
+  t.is(Object.keys(ff.$meta.query[0].ids).length, 9)
+
   await wait()
 
   const obs = await client.observe({

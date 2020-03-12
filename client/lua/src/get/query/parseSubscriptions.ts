@@ -228,6 +228,10 @@ function parseSubscriptions(
     for (let i = 1; i < meta.ids.length; i++) {
       sub.ids[meta.ids[i]] = true
     }
+
+    if (meta.type) {
+      sub.type = meta.type
+    }
   }
 
   if (sub.ids || !meta.ast) {

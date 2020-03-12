@@ -151,7 +151,6 @@ const handleQuery = (
   message: string,
   eventName: string
 ) => {
-  // TYPE needs to be fixed
   const checkFields = message === 'update'
   const parts = eventName.split('.')
   const endField = parts.slice(1).join('.')
@@ -166,8 +165,6 @@ const handleQuery = (
         }
 
         const q = subsManager.queries[key]
-
-        console.log('???', q)
 
         let needsUpdate = false
         for (let i = 0; i < q.length; i++) {
