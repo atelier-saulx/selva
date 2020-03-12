@@ -192,8 +192,6 @@ export function resetChildren(
   value: Id[],
   modify: FnModify
 ): Id[] {
-  info('---resetChldren--', id, setKey, value)
-
   const children = redis.smembers(setKey)
   // if (arrayIsEqual(children, value)) {
   //   return
@@ -203,11 +201,13 @@ export function resetChildren(
     redis.srem(parentKey, id)
     const size = redis.scard(parentKey)
     if (size === 0) {
+      // WRONG
       deleteItem(child)
     } else {
       markForAncestorRecalculation(child)
     }
   }
+
   redis.del(setKey)
   return addToChildren(id, value, modify)
 }

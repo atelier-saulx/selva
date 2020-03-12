@@ -870,36 +870,4 @@ test.serial.only('yes', async t => {
     name: 'sport',
     children: ['cuFed']
   })
-
-  /*
-  {
-    type: sport
-    children: ['cuFed']
-  }
-  */
-
-  // const league = await client.set({
-  //   $id: 'cuLeague',
-  //   type: 'league',
-  //   name: 'league',
-  //   parents: ['cuFed']
-  // })
-
-  // const ancestors = await client.get({
-  //   $id: 'cuLeague',
-  //   ancestors: true
-  // }) //.ancestors
-
-  // console.log(ancestors)
-
-  // console.log(
-  //   await Promise.all(
-  //     ancestors.map(async a => {
-  //       return await client.get({
-  //         $id: a,
-  //         name: true
-  //       })
-  //     })
-  //   )
-  // )
 })
