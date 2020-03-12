@@ -867,6 +867,35 @@ test.serial.only('yes', async t => {
     parents: ['cuFed']
   })
 
+  const sport = await client.set({
+    $id: 'cuSport',
+    type: 'league',
+    name: 'sport',
+    children: ['cuLeague', 'cuFed']
+  })
+
+  // const region = await client.set({
+  //   $id: 'cuRegion',
+  //   type: 'league',
+  //   name: 'region',
+  //   children: ['cuSport']
+  // })
+
+  // const league = await client.set({
+  //   $id: 'cuLeague',
+  //   type: 'league',
+  //   name: 'league',
+  //   parents: ['cuFed', 'cuSport']
+  // })
+
+  // const federation = await client.set({
+  //   $id: 'cuFed',
+  //   type: 'league',
+  //   name: 'federation',
+  //   parents: ['cuSport'],
+  //   children: ['cuLeague']
+  // })
+
   const ancestors = (
     await client.get({
       $id: 'cuLeague',
