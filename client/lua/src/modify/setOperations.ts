@@ -106,11 +106,6 @@ export function resetParents(
   for (const parent of value) {
     redis.sadd(parent + '.children', id)
     sendEvent(parent, 'children', 'update')
-
-    // recurse if necessary
-    if (!redis.exists(parent)) {
-      modify({ $id: parent })
-    }
   }
 
   markForAncestorRecalculation(id)
@@ -121,9 +116,6 @@ export function addToParents(id: string, value: Id[], modify: FnModify): void {
     const childrenKey = parent + '.children'
     redis.sadd(childrenKey, id)
     sendEvent(parent, 'children', 'update')
-    if (!redis.exists(parent)) {
-      modify({ $id: parent })
-    }
   }
 
   markForAncestorRecalculation(id)
@@ -158,14 +150,10 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     result[i] = child
 
     if (child !== '') {
-      if (!redis.exists(child)) {
-        modify({ $id: child, parents: { $add: id } })
-      } else {
-        redis.sadd(child + '.parents', id)
-        sendEvent(child, 'parents', 'update')
+      redis.sadd(child + '.parents', id)
+      sendEvent(child, 'parents', 'update')
 
-        markForAncestorRecalculation(child)
-      }
+      markForAncestorRecalculation(child)
     }
   }
 
