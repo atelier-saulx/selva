@@ -110,7 +110,6 @@ test.serial('subscription list', async t => {
   await wait(1000)
   t.is(cnt, 1)
 
-  console.log('go')
   client.set({
     $id: matches[0].$id,
     name: 'FLURP!'
