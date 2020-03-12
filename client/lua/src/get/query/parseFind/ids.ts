@@ -53,20 +53,13 @@ function parseIds(
       }
     }
     if (typeFilter) {
-      logger.info('????', meta)
-
-      logger.info('!!!', typeFilter)
       ids = parseTypeFilter(typeFilter, ids)
-      logger.info('!!!2')
 
       if (!meta.type) {
         meta.type = []
       }
 
       // FIXME: optimize
-
-      logger.info('2????333')
-
       if (isArray(typeFilter.$value)) {
         for (let j = 0; j < typeFilter.$value.length; j++) {
           meta.type[meta.type.length] = getPrefixFromType(
@@ -78,8 +71,6 @@ function parseIds(
           <string>typeFilter.$value
         )
       }
-
-      logger.info('2????')
     }
     if (filters.length === 0) {
       return [ids, null]

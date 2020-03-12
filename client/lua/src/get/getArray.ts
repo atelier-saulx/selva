@@ -18,7 +18,6 @@ export default function getArray(
   includeMeta?: boolean,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {
-  logger.info('GET ARRAY')
   const resultAry: GetResult[] = []
   for (let i = 0; i < props.length; i++) {
     const intermediateResult = {}
@@ -33,7 +32,6 @@ export default function getArray(
       includeMeta,
       ignore
     )
-    logger.info('intermediate result for field', field, intermediateResult)
     resultAry[i] = getNestedField(intermediateResult, field)
   }
 
