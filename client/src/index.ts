@@ -318,6 +318,8 @@ export class SelvaClient {
   }
 
   async fetch(opts: GetOptions): Promise<GetResult> {
+    console.info('LOG LEVEL COME ON', this.loglevel)
+
     const str = await this.redis.loadAndEvalScript(
       'fetch',
       SCRIPTS.fetch,
