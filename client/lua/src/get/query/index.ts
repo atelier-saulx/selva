@@ -116,7 +116,6 @@ const parseQuery = (
         if (err) {
           return [{ results }, err]
         }
-
         const args = createSearchArgs(
           getOptions,
           string.sub(q, 2, q.length - 1),
@@ -268,6 +267,8 @@ const queryGet = (
   if (!ids) {
     ids = [getOptions.$id || 'root']
   }
+
+  logger.info('FLURPYSHINE')
 
   const [r, err] = parseQuery(
     getField,
