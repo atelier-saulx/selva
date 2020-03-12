@@ -324,20 +324,6 @@
   dependencies:
     any-observable "^0.3.0"
 
-"@saulx/selva@0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@saulx/selva/-/selva-0.1.1.tgz#2bd2e87d988b478e7c6d9f2869fa5debb93712ef"
-  integrity sha512-vQ8NpK1xRU8uA4YGK409MIBeSJZZx9x8goMMPg8CN8nyrrKNpAajt0wUb/tpNL0FsATIFsk76ekQ12DfwpskkA==
-  dependencies:
-    "@sindresorhus/fnv1a" "^2.0.0"
-    "@types/uuid" "^3.4.6"
-    async-retry "^1.3.1"
-    aws-sdk "^2.616.0"
-    dropbox "^4.0.30"
-    node-fetch "^2.6.0"
-    redis "^2.8.0"
-    uuid "^3.3.3"
-
 "@sindresorhus/fnv1a@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@sindresorhus/fnv1a/-/fnv1a-2.0.0.tgz#2c8c77f887eeb9762dc5fa6614215671085a7a3b"

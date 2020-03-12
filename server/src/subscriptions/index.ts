@@ -113,14 +113,13 @@ export default class SubscriptionManager {
         }
       )
 
-      // delete cache for latest result since there is no result now
+      // delete cache for latest result since there is no result now!
       delete this.lastResultHash[subscriptionId]
       return
     }
 
     getOptions = getOptions || this.subscriptions[subscriptionId]
 
-    console.info('??? snurkey', getOptions)
     const payload = await this.client.get(
       Object.assign({}, getOptions, {
         $includeMeta: true
