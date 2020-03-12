@@ -7,7 +7,7 @@
     "tools"
   ],
   "scripts": {
-    "publish-script": "node ./bin/publish.js && npm login && cd client && npm publish && cd ../server && npm publish",
+    "publish-script": "yarn build && node ./bin/publish.js && npm login && cd client && npm publish && cd ../server && npm publish",
     "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist",
     "test": "cd client && yarn test",
     "build": "yarn buildClient && yarn buildServer",
