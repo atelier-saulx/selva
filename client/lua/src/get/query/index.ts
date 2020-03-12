@@ -269,8 +269,6 @@ const queryGet = (
     ids = [getOptions.$id || 'root']
   }
 
-  logger.info('????')
-
   const [r, err] = parseQuery(
     getField,
     schema,

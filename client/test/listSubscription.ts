@@ -43,6 +43,8 @@ test.serial('subscription list', async t => {
 
   const matches = []
 
+  await wait(500)
+
   for (let i = 0; i < 10; i++) {
     matches.push({
       $id: await client.id({ type: 'match' }),

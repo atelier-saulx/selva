@@ -32,6 +32,8 @@ function getField(
     return true
   }
 
+  logger.info('NOOOO')
+
   if (
     (props.$list || props.$find) &&
     ignore !== '$list' &&

@@ -206,7 +206,6 @@ export default class SelvaPubSub {
 
     this.sub.on('message', (channel, message) => {
       // does this allways happen now?
-
       if (channel.startsWith('___selva_lua_logs:') && this.log) {
         this.log(JSON.parse(message))
         return
