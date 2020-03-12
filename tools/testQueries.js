@@ -76,7 +76,7 @@ async function run() {
     ]
   })
 
-  console.log(JSON.stringify(result, false, 2))
+  // console.war(JSON.stringify(result, false, 2))
 
   console.log(
     (
