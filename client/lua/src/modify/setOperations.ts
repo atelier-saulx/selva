@@ -5,6 +5,7 @@ import * as redis from '../redis'
 import { markForAncestorRecalculation } from './ancestors'
 import { deleteItem } from './delete'
 import sendEvent from './events'
+import { log, info, configureLogger } from '../logger'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -19,6 +20,8 @@ export function resetSet(
   modify: FnModify,
   hierarchy: boolean = true
 ): void {
+  info('---reset--', id, field, value, hierarchy)
+
   const setKey = getSetKey(id, field)
 
   if (hierarchy) {
@@ -104,13 +107,13 @@ export function resetParents(
 
   // add new parents
   for (const parent of value) {
-    redis.sadd(parent + '.children', id)
-    sendEvent(parent, 'children', 'update')
-
     // recurse if necessary
     if (!redis.exists(parent)) {
       modify({ $id: parent })
     }
+
+    redis.sadd(parent + '.children', id)
+    sendEvent(parent, 'children', 'update')
   }
 
   markForAncestorRecalculation(id)
@@ -189,6 +192,8 @@ export function resetChildren(
   value: Id[],
   modify: FnModify
 ): Id[] {
+  info('---resetChldren--', id, setKey, value)
+
   const children = redis.smembers(setKey)
   // if (arrayIsEqual(children, value)) {
   //   return

@@ -93,6 +93,8 @@ function setInternalArrayStructure(
 ): void {
   const hierarchy = value.$hierarchy === false ? false : true
 
+  logger.info('???', id, field, value)
+
   if (isArray(value)) {
     resetSet(id, field, value, update, hierarchy)
   } else if (type(value) === 'string') {
