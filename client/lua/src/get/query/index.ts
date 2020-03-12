@@ -268,8 +268,6 @@ const queryGet = (
     ids = [getOptions.$id || 'root']
   }
 
-  logger.info('FLURPYSHINE')
-
   const [r, err] = parseQuery(
     getField,
     schema,

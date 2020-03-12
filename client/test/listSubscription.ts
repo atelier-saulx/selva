@@ -60,6 +60,19 @@ test.serial('subscription list', async t => {
   await wait(500)
 
   // without sort
+  const flap = await client.get({
+    $includeMeta: true,
+    children: {
+      name: true,
+      id: true,
+      $list: {}
+    }
+  })
+
+  t.is(Object.keys(flap.$meta.query[0].ids).length, 9)
+
+  await wait()
+
   const obs = await client.observe({
     children: {
       name: true,

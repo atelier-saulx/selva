@@ -129,7 +129,6 @@ function parseSubscriptions(
   traverse?: string | string[]
 ) {
   let sub: QuerySubscription | undefined
-  logger.info('parse subs')
 
   // not so nice....
   const queryId = redis.sha1hex(cjson.encode(getOptions))
@@ -222,18 +221,14 @@ function parseSubscriptions(
       }
     }
   } else {
-    logger.info('??', meta)
     // need to check if TYPE is there
-    // no qeury on fields etc easy
-    // if (!sub.ids) {
-    //   sub.ids = {}
-    // }
-    // for (let i = 1; i < meta.ids.length; i++) {
-    //   sub.ids[meta.ids[i]] = true
-    // }
+    if (!sub.ids) {
+      sub.ids = {}
+    }
+    for (let i = 1; i < meta.ids.length; i++) {
+      sub.ids[meta.ids[i]] = true
+    }
   }
-
-  logger.info(sub)
 
   if (sub.ids || !meta.ast) {
     if (!sub.idFields) {
