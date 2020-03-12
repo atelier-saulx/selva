@@ -61,7 +61,8 @@ export default class SubscriptionManager {
   }
 
   async attach(port: number) {
-    this.client = new SelvaClient({ port }, { loglevel: 'off' })
+    // NEED TO FIX LOGS
+    this.client = new SelvaClient({ port }, { loglevel: 'info' })
     this.sub = createClient({ port })
     this.pub = createClient({ port })
 
@@ -119,6 +120,7 @@ export default class SubscriptionManager {
 
     getOptions = getOptions || this.subscriptions[subscriptionId]
 
+    console.info('??? snurkey', getOptions)
     const payload = await this.client.get(
       Object.assign({}, getOptions, {
         $includeMeta: true
