@@ -852,26 +852,41 @@ test.serial.only('yes', async t => {
     port
   })
 
-  const league = await client.set({
-    type: 'league',
-    name: 'league'
-  })
-
-  const federation = await client.set({
-    type: 'league',
-    name: 'federation',
-    children: [league]
-  })
-
-  const sport = await client.set({
+  const sport = client.set({
+    $id: 'cuSport',
     type: 'league',
     name: 'sport',
-    children: [league, federation]
+    parents: ['cuRegion'],
+    children: ['cuLeague', 'cuFed']
   })
+
+  const region = client.set({
+    $id: 'cuRegion',
+    type: 'league',
+    name: 'region',
+    children: ['cuSport']
+  })
+
+  const league = client.set({
+    $id: 'cuLeague',
+    type: 'league',
+    name: 'league',
+    parents: ['cuFed', 'cuSport']
+  })
+
+  const federation = client.set({
+    $id: 'cuFed',
+    type: 'league',
+    name: 'federation',
+    parents: ['cuSport'],
+    children: ['cuLeague']
+  })
+
+  await Promise.all([federation, sport, region, league])
 
   const ancestors = (
     await client.get({
-      $id: league,
+      $id: 'cuLeague',
       ancestors: true
     })
   ).ancestors
