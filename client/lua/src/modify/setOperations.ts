@@ -161,14 +161,14 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     result[i] = child
 
     if (child !== '') {
+      redis.sadd(child + '.parents', id)
+
       if (!redis.exists(child)) {
         modify({ $id: child, parents: { $add: id } })
-      } else {
-        redis.sadd(child + '.parents', id)
-        sendEvent(child, 'parents', 'update')
-
-        markForAncestorRecalculation(child)
       }
+
+      sendEvent(child, 'parents', 'update')
+      markForAncestorRecalculation(child)
     }
   }
 
@@ -193,12 +193,16 @@ export function resetChildren(
   modify: FnModify
 ): Id[] {
   const children = redis.smembers(setKey)
-  // if (arrayIsEqual(children, value)) {
-  //   return
-  // }
+
   for (const child of children) {
     const parentKey = child + '.parents'
     redis.srem(parentKey, id)
+  }
+
+  redis.del(setKey)
+  const newChildren = addToChildren(id, value, modify)
+  for (const child of children) {
+    const parentKey = child + '.parents'
     const size = redis.scard(parentKey)
     if (size === 0) {
       // WRONG
@@ -208,8 +212,7 @@ export function resetChildren(
     }
   }
 
-  redis.del(setKey)
-  return addToChildren(id, value, modify)
+  return newChildren
 }
 
 export function resetAlias(id: string, value: Id[]): void {
