@@ -543,6 +543,28 @@ async function migrate() {
         process.exit(1)
       }
 
+      const aliases = []
+      if (item.uuid) {
+        aliases.push('sas-' + item.uuid)
+      }
+
+      if (item.url) {
+        try {
+          const obj = JSON.parse(item.url)
+          if (typeof obj == 'object') {
+            for (const key in obj) {
+              aliases.push(obj[key])
+            }
+          }
+        } catch (_e) {
+          aliases.push(item.url)
+        }
+      }
+
+      if (aliases.length) {
+        newPayload.aliases = (newPayload.aliases || []).concat(aliases)
+      }
+
       // delete newPayload.title
       console.log('inserting', newPayload)
       await client.set(newPayload)

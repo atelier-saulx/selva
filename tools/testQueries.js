@@ -174,6 +174,26 @@ async function run() {
     )
   )
 
+  // console.log(
+  //   await client.get({
+  //     $alias: '47-adac-total-24h-rennen-onboard-6',
+  //     $language: 'de',
+  //     id: true,
+  //     title: true,
+  //     caption: true
+  //   })
+  // )
+
+  // console.log(
+  //   await client.get({
+  //     $alias: 'sas-8a222205-7171-4e6e-9696-43de318288d2',
+  //     $language: 'de',
+  //     id: true,
+  //     title: true,
+  //     caption: true
+  //   })
+  // )
+
   await client.destroy()
 }
 
