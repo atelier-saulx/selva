@@ -202,6 +202,8 @@ export default class RedisClient extends RedisMethods {
     subscriber?: boolean,
     type?: string // need this for smart batching
   ) {
+    // NEED TYPE - REMOVE SUBSCRIBER
+
     // not good...
     if (subscriber) {
       // somewhere else!
