@@ -147,7 +147,7 @@ export default class RedisClient extends RedisMethods {
             newOpts.port !== opts.port ||
             tries > 15
           ) {
-            console.log('HARD RECONN')
+            // console.log('HARD RECONN')
             this.client.quit()
             this.connected = false
             this.subscriptionManager.disconnect()
