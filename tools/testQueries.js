@@ -3,24 +3,38 @@ const { connect } = require('@saulx/selva')
 async function run() {
   const client = await connect({ port: 6061 }, { loglevel: 'info' })
   const result = await client.get({
-    $id: 'leD25oaXJ',
+    $id: 'root',
     id: true,
     $language: 'en',
     // theme: { $inherit: true },
     // ads: { $inherit: true },
     components: [
       {
-        component: { $value: 'description' },
+        component: { $value: 'GridSmall' },
         title: true,
-        image: true,
-        description: true,
-        sport: {
+        children: {
           title: true,
-          $inherit: {
-            $item: 'sport'
+          id: true,
+          image: true,
+          $list: {
+            $find: {
+              $traverse: 'descendants',
+              $filter: {
+                $field: 'id',
+                $operator: '=',
+                $value: ['relK767V5', 'renk1qW6p', 'rez5lmBya', 're7GonM2a']
+              }
+            }
           }
-        },
-        ancestors: true
+        }
+        // children: [
+        //   {
+        //     $id: 'relK767V5',
+        //     title: true,
+        //     id: true,
+        //     image: true
+        //   }
+        // ]
       }
       // {
       //   component: { $value: 'gridLarge' },
@@ -76,30 +90,30 @@ async function run() {
     ]
   })
 
-  // console.war(JSON.stringify(result, false, 2))
+  console.log(JSON.stringify(result, false, 2))
 
-  console.log(
-    (
-      await client.get({
-        $language: 'de',
-        items: {
-          ancestors: true,
-          $list: {
-            $find: {
-              $traverse: 'descendants',
-              $filter: [
-                {
-                  $field: 'type',
-                  $operator: '=',
-                  $value: 'league'
-                }
-              ]
-            }
-          }
-        }
-      })
-    ).items.map(({ ancestors }) => ancestors)
-  )
+  // console.log(
+  //   (
+  //     await client.get({
+  //       $language: 'de',
+  //       items: {
+  //         ancestors: true,
+  //         $list: {
+  //           $find: {
+  //             $traverse: 'descendants',
+  //             $filter: [
+  //               {
+  //                 $field: 'type',
+  //                 $operator: '=',
+  //                 $value: 'league'
+  //               }
+  //             ]
+  //           }
+  //         }
+  //       }
+  //     })
+  //   ).items.find(({ title }) => title)
+  // )
 
   /*
   console.log(

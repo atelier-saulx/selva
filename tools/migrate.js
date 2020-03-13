@@ -172,7 +172,13 @@ async function makeSchema(client) {
     languages: ['en', 'de', 'fr', 'nl', 'it'],
     rootType: {
       fields: {
-        ...contentFields
+        ...contentFields,
+        aliases: {
+          type: 'set',
+          items: {
+            type: 'string'
+          }
+        }
       }
     },
     types: {
@@ -499,10 +505,11 @@ async function migrate() {
 
   let ignore = IGNORE_UNTIL ? true : false
   for (let db of dump) {
-    // db = { cujpQXzXZ: db.cujpQXzXZ }
+    // db.root.url = db.root.url.filter(val => val)
+    // db = { rez5lmBya: db.rez5lmBya, uuid: db.uuid }
     const keys = Object.keys(db)
-    const batches = _.chunk(keys, 3000)
-    // const batches = [['leD25oaXJ', 'feZMYOZZR', 'sp1ZyDjY0', 'prbq9nqPk']]
+    // const batches = _.chunk(keys, 3000)
+    const batches = [['root', 'rez5lmBya']] //'rez5lmBya']]
     for (const batch of batches) {
       // console.log('batch', batch)
       let promises = []
@@ -578,7 +585,9 @@ async function migrate() {
             const obj = JSON.parse(item.url)
             if (typeof obj == 'object') {
               for (const key in obj) {
-                aliases.push(obj[key])
+                if (obj[key]) {
+                  aliases.push(obj[key])
+                }
               }
             }
           } catch (_e) {
@@ -593,7 +602,7 @@ async function migrate() {
         // delete newPayload.title
         // console.log('inserting', newPayload)
         promises.push(client.set(newPayload))
-        console.log('INSERTED')
+        console.log('INSERTED', newPayload)
         await new Promise((resolve, _reject) => {
           setTimeout(resolve, 1)
         })
