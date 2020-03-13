@@ -508,8 +508,8 @@ async function migrate() {
     // db.root.url = db.root.url.filter(val => val)
     // db = { rez5lmBya: db.rez5lmBya, uuid: db.uuid }
     const keys = Object.keys(db)
-    // const batches = _.chunk(keys, 3000)
-    const batches = [['root', 'rez5lmBya']] //'rez5lmBya']]
+    const batches = _.chunk(keys, 3000)
+    // const batches = [['root', 'rez5lmBya']] //'rez5lmBya']]
     for (const batch of batches) {
       // console.log('batch', batch)
       let promises = []

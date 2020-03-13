@@ -205,7 +205,6 @@ export function resetChildren(
     const parentKey = child + '.parents'
     const size = redis.scard(parentKey)
     if (size === 0) {
-      // WRONG
       deleteItem(child)
     } else {
       markForAncestorRecalculation(child)
