@@ -435,7 +435,8 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
                 if (
                   prefixToTypeMapping[prefix] &&
                   /* exclude self references */
-                  relation !== id
+                  relation !== id &&
+                  relation !== 'relnqzJe'
                 ) {
                   // console.log('adding relation for', id, relation)
                   relations.push(relation)
@@ -500,14 +501,17 @@ async function migrate() {
   for (let db of dump) {
     // db = { cujpQXzXZ: db.cujpQXzXZ }
     const keys = Object.keys(db)
-    // const batches = _.chunk(keys, 3000)
-    const batches = [
-      ['leD25oaXJ' /*'feZMYOZZR'*/, , 'sp1ZyDjY0' /*'prbq9nqPk'*/]
-    ]
+    const batches = _.chunk(keys, 3000)
+    // const batches = [['leD25oaXJ', 'feZMYOZZR', 'sp1ZyDjY0', 'prbq9nqPk']]
     for (const batch of batches) {
       // console.log('batch', batch)
       let promises = []
       for (const key of batch) {
+        // ignore deprecated
+        if (key === 'relnqzJe') {
+          continue
+        }
+
         if (ignore) {
           if (key === IGNORE_UNTIL) {
             ignore = false
@@ -558,7 +562,15 @@ async function migrate() {
 
         const aliases = []
         if (item.uuid) {
-          aliases.push('sas-' + item.uuid)
+          const uuids = item.uuid.split(',')
+          for (const uuid of uuids) {
+            let uuidSource = db.uuids[uuid]
+            if (!uuidSource) {
+              uuidSource = 'sas'
+            }
+
+            aliases.push(`${uuidSource}-${uuid}`)
+          }
         }
 
         if (item.url) {
