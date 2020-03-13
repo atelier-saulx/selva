@@ -52,6 +52,7 @@ type Resolvable = {
 
 type RedisCommand = Resolvable & {
   command: string
+  type?: string
   args: (string | number)[]
   hash?: number
   nested?: Resolvable[]
@@ -80,6 +81,7 @@ export default class RedisClient extends RedisMethods {
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
     this.buffer = []
     this.connect()
+
     this.subscriptionManager = new SelvaPubSub()
   }
 
@@ -97,19 +99,6 @@ export default class RedisClient extends RedisMethods {
     opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
     if (!this.scriptShas[scriptName]) {
-      /*
-       * Node is really fucking nice
-       * If I change this to
-       * this.scriptShas[scriptName] = await this.loadScript(script)
-       *
-       * the whole functions shits the bed like this line doesn't even exist
-       * and this.scriptShas is an empty object ({})...
-       * which means that even if the promise was resolved wrong
-       * the key doesn't exist at all, which it would if you did
-       * this.scriptShas['hello'] = undefined // becomes { hello: undefined }
-       *
-       * Thaaaanks!
-       */
       const r = await this.loadScript(script)
       this.scriptShas[scriptName] = r
     }
@@ -141,17 +130,27 @@ export default class RedisClient extends RedisMethods {
     }
     // even if the db does not exists should not crash!
     this.retryTimer = 100
+    let tries = 0
     if (!opts.retryStrategy) {
       opts.retryStrategy = () => {
+        // console.log('RECON', tries)
+        tries++
+        // needs to re do client
+        // prob want a keep alive thing in here
+
         this.resetScripts()
         this.connected = false
         this.subscriptionManager.markSubscriptionsClosed()
         this.connector().then(async newOpts => {
-          if (newOpts.host !== opts.host || newOpts.port !== opts.port) {
+          if (
+            newOpts.host !== opts.host ||
+            newOpts.port !== opts.port ||
+            tries > 15
+          ) {
+            console.log('HARD RECONN')
             this.client.quit()
             this.connected = false
             this.subscriptionManager.disconnect()
-
             await this.connect()
           }
         })
@@ -162,12 +161,14 @@ export default class RedisClient extends RedisMethods {
       }
     }
 
+    // reconnecting
+
     this.subscriptionManager.connect(opts)
     // on dc needs to re run connector - if different reconnect
     this.client = createClient(opts)
 
     this.client.on('error', err => {
-      // console.log('ERRRRR')
+      // console.log('ERR', err)
       if (err.code === 'ECONNREFUSED') {
         console.info(`Connecting to ${err.address}:${err.port}`)
       } else {
@@ -176,10 +177,13 @@ export default class RedisClient extends RedisMethods {
     })
 
     this.client.on('connect', _ => {
-      // console.log('connect it', a)
+      tries = 0
+      // console.log('connect it')
     })
 
     this.client.on('ready', () => {
+      // console.log('ready')
+      tries = 0
       this.retryTimer = 100
       this.connected = true
       this.flushBuffered()
@@ -195,13 +199,16 @@ export default class RedisClient extends RedisMethods {
     args: (string | number)[],
     resolve: (x: any) => void,
     reject: (x: Error) => void,
-    subscriber?: boolean
+    subscriber?: boolean,
+    type?: string // need this for smart batching
   ) {
+    // not good...
     if (subscriber) {
       // somewhere else!
       console.info('SUBSCRIBER NOT DONE YET')
     } else {
       // // do we want to cache?
+      // batch gets pretty nice to do
       // if (command === 'GET') {
       //   // dont execute getting the same ids
       //   // makes it a bit slower in some cases - check it
@@ -228,6 +235,7 @@ export default class RedisClient extends RedisMethods {
       //     this.bufferedGet[hash] = redisCommand
       //   }
       // } else {
+
       this.buffer.push({
         command,
         args,
@@ -275,12 +283,15 @@ export default class RedisClient extends RedisMethods {
       }
     }
 
+    // should not be just modify
     for (let sha in batchedModifyArgs) {
       const modifyArgs = batchedModifyArgs[sha]
       const modifyResolves = batchedModifyResolves[sha]
       const modifyRejects = batchedModifyRejects[sha]
       if (modifyArgs.length) {
         slice.push({
+          // add type
+          type: 'modify',
           command: 'evalsha',
           args: [sha, 0, ...modifyArgs],
           resolve: (x: any) => {

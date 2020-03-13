@@ -58,9 +58,12 @@ test('Connect and re-connect', async t => {
   await server.destroy()
   console.log('server destroyed')
 
-  await wait(1e3)
+  await wait(2e3)
   const server2 = await start({ port: current })
-  await wait(1e3)
+
+  // how to test?
+
+  await wait(2e3)
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -96,4 +99,39 @@ test('Connect and re-connect', async t => {
   )
 
   server2.destroy()
+  await wait(1e3)
+
+  client.updateSchema({
+    types: {
+      flurp: {
+        prefix: 'fl',
+        fields: {
+          snurk: { type: 'string' }
+        }
+      }
+    }
+  })
+
+  console.log('SET SNURK')
+  client.set({
+    $id: 'flap',
+    snurk: 'snurk it 1'
+  })
+
+  console.log('long wait')
+  await wait(10e3)
+  const server3 = await start({ port: current })
+
+  await wait(3e3)
+  console.log('RECONNECT')
+
+  const item = await client.get({ $id: 'flap', snurk: true })
+
+  t.deepEqual(item, {
+    snurk: 'snurk it 1'
+  })
+
+  console.log(item)
+
+  server3.destroy()
 })
