@@ -3,30 +3,58 @@ const { connect } = require('@saulx/selva')
 async function run() {
   const client = await connect({ port: 6061 }, { loglevel: 'info' })
   const result = await client.get({
-    $id: 'root',
+    $id: 're7GonM2a',
+    // $id: 'root',
+    title: true,
     id: true,
     $language: 'en',
     // theme: { $inherit: true },
     // ads: { $inherit: true },
     components: [
       {
-        component: { $value: 'GridSmall' },
-        title: true,
+        component: { $value: 'Table' },
         children: {
-          title: true,
           id: true,
-          image: true,
+          title: true,
+          startTime: true,
           $list: {
             $find: {
+              // $traverse: 'children',
               $traverse: 'descendants',
-              $filter: {
-                $field: 'id',
-                $operator: '=',
-                $value: ['relK767V5', 'renk1qW6p', 'rez5lmBya', 're7GonM2a']
-              }
+              $filter: [
+                {
+                  $operator: '=',
+                  $field: 'type',
+                  $value: 'match'
+                },
+                {
+                  $operator: '>',
+                  $field: 'startTime',
+                  $value: 'now'
+                }
+              ]
             }
           }
         }
+        //components: [
+        //  {
+        //    component: { $value: 'GridSmall' },
+        //    title: true,
+        //    children: {
+        //      title: true,
+        //      id: true,
+        //      image: true,
+        //      $list: {
+        //        $find: {
+        //          $traverse: 'descendants',
+        //          $filter: {
+        //            $field: 'id',
+        //            $operator: '=',
+        //            $value: ['relK767V5', 'renk1qW6p', 'rez5lmBya', 're7GonM2a']
+        //          }
+        //        }
+        //      }
+        //    }
         // children: [
         //   {
         //     $id: 'relK767V5',

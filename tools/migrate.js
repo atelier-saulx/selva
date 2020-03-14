@@ -7,6 +7,19 @@ const _ = require('lodash')
 
 const IGNORE_UNTIL = null
 
+const REMAPPED_FIELDS = {
+  streamStart: 'startTime',
+  streamEnd: 'endTime'
+}
+
+function remapField(field) {
+  if (REMAPPED_FIELDS[field]) {
+    return REMAPPED_FIELDS[field]
+  }
+
+  return field
+}
+
 async function makeSchema(client) {
   const types = [
     'ad',
@@ -96,12 +109,12 @@ async function makeSchema(client) {
 
   const startTime = {
     type: 'timestamp',
-    search: { type: ['NUMERIC'] }
+    search: { type: ['NUMERIC', 'SORTABLE'] }
   }
 
   const endTime = {
     type: 'timestamp',
-    search: { type: ['NUMERIC'] }
+    search: { type: ['NUMERIC', 'SORTABLE'] }
   }
 
   const gender = {
@@ -184,6 +197,13 @@ async function makeSchema(client) {
     types: {
       match: {
         prefix: 'ma',
+
+        hierarchy: {
+          team: {
+            excludeAncestryWith: ['league']
+          }
+        },
+
         fields: {
           ...videoFields,
           highlights: {
@@ -241,6 +261,13 @@ async function makeSchema(client) {
       },
       team: {
         prefix: 'te',
+
+        hierarchy: {
+          team: {
+            excludeAncestryWith: ['league']
+          }
+        },
+
         fields: {
           ...contentFields
         }
@@ -366,8 +393,8 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
     }
 
     if (typeSchema.fields) {
-      if (typeSchema.fields[itemKey]) {
-        const fieldType = typeSchema.fields[itemKey].type
+      if (typeSchema.fields[remapField(itemKey)]) {
+        const fieldType = typeSchema.fields[remapField(itemKey)].type
         switch (fieldType) {
           case 'object':
             if (!item[itemKey] || item[itemKey] === '') {
@@ -377,9 +404,9 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
             try {
               const newSchema = {
                 type: 'object',
-                fields: typeSchema.fields[itemKey].properties
+                fields: typeSchema.fields[remapField(itemKey)].properties
               }
-              props[itemKey] = constructSetProps(
+              props[remapField(itemKey)] = constructSetProps(
                 id,
                 prefixToTypeMapping,
                 newSchema,
@@ -402,11 +429,11 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
           case 'json':
             if (
               (fieldType === 'array' || fieldType === 'set') &&
-              typeSchema.fields[itemKey].items.type === 'object'
+              typeSchema.fields[remapField(itemKey)].items.type === 'object'
             ) {
               const newSchema = {
                 type: 'object',
-                fields: typeSchema.fields[itemKey].items.properties
+                fields: typeSchema.fields[remapField(itemKey)].items.properties
               }
 
               const ary = JSON.parse(item[itemKey])
@@ -414,7 +441,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
                 continue
               }
 
-              props[itemKey] = ary.map(x => {
+              props[remapField(itemKey)] = ary.map(x => {
                 return constructSetProps(id, prefixToTypeMapping, newSchema, x)
               })
               continue
@@ -431,7 +458,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
             const parsed = JSON.parse(item[itemKey])
             if (fieldType === 'references') {
               if (id === 'cujpQXzXZ') {
-                props[itemKey] = []
+                props[remapField(itemKey)] = []
                 continue
               }
 
@@ -450,14 +477,14 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
               }
 
               if (relations.length) {
-                props[itemKey] = relations
+                props[remapField(itemKey)] = relations
               }
             } else {
-              props[itemKey] = parsed
+              props[remapField(itemKey)] = parsed
             }
             break
           case 'boolean':
-            props[itemKey] = !!Number(item[itemKey])
+            props[remapField(itemKey)] = !!Number(item[itemKey])
             break
           case 'int':
           case 'float':
@@ -467,7 +494,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
               continue
             }
 
-            props[itemKey] = Number(item[itemKey])
+            props[remapField(itemKey)] = Number(item[itemKey])
             break
           case 'url':
           case 'string':
@@ -476,9 +503,9 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
                 continue
               }
 
-              props[itemKey] = item[itemKey][0]
+              props[remapField(itemKey)] = item[itemKey][0]
             } else {
-              props[itemKey] = item[itemKey]
+              props[remapField(itemKey)] = item[itemKey]
             }
             break
           default:
