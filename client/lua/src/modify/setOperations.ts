@@ -20,8 +20,6 @@ export function resetSet(
   modify: FnModify,
   hierarchy: boolean = true
 ): void {
-  info('---reset--', id, field, value, hierarchy)
-
   const setKey = getSetKey(id, field)
 
   if (hierarchy) {

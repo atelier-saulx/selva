@@ -88,10 +88,10 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  // const client = connect({ port })
-  // await client.delete('root')
-  // await client.destroy()
-  // await srv.destroy()
+  const client = connect({ port })
+  await client.delete('root')
+  await client.destroy()
+  await srv.destroy()
 })
 
 test.serial('root', async t => {
@@ -847,27 +847,3 @@ test.serial('createdAt not set if provided in modify props', async t => {
 
 //   await client.delete('root')
 // })
-
-test.serial.only('yes', async t => {
-  const client = connect(
-    {
-      port
-    },
-    { loglevel: 'info' }
-  )
-
-  const federation = await client.set({
-    $id: 'cuFed',
-    type: 'league',
-    name: 'federation',
-    parents: ['cuSport'],
-    children: ['cuLeague']
-  })
-
-  const sport = await client.set({
-    $id: 'cuSport',
-    type: 'league',
-    name: 'sport',
-    children: ['cuFed']
-  })
-})

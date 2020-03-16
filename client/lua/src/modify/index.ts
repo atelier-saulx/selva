@@ -93,8 +93,6 @@ function setInternalArrayStructure(
 ): void {
   const hierarchy = value.$hierarchy === false ? false : true
 
-  logger.info('???', id, field, value)
-
   if (isArray(value)) {
     resetSet(id, field, value, update, hierarchy)
   } else if (type(value) === 'string') {
@@ -222,8 +220,6 @@ function setField(
   const current = redis.hget(id, field)
   const strVal = tostring(value)
 
-  logger.info('trying to set', strVal, 'for', id, field)
-  console.log('trying to set', strVal, 'for', id, field)
   if (current === strVal) {
     return
   }
@@ -234,8 +230,6 @@ function setField(
     redis.hset(id, field, strVal)
   }
 
-  logger.info('trying to index', strVal, 'for', id, field)
-  console.log('trying to index', strVal, 'for', id, field)
   addFieldToSearch(id, field, value)
   sendEvent(id, field, 'update')
 }
