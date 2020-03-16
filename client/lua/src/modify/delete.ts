@@ -73,6 +73,13 @@ export function cleanUpSuggestions(id: string, field: string) {
   }
 }
 
+function cleanUpAliases(id: Id): void {
+  const itemAliases = r.smembers(id + '.aliases')
+  for (const alias of itemAliases) {
+    r.hdel('___selva_aliases', alias)
+  }
+}
+
 export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   if (hierarchy) {
     const children = r.smembers(id + '.children')
@@ -97,6 +104,9 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   r.del(id + '.parents')
   r.del(id + '.ancestors')
   r.del(id + '._depth')
+
+  cleanUpAliases(id)
+
   sendEvent(id, '', 'delete')
 
   const vals = r.hgetall(id)

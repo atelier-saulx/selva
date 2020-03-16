@@ -58,6 +58,12 @@ export const parseSetObject = (
         }
 
         result[key] = payload[key]
+      } else if (key === '$alias') {
+        if (typeof payload[key] !== 'string' && !Array.isArray(payload[key])) {
+          throw new Error('Wrong type for $alias, string or array required')
+        }
+
+        result[key] = payload[key]
       } else if (key === '$version') {
         if (typeof payload[key] !== 'string') {
           throw new Error('Wrong type for $version')
