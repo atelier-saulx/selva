@@ -32,6 +32,29 @@ function getField(
     return true
   }
 
+  if (props.$id && field) {
+    const intermediateResult = {}
+    const v = getField(
+      props,
+      schema,
+      intermediateResult,
+      props.$id,
+      undefined,
+      language,
+      version,
+      false,
+      ignore
+    )
+
+    if (!v) {
+      return false
+    }
+
+    setNestedResult(result, field, v)
+
+    return true
+  }
+
   if (
     (props.$list || props.$find) &&
     ignore !== '$list' &&
