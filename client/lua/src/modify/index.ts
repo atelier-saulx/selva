@@ -315,23 +315,42 @@ function removeSpecified(
 
 function update(payload: SetOptions): Id | null {
   if (!payload.$id) {
-    if (!payload.type) {
+    if (payload.$alias) {
+      const accessAliases: string[] = ensureArray(payload.$alias)
+      for (const alias of accessAliases) {
+        const id: string = redis.hget('___selva_aliases', alias)
+        if (id && id !== '') {
+          payload.$id = id
+          break
+        }
+      }
+
+      if (!payload.$id) {
+        delete payload.$alias
+        if (!payload.aliases) {
+          payload.aliases = accessAliases
+        }
+
+        update(payload)
+      }
+    } else if (!payload.type) {
       return null
-    }
-    const itemType =
-      type(payload.type) === 'string'
-        ? payload.type
-        : (<any>payload.type).$value
-    if (
-      (payload.externalId && type(payload.externalId) === 'string') ||
-      isArray(<any>payload.externalId)
-    ) {
-      payload.$id = genId({
-        type: itemType,
-        externalId: <any>payload.externalId
-      })
     } else {
-      payload.$id = genId({ type: itemType })
+      const itemType =
+        type(payload.type) === 'string'
+          ? payload.type
+          : (<any>payload.type).$value
+      if (
+        (payload.externalId && type(payload.externalId) === 'string') ||
+        isArray(<any>payload.externalId)
+      ) {
+        payload.$id = genId({
+          type: itemType,
+          externalId: <any>payload.externalId
+        })
+      } else {
+        payload.$id = genId({ type: itemType })
+      }
     }
   }
 
