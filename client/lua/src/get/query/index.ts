@@ -116,7 +116,6 @@ const parseQuery = (
         if (err) {
           return [{ results }, err]
         }
-
         const args = createSearchArgs(
           getOptions,
           string.sub(q, 2, q.length - 1),
@@ -290,7 +289,6 @@ const queryGet = (
     if (!result.$meta.query) {
       result.$meta.query = []
     }
-
     parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
   }
 
@@ -302,6 +300,7 @@ const queryGet = (
   }
 
   if (err) {
+    logger.error(err)
     return err
   }
   return null

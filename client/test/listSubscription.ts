@@ -43,6 +43,8 @@ test.serial('subscription list', async t => {
 
   const matches = []
 
+  await wait(500)
+
   for (let i = 0; i < 10; i++) {
     matches.push({
       $id: await client.id({ type: 'match' }),
@@ -58,6 +60,40 @@ test.serial('subscription list', async t => {
   await wait(500)
 
   // without sort
+  const flap = await client.get({
+    $includeMeta: true,
+    children: {
+      name: true,
+      id: true,
+      $list: {}
+    }
+  })
+
+  t.is(Object.keys(flap.$meta.query[0].ids).length, 9)
+
+  const ff = await client.get({
+    $includeMeta: true,
+    children: {
+      name: true,
+      id: true,
+      $list: {
+        $find: {
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match' // bit nicer error habndling if you do something weird here
+          }
+        }
+      }
+    }
+  })
+
+  console.log(JSON.stringify(ff.$meta, void 0, 2))
+
+  t.is(Object.keys(ff.$meta.query[0].ids).length, 9)
+
+  await wait()
+
   const obs = await client.observe({
     children: {
       name: true,
@@ -74,7 +110,6 @@ test.serial('subscription list', async t => {
   await wait(1000)
   t.is(cnt, 1)
 
-  console.log('go')
   client.set({
     $id: matches[0].$id,
     name: 'FLURP!'

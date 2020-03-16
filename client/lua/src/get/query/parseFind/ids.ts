@@ -54,6 +54,7 @@ function parseIds(
     }
     if (typeFilter) {
       ids = parseTypeFilter(typeFilter, ids)
+
       if (!meta.type) {
         meta.type = []
       }

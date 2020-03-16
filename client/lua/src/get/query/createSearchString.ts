@@ -132,7 +132,6 @@ const addField = (
 
       let suggestions: string[] = []
       for (let i = 0; i < words.length; i++) {
-        logger.info('sugget', words[i])
         const suggestion: string[] = redis.pcall(
           'ft.sugget',
           `sug_${language}`,
