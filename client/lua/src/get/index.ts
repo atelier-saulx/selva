@@ -46,11 +46,7 @@ function getField(
       ignore
     )
 
-    if (!v) {
-      return false
-    }
-
-    setNestedResult(result, field, v)
+    setNestedResult(result, field, intermediateResult)
 
     return true
   }
@@ -151,7 +147,6 @@ function getField(
               schema,
               result,
               id,
-              field || '',
               f,
               language,
               version,
