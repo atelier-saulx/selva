@@ -11,7 +11,6 @@ export default function getArray(
   schema: Schema,
   result: GetResult,
   id: Id,
-  field: string,
   resultField: string,
   language?: string,
   version?: string,
@@ -26,13 +25,18 @@ export default function getArray(
       schema,
       intermediateResult,
       id,
-      field,
+      props[i].$id ? 'arrayPayload' : undefined,
       language,
       version,
       includeMeta,
       ignore
     )
-    resultAry[i] = getNestedField(intermediateResult, field)
+
+    if (props[i].$id) {
+      resultAry[i] = getNestedField(intermediateResult, 'arrayPayload')
+    } else {
+      resultAry[i] = intermediateResult
+    }
   }
 
   setNestedResult(result, resultField, resultAry)
