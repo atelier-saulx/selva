@@ -1,301 +1,35 @@
 # Selva
 
+## About
+
 🌴 Selva is a realtime undirected acyclic graph database.
 
-- Real time
-- Versioning system for the data itself allowing branches of data to be merged and revised into the master data, allows content creators to try stuff before it goes live and allows them to collaborate on a version (in real time)
-- Persistence layer using GIT-LFS allowing backups every 5 mins and keeps versions of all data available
-- Custom query language and indexes optimized for the undirected acyclic graph data structure
-- Simple query language
+It was built to handle massively scalable data structures with complex hierarchies and taxonomies. Documents or graph vertices can have any number or combination of parents and children. Field values can be augmented with data exiting in other members of its hierarchy allowing for useful defaults based on a document context.  
+All of this with real-time updates and transparent subscriptions making it perfect to drive dynamic websites and applications.
 
-## Methods
+Here are some of its features:
 
-### selva.connect(options)
+  - Real-time engine and subscription model.
+  - Versioning system for the data itself allowing branches of data to be merged and revised into the master data, allowing content creators to try changes before date is published to a live system. It allows collaborative version editing in real-time.
+  - Schemas enforce data types with builtin validation.
+  - Persistence layer using GIT-LFS allowing backups every 5 mins and all versions of the data to available at all times.
+  - Custom query language and indexes optimized for the undirected acyclic graph data structure.
+  - Simple JSON based query language DSL.
+  - Client API uses web sockets to subscribe to data and transparently keep content updated in real-time.
 
-Takes an object with options
+## Documentation
 
-- reconnects
-- batches commands
-- queues commands if disconnected
-- \*optimized/cached results
+Selva is composed of two main modules - @saulx/selva client and @saulx/selva-server.
+Documentation for its API as well as the two main concepts: the schemas and its query DSL can be viewed in the links below.
 
-example
+  - [API](docs/api.md)
+  - [Schema definition](docs/schemas.md)
+  - [Query language](docs/query.md)
 
-```js
-import { getService } from 'registry'
+## Usage
 
-const client = selva.connect(() => getService('name-of-db'))
+llorem
 
-// client.redis.hget()
+## License
 
-client.set('myId', { myShine: true }).then(result => console.log(result)) // logs OK
-```
-
-```js
-const client = selva.connect({
-  port: 8080,
-  host: 'whatever', // defaults to localhost
-  retryStrategy() {
-    // optional
-    return 5e3
-  }
-})
-```
-
-or with a promise
-
-```js
-const client = selva.connect(new Promise(resolve => {
-  resolve({
-    port: 8080,
-    host: 'whatever',
-    retryStrategy () {
-      return 5e3
-    }
-  })
-})
-```
-
-or with a (async) function
-
-```js
-const client = selva.connect(async () => {
-  await doSomething()
-  return {
-    port: 8080,
-    host: 'whatever',
-    retryStrategy() {
-      return 5e3
-    }
-  }
-})
-```
-
-On every reconnect selva will call the given function. This allows you to change the configuration (eg. if a db has become unresponsive).
-
-### client.set()
-
-Set an object on an id. Will deep merge objects by default.
-
-Default behaviours
-
-- Acenstors can never be set, children and parents update ancestors, children and parents.
-- Date is allways added by default
-- Keyword 'now' in date, start, end will add date
-- Setting a batch with adding new stuff is tricky
-  - Try to set - if batch - error 'does' not exist - wait 150ms (?) order the non working results. if it does not work return error
-
-```js
-await client.set({
-  $id: 'myId',
-  $merge: false, // defaults to true
-  $version: 'mySpecialversion', // optional
-  id: 'myNewId',
-  foo: true
-})
-```
-
-```js
-await client.set({
-  $id: 'myId',
-  $merge: false, // defaults to true
-  $version: 'mySpecialversion', // optional
-  id: 'myNewId',
-  foo: true,
-  children: {
-    $add: 'smukytown',
-    $delete: 'myblarf'
-  }
-})
-```
-
-```js
-await client.set({
-  $id: 'myId',
-  children: {
-    // maybe redis SET do it?
-    // ---- :(
-    $hierarchy: false, // defaults to true
-    $add: 'smukytown',
-    $delete: ['myblarf', 'xxx']
-  }
-})
-```
-
-```js
-await client.set({
-  $id: 'myId',
-  children: {
-    // ---- :(
-    $hierarchy: false, // defaults to true
-    $value: ['root']
-  }
-})
-```
-
-```js
-await client.set({
-  // gen id, add to root
-  type: 'tag',
-  title: 'flowers',
-  externalId: 'myflower.de'
-  }
-})
-```
-
-```js
-await client.set({
-  // gen id, add to root
-  type: 'tag',
-  title: 'flowers',
-  externalId: {
-    $merge: false,
-    $value: 'myflower.de'
-  }
-})
-```
-
-```js
-await client.set({
-  type: 'tag',
-  title: { de: 'blümen' }
-})
-```
-
-```js
-await client.set({
-  $id: 'myId',
-  $merge: false, // defaults to true
-  $version: 'mySpecialversion', // optional
-  myThing: {
-    title: 'blurf',
-    nestedCount: {
-      $default: 100,
-      $inc: { $value: 1 }
-    },
-    access: {
-      $default: {
-        flurpiepants: 'my pants'
-      }
-    }
-  }
-})
-```
-
-```js
-myId
-myId#mySpecialversion
-```
-
-```js
-const result = await client.get(
-  {
-    $id: 'myId',
-    $version: 'mySpecialversion'
-  }
-)
-
-const versioned = redisClient.get('myId#mySpecialversion')
-const original = redisClient.get('myId') || {}
-const result = { ...original, ...versioned }
-
-myId
-myId#mySpecialversion
-```
-
-```js
-const obj = {
-  foo: {
-    bar: true
-  },
-  haha: true
-}
-```
-
-```js
-'foo.bar': true
-'foo.foo': true
-'foo.baz': true
-'foo.baz.blarf': true,
-haha: true
-```
-
-hkeys: foo.\*
-
-{
-foo: true
-}
-
-### client.subscribe()
-
-```js
-const result = await client.subscribe(
-  {
-    id: 'myId',
-    version: 'mySpecialversion' // optional
-  },
-  (id, msg) => {
-    console.log(`Fired for ${id} with message: ${msg}`)
-  }
-)
-```
-
-### client.subscribe()
-
-```js
-const result = await client.subscribe(
-  {
-    id: 'myId',
-    date: 123123123,
-    version: 'mySpecialversion' // optional
-  },
-  (id, msg) => {
-    console.log(`Fired for ${id} with message: ${msg}`)
-  }
-)
-```
-
-or with an array for ids
-
-```js
-const result = await client.subscribe(
-  {
-    id: ['myId', 'myOtherId'],
-    version: 'mySpecialversion' // optional
-  },
-  (id, msg) => {
-    console.log(`Fired for ${id} with message: ${msg}`)
-  }
-)
-```
-
-### client.unsubscribe()
-
-```js
-const result = await client.unsubscribe(
-  {
-    id: 'myId',
-    version: 'mySpecialversion' // optional
-  },
-  myCallback // if omitted will remove all listeners
-)
-```
-
-### id
-
-Generate an id
-
-Max types 1764!
-
-```javascript
-const id = await client.id({ type: 'flurpy', externalId: 'smurkysmurk' })
-// flgurk
-```
-
-### delete
-
-```javascript
-await client.delete('ma12231')
-await client.delete({ $id: 'ma12231' })
-await client.delete({ $id: 'ma12231', $hierarchy: false })
-```
+TBD
