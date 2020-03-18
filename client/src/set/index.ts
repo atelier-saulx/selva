@@ -3,6 +3,7 @@ import { SelvaClient } from '..'
 import { Schema } from '../schema'
 import fieldParsers from './fieldParsers'
 import { verifiers } from './fieldParsers/simple'
+import { configureLogger } from 'lua/src/logger'
 
 export const parseSetObject = (
   payload: SetOptions,
@@ -48,6 +49,21 @@ export const parseSetObject = (
           throw new Error('Wrong type for $id ' + payload[key])
         }
         result[key] = payload[key]
+      } else if (key === '$source') {
+        if (
+          typeof payload[key] !== 'string' &&
+          typeof payload[key] !== 'object'
+        ) {
+          throw new Error('Wrong type for $source, string or object required')
+        }
+
+        result[key] = payload[key]
+      } else if (key === '$alias') {
+        if (typeof payload[key] !== 'string' && !Array.isArray(payload[key])) {
+          throw new Error('Wrong type for $alias, string or array required')
+        }
+
+        result[key] = payload[key]
       } else if (key === '$version') {
         if (typeof payload[key] !== 'string') {
           throw new Error('Wrong type for $version')
@@ -75,17 +91,34 @@ export const parseSetObject = (
 }
 
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
+  let gotSchema = false
   if (!client.schema) {
     await client.getSchema()
+    gotSchema = true
   }
+  // need to check if it updated
 
   let schema = client.schema
 
-  const parsed = parseSetObject(payload, schema)
+  let parsed
+  try {
+    parsed = parseSetObject(payload, schema)
+  } catch (err) {
+    if (!gotSchema) {
+      delete client.schema
+      return set(client, payload)
+    } else {
+      throw err
+    }
+  }
+
+  // need to check for error of schema
   const modifyResult = await client.modify({
     kind: 'update',
     payload: <SetOptions & { $id: string }>parsed // assure TS that id is actually set :|
   })
+
+  console.log(modifyResult)
 
   return <string>modifyResult
 }

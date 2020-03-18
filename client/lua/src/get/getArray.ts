@@ -11,14 +11,12 @@ export default function getArray(
   schema: Schema,
   result: GetResult,
   id: Id,
-  field: string,
   resultField: string,
   language?: string,
   version?: string,
   includeMeta?: boolean,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {
-  logger.info('GET ARRAY')
   const resultAry: GetResult[] = []
   for (let i = 0; i < props.length; i++) {
     const intermediateResult = {}
@@ -27,14 +25,18 @@ export default function getArray(
       schema,
       intermediateResult,
       id,
-      field,
+      props[i].$id ? 'arrayPayload' : undefined,
       language,
       version,
       includeMeta,
       ignore
     )
-    logger.info('intermediate result for field', field, intermediateResult)
-    resultAry[i] = getNestedField(intermediateResult, field)
+
+    if (props[i].$id) {
+      resultAry[i] = getNestedField(intermediateResult, 'arrayPayload')
+    } else {
+      resultAry[i] = intermediateResult
+    }
   }
 
   setNestedResult(result, resultField, resultAry)

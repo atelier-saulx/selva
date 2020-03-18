@@ -125,6 +125,7 @@ export default class SelvaPubSub {
     return new Observable(observer => {
       emitter.on('publish', str => {
         const event: Event = JSON.parse(str)
+
         if (event.type === 'update') {
           observer.next(event.payload)
         } else if (event.type === 'delete') {
@@ -135,7 +136,7 @@ export default class SelvaPubSub {
       })
 
       return () => {
-        this.sub.unsubscribe('channel')
+        this.sub.unsubscribe(channel)
         delete this.subscriptions[channel]
         delete this.lastHeartbeat[channel]
       }
@@ -204,17 +205,23 @@ export default class SelvaPubSub {
     this.sub.removeAllListeners('message')
 
     this.sub.on('message', (channel, message) => {
+      // does this allways happen now?
       if (channel.startsWith('___selva_lua_logs:') && this.log) {
         this.log(JSON.parse(message))
         return
       }
 
       const sub = this.subscriptions[channel]
+
       if (sub) {
         sub.emitter.emit('publish', message)
       }
     })
   }
+
+  // public async unsubscribe (channel: string) {
+
+  // }
 
   private async setSubcriptionData(channel: string) {
     try {

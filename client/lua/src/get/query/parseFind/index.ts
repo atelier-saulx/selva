@@ -50,6 +50,7 @@ function parseFind(
   if (!isArray(filterRaw)) {
     filterRaw = opts.$filter = [filterRaw]
   }
+
   const filters: Filter[] = filterRaw
 
   // if $traverse is an array use that array

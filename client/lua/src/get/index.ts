@@ -11,6 +11,7 @@ import { getSchema } from '../schema/index'
 import { ensureArray, isArray } from 'lua/src/util'
 import makeNewGetOptions from 'lua/src/get/all'
 import getQuery from './query/index'
+import * as r from '../redis'
 
 // add error handling
 function getField(
@@ -31,12 +32,36 @@ function getField(
     return true
   }
 
-  if (props.$list && ignore !== '$list' && ignore !== '$') {
+  if (props.$id && field) {
+    const intermediateResult = {}
+    const v = getField(
+      props,
+      schema,
+      intermediateResult,
+      props.$id,
+      undefined,
+      language,
+      version,
+      false,
+      ignore
+    )
+
+    setNestedResult(result, field, intermediateResult)
+
+    return true
+  }
+
+  if (
+    (props.$list || props.$find) &&
+    ignore !== '$list' &&
+    ignore !== '$' &&
+    ignore !== '$find'
+  ) {
     // field that needs to get the result
 
     if (field) {
       let sourceField: string | string[] = field
-      if (!props.$list.$find && props.$field) {
+      if (!(props.$list && props.$list.$find) && props.$field) {
         sourceField = resolveAll(
           id,
           schema,
@@ -122,7 +147,6 @@ function getField(
               schema,
               result,
               id,
-              field || '',
               f,
               language,
               version,
@@ -223,12 +247,24 @@ function get(opts: GetOptions): GetResult {
   const result: GetResult = {}
 
   // logger.info(`GET ${cjson.encode(opts)}`)
-  const {
+  let {
     $version: version,
-    $id: id = 'root',
+    $id: id,
+    $alias: alias,
     $language: language,
     $includeMeta: includeMeta
   } = opts
+
+  if (alias) {
+    const aliased = r.hget('___selva_aliases', alias)
+    if (aliased && aliased.length > 0) {
+      id = aliased
+    } else {
+      return {}
+    }
+  } else if (!id) {
+    id = 'root'
+  }
 
   if (includeMeta) {
     result.$meta = { $refs: {} }

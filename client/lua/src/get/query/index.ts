@@ -38,7 +38,13 @@ const parseNested = (
       }
     }
   } else if (opts.$find) {
-    return [{ isFork: true }, 'Find outside of a list not supported']
+    // return [{ isFork: true }, 'Find outside of a list not supported']
+    // TODO: disallow $range
+    if (!opts.$find.$traverse) {
+      opts.$find.$traverse = traverse
+    }
+    const result = parseFind(opts.$find, ids, meta)
+    return result
   }
   return [{ isFork: true }, 'Not a valid query']
 }
@@ -86,6 +92,7 @@ const parseQuery = (
       resultIds = r
     }
   }
+
   if (resultFork) {
     const idMap: Record<string, true> = {}
     const [queries, err] = createSearchString(resultFork, language)
@@ -109,7 +116,6 @@ const parseQuery = (
         if (err) {
           return [{ results }, err]
         }
-
         const args = createSearchArgs(
           getOptions,
           string.sub(q, 2, q.length - 1),
@@ -142,9 +148,6 @@ const parseQuery = (
 
   if (resultIds) {
     const find = getFind(getOptions)
-
-    logger.info(getOptions.$meta)
-
     // need to do something here for nested queries
     if (find && find.$find) {
       // nested find
@@ -157,6 +160,7 @@ const parseQuery = (
           opts[key] = getOptions[key]
         }
       }
+
       opts.$list = {
         $find: find.$find
       }
@@ -165,33 +169,41 @@ const parseQuery = (
         opts.$list.$sort = getOptions.$list.$sort
       }
 
-      if (getOptions.$list && getOptions.$list.$range) {
-        opts.$list.$range = getOptions.$list.$range
+      if (getOptions.$list && getOptions.$list.$offset) {
+        opts.$list.$offset = getOptions.$list.$offset
       }
 
-      const [{ results: nestedResults }, err] = parseQuery(
-        getField,
-        schema,
-        opts,
-        resultIds,
-        undefined,
-        language,
-        version,
-        includeMeta,
-        getResult
-      )
-      if (err) {
-        return [{ results }, err]
+      if (getOptions.$list && getOptions.$list.$limit) {
+        opts.$list.$limit = getOptions.$list.$limit
       }
-      const nestedMap: Record<string, boolean> = {}
-      for (let i = 0; i < nestedResults.length; i++) {
-        const item = nestedResults[i]
-        if (!nestedMap[item.id]) {
-          nestedMap[item.id] = true
-          if (!getOptions.id) {
-            delete item.id
+
+      if (resultIds.length !== 0) {
+        const [{ results: nestedResults }, err] = parseQuery(
+          getField,
+          schema,
+          opts,
+          resultIds,
+          undefined,
+          language,
+          version,
+          includeMeta,
+          getResult
+        )
+
+        if (err) {
+          return [{ results }, err]
+        }
+
+        const nestedMap: Record<string, boolean> = {}
+        for (let i = 0; i < nestedResults.length; i++) {
+          const item = nestedResults[i]
+          if (!nestedMap[item.id]) {
+            nestedMap[item.id] = true
+            if (!getOptions.id) {
+              delete item.id
+            }
+            results[results.length] = item
           }
-          results[results.length] = item
         }
       }
     } else {
@@ -231,6 +243,10 @@ const parseQuery = (
     getOptions.$list.$find.$traverse
   ) {
     meta.traverse = getOptions.$list.$find.$traverse
+  } else if (getOptions.$find && getOptions.$find.$traverse) {
+    meta.traverse = getOptions.$find.$traverse
+  } else if (traverse) {
+    meta.traverse = traverse
   }
 
   return [{ results, meta }, null]
@@ -275,8 +291,16 @@ const queryGet = (
     }
     parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
   }
-  result[resultField] = results
+
+  // hey smurky boys
+  if (getOptions.$find) {
+    result[resultField] = results.length ? results[0] : {}
+  } else {
+    result[resultField] = results
+  }
+
   if (err) {
+    logger.error(err)
     return err
   }
   return null

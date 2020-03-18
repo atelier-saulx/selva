@@ -4,7 +4,7 @@ export type Value = (string | number) | (string | number)[]
 
 export type FilterAST = {
   $field: string
-  $operator: '=' | '>' | '<' | '..' | '!=' | 'distance' | 'exists'
+  $operator: '=' | '>' | '<' | '..' | '!=' | 'distance' | 'exists' | 'notExists'
   $value: Value
   $search: string[]
   hasNow?: true

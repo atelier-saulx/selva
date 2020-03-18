@@ -4,6 +4,7 @@ import { Id } from '~selva/schema/index'
 import * as redis from '../redis'
 import { markForAncestorRecalculation } from './ancestors'
 import { deleteItem } from './delete'
+import sendEvent from './events'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -25,6 +26,8 @@ export function resetSet(
       resetParents(id, setKey, value, modify)
     } else if (field === 'children') {
       value = resetChildren(id, setKey, value, modify)
+    } else if (field === 'aliases') {
+      resetAlias(id, value)
     }
   } else {
     redis.del(setKey)
@@ -52,6 +55,8 @@ export function addToSet(
       addToParents(id, value, modify)
     } else if (field === 'children') {
       addToChildren(id, value, modify)
+    } else if (field === 'aliases') {
+      addAlias(id, value)
     }
   }
 }
@@ -70,6 +75,8 @@ export function removeFromSet(
       removeFromParents(id, value)
     } else if (field === 'children') {
       removeFromChildren(id, value)
+    } else if (field === 'aliases') {
+      removeAlias(id, value)
     }
   }
 }
@@ -98,6 +105,8 @@ export function resetParents(
   // add new parents
   for (const parent of value) {
     redis.sadd(parent + '.children', id)
+    sendEvent(parent, 'children', 'update')
+
     // recurse if necessary
     if (redis.exists(parent)) {
       modify({ $id: parent })
@@ -111,6 +120,7 @@ export function addToParents(id: string, value: Id[], modify: FnModify): void {
   for (const parent of value) {
     const childrenKey = parent + '.children'
     redis.sadd(childrenKey, id)
+    sendEvent(parent, 'children', 'update')
     if (!redis.exists(parent)) {
       modify({ $id: parent })
     }
@@ -152,12 +162,25 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
         modify({ $id: child, parents: { $add: id } })
       } else {
         redis.sadd(child + '.parents', id)
+        sendEvent(child, 'parents', 'update')
+
         markForAncestorRecalculation(child)
       }
     }
   }
 
   return result
+}
+
+export function addAlias(id: string, value: Id[]): void {
+  for (const v of value) {
+    const current = redis.hget('___selva_aliases', v)
+    if (current !== id) {
+      redis.srem(current + '.aliases', v)
+    }
+
+    redis.hset('___selva_aliases', v, id)
+  }
 }
 
 export function resetChildren(
@@ -184,9 +207,26 @@ export function resetChildren(
   return addToChildren(id, value, modify)
 }
 
+export function resetAlias(id: string, value: Id[]): void {
+  const current = redis.smembers(id + '.aliases')
+  if (current) {
+    for (const v of current) {
+      redis.hdel('___selva_aliases', v)
+    }
+  }
+
+  addAlias(id, value)
+}
+
 export function removeFromChildren(id: string, value: Id[]): void {
   for (const child of value) {
     redis.srem(child + '.parents', id)
     markForAncestorRecalculation(child)
+  }
+}
+
+export function removeAlias(_id: string, value: Id[]): void {
+  for (const v of value) {
+    redis.hdel('___selva_aliases', v)
   }
 }

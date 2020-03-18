@@ -59,6 +59,10 @@ test.serial.only('schemas - basic', async t => {
     descendants: {
       type: 'references'
     },
+    aliases: {
+      type: 'set',
+      items: { type: 'string' }
+    },
     name: {
       type: 'string',
       search: {

@@ -52,9 +52,19 @@ function parseList(results: string[], list: List): string[] {
     }
   }
 
-  if (list.$range) {
+  if (list.$limit || list.$offset) {
+    let start = 0
+    let end = results.length
+
+    if (list.$offset) {
+      start = list.$offset
+    }
+
+    if (list.$limit) {
+      end = start + list.$limit
+    }
+
     const newResults: string[] = []
-    const [start, end] = list.$range
     for (let i = start; i < end && i < results.length; i++) {
       newResults[newResults.length] = results[i]
     }

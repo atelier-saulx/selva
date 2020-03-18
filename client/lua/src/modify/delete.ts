@@ -7,10 +7,14 @@ import { getSchema } from 'lua/src/schema/index'
 import { getTypeFromId } from 'lua/src/typeIdMapping'
 import * as logger from '../logger'
 
-function cleanUpSuggestions(id: string, field: string) {
+export function cleanUpSuggestions(id: string, field: string) {
   const schema = getSchema()
   const base = field.substr(0, field.length - 3)
-  const type = schema.types[getTypeFromId(id)]
+  const type = id === 'root' ? schema.rootType : schema.types[getTypeFromId(id)]
+
+  if (!type) {
+    return
+  }
 
   const split = splitString(base, '.')
 
@@ -22,6 +26,10 @@ function cleanUpSuggestions(id: string, field: string) {
       }
 
       prop = prop.properties[split[i]]
+    }
+
+    if (!prop) {
+      return
     }
 
     const fieldSchema = <FieldSchemaOther>prop
@@ -65,6 +73,13 @@ function cleanUpSuggestions(id: string, field: string) {
   }
 }
 
+function cleanUpAliases(id: Id): void {
+  const itemAliases = r.smembers(id + '.aliases')
+  for (const alias of itemAliases) {
+    r.hdel('___selva_aliases', alias)
+  }
+}
+
 export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   if (hierarchy) {
     const children = r.smembers(id + '.children')
@@ -89,6 +104,9 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   r.del(id + '.parents')
   r.del(id + '.ancestors')
   r.del(id + '._depth')
+
+  cleanUpAliases(id)
+
   sendEvent(id, '', 'delete')
 
   const vals = r.hgetall(id)
@@ -96,7 +114,8 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
     // FIXME: a bit hacky, always assumes we have english enabled
     if (
       stringEndsWith(vals[i], '.en') &&
-      !stringStartsWith(vals[i], '___escaped:')
+      !stringStartsWith(vals[i], '___escaped:') &&
+      !stringStartsWith(vals[i], '$source_')
     ) {
       cleanUpSuggestions(id, vals[i])
     }

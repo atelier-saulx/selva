@@ -3,6 +3,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
+import { dumpDb } from './assertions'
 
 let srv
 let port: number
@@ -122,8 +123,236 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('get $value', async t => {
-  const client = connect({ port })
+test.serial('set alias and get by $alias', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    aliases: 'nice_match',
+    type: 'match',
+    title: { en: 'yesh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'nice_match',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      id: match1,
+      title: 'yesh',
+      aliases: ['nice_match']
+    }
+  )
+
+  t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), {
+    nice_match: match1
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(match1 + '.aliases'), [
+    'nice_match'
+  ])
+
+  const match2 = await client.set({
+    aliases: ['nice_match', 'very_nice_match'],
+    type: 'match',
+    title: { en: 'yesh2' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'nice_match',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      id: match2,
+      title: 'yesh2',
+      aliases: ['nice_match', 'very_nice_match']
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'very_nice_match',
+      id: true,
+      title: true
+    }),
+    {
+      id: match2,
+      title: 'yesh2'
+    }
+  )
+
+  t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), {
+    nice_match: match2,
+    very_nice_match: match2
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(match2 + '.aliases'), [
+    'nice_match',
+    'very_nice_match'
+  ])
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(match1 + '.aliases'), [])
+
+  await client.set({
+    $id: match1,
+    aliases: { $add: ['ok_match'] }
+  })
+
+  await client.set({
+    $id: match2,
+    aliases: { $delete: ['very_nice_match'] }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'nice_match',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      id: match2,
+      title: 'yesh2',
+      aliases: ['nice_match']
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'ok_match',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      id: match1,
+      title: 'yesh',
+      aliases: ['ok_match']
+    }
+  )
+
+  t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), {
+    ok_match: match1,
+    nice_match: match2
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(match2 + '.aliases'), [
+    'nice_match'
+  ])
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(match1 + '.aliases'), [
+    'ok_match'
+  ])
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('set new entry with alias', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    $alias: 'nice_match',
+    type: 'match',
+    title: { en: 'yesh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'nice_match',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      id: match1,
+      title: 'yesh',
+      aliases: ['nice_match']
+    }
+  )
+
+  t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), {
+    nice_match: match1
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(match1 + '.aliases'), [
+    'nice_match'
+  ])
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('set existing entry with alias', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    $alias: 'nice_match',
+    type: 'match',
+    title: { en: 'yesh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'nice_match',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      id: match1,
+      title: 'yesh',
+      aliases: ['nice_match']
+    }
+  )
+
+  await client.set({
+    $alias: ['not_so_nice_match', 'nice_match'], // second one exists
+    type: 'match',
+    title: { en: 'yesh yesh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'nice_match',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      id: match1,
+      title: 'yesh yesh',
+      aliases: ['nice_match']
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'nice_match',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      id: match1,
+      title: 'yesh yesh',
+      aliases: ['nice_match']
+    }
+  )
 
   await client.delete('root')
   client.destroy()

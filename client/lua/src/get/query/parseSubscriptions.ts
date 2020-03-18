@@ -130,6 +130,7 @@ function parseSubscriptions(
 ) {
   let sub: QuerySubscription | undefined
 
+  // not so nice....
   const queryId = redis.sha1hex(cjson.encode(getOptions))
 
   for (let i = 0; i < querySubs.length; i++) {
@@ -183,7 +184,7 @@ function parseSubscriptions(
                 $field: timestampFilters[i].$field, // it's actually not so easy to decide which timestamp field should be the basis of sorting
                 $order: 'asc'
               },
-              $range: [0, 1]
+              $limit: 1
             }
           },
           string.sub(q, 2, q.length - 1),
@@ -221,13 +222,16 @@ function parseSubscriptions(
     }
   } else {
     // need to check if TYPE is there
-    // no qeury on fields etc easy
-    // if (!sub.ids) {
-    //   sub.ids = {}
-    // }
-    // for (let i = 1; i < meta.ids.length; i++) {
-    //   sub.ids[meta.ids[i]] = true
-    // }
+    if (!sub.ids) {
+      sub.ids = {}
+    }
+    for (let i = 1; i < meta.ids.length; i++) {
+      sub.ids[meta.ids[i]] = true
+    }
+
+    if (meta.type) {
+      sub.type = meta.type
+    }
   }
 
   if (sub.ids || !meta.ast) {

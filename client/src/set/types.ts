@@ -21,6 +21,12 @@ export type SetExtraOptions<T> = {
   $value?: T
   $merge?: boolean
   $field?: string | string[]
+  $source?:
+    | string
+    | {
+        $overwrite?: boolean | string[]
+        $name: string
+      }
 }
 
 export type SetExtraCounterOptions = {

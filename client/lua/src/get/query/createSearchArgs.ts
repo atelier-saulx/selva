@@ -8,15 +8,24 @@ function createSearchArgs(
   query: string,
   fork: Fork
 ): string[] {
-  const $list = getOptions.$list
+  let $list = getOptions.$list
+  let isNoList = false
   if (!$list) {
-    return []
+    if (getOptions.$find) {
+      isNoList = true
+      $list = { $find: getOptions.$find }
+    } else {
+      return []
+    }
   }
-  let lo = 0
-  let hi = 99999
-  if ($list.$range) {
-    lo = $list.$range[0]
-    hi = $list.$range[1]
+  let offset = 0
+  let limit = isNoList ? 1 : 99999
+  if ($list.$limit) {
+    limit = $list.$limit
+  }
+
+  if ($list.$offset) {
+    offset = $list.$offset
   }
 
   const sort: string[] = []
@@ -39,8 +48,8 @@ function createSearchArgs(
     query,
     'NOCONTENT',
     'LIMIT',
-    tostring(lo),
-    tostring(hi)
+    tostring(offset),
+    tostring(limit)
   ]
 
   for (let i = 0; i < sort.length; i++) {

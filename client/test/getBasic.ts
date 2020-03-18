@@ -117,6 +117,7 @@ test.before(async t => {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
+          value: { type: 'number' },
           description: { type: 'text' }
         }
       },
@@ -171,6 +172,72 @@ test.serial('get $value', async t => {
           complex: true
         }
       }
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('get nested queries', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'maTest',
+    value: 11,
+    title: { en: 'hello' }
+  })
+
+  await client.set({
+    $id: 'maTest2',
+    value: 12,
+    title: { en: 'halloumi' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maTest',
+      id: true,
+      someItem: {
+        $id: 'maTest2',
+        title: true,
+        nestedThing: { $id: 'maTest', value: true }
+      },
+      values: [
+        {
+          $id: 'maTest',
+          id: true,
+          value: true
+        },
+        {
+          $id: 'maTest2',
+          id: true,
+          value: true
+        }
+      ],
+      title: true
+    }),
+    {
+      id: 'maTest',
+      title: { en: 'hello' },
+      someItem: {
+        title: {
+          en: 'halloumi'
+        },
+        nestedThing: {
+          value: 11
+        }
+      },
+      values: [
+        {
+          id: 'maTest',
+          value: 11
+        },
+        {
+          id: 'maTest2',
+          value: 12
+        }
+      ]
     }
   )
 
@@ -379,7 +446,8 @@ test.serial('get - $all simple', async t => {
   t.deepEqual(
     await client.get({
       $id: 'maA',
-      $all: true
+      $all: true,
+      aliases: false
     }),
     {
       id: 'maA',
@@ -422,7 +490,8 @@ test.serial('get - $all root level whitelist + $all', async t => {
       image: {
         thumb: true
       },
-      $all: true
+      $all: true,
+      aliases: false
     }),
     {
       id: 'clA',
@@ -471,7 +540,8 @@ test.serial('get - $all root level whitelist + blacklists + $all', async t => {
         poster: false
       },
       description: false,
-      $all: true
+      $all: true,
+      aliases: false
     }),
     {
       id: 'clA',

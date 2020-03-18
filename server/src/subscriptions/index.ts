@@ -61,7 +61,8 @@ export default class SubscriptionManager {
   }
 
   async attach(port: number) {
-    this.client = new SelvaClient({ port }, { loglevel: 'off' })
+    // NEED TO FIX LOGS
+    this.client = new SelvaClient({ port }, { loglevel: 'info' })
     this.sub = createClient({ port })
     this.pub = createClient({ port })
 
@@ -112,7 +113,7 @@ export default class SubscriptionManager {
         }
       )
 
-      // delete cache for latest result since there is no result now
+      // delete cache for latest result since there is no result now!
       delete this.lastResultHash[subscriptionId]
       return
     }
@@ -189,6 +190,11 @@ export default class SubscriptionManager {
 
     this.lastResultHash[subscriptionId] = newHash
 
+    // console.log(this)
+
+    // publish
+
+    // if (this.pub) {
     this.pub.publish(
       `___selva_subscription:${subscriptionId}`,
       resultStr,
@@ -196,6 +202,7 @@ export default class SubscriptionManager {
         // console.error(err)
       }
     )
+    // }
   }
 
   public async refreshSubscription(

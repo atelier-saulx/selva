@@ -40,6 +40,7 @@ test.before(async t => {
     }
   })
 
+  await client.delete('root')
   await client.destroy()
 })
 
@@ -92,6 +93,9 @@ test.serial('find - numeric exists field', async t => {
     }),
     { id: 'root', items: [{ name: 'match 1' }] }
   )
+
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('find - string field only exists indexed', async t => {
@@ -134,4 +138,97 @@ test.serial('find - string field only exists indexed', async t => {
     }),
     { id: 'root', items: [{ name: 'league 2' }] }
   )
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('find - numeric not exists field', async t => {
+  // simple nested - single query
+  const client = connect({ port: port }, { loglevel: 'info' })
+  await client.set({
+    type: 'match',
+    name: 'match 1',
+    value: 1
+  })
+
+  await client.set({
+    type: 'match',
+    name: 'match 2'
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'value',
+                $operator: 'notExists'
+              }
+            ]
+          }
+        }
+      }
+    }),
+    { id: 'root', items: [{ name: 'match 2' }] }
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('find - string field only not exists indexed', async t => {
+  // simple nested - single query
+  const client = connect({ port: port }, { loglevel: 'info' })
+  await client.set({
+    type: 'league',
+    name: 'league 1'
+  })
+
+  await client.set({
+    type: 'league',
+    name: 'league 2',
+    thing: 'yes some value here'
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              },
+              {
+                $field: 'thing',
+                $operator: 'notExists'
+              }
+            ]
+          }
+        }
+      }
+    }),
+    { id: 'root', items: [{ name: 'league 1' }] }
+  )
+
+  await client.delete('root')
+  await client.destroy()
 })

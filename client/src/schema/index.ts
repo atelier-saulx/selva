@@ -158,6 +158,10 @@ export const defaultFields: Record<string, FieldSchema> = {
   },
   descendants: {
     type: 'references'
+  },
+  aliases: {
+    type: 'set',
+    items: { type: 'string' }
   }
 }
 
