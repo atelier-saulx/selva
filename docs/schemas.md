@@ -1,6 +1,7 @@
 # Selva Schema Definition
 
-Schemas define da data structure to be used bla bla bla
+Schemas define da data structure to be used.
+They allow for data to be automatically validated and the right type of index to be used for searching.
 
   - [_root_ object](#rootobject)
   - [Types](#types)
