@@ -28,7 +28,7 @@ Documentation for its API as well as the two main concepts: the schemas and its 
 
 ## Usage
 
-llorem
+...
 
 ## License
 

@@ -4,7 +4,8 @@ Schemas define da data structure to be used bla bla bla
 
   - [_root_ object](#rootobject)
   - [Types](#types)
-    - [Available field data types](#avilablefielddatatypes)
+    - [Field index types](#fieldindexes)
+    - [Field data types](#fielddatatypes)
 
 ### _root_ object
 
@@ -48,13 +49,38 @@ Defines the fields available to each type.
 | Name | type | atributes | description |
 | ---  | ---  | ---       | ---         |
 | `type` | string | | Two character string that identifies the type. Used as a prefix for each object/id |
-| `fields` | Object | | [Data type](#avilablefielddatatypes) for the field.
-| `search` | Object | optional | Indexing info blabla
+| `fields` | Object | | [Data type](#fielddatatypes) for the field.
+| `search` | Object | optional | [Index](#fieldindexes) type for the field.
 
-##### Avilable field data types
+#### Field indexes types
 
-- **string**: `"flurpy"`, `"pants"`  
-- **integer**: `123`, `666`
-- **float**: `12.234`, `6.6666`
-- **timestamp**: `269222400`
-- ...
+For the fields to be searchable, it needs an index.
+There are several types of indexes avaliable. One field may have multiple index types.
+
+
+  - `EXISTS`
+  - `TAG`
+  - `TEXT`
+  - `NUMERIC`
+  - `SORTABLE`
+  - `TEXT-LANGUAGE`
+  - `GEO`
+  - `TEXT-LANGUAGE-SUG`
+
+#### Field data types
+
+  - `float`
+  - `boolean`
+  - `number`
+  - `int`
+  - `references`
+  - `string`
+  - `text`
+  - `id`
+  - `digest`
+  - `url`
+  - `email`
+  - `phone`
+  - `geo`
+  - `type`
+  - `timestamp`
