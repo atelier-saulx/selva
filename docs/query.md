@@ -163,7 +163,8 @@ const result = await client.get({
 
 ### `$list`: _boolean_, _object_
 
-Sets the field to return a collection of referenced documents.
+Sets the field to return a collection of documents.
+Used in conjuction with the `$find` operator.
 
 ### `$sort`: _object_
 
@@ -194,7 +195,7 @@ const result = await client.get({
 Property of `$list` clause.  
 Limits the `$list` amount of items returned in a list according to the following properties:
 
-  - `$offset`: _integer_ - index of the starting item.
+  - `$offset`: _integer_ - start list at item with index.
   - `$limit`: _integer_ - amount of items to return.
 
 ```javascript
@@ -213,6 +214,44 @@ const result = await client.get({
 ```
 
 [See test](../client/test/examples/clauses/list.ts)
+
+### `$find`: _object_
+
+Traverses ancestors or descendants and assigns matched results to a field.
+Can be used inside a `$list` clause to specify collection search terms or independently to reference a single document to a field. In that case it will return the first matched document.
+
+### `$traverse`: _string_
+
+Property of `$find`.
+Allowed values: `ancestors`, `descendents`, `children`, `parents`.
+Sets direction to search the document hierarchy.
+
+### `$filter`: _object_, _array_
+
+Property of `$find`.
+
+Sets a search term for the `$find` clause.
+Has the following properties:
+
+  - `$operator`: _string_ - Operator to use in the comparisson. Allowdd values are: `=`, `>`, `<`, `..`, `!=`, `distance`, `exists`, `notExists`.
+  - `$field`: _string_ - Field name to compare the value to.
+  - `$value`: _string_ - Value to compare the field to.
+
+Search terms can be composed with the `$or` and `$and` clauses, and nested to create complex logic.
+If an array of search terms is used, each term acts as an AND.
+
+### `$or`: _object_
+
+Property of `$filter`.
+Adds a OR search term to the filter.
+Can be nested.
+
+### `$and`: _object_
+
+Property of `$filter`.
+Adds a AND search term to the filter.
+Can be nested.
+
 
 ## Avilable field data types
 
