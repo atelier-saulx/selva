@@ -135,3 +135,5 @@ test('Connect and re-connect', async t => {
 
   server3.destroy()
 })
+
+// creates one redis instance for same port / host
