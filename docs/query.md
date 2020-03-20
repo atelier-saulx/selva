@@ -253,6 +253,27 @@ Has the following properties:
 Search terms can be composed with the `$or` and `$and` clauses, and nested to create complex logic.
 If an array of search terms is used, each term acts as an AND.
 
+```javascript
+const result = await client.get({
+  $id: 'mo2001ASpaceOdyssey',
+  $language: 'en',
+  title: true,
+  genres: {
+    name: true,
+    $list: {
+      $traverse: 'parents',
+      $find: {
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'genre'
+        }
+      }
+    }
+  }
+})
+```
+
 ### `$or`: _object_
 
 Property of `$filter`.
@@ -264,4 +285,30 @@ Can be nested.
 Property of `$filter`.
 Adds a AND search term to the filter.
 Can be nested.
+
+```javascript
+const result = await client.get({
+  $id: 'geScifi',
+  $language: 'en',
+  name: true,
+  longMovies: {
+    title: true,
+    $list: {
+      $traverse: 'children',
+      $find: {
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'movie',
+          $and: {
+            $field: 'technicalData.runtime',
+            $operator: '>',
+            $value: 100
+          }
+        }
+      }
+    }
+  }
+})
+```
 
