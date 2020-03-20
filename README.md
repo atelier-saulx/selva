@@ -2,7 +2,7 @@
 
 ## About
 
-🌴 Selva is a realtime undirected acyclic graph database.
+🌴 Selva is a realtime mixed acyclic graph database.
 
 It was built to handle massively scalable data structures with complex hierarchies and taxonomies. Documents or graph vertices can have any number or combination of parents and children. Field values can be augmented with data from other members of its hierarchy allowing for useful defaults based on the document context.  
 All of this with real-time updates and transparent subscriptions making it perfect to drive dynamic websites and applications.
