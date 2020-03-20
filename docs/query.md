@@ -190,13 +190,10 @@ const result = await client.get({
 
 [See test](../client/test/examples/clauses/list.ts)
 
-### `$range`: _[offset, limit]_
+### `$offset`: _integer_
 
 Property of `$list` clause.  
-Limits the `$list` amount of items returned in a list according to the following properties:
-
-  - `$offset`: _integer_ - start list at item with index.
-  - `$limit`: _integer_ - amount of items to return.
+Shows results of a `$list` starting at the specified index.
 
 ```javascript
 const result = await client.get({
@@ -207,11 +204,17 @@ const result = await client.get({
     year: true,
     $list: {
       $sort: { $field: 'year', $order: 'asc' },
-      $range: { $offset: 0, $limit: 2 }
+      $offset: 0,
+      $limit: 2,
     }
   }
 })
 ```
+
+### `$limit`: _integer_
+
+Property of `$list` clause.  
+Limits the `$list` amount of items returned in a `$list`.
 
 [See test](../client/test/examples/clauses/list.ts)
 
