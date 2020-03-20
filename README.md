@@ -28,7 +28,7 @@ Documentation for its API as well as the two main concepts: the schemas and its 
 
 ## Usage
 
-Setup a server.
+First setup a Selva server.
 
 ```js
 import { start } from '@saulx/selva-server'
@@ -81,7 +81,7 @@ await client.updateSchema({
 })
 ```
 
-Set some data
+Set some data.
 
 ```js
 await Promise.all([
@@ -141,6 +141,22 @@ const result = await client.get({
   title: true,
   year: true,
   director: true
+})
+```
+
+Or subscribe to changes.
+
+```js
+await client.subscribe({
+  $id: 'moSoylentGreen',
+  $language: 'en',
+  title: true,
+  year: true,
+  director: true
+}, (id, data) => {
+  // render the data
+  // (will also be run one time when subscribing)
+  console.log('Data changed: ', data)
 })
 ```
 
