@@ -1,13 +1,23 @@
 # Selva Query DSL Documentation
 
-Selva uses a JSON query DSL to specify the data to be retrieved from the database.
+Selva uses a JSON query DSL to specify the data to be retrieved or subscribed from the database.
 
   - [**&lt;any field name&gt;**](#any-field-name)
   - [**$id**](#id)
   - [**$all**](#all)
   - [**$value**](#id)
   - [**$default**](#default)
-  - [**language**](#language)
+  - [**$language**](#language)
+  - [**$inherit**]($inherit)
+  - [**$list**]($list)
+  - [**$sort**]($sort)
+  - [**$offset**]($offset)
+  - [**$limit**]($limit)
+  - [**$find**]($find)
+  - [**$traverse**]($traverse)
+  - [**$filter**]($filter)
+  - [**$or**]($or)
+  - [**$and**]($and)
 
 
 [Available data types](#available-data-types)
@@ -255,11 +265,3 @@ Property of `$filter`.
 Adds a AND search term to the filter.
 Can be nested.
 
-
-## Avilable field data types
-
-- **string**: `"flurpy"`, `"pants"`  
-- **integer**: `123`, `666`
-- **float**: `12.234`, `6.6666`
-- **timestamp**: `269222400`
-- ...
