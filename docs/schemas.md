@@ -5,6 +5,7 @@ They allow for data to be automatically validated and the right type of index to
 
   - [_root_ object](#root-object)
   - [Types](#types)
+    - [`Object` type](#object-type)
   - [Type Fields](#type-fields)
     - [Field index types](#field-indexes-types)
     - [Field data types](#field-data-types)
@@ -54,6 +55,33 @@ Defines the fields available to each type.
 | `fields` | Object | | [Data type](#fielddatatypes) for the field.
 | `search` | Object | optional | [Index](#fieldindexes) type for the field.
 
+#### `Object` type
+
+Object allow for nested structures, but unlike the JSON type, they allow it's properties to have type validation and indexes.
+In field of type object, the subfield `properties` is a reserved field name for this feature.
+
+##### Example
+
+```javascript
+{
+  // ...
+  movie: {
+    prefix: 'mo',
+    fields: {
+      title: { type: 'text' },
+      technicalData: {
+        type: 'object',
+        properties: {
+          runtime: { type: 'int' },
+          color: { type: 'string' },
+          aspectRatio: { type: 'string' }
+        }
+      }
+    }
+  }
+}
+```
+
 #### Field indexes types
 
 For the fields to be searchable, it needs an index.
@@ -84,8 +112,8 @@ There are several types of indexes avaliable. One field may have multiple index 
   - `email`
   - `phone`
   - `geo`
-  - `type`
   - `timestamp`
   - `set`
   - `array`
+  - [`object`](#object-type)
   - `json`
