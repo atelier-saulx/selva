@@ -288,7 +288,7 @@ test.serial('subscription find', async t => {
   const ids = await Promise.all(x)
   console.log('SET 5k', Date.now() - d, 'ms')
 
-  await wait(1000)
+  await wait(2000)
   client.set({
     $id: ids[6],
     name: 'FLURRRRP'
