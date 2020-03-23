@@ -1,13 +1,23 @@
 # Selva Query DSL Documentation
 
-Selva uses a JSON query DSL to specify the data to be retrieved from the database.
+Selva uses a JSON query DSL to specify the data to be retrieved or subscribed from the database.
 
   - [**&lt;any field name&gt;**](#any-field-name)
   - [**$id**](#id)
   - [**$all**](#all)
   - [**$value**](#id)
   - [**$default**](#default)
-  - [**language**](#language)
+  - [**$language**](#language)
+  - [**$inherit**]($inherit)
+  - [**$list**]($list)
+  - [**$sort**]($sort)
+  - [**$offset**]($offset)
+  - [**$limit**]($limit)
+  - [**$find**]($find)
+  - [**$traverse**]($traverse)
+  - [**$filter**]($filter)
+  - [**$or**]($or)
+  - [**$and**]($and)
 
 
 [Available data types](#available-data-types)
@@ -163,7 +173,8 @@ const result = await client.get({
 
 ### `$list`: _boolean_, _object_
 
-Sets the field to return a collection of referenced documents.
+Sets the field to return a collection of documents.
+Used in conjuction with the `$find` operator.
 
 ### `$sort`: _object_
 
@@ -189,13 +200,10 @@ const result = await client.get({
 
 [See test](../client/test/examples/clauses/list.ts)
 
-### `$range`: _[offset, limit]_
+### `$offset`: _integer_
 
 Property of `$list` clause.  
-Limits the `$list` amount of items returned in a list according to the following properties:
-
-  - `$offset`: _integer_ - index of the starting item.
-  - `$limit`: _integer_ - amount of items to return.
+Shows results of a `$list` starting at the specified index.
 
 ```javascript
 const result = await client.get({
@@ -206,18 +214,101 @@ const result = await client.get({
     year: true,
     $list: {
       $sort: { $field: 'year', $order: 'asc' },
-      $range: { $offset: 0, $limit: 2 }
+      $offset: 0,
+      $limit: 2,
     }
   }
 })
 ```
 
+### `$limit`: _integer_
+
+Property of `$list` clause.  
+Limits the `$list` amount of items returned in a `$list`.
+
 [See test](../client/test/examples/clauses/list.ts)
 
-## Avilable field data types
+### `$find`: _object_
 
-- **string**: `"flurpy"`, `"pants"`  
-- **integer**: `123`, `666`
-- **float**: `12.234`, `6.6666`
-- **timestamp**: `269222400`
-- ...
+Traverses ancestors or descendants and assigns matched results to a field.
+Can be used inside a `$list` clause to specify collection search terms or independently to reference a single document to a field. In that case it will return the first matched document.
+
+### `$traverse`: _string_
+
+Property of `$find`.
+Allowed values: `ancestors`, `descendents`, `children`, `parents`.
+Sets direction to search the document hierarchy.
+
+### `$filter`: _object_, _array_
+
+Property of `$find`.
+
+Sets a search term for the `$find` clause.
+Has the following properties:
+
+  - `$operator`: _string_ - Operator to use in the comparisson. Allowdd values are: `=`, `>`, `<`, `..`, `!=`, `distance`, `exists`, `notExists`.
+  - `$field`: _string_ - Field name to compare the value to.
+  - `$value`: _string_ - Value to compare the field to.
+
+Search terms can be composed with the `$or` and `$and` clauses, and nested to create complex logic.
+If an array of search terms is used, each term acts as an AND.
+
+```javascript
+const result = await client.get({
+  $id: 'mo2001ASpaceOdyssey',
+  $language: 'en',
+  title: true,
+  genres: {
+    name: true,
+    $list: {
+      $traverse: 'parents',
+      $find: {
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'genre'
+        }
+      }
+    }
+  }
+})
+```
+
+### `$or`: _object_
+
+Property of `$filter`.
+Adds a OR search term to the filter.
+Can be nested.
+
+### `$and`: _object_
+
+Property of `$filter`.
+Adds a AND search term to the filter.
+Can be nested.
+
+```javascript
+const result = await client.get({
+  $id: 'geScifi',
+  $language: 'en',
+  name: true,
+  longMovies: {
+    title: true,
+    $list: {
+      $traverse: 'children',
+      $find: {
+        $filter: {
+          $field: 'type',
+          $operator: '=',
+          $value: 'movie',
+          $and: {
+            $field: 'technicalData.runtime',
+            $operator: '>',
+            $value: 100
+          }
+        }
+      }
+    }
+  }
+})
+```
+

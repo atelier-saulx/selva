@@ -2,17 +2,19 @@
 
   - Server
     - **[start()](#start)**
-    - **[_server_.destrioy()](#serverdestroy)**
+    - **[_server_.destroy()](#serverdestroy)**
     - **[_server_.backup()](#serverbackup)**
   - Client
     - **[connect()](#connect)**
-    - **[set()](#set)**
-    - **[get()](#get)**
-    - **[observe()](#observe)**
-    - **[getSchema()](#getschema)**
-    - **[updateSchema()](#updateschema)**
-    - **[getTypeFromId()](#gettypefromid)**
-    - **[delete()](#delete)**
+    - **[set()](#clientset)**
+    - **[get()](#clientget)**
+    - **[subscribe()](#clientsubscribe)**
+    - **[unsubscribe()](#clientunsubscribe)**
+    - **[id()](#clientid)**
+    - **[getSchema()](#clientgetschema)**
+    - **[updateSchema()](#clientupdateschema)**
+    - **[getTypeFromId()](#clientgettypefromid)**
+    - **[delete()](#clientdelete)**
 
 ## Server
 
@@ -116,7 +118,10 @@ Promise representing successful shutdown.
 
 ### connect(_options_)
 
-Connects to a server
+Connects to a Selva server.
+It automatically reconnects to the server in case of lost connection.
+Queries are batched automatically and queued in case of a disconnectet.
+Results are automatically cached and optimized.
 
 #### Parameters
 
@@ -172,9 +177,70 @@ Connects to a server
   </tr>
 </table>
 
-### set(_payload_)
 
-Sets data in the database.
+#### Example
+
+```js
+import { getService } from 'registry'
+
+const client = selva.connect(() => getService('name-of-db'))
+
+// client.redis.hget()
+
+client.set('myId', { myShine: true }).then(result => console.log(result)) // logs OK
+```
+
+```js
+const client = selva.connect({
+  port: 8080,
+  host: 'whatever', // defaults to localhost
+  retryStrategy() {
+    // optional
+    return 5e3
+  }
+})
+```
+
+or with a promise
+
+```js
+const client = selva.connect(new Promise(resolve => {
+  resolve({
+    port: 8080,
+    host: 'whatever',
+    retryStrategy () {
+      return 5e3
+    }
+  })
+})
+```
+
+or with a (async) function
+
+```js
+const client = selva.connect(async () => {
+  await doSomething()
+  return {
+    port: 8080,
+    host: 'whatever',
+    retryStrategy() {
+      return 5e3
+    }
+  }
+})
+```
+
+On every reconnect selva will call the given function. This allows you to change the configuration (eg. if a db has become unresponsive).
+
+### _client_.set(_payload_)
+
+Set an document/object on an id. Will deep merge objects by default.
+
+Default behaviours:
+
+- Acenstors can never be set, children and parents update ancestors, children and parents.
+- Date is allways added by default.
+- Keyword 'now' in date, start, end will add date.
 
 #### Parameters
 
@@ -252,25 +318,150 @@ Sets data in the database.
 
 Promise resolving to the _id_ of the updated or created record.
 
-#### Example
+#### Examples
 
-```javascript
+```js
 await client.set({
-  $id: 'clA',
-  title: {
-    en: 'nice!'
-  },
-  description: {
-    en: 'yesh'
-  },
-  image: {
-    thumb: 'thumb',
-    poster: 'poster'
+  $id: 'myId',
+  $merge: false, // defaults to true
+  $version: 'mySpecialversion', // optional
+  id: 'myNewId',
+  foo: true
+})
+```
+
+```js
+await client.set({
+  $id: 'myId',
+  $merge: false, // defaults to true
+  $version: 'mySpecialversion', // optional
+  id: 'myNewId',
+  foo: true,
+  children: {
+    $add: 'smukytown',
+    $delete: 'myblarf'
   }
 })
 ```
 
-### get(_query_)
+```js
+await client.set({
+  $id: 'myId',
+  children: {
+    // maybe redis SET do it?
+    // ---- :(
+    $hierarchy: false, // defaults to true
+    $add: 'smukytown',
+    $delete: ['myblarf', 'xxx']
+  }
+})
+```
+
+```js
+await client.set({
+  $id: 'myId',
+  children: {
+    // ---- :(
+    $hierarchy: false, // defaults to true
+    $value: ['root']
+  }
+})
+```
+
+```js
+await client.set({
+  // gen id, add to root
+  type: 'tag',
+  title: 'flowers',
+  externalId: 'myflower.de'
+  }
+})
+```
+
+```js
+await client.set({
+  // gen id, add to root
+  type: 'tag',
+  title: 'flowers',
+  externalId: {
+    $merge: false,
+    $value: 'myflower.de'
+  }
+})
+```
+
+```js
+await client.set({
+  type: 'tag',
+  title: { de: 'blümen' }
+})
+```
+
+```js
+await client.set({
+  $id: 'myId',
+  $merge: false, // defaults to true
+  $version: 'mySpecialversion', // optional
+  myThing: {
+    title: 'blurf',
+    nestedCount: {
+      $default: 100,
+      $inc: { $value: 1 }
+    },
+    access: {
+      $default: {
+        flurpiepants: 'my pants'
+      }
+    }
+  }
+})
+```
+
+```js
+myId
+myId#mySpecialversion
+```
+
+```js
+const result = await client.get(
+  {
+    $id: 'myId',
+    $version: 'mySpecialversion'
+  }
+)
+
+const versioned = redisClient.get('myId#mySpecialversion')
+const original = redisClient.get('myId') || {}
+const result = { ...original, ...versioned }
+
+myId
+myId#mySpecialversion
+```
+
+```js
+const obj = {
+  foo: {
+    bar: true
+  },
+  haha: true
+}
+```
+
+```js
+'foo.bar': true
+'foo.foo': true
+'foo.baz': true
+'foo.baz.blarf': true,
+haha: true
+```
+
+hkeys: foo.\*
+
+{
+foo: true
+}
+
+### _client_.get(_query_)
 
 Retrieves data from the database.
 
@@ -299,9 +490,9 @@ Retrieves data from the database.
 
 Promise resolving to the fetched data.
 
-### observe(_query_)
+### _client_.subscribe(_query_, _callback(id, data)_)
 
-Retrieves and sets a subscription to data.
+Executes the query and subscribes to future changes.
 
 #### Parameters
 
@@ -322,13 +513,174 @@ Retrieves and sets a subscription to data.
       [Query](query.md) to be executed.
     </td>
   </tr>
+  <tr>
+    <td valign="top"><code>callback</code></td>
+    <td valign="top">function</td>
+    <td valign="top"></td>
+    <td>
+      Function to be executed on data change. Sends the `id`, and `data` that has changed.
+    </td>
+  </tr>
 </table>
 
 #### Returns
 
 Promise resolving to an observable (?? needs better definition)
 
-### getSchema()
+#### Examples
+
+```js
+const result = await client.subscribe(
+  {
+    id: 'myId',
+    version: 'mySpecialversion' // optional
+  },
+  (id, msg) => {
+    console.log(`Fired for ${id} with message: ${msg}`)
+  }
+)
+```
+
+```js
+const result = await client.subscribe(
+  {
+    id: 'myId',
+    date: 123123123,
+    version: 'mySpecialversion' // optional
+  },
+  (id, msg) => {
+    console.log(`Fired for ${id} with message: ${msg}`)
+  }
+)
+```
+
+or with an array for ids
+
+```js
+const result = await client.subscribe(
+  {
+    id: ['myId', 'myOtherId'],
+    version: 'mySpecialversion' // optional
+  },
+  (id, msg) => {
+    console.log(`Fired for ${id} with message: ${msg}`)
+  }
+)
+```
+
+### _client_.unsubscribe(_id_, _callback_)
+
+Removes a previously created subscription.
+
+#### Parameters
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Attributes</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tr>
+    <td valign="top"><code>query</code></td>
+    <td valign="top">object</td>
+    <td valign="top"></td>
+    <td>
+      [Query](query.md) used in the subscription.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top"><code>callback</code></td>
+    <td valign="top">function</td>
+    <td valign="top"></td>
+    <td>
+      Function used in the subscription.
+    </td>
+  </tr>
+</table>
+
+#### Returns
+
+Promise resolving in the subscription was found.
+
+#### Examples
+
+```js
+const result = await client.unsubscribe(
+  {
+    id: 'myId',
+    version: 'mySpecialversion' // optional
+  },
+  myCallback // if omitted will remove all listeners
+)
+```
+
+### _client_.id(_options_)
+
+Generates a random id for a document of a type.
+
+#### Parameters
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Attributes</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tr>
+    <td valign="top"><code>options</code></td>
+    <td valign="top">object</td>
+    <td valign="top"></td>
+    <td>
+      <br>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Attributes</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tr>
+          <td valign="top"><code>type</code></td>
+          <td valign="top">string</td>
+          <td valign="top"></td>
+          <td valign="top">
+            Type of the document.
+          </td>
+        </tr>
+        <tr>
+          <td valign="top"><code>externalId</code></td>
+          <td valign="top">string</td>
+          <td valign="top">optional</td>
+          <td valign="top">
+            Alias for the document id (?)
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+#### Returns
+
+Promise resolving to the generated id.
+
+#### Examples
+
+```javascript
+const id = await client.id({ type: 'flurpy', externalId: 'smurkysmurk' })
+// flgurk
+```
+
+
+### _client_.getSchema()
 
 Gets the database schema.
 
@@ -336,7 +688,7 @@ Gets the database schema.
 
 Promise resolving to the [schema](schemas.md) currently in use.
 
-### updateSchema(_schema_)
+### _client_.updateSchema(_schema_)
 
 Updates the database [schema](schemas.md)
 
@@ -371,7 +723,7 @@ Updates the database [schema](schemas.md)
 
 Promise resolving to an observable (?? needs better definition)
 
-### getTypeFromId(_id_)
+### _client_.getTypeFromId(_id_)
 
 Gets the type of a document.
 
@@ -398,9 +750,9 @@ Gets the type of a document.
 
 Promise resolving to the type of the document.
 
-### delete(_id_)
+### _client_.delete(_id_)
 
-Gets the type of a document.
+Deletes a document.
 
 #### Parameters
 
@@ -453,3 +805,11 @@ Gets the type of a document.
 #### Returns
 
 Promise resolving to the type of the document.
+
+#### Examples
+
+```javascript
+await client.delete('ma12231')
+await client.delete({ $id: 'ma12231' })
+await client.delete({ $id: 'ma12231', $hierarchy: false })
+```

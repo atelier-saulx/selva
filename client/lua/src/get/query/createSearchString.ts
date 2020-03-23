@@ -87,6 +87,10 @@ const addField = (
     return `@_exists_${filter.$field}:{T}`
   }
 
+  if (operator === 'notExists') {
+    return `-@_exists_${filter.$field}:{T}`
+  }
+
   if (type === 'TAG') {
     if (isArray(filter.$value)) {
       filter.$value = `${joinAny(filter.$value, '|')}`
