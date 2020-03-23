@@ -29,9 +29,9 @@ export default (
   fields: FieldSchemaArrayLike,
   type: string
 ): void => {
-  const typeSchema = schema.types[type]
+  const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
   if (!typeSchema) {
-    throw new Error('Cannot find type schema ' + typeSchema)
+    throw new Error('Cannot find type schema ' + type)
   }
 
   if (!fields || !fields.items) {

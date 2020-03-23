@@ -72,7 +72,7 @@ export function addFieldToSearch(
   for (const indexKey in searchIndex) {
     const index = searchIndex[indexKey]
     if (index[field]) {
-      redis.pcall(
+      const v = redis.pcall(
         'ft.add',
         indexKey,
         id,
@@ -82,12 +82,14 @@ export function addFieldToSearch(
         'PARTIAL',
         'FIELDS',
         field,
-        value
+        tostring(value)
       )
+
+      logger.info('PCALL', cjson.encode(v))
 
       if (hasExistsIndex(index[field])) {
         redis.call('hset', id, '_exists_' + field, 'T')
-        redis.pcall(
+        const v = redis.pcall(
           'ft.add',
           indexKey,
           id,
@@ -99,6 +101,8 @@ export function addFieldToSearch(
           '_exists_' + field,
           'T'
         )
+
+        logger.info('PCALL', v)
       }
     } else {
       const lastDotIndex = getDotIndex(field)
@@ -112,7 +116,7 @@ export function addFieldToSearch(
             redis.call('hset', id, '___escaped:' + field, escaped)
 
             const mapped = mapLanguages(lang)
-            redis.pcall(
+            const v = redis.pcall(
               'ft.add',
               indexKey,
               id,
@@ -126,6 +130,8 @@ export function addFieldToSearch(
               '___escaped:' + field,
               escaped
             )
+
+            logger.info('PCALL', v)
 
             if (hasExistsIndex(index[field])) {
               redis.call('hset', id, '_exists_' + field, 'T')
@@ -171,7 +177,8 @@ function addSuggestion(sug: string, lang: string) {
   const current: number = redis.call('hincrby', `sug_${lang}_counts`, sug, '1')
   if (current === 1) {
     logger.info('ft.sugadd', `sug_${lang}`, sug, '1')
-    redis.pcall('ft.sugadd', `sug_${lang}`, sug, '1')
+    const v = redis.pcall('ft.sugadd', `sug_${lang}`, sug, '1')
+    logger.info('PCALL', v)
   } else {
     logger.info(
       `ft.sugadd -- exists, incrementing to ${current}`,

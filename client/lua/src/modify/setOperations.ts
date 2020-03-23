@@ -5,6 +5,7 @@ import * as redis from '../redis'
 import { markForAncestorRecalculation } from './ancestors'
 import { deleteItem } from './delete'
 import sendEvent from './events'
+import { log, info, configureLogger } from '../logger'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -104,13 +105,13 @@ export function resetParents(
 
   // add new parents
   for (const parent of value) {
-    redis.sadd(parent + '.children', id)
-    sendEvent(parent, 'children', 'update')
-
     // recurse if necessary
-    if (redis.exists(parent)) {
+    if (!redis.exists(parent)) {
       modify({ $id: parent })
     }
+
+    redis.sadd(parent + '.children', id)
+    sendEvent(parent, 'children', 'update')
   }
 
   markForAncestorRecalculation(id)
@@ -158,14 +159,14 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     result[i] = child
 
     if (child !== '') {
+      redis.sadd(child + '.parents', id)
+
       if (!redis.exists(child)) {
         modify({ $id: child, parents: { $add: id } })
-      } else {
-        redis.sadd(child + '.parents', id)
-        sendEvent(child, 'parents', 'update')
-
-        markForAncestorRecalculation(child)
       }
+
+      sendEvent(child, 'parents', 'update')
+      markForAncestorRecalculation(child)
     }
   }
 
@@ -190,12 +191,16 @@ export function resetChildren(
   modify: FnModify
 ): Id[] {
   const children = redis.smembers(setKey)
-  // if (arrayIsEqual(children, value)) {
-  //   return
-  // }
+
   for (const child of children) {
     const parentKey = child + '.parents'
     redis.srem(parentKey, id)
+  }
+
+  redis.del(setKey)
+  const newChildren = addToChildren(id, value, modify)
+  for (const child of children) {
+    const parentKey = child + '.parents'
     const size = redis.scard(parentKey)
     if (size === 0) {
       deleteItem(child)
@@ -203,8 +208,8 @@ export function resetChildren(
       markForAncestorRecalculation(child)
     }
   }
-  redis.del(setKey)
-  return addToChildren(id, value, modify)
+
+  return newChildren
 }
 
 export function resetAlias(id: string, value: Id[]): void {
