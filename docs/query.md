@@ -107,7 +107,7 @@ const result = await get({
 
 ### `$language`: _string_
 
-Filters document data to a set language on fields that supoprt it.
+Filters document data to a set language on fields that support it.
 
 ```javascript
 const result = await client.get({

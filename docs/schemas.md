@@ -85,3 +85,6 @@ There are several types of indexes avaliable. One field may have multiple index 
   - `geo`
   - `type`
   - `timestamp`
+  - `set`
+  - `array`
+  - `json`
