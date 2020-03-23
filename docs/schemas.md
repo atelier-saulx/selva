@@ -3,10 +3,11 @@
 Schemas define the data structure to be used.  
 They allow for data to be automatically validated and the right type of index to be used for searching.
 
-  - [_root_ object](#rootobject)
+  - [_root_ object](#root-object)
   - [Types](#types)
-    - [Field index types](#fieldindexes)
-    - [Field data types](#fielddatatypes)
+  - [Type Fields](#type-fields)
+    - [Field index types](#field-indexes-types)
+    - [Field data types](#field-data-types)
 
 ### _root_ object
 
