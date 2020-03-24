@@ -20,19 +20,17 @@ import getTypeFromId from './getTypeFromId'
 import digest from './digest'
 import { IdOptions } from '../lua/src/id'
 import { v4 as uuid } from 'uuid'
-
 const MAX_SCHEMA_UPDATE_RETRIES = 5
-
 export type LogEntry = { level: LogLevel; msg: string }
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
 export type LogFn = (log: LogEntry) => void
-
 export type SelvaOptions = {
   loglevel?: LogLevel
   log?: LogFn
 }
 
 let SCRIPTS
+
 try {
   SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
     (obj, scriptName) => {
@@ -40,7 +38,6 @@ try {
       if (!distPath.endsWith('dist')) {
         distPath = pathJoin(distPath, 'dist')
       }
-
       return Object.assign(obj, {
         [scriptName]: readFileSync(
           pathJoin(distPath, 'lua', `${scriptName}.lua`),
@@ -55,14 +52,6 @@ try {
   process.exit(1)
 }
 
-const defaultLogging: LogFn = log => {
-  if (log.level === 'warning') {
-    console.warn('LUA: ' + log.msg)
-  } else {
-    console[log.level]('LUA: ' + log.msg)
-  }
-}
-
 export class SelvaClient {
   public schema: Schema
   public searchIndexes: SearchIndexes
@@ -75,13 +64,7 @@ export class SelvaClient {
     selvaOpts?: SelvaOptions
   ) {
     this.clientId = uuid()
-    this.redis = new RedisClient(opts)
-
-    this.redis.subscriptionManager.configureLogs(
-      this.clientId,
-      (selvaOpts && selvaOpts.log) || defaultLogging
-    )
-
+    this.redis = new RedisClient(opts, this.clientId, selvaOpts)
     if (selvaOpts && selvaOpts.loglevel) {
       this.loglevel = selvaOpts.loglevel
     }

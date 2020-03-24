@@ -3,10 +3,10 @@ type args = (string | number)[]
 abstract class RedisMethods {
   abstract queue(
     command: string,
-    args: args,
+    args: (string | number)[],
     resolve: (x: any) => void,
     reject: (x: Error) => void,
-    subscriber?: boolean
+    type?: 'client' | 'sub'
   ): void
 
   async command(key: string, ...args: args): Promise<any> {
