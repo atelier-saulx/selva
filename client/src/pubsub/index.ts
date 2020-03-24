@@ -1,9 +1,12 @@
-import Observable from './observe/observable'
+import Observable from '../observe/observable'
 import { createClient, RedisClient as Redis } from 'redis'
-import { GetResult, GetOptions } from './get/types'
+import { GetResult, GetOptions } from '../get/types'
 import { EventEmitter } from 'events'
-import { ConnectOptions } from './redis'
-import { LogFn } from '.'
+import { ConnectOptions } from '../redis'
+import { LogFn } from '..'
+import { RedisClientWrapper } from '../redisConnector'
+
+let cnt = 0
 
 type RedisSubsription = {
   channel: string
@@ -30,63 +33,34 @@ type Event = UpdateEvent | HeartBeatEvent | DeleteEvent
 export default class SelvaPubSub {
   private subscriptions: { [channel: string]: RedisSubsription } = {}
   private lastHeartbeat: { [channel: string]: number } = {}
-  private pub: Redis
-  private sub: Redis
+  public pub: Redis
+  public sub: Redis
   private heartbeatTimer: NodeJS.Timeout
-  private opts: ConnectOptions
   private connected: boolean = false
   private clientId: string
   private log: LogFn
 
-  connect(opts: ConnectOptions) {
-    this.opts = opts
-    this.pub = createClient(opts)
-    this.sub = createClient(opts)
+  connect(clientWrapper: RedisClientWrapper) {
+    this.pub = clientWrapper.pub
+    this.sub = clientWrapper.sub
 
-    this.sub.on('error', err => {
-      // console.log('ERRRRR')
-      if (err.code === 'ECONNREFUSED') {
-        console.info(`Connecting to ${err.address}:${err.port}`)
-      } else {
-        // console.log('ERR', err)
-      }
-    })
+    // fires first time as well
+    clientWrapper.on('ready', () => {})
 
-    this.pub.on('error', err => {
-      // console.log('ERRRRR')
-      if (err.code === 'ECONNREFUSED') {
-        console.info(`Connecting to ${err.address}:${err.port}`)
-      } else {
-        // console.log('ERR', err)
-      }
-    })
-
-    this.sub.on('ready', () => {
-      this.connected = true
-      this.ensureSubscriptions()
-      this.attachLogging()
-    })
-
-    this.pub.on('ready', () => {
-      this.connected = true
-      this.startHeartbeats()
-    })
+    // this.opts = opts
+    //
+    // use await
+    // this.pub = createClient(opts)
+    // this.sub = createClient(opts)
   }
 
-  disconnect() {
+  remove() {
+    // remove it
     this.stopHeartbeats()
     this.markSubscriptionsClosed()
-
+    this.pub = null
+    this.sub = null
     this.connected = false
-    if (this.pub) {
-      this.pub.quit()
-    }
-
-    if (this.sub) {
-      this.sub.quit()
-    }
-
-    this.pub = this.sub = undefined
   }
 
   attachLogging() {
@@ -144,11 +118,14 @@ export default class SelvaPubSub {
   }
 
   private attemptReconnect() {
-    this.disconnect()
-    setTimeout(() => this.connect(this.opts), 1000)
+    // handle this for all
+    // move this to connector
+    // this.disconnect()
+    // setTimeout(() => this.connect(this.opts), 1000)
   }
 
   private startHeartbeats() {
+    // move to connector
     if (this.heartbeatTimer) {
       return
     }
