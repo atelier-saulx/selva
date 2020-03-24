@@ -9,7 +9,10 @@ abstract class RedisQueue extends RedisMethods {
     client: [],
     sub: []
   }
-  public inProgress: { client: boolean; sub: boolean }
+  public inProgress: { client: boolean; sub: boolean } = {
+    client: false,
+    sub: false
+  }
 
   public connected: { client: boolean; sub: boolean } = {
     client: false,
@@ -24,7 +27,7 @@ abstract class RedisQueue extends RedisMethods {
     [scriptName: string]: string
   } = {}
 
-  resetScripts() {
+  resetScripts(type: 'client' | 'sub' = 'client') {
     this.scriptBatchingEnabled = {}
     this.scriptShas = {}
   }
@@ -50,8 +53,8 @@ abstract class RedisQueue extends RedisMethods {
   async queue(
     command: string,
     args: (string | number)[],
-    resolve: (x: any) => void,
-    reject: (x: Error) => void,
+    resolve: (x: any) => void = () => {},
+    reject: (x: Error) => void = () => {},
     type?: 'client' | 'sub'
   ) {
     if (type === undefined) {
@@ -169,7 +172,7 @@ abstract class RedisQueue extends RedisMethods {
     })
   }
 
-  private async flushBuffered(type: 'sub' | 'client' = 'client') {
+  public async flushBuffered(type: 'sub' | 'client' = 'client') {
     this.inProgress[type] = true
     const buffer = this.buffer[type]
     this.buffer[type] = []

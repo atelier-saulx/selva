@@ -1,140 +1,266 @@
-import Observable from '../../observe/observable'
-import { createClient, RedisClient as Redis } from 'redis'
+// import Observable from './observe/observable'
+// import { createClient, RedisClient as Redis } from 'redis'
+// import { GetResult, GetOptions } from './get/types'
+// import { EventEmitter } from 'events'
+// import { ConnectOptions } from './redis'
+// import { LogFn } from '.'
 
-import { LogFn } from '../../'
+// type RedisSubsription = {
+//   channel: string
+//   active: boolean
+//   emitter: EventEmitter
+//   getOpts: GetOptions
+// }
 
-export default class SelvaPubSub {
-  private subscriptions: { [channel: string]: RedisSubsription } = {}
-  private pub: Redis
-  private sub: Redis
-  private log: LogFn
+// type UpdateEvent = {
+//   type: 'update'
+//   payload: GetResult
+// }
 
-  connect(opts: ConnectOptions) {
-    this.opts = opts
-    this.pub = createClient(opts)
-    this.sub = createClient(opts)
+// type DeleteEvent = {
+//   type: 'delete'
+// }
 
-    this.sub.on('error', err => {
-      // console.log('ERRRRR')
-      if (err.code === 'ECONNREFUSED') {
-        console.info(`Connecting to ${err.address}:${err.port}`)
-      } else {
-        // console.log('ERR', err)
-      }
-    })
+// type HeartBeatEvent = {
+//   type: 'heartbeat'
+// }
 
-    this.pub.on('error', err => {
-      // console.log('ERRRRR')
-      if (err.code === 'ECONNREFUSED') {
-        console.info(`Connecting to ${err.address}:${err.port}`)
-      } else {
-        // console.log('ERR', err)
-      }
-    })
+// type Event = UpdateEvent | HeartBeatEvent | DeleteEvent
 
-    this.sub.on('ready', () => {
-      this.connected = true
-      this.ensureSubscriptions()
-      this.attachLogging()
-    })
+// export default class SelvaPubSub {
+//   private subscriptions: { [channel: string]: RedisSubsription } = {}
+//   private lastHeartbeat: { [channel: string]: number } = {}
+//   private pub: Redis
+//   private sub: Redis
+//   private heartbeatTimer: NodeJS.Timeout
+//   private opts: ConnectOptions
+//   private connected: boolean = false
+//   private clientId: string
+//   private log: LogFn
 
-    this.pub.on('ready', () => {
-      this.connected = true
-      this.startHeartbeats()
-    })
-  }
+//   connect(opts: ConnectOptions) {
+//     this.opts = opts
+//     this.pub = createClient(opts)
+//     this.sub = createClient(opts)
 
-  disconnect() {
-    this.stopHeartbeats()
-    this.markSubscriptionsClosed()
+//     this.sub.on('error', err => {
+//       // console.log('ERRRRR')
+//       if (err.code === 'ECONNREFUSED') {
+//         console.info(`Connecting to ${err.address}:${err.port}`)
+//       } else {
+//         // console.log('ERR', err)
+//       }
+//     })
 
-    this.connected = false
-    if (this.pub) {
-      this.pub.quit()
-    }
+//     this.pub.on('error', err => {
+//       // console.log('ERRRRR')
+//       if (err.code === 'ECONNREFUSED') {
+//         console.info(`Connecting to ${err.address}:${err.port}`)
+//       } else {
+//         // console.log('ERR', err)
+//       }
+//     })
 
-    if (this.sub) {
-      this.sub.quit()
-    }
+//     this.sub.on('ready', () => {
+//       this.connected = true
+//       this.ensureSubscriptions()
+//       this.attachLogging()
+//     })
 
-    this.pub = this.sub = undefined
-  }
+//     this.pub.on('ready', () => {
+//       this.connected = true
+//       this.startHeartbeats()
+//     })
+//   }
 
-  attachLogging() {
-    this.sub.subscribe(`___selva_lua_logs:${this.clientId}`)
-  }
+//   disconnect() {
+//     this.stopHeartbeats()
+//     this.markSubscriptionsClosed()
 
-  private async ensureSubscriptions() {
-    for (const channel in this.subscriptions) {
-      if (!this.subscriptions[channel].active) {
-        this.sub.subscribe(channel)
-        this.subscriptions[channel].active = true
+//     this.connected = false
+//     if (this.pub) {
+//       this.pub.quit()
+//     }
 
-        await this.setSubcriptionData(channel)
-      }
-    }
+//     if (this.sub) {
+//       this.sub.quit()
+//     }
 
-    // ensure old listener is gone
-    this.sub.removeAllListeners('message')
+//     this.pub = this.sub = undefined
+//   }
 
-    this.sub.on('message', (channel, message) => {
-      // does this allways happen now?
-      if (channel.startsWith('___selva_lua_logs:') && this.log) {
-        this.log(JSON.parse(message))
-        return
-      }
+//   attachLogging() {
+//     this.sub.subscribe(`___selva_lua_logs:${this.clientId}`)
+//   }
 
-      const sub = this.subscriptions[channel]
+//   configureLogs(clientId: string, logFn: LogFn) {
+//     if (clientId) {
+//       this.clientId = clientId
+//     }
 
-      if (sub) {
-        sub.emitter.emit('publish', message)
-      }
-    })
-  }
+//     this.log = logFn
+//   }
 
-  // public async unsubscribe (channel: string) {
+//   subscribe(channel: string, getOpts: GetOptions) {
+//     const current = this.subscriptions[channel]
+//     if (current && current.active) {
+//       return
+//     }
 
-  // }
+//     const emitter = new EventEmitter()
 
-  private async setSubcriptionData(channel: string) {
-    // this wil change
-    try {
-      await new Promise((resolve, reject) => {
-        const tx = this.pub.multi()
-        tx.hset(
-          '___selva_subscriptions',
-          channel.substr('___selva_subscription:'.length),
-          JSON.stringify(this.subscriptions[channel].getOpts)
-        )
+//     this.subscriptions[channel] = {
+//       channel,
+//       active: this.connected,
+//       emitter,
+//       getOpts
+//     }
 
-        tx.hset(
-          '___selva_subscriptions',
-          '___lastEdited',
-          new Date().toISOString()
-        )
+//     if (this.connected) {
+//       this.sub.subscribe(channel)
+//       this.lastHeartbeat[channel] = Date.now()
+//       this.setSubcriptionData(channel)
+//     }
 
-        tx.exec((err, _replies) => {
-          if (err) {
-            this.attemptReconnect()
-            return reject(err)
-          }
+//     return new Observable(observer => {
+//       emitter.on('publish', str => {
+//         const event: Event = JSON.parse(str)
 
-          this.pub.publish(
-            '___selva_subscription:client_heartbeats',
-            JSON.stringify({ channel, refresh: true })
-          )
-          resolve()
-        })
-      })
-    } catch (e) {
-      console.error(e)
-      return
-    }
-  }
+//         if (event.type === 'update') {
+//           observer.next(event.payload)
+//         } else if (event.type === 'delete') {
+//           observer.next(null)
+//         } else if (event.type === 'heartbeat') {
+//           this.lastHeartbeat[channel] = Date.now()
+//         }
+//       })
 
-  async markSubscriptionsClosed() {
-    for (const channel in this.subscriptions) {
-      this.subscriptions[channel].active = false
-    }
-  }
-}
+//       return () => {
+//         this.sub.unsubscribe(channel)
+//         delete this.subscriptions[channel]
+//         delete this.lastHeartbeat[channel]
+//       }
+//     })
+//   }
+
+//   private attemptReconnect() {
+//     this.disconnect()
+//     setTimeout(() => this.connect(this.opts), 1000)
+//   }
+
+//   private startHeartbeats() {
+//     if (this.heartbeatTimer) {
+//       return
+//     }
+
+//     const timeout = () => {
+//       this.heartbeatTimer = setTimeout(() => {
+//         for (const channel in this.lastHeartbeat) {
+//           if (
+//             this.lastHeartbeat[channel] &&
+//             Date.now() - this.lastHeartbeat[channel] > 1000 * 60
+//           ) {
+//             // it's been too long since latest server heartbeat, disconnecting and connecting again in a second
+//             this.attemptReconnect()
+//           }
+//         }
+
+//         if (this.connected && this.pub) {
+//           for (const channel in this.subscriptions) {
+//             this.pub.publish(
+//               '___selva_subscription:client_heartbeats',
+//               JSON.stringify({ channel })
+//             )
+//           }
+//         } else {
+//           this.stopHeartbeats()
+//           return
+//         }
+
+//         timeout()
+//       }, 1000 * 30)
+//     }
+
+//     timeout()
+//   }
+
+//   private stopHeartbeats() {
+//     if (this.heartbeatTimer) {
+//       clearTimeout(this.heartbeatTimer)
+//       this.heartbeatTimer = undefined
+//     }
+//   }
+
+//   private async ensureSubscriptions() {
+//     for (const channel in this.subscriptions) {
+//       if (!this.subscriptions[channel].active) {
+//         this.sub.subscribe(channel)
+//         this.subscriptions[channel].active = true
+
+//         await this.setSubcriptionData(channel)
+//       }
+//     }
+
+//     // ensure old listener is gone
+//     this.sub.removeAllListeners('message')
+
+//     this.sub.on('message', (channel, message) => {
+//       // does this allways happen now?
+//       if (channel.startsWith('___selva_lua_logs:') && this.log) {
+//         this.log(JSON.parse(message))
+//         return
+//       }
+
+//       const sub = this.subscriptions[channel]
+
+//       if (sub) {
+//         sub.emitter.emit('publish', message)
+//       }
+//     })
+//   }
+
+//   // public async unsubscribe (channel: string) {
+
+//   // }
+
+//   private async setSubcriptionData(channel: string) {
+//     try {
+//       await new Promise((resolve, reject) => {
+//         const tx = this.pub.multi()
+//         tx.hset(
+//           '___selva_subscriptions',
+//           channel.substr('___selva_subscription:'.length),
+//           JSON.stringify(this.subscriptions[channel].getOpts)
+//         )
+
+//         tx.hset(
+//           '___selva_subscriptions',
+//           '___lastEdited',
+//           new Date().toISOString()
+//         )
+
+//         tx.exec((err, _replies) => {
+//           if (err) {
+//             this.attemptReconnect()
+//             return reject(err)
+//           }
+
+//           this.pub.publish(
+//             '___selva_subscription:client_heartbeats',
+//             JSON.stringify({ channel, refresh: true })
+//           )
+//           resolve()
+//         })
+//       })
+//     } catch (e) {
+//       console.error(e)
+//       return
+//     }
+//   }
+
+//   async markSubscriptionsClosed() {
+//     for (const channel in this.subscriptions) {
+//       this.subscriptions[channel].active = false
+//     }
+//   }
+// }

@@ -14,11 +14,11 @@ export type RedisCommand = Resolvable & {
   nested?: Resolvable[]
 }
 
-export type RedisSubscription = {
+export type Subscription = {
   channel: string
-  active: boolean
   emitter: EventEmitter
   getOpts: GetOptions
+  count: number
 }
 
 export type UpdateEvent = {

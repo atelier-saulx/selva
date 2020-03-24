@@ -250,8 +250,6 @@ test.serial('find - ancestors - regions', async t => {
     })
   ])
 
-  console.log(regions)
-
   for (let i = 0; i < 11; i++) {
     await client.set({
       type: 'team',

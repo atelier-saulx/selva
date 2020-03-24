@@ -18,6 +18,8 @@ test('Connect and re-connect', async t => {
 
   // client === client2 (or at least nested client)
 
+  t.true(client.redis.redis === client2.redis.redis)
+
   await wait()
 
   await server.destroy()

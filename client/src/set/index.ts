@@ -118,8 +118,6 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
     payload: <SetOptions & { $id: string }>parsed // assure TS that id is actually set :|
   })
 
-  console.log(modifyResult)
-
   return <string>modifyResult
 }
 
