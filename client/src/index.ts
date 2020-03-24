@@ -92,27 +92,29 @@ export class SelvaClient {
       return null
     }
 
-    if (!props.type) {
-      if (props.$id) {
-        props.type = await getTypeFromId(this, props.$id)
-      } else {
-        const typePayload = await this.get({
-          $alias: props.$alias,
-          type: true,
-          id: true
-        })
+    if (props.$id !== 'root') {
+      if (!props.type) {
+        if (props.$id) {
+          props.type = await getTypeFromId(this, props.$id)
+        } else {
+          const typePayload = await this.get({
+            $alias: props.$alias,
+            type: true,
+            id: true
+          })
 
-        props.type = typePayload.type
-        props.$id = typePayload.id
+          props.type = typePayload.type
+          props.$id = typePayload.id
+        }
+      }
+
+      if (!props.type) {
+        return null
       }
     }
 
-    if (!props.type) {
-      return null
-    }
-
     const typeSchema =
-      props.type === 'root'
+      props.$id === 'root'
         ? this.schema.rootType
         : this.schema.types[props.type]
 

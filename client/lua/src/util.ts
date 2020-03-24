@@ -164,7 +164,6 @@ export function markEmptyArraysInJSON(str: string): string {
 
 export function escapeSpecial(str: string): string {
   const transformed = transformSupportedSpecialChars(str.toLowerCase())
-  console.log('transformed', transformed)
 
   // remove all unsupported alphanumerics
   const [replaced] = string.gsub(transformed, '[^%w ]', '')

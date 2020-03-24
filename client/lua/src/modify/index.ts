@@ -217,10 +217,17 @@ function setField(
     redis.hset(id, '$source_' + field, sourceString)
   }
 
+  const current = redis.hget(id, field)
+  const strVal = tostring(value)
+
+  if (current === strVal) {
+    return
+  }
+
   if (fromDefault) {
-    redis.hsetnx(id, field, tostring(value))
+    redis.hsetnx(id, field, strVal)
   } else {
-    redis.hset(id, field, tostring(value))
+    redis.hset(id, field, strVal)
   }
 
   addFieldToSearch(id, field, value)
