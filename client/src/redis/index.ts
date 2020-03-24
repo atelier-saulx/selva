@@ -24,6 +24,7 @@ const defaultLogging: LogFn = log => {
 export default class RedisClient extends Queue {
   public connector: () => Promise<ConnectOptions>
   public isDestroyed: boolean
+  public noSubscriptions: boolean = false
   private clientId: string
   private log: LogFn
   private connectOptions: ConnectOptions
@@ -41,6 +42,7 @@ export default class RedisClient extends Queue {
     super()
     this.clientId = clientId
     this.log = (selvaOpts && selvaOpts.log) || defaultLogging
+    this.noSubscriptions = selvaOpts && selvaOpts.noSubscriptions
     this.connector =
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
     this.connect()
@@ -56,7 +58,7 @@ export default class RedisClient extends Queue {
   }
 
   private attachLogging() {
-    this.queue('subscribe', [`___selva_lua_logs:${this.clientId}`])
+    this.redis.sub.subscribe(`___selva_lua_logs:${this.clientId}`)
   }
 
   public async unsubscribe(channel: string) {
@@ -72,22 +74,22 @@ export default class RedisClient extends Queue {
       getOpts,
       count: 0
     })
-    this.queue('subscribe', [channel])
-    if (this.connected.client) {
+    if (this.connected.sub) {
+      this.redis.sub.subscribe(channel)
       this.lastHeartbeat[channel] = Date.now()
-      this.setSubcriptionData(channel)
     }
     return subscription
   }
 
   subscribe(channel: string, getOpts: GetOptions): Observable<GetResult> {
+    const subscription =
+      this.subscriptions[channel] || this.createSubscription(channel, getOpts)
+    subscription.count++
+
     return new Observable(observer => {
-      const subscription =
-        this.subscriptions[channel] || this.createSubscription(channel, getOpts)
-      subscription.count++
+      console.log('make observable')
 
       const listener = (str: string) => {
-        console.log(str)
         const event: Event = JSON.parse(str)
         if (event.type === 'update') {
           observer.next(event.payload)
@@ -99,6 +101,11 @@ export default class RedisClient extends Queue {
       }
 
       subscription.emitter.on('publish', listener)
+
+      if (this.connected.sub) {
+        this.setSubcriptionData(channel)
+      }
+
       return () => {
         subscription.count--
         subscription.emitter.removeListener('publish', listener)
@@ -107,7 +114,7 @@ export default class RedisClient extends Queue {
             'REMOVE SUBS LISTENER AND SEND IT AS WELL, REMOVE HEATHBEATH ALSO'
           )
           // also remove the hearthbeat
-          this.redis.client.unsubscribe(channel)
+          this.redis.sub.unsubscribe(channel)
           delete this.lastHeartbeat[channel]
           delete this.subscriptions[channel]
         }
@@ -116,36 +123,45 @@ export default class RedisClient extends Queue {
   }
 
   private async setSubcriptionData(channel: string) {
+    console.log('setSubcriptionData', channel)
     try {
       // dont rly like this - why is this nessecary?
       await new Promise((resolve, reject) => {
-        const tx = this.redis.client.multi()
-        // combine for each sub
-        tx.hset(
-          '___selva_subscriptions',
-          channel.substr('___selva_subscription:'.length),
-          JSON.stringify(this.subscriptions[channel].getOpts)
-        )
-
-        // can be done after all subs
-        tx.hset(
-          '___selva_subscriptions',
-          '___lastEdited',
-          new Date().toISOString()
-        )
-
-        tx.exec((err, _replies) => {
-          if (err) {
-            this.redis.reconnect()
-            return reject(err)
-          }
-
-          this.redis.client.publish(
-            '___selva_subscription:client_heartbeats',
-            JSON.stringify({ channel, refresh: true })
+        if (this.connected.client) {
+          const tx = this.redis.client.multi()
+          // combine for each sub
+          tx.hset(
+            '___selva_subscriptions',
+            channel.substr('___selva_subscription:'.length),
+            JSON.stringify(this.subscriptions[channel].getOpts)
           )
-          resolve()
-        })
+
+          // can be done after all subs
+          tx.hset(
+            '___selva_subscriptions',
+            '___lastEdited',
+            new Date().toISOString()
+          )
+
+          tx.exec((err, _replies) => {
+            if (err) {
+              this.redis.reconnect()
+              return reject(err)
+            }
+
+            console.log('PUBLISH', channel, this.connected)
+            this.redis.client.publish(
+              '___selva_subscription:client_heartbeats',
+              JSON.stringify({ channel, refresh: true }),
+              err => {
+                console.log('snurf publish callback', err)
+              }
+            )
+            resolve()
+          })
+        } else {
+          reject()
+        }
       })
     } catch (e) {
       console.error(e)
@@ -153,13 +169,12 @@ export default class RedisClient extends Queue {
     }
   }
 
-  private resendSubscriptions() {
+  private async resendSubscriptions() {
+    console.log('resend subs')
     let q = []
     for (const channel in this.subscriptions) {
-      // first check if its not in the queue
-
-      console.log('re-send this guys', 'check if it exists')
       this.redis.sub.subscribe(channel)
+      this.lastHeartbeat[channel] = Date.now()
       q.push(this.setSubcriptionData(channel))
     }
 
@@ -167,7 +182,6 @@ export default class RedisClient extends Queue {
     this.redis.sub.removeAllListeners('message')
 
     this.redis.sub.on('message', (channel, message) => {
-      console.log('yesh resend new do')
       // does this allways happen now?
       if (channel.startsWith('___selva_lua_logs:') && this.log) {
         this.log(JSON.parse(message))
@@ -181,15 +195,16 @@ export default class RedisClient extends Queue {
       }
     })
 
-    Promise.all(q).then(() => {
-      console.log('all good i set all the data on subs')
-    })
+    console.log('go send those sets')
+    await Promise.all(q)
   }
 
   private startHeartbeats() {
     if (this.heartbeatTimer) {
       return
     }
+
+    console.log('start beats')
 
     const timeout = () => {
       this.heartbeatTimer = setTimeout(() => {
@@ -236,23 +251,25 @@ export default class RedisClient extends Queue {
     }
     const opts = await this.connector()
     this.connectOptions = opts
-    this.redis = createClient(opts)
+    this.redis = createClient(opts, this.noSubscriptions)
     this.redis.addClient(this.clientId, {
       connect: type => {
         console.log('CONNECTED', type)
         this.connected[type] = true
-        if (type === 'sub') {
+        if (this.connected.sub && this.connected.client) {
+          console.log('setup some stuff')
           this.attachLogging()
-          this.resendSubscriptions()
-        } else {
           this.startHeartbeats()
+          this.resendSubscriptions()
         }
+        // make this happen
         this.resetScripts(type)
         this.flushBuffered(type)
       },
       disconnect: type => {
         console.log('DIS-CONNECTED', type)
         this.connected[type] = false
+        //
         this.connector().then(opts => {
           console.log(
             'DC NEED TO CHECK IF DIFFERENT',

@@ -29,7 +29,6 @@ const attach = async (
             if (tm) {
               clearTimeout(tm)
             }
-
             resolve()
           }
         })
@@ -48,9 +47,6 @@ const attach = async (
     }, 1000)
   }
 
-  await subsManager.refreshSubscriptions()
-  subsManager.recalculateUpdates()
-
   // make it better
 
   let clearTm: NodeJS.Timeout | undefined
@@ -58,7 +54,6 @@ const attach = async (
   // client heartbeat events
   subsManager.sub.on('message', (_channel, message) => {
     const payload: { channel: string; refresh?: boolean } = JSON.parse(message)
-
     const subId = payload.channel.slice('___selva_subscription:'.length)
     subsManager.lastHeartbeat[subId] = Date.now()
 
@@ -90,6 +85,7 @@ const attach = async (
     }
 
     subsManager.lastModifyEvent = Date.now()
+
     if (channel === '___selva_events:heartbeat') {
       return
     }
@@ -141,6 +137,9 @@ const attach = async (
 
   subsManager.sub.psubscribe('___selva_events:*')
   subsManager.sub.subscribe('___selva_subscription:client_heartbeats')
+
+  await subsManager.refreshSubscriptions()
+  subsManager.recalculateUpdates()
 
   const timeout = () => {
     if (Date.now() - subsManager.lastModifyEvent > 1000 * 30) {

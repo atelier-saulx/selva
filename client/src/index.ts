@@ -27,6 +27,7 @@ export type LogFn = (log: LogEntry) => void
 export type SelvaOptions = {
   loglevel?: LogLevel
   log?: LogFn
+  noSubscriptions?: boolean
 }
 
 let SCRIPTS
@@ -57,7 +58,7 @@ export class SelvaClient {
   public searchIndexes: SearchIndexes
   public redis: RedisClient
   private loglevel: LogLevel = 'warning'
-  private clientId: string
+  public clientId: string
 
   constructor(
     opts: ConnectOptions | (() => Promise<ConnectOptions>),

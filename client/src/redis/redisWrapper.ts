@@ -4,8 +4,6 @@ import { ConnectOptions } from './'
 
 const redisClients: Record<string, RedisWrapper> = {}
 
-const types = ['sub', 'client']
-
 type Listeners = {
   connect: (string) => void
   disconnect: (string) => void
@@ -15,8 +13,10 @@ export class RedisWrapper extends EventEmitter {
   public client: RedisClient
   public sub: RedisClient
   public id: string
+  public noSubscriptions: boolean = false
   public clients: Map<string, Listeners> = new Map()
   public opts: ConnectOptions
+  public types: string[]
   public connected: {
     client: boolean
     sub: boolean
@@ -26,16 +26,20 @@ export class RedisWrapper extends EventEmitter {
   }
   private retryTimer: number = 100
 
-  constructor(opts: ConnectOptions) {
+  constructor(opts: ConnectOptions, id: string, noSubscriptions?: boolean) {
     super()
     this.opts = opts
-    this.id = `${opts.host || '0.0.0.0'}:${opts.port}`
+    this.id = id
+
+    this.types = noSubscriptions ? ['client'] : ['sub', 'client']
+
+    console.log('create wrapper')
     this.connect()
   }
 
   public connect() {
     console.log('hello connect it!')
-    types.forEach(type => {
+    this.types.forEach(type => {
       let tries = 0
       const typeOpts = Object.assign({}, this.opts, {
         retryStrategy: () => {
@@ -43,8 +47,8 @@ export class RedisWrapper extends EventEmitter {
           if (tries > 15) {
             this.reconnect()
           } else {
-            // only fire it on tries === 0 and it was connected
             if (tries === 0 && this.connected[type] === true) {
+              this.connected[type] = false
               this.emit('disconnect', type)
             }
           }
@@ -59,7 +63,7 @@ export class RedisWrapper extends EventEmitter {
       const client = (this[type] = createRedisClient(typeOpts))
 
       client.on('ready', () => {
-        console.log('hello ready')
+        tries = 0
         this.connected[type] = true
         this.emit('connect', type)
       })
@@ -77,10 +81,8 @@ export class RedisWrapper extends EventEmitter {
   }
 
   public disconnect() {
-    // not really nice to use :D
-    this.client.end(true)
-    this.sub.end(true)
-    types.forEach(type => {
+    this.types.forEach(type => {
+      this[type].end(true)
       this.connected[type] = false
       this.emit('disconnect', type)
     })
@@ -112,8 +114,9 @@ export class RedisWrapper extends EventEmitter {
   }
 
   public addClient(client: string, listeners: Listeners) {
+    console.log('add client', client)
     this.clients.set(client, listeners)
-    types.forEach(type => {
+    this.types.forEach(type => {
       if (this.connected[type]) {
         listeners.connect(type)
       }
@@ -123,12 +126,12 @@ export class RedisWrapper extends EventEmitter {
   }
 }
 
-export const createClient = opts => {
-  const id = `${opts.host || '0.0.0.0'}:${opts.port}`
+export const createClient = (opts, noSubscriptions?: boolean) => {
+  const id = `${opts.host || '0.0.0.0'}:${opts.port}:${noSubscriptions ? 1 : 0}`
   if (redisClients[id]) {
     return redisClients[id]
   } else {
-    const wrapper = new RedisWrapper(opts)
+    const wrapper = new RedisWrapper(opts, id, noSubscriptions)
     redisClients[id] = wrapper
     console.log('hello re-use that client!', id)
     return wrapper
