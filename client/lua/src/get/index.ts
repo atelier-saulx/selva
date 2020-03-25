@@ -242,6 +242,22 @@ function getField(
   }
 }
 
+function getRawAncestors(
+  id: string,
+  result: Record<string, true> = {}
+): Record<string, true> {
+  let parents = r.smembers(id + '.parents')
+
+  logger.info(parents)
+
+  for (let i = 0; i < parents.length; i++) {
+    result[parents[i]] = true
+    getRawAncestors(parents[i], result)
+  }
+
+  return result
+}
+
 function get(opts: GetOptions): GetResult {
   const schema = getSchema()
   const result: GetResult = {}
@@ -252,7 +268,8 @@ function get(opts: GetOptions): GetResult {
     $id: id,
     $alias: alias,
     $language: language,
-    $includeMeta: includeMeta
+    $includeMeta: includeMeta,
+    $rawAncestors: rawAncestors // subscriptions is shitty
   } = opts
 
   if (alias) {
@@ -271,6 +288,15 @@ function get(opts: GetOptions): GetResult {
   }
 
   getField(opts, schema, result, id, undefined, language, version, includeMeta)
+
+  if (rawAncestors) {
+    const obj = getRawAncestors(id)
+    const arr = []
+    for (const id in obj) {
+      arr[arr.length] = id
+    }
+    result.rawAncestors = arr
+  }
 
   return <any>result
 }

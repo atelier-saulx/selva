@@ -99,4 +99,5 @@ export type GetOptions = GetItem & {
   $id?: Id
   $version?: string
   $language?: string
+  $rawAncestors?: true
 }
