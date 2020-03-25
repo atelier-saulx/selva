@@ -60,7 +60,7 @@ export default class RedisClient extends Queue {
   }
 
   public async unsubscribe(channel: string) {
-    console.log('unsubscribe subs not implemented!', channel)
+    console.warn('Unsubscribe subs not implemented!', channel)
   }
 
   createSubscription(channel: string, getOpts: GetOptions) {
@@ -154,7 +154,6 @@ export default class RedisClient extends Queue {
   }
 
   private async resendSubscriptions() {
-    console.log('resend subs')
     let q = []
     for (const channel in this.subscriptions) {
       this.redis.sub.subscribe(channel)

@@ -67,7 +67,7 @@ export class RedisWrapper extends EventEmitter {
       client.on('error', err => {
         if (err.code === 'ECONNREFUSED') {
           if (this.connected[type]) {
-            console.info(`DC ERROR - ${err.address}:${err.port} ${type}`)
+            // console.info(`DC ERROR - ${err.address}:${err.port} ${type}`)
             this.connected[type] = false
             this.emit('disconnect', type)
           }
@@ -114,7 +114,6 @@ export class RedisWrapper extends EventEmitter {
   }
 
   public addClient(client: string, listeners: Listeners) {
-    console.log('add client', client)
     this.clients.set(client, listeners)
     this.types.forEach(type => {
       if (this.connected[type]) {
