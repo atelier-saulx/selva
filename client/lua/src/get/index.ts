@@ -287,14 +287,14 @@ function get(opts: GetOptions): GetResult {
 
   getField(opts, schema, result, id, undefined, language, version, includeMeta)
 
-  if (rawAncestors) {
-    const obj = getRawAncestors(id)
-    const arr: string[] = []
-    for (const id in obj) {
-      arr[arr.length] = id
-    }
-    result.rawAncestors = arr
-  }
+  // if (rawAncestors) {
+  //   const obj = getRawAncestors(id)
+  //   const arr: string[] = []
+  //   for (const id in obj) {
+  //     arr[arr.length] = id
+  //   }
+  //   result.rawAncestors = arr
+  // }
 
   return <any>result
 }

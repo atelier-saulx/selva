@@ -1,5 +1,5 @@
 import * as logger from '../../logger'
-import { GetOptions, GetResult } from '~selva/get/types'
+import { GetOptions, GetResult, Sort } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
@@ -11,6 +11,7 @@ import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
 import parseSubscriptions from './parseSubscriptions'
+import { get } from 'lua/src/redis'
 
 const parseNested = (
   opts: GetOptions,
@@ -74,6 +75,7 @@ const parseQuery = (
 
   let resultIds: any[] | undefined = []
   let resultFork: Fork | undefined
+
   const meta: Meta = { ids: resultIds }
 
   if (getOptions.$list || getOptions.$find) {
@@ -136,8 +138,20 @@ const parseQuery = (
       }
     }
 
-    for (const id in idMap) {
-      resultIds[resultIds.length] = id
+    if (
+      getOptions.$list &&
+      (getOptions.$list.$limit ||
+        getOptions.$list.$offset ||
+        getOptions.$list.$sort)
+    ) {
+      for (const id in idMap) {
+        resultIds[resultIds.length] = id
+      }
+      resultIds = parseList(resultIds, getOptions.$list)
+    } else {
+      for (const id in idMap) {
+        resultIds[resultIds.length] = id
+      }
     }
   } else if (getOptions.$list) {
     resultIds = parseList(resultIds, getOptions.$list)
@@ -292,7 +306,6 @@ const queryGet = (
     parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
   }
 
-  // hey smurky boys
   if (getOptions.$find) {
     result[resultField] = results.length ? results[0] : {}
   } else {

@@ -354,9 +354,11 @@ test.serial('find - descendants', async t => {
     }
   })
 
+  await wait(1000)
+
   console.log(videosText)
 
-  await wait(5000)
+  await wait(1000)
 
   t.true(true)
 })
