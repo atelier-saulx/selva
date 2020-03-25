@@ -248,8 +248,6 @@ function getRawAncestors(
 ): Record<string, true> {
   let parents = r.smembers(id + '.parents')
 
-  logger.info(parents)
-
   for (let i = 0; i < parents.length; i++) {
     result[parents[i]] = true
     getRawAncestors(parents[i], result)
