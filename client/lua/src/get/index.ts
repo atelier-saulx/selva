@@ -260,14 +260,13 @@ function get(opts: GetOptions): GetResult {
   const schema = getSchema()
   const result: GetResult = {}
 
-  // logger.info(`GET ${cjson.encode(opts)}`)
   let {
     $version: version,
     $id: id,
     $alias: alias,
     $language: language,
     $includeMeta: includeMeta,
-    $rawAncestors: rawAncestors // subscriptions is shitty
+    $rawAncestors: rawAncestors
   } = opts
 
   if (alias) {
@@ -287,14 +286,14 @@ function get(opts: GetOptions): GetResult {
 
   getField(opts, schema, result, id, undefined, language, version, includeMeta)
 
-  // if (rawAncestors) {
-  //   const obj = getRawAncestors(id)
-  //   const arr: string[] = []
-  //   for (const id in obj) {
-  //     arr[arr.length] = id
-  //   }
-  //   result.rawAncestors = arr
-  // }
+  if (rawAncestors) {
+    const obj = getRawAncestors(id)
+    const arr: string[] = []
+    for (const id in obj) {
+      arr[arr.length] = id
+    }
+    result.rawAncestors = arr
+  }
 
   return <any>result
 }
