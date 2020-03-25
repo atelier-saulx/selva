@@ -354,11 +354,11 @@ test.serial('find - descendants', async t => {
     }
   })
 
-  await wait(1000)
-
-  console.log(videosText)
-
-  await wait(1000)
-
-  t.true(true)
+  t.deepEqual(videosText, [
+    { value: 99 },
+    { value: 98 },
+    { value: 97 },
+    { value: 96 },
+    { value: 95 }
+  ])
 })
