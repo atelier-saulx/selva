@@ -289,7 +289,7 @@ function get(opts: GetOptions): GetResult {
 
   if (rawAncestors) {
     const obj = getRawAncestors(id)
-    const arr = []
+    const arr: string[] = []
     for (const id in obj) {
       arr[arr.length] = id
     }
