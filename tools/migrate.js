@@ -8,8 +8,8 @@ const _ = require('lodash')
 const IGNORE_UNTIL = null
 
 const REMAPPED_FIELDS = {
-  streamStart: 'startTime',
-  streamEnd: 'endTime'
+  streamStart: 'start',
+  streamEnd: 'end'
 }
 
 function remapField(field) {
@@ -107,12 +107,12 @@ async function makeSchema(client) {
     }
   }
 
-  const startTime = {
+  const start = {
     type: 'timestamp',
     search: { type: ['NUMERIC', 'SORTABLE'] }
   }
 
-  const endTime = {
+  const end = {
     type: 'timestamp',
     search: { type: ['NUMERIC', 'SORTABLE'] }
   }
@@ -137,8 +137,8 @@ async function makeSchema(client) {
       type: 'timestamp',
       search: { type: ['NUMERIC', 'SORTABLE'] }
     },
-    startTime,
-    endTime,
+    start,
+    end,
     gender,
     status,
     video: {
@@ -276,8 +276,8 @@ async function makeSchema(client) {
         prefix: 'se',
         fields: {
           ...contentFields,
-          startTime,
-          endTime
+          start,
+          end
         }
       },
       league: {
@@ -324,16 +324,16 @@ async function makeSchema(client) {
             type: 'number'
           },
           price,
-          startTime,
-          endTime
+          start,
+          end
         }
       },
       ad: {
         prefix: 'ad',
         fields: {
           ...contentFields,
-          startTime,
-          endTime,
+          start,
+          end,
           user: {
             type: 'string'
           },
@@ -377,6 +377,8 @@ async function makeSchema(client) {
     }
   }
 
+  console.log(schema)
+
   await client.updateSchema(schema)
 }
 
@@ -402,16 +404,76 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
             }
 
             try {
-              const newSchema = {
-                type: 'object',
-                fields: typeSchema.fields[remapField(itemKey)].properties
+              const value = JSON.parse(item[itemKey])
+              if (itemKey === 'video') {
+                /*
+                  video: [{
+                    type: 'vod',
+                    mp4: 'haha'
+                    m3u8: 'haha'
+                  }, {
+                    type: 'pano',
+                    mp4: 'haha'
+                    m3u8: 'haha'
+                  }, {
+                    {
+                    type: 'live',
+                    mp4: 'haha'
+                    m3u8: 'haha'
+                  }
+                  }
+                ]
+                ===>
+                video: {
+                  vod: {
+                    mp4: 
+                    hls: 
+                  },
+                  pano: {
+                    mp4: 
+                    hls:
+                  },
+                  live: {
+                    mp4:
+                    hls: 
+                  }
+                }
+                */
+                if (Array.isArray(value)) {
+                  const video = {}
+                  let pass
+                  value.forEach(({ type, mp4, m3u8 }) => {
+                    if (type !== 'pano' && type !== 'live') {
+                      type = 'vod'
+                    }
+                    if (!video[type]) {
+                      video[type] = {}
+                    }
+                    if (mp4 && /^http/.test(mp4)) {
+                      video[type].mp4 = encodeURI(mp4)
+                      pass = true
+                    }
+                    if (m3u8 && /^http/.test(m3u8)) {
+                      video[type].hls = encodeURI(m3u8)
+                      pass = true
+                    }
+                  })
+                  if (pass) {
+                    props[remapField(itemKey)] = video
+                  }
+                }
+              } else {
+                const newSchema = {
+                  type: 'object',
+                  fields: typeSchema.fields[remapField(itemKey)].properties
+                }
+                props[remapField(itemKey)] = constructSetProps(
+                  id,
+                  prefixToTypeMapping,
+                  newSchema,
+                  value
+                )
               }
-              props[remapField(itemKey)] = constructSetProps(
-                id,
-                prefixToTypeMapping,
-                newSchema,
-                JSON.parse(item[itemKey])
-              )
             } catch (e) {
               console.error(
                 'Error processing json field value for',
@@ -629,7 +691,7 @@ async function migrate() {
         // delete newPayload.title
         // console.log('inserting', newPayload)
         promises.push(client.set(newPayload))
-        console.log('INSERTED', newPayload)
+
         await new Promise((resolve, _reject) => {
           setTimeout(resolve, 1)
         })
