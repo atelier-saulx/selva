@@ -30,9 +30,6 @@ export type SelvaOptions = {
   noSubscriptions?: boolean
 }
 
-export const wait = (timeMs: number = 500): Promise<void> =>
-  new Promise(r => setTimeout(r, timeMs))
-
 let SCRIPTS
 
 try {
@@ -244,7 +241,7 @@ export class SelvaClient {
         this.schema = JSON.parse(updated)
       }
     } catch (e) {
-      console.error('Error updating schema', e.stack)
+      // console.error('Error updating schema', e.stack)
       if (
         e.stack.includes(
           'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
@@ -256,9 +253,14 @@ export class SelvaClient {
           )
         }
 
-        await wait(100)
         await this.getSchema()
         await this.updateSchema(props, retry + 1)
+      } else {
+        if (e.code === 'NR_CLOSED') {
+          // canhappen with load and eval script
+        } else {
+          throw e
+        }
       }
     }
   }
@@ -316,6 +318,7 @@ export class SelvaClient {
       [],
       [`${this.loglevel}:${this.clientId}`, JSON.stringify(opts)],
       'client'
+      // { batchingEnabled: true } prob needs this?
     )
 
     return JSON.parse(str)

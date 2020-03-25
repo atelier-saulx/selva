@@ -293,7 +293,7 @@ test.serial('subscription find', async t => {
     $id: ids[6],
     name: 'FLURRRRP'
   })
-  await wait(1000)
+  await wait(2000)
 
   t.is(cnt3, 3)
 })

@@ -94,14 +94,17 @@ abstract class RedisQueue extends RedisMethods {
     }
   }
 
-  batchEvalScriptArgs(origSlice: RedisCommand[]): RedisCommand[] {
+  batchEvalScriptArgs(
+    origSlice: RedisCommand[],
+    type: 'client' | 'sub'
+  ): RedisCommand[] {
     const slice: RedisCommand[] = []
     const batchedModifyArgs: { [scriptSha: string]: any[] } = {}
     const batchedModifyResolves: { [scriptSha: string]: any[] } = {}
     const batchedModifyRejects: { [scriptSha: string]: any[] } = {}
 
-    for (const sha in this.scriptBatchingEnabled) {
-      if (this.scriptBatchingEnabled[sha] === true) {
+    for (const sha in this.scriptBatchingEnabled[type]) {
+      if (this.scriptBatchingEnabled[type][sha] === true) {
         batchedModifyArgs[sha] = []
         batchedModifyResolves[sha] = []
         batchedModifyRejects[sha] = []
@@ -115,7 +118,7 @@ abstract class RedisQueue extends RedisMethods {
       }
 
       const scriptSha = cmd.args[0]
-      if (this.scriptBatchingEnabled[scriptSha]) {
+      if (this.scriptBatchingEnabled[type][scriptSha]) {
         batchedModifyArgs[scriptSha].push(...cmd.args.slice(2)) // push all args after sha and numKeys
         batchedModifyResolves[scriptSha].push(cmd.resolve)
         batchedModifyRejects[scriptSha].push(cmd.reject)
@@ -152,7 +155,7 @@ abstract class RedisQueue extends RedisMethods {
     return new Promise((resolve, reject) => {
       const batch = this.redis[type].batch()
       const slice = Object.values(this.scriptBatchingEnabled).some(x => x)
-        ? this.batchEvalScriptArgs(origSlice)
+        ? this.batchEvalScriptArgs(origSlice, type)
         : origSlice
 
       slice.forEach(({ command, args }) => {

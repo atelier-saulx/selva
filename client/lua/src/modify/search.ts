@@ -85,8 +85,6 @@ export function addFieldToSearch(
         tostring(value)
       )
 
-      logger.info('PCALL', cjson.encode(v))
-
       if (hasExistsIndex(index[field])) {
         redis.call('hset', id, '_exists_' + field, 'T')
         const v = redis.pcall(
@@ -101,8 +99,6 @@ export function addFieldToSearch(
           '_exists_' + field,
           'T'
         )
-
-        logger.info('PCALL', v)
       }
     } else {
       const lastDotIndex = getDotIndex(field)
@@ -130,8 +126,6 @@ export function addFieldToSearch(
               '___escaped:' + field,
               escaped
             )
-
-            logger.info('PCALL', v)
 
             if (hasExistsIndex(index[field])) {
               redis.call('hset', id, '_exists_' + field, 'T')
@@ -178,7 +172,6 @@ function addSuggestion(sug: string, lang: string) {
   if (current === 1) {
     logger.info('ft.sugadd', `sug_${lang}`, sug, '1')
     const v = redis.pcall('ft.sugadd', `sug_${lang}`, sug, '1')
-    logger.info('PCALL', v)
   } else {
     logger.info(
       `ft.sugadd -- exists, incrementing to ${current}`,

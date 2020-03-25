@@ -78,8 +78,6 @@ export class RedisWrapper extends EventEmitter {
 
   public disconnect() {
     this.types.forEach(type => {
-      // this[type].end(true) does not seem to be better
-      console.log('DC?')
       if (this[type]) {
         this[type].quit()
         this[type] = null
