@@ -30,6 +30,9 @@ export type SelvaOptions = {
   noSubscriptions?: boolean
 }
 
+export const wait = (timeMs: number = 500): Promise<void> =>
+  new Promise(r => setTimeout(r, timeMs))
+
 let SCRIPTS
 
 try {
@@ -202,7 +205,8 @@ export class SelvaClient {
       SCRIPTS.id,
       0,
       [],
-      [JSON.stringify(props)]
+      [JSON.stringify(props)],
+      'client'
     )
   }
 
@@ -232,7 +236,8 @@ export class SelvaClient {
         SCRIPTS['update-schema'],
         0,
         [],
-        [`${this.loglevel}:${this.clientId}`, JSON.stringify(newSchema)]
+        [`${this.loglevel}:${this.clientId}`, JSON.stringify(newSchema)],
+        'client'
       )
 
       if (updated) {
@@ -251,10 +256,9 @@ export class SelvaClient {
           )
         }
 
+        await wait(100)
         await this.getSchema()
         await this.updateSchema(props, retry + 1)
-      } else {
-        throw e
       }
     }
   }
@@ -279,6 +283,7 @@ export class SelvaClient {
           this.schema.sha,
           JSON.stringify(opts)
         ],
+        'client',
         { batchingEnabled: true }
       )
     } catch (e) {
@@ -309,7 +314,8 @@ export class SelvaClient {
       SCRIPTS.fetch,
       0,
       [],
-      [`${this.loglevel}:${this.clientId}`, JSON.stringify(opts)]
+      [`${this.loglevel}:${this.clientId}`, JSON.stringify(opts)],
+      'client'
     )
 
     return JSON.parse(str)

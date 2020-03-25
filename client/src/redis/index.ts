@@ -28,10 +28,8 @@ export default class RedisClient extends Queue {
   private clientId: string
   private log: LogFn
   private connectOptions: ConnectOptions
-
   private subscriptions: { [channel: string]: Subscription } = {}
   private lastHeartbeat: { [channel: string]: number } = {}
-
   private heartbeatTimer: NodeJS.Timeout
 
   constructor(
@@ -53,7 +51,7 @@ export default class RedisClient extends Queue {
     this.redis.removeClient(this.clientId)
     this.redis = null
     this.connected = { client: false, sub: false }
-    // send all unsubscribe events
+    // send all unsubscribe events as well (for faster unsubscribe)
     this.buffer = { client: [], sub: [] }
   }
 
@@ -62,9 +60,7 @@ export default class RedisClient extends Queue {
   }
 
   public async unsubscribe(channel: string) {
-    // and getOptions as well
-    // not used with observables!
-    console.log('unsubscribe?', channel)
+    console.log('unsubscribe subs not implemented!', channel)
   }
 
   createSubscription(channel: string, getOpts: GetOptions) {
@@ -87,8 +83,6 @@ export default class RedisClient extends Queue {
     subscription.count++
 
     return new Observable(observer => {
-      console.log('make observable')
-
       const listener = (str: string) => {
         const event: Event = JSON.parse(str)
         if (event.type === 'update') {
@@ -102,7 +96,8 @@ export default class RedisClient extends Queue {
 
       subscription.emitter.on('publish', listener)
 
-      if (this.connected.sub) {
+      if (this.connected.sub && this.connected.client) {
+        // not so nice to reset data ont he server for every multiplexed sub
         this.setSubcriptionData(channel)
       }
 
@@ -110,10 +105,6 @@ export default class RedisClient extends Queue {
         subscription.count--
         subscription.emitter.removeListener('publish', listener)
         if (subscription.count === 0) {
-          console.log(
-            'REMOVE SUBS LISTENER AND SEND IT AS WELL, REMOVE HEATHBEATH ALSO'
-          )
-          // also remove the hearthbeat
           this.redis.sub.unsubscribe(channel)
           delete this.lastHeartbeat[channel]
           delete this.subscriptions[channel]
@@ -123,38 +114,31 @@ export default class RedisClient extends Queue {
   }
 
   private async setSubcriptionData(channel: string) {
-    console.log('setSubcriptionData', channel)
     try {
-      // dont rly like this - why is this nessecary?
+      // combine all subs
       await new Promise((resolve, reject) => {
         if (this.connected.client) {
           const tx = this.redis.client.multi()
-          // combine for each sub
           tx.hset(
             '___selva_subscriptions',
             channel.substr('___selva_subscription:'.length),
             JSON.stringify(this.subscriptions[channel].getOpts)
           )
-
-          // can be done after all subs
           tx.hset(
             '___selva_subscriptions',
             '___lastEdited',
             new Date().toISOString()
           )
-
           tx.exec((err, _replies) => {
             if (err) {
               this.redis.reconnect()
               return reject(err)
             }
-
-            console.log('PUBLISH', channel, this.connected)
             this.redis.client.publish(
               '___selva_subscription:client_heartbeats',
               JSON.stringify({ channel, refresh: true }),
               err => {
-                console.log('snurf publish callback', err)
+                // console.log('publish callback', err)
               }
             )
             resolve()
@@ -180,22 +164,17 @@ export default class RedisClient extends Queue {
 
     // ensure old listener is gone
     this.redis.sub.removeAllListeners('message')
-
     this.redis.sub.on('message', (channel, message) => {
-      // does this allways happen now?
       if (channel.startsWith('___selva_lua_logs:') && this.log) {
         this.log(JSON.parse(message))
         return
       }
-
       const sub = this.subscriptions[channel]
-
       if (sub) {
         sub.emitter.emit('publish', message)
       }
     })
 
-    console.log('go send those sets')
     await Promise.all(q)
   }
 
@@ -203,9 +182,6 @@ export default class RedisClient extends Queue {
     if (this.heartbeatTimer) {
       return
     }
-
-    console.log('start beats')
-
     const timeout = () => {
       this.heartbeatTimer = setTimeout(() => {
         for (const channel in this.lastHeartbeat) {
@@ -213,12 +189,9 @@ export default class RedisClient extends Queue {
             this.lastHeartbeat[channel] &&
             Date.now() - this.lastHeartbeat[channel] > 1000 * 60
           ) {
-            console.log('its been long scince hearthbeath what to do?')
             this.redis.reconnect()
           }
         }
-
-        // ----------------- reconnect only for client ------------
         if (this.connected.client) {
           for (const channel in this.subscriptions) {
             this.redis.client.publish(
@@ -230,11 +203,9 @@ export default class RedisClient extends Queue {
           this.stopHeartbeats()
           return
         }
-
         timeout()
       }, 1000 * 30)
     }
-
     timeout()
   }
 
@@ -254,30 +225,28 @@ export default class RedisClient extends Queue {
     this.redis = createClient(opts, this.noSubscriptions)
     this.redis.addClient(this.clientId, {
       connect: type => {
-        console.log('CONNECTED', type)
         this.connected[type] = true
         if (this.connected.sub && this.connected.client) {
-          console.log('setup some stuff')
           this.attachLogging()
           this.startHeartbeats()
           this.resendSubscriptions()
         }
-        // make this happen
         this.resetScripts(type)
         this.flushBuffered(type)
       },
       disconnect: type => {
-        console.log('DIS-CONNECTED', type)
         this.connected[type] = false
-        //
-        this.connector().then(opts => {
-          console.log(
-            'DC NEED TO CHECK IF DIFFERENT',
-            opts,
-            'vs',
-            this.connectOptions
-          )
-        })
+        if (type === 'client') {
+          this.connector().then(opts => {
+            if (
+              opts.host !== this.connectOptions.host ||
+              opts.port !== this.connectOptions.port
+            ) {
+              this.redis.removeClient(this.clientId)
+              this.connect()
+            }
+          })
+        }
       }
     })
   }

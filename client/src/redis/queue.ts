@@ -20,16 +20,26 @@ abstract class RedisQueue extends RedisMethods {
   }
 
   public scriptBatchingEnabled: {
-    [scriptSha: string]: boolean
-  } = {}
+    sub: {
+      [scriptSha: string]: boolean
+    }
+    client: {
+      [scriptSha: string]: boolean
+    }
+  } = { sub: {}, client: {} }
 
   public scriptShas: {
-    [scriptName: string]: string
-  } = {}
+    sub: {
+      [scriptName: string]: string
+    }
+    client: {
+      [scriptName: string]: string
+    }
+  } = { sub: {}, client: {} }
 
-  resetScripts(type: 'client' | 'sub' = 'client') {
-    this.scriptBatchingEnabled = {}
-    this.scriptShas = {}
+  resetScripts(type: 'client' | 'sub') {
+    this.scriptBatchingEnabled[type] = {}
+    this.scriptShas[type] = {}
   }
 
   async loadAndEvalScript(
@@ -38,16 +48,22 @@ abstract class RedisQueue extends RedisMethods {
     numKeys: number,
     keys: string[],
     args: string[],
+    type: 'client' | 'sub',
     opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
-    if (!this.scriptShas[scriptName]) {
+    if (!this.scriptShas[type][scriptName]) {
       const r = await this.loadScript(script)
-      this.scriptShas[scriptName] = r
+      this.scriptShas[type][scriptName] = r
     }
     if (opts && opts.batchingEnabled) {
-      this.scriptBatchingEnabled[this.scriptShas[scriptName]] = true
+      this.scriptBatchingEnabled[type][this.scriptShas[type][scriptName]] = true
     }
-    return this.evalSha(this.scriptShas[scriptName], numKeys, ...keys, ...args)
+    return this.evalSha(
+      this.scriptShas[type][scriptName],
+      numKeys,
+      ...keys,
+      ...args
+    )
   }
 
   async queue(
@@ -59,8 +75,6 @@ abstract class RedisQueue extends RedisMethods {
   ) {
     if (type === undefined) {
       if (command === 'subscribe') {
-        // subscribe needs to add some stuff as well
-        // like storing them
         type = 'sub'
       } else {
         type = 'client'
@@ -172,19 +186,27 @@ abstract class RedisQueue extends RedisMethods {
     })
   }
 
-  public async flushBuffered(type: 'sub' | 'client' = 'client') {
-    this.inProgress[type] = true
-    const buffer = this.buffer[type]
-    this.buffer[type] = []
-    const len = Math.ceil(buffer.length / 5000)
-    for (let i = 0; i < len; i++) {
-      const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
-      await this.execBatch(slice, type)
+  public async flushBuffered(type: 'sub' | 'client') {
+    if (this.connected[type]) {
+      this.inProgress[type] = true
+      const buffer = this.buffer[type]
+      this.buffer[type] = []
+      const len = Math.ceil(buffer.length / 5000)
+      for (let i = 0; i < len; i++) {
+        const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
+        if (!this.connected[type]) {
+          this.inProgress[type] = false
+          return
+        }
+        await this.execBatch(slice, type)
+      }
+      if (this.buffer[type].length) {
+        await this.flushBuffered(type)
+      }
+      this.inProgress[type] = false
+    } else {
+      this.inProgress[type] = false
     }
-    if (this.buffer[type].length) {
-      await this.flushBuffered()
-    }
-    this.inProgress[type] = false
   }
 }
 

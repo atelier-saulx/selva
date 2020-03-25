@@ -30,15 +30,11 @@ export class RedisWrapper extends EventEmitter {
     super()
     this.opts = opts
     this.id = id
-
     this.types = noSubscriptions ? ['client'] : ['sub', 'client']
-
-    console.log('create wrapper')
     this.connect()
   }
 
   public connect() {
-    console.log('hello connect it!')
     this.types.forEach(type => {
       let tries = 0
       const typeOpts = Object.assign({}, this.opts, {
@@ -82,7 +78,12 @@ export class RedisWrapper extends EventEmitter {
 
   public disconnect() {
     this.types.forEach(type => {
-      this[type].end(true)
+      // this[type].end(true) does not seem to be better
+      console.log('DC?')
+      if (this[type]) {
+        this[type].quit()
+        this[type] = null
+      }
       this.connected[type] = false
       this.emit('disconnect', type)
     })
@@ -104,11 +105,12 @@ export class RedisWrapper extends EventEmitter {
       }
     }
     if (this.clients.size === 0) {
-      console.log('REMOVE REDIS-WRAPPER', this.id)
-      this.client.end(true)
-      this.sub.end(true)
-      this.client = null
-      this.sub = null
+      this.types.forEach(type => {
+        if (this[type]) {
+          this[type].quit()
+          this[type] = null
+        }
+      })
       delete redisClients[this.id]
     }
   }
@@ -133,7 +135,6 @@ export const createClient = (opts, noSubscriptions?: boolean) => {
   } else {
     const wrapper = new RedisWrapper(opts, id, noSubscriptions)
     redisClients[id] = wrapper
-    console.log('hello re-use that client!', id)
     return wrapper
   }
 }
