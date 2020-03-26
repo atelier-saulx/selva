@@ -591,9 +591,79 @@ async function migrate() {
   )
 
   const schema = await client.getSchema()
+  const checkBad = (item, blacklist) => {
+    if (blacklist.has(item.id)) {
+      return true
+    }
+    if (!Number(item.published)) {
+      if (
+        !item.parents ||
+        !JSON.parse(item.parents).length ||
+        /"Copy of /.test(item.title)
+      ) {
+        blacklist.add(item.id)
+        return true
+      }
+      let keep
+      for (let i in item) {
+        if (/:from$/.test(i) && i !== 'published:from') {
+          const [origin] = item[i].split('-')
+          if (origin === 'set') keep = true
+        }
+      }
+      if (!keep) {
+        try {
+          keep = JSON.parse(item.children).find(id => {
+            const bad = checkBad(data[id], blacklist)
+            return !bad
+          })
+        } catch (e) {}
+      }
+      if (!keep) {
+        blacklist.add(item.id)
+        return true
+      }
+    }
+  }
+
+  const clean = data => {
+    const blacklist = new Set()
+
+    for (const id in data) {
+      const item = data[id]
+      if (
+        !item.type ||
+        item.type === 'location' ||
+        item.type === 'sponsorship'
+      ) {
+        continue
+      }
+      if (checkBad(item, blacklist)) {
+        delete data[id]
+      }
+    }
+
+    for (const id in data) {
+      const item = data[id]
+      try {
+        item.parents = JSON.stringify(
+          JSON.parse(item.parents).filter(id => !blacklist.has(id))
+        )
+      } catch (e) {}
+      try {
+        item.children = JSON.stringify(
+          JSON.parse(item.children).filter(id => !blacklist.has(id))
+        )
+      } catch (e) {}
+    }
+  }
 
   let ignore = IGNORE_UNTIL ? true : false
+
   for (let db of dump) {
+    clean(db)
+    // console.log(db.vi0dMzRO)
+    // continue
     // db.root.url = db.root.url.filter(val => val)
     // db = { rez5lmBya: db.rez5lmBya, uuid: db.uuid }
     const keys = Object.keys(db)
