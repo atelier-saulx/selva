@@ -5,6 +5,8 @@ import fieldParsers from './fieldParsers'
 import { verifiers } from './fieldParsers/simple'
 import { configureLogger } from 'lua/src/logger'
 
+import { MAX_BATCH_SIZE } from '../redis'
+
 export const parseSetObject = (
   payload: SetOptions,
   schemas: Schema,
@@ -112,6 +114,11 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
     }
   }
 
+  console.log('PARSED', parsed)
+  const batches = []
+  if (parsed.$_itemCount > MAX_BATCH_SIZE) {
+  }
+
   // need to check for error of schema
   const modifyResult = await client.modify({
     kind: 'update',
@@ -121,6 +128,59 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   console.log(modifyResult)
 
   return <string>modifyResult
+}
+
+async function setInBatches(
+  client: SelvaClient,
+  payload: SetOptions,
+  remainingBatchSize: number
+): Promise<string> {
+  if (payload.$_itemCount <= MAX_BATCH_SIZE && payload.$_itemCount !== 0) {
+    const id = await set(client, payload)
+    payload.$id = id
+    payload.$_itemCount = 0
+    return id
+  }
+
+  const withoutRefs = {}
+  const refs = {}
+  for (const field in payload) {
+    if (payload[field].$_itemCount) {
+      let items: SetOptions[]
+      if (Array.isArray(payload[field])) {
+        items = payload[field]
+      } else {
+        items = payload[field].$add
+        refs[field].$_add = true
+      }
+
+      const stringIds: string[] = []
+      for (const item of items) {
+        if (typeof item === 'object') {
+          const id = await setInBatches(client, item, remainingBatchSize)
+          stringIds.push(id)
+          // FIXME: we'll definitely want to set multiple indices in references at once if they can fit
+        } else {
+          stringIds.push(item)
+        }
+      }
+
+      refs[field] = stringIds
+    } else {
+      withoutRefs[field] = payload[field]
+    }
+  }
+
+  const refsPayload = {}
+  for (const field in refs) {
+    if (refs[field].$_add) {
+      refsPayload[field] = { $add: refs[field] }
+    } else {
+      refsPayload[field] = refs[field]
+    }
+  }
+
+  await set(client, { ...withoutRefs, ...refsPayload })
 }
 
 export { set, SetOptions }

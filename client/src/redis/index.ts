@@ -5,6 +5,8 @@ import { createClient, RedisClient as Redis } from 'redis'
 import RedisMethods from './methods'
 import SelvaPubSub from '../pubsub'
 
+export const MAX_BATCH_SIZE = 5000
+
 const redisSearchCommands = [
   'CREATE',
   'ADD',
@@ -353,10 +355,11 @@ export default class RedisClient extends RedisMethods {
     this.inProgress = true
     const buffer = this.buffer
     this.buffer = []
-    const len = Math.ceil(buffer.length / 5000)
-    // console.log(buffer.length)
+    const len = Math.ceil(buffer.length / MAX_BATCH_SIZE)
+    console.log(buffer.length)
     for (let i = 0; i < len; i++) {
-      const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
+      console.log('batch', i)
+      const slice = buffer.slice(i * MAX_BATCH_SIZE, (i + 1) * MAX_BATCH_SIZE)
       await this.execBatch(slice)
     }
     if (this.buffer.length) {
