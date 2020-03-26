@@ -249,8 +249,10 @@ function getRawAncestors(
   let parents = r.smembers(id + '.parents')
 
   for (let i = 0; i < parents.length; i++) {
-    result[parents[i]] = true
-    getRawAncestors(parents[i], result)
+    if (!result[parents[i]]) {
+      result[parents[i]] = true
+      getRawAncestors(parents[i], result)
+    }
   }
 
   return result
