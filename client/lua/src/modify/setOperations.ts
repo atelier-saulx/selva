@@ -159,11 +159,11 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     result[i] = child
 
     if (child !== '') {
-      redis.sadd(child + '.parents', id)
-
       if (!redis.exists(child)) {
-        modify({ $id: child, parents: { $add: id } })
+        modify({ $id: child })
       }
+
+      redis.sadd(child + '.parents', id)
 
       sendEvent(child, 'parents', 'update')
       markForAncestorRecalculation(child)
