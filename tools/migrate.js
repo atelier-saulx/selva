@@ -426,16 +426,16 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
                 ===>
                 video: {
                   vod: {
-                    mp4: 
-                    hls: 
+                    mp4:
+                    hls:
                   },
                   pano: {
-                    mp4: 
+                    mp4:
                     hls:
                   },
                   live: {
                     mp4:
-                    hls: 
+                    hls:
                   }
                 }
                 */
@@ -528,7 +528,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
               for (const relation of parsed) {
                 const prefix = relation.slice(0, 2)
                 if (
-                  prefixToTypeMapping[prefix] &&
+                  (relation === 'root' || prefixToTypeMapping[prefix]) &&
                   /* exclude self references */
                   relation !== id &&
                   relation !== 'relnqzJe'
@@ -663,12 +663,13 @@ async function migrate() {
   for (let db of dump) {
     clean(db)
     // console.log(db.vi0dMzRO)
+    // console.log(db.sp1ZyDjY0)
     // continue
     // db.root.url = db.root.url.filter(val => val)
     // db = { rez5lmBya: db.rez5lmBya, uuid: db.uuid }
     const keys = Object.keys(db)
     const batches = _.chunk(keys, 3000)
-    // const batches = [['root', 'rez5lmBya']] //'rez5lmBya']]
+    // const batches = [['root'], ['vi0dMzRO'] /*, ['sp1ZyDjY0']*/] //'rez5lmBya']]
     for (const batch of batches) {
       // console.log('batch', batch)
       let promises = []
@@ -695,7 +696,7 @@ async function migrate() {
           continue
         }
 
-        // console.log('processing key', key, 'type', item.type, item)
+        //  console.log('processing key', key, 'type', item.type, item)
 
         const typeSchema =
           key === 'root'
@@ -771,6 +772,9 @@ async function migrate() {
     }
   }
 
+  await new Promise((resolve, _reject) => {
+    setTimeout(resolve, 100)
+  })
   await client.destroy()
   // await srv.destroy()
 }
