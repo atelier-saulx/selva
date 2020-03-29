@@ -434,7 +434,7 @@ test.serial.only('find - find with another language', async t => {
     }
   })
 
-  await client.set({
+  const l2 = await client.set({
     type: 'league',
     name: 'league 2',
     title: {
@@ -533,5 +533,136 @@ test.serial.only('find - find with another language', async t => {
       })
     ).items.map(x => x.name),
     ['league 1']
+  )
+
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        $language: 'en',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                },
+                {
+                  $field: 'title',
+                  $operator: '=',
+                  $value: 'german'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(x => x.name),
+    ['league 2']
+  )
+
+  await client.set({
+    $id: l2,
+    title: {
+      en: 'yesh en league'
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        $language: 'en',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                },
+                {
+                  $field: 'title',
+                  $operator: '=',
+                  $value: 'german'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(x => x.name),
+    []
+  )
+
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        $language: 'de',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                },
+                {
+                  $field: 'title',
+                  $operator: '=',
+                  $value: 'german'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(x => x.name),
+    ['league 2']
+  )
+
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        $language: 'nl',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                },
+                {
+                  $field: 'title',
+                  $operator: '=',
+                  $value: 'en league'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(x => x.name),
+    ['league 2']
   )
 })

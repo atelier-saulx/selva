@@ -241,15 +241,15 @@ export function addFieldToSearch(
   }
 }
 
-function addSuggestion(sug: string, lang: string) {
-  const current: number = redis.call('hincrby', `sug_${lang}_counts`, sug, '1')
+function addSuggestion(sug: string, _lang: string) {
+  const current: number = redis.call('hincrby', `sug_counts`, sug, '1')
   if (current === 1) {
-    logger.info('ft.sugadd', `sug_${lang}`, sug, '1')
-    const v = redis.pcall('ft.sugadd', `sug_${lang}`, sug, '1')
+    logger.info('ft.sugadd', `sug`, sug, '1')
+    const v = redis.pcall('ft.sugadd', `sug`, sug, '1')
   } else {
     logger.info(
       `ft.sugadd -- exists, incrementing to ${current}`,
-      `sug_${lang}`,
+      `sug`,
       sug,
       '1'
     )
