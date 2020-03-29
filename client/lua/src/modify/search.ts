@@ -7,7 +7,8 @@ import {
   isTextIndex,
   joinString,
   escapeSpecial,
-  hasExistsIndex
+  hasExistsIndex,
+  stringStartsWith
 } from '../util'
 
 const mapLanguages = (lang: string): string => {
@@ -109,7 +110,10 @@ export function addFieldToSearch(
           const lang = field.substring(lastDotIndex + 1)
 
           if (isTextIndex(index[fieldToCheck])) {
-            redis.call('hset', id, '___escaped:' + field, escaped)
+            const escapedFieldName = '___escaped:' + field
+            const allLanguages = getSchema().languages || []
+
+            redis.call('hset', id, escapedFieldName, escaped)
 
             const mapped = mapLanguages(lang)
             const v = redis.pcall(
@@ -123,9 +127,79 @@ export function addFieldToSearch(
               'REPLACE',
               'PARTIAL',
               'FIELDS',
-              '___escaped:' + field,
+              escapedFieldName,
               escaped
             )
+
+            const allKeys: string[] = redis.call('hkeys', id)
+            // FIXME: this can be cached per script execution later
+            const allSetLanguages: Record<string, true> = {}
+            for (const key of allKeys) {
+              if (stringStartsWith(key, fieldToCheck)) {
+                const lastDotIdx = getDotIndex(key)
+                const l = key.substring(lastDotIdx, key.length)
+                allSetLanguages[l] = true
+              }
+            }
+
+            let hasPrecedence = false
+            for (const otherLang of allLanguages) {
+              const exists = allSetLanguages[otherLang]
+              const escapedFieldName =
+                '___escaped:' + fieldToCheck + '.' + otherLang
+
+              if (otherLang === lang) {
+                hasPrecedence = true
+              } else {
+                let replaceValue = false
+                if (hasPrecedence && !exists) {
+                  replaceValue = true
+                }
+
+                if (replaceValue) {
+                  redis.call('hset', id, escapedFieldName, escaped)
+
+                  redis.pcall(
+                    'ft.add',
+                    indexKey,
+                    id,
+                    '1',
+                    'LANGUAGE',
+                    mapLanguages(otherLang),
+                    'NOSAVE',
+                    'REPLACE',
+                    'PARTIAL',
+                    'FIELDS',
+                    escapedFieldName,
+                    escaped
+                  )
+                } else {
+                  const didSet = redis.call(
+                    'hsetnx',
+                    id,
+                    escapedFieldName,
+                    escaped
+                  )
+
+                  if (didSet === 1) {
+                    redis.pcall(
+                      'ft.add',
+                      indexKey,
+                      id,
+                      '1',
+                      'LANGUAGE',
+                      mapLanguages(otherLang),
+                      'NOSAVE',
+                      'REPLACE',
+                      'PARTIAL',
+                      'FIELDS',
+                      escapedFieldName,
+                      escaped
+                    )
+                  }
+                }
+              }
+            }
 
             if (hasExistsIndex(index[field])) {
               redis.call('hset', id, '_exists_' + field, 'T')
