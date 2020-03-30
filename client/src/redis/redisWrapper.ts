@@ -48,6 +48,8 @@ export class RedisWrapper {
     this.id = id
     // to send to the server
     this.uuid = uuid()
+
+    // subscription manager client // pub channel and setting your subs stuff
     this.types = ['sub', 'client']
     this.connect()
   }
@@ -288,10 +290,10 @@ export class RedisWrapper {
   subscribeChannel(channel: string, getOptions: GetOptions) {
     // innitial subscription needs to get data somehow
     // do we want to keep a mem cache :/ on the client as well?
-
     console.log('Subscribe channel (wrapper)', channel.slice(-5))
     const subscriptions = '___selva_subscriptions'
     const newSubscriptionChannel = '___selva_subscription:new'
+    // add verbose option in queue
     this.queue('hsetnx', [subscriptions, channel, JSON.stringify(getOptions)])
     this.queue('sadd', [channel, this.uuid])
     this.queue('publish', [
@@ -527,6 +529,8 @@ export class RedisWrapper {
             if (v instanceof Error) {
               if (slice[i].reject) {
                 slice[i].reject(v)
+              } else {
+                console.error('Error executing command', slice[i], v)
               }
             } else if (slice[i].resolve) {
               slice[i].resolve(v)

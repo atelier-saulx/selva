@@ -4,7 +4,6 @@ import { SelvaClient, GetOptions, Schema } from '@saulx/selva'
 import addFields from './addFields'
 import addListeners from './addListeners'
 import sendUpdate from './sendUpdate'
-import { get } from '@saulx/selva/dist/src/get'
 
 export type QuerySubscription = {
   idFields?: Record<string, true>
