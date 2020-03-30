@@ -103,9 +103,11 @@ test.serial.only('basic id based subscriptions', async t => {
   sub.unsubscribe()
   sub2.unsubscribe()
 
-  await wait(1000 * 2)
+  await wait(5000 * 2)
 
   await client.delete('root')
+
+  await wait(1000)
 })
 
 test.serial('using $field works', async t => {
