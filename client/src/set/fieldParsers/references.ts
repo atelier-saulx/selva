@@ -33,7 +33,11 @@ export default (
   _type: string,
   $lang?: string
 ): void => {
-  if (typeof payload === 'object' && !Array.isArray(payload)) {
+  if (
+    typeof payload === 'object' &&
+    !Array.isArray(payload) &&
+    payload !== null
+  ) {
     result[field] = {}
     for (let k in payload) {
       if (k === '$add') {

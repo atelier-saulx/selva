@@ -304,6 +304,20 @@ test.serial('basic', async t => {
     'match has no children after $add: []'
   )
 
+  // set null children
+  await t.throwsAsync(
+    client.set({
+      $id: match,
+      children: null
+    })
+  )
+
+  t.deepEqual(
+    await client.redis.smembers(match + '.children'),
+    [],
+    'match has no children after children: null'
+  )
+
   t.deepEqual(
     await client.redis.smembers(person + '.parents'),
     [league],
