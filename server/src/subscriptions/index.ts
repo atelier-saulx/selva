@@ -4,6 +4,7 @@ import { SelvaClient, GetOptions, Schema } from '@saulx/selva'
 import addFields from './addFields'
 import addListeners from './addListeners'
 import sendUpdate from './sendUpdate'
+import { get } from '@saulx/selva/dist/src/get'
 
 export type QuerySubscription = {
   idFields?: Record<string, true>
@@ -63,9 +64,51 @@ export default class SubscriptionManager {
 
   // update individual, update non indivdual
 
-  addClientSubscription(client: string, channel: string) {}
+  async addClientSubscription(client: string, channel: string) {
+    const subscriptionsName = '___selva_subscriptions'
 
-  removeClientSubscription(client: string, channel: string) {}
+    // just to speed things up and potentialy send something
+    if (!this.subscriptions[channel]) {
+      console.log('channel is not there lets make make', channel)
+      const [getOptions, clients] = await Promise.all([
+        this.client.redis.hget(subscriptionsName, channel),
+        this.client.redis.smembers(channel)
+      ])
+      if (getOptions && clients.length) {
+        this.addSubscription(channel, new Set(clients), getOptions)
+      }
+    } else {
+      this.subscriptions[channel].clients.add(client)
+    }
+  }
+
+  async removeClientSubscription(client: string, channel: string) {
+    // just to speed things up
+    // use client redis internally for everything - much better
+    const cleanUpQ = []
+    const clients = await this.client.redis.smembers(channel)
+    let len = clients.length
+    const cIndex = clients.indexOf(client)
+    if (cIndex !== -1) {
+      len--
+      cleanUpQ.push(this.client.redis.srem(channel, client))
+    }
+    const sub = this.subscriptions[channel]
+    if (sub) {
+      sub.clients.delete(client)
+    }
+    if (len === 0) {
+      this.removeSubscription(channel, cleanUpQ)
+      delete this.subscriptions[channel]
+    }
+    if (cleanUpQ.length) {
+      await Promise.all(cleanUpQ)
+      console.log(
+        'cleaned up subscriptions from removeClientSubscription',
+        cleanUpQ.length
+      )
+    }
+  }
 
   addSubscription(
     channel: string,
@@ -149,8 +192,10 @@ export default class SubscriptionManager {
       i++
     }
 
-    await Promise.all(cleanUpQ)
-    console.log('cleaned up', cleanUpQ.length)
+    if (cleanUpQ.length) {
+      await Promise.all(cleanUpQ)
+      console.log('cleaned up clients / subscriptions', cleanUpQ.length)
+    }
   }
 
   revalidateSubscriptions() {
@@ -187,7 +232,6 @@ export default class SubscriptionManager {
 
       this.client.on('connect', () => {
         console.log('connect server-client')
-        // have to check everuywhere if sub exists
         this.sub = this.client.redis.redis.sub
         this.pub = this.client.redis.redis.client
         addListeners(this)

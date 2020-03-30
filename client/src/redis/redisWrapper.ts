@@ -29,7 +29,8 @@ export class RedisWrapper {
       getOptions: GetOptions
       clients: Set<string>
       version?: string // check if version?
-      // keep cache data :/ dont know
+      // keep cache data :/ dont know - have to think about this!
+      // for now we can just get (dirty nice)
     }
   > = {}
 
