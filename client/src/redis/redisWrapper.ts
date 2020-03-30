@@ -272,17 +272,14 @@ export class RedisWrapper {
 
   unsubscribeChannel(channel: string) {
     const removeSubscriptionChannel = '___selva_subscription:remove'
-    this.queue('sdel', [channel, this.uuid])
+    this.queue('srem', [channel, this.uuid])
     this.queue(
       'publish',
       [
         removeSubscriptionChannel,
         JSON.stringify({ client: this.uuid, channel })
       ],
-      () => {
-        console.log('DID SEND PUBLISH')
-        this.removeSubscriptionsSet.delete(channel)
-      }
+      () => this.removeSubscriptionsSet.delete(channel)
     )
     this.sub.unsubscribe(channel)
   }
@@ -501,29 +498,20 @@ export class RedisWrapper {
   execBatch(origSlice: RedisCommand[], type: string): Promise<void> {
     return new Promise((resolve, reject) => {
       // dont need this type
-
       const batch = this[type].batch()
       const slice = Object.values(this.scriptBatchingEnabled).some(x => x)
         ? this.batchEvalScriptArgs(origSlice, type)
         : origSlice
 
       slice.forEach(({ command, args }) => {
-        batch[command](...args)
+        if (!batch[command]) {
+          throw new Error(`Command "${command}" is not a valid redis command!`)
+        } else {
+          batch[command](...args)
+        }
       })
 
-      console.log(
-        'exec batch',
-        slice.map(v => v.command),
-        origSlice.map(v => v.command)
-      )
-
       batch.exec((err: Error, reply: any[]) => {
-        console.log(
-          'batch response from',
-          slice.map(v => v.command),
-          reply
-        )
-
         if (err) {
           console.error(err)
           reject(err)
@@ -549,10 +537,6 @@ export class RedisWrapper {
     // remove type
 
     if (this.connected[type]) {
-      console.log(
-        'flush',
-        this.buffer[type].map(v => v.command)
-      )
       this.inProgress[type] = true
       const buffer = this.buffer[type]
       this.buffer[type] = []
@@ -561,14 +545,13 @@ export class RedisWrapper {
         const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
         if (!this.connected[type]) {
           this.inProgress[type] = false
-          console.log('dced')
           return
         } else {
-          console.log(
-            'go exec batch',
-            slice.map(v => v.command)
-          )
-          await this.execBatch(slice, type)
+          try {
+            await this.execBatch(slice, type)
+          } catch (err) {
+            console.error(err)
+          }
         }
       }
       if (this.buffer[type].length) {

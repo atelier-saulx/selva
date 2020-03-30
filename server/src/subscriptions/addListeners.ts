@@ -12,6 +12,7 @@ const addListeners = async (
   const clients = `___selva_clients`
 
   subsManager.sub.on('message', (channel, message) => {
+    console.log(channel)
     if (channel === heartbeatChannel) {
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {
