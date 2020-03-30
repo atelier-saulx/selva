@@ -82,7 +82,7 @@ test.serial.only('basic id based subscriptions', async t => {
     o2counter++
   })
 
-  await wait(1000 * 5)
+  await wait(1000 * 2)
 
   await client.set({
     $id: 'root',
@@ -98,10 +98,12 @@ test.serial.only('basic id based subscriptions', async t => {
     $id: thing
   })
 
-  await wait(1000 * 5)
+  await wait(1000 * 2)
 
   sub.unsubscribe()
   sub2.unsubscribe()
+
+  await wait(1000 * 2)
 
   await client.delete('root')
 })

@@ -12,7 +12,6 @@ const addListeners = async (
   const clients = `___selva_clients`
 
   subsManager.sub.on('message', (channel, message) => {
-    console.log(channel)
     if (channel === heartbeatChannel) {
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {
@@ -85,7 +84,7 @@ const addListeners = async (
   subsManager.sub.psubscribe('___selva_events:*')
   subsManager.sub.subscribe(newSubscriptionChannel)
   subsManager.sub.subscribe(heartbeatChannel)
-  subsManager.sub.unsubscribe(removeSubscriptionChannel)
+  subsManager.sub.subscribe(removeSubscriptionChannel)
 }
 
 export default addListeners
