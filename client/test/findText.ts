@@ -160,6 +160,9 @@ test.serial.skip('find - exact text match on exact field', async t => {
     ).items.map(x => x.name),
     ['match 1', 'match 2']
   )
+
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('find - find with suggestion', async t => {
@@ -273,6 +276,9 @@ test.serial('find - find with suggestion', async t => {
     ).items.map(x => x.name),
     ['league 1', 'league 2']
   )
+
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial(
@@ -419,6 +425,9 @@ test.serial(
       ).items.map(x => x.name),
       ['league 1', 'league 2']
     )
+
+    await client.delete('root')
+    await client.destroy()
   }
 )
 
@@ -665,4 +674,7 @@ test.serial('find - find with another language', async t => {
     ).items.map(x => x.name),
     ['league 2']
   )
+
+  await client.delete('root')
+  await client.destroy()
 })
