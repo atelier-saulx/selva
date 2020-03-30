@@ -119,6 +119,8 @@ export default class SubscriptionManager {
       clients,
       get: getOptions
     }
+
+    // have to make version as well!
   }
 
   removeSubscription(channel: string, cleanUpQ: any[] = []) {
