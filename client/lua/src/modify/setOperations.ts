@@ -49,16 +49,19 @@ export function addToSet(
   hierarchy: boolean = true
 ): void {
   const setKey = getSetKey(id, field)
-  redis.sadd(setKey, ...value)
 
   if (hierarchy) {
     if (field === 'parents') {
       addToParents(id, value, modify)
     } else if (field === 'children') {
-      addToChildren(id, value, modify)
+      value = addToChildren(id, value, modify)
     } else if (field === 'aliases') {
       addAlias(id, value)
     }
+  }
+
+  if (value.length > 0) {
+    redis.sadd(setKey, ...value)
   }
 }
 
@@ -145,9 +148,9 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     // if the child is an object
     // automatic creation is attempted
     if (type(child) === 'table') {
-      if ((<any>child).$id) {
+      if ((<any>child).$id || (<any>child).$alias) {
         child = modify(<any>child) || ''
-      } else if (!(<any>child).$id && (<any>child).type !== null) {
+      } else if ((<any>child).type !== null) {
         ;(<any>child).$id = genId({ type: (<any>child).type })
         child = modify(<any>child) || ''
       } else {

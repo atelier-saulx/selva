@@ -8,7 +8,7 @@ export type RedisSetParams =
   | Id[]
   | {
       $value?: string[] | Id
-      $add?: Id[] | Id
+      $add?: Id[] | Id | SetItem[]
       $delete?: Id[] | Id
     }
 
