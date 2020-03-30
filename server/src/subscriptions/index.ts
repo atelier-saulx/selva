@@ -80,6 +80,9 @@ export default class SubscriptionManager {
     } else {
       this.subscriptions[channel].clients.add(client)
     }
+
+    // for now can send a ping to a client channel where we can publish the initial
+    // normally the client just gets it
   }
 
   async removeClientSubscription(client: string, channel: string) {
@@ -120,13 +123,19 @@ export default class SubscriptionManager {
       get: getOptions
     }
 
-    // have to make version as well!
+    // have to make version as well - and store it somewhere probably
+    // this piece can later be replaced with a seperate SUBSCRIPTION SERVER
+    // all subscriptions etc by clients will be done on this server
+    // means we make more clients on the client side (1 extra)
+    // subscriptions (the actual publishes etc) can then be made on this on as well
   }
 
   removeSubscription(channel: string, cleanUpQ: any[] = []) {
     const subscriptionsName = '___selva_subscriptions'
     cleanUpQ.push(this.client.redis.hdel(subscriptionsName, channel))
     cleanUpQ.push(this.client.redis.del(channel))
+
+    // want to clean up the db
   }
 
   async updateSubscriptionData() {

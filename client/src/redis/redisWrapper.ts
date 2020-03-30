@@ -286,6 +286,9 @@ export class RedisWrapper {
   }
 
   subscribeChannel(channel: string, getOptions: GetOptions) {
+    // innitial subscription needs to get data somehow
+    // do we want to keep a mem cache :/ on the client as well?
+
     console.log('Subscribe channel (wrapper)', channel.slice(-5))
     const subscriptions = '___selva_subscriptions'
     const newSubscriptionChannel = '___selva_subscription:new'
@@ -315,6 +318,9 @@ export class RedisWrapper {
       this.clients.delete(client)
 
       // this is why we want subs here
+
+      // remove all SUBS
+      // make this after
 
       // if (type === 'sub' && this.redis.sub) {
       // this.redis.sub.unsubscribe(`${logPrefix}:${this.clientId}`)
