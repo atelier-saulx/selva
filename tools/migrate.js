@@ -591,43 +591,43 @@ async function migrate() {
   )
 
   const schema = await client.getSchema()
-  const checkBad = (item, blacklist) => {
-    if (blacklist.has(item.id)) {
-      return true
-    }
-    if (!Number(item.published)) {
-      if (
-        !item.parents ||
-        !JSON.parse(item.parents).length ||
-        /"Copy of /.test(item.title)
-      ) {
-        blacklist.add(item.id)
-        return true
-      }
-      let keep
-      for (let i in item) {
-        if (/:from$/.test(i) && i !== 'published:from') {
-          const [origin] = item[i].split('-')
-          if (origin === 'set') keep = true
-        }
-      }
-      if (!keep) {
-        try {
-          keep = JSON.parse(item.children).find(id => {
-            const bad = checkBad(data[id], blacklist)
-            return !bad
-          })
-        } catch (e) {}
-      }
-      if (!keep) {
-        blacklist.add(item.id)
-        return true
-      }
-    }
-  }
 
   const clean = data => {
     const blacklist = new Set()
+    const checkBad = (item, blacklist) => {
+      if (blacklist.has(item.id)) {
+        return true
+      }
+      if (!Number(item.published)) {
+        if (
+          !item.parents ||
+          !JSON.parse(item.parents).length ||
+          /"Copy of /.test(item.title)
+        ) {
+          blacklist.add(item.id)
+          return true
+        }
+        let keep
+        for (let i in item) {
+          if (/:from$/.test(i) && i !== 'published:from') {
+            const [origin] = item[i].split('-')
+            if (origin === 'set') keep = true
+          }
+        }
+        if (!keep) {
+          try {
+            keep = JSON.parse(item.children).find(id => {
+              const bad = checkBad(data[id], blacklist)
+              return !bad
+            })
+          } catch (e) {}
+        }
+        if (!keep) {
+          blacklist.add(item.id)
+          return true
+        }
+      }
+    }
 
     for (const id in data) {
       const item = data[id]
