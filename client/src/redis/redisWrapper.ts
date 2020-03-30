@@ -273,11 +273,17 @@ export class RedisWrapper {
   unsubscribeChannel(channel: string) {
     const removeSubscriptionChannel = '___selva_subscription:remove'
     this.queue('sdel', [channel, this.uuid])
-    this.queue('publish', [
-      removeSubscriptionChannel,
-      JSON.stringify({ client: this.uuid, channel })
-    ])
-    this.removeSubscriptionsSet.delete(channel)
+    this.queue(
+      'publish',
+      [
+        removeSubscriptionChannel,
+        JSON.stringify({ client: this.uuid, channel })
+      ],
+      () => {
+        console.log('DID SEND PUBLISH')
+        this.removeSubscriptionsSet.delete(channel)
+      }
+    )
     this.sub.unsubscribe(channel)
   }
 
@@ -305,6 +311,7 @@ export class RedisWrapper {
   }
 
   public removeClient(client: string) {
+    // add log here as well
     const clientObj = this.clients.get(client)
     if (clientObj) {
       this.clients.delete(client)
@@ -327,6 +334,7 @@ export class RedisWrapper {
   }
 
   public addClient(client: string, clientObj: ClientObject) {
+    // add log here as well
     if (!this.clients.get(client)) {
       this.clients.set(client, clientObj)
       this.types.forEach(type => {
@@ -502,12 +510,25 @@ export class RedisWrapper {
       slice.forEach(({ command, args }) => {
         batch[command](...args)
       })
-      batch.exec((err, reply) => {
+
+      console.log(
+        'exec batch',
+        slice.map(v => v.command),
+        origSlice.map(v => v.command)
+      )
+
+      batch.exec((err: Error, reply: any[]) => {
+        console.log(
+          'batch response from',
+          slice.map(v => v.command),
+          reply
+        )
+
         if (err) {
           console.error(err)
           reject(err)
         } else {
-          reply.forEach((v, i) => {
+          reply.forEach((v: any, i: number) => {
             if (v instanceof Error) {
               if (slice[i].reject) {
                 slice[i].reject(v)
@@ -524,13 +545,14 @@ export class RedisWrapper {
 
   async flushBuffered(type: string) {
     // dont need this type
-    // move to redis wrapper
-
     // extra optmization is to check for the same gets / sets / requests
-    // e.g initliazing scripts
     // remove type
 
     if (this.connected[type]) {
+      console.log(
+        'flush',
+        this.buffer[type].map(v => v.command)
+      )
       this.inProgress[type] = true
       const buffer = this.buffer[type]
       this.buffer[type] = []
@@ -539,9 +561,15 @@ export class RedisWrapper {
         const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
         if (!this.connected[type]) {
           this.inProgress[type] = false
+          console.log('dced')
           return
+        } else {
+          console.log(
+            'go exec batch',
+            slice.map(v => v.command)
+          )
+          await this.execBatch(slice, type)
         }
-        await this.execBatch(slice, type)
       }
       if (this.buffer[type].length) {
         await this.flushBuffered(type)
