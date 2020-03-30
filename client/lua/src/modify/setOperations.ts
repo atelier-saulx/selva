@@ -49,17 +49,18 @@ export function addToSet(
   hierarchy: boolean = true
 ): void {
   const setKey = getSetKey(id, field)
-  redis.sadd(setKey, ...value)
 
   if (hierarchy) {
     if (field === 'parents') {
       addToParents(id, value, modify)
     } else if (field === 'children') {
-      addToChildren(id, value, modify)
+      value = addToChildren(id, value, modify)
     } else if (field === 'aliases') {
       addAlias(id, value)
     }
   }
+
+  redis.sadd(setKey, ...value)
 }
 
 export function removeFromSet(

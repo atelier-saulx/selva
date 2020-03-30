@@ -647,9 +647,12 @@ test.serial('$merge = false', async t => {
 })
 
 test.serial('automatic child creation', async t => {
-  const client = connect({
-    port
-  })
+  const client = connect(
+    {
+      port
+    },
+    { loglevel: 'info' }
+  )
 
   const parent = await client.set({
     $id: 'viParent',
@@ -691,6 +694,39 @@ test.serial('automatic child creation', async t => {
   for (let i = 0; i < titles.length; i++) {
     t.is(titles[i], 'child' + (i + 1), `Child ${i} title should match`)
   }
+
+  await client.set({
+    $id: parent,
+    children: {
+      $add: [
+        {
+          $id: 'maTestWithId',
+          title: {
+            nl: 'yes with id'
+          }
+        }
+      ]
+    }
+  })
+
+  await client.set({
+    $id: parent,
+    type: 'match',
+    children: {
+      $add: [
+        {
+          type: 'match',
+          $alias: 'maTestWithAlias',
+          title: {
+            nl: 'yes with alias'
+          }
+        }
+      ]
+    }
+  })
+
+  const newChildren = await client.redis.smembers(parent + '.children')
+  t.is(newChildren.length, 5, 'Should have 5 children created')
 })
 
 test.serial('createdAt set if defined as timestamp', async t => {
