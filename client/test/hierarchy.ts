@@ -195,10 +195,10 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial(
+test.serial.only(
   'inheriting while excluding league from match through setting match as parent',
   async t => {
-    const client = connect({ port })
+    const client = connect({ port }, { loglevel: 'info' })
 
     const league = await client.set({
       type: 'league',
@@ -267,6 +267,13 @@ test.serial(
       await client.redis.zrange(match + '.ancestors', 0, -1),
       [team, club, 'root']
     )
+
+    const r = await client.get({
+      $id: match,
+      $rawAncestors: true
+    })
+
+    t.deepEqualIgnoreOrder(r.rawAncestors, [league, club, 'root', team, season])
 
     // cleanup
     await client.delete('root')

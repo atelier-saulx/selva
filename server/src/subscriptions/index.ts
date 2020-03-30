@@ -62,7 +62,10 @@ export default class SubscriptionManager {
 
   async attach(port: number) {
     // NEED TO FIX LOGS
-    this.client = new SelvaClient({ port }, { loglevel: 'info' })
+    this.client = new SelvaClient(
+      { port },
+      { loglevel: 'info', noSubscriptions: true }
+    )
     this.sub = createClient({ port })
     this.pub = createClient({ port })
 

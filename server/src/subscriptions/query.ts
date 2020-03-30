@@ -44,7 +44,7 @@ const addToUpdateQueue = (subsManager: SubscriptionManager, key: string) => {
 }
 
 const createBatch = (subsManager: SubscriptionManager) => {
-  execBatch = subsManager.client.redis.client.batch()
+  execBatch = subsManager.client.redis.redis.client.batch()
   process.nextTick(() => {
     execBatch.exec((err, d) => {
       if (err) {

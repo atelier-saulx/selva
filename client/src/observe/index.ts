@@ -19,6 +19,8 @@ export async function observe(
   opts: ObserveOptions = { getLatest: true }
 ): Promise<Observable<GetResult>> {
   const subscriptionId = makeSubscriptionId(props)
+
+  // props optional
   const obs = client.redis.subscribe(
     `___selva_subscription:${subscriptionId}`,
     props

@@ -1,20 +1,20 @@
 # Selva API Documentation
 
   - Server
-    - **[start()](#start)**
+    - **[start()](#startoptions)**
     - **[_server_.destroy()](#serverdestroy)**
     - **[_server_.backup()](#serverbackup)**
   - Client
-    - **[connect()](#connect)**
-    - **[set()](#clientset)**
-    - **[get()](#clientget)**
-    - **[subscribe()](#clientsubscribe)**
-    - **[unsubscribe()](#clientunsubscribe)**
-    - **[id()](#clientid)**
+    - **[connect()](#connectoptions)**
+    - **[set()](#clientsetpayload)**
+    - **[get()](#clientsubscribequery-callbackid-data)**
+    - **[subscribe()](#clientunsubscribeid-callback)**
+    - **[unsubscribe()](#clientunsubscribeid-callback)**
+    - **[id()](#clientidoptions)**
     - **[getSchema()](#clientgetschema)**
-    - **[updateSchema()](#clientupdateschema)**
-    - **[getTypeFromId()](#clientgettypefromid)**
-    - **[delete()](#clientdelete)**
+    - **[updateSchema()](#clientupdateschemaschema)**
+    - **[getTypeFromId()](#clientgettypefromidid)**
+    - **[delete()](#clientdeleteid)**
 
 ## Server
 
@@ -446,20 +446,6 @@ const obj = {
   haha: true
 }
 ```
-
-```js
-'foo.bar': true
-'foo.foo': true
-'foo.baz': true
-'foo.baz.blarf': true,
-haha: true
-```
-
-hkeys: foo.\*
-
-{
-foo: true
-}
 
 ### _client_.get(_query_)
 

@@ -5,34 +5,6 @@ import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
-import { performance, PerformanceObserver } from 'perf_hooks'
-
-let totalTime = 0
-let t
-let cnt = 0
-const obs = new PerformanceObserver(items => {
-  totalTime += items.getEntries()[0].duration
-  performance.clearMarks()
-  cnt++
-  clearTimeout(t)
-  t = setTimeout(() => {
-    console.log(
-      'SPEND',
-      totalTime,
-      'ms in publish parser',
-      'called ',
-      cnt,
-      'times',
-      'avg',
-      totalTime / cnt,
-      'ms'
-    )
-    cnt = 0
-    totalTime = 0
-  }, 500)
-})
-obs.observe({ entryTypes: ['measure'] })
-
 let srv
 let port: number
 test.before(async t => {
@@ -293,7 +265,7 @@ test.serial('subscription find', async t => {
     $id: ids[6],
     name: 'FLURRRRP'
   })
-  await wait(1000)
+  await wait(2000)
 
   t.is(cnt3, 3)
 })

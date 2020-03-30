@@ -20,19 +20,18 @@ import getTypeFromId from './getTypeFromId'
 import digest from './digest'
 import { IdOptions } from '../lua/src/id'
 import { v4 as uuid } from 'uuid'
-
 const MAX_SCHEMA_UPDATE_RETRIES = 5
-
 export type LogEntry = { level: LogLevel; msg: string }
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
 export type LogFn = (log: LogEntry) => void
-
 export type SelvaOptions = {
   loglevel?: LogLevel
   log?: LogFn
+  noSubscriptions?: boolean
 }
 
 let SCRIPTS
+
 try {
   SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
     (obj, scriptName) => {
@@ -40,7 +39,6 @@ try {
       if (!distPath.endsWith('dist')) {
         distPath = pathJoin(distPath, 'dist')
       }
-
       return Object.assign(obj, {
         [scriptName]: readFileSync(
           pathJoin(distPath, 'lua', `${scriptName}.lua`),
@@ -55,33 +53,19 @@ try {
   process.exit(1)
 }
 
-const defaultLogging: LogFn = log => {
-  if (log.level === 'warning') {
-    console.warn('LUA: ' + log.msg)
-  } else {
-    console[log.level]('LUA: ' + log.msg)
-  }
-}
-
 export class SelvaClient {
   public schema: Schema
   public searchIndexes: SearchIndexes
   public redis: RedisClient
   private loglevel: LogLevel = 'warning'
-  private clientId: string
+  public clientId: string
 
   constructor(
     opts: ConnectOptions | (() => Promise<ConnectOptions>),
     selvaOpts?: SelvaOptions
   ) {
     this.clientId = uuid()
-    this.redis = new RedisClient(opts)
-
-    this.redis.subscriptionManager.configureLogs(
-      this.clientId,
-      (selvaOpts && selvaOpts.log) || defaultLogging
-    )
-
+    this.redis = new RedisClient(opts, this.clientId, selvaOpts)
     if (selvaOpts && selvaOpts.loglevel) {
       this.loglevel = selvaOpts.loglevel
     }
@@ -218,7 +202,8 @@ export class SelvaClient {
       SCRIPTS.id,
       0,
       [],
-      [JSON.stringify(props)]
+      [JSON.stringify(props)],
+      'client'
     )
   }
 
@@ -248,14 +233,15 @@ export class SelvaClient {
         SCRIPTS['update-schema'],
         0,
         [],
-        [`${this.loglevel}:${this.clientId}`, JSON.stringify(newSchema)]
+        [`${this.loglevel}:${this.clientId}`, JSON.stringify(newSchema)],
+        'client'
       )
 
       if (updated) {
         this.schema = JSON.parse(updated)
       }
     } catch (e) {
-      console.error('Error updating schema', e.stack)
+      // console.error('Error updating schema', e.stack)
       if (
         e.stack.includes(
           'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
@@ -270,7 +256,11 @@ export class SelvaClient {
         await this.getSchema()
         await this.updateSchema(props, retry + 1)
       } else {
-        throw e
+        if (e.code === 'NR_CLOSED') {
+          // canhappen with load and eval script
+        } else {
+          throw e
+        }
       }
     }
   }
@@ -295,6 +285,7 @@ export class SelvaClient {
           this.schema.sha,
           JSON.stringify(opts)
         ],
+        'client',
         { batchingEnabled: true }
       )
     } catch (e) {
@@ -325,7 +316,9 @@ export class SelvaClient {
       SCRIPTS.fetch,
       0,
       [],
-      [`${this.loglevel}:${this.clientId}`, JSON.stringify(opts)]
+      [`${this.loglevel}:${this.clientId}`, JSON.stringify(opts)],
+      'client'
+      // { batchingEnabled: true } prob needs this?
     )
 
     return JSON.parse(str)

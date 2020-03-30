@@ -2,22 +2,23 @@
 
 Selva uses a JSON query DSL to specify the data to be retrieved or subscribed from the database.
 
-  - [**&lt;any field name&gt;**](#any-field-name)
-  - [**$id**](#id)
-  - [**$all**](#all)
-  - [**$value**](#id)
-  - [**$default**](#default)
-  - [**$language**](#language)
-  - [**$inherit**]($inherit)
-  - [**$list**]($list)
-  - [**$sort**]($sort)
-  - [**$offset**]($offset)
-  - [**$limit**]($limit)
-  - [**$find**]($find)
-  - [**$traverse**]($traverse)
-  - [**$filter**]($filter)
-  - [**$or**]($or)
-  - [**$and**]($and)
+  - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
+  - [**$id**](#id-string)
+  - [**$all**](#all-boolean)
+  - [**$value**](#value-any)
+  - [**$default**](#default-any)
+  - [**$language**](#language-string)
+  - [**$field**](#field-string-arraystring)
+  - [**$inherit**](#inherit-boolean)
+  - [**$list**](#list-boolean-object)
+  - [**$sort**](#sort-object)
+  - [**$offset**](#offset-integer)
+  - [**$limit**](#limit-integer)
+  - [**$find**](#find-object)
+  - [**$traverse**](#traverse-string)
+  - [**$filter**](#filter-object-array)
+  - [**$or**](#or-object)
+  - [**$and**](#and-object)
 
 
 [Available data types](#available-data-types)
@@ -107,7 +108,7 @@ const result = await get({
 
 ### `$language`: _string_
 
-Filters document data to a set language on fields that supoprt it.
+Filters document data to a set language on fields that support it.
 
 ```javascript
 const result = await client.get({

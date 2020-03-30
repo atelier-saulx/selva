@@ -50,6 +50,7 @@ test.before(async t => {
       video: {
         prefix: 'vi',
         fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
           date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           // making it different here should tell you something or at least take it over
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
@@ -88,6 +89,7 @@ test.before(async t => {
       ch.push({
         type: 'video',
         name: 'video',
+        title: { en: 'flap video ' + i },
         date: Date.now() + i + (i > 5 ? 1000000 : -100000),
         value: i
       })
@@ -333,4 +335,30 @@ test.serial('find - descendants', async t => {
   t.deepEqual(empty, [], 'does not throw for TAG fields')
 
   await wait(1000)
+
+  const { items: videosText } = await client.get({
+    items: {
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'desc' },
+        $limit: 5,
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'title',
+            $operator: '=',
+            $value: 'flap'
+          }
+        }
+      }
+    }
+  })
+
+  t.deepEqual(videosText, [
+    { value: 99 },
+    { value: 98 },
+    { value: 97 },
+    { value: 96 },
+    { value: 95 }
+  ])
 })

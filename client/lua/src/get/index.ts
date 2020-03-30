@@ -3,9 +3,9 @@ import { Id } from '~selva/schema/index'
 import getByType from './getByType'
 import { Schema } from '../../../src/schema/index'
 import * as logger from '../logger'
-import { setNestedResult } from './nestedFields'
+import { setNestedResult, getNestedField } from './nestedFields'
 import inherit from './inherit'
-import getWithField, { resolveAll } from './field'
+import getWithField, { resolveAll, isObjectField } from './field'
 import getArray from './getArray'
 import { getSchema } from '../schema/index'
 import { ensureArray, isArray } from 'lua/src/util'
@@ -61,14 +61,31 @@ function getField(
 
     if (field) {
       let sourceField: string | string[] = field
+      let ids: string[] = [id]
+
       if (!(props.$list && props.$list.$find) && props.$field) {
-        sourceField = resolveAll(
-          id,
-          schema,
-          ensureArray(props.$field),
-          language,
-          version
-        )
+        if (isObjectField(props.$field)) {
+          if (!props.$field.value.$id) {
+            return false
+          }
+
+          sourceField = resolveAll(
+            props.$field.value.$id,
+            schema,
+            ensureArray(props.$field.path),
+            language,
+            version
+          )
+          ids = [props.$field.value.$id]
+        } else {
+          sourceField = resolveAll(
+            id,
+            schema,
+            ensureArray(props.$field),
+            language,
+            version
+          )
+        }
       }
 
       // clean up this property so we don't use it in gets with lists
@@ -81,7 +98,7 @@ function getField(
         result,
         props,
         field,
-        [id],
+        ids,
         sourceField,
         language,
         version,
@@ -97,27 +114,56 @@ function getField(
     if (props.$field && field) {
       hasAlias = true
 
-      props.$field = resolveAll(
-        id,
-        schema,
-        ensureArray(props.$field),
-        language,
-        version
-      )
-
-      if (
-        getWithField(
-          result,
-          schema,
+      if (isObjectField(props.$field) && props.$field.value.$id) {
+        const intermediateResult = {}
+        const $field = resolveAll(
           id,
-          field,
-          props.$field,
+          schema,
+          ensureArray(props.$field.path),
           language,
-          version,
-          includeMeta
+          version
         )
-      ) {
+
+        getWithField(
+          intermediateResult,
+          schema,
+          props.$field.value.$id,
+          'intermediate',
+          $field,
+          language,
+          version
+        )
+
+        setNestedResult(
+          result,
+          field,
+          getNestedField(intermediateResult, 'intermediate')
+        )
+
         return true
+      } else {
+        props.$field = resolveAll(
+          id,
+          schema,
+          ensureArray(<string[]>props.$field),
+          language,
+          version
+        )
+
+        if (
+          getWithField(
+            result,
+            schema,
+            id,
+            field,
+            props.$field,
+            language,
+            version,
+            includeMeta
+          )
+        ) {
+          return true
+        }
       }
     }
 
@@ -199,7 +245,7 @@ function getField(
             language,
             version,
             includeMeta,
-            hasAlias ? props.$field : undefined
+            hasAlias ? <string[]>props.$field : undefined
           )
         }
       } else {
@@ -213,7 +259,7 @@ function getField(
           language,
           version,
           includeMeta,
-          hasAlias ? props.$field : undefined
+          hasAlias ? <string[]>props.$field : undefined
         )
       }
     }
@@ -242,17 +288,33 @@ function getField(
   }
 }
 
+function getRawAncestors(
+  id: string,
+  result: Record<string, true> = {}
+): Record<string, true> {
+  let parents = r.smembers(id + '.parents')
+
+  for (let i = 0; i < parents.length; i++) {
+    if (!result[parents[i]]) {
+      result[parents[i]] = true
+      getRawAncestors(parents[i], result)
+    }
+  }
+
+  return result
+}
+
 function get(opts: GetOptions): GetResult {
   const schema = getSchema()
   const result: GetResult = {}
 
-  // logger.info(`GET ${cjson.encode(opts)}`)
   let {
     $version: version,
     $id: id,
     $alias: alias,
     $language: language,
-    $includeMeta: includeMeta
+    $includeMeta: includeMeta,
+    $rawAncestors: rawAncestors
   } = opts
 
   if (alias) {
@@ -271,6 +333,15 @@ function get(opts: GetOptions): GetResult {
   }
 
   getField(opts, schema, result, id, undefined, language, version, includeMeta)
+
+  if (rawAncestors) {
+    const obj = getRawAncestors(id)
+    const arr: string[] = []
+    for (const id in obj) {
+      arr[arr.length] = id
+    }
+    result.rawAncestors = arr
+  }
 
   return <any>result
 }
