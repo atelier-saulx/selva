@@ -60,7 +60,9 @@ export function addToSet(
     }
   }
 
-  redis.sadd(setKey, ...value)
+  if (value.length > 0) {
+    redis.sadd(setKey, ...value)
+  }
 }
 
 export function removeFromSet(
