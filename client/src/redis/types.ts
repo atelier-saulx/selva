@@ -1,9 +1,10 @@
-import { EventEmitter } from 'events'
 import { GetResult, GetOptions } from '../get/types'
+import Redis from './'
+import { LogFn } from '..'
 
 type Resolvable = {
-  resolve: (x: any) => void
-  reject: (x: Error) => void
+  resolve?: (x: any) => void
+  reject?: (x: Error) => void
 }
 
 export type RedisCommand = Resolvable & {
@@ -11,16 +12,9 @@ export type RedisCommand = Resolvable & {
   type?: string
   args: (string | number)[]
   hash?: number
-  nested?: Resolvable[]
 }
 
-export type Subscription = {
-  channel: string
-  emitter: EventEmitter
-  getOpts: GetOptions
-  count: number
-}
-
+// different heartbeat event will be gone
 export type UpdateEvent = {
   type: 'update'
   payload: GetResult
@@ -30,8 +24,12 @@ export type DeleteEvent = {
   type: 'delete'
 }
 
-export type HeartBeatEvent = {
-  type: 'heartbeat'
-}
+export type Event = UpdateEvent | DeleteEvent
 
-export type Event = UpdateEvent | HeartBeatEvent | DeleteEvent
+export type ClientObject = {
+  connect: (type: string) => void
+  disconnect: (type: string) => void
+  message: (channel: string, message: string) => void
+  log?: LogFn
+  client: Redis
+}

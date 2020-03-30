@@ -18,6 +18,8 @@ test('Connect and re-connect', async t => {
 
   t.true(client.redis.redis === client2.redis.redis)
 
+  // ad some subs tests here
+
   await wait()
 
   await server.destroy()

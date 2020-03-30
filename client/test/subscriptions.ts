@@ -8,16 +8,20 @@ let srv
 let port: number
 test.before(async () => {
   port = await getPort()
+  console.log('ok CONNECTBOYS!')
+
   srv = await start({
     port
   })
+
+  console.log('ok server started!')
 })
 
 test.after(async () => {
   await srv.destroy()
 })
 
-test.serial('basic id based subscriptions', async t => {
+test.serial.only('basic id based subscriptions', async t => {
   const client = connect({ port })
 
   await client.updateSchema({

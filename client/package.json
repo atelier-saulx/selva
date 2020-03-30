@@ -11,6 +11,7 @@
     "testLua": "yarn buildLua && ./lua/testy.lua dist/lua/tests.lua",
     "buildLua": " scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ../bin/transpileScript $script; done && node ./lua/postprocessLuaTests.js",
     "buildTs": "tsc",
+    "watchTs": "tsc --watch",
     "clean": "rm -rf ./dist"
   },
   "husky": {

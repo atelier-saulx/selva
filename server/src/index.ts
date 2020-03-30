@@ -175,7 +175,7 @@ export const start = async function({
   const subs = new SubscriptionManager()
   console.log(`subs enabled ${subscriptions}`, port)
   if (subscriptions) {
-    await subs.attach(port)
+    await subs.connect(port)
   }
 
   const redisServer: SelvaServer = {
@@ -189,13 +189,13 @@ export const start = async function({
       }
     },
     closeSubscriptions: () => {
-      subs.detach()
+      subs.destroy()
     },
     openSubscriptions: async () => {
-      await subs.attach(port)
+      await subs.connect(port)
     },
     destroy: async () => {
-      subs.detach()
+      subs.destroy()
       execSync(`redis-cli -p ${port} shutdown`)
       redisDb.kill()
       await wait()

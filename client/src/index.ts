@@ -6,6 +6,7 @@ import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions, GetResult } from './get'
 import { observe } from './observe/index'
 import { readFileSync } from 'fs'
+import { EventEmitter } from 'events'
 import { join as pathJoin } from 'path'
 import {
   Schema,
@@ -27,8 +28,9 @@ export type LogFn = (log: LogEntry) => void
 export type SelvaOptions = {
   loglevel?: LogLevel
   log?: LogFn
-  noSubscriptions?: boolean
 }
+
+// split this up and clean it!
 
 let SCRIPTS
 
@@ -53,7 +55,7 @@ try {
   process.exit(1)
 }
 
-export class SelvaClient {
+export class SelvaClient extends EventEmitter {
   public schema: Schema
   public searchIndexes: SearchIndexes
   public redis: RedisClient
@@ -64,8 +66,10 @@ export class SelvaClient {
     opts: ConnectOptions | (() => Promise<ConnectOptions>),
     selvaOpts?: SelvaOptions
   ) {
+    super()
     this.clientId = uuid()
-    this.redis = new RedisClient(opts, this.clientId, selvaOpts)
+    this.redis = new RedisClient(opts, this, selvaOpts)
+    this.setMaxListeners(100)
     if (selvaOpts && selvaOpts.loglevel) {
       this.loglevel = selvaOpts.loglevel
     }
@@ -192,6 +196,7 @@ export class SelvaClient {
   }
 
   async destroy() {
+    this.removeAllListeners()
     this.redis.destroy()
   }
 

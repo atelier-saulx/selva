@@ -9,7 +9,7 @@ import getWithField, { resolveAll } from './field'
 import getArray from './getArray'
 import { getSchema } from '../schema/index'
 import { ensureArray, isArray } from 'lua/src/util'
-import makeNewGetOptions from 'lua/src/get/all'
+import makeNewGetOptions from './all'
 import getQuery from './query/index'
 import * as r from '../redis'
 
@@ -34,7 +34,7 @@ function getField(
 
   if (props.$id && field) {
     const intermediateResult = {}
-    const v = getField(
+    getField(
       props,
       schema,
       intermediateResult,

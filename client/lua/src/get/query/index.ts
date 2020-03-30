@@ -11,7 +11,6 @@ import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
 import parseSubscriptions from './parseSubscriptions'
-import { get } from 'lua/src/redis'
 
 const parseNested = (
   opts: GetOptions,
