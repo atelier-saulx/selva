@@ -49,11 +49,11 @@ export default class SubscriptionManager {
   // subscribed on newSubscription
   public clients: Record<
     string,
-    { lastTs: number; subscriptions: string[] }
+    { lastTs: number; subscriptions: Set<string> }
   > = {}
   public subscriptions: Record<
     string,
-    { clients: Set<string>; get?: GetOptions; version?: string }
+    { clients: Set<string>; get: GetOptions; version?: string }
   > = {}
 
   // public subscriptions: Record<string, GetOptions> = {}
@@ -63,25 +63,97 @@ export default class SubscriptionManager {
 
   // update individual, update non indivdual
 
-  addSubscription(client: string, channel: string) {}
+  addClientSubscription(client: string, channel: string) {}
 
-  removeSubscription(client: string, channel: string) {}
+  removeClientSubscription(client: string, channel: string) {}
 
-  updateSubscriptionData() {
-    // console.log('updateSubscriptionData', client, channel)
-    // also check if the server has timeoud
-    // checks clients
-    // checks clients hearthbeats
-    // checks subscriptions
-    // hexists(subscriptions, channel)
-    // hset(subscriptions, channel: getOptions)
-    // client is redisWrapper client
-    // sadd(clients, client)
-    // sadd(client, channel)
+  addSubscription(
+    channel: string,
+    clients: Set<string>,
+    getOptions: GetOptions
+  ) {
+    this.subscriptions[channel] = {
+      clients,
+      get: getOptions
+    }
+  }
+
+  removeSubscription(channel: string, cleanUpQ: any[] = []) {
+    const subscriptionsName = '___selva_subscriptions'
+    cleanUpQ.push(this.client.redis.hdel(subscriptionsName, channel))
+    cleanUpQ.push(this.client.redis.del(channel))
+  }
+
+  async updateSubscriptionData() {
+    // in progress as well
+    // has to become lua
+    const subscriptionsName = '___selva_subscriptions'
+    const clientsName = `___selva_clients`
+
+    const [subscriptions, clients] = await Promise.all([
+      this.client.redis.hgetall(subscriptionsName),
+      this.client.redis.hgetall(clientsName)
+    ])
+
+    const q = []
+    for (const channel in subscriptions) {
+      q.push(this.client.redis.smembers(channel))
+    }
+
+    const subsClients = await Promise.all(q)
+
+    this.clients = {}
+    this.subscriptions = {}
+
+    const cleanUpQ = []
+
+    const now = Date.now()
+    for (const client in clients) {
+      const ts = Number(clients[client])
+      if (now - ts < 5e3) {
+        this.clients[client] = {
+          lastTs: ts,
+          subscriptions: new Set()
+        }
+      } else {
+        console.log('Client is timedout', client)
+        cleanUpQ.push(this.client.redis.hdel(clientsName, client))
+      }
+    }
+
+    let i = 0
+    for (const channel in subscriptions) {
+      const cl = subsClients[i]
+      if (cl.length) {
+        const clientsSet: Set<string> = new Set()
+        for (let i = 0; i < cl.length; i++) {
+          const client = cl[i]
+          if (client in this.clients) {
+            clientsSet.add(client)
+          } else {
+            cleanUpQ.push(this.client.redis.srem(channel, client))
+          }
+        }
+        if (clientsSet.size) {
+          this.addSubscription(
+            channel,
+            clientsSet,
+            <GetOptions>JSON.parse(subscriptions[channel])
+          )
+        } else {
+          this.removeSubscription(channel, cleanUpQ)
+        }
+      } else {
+        this.removeSubscription(channel, cleanUpQ)
+      }
+      i++
+    }
+
+    await Promise.all(cleanUpQ)
+    console.log('cleaned up', cleanUpQ.length)
   }
 
   revalidateSubscriptions() {
-    // console.log('\nrevalidate those subs')
     this.updateSubscriptionData()
     this.revalidateSubscriptionsTimeout = setTimeout(() => {
       this.revalidateSubscriptions()

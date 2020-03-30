@@ -17,7 +17,7 @@ const addListeners = async (
       if (!subsManager.clients[client]) {
         if (client !== subsManager.client.redis.redis.uuid) {
           console.log('received new client on server', client)
-          subsManager.clients[client] = { subscriptions: [], lastTs: ts }
+          subsManager.clients[client] = { subscriptions: new Set(), lastTs: ts }
           subsManager.client.redis.hset(clients, client, ts)
         }
       } else {
@@ -27,11 +27,11 @@ const addListeners = async (
     } else if (channel === newSubscriptionChannel) {
       const { client, channel } = JSON.parse(message)
       console.log('Got a create sub on (server)', channel.slice(-5))
-      subsManager.addSubscription(client, channel)
+      subsManager.addClientSubscription(client, channel)
     } else if (channel === removeSubscriptionChannel) {
       const { client, channel } = JSON.parse(message)
       console.log('Got a remove sub on (server)', channel.slice(-5))
-      subsManager.removeSubscription(client, channel)
+      subsManager.removeClientSubscription(client, channel)
     }
   })
 
