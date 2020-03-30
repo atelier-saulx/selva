@@ -143,6 +143,7 @@ export default class SubscriptionManager {
     const subscriptionsName = '___selva_subscriptions'
     const clientsName = `___selva_clients`
 
+    // can do multi if you want
     const [subscriptions, clients] = await Promise.all([
       this.client.redis.hgetall(subscriptionsName),
       this.client.redis.hgetall(clientsName)
@@ -242,8 +243,11 @@ export default class SubscriptionManager {
 
       this.client.on('connect', () => {
         console.log('connect server-client')
+        // ------------------------------
+        // want to remove this
         this.sub = this.client.redis.redis.sub
         this.pub = this.client.redis.redis.client
+        // ------------------------------
         addListeners(this)
         this.revalidateSubscriptions()
         this.startServerHeartbeat()
