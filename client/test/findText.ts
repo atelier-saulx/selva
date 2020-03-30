@@ -40,12 +40,12 @@ test.before(async t => {
 })
 
 test.after(async _t => {
-  // const client = connect({ port }, { loglevel: 'info' })
-  // const d = Date.now()
-  // await client.delete('root')
-  // console.log('removed', Date.now() - d, 'ms')
-  // await client.destroy()
-  // await srv.destroy()
+  const client = connect({ port }, { loglevel: 'info' })
+  const d = Date.now()
+  await client.delete('root')
+  console.log('removed', Date.now() - d, 'ms')
+  await client.destroy()
+  await srv.destroy()
 })
 
 // TODO: this needs to use a non-TEXT-lANGUAGE-SUG field
@@ -422,7 +422,7 @@ test.serial(
   }
 )
 
-test.serial.only('find - find with another language', async t => {
+test.serial('find - find with another language', async t => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({

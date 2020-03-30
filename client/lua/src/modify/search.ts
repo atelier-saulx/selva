@@ -137,7 +137,7 @@ export function addFieldToSearch(
             for (const key of allKeys) {
               if (stringStartsWith(key, fieldToCheck)) {
                 const lastDotIdx = getDotIndex(key)
-                const l = key.substring(lastDotIdx, key.length)
+                const l = key.substring(lastDotIdx + 1, key.length)
                 allSetLanguages[l] = true
               }
             }
