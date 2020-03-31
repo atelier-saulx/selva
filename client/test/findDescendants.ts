@@ -60,7 +60,7 @@ test.before(async t => {
   })
 
   const team1 = await client.id({ type: 'team' })
-  const amount = 17500
+  const amount = 10000
   const genMatches = (s = 0) => {
     const ch = []
     for (let i = s; i < s + amount; i++) {

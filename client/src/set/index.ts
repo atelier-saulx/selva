@@ -6,7 +6,7 @@ import { verifiers } from './fieldParsers/simple'
 import { configureLogger } from 'lua/src/logger'
 
 // import { MAX_BATCH_SIZE } from '../redis'
-const MAX_BATCH_SIZE = 5000
+const MAX_BATCH_SIZE = 5
 
 export const parseSetObject = (
   payload: SetOptions,
@@ -80,6 +80,9 @@ export const parseSetObject = (
         ) {
           throw new Error(`Wrong type for language ${payload[key]}`)
         }
+      } else if (key === '$_itemCount') {
+        // ignore
+        result[key] = payload[key]
       } else {
         throw new Error(`Wrong option on set object ${key}`)
       }
@@ -116,7 +119,7 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   }
 
   if (parsed.$_itemCount > MAX_BATCH_SIZE) {
-    const [id] = await setInBatches(client, payload)
+    const [id] = await setInBatches(client, parsed)
     return id
   }
 
@@ -134,33 +137,42 @@ async function setInBatches(
   payload: SetOptions | SetOptions[]
 ): Promise<string[]> {
   if (Array.isArray(payload)) {
-    const BATCH_SIZE = MAX_BATCH_SIZE - 10 // allow for some operations to be batched with these
+    // const BATCH_SIZE = MAX_BATCH_SIZE - 10 // allow for some operations to be batched with these
+    const BATCH_SIZE = MAX_BATCH_SIZE
     const allIds: string[] = []
     let idx = 0
 
     do {
-      const slice = payload.slice(idx, BATCH_SIZE)
-      idx += BATCH_SIZE
+      const slice = payload.slice(idx, idx + BATCH_SIZE)
 
       const ids = await Promise.all(
         slice.map(i => {
-          return set(client, i)
+          return client.modify({
+            kind: 'update',
+            payload: <SetOptions & { $id: string }>i // assure TS that id is actually set :|
+          })
         })
       )
 
-      allIds.push(...ids)
+      allIds.push(...(<string[]>ids))
+      idx += BATCH_SIZE
     } while (idx < payload.length)
 
     return allIds
   }
 
   if (payload.$_itemCount < MAX_BATCH_SIZE && payload.$_itemCount !== 0) {
-    const id = await set(client, payload)
-    payload.$id = id
+    const id = await client.modify({
+      kind: 'update',
+      payload: <SetOptions & { $id: string }>payload // assure TS that id is actually set :|
+    })
+
+    payload.$id = <string>id
     payload.$_itemCount = 0
-    return [id]
+    return [<string>id]
   }
 
+  const size = payload.$_itemCount
   let fieldNames: string[] = []
   let missingFieldNames: string[] = []
   let processedFields: { [x: string]: string[] | { $add: string[] } } = {}
@@ -168,7 +180,7 @@ async function setInBatches(
   let remainingBatchSize = MAX_BATCH_SIZE
   for (const field in payload) {
     if (payload[field].$_itemCount) {
-      if (payload[field].$_itemCount - remainingBatchSize >= 0) {
+      if (remainingBatchSize - payload[field].$_itemCount >= 0) {
         remainingBatchSize -= payload[field].$_itemCount
         batchQueue.push(payload[field])
         fieldNames.push(field)
@@ -199,14 +211,25 @@ async function setInBatches(
     newPayload[field] = processedFields[field]
   }
 
-  const id = await set(client, newPayload)
-  const missingPayload: SetOptions = { $id: id }
+  newPayload.$_itemCount = MAX_BATCH_SIZE - remainingBatchSize
+  const id = await client.modify({
+    kind: 'update',
+    payload: <SetOptions & { $id: string }>newPayload // assure TS that id is actually set :|
+  })
+
+  const missingPayload: SetOptions = { $id: <string>id }
+  let missingFieldsCount = 0
   for (const field of missingFieldNames) {
+    missingFieldsCount++
     missingPayload[field] = payload[field]
   }
 
-  await setInBatches(client, missingPayload)
-  return [payload.$id]
+  if (missingFieldsCount) {
+    missingPayload.$_itemCount = size - newPayload.$_itemCount
+    await setInBatches(client, missingPayload)
+  }
+
+  return [<string>id]
 }
 
 export { set, SetOptions }
