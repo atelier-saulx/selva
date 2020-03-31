@@ -1,7 +1,10 @@
 import { RedisClient } from 'redis'
 import { SelvaClient, GetOptions, Schema } from '@saulx/selva'
 
-import addFields from './addFields'
+import {
+  addFieldsToSubscription,
+  removeFieldsFromSubscription
+} from './addFields'
 import addListeners from './addListeners'
 import sendUpdate from './sendUpdate'
 
@@ -17,6 +20,17 @@ export type QuerySubscription = {
   time?: { nextRefresh: number }
 }
 
+export type Subscription = {
+  clients: Set<string>
+  get: GetOptions
+  version?: string
+  fields: Set<string>
+}
+
+export type RefsById = Record<string, Record<string, string>>
+
+export type Fields = Record<string, Set<string>>
+
 export default class SubscriptionManager {
   public queries: Record<string, QuerySubscription[]> = {}
   public nowBasedQueries: {
@@ -24,7 +38,7 @@ export default class SubscriptionManager {
     queries: { subId: string; nextRefresh: number }[]
   }
 
-  public refsById: Record<string, Record<string, string>> = {}
+  public refsById: RefsById = {}
 
   public client: SelvaClient
   public sub: RedisClient
@@ -45,36 +59,25 @@ export default class SubscriptionManager {
   // revalidates subs ones in a while
   public revalidateSubscriptionsTimeout: NodeJS.Timeout
 
-  // just set this from the client
-  // subscribed on newSubscription
   public clients: Record<
     string,
     { lastTs: number; subscriptions: Set<string> }
   > = {}
-  public subscriptions: Record<
-    string,
-    { clients: Set<string>; get: GetOptions; version?: string }
-  > = {}
-
-  // public subscriptions: Record<string, GetOptions> = {}
-  // have to update a put
-
-  public subscriptionsByField: Record<string, Set<string>> = {}
-
-  // update individual, update non indivdual
+  public subscriptions: Record<string, Subscription> = {}
+  public fieldMap: Fields = {}
 
   async addClientSubscription(client: string, channel: string) {
     const subscriptionsName = '___selva_subscriptions'
 
     // just to speed things up and potentialy send something
     if (!this.subscriptions[channel]) {
-      console.log('channel is not there lets make make', channel)
+      console.log('Create sub from client', channel)
       const [getOptions, clients] = await Promise.all([
         this.client.redis.hget(subscriptionsName, channel),
         this.client.redis.smembers(channel)
       ])
       if (getOptions && clients.length) {
-        this.addSubscription(channel, new Set(clients), getOptions)
+        this.addSubscription(channel, new Set(clients), JSON.parse(getOptions))
       }
     } else {
       this.subscriptions[channel].clients.add(client)
@@ -112,34 +115,81 @@ export default class SubscriptionManager {
     }
   }
 
-  addSubscription(
+  public schema: Schema
+  public hasSchema: Promise<any>
+  public schemaTimeout: NodeJS.Timeout
+
+  public stopObservingSchema() {
+    clearTimeout(this.schemaTimeout)
+  }
+
+  async observeSchema() {
+    if (!this.schema) {
+      // add await for schema
+      this.hasSchema = this.client.getSchema()
+      this.schema = (await this.hasSchema).schema
+      this.hasSchema = null
+    }
+
+    const getSchema = () => {
+      this.schemaTimeout = setTimeout(() => {
+        this.client.getSchema().then(({ schema }) => {
+          this.schema = schema
+        })
+        // when clearing dont want to await        getSchema()
+      }, 1e3)
+    }
+
+    getSchema()
+  }
+
+  async addSubscription(
     channel: string,
     clients: Set<string>,
     getOptions: GetOptions
   ) {
     this.subscriptions[channel] = {
       clients,
-      get: getOptions
+      get: getOptions,
+      fields: new Set()
     }
 
-    // have to make version as well - and store it somewhere probably
-    // this piece can later be replaced with a seperate SUBSCRIPTION SERVER
-    // all subscriptions etc by clients will be done on this server
-    // means we make more clients on the client side (1 extra)
-    // subscriptions (the actual publishes etc) can then be made on this on as well
+    if (!this.schema) {
+      await this.hasSchema
+    }
+
+    addFieldsToSubscription(
+      this.subscriptions[channel],
+      this.fieldMap,
+      this.schema,
+      channel,
+      this.refsById
+    )
   }
 
-  removeSubscription(channel: string, cleanUpQ: any[] = []) {
+  async removeSubscription(channel: string, cleanUpQ: any[] = []) {
     const subscriptionsName = '___selva_subscriptions'
     cleanUpQ.push(this.client.redis.hdel(subscriptionsName, channel))
     cleanUpQ.push(this.client.redis.del(channel))
 
-    // want to clean up the db
+    if (!this.schema) {
+      await this.hasSchema
+    }
+
+    removeFieldsFromSubscription(
+      this.subscriptions[channel],
+      this.fieldMap,
+      channel,
+      this.refsById
+    )
   }
 
   async updateSubscriptionData() {
     // in progress as well
     // has to become lua
+    // can we do less here maybe?
+    // e.g do a diff first or something
+
     const subscriptionsName = '___selva_subscriptions'
     const clientsName = `___selva_clients`
 
@@ -158,6 +208,8 @@ export default class SubscriptionManager {
 
     this.clients = {}
     this.subscriptions = {}
+    this.fieldMap = {}
+    this.refsById = {}
 
     const cleanUpQ = []
 
@@ -232,6 +284,7 @@ export default class SubscriptionManager {
     this.cleanUp = false
     clearTimeout(this.revalidateSubscriptionsTimeout)
     clearTimeout(this.serverHeartbeatTimeout)
+    this.stopObservingSchema()
     this.sub = null
     this.pub = null
   }
@@ -251,6 +304,7 @@ export default class SubscriptionManager {
         addListeners(this)
         this.revalidateSubscriptions()
         this.startServerHeartbeat()
+        this.observeSchema()
         if (!isResolved) {
           isResolved = true
           resolve()

@@ -84,6 +84,9 @@ test.serial.only('basic id based subscriptions', async t => {
 
   await wait(1000 * 2)
 
+  console.log('----------------------------------')
+  console.log('set some things')
+
   await client.set({
     $id: 'root',
     no: 'no event pls'
@@ -99,6 +102,9 @@ test.serial.only('basic id based subscriptions', async t => {
   })
 
   await wait(1000 * 2)
+
+  console.log('----------------------------------')
+  console.log('unsubscribe')
 
   sub.unsubscribe()
   sub2.unsubscribe()

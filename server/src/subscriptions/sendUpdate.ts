@@ -10,7 +10,7 @@ const sendUpdate = async (
   getOptions?: GetOptions,
   deleteOp: boolean = false
 ) => {
-  if (!this.pub) {
+  if (!subscriptionManager.pub) {
     return
   }
 
@@ -30,7 +30,8 @@ const sendUpdate = async (
     return
   }
 
-  getOptions = getOptions || this.subscriptions[subscriptionId]
+  getOptions =
+    getOptions || subscriptionManager.subscriptions[subscriptionId].get
 
   const payload = await subscriptionManager.client.get(
     Object.assign({}, getOptions, {
@@ -39,7 +40,8 @@ const sendUpdate = async (
   )
 
   const refs = payload.$meta.$refs
-  delete this.refsById[getOptions.$id]
+
+  delete subscriptionManager.refsById[getOptions.$id]
 
   let hasRefs = false
 
@@ -52,8 +54,12 @@ const sendUpdate = async (
   }
   subscriptionManager.refsById[getOptions.$id] = newRefs
 
+  // what to do here ???
   if (hasRefs) {
-    // subscriptionManager.refreshSubscription(subscriptionId)
+    // FIXME: REALLY HAS TO GO
+    console.log('WARNING UPDATING ALL SUBS BECAUSE OF REF CHANGE (SLOW!)')
+    // very slow to do this all the time
+    subscriptionManager.updateSubscriptionData()
   }
 
   if (payload.$meta.query) {
@@ -92,10 +98,12 @@ const sendUpdate = async (
     return
   }
 
+  // change all this result hash
   subscriptionManager.lastResultHash[subscriptionId] = newHash
 
   // add publish in the redis client
-  subscriptionManager.client.redis.redis.client.publish(
+  console.log('PUBLISH', subscriptionId)
+  subscriptionManager.pub.publish(
     `___selva_subscription:${subscriptionId}`,
     resultStr,
     () => {}

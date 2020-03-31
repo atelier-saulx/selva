@@ -108,13 +108,17 @@ export class RedisWrapper {
         // FIXME: dirty when clock mismatch  - ok for now
         if (ts < Date.now() - 60 * 1e3) {
           console.log(
-            '1 minute delay to get a server hearthbeat - must be broken - reconnect'
+            '1 minute delay to get a server heartbeat - must be broken - reconnect'
           )
           this.reconnect()
         }
       } else if (channel.indexOf(logPrefix) === 0) {
         console.log('log', channel)
         // this.emit('log', { client: logPrefix.slice(0, logPrefix.length), msg })
+      } else {
+        if (channel.indexOf('heartbeat') === -1) {
+          console.log('  --> ok channel', channel)
+        }
       }
     })
   }
@@ -290,7 +294,7 @@ export class RedisWrapper {
   subscribeChannel(channel: string, getOptions: GetOptions) {
     // innitial subscription needs to get data somehow
     // do we want to keep a mem cache :/ on the client as well?
-    console.log('Subscribe channel (wrapper)', channel.slice(-5))
+    console.log('Subscribe channel (wrapper)', channel)
     const subscriptions = '___selva_subscriptions'
     const newSubscriptionChannel = '___selva_subscription:new'
     // add verbose option in queue
