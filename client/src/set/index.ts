@@ -134,12 +134,13 @@ async function setInBatches(
   payload: SetOptions | SetOptions[]
 ): Promise<string[]> {
   if (Array.isArray(payload)) {
+    const BATCH_SIZE = MAX_BATCH_SIZE - 10 // allow for some operations to be batched with these
     const allIds: string[] = []
     let idx = 0
 
     do {
-      const slice = payload.slice(idx, MAX_BATCH_SIZE)
-      idx += MAX_BATCH_SIZE
+      const slice = payload.slice(idx, BATCH_SIZE)
+      idx += BATCH_SIZE
 
       const ids = await Promise.all(
         slice.map(i => {
@@ -153,7 +154,7 @@ async function setInBatches(
     return allIds
   }
 
-  if (payload.$_itemCount <= MAX_BATCH_SIZE && payload.$_itemCount !== 0) {
+  if (payload.$_itemCount < MAX_BATCH_SIZE && payload.$_itemCount !== 0) {
     const id = await set(client, payload)
     payload.$id = id
     payload.$_itemCount = 0
