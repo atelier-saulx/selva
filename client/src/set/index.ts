@@ -115,9 +115,9 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
     }
   }
 
-  console.log('PARSED', parsed)
   if (parsed.$_itemCount > MAX_BATCH_SIZE) {
-    // TODO
+    const [id] = await setInBatches(client, payload)
+    return id
   }
 
   // need to check for error of schema
@@ -164,8 +164,8 @@ async function setInBatches(
   let fieldNames: string[] = []
   let missingFieldNames: string[] = []
   let processedFields: { [x: string]: string[] | { $add: string[] } } = {}
-  let remainingBatchSize = MAX_BATCH_SIZE
   let batchQueue: SetOptions[] = []
+  let remainingBatchSize = MAX_BATCH_SIZE
   for (const field in payload) {
     if (payload[field].$_itemCount) {
       if (payload[field].$_itemCount - remainingBatchSize >= 0) {
