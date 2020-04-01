@@ -61,6 +61,8 @@ export default (
           )
         }
         result[field].$hierarchy = payload[k]
+      } else if (k === '$_itemCount') {
+        // ignore this internal field if setting with a split payload
       } else {
         throw new Error(`Wrong key for references ${k}`)
       }
@@ -68,5 +70,14 @@ export default (
   } else {
     result[field] =
       parseObjectArray(payload, schema, $lang) || verifySimple(payload)
+
+    if (Array.isArray(result[field])) {
+      const referenceCount = result[field].reduce((acc, x) => {
+        return acc + (x.$_itemCount || 1)
+      }, 0)
+
+      result.$_itemCount = (result.$_itemCount || 1) + referenceCount
+      result[field].$_itemCount = referenceCount
+    }
   }
 }

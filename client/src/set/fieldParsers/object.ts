@@ -29,6 +29,9 @@ export default (
       } else if (key === '$ref') {
         r.$ref = payload[key]
         return
+      } else if (key === '$_itemCount') {
+        r.$ref = payload[key]
+        return
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }
