@@ -102,10 +102,7 @@ const sendUpdate = async (
 
   // add publish in the redis client
   console.log('PUBLISH', subscriptionId)
-  subscriptionManager.client.redis.publish(
-    `___selva_subscription:${subscriptionId}`,
-    resultStr
-  )
+  subscriptionManager.client.redis.publish(subscriptionId, resultStr)
 }
 
 export default sendUpdate

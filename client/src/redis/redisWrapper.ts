@@ -116,7 +116,10 @@ export class RedisWrapper {
         console.log('log', channel)
         // this.emit('log', { client: logPrefix.slice(0, logPrefix.length), msg })
       } else {
-        if (channel.indexOf('heartbeat') === -1) {
+        if (
+          channel.indexOf('heartbeat') === -1 &&
+          channel !== '___selva_subscription:remove'
+        ) {
           console.log('  --> ok channel', channel)
         }
       }
