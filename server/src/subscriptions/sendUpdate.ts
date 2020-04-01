@@ -83,7 +83,6 @@ const sendUpdate = async (
   // hack-ish thing: include the result object in the string
   // so we don't need to encode/decode as many times
   const resultStr = JSON.stringify({ type: 'update', payload })
-
   // can start with a cache store for this allready  -- why not
 
   const currentHash = subscriptionManager.lastResultHash[subscriptionId]
@@ -103,10 +102,9 @@ const sendUpdate = async (
 
   // add publish in the redis client
   console.log('PUBLISH', subscriptionId)
-  subscriptionManager.pub.publish(
+  subscriptionManager.client.redis.publish(
     `___selva_subscription:${subscriptionId}`,
-    resultStr,
-    () => {}
+    resultStr
   )
 }
 

@@ -335,6 +335,12 @@ abstract class RedisMethods {
     })
   }
 
+  async publish(channel: string, value: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('publish', [channel, value], resolve, reject)
+    })
+  }
+
   async zrange(key: string, start: number, end: number): Promise<string[]> {
     return new Promise((resolve, reject) => {
       this.queue('zrange', [key, start, end], resolve, reject)

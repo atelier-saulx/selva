@@ -304,6 +304,8 @@ export class RedisWrapper {
       newSubscriptionChannel,
       JSON.stringify({ client: this.uuid, channel })
     ])
+
+    console.log('subscribe!', channel)
     this.sub.subscribe(channel)
   }
 
@@ -322,7 +324,6 @@ export class RedisWrapper {
     const clientObj = this.clients.get(client)
     if (clientObj) {
       this.clients.delete(client)
-
       // this is why we want subs here
 
       // remove all SUBS
