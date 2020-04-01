@@ -585,7 +585,7 @@ async function migrate() {
   const client = connect({ port: 6061 } /*, { loglevel: 'info' }*/)
 
   await makeSchema(client)
-  return
+
   const dump = JSON.parse(
     await fs.readFile(path.join(os.homedir(), 'Downloads', 'dump-last.json'))
   )
