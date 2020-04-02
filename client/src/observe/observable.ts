@@ -2,6 +2,7 @@ type SubscriptionObserver<T> = {
   next: (value: T) => void
   error: (err: Error) => void
   complete: () => void
+  version?: string
   closed: boolean // implemented as getter
 }
 

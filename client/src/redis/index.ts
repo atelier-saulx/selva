@@ -86,12 +86,23 @@ export default class RedisClient extends RedisMethods {
     return new Observable(observer => {
       const listener = (event: UpdateEvent | DeleteEvent) => {
         if (event.type === 'update') {
-          observer.next(event.payload)
+          if (observer.version !== event.version) {
+            observer.next(event.payload)
+          }
         } else if (event.type === 'delete') {
           observer.next(null)
         }
       }
       subscription.on('message', listener)
+
+      // get data if its there!
+      if (
+        this.redis.subscriptions[channel] &&
+        this.redis.subscriptions[channel].version
+      ) {
+        // get that initial
+      }
+
       return () => {
         subscription.count--
         subscription.removeListener('message', listener)

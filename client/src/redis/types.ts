@@ -18,6 +18,7 @@ export type RedisCommand = Resolvable & {
 export type UpdateEvent = {
   type: 'update'
   payload: GetResult
+  version?: string
 }
 
 export type DeleteEvent = {

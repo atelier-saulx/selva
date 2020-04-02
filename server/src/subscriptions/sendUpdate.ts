@@ -42,7 +42,7 @@ const sendUpdate = async (
     })
   )
 
-  // handle refs
+  // handle refs -- add this somewhere else
   const refs = payload.$meta.$refs
   delete subscriptionManager.refsById[getOptions.$id]
   let hasRefs = false
@@ -56,7 +56,8 @@ const sendUpdate = async (
   if (hasRefs) {
     // FIXME: very slow to do this all the time for everything :/
     console.log('WARNING UPDATING ALL SUBS BECAUSE OF REF CHANGE (SLOW!)')
-    subscriptionManager.updateSubscriptionData()
+    // will go into an endless loop scince creation of subscriptions call sendupdate
+    // subscriptionManager.updateSubscriptionData(true)
   }
 
   // handle query

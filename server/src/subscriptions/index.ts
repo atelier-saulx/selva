@@ -63,7 +63,6 @@ export default class SubscriptionManager {
 
     // just to speed things up and potentialy send something
     if (!this.subscriptions[channel]) {
-      console.log('Create sub from client', channel)
       const [getOptions, clients] = await Promise.all([
         this.client.redis.hget(subscriptionsName, channel),
         this.client.redis.smembers(channel)
@@ -118,33 +117,36 @@ export default class SubscriptionManager {
       fields: new Set()
     }
 
-    // FIXME: schema needs an observer!
-
     addFieldsToSubscription(
       this.subscriptions[channel],
       this.fieldMap,
+      // FIXME: schema needs an observer!
       (await this.client.getSchema()).schema,
       channel,
       this.refsById
     )
 
-    await this.sendUpdate(channel)
+    // have to check what the last update was
+    if (!(await this.client.redis.hexists('__selva_cache', channel))) {
+      await this.sendUpdate(channel)
+    }
   }
 
   async removeSubscription(channel: string, cleanUpQ: any[] = []) {
     const cache = `___selva_cache`
-
     const subscriptionsName = '___selva_subscriptions'
     cleanUpQ.push(this.client.redis.hdel(subscriptionsName, channel))
     cleanUpQ.push(this.client.redis.del(channel))
     cleanUpQ.push(this.client.redis.hdel(cache, channel, channel + '_version'))
-
-    removeFieldsFromSubscription(
-      this.subscriptions[channel],
-      this.fieldMap,
-      channel,
-      this.refsById
-    )
+    if (this.subscriptions[channel]) {
+      removeFieldsFromSubscription(
+        this.subscriptions[channel],
+        this.fieldMap,
+        channel,
+        this.refsById
+      )
+      delete this.subscriptions[channel]
+    }
   }
 
   async updateSubscriptionData() {
