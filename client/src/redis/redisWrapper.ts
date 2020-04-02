@@ -534,41 +534,68 @@ export class RedisWrapper {
     this.scriptShas[type] = {}
   }
 
+  public isBusy: boolean = false
+
   execBatch(origSlice: RedisCommand[], type: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      // dont need this type
-      const batch = this[type].batch()
-      const slice = Object.values(this.scriptBatchingEnabled).some(x => x)
-        ? this.batchEvalScriptArgs(origSlice, type)
-        : origSlice
+      if (this.isBusy) {
+        console.log('Server is busy - retrying in 1 second')
+        setTimeout(() => {
+          this.isBusy = false
+          this.execBatch(origSlice, type)
+        }, 1e3)
+      } else {
+        // dont need this type
+        const batch = this[type].batch()
+        const slice = Object.values(this.scriptBatchingEnabled).some(x => x)
+          ? this.batchEvalScriptArgs(origSlice, type)
+          : origSlice
 
-      slice.forEach(({ command, args }) => {
-        if (!batch[command]) {
-          throw new Error(`Command "${command}" is not a valid redis command!`)
-        } else {
-          batch[command](...args)
-        }
-      })
+        slice.forEach(({ command, args }) => {
+          if (!batch[command]) {
+            throw new Error(
+              `Command "${command}" is not a valid redis command!`
+            )
+          } else {
+            batch[command](...args)
+          }
+        })
 
-      batch.exec((err: Error, reply: any[]) => {
-        if (err) {
-          console.error(err)
-          reject(err)
-        } else {
-          reply.forEach((v: any, i: number) => {
-            if (v instanceof Error) {
-              if (slice[i].reject) {
-                slice[i].reject(v)
-              } else {
-                console.error('Error executing command', slice[i], v)
+        batch.exec((err: Error, reply: any[]) => {
+          if (err) {
+            console.error(err)
+            reject(err)
+          } else {
+            let hasBusy = false
+            reply.forEach((v: any, i: number) => {
+              if (v instanceof Error) {
+                if (v.message.indexOf('BUSY') !== -1) {
+                  hasBusy = true
+                  this.queue(
+                    slice[i].command,
+                    slice[i].args,
+                    slice[i].resolve,
+                    slice[i].reject,
+                    type
+                  )
+                } else if (slice[i].reject) {
+                  slice[i].reject(v)
+                } else {
+                  console.error('Error executing command', slice[i], v)
+                }
+              } else if (slice[i].resolve) {
+                slice[i].resolve(v)
               }
-            } else if (slice[i].resolve) {
-              slice[i].resolve(v)
+            })
+            if (hasBusy) {
+              this.isBusy = true
+            } else {
+              this.isBusy = false
             }
-          })
-          resolve()
-        }
-      })
+            resolve()
+          }
+        })
+      }
     })
   }
 

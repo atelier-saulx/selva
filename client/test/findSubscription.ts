@@ -236,10 +236,11 @@ test.serial('subscription find', async t => {
 
   let cnt3 = 0
   obs3.subscribe(d => {
+    console.log('incoming cnt 3', d)
     cnt3++
   })
 
-  await wait(300)
+  await wait(1000)
   // how to handle large responses ???
 
   // remove unpack
@@ -261,11 +262,15 @@ test.serial('subscription find', async t => {
   console.log('SET 5k', Date.now() - d, 'ms')
 
   await wait(2000)
+
+  console.log('set single')
   client.set({
     $id: ids[6],
     name: 'FLURRRRP'
   })
-  await wait(2000)
+  await wait(7000)
 
+  console.log('check for cnt')
   t.is(cnt3, 3)
+  await wait(2000)
 })
