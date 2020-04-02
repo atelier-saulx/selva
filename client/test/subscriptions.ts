@@ -361,7 +361,7 @@ test.serial(
   }
 )
 
-test.serial.only(
+test.serial(
   'subscription client side reconnection test -- event if pending changes',
   async t => {
     const port = await getPort()
@@ -451,7 +451,7 @@ test.serial.only(
   }
 )
 
-test.serial(
+test.serial.only(
   'subscription server side reconnection test -- event if pending changes',
   async t => {
     const port = await getPort()
