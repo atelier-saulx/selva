@@ -295,12 +295,9 @@ export class RedisWrapper {
   }
 
   subscribeChannel(channel: string, getOptions: GetOptions) {
-    // innitial subscription needs to get data somehow
-    // do we want to keep a mem cache :/ on the client as well?
     console.log('Subscribe channel (wrapper)', channel)
     const subscriptions = '___selva_subscriptions'
     const newSubscriptionChannel = '___selva_subscription:new'
-    // add verbose option in queue
     this.queue('hsetnx', [subscriptions, channel, JSON.stringify(getOptions)])
     this.queue('sadd', [channel, this.uuid])
     this.queue('publish', [
@@ -323,22 +320,16 @@ export class RedisWrapper {
   }
 
   public removeClient(client: string) {
-    // add log here as well
     const clientObj = this.clients.get(client)
     if (clientObj) {
       this.clients.delete(client)
-      // this is why we want subs here
-
-      // remove all SUBS
-      // make this after
-
+      for (const channel in clientObj.client.subscriptions) {
+        this.unsubscribe(client, channel)
+      }
+      // remove logs
       // if (type === 'sub' && this.redis.sub) {
       // this.redis.sub.unsubscribe(`${logPrefix}:${this.clientId}`)
       // }
-
-      // REMOVE SUBS from client
-      // have to remove all active subs here
-      // check in clients object set and remove all
     }
     if (this.clients.size === 0) {
       this.isDestroyed = true

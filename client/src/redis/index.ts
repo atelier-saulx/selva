@@ -34,7 +34,7 @@ export default class RedisClient extends RedisMethods {
   private log: LogFn | undefined
   private selvaClient: SelvaClient
   private connectOptions: ConnectOptions
-  private subscriptions: { [channel: string]: Subscription } = {}
+  public subscriptions: { [channel: string]: Subscription } = {}
 
   constructor(
     connect: ConnectOptions | (() => Promise<ConnectOptions>),
