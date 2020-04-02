@@ -141,8 +141,6 @@ export class RedisWrapper {
           channel !== '___selva_subscription:remove' &&
           channel !== '___selva_subscription:new'
         ) {
-          console.log('           --> ', channel)
-
           if (this.subscriptions[channel]) {
             this.emitChannel(channel)
           }
