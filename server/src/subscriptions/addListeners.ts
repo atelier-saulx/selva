@@ -44,14 +44,14 @@ const addListeners = async (
     if (message === 'delete') {
       for (const field in subsManager.fieldMap) {
         if (field.startsWith(eventName)) {
-          const subscriptionIds: Set<string> | undefined =
+          const subscriptionIds: Set<string> =
             subsManager.fieldMap[field] || new Set()
           for (const subscriptionId of subscriptionIds) {
             if (updatedSubscriptions[subscriptionId]) {
               continue
             }
             updatedSubscriptions[subscriptionId] = true
-            subsManager.sendUpdate(subscriptionId, null, true)
+            subsManager.sendUpdate(subscriptionId, true)
           }
         }
       }
@@ -61,16 +61,13 @@ const addListeners = async (
       let field = parts[0]
       for (let i = 0; i < parts.length; i++) {
         const channels: Set<string> | undefined = subsManager.fieldMap[field]
-
         if (channels) {
           for (const channel of channels) {
             if (updatedSubscriptions[channel]) {
               continue
             }
             updatedSubscriptions[channel] = true
-            subsManager.sendUpdate(channel).catch(e => {
-              console.error(e)
-            })
+            subsManager.sendUpdate(channel)
           }
         }
         if (i < parts.length - 1) {

@@ -99,6 +99,26 @@ export class RedisWrapper {
     clearTimeout(this.heartbeatTimout)
   }
 
+  emitChannel(channel: string) {
+    const cache = `___selva_cache`
+    this.queue(
+      'hmget',
+      [cache, channel, channel + '_version'],
+      ([data, version]) => {
+        if (data) {
+          const obj = JSON.parse(data)
+          this.subscriptions[channel].clients.forEach(client => {
+            const clientObj = this.clients.get(client)
+            clientObj.message(channel, obj)
+          })
+        }
+      },
+      err => {
+        console.error(err)
+      }
+    )
+  }
+
   addListeners() {
     this.sub.subscribe(serverHeartbeat)
 
@@ -118,14 +138,13 @@ export class RedisWrapper {
       } else {
         if (
           channel.indexOf('heartbeat') === -1 &&
-          channel !== '___selva_subscription:remove'
+          channel !== '___selva_subscription:remove' &&
+          channel !== '___selva_subscription:new'
         ) {
+          console.log('           --> ', channel)
+
           if (this.subscriptions[channel]) {
-            const obj = JSON.parse(msg)
-            this.subscriptions[channel].clients.forEach(client => {
-              const clientObj = this.clients.get(client)
-              clientObj.message(channel, obj)
-            })
+            this.emitChannel(channel)
           }
         }
       }
@@ -142,7 +161,7 @@ export class RedisWrapper {
 
   emit(type: string, value: any, client?: string) {
     if (!client) {
-      this.clients.forEach((obj, client) => {
+      this.clients.forEach(obj => {
         if (obj[type]) {
           obj[type](value)
         }
@@ -241,7 +260,6 @@ export class RedisWrapper {
   subscribe(client: string, channel: string, getOptions: GetOptions) {
     if (!this.subscriptions[channel]) {
       this.removeSubscriptionsSet.delete(channel)
-      console.log('Create subscription (wrapper)', channel.slice(-5))
       this.subscriptions[channel] = {
         clients: new Set(),
         getOptions
@@ -263,7 +281,6 @@ export class RedisWrapper {
     if (this.subscriptions[channel]) {
       this.subscriptions[channel].clients.delete(client)
       if (this.subscriptions[channel].clients.size === 0) {
-        console.log('Remove subscription (wrapper)', channel.slice(-5))
         delete this.subscriptions[channel]
         if (this.allConnected) {
           this.unsubscribeChannel(channel)
@@ -301,7 +318,6 @@ export class RedisWrapper {
   }
 
   subscribeChannel(channel: string, getOptions: GetOptions) {
-    console.log('Subscribe channel (wrapper)', channel)
     const subscriptions = '___selva_subscriptions'
     const newSubscriptionChannel = '___selva_subscription:new'
     this.queue('hsetnx', [subscriptions, channel, JSON.stringify(getOptions)])
@@ -310,9 +326,8 @@ export class RedisWrapper {
       newSubscriptionChannel,
       JSON.stringify({ client: this.uuid, channel })
     ])
-
-    console.log('subscribe!', channel)
     this.sub.subscribe(channel)
+    this.emitChannel(channel)
   }
 
   public sendSubcriptions() {

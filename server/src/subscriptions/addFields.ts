@@ -103,6 +103,7 @@ function addFieldsToSubscription(
   const { fields, get } = subscription
   // subscriptionsByField
   addFields('', fields, schema, get)
+
   for (const field of fields) {
     let current = fieldMap[get.$id + field]
     if (!current) {

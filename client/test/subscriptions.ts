@@ -43,7 +43,6 @@ test.serial.only('basic id based subscriptions', async t => {
   const observable = await client.observe({ $id: 'root', yesh: true })
   let o1counter = 0
   const sub = observable.subscribe(d => {
-    console.log('YO SUBSCRIBE!', d)
     if (o1counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, { yesh: '' })
@@ -66,6 +65,8 @@ test.serial.only('basic id based subscriptions', async t => {
   console.log('\n\nsecond sub!')
   const other = await client.observe({ $id: thing, $all: true, aliases: false })
   const sub2 = other.subscribe(d => {
+    console.log('incoming 2', d)
+
     if (o2counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
@@ -83,7 +84,7 @@ test.serial.only('basic id based subscriptions', async t => {
     o2counter++
   })
 
-  await wait(1000 * 2)
+  await wait(500 * 2)
 
   console.log('----------------------------------')
   console.log('set some things')
@@ -102,7 +103,7 @@ test.serial.only('basic id based subscriptions', async t => {
     $id: thing
   })
 
-  await wait(1000 * 2)
+  await wait(500 * 2)
 
   console.log('----------------------------------')
   console.log('unsubscribe')
@@ -110,7 +111,7 @@ test.serial.only('basic id based subscriptions', async t => {
   sub.unsubscribe()
   sub2.unsubscribe()
 
-  await wait(5000 * 2)
+  await wait(500 * 2)
 
   await client.delete('root')
 

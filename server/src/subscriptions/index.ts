@@ -37,25 +37,17 @@ export default class SubscriptionManager {
     nextRefresh: number
     queries: { subId: string; nextRefresh: number }[]
   }
-
   public refsById: RefsById = {}
-
   public client: SelvaClient
   public sub: RedisClient
   public pub: RedisClient // pub and client
-
   public inProgress: Record<string, true> = {}
   public incomingCount: number = 0
   public isDestroyed: boolean = false
   public cleanUp: boolean = false
-
   public refreshNowQueriesTimeout: NodeJS.Timeout
-
-  public lastResultHash: Record<string, string> = {}
-
   // to check if the server is still ok
   public serverHeartbeatTimeout: NodeJS.Timeout
-
   // revalidates subs ones in a while
   public revalidateSubscriptionsTimeout: NodeJS.Timeout
 
@@ -115,34 +107,6 @@ export default class SubscriptionManager {
     }
   }
 
-  public schema: Schema
-  public hasSchema: Promise<any>
-  public schemaTimeout: NodeJS.Timeout
-
-  public stopObservingSchema() {
-    clearTimeout(this.schemaTimeout)
-  }
-
-  async observeSchema() {
-    if (!this.schema) {
-      // add await for schema
-      this.hasSchema = this.client.getSchema()
-      this.schema = (await this.hasSchema).schema
-      this.hasSchema = null
-    }
-
-    const getSchema = () => {
-      this.schemaTimeout = setTimeout(() => {
-        this.client.getSchema().then(({ schema }) => {
-          this.schema = schema
-        })
-        // when clearing dont want to await        getSchema()
-      }, 1e3)
-    }
-
-    getSchema()
-  }
-
   async addSubscription(
     channel: string,
     clients: Set<string>,
@@ -154,27 +118,26 @@ export default class SubscriptionManager {
       fields: new Set()
     }
 
-    if (!this.schema) {
-      await this.hasSchema
-    }
+    // FIXME: schema needs an observer!
 
     addFieldsToSubscription(
       this.subscriptions[channel],
       this.fieldMap,
-      this.schema,
+      (await this.client.getSchema()).schema,
       channel,
       this.refsById
     )
+
+    await this.sendUpdate(channel)
   }
 
   async removeSubscription(channel: string, cleanUpQ: any[] = []) {
+    const cache = `___selva_cache`
+
     const subscriptionsName = '___selva_subscriptions'
     cleanUpQ.push(this.client.redis.hdel(subscriptionsName, channel))
     cleanUpQ.push(this.client.redis.del(channel))
-
-    if (!this.schema) {
-      await this.hasSchema
-    }
+    cleanUpQ.push(this.client.redis.hdel(cache, channel, channel + '_version'))
 
     removeFieldsFromSubscription(
       this.subscriptions[channel],
@@ -284,7 +247,6 @@ export default class SubscriptionManager {
     this.cleanUp = false
     clearTimeout(this.revalidateSubscriptionsTimeout)
     clearTimeout(this.serverHeartbeatTimeout)
-    this.stopObservingSchema()
     this.sub = null
     this.pub = null
   }
@@ -304,7 +266,6 @@ export default class SubscriptionManager {
         addListeners(this)
         this.revalidateSubscriptions()
         this.startServerHeartbeat()
-        this.observeSchema()
         if (!isResolved) {
           isResolved = true
           resolve()
@@ -334,11 +295,7 @@ export default class SubscriptionManager {
     }
   }
 
-  async sendUpdate(
-    subscriptionId: string,
-    getOptions?: GetOptions,
-    deleteOp: boolean = false
-  ) {
-    return sendUpdate(this, subscriptionId, getOptions, deleteOp)
+  async sendUpdate(subscriptionId: string, deleteOp: boolean = false) {
+    return sendUpdate(this, subscriptionId, deleteOp)
   }
 }

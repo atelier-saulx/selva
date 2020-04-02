@@ -7,31 +7,34 @@ import SubscriptionManager from './index'
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
   subscriptionId: string,
-  getOptions?: GetOptions,
   deleteOp: boolean = false
 ) => {
   if (!subscriptionManager.pub) {
     return
   }
+  const cache = `___selva_cache`
+  const subscription = subscriptionManager.subscriptions[subscriptionId]
 
-  if (deleteOp) {
-    subscriptionManager.pub.publish(
-      `___selva_subscription:${subscriptionId}`,
-      JSON.stringify({ type: 'delete' }),
-      (err, _reply) => {
-        if (err) {
-          console.error(err)
-        }
-      }
-    )
-
-    // delete cache for latest result since there is no result now!
-    // delete subscriptionManager.lastResultHash[subscriptionId]
+  if (!subscription) {
+    console.error(`Cannot find subscription on server ${subscriptionId}`)
     return
   }
 
-  getOptions =
-    getOptions || subscriptionManager.subscriptions[subscriptionId].get
+  if (deleteOp) {
+    const event = JSON.stringify({ type: 'delete' })
+    await Promise.all([
+      subscriptionManager.client.redis.hset(cache, subscriptionId, event),
+      subscriptionManager.client.redis.hset(
+        cache,
+        subscriptionId + '_version',
+        ''
+      )
+    ])
+    await subscriptionManager.client.redis.publish(subscriptionId, '')
+    return
+  }
+
+  const getOptions = subscriptionManager.subscriptions[subscriptionId].get
 
   const payload = await subscriptionManager.client.get(
     Object.assign({}, getOptions, {
@@ -39,29 +42,24 @@ const sendUpdate = async (
     })
   )
 
+  // handle refs
   const refs = payload.$meta.$refs
-
   delete subscriptionManager.refsById[getOptions.$id]
-
   let hasRefs = false
-
   const newRefs: Record<string, string> = {}
-
   for (const refSource in refs) {
     hasRefs = true
     const refTargets = refs[refSource]
     newRefs[refSource] = refTargets
   }
   subscriptionManager.refsById[getOptions.$id] = newRefs
-
-  // what to do here ???
   if (hasRefs) {
-    // FIXME: REALLY HAS TO GO
+    // FIXME: very slow to do this all the time for everything :/
     console.log('WARNING UPDATING ALL SUBS BECAUSE OF REF CHANGE (SLOW!)')
-    // very slow to do this all the time
     subscriptionManager.updateSubscriptionData()
   }
 
+  // handle query
   if (payload.$meta.query) {
     subscriptionManager.queries[subscriptionId] = <QuerySubscription[]>(
       payload.$meta.query
@@ -80,12 +78,9 @@ const sendUpdate = async (
   // if nested meta remove them
   delete payload.$meta
 
-  // hack-ish thing: include the result object in the string
-  // so we don't need to encode/decode as many times
+  // dont encode/decode as many times
   const resultStr = JSON.stringify({ type: 'update', payload })
-  // can start with a cache store for this allready  -- why not
-
-  const currentHash = subscriptionManager.lastResultHash[subscriptionId]
+  const currentHash = subscription.version
   const hashingFn = createHash('sha256')
   hashingFn.update(resultStr)
   const newHash = hashingFn.digest('hex')
@@ -98,11 +93,20 @@ const sendUpdate = async (
   }
 
   // change all this result hash
-  subscriptionManager.lastResultHash[subscriptionId] = newHash
+  subscription.version = newHash
 
-  // add publish in the redis client
-  console.log('PUBLISH', subscriptionId)
-  subscriptionManager.client.redis.publish(subscriptionId, resultStr)
+  // update cache
+  // also do this on intial
+  await Promise.all([
+    subscriptionManager.client.redis.hset(cache, subscriptionId, resultStr),
+    subscriptionManager.client.redis.hset(
+      cache,
+      subscriptionId + '_version',
+      newHash
+    )
+  ])
+
+  subscriptionManager.client.redis.publish(subscriptionId, newHash)
 }
 
 export default sendUpdate
