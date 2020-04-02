@@ -120,7 +120,13 @@ export class RedisWrapper {
           channel.indexOf('heartbeat') === -1 &&
           channel !== '___selva_subscription:remove'
         ) {
-          console.log('  --> ok channel', channel)
+          if (this.subscriptions[channel]) {
+            const obj = JSON.parse(msg)
+            this.subscriptions[channel].clients.forEach(client => {
+              const clientObj = this.clients.get(client)
+              clientObj.message(channel, obj)
+            })
+          }
         }
       }
     })
@@ -326,6 +332,8 @@ export class RedisWrapper {
       for (const channel in clientObj.client.subscriptions) {
         this.unsubscribe(client, channel)
       }
+      // to make sure it gets gc'ed
+      delete clientObj.client
       // remove logs
       // if (type === 'sub' && this.redis.sub) {
       // this.redis.sub.unsubscribe(`${logPrefix}:${this.clientId}`)
@@ -545,7 +553,6 @@ export class RedisWrapper {
     // dont need this type
     // extra optmization is to check for the same gets / sets / requests
     // remove type
-
     if (this.connected[type]) {
       this.inProgress[type] = true
       const buffer = this.buffer[type]

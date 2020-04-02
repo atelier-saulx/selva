@@ -2,15 +2,20 @@ import Observable from '../observe/observable'
 import { GetOptions, GetResult } from '../get/types'
 import { LogFn, SelvaOptions, SelvaClient } from '..'
 import { createClient, RedisWrapper } from './redisWrapper'
-import { Event, RedisCommand } from './types'
+import { Event, RedisCommand, UpdateEvent, DeleteEvent } from './types'
 import RedisMethods from './redisMethods'
+import { EventEmitter } from 'events'
 // adds FT commands to redis
 import './redisSearch'
 
-type Subscription = {
-  channel: string
-  getOpts: GetOptions
-  count: number
+class Subscription extends EventEmitter {
+  public channel: string
+  public getOpts: GetOptions
+  public count: number = 0
+  constructor(getOpts: GetOptions) {
+    super()
+    this.getOpts = getOpts
+  }
 }
 
 export type ConnectOptions = {
@@ -55,8 +60,9 @@ export default class RedisClient extends RedisMethods {
   destroy() {
     this.isDestroyed = true
     this.redis.removeClient(this.clientId)
-    if (this.redis.sub) {
-      this.redis.sub.unsubscribe(`___selva_lua_logs:${this.clientId}`)
+    for (let channel in this.subscriptions) {
+      this.subscriptions[channel].removeAllListeners()
+      delete this.subscriptions[channel]
     }
     this.redis = null
     this.connected = { client: false, sub: false }
@@ -64,11 +70,9 @@ export default class RedisClient extends RedisMethods {
   }
 
   createSubscription(channel: string, getOpts: GetOptions) {
-    const subscription = (this.subscriptions[channel] = {
-      channel,
-      getOpts,
-      count: 0
-    })
+    const subscription = (this.subscriptions[channel] = new Subscription(
+      getOpts
+    ))
     if (this.connected.sub) {
       this.redis.subscribe(this.clientId, channel, getOpts)
     }
@@ -79,27 +83,21 @@ export default class RedisClient extends RedisMethods {
     const subscription =
       this.subscriptions[channel] || this.createSubscription(channel, getOpts)
     subscription.count++
-
-    // make this a little bit more efficient
     return new Observable(observer => {
-      // add this fn to the total
-      // make this more efficient
-      const listener = (str: string) => {
-        const event: Event = JSON.parse(str)
+      const listener = (event: UpdateEvent | DeleteEvent) => {
         if (event.type === 'update') {
           observer.next(event.payload)
         } else if (event.type === 'delete') {
           observer.next(null)
         }
       }
-      // subscription.emitter.on('publish', listener)
-
-      // gets here twice not so nice
+      subscription.on('message', listener)
       return () => {
         subscription.count--
-        // subscription.emitter.removeListener('publish', listener)
+        subscription.removeListener('message', listener)
         if (subscription.count === 0) {
           this.redis.unsubscribe(this.clientId, channel)
+          subscription.removeAllListeners()
           delete this.subscriptions[channel]
         }
       }
@@ -200,8 +198,10 @@ export default class RedisClient extends RedisMethods {
 
     this.redis.addClient(this.clientId, {
       message: (channel, message) => {
-        console.log('publish something for this client', channel, message)
-        // recieves publish for all channels this client is interessted in
+        const subscription = this.subscriptions[channel]
+        if (subscription && message.type) {
+          subscription.emit('message', message)
+        }
       },
       log: this.log,
       connect: type => {

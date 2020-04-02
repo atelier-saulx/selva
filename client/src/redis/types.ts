@@ -29,7 +29,7 @@ export type Event = UpdateEvent | DeleteEvent
 export type ClientObject = {
   connect: (type: string) => void
   disconnect: (type: string) => void
-  message: (channel: string, message: string) => void
+  message: (channel: string, message: { [key: string]: any }) => void
   log?: LogFn
   client: Redis
 }
