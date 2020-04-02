@@ -43,6 +43,7 @@ test.serial.only('basic id based subscriptions', async t => {
   const observable = await client.observe({ $id: 'root', yesh: true })
   let o1counter = 0
   const sub = observable.subscribe(d => {
+    console.log('YO SUBSCRIBE!', d)
     if (o1counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, { yesh: '' })
