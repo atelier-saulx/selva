@@ -43,7 +43,7 @@ export default class SubscriptionManager {
   public pub: RedisClient // pub and client
   public inProgress: Record<string, true> = {}
   public incomingCount: number = 0
-  public isDestroyed: boolean = false
+  // public isDestroyed: boolean = false
   public cleanUp: boolean = false
   public refreshNowQueriesTimeout: NodeJS.Timeout
   // to check if the server is still ok
@@ -220,6 +220,8 @@ export default class SubscriptionManager {
       i++
     }
 
+    // console.log('helo do it', this.clients, this.subscriptions)
+
     if (cleanUpQ.length) {
       await Promise.all(cleanUpQ)
       console.log('cleaned up clients / subscriptions', cleanUpQ.length)
@@ -266,8 +268,8 @@ export default class SubscriptionManager {
         this.pub = this.client.redis.redis.client
         // ------------------------------
         addListeners(this)
-        this.revalidateSubscriptions()
         this.startServerHeartbeat()
+        this.revalidateSubscriptions()
         if (!isResolved) {
           isResolved = true
           resolve()
@@ -283,7 +285,6 @@ export default class SubscriptionManager {
 
   destroy() {
     this.client.destroy()
-    this.isDestroyed = true
     this.clear()
   }
 

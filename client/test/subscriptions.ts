@@ -287,7 +287,7 @@ test.serial('basic $inherit when ancestors change', async t => {
   await client.delete('root')
 })
 
-test.serial(
+test.serial.only(
   'subscription client side reconnection test -- no event if no changes',
   async t => {
     const port = await getPort()
@@ -311,21 +311,19 @@ test.serial(
       }
     })
 
-    t.plan(4)
+    t.plan(3)
 
     const observable = await client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
     const sub = observable.subscribe(d => {
+      console.log(d)
       if (o1counter === 0) {
         // gets start event
         t.deepEqualIgnoreOrder(d, { yesh: '' })
       } else if (o1counter === 1) {
         // reconnect event
-        t.deepEqualIgnoreOrder(d, { yesh: '' })
-      } else if (o1counter === 2) {
-        // gets update event
         t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })
-      } else if (o1counter === 3) {
+      } else if (o1counter === 2) {
         t.deepEqualIgnoreOrder(d, { yesh: 'so nice!!!' })
       } else {
         // doesn't get any more events
@@ -334,13 +332,14 @@ test.serial(
       o1counter++
     })
 
-    await wait(1000 * 5)
+    await wait(1000)
     // should get no event after reconnection
     client.redis.redis.disconnect()
     await wait(1000 * 5)
     client.redis.redis.reconnect()
     await wait(1000 * 5)
 
+    console.log('set so nice')
     await client.set({
       $id: 'root',
       yesh: 'so nice'
@@ -348,6 +347,7 @@ test.serial(
 
     await wait(1000 * 1)
 
+    console.log('set so nice!!!')
     await client.set({
       $id: 'root',
       yesh: 'so nice!!!'
@@ -361,6 +361,7 @@ test.serial(
   }
 )
 
+// still have to fix this
 test.serial(
   'subscription client side reconnection test -- event if pending changes',
   async t => {
@@ -451,7 +452,7 @@ test.serial(
   }
 )
 
-test.serial.only(
+test.serial(
   'subscription server side reconnection test -- event if pending changes',
   async t => {
     const port = await getPort()
@@ -495,9 +496,12 @@ test.serial.only(
     })
 
     await wait(1000 * 5)
+    console.log('close subs')
     // should get no event after reconnection
     server.closeSubscriptions()
     await wait(1000 * 5)
+
+    console.log('set')
 
     await client.set({
       $id: 'root',
@@ -506,16 +510,20 @@ test.serial.only(
 
     await wait(1000 * 1)
 
+    console.log('set 2')
+
     await client.set({
       $id: 'root',
       yesh: 'so nice!!!'
     })
 
     await wait(1000 * 1)
+    console.log('open subs')
+
     server.openSubscriptions()
     await wait(1000 * 5)
 
-    console.log('yesh')
+    console.log('done shludl have done all!')
     sub.unsubscribe()
 
     await client.delete('root')
