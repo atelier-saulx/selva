@@ -75,6 +75,7 @@ const addListeners = async (
         }
       }
     }
+    // if query dont add to fields
     query(subsManager, message, eventName)
   })
 

@@ -16,7 +16,9 @@ const sendUpdate = async (
   const subscription = subscriptionManager.subscriptions[subscriptionId]
 
   if (!subscription) {
-    console.error(`Cannot find subscription on server ${subscriptionId}`)
+    console.error(
+      `Cannot find subscription on server ${subscriptionId.slice(-5)}`
+    )
     return
   }
 
@@ -61,6 +63,8 @@ const sendUpdate = async (
   }
 
   // handle query
+
+  // need to add some stuff here
   if (payload.$meta.query) {
     subscriptionManager.queries[subscriptionId] = <QuerySubscription[]>(
       payload.$meta.query

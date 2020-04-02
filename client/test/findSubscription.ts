@@ -141,7 +141,7 @@ test.serial('subscription find', async t => {
     $id: matches[1].$id,
     value: 8
   })
-  await wait(300)
+  await wait(1000)
   t.is(cnt, 3)
 
   sub.unsubscribe()
@@ -235,7 +235,7 @@ test.serial('subscription find', async t => {
   })
 
   let cnt3 = 0
-  obs3.subscribe(s => {
+  obs3.subscribe(d => {
     cnt3++
   })
 

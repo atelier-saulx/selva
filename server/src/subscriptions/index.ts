@@ -138,6 +138,11 @@ export default class SubscriptionManager {
     cleanUpQ.push(this.client.redis.hdel(subscriptionsName, channel))
     cleanUpQ.push(this.client.redis.del(channel))
     cleanUpQ.push(this.client.redis.hdel(cache, channel, channel + '_version'))
+
+    if (this.queries[channel]) {
+      delete this.queries[channel]
+    }
+
     if (this.subscriptions[channel]) {
       removeFieldsFromSubscription(
         this.subscriptions[channel],

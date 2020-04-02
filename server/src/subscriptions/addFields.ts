@@ -156,6 +156,8 @@ function removeFieldsFromSubscription(
       }
     }
   }
+
+  console.log('remove fields', channel.slice(-5), get.$id, fields)
 }
 
 // this will become very annoying....
