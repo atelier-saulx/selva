@@ -97,6 +97,7 @@ const sendUpdate = async (
   subscription.version = newHash
 
   // update cache
+
   // also do this on intial
   await Promise.all([
     subscriptionManager.client.redis.hset(cache, subscriptionId, resultStr),

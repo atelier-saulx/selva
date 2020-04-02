@@ -361,7 +361,7 @@ test.serial(
   }
 )
 
-test.serial(
+test.serial.only(
   'subscription client side reconnection test -- event if pending changes',
   async t => {
     const port = await getPort()
@@ -390,6 +390,7 @@ test.serial(
     const observable = await client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
     const sub = observable.subscribe(d => {
+      console.log(d)
       if (o1counter === 0) {
         // gets start event
         t.deepEqualIgnoreOrder(d, { yesh: '' })
@@ -405,20 +406,32 @@ test.serial(
       o1counter++
     })
 
-    await wait(1000 * 5)
+    await wait(1000)
+    console.log('----------------------------------')
+    console.log('dc and rc')
+
     // should get no event after reconnection
     client.redis.redis.disconnect()
     await wait(1000 * 5)
     client.redis.redis.reconnect()
+    console.log('----------------------------------')
+
+    console.log('set')
 
     await client.set({
       $id: 'root',
       yesh: 'so nice'
     })
 
-    await wait(1000 * 1)
+    await wait(1000 * 5)
+    console.log('----------------------------------')
+
+    console.log('reconnect')
 
     client.redis.redis.reconnect()
+    console.log('----------------------------------')
+
+    console.log('set again')
 
     await client.set({
       $id: 'root',
@@ -426,6 +439,9 @@ test.serial(
     })
 
     await wait(1000 * 5)
+    console.log('----------------------------------')
+
+    console.log('unsubscribe')
 
     sub.unsubscribe()
 

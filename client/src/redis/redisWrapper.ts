@@ -99,7 +99,7 @@ export class RedisWrapper {
     clearTimeout(this.heartbeatTimout)
   }
 
-  emitChannel(channel: string) {
+  emitChannel(channel: string, client?: string) {
     const cache = `___selva_cache`
     this.queue(
       'hmget',
@@ -107,10 +107,16 @@ export class RedisWrapper {
       ([data, version]) => {
         if (data) {
           const obj = JSON.parse(data)
-          this.subscriptions[channel].clients.forEach(client => {
+          obj.version = version
+          if (client) {
             const clientObj = this.clients.get(client)
             clientObj.message(channel, obj)
-          })
+          } else {
+            this.subscriptions[channel].clients.forEach(client => {
+              const clientObj = this.clients.get(client)
+              clientObj.message(channel, obj)
+            })
+          }
         }
       },
       err => {
@@ -152,7 +158,7 @@ export class RedisWrapper {
   cleanUp() {
     if (this.sub) {
       this.sub.removeAllListeners('message')
-      this.unsubscribeAllChannels()
+      // this.unsubscribeAllChannels()
     }
     this.stopHeartbeat()
   }
@@ -330,7 +336,7 @@ export class RedisWrapper {
 
   public sendSubcriptions() {
     for (const channel in this.subscriptions) {
-      this.subscribeChannel(channel, this.subscriptions[channel])
+      this.subscribeChannel(channel, this.subscriptions[channel].getOptions)
     }
 
     this.removeSubscriptionsSet.forEach(channel => {
