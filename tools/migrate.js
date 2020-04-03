@@ -83,7 +83,7 @@ async function makeSchema(client) {
       type: 'string'
     },
     article: {
-      type: 'string'
+      type: 'text'
     },
     image: {
       type: 'object',
