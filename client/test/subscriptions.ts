@@ -452,7 +452,8 @@ test.serial(
   }
 )
 
-test.serial(
+// skip for now
+test.serial.skip(
   'subscription server side reconnection test -- event if pending changes',
   async t => {
     const port = await getPort()

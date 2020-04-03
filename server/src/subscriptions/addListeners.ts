@@ -35,13 +35,6 @@ const addListeners = async (
     }
   })
 
-  console.log('Server listeners (sub)', subsManager.sub.rawListeners.length)
-  console.log('Server listeners (pub)', subsManager.pub.rawListeners.length)
-  console.log(
-    'Server listeners (client)',
-    subsManager.client.rawListeners.length
-  )
-
   const prefixLength = '___selva_events:'.length
 
   subsManager.sub.on('pmessage', (_pattern, channel, message) => {

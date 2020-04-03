@@ -244,7 +244,9 @@ test.serial('subscription find', async t => {
   // how to handle large responses ???
 
   // remove unpack
-  const amount = 5000 // 10k wrong 5k fine
+
+  // for now 1k
+  const amount = 1000 // 10k wrong 5k fine
 
   const x = []
   for (let i = 0; i < amount; i++) {
@@ -259,7 +261,7 @@ test.serial('subscription find', async t => {
 
   var d = Date.now()
   const ids = await Promise.all(x)
-  console.log('SET 5k', Date.now() - d, 'ms')
+  console.log('SET 1k', Date.now() - d, 'ms')
 
   await wait(2000)
 

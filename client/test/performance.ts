@@ -59,7 +59,7 @@ test.serial('perf - Set multiple using 5 clients', async t => {
 
     let iteration = 1
     let time = 0
-    let amount = 1000
+    let amount = 500
     const setLoop = async () => {
       const q = []
       for (let i = 0; i < amount; i++) {
@@ -110,14 +110,21 @@ test.serial('perf - Set multiple using 5 clients', async t => {
   }
 
   let it = 0
-  setInterval(() => {
+
+  const getTotal = () => {
     let a = 0
     for (let key in total) {
       a += total[key].amount
     }
+    return a
+  }
+
+  setInterval(() => {
     it++
     if (it - 2 > 0) {
-      console.log(`Processed ${a} items in ${10 * (it - 2)}s using 5 clients`)
+      console.log(
+        `Processed ${getTotal()} items in ${10 * (it - 2)}s using 5 clients`
+      )
     }
   }, 10e3)
 
@@ -143,6 +150,6 @@ test.serial('perf - Set multiple using 5 clients', async t => {
   //     cnt++
   //   })
 
-  await wait(5000500)
-  t.true(true)
+  await wait(60000)
+  t.true(getTotal() > 20e3)
 })
