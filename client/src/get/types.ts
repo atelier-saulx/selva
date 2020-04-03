@@ -59,7 +59,7 @@ export type List = {
 }
 
 export type GetField<T> = {
-  $field?: string | string[]
+  $field?: string | string[] | { path: string | string[]; value: GetOptions }
   $inherit?: Inherit
   $list?: List
   $find?: Find
