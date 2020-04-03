@@ -55,14 +55,14 @@ export function cleanUpSuggestions(id: string, field: string) {
 
               const current: number = redis.call(
                 'hincrby',
-                `sug_${lang}_counts`,
+                `sug_counts`,
                 str,
                 '-1'
               )
 
               if (current === 0) {
-                redis.call('hdel', `sug_${lang}_counts`, str)
-                redis.pcall('ft.sugdel', `sug_${lang}`, str)
+                redis.call('hdel', `sug_counts`, str)
+                redis.pcall('ft.sugdel', `sug`, str)
               } else {
               }
             }
