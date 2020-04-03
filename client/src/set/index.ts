@@ -178,6 +178,10 @@ async function setInBatches(
       })
 
       const ids = entries.map(e => {
+        if (typeof e === 'string') {
+          return e
+        }
+
         return e.$id
       })
 
