@@ -153,6 +153,8 @@ export class RedisWrapper {
         }
       }
     })
+
+    console.log('Client listeners', 'sub', this.sub.rawListeners.length)
   }
 
   cleanUp() {
@@ -212,17 +214,23 @@ export class RedisWrapper {
       client.on('ready', () => {
         tries = 0
         this.connected[type] = true
+        // ----------------------------------------------------
+        // hopefully this does not break anything
+        client.removeAllListeners('message')
+        client.removeAllListeners('pmessage')
+        // ----------------------------------------------------
         this.resetScripts(type)
+
         // initlize logging for each client
         /*
           this.redis.sub.subscribe(`${logPrefix}:${this.clientId}`)
         */
-        this.emit('connect', type)
         if (this.allConnected) {
           this.startHeartbeat()
           this.sendSubcriptions()
           this.addListeners()
         }
+        this.emit('connect', type)
       })
 
       client.on('error', err => {

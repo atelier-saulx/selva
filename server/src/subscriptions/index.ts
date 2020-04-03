@@ -263,6 +263,7 @@ export default class SubscriptionManager {
   connect(port: number): Promise<void> {
     let isResolved = false
     return new Promise((resolve, reject) => {
+      resolve()
       this.client = new SelvaClient({ port }, { loglevel: 'info' })
 
       this.client.on('connect', () => {
