@@ -154,7 +154,7 @@ async function setInBatches(
 
       const entries = await Promise.all(
         slice.map(async i => {
-          if (i.$id || i.$alias) {
+          if (typeof i === 'string' || i.$id || i.$alias) {
             return i
           }
 
