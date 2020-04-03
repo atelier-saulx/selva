@@ -140,7 +140,7 @@ export class RedisWrapper {
         }
       } else if (channel.indexOf(logPrefix) === 0) {
         console.log('log', channel)
-        // this.emit('log', { client: logPrefix.slice(0, logPrefix.length), msg })
+        // this.emit('log', msg, channel.slice(0, logPrefix.length))
       } else {
         if (
           channel.indexOf('heartbeat') === -1 &&
@@ -163,6 +163,7 @@ export class RedisWrapper {
       // this.unsubscribeAllChannels()
     }
     this.stopHeartbeat()
+    this.stopClientLogging()
   }
 
   emit(type: string, value: any, client?: string) {
@@ -227,6 +228,7 @@ export class RedisWrapper {
           this.startHeartbeat()
           this.sendSubcriptions()
           this.addListeners()
+          this.startClientLogging()
         }
         this.emit('connect', type)
       })
@@ -244,6 +246,22 @@ export class RedisWrapper {
           this.emit('error', err)
         }
       })
+    })
+  }
+
+  startClientLogging() {
+    this.clients.forEach((client, id) => {
+      if (client.log) {
+        this.sub.subscribe(`${logPrefix}:${id}`)
+      }
+    })
+  }
+
+  stopClientLogging() {
+    this.clients.forEach((client, id) => {
+      if (client.log) {
+        this.sub.unsubscribe(`${logPrefix}:${id}`)
+      }
     })
   }
 
@@ -359,6 +377,9 @@ export class RedisWrapper {
       for (const channel in clientObj.client.subscriptions) {
         this.unsubscribe(client, channel)
       }
+      if (clientObj.log && this.connected.sub) {
+        this.sub.unsubscribe(`${logPrefix}:${client}`)
+      }
       // to make sure it gets gc'ed
       delete clientObj.client
       // remove logs
@@ -382,6 +403,9 @@ export class RedisWrapper {
           clientObj.connect(type)
         }
       })
+      if (this.connected.sub && clientObj.log) {
+        this.sub.subscribe(`${logPrefix}:${client}`)
+      }
     } else {
       throw new Error('trying to add a client thats allready added!')
     }
