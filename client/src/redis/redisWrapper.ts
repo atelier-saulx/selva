@@ -221,7 +221,7 @@ export class RedisWrapper {
         // ----------------------------------------------------
         this.resetScripts(type)
 
-        // initlize logging for each client
+        // initialize logging for each client
         /*
           this.redis.sub.subscribe(`${logPrefix}:${this.clientId}`)
         */
