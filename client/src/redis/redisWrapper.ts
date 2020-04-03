@@ -196,8 +196,6 @@ export class RedisWrapper {
               if (this.allDisconnected) {
                 this.cleanUp()
               }
-              console.log('DISCONNECTED')
-
               this.emit('disconnect', type)
             }
           }
@@ -240,8 +238,6 @@ export class RedisWrapper {
             if (this.allDisconnected) {
               this.cleanUp()
             }
-            console.log('DISCONNECTED')
-
             this.emit('disconnect', type)
           }
         } else {
