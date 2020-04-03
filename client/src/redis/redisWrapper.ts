@@ -9,7 +9,7 @@ const redisClients: Record<string, RedisWrapper> = {}
 const HEARTBEAT_TIMER = 5e3
 
 const serverHeartbeat = '___selva_subscription:server_heartbeat'
-const logPrefix = '___selva_lua_logs:'
+const logPrefix = '___selva_lua_logs'
 
 export class RedisWrapper {
   public client: RedisClient
@@ -139,8 +139,8 @@ export class RedisWrapper {
           this.reconnect()
         }
       } else if (channel.indexOf(logPrefix) === 0) {
-        console.log('log', channel)
-        // this.emit('log', msg, channel.slice(0, logPrefix.length))
+        const [_, id] = channel.split(':')
+        this.emit('log', JSON.parse(msg), id)
       } else {
         if (
           channel.indexOf('heartbeat') === -1 &&
@@ -252,6 +252,7 @@ export class RedisWrapper {
   startClientLogging() {
     this.clients.forEach((client, id) => {
       if (client.log) {
+        console.log('subscribe', `${logPrefix}:${id}`)
         this.sub.subscribe(`${logPrefix}:${id}`)
       }
     })
@@ -380,12 +381,7 @@ export class RedisWrapper {
       if (clientObj.log && this.connected.sub) {
         this.sub.unsubscribe(`${logPrefix}:${client}`)
       }
-      // to make sure it gets gc'ed
       delete clientObj.client
-      // remove logs
-      // if (type === 'sub' && this.redis.sub) {
-      // this.redis.sub.unsubscribe(`${logPrefix}:${this.clientId}`)
-      // }
     }
     if (this.clients.size === 0) {
       this.isDestroyed = true
