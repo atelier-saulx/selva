@@ -229,11 +229,9 @@ export class SelvaClient extends EventEmitter {
 
   async updateSchema(props: SchemaOptions, retry?: number) {
     retry = retry || 0
-
     if (!props.types) {
       props.types = {}
     }
-
     const newSchema = newSchemaDefinition(this.schema, <Schema>props)
     try {
       const updated = await this.redis.loadAndEvalScript(
@@ -244,12 +242,10 @@ export class SelvaClient extends EventEmitter {
         [`${this.loglevel}:${this.clientId}`, JSON.stringify(newSchema)],
         'client'
       )
-
       if (updated) {
         this.schema = JSON.parse(updated)
       }
     } catch (e) {
-      // console.error('Error updating schema', e.stack)
       if (
         e.stack.includes(
           'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
@@ -260,7 +256,6 @@ export class SelvaClient extends EventEmitter {
             `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
           )
         }
-
         await this.getSchema()
         await wait(retry * 200)
         await this.updateSchema(props, retry + 1)

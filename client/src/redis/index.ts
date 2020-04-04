@@ -193,10 +193,13 @@ export default class RedisClient extends RedisMethods {
   }
 
   public sendQueueToRedis(type) {
-    this.buffer[type].forEach(({ command, args, resolve, reject }) => {
+    // need to check if dc here else you loose commands
+    const buffer = this.buffer[type]
+    this.buffer[type] = []
+
+    buffer.forEach(({ command, args, resolve, reject }) => {
       this.redis.queue(command, args, resolve, reject, type)
     })
-    this.buffer[type] = []
   }
 
   private async connect() {
@@ -224,6 +227,7 @@ export default class RedisClient extends RedisMethods {
         }
       },
       disconnect: type => {
+        console.log('dc client', type)
         this.connected[type] = false
         if (this.redis.allDisconnected) {
           this.selvaClient.emit('disconnect')

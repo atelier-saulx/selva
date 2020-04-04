@@ -214,6 +214,7 @@ export class RedisWrapper {
         client.removeAllListeners('pmessage')
         // ----------------------------------------------------
         this.resetScripts(type)
+        this.flushBuffered(type)
 
         if (this.allConnected) {
           this.startHeartbeat()
@@ -221,6 +222,7 @@ export class RedisWrapper {
           this.addListeners()
           this.startClientLogging()
         }
+
         this.emit('connect', type)
       })
 
@@ -613,10 +615,37 @@ export class RedisWrapper {
     })
   }
 
+  async logBuffer(buffer, type) {
+    console.log('--------------------------')
+    console.log(type, 'buffer', Date.now())
+    buffer.forEach(({ command, args }) => {
+      if (command === 'evalsha') {
+        for (let key in this.scriptShas[type]) {
+          if (this.scriptShas[type][key] === args[0]) {
+            console.log(` ${key}`)
+            try {
+              const j = JSON.parse(args[3])
+              console.log(j)
+            } catch (_err) {
+              console.log(`    ${args}`)
+            }
+          }
+        }
+      } else {
+        console.log(` ${command}`)
+        if (command !== 'script') {
+          console.log(`    ${args}`)
+        }
+      }
+    })
+    console.log('--------------------------')
+  }
+
   async flushBuffered(type: string) {
     if (this.connected[type]) {
       this.inProgress[type] = true
       const buffer = this.buffer[type]
+      this.logBuffer(buffer, type)
       this.buffer[type] = []
       const len = Math.ceil(buffer.length / 5000)
       for (let i = 0; i < len; i++) {
@@ -625,11 +654,7 @@ export class RedisWrapper {
           this.inProgress[type] = false
           return
         } else {
-          try {
-            await this.execBatch(slice, type)
-          } catch (err) {
-            console.error(err)
-          }
+          await this.execBatch(slice, type)
         }
       }
       if (this.buffer[type].length) {

@@ -11,14 +11,6 @@ test('Connect and re-connect', async t => {
     return { port: current }
   })
 
-  client.on('connect', () => {
-    console.log('connect CLIENT EVENT')
-  })
-
-  client.on('disconnect', () => {
-    console.log('disconnect CLIENT EVENT')
-  })
-
   const server = await start({ port: current })
 
   await client.updateSchema({
@@ -110,11 +102,11 @@ test('Connect and re-connect', async t => {
     {}
   )
 
-  console.log('lullz')
-
   server2.destroy()
-  await wait(1e3)
+  await wait(2e3)
 
+  console.log('-----------------------------------------------')
+  console.log('Update schema')
   client.updateSchema({
     types: {
       flurp: {
@@ -126,18 +118,17 @@ test('Connect and re-connect', async t => {
     }
   })
 
-  console.log('SET SNURK')
+  console.log('Set snurk')
   client.set({
     $id: 'flap',
     snurk: 'snurk it 1'
   })
 
-  console.log('long wait')
-  await wait(10e3)
+  await wait(1e3)
+  console.log('Reconnect')
   const server3 = await start({ port: current })
 
   await wait(3e3)
-  console.log('RECONNECT')
 
   const item = await client.get({ $id: 'flap', snurk: true })
 
