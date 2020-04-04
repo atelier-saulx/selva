@@ -89,8 +89,6 @@ test.serial('subscription list', async t => {
     }
   })
 
-  console.log(JSON.stringify(ff.$meta, void 0, 2))
-
   t.is(Object.keys(ff.$meta.query[0].ids).length, 9)
 
   await wait()
@@ -105,7 +103,6 @@ test.serial('subscription list', async t => {
   let cnt = 0
   const sub = obs.subscribe(d => {
     cnt++
-    console.log('FLURPY GO!', cnt, d)
   })
 
   await wait(1000)
@@ -131,10 +128,29 @@ test.serial('subscription list', async t => {
     }
   })
 
+  const obs3 = await client.observe({
+    $language: 'en', // need this in my meta query
+    title: true,
+    items: {
+      name: true,
+      title: true,
+      type: true,
+      $list: {
+        $find: {
+          $traverse: 'children'
+        }
+      }
+    }
+  })
+
   let cnt2 = 0
+  let cnt3 = 0
   const sub2 = obs2.subscribe(d => {
     cnt2++
-    console.log('get children', d, cnt2)
+  })
+
+  const sub3 = obs3.subscribe(d => {
+    cnt3++
   })
 
   await wait(1000)
@@ -147,6 +163,7 @@ test.serial('subscription list', async t => {
 
   await wait(1000)
   sub2.unsubscribe()
-
+  sub3.unsubscribe()
+  t.is(cnt3, 2)
   t.is(cnt2, 2)
 })
