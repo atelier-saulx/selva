@@ -55,8 +55,6 @@ export default class RedisClient extends RedisMethods {
         ? defaultLogging
         : undefined)
 
-    console.log('hello', this.log)
-
     this.connector =
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
     this.connect()
