@@ -11,6 +11,13 @@ const HEARTBEAT_TIMER = 5e3
 const serverHeartbeat = '___selva_subscription:server_heartbeat'
 const logPrefix = '___selva_lua_logs'
 
+const isEmpty = (obj: { [k: string]: any }): boolean => {
+  for (let k in obj) {
+    return false
+  }
+  return true
+}
+
 export class RedisWrapper {
   public client: RedisClient
   public sub: RedisClient
@@ -161,6 +168,7 @@ export class RedisWrapper {
     }
     this.stopHeartbeat()
     this.stopClientLogging()
+    this.inProgress = { sub: false, client: false }
   }
 
   emit(type: string, value: any, client?: string) {
@@ -468,7 +476,6 @@ export class RedisWrapper {
     }
 
     if (!this.inProgress[type] && this.connected[type]) {
-      this.inProgress[type] = true
       process.nextTick(() => {
         this.flushBuffered(type)
       })
@@ -563,9 +570,10 @@ export class RedisWrapper {
       } else {
         // dont need this type
         const batch = this[type].batch()
-        const slice = Object.values(this.scriptBatchingEnabled).some(x => x)
-          ? this.batchEvalScriptArgs(origSlice, type)
-          : origSlice
+
+        const slice = isEmpty(this.scriptBatchingEnabled[type])
+          ? origSlice
+          : this.batchEvalScriptArgs(origSlice, type)
 
         slice.forEach(({ command, args }) => {
           if (!batch[command]) {
@@ -585,6 +593,7 @@ export class RedisWrapper {
             let hasBusy = false
             reply.forEach((v: any, i: number) => {
               if (v instanceof Error) {
+                console.log('ERROR', v)
                 if (v.message.indexOf('BUSY') !== -1) {
                   hasBusy = true
                   this.queue(
@@ -615,9 +624,11 @@ export class RedisWrapper {
     })
   }
 
-  async logBuffer(buffer, type) {
+  logBuffer(buffer, type) {
     console.log('--------------------------')
-    console.log(type, 'buffer', Date.now())
+    const bufferId = `${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}:${new Date().getMilliseconds()}`
+
+    console.log(type, 'buffer', bufferId)
     buffer.forEach(({ command, args }) => {
       if (command === 'evalsha') {
         for (let key in this.scriptShas[type]) {
@@ -638,31 +649,38 @@ export class RedisWrapper {
         }
       }
     })
-    console.log('--------------------------')
+    return bufferId
   }
 
   async flushBuffered(type: string) {
     if (this.connected[type]) {
-      this.inProgress[type] = true
-      const buffer = this.buffer[type]
-      this.logBuffer(buffer, type)
-      this.buffer[type] = []
-      const len = Math.ceil(buffer.length / 5000)
-      for (let i = 0; i < len; i++) {
-        const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
-        if (!this.connected[type]) {
-          this.inProgress[type] = false
-          return
-        } else {
-          await this.execBatch(slice, type)
+      if (!this.inProgress[type]) {
+        this.inProgress[type] = true
+        const buffer = this.buffer[type]
+        if (buffer.length) {
+          const bId = this.logBuffer(buffer, type)
+          this.buffer[type] = []
+          const len = Math.ceil(buffer.length / 5000)
+          for (let i = 0; i < len; i++) {
+            const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
+            if (!this.connected[type]) {
+              // re add slice
+              this.buffer[type] = buffer.slice(i * 5e3)
+              return
+            } else {
+              if (slice.length) {
+                await this.execBatch(slice, type)
+                console.log('EXECUTED BATCH\n', bId, type)
+              }
+            }
+          }
+          if (this.buffer[type].length) {
+            this.inProgress[type] = false
+            await this.flushBuffered(type)
+          }
         }
+        this.inProgress[type] = false
       }
-      if (this.buffer[type].length) {
-        await this.flushBuffered(type)
-      }
-      this.inProgress[type] = false
-    } else {
-      this.inProgress[type] = false
     }
   }
 }

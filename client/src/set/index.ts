@@ -31,11 +31,11 @@ export const parseSetObject = (
   const schema = type === 'root' ? schemas.rootType : schemas.types[type]
   if (!schema) {
     throw new Error(
-      `Cannot find type ${type} from set-object ${JSON.stringify(
-        payload,
-        null,
-        2
-      )}`
+      `Cannot find type ${type ||
+        ` from prefix ${payload.$id.substring(
+          0,
+          2
+        )}`} from set-object ${JSON.stringify(payload, null, 2)}`
     )
   }
 
@@ -99,7 +99,10 @@ export const parseSetObject = (
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   let gotSchema = false
   if (!client.schema) {
+    console.log('RE-GET SCHEMA')
+    // order goes wrong update schema allways needs to exec before anything else
     await client.getSchema()
+    console.log('REGOT SCHEMA!', JSON.stringify(client.schema, void 0, 2))
     gotSchema = true
   }
   // need to check if it updated
