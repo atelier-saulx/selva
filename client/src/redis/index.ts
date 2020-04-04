@@ -51,7 +51,12 @@ export default class RedisClient extends RedisMethods {
     this.selvaClient = selvaClient
     this.log =
       (selvaOpts && selvaOpts.log) ||
-      (selvaOpts && selvaOpts.loglevel ? defaultLogging : undefined)
+      (selvaOpts && selvaOpts.loglevel && selvaOpts.loglevel !== 'off'
+        ? defaultLogging
+        : undefined)
+
+    console.log('hello', this.log)
+
     this.connector =
       typeof connect === 'object' ? () => Promise.resolve(connect) : connect
     this.connect()

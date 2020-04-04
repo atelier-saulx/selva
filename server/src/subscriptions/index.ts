@@ -264,7 +264,9 @@ export default class SubscriptionManager {
     let isResolved = false
     return new Promise((resolve, reject) => {
       // resolve()
-      this.client = new SelvaClient({ port }, { loglevel: 'info' })
+
+      // { loglevel: 'info' }
+      this.client = new SelvaClient({ port })
 
       this.client.on('connect', () => {
         console.log('connect server-client')

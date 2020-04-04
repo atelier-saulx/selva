@@ -1,5 +1,4 @@
 import { default as RedisClient, ConnectOptions } from './redis'
-// import { id, IdOptions } from './id'
 import { set, SetOptions } from './set'
 import { ModifyOptions, ModifyResult } from './modifyTypes'
 import { deleteItem, DeleteOptions } from './delete'
@@ -62,7 +61,7 @@ export class SelvaClient extends EventEmitter {
   public schema: Schema
   public searchIndexes: SearchIndexes
   public redis: RedisClient
-  private loglevel: LogLevel = 'warning'
+  private loglevel: LogLevel = 'off'
   public clientId: string
 
   constructor(
@@ -71,11 +70,18 @@ export class SelvaClient extends EventEmitter {
   ) {
     super()
     this.clientId = uuid()
-    this.redis = new RedisClient(opts, this, selvaOpts)
-    this.setMaxListeners(100)
     if (selvaOpts && selvaOpts.loglevel) {
       this.loglevel = selvaOpts.loglevel
+    } else {
+      this.loglevel = 'off'
+      if (!selvaOpts) {
+        selvaOpts = {}
+      }
+      selvaOpts.loglevel = 'off'
     }
+
+    this.setMaxListeners(100)
+    this.redis = new RedisClient(opts, this, selvaOpts)
   }
 
   async conformToSchema(props: SetOptions): Promise<SetOptions> {

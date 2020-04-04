@@ -54,12 +54,7 @@ test.after(async _t => {
 })
 
 test.serial('subscription find', async t => {
-  const client = connect(
-    {
-      port
-    },
-    { loglevel: 'info' }
-  )
+  const client = connect({ port })
 
   const matches = []
   const teams = []
