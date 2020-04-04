@@ -188,7 +188,6 @@ export class RedisWrapper {
       let tries = 0
       const typeOpts = Object.assign({}, this.opts, {
         retryStrategy: () => {
-          tries++
           if (tries > 100) {
             this.reconnect()
           } else {
@@ -200,7 +199,7 @@ export class RedisWrapper {
               this.emit('disconnect', type)
             }
           }
-          this.connected[type] = false
+          tries++
           if (this.retryTimer < 1e3) {
             this.retryTimer += 100
           }

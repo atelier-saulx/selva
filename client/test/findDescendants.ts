@@ -125,7 +125,7 @@ test.before(async t => {
     })
   ])
   console.log(
-    `Set ${Math.floor((amount * 2 + vids * 2) / 100) / 10}k nested`,
+    `Set ${Math.floor((amount * 2 + vids) / 100) / 10}k nested`,
     Date.now() - d,
     'ms'
   )
