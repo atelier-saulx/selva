@@ -124,20 +124,29 @@ test.serial('subscription list', async t => {
     $language: 'en',
     title: true,
     children: {
-      id: true,
+      name: true,
       title: true,
       type: true,
       $list: {}
     }
   })
 
+  let cnt2 = 0
   const sub2 = obs2.subscribe(d => {
-    console.log(d)
+    cnt2++
+    console.log('get children', d, cnt2)
   })
 
   await wait(1000)
 
+  console.log('fire subs!')
+  client.set({
+    $id: matches[0].$id,
+    title: { en: 'Flapdrol' }
+  })
+
+  await wait(1000)
   sub2.unsubscribe()
 
-  t.true(true)
+  t.is(cnt2, 2)
 })
