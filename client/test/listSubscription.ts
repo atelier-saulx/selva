@@ -19,6 +19,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          title: { type: 'text' },
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
@@ -117,4 +118,26 @@ test.serial('subscription list', async t => {
 
   await wait(1000)
   t.is(cnt, 2)
+  sub.unsubscribe()
+
+  const obs2 = await client.observe({
+    $language: 'en',
+    title: true,
+    children: {
+      id: true,
+      title: true,
+      type: true,
+      $list: {}
+    }
+  })
+
+  const sub2 = obs2.subscribe(d => {
+    console.log(d)
+  })
+
+  await wait(1000)
+
+  sub2.unsubscribe()
+
+  t.true(true)
 })

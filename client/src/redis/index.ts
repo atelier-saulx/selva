@@ -227,7 +227,6 @@ export default class RedisClient extends RedisMethods {
         }
       },
       disconnect: type => {
-        console.log('dc client', type)
         this.connected[type] = false
         if (this.redis.allDisconnected) {
           this.selvaClient.emit('disconnect')
