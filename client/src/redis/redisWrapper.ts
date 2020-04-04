@@ -28,9 +28,8 @@ export class RedisWrapper {
     {
       getOptions: GetOptions
       clients: Set<string>
-      version?: string // check if version?
-      // keep cache data :/ dont know - have to think about this!
-      // for now we can just get (dirty nice)
+      version?: string
+      // QUESTION: keep cache data :/ dont know ?- have to think about this!
     }
   > = {}
 
@@ -211,16 +210,11 @@ export class RedisWrapper {
         tries = 0
         this.connected[type] = true
         // ----------------------------------------------------
-        // hopefully this does not break anything
         client.removeAllListeners('message')
         client.removeAllListeners('pmessage')
         // ----------------------------------------------------
         this.resetScripts(type)
 
-        // initialize logging for each client
-        /*
-          this.redis.sub.subscribe(`${logPrefix}:${this.clientId}`)
-        */
         if (this.allConnected) {
           this.startHeartbeat()
           this.sendSubcriptions()
@@ -620,9 +614,6 @@ export class RedisWrapper {
   }
 
   async flushBuffered(type: string) {
-    // dont need this type
-    // extra optmization is to check for the same gets / sets / requests
-    // remove type
     if (this.connected[type]) {
       this.inProgress[type] = true
       const buffer = this.buffer[type]
