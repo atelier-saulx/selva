@@ -1,6 +1,9 @@
 import { SelvaClient } from '../'
 import { Schema, SearchIndexes, GetSchemaResult, rootDefaultFields } from '.'
 
+const wait = (t: number = 0): Promise<void> =>
+  new Promise(r => setTimeout(r, t))
+
 async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
   let schema: Schema = {
     languages: [],
@@ -12,11 +15,16 @@ async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
 
   let searchIndexes: SearchIndexes = {}
 
-  const fetchedTypes = await client.redis.hget('___selva_schema', 'types')
-  const fetchedIndexes = await client.redis.hget(
+  const [fetchedTypes, fetchedIndexes] = await client.redis.hmget(
     '___selva_schema',
+    'types',
     'searchIndexes'
   )
+
+  if (!fetchedTypes) {
+    await wait(20)
+    return getSchema(client)
+  }
 
   if (fetchedTypes) {
     schema = JSON.parse(fetchedTypes)

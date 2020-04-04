@@ -559,7 +559,11 @@ export class RedisWrapper {
 
   public isBusy: boolean = false
 
-  execBatch(origSlice: RedisCommand[], type: string): Promise<void> {
+  execBatch(
+    origSlice: RedisCommand[],
+    type: string,
+    bid?: string
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.isBusy) {
         console.log('Server is busy - retrying in 1 second')
@@ -609,6 +613,7 @@ export class RedisWrapper {
                   console.error('Error executing command', slice[i], v)
                 }
               } else if (slice[i].resolve) {
+                console.log('resolve', slice[i].command, bid, v)
                 slice[i].resolve(v)
               }
             })
@@ -626,7 +631,7 @@ export class RedisWrapper {
 
   logBuffer(buffer, type) {
     console.log('--------------------------')
-    const bufferId = `${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}:${new Date().getMilliseconds()}`
+    const bufferId = (~~(Math.random() * 10000)).toString(16)
 
     console.log(type, 'buffer', bufferId)
     buffer.forEach(({ command, args }) => {
@@ -669,8 +674,8 @@ export class RedisWrapper {
               return
             } else {
               if (slice.length) {
-                await this.execBatch(slice, type)
-                console.log('EXECUTED BATCH\n', bId, type)
+                await this.execBatch(slice, type, bId)
+                console.log('EXECUTED BATCH', bId, type)
               }
             }
           }

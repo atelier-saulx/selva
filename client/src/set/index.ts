@@ -99,10 +99,7 @@ export const parseSetObject = (
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   let gotSchema = false
   if (!client.schema) {
-    console.log('RE-GET SCHEMA')
-    // order goes wrong update schema allways needs to exec before anything else
     await client.getSchema()
-    console.log('REGOT SCHEMA!', JSON.stringify(client.schema, void 0, 2))
     gotSchema = true
   }
   // need to check if it updated
