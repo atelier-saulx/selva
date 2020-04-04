@@ -299,7 +299,6 @@ export class SelvaClient extends EventEmitter {
         { batchingEnabled: true }
       )
     } catch (e) {
-      console.error('Error running modify', e)
       if (
         e.stack &&
         e.stack.includes(

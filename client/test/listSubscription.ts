@@ -153,14 +153,14 @@ test.serial('subscription list', async t => {
     cnt3++
   })
 
-  await wait(1000)
+  await wait(2000)
 
   client.set({
     $id: matches[0].$id,
     title: { en: 'Flapdrol' }
   })
 
-  await wait(1000)
+  await wait(2000)
   sub2.unsubscribe()
   sub3.unsubscribe()
   t.is(cnt3, 2)
