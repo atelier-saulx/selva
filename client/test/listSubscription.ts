@@ -121,7 +121,7 @@ test.serial('subscription list', async t => {
   sub.unsubscribe()
 
   const obs2 = await client.observe({
-    $language: 'en',
+    $language: 'en', // need this in my meta query
     title: true,
     children: {
       name: true,
