@@ -6,7 +6,7 @@ import { verifiers } from './fieldParsers/simple'
 import { configureLogger } from 'lua/src/logger'
 
 // import { MAX_BATCH_SIZE } from '../redis'
-const MAX_BATCH_SIZE = 5000
+const MAX_BATCH_SIZE = 5500
 
 export const parseSetObject = (
   payload: SetOptions,
@@ -178,6 +178,10 @@ async function setInBatches(
       })
 
       const ids = entries.map(e => {
+        if (typeof e === 'string') {
+          return e
+        }
+
         return e.$id
       })
 
