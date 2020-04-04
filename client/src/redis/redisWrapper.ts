@@ -565,7 +565,7 @@ export class RedisWrapper {
         console.log('Server is busy - retrying in 1 second')
         setTimeout(() => {
           this.isBusy = false
-          this.execBatch(origSlice, type)
+          // this.execBatch(origSlice, type)
         }, 1e3)
       } else {
         // dont need this type
