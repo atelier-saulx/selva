@@ -377,4 +377,6 @@ test.serial('get - simple $list with query $field of one field', async t => {
     },
     'non redis search sort'
   )
+
+  // $list: true
 })
