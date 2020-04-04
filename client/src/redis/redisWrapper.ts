@@ -153,8 +153,6 @@ export class RedisWrapper {
         }
       }
     })
-
-    console.log('Client listeners', 'sub', this.sub.rawListeners.length)
   }
 
   cleanUp() {
@@ -251,7 +249,6 @@ export class RedisWrapper {
   startClientLogging() {
     this.clients.forEach((client, id) => {
       if (client.log) {
-        console.log('subscribe', `${logPrefix}:${id}`)
         this.sub.subscribe(`${logPrefix}:${id}`)
       }
     })
