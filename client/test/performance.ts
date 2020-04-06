@@ -59,23 +59,37 @@ test.serial('perf - Set multiple using 5 clients', async t => {
 
     let iteration = 1
     let time = 0
-    let amount = 10000
+    let amount = 1000
     const setLoop = async () => {
       // @ts-ignore
       if (global.stopped) {
         console.log('stop client', i)
       } else {
         const q = []
+        // for (let i = 0; i < amount; i++) {
+        //   q.push(
+        //     client.set({
+        //       type: 'match',
+        //       value: ~~(Math.random() * 1000)
+        //     })
+        //   )
+        // }
+
         for (let i = 0; i < amount; i++) {
-          q.push(
-            client.set({
-              type: 'match',
-              value: ~~(Math.random() * 1000)
-            })
-          )
+          q.push({
+            type: 'match',
+            value: ~~(Math.random() * 1000)
+          })
         }
+
+        await client.set({
+          $id: 'root',
+          children: q //{ $add: q }
+          // children: { $add: q }
+        })
+
         let d = Date.now()
-        await Promise.all(q)
+        // await Promise.all(q)
         time += Date.now() - d
 
         //   console.log(
@@ -86,6 +100,10 @@ test.serial('perf - Set multiple using 5 clients', async t => {
         iteration++
         //@ts-ignore
         global.total[i] = { amount: iteration * amount, time }
+
+        // await wait(1e3)
+        // if sets are larger then a certain amount do a wait on the client to let it gc a bit
+        // for gc ?
 
         setLoop()
       }
@@ -99,13 +117,13 @@ test.serial('perf - Set multiple using 5 clients', async t => {
 
   const vms = []
 
-  const clientAmount = 5
+  const clientAmount = 1
 
   for (let i = 0; i < clientAmount; i++) {
     let wrappedRequire = require
     vms.push(
       vm.runInThisContext(m.wrap(`(${code.toString()})(${i},${port})`), {
-        filename: 'aristotle-vm.js'
+        filename: `client-vm${i}.js`
       })(
         exports,
         wrappedRequire,
@@ -130,8 +148,8 @@ test.serial('perf - Set multiple using 5 clients', async t => {
 
   const int = setInterval(() => {
     it++
-    if (it - 2 > 0) {
-      const s = time * (it - 2)
+    if (it) {
+      const s = time * it
 
       console.log(
         `${Math.round(

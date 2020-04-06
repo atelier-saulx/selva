@@ -617,7 +617,14 @@ export class RedisWrapper {
             } else {
               this.isBusy = false
             }
-            resolve()
+            if (slice.length > 1e3) {
+              process.nextTick(() => {
+                // let it gc a bit
+                resolve()
+              })
+            } else {
+              resolve()
+            }
           }
         })
       }
