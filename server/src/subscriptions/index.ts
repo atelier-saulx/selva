@@ -192,7 +192,7 @@ export default class SubscriptionManager {
           subscriptions: new Set()
         }
       } else {
-        console.log('Client is timedout', client)
+        console.log('Client is timedout from server', client)
         cleanUpQ.push(this.client.redis.hdel(clientsName, client))
         // publish too client that its marked as timeout
       }

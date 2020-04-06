@@ -6,13 +6,13 @@ import { ClientObject, RedisCommand } from './types'
 
 const redisClients: Record<string, RedisWrapper> = {}
 
-const HEARTBEAT_TIMER = 5e3
+const HEARTBEAT_TIMER = 3e3
 
 const serverHeartbeat = '___selva_subscription:server_heartbeat'
 const logPrefix = '___selva_lua_logs'
 
 const isEmpty = (obj: { [k: string]: any }): boolean => {
-  for (let k in obj) {
+  for (const _k in obj) {
     return false
   }
   return true
@@ -83,8 +83,19 @@ export class RedisWrapper {
   }
 
   startHeartbeat() {
+    const clientsName = `___selva_clients`
+
     const setHeartbeat = () => {
       if (this.connected.client) {
+        const clientsName = `___selva_clients`
+        this.client.hget(clientsName, this.uuid, (err, r) => {
+          if (!err && r) {
+            if (Number(r) < Date.now() - HEARTBEAT_TIMER * 3) {
+              console.log('Client timedout - re send subscriptions')
+              this.sendSubcriptions()
+            }
+          }
+        })
         this.client.publish(
           '___selva_subscription:heartbeat',
           JSON.stringify({
@@ -565,7 +576,8 @@ export class RedisWrapper {
         console.log('Server is busy - retrying in 5 seconds')
         setTimeout(() => {
           this.isBusy = false
-          // this.execBatch(origSlice, type)
+          // need to rerun the batch ofc
+          this.execBatch(origSlice, type)
         }, 5e3)
       } else {
         // dont need this type
@@ -617,14 +629,14 @@ export class RedisWrapper {
             } else {
               this.isBusy = false
             }
-            // if (slice.length > 1e3) {
-            //   process.nextTick(() => {
-            //     // let it gc a bit
-            //     resolve()
-            //   })
-            // } else {
-            resolve()
-            // }
+            if (slice.length > 1e3) {
+              process.nextTick(() => {
+                // let it gc a bit
+                resolve()
+              })
+            } else {
+              resolve()
+            }
           }
         })
       }
