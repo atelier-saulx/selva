@@ -90,7 +90,7 @@ export class RedisWrapper {
         const clientsName = `___selva_clients`
         this.client.hget(clientsName, this.uuid, (err, r) => {
           if (!err && r) {
-            if (Number(r) < Date.now() - HEARTBEAT_TIMER * 3) {
+            if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
               console.log('Client timedout - re send subscriptions')
               this.sendSubcriptions()
             }
