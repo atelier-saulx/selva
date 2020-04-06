@@ -48,7 +48,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.skip('perf - Set multiple using 5 clients', async t => {
+test.serial('perf - Set multiple using 5 clients', async t => {
   //@ts-ignore
   const total = (global.total = {})
 
@@ -59,31 +59,36 @@ test.serial.skip('perf - Set multiple using 5 clients', async t => {
 
     let iteration = 1
     let time = 0
-    let amount = 500
+    let amount = 10000
     const setLoop = async () => {
-      const q = []
-      for (let i = 0; i < amount; i++) {
-        q.push(
-          client.set({
-            type: 'match',
-            value: 1
-          })
-        )
+      // @ts-ignore
+      if (global.stopped) {
+        console.log('stop client', i)
+      } else {
+        const q = []
+        for (let i = 0; i < amount; i++) {
+          q.push(
+            client.set({
+              type: 'match',
+              value: ~~(Math.random() * 1000)
+            })
+          )
+        }
+        let d = Date.now()
+        await Promise.all(q)
+        time += Date.now() - d
+
+        //   console.log(
+        //     `Client ${i} iteration ${iteration} finished in ${Date.now() -
+        //       d}ms total set ${iteration * amount}`
+        //   )
+
+        iteration++
+        //@ts-ignore
+        global.total[i] = { amount: iteration * amount, time }
+
+        setLoop()
       }
-      let d = Date.now()
-      await Promise.all(q)
-      time += Date.now() - d
-
-      //   console.log(
-      //     `Client ${i} iteration ${iteration} finished in ${Date.now() -
-      //       d}ms total set ${iteration * amount}`
-      //   )
-
-      iteration++
-      //@ts-ignore
-      global.total[i] = { amount: iteration * amount, time }
-
-      setLoop()
     }
 
     client.on('connect', () => {
@@ -94,7 +99,9 @@ test.serial.skip('perf - Set multiple using 5 clients', async t => {
 
   const vms = []
 
-  for (let i = 0; i < 5; i++) {
+  const clientAmount = 5
+
+  for (let i = 0; i < clientAmount; i++) {
     let wrappedRequire = require
     vms.push(
       vm.runInThisContext(m.wrap(`(${code.toString()})(${i},${port})`), {
@@ -119,14 +126,44 @@ test.serial.skip('perf - Set multiple using 5 clients', async t => {
     return a
   }
 
-  setInterval(() => {
+  const time = 1
+
+  const int = setInterval(() => {
     it++
     if (it - 2 > 0) {
+      const s = time * (it - 2)
+
       console.log(
-        `Processed ${getTotal()} items in ${10 * (it - 2)}s using 5 clients`
+        `${Math.round(
+          getTotal() / s
+        )}/s Processed ${getTotal()} items in ${s}s using ${clientAmount} clients`
       )
     }
-  }, 10e3)
+  }, time * 1e3)
+
+  const client = connect({ port })
+
+  const s = await client.observe({
+    items: {
+      value: true,
+      id: true,
+      $list: {
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'value',
+            $operator: '=',
+            $value: 10
+          }
+        }
+      }
+    }
+  })
+
+  s.subscribe(d => {
+    console.log('hey update', d)
+  })
 
   //   const client = connect({ port })
   //   const sub = await client.observe({
@@ -150,6 +187,10 @@ test.serial.skip('perf - Set multiple using 5 clients', async t => {
   //     cnt++
   //   })
 
-  await wait(60000)
+  await wait(6e4 * 10)
+  clearInterval(int)
+  // @ts-ignore
+  global.stopped = true
+  await wait(1e3)
   t.true(getTotal() > 20e3)
 })

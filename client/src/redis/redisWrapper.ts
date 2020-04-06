@@ -562,11 +562,11 @@ export class RedisWrapper {
   execBatch(origSlice: RedisCommand[], type: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.isBusy) {
-        console.log('Server is busy - retrying in 1 second')
+        console.log('Server is busy - retrying in 5 seconds')
         setTimeout(() => {
           this.isBusy = false
           // this.execBatch(origSlice, type)
-        }, 1e3)
+        }, 5e3)
       } else {
         // dont need this type
         const batch = this[type].batch()
@@ -658,6 +658,9 @@ export class RedisWrapper {
         this.inProgress[type] = true
         const buffer = this.buffer[type]
         if (buffer.length) {
+          if (buffer.length > 1e5) {
+            console.warn('buffer is larger then 100k may need to do something')
+          }
           // const bId = this.logBuffer(buffer, type)
           this.buffer[type] = []
           const len = Math.ceil(buffer.length / 5000)

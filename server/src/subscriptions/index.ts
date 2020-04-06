@@ -186,7 +186,7 @@ export default class SubscriptionManager {
     const now = Date.now()
     for (const client in clients) {
       const ts = Number(clients[client])
-      if (now - ts < 5e3) {
+      if (now - ts < 60e3) {
         this.clients[client] = {
           lastTs: ts,
           subscriptions: new Set()
@@ -194,6 +194,7 @@ export default class SubscriptionManager {
       } else {
         console.log('Client is timedout', client)
         cleanUpQ.push(this.client.redis.hdel(clientsName, client))
+        // publish too client that its marked as timeout
       }
     }
 
@@ -237,13 +238,15 @@ export default class SubscriptionManager {
     this.updateSubscriptionData()
     this.revalidateSubscriptionsTimeout = setTimeout(() => {
       this.revalidateSubscriptions()
-    }, 3e3)
+    }, 60e3)
   }
 
   startServerHeartbeat() {
     const heartbeatChannel = '___selva_subscription:server_heartbeat'
     const setHeartbeat = () => {
-      this.pub.publish(heartbeatChannel, String(Date.now()))
+      if (this.pub) {
+        this.pub.publish(heartbeatChannel, String(Date.now()))
+      }
       this.serverHeartbeatTimeout = setTimeout(setHeartbeat, 2e3)
     }
     setHeartbeat()
