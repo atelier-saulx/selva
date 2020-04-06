@@ -166,7 +166,7 @@ test.serial('perf - Set multiple using 5 clients', async t => {
       value: true,
       id: true,
       $list: {
-        $limit: 100,
+        $limit: 10,
         $find: {
           $traverse: 'descendants',
           $filter: {
@@ -182,6 +182,31 @@ test.serial('perf - Set multiple using 5 clients', async t => {
   s.subscribe(d => {
     console.log('hey update', d)
   })
+
+  const s2 = await client.observe({
+    items: {
+      value: true,
+      id: true,
+      type: true,
+      $list: {
+        $limit: 10,
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'value',
+            $operator: '>',
+            $value: 1
+          }
+        }
+      }
+    }
+  })
+
+  s2.subscribe(d => {
+    console.log('hey update 2', d)
+  })
+
+  // 2 subs broken???
 
   //   const client = connect({ port })
   //   const sub = await client.observe({
