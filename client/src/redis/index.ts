@@ -76,7 +76,8 @@ export default class RedisClient extends RedisMethods {
     const subscription = (this.subscriptions[channel] = new Subscription(
       getOpts
     ))
-    if (this.connected.sub) {
+
+    if (this.redis) {
       this.redis.subscribe(this.clientId, channel, getOpts)
     }
     return subscription

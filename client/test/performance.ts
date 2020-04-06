@@ -88,30 +88,27 @@ test.serial('perf - Set multiple using 5 clients', async t => {
           // children: { $add: q }
         })
 
-        let d = Date.now()
         // await Promise.all(q)
-        time += Date.now() - d
-
-        //   console.log(
-        //     `Client ${i} iteration ${iteration} finished in ${Date.now() -
-        //       d}ms total set ${iteration * amount}`
-        //   )
+        time += 1
 
         iteration++
+
         //@ts-ignore
         global.total[i] = { amount: iteration * amount, time }
 
         // await wait(1e3)
+
         // if sets are larger then a certain amount do a wait on the client to let it gc a bit
         // for gc ?
 
-        setLoop()
+        setTimeout(setLoop, 1e3)
+        // setLoop()
       }
     }
 
     client.on('connect', () => {
       console.log(`Connected ${i}`)
-      setLoop()
+      setTimeout(setLoop, 1e3)
     })
   }
 
@@ -134,8 +131,6 @@ test.serial('perf - Set multiple using 5 clients', async t => {
     )
   }
 
-  let it = 0
-
   const getTotal = () => {
     let a = 0
     for (let key in total) {
@@ -144,20 +139,25 @@ test.serial('perf - Set multiple using 5 clients', async t => {
     return a
   }
 
-  const time = 1
+  const getTotalTime = () => {
+    let t = 0
+    for (let key in total) {
+      t += total[key].time
+    }
+    return t
+  }
+
+  const time = Date.now()
 
   const int = setInterval(() => {
-    it++
-    if (it) {
-      const s = time * it
+    const s = Math.round((Date.now() - time) / 1000) - getTotalTime()
 
-      console.log(
-        `${Math.round(
-          getTotal() / s
-        )}/s Processed ${getTotal()} items in ${s}s using ${clientAmount} clients`
-      )
-    }
-  }, time * 1e3)
+    console.log(
+      `${Math.round(
+        getTotal() / s
+      )}/s Processed ${getTotal()} items in ${s}s using ${clientAmount} clients`
+    )
+  }, 1e3)
 
   const client = connect({ port })
 
