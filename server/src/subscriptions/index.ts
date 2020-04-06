@@ -238,7 +238,7 @@ export default class SubscriptionManager {
     this.updateSubscriptionData()
     this.revalidateSubscriptionsTimeout = setTimeout(() => {
       this.revalidateSubscriptions()
-    }, 60e3)
+    }, 30e3)
   }
 
   startServerHeartbeat() {
