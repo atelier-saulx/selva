@@ -41,6 +41,9 @@
       "ts-node/register"
     ]
   },
+  "bin": {
+    "selva-server": "/bin/index.js"
+  },
   "devDependencies": {
     "@types/redis": "^2.8.14",
     "ava": "2.4.0",

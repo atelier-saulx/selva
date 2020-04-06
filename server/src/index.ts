@@ -8,7 +8,7 @@ import {
   saveAndBackUp,
   loadBackup
 } from './backups'
-
+import cleanExit from './cleanExit'
 import SubscriptionManager from './subscriptions'
 
 type Service = {
@@ -210,7 +210,7 @@ export const start = async function({
     }
   }
 
-  // cleanExit(port)
+  cleanExit(port)
 
   return redisServer
 }
