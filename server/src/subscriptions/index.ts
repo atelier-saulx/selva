@@ -1,12 +1,19 @@
 import { RedisClient } from 'redis'
 import { SelvaClient, GetOptions, Schema } from '@saulx/selva'
-
 import {
   addFieldsToSubscription,
   removeFieldsFromSubscription
 } from './addFields'
 import addListeners from './addListeners'
 import sendUpdate from './sendUpdate'
+
+import {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData,
+  MessageChannel
+} from 'worker_threads'
 
 export type QuerySubscription = {
   idFields?: Record<string, true>
@@ -38,6 +45,9 @@ export default class SubscriptionManager {
     queries: { subId: string; nextRefresh: number }[]
   }
   public refsById: RefsById = {}
+
+  public eventHandlerWorker: Worker
+
   public client: SelvaClient
   public sub: RedisClient
   public pub: RedisClient // pub and client
@@ -265,6 +275,10 @@ export default class SubscriptionManager {
 
   connect(port: number): Promise<void> {
     let isResolved = false
+
+    // bit more complex -- needs its own selva client
+    // subsManager.eventHandlerWorker = new Worker()
+
     return new Promise((resolve, reject) => {
       // resolve()
 
