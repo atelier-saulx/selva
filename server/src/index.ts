@@ -22,6 +22,7 @@ type Service = {
 export type Subscriptions = {
   port?: number | Promise<number>
   service?: Service | Promise<Service>
+  host?: number | Promise<number>
   selvaServer: {
     port?: number | Promise<number>
     service?: Service | Promise<Service>

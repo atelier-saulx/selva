@@ -256,7 +256,15 @@ export default class RedisClient extends RedisMethods {
           this.connector().then(opts => {
             if (
               opts.host !== this.connectOptions.host ||
-              opts.port !== this.connectOptions.port
+              opts.port !== this.connectOptions.port ||
+              (opts.subscriptions && !this.connectOptions.subscriptions) ||
+              (this.connectOptions.subscriptions && !opts.subscriptions) ||
+              (opts.subscriptions &&
+                this.connectOptions.subscriptions &&
+                (opts.subscriptions.host !==
+                  this.connectOptions.subscriptions.host ||
+                  opts.subscriptions.port !==
+                    this.connectOptions.subscriptions.port))
             ) {
               this.redis.removeClient(this.clientId)
               this.connect()

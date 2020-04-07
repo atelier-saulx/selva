@@ -1,5 +1,5 @@
 import { RedisClient } from 'redis'
-import { SelvaClient, GetOptions, ConnectOptions } from '@saulx/selva'
+import { SelvaClient, GetOptions, ConnectOptions, prefixes } from '@saulx/selva'
 import {
   addFieldsToSubscription,
   removeFieldsFromSubscription
@@ -70,12 +70,10 @@ export default class SubscriptionManager {
   public fieldMap: Fields = {}
 
   async addClientSubscription(client: string, channel: string) {
-    const subscriptionsName = '___selva_subscriptions'
-
     // just to speed things up and potentialy send something
     if (!this.subscriptions[channel]) {
       const [getOptions, clients] = await Promise.all([
-        this.client.redis.hget(subscriptionsName, channel),
+        this.client.redis.hget(prefixes.subscriptions, channel),
         this.client.redis.smembers(channel)
       ])
       if (getOptions && clients.length) {
@@ -138,7 +136,7 @@ export default class SubscriptionManager {
     )
 
     // have to check what the last update was
-    if (!(await this.client.redis.hexists('__selva_cache', channel))) {
+    if (!(await this.client.redis.hexists(prefixes.cache, channel))) {
       await this.sendUpdate(channel)
     }
   }
@@ -280,8 +278,10 @@ export default class SubscriptionManager {
     // bit more complex -- needs its own selva client
     // subsManager.eventHandlerWorker = new Worker()
 
-    const connectOptions = opts.selvaServer.service
-      ? opts.selvaServer.service
+    const subscriptions = opts.selvaServer.service
+      ? opts.selvaServer.service instanceof Promise
+        ? await opts.selvaServer.service
+        : opts.selvaServer.service
       : {
           port:
             opts.selvaServer.port instanceof Promise
@@ -293,6 +293,19 @@ export default class SubscriptionManager {
               ? await opts.selvaServer.host
               : opts.selvaServer.host
         }
+
+    const connectOptions = {
+      port: opts.selvaServer.port,
+      host: opts.selvaServer.host,
+      subscriptions: opts.service
+        ? opts.service instanceof Promise
+          ? await opts.service
+          : opts.service
+        : {
+            port: opts.port instanceof Promise ? await opts.port : opts.port,
+            host: opts.host instanceof Promise ? await opts.host : opts.host
+          }
+    }
 
     return new Promise((resolve, reject) => {
       // make promise assignable as well
