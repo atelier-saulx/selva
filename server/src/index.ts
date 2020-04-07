@@ -10,6 +10,7 @@ import {
 } from './backups'
 import cleanExit from './cleanExit'
 import SubscriptionManager from './subscriptions'
+import { ConnectOptions } from '@saulx/selva'
 
 type Service = {
   port: number
@@ -18,12 +19,13 @@ type Service = {
 
 // make abstraction on top
 
-type Subscriptions = {
+export type Subscriptions = {
   port?: number | Promise<number>
   service?: Service | Promise<Service>
   selvaServer: {
     port?: number | Promise<number>
     service?: Service | Promise<Service>
+    host?: string | Promise<string>
   }
 }
 
@@ -198,7 +200,9 @@ const startInternal = async function({
 
   console.log(`subs enabled ${subscriptions}`, port)
   if (subscriptions) {
-    await subs.connect(port)
+    if (typeof subscriptions === 'object') {
+      await subs.connect(subscriptions)
+    }
   }
 
   const redisServer: SelvaServer = {
@@ -215,7 +219,9 @@ const startInternal = async function({
       subs.destroy()
     },
     openSubscriptions: async () => {
-      await subs.connect(port)
+      if (typeof subscriptions === 'object') {
+        await subs.connect(subscriptions)
+      }
     },
     destroy: async () => {
       subs.destroy()

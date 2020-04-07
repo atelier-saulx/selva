@@ -56,7 +56,10 @@ export default class RedisClient extends RedisMethods {
   public connected: { [client: string]: boolean } = {}
 
   constructor(
-    connect: ConnectOptions | (() => Promise<ConnectOptions>),
+    connect:
+      | ConnectOptions
+      | (() => Promise<ConnectOptions>)
+      | Promise<ConnectOptions>,
     selvaClient: SelvaClient,
     selvaOpts: SelvaOptions
   ) {
@@ -76,7 +79,11 @@ export default class RedisClient extends RedisMethods {
         : undefined)
 
     this.connector =
-      typeof connect === 'object' ? () => Promise.resolve(connect) : connect
+      typeof connect === 'object'
+        ? () => Promise.resolve(connect)
+        : connect instanceof Promise
+        ? async () => connect
+        : connect
     this.connect()
   }
 

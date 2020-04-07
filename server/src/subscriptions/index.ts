@@ -1,11 +1,12 @@
 import { RedisClient } from 'redis'
-import { SelvaClient, GetOptions, Schema } from '@saulx/selva'
+import { SelvaClient, GetOptions, ConnectOptions } from '@saulx/selva'
 import {
   addFieldsToSubscription,
   removeFieldsFromSubscription
 } from './addFields'
 import addListeners from './addListeners'
 import sendUpdate from './sendUpdate'
+import { Subscriptions } from '../'
 
 import {
   Worker,
@@ -273,17 +274,30 @@ export default class SubscriptionManager {
     this.pub = null
   }
 
-  connect(port: number): Promise<void> {
+  async connect(opts: Subscriptions): Promise<void> {
     let isResolved = false
 
     // bit more complex -- needs its own selva client
     // subsManager.eventHandlerWorker = new Worker()
 
-    return new Promise((resolve, reject) => {
-      // resolve()
+    const connectOptions = opts.selvaServer.service
+      ? opts.selvaServer.service
+      : {
+          port:
+            opts.selvaServer.port instanceof Promise
+              ? await opts.selvaServer.port
+              : opts.selvaServer.port,
 
-      // { loglevel: 'info' }
-      this.client = new SelvaClient({ port })
+          host:
+            opts.selvaServer.host instanceof Promise
+              ? await opts.selvaServer.host
+              : opts.selvaServer.host
+        }
+
+    return new Promise((resolve, reject) => {
+      // make promise assignable as well
+
+      this.client = new SelvaClient(<ConnectOptions>connectOptions)
 
       this.client.on('connect', () => {
         console.log('connect server-client')
