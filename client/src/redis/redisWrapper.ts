@@ -15,7 +15,7 @@ const isEmpty = (obj: { [k: string]: any }): boolean => {
   return true
 }
 
-type ClientType = 'sub' | 'client' | 'sSub' | 'sClient'
+export type ClientType = 'sub' | 'client' | 'sSub' | 'sClient'
 
 export const clientTypes: ClientType[] = ['sub', 'client', 'sSub', 'sClient']
 
@@ -24,6 +24,9 @@ export const clientTypes: ClientType[] = ['sub', 'client', 'sSub', 'sClient']
 export class RedisWrapper {
   public client: RedisClient
   public sub: RedisClient
+  public sSub: RedisClient
+  public sClient: RedisClient
+
   public id: string
   public uuid: string
   public noSubscriptions: boolean = false
@@ -113,7 +116,7 @@ export class RedisWrapper {
   startHeartbeat() {
     const setHeartbeat = () => {
       if (this.connected.client) {
-        this.client.hget(prefixes.clients, this.uuid, (err, r) => {
+        this.sClient.hget(prefixes.clients, this.uuid, (err, r) => {
           if (!err && r) {
             if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
               console.log('Client timedout - re send subscriptions')
@@ -121,7 +124,7 @@ export class RedisWrapper {
             }
           }
         })
-        this.client.publish(
+        this.sClient.publish(
           prefixes.heartbeat,
           JSON.stringify({
             client: this.uuid,
@@ -162,14 +165,15 @@ export class RedisWrapper {
       },
       err => {
         console.error(err)
-      }
+      },
+      'sClient'
     )
   }
 
   addListeners() {
-    this.sub.subscribe(prefixes.serverHeartbeat)
+    this.sSub.subscribe(prefixes.serverHeartbeat)
 
-    this.sub.on('message', (channel, msg) => {
+    this.sSub.on('message', (channel, msg) => {
       if (channel === prefixes.serverHeartbeat) {
         const ts: number = Number(msg)
         // FIXME: dirty when clock mismatch  - ok for now
@@ -197,13 +201,16 @@ export class RedisWrapper {
   }
 
   cleanUp() {
+    if (this.sSub) {
+      this.sSub.removeAllListeners('message')
+      // this.unsubscribeAllChannels()
+    }
     if (this.sub) {
       this.sub.removeAllListeners('message')
-      // this.unsubscribeAllChannels()
     }
     this.stopHeartbeat()
     this.stopClientLogging()
-    this.inProgress = { sub: false, client: false }
+    this.inProgress = {}
   }
 
   emit(type: string, value: any, client?: string) {
@@ -227,6 +234,13 @@ export class RedisWrapper {
     this.types.forEach(type => {
       let tries = 0
       console.log('opts:: -->', this.opts)
+
+      const { subscriptions } = this.opts
+
+      if (subscriptions) {
+        // make it different
+        console.log('need to connect this client to something else!')
+      }
 
       const typeOpts = Object.assign({}, this.opts, {
         retryStrategy: () => {
@@ -281,7 +295,7 @@ export class RedisWrapper {
             this.emit('disconnect', type)
           }
         } else {
-          this.emit('error', err)
+          // this.emit('error', err)
         }
       })
     })
@@ -289,7 +303,7 @@ export class RedisWrapper {
 
   startClientLogging() {
     this.clients.forEach((client, id) => {
-      if (client.log) {
+      if (client.log && this.sub) {
         this.sub.subscribe(`${prefixes.log}:${id}`)
       }
     })
@@ -297,7 +311,7 @@ export class RedisWrapper {
 
   stopClientLogging() {
     this.clients.forEach((client, id) => {
-      if (client.log) {
+      if (client.log && this.sub) {
         this.sub.unsubscribe(`${prefixes.log}:${id}`)
       }
     })
@@ -350,8 +364,8 @@ export class RedisWrapper {
           this.unsubscribeChannel(channel)
         } else {
           this.removeSubscriptionsSet.add(channel)
-          if (this.sub) {
-            this.sub.unsubscribe(channel)
+          if (this.sSub) {
+            this.sSub.unsubscribe(channel)
           }
         }
       }
@@ -360,35 +374,42 @@ export class RedisWrapper {
 
   unsubscribeAllChannels() {
     for (const channel in this.subscriptions) {
-      if (this.sub) {
-        this.sub.unsubscribe(channel)
+      if (this.sSub) {
+        this.sSub.unsubscribe(channel)
       }
       this.removeSubscriptionsSet.add(channel)
     }
   }
 
   unsubscribeChannel(channel: string) {
-    this.queue('srem', [channel, this.uuid])
+    this.queue('srem', [channel, this.uuid], undefined, undefined, 'sClient')
     this.queue(
       'publish',
       [prefixes.remove, JSON.stringify({ client: this.uuid, channel })],
-      () => this.removeSubscriptionsSet.delete(channel)
+      () => this.removeSubscriptionsSet.delete(channel),
+      undefined,
+      'sClient'
     )
     this.sub.unsubscribe(channel)
   }
 
   subscribeChannel(channel: string, getOptions: GetOptions) {
-    this.queue('hsetnx', [
-      prefixes.subscriptions,
-      channel,
-      JSON.stringify(getOptions)
-    ])
-    this.queue('sadd', [channel, this.uuid])
-    this.queue('publish', [
-      prefixes.new,
-      JSON.stringify({ client: this.uuid, channel })
-    ])
-    this.sub.subscribe(channel)
+    this.queue(
+      'hsetnx',
+      [prefixes.subscriptions, channel, JSON.stringify(getOptions)],
+      undefined,
+      undefined,
+      'sClient'
+    )
+    this.queue('sadd', [channel, this.uuid], undefined, undefined, 'sClient')
+    this.queue(
+      'publish',
+      [prefixes.new, JSON.stringify({ client: this.uuid, channel })],
+      undefined,
+      undefined,
+      'sClient'
+    )
+    this.sSub.subscribe(channel)
     this.emitChannel(channel)
   }
 
@@ -475,12 +496,14 @@ export class RedisWrapper {
     args: (string | number)[],
     resolve?: (x: any) => void,
     reject?: (x: Error) => void,
-    type?: string
+    type?: ClientType
   ) {
     // remove type
     if (type === undefined) {
-      if (command === 'subscribe') {
-        type = 'sub'
+      if (command === 'publish') {
+        type = 'sClient'
+      } else if (command === 'subscribe') {
+        type = 'sSub'
       } else {
         type = 'client'
       }
@@ -560,7 +583,7 @@ export class RedisWrapper {
     this.scriptShas[type] = {}
   }
 
-  execBatch(origSlice: RedisCommand[], type: string): Promise<void> {
+  execBatch(origSlice: RedisCommand[], type: ClientType): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.isBusy) {
         console.log('Server is busy - retrying in 5 seconds')
@@ -660,7 +683,7 @@ export class RedisWrapper {
     return bufferId
   }
 
-  async flushBuffered(type: string) {
+  async flushBuffered(type: ClientType) {
     if (this.connected[type]) {
       if (!this.inProgress[type]) {
         this.inProgress[type] = true

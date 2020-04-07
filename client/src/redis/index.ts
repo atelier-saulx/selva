@@ -1,7 +1,12 @@
 import Observable from '../observe/observable'
 import { GetOptions, GetResult } from '../get/types'
 import { LogFn, SelvaOptions, SelvaClient } from '..'
-import { createClient, RedisWrapper, clientTypes } from './redisWrapper'
+import {
+  createClient,
+  RedisWrapper,
+  clientTypes,
+  ClientType
+} from './redisWrapper'
 import { Event, RedisCommand, UpdateEvent, DeleteEvent } from './types'
 import RedisMethods from './redisMethods'
 import { EventEmitter } from 'events'
@@ -151,7 +156,7 @@ export default class RedisClient extends RedisMethods {
     numKeys: number,
     keys: string[],
     args: string[],
-    type: string,
+    type: ClientType,
     opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -177,7 +182,7 @@ export default class RedisClient extends RedisMethods {
     args: (string | number)[],
     resolve: (x: any) => void = () => {},
     reject: (x: Error) => void = () => {},
-    type?: string
+    type?: ClientType
   ) {
     // remove type
     if (type === undefined) {
