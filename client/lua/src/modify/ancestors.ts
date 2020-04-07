@@ -299,6 +299,8 @@ export function reCalculateAncestors(): void {
     for (const id of newIds) {
       ids[ids.length] = id
     }
+
+    redis.del(`___selva_ancestors_batch:${batchId}`)
   } else {
     ids = newIds
   }

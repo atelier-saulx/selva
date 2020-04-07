@@ -193,6 +193,8 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
           deleteItem(child)
         }
       }
+
+      redis.del(`___selva_reset_children:${batchId}`)
     }
   }
 
