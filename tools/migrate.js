@@ -539,7 +539,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
               }
 
               if (relations.length) {
-                props[remapField(itemKey)] = relations
+                props[remapField(itemKey)] = { $add: relations }
               }
             } else {
               props[remapField(itemKey)] = parsed
