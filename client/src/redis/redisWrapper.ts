@@ -3,13 +3,10 @@ import { ConnectOptions } from './'
 import { v4 as uuid } from 'uuid'
 import { GetOptions } from '../get/types'
 import { ClientObject, RedisCommand } from './types'
+import prefixes from '../prefixes'
 
 const redisClients: Record<string, RedisWrapper> = {}
-
 const HEARTBEAT_TIMER = 3e3
-
-const serverHeartbeat = '___selva_subscription:server_heartbeat'
-const logPrefix = '___selva_lua_logs'
 
 const isEmpty = (obj: { [k: string]: any }): boolean => {
   for (const _k in obj) {
@@ -17,6 +14,12 @@ const isEmpty = (obj: { [k: string]: any }): boolean => {
   }
   return true
 }
+
+type ClientType = 'sub' | 'client' | 'sSub' | 'sClient'
+
+export const clientTypes: ClientType[] = ['sub', 'client', 'sSub', 'sClient']
+
+// sSub means sub manager sub client
 
 export class RedisWrapper {
   public client: RedisClient
@@ -27,8 +30,26 @@ export class RedisWrapper {
   public clients: Map<string, ClientObject> = new Map()
   public opts: ConnectOptions
   public heartbeatTimout: NodeJS.Timeout
-  public types: string[]
+  public types: ClientType[]
   public isDestroyed: boolean = false
+
+  public buffer: { [client: string]: RedisCommand[] } = {}
+
+  public inProgress: {
+    [client: string]: boolean | undefined
+  } = {}
+
+  public connected: {
+    [client: string]: boolean | undefined
+  } = {}
+
+  public scriptBatchingEnabled: {
+    [client: string]: { [scriptSha: string]: boolean }
+  } = {}
+
+  public scriptShas: { [client: string]: { [scriptName: string]: string } } = {}
+
+  public isBusy: boolean = false
 
   public subscriptions: Record<
     string,
@@ -40,14 +61,11 @@ export class RedisWrapper {
     }
   > = {}
 
-  public connected: {
-    client: boolean
-    sub: boolean
-  } = {
-    client: false,
-    sub: false
-  }
   private retryTimer: number = 100
+
+  // this exists in the case where a client reconnects faster then the server timeout
+  // and it still needs to remove the subs
+  public removeSubscriptionsSet: Set<string> = new Set()
 
   constructor(opts: ConnectOptions, id: string) {
     this.opts = opts
@@ -56,7 +74,17 @@ export class RedisWrapper {
     this.uuid = uuid()
 
     // subscription manager client // pub channel and setting your subs stuff
-    this.types = ['sub', 'client']
+    this.types = clientTypes
+
+    this.types.forEach(type => {
+      this.scriptShas[type] = {}
+      this.scriptBatchingEnabled[type] = {}
+      this.connected[type] = false
+      this.inProgress[type] = false
+      this.buffer[type] = []
+      // initialize
+    })
+
     this.connect()
   }
 
@@ -83,12 +111,9 @@ export class RedisWrapper {
   }
 
   startHeartbeat() {
-    const clientsName = `___selva_clients`
-
     const setHeartbeat = () => {
       if (this.connected.client) {
-        const clientsName = `___selva_clients`
-        this.client.hget(clientsName, this.uuid, (err, r) => {
+        this.client.hget(prefixes.clients, this.uuid, (err, r) => {
           if (!err && r) {
             if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
               console.log('Client timedout - re send subscriptions')
@@ -97,7 +122,7 @@ export class RedisWrapper {
           }
         })
         this.client.publish(
-          '___selva_subscription:heartbeat',
+          prefixes.heartbeat,
           JSON.stringify({
             client: this.uuid,
             ts: Date.now()
@@ -111,16 +136,15 @@ export class RedisWrapper {
 
   stopHeartbeat() {
     if (this.sub) {
-      this.sub.unsubscribe(serverHeartbeat)
+      this.sub.unsubscribe(prefixes.serverHeartbeat)
     }
     clearTimeout(this.heartbeatTimout)
   }
 
   emitChannel(channel: string, client?: string) {
-    const cache = `___selva_cache`
     this.queue(
       'hmget',
-      [cache, channel, channel + '_version'],
+      [prefixes.cache, channel, channel + '_version'],
       ([data, version]) => {
         if (data) {
           const obj = JSON.parse(data)
@@ -143,10 +167,10 @@ export class RedisWrapper {
   }
 
   addListeners() {
-    this.sub.subscribe(serverHeartbeat)
+    this.sub.subscribe(prefixes.serverHeartbeat)
 
     this.sub.on('message', (channel, msg) => {
-      if (channel === serverHeartbeat) {
+      if (channel === prefixes.serverHeartbeat) {
         const ts: number = Number(msg)
         // FIXME: dirty when clock mismatch  - ok for now
         if (ts < Date.now() - 60 * 1e3) {
@@ -155,14 +179,14 @@ export class RedisWrapper {
           )
           this.reconnect()
         }
-      } else if (channel.indexOf(logPrefix) === 0) {
+      } else if (channel.indexOf(prefixes.log) === 0) {
         const [_, id] = channel.split(':')
         this.emit('log', JSON.parse(msg), id)
       } else {
         if (
           channel.indexOf('heartbeat') === -1 &&
-          channel !== '___selva_subscription:remove' &&
-          channel !== '___selva_subscription:new'
+          channel !== prefixes.remove &&
+          channel !== prefixes.new
         ) {
           if (this.subscriptions[channel]) {
             this.emitChannel(channel)
@@ -202,6 +226,8 @@ export class RedisWrapper {
   connect() {
     this.types.forEach(type => {
       let tries = 0
+      console.log('opts:: -->', this.opts)
+
       const typeOpts = Object.assign({}, this.opts, {
         retryStrategy: () => {
           if (tries > 100) {
@@ -264,7 +290,7 @@ export class RedisWrapper {
   startClientLogging() {
     this.clients.forEach((client, id) => {
       if (client.log) {
-        this.sub.subscribe(`${logPrefix}:${id}`)
+        this.sub.subscribe(`${prefixes.log}:${id}`)
       }
     })
   }
@@ -272,7 +298,7 @@ export class RedisWrapper {
   stopClientLogging() {
     this.clients.forEach((client, id) => {
       if (client.log) {
-        this.sub.unsubscribe(`${logPrefix}:${id}`)
+        this.sub.unsubscribe(`${prefixes.log}:${id}`)
       }
     })
   }
@@ -315,10 +341,6 @@ export class RedisWrapper {
     }
   }
 
-  // this exists in the case where a client reconnects faster then the server timeout
-  // and it still needs to remove the subs
-  public removeSubscriptionsSet: Set<string> = new Set()
-
   unsubscribe(client: string, channel: string) {
     if (this.subscriptions[channel]) {
       this.subscriptions[channel].clients.delete(client)
@@ -346,26 +368,24 @@ export class RedisWrapper {
   }
 
   unsubscribeChannel(channel: string) {
-    const removeSubscriptionChannel = '___selva_subscription:remove'
     this.queue('srem', [channel, this.uuid])
     this.queue(
       'publish',
-      [
-        removeSubscriptionChannel,
-        JSON.stringify({ client: this.uuid, channel })
-      ],
+      [prefixes.remove, JSON.stringify({ client: this.uuid, channel })],
       () => this.removeSubscriptionsSet.delete(channel)
     )
     this.sub.unsubscribe(channel)
   }
 
   subscribeChannel(channel: string, getOptions: GetOptions) {
-    const subscriptions = '___selva_subscriptions'
-    const newSubscriptionChannel = '___selva_subscription:new'
-    this.queue('hsetnx', [subscriptions, channel, JSON.stringify(getOptions)])
+    this.queue('hsetnx', [
+      prefixes.subscriptions,
+      channel,
+      JSON.stringify(getOptions)
+    ])
     this.queue('sadd', [channel, this.uuid])
     this.queue('publish', [
-      newSubscriptionChannel,
+      prefixes.new,
       JSON.stringify({ client: this.uuid, channel })
     ])
     this.sub.subscribe(channel)
@@ -390,7 +410,7 @@ export class RedisWrapper {
         this.unsubscribe(client, channel)
       }
       if (clientObj.log && this.connected.sub) {
-        this.sub.unsubscribe(`${logPrefix}:${client}`)
+        this.sub.unsubscribe(`${prefixes.log}:${client}`)
       }
       delete clientObj.client
     }
@@ -411,21 +431,11 @@ export class RedisWrapper {
         }
       })
       if (this.connected.sub && clientObj.log) {
-        this.sub.subscribe(`${logPrefix}:${client}`)
+        this.sub.subscribe(`${prefixes.log}:${client}`)
       }
     } else {
       throw new Error('trying to add a client thats allready added!')
     }
-  }
-
-  public buffer: { client: RedisCommand[]; sub: RedisCommand[] } = {
-    client: [],
-    sub: []
-  }
-
-  public inProgress: { client: boolean; sub: boolean } = {
-    client: false,
-    sub: false
   }
 
   loadAndEvalScript(
@@ -545,30 +555,10 @@ export class RedisWrapper {
     return slice
   }
 
-  public scriptBatchingEnabled: {
-    sub: {
-      [scriptSha: string]: boolean
-    }
-    client: {
-      [scriptSha: string]: boolean
-    }
-  } = { sub: {}, client: {} }
-
-  public scriptShas: {
-    sub: {
-      [scriptName: string]: string
-    }
-    client: {
-      [scriptName: string]: string
-    }
-  } = { sub: {}, client: {} }
-
   resetScripts(type: string) {
     this.scriptBatchingEnabled[type] = {}
     this.scriptShas[type] = {}
   }
-
-  public isBusy: boolean = false
 
   execBatch(origSlice: RedisCommand[], type: string): Promise<void> {
     return new Promise((resolve, reject) => {

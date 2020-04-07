@@ -1,7 +1,7 @@
 import Observable from '../observe/observable'
 import { GetOptions, GetResult } from '../get/types'
 import { LogFn, SelvaOptions, SelvaClient } from '..'
-import { createClient, RedisWrapper } from './redisWrapper'
+import { createClient, RedisWrapper, clientTypes } from './redisWrapper'
 import { Event, RedisCommand, UpdateEvent, DeleteEvent } from './types'
 import RedisMethods from './redisMethods'
 import { EventEmitter } from 'events'
@@ -45,12 +45,23 @@ export default class RedisClient extends RedisMethods {
   private connectOptions: ConnectOptions
   public subscriptions: { [channel: string]: Subscription } = {}
 
+  public redis: RedisWrapper
+
+  public buffer: { [client: string]: RedisCommand[] } = {}
+  public connected: { [client: string]: boolean } = {}
+
   constructor(
     connect: ConnectOptions | (() => Promise<ConnectOptions>),
     selvaClient: SelvaClient,
     selvaOpts: SelvaOptions
   ) {
     super()
+
+    clientTypes.forEach(type => {
+      this.buffer[type] = []
+      this.connected[type] = false
+    })
+
     this.clientId = selvaClient.clientId
     this.selvaClient = selvaClient
     this.log =
@@ -72,8 +83,8 @@ export default class RedisClient extends RedisMethods {
       delete this.subscriptions[channel]
     }
     this.redis = null
-    this.connected = { client: false, sub: false }
-    this.buffer = { client: [], sub: [] }
+    this.connected = {}
+    this.buffer = {}
   }
 
   createSubscription(channel: string, getOpts: GetOptions) {
@@ -134,18 +145,6 @@ export default class RedisClient extends RedisMethods {
     }
   }
 
-  public redis: RedisWrapper
-
-  public buffer: { client: RedisCommand[]; sub: RedisCommand[] } = {
-    client: [],
-    sub: []
-  }
-
-  public connected: { client: boolean; sub: boolean } = {
-    client: false,
-    sub: false
-  }
-
   loadAndEvalScript(
     scriptName: string,
     script: string,
@@ -183,7 +182,9 @@ export default class RedisClient extends RedisMethods {
     // remove type
     if (type === undefined) {
       if (command === 'subscribe') {
-        type = 'sub'
+        type = 'sSub'
+      } else if (command === 'publish') {
+        type = 'sClient'
       } else {
         type = 'client'
       }

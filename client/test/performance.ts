@@ -48,7 +48,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('perf - Set multiple using 5 clients', async t => {
+test.serial('perf - Set a lot of things', async t => {
   //@ts-ignore
   const total = (global.total = {})
 
