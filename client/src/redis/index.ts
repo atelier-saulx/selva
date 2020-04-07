@@ -21,6 +21,10 @@ class Subscription extends EventEmitter {
 export type ConnectOptions = {
   port: number
   host?: string
+  subscription?: {
+    port: number
+    host?: string
+  }
 }
 
 const defaultLogging: LogFn = log => {

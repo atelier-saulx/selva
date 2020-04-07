@@ -646,7 +646,6 @@ export class RedisWrapper {
   logBuffer(buffer, type) {
     console.log('--------------------------')
     const bufferId = (~~(Math.random() * 10000)).toString(16)
-
     console.log(type, 'buffer', bufferId)
     buffer.forEach(({ command, args }) => {
       if (command === 'evalsha') {

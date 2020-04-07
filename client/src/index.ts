@@ -24,6 +24,7 @@ const MAX_SCHEMA_UPDATE_RETRIES = 10
 export type LogEntry = { level: LogLevel; msg: string }
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
 export type LogFn = (log: LogEntry) => void
+
 export type SelvaOptions = {
   loglevel?: LogLevel
   log?: LogFn
