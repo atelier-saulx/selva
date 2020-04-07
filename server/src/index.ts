@@ -256,7 +256,7 @@ export const start = async (opts: FnStart): Promise<SelvaServer> => {
         opts.service = opts.subscriptions.service
         return
       } else {
-        if (!opts.subscriptions.server) {
+        if (!opts.subscriptions.selvaServer) {
           opts.subscriptions.selvaServer = {
             service: opts.service,
             port: opts.port
