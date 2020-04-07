@@ -18,7 +18,7 @@ test.before(async t => {
 
   await wait(500)
 
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en'],
     types: {

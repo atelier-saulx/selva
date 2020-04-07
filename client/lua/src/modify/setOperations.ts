@@ -6,6 +6,7 @@ import { markForAncestorRecalculation } from './ancestors'
 import { deleteItem } from './delete'
 import sendEvent from './events'
 import { log, info, configureLogger } from '../logger'
+import globals from '../globals'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -173,6 +174,35 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     }
   }
 
+  if (
+    globals.$_batchOpts &&
+    globals.$_batchOpts.refField &&
+    globals.$_batchOpts.refField.resetReference === 'children'
+  ) {
+    info(
+      'RESET CHILDREN MID OF BATCH STATUS',
+      globals.$_batchOpts.refField.last
+    )
+
+    if (globals.$_batchOpts.refField.last) {
+      const batchId = globals.$_batchOpts.batchId
+      const bufferedChildren = redis.smembers(
+        `___selva_reset_children:${batchId}`
+      )
+
+      // run cleanup at the end of the partial batch that processes large reference arrays
+      info('END OF BATCH, CHECKING FOR THINGS TO CLEAN UP', bufferedChildren)
+      for (const child of bufferedChildren) {
+        const parentKey = child + '.parents'
+        const size = redis.scard(parentKey)
+        if (size === 0) {
+          info('END OF BATCH, CLEANING UP', child)
+          deleteItem(child)
+        }
+      }
+    }
+  }
+
   return result
 }
 
@@ -193,6 +223,15 @@ export function resetChildren(
   value: Id[],
   modify: FnModify
 ): Id[] {
+  let batchId = null
+  if (
+    globals.$_batchOpts &&
+    globals.$_batchOpts.refField &&
+    globals.$_batchOpts.refField.resetReference === 'children'
+  ) {
+    batchId = globals.$_batchOpts.batchId
+  }
+
   const children = redis.smembers(setKey)
 
   for (const child of children) {
@@ -204,11 +243,20 @@ export function resetChildren(
   const newChildren = addToChildren(id, value, modify)
   for (const child of children) {
     const parentKey = child + '.parents'
-    const size = redis.scard(parentKey)
+    // bit special but good for perf to skip this in batching mode
+    const size = batchId ? 1 : redis.scard(parentKey)
     if (size === 0) {
       deleteItem(child)
     } else {
       markForAncestorRecalculation(child)
+    }
+  }
+
+  if (batchId) {
+    info('RESET CHILDREN START OF BATCH', children)
+    if (children && children.length >= 1) {
+      redis.sadd(`___selva_reset_children:${batchId}`, ...children)
+      redis.expire(`___selva_reset_children:${batchId}`, 60 * 15) // expires in 15 minutes
     }
   }
 

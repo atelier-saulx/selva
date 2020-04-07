@@ -22,6 +22,7 @@ import { addFieldToSearch } from './search'
 import sendEvent from './events'
 import { setUpdatedAt, setCreatedAt } from './timestamps'
 import { cleanUpSuggestions } from './delete'
+import globals from '../globals'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -323,7 +324,7 @@ function removeSpecified(
 function update(payload: SetOptions): Id | null {
   if (payload.$_batchOpts) {
     logger.info('BATCH OPTS', payload.$_batchOpts)
-    console.log('BATCH OPTS', cjson.encode(payload.$_batchOpts))
+    globals.$_batchOpts = payload.$_batchOpts
   }
 
   if (!payload.$id) {

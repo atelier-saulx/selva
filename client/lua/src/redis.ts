@@ -146,6 +146,14 @@ export function exists(...keys: string[]): number {
   return redis.call('exists', ...keys)
 }
 
+export function expire(key: string, timeInSeconds: number) {
+  return redis.call('exists', key, tostring(timeInSeconds))
+}
+
+export function pexpire(key: string, timeInMs: number) {
+  return redis.call('pexists', key, tostring(timeInMs))
+}
+
 export function set(key: string, val: string): boolean {
   return redis.call('set', key, val)
 }
