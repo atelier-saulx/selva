@@ -76,6 +76,7 @@ async function migrate() {
   let db = dump[0]
   clean(db)
 
+  let keyCount = 0
   const parentsKeys = await client.redis.keys('*.children')
   for (const key of parentsKeys) {
     const id = key.split('.')[0]
@@ -100,7 +101,11 @@ async function migrate() {
       }
       console.log('TYPE MISSING IN DB', db[id], await client.redis.hgetall(id))
     }
+
+    keyCount++
   }
+
+  console.log('TOTAL KEYS', keyCount)
 
   await client.destroy()
   // await srv.destroy()

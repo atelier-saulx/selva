@@ -80,9 +80,9 @@ export function hincrby(key: string, field: string, increment: number): number {
   return redis.call('hincrby', key, field, tostring(increment))
 }
 
-export function sadd(key: string, ...members: string[]): boolean {
+export function sadd(key: string, ...members: string[]): number {
   const result = redis.call('sadd', key, ...members)
-  return result === 1
+  return result
 }
 
 export function sismember(key: string, value: string): boolean {
