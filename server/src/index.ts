@@ -16,6 +16,18 @@ type Service = {
   host: string
 }
 
+// make abstraction on top
+
+type Subscriptions = {
+  port?: number | Promise<number>
+  service?: Service | Promise<Service>
+  verbose?: boolean
+  server?: {
+    port?: number | Promise<number>
+    service?: Service | Promise<Service>
+  }
+}
+
 type FnStart = {
   port?: number | Promise<number>
   service?: Service | Promise<Service>
@@ -27,7 +39,8 @@ type FnStart = {
     scheduled?: { intervalInMinutes: number }
     backupFns: BackupFns | Promise<BackupFns>
   }
-  subscriptions?: boolean
+  onlySubs?: boolean
+  subscriptions?: false | Subscriptions
 }
 
 export type SelvaServer = {
@@ -48,14 +61,14 @@ const wait = (): Promise<void> =>
     setTimeout(resolve, 100)
   })
 
-export const start = async function({
+const startInternal = async function({
   port: portOpt,
   service,
   modules,
   replica,
   verbose = false,
   backups = null,
-  subscriptions = true
+  subscriptions
 }: FnStart): Promise<SelvaServer> {
   let port: number
   let backupFns: BackupFns
@@ -213,4 +226,34 @@ export const start = async function({
   cleanExit(port)
 
   return redisServer
+}
+
+export const start = async (
+  opts: FnStart & { subscriptions: true | Subscriptions }
+): Promise<SelvaServer> => {
+  if (opts.subscriptions) {
+    if (opts.subscriptions === true) {
+      opts.subscriptions = {
+        server: opts
+      }
+      return start(opts)
+    } else {
+      if (!opts.port && !opts.service) {
+        // just subs manager
+        opts = opts.subscriptions
+        opts.subscriptions = true
+        opts.onlySubs = true
+        return start(opts)
+      } else {
+        return
+      }
+    }
+  } else {
+    if (opts.subscriptions === undefined) {
+      opts.subscriptions = {
+        server: opts
+      }
+    }
+    return start(opts)
+  }
 }

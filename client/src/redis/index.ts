@@ -21,7 +21,7 @@ class Subscription extends EventEmitter {
 export type ConnectOptions = {
   port: number
   host?: string
-  subscription?: {
+  subscriptionManager?: {
     port: number
     host?: string
   }
