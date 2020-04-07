@@ -281,6 +281,8 @@ function removeSpecified(
         }
 
         redis.hdel(id, keyPath)
+        redis.hdel(id, '$source_' + keyPath)
+        sendEvent(id, keyPath, 'update')
       } else if (payload[key] === false) {
         falses[falses.length] = keyPath
       } else if (type(payload[key]) === 'table') {
@@ -311,7 +313,9 @@ function removeSpecified(
         }
 
         if (!skip) {
+          redis.hdel(id, '$source_' + key)
           redis.hdel(id, key)
+          sendEvent(id, key, 'update')
         }
       }
     }
