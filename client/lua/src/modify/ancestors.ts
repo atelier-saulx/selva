@@ -178,11 +178,22 @@ function setDepth(id: Id, depth: number): boolean {
   return true
 }
 
+const PARENT_CACHE: Record<string, Id[]> = {}
+function getParents(id: Id): Id[] {
+  if (PARENT_CACHE[id]) {
+    return PARENT_CACHE[id]
+  }
+
+  const parents = redis.smembers(id + '.parents')
+  PARENT_CACHE[id] = parents
+  return parents
+}
+
 function reCalculateAncestorsFor(ids: Id[]): void {
   for (const id of ids) {
     // clear the ancestors in case of any removed ancestors
 
-    const parents = redis.smembers(id + '.parents')
+    const parents = getParents(id)
 
     let skipAncestorUpdate = false
     if (!parents) {
@@ -199,7 +210,6 @@ function reCalculateAncestorsFor(ids: Id[]): void {
 
     let maxParentDepth = 0
     if (!skipAncestorUpdate) {
-      // TODO: compare ancestor string maybe for extra fast?
       const currentAncestors = redis.zrange(id + '.ancestors')
       redis.del(id + '.ancestors')
 
@@ -210,6 +220,7 @@ function reCalculateAncestorsFor(ids: Id[]): void {
         }
 
         // add all ancestors of parent
+        // TODO: add ancestor cache for anything that's already been calculated
         const parentAncestors: string[] = ancestryFromHierarchy(id, parent)
 
         const reversed: string[] = []
