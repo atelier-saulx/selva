@@ -128,8 +128,9 @@ function setObject(
       const result = redis.hsetnx(id, field, item.$default)
       if (result === 0) {
         redis.hincrby(id, field, item.$increment)
-        sendEvent(id, field, 'update')
       }
+
+      sendEvent(id, field, 'update')
       return
     }
 
@@ -138,7 +139,12 @@ function setObject(
     redis.hincrby(id, field, item.$increment)
     sendEvent(id, field, 'update')
   } else if (item.$ref) {
-    redis.hset(id, `${field}.$ref`, item.$ref)
+    const current = redis.hget(id, item.$ref)
+    if (current !== `${field}.$ref`) {
+      redis.hset(id, `${field}.$ref`, item.$ref)
+    }
+
+    sendEvent(id, field, 'update')
   } else {
     setField(id, field, item, false, source)
   }
