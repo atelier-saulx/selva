@@ -113,8 +113,6 @@ function setInternalArrayStructure(
   if (field.indexOf('.') !== -1) {
     redis.hset(id, field, '___selva_$set')
   }
-
-  sendEvent(id, field, 'update')
 }
 
 function setObject(

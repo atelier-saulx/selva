@@ -23,6 +23,10 @@ export function resetSet(
   hierarchy: boolean = true
 ): void {
   const setKey = getSetKey(id, field)
+  const current = redis.smembers(setKey)
+  if (arrayIsEqual(current, value)) {
+    return
+  }
 
   if (hierarchy) {
     if (field === 'parents') {
@@ -41,6 +45,8 @@ export function resetSet(
   } else {
     redis.sadd(setKey, ...value)
   }
+
+  sendEvent(id, field, 'update')
 }
 
 export function addToSet(
@@ -63,7 +69,10 @@ export function addToSet(
   }
 
   if (value.length > 0) {
-    redis.sadd(setKey, ...value)
+    const added = redis.sadd(setKey, ...value)
+    if (added > 0) {
+      sendEvent(id, field, 'update')
+    }
   }
 }
 
@@ -85,6 +94,8 @@ export function removeFromSet(
       removeAlias(id, value)
     }
   }
+
+  sendEvent(id, field, 'update')
 }
 
 export function resetParents(
@@ -93,13 +104,8 @@ export function resetParents(
   value: Id[],
   modify: FnModify
 ): void {
+  // TODO: can be passed from "above"
   const parents = redis.smembers(id + '.parents')
-  // bail if parents are unchanged
-  // needs to be commented for now as we set before recalculating ancestors
-  // this will likely change as we optimize ancestor calculation
-  if (arrayIsEqual(parents, value)) {
-    return
-  }
 
   // clean up existing parents
   for (const parent of parents) {
