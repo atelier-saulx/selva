@@ -323,7 +323,6 @@ function removeSpecified(
 
 function update(payload: SetOptions): Id | null {
   if (payload.$_batchOpts) {
-    logger.info('BATCH OPTS', payload.$_batchOpts)
     globals.$_batchOpts = payload.$_batchOpts
   }
 

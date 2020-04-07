@@ -286,22 +286,16 @@ export function reCalculateAncestors(): void {
   if (globals.$_batchOpts) {
     const { batchId } = globals.$_batchOpts
 
-    logger.info('IS BATCH, STATUS?', globals.$_batchOpts.last)
     if (!globals.$_batchOpts.last) {
       if (newIds.length > 0) {
         redis.sadd(`___selva_ancestors_batch:${batchId}`, ...newIds)
         redis.expire(`___selva_ancestors_batch:${batchId}`, 60 * 1) // expires in 15 minutes 5
       }
 
-      logger.info(
-        'MID BATCH, SKIPPING ANCESTOR RECALC WITH AMONUT',
-        newIds.length
-      )
       return
     }
 
     ids = redis.smembers(`___selva_ancestors_batch:${batchId}`) || []
-    logger.info('ADDING OLD BATCH IDS FOR ANCESTOR RECALC', ids.length)
     for (const id of newIds) {
       ids[ids.length] = id
     }
@@ -309,6 +303,5 @@ export function reCalculateAncestors(): void {
     ids = newIds
   }
 
-  logger.info('RECALC ANCESTORS', ids.length)
   reCalculateAncestorsFor(ids)
 }
