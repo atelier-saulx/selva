@@ -321,6 +321,11 @@ function removeSpecified(
 }
 
 function update(payload: SetOptions): Id | null {
+  if (payload.$_batchOpts) {
+    logger.info('BATCH OPTS', payload.$_batchOpts)
+    console.log('BATCH OPTS', cjson.encode(payload.$_batchOpts))
+  }
+
   if (!payload.$id) {
     if (payload.$alias) {
       const accessAliases: string[] = ensureArray(payload.$alias)
