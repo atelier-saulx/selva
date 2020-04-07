@@ -196,12 +196,14 @@ const startInternal = async function({
     }
   }
 
-  // const subs = new SubscriptionManager(opts.subscriptions)
   const subs = new SubscriptionManager()
 
-  console.log(`subs enabled ${subscriptions}`, port)
   if (subscriptions) {
     if (typeof subscriptions === 'object') {
+      console.log(`subs enabled ${subscriptions}`, port)
+
+      // may need to create another server ":/"
+
       await subs.connect(subscriptions)
     }
   }
@@ -250,6 +252,8 @@ export const start = async (opts: FnStart): Promise<SelvaServer> => {
     if (opts.subscriptions === true) {
       // prob want seperate thing to be the default
       opts.subscriptions = {
+        port: opts.port,
+        service: opts.service,
         selvaServer: {
           service: opts.service,
           port: opts.port
@@ -286,6 +290,8 @@ export const start = async (opts: FnStart): Promise<SelvaServer> => {
   } else {
     if (opts.subscriptions === undefined) {
       opts.subscriptions = {
+        port: opts.port,
+        service: opts.service,
         selvaServer: {
           service: opts.service,
           port: opts.port

@@ -6,5 +6,6 @@ export default {
   cache: '___selva_cache',
   remove: '___selva_subscription:remove',
   new: '___selva_subscription:new',
-  subscriptions: '___selva_subscriptions'
+  subscriptions: '___selva_subscriptions',
+  events: '___selva_events:'
 }

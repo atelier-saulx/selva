@@ -13,9 +13,14 @@ let vms
 
 test.before(async t => {
   port = await getPort()
+
+  // small test
   srv = await start({
-    port
+    port: new Promise(r => {
+      setTimeout(() => r(port), 100)
+    })
   })
+
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],

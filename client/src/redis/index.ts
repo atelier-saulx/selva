@@ -8,10 +8,11 @@ import {
   ClientType
 } from './redisWrapper'
 import { Event, RedisCommand, UpdateEvent, DeleteEvent } from './types'
-import RedisMethods from './redisMethods'
 import { EventEmitter } from 'events'
 // adds FT commands to redis
 import './redisSearch'
+import RedisMethodsByType from './redisMethodsByType'
+import RedisMethods from './RedisMethods'
 
 class Subscription extends EventEmitter {
   public channel: string
@@ -55,6 +56,8 @@ export default class RedisClient extends RedisMethods {
   public buffer: { [client: string]: RedisCommand[] } = {}
   public connected: { [client: string]: boolean } = {}
 
+  public byType: RedisMethodsByType
+
   constructor(
     connect:
       | ConnectOptions
@@ -69,6 +72,8 @@ export default class RedisClient extends RedisMethods {
       this.buffer[type] = []
       this.connected[type] = false
     })
+
+    this.byType = new RedisMethodsByType(this)
 
     this.clientId = selvaClient.clientId
     this.selvaClient = selvaClient

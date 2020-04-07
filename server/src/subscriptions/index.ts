@@ -52,6 +52,9 @@ export default class SubscriptionManager {
   public client: SelvaClient
   public sub: RedisClient
   public pub: RedisClient // pub and client
+  public sSub: RedisClient
+  public sPub: RedisClient // pub and client
+
   public inProgress: Record<string, true> = {}
   public incomingCount: number = 0
   // public isDestroyed: boolean = false
@@ -91,12 +94,12 @@ export default class SubscriptionManager {
     // just to speed things up
     // use client redis internally for everything - much better
     const cleanUpQ = []
-    const clients = await this.client.redis.smembers(channel)
+    const clients = await this.client.redis.byType.smembers('sClient', channel)
     let len = clients.length
     const cIndex = clients.indexOf(client)
     if (cIndex !== -1) {
       len--
-      cleanUpQ.push(this.client.redis.srem(channel, client))
+      cleanUpQ.push(this.client.redis.byType.srem('sClient', channel, client))
     }
     const sub = this.subscriptions[channel]
     if (sub) {
@@ -142,11 +145,18 @@ export default class SubscriptionManager {
   }
 
   async removeSubscription(channel: string, cleanUpQ: any[] = []) {
-    const cache = `___selva_cache`
-    const subscriptionsName = '___selva_subscriptions'
-    cleanUpQ.push(this.client.redis.hdel(subscriptionsName, channel))
-    cleanUpQ.push(this.client.redis.del(channel))
-    cleanUpQ.push(this.client.redis.hdel(cache, channel, channel + '_version'))
+    cleanUpQ.push(
+      this.client.redis.byType.hdel('sClient', prefixes.subscriptions, channel)
+    )
+    cleanUpQ.push(this.client.redis.byType.del('sClient', channel))
+    cleanUpQ.push(
+      this.client.redis.byType.hdel(
+        'sClient',
+        prefixes.cache,
+        channel,
+        channel + '_version'
+      )
+    )
 
     if (this.queries[channel]) {
       delete this.queries[channel]
@@ -169,18 +179,15 @@ export default class SubscriptionManager {
     // can we do less here maybe?
     // e.g do a diff first or something
 
-    const subscriptionsName = '___selva_subscriptions'
-    const clientsName = `___selva_clients`
-
     // can do multi if you want
     const [subscriptions, clients] = await Promise.all([
-      this.client.redis.hgetall(subscriptionsName),
-      this.client.redis.hgetall(clientsName)
+      this.client.redis.byType.hgetall('sClient', prefixes.subscriptions),
+      this.client.redis.byType.hgetall('sClient', prefixes.clients)
     ])
 
     const q = []
     for (const channel in subscriptions) {
-      q.push(this.client.redis.smembers(channel))
+      q.push(this.client.redis.byType.smembers('sClient', channel))
     }
 
     const subsClients = await Promise.all(q)
@@ -202,7 +209,9 @@ export default class SubscriptionManager {
         }
       } else {
         console.log('Client is timedout from server', client)
-        cleanUpQ.push(this.client.redis.hdel(clientsName, client))
+        cleanUpQ.push(
+          this.client.redis.byType.hdel('sClient', prefixes.clients, client)
+        )
         // publish too client that its marked as timeout
       }
     }
@@ -217,7 +226,9 @@ export default class SubscriptionManager {
           if (client in this.clients) {
             clientsSet.add(client)
           } else {
-            cleanUpQ.push(this.client.redis.srem(channel, client))
+            cleanUpQ.push(
+              this.client.redis.byType.srem('sClient', channel, client)
+            )
           }
         }
         if (clientsSet.size) {
@@ -235,8 +246,6 @@ export default class SubscriptionManager {
       i++
     }
 
-    // console.log('helo do it', this.clients, this.subscriptions)
-
     if (cleanUpQ.length) {
       await Promise.all(cleanUpQ)
       console.log('cleaned up clients / subscriptions', cleanUpQ.length)
@@ -251,10 +260,9 @@ export default class SubscriptionManager {
   }
 
   startServerHeartbeat() {
-    const heartbeatChannel = '___selva_subscription:server_heartbeat'
     const setHeartbeat = () => {
       if (this.pub) {
-        this.pub.publish(heartbeatChannel, String(Date.now()))
+        this.pub.publish(prefixes.serverHeartbeat, String(Date.now()))
       }
       this.serverHeartbeatTimeout = setTimeout(setHeartbeat, 2e3)
     }
@@ -270,6 +278,8 @@ export default class SubscriptionManager {
     clearTimeout(this.serverHeartbeatTimeout)
     this.sub = null
     this.pub = null
+    this.sPub = null
+    this.sSub = null
   }
 
   async connect(opts: Subscriptions): Promise<void> {
@@ -295,8 +305,8 @@ export default class SubscriptionManager {
         }
 
     const connectOptions = {
-      port: opts.selvaServer.port,
-      host: opts.selvaServer.host,
+      port: subscriptions.port,
+      host: subscriptions.host,
       subscriptions: opts.service
         ? opts.service instanceof Promise
           ? await opts.service
@@ -307,7 +317,9 @@ export default class SubscriptionManager {
           }
     }
 
-    return new Promise((resolve, reject) => {
+    console.log('ConnectOptions SERVER', connectOptions)
+
+    return new Promise(resolve => {
       // make promise assignable as well
 
       this.client = new SelvaClient(<ConnectOptions>connectOptions)
@@ -318,6 +330,8 @@ export default class SubscriptionManager {
         // want to remove this
         this.sub = this.client.redis.redis.sub
         this.pub = this.client.redis.redis.client
+        this.sSub = this.client.redis.redis.sSub
+        this.sPub = this.client.redis.redis.sClient
         // ------------------------------
         addListeners(this)
         this.startServerHeartbeat()
