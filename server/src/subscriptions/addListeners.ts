@@ -11,6 +11,7 @@ const addListeners = async (
   const removeSubscriptionChannel = '___selva_subscription:remove'
   const clients = `___selva_clients`
 
+  // this is on the subs manager
   subsManager.sub.on('message', (channel, message) => {
     if (channel === heartbeatChannel) {
       const { client, ts } = JSON.parse(message)
@@ -37,6 +38,7 @@ const addListeners = async (
 
   const prefixLength = '___selva_events:'.length
 
+  // this is on the actual db
   subsManager.sub.on('pmessage', (_pattern, channel, message) => {
     subsManager.incomingCount++
     const updatedSubscriptions: Record<string, true> = {}

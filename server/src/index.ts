@@ -21,8 +21,7 @@ type Service = {
 type Subscriptions = {
   port?: number | Promise<number>
   service?: Service | Promise<Service>
-  verbose?: boolean
-  server?: {
+  server: {
     port?: number | Promise<number>
     service?: Service | Promise<Service>
   }
@@ -39,8 +38,8 @@ type FnStart = {
     scheduled?: { intervalInMinutes: number }
     backupFns: BackupFns | Promise<BackupFns>
   }
-  onlySubs?: boolean
-  subscriptions?: false | Subscriptions
+  seperateSubsmanager?: boolean
+  subscriptions?: Subscriptions | boolean
 }
 
 export type SelvaServer = {
@@ -52,6 +51,7 @@ export type SelvaServer = {
   backup: () => Promise<void>
   openSubscriptions: () => Promise<void>
   closeSubscriptions: () => void
+  subsManagerServer?: SelvaServer
 }
 
 const defaultModules = ['redisearch', 'selva']
@@ -68,7 +68,8 @@ const startInternal = async function({
   replica,
   verbose = false,
   backups = null,
-  subscriptions
+  subscriptions,
+  seperateSubsmanager
 }: FnStart): Promise<SelvaServer> {
   let port: number
   let backupFns: BackupFns
@@ -185,7 +186,16 @@ const startInternal = async function({
 
   const redisDb = spawn('redis-server', args)
 
+  if (seperateSubsmanager) {
+    console.log('make seperate subsManager')
+    if (typeof subscriptions === 'object') {
+      this.subsManagerServer = await startInternal(subscriptions)
+    }
+  }
+
+  // const subs = new SubscriptionManager(opts.subscriptions)
   const subs = new SubscriptionManager()
+
   console.log(`subs enabled ${subscriptions}`, port)
   if (subscriptions) {
     await subs.connect(port)
@@ -228,24 +238,41 @@ const startInternal = async function({
   return redisServer
 }
 
-export const start = async (
-  opts: FnStart & { subscriptions: true | Subscriptions }
-): Promise<SelvaServer> => {
+export const start = async (opts: FnStart): Promise<SelvaServer> => {
   if (opts.subscriptions) {
     if (opts.subscriptions === true) {
       opts.subscriptions = {
-        server: opts
+        server: {
+          service: opts.service,
+          port: opts.port
+        }
       }
-      return start(opts)
+      return startInternal(opts)
     } else {
       if (!opts.port && !opts.service) {
         // just subs manager
-        opts = opts.subscriptions
-        opts.subscriptions = true
-        opts.onlySubs = true
-        return start(opts)
-      } else {
+        opts.port = opts.subscriptions.port
+        opts.service = opts.subscriptions.service
         return
+      } else {
+        if (!opts.subscriptions.server) {
+          opts.subscriptions.server = {
+            service: opts.service,
+            port: opts.port
+          }
+        }
+
+        if (opts.subscriptions.port || opts.subscriptions.service) {
+          opts.seperateSubsmanager = true
+          opts.subscriptions.server = {
+            service: opts.service,
+            port: opts.port
+          }
+          // needs to create a seperate subs manager
+          return startInternal(opts)
+        } else {
+          return startInternal(opts)
+        }
       }
     }
   } else {
@@ -254,6 +281,6 @@ export const start = async (
         server: opts
       }
     }
-    return start(opts)
+    return startInternal(opts)
   }
 }

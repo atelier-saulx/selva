@@ -230,10 +230,10 @@ test.serial('perf - Set multiple using 5 clients', async t => {
   //     cnt++
   //   })
 
-  await wait(6e4 * 10)
+  await wait(10e3)
   clearInterval(int)
   // @ts-ignore
   global.stopped = true
   await wait(1e3)
-  t.true(getTotal() > 20e3)
+  t.true(getTotal() > 10e3)
 })
