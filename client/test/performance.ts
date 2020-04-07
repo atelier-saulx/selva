@@ -101,8 +101,8 @@ test.serial('perf - Set multiple using 5 clients', async t => {
         // if sets are larger then a certain amount do a wait on the client to let it gc a bit
         // for gc ?
 
-        setTimeout(setLoop, 1e3)
-        // setLoop()
+        // setTimeout(setLoop, 1e3)
+        setLoop()
       }
     }
 

@@ -21,7 +21,7 @@ type Service = {
 type Subscriptions = {
   port?: number | Promise<number>
   service?: Service | Promise<Service>
-  server: {
+  selvaServer: {
     port?: number | Promise<number>
     service?: Service | Promise<Service>
   }
@@ -241,8 +241,9 @@ const startInternal = async function({
 export const start = async (opts: FnStart): Promise<SelvaServer> => {
   if (opts.subscriptions) {
     if (opts.subscriptions === true) {
+      // prob want seperate thing to be the default
       opts.subscriptions = {
-        server: {
+        selvaServer: {
           service: opts.service,
           port: opts.port
         }
@@ -256,7 +257,7 @@ export const start = async (opts: FnStart): Promise<SelvaServer> => {
         return
       } else {
         if (!opts.subscriptions.server) {
-          opts.subscriptions.server = {
+          opts.subscriptions.selvaServer = {
             service: opts.service,
             port: opts.port
           }
@@ -264,7 +265,7 @@ export const start = async (opts: FnStart): Promise<SelvaServer> => {
 
         if (opts.subscriptions.port || opts.subscriptions.service) {
           opts.seperateSubsmanager = true
-          opts.subscriptions.server = {
+          opts.subscriptions.selvaServer = {
             service: opts.service,
             port: opts.port
           }
@@ -278,7 +279,10 @@ export const start = async (opts: FnStart): Promise<SelvaServer> => {
   } else {
     if (opts.subscriptions === undefined) {
       opts.subscriptions = {
-        server: opts
+        selvaServer: {
+          service: opts.service,
+          port: opts.port
+        }
       }
     }
     return startInternal(opts)
