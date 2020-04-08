@@ -622,7 +622,6 @@ export class RedisWrapper {
             let hasBusy = false
             reply.forEach((v: any, i: number) => {
               if (v instanceof Error) {
-                console.log('ERROR', v)
                 if (v.message.indexOf('BUSY') !== -1) {
                   hasBusy = true
                   this.queue(
