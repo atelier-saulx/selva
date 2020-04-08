@@ -20,7 +20,7 @@ import getTypeFromId from './getTypeFromId'
 import digest from './digest'
 import { IdOptions } from '../lua/src/id'
 import { v4 as uuid } from 'uuid'
-const MAX_SCHEMA_UPDATE_RETRIES = 10
+const MAX_SCHEMA_UPDATE_RETRIES = 100
 export type LogEntry = { level: LogLevel; msg: string }
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
 export type LogFn = (log: LogEntry) => void
