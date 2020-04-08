@@ -1,12 +1,18 @@
 import Observable from '../observe/observable'
 import { GetOptions, GetResult } from '../get/types'
 import { LogFn, SelvaOptions, SelvaClient } from '..'
-import { createClient, RedisWrapper } from './redisWrapper'
+import {
+  createClient,
+  RedisWrapper,
+  clientTypes,
+  ClientType
+} from './redisWrapper'
 import { Event, RedisCommand, UpdateEvent, DeleteEvent } from './types'
-import RedisMethods from './redisMethods'
 import { EventEmitter } from 'events'
 // adds FT commands to redis
 import './redisSearch'
+import RedisMethodsByType from './redisMethodsByType'
+import RedisMethods from './RedisMethods'
 
 class Subscription extends EventEmitter {
   public channel: string
@@ -21,6 +27,10 @@ class Subscription extends EventEmitter {
 export type ConnectOptions = {
   port: number
   host?: string
+  subscriptions?: {
+    port: number
+    host?: string
+  }
 }
 
 const defaultLogging: LogFn = log => {
@@ -41,12 +51,30 @@ export default class RedisClient extends RedisMethods {
   private connectOptions: ConnectOptions
   public subscriptions: { [channel: string]: Subscription } = {}
 
+  public redis: RedisWrapper
+
+  public buffer: { [client: string]: RedisCommand[] } = {}
+  public connected: { [client: string]: boolean } = {}
+
+  public byType: RedisMethodsByType
+
   constructor(
-    connect: ConnectOptions | (() => Promise<ConnectOptions>),
+    connect:
+      | ConnectOptions
+      | (() => Promise<ConnectOptions>)
+      | Promise<ConnectOptions>,
     selvaClient: SelvaClient,
     selvaOpts: SelvaOptions
   ) {
     super()
+
+    clientTypes.forEach(type => {
+      this.buffer[type] = []
+      this.connected[type] = false
+    })
+
+    this.byType = new RedisMethodsByType(this)
+
     this.clientId = selvaClient.clientId
     this.selvaClient = selvaClient
     this.log =
@@ -56,7 +84,11 @@ export default class RedisClient extends RedisMethods {
         : undefined)
 
     this.connector =
-      typeof connect === 'object' ? () => Promise.resolve(connect) : connect
+      typeof connect === 'object'
+        ? () => Promise.resolve(connect)
+        : connect instanceof Promise
+        ? async () => connect
+        : connect
     this.connect()
   }
 
@@ -68,15 +100,16 @@ export default class RedisClient extends RedisMethods {
       delete this.subscriptions[channel]
     }
     this.redis = null
-    this.connected = { client: false, sub: false }
-    this.buffer = { client: [], sub: [] }
+    this.connected = {}
+    this.buffer = {}
   }
 
   createSubscription(channel: string, getOpts: GetOptions) {
     const subscription = (this.subscriptions[channel] = new Subscription(
       getOpts
     ))
-    if (this.connected.sub) {
+
+    if (this.redis) {
       this.redis.subscribe(this.clientId, channel, getOpts)
     }
     return subscription
@@ -129,25 +162,13 @@ export default class RedisClient extends RedisMethods {
     }
   }
 
-  public redis: RedisWrapper
-
-  public buffer: { client: RedisCommand[]; sub: RedisCommand[] } = {
-    client: [],
-    sub: []
-  }
-
-  public connected: { client: boolean; sub: boolean } = {
-    client: false,
-    sub: false
-  }
-
   loadAndEvalScript(
     scriptName: string,
     script: string,
     numKeys: number,
     keys: string[],
     args: string[],
-    type: string,
+    type: ClientType,
     opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -173,12 +194,14 @@ export default class RedisClient extends RedisMethods {
     args: (string | number)[],
     resolve: (x: any) => void = () => {},
     reject: (x: Error) => void = () => {},
-    type?: string
+    type?: ClientType
   ) {
     // remove type
     if (type === undefined) {
       if (command === 'subscribe') {
-        type = 'sub'
+        type = 'sSub'
+      } else if (command === 'publish') {
+        type = 'sClient'
       } else {
         type = 'client'
       }
@@ -238,7 +261,15 @@ export default class RedisClient extends RedisMethods {
           this.connector().then(opts => {
             if (
               opts.host !== this.connectOptions.host ||
-              opts.port !== this.connectOptions.port
+              opts.port !== this.connectOptions.port ||
+              (opts.subscriptions && !this.connectOptions.subscriptions) ||
+              (this.connectOptions.subscriptions && !opts.subscriptions) ||
+              (opts.subscriptions &&
+                this.connectOptions.subscriptions &&
+                (opts.subscriptions.host !==
+                  this.connectOptions.subscriptions.host ||
+                  opts.subscriptions.port !==
+                    this.connectOptions.subscriptions.port))
             ) {
               this.redis.removeClient(this.clientId)
               this.connect()

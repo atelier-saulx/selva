@@ -16,6 +16,19 @@ type Service = {
   host: string
 }
 
+// make abstraction on top
+
+export type Subscriptions = {
+  port?: number | Promise<number>
+  service?: Service | Promise<Service>
+  host?: number | Promise<number>
+  selvaServer?: {
+    port?: number | Promise<number>
+    service?: Service | Promise<Service>
+    host?: string | Promise<string>
+  }
+}
+
 type FnStart = {
   port?: number | Promise<number>
   service?: Service | Promise<Service>
@@ -27,7 +40,8 @@ type FnStart = {
     scheduled?: { intervalInMinutes: number }
     backupFns: BackupFns | Promise<BackupFns>
   }
-  subscriptions?: boolean
+  seperateSubsmanager?: boolean
+  subscriptions?: Subscriptions | boolean
 }
 
 export type SelvaServer = {
@@ -39,6 +53,7 @@ export type SelvaServer = {
   backup: () => Promise<void>
   openSubscriptions: () => Promise<void>
   closeSubscriptions: () => void
+  subsManagerServer?: SelvaServer
 }
 
 const defaultModules = ['redisearch', 'selva']
@@ -48,14 +63,15 @@ const wait = (): Promise<void> =>
     setTimeout(resolve, 100)
   })
 
-export const start = async function({
+export const startInternal = async function({
   port: portOpt,
   service,
   modules,
   replica,
   verbose = false,
   backups = null,
-  subscriptions = true
+  subscriptions,
+  seperateSubsmanager
 }: FnStart): Promise<SelvaServer> {
   let port: number
   let backupFns: BackupFns
@@ -172,10 +188,22 @@ export const start = async function({
 
   const redisDb = spawn('redis-server', args)
 
-  const subs = new SubscriptionManager()
-  console.log(`subs enabled ${subscriptions}`, port)
+  let subs
+
   if (subscriptions) {
-    await subs.connect(port)
+    if (typeof subscriptions === 'object') {
+      subs = new SubscriptionManager()
+
+      console.log(`subs enabled ${subscriptions}`, port)
+
+      if (seperateSubsmanager) {
+        await subs.createServer(subscriptions, seperateSubsmanager)
+      }
+
+      // may need to create another server ":/"
+
+      await subs.connect(subscriptions)
+    }
   }
 
   const redisServer: SelvaServer = {
@@ -189,15 +217,21 @@ export const start = async function({
       }
     },
     closeSubscriptions: () => {
-      subs.destroy()
+      if (subs) {
+        subs.destroy()
+      }
     },
     openSubscriptions: async () => {
-      await subs.connect(port)
+      if (subs && typeof subscriptions === 'object') {
+        await subs.connect(subscriptions)
+      }
     },
     destroy: async () => {
-      subs.destroy()
       execSync(`redis-cli -p ${port} shutdown`)
       redisDb.kill()
+      if (subs) {
+        await subs.destroy()
+      }
       await wait()
     },
     backup: async () => {
@@ -212,5 +246,62 @@ export const start = async function({
 
   cleanExit(port)
 
+  if (verbose) console.info(`🌈 Succesfully started db on port ${port}`)
+
   return redisServer
+}
+
+export const start = async (opts: FnStart): Promise<SelvaServer> => {
+  if (opts.subscriptions) {
+    if (opts.subscriptions === true) {
+      // prob want seperate thing to be the default
+      opts.subscriptions = {
+        port: opts.port,
+        service: opts.service,
+        selvaServer: {
+          service: opts.service,
+          port: opts.port
+        }
+      }
+      return startInternal(opts)
+    } else {
+      if (!opts.port && !opts.service) {
+        // just subs manager
+        opts.port = opts.subscriptions.port
+        opts.service = opts.subscriptions.service
+        return
+      } else {
+        if (!opts.subscriptions.selvaServer) {
+          opts.subscriptions.selvaServer = {
+            service: opts.service,
+            port: opts.port
+          }
+        }
+
+        if (opts.subscriptions.port || opts.subscriptions.service) {
+          opts.seperateSubsmanager = true
+          opts.subscriptions.selvaServer = {
+            service: opts.service,
+            port: opts.port
+          }
+          // needs to create a seperate subs manager
+          return startInternal(opts)
+        } else {
+          return startInternal(opts)
+        }
+      }
+    }
+  } else {
+    if (opts.subscriptions === undefined) {
+      opts.subscriptions = {
+        port: opts.port,
+        service: opts.service,
+        selvaServer: {
+          service: opts.service,
+          port: opts.port
+        }
+      }
+    }
+    return startInternal(opts)
+  }
 }

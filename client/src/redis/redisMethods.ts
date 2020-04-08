@@ -1,3 +1,5 @@
+import { ClientType } from './redisWrapper'
+
 type args = (string | number)[]
 
 abstract class RedisMethods {
@@ -6,7 +8,7 @@ abstract class RedisMethods {
     args: (string | number)[],
     resolve: (x: any) => void,
     reject: (x: Error) => void,
-    type?: 'client' | 'sub'
+    type?: ClientType
   ): void
 
   async command(key: string, ...args: args): Promise<any> {

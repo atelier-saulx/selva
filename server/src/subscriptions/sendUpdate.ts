@@ -1,8 +1,8 @@
-import { GetOptions } from '@saulx/selva'
+import { prefixes } from '@saulx/selva'
 import { createHash } from 'crypto'
 import { updateQueries as updateNowQueries } from './now'
 import { QuerySubscription } from './'
-import SubscriptionManager from './index'
+import SubscriptionManager from './subsManager'
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
@@ -12,7 +12,6 @@ const sendUpdate = async (
   if (!subscriptionManager.pub) {
     return
   }
-  const cache = `___selva_cache`
   const subscription = subscriptionManager.subscriptions[subscriptionId]
 
   if (!subscription) {
@@ -25,14 +24,24 @@ const sendUpdate = async (
   if (deleteOp) {
     const event = JSON.stringify({ type: 'delete' })
     await Promise.all([
-      subscriptionManager.client.redis.hset(cache, subscriptionId, event),
-      subscriptionManager.client.redis.hset(
-        cache,
+      subscriptionManager.client.redis.byType.hset(
+        'sClient',
+        prefixes.cache,
+        subscriptionId,
+        event
+      ),
+      subscriptionManager.client.redis.byType.hset(
+        'sClient',
+        prefixes.cache,
         subscriptionId + '_version',
         ''
       )
     ])
-    await subscriptionManager.client.redis.publish(subscriptionId, '')
+    await subscriptionManager.client.redis.byType.publish(
+      'sClient',
+      subscriptionId,
+      ''
+    )
     return
   }
 
@@ -99,20 +108,29 @@ const sendUpdate = async (
 
   // change all this result hash
   subscription.version = newHash
-
   // update cache
 
   // also do this on intial
   await Promise.all([
-    subscriptionManager.client.redis.hset(cache, subscriptionId, resultStr),
-    subscriptionManager.client.redis.hset(
-      cache,
+    subscriptionManager.client.redis.byType.hset(
+      'sClient',
+      prefixes.cache,
+      subscriptionId,
+      resultStr
+    ),
+    subscriptionManager.client.redis.byType.hset(
+      'sClient',
+      prefixes.cache,
       subscriptionId + '_version',
       newHash
     )
   ])
 
-  subscriptionManager.client.redis.publish(subscriptionId, newHash)
+  subscriptionManager.client.redis.byType.publish(
+    'sClient',
+    subscriptionId,
+    newHash
+  )
 }
 
 export default sendUpdate

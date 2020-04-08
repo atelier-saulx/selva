@@ -24,6 +24,9 @@ const MAX_SCHEMA_UPDATE_RETRIES = 10
 export type LogEntry = { level: LogLevel; msg: string }
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
 export type LogFn = (log: LogEntry) => void
+
+export { default as prefixes } from './prefixes'
+
 export type SelvaOptions = {
   loglevel?: LogLevel
   log?: LogFn
@@ -65,7 +68,10 @@ export class SelvaClient extends EventEmitter {
   public clientId: string
 
   constructor(
-    opts: ConnectOptions | (() => Promise<ConnectOptions>),
+    opts:
+      | ConnectOptions
+      | (() => Promise<ConnectOptions>)
+      | Promise<ConnectOptions>,
     selvaOpts?: SelvaOptions
   ) {
     super()
@@ -343,7 +349,10 @@ export class SelvaClient extends EventEmitter {
 }
 
 export function connect(
-  opts: ConnectOptions | (() => Promise<ConnectOptions>),
+  opts:
+    | ConnectOptions
+    | (() => Promise<ConnectOptions>)
+    | Promise<ConnectOptions>,
   selvaOpts?: SelvaOptions
 ): SelvaClient {
   return new SelvaClient(opts, selvaOpts)
@@ -351,3 +360,4 @@ export function connect(
 
 export * from './schema/index'
 export * from './get/types'
+export { ConnectOptions } from './redis'

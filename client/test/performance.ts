@@ -10,13 +10,24 @@ import m from 'module'
 let srv
 let port: number
 let vms
+let portSubs: number
 
 test.before(async t => {
   port = await getPort()
+  portSubs = await getPort()
+  // small test
   srv = await start({
-    port
+    port: new Promise(r => {
+      setTimeout(() => r(port), 100)
+    }),
+    subscriptions: {
+      port: new Promise(r => {
+        setTimeout(() => r(portSubs), 100)
+      })
+    }
   })
-  const client = connect({ port })
+
+  const client = connect({ port, subscriptions: { port: portSubs } })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -48,58 +59,92 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.skip('perf - Set multiple using 5 clients', async t => {
+test.serial('perf - Set a lot of things', async t => {
   //@ts-ignore
   const total = (global.total = {})
 
-  const code = function(i, port) {
+  const code = function(i, port, portSubs) {
     console.log(`Start vm ${i}`)
     const { connect } = require('../src/index')
-    const client = connect({ port })
+    const client = connect({
+      port,
+      subscriptions: {
+        port: portSubs
+      }
+    })
+
+    client.on('connect', () => {
+      console.log('connect main client!')
+    })
 
     let iteration = 1
     let time = 0
-    let amount = 500
+    let amount = 1500
     const setLoop = async () => {
-      const q = []
-      for (let i = 0; i < amount; i++) {
-        q.push(
-          client.set({
+      // @ts-ignore
+      if (global.stopped) {
+        console.log('stop client', i)
+      } else {
+        const q = []
+        // for (let i = 0; i < amount; i++) {
+        //   q.push(
+        //     client.set({
+        //       type: 'match',
+        //       value: ~~(Math.random() * 1000)
+        //     })
+        //   )
+        // }
+
+        for (let i = 0; i < amount; i++) {
+          q.push({
             type: 'match',
-            value: 1
+            value: ~~(Math.random() * 1000)
           })
-        )
+        }
+
+        await client.set({
+          $id: 'root',
+          children: q //{ $add: q }
+          // children: { $add: q }
+        })
+
+        // await Promise.all(q)
+        time += 1
+
+        iteration++
+
+        //@ts-ignore
+        global.total[i] = { amount: iteration * amount, time }
+
+        // await wait(1e3)
+
+        // if sets are larger then a certain amount do a wait on the client to let it gc a bit
+        // for gc ?
+
+        // setTimeout(setLoop, 1e3)
+        setLoop()
       }
-      let d = Date.now()
-      await Promise.all(q)
-      time += Date.now() - d
-
-      //   console.log(
-      //     `Client ${i} iteration ${iteration} finished in ${Date.now() -
-      //       d}ms total set ${iteration * amount}`
-      //   )
-
-      iteration++
-      //@ts-ignore
-      global.total[i] = { amount: iteration * amount, time }
-
-      setLoop()
     }
 
     client.on('connect', () => {
       console.log(`Connected ${i}`)
-      setLoop()
+      setTimeout(setLoop, 1e3)
     })
   }
 
   const vms = []
 
-  for (let i = 0; i < 5; i++) {
+  const clientAmount = 2
+
+  for (let i = 0; i < clientAmount; i++) {
     let wrappedRequire = require
     vms.push(
-      vm.runInThisContext(m.wrap(`(${code.toString()})(${i},${port})`), {
-        filename: 'aristotle-vm.js'
-      })(
+      vm.runInThisContext(
+        m.wrap(`(${code.toString()})(${i},${port}, ${portSubs})`),
+        {
+          filename: `client-vm${i}.js`
+        }
+      )(
         exports,
         wrappedRequire,
         module,
@@ -109,8 +154,6 @@ test.serial.skip('perf - Set multiple using 5 clients', async t => {
     )
   }
 
-  let it = 0
-
   const getTotal = () => {
     let a = 0
     for (let key in total) {
@@ -119,37 +162,77 @@ test.serial.skip('perf - Set multiple using 5 clients', async t => {
     return a
   }
 
-  setInterval(() => {
-    it++
-    if (it - 2 > 0) {
-      console.log(
-        `Processed ${getTotal()} items in ${10 * (it - 2)}s using 5 clients`
-      )
+  const getTotalTime = () => {
+    let t = 0
+    for (let key in total) {
+      t += total[key].time
     }
-  }, 10e3)
+    return 0
+  }
 
-  //   const client = connect({ port })
-  //   const sub = await client.observe({
-  //     items: {
-  //       $list: {
-  //         $find: {
-  //           $traverse: 'descendants',
-  //           $filter: {
-  //             $field: 'value',
-  //             $operator: '>',
-  //             $value: 10
-  //           }
-  //         }
-  //       }
-  //     }
-  //   })
+  const time = Date.now()
 
-  //   let cnt = 0
-  //   sub.subscribe(d => {
-  //     console.log('incoming', d)
-  //     cnt++
-  //   })
+  const int = setInterval(() => {
+    const s = Math.round((Date.now() - time) / 1000) - getTotalTime()
 
-  await wait(60000)
-  t.true(getTotal() > 20e3)
+    console.log(
+      `${Math.round(
+        getTotal() / s
+      )}/s Processed ${getTotal()} items in ${s}s using ${clientAmount} clients`
+    )
+  }, 1e3)
+
+  const client = connect({ port })
+
+  const s = await client.observe({
+    items: {
+      value: true,
+      id: true,
+      $list: {
+        $limit: 10,
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'value',
+            $operator: '=',
+            $value: 10
+          }
+        }
+      }
+    }
+  })
+
+  s.subscribe(d => {
+    console.log('hey update', d)
+  })
+
+  const s2 = await client.observe({
+    items: {
+      value: true,
+      id: true,
+      type: true,
+      $list: {
+        $limit: 10,
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'value',
+            $operator: '>',
+            $value: 1
+          }
+        }
+      }
+    }
+  })
+
+  s2.subscribe(d => {
+    console.log('hey update 2', d)
+  })
+
+  await wait(10e3)
+  clearInterval(int)
+  // @ts-ignore
+  global.stopped = true
+  await wait(1e3)
+  t.true(getTotal() > 40e3)
 })
