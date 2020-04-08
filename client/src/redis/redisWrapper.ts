@@ -156,10 +156,12 @@ export class RedisWrapper {
             const clientObj = this.clients.get(client)
             clientObj.message(channel, obj)
           } else {
-            this.subscriptions[channel].clients.forEach(client => {
-              const clientObj = this.clients.get(client)
-              clientObj.message(channel, obj)
-            })
+            if (this.subscriptions[channel]) {
+              this.subscriptions[channel].clients.forEach(client => {
+                const clientObj = this.clients.get(client)
+                clientObj.message(channel, obj)
+              })
+            }
           }
         }
       },
