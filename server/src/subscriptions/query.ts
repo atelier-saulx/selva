@@ -1,4 +1,5 @@
-import SubscriptionManager, { QuerySubscription } from './index'
+import SubscriptionManager from './subsManager'
+import { QuerySubscription } from './'
 import { Multi } from 'redis'
 
 let memberMemCache = {}

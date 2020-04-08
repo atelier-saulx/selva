@@ -1,4 +1,4 @@
-import SubscriptionManager from './index'
+import SubscriptionManager from './subsManager'
 
 const MAX_TIMEOUT = 10 * 60 * 60 * 1000 // 10 minutes
 

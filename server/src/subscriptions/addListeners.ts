@@ -1,4 +1,4 @@
-import SubscriptionManager from './index'
+import SubscriptionManager from './subsManager'
 import query from './query'
 import { prefixes } from '@saulx/selva'
 

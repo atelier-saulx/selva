@@ -233,16 +233,20 @@ export class RedisWrapper {
   connect() {
     this.types.forEach(type => {
       let tries = 0
-      console.log('opts:: -->', this.opts)
-
-      const { subscriptions } = this.opts
+      let opts = this.opts
+      const { subscriptions } = opts
 
       if (subscriptions) {
         // make it different
-        console.log('need to connect this client to something else!')
+        if (type === 'sClient' || type === 'sSub') {
+          console.log('need to connect this client to something else!', type)
+          opts = subscriptions
+        }
       }
 
-      const typeOpts = Object.assign({}, this.opts, {
+      console.log('Connect', type, 'to', opts)
+
+      const typeOpts = Object.assign({}, opts, {
         retryStrategy: () => {
           if (tries > 100) {
             this.reconnect()
@@ -692,7 +696,9 @@ export class RedisWrapper {
           if (buffer.length > 1e5) {
             console.warn('buffer is larger then 100k may need to do something')
           }
-          // const bId = this.logBuffer(buffer, type)
+          if (type === 'sClient') {
+            this.logBuffer(buffer, type)
+          }
           this.buffer[type] = []
           const len = Math.ceil(buffer.length / 5000)
           for (let i = 0; i < len; i++) {

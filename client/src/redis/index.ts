@@ -219,6 +219,7 @@ export default class RedisClient extends RedisMethods {
   }
 
   public sendQueueToRedis(type) {
+    console.log('SEND Q TO REDIS', type)
     // need to check if dc here else you loose commands
     const buffer = this.buffer[type]
     this.buffer[type] = []

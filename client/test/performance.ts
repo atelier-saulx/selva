@@ -10,18 +10,24 @@ import m from 'module'
 let srv
 let port: number
 let vms
+let portSubs: number
 
 test.before(async t => {
   port = await getPort()
-
+  portSubs = await getPort()
   // small test
   srv = await start({
     port: new Promise(r => {
       setTimeout(() => r(port), 100)
-    })
+    }),
+    subscriptions: {
+      port: new Promise(r => {
+        setTimeout(() => r(portSubs), 100)
+      })
+    }
   })
 
-  const client = connect({ port })
+  const client = connect({ port, subscriptions: { port: portSubs } })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -57,10 +63,19 @@ test.serial('perf - Set a lot of things', async t => {
   //@ts-ignore
   const total = (global.total = {})
 
-  const code = function(i, port) {
+  const code = function(i, port, portSubs) {
     console.log(`Start vm ${i}`)
     const { connect } = require('../src/index')
-    const client = connect({ port })
+    const client = connect({
+      port,
+      subscriptions: {
+        port: portSubs
+      }
+    })
+
+    client.on('connect', () => {
+      console.log('connect main client!')
+    })
 
     let iteration = 1
     let time = 0
@@ -124,9 +139,12 @@ test.serial('perf - Set a lot of things', async t => {
   for (let i = 0; i < clientAmount; i++) {
     let wrappedRequire = require
     vms.push(
-      vm.runInThisContext(m.wrap(`(${code.toString()})(${i},${port})`), {
-        filename: `client-vm${i}.js`
-      })(
+      vm.runInThisContext(
+        m.wrap(`(${code.toString()})(${i},${port}, ${portSubs})`),
+        {
+          filename: `client-vm${i}.js`
+        }
+      )(
         exports,
         wrappedRequire,
         module,
@@ -210,30 +228,6 @@ test.serial('perf - Set a lot of things', async t => {
   s2.subscribe(d => {
     console.log('hey update 2', d)
   })
-
-  // 2 subs broken???
-
-  //   const client = connect({ port })
-  //   const sub = await client.observe({
-  //     items: {
-  //       $list: {
-  //         $find: {
-  //           $traverse: 'descendants',
-  //           $filter: {
-  //             $field: 'value',
-  //             $operator: '>',
-  //             $value: 10
-  //           }
-  //         }
-  //       }
-  //     }
-  //   })
-
-  //   let cnt = 0
-  //   sub.subscribe(d => {
-  //     console.log('incoming', d)
-  //     cnt++
-  //   })
 
   await wait(10e3)
   clearInterval(int)

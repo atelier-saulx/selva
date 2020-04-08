@@ -2,7 +2,7 @@ import { prefixes } from '@saulx/selva'
 import { createHash } from 'crypto'
 import { updateQueries as updateNowQueries } from './now'
 import { QuerySubscription } from './'
-import SubscriptionManager from './index'
+import SubscriptionManager from './subsManager'
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,

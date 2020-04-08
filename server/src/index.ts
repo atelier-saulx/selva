@@ -10,7 +10,6 @@ import {
 } from './backups'
 import cleanExit from './cleanExit'
 import SubscriptionManager from './subscriptions'
-import { ConnectOptions } from '@saulx/selva'
 
 type Service = {
   port: number
@@ -23,7 +22,7 @@ export type Subscriptions = {
   port?: number | Promise<number>
   service?: Service | Promise<Service>
   host?: number | Promise<number>
-  selvaServer: {
+  selvaServer?: {
     port?: number | Promise<number>
     service?: Service | Promise<Service>
     host?: string | Promise<string>
@@ -64,7 +63,7 @@ const wait = (): Promise<void> =>
     setTimeout(resolve, 100)
   })
 
-const startInternal = async function({
+export const startInternal = async function({
   port: portOpt,
   service,
   modules,
@@ -189,18 +188,17 @@ const startInternal = async function({
 
   const redisDb = spawn('redis-server', args)
 
-  if (seperateSubsmanager) {
-    console.log('make seperate subsManager')
-    if (typeof subscriptions === 'object') {
-      this.subsManagerServer = await startInternal(subscriptions)
-    }
-  }
-
-  const subs = new SubscriptionManager()
+  let subs
 
   if (subscriptions) {
     if (typeof subscriptions === 'object') {
+      subs = new SubscriptionManager()
+
       console.log(`subs enabled ${subscriptions}`, port)
+
+      if (seperateSubsmanager) {
+        await subs.createServer(subscriptions, seperateSubsmanager)
+      }
 
       // may need to create another server ":/"
 
@@ -219,15 +217,19 @@ const startInternal = async function({
       }
     },
     closeSubscriptions: () => {
-      subs.destroy()
+      if (subs) {
+        subs.destroy()
+      }
     },
     openSubscriptions: async () => {
-      if (typeof subscriptions === 'object') {
+      if (subs && typeof subscriptions === 'object') {
         await subs.connect(subscriptions)
       }
     },
     destroy: async () => {
-      subs.destroy()
+      if (subs) {
+        subs.destroy()
+      }
       execSync(`redis-cli -p ${port} shutdown`)
       redisDb.kill()
       await wait()
@@ -243,6 +245,8 @@ const startInternal = async function({
   }
 
   cleanExit(port)
+
+  if (verbose) console.info(`🌈 Succesfully started db on port ${port}`)
 
   return redisServer
 }
