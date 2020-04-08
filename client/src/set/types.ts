@@ -47,8 +47,20 @@ export type SetItem<T = BaseItem> = {
     : T[P] | (T[P] & SetExtraOptions<T[P]>)
 }
 
+export type BatchRefFieldOpts = {
+  resetReference?: string // field name
+  last?: boolean
+}
+
+export type BatchOpts = {
+  batchId: string
+  refField?: BatchRefFieldOpts
+  last?: boolean
+}
+
 export type SetOptions = SetItem & {
   $id?: Id
+  $_batchOpts?: BatchOpts
   $language?: string
   $merge?: boolean
   $version?: string

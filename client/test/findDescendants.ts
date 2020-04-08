@@ -12,10 +12,13 @@ test.before(async t => {
   srv = await start({
     port
   })
+  srv.on('data', d => {
+    console.log(d.toString())
+  })
 
   await wait(500)
 
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en'],
     types: {

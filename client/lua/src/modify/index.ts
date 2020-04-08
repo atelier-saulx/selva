@@ -22,6 +22,7 @@ import { addFieldToSearch } from './search'
 import sendEvent from './events'
 import { setUpdatedAt, setCreatedAt } from './timestamps'
 import { cleanUpSuggestions } from './delete'
+import globals from '../globals'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -258,7 +259,7 @@ function removeSpecified(
   id: Id,
   path: string,
   payload: Record<string, any>
-): string[] {
+): void {
   let falses: string[] = []
   let onlyFalse = true
   for (const key in payload) {
@@ -280,47 +281,52 @@ function removeSpecified(
         }
 
         redis.hdel(id, keyPath)
+        redis.hdel(id, '$source_' + keyPath)
+        sendEvent(id, keyPath, 'update')
       } else if (payload[key] === false) {
         falses[falses.length] = keyPath
       } else if (type(payload[key]) === 'table') {
-        const nested = removeSpecified(id, keyPath, payload[key])
-        for (const item of nested) {
-          falses[falses.length] = item
-        }
+        onlyFalse = false
+        removeSpecified(id, keyPath, payload[key])
       }
     }
   }
 
-  // only run this top level
-  if (onlyFalse && path === '') {
+  if (onlyFalse) {
     const allKeys = redis.hkeys(id)
     logger.info('allKeys', allKeys)
     logger.info('falses', falses)
     for (const key of allKeys) {
       let skip = false
-      for (const setAsFalse of falses) {
-        if (
-          stringStartsWith(key, setAsFalse) ||
-          stringEndsWith(key, '.ancestors') ||
-          key === 'type' ||
-          key === 'createdAt' ||
-          key === 'updatedAt'
-        ) {
-          skip = true
-          break
+      if (stringStartsWith(key, path)) {
+        for (const setAsFalse of falses) {
+          if (
+            stringStartsWith(key, setAsFalse) ||
+            stringEndsWith(key, '.ancestors') ||
+            key === 'type' ||
+            key === 'createdAt' ||
+            key === 'updatedAt'
+          ) {
+            skip = true
+            break
+          }
         }
-      }
 
-      if (!skip) {
-        redis.hdel(id, key)
+        if (!skip) {
+          redis.hdel(id, '$source_' + key)
+          redis.hdel(id, key)
+          sendEvent(id, key, 'update')
+        }
       }
     }
   }
-
-  return falses
 }
 
 function update(payload: SetOptions): Id | null {
+  if (payload.$_batchOpts) {
+    globals.$_batchOpts = payload.$_batchOpts
+  }
+
   if (!payload.$id) {
     if (payload.$alias) {
       const accessAliases: string[] = ensureArray(payload.$alias)
