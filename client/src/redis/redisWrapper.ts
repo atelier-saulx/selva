@@ -237,14 +237,10 @@ export class RedisWrapper {
       const { subscriptions } = opts
 
       if (subscriptions) {
-        // make it different
         if (type === 'sClient' || type === 'sSub') {
-          console.log('need to connect this client to something else!', type)
           opts = subscriptions
         }
       }
-
-      console.log('Connect', type, 'to', opts)
 
       const typeOpts = Object.assign({}, opts, {
         retryStrategy: () => {
