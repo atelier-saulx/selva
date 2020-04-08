@@ -182,7 +182,7 @@ test.serial('subscription find', async t => {
     cnt2++
   })
 
-  await wait(300)
+  await wait(1000)
   t.is(cnt2, 1)
 
   let matchTeam
@@ -200,7 +200,7 @@ test.serial('subscription find', async t => {
 
   await Promise.all(matches.map(t => client.set(t)))
 
-  await wait(300)
+  await wait(1000)
   t.is(cnt2, 2)
 
   sub2.unsubscribe()
