@@ -227,11 +227,11 @@ export const startInternal = async function({
       }
     },
     destroy: async () => {
-      if (subs) {
-        subs.destroy()
-      }
       execSync(`redis-cli -p ${port} shutdown`)
       redisDb.kill()
+      if (subs) {
+        await subs.destroy()
+      }
       await wait()
     },
     backup: async () => {
