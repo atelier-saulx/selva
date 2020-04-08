@@ -164,8 +164,6 @@ export default class SubscriptionManager {
       this.client.redis.byType.hgetall('sClient', prefixes.clients)
     ])
 
-    console.log('SUBS DATA', subscriptions, clients)
-
     const q = []
     for (const channel in subscriptions) {
       q.push(this.client.redis.byType.smembers('sClient', channel))
@@ -236,7 +234,7 @@ export default class SubscriptionManager {
   revalidateSubscriptions() {
     setTimeout(() => {
       this.updateSubscriptionData()
-    }, 1e3)
+    }, 500)
     this.revalidateSubscriptionsTimeout = setTimeout(() => {
       this.revalidateSubscriptions()
     }, 30e3)

@@ -696,9 +696,7 @@ export class RedisWrapper {
           if (buffer.length > 1e5) {
             console.warn('buffer is larger then 100k may need to do something')
           }
-          if (type === 'sClient') {
-            this.logBuffer(buffer, type)
-          }
+          // this.logBuffer(buffer, type)
           this.buffer[type] = []
           const len = Math.ceil(buffer.length / 5000)
           for (let i = 0; i < len; i++) {
