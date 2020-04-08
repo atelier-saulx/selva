@@ -79,7 +79,7 @@ test.serial('perf - Set a lot of things', async t => {
 
     let iteration = 1
     let time = 0
-    let amount = 1000
+    let amount = 1500
     const setLoop = async () => {
       // @ts-ignore
       if (global.stopped) {
@@ -134,7 +134,7 @@ test.serial('perf - Set a lot of things', async t => {
 
   const vms = []
 
-  const clientAmount = 1
+  const clientAmount = 2
 
   for (let i = 0; i < clientAmount; i++) {
     let wrappedRequire = require
@@ -234,5 +234,5 @@ test.serial('perf - Set a lot of things', async t => {
   // @ts-ignore
   global.stopped = true
   await wait(1e3)
-  t.true(getTotal() > 10e3)
+  t.true(getTotal() > 40e3)
 })
