@@ -173,6 +173,13 @@ export class RedisWrapper {
   addListeners() {
     this.sSub.subscribe(prefixes.serverHeartbeat)
 
+    this.sub.on('message', (channel, msg) => {
+      if (channel.indexOf(prefixes.log) === 0) {
+        const [_, id] = channel.split(':')
+        this.emit('log', JSON.parse(msg), id)
+      }
+    })
+
     this.sSub.on('message', (channel, msg) => {
       if (channel === prefixes.serverHeartbeat) {
         const ts: number = Number(msg)
@@ -183,9 +190,6 @@ export class RedisWrapper {
           )
           this.reconnect()
         }
-      } else if (channel.indexOf(prefixes.log) === 0) {
-        const [_, id] = channel.split(':')
-        this.emit('log', JSON.parse(msg), id)
       } else {
         if (
           channel.indexOf('heartbeat') === -1 &&

@@ -12,9 +12,6 @@ test.before(async t => {
   srv = await start({
     port
   })
-  srv.on('data', d => {
-    console.log(d.toString())
-  })
 
   await wait(500)
 
