@@ -12,12 +12,12 @@ logger.configureLogger(clientId, <logger.LogLevel>loglevel)
 const modifyArgs: ModifyOptions[] = []
 for (let i = 0, j = 0; i < ARGV.length; i += 3, j++) {
   const sha = ARGV[i + 1]
-  if (currentSchema.sha && sha !== currentSchema.sha) {
-    // @ts-ignore
-    return redis.error_reply(
-      'SHA mismatch: trying to update an older schema version please re-fetch and try again'
-    )
-  }
+  // if (currentSchema.sha && sha !== currentSchema.sha) {
+  //   // @ts-ignore
+  //   return redis.error_reply(
+  //     'SHA mismatch: trying to update an older schema version please re-fetch and try again'
+  //   )
+  // }
   modifyArgs[j] = cjson.decode(ARGV[i + 2])
 }
 let a = modify(modifyArgs)
