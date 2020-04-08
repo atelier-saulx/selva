@@ -5,7 +5,7 @@ import { Worker } from 'worker_threads'
 
 import path from 'path'
 
-import { startInternal } from '..'
+import { startInternal, SelvaServer } from '..'
 
 export type QuerySubscription = {
   idFields?: Record<string, true>
@@ -32,9 +32,10 @@ export type Fields = Record<string, Set<string>>
 
 export default class SubWorker {
   public worker: Worker
+  public server: SelvaServer
 
   async createServer(subscriptions: Subscriptions) {
-    return startInternal({
+    this.server = await startInternal({
       port: subscriptions.port,
       service: subscriptions.service,
       subscriptions: false,
@@ -42,12 +43,11 @@ export default class SubWorker {
     })
   }
 
-  destroy(): Promise<void> {
-    return new Promise(() => {
-      this.worker.postMessage(JSON.stringify({ event: 'destroy' }))
-      this.worker.removeAllListeners()
-      this.worker = null
-    })
+  async destroy() {
+    this.worker.postMessage(JSON.stringify({ event: 'destroy' }))
+    this.worker.removeAllListeners()
+    this.worker = null
+    await this.server.destroy()
   }
   async connect(opts: Subscriptions): Promise<void> {
     const subscriptions = opts.selvaServer.service
