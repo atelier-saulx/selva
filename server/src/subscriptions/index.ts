@@ -47,7 +47,9 @@ export default class SubWorker {
     this.worker.postMessage(JSON.stringify({ event: 'destroy' }))
     this.worker.removeAllListeners()
     this.worker = null
-    await this.server.destroy()
+    if (this.server) {
+      await this.server.destroy()
+    }
   }
   async connect(opts: Subscriptions): Promise<void> {
     const subscriptions = opts.selvaServer.service
