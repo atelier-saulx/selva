@@ -68,17 +68,15 @@ export default class SubWorker {
               : opts.selvaServer.host
         }
 
+    console.log('selvaServer???', opts.selvaServer, opts)
+
     const connectOptions = {
       port: subscriptions.port,
       host: subscriptions.host,
-      subscriptions: opts.service
-        ? opts.service instanceof Promise
-          ? await opts.service
-          : opts.service
-        : {
-            port: opts.port instanceof Promise ? await opts.port : opts.port,
-            host: opts.host instanceof Promise ? await opts.host : opts.host
-          }
+      subscriptions: {
+        port: opts.port instanceof Promise ? await opts.port : opts.port,
+        host: opts.host instanceof Promise ? await opts.host : opts.host
+      }
     }
 
     console.log('connect opts', connectOptions)
