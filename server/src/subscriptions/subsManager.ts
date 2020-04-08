@@ -1,5 +1,11 @@
 import { RedisClient } from 'redis'
-import { SelvaClient, GetOptions, ConnectOptions, prefixes } from '@saulx/selva'
+import {
+  SelvaClient,
+  GetOptions,
+  ConnectOptions,
+  prefixes,
+  Schema
+} from '@saulx/selva'
 import {
   addFieldsToSubscription,
   removeFieldsFromSubscription
@@ -34,6 +40,8 @@ export default class SubscriptionManager {
   public sSub: RedisClient
   public sPub: RedisClient // pub and client
 
+  public tmpSchema: Schema
+
   public inProgress: Record<string, true> = {}
   public incomingCount: number = 0
   // public isDestroyed: boolean = false
@@ -55,9 +63,14 @@ export default class SubscriptionManager {
     // just to speed things up and potentialy send something
     if (!this.subscriptions[channel]) {
       const [getOptions, clients] = await Promise.all([
-        this.client.redis.hget(prefixes.subscriptions, channel),
-        this.client.redis.smembers(channel)
+        this.client.redis.byType.hget(
+          'sClient',
+          prefixes.subscriptions,
+          channel
+        ),
+        this.client.redis.byType.smembers('sClient', channel)
       ])
+
       if (getOptions && clients.length) {
         this.addSubscription(channel, new Set(clients), JSON.parse(getOptions))
       }
@@ -90,10 +103,10 @@ export default class SubscriptionManager {
     }
     if (cleanUpQ.length) {
       await Promise.all(cleanUpQ)
-      console.log(
-        'cleaned up subscriptions from removeClientSubscription',
-        cleanUpQ.length
-      )
+      // console.log(
+      //   'cleaned up subscriptions from removeClientSubscription',
+      //   cleanUpQ.length
+      // )
     }
   }
 
@@ -108,19 +121,23 @@ export default class SubscriptionManager {
       fields: new Set()
     }
 
+    if (!this.tmpSchema) {
+      this.tmpSchema = (await this.client.getSchema()).schema
+    }
+
     addFieldsToSubscription(
       this.subscriptions[channel],
       this.fieldMap,
       // FIXME: schema needs an observer!
-      (await this.client.getSchema()).schema,
+      this.tmpSchema,
       channel,
       this.refsById
     )
 
     // have to check what the last update was
-    if (!(await this.client.redis.hexists(prefixes.cache, channel))) {
-      await this.sendUpdate(channel)
-    }
+    // if (!(await this.client.redis.hexists(prefixes.cache, channel))) {
+    await this.sendUpdate(channel)
+    // }
   }
 
   async removeSubscription(channel: string, cleanUpQ: any[] = []) {
@@ -157,7 +174,7 @@ export default class SubscriptionManager {
     // has to become lua
     // can we do less here maybe?
     // e.g do a diff first or something
-
+    this.tmpSchema = null
     // can do multi if you want
     const [subscriptions, clients] = await Promise.all([
       this.client.redis.byType.hgetall('sClient', prefixes.subscriptions),
@@ -237,7 +254,7 @@ export default class SubscriptionManager {
     }, 1000)
     this.revalidateSubscriptionsTimeout = setTimeout(() => {
       this.revalidateSubscriptions()
-    }, 6e3)
+    }, 30e3)
   }
 
   startServerHeartbeat() {

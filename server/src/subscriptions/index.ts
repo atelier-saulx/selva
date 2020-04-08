@@ -68,8 +68,6 @@ export default class SubWorker {
               : opts.selvaServer.host
         }
 
-    console.log('selvaServer???', opts.selvaServer, opts)
-
     const connectOptions = {
       port: subscriptions.port,
       host: subscriptions.host,

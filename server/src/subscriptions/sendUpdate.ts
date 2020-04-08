@@ -12,6 +12,7 @@ const sendUpdate = async (
   if (!subscriptionManager.pub) {
     return
   }
+
   const subscription = subscriptionManager.subscriptions[subscriptionId]
 
   if (!subscription) {

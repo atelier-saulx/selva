@@ -6,7 +6,7 @@ import { ClientObject, RedisCommand } from './types'
 import prefixes from '../prefixes'
 
 const redisClients: Record<string, RedisWrapper> = {}
-const HEARTBEAT_TIMER = 3e3
+const HEARTBEAT_TIMER = 5e3
 
 const isEmpty = (obj: { [k: string]: any }): boolean => {
   for (const _k in obj) {
@@ -114,6 +114,8 @@ export class RedisWrapper {
   }
 
   startHeartbeat() {
+    clearTimeout(this.heartbeatTimout)
+
     const setHeartbeat = () => {
       if (this.connected.client) {
         this.sClient.hget(prefixes.clients, this.uuid, (err, r) => {
@@ -407,7 +409,8 @@ export class RedisWrapper {
       undefined,
       'sClient'
     )
-    this.queue('sadd', [channel, this.uuid], undefined, undefined, 'sClient')
+    this.queue('sadd', [channel, this.uuid], () => {}, undefined, 'sClient')
+
     this.queue(
       'publish',
       [prefixes.new, JSON.stringify({ client: this.uuid, channel })],
@@ -415,6 +418,7 @@ export class RedisWrapper {
       undefined,
       'sClient'
     )
+
     this.sSub.subscribe(channel)
     this.emitChannel(channel)
   }
