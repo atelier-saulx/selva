@@ -129,7 +129,7 @@ test.serial('subscription list', async t => {
   })
 
   const obs3 = await client.observe({
-    $language: 'en', // need this in my meta query
+    $language: 'en', // need this in my meta query, also need to use schema for this (adding lang field to text fields)
     title: true,
     items: {
       name: true,

@@ -311,7 +311,15 @@ const queryGet = (
     if (!result.$meta.query) {
       result.$meta.query = []
     }
-    parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
+    parseSubscriptions(
+      result.$meta.query,
+      meta,
+      ids,
+      getOptions,
+      schema,
+      language,
+      traverse
+    )
   }
 
   if (getOptions.$find) {

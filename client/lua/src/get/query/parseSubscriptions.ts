@@ -6,6 +6,7 @@ import { indexOf, isArray, joinString } from '../../util'
 import { GetOptions } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import createSearchArgs from './createSearchArgs'
+import { Schema } from '../../../../src/schema/index'
 
 const addType = (type: string | number, arr: string[]) => {
   const prefix = getPrefixFromType(tostring(type))
@@ -126,6 +127,8 @@ function parseSubscriptions(
   meta: Meta,
   ids: string[],
   getOptions: GetOptions,
+  schema: Schema,
+  language: string,
   traverse?: string | string[]
 ) {
   let sub: QuerySubscription | undefined
