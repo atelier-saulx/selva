@@ -19,7 +19,7 @@ const parseNested = (
   traverse?: string | string[]
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
-    if (opts.$list.$find) {
+    if (typeof opts.$list === 'object' && opts.$list.$find) {
       if (!opts.$list.$find.$traverse) {
         opts.$list.$find.$traverse = traverse
       }
@@ -139,6 +139,7 @@ const parseQuery = (
 
     if (
       getOptions.$list &&
+      typeof getOptions.$list === 'object' &&
       (getOptions.$list.$limit ||
         getOptions.$list.$offset ||
         getOptions.$list.$sort)
@@ -178,16 +179,18 @@ const parseQuery = (
         $find: find.$find
       }
 
-      if (getOptions.$list && getOptions.$list.$sort) {
-        opts.$list.$sort = getOptions.$list.$sort
-      }
+      if (typeof getOptions.$list === 'object') {
+        if (getOptions.$list && getOptions.$list.$sort) {
+          opts.$list.$sort = getOptions.$list.$sort
+        }
 
-      if (getOptions.$list && getOptions.$list.$offset) {
-        opts.$list.$offset = getOptions.$list.$offset
-      }
+        if (getOptions.$list && getOptions.$list.$offset) {
+          opts.$list.$offset = getOptions.$list.$offset
+        }
 
-      if (getOptions.$list && getOptions.$list.$limit) {
-        opts.$list.$limit = getOptions.$list.$limit
+        if (getOptions.$list && getOptions.$list.$limit) {
+          opts.$list.$limit = getOptions.$list.$limit
+        }
       }
 
       if (resultIds.length !== 0) {
@@ -244,14 +247,20 @@ const parseQuery = (
     }
   }
 
-  const sort = getOptions.$list && getOptions.$list.$sort
+  const sort =
+    getOptions.$list &&
+    typeof getOptions.$list === 'object' &&
+    getOptions.$list.$sort
 
   meta.ast = resultFork
-  meta.sort = sort
+  if (sort) {
+    meta.sort = sort
+  }
   meta.ids = resultIds
 
   if (
     getOptions.$list &&
+    typeof getOptions.$list === 'object' &&
     getOptions.$list.$find &&
     getOptions.$list.$find.$traverse
   ) {

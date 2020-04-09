@@ -378,5 +378,15 @@ test.serial('get - simple $list with query $field of one field', async t => {
     'non redis search sort'
   )
 
-  // $list: true
+  const c2 = await client.get({
+    $id: 'cuB',
+    otherName: {
+      name: true,
+      value: true,
+      $field: { path: 'children', value: { $id: 'cuA', children: true } },
+      $list: true
+    }
+  })
+
+  t.is(c2.otherName.length, 100, 'list true')
 })

@@ -63,7 +63,14 @@ function getField(
       let sourceField: string | string[] = field
       let ids: string[] = [id]
 
-      if (!(props.$list && props.$list.$find) && props.$field) {
+      if (
+        !(
+          props.$list &&
+          typeof props.$list === 'object' &&
+          props.$list.$find
+        ) &&
+        props.$field
+      ) {
         if (isObjectField(props.$field)) {
           if (!props.$field.value.$id) {
             return false
