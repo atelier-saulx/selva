@@ -316,7 +316,6 @@ const queryGet = (
       meta,
       ids,
       getOptions,
-      schema,
       language,
       traverse
     )

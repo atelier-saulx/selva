@@ -105,6 +105,7 @@ const parseGet = (
     if (key[0] !== '$') {
       const item = opts[key]
       if (typeof item === 'object') {
+        // logger
         if (!item.$list) {
           const newArray: string[] = []
           for (let i = 0; i < field.length; i++) {
@@ -127,13 +128,10 @@ function parseSubscriptions(
   meta: Meta,
   ids: string[],
   getOptions: GetOptions,
-  schema: Schema,
-  language: string,
+  language?: string,
   traverse?: string | string[]
 ) {
   let sub: QuerySubscription | undefined
-
-  // not so nice....
   const queryId = redis.sha1hex(cjson.encode(getOptions))
 
   for (let i = 0; i < querySubs.length; i++) {
@@ -146,7 +144,8 @@ function parseSubscriptions(
     sub = {
       member: [],
       fields: {},
-      queryId
+      queryId,
+      language
     }
     querySubs[querySubs.length] = sub
   }
@@ -224,14 +223,12 @@ function parseSubscriptions(
       }
     }
   } else {
-    // need to check if TYPE is there
     if (!sub.ids) {
       sub.ids = {}
     }
     for (let i = 1; i < meta.ids.length; i++) {
       sub.ids[meta.ids[i]] = true
     }
-
     if (meta.type) {
       sub.type = meta.type
     }
