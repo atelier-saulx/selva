@@ -26,7 +26,6 @@ test.serial('basic schema based subscriptions', async t => {
   const observable = client.subscribeSchema()
   let o1counter = 0
   const sub = observable.subscribe(d => {
-    console.log('YABAYABA', d)
     if (o1counter === 0) {
       // gets update event
       t.deepEqualIgnoreOrder(d.types, {})
