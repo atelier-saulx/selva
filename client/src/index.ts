@@ -391,7 +391,6 @@ export function connect(
   selvaOpts?: SelvaOptions
 ): SelvaClient {
   const client = new SelvaClient(opts, selvaOpts)
-  client.subscribeSchema()
   return client
 }
 

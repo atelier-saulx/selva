@@ -280,5 +280,7 @@ export default class RedisClient extends RedisMethods {
       },
       client: this
     })
+
+    this.selvaClient.subscribeSchema()
   }
 }
