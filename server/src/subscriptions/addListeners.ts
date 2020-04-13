@@ -49,7 +49,11 @@ const addListeners = async (
     subsManager.incomingCount++
     const updatedSubscriptions: Record<string, true> = {}
     const eventName = channel.slice(prefixLength)
-    if (message === 'delete') {
+    if (message === 'schema_update') {
+      updatedSubscriptions['___selva_subscription:schema_update'] = true
+      subsManager.sendUpdate('___selva_subscription:schema_update', true)
+      return
+    } else if (message === 'delete') {
       for (const field in subsManager.fieldMap) {
         if (field.startsWith(eventName)) {
           const subscriptionIds: Set<string> =

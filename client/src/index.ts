@@ -4,6 +4,7 @@ import { ModifyOptions, ModifyResult } from './modifyTypes'
 import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions, GetResult } from './get'
 import { observe } from './observe/index'
+import Observable from './observe/observable'
 import { readFileSync } from 'fs'
 import { EventEmitter } from 'events'
 import { join as pathJoin } from 'path'
@@ -66,6 +67,7 @@ export class SelvaClient extends EventEmitter {
   public redis: RedisClient
   private loglevel: LogLevel = 'off'
   public clientId: string
+  private schemaObservable: Observable<Schema>
 
   constructor(
     opts:
@@ -88,6 +90,39 @@ export class SelvaClient extends EventEmitter {
 
     this.setMaxListeners(100)
     this.redis = new RedisClient(opts, this, selvaOpts)
+  }
+
+  subscribeSchema() {
+    if (this.schemaObservable) {
+      return this.schemaObservable
+    }
+
+    const obs = this.redis.subscribe(`___selva_subscription:schema_update`, {})
+
+    this.schemaObservable = new Observable<Schema>(observe => {
+      const sub = obs.subscribe({
+        next: (_x: any) => {
+          this.getSchema().then(() => {
+            observe.next(this.schema)
+          })
+        },
+        error: observe.error,
+        complete: observe.complete
+      })
+
+      return <any>sub
+    })
+
+    this.schemaObservable.subscribe(
+      _ => {
+        // skip
+      },
+      e => {
+        console.error('Error fetching schema', e)
+      }
+    )
+
+    return this.schemaObservable
   }
 
   async conformToSchema(props: SetOptions): Promise<SetOptions> {
@@ -355,7 +390,9 @@ export function connect(
     | Promise<ConnectOptions>,
   selvaOpts?: SelvaOptions
 ): SelvaClient {
-  return new SelvaClient(opts, selvaOpts)
+  const client = new SelvaClient(opts, selvaOpts)
+  client.subscribeSchema()
+  return client
 }
 
 export * from './schema/index'

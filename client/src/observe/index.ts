@@ -3,10 +3,6 @@ import { GetOptions, GetResult } from '../get/types'
 import Observable from './observable'
 import { createHash } from 'crypto'
 
-type ObserveOptions = {
-  getLatest: boolean
-}
-
 function makeSubscriptionId(opts: GetOptions) {
   const hash = createHash('sha256')
   hash.update(JSON.stringify(opts))
@@ -15,8 +11,7 @@ function makeSubscriptionId(opts: GetOptions) {
 
 export async function observe(
   client: SelvaClient,
-  props: GetOptions,
-  opts: ObserveOptions = { getLatest: true }
+  props: GetOptions
 ): Promise<Observable<GetResult>> {
   const subscriptionId = makeSubscriptionId(props)
 
