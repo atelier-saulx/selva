@@ -133,6 +133,7 @@ export default class RedisClient extends RedisMethods {
       subscription.on('message', listener)
 
       if (
+        this.redis &&
         this.redis.allConnected &&
         this.redis.subscriptions[channel] &&
         this.redis.subscriptions[channel].version
@@ -279,5 +280,7 @@ export default class RedisClient extends RedisMethods {
       },
       client: this
     })
+
+    this.selvaClient.subscribeSchema()
   }
 }

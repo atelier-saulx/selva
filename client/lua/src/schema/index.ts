@@ -79,6 +79,7 @@ export function saveSchema(
   CACHED_SCHEMA = schema
   encoded = cjson.encode(schema)
   r.hset('___selva_schema', 'types', encoded)
+  redis.call('publish', '___selva_events:schema_update', 'schema_update')
   return encoded
 }
 
