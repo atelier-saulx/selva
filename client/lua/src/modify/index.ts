@@ -158,7 +158,41 @@ function setField(
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   if (isSetPayload(value) && field) {
+    if (source) {
+      const sourceString: string | null = !source
+        ? null
+        : type(source) === 'string'
+        ? source
+        : (<any>source).$name
+
+      if (sourceString && !(<any>source).$overwrite) {
+        const currentSource = redis.hget(id, '$source_' + field)
+        if (currentSource && currentSource !== '' && currentSource !== source) {
+          // ignore updates from different sources
+          return
+        }
+      } else if (sourceString && isArray((<any>source).$overwrite)) {
+        const currentSource = redis.hget(id, '$source_' + field)
+
+        const sourceAry = <string[]>(<any>source).$overwrite
+        let matching = false
+        for (const sourceId of sourceAry) {
+          if (sourceId === currentSource) {
+            matching = true
+          }
+        }
+
+        if (!matching) {
+          // ignore updates from different sources if no overwrite specified for this source
+          return
+        }
+      }
+
+      redis.hset(id, '$source_' + field, sourceString)
+    }
+
     setInternalArrayStructure(id, field, value)
+
     return
   }
 
