@@ -1284,7 +1284,7 @@ test.serial(
   }
 )
 
-// test.serial('get - $field (basic)', async t => {
+// test.serial('get - $field type (layout)', async t => {
 //   const client = connect({ port })
 
 //   await client.set({
@@ -1307,7 +1307,3 @@ test.serial(
 //     }
 //   })
 // })
-
-// ADD FIELD
-// ADD REF <-- ref mucho importante
-//
