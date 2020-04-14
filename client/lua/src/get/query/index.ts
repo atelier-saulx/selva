@@ -11,6 +11,7 @@ import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
 import parseSubscriptions from './parseSubscriptions'
+import { setNestedResult } from '../nestedFields'
 
 const parseNested = (
   opts: GetOptions,
@@ -322,9 +323,9 @@ const queryGet = (
   }
 
   if (getOptions.$find) {
-    result[resultField] = results.length ? results[0] : {}
+    setNestedResult(result, resultField, results.length ? results[0] : {})
   } else {
-    result[resultField] = results
+    setNestedResult(result, resultField, results)
   }
 
   if (err) {
