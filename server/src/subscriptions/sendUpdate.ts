@@ -54,6 +54,7 @@ const sendUpdate = async (
     })
   )
 
+
   // handle refs -- add this somewhere else
   const refs = payload.$meta.$refs
   delete subscriptionManager.refsById[getOptions.$id]
