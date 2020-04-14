@@ -330,6 +330,28 @@ test.serial(
       }
     )
 
+    // broken test for children/parents
+    // await client.set({
+    //   $id: child,
+    //   $source: { $name: 'random-guy' },
+    //   parents: { $delete: match1 }
+    // })
+
+    // t.deepEqualIgnoreOrder(
+    //   await client.get({
+    //     $id: match1,
+    //     $language: 'en',
+    //     id: true,
+    //     title: true,
+    //     children: true
+    //   }),
+    //   {
+    //     id: match1,
+    //     title: 'yesh4',
+    //     children: [child]
+    //   }
+    // )
+
     await client.delete('root')
     client.destroy()
   }
