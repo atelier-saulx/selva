@@ -102,6 +102,9 @@ export default class RedisClient extends RedisMethods {
     this.redis = null
     this.connected = {}
     this.buffer = {}
+    clientTypes.forEach(type => {
+      this.buffer[type] = []
+    })
   }
 
   createSubscription(channel: string, getOpts: GetOptions) {
@@ -197,6 +200,10 @@ export default class RedisClient extends RedisMethods {
     reject: (x: Error) => void = () => {},
     type?: ClientType
   ) {
+    if (this.isDestroyed) {
+      console.error('Trying to set on a destroyed client!', command)
+      return
+    }
     // remove type
     if (type === undefined) {
       if (command === 'subscribe') {
