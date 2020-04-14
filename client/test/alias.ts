@@ -357,3 +357,28 @@ test.serial('set existing entry with alias', async t => {
   await client.delete('root')
   client.destroy()
 })
+
+test.serial('set and get by $alias as id', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    type: 'match',
+    title: { en: 'yesh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: match1,
+      id: true,
+      title: true
+    }),
+    {
+      id: match1,
+      title: 'yesh'
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})

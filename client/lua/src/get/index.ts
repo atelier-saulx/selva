@@ -329,7 +329,10 @@ function get(opts: GetOptions): GetResult {
     if (aliased && aliased.length > 0) {
       id = aliased
     } else {
-      return {}
+      // try with $alias as $id
+      delete opts.$alias
+      opts.$id = alias
+      return get(opts)
     }
   } else if (!id) {
     id = 'root'
