@@ -295,6 +295,6 @@ test.serial('find - ancestors - regions', async t => {
         { name: 'team region 0' }
       ]
     },
-    'hello'
+    'dutch teams'
   )
 })

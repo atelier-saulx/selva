@@ -210,6 +210,10 @@ export default class RedisClient extends RedisMethods {
     if (this.connected[type]) {
       this.redis.queue(command, args, resolve, reject, type)
     } else {
+      if (!this.buffer[type]) {
+        console.error('Cannot find type on buffer', type)
+      }
+
       this.buffer[type].push({
         command,
         args,
