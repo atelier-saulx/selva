@@ -100,6 +100,11 @@ function addFieldsToSubscription(
 ) {
   // add fields directly to subscription
 
+  if (!subscription) {
+    console.error('CANNOT FIND SUBSCRIPTION')
+    return
+  }
+
   const { fields, get } = subscription
   // subscriptionsByField
   addFields('', fields, schema, get)
