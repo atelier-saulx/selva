@@ -299,7 +299,7 @@ export default function inherit(
       }
 
       if (inherit !== true && inherit.$item) {
-        logger.info('ADD META FOR INHERIT')
+        logger.info('ADD META FOR INHERIT', field, fieldFrom)
       } else {
         result.$meta.inherit[id].fields[field] = true
       }
