@@ -67,6 +67,7 @@ function getField(
   }
 
   if (props.$id && field) {
+    //FIXME: meta
     const intermediateResult = {}
     getField(
       props,
@@ -298,6 +299,10 @@ function getField(
       (!isComplete || !hasKeys)
     ) {
       if (!hasAlias && !hasKeys) {
+        if (props.$inherit && includeMeta === true) {
+          addInheritMeta(props, <string>field, result, id)
+        }
+
         const complete = getByType(
           result,
           schema,

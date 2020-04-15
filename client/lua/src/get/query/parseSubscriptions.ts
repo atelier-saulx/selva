@@ -259,15 +259,15 @@ function parseSubscriptions(
     }
   }
 
-  if (result.$meta && result.$meta.inherit) {
-    // merge them
-    const together = {}
+  // if (result.$meta && result.$meta.inherit) {
+  //   // merge them
+  //   const together = {}
 
-    for (const key in result.$meta.inherit) {
-    }
+  //   for (const key in result.$meta.inherit) {
+  //   }
 
-    logger.info(result.$meta.inherit)
-  }
+  //   logger.info(result.$meta.inherit)
+  // }
 }
 
 export default parseSubscriptions
