@@ -345,6 +345,117 @@ test.serial('$field +  multiple options', async t => {
 
   const x = await client.get(query)
 
+  t.is(x.layout.components.c1.component.$value, 'bye')
+
+  const y = await client.get({
+    $alias: 'reB',
+    id: true,
+    layout: {
+      $inherit: true,
+      $field: ['layout.${type}', 'layout.default']
+    }
+  })
+
+  t.is(y.layout.components.c1.component.$value, 'hello')
+
+  t.true(true)
+})
+
+test.serial('$field +  multiple options + inherit from root', async t => {
+  const client = connect({ port: port })
+
+  // adding extra field to schema as well
+  const types = ['match', 'region', 'root', 'default']
+  // is failing
+
+  const layout = {
+    type: 'object',
+    properties: types.reduce((properties, type) => {
+      properties[type] = {
+        type: 'json'
+      }
+      return properties
+    }, {})
+  }
+
+  try {
+    await client.updateSchema({
+      rootType: {
+        fields: {
+          //@ts-ignore
+          layout
+        }
+      },
+      types: {
+        match: {
+          prefix: 'ma',
+          fields: {
+            //@ts-ignore
+            layout
+          }
+        },
+        region: {
+          prefix: 're',
+          fields: {
+            //@ts-ignore
+            layout
+          }
+        }
+      }
+    })
+  } catch (err) {
+    t.fail('should be able to update layout fields root')
+    console.log(err)
+  }
+
+  await client.set({
+    $id: 'root',
+    layout: {
+      default: {
+        components: {
+          c1: {
+            component: { $value: 'bye' }
+          }
+        }
+      },
+      region: {
+        components: {
+          c1: {
+            component: { $value: 'hello' }
+          }
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'maA',
+    parents: ['root']
+  })
+
+  await client.set({
+    $id: 'reB',
+    parents: ['root']
+  })
+
+  const g = await client.get({
+    $id: 'root',
+    $all: true
+  })
+
+  t.is(g.layout.default.components.c1.component.$value, 'bye')
+
+  const query = {
+    $alias: 'maA',
+    id: true,
+    layout: {
+      $inherit: true,
+      $field: ['layout.${type}', 'layout.default']
+    }
+  }
+
+  const x = await client.get(query)
+
   console.dir(x, { depth: 10 })
 
   t.is(x.layout.components.c1.component.$value, 'bye')
@@ -360,7 +471,7 @@ test.serial('$field +  multiple options', async t => {
 
   console.dir(y, { depth: 10 })
 
-  t.is(x.layout.components.c1.component.$value, 'hello')
+  t.is(y.layout.components.c1.component.$value, 'hello')
 
   t.true(true)
 })
