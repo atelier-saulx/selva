@@ -108,6 +108,88 @@ test.serial('basic inherit subscription', async t => {
   await client.delete('root')
 })
 
+test.only('inherit object', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: {
+        flapper: {
+          type: 'object',
+          properties: {
+            snurk: { type: 'json' },
+            bob: { type: 'json' }
+          }
+        }
+      }
+    },
+    types: {
+      yeshType: {
+        prefix: 'ye',
+        fields: {
+          flapper: {
+            type: 'object',
+            properties: {
+              snurk: { type: 'json' },
+              bob: { type: 'json' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'root',
+    flapper: {
+      snurk: 'hello',
+      bob: 'xxx'
+    }
+  })
+
+  await client.set({
+    $id: 'yeB',
+    parents: ['yeA']
+  })
+
+  const x = await client.get({
+    $id: 'yeB',
+    flapper: { $inherit: true }
+  })
+
+  const observable = await client.observe({
+    $id: 'yeB',
+    flapper: { $inherit: true }
+  })
+
+  const results = []
+
+  const subs = observable.subscribe(p => {
+    results.push(p)
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'yeA',
+    flapper: {
+      snurk: 'snurkels'
+    }
+  })
+
+  await wait(1000)
+
+  subs.unsubscribe()
+
+  t.deepEqual(results, [
+    { flapper: { snurk: 'hello', bob: 'xxx' } },
+    { flapper: { snurk: 'snurkels', bob: 'xxx' } }
+  ])
+
+  await client.delete('root')
+})
+
 test.serial('list inherit subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
@@ -224,6 +306,7 @@ test.serial('list inherit subscription', async t => {
       ]
     }
   ])
+  subs.unsubscribe()
 
   await client.delete('root')
 })
