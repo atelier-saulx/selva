@@ -118,8 +118,6 @@ export default class SubscriptionManager {
       await this.client.getSchema()
     }
 
-    console.log('hello', channel, getOptions)
-
     addFieldsToSubscription(
       this.subscriptions[channel],
       this.fieldMap,

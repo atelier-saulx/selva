@@ -213,6 +213,8 @@ const handleQuery = (
 
           const fields = item.fields
 
+          console.log('FIELDS', fields)
+
           if (checkFields) {
             let notField = true
             const [startOfEndField] = endField.split('.')

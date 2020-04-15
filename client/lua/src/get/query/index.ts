@@ -317,6 +317,7 @@ const queryGet = (
       meta,
       ids,
       getOptions,
+      result,
       language,
       traverse
     )
