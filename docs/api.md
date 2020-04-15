@@ -238,9 +238,9 @@ Set an document/object on an id. Will deep merge objects by default.
 
 Default behaviours:
 
-- Acenstors can never be set, children and parents update ancestors, children and parents.
-- Date is allways added by default.
-- Keyword 'now' in date, start, end will add date.
+- Acenstors can never be set, children and parents update ancestors, children and parents
+- Date is always added by default
+- Keyword 'now' in date, start, end will add date
 
 #### Parameters
 
