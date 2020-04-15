@@ -408,10 +408,14 @@ test.only('list inherit + field subscription', async t => {
   })
 
   console.log(x)
-  t.deepEqual(x, {
-    id: 'yeB',
-    yesh: 'no'
-  })
+  t.deepEqual(
+    x,
+    {
+      id: 'yeB',
+      yesh: 'no'
+    },
+    'get'
+  )
 
   await wait(1000)
 
