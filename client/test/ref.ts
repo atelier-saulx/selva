@@ -123,7 +123,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('string field ref', async t => {
+test.serial.only('string field ref', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -135,6 +135,22 @@ test.serial('string field ref', async t => {
     strVal: { $ref: 'name' },
     value: 25
   })
+
+  console.log(
+    JSON.stringify(
+      (
+        await client.get({
+          $includeMeta: true,
+          $id: 'viA',
+          id: true,
+          value: true,
+          strVal: true
+        })
+      ).$meta,
+      null,
+      2
+    )
+  )
 
   t.deepEqual(
     await client.get({
