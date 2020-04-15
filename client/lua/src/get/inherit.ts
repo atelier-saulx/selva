@@ -71,7 +71,7 @@ function setFromAncestors(
 
   let validParents: Id[] = []
   for (let i = 0; i < parents.length; i++) {
-    if (parents[i] !== 'root' && ancestorDepthMap[parents[i]]) {
+    if (ancestorDepthMap[parents[i]]) {
       validParents[validParents.length] = parents[i]
     }
   }
