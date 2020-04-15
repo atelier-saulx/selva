@@ -19,7 +19,13 @@ parentPort.on('message', message => {
         )
       })
     } else if (event === 'destroy') {
+      console.log('destroy subs client')
       subsManager.destroy()
+      parentPort.postMessage(
+        JSON.stringify({
+          event: 'destroyComplete'
+        })
+      )
     }
   } catch (_err) {}
 })

@@ -43,13 +43,20 @@ export default class SubWorker {
     })
   }
 
-  async destroy() {
-    this.worker.postMessage(JSON.stringify({ event: 'destroy' }))
-    this.worker.removeAllListeners()
-    this.worker = null
-    if (this.server) {
-      await this.server.destroy()
-    }
+  destroy() {
+    return new Promise(resolve => {
+      console.log('Destroy subs worker')
+      this.worker.once('destroyComplete', async () => {
+        console.log('Destroy complete!')
+        this.worker.removeAllListeners()
+        this.worker = null
+        if (this.server) {
+          await this.server.destroy()
+        }
+        resolve()
+      })
+      this.worker.postMessage(JSON.stringify({ event: 'destroy' }))
+    })
   }
   async connect(opts: Subscriptions): Promise<void> {
     const subscriptions = opts.selvaServer.service
