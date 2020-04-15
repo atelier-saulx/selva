@@ -27,6 +27,18 @@ test.before(async t => {
               name: { type: 'string' },
               something: { type: 'string' }
             }
+          },
+          theme: {
+            type: 'object',
+            properties: {
+              colors: {
+                type: 'object',
+                properties: {
+                  color1: { type: 'string' },
+                  color2: { type: 'string' }
+                }
+              }
+            }
           }
         }
       },
@@ -120,7 +132,7 @@ test.serial('$field + object', async t => {
 
   const genre2 = await client.set({
     $id: 'geD',
-    parents: ['geA']
+    parents: ['geC']
   })
 
   const result1 = await client.get({
@@ -158,7 +170,7 @@ test.serial('$field + object + all', async t => {
 
   const genre2 = await client.set({
     $id: 'geD',
-    parents: ['geA']
+    parents: ['geC']
   })
 
   const result1 = await client.get({
@@ -184,4 +196,69 @@ test.serial('$field + object + all', async t => {
   console.log('res', result)
 
   t.deepEqual(result, { flaprdol: { name: 'hello', something: '' } }, 'inherit')
+})
+
+test.serial('$field + object + all + nested', async t => {
+  const client = connect({ port: port })
+
+  const genre = await client.set({
+    $id: 'geX',
+    theme: {
+      colors: {
+        color1: '1',
+        color2: '2'
+      }
+    }
+  })
+
+  const genre2 = await client.set({
+    $id: 'geY',
+    parents: ['geX']
+  })
+
+  const result1 = await client.get({
+    $id: 'geX',
+    myTheme: {
+      $field: 'theme',
+      $inherit: true,
+      $all: true
+    }
+  })
+
+  t.deepEqual(
+    result1,
+    {
+      myTheme: {
+        colors: {
+          color1: '1',
+          color2: '2'
+        }
+      }
+    },
+    'get'
+  )
+
+  const result = await client.get({
+    $id: 'geY',
+    myTheme: {
+      $field: 'theme',
+      $inherit: true,
+      $all: true
+    }
+  })
+
+  console.log('res', result)
+
+  t.deepEqual(
+    result1,
+    {
+      myTheme: {
+        colors: {
+          color1: '1',
+          color2: '2'
+        }
+      }
+    },
+    'inherit'
+  )
 })
