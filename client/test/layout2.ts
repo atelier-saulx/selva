@@ -37,6 +37,19 @@ test.before(async t => {
   }
 
   const types = {
+    dictionary: {
+      prefix: 'di',
+      fields: {
+        dictionaryGroup: {
+          type: 'object',
+          properties: {
+            dictionaryText: {
+              type: 'text'
+            }
+          }
+        }
+      }
+    },
     league: {
       prefix: 'le',
       fields
@@ -88,20 +101,22 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('layout query', async t => {
+test.serial('layout without inheritance or refs', async t => {
   const client = connect({ port })
-  // const client = connect({ port }, { loglevel: 'info' })
-
   // creating data
-  const root = await client.set({
-    $id: 'root',
+  const match = await client.set({
+    type: 'match',
     $language: 'en',
+    title: 'title-0',
+    description: 'description-0',
+    start: Date.now() - 10000,
+    end: Date.now() + 60 * 60 * 1000 * 2,
     layout: {
       match: {
         id: true,
         components: [
           {
-            component: { $value: 'rootMatchComponent1' },
+            component: { $value: 'comp1-0' },
             title: {
               $field: 'title'
             },
@@ -111,47 +126,228 @@ test.serial('layout query', async t => {
           }
         ]
       }
+    }
+  })
+
+  // subscribe to layout of match, and update match page subscription
+  let updateCount = 0
+  let totalCount = 0
+  let fireCount = 0
+  let pageObs
+  let pageSub
+  let layout
+  let query
+
+  client
+    .observe({
+      $id: match,
+      layout: true //{ $inherit: true } // change this to { $inherit: true } to break it
+    })
+    .then(layoutObs =>
+      layoutObs.subscribe(async res => {
+        if (pageSub) {
+          pageSub.unsubscribe()
+        }
+        query = {
+          $id: match,
+          $language: 'en',
+          ...res.layout.match
+        }
+        pageObs = await client.observe(query)
+        pageSub = pageObs.subscribe(res => {
+          layout = res
+          fireCount++
+        })
+      })
+    )
+
+  while (updateCount <= 2) {
+    updateCount++
+    totalCount++
+    await client.set({
+      $id: match,
+      layout: {
+        match: {
+          components: [
+            {
+              component: {
+                $value: `comp1-${updateCount}`
+              },
+              title: {
+                $field: 'title'
+              },
+              description: {
+                $field: 'description'
+              }
+            }
+          ]
+        }
+      }
+    })
+    await wait(100)
+    t.is(totalCount, fireCount)
+    t.is(layout.components[0].component, `comp1-${updateCount}`)
+  }
+
+  while (updateCount <= 4) {
+    updateCount++
+    totalCount++
+    await client.set({
+      $id: match,
+      $language: 'en',
+      title: `title-${updateCount}`,
+      description: `description-${updateCount}`
+    })
+    await wait(100)
+    t.is(totalCount, fireCount)
+    t.is(layout.components[0].title, `title-${updateCount}`)
+    t.is(layout.components[0].description, `description-${updateCount}`)
+  }
+
+  let compCount = 1
+  while (compCount <= 2) {
+    compCount++
+    totalCount++
+    await client.set({
+      $id: match,
+      layout: {
+        match: {
+          components: [
+            ...query.components,
+            {
+              component: {
+                $value: `comp${compCount}-${updateCount}`
+              },
+              title: {
+                $field: 'title'
+              },
+              description: {
+                $field: 'description'
+              }
+            }
+          ]
+        }
+      }
+    })
+    await wait(100)
+    t.is(totalCount, fireCount)
+    t.is(layout.components.length, compCount)
+    layout.components.forEach(({ title, description }) => {
+      t.is(title, `title-${updateCount}`)
+      t.is(description, `description-${updateCount}`)
+    })
+  }
+})
+
+test.serial('layout with refs', async t => {
+  const client = connect({ port })
+  // add some refs to the layout!
+  const dictionary = await client.set({
+    type: 'dictionary',
+    $language: 'en',
+    dictionaryGroup: {
+      dictionaryText: `dictionary-0`
     }
   })
 
   const match = await client.set({
     type: 'match',
     $language: 'en',
-    title: 'match one',
-    description: 'match one story!',
+    title: 'title-0',
+    description: 'description-0',
     start: Date.now() - 10000,
-    end: Date.now() + 60 * 60 * 1000 * 2
+    end: Date.now() + 60 * 60 * 1000 * 2,
+    layout: {
+      match: {
+        components: [
+          {
+            component: {
+              $value: `comp-with-refs`
+            },
+            title: {
+              $field: {
+                value: {
+                  $id: dictionary,
+                  dictionaryGroup: { dictionaryText: true }
+                },
+                path: ['dictionaryGroup.dictionaryText']
+              }
+            },
+            description: {
+              $field: 'description'
+            }
+          }
+        ]
+      }
+    }
   })
 
-  try {
-    const inheritedMatchLayout = await client.get({
-      $id: match,
-      $language: 'en',
-      ...(
-        await client.get({
-          $id: match,
-          layout: { $inherit: true }
-        })
-      ).layout.match
-    })
-    t.is(
-      inheritedMatchLayout.components[0].component,
-      'rootMatchComponent1',
-      'inherits from root'
-    )
-  } catch (e) {
-    t.fail.skip('doesnt inherit root layout: ' + e.message)
-  }
+  // subscribe to layout of match, and update match page subscription
+  let totalCount = 1
+  let fireCount = 0
+  let pageObs
+  let pageSub
+  let layout
 
-  // set new layout on match
-  await client.set({
-    $id: match,
+  client
+    .observe({
+      $id: match,
+      layout: true //{ $inherit: true } // change this to { $inherit: true } to break it
+    })
+    .then(layoutObs =>
+      layoutObs.subscribe(async res => {
+        if (pageSub) {
+          pageSub.unsubscribe()
+        }
+        pageObs = await client.observe({
+          $id: match,
+          $language: 'en',
+          ...res.layout.match
+        })
+        pageSub = pageObs.subscribe(res => {
+          layout = res
+          fireCount++
+        })
+      })
+    )
+
+  await wait(100)
+  t.is(totalCount, fireCount)
+  t.is(layout.components[0].title, 'dictionary-0')
+
+  let dictionaryCount = 0
+  while (dictionaryCount <= 4) {
+    dictionaryCount++
+    totalCount++
+    await client.set({
+      $id: dictionary,
+      $language: 'en',
+      dictionaryGroup: {
+        dictionaryText: `dictionary-${dictionaryCount}`
+      }
+    })
+    await wait(100)
+    t.is(totalCount, fireCount)
+    t.is(layout.components[0].title, `dictionary-${dictionaryCount}`)
+  }
+})
+
+test.serial('layout using $inherit: true - own layout', async t => {
+  const client = connect({ port })
+  // creating data
+  const match = await client.set({
+    type: 'match',
+    $language: 'en',
+    title: 'title-0',
+    description: 'description-0',
+    start: Date.now() - 10000,
+    end: Date.now() + 60 * 60 * 1000 * 2,
     layout: {
       match: {
         id: true,
         components: [
           {
-            component: { $value: 'matchMatchComponent1' },
+            component: { $value: 'comp1-0' },
             title: {
               $field: 'title'
             },
@@ -164,222 +360,112 @@ test.serial('layout query', async t => {
     }
   })
 
-  const matchLayout = await client.get({
-    $id: match,
-    $language: 'en',
-    ...(
-      await client.get({
-        $id: match,
-        layout: { $inherit: true }
+  // subscribe to layout of match, and update match page subscription
+  let updateCount = 0
+  let totalCount = 0
+  let fireCount = 0
+  let pageObs
+  let pageSub
+  let layout
+  let query
+
+  client
+    .observe({
+      $id: match,
+      layout: { $inherit: true }
+    })
+    .then(layoutObs =>
+      layoutObs.subscribe(async res => {
+        if (pageSub) {
+          pageSub.unsubscribe()
+        }
+        query = {
+          $id: match,
+          $language: 'en',
+          ...res.layout.match
+        }
+        pageObs = await client.observe(query)
+        pageSub = pageObs.subscribe(res => {
+          layout = res
+          fireCount++
+        })
       })
-    ).layout.match
-  })
+    )
 
-  t.is(
-    matchLayout.components[0].component,
-    'matchMatchComponent1',
-    'gets own layout'
-  )
-
-  // update layout on match
-  await client.set({
-    $id: match,
-    layout: {
-      match: {
-        components: [
-          {
-            component: { $value: 'matchMatchComponent1Updated' }
-          }
-        ]
+  while (updateCount <= 2) {
+    updateCount++
+    totalCount++
+    await client.set({
+      $id: match,
+      layout: {
+        match: {
+          components: [
+            {
+              component: {
+                $value: `comp1-${updateCount}`
+              },
+              title: {
+                $field: 'title'
+              },
+              description: {
+                $field: 'description'
+              }
+            }
+          ]
+        }
       }
-    }
-  })
+    })
+    await wait(100)
+    t.is(totalCount, fireCount)
+    t.is(layout.components[0].component, `comp1-${updateCount}`)
+  }
 
-  const matchLayoutUpdated = await client.get({
-    $id: match,
-    $language: 'en',
-    ...(
-      await client.get({
-        $id: match,
-        layout: { $inherit: true }
-      })
-    ).layout.match
-  })
+  while (updateCount <= 4) {
+    updateCount++
+    totalCount++
+    await client.set({
+      $id: match,
+      $language: 'en',
+      title: `title-${updateCount}`,
+      description: `description-${updateCount}`
+    })
+    await wait(100)
+    t.is(totalCount, fireCount)
+    t.is(layout.components[0].title, `title-${updateCount}`)
+    t.is(layout.components[0].description, `description-${updateCount}`)
+  }
 
-  t.is(
-    matchLayoutUpdated.components[0].component,
-    'matchMatchComponent1Updated',
-    'gets own layout after update'
-  )
-
-  // subscribe to layout of match
-  const obs = await client.observe({
-    $id: match,
-    layout: { $inherit: true }
-  })
-
-  // .then(obs => {
-  //   obs.subscribe(res => {
-  //     console.log('fires:', res)
-  //   })
-  // })
-
-  // // change component name
-  // await client.set({
-  //   $id: match,
-  //   layout: {
-  //     match: {
-  //       components: [
-  //         {
-  //           component: { $value: 'matchMatchComponent1Updated' }
-  //         }
-  //       ]
-  //     }
-  //   }
-  // })
-
-  // const team = await client.set({
-  //   type: 'team',
-  //   $language: 'en',
-  //   title: 'team one',
-  //   children: [match]
-  // })
-
-  // const teamLayout = await client.get({
-  //   $id: team,
-  //   $language: 'en',
-  //   id: true,
-  //   components: [
-  //     {
-  //       component: { $value: 'description' },
-  //       title: {
-  //         $field: 'title'
-  //       },
-  //       description: {
-  //         $field: 'description'
-  //       }
-  //     },
-  //     {
-  //       component: { $value: 'gridLarge' },
-  //       showall: { $value: true },
-  //       children: {
-  //         title: true,
-  //         $list: {
-  //           $range: [0, 100],
-  //           $find: {
-  //             $traverse: 'descendants',
-  //             $filter: [
-  //               {
-  //                 $field: 'type',
-  //                 $operator: '=',
-  //                 $value: 'match'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     }
-  //   ]
-  // })
-
-  // console.log('MATCH LAYOUT:', teamLayout)
-
-  // const league = await client.set({
-  //   $language: 'en',
-  //   title: 'league one',
-  //   children: [team]
-  // })
-
-  // const result = await client.get({
-  //   $id: 'league1',
-  //   id: true,
-  //   $language: 'en',
-  //   // theme: { $inherit: true },
-  //   // ads: { $inherit: true },
-  //   components: [
-  //     {
-  //       component: { $value: 'description' },
-  //       title: {
-  //         $field: 'title'
-  //       },
-  //       description: {
-  //         $field: 'description'
-  //       }
-  //     },
-  //     {
-  //       component: { $value: 'gridLarge' },
-  //       showall: { $value: true },
-  //       children: {
-  //         title: true,
-  //         $list: {
-  //           $range: [0, 100],
-  //           $find: {
-  //             $traverse: 'descendants',
-  //             $filter: [
-  //               {
-  //                 $field: 'type',
-  //                 $operator: '=',
-  //                 $value: 'team'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     },
-  //     {
-  //       component: { $value: 'list' },
-  //       children: {
-  //         title: true,
-  //         image: { icon: true, thumb: true },
-  //         sport: { title: true, $inherit: { $item: 'sport' } },
-  //         $list: {
-  //           $sort: { $field: 'start', $order: 'asc' },
-  //           $find: {
-  //             $traverse: 'descendants',
-  //             $filter: [
-  //               {
-  //                 $field: 'type',
-  //                 $operator: '=',
-  //                 $value: 'match'
-  //               },
-  //               {
-  //                 $field: 'start',
-  //                 $operator: '<',
-  //                 $value: 'now'
-  //               },
-  //               {
-  //                 $field: 'end',
-  //                 $operator: '>',
-  //                 $value: 'now'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     }
-  //   ]
-  // })
-
-  // console.log(Date.now())
-  // console.dir(result, { depth: 100 })
-
-  // t.deepEqualIgnoreOrder(result, {
-  //   id: 'league1',
-  //   components: [
-  //     {
-  //       component: 'description',
-  //       title: '🌊 mr flurpels 🌊',
-  //       description: 'I like fancy 🌊'
-  //     },
-  //     {
-  //       component: 'gridLarge',
-  //       showall: true,
-  //       children: [{ title: '🌊 TEAM 🌊' }]
-  //     },
-  //     {
-  //       component: 'list',
-  //       children: [{ sport: { title: 'flurp football' }, title: '🌊 MATCH 🌊' }]
-  //     }
-  //   ]
-  // })
+  let compCount = 1
+  while (compCount <= 2) {
+    compCount++
+    totalCount++
+    await client.set({
+      $id: match,
+      layout: {
+        match: {
+          components: [
+            ...query.components,
+            {
+              component: {
+                $value: `comp${compCount}-${updateCount}`
+              },
+              title: {
+                $field: 'title'
+              },
+              description: {
+                $field: 'description'
+              }
+            }
+          ]
+        }
+      }
+    })
+    await wait(100)
+    t.is(totalCount, fireCount)
+    t.is(layout.components.length, compCount)
+    layout.components.forEach(({ title, description }) => {
+      t.is(title, `title-${updateCount}`)
+      t.is(description, `description-${updateCount}`)
+    })
+  }
 })
