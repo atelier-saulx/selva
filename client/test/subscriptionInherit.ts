@@ -18,7 +18,7 @@ test.after(async () => {
   await srv.destroy()
 })
 
-test.skip('inherit object youzi', async t => {
+test.only('inherit object youzi', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -41,6 +41,7 @@ test.skip('inherit object youzi', async t => {
 
   await client.set({
     $id: 'yeA',
+    parents: ['yeB'],
     flapper: {
       snurk: 'hello',
       bob: 'xxx'
