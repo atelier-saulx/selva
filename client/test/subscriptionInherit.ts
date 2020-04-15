@@ -38,6 +38,7 @@ test.serial('basic inherit subscription', async t => {
     },
     types: {
       yeshType: {
+        prefix: 'ye',
         fields: {
           yesh: { type: 'string' },
           flapper: {
@@ -52,27 +53,53 @@ test.serial('basic inherit subscription', async t => {
     }
   })
 
-  // const observable = await client.observe({ $id: 'root', yesh: true })
-  // let o1counter = 0
-  // const sub = observable.subscribe(d => {
-  //   if (o1counter === 0) {
-  //     // gets start event
-  //     t.deepEqualIgnoreOrder(d, { yesh: '' })
-  //   } else if (o1counter === 1) {
-  //     // gets update event
-  //     t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })
-  //   } else {
-  //     // doesn't get any more events
-  //     t.fail()
-  //   }
-  //   o1counter++
-  // })
+  await client.set({
+    $id: 'root',
+    yesh: 'yesh',
+    no: 'no'
+  })
 
-  // const thing = await client.set({
-  //   type: 'yeshType',
-  //   yesh: 'extra nice'
-  // })
+  await client.set({
+    $id: 'yeA',
+    yesh: 'yesh a'
+  })
 
-  // await wait(1000)
-  t.true(true)
+  await client.set({
+    $id: 'yeB',
+    parents: ['yeA']
+  })
+
+  const observable = await client.observe({
+    $id: 'yeB',
+    yesh: { $inherit: true }
+  })
+
+  const results = []
+
+  const subs = observable.subscribe(p => {
+    console.log(p)
+    results.push(p)
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'yeA',
+    yesh: 'yesh a!'
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'yeB',
+    yesh: 'yesh b'
+  })
+
+  await wait(1000)
+
+  t.deepEqual(results, [
+    { yesh: 'yesh a' },
+    { yesh: 'yesh a!' },
+    { yesh: 'yesh b' }
+  ])
 })

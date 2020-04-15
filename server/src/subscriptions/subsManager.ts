@@ -40,8 +40,6 @@ export default class SubscriptionManager {
   public sSub: RedisClient
   public sPub: RedisClient // pub and client
 
-  public tmpSchema: Schema
-
   public inProgress: Record<string, true> = {}
   public incomingCount: number = 0
   // public isDestroyed: boolean = false
@@ -121,23 +119,26 @@ export default class SubscriptionManager {
       fields: new Set()
     }
 
-    if (!this.tmpSchema) {
-      this.tmpSchema = (await this.client.getSchema()).schema
+    // FIXME: use schema subs!
+    if (!this.client.schema) {
+      await this.client.getSchema()
     }
+
+    console.log('hello', channel, getOptions)
 
     addFieldsToSubscription(
       this.subscriptions[channel],
       this.fieldMap,
       // FIXME: schema needs an observer!
-      this.tmpSchema,
+      this.client.schema,
       channel,
       this.refsById
     )
 
-    // have to check what the last update was
-    // if (!(await this.client.redis.hexists(prefixes.cache, channel))) {
-    await this.sendUpdate(channel)
-    // }
+    // have to check what the last update was ESPECIALY WHEN
+    if (!(await this.client.redis.hexists(prefixes.cache, channel))) {
+      await this.sendUpdate(channel)
+    }
   }
 
   async removeSubscription(channel: string, cleanUpQ: any[] = []) {
@@ -174,7 +175,6 @@ export default class SubscriptionManager {
     // has to become lua
     // can we do less here maybe?
     // e.g do a diff first or something
-    this.tmpSchema = null
     // can do multi if you want
     const [subscriptions, clients] = await Promise.all([
       this.client.redis.byType.hgetall('sClient', prefixes.subscriptions),
