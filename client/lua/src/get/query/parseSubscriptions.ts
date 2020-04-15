@@ -3,7 +3,7 @@ import * as logger from '../../logger'
 import { isFork } from './util'
 import { getPrefixFromType } from '../../typeIdMapping'
 import { indexOf, isArray, joinString } from '../../util'
-import { GetOptions } from '~selva/get/types'
+import { GetOptions, GetResult } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import createSearchArgs from './createSearchArgs'
 import { Schema } from '../../../../src/schema/index'
@@ -128,6 +128,7 @@ function parseSubscriptions(
   meta: Meta,
   ids: string[],
   getOptions: GetOptions,
+  result: GetResult,
   language?: string,
   traverse?: string | string[]
 ) {
@@ -256,6 +257,16 @@ function parseSubscriptions(
     for (let i = 0; i < sort.length; i++) {
       sub.fields[sort[i].$field] = true
     }
+  }
+
+  if (result.$meta && result.$meta.inherit) {
+    // merge them
+    const together = {}
+
+    for (const key in result.$meta.inherit) {
+    }
+
+    logger.info(result.$meta.inherit)
   }
 }
 
