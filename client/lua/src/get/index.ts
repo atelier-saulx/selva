@@ -14,6 +14,40 @@ import getQuery from './query/index'
 import * as r from '../redis'
 
 // add error handling
+
+function addInheritMeta(
+  props: GetOptions,
+  field: string | string[],
+  result: GetResult,
+  id: string
+) {
+  const inherit = props.$inherit
+  if (inherit) {
+    if (!result.$meta.inherit) {
+      result.$meta.inherit = {}
+    }
+    if (!result.$meta.inherit[id]) {
+      result.$meta.inherit[id] = {
+        ids: {},
+        fields: {}
+      }
+    }
+    if (inherit !== true && inherit.$item) {
+      logger.info('ADD META FOR INHERIT', field, props)
+    } else {
+      if (field) {
+        if (isArray(field)) {
+          for (let i = 0; i < field.length; i++) {
+            result.$meta.inherit[id].fields[field[i]] = true
+          }
+        } else {
+          result.$meta.inherit[id].fields[field] = true
+        }
+      }
+    }
+  }
+}
+
 function getField(
   props: GetItem,
   schema: Schema,
@@ -147,6 +181,10 @@ function getField(
           getNestedField(intermediateResult, 'intermediate')
         )
 
+        if (props.$inherit && includeMeta === true) {
+          addInheritMeta(props, $field, result, id)
+        }
+
         return true
       } else {
         props.$field = resolveAll(
@@ -169,6 +207,10 @@ function getField(
             includeMeta
           )
         ) {
+          if (props.$inherit && includeMeta === true) {
+            addInheritMeta(props, props.$field, result, id)
+          }
+
           return true
         }
       }
@@ -178,6 +220,10 @@ function getField(
     let hasKeys = false
     let propagatedInherit = false
     if (!hasAlias) {
+      if (props.$inherit && includeMeta === true) {
+        addInheritMeta(props, field, result, id)
+      }
+
       if (props.$all) {
         props = makeNewGetOptions(id, field || '', schema, props)
       }

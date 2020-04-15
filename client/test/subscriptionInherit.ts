@@ -18,7 +18,7 @@ test.after(async () => {
   await srv.destroy()
 })
 
-test.skip('inherit object youzi', async t => {
+test.only('inherit object youzi', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({

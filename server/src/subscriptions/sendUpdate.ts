@@ -80,6 +80,8 @@ const sendUpdate = async (
 
   // make query
 
+  console.log('----->', payload)
+
   if (payload.$meta.inherit) {
     console.log('GO', payload.$meta)
     if (!payload.$meta.query) {
