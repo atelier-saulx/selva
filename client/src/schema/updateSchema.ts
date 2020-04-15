@@ -79,6 +79,10 @@ export function newSchemaDefinition(
 
 function newLanguages(oldLangs: string[], newLangs: string[]): string[] {
   const langs: Set<string> = new Set()
+
+  if (!Array.isArray(oldLangs)) {
+    oldLangs = ['en']
+  }
   for (const lang of oldLangs) {
     langs.add(lang)
   }

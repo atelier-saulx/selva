@@ -606,7 +606,7 @@ test.serial('get - $all nested', async t => {
 })
 
 test.serial('get - $all deeply nested', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   const entry = await client.set({
     type: 'lekkerType',
@@ -1283,27 +1283,3 @@ test.serial(
     client.destroy()
   }
 )
-
-// test.serial('get - $field type (layout)', async t => {
-//   const client = connect({ port })
-
-//   await client.set({
-//     $id: 'reDe',
-//     layout: {
-//       match: { components: [{ type: 'list', blurf: true }] }
-//     }
-//   })
-
-//   await client.set({
-//     $id: 'maA',
-//     parents: ['reDe']
-//   })
-
-//   await client.get({
-//     $id: 'maA',
-//     layout: {
-//       $inherit: true,
-//       $field: ['layout.$type', 'layout.default']
-//     }
-//   })
-// })
