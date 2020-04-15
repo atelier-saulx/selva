@@ -221,6 +221,16 @@ function getField(
             ) {
               isComplete = false
             }
+
+            if (field && field !== '') {
+              const nested = getNestedField(result, field)
+              if (
+                !nested ||
+                (type(nested) === 'table' && next(nested) === null)
+              ) {
+                setNestedResult(result, field, {})
+              }
+            }
           }
         }
       }
