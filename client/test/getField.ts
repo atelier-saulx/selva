@@ -604,3 +604,40 @@ test.serial(
     )
   }
 )
+
+test.serial('get - $field with object structure', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!'
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      id: true,
+      wrappingObject: {
+        de: {
+          $field: 'title.de'
+        }
+      },
+      value: true
+    }),
+    {
+      id: 'viA',
+      wrappingObject: {},
+      value: 25
+    }
+  )
+})

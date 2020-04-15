@@ -331,7 +331,8 @@ const object = (
     if (mergeProps && mergeProps.properties) {
       for (const topLevelKey in mergeProps.properties) {
         const fullPathToKey = field + '.' + topLevelKey
-        if (!getNestedField(result, fullPathToKey)) {
+        const nested = getNestedField(result, fullPathToKey)
+        if (!nested || (type(nested) === 'table' && next(nested) === null)) {
           return false
         }
       }

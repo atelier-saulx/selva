@@ -606,7 +606,7 @@ test.serial('get - $all nested', async t => {
 })
 
 test.serial('get - $all deeply nested', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   const entry = await client.set({
     type: 'lekkerType',
