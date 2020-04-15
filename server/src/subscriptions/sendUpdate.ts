@@ -88,21 +88,17 @@ const sendUpdate = async (
 
     // bit more efficient....
     for (let key in payload.$meta.inherit) {
-      console.log('x', payload.$meta.inherit[key])
-
-      const ids = { [key]: true }
-      console.log(payload.$meta.inherit[key].ancestors)
-      payload.$meta.inherit[key].ancestors.forEach(v => {
-        ids[v] = true
-      })
-
-      payload.$meta.query.push({
-        ids,
-        idFields: {
-          [`${key}.ancestors`]: true
-        },
-        fields: payload.$meta.inherit[key].fields
-      })
+      let hasAncestor = false
+      for (let k in payload.$meta.inherit[key].ids) {
+        hasAncestor = true
+        break
+      }
+      if (hasAncestor) {
+        payload.$meta.inherit[key].idFields = { [`${key}.ancestors`]: true }
+      }
+      payload.$meta.inherit[key].ids[key] = true
+      console.dir(payload.$meta.inherit[key], { depth: 10 })
+      payload.$meta.query.push(payload.$meta.inherit[key])
     }
   }
 
