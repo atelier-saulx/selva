@@ -184,7 +184,7 @@ const layoutSubsTest = async (t, layoutSub) => {
         }
       }
     })
-    await wait(100)
+    await wait(500)
     t.is(totalCount, fireCount)
     t.is(layout.components[0].component, `comp1-${updateCount}`)
   }
@@ -198,7 +198,7 @@ const layoutSubsTest = async (t, layoutSub) => {
       title: `title-${updateCount}`,
       description: `description-${updateCount}`
     })
-    await wait(100)
+    await wait(500)
     t.is(totalCount, fireCount)
     t.is(layout.components[0].title, `title-${updateCount}`)
     t.is(layout.components[0].description, `description-${updateCount}`)
@@ -229,7 +229,7 @@ const layoutSubsTest = async (t, layoutSub) => {
         }
       }
     })
-    await wait(100)
+    await wait(500)
     t.is(totalCount, fireCount)
     t.is(layout.components.length, compCount)
     layout.components.forEach(({ title, description }) => {
@@ -337,3 +337,58 @@ test.serial('layout without inheritance or refs', t => layoutSubsTest(t, true))
 test.serial('layout using $inherit: true - own layout, no refs', t =>
   layoutSubsTest(t, { $inherit: true })
 )
+test.serial.only('layout with inheritance', async t => {
+  const client = connect({ port })
+  // creating data
+  await client.set({
+    $id: 'root',
+    layout: {
+      match: {
+        id: true,
+        components: [
+          {
+            component: { $value: 'comp1-0' },
+            title: {
+              $field: 'title'
+            },
+            description: {
+              $field: 'description'
+            }
+          }
+        ]
+      }
+    }
+  })
+
+  const club = await client.set({
+    $id: 'clA',
+    $language: 'en',
+    title: 'Club A'
+  })
+
+  const team = await client.set({
+    $id: 'teA',
+    $language: 'en',
+    title: 'Team A',
+    parents: [club]
+  })
+
+  const match = await client.set({
+    $id: 'maA',
+    $language: 'en',
+    title: 'Match A',
+    parents: [team]
+  })
+
+  const results = []
+  const matchLayoutObs = await client.observe({
+    $id: match,
+    layout: { match: { $inherit: true } }
+  })
+
+  matchLayoutObs.subscribe(async ({ layout }) => {
+    console.log('---------', layout)
+  })
+
+  await wait(500)
+})

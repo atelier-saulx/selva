@@ -18,6 +18,83 @@ test.after(async () => {
   await srv.destroy()
 })
 
+test.serial('inherit object nested field from root youzi', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: {
+        flapper: {
+          type: 'object',
+          properties: {
+            snurk: { type: 'json' },
+            bob: { type: 'json' }
+          }
+        }
+      }
+    },
+    types: {
+      yeshType: {
+        prefix: 'ye',
+        fields: {
+          flapper: {
+            type: 'object',
+            properties: {
+              snurk: { type: 'json' },
+              bob: { type: 'json' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'root',
+    flapper: {
+      snurk: 'hello',
+      bob: 'xxx'
+    }
+  })
+
+  await client.set({
+    $id: 'yeA'
+  })
+
+  const observable = await client.observe({
+    $id: 'yeA',
+    flapper: { snurk: { $inherit: true } }
+  })
+
+  const results = []
+
+  const subs = observable.subscribe(p => {
+    console.log('-----------', p)
+    results.push(p)
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'root',
+    flapper: {
+      snurk: 'snurkels'
+    }
+  })
+
+  await wait(1000)
+
+  subs.unsubscribe()
+
+  t.deepEqual(results, [
+    { flapper: { snurk: 'hello' } },
+    { flapper: { snurk: 'snurkels' } }
+  ])
+
+  await client.delete('root')
+})
+
 test.serial('inherit object youzi', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
@@ -55,7 +132,6 @@ test.serial('inherit object youzi', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    console.log('--------------------------', p)
     results.push(p)
   })
 
