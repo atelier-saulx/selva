@@ -102,4 +102,128 @@ test.serial('basic inherit subscription', async t => {
     { yesh: 'yesh a!' },
     { yesh: 'yesh b' }
   ])
+
+  subs.unsubscribe()
+
+  await client.delete('root')
+})
+
+test.serial('list inherit subscription', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: {
+        yesh: { type: 'string' },
+        no: { type: 'string' },
+        flapper: {
+          type: 'object',
+          properties: {
+            snurk: { type: 'string' },
+            bob: { type: 'string' }
+          }
+        }
+      }
+    },
+    types: {
+      yeshType: {
+        prefix: 'ye',
+        fields: {
+          yesh: { type: 'string' },
+          flapper: {
+            type: 'object',
+            properties: {
+              snurk: { type: 'string' },
+              bob: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'root',
+    yesh: 'yesh',
+    no: 'no'
+  })
+
+  await client.set({
+    $id: 'yeA',
+    yesh: 'yesh a'
+  })
+
+  await client.set({
+    $id: 'yeB',
+    parents: ['yeA']
+  })
+
+  for (let i = 0; i < 2; i++) {
+    await client.set({
+      $id: 'ye' + i,
+      parents: ['yeA']
+    })
+  }
+
+  const observable = await client.observe({
+    $id: 'yeA',
+    flapdrol: {
+      id: true,
+      yesh: { $inherit: true },
+      $field: 'children',
+      $list: true
+    }
+  })
+
+  const results = []
+
+  const subs = observable.subscribe(p => {
+    results.push(p)
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'yeA',
+    yesh: 'yesh a!'
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'yeB',
+    yesh: 'yesh b'
+  })
+
+  await wait(1000)
+
+  t.true(true)
+
+  console.dir(results, { depth: 10 })
+  t.deepEqualIgnoreOrder(results, [
+    {
+      flapdrol: [
+        { id: 'ye0', yesh: 'yesh a' },
+        { id: 'yeB', yesh: 'yesh a' },
+        { id: 'ye1', yesh: 'yesh a' }
+      ]
+    },
+    {
+      flapdrol: [
+        { id: 'ye0', yesh: 'yesh a!' },
+        { id: 'yeB', yesh: 'yesh a!' },
+        { id: 'ye1', yesh: 'yesh a!' }
+      ]
+    },
+    {
+      flapdrol: [
+        { id: 'ye0', yesh: 'yesh a!' },
+        { id: 'yeB', yesh: 'yesh b' },
+        { id: 'ye1', yesh: 'yesh a!' }
+      ]
+    }
+  ])
+
+  await client.delete('root')
 })
