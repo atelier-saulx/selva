@@ -13,6 +13,8 @@ import { Schema } from '../../../../src/schema/index'
 import parseSubscriptions from './parseSubscriptions'
 import { setNestedResult } from '../nestedFields'
 
+import globals from '../../globals'
+
 const parseNested = (
   opts: GetOptions,
   ids: string[],
@@ -58,7 +60,6 @@ const parseQuery = (
   traverse?: string | string[],
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   getResult?: GetResult
 ): [
   {
@@ -203,7 +204,6 @@ const parseQuery = (
           undefined,
           language,
           version,
-          includeMeta,
           getResult
         )
 
@@ -226,7 +226,7 @@ const parseQuery = (
     } else {
       for (let i = 0; i < resultIds.length; i++) {
         const result: GetResult =
-          includeMeta && getResult && getResult.$meta
+          globals.$meta && getResult && getResult.$meta
             ? { $meta: getResult.$meta }
             : {}
         getField(
@@ -237,7 +237,6 @@ const parseQuery = (
           '',
           language,
           version,
-          includeMeta,
           '$'
         )
         if (result.$meta) {
@@ -284,8 +283,7 @@ const queryGet = (
   ids?: string[],
   traverse?: string | string[],
   language?: string,
-  version?: string,
-  includeMeta?: boolean
+  version?: string
 ): string | null => {
   if (!ids) {
     ids = [getOptions.$id || 'root']
@@ -299,7 +297,6 @@ const queryGet = (
     traverse,
     language,
     version,
-    includeMeta,
     result
   )
 
@@ -308,10 +305,10 @@ const queryGet = (
   if (!results.length || results.length === 0) {
     results = emptyArray()
   }
-  if (includeMeta && meta) {
-    if (!result.$meta.query) {
-      result.$meta.query = []
-    }
+  if (globals.$meta && meta) {
+    // if (!result.$meta.query) {
+    //   result.$meta.query = []
+    // }
     parseSubscriptions(
       result.$meta.query,
       meta,

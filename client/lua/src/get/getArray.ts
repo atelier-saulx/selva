@@ -14,7 +14,6 @@ export default function getArray(
   resultField: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
 ): boolean {
   const resultAry: GetResult[] = []
@@ -28,7 +27,6 @@ export default function getArray(
       props[i].$id ? 'arrayPayload' : undefined,
       language,
       version,
-      includeMeta,
       ignore
     )
 

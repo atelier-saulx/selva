@@ -1192,7 +1192,7 @@ test.serial(
   }
 )
 
-test.serial(
+test.serial.only(
   'get - $inherit with object types of nested objects, does shallow merge',
   async t => {
     const client = connect({ port }, { loglevel: 'info' })
@@ -1247,6 +1247,26 @@ test.serial(
         dung: 1
       }
     })
+
+    console.log(
+      JSON.stringify(
+        (
+          await client.get({
+            $includeMeta: true,
+            $id: entry,
+            id: true,
+            title: { $inherit: true },
+            ding: {
+              dang: { $inherit: true },
+              dunk: { $inherit: true },
+              dung: { $inherit: true }
+            }
+          })
+        ).$meta,
+        null,
+        2
+      )
+    )
 
     t.deepEqualIgnoreOrder(
       await client.get({

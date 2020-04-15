@@ -53,7 +53,6 @@ function setFromAncestors(
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   fieldFrom?: string | string[],
   merge?: boolean,
   tryAncestorCondition?: (ancestor: Id) => boolean,
@@ -89,9 +88,9 @@ function setFromAncestors(
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
-      if (includeMeta) {
-        result.$meta.inherit[id].ids[parent] = true
-      }
+      // if (includeMeta) {
+      //   result.$meta.inherit[id].ids[parent] = true
+      // }
 
       if (
         !tryAncestorCondition ||
@@ -106,8 +105,7 @@ function setFromAncestors(
               field,
               fieldFrom,
               language,
-              version,
-              includeMeta
+              version
             )
           ) {
             return true
@@ -122,8 +120,6 @@ function setFromAncestors(
             '',
             language,
             version,
-            //includeMeta,
-            false, // FIXME: maybe need to support this here too?
             '$inherit'
           )
 
@@ -139,16 +135,7 @@ function setFromAncestors(
           }
         } else {
           if (
-            getByType(
-              result,
-              schema,
-              parent,
-              field,
-              language,
-              version,
-              includeMeta,
-              merge
-            )
+            getByType(result, schema, parent, field, language, version, merge)
           ) {
             return true
           }
@@ -183,8 +170,7 @@ function inheritItem(
   item: string[],
   required: string[],
   language?: string,
-  version?: string,
-  includeMeta?: boolean
+  version?: string
 ) {
   const requiredFields: string[][] = prepareRequiredFieldSegments(required)
 
@@ -210,8 +196,6 @@ function inheritItem(
         '',
         language,
         version,
-        // includeMeta, // FIXME: do we need to support this? don't think so
-        false,
         '$inherit'
       )
       setNestedResult(result, field, intermediateResult)
@@ -225,7 +209,6 @@ function inheritItem(
         '',
         language,
         version,
-        includeMeta,
         '',
         false,
         (ancestor: Id) => {
@@ -276,10 +259,9 @@ export default function inherit(
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   fieldFrom?: string | string[]
 ) {
-  logger.info(`INHERIT DAT FIELD ${field}`, result, includeMeta)
+  logger.info(`INHERIT DAT FIELD ${field}`, result)
 
   // add from where it inherited and make a descendants there
   // how to check if descandents in it checl if in acnestors
@@ -295,7 +277,6 @@ export default function inherit(
         field,
         language,
         version,
-        includeMeta,
         fieldFrom,
         true
       )
@@ -309,7 +290,6 @@ export default function inherit(
         field,
         language,
         version,
-        includeMeta,
         fieldFrom,
         inherit.$merge !== undefined ? inherit.$merge : true,
         (ancestor: Id) => {
@@ -332,7 +312,6 @@ export default function inherit(
         field,
         language,
         version,
-        includeMeta,
         fieldFrom,
         inherit.$merge !== undefined ? inherit.$merge : true,
         (ancestor: Id) => {
@@ -357,8 +336,7 @@ export default function inherit(
         ensureArray(inherit.$item),
         ensureArray(inherit.$required),
         language,
-        version,
-        includeMeta
+        version
       )
     } else if (inherit.$merge !== undefined) {
       // if only merge specified, same as inherit: true with merge off
@@ -370,7 +348,6 @@ export default function inherit(
         field,
         language,
         version,
-        includeMeta,
         fieldFrom,
         inherit.$merge
       )

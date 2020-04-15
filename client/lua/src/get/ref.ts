@@ -12,8 +12,7 @@ type GetByTypeFn = (
   id: Id,
   field: string,
   language?: string,
-  version?: string,
-  includeMeta?: boolean
+  version?: string
 ) => boolean
 
 export function resolveObjectRef(
@@ -23,8 +22,7 @@ export function resolveObjectRef(
   field: string,
   getByType: GetByTypeFn,
   language?: string,
-  version?: string,
-  includeMeta?: boolean
+  version?: string
 ) {
   const ref = redis.hget(id, `${field}.$ref`)
   if (!ref || ref.length === 0) {
@@ -39,8 +37,7 @@ export function resolveObjectRef(
     ref,
     getByType,
     language,
-    version,
-    includeMeta
+    version
   )
 }
 
@@ -52,25 +49,14 @@ export function tryResolveSimpleRef(
   value: string,
   getByType: GetByTypeFn,
   language?: string,
-  version?: string,
-  includeMeta?: boolean
+  version?: string
 ): boolean {
   if (!value || value.indexOf(REF_SIMPLE_FIELD_PREFIX) !== 0) {
     return false
   }
 
   const ref = value.substring(REF_SIMPLE_FIELD_PREFIX.length)
-  resolveRef(
-    result,
-    schema,
-    id,
-    field,
-    ref,
-    getByType,
-    language,
-    version,
-    includeMeta
-  )
+  resolveRef(result, schema, id, field, ref, getByType, language, version)
 
   return true
 }
@@ -83,19 +69,18 @@ function resolveRef(
   ref: string,
   getByType: GetByTypeFn,
   language?: string,
-  version?: string,
-  includeMeta?: boolean
+  version?: string
 ): boolean {
-  if (includeMeta) {
-    let current = result.$meta.$refs[ref]
-    if (!current) {
-      current = [field]
-    } else {
-      current[current.length] = field
-    }
+  // if (includeMeta) {
+  //   let current = result.$meta.$refs[ref]
+  //   if (!current) {
+  //     current = [field]
+  //   } else {
+  //     current[current.length] = field
+  //   }
 
-    result.$meta.$refs[ref] = current
-  }
+  //   result.$meta.$refs[ref] = current
+  // }
 
   const intermediateResult = {}
   const found = getByType(
@@ -104,8 +89,7 @@ function resolveRef(
     id,
     ref,
     language,
-    version,
-    includeMeta
+    version
   )
 
   if (found) {

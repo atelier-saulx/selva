@@ -3,7 +3,7 @@ import { Id, FieldSchema } from '~selva/schema/index'
 import * as redis from '../redis'
 import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
-import { setNestedResult, getNestedField } from './nestedFields'
+import { setNestedResult, getNestedField, setMeta } from './nestedFields'
 import { Schema } from '../../../src/schema/index'
 import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
@@ -24,7 +24,6 @@ const id = (
   _field: string,
   _language?: string,
   _version?: string,
-  _includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
@@ -39,7 +38,6 @@ const number = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
@@ -53,8 +51,7 @@ const number = (
       v,
       getByType,
       language,
-      version,
-      includeMeta
+      version
     )
   ) {
     return true
@@ -72,11 +69,10 @@ const float = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
-  return number(result, schema, id, field, language, version, includeMeta)
+  return number(result, schema, id, field, language, version)
 }
 
 const int = (
@@ -86,7 +82,6 @@ const int = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
@@ -101,8 +96,7 @@ const int = (
       v,
       getByType,
       language,
-      version,
-      includeMeta
+      version
     )
   ) {
     return true
@@ -120,7 +114,6 @@ const boolean = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): true => {
@@ -135,8 +128,7 @@ const boolean = (
       v,
       getByType,
       language,
-      version,
-      includeMeta
+      version
     )
   ) {
     return true
@@ -153,7 +145,6 @@ const string = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
@@ -168,8 +159,7 @@ const string = (
       value,
       getByType,
       language,
-      version,
-      includeMeta
+      version
     )
   ) {
     return true
@@ -186,7 +176,6 @@ const arrayLike = (
   field: string,
   language?: string,
   version?: string,
-  _includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
@@ -214,7 +203,6 @@ const json = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
@@ -235,8 +223,7 @@ const json = (
         value,
         getByType,
         language,
-        version,
-        includeMeta
+        version
       )
     ) {
       return true
@@ -258,7 +245,6 @@ const array = (
   field: string,
   _language?: string,
   _version?: string,
-  _includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
@@ -282,7 +268,6 @@ const object = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   merge?: boolean,
   mergeProps?: any
 ): boolean => {
@@ -303,14 +288,11 @@ const object = (
           field,
           getByType,
           language,
-          version,
-          includeMeta
+          version
         )
       }
 
-      if (
-        !getByType(usedResult, schema, id, key, language, version, includeMeta)
-      ) {
+      if (!getByType(usedResult, schema, id, key, language, version)) {
         isComplete = false
       }
     }
@@ -366,20 +348,11 @@ const text = (
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   _merge?: boolean,
   _mergeProps?: any
 ): boolean => {
   if (!language) {
-    const isComplete = object(
-      result,
-      schema,
-      id,
-      field,
-      language,
-      version,
-      includeMeta
-    )
+    const isComplete = object(result, schema, id, field, language, version)
     if (!isComplete) {
       const value = getNestedField(result, field)
       if (!value) {
@@ -517,7 +490,6 @@ function getByType(
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   merge?: boolean
 ): boolean {
   // version still missing!
@@ -568,18 +540,12 @@ function getByType(
     return false
   }
 
+  setMeta(field, {
+    ___ids: id
+  })
+
   const fn = types[prop.type] || string
-  return fn(
-    result,
-    schema,
-    id,
-    field,
-    language,
-    version,
-    includeMeta,
-    merge,
-    prop
-  )
+  return fn(result, schema, id, field, language, version, merge, prop)
 }
 
 export default getByType
