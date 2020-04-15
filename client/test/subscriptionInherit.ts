@@ -170,7 +170,7 @@ test.serial('basic inherit subscription', async t => {
   await client.delete('root')
 })
 
-test.only('inherit object', async t => {
+test.serial('inherit object', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({

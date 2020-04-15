@@ -142,8 +142,8 @@ export function zscore(key: string, member: string): number {
   return tonumber(redis.call('zscore', key, member))
 }
 
-export function exists(...keys: string[]): number {
-  return redis.call('exists', ...keys)
+export function exists(...keys: string[]): boolean {
+  return redis.call('exists', ...keys) === 1
 }
 
 export function expire(key: string, timeInSeconds: number) {
