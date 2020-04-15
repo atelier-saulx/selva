@@ -40,6 +40,11 @@ function prepareRequiredFieldSegments(fields: string[]): string[][] {
   return requiredFields
 }
 
+type Query = {
+  ids: Record<string, true>
+  fields: Record<string, true>
+}
+
 function setFromAncestors(
   getField: GetFieldFn,
   result: GetResult,
@@ -84,6 +89,10 @@ function setFromAncestors(
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
+      if (includeMeta) {
+        result.$meta.inherit[id].ids[parent] = true
+      }
+
       if (
         !tryAncestorCondition ||
         (tryAncestorCondition && tryAncestorCondition(parent))
@@ -270,9 +279,32 @@ export default function inherit(
   includeMeta?: boolean,
   fieldFrom?: string | string[]
 ) {
-  logger.info(`INHERITING FIELD ${field}`)
+  logger.info(`INHERITING FIELD ${field}`, result, includeMeta)
+
+  // add from where it inherited and make a descendants there
+  // how to check if descandents in it checl if in acnestors
+
   const inherit = props.$inherit
   if (inherit) {
+    if (includeMeta === true) {
+      if (!result.$meta.inherit) {
+        result.$meta.inherit = {}
+      }
+
+      if (!result.$meta.inherit[id]) {
+        result.$meta.inherit[id] = <Query>{
+          ids: {}, // redis.zrange(id + '.ancestors')
+          fields: {}
+        }
+      }
+
+      if (inherit !== true && inherit.$item) {
+        logger.info('ADD META FOR INHERIT', field, fieldFrom)
+      } else {
+        result.$meta.inherit[id].fields[field] = true
+      }
+    }
+
     if (inherit === true) {
       return setFromAncestors(
         getField,

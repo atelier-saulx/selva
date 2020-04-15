@@ -58,6 +58,7 @@ const createBatch = (subsManager: SubscriptionManager) => {
           const listeners = fieldsProgress[field]
           for (let i = 0; i < listeners.length - 1; i += 2) {
             const v = listeners[i + 1]
+            console.log('totally', v, members, m)
             if (members[v]) {
               addToUpdateQueue(subsManager, listeners[i])
             }
@@ -80,7 +81,9 @@ const addAncestorsToBatch = (
   if (!execBatch) {
     createBatch(subsManager)
   }
+
   if (!fieldsProgress[field]) {
+    console.log('go ', field, key, v)
     execBatch.zrange(field, 0, -1)
     fieldsInBatch.push(field)
     fieldsProgress[field] = [key, v]
@@ -117,9 +120,17 @@ const membersContainsId = (
   for (let j = 0; j < member.length; j++) {
     const m = member[j]
     const value = m.$value
+
     if (m.$field === 'ancestors') {
       for (let k = 0; k < value.length; k++) {
         const v = value[k]
+
+        console.log(id, value, k)
+        if (v === id) {
+          return false
+        }
+        console.log('ok check if ', v, 'is in ancestors.', id)
+
         if (v === 'root') {
           return true
         }

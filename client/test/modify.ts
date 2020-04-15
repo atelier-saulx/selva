@@ -4,7 +4,6 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import { dumpDb, idExists } from './assertions'
 import getPort from 'get-port'
-import { ForbiddenLuaTableUseException } from 'typescript-to-lua/dist/transformation/utils/errors'
 
 let srv
 let port: number

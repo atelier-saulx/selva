@@ -241,7 +241,7 @@ test.serial('subscription find', async t => {
   // remove unpack
 
   // for now 1k
-  const amount = 1000 // 10k wrong 5k fine
+  const amount = 10 // 10k wrong 5k fine
 
   const x = []
   for (let i = 0; i < amount; i++) {
