@@ -262,3 +262,105 @@ test.serial('$field + object + all + nested', async t => {
     'inherit'
   )
 })
+
+test.serial.only('$field +  multiple options', async t => {
+  const client = connect({ port: port })
+
+  const types = ['match', 'region']
+
+  const layout = {
+    type: 'object',
+    properties: [...types, 'default'].reduce((properties, type) => {
+      properties[type] = {
+        type: 'json'
+      }
+      return properties
+    }, {})
+  }
+
+  await client.updateSchema({
+    types: {
+      match: {
+        prefix: 'ma',
+        fields: {
+          //@ts-ignore
+          layout
+        }
+      },
+      region: {
+        prefix: 're',
+        fields: {
+          //@ts-ignore
+          layout
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'reA',
+    layout: {
+      default: {
+        components: {
+          c1: {
+            component: { $value: 'bye' }
+          }
+        }
+      },
+      region: {
+        components: {
+          c1: {
+            component: { $value: 'hello' }
+          }
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'maA',
+    parents: ['reA']
+  })
+
+  await client.set({
+    $id: 'reB',
+    parents: ['reA']
+  })
+
+  const g = await client.get({
+    $id: 'reA',
+    $all: true
+  })
+
+  t.is(g.layout.default.components.c1.component.$value, 'bye')
+
+  const query = {
+    $alias: 'maA',
+    id: true,
+    layout: {
+      $inherit: true,
+      $field: ['layout.${type}', 'layout.default']
+    }
+  }
+
+  const x = await client.get(query)
+
+  console.dir(x, { depth: 10 })
+
+  t.is(x.layout.components.c1.component.$value, 'bye')
+
+  const y = await client.get({
+    $alias: 'reB',
+    id: true,
+    layout: {
+      $inherit: true,
+      $field: ['layout.${type}', 'layout.default']
+    }
+  })
+
+  console.dir(y, { depth: 10 })
+
+  t.is(x.layout.components.c1.component.$value, 'hello')
+
+  t.true(true)
+})
