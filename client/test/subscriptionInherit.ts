@@ -30,8 +30,8 @@ test.serial('basic inherit subscription', async t => {
         flapper: {
           type: 'object',
           properties: {
-            snurk: { type: 'string' },
-            bob: { type: 'string' }
+            snurk: { type: 'json' },
+            bob: { type: 'json' }
           }
         }
       }
@@ -44,8 +44,8 @@ test.serial('basic inherit subscription', async t => {
           flapper: {
             type: 'object',
             properties: {
-              snurk: { type: 'string' },
-              bob: { type: 'string' }
+              snurk: { type: 'json' },
+              bob: { type: 'json' }
             }
           }
         }
@@ -108,7 +108,7 @@ test.serial('basic inherit subscription', async t => {
   await client.delete('root')
 })
 
-test.only('inherit object', async t => {
+test.serial('inherit object', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -197,8 +197,8 @@ test.serial('list inherit subscription', async t => {
         flapper: {
           type: 'object',
           properties: {
-            snurk: { type: 'string' },
-            bob: { type: 'string' }
+            snurk: { type: 'json' },
+            bob: { type: 'json' }
           }
         }
       }
@@ -211,8 +211,8 @@ test.serial('list inherit subscription', async t => {
           flapper: {
             type: 'object',
             properties: {
-              snurk: { type: 'string' },
-              bob: { type: 'string' }
+              snurk: { type: 'json' },
+              bob: { type: 'json' }
             }
           }
         }
@@ -299,6 +299,142 @@ test.serial('list inherit subscription', async t => {
         { id: 'yeB', yesh: 'yesh b' },
         { id: 'ye1', yesh: 'yesh a!' }
       ]
+    }
+  ])
+  subs.unsubscribe()
+
+  await client.delete('root')
+})
+
+test.only('list inherit + field subscription', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: {
+        yesh: { type: 'string' },
+        no: { type: 'string' },
+        flapper: {
+          type: 'object',
+          properties: {
+            snurk: { type: 'json' },
+            bob: { type: 'json' }
+          }
+        }
+      }
+    },
+    types: {
+      yeshType: {
+        prefix: 'ye',
+        fields: {
+          no: { type: 'string' },
+          yesh: { type: 'string' },
+          flapper: {
+            type: 'object',
+            properties: {
+              snurk: { type: 'json' },
+              bob: { type: 'json' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'root',
+    yesh: 'yesh'
+  })
+
+  await client.set({
+    $id: 'yeA',
+    yesh: 'yesh a',
+    no: 'no'
+  })
+
+  await client.set({
+    $id: 'yeB',
+    parents: ['yeA']
+  })
+
+  for (let i = 0; i < 2; i++) {
+    await client.set({
+      $id: 'ye' + i,
+      parents: ['yeA']
+    })
+  }
+
+  const observable = await client.observe({
+    $id: 'yeA',
+    flapdrol: {
+      id: true,
+      yesh: {
+        $field: 'no',
+        $inherit: true
+      },
+      $field: 'children',
+      $list: true
+    }
+  })
+
+  const results = []
+
+  const subs = observable.subscribe(p => {
+    results.push(p)
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'yeA',
+    no: 'no!'
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'yeB',
+    no: 'o yes?'
+  })
+
+  const x = await client.get({
+    $id: 'yeB',
+    id: true,
+    yesh: {
+      $field: 'no',
+      $inherit: true
+    }
+  })
+
+  console.log(x)
+  t.deepEqual(x, {
+    id: 'yeB',
+    yesh: 'no'
+  })
+
+  await wait(1000)
+
+  t.true(true)
+
+  console.dir(results, { depth: 10 })
+  t.deepEqualIgnoreOrder(results, [
+    {
+      flapdrol: [
+        { id: 'ye0', yesh: 'no' },
+        { id: 'yeB', yesh: 'no' },
+        { id: 'ye1', yesh: 'no' }
+      ]
+    },
+    {
+      flapdrol: [
+        { id: 'ye0', yesh: 'no!' },
+        { id: 'yeB', yesh: 'no!' },
+        { id: 'ye1', yesh: 'no!' }
+      ]
+    },
+    {
+      flapdrol: [{ id: 'yeB', yesh: 'o yes?' }]
     }
   ])
   subs.unsubscribe()
