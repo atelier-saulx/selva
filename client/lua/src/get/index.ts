@@ -176,6 +176,7 @@ function getField(
 
     let isComplete = true
     let hasKeys = false
+    let propagatedInherit = false
     if (!hasAlias) {
       if (props.$all) {
         props = makeNewGetOptions(id, field || '', schema, props)
@@ -207,6 +208,11 @@ function getField(
               ignore
             )
           } else {
+            if (props.$inherit === true) {
+              propagatedInherit = true
+              props[key].$inherit = true
+            }
+
             if (
               getField(
                 props[key],
@@ -234,6 +240,10 @@ function getField(
           }
         }
       }
+    }
+
+    if (propagatedInherit) {
+      delete props.$inherit
     }
 
     if (

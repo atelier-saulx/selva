@@ -84,7 +84,7 @@ test.serial('simple', async t => {
 })
 
 test.serial('$all', async t => {
-  const client = connect({ port: port })
+  const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
     $id: 'geA',
@@ -121,7 +121,7 @@ test.serial('$all', async t => {
 })
 
 test.serial('$field + object', async t => {
-  const client = connect({ port: port })
+  const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
     $id: 'geC',
@@ -182,7 +182,7 @@ test.serial('$field + object + all', async t => {
     }
   })
 
-  t.deepEqual(result1, { flaprdol: { name: 'hello', something: '' } }, 'get')
+  t.deepEqual(result1, { flaprdol: { name: 'hello' } }, 'get')
 
   const result = await client.get({
     $id: 'geD',
@@ -195,7 +195,7 @@ test.serial('$field + object + all', async t => {
 
   console.log('res', result)
 
-  t.deepEqual(result, { flaprdol: { name: 'hello', something: '' } }, 'inherit')
+  t.deepEqual(result, { flaprdol: { name: 'hello' } }, 'inherit')
 })
 
 test.serial('$field + object + all + nested', async t => {
