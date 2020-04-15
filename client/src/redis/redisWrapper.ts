@@ -450,11 +450,6 @@ export class RedisWrapper {
     }
     if (this.clients.size === 0) {
       this.isDestroyed = true
-      // this.types.forEach(t => {
-      //   if (this[t]) {
-      //     this[t].quit()
-      //   }
-      // })
       this.disconnect(true)
       delete redisClients[this.id]
     }
