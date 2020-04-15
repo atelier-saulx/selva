@@ -361,7 +361,7 @@ test.serial('$field +  multiple options', async t => {
   t.true(true)
 })
 
-test.only('$field +  multiple options + inherit from root', async t => {
+test.serial('$field +  multiple options + inherit from root', async t => {
   const client = connect({ port: port })
 
   // adding extra field to schema as well
