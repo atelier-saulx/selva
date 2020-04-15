@@ -322,7 +322,12 @@ const object = (
         const topLevelPropertyField = field + '.' + keyPartsAfterField
 
         const intermediate = getNestedField(usedResult, topLevelPropertyField)
-        if (!getNestedField(result, topLevelPropertyField)) {
+        const nested = getNestedField(result, topLevelPropertyField)
+        if (
+          !nested ||
+          nested === '' ||
+          (type(nested) === 'table' && next(nested) === null)
+        ) {
           setNestedResult(result, topLevelPropertyField, intermediate)
         }
       }
@@ -332,7 +337,11 @@ const object = (
       for (const topLevelKey in mergeProps.properties) {
         const fullPathToKey = field + '.' + topLevelKey
         const nested = getNestedField(result, fullPathToKey)
-        if (!nested || (type(nested) === 'table' && next(nested) === null)) {
+        if (
+          !nested ||
+          nested === '' ||
+          (type(nested) === 'table' && next(nested) === null)
+        ) {
           return false
         }
       }
