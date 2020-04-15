@@ -405,7 +405,6 @@ test.only('list inherit + field subscription', async t => {
     }
   })
 
-  console.log(x)
   t.deepEqual(
     x,
     {
