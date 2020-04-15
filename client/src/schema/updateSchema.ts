@@ -70,6 +70,8 @@ export function newSchemaDefinition(
         typeDef.fields[fieldName] = newSchema.rootType.fields[fieldName]
       }
     }
+
+    schema.rootType = typeDef
   } else {
     schema.rootType = oldSchema.rootType
   }

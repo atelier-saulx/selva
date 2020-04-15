@@ -1,5 +1,5 @@
 import test from 'ava'
-import { connect } from '@saulx/selva'
+import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
