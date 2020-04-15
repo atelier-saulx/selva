@@ -108,7 +108,7 @@ test.serial('basic inherit subscription', async t => {
   await client.delete('root')
 })
 
-test.only('inherit object', async t => {
+test.skip('inherit object', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -161,6 +161,69 @@ test.only('inherit object', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
+    console.log('--------------------------', p)
+    results.push(p)
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'yeA',
+    flapper: {
+      snurk: 'snurkels'
+    }
+  })
+
+  await wait(1000)
+
+  subs.unsubscribe()
+
+  t.deepEqual(results, [
+    { flapper: { snurk: 'hello', bob: 'xxx' } },
+    { flapper: { snurk: 'snurkels', bob: 'xxx' } }
+  ])
+
+  await client.delete('root')
+})
+
+test.only('inherit object youzi', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    types: {
+      yeshType: {
+        prefix: 'ye',
+        fields: {
+          flapper: {
+            type: 'object',
+            properties: {
+              snurk: { type: 'json' },
+              bob: { type: 'json' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'yeA',
+    flapper: {
+      snurk: 'hello',
+      bob: 'xxx'
+    }
+  })
+
+  const observable = await client.observe({
+    $id: 'yeA',
+    flapper: { $inherit: true }
+  })
+
+  const results = []
+
+  const subs = observable.subscribe(p => {
+    console.log('--------------------------', p)
     results.push(p)
   })
 
