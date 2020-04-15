@@ -263,7 +263,7 @@ test.serial('$field + object + all + nested', async t => {
   )
 })
 
-test.serial.only('$field +  multiple options', async t => {
+test.serial('$field +  multiple options', async t => {
   const client = connect({ port: port })
 
   const types = ['match', 'region']
