@@ -54,7 +54,6 @@ const sendUpdate = async (
     })
   )
 
-
   // handle refs -- add this somewhere else
   const refs = payload.$meta.$refs
   delete subscriptionManager.refsById[getOptions.$id]
@@ -76,10 +75,42 @@ const sendUpdate = async (
   // handle query
 
   // need to add some stuff here
+
+  // if has inherits
+
+  // make query
+
+  if (payload.$meta.inherit) {
+    console.log('GO', payload.$meta)
+    if (!payload.$meta.query) {
+      payload.$meta.query = []
+    }
+
+    // bit more efficient....
+    for (let key in payload.$meta.inherit) {
+      console.log('x', payload.$meta.inherit[key])
+
+      const ids = { [key]: true }
+      console.log(payload.$meta.inherit[key].ancestors)
+      payload.$meta.inherit[key].ancestors.forEach(v => {
+        ids[v] = true
+      })
+
+      payload.$meta.query.push({
+        ids,
+        idFields: {
+          [`${key}.ancestors`]: true
+        },
+        fields: payload.$meta.inherit[key].fields
+      })
+    }
+  }
+
   if (payload.$meta.query) {
     subscriptionManager.queries[subscriptionId] = <QuerySubscription[]>(
       payload.$meta.query
     )
+    console.dir(payload.$meta.query, { depth: 10 })
     for (const queryMeta of payload.$meta.query) {
       if (queryMeta.time) {
         updateNowQueries(subscriptionManager, {

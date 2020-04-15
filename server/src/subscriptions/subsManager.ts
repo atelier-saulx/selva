@@ -1,11 +1,5 @@
 import { RedisClient } from 'redis'
-import {
-  SelvaClient,
-  GetOptions,
-  ConnectOptions,
-  prefixes,
-  Schema
-} from '@saulx/selva'
+import { SelvaClient, GetOptions, ConnectOptions, prefixes } from '@saulx/selva'
 import {
   addFieldsToSubscription,
   removeFieldsFromSubscription
@@ -287,7 +281,7 @@ export default class SubscriptionManager {
 
     return new Promise(resolve => {
       // make promise assignable as well
-      this.client = new SelvaClient(opts)
+      this.client = new SelvaClient(opts, { loglevel: 'info' })
 
       this.client.on('connect', () => {
         console.log('connect server-client')

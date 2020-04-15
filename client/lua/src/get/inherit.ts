@@ -270,7 +270,25 @@ export default function inherit(
   includeMeta?: boolean,
   fieldFrom?: string | string[]
 ) {
-  logger.info(`INHERITING FIELD ${field}`)
+  logger.info(`INHERITING FIELD ${field}`, result, includeMeta)
+
+  // add from where it inherited and make a descendants there
+  // how to check if descandents in it checl if in acnestors
+  if (includeMeta === true) {
+    if (!result.$meta.inherit) {
+      result.$meta.inherit = {}
+    }
+
+    if (!result.$meta.inherit[id]) {
+      result.$meta.inherit[id] = {
+        ancestors: redis.zrange(id + '.ancestors'),
+        fields: {}
+      }
+    }
+
+    result.$meta.inherit[id].fields[field] = true
+  }
+
   const inherit = props.$inherit
   if (inherit) {
     if (inherit === true) {

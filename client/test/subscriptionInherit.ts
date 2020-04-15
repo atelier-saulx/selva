@@ -19,7 +19,7 @@ test.after(async () => {
 })
 
 test.serial('basic inherit subscription', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
