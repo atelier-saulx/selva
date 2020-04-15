@@ -412,7 +412,7 @@ test.only('list inherit + field subscription', async t => {
     x,
     {
       id: 'yeB',
-      yesh: 'no'
+      yesh: 'o yes?'
     },
     'get'
   )
