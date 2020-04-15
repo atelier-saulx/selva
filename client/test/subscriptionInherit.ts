@@ -170,7 +170,7 @@ test.serial('basic inherit subscription', async t => {
   await client.delete('root')
 })
 
-test.serial('inherit object', async t => {
+test.only('inherit object', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -210,10 +210,27 @@ test.serial('inherit object', async t => {
     }
   })
 
+  // await client.set({
+  //   $id: 'yeA'
+  // })
+
   await client.set({
     $id: 'yeB',
     parents: ['yeA']
   })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'yeB',
+      flapper: { $inherit: true }
+    }),
+    {
+      flapper: {
+        snurk: 'hello',
+        bob: 'xxx'
+      }
+    }
+  )
 
   const observable = await client.observe({
     $id: 'yeB',

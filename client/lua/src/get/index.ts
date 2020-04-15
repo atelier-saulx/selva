@@ -165,6 +165,9 @@ function getField(
           language,
           version
         )
+        if (props.$inherit && includeMeta === true) {
+          addInheritMeta(props, $field, result, id)
+        }
 
         getWithField(
           intermediateResult,
@@ -182,10 +185,6 @@ function getField(
           getNestedField(intermediateResult, 'intermediate')
         )
 
-        if (props.$inherit && includeMeta === true) {
-          addInheritMeta(props, $field, result, id)
-        }
-
         return true
       } else {
         props.$field = resolveAll(
@@ -195,6 +194,9 @@ function getField(
           language,
           version
         )
+        if (props.$inherit && includeMeta === true) {
+          addInheritMeta(props, props.$field, result, id)
+        }
 
         if (
           getWithField(
@@ -208,10 +210,6 @@ function getField(
             includeMeta
           )
         ) {
-          if (props.$inherit && includeMeta === true) {
-            addInheritMeta(props, props.$field, result, id)
-          }
-
           return true
         }
       }
@@ -221,12 +219,12 @@ function getField(
     let hasKeys = false
     let propagatedInherit = false
     if (!hasAlias) {
-      if (props.$inherit && includeMeta === true) {
-        addInheritMeta(props, field, result, id)
-      }
-
       if (props.$all) {
         props = makeNewGetOptions(id, field || '', schema, props)
+      }
+
+      if (props.$inherit && includeMeta === true) {
+        addInheritMeta(props, <string>field, result, id)
       }
 
       for (const key in props) {
@@ -299,10 +297,6 @@ function getField(
       (!isComplete || !hasKeys)
     ) {
       if (!hasAlias && !hasKeys) {
-        if (props.$inherit && includeMeta === true) {
-          addInheritMeta(props, <string>field, result, id)
-        }
-
         const complete = getByType(
           result,
           schema,
@@ -312,6 +306,11 @@ function getField(
           version,
           includeMeta
         )
+
+        if (props.$inherit && includeMeta === true) {
+          addInheritMeta(props, <string>field, result, id)
+        }
+
         if (!complete) {
           inherit(
             getField,
