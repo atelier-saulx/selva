@@ -61,19 +61,23 @@ export function setMeta(
 
   if (fields && fieldOpts) {
     for (const field of ensureArray(fields)) {
-      const current = getNestedField(globals.$meta, field) || {
-        ___ids: {},
-        ___types: {},
-        ___any: {}
-      }
+      const current = getNestedField(globals.$meta, field) || {}
 
       if (fieldOpts.___ids) {
+        if (!current.___ids) {
+          current.___ids = {}
+        }
+
         for (const id of ensureArray(fieldOpts.___ids)) {
           current.___ids[id] = true
         }
       }
 
       if (fieldOpts.___types) {
+        if (!current.___types) {
+          current.___types = {}
+        }
+
         for (const type in fieldOpts.___types) {
           for (const queryId of ensureArray(fieldOpts.___types[type])) {
             current.___types[type] = { [queryId]: true }
@@ -82,6 +86,10 @@ export function setMeta(
       }
 
       if (fieldOpts.___any) {
+        if (!current.___any) {
+          current.___any = {}
+        }
+
         for (const queryId of fieldOpts.___any) {
           current.___any[queryId] = true
         }
@@ -96,9 +104,13 @@ export function setMeta(
       }
 
       if (globalOpts.___contains) {
+        const contains = globals.$meta.___contains || {}
+
         for (const queryId in globalOpts.___contains) {
-          globals.$meta[queryId] = globalOpts.___contains[queryId]
+          contains[queryId] = globalOpts.___contains[queryId]
         }
+
+        globals.$meta.___contains = contains
       }
     }
   }
