@@ -157,7 +157,7 @@ function setFromAncestors(
 
       const parentsOfParents = redis.smembers(parent + '.parents')
       for (const parentOfParents of parentsOfParents) {
-        if (parentOfParents !== 'root' && ancestorDepthMap[parentOfParents]) {
+        if (ancestorDepthMap[parentOfParents]) {
           next[next.length] = parentOfParents
         }
       }
