@@ -4,7 +4,7 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult, GetItem } from '~selva/get/types'
 import { setNestedResult } from './nestedFields'
 import getByType from './getByType'
-import { ensureArray, splitString } from '../util'
+import { ensureArray, splitString, isArray } from '../util'
 import * as logger from '../logger'
 import getWithField from 'lua/src/get/field'
 import { GetFieldFn } from './types'
@@ -290,18 +290,26 @@ export default function inherit(
       if (!result.$meta.inherit) {
         result.$meta.inherit = {}
       }
-
       if (!result.$meta.inherit[id]) {
         result.$meta.inherit[id] = <Query>{
-          ids: {}, // redis.zrange(id + '.ancestors')
+          ids: {},
           fields: {}
         }
       }
-
       if (inherit !== true && inherit.$item) {
-        logger.info('ADD META FOR INHERIT', field, fieldFrom)
+        logger.info('ADD META FOR INHERIT', field, fieldFrom, props)
       } else {
-        result.$meta.inherit[id].fields[field] = true
+        if (fieldFrom) {
+          if (isArray(fieldFrom)) {
+            for (let i = 0; i < fieldFrom.length; i++) {
+              result.$meta.inherit[id].fields[fieldFrom[i]] = true
+            }
+          } else {
+            result.$meta.inherit[id].fields[fieldFrom] = true
+          }
+        } else {
+          result.$meta.inherit[id].fields[field] = true
+        }
       }
     }
 

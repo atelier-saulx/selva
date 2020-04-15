@@ -26,6 +26,8 @@ const deepSort = (a: any, b: any): void => {
           return 0
         }
       }
+      a.sort(s)
+      b.sort(s)
     } else {
       a.sort()
       b.sort()

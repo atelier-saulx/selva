@@ -86,7 +86,6 @@ const sendUpdate = async (
       payload.$meta.query = []
     }
 
-    // bit more efficient....
     for (let key in payload.$meta.inherit) {
       let hasAncestor = false
       for (let k in payload.$meta.inherit[key].ids) {
