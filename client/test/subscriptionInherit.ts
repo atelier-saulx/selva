@@ -153,11 +153,6 @@ test.only('inherit object', async t => {
     parents: ['yeA']
   })
 
-  const x = await client.get({
-    $id: 'yeB',
-    flapper: { $inherit: true }
-  })
-
   const observable = await client.observe({
     $id: 'yeB',
     flapper: { $inherit: true }
