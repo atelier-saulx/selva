@@ -304,7 +304,7 @@ test.serial('list inherit subscription', async t => {
   await client.delete('root')
 })
 
-test.only('list inherit + field subscription', async t => {
+test.serial('list inherit + field subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
