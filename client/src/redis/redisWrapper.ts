@@ -168,7 +168,10 @@ export class RedisWrapper {
         }
       },
       err => {
-        console.error(err)
+        // @ts-ignore
+        if (err.code !== 'UNCERTAIN_STATE') {
+          console.error(err.message)
+        }
       },
       'sClient'
     )
@@ -447,6 +450,11 @@ export class RedisWrapper {
     }
     if (this.clients.size === 0) {
       this.isDestroyed = true
+      this.types.forEach(t => {
+        if (this[t]) {
+          this[t].quit()
+        }
+      })
       this.disconnect(true)
       delete redisClients[this.id]
     }
@@ -600,7 +608,13 @@ export class RedisWrapper {
         setTimeout(() => {
           this.isBusy = false
           // need to rerun the batch ofc
-          this.execBatch(origSlice, type)
+          if (!this.allConnected) {
+            console.log('DC while busy add to buffer again!')
+            this.buffer[type].push(...origSlice)
+            // add this
+          } else {
+            this.execBatch(origSlice, type)
+          }
         }, 5e3)
       } else {
         // dont need this type
@@ -622,7 +636,7 @@ export class RedisWrapper {
 
         batch.exec((err: Error, reply: any[]) => {
           if (err) {
-            console.error(err)
+            // console.error(err)
             reject(err)
           } else {
             let hasBusy = false
