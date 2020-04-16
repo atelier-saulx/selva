@@ -2,6 +2,7 @@ import { Subscription } from '../'
 import SubscriptionManager from '../subsManager'
 import addUpdate from './addUpdate'
 
+// clean this up more
 let execBatch
 let fieldsProgress = {}
 let fieldsInBatch = []

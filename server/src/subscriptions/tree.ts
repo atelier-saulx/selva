@@ -164,6 +164,7 @@ export function removeSubscriptionFromTree(
     } else {
       if (tree.___refreshAt) {
         console.log('REMOVE REFRESH LISTENER')
+        clearTimeout(subscription.refreshTimeout)
       }
       removeFromTree(subscription, subsmanager.tree, tree)
     }
