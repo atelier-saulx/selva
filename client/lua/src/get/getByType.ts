@@ -469,6 +469,7 @@ const types = {
   boolean,
   object,
   set: arrayLike,
+  reference: string,
   references: arrayLike,
   json,
   array,
@@ -526,6 +527,40 @@ function getByType(
         version
       )
       setNestedResult(result, field, getNestedField(intermediateResult, field))
+      return true
+    } else if (prop && prop.type === 'reference' && i < paths.length - 1) {
+      let pathSoFar: string = ''
+      for (let j = 0; j <= i; j++) {
+        pathSoFar += paths[j]
+      }
+
+      const reference = redis.hget(id, pathSoFar)
+      if (!reference) {
+        return false
+      }
+
+      let remainingPath: string = ''
+      for (let j = i + 1; i < paths.length; j++) {
+        remainingPath += paths[j]
+      }
+
+      const intermediateResult = {}
+      getByType(
+        intermediateResult,
+        schema,
+        reference,
+        remainingPath,
+        language,
+        version,
+        merge
+      )
+
+      setNestedResult(
+        result,
+        field,
+        getNestedField(intermediateResult, remainingPath)
+      )
+
       return true
     } else {
       if (!prop || prop.type !== 'object') {
