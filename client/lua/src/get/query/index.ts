@@ -236,7 +236,7 @@ const parseQuery = (
       if (sort) {
         meta.sort = sort
       }
-      meta.ids = resultIds
+      // meta.ids = resultIds
 
       if (
         getOptions.$list &&

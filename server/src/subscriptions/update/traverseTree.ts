@@ -42,6 +42,14 @@ const traverse = (
       }
 
       if (segment.__any) {
+        for (let containsId in segment.__any) {
+          contains(
+            subscriptionManager,
+            containsId,
+            id,
+            segment.__any[containsId]
+          )
+        }
       }
     } else {
       break
