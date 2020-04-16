@@ -21,8 +21,10 @@ export type UpdateEvent = {
   version?: string
 }
 
-export type DeleteEvent = {
-  type: 'delete'
+export type CustomEvent = {
+  type: string
+  payload?: any
+  version?: string
 }
 
 export type Event = UpdateEvent | DeleteEvent
