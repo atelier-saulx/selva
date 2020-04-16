@@ -490,7 +490,8 @@ function getByType(
   field: string,
   language?: string,
   version?: string,
-  merge?: boolean
+  merge?: boolean,
+  metaKeys?: any
 ): boolean {
   // version still missing!
   const type = getTypeFromId(id)
@@ -540,9 +541,13 @@ function getByType(
     return false
   }
 
-  setMeta(field, {
-    ___ids: id
-  })
+  if (metaKeys) {
+    setMeta(field, metaKeys)
+  } else {
+    setMeta(field, {
+      ___ids: id
+    })
+  }
 
   const fn = types[prop.type] || string
   return fn(result, schema, id, field, language, version, merge, prop)
