@@ -182,7 +182,7 @@ test.serial('subscribe - simple alias', async t => {
   ])
 })
 
-test.serial.only('subscribe - simple alias with variable', async t => {
+test.serial('subscribe - simple alias with variable', async t => {
   const client = connect({ port })
 
   await client.set({
