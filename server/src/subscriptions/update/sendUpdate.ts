@@ -2,14 +2,14 @@ import { prefixes } from '@saulx/selva'
 import SubscriptionManager from '../subsManager'
 import { addSubscriptionToTree, removeSubscriptionFromTree } from '../tree'
 import { hash } from '../util'
+import { Subscription } from '../'
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
-  channel: string,
+  subscription: Subscription,
   deleteOp: boolean = false
 ) => {
-  const subscription = subscriptionManager.subscriptions[channel]
-
+  const channel = subscription.channel
   if (deleteOp) {
     // only for individual ID
     const event = JSON.stringify({ type: 'delete' })
@@ -55,11 +55,11 @@ const sendUpdate = async (
 
   if (treeVersion !== newTreeVersion) {
     if (treeVersion) {
-      removeSubscriptionFromTree(subscriptionManager, channel, subscription)
+      removeSubscriptionFromTree(subscriptionManager, subscription)
     }
     subscription.treeVersion = newVersion
     subscription.tree = newTree
-    addSubscriptionToTree(subscriptionManager, channel, subscription)
+    addSubscriptionToTree(subscriptionManager, subscription)
     q.push(
       subscriptionManager.client.redis.byType.hset(
         'sClient',

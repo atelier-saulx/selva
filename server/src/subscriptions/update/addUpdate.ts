@@ -1,5 +1,6 @@
 import SubscriptionManager from '../subsManager'
 import sendUpdate from './sendUpdate'
+import { Subscription } from '../'
 /*
   if (!subscription) {
     console.error(`Cannot find subscription on server ${channel.slice(-5)}`)
@@ -45,23 +46,15 @@ import sendUpdate from './sendUpdate'
 
 const addUpdate = async (
   subscriptionManager: SubscriptionManager,
-  channel: string,
+  subscription: Subscription,
   isDelete: boolean = false
 ) => {
-  const subscription = subscriptionManager.subscriptions[channel]
-
-  if (!subscription) {
-    // this should never happen
-    console.error(`Cannot find subscription on server ${channel}`)
-    return
-  }
-
   if (subscription.inProgress) {
     console.log('Sub in progess')
   } else {
     // handle batch mechanism
 
-    await sendUpdate(subscriptionManager, channel, isDelete)
+    await sendUpdate(subscriptionManager, subscription, isDelete)
     subscription.inProgress = false
   }
 }

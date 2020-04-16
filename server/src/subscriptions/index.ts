@@ -18,6 +18,7 @@ export type Subscription = {
   tree?: SubTree
   treeVersion?: string
   inProgress?: boolean
+  channel: string
 }
 
 export default class SubWorker {

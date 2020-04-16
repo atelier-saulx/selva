@@ -81,10 +81,12 @@ export default class SubscriptionManager {
     getOptions: GetOptions
   ) {
     const { byType } = this.client.redis
-    this.subscriptions[channel] = {
+    const subscription = {
       clients,
+      channel,
       get: getOptions
     }
+    this.subscriptions[channel] = subscription
     if (await byType.hexists('sClient', prefixes.cache, channel)) {
       const [tree, version] = await byType.hmget(
         'sClient',
@@ -95,9 +97,9 @@ export default class SubscriptionManager {
       this.subscriptions[channel].version = version
       this.subscriptions[channel].tree = JSON.parse(tree)
       this.subscriptions[channel].treeVersion = hash(tree)
-      addSubscriptionToTree(this, channel, this.subscriptions[channel])
+      addSubscriptionToTree(this, subscription)
     } else {
-      await addUpdate(this, channel)
+      await addUpdate(this, subscription)
     }
   }
 
@@ -116,7 +118,7 @@ export default class SubscriptionManager {
       )
     )
     if (channel in subscriptions) {
-      removeSubscriptionFromTree(this, channel, subscriptions[channel])
+      removeSubscriptionFromTree(this, subscriptions[channel])
       delete subscriptions[channel]
     }
   }
