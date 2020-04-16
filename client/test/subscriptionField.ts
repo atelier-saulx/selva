@@ -182,7 +182,7 @@ test.serial('subscribe - simple alias', async t => {
   ])
 })
 
-test.serial('subscribe - simple alias with variable', async t => {
+test.serial.only('subscribe - simple alias with variable', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -213,7 +213,7 @@ test.serial('subscribe - simple alias with variable', async t => {
     value: true
   })
 
-  obs.subscribe(res => {
+  const sub = obs.subscribe(res => {
     results.push(res)
   })
 
@@ -246,6 +246,9 @@ test.serial('subscribe - simple alias with variable', async t => {
       value: 25
     }
   ])
+
+  sub.unsubscribe()
+  await wait(1500)
 })
 
 test.serial('subscribe - alias with nested structure variable', async t => {
