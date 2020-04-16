@@ -175,24 +175,6 @@ test.serial('get - simple alias with variable', async t => {
     }
   })
 
-  console.log(
-    JSON.stringify(
-      (
-        await client.get({
-          $includeMeta: true,
-          $id: 'viB',
-          id: true,
-          somethingWithVariable: {
-            $field: '${type}.thingydingy'
-          },
-          value: true
-        })
-      ).$meta,
-      null,
-      2
-    )
-  )
-
   t.deepEqual(
     await client.get({
       $id: 'viB',

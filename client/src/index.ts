@@ -103,10 +103,7 @@ export class SelvaClient extends EventEmitter {
       const sub = obs.subscribe({
         next: (_x: any) => {
           this.getSchema().then(() => {
-            // if (obs.version !== this.schema.sha) {
-            // obs.version = this.schema.sha
             observe.next(this.schema)
-            // }
           })
         },
         error: observe.error,

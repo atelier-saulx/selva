@@ -88,10 +88,6 @@ function setFromAncestors(
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
-      // if (includeMeta) {
-      //   result.$meta.inherit[id].ids[parent] = true
-      // }
-
       if (
         !tryAncestorCondition ||
         (tryAncestorCondition && tryAncestorCondition(parent))

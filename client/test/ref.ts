@@ -136,22 +136,6 @@ test.serial('string field ref', async t => {
     value: 25
   })
 
-  console.log(
-    JSON.stringify(
-      (
-        await client.get({
-          $includeMeta: true,
-          $id: 'viA',
-          id: true,
-          value: true,
-          strVal: true
-        })
-      ).$meta,
-      null,
-      2
-    )
-  )
-
   t.deepEqual(
     await client.get({
       $id: 'viA',

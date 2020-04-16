@@ -1248,26 +1248,6 @@ test.serial(
       }
     })
 
-    console.log(
-      JSON.stringify(
-        (
-          await client.get({
-            $includeMeta: true,
-            $id: entry,
-            id: true,
-            title: { $inherit: true },
-            ding: {
-              dang: { $inherit: true },
-              dunk: { $inherit: true },
-              dung: { $inherit: true }
-            }
-          })
-        ).$meta,
-        null,
-        2
-      )
-    )
-
     t.deepEqualIgnoreOrder(
       await client.get({
         $id: entry,

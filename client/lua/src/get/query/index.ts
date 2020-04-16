@@ -224,8 +224,6 @@ const parseQuery = (
         }
       }
     } else {
-      // printAst(resultFork)
-
       const sort =
         getOptions.$list &&
         typeof getOptions.$list === 'object' &&
@@ -251,42 +249,30 @@ const parseQuery = (
       }
 
       if (resultFork) {
-        // printAst(resultFork)
-        // logger.info('hello', meta)
-
-        let funObject: any
+        let getMeta: any
         if (globals.$meta) {
-          const ballz: QuerySubscription[] = []
-          const x: GetResult = {}
-
-          parseSubscriptions(
-            ballz,
+          const subMeta = parseSubscriptions(
             meta,
             resultIds,
             getOptions,
-            x,
             language,
             traverse
           )
 
-          const snurf = ballz[0]
-
-          if (snurf.time && snurf.time.nextRefresh) {
+          if (subMeta.time && subMeta.time.nextRefresh) {
             setMeta(undefined, undefined, {
-              ___refreshAt: snurf.time.nextRefresh
+              ___refreshAt: subMeta.time.nextRefresh
             })
           }
 
-          const fields = snurf.fields
-
-          logger.info('flapperdrol', meta.traverse, snurf)
+          const fields = subMeta.fields
 
           if (meta.traverse === 'descendants') {
-            if (snurf.member.length > 1) {
+            if (subMeta.member.length > 1) {
               logger.info('HOW CAN THIS BE MULTIPLE MEMBERS')
             }
 
-            let members = snurf.member[0]
+            let members = subMeta.member[0]
 
             const memberId = redis.sha1hex(cjson.encode(members)).substr(0, 10)
 
@@ -294,23 +280,23 @@ const parseQuery = (
               ___contains: { [memberId]: members }
             })
 
-            const type = snurf.type
+            const type = subMeta.type
 
-            funObject = {}
+            getMeta = {}
 
             if (type) {
-              funObject.___types = {}
+              getMeta.___types = {}
               for (let i = 0; i < type.length; i++) {
-                funObject.___types[type[i]] = { [memberId]: true }
+                getMeta.___types[type[i]] = { [memberId]: true }
               }
             } else {
-              funObject.___any = {
+              getMeta.___any = {
                 [memberId]: true
               }
             }
 
             for (let key in fields) {
-              setMeta(key, funObject)
+              setMeta(key, getMeta)
             }
           } else {
             // can choose to make this in member checks
@@ -332,13 +318,11 @@ const parseQuery = (
             language,
             version,
             '$',
-            meta.traverse === 'descendants' ? funObject : undefined
+            meta.traverse === 'descendants' ? getMeta : undefined
           )
           results[results.length] = r
         }
       } else {
-        // logger.info('META', meta, 'ID', ids)
-        // TODO: add sort fields with traverse id
         if (meta.traverse) {
           setMeta(meta.traverse, { ___ids: ids })
         }
@@ -401,21 +385,6 @@ const queryGet = (
   if (!results.length || results.length === 0) {
     results = emptyArray()
   }
-
-  // if (globals.$meta && meta) {
-  //   // if (!result.$meta.query) {
-  //   //   result.$meta.query = []
-  //   // }
-  //   parseSubscriptions(
-  //     result.$meta.query,
-  //     meta,
-  //     ids,
-  //     getOptions,
-  //     result,
-  //     language,
-  //     traverse
-  //   )
-  // }
 
   if (getOptions.$find) {
     setNestedResult(result, resultField, results.length ? results[0] : {})

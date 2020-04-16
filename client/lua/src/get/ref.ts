@@ -71,17 +71,6 @@ function resolveRef(
   language?: string,
   version?: string
 ): boolean {
-  // if (includeMeta) {
-  //   let current = result.$meta.$refs[ref]
-  //   if (!current) {
-  //     current = [field]
-  //   } else {
-  //     current[current.length] = field
-  //   }
-
-  //   result.$meta.$refs[ref] = current
-  // }
-
   const intermediateResult = {}
   const found = getByType(
     intermediateResult,
