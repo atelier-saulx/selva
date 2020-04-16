@@ -74,7 +74,7 @@ test.only('basic id based subscriptions', async t => {
       })
     } else if (o2counter === 1) {
       // gets delete event
-      t.is(d, null)
+      t.true(d.$isNull)
     } else {
       t.fail
     }
