@@ -46,8 +46,7 @@ import { Subscription } from '../'
 
 const addUpdate = async (
   subscriptionManager: SubscriptionManager,
-  subscription: Subscription,
-  isDelete: boolean = false
+  subscription: Subscription
 ) => {
   if (subscription.inProgress) {
     console.log('Sub in progess')

@@ -6,31 +6,9 @@ import { Subscription } from '../'
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
-  subscription: Subscription,
-  deleteOp: boolean = false
+  subscription: Subscription
 ) => {
   const channel = subscription.channel
-  if (deleteOp) {
-    // only for individual ID
-    const event = JSON.stringify({ type: 'delete' })
-    // double check - delete not so nice yet
-    await subscriptionManager.client.redis.byType.hmset(
-      'sClient',
-      prefixes.cache,
-      channel,
-      event,
-      channel + '_version',
-      ''
-    )
-    await subscriptionManager.client.redis.byType.publish(
-      'sClient',
-      channel,
-      ''
-    )
-
-    subscription.inProgress = false
-    return
-  }
 
   const getOptions = subscription.get
   getOptions.$includeMeta = true
