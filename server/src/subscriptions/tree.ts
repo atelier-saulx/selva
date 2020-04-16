@@ -51,11 +51,11 @@ const addToTree = (
       // not handled in tree
     } else if (key === '___contains') {
       for (let k in tree.___contains) {
-        if (!targetTree.__contains) {
-          targetTree.__contains = {}
+        if (!targetTree.___contains) {
+          targetTree.___contains = {}
         }
         // add count
-        targetTree.__contains[k] = tree.___contains[k]
+        targetTree.___contains[k] = tree.___contains[k]
       }
     } else {
       addTreeNested(
