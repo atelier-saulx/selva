@@ -1,5 +1,6 @@
 {
   "files.exclude": {
+    "*.rdb": "explorerExcludedFiles",
     "logs": "explorerExcludedFiles",
     "*.log": "explorerExcludedFiles",
     "npm-debug.log*": "explorerExcludedFiles",
