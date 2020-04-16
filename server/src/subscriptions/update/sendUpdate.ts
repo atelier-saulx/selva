@@ -6,31 +6,9 @@ import { Subscription } from '../'
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
-  subscription: Subscription,
-  deleteOp: boolean = false
+  subscription: Subscription
 ) => {
   const channel = subscription.channel
-  if (deleteOp) {
-    // only for individual ID
-    const event = JSON.stringify({ type: 'delete' })
-    // double check - delete not so nice yet
-    await subscriptionManager.client.redis.byType.hmset(
-      'sClient',
-      prefixes.cache,
-      channel,
-      event,
-      channel + '_version',
-      ''
-    )
-    await subscriptionManager.client.redis.byType.publish(
-      'sClient',
-      channel,
-      ''
-    )
-
-    subscription.inProgress = false
-    return
-  }
 
   const getOptions = subscription.get
   getOptions.$includeMeta = true
@@ -45,27 +23,32 @@ const sendUpdate = async (
   const currentVersion = subscription.version
   const newVersion = hash(resultStr)
 
-  const newTreeJson = JSON.stringify(newTree)
-  const newTreeVersion = hash(newTreeJson)
   const treeVersion = subscription.treeVersion
 
-  const q = []
+  if (newTree) {
+    const newTreeJson = JSON.stringify(newTree)
+    const newTreeVersion = hash(newTreeJson)
 
-  if (treeVersion !== newTreeVersion) {
-    if (treeVersion) {
-      removeSubscriptionFromTree(subscriptionManager, subscription)
-    }
-    subscription.treeVersion = newTreeVersion
-    subscription.tree = newTree
-    addSubscriptionToTree(subscriptionManager, subscription)
-    q.push(
-      subscriptionManager.client.redis.byType.hset(
-        'sClient',
-        prefixes.cache,
-        channel + '_tree',
-        newTreeJson
+    const q = []
+
+    if (treeVersion !== newTreeVersion) {
+      if (treeVersion) {
+        removeSubscriptionFromTree(subscriptionManager, subscription)
+      }
+      subscription.treeVersion = newTreeVersion
+      subscription.tree = newTree
+      addSubscriptionToTree(subscriptionManager, subscription)
+      q.push(
+        subscriptionManager.client.redis.byType.hset(
+          'sClient',
+          prefixes.cache,
+          channel + '_tree',
+          newTreeJson
+        )
       )
-    )
+    }
+  } else if (treeVersion) {
+    // remove tree ?
   }
 
   if (currentVersion === newVersion) {

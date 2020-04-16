@@ -4,6 +4,7 @@ import traverseTree from './traverseTree'
 import addUpdate from './addUpdate'
 
 const prefixLength = prefixes.events.length
+const deleteLength = 'delete:'.length
 
 const addListeners = (subsManager: SubscriptionManager) => {
   // process.nextTick
@@ -17,8 +18,7 @@ const addListeners = (subsManager: SubscriptionManager) => {
       if (message === 'schema_update') {
         addUpdate(
           subsManager,
-          subsManager.subscriptions['___selva_subscription:schema_update'],
-          true
+          subsManager.subscriptions['___selva_subscription:schema_update']
         )
         return
       } else {
@@ -26,8 +26,11 @@ const addListeners = (subsManager: SubscriptionManager) => {
         // make this batch as well (the check)
         if (message === 'update') {
           traverseTree(subsManager, eventName)
-        } else if (message === 'delete') {
-          traverseTree(subsManager, eventName, true)
+        } else if (message.startsWith('delete')) {
+          const fields = message.slice(deleteLength).split(',')
+          fields.forEach(v => {
+            traverseTree(subsManager, eventName + '.' + v)
+          })
         }
       }
     }

@@ -18,7 +18,7 @@ test.after(async () => {
   await srv.destroy()
 })
 
-test.serial('basic id based subscriptions', async t => {
+test.only('basic id based subscriptions', async t => {
   const client = connect({ port })
 
   await client.updateSchema({
@@ -74,7 +74,7 @@ test.serial('basic id based subscriptions', async t => {
       })
     } else if (o2counter === 1) {
       // gets delete event
-      t.is(d, null)
+      t.true(d.$isNull)
     } else {
       t.fail
     }

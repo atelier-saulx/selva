@@ -4,17 +4,13 @@ import contains from './contains'
 
 const traverse = (
   subscriptionManager: SubscriptionManager,
-  channel: string,
-  isDelete: boolean = false
+  channel: string
 ) => {
   // make it batch
   const path = channel.split('.')
   const id = path[0]
-
   let segment = subscriptionManager.tree
-
   let prefix: string | undefined
-
   for (let i = 1; i < path.length; i++) {
     segment = segment[path[i]]
     if (segment) {
