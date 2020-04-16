@@ -123,7 +123,7 @@ export function addSubscriptionToTree(
   if (channel === prefixes.schemaSubscription) {
     console.log('add schema')
   } else {
-    console.log('OK ADD IT', subscription)
+    // console.log('OK ADD IT', subscription)
     let { tree } = subscription
 
     if (tree.___refreshAt) {
@@ -140,7 +140,7 @@ export function removeSubscriptionFromTree(
   subscription: Subscription
 ) {
   const channel = subscription.channel
-  console.log('REMOVE DAT', channel)
+  // console.log('REMOVE DAT', channel)
   if (channel === prefixes.schemaSubscription) {
     console.log('remove schema')
   } else {
