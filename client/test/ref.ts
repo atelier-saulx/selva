@@ -123,7 +123,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.only('string field ref', async t => {
+test.serial('string field ref', async t => {
   const client = connect({ port })
 
   await client.set({

@@ -287,7 +287,7 @@ test.serial('basic $inherit when ancestors change', async t => {
   await client.delete('root')
 })
 
-test.serial.only(
+test.serial(
   'subscription client side reconnection test -- no event if no changes',
   async t => {
     const port = await getPort()
