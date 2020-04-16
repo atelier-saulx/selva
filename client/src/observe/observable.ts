@@ -122,6 +122,8 @@ class Subscription<T> {
 export default class Observable<T> {
   private observe: SubscriberFn<T>
 
+  public version?: string
+
   constructor(observe: SubscriberFn<T>) {
     this.observe = observe
   }

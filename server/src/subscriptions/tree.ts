@@ -141,6 +141,9 @@ export function addSubscriptionToTree(
         console.log('ADD REFRESH LISTENER', tree.___refreshAt)
         clearTimeout(subscription.refreshTimeout)
 
+        if (tree.___refreshAt - Date.now()) {
+        }
+
         // 2147483647
 
         //         clearTimeout(subscription.refreshTimeout)

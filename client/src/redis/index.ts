@@ -129,7 +129,7 @@ export default class RedisClient extends RedisMethods {
             observer.version = event.version
             observer.next(event.payload)
           }
-        } else if (event.type === 'delete') {
+        } else if (event.type) {
           observer.next(null)
         }
       }

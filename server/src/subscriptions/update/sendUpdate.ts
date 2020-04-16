@@ -6,12 +6,32 @@ import { Subscription } from '../'
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
-  subscription: Subscription
+  subscription: Subscription,
+  custom?: { type: string; payload?: any }
 ) => {
   const channel = subscription.channel
 
   const getOptions = subscription.get
   getOptions.$includeMeta = true
+
+  if (custom) {
+    const event = JSON.stringify(custom)
+    await subscriptionManager.client.redis.byType.hmset(
+      'sClient',
+      prefixes.cache,
+      channel,
+      event,
+      channel + '_version',
+      ''
+    )
+    await subscriptionManager.client.redis.byType.publish(
+      'sClient',
+      channel,
+      ''
+    )
+    return
+  }
+
   const payload = await subscriptionManager.client.get(getOptions)
 
   // call $meta tree

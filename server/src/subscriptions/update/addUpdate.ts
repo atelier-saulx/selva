@@ -46,7 +46,8 @@ import { Subscription } from '../'
 
 const addUpdate = async (
   subscriptionManager: SubscriptionManager,
-  subscription: Subscription
+  subscription: Subscription,
+  custom?: { type: string; payload?: any }
 ) => {
   if (subscription.inProgress) {
     console.log('Sub in progess')
@@ -54,7 +55,7 @@ const addUpdate = async (
     // handle batch mechanism
     subscription.inProgress = true
 
-    await sendUpdate(subscriptionManager, subscription)
+    await sendUpdate(subscriptionManager, subscription, custom)
     subscription.inProgress = false
   }
 }
