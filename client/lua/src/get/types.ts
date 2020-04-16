@@ -9,5 +9,6 @@ export type GetFieldFn = (
   field?: string,
   language?: string,
   version?: string,
-  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
+  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter', // when from inherit
+  metaKeys?: any
 ) => boolean

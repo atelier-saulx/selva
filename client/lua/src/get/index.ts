@@ -58,7 +58,8 @@ function getField(
   field?: string,
   language?: string,
   version?: string,
-  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
+  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter', // when from inherit
+  metaKeys?: any
 ): boolean {
   let hasAlias = false
 
@@ -229,7 +230,18 @@ function getField(
           hasKeys = true
           const f = field && field.length > 0 ? field + '.' + key : key
           if (props[key] === true) {
-            if (!getByType(result, schema, id, f, language, version)) {
+            if (
+              !getByType(
+                result,
+                schema,
+                id,
+                f,
+                language,
+                version,
+                false,
+                metaKeys
+              )
+            ) {
               isComplete = false
             }
           } else if (props[key] === false) {
@@ -292,7 +304,9 @@ function getField(
           id,
           <string>field,
           language,
-          version
+          version,
+          false,
+          metaKeys
         )
 
         if (!complete) {
@@ -335,7 +349,9 @@ function getField(
         id,
         <string>field,
         language,
-        version
+        version,
+        false,
+        metaKeys
       )
       if (!complete) {
         setNestedResult(result, <string>field, props.$default)

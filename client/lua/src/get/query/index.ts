@@ -306,8 +306,6 @@ const parseQuery = (
           }
         }
 
-        //
-
         for (let i = 0; i < resultIds.length; i++) {
           getField(
             getOptions,
@@ -317,7 +315,8 @@ const parseQuery = (
             '',
             language,
             version,
-            '$'
+            '$',
+            funObject
           )
           results[results.length] = result
         }
