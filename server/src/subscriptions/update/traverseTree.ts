@@ -1,4 +1,5 @@
 import SubscriptionManager from '../subsManager'
+import addUpdate from './addUpdate'
 
 const traverse = async (
   subscriptionManager: SubscriptionManager,

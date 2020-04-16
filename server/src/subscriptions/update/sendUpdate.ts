@@ -39,6 +39,8 @@ const sendUpdate = async (
   // call $meta tree
   const newTree = payload.$meta
 
+  console.log(payload)
+
   delete payload.$meta
 
   const resultStr = JSON.stringify({ type: 'update', payload })
