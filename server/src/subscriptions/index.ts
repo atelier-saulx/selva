@@ -11,6 +11,11 @@ export type Tree = Record<string, any>
 
 export type SubTree = Record<string, any>
 
+export type RefreshSubscriptions = {
+  nextRefresh: number
+  subscriptions: Subscription[]
+}
+
 export type Subscription = {
   clients: Set<string>
   get: GetOptions
@@ -19,7 +24,7 @@ export type Subscription = {
   treeVersion?: string
   inProgress?: boolean
   channel: string
-  refreshTimeout?: NodeJS.Timeout
+  refreshAt?: number
 }
 
 export default class SubWorker {

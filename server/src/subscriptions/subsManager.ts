@@ -4,11 +4,10 @@ import addListeners from './addListeners'
 import addListenersUpdate from './update/addListeners'
 import addUpdate from './update/addUpdate'
 import { hash } from './util'
-
 // for add listeners...
 import { Worker } from 'worker_threads'
 
-import { Subscription, Tree } from '.'
+import { Subscription, Tree, RefreshSubscriptions } from './'
 
 export default class SubscriptionManager {
   public client: SelvaClient
@@ -17,8 +16,12 @@ export default class SubscriptionManager {
   // public isDestroyed: boolean = false
   // to check if the server is still ok
   public serverHeartbeatTimeout: NodeJS.Timeout
+
+  public refreshNowQueriesTimeout: NodeJS.Timeout
   // revalidates subs ones in a while
   public revalidateSubscriptionsTimeout: NodeJS.Timeout
+
+  public refreshSubscriptions: RefreshSubscriptions
 
   public clients: Record<
     string,
@@ -223,6 +226,7 @@ export default class SubscriptionManager {
     this.tree = {}
     clearTimeout(this.revalidateSubscriptionsTimeout)
     clearTimeout(this.serverHeartbeatTimeout)
+    clearTimeout(this.refreshNowQueriesTimeout)
   }
 
   async connect(opts: ConnectOptions): Promise<void> {

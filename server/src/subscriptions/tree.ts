@@ -1,7 +1,7 @@
 import SubscriptionManager from './subsManager'
 import { Subscription, SubTree, Tree } from './'
 import { prefixes } from '@saulx/selva'
-
+import * as now from './now'
 // const example = {
 //   ___refreshAt: Date.now() + 3000,
 //   ___contains: {
@@ -122,8 +122,6 @@ const removeFromTree = (
   }
 }
 
-// updateTree has to happen
-
 export function addSubscriptionToTree(
   subsmanager: SubscriptionManager,
   subscription: Subscription
@@ -139,16 +137,8 @@ export function addSubscriptionToTree(
     } else {
       if (tree.___refreshAt) {
         console.log('ADD REFRESH LISTENER', tree.___refreshAt)
-        clearTimeout(subscription.refreshTimeout)
-
-        if (tree.___refreshAt - Date.now()) {
-        }
-
-        // 2147483647
-
-        //         clearTimeout(subscription.refreshTimeout)
-
-        // smaller then 32 bits be carefull now
+        subscription.refreshAt = tree.___refreshAt
+        now.addSubscription(subsmanager, subscription)
       }
       addToTree(subscription, subsmanager.tree, tree)
     }
@@ -160,23 +150,19 @@ export function removeSubscriptionFromTree(
   subscription: Subscription
 ) {
   const channel = subscription.channel
-  // console.log('REMOVE DAT', channel)
   if (channel === prefixes.schemaSubscription) {
     console.log('remove schema')
   } else {
-    // console.log('OK remove IT', subscription)
-
     let { tree } = subscription
-
     if (!tree) {
       console.error('No tree on subscription', subscription)
     } else {
       if (tree.___refreshAt) {
         console.log('REMOVE REFRESH LISTENER')
-        clearTimeout(subscription.refreshTimeout)
+        delete subscription.refreshAt
+        now.removeSubscription(subsmanager, subscription)
       }
       removeFromTree(subscription, subsmanager.tree, tree)
     }
-    // console.dir(subsmanager.tree, { depth: 10 })
   }
 }
