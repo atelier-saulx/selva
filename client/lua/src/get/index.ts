@@ -297,6 +297,10 @@ function getField(
       (!isComplete || !hasKeys)
     ) {
       if (!hasAlias && !hasKeys) {
+        if (props.$inherit && includeMeta === true) {
+          addInheritMeta(props, <string>field, result, id)
+        }
+
         const complete = getByType(
           result,
           schema,
@@ -306,10 +310,6 @@ function getField(
           version,
           includeMeta
         )
-
-        if (props.$inherit && includeMeta === true) {
-          addInheritMeta(props, <string>field, result, id)
-        }
 
         if (!complete) {
           inherit(

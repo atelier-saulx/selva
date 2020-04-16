@@ -220,6 +220,10 @@ const json = (
 ): boolean => {
   let value = redis.hget(id, field)
 
+  if (!value) {
+    return false
+  }
+
   let isString = true
   if (type(value) === 'string') {
     if (
