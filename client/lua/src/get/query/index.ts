@@ -124,7 +124,7 @@ const parseQuery = (
           string.sub(q, 2, q.length - 1),
           resultFork
         )
-        printAst(resultFork, args)
+        // printAst(resultFork, args)
         const queryResult: string[] = redis.call(
           'ft.search',
           'default',
@@ -252,8 +252,8 @@ const parseQuery = (
       }
 
       if (resultFork) {
-        printAst(resultFork)
-        logger.info('hello', meta)
+        // printAst(resultFork)
+        // logger.info('hello', meta)
 
         let funObject: any
         if (globals.$meta) {
@@ -274,14 +274,13 @@ const parseQuery = (
           const fields = snurf.fields
 
           if (snurf.member.length > 1) {
-            logger.info('HOW CAN TIHS BE MULTIPLE MEMBER')
+            logger.info('HOW CAN THIS BE MULTIPLE MEMBERS')
           }
 
           let members = snurf.member[0]
 
           const memberId = redis.sha1hex(cjson.encode(members)).substr(0, 10)
 
-          logger.info('here - contains')
           setMeta(undefined, undefined, {
             ___contains: { [memberId]: members }
           })

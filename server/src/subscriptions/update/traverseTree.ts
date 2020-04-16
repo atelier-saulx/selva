@@ -1,7 +1,8 @@
 import SubscriptionManager from '../subsManager'
 import addUpdate from './addUpdate'
+import contains from './contains'
 
-const traverse = async (
+const traverse = (
   subscriptionManager: SubscriptionManager,
   channel: string,
   isDelete: boolean = false
@@ -11,6 +12,9 @@ const traverse = async (
   const id = path[0]
 
   let segment = subscriptionManager.tree
+
+  let prefix: string | undefined
+
   for (let i = 1; i < path.length; i++) {
     segment = segment[path[i]]
     if (segment) {
@@ -25,7 +29,16 @@ const traverse = async (
         }
       }
 
-      if (segment.__type) {
+      if (segment.___types) {
+        if (!prefix) {
+          prefix = id.slice(0, 2)
+        }
+        const match = segment.___types[prefix]
+        if (match) {
+          for (let containsId in match) {
+            contains(subscriptionManager, containsId, id, match[containsId])
+          }
+        }
       }
 
       if (segment.__any) {

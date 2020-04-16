@@ -111,3 +111,9 @@
 //     }
 //     return false
 //   }
+
+const contains = (subManager, contains, id, branch) => {
+  // branch is a set of subscriptions
+}
+
+export default contains

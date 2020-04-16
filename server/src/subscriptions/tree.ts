@@ -48,7 +48,15 @@ const addToTree = (
 ) => {
   for (const key in tree) {
     if (key === '___refreshAt') {
+      // not handled in tree
     } else if (key === '___contains') {
+      for (let k in tree.___contains) {
+        if (!targetTree.__contains) {
+          targetTree.__contains = {}
+        }
+        // add count
+        targetTree.__contains[k] = tree.___contains[k]
+      }
     } else {
       addTreeNested(
         subscription,
@@ -101,6 +109,7 @@ const removeFromTree = (
   for (const key in tree) {
     if (key === '___refreshAt') {
     } else if (key === '___contains') {
+      // merge on top
     } else {
       if (targetTree[key]) {
         if (!removeTreeNested(subscription, targetTree[key], tree[key])) {
@@ -131,8 +140,6 @@ export function addSubscriptionToTree(
       if (tree.___refreshAt) {
         console.log('ADD REFRESH LISTENER')
       }
-      console.log('THIS ONE', tree)
-
       addToTree(subscription, subsmanager.tree, tree)
     }
   }
@@ -147,7 +154,7 @@ export function removeSubscriptionFromTree(
   if (channel === prefixes.schemaSubscription) {
     console.log('remove schema')
   } else {
-    console.log('OK remove IT', subscription)
+    // console.log('OK remove IT', subscription)
 
     let { tree } = subscription
 
