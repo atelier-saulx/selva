@@ -151,7 +151,7 @@ function parseSubscriptions(
     querySubs[querySubs.length] = sub
   }
 
-  parseGet(getOptions, sub.fields, [])
+  // parseGet(getOptions, sub.fields, [])
 
   if (meta.ast) {
     const newAst: Fork = { isFork: meta.ast.isFork }

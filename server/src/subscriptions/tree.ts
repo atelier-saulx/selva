@@ -123,15 +123,18 @@ export function addSubscriptionToTree(
   if (channel === prefixes.schemaSubscription) {
     console.log('add schema')
   } else {
-    // console.log('OK ADD IT', subscription)
     let { tree } = subscription
 
-    if (tree.___refreshAt) {
-      console.log('ADD REFRESH LISTENER')
-    }
+    if (!tree) {
+      console.error('No tree on subscription', subscription)
+    } else {
+      if (tree.___refreshAt) {
+        console.log('ADD REFRESH LISTENER')
+      }
+      console.log('THIS ONE', tree)
 
-    addToTree(subscription, subsmanager.tree, tree)
-    // console.dir(subsmanager.tree, { depth: 10 })
+      addToTree(subscription, subsmanager.tree, tree)
+    }
   }
 }
 
@@ -144,13 +147,18 @@ export function removeSubscriptionFromTree(
   if (channel === prefixes.schemaSubscription) {
     console.log('remove schema')
   } else {
+    console.log('OK remove IT', subscription)
+
     let { tree } = subscription
 
-    if (tree.___refreshAt) {
-      console.log('REMOVE REFRESH LISTENER')
+    if (!tree) {
+      console.error('No tree on subscription', subscription)
+    } else {
+      if (tree.___refreshAt) {
+        console.log('REMOVE REFRESH LISTENER')
+      }
+      removeFromTree(subscription, subsmanager.tree, tree)
     }
-
-    removeFromTree(subscription, subsmanager.tree, tree)
     // console.dir(subsmanager.tree, { depth: 10 })
   }
 }

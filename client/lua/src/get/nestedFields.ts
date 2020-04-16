@@ -47,12 +47,12 @@ export function setMeta(
   fields?: string | string[],
   fieldOpts?: {
     ___ids?: string | string[]
-    ___types?: Record<string, string | string[]> // type => queryid
+    ___types?: Record<string, Record<string, true>> // type => queryid
     ___any?: string | string[] // query id
   },
   globalOpts?: {
     ___refreshAt?: number
-    ___contains?: Record<string, { $field: string; $value: string }>
+    ___contains?: Record<string, { $field: string; $value: string[] }>
   }
 ): void {
   if (!globals.$meta) {
@@ -79,8 +79,13 @@ export function setMeta(
         }
 
         for (const type in fieldOpts.___types) {
-          for (const queryId of ensureArray(fieldOpts.___types[type])) {
-            current.___types[type] = { [queryId]: true }
+          if (!current.___types[type]) {
+            current.___types[type] = {}
+          }
+
+          for (const contains in fieldOpts.___types[type]) {
+            current.___types[type][contains] =
+              fieldOpts.___types[type][contains]
           }
         }
       }
@@ -97,21 +102,27 @@ export function setMeta(
 
       setNestedResult(globals.$meta, field, current)
     }
+  }
 
-    if (globalOpts) {
-      if (globalOpts.___refreshAt) {
+  if (globalOpts) {
+    if (globalOpts.___refreshAt) {
+      if (globals.$meta.___refreshAt) {
+        if (globalOpts.___refreshAt < globals.$meta.___refreshAt) {
+          globals.$meta.___refreshAt = globalOpts.___refreshAt
+        }
+      } else {
         globals.$meta.___refreshAt = globalOpts.___refreshAt
       }
+    }
 
-      if (globalOpts.___contains) {
-        const contains = globals.$meta.___contains || {}
+    if (globalOpts.___contains) {
+      const contains = globals.$meta.___contains || {}
 
-        for (const queryId in globalOpts.___contains) {
-          contains[queryId] = globalOpts.___contains[queryId]
-        }
-
-        globals.$meta.___contains = contains
+      for (const queryId in globalOpts.___contains) {
+        contains[queryId] = globalOpts.___contains[queryId]
       }
+
+      globals.$meta.___contains = contains
     }
   }
 }

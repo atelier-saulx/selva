@@ -3,15 +3,15 @@ import { GetOptions, GetResult, Sort } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
-import { Fork, Meta } from './types'
+import { Fork, Meta, QuerySubscription } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
-import { emptyArray, ensureArray, isArray } from '../../util'
+import { emptyArray, ensureArray, isArray, splitString } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
 import parseSubscriptions from './parseSubscriptions'
-import { setNestedResult } from '../nestedFields'
+import { setNestedResult, setMeta } from '../nestedFields'
 
 import globals from '../../globals'
 
@@ -224,51 +224,119 @@ const parseQuery = (
         }
       }
     } else {
-      for (let i = 0; i < resultIds.length; i++) {
-        const result: GetResult =
-          globals.$meta && getResult && getResult.$meta
-            ? { $meta: getResult.$meta }
-            : {}
-        getField(
-          getOptions,
-          schema,
-          result,
-          resultIds[i],
-          '',
-          language,
-          version,
-          '$'
-        )
-        if (result.$meta) {
-          delete result.$meta
+      // printAst(resultFork)
+      const result: GetResult = {}
+
+      const sort =
+        getOptions.$list &&
+        typeof getOptions.$list === 'object' &&
+        getOptions.$list.$sort
+
+      meta.ast = resultFork
+      if (sort) {
+        meta.sort = sort
+      }
+      meta.ids = resultIds
+
+      if (
+        getOptions.$list &&
+        typeof getOptions.$list === 'object' &&
+        getOptions.$list.$find &&
+        getOptions.$list.$find.$traverse
+      ) {
+        meta.traverse = getOptions.$list.$find.$traverse
+      } else if (getOptions.$find && getOptions.$find.$traverse) {
+        meta.traverse = getOptions.$find.$traverse
+      } else if (traverse) {
+        meta.traverse = traverse
+      }
+
+      if (resultFork) {
+        printAst(resultFork)
+        logger.info('hello', meta)
+
+        let funObject: any
+        if (globals.$meta) {
+          const ballz: QuerySubscription[] = []
+
+          parseSubscriptions(
+            ballz,
+            meta,
+            resultIds,
+            getOptions,
+            result,
+            language,
+            traverse
+          )
+
+          const snurf = ballz[0]
+
+          const fields = snurf.fields
+
+          if (snurf.member.length > 1) {
+            logger.info('HOW CAN TIHS BE MULTIPLE MEMBER')
+          }
+
+          let members = snurf.member[0]
+
+          const memberId = redis.sha1hex(cjson.encode(members)).substr(0, 10)
+
+          logger.info('here - contains')
+          setMeta(undefined, undefined, {
+            ___contains: { [memberId]: members }
+          })
+
+          const type = snurf.type
+
+          funObject = {}
+
+          if (type) {
+            funObject.___types = {}
+            for (let i = 0; i < type.length; i++) {
+              funObject.___types[type[i]] = { [memberId]: true }
+            }
+          } else {
+            funObject.___any = {
+              [memberId]: true
+            }
+          }
+
+          for (let key in fields) {
+            setMeta(key, funObject)
+          }
         }
-        results[results.length] = result
+
+        //
+
+        for (let i = 0; i < resultIds.length; i++) {
+          getField(
+            getOptions,
+            schema,
+            result,
+            resultIds[i],
+            '',
+            language,
+            version,
+            '$'
+          )
+          results[results.length] = result
+        }
+      } else {
+        for (let i = 0; i < resultIds.length; i++) {
+          getField(
+            getOptions,
+            schema,
+            result,
+            resultIds[i],
+            '',
+            language,
+            version,
+            '$'
+          )
+          results[results.length] = result
+        }
       }
     }
-  }
-
-  const sort =
-    getOptions.$list &&
-    typeof getOptions.$list === 'object' &&
-    getOptions.$list.$sort
-
-  meta.ast = resultFork
-  if (sort) {
-    meta.sort = sort
-  }
-  meta.ids = resultIds
-
-  if (
-    getOptions.$list &&
-    typeof getOptions.$list === 'object' &&
-    getOptions.$list.$find &&
-    getOptions.$list.$find.$traverse
-  ) {
-    meta.traverse = getOptions.$list.$find.$traverse
-  } else if (getOptions.$find && getOptions.$find.$traverse) {
-    meta.traverse = getOptions.$find.$traverse
-  } else if (traverse) {
-    meta.traverse = traverse
   }
 
   return [{ results, meta }, null]
@@ -305,20 +373,21 @@ const queryGet = (
   if (!results.length || results.length === 0) {
     results = emptyArray()
   }
-  if (globals.$meta && meta) {
-    // if (!result.$meta.query) {
-    //   result.$meta.query = []
-    // }
-    parseSubscriptions(
-      result.$meta.query,
-      meta,
-      ids,
-      getOptions,
-      result,
-      language,
-      traverse
-    )
-  }
+
+  // if (globals.$meta && meta) {
+  //   // if (!result.$meta.query) {
+  //   //   result.$meta.query = []
+  //   // }
+  //   parseSubscriptions(
+  //     result.$meta.query,
+  //     meta,
+  //     ids,
+  //     getOptions,
+  //     result,
+  //     language,
+  //     traverse
+  //   )
+  // }
 
   if (getOptions.$find) {
     setNestedResult(result, resultField, results.length ? results[0] : {})
