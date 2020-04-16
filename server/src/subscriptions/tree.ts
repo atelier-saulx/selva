@@ -139,6 +139,12 @@ export function addSubscriptionToTree(
     } else {
       if (tree.___refreshAt) {
         console.log('ADD REFRESH LISTENER', tree.___refreshAt)
+        clearTimeout(subscription.refreshTimeout)
+
+        // 2147483647
+
+        //         clearTimeout(subscription.refreshTimeout)
+
         // smaller then 32 bits be carefull now
       }
       addToTree(subscription, subsmanager.tree, tree)

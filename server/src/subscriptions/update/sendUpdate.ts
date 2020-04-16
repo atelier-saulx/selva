@@ -24,12 +24,11 @@ const sendUpdate = async (
   const newVersion = hash(resultStr)
 
   const treeVersion = subscription.treeVersion
+  const q = []
 
   if (newTree) {
     const newTreeJson = JSON.stringify(newTree)
     const newTreeVersion = hash(newTreeJson)
-
-    const q = []
 
     if (treeVersion !== newTreeVersion) {
       if (treeVersion) {
