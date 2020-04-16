@@ -7,28 +7,18 @@ import path from 'path'
 
 import { startInternal, SelvaServer } from '..'
 
-export type QuerySubscription = {
-  idFields?: Record<string, true>
-  queryId: string
-  ids?: Record<string, true>
-  member: { $field: string; $value: string[] }[] // array is an OR
-  type?: string[]
-  fields: {
-    [key: string]: true
-  }
-  time?: { nextRefresh: number }
-}
+export type Tree = Record<string, any>
+
+export type SubTree = Record<string, any>
 
 export type Subscription = {
   clients: Set<string>
   get: GetOptions
   version?: string
-  fields: Set<string>
+  tree?: SubTree
+  treeVersion?: string
+  inProgress?: boolean
 }
-
-export type RefsById = Record<string, Record<string, string>>
-
-export type Fields = Record<string, Set<string>>
 
 export default class SubWorker {
   public worker: Worker

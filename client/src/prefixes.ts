@@ -7,5 +7,6 @@ export default {
   remove: '___selva_subscription:remove',
   new: '___selva_subscription:new',
   subscriptions: '___selva_subscriptions',
-  events: '___selva_events:'
+  events: '___selva_events:',
+  schemaSubscription: '___selva_subscription:schema_update'
 }
