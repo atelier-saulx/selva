@@ -138,7 +138,8 @@ export function addSubscriptionToTree(
       console.error('No tree on subscription', subscription)
     } else {
       if (tree.___refreshAt) {
-        console.log('ADD REFRESH LISTENER')
+        console.log('ADD REFRESH LISTENER', tree.___refreshAt)
+        // smaller then 32 bits be carefull now
       }
       addToTree(subscription, subsmanager.tree, tree)
     }

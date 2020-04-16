@@ -70,7 +70,6 @@ test.serial('get - simple $list', async t => {
   ])
 
   const c = await client.get({
-    $includeMeta: true,
     $id: 'cuA',
     children: {
       name: true,
@@ -81,8 +80,6 @@ test.serial('get - simple $list', async t => {
       }
     }
   })
-
-  console.log('METAAAAAAAAHHHHHH', c.$meta)
 
   t.deepEqual(
     c,

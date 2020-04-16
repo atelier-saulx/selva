@@ -19,6 +19,7 @@ export type Subscription = {
   treeVersion?: string
   inProgress?: boolean
   channel: string
+  refreshTimeout?: NodeJS.Timeout
 }
 
 export default class SubWorker {
