@@ -181,7 +181,7 @@ export class RedisWrapper {
     this.sSub.subscribe(prefixes.serverHeartbeat)
 
     this.sub.on('message', (channel, msg) => {
-      if (channel.indexOf(prefixes.log) === 0) {
+      if (channel.startsWith(prefixes.log)) {
         const [_, id] = channel.split(':')
         this.emit('log', JSON.parse(msg), id)
       }

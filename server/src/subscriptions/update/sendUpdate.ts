@@ -23,27 +23,32 @@ const sendUpdate = async (
   const currentVersion = subscription.version
   const newVersion = hash(resultStr)
 
-  const newTreeJson = JSON.stringify(newTree)
-  const newTreeVersion = hash(newTreeJson)
   const treeVersion = subscription.treeVersion
 
-  const q = []
+  if (newTree) {
+    const newTreeJson = JSON.stringify(newTree)
+    const newTreeVersion = hash(newTreeJson)
 
-  if (treeVersion !== newTreeVersion) {
-    if (treeVersion) {
-      removeSubscriptionFromTree(subscriptionManager, subscription)
-    }
-    subscription.treeVersion = newTreeVersion
-    subscription.tree = newTree
-    addSubscriptionToTree(subscriptionManager, subscription)
-    q.push(
-      subscriptionManager.client.redis.byType.hset(
-        'sClient',
-        prefixes.cache,
-        channel + '_tree',
-        newTreeJson
+    const q = []
+
+    if (treeVersion !== newTreeVersion) {
+      if (treeVersion) {
+        removeSubscriptionFromTree(subscriptionManager, subscription)
+      }
+      subscription.treeVersion = newTreeVersion
+      subscription.tree = newTree
+      addSubscriptionToTree(subscriptionManager, subscription)
+      q.push(
+        subscriptionManager.client.redis.byType.hset(
+          'sClient',
+          prefixes.cache,
+          channel + '_tree',
+          newTreeJson
+        )
       )
-    )
+    }
+  } else if (treeVersion) {
+    // remove tree ?
   }
 
   if (currentVersion === newVersion) {
