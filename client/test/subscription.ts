@@ -144,7 +144,7 @@ test.serial('using $field works', async t => {
   const sub = observable.subscribe(d => {
     if (o1counter === 0) {
       // gets start event
-      t.deepEqualIgnoreOrder(d, { id: 'root' })
+      t.deepEqualIgnoreOrder(d, { id: 'root', $isNull: true })
     } else if (o1counter === 1) {
       // gets update event
       t.deepEqualIgnoreOrder(d, { id: 'root', aliasedField: 'so nice' })
@@ -319,7 +319,7 @@ test.serial(
       console.log(d)
       if (o1counter === 0) {
         // gets start event
-        t.deepEqualIgnoreOrder(d, { yesh: '' })
+        t.deepEqualIgnoreOrder(d, { yesh: '', $isNull: true })
       } else if (o1counter === 1) {
         // reconnect event
         t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })
@@ -394,7 +394,7 @@ test.serial(
       console.log(d)
       if (o1counter === 0) {
         // gets start event
-        t.deepEqualIgnoreOrder(d, { yesh: '' })
+        t.deepEqualIgnoreOrder(d, { yesh: '', $isNull: true })
       } else if (o1counter === 1) {
         // gets update event
         t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })

@@ -415,6 +415,7 @@ function get(opts: GetOptions): GetResult {
 
   if (includeMeta) {
     global.$meta = {}
+    result.$meta = global.$meta
   }
 
   getField(opts, schema, result, id, undefined, language, version)
@@ -428,8 +429,8 @@ function get(opts: GetOptions): GetResult {
     result.rawAncestors = arr
   }
 
-  if (includeMeta) {
-    result.$meta = global.$meta
+  if (!r.exists(id)) {
+    result.$isNull = true
   }
 
   return <any>result

@@ -99,7 +99,7 @@ test('Connect and re-connect', async t => {
       $id: 'cuflap',
       title: true
     }),
-    {}
+    { $isNull: true }
   )
 
   server2.destroy()
