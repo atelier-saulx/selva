@@ -320,6 +320,18 @@ const parseQuery = (
           results[results.length] = result
         }
       } else {
+        logger.info('META', meta, 'ID', ids)
+        // TODO: add sort fields with traverse id
+        if (meta.traverse) {
+          setMeta(meta.traverse, { ___ids: ids })
+        }
+
+        if (meta.sort) {
+          for (const sort of ensureArray(meta.sort)) {
+            setMeta(sort.$field, { ___ids: ids })
+          }
+        }
+
         for (let i = 0; i < resultIds.length; i++) {
           getField(
             getOptions,

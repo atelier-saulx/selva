@@ -20,7 +20,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('get - simple $list', async t => {
+test.serial.only('get - simple $list', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -70,6 +70,7 @@ test.serial('get - simple $list', async t => {
   ])
 
   const c = await client.get({
+    $includeMeta: true,
     $id: 'cuA',
     children: {
       name: true,
@@ -80,6 +81,8 @@ test.serial('get - simple $list', async t => {
       }
     }
   })
+
+  console.log('METAAAAAAAAHHHHHH', c.$meta)
 
   t.deepEqual(
     c,
