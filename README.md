@@ -10,14 +10,22 @@ Documents or graph vertices can have any number or combination of parents and ch
 
 Here are some of its features:
 
-Real-time engine and subscription model
-Schemas enforce data types with built-in validation
-Persistence layer using GIT-LFS allowing backups every 5 minutes and access to all versions of the data available at all times
-JSON-based DSL for queries
-Optional indexes optimised for the graph data structure
-I18n and search included
-Client API uses web sockets to subscribe to data and transparently keep content updated in real-time
-Versioning system for the data allows branches of data to be merged and revised into the master data, allowing content creators to try changes before data is published to a live system
+- Real-time engine and subscription model
+
+- Schemas enforce data types with built-in validation
+
+- Persistence layer using GIT-LFS allowing backups every 5 minutes and access to all versions of the data available at all times
+
+- JSON-based DSL for queries
+
+- Optional indexes optimised for the graph data structure
+
+- I18n and search included
+
+- Client API uses web sockets to subscribe to data and transparently keep content updated in real-time
+
+- Versioning system for the data allows branches of data to be merged and revised into the master data, allowing content creators to try changes before data is published to a live system
+
 
 ## Documentation
 
