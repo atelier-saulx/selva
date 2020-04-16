@@ -106,7 +106,7 @@ const parseQuery = (
       }
 
       const args = createSearchArgs(getOptions, query, resultFork)
-      printAst(resultFork, args)
+      // printAst(resultFork, args)
       const queryResult: string[] = redis.call('ft.search', 'default', ...args)
       if (queryResult) {
         if (queries.length === 1) {
@@ -225,7 +225,6 @@ const parseQuery = (
       }
     } else {
       // printAst(resultFork)
-      const result: GetResult = {}
 
       const sort =
         getOptions.$list &&
@@ -258,13 +257,14 @@ const parseQuery = (
         let funObject: any
         if (globals.$meta) {
           const ballz: QuerySubscription[] = []
+          const x: GetResult = {}
 
           parseSubscriptions(
             ballz,
             meta,
             resultIds,
             getOptions,
-            result,
+            x,
             language,
             traverse
           )
@@ -273,54 +273,70 @@ const parseQuery = (
 
           const fields = snurf.fields
 
-          if (snurf.member.length > 1) {
-            logger.info('HOW CAN THIS BE MULTIPLE MEMBERS')
-          }
+          logger.info('flapperdrol', meta.traverse, snurf)
 
-          let members = snurf.member[0]
+          if (meta.traverse === 'descendants') {
+            if (snurf.member.length > 1) {
+              logger.info('HOW CAN THIS BE MULTIPLE MEMBERS')
+            }
 
-          const memberId = redis.sha1hex(cjson.encode(members)).substr(0, 10)
+            let members = snurf.member[0]
 
-          setMeta(undefined, undefined, {
-            ___contains: { [memberId]: members }
-          })
+            const memberId = redis.sha1hex(cjson.encode(members)).substr(0, 10)
 
-          const type = snurf.type
+            setMeta(undefined, undefined, {
+              ___contains: { [memberId]: members }
+            })
 
-          funObject = {}
+            const type = snurf.type
 
-          if (type) {
-            funObject.___types = {}
-            for (let i = 0; i < type.length; i++) {
-              funObject.___types[type[i]] = { [memberId]: true }
+            funObject = {}
+
+            if (type) {
+              funObject.___types = {}
+              for (let i = 0; i < type.length; i++) {
+                funObject.___types[type[i]] = { [memberId]: true }
+              }
+            } else {
+              funObject.___any = {
+                [memberId]: true
+              }
+            }
+
+            for (let key in fields) {
+              setMeta(key, funObject)
             }
           } else {
-            funObject.___any = {
-              [memberId]: true
+            setMeta(meta.traverse, { ___ids: ids })
+            for (let key in fields) {
+              setMeta(key, { ___ids: resultIds })
             }
-          }
-
-          for (let key in fields) {
-            setMeta(key, funObject)
           }
         }
 
+        // if (meta.sort) {
+        //   for (const sort of ensureArray(meta.sort)) {
+        //     setMeta(sort.$field, { ___ids: ids })
+        //   }
+        // }
+
         for (let i = 0; i < resultIds.length; i++) {
+          const r: GetResult = {}
           getField(
             getOptions,
             schema,
-            result,
+            r,
             resultIds[i],
             '',
             language,
             version,
             '$',
-            funObject
+            meta.traverse === 'descendants' ? funObject : undefined
           )
-          results[results.length] = result
+          results[results.length] = r
         }
       } else {
-        logger.info('META', meta, 'ID', ids)
+        // logger.info('META', meta, 'ID', ids)
         // TODO: add sort fields with traverse id
         if (meta.traverse) {
           setMeta(meta.traverse, { ___ids: ids })
@@ -328,22 +344,23 @@ const parseQuery = (
 
         if (meta.sort) {
           for (const sort of ensureArray(meta.sort)) {
-            setMeta(sort.$field, { ___ids: ids })
+            setMeta(sort.$field, { ___ids: resultIds })
           }
         }
 
         for (let i = 0; i < resultIds.length; i++) {
+          const r: GetResult = {}
           getField(
             getOptions,
             schema,
-            result,
+            r,
             resultIds[i],
             '',
             language,
             version,
             '$'
           )
-          results[results.length] = result
+          results[results.length] = r
         }
       }
     }

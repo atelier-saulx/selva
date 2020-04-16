@@ -55,7 +55,7 @@ const sendUpdate = async (
     if (treeVersion) {
       removeSubscriptionFromTree(subscriptionManager, subscription)
     }
-    subscription.treeVersion = newVersion
+    subscription.treeVersion = newTreeVersion
     subscription.tree = newTree
     addSubscriptionToTree(subscriptionManager, subscription)
     q.push(

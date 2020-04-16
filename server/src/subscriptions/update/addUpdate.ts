@@ -53,6 +53,7 @@ const addUpdate = async (
     console.log('Sub in progess')
   } else {
     // handle batch mechanism
+    subscription.inProgress = true
 
     await sendUpdate(subscriptionManager, subscription, isDelete)
     subscription.inProgress = false
