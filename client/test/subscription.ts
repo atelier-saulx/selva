@@ -42,7 +42,7 @@ test.serial('basic id based subscriptions', async t => {
   const sub = observable.subscribe(d => {
     if (o1counter === 0) {
       // gets start event
-      t.deepEqualIgnoreOrder(d, { yesh: '' })
+      t.is(d.yesh, '')
     } else if (o1counter === 1) {
       // gets update event
       t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })
