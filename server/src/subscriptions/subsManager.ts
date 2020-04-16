@@ -13,10 +13,8 @@ import { Subscription, Tree } from '.'
 export default class SubscriptionManager {
   public client: SelvaClient
 
-  public inProgress: Record<string, true> = {}
   public incomingCount: number = 0
   // public isDestroyed: boolean = false
-  public cleanUp: boolean = false
   // to check if the server is still ok
   public serverHeartbeatTimeout: NodeJS.Timeout
   // revalidates subs ones in a while
@@ -203,7 +201,7 @@ export default class SubscriptionManager {
     this.updateSubscriptionData()
     this.revalidateSubscriptionsTimeout = setTimeout(() => {
       this.revalidateSubscriptions()
-    }, 1 * 60e3)
+    }, 1 * 30e3)
   }
 
   startServerHeartbeat() {
@@ -218,11 +216,11 @@ export default class SubscriptionManager {
   }
 
   clear() {
-    this.inProgress = {}
     this.clients = {}
+    // for each sub remove refreshAt
+
     this.subscriptions = {}
     this.tree = {}
-    this.cleanUp = false
     clearTimeout(this.revalidateSubscriptionsTimeout)
     clearTimeout(this.serverHeartbeatTimeout)
   }
@@ -263,15 +261,5 @@ export default class SubscriptionManager {
   destroy() {
     this.client.destroy()
     this.clear()
-  }
-
-  cleanUpProgress() {
-    if (!this.cleanUp) {
-      this.cleanUp = true
-      setTimeout(() => {
-        this.inProgress = {}
-        this.cleanUp = false
-      }, 250)
-    }
   }
 }

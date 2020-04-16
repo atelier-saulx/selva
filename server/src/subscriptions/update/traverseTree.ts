@@ -17,8 +17,7 @@ const traverse = async (
       if (segment.___ids) {
         const subs = segment.___ids[id]
         if (subs) {
-          subs.forEach(channel => {
-            const subscription = subscriptionManager.subscriptions[channel]
+          subs.forEach(subscription => {
             if (!subscription.inProgress) {
               addUpdate(subscriptionManager, subscription)
             }
@@ -31,6 +30,8 @@ const traverse = async (
 
       if (segment.__any) {
       }
+    } else {
+      break
     }
   }
 }

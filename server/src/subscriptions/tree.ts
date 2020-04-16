@@ -21,29 +21,37 @@ import { prefixes } from '@saulx/selva'
 //   }
 // }
 
-const addTreeNested = (channel: string, targetTree: Tree, tree: SubTree) => {
+const addTreeNested = (
+  subscription: Subscription,
+  targetTree: Tree,
+  tree: SubTree
+) => {
   for (const key in tree) {
     if (tree[key] === true) {
       if (!targetTree[key]) {
         targetTree[key] = new Set()
       }
-      targetTree[key].add(channel)
+      targetTree[key].add(subscription)
     } else {
       if (!targetTree[key]) {
         targetTree[key] = {}
       }
-      addTreeNested(channel, targetTree[key], tree[key])
+      addTreeNested(subscription, targetTree[key], tree[key])
     }
   }
 }
 
-const addToTree = (channel: string, targetTree: Tree, tree: SubTree) => {
+const addToTree = (
+  subscription: Subscription,
+  targetTree: Tree,
+  tree: SubTree
+) => {
   for (const key in tree) {
     if (key === '___refreshAt') {
     } else if (key === '___contains') {
     } else {
       addTreeNested(
-        channel,
+        subscription,
         targetTree[key] || (targetTree[key] = {}),
         tree[key]
       )
@@ -58,18 +66,22 @@ const isEmpty = (tree: Tree): boolean => {
   return true
 }
 
-const removeTreeNested = (channel: string, targetTree: Tree, tree: SubTree) => {
+const removeTreeNested = (
+  subscription: Subscription,
+  targetTree: Tree,
+  tree: SubTree
+) => {
   let removed
   for (const key in tree) {
     if (targetTree[key]) {
       if (tree[key] === true) {
-        targetTree[key].delete(channel)
+        targetTree[key].delete(subscription)
         if (targetTree[key].size === 0) {
           delete targetTree[key]
           removed = true
         }
       } else if (!(targetTree[key] instanceof Set)) {
-        if (removeTreeNested(channel, targetTree[key], tree[key])) {
+        if (removeTreeNested(subscription, targetTree[key], tree[key])) {
           if (isEmpty(targetTree[key])) {
             delete targetTree[key]
             removed = true
@@ -81,13 +93,17 @@ const removeTreeNested = (channel: string, targetTree: Tree, tree: SubTree) => {
   return removed
 }
 
-const removeFromTree = (channel: string, targetTree: Tree, tree: SubTree) => {
+const removeFromTree = (
+  subscription: Subscription,
+  targetTree: Tree,
+  tree: SubTree
+) => {
   for (const key in tree) {
     if (key === '___refreshAt') {
     } else if (key === '___contains') {
     } else {
       if (targetTree[key]) {
-        if (!removeTreeNested(channel, targetTree[key], tree[key])) {
+        if (!removeTreeNested(subscription, targetTree[key], tree[key])) {
           if (isEmpty(targetTree[key])) {
             delete targetTree[key]
           }
@@ -114,8 +130,8 @@ export function addSubscriptionToTree(
       console.log('ADD REFRESH LISTENER')
     }
 
-    addToTree(channel, subsmanager.tree, tree)
-    console.dir(subsmanager.tree, { depth: 10 })
+    addToTree(subscription, subsmanager.tree, tree)
+    // console.dir(subsmanager.tree, { depth: 10 })
   }
 }
 
@@ -134,7 +150,7 @@ export function removeSubscriptionFromTree(
       console.log('REMOVE REFRESH LISTENER')
     }
 
-    removeFromTree(channel, subsmanager.tree, tree)
-    console.dir(subsmanager.tree, { depth: 10 })
+    removeFromTree(subscription, subsmanager.tree, tree)
+    // console.dir(subsmanager.tree, { depth: 10 })
   }
 }
