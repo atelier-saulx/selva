@@ -18,7 +18,7 @@ test.after(async () => {
   await srv.destroy()
 })
 
-test.only('basic id based subscriptions', async t => {
+test.serial('basic id based subscriptions', async t => {
   const client = connect({ port })
 
   await client.updateSchema({
