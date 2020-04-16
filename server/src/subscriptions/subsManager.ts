@@ -232,7 +232,8 @@ export default class SubscriptionManager {
 
     return new Promise(resolve => {
       // make promise assignable as well
-      this.client = new SelvaClient(opts, { loglevel: 'info' })
+      // { loglevel: 'info' }
+      this.client = new SelvaClient(opts)
 
       this.client.on('connect', () => {
         console.log('connect server-client')

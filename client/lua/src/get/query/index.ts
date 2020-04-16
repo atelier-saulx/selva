@@ -307,18 +307,13 @@ const parseQuery = (
               setMeta(key, funObject)
             }
           } else {
+            // can choose to make this in member checks
             setMeta(meta.traverse, { ___ids: ids })
             for (let key in fields) {
               setMeta(key, { ___ids: resultIds })
             }
           }
         }
-
-        // if (meta.sort) {
-        //   for (const sort of ensureArray(meta.sort)) {
-        //     setMeta(sort.$field, { ___ids: ids })
-        //   }
-        // }
 
         for (let i = 0; i < resultIds.length; i++) {
           const r: GetResult = {}
