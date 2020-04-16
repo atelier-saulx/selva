@@ -3,7 +3,7 @@ import { Id } from '~selva/schema/index'
 import getByType from './getByType'
 import { Schema } from '../../../src/schema/index'
 import * as logger from '../logger'
-import { setNestedResult, getNestedField } from './nestedFields'
+import { setNestedResult, getNestedField, setMeta } from './nestedFields'
 import inherit from './inherit'
 import getWithField, { resolveAll, isObjectField } from './field'
 import getArray from './getArray'
@@ -293,6 +293,14 @@ function getField(
       props.$inherit &&
       (!isComplete || !hasKeys)
     ) {
+      // inheritance
+      setMeta(
+        'ancestors',
+        metaKeys || {
+          ___ids: id
+        }
+      )
+
       if (!hasAlias && !hasKeys) {
         // if (props.$inherit && includeMeta === true) {
         //   addInheritMeta(props, <string>field, result, id)
