@@ -136,7 +136,6 @@ export function addSubscriptionToTree(
       console.error('No tree on subscription', subscription)
     } else {
       if (tree.___refreshAt) {
-        console.log('ADD REFRESH LISTENER', tree.___refreshAt)
         subscription.refreshAt = tree.___refreshAt
         now.addSubscription(subsmanager, subscription)
       }
@@ -158,7 +157,6 @@ export function removeSubscriptionFromTree(
       console.error('No tree on subscription', subscription)
     } else {
       if (tree.___refreshAt) {
-        console.log('REMOVE REFRESH LISTENER')
         delete subscription.refreshAt
         now.removeSubscription(subsmanager, subscription)
       }
