@@ -220,6 +220,10 @@ const json = (
 ): boolean => {
   let value = redis.hget(id, field)
 
+  if (!value) {
+    return false
+  }
+
   let isString = true
   if (type(value) === 'string') {
     if (
@@ -322,7 +326,12 @@ const object = (
         const topLevelPropertyField = field + '.' + keyPartsAfterField
 
         const intermediate = getNestedField(usedResult, topLevelPropertyField)
-        if (!getNestedField(result, topLevelPropertyField)) {
+        const nested = getNestedField(result, topLevelPropertyField)
+        if (
+          !nested ||
+          nested === '' ||
+          (type(nested) === 'table' && next(nested) === null)
+        ) {
           setNestedResult(result, topLevelPropertyField, intermediate)
         }
       }
@@ -331,7 +340,12 @@ const object = (
     if (mergeProps && mergeProps.properties) {
       for (const topLevelKey in mergeProps.properties) {
         const fullPathToKey = field + '.' + topLevelKey
-        if (!getNestedField(result, fullPathToKey)) {
+        const nested = getNestedField(result, fullPathToKey)
+        if (
+          !nested ||
+          nested === '' ||
+          (type(nested) === 'table' && next(nested) === null)
+        ) {
           return false
         }
       }

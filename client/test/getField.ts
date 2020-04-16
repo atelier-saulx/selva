@@ -536,3 +536,108 @@ test.serial('get - more complex $field with $inherit: $name', async t => {
     }
   )
 })
+
+test.serial(
+  'get - query $field with multiple options complex. taking the second',
+  async t => {
+    const client = connect({ port }, { loglevel: 'info' })
+
+    await client.set({
+      $id: 'viG',
+      title: {
+        en: 'nice'
+      },
+      nice: { complexNice: {} },
+      lekkerType: {
+        thingydingy: 'title.en'
+      },
+      age: 62,
+      auth: {
+        // role needs to be different , different roles per scope should be possible
+        role: {
+          id: ['root'],
+          type: 'admin'
+        }
+      }
+    })
+
+    await client.set({
+      $id: 'viZ',
+      title: {
+        en: 'best'
+      },
+      nice: { complexNice: {} },
+      lekkerType: {
+        thingydingy: 'Thing-y Ding-y'
+      },
+      age: 62,
+      auth: {
+        // role needs to be different , different roles per scope should be possible
+        role: {
+          id: ['root'],
+          type: 'admin'
+        }
+      }
+    })
+
+    t.deepEqual(
+      await client.get({
+        $id: 'viG',
+        id: true,
+        complexThingy: {
+          $field: {
+            path: ['yes.no', '${lekkerType.thingydingy}'],
+            value: {
+              $id: 'viZ',
+              title: {
+                en: true
+              },
+              somethingElse: { $value: 'yes' }
+            }
+          }
+        }
+      }),
+      {
+        id: 'viG',
+        complexThingy: 'best'
+      }
+    )
+  }
+)
+
+test.serial('get - $field with object structure', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!'
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      id: true,
+      wrappingObject: {
+        de: {
+          $field: 'title.de'
+        }
+      },
+      value: true
+    }),
+    {
+      id: 'viA',
+      wrappingObject: {},
+      value: 25
+    }
+  )
+})

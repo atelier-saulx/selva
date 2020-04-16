@@ -7,6 +7,7 @@ import getPort from 'get-port'
 test('Connect and re-connect', async t => {
   let current = await getPort()
   const client = connect(async () => {
+    console.log('connect CLIENT FN')
     return { port: current }
   })
 
@@ -55,11 +56,14 @@ test('Connect and re-connect', async t => {
   await wait(1e3)
   console.log('destroying server')
   current = await getPort()
+
   await server.destroy()
   console.log('server destroyed')
 
   await wait(2e3)
   const server2 = await start({ port: current })
+
+  console.log('new server started should reconnect!')
 
   // how to test?
 
@@ -99,8 +103,10 @@ test('Connect and re-connect', async t => {
   )
 
   server2.destroy()
-  await wait(1e3)
+  await wait(2e3)
 
+  console.log('-----------------------------------------------')
+  console.log('Update schema')
   client.updateSchema({
     types: {
       flurp: {
@@ -112,18 +118,17 @@ test('Connect and re-connect', async t => {
     }
   })
 
-  console.log('SET SNURK')
+  console.log('Set snurk')
   client.set({
     $id: 'flap',
     snurk: 'snurk it 1'
   })
 
-  console.log('long wait')
-  await wait(10e3)
+  await wait(1e3)
+  console.log('Reconnect')
   const server3 = await start({ port: current })
 
   await wait(3e3)
-  console.log('RECONNECT')
 
   const item = await client.get({ $id: 'flap', snurk: true })
 

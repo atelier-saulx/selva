@@ -19,6 +19,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          title: { type: 'text' },
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
@@ -88,8 +89,6 @@ test.serial('subscription list', async t => {
     }
   })
 
-  console.log(JSON.stringify(ff.$meta, void 0, 2))
-
   t.is(Object.keys(ff.$meta.query[0].ids).length, 9)
 
   await wait()
@@ -104,7 +103,6 @@ test.serial('subscription list', async t => {
   let cnt = 0
   const sub = obs.subscribe(d => {
     cnt++
-    console.log('FLURPY GO!', cnt, d)
   })
 
   await wait(1000)
@@ -117,4 +115,54 @@ test.serial('subscription list', async t => {
 
   await wait(1000)
   t.is(cnt, 2)
+  sub.unsubscribe()
+
+  const obs2 = await client.observe({
+    $language: 'en', // need this in my meta query
+    title: true,
+    children: {
+      name: true,
+      title: true,
+      type: true,
+      $list: {}
+    }
+  })
+
+  const obs3 = await client.observe({
+    $language: 'en', // need this in my meta query, also need to use schema for this (adding lang field to text fields)
+    title: true,
+    items: {
+      name: true,
+      title: true,
+      type: true,
+      $list: {
+        $find: {
+          $traverse: 'children'
+        }
+      }
+    }
+  })
+
+  let cnt2 = 0
+  let cnt3 = 0
+  const sub2 = obs2.subscribe(d => {
+    cnt2++
+  })
+
+  const sub3 = obs3.subscribe(d => {
+    cnt3++
+  })
+
+  await wait(2000)
+
+  client.set({
+    $id: matches[0].$id,
+    title: { en: 'Flapdrol' }
+  })
+
+  await wait(2000)
+  sub2.unsubscribe()
+  sub3.unsubscribe()
+  t.is(cnt3, 2)
+  t.is(cnt2, 2)
 })

@@ -1,10 +1,10 @@
-import { GetResult } from '~selva/get/types'
+import { GetResult, GetOptions } from '~selva/get/types'
 import { Id } from '~selva/schema/index'
 import getByType from './getByType'
 import { Schema } from '../../../src/schema/index'
 import * as logger from '../logger'
 import { setNestedResult, getNestedField } from './nestedFields'
-import { ensureArray } from 'lua/src/util'
+import { ensureArray, isArray } from 'lua/src/util'
 
 function resolveVariable(
   id: Id,
@@ -104,4 +104,13 @@ export default function getWithField(
 
   setNestedResult(result, field, fromNested)
   return true
+}
+
+type FieldObjectSpec = {
+  path: string | string[]
+  value: GetOptions
+}
+
+export function isObjectField(x: any): x is FieldObjectSpec {
+  return type(x) === 'table' && !!x.path && x.value
 }

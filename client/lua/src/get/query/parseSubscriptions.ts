@@ -3,9 +3,10 @@ import * as logger from '../../logger'
 import { isFork } from './util'
 import { getPrefixFromType } from '../../typeIdMapping'
 import { indexOf, isArray, joinString } from '../../util'
-import { GetOptions } from '~selva/get/types'
+import { GetOptions, GetResult } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import createSearchArgs from './createSearchArgs'
+import { Schema } from '../../../../src/schema/index'
 
 const addType = (type: string | number, arr: string[]) => {
   const prefix = getPrefixFromType(tostring(type))
@@ -104,6 +105,7 @@ const parseGet = (
     if (key[0] !== '$') {
       const item = opts[key]
       if (typeof item === 'object') {
+        // logger
         if (!item.$list) {
           const newArray: string[] = []
           for (let i = 0; i < field.length; i++) {
@@ -126,11 +128,11 @@ function parseSubscriptions(
   meta: Meta,
   ids: string[],
   getOptions: GetOptions,
+  result: GetResult,
+  language?: string,
   traverse?: string | string[]
 ) {
   let sub: QuerySubscription | undefined
-
-  // not so nice....
   const queryId = redis.sha1hex(cjson.encode(getOptions))
 
   for (let i = 0; i < querySubs.length; i++) {
@@ -143,7 +145,8 @@ function parseSubscriptions(
     sub = {
       member: [],
       fields: {},
-      queryId
+      queryId,
+      language
     }
     querySubs[querySubs.length] = sub
   }
@@ -221,14 +224,12 @@ function parseSubscriptions(
       }
     }
   } else {
-    // need to check if TYPE is there
     if (!sub.ids) {
       sub.ids = {}
     }
     for (let i = 1; i < meta.ids.length; i++) {
       sub.ids[meta.ids[i]] = true
     }
-
     if (meta.type) {
       sub.type = meta.type
     }
@@ -257,6 +258,16 @@ function parseSubscriptions(
       sub.fields[sort[i].$field] = true
     }
   }
+
+  // if (result.$meta && result.$meta.inherit) {
+  //   // merge them
+  //   const together = {}
+
+  //   for (const key in result.$meta.inherit) {
+  //   }
+
+  //   logger.info(result.$meta.inherit)
+  // }
 }
 
 export default parseSubscriptions

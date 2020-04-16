@@ -1,374 +1,297 @@
 import Observable from '../observe/observable'
-import { GetOptions } from '../get/types'
-import * as redis from 'redis'
-import { createClient, RedisClient as Redis } from 'redis'
-import RedisMethods from './methods'
-import SelvaPubSub from '../pubsub'
+import { GetOptions, GetResult } from '../get/types'
+import { LogFn, SelvaOptions, SelvaClient } from '..'
+import {
+  createClient,
+  RedisWrapper,
+  clientTypes,
+  ClientType
+} from './redisWrapper'
+import { Event, RedisCommand, UpdateEvent, DeleteEvent } from './types'
+import { EventEmitter } from 'events'
+// adds FT commands to redis
+import './redisSearch'
+import RedisMethodsByType from './redisMethodsByType'
+import RedisMethods from './RedisMethods'
 
-const redisSearchCommands = [
-  'CREATE',
-  'ADD',
-  'ADDHASH',
-  'ALTER',
-  'INFO',
-  'SEARCH',
-  'AGGREGATE',
-  'EXPLAIN',
-  'DEL',
-  'GET',
-  'DROP',
-  'SUGADD',
-  'SUGGET',
-  'SUGDEL',
-  'SUGLEN',
-  'SYNADD',
-  'SYNUPDATE',
-  'SYNDUMP',
-  'SPELLCHECK',
-  'DICTADD',
-  'DICTDEL',
-  'DICTDUMP',
-  'TAGVALS',
-  'CONFIG'
-]
-
-redisSearchCommands.forEach(cmd => {
-  // type definition is wrong its not on the client
-  // @ts-ignore
-  redis.add_command(`FT.${cmd}`)
-})
+class Subscription extends EventEmitter {
+  public channel: string
+  public getOpts: GetOptions
+  public count: number = 0
+  constructor(getOpts: GetOptions) {
+    super()
+    this.getOpts = getOpts
+  }
+}
 
 export type ConnectOptions = {
   port: number
   host?: string
-  retryStrategy?: () => number // make a good default dont want to confiure this all the time
-  // how we currently use this type is a 'service type' which can hold a bit more info, like name, id etc of the service)
+  subscriptions?: {
+    port: number
+    host?: string
+  }
 }
 
-type Resolvable = {
-  resolve: (x: any) => void
-  reject: (x: Error) => void
-}
-
-type RedisCommand = Resolvable & {
-  command: string
-  type?: string
-  args: (string | number)[]
-  hash?: number
-  nested?: Resolvable[]
+const defaultLogging: LogFn = log => {
+  if (log.level === 'warning') {
+    console.warn('LUA: ' + log.msg)
+  } else {
+    console[log.level]('LUA: ' + log.msg)
+  }
 }
 
 export default class RedisClient extends RedisMethods {
-  private connector: () => Promise<ConnectOptions>
-  public client: Redis
-  private buffer: RedisCommand[]
-  private connected: boolean
-  private inProgress: boolean
-  private isDestroyed: boolean
-  private retryTimer: number
-  private scriptShas: {
-    [scriptName: string]: string
-  } = {}
-  private scriptBatchingEnabled: {
-    [scriptSha: string]: boolean
-  } = {}
-  public subscriptionManager: SelvaPubSub
-  // private bufferedGet: Record<number, RedisCommand>
+  public connector: () => Promise<ConnectOptions>
+  public isDestroyed: boolean
 
-  constructor(connect: ConnectOptions | (() => Promise<ConnectOptions>)) {
+  private clientId: string
+  private log: LogFn | undefined
+  private selvaClient: SelvaClient
+  private connectOptions: ConnectOptions
+  public subscriptions: { [channel: string]: Subscription } = {}
+
+  public redis: RedisWrapper
+
+  public buffer: { [client: string]: RedisCommand[] } = {}
+  public connected: { [client: string]: boolean } = {}
+
+  public byType: RedisMethodsByType
+
+  constructor(
+    connect:
+      | ConnectOptions
+      | (() => Promise<ConnectOptions>)
+      | Promise<ConnectOptions>,
+    selvaClient: SelvaClient,
+    selvaOpts: SelvaOptions
+  ) {
     super()
+
+    clientTypes.forEach(type => {
+      this.buffer[type] = []
+      this.connected[type] = false
+    })
+
+    this.byType = new RedisMethodsByType(this)
+
+    this.clientId = selvaClient.clientId
+    this.selvaClient = selvaClient
+    this.log =
+      (selvaOpts && selvaOpts.log) ||
+      (selvaOpts && selvaOpts.loglevel && selvaOpts.loglevel !== 'off'
+        ? defaultLogging
+        : undefined)
+
     this.connector =
-      typeof connect === 'object' ? () => Promise.resolve(connect) : connect
-    this.buffer = []
+      typeof connect === 'object'
+        ? () => Promise.resolve(connect)
+        : connect instanceof Promise
+        ? async () => connect
+        : connect
     this.connect()
-
-    this.subscriptionManager = new SelvaPubSub()
   }
 
-  private resetScripts() {
-    this.scriptBatchingEnabled = {}
-    this.scriptShas = {}
+  destroy() {
+    this.isDestroyed = true
+    this.redis.removeClient(this.clientId)
+    for (let channel in this.subscriptions) {
+      this.subscriptions[channel].removeAllListeners()
+      delete this.subscriptions[channel]
+    }
+    this.redis = null
+    this.connected = {}
+    this.buffer = {}
+    clientTypes.forEach(type => {
+      this.buffer[type] = []
+    })
   }
 
-  async loadAndEvalScript(
+  createSubscription(channel: string, getOpts: GetOptions) {
+    const subscription = (this.subscriptions[channel] = new Subscription(
+      getOpts
+    ))
+
+    if (this.redis) {
+      this.redis.subscribe(this.clientId, channel, getOpts)
+    }
+    return subscription
+  }
+
+  subscribe(channel: string, getOpts: GetOptions): Observable<GetResult> {
+    const subscription =
+      this.subscriptions[channel] || this.createSubscription(channel, getOpts)
+    subscription.count++
+    return new Observable(observer => {
+      const listener = (event: UpdateEvent | DeleteEvent) => {
+        if (event.type === 'update') {
+          if (observer.version !== event.version) {
+            observer.version = event.version
+            observer.next(event.payload)
+          }
+        } else if (event.type === 'delete') {
+          observer.next(null)
+        }
+      }
+      subscription.on('message', listener)
+
+      if (
+        this.redis &&
+        this.redis.allConnected &&
+        this.redis.subscriptions[channel] &&
+        this.redis.subscriptions[channel].version
+      ) {
+        this.redis.emitChannel(channel, this.clientId)
+      }
+
+      return () => {
+        subscription.count--
+        subscription.removeListener('message', listener)
+        if (subscription.count === 0) {
+          this.redis.unsubscribe(this.clientId, channel)
+          subscription.removeAllListeners()
+          delete this.subscriptions[channel]
+        }
+      }
+    })
+  }
+
+  private async registerSubscriptions() {
+    for (const channel in this.subscriptions) {
+      this.redis.subscribe(
+        this.clientId,
+        channel,
+        this.subscriptions[channel].getOpts
+      )
+    }
+  }
+
+  loadAndEvalScript(
     scriptName: string,
     script: string,
     numKeys: number,
     keys: string[],
     args: string[],
+    type: ClientType,
     opts?: { batchingEnabled?: boolean }
   ): Promise<any> {
-    if (!this.scriptShas[scriptName]) {
-      const r = await this.loadScript(script)
-      this.scriptShas[scriptName] = r
-    }
-
-    if (opts && opts.batchingEnabled) {
-      this.scriptBatchingEnabled[this.scriptShas[scriptName]] = true
-    }
-
-    return this.evalSha(this.scriptShas[scriptName], numKeys, ...keys, ...args)
-  }
-
-  destroy() {
-    this.isDestroyed = true
-    if (this.client) {
-      this.client.quit()
-      this.client = null
-    } else {
-      this.client = null
-    }
-
-    this.subscriptionManager.disconnect()
-  }
-
-  private async connect() {
-    const opts = await this.connector()
-
-    if (this.isDestroyed) {
-      return
-    }
-    // even if the db does not exists should not crash!
-    this.retryTimer = 100
-    let tries = 0
-    if (!opts.retryStrategy) {
-      opts.retryStrategy = () => {
-        // console.log('RECON', tries)
-        tries++
-        // needs to re do client
-        // prob want a keep alive thing in here
-
-        this.resetScripts()
-        this.connected = false
-        this.subscriptionManager.markSubscriptionsClosed()
-        this.connector().then(async newOpts => {
-          if (
-            newOpts.host !== opts.host ||
-            newOpts.port !== opts.port ||
-            tries > 15
-          ) {
-            // console.log('HARD RECONN')
-            this.client.quit()
-            this.connected = false
-            this.subscriptionManager.disconnect()
-            await this.connect()
-          }
-        })
-        if (this.retryTimer < 1e3) {
-          this.retryTimer += 100
-        }
-        return this.retryTimer
-      }
-    }
-
-    // reconnecting
-
-    this.subscriptionManager.connect(opts)
-    // on dc needs to re run connector - if different reconnect
-    this.client = createClient(opts)
-
-    this.client.on('error', err => {
-      // console.log('ERR', err)
-      if (err.code === 'ECONNREFUSED') {
-        console.info(`Connecting to ${err.address}:${err.port}`)
-      } else {
-        // console.log('ERR', err)
-      }
+    return new Promise((resolve, reject) => {
+      this.queue(
+        'loadAndEvalScript',
+        [
+          opts && opts.batchingEnabled ? 1 : 0,
+          script,
+          scriptName,
+          numKeys,
+          ...keys,
+          ...args
+        ],
+        resolve,
+        reject,
+        type
+      )
     })
-
-    this.client.on('connect', _ => {
-      tries = 0
-      // console.log('connect it')
-    })
-
-    this.client.on('ready', () => {
-      // console.log('ready')
-      tries = 0
-      this.retryTimer = 100
-      this.connected = true
-      this.flushBuffered()
-    })
-  }
-
-  subscribe<T>(channel: string, getOpts: GetOptions): Observable<T> {
-    return this.subscriptionManager.subscribe(channel, getOpts)
   }
 
   async queue(
     command: string,
     args: (string | number)[],
-    resolve: (x: any) => void,
-    reject: (x: Error) => void,
-    subscriber?: boolean,
-    type?: string // need this for smart batching
+    resolve: (x: any) => void = () => {},
+    reject: (x: Error) => void = () => {},
+    type?: ClientType
   ) {
-    // NEED TYPE - REMOVE SUBSCRIBER
-
-    // not good...
-    if (subscriber) {
-      // somewhere else!
-      console.info('SUBSCRIBER NOT DONE YET')
+    if (this.isDestroyed) {
+      console.error('Trying to set on a destroyed client!', command)
+      return
+    }
+    // remove type
+    if (type === undefined) {
+      if (command === 'subscribe') {
+        type = 'sSub'
+      } else if (command === 'publish') {
+        type = 'sClient'
+      } else {
+        type = 'client'
+      }
+    }
+    if (this.connected[type]) {
+      this.redis.queue(command, args, resolve, reject, type)
     } else {
-      // // do we want to cache?
-      // batch gets pretty nice to do
-      // if (command === 'GET') {
-      //   // dont execute getting the same ids
-      //   // makes it a bit slower in some cases - check it
-      //   const hash = fnv1a(args.join('|'))
-      //   // can make this a cache
-      //   const hashedRedisCommand = this.bufferedGet[hash]
-      //   if (hashedRedisCommand) {
-      //     if (!hashedRedisCommand.nested) {
-      //       hashedRedisCommand.nested = []
-      //     }
-      //     hashedRedisCommand.nested.push({
-      //       resolve,
-      //       reject
-      //     })
-      //   } else {
-      //     const redisCommand = {
-      //       command,
-      //       args,
-      //       resolve,
-      //       reject,
-      //       hash
-      //     }
-      //     this.buffer.push(redisCommand)
-      //     this.bufferedGet[hash] = redisCommand
-      //   }
-      // } else {
+      if (!this.buffer[type]) {
+        console.error('Cannot find type on buffer', type)
+      }
 
-      this.buffer.push({
+      this.buffer[type].push({
         command,
         args,
         resolve,
         reject
       })
-      // }
-      if (!this.inProgress && this.connected) {
-        // allrdy put it inProgress, but wait 1 tick to execute it
-        this.inProgress = true
-        process.nextTick(() => {
-          this.flushBuffered()
-        })
-      }
     }
   }
 
-  private batchEvalScriptArgs(origSlice: RedisCommand[]): RedisCommand[] {
-    const slice: RedisCommand[] = []
-    const batchedModifyArgs: { [scriptSha: string]: any[] } = {}
-    const batchedModifyResolves: { [scriptSha: string]: any[] } = {}
-    const batchedModifyRejects: { [scriptSha: string]: any[] } = {}
+  public sendQueueToRedis(type) {
+    // need to check if dc here else you loose commands
+    const buffer = this.buffer[type]
+    this.buffer[type] = []
 
-    for (const sha in this.scriptBatchingEnabled) {
-      if (this.scriptBatchingEnabled[sha] === true) {
-        batchedModifyArgs[sha] = []
-        batchedModifyResolves[sha] = []
-        batchedModifyRejects[sha] = []
-      }
-    }
-
-    for (const cmd of origSlice) {
-      if (cmd.command !== 'evalsha') {
-        slice.push(cmd)
-        continue
-      }
-
-      const scriptSha = cmd.args[0]
-      if (this.scriptBatchingEnabled[scriptSha]) {
-        batchedModifyArgs[scriptSha].push(...cmd.args.slice(2)) // push all args after sha and numKeys
-        batchedModifyResolves[scriptSha].push(cmd.resolve)
-        batchedModifyRejects[scriptSha].push(cmd.reject)
-      } else {
-        slice.push(cmd)
-      }
-    }
-
-    // should not be just modify
-    for (let sha in batchedModifyArgs) {
-      const modifyArgs = batchedModifyArgs[sha]
-      const modifyResolves = batchedModifyResolves[sha]
-      const modifyRejects = batchedModifyRejects[sha]
-      if (modifyArgs.length) {
-        slice.push({
-          // add type
-          type: 'modify',
-          command: 'evalsha',
-          args: [sha, 0, ...modifyArgs],
-          resolve: (x: any) => {
-            modifyResolves.forEach((resolve, i: number) => resolve(x[i]))
-          },
-          reject: (x: Error) => {
-            modifyRejects.forEach(reject => reject(x))
-          }
-        })
-      }
-    }
-
-    return slice
-  }
-
-  private execBatch(origSlice: RedisCommand[]): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const batch = this.client.batch()
-
-      const slice = Object.values(this.scriptBatchingEnabled).some(x => x)
-        ? this.batchEvalScriptArgs(origSlice)
-        : origSlice
-
-      slice.forEach(({ command, args }) => {
-        batch[command](...args)
-      })
-      batch.exec((err, reply) => {
-        if (err) {
-          // if set returns error then do some stuff!
-          console.error(err)
-          reject(err)
-        } else {
-          reply.forEach((v, i) => {
-            if (v instanceof Error) {
-              slice[i].reject(v)
-              if (slice[i].nested) {
-                slice[i].nested.forEach(({ reject }) => {
-                  reject(v)
-                })
-              }
-            } else {
-              slice[i].resolve(v)
-              if (slice[i].nested) {
-                slice[i].nested.forEach(({ resolve }) => {
-                  resolve(v)
-                })
-              }
-            }
-          })
-          resolve()
-        }
-      })
+    buffer.forEach(({ command, args, resolve, reject }) => {
+      this.redis.queue(command, args, resolve, reject, type)
     })
   }
 
-  private async flushBuffered() {
-    this.inProgress = true
-    const buffer = this.buffer
-    this.buffer = []
-    const len = Math.ceil(buffer.length / 5000)
-    // console.log(buffer.length)
-    for (let i = 0; i < len; i++) {
-      const slice = buffer.slice(i * 5e3, (i + 1) * 5e3)
-      await this.execBatch(slice)
+  private async connect() {
+    if (this.isDestroyed) {
+      return
     }
-    if (this.buffer.length) {
-      // more added over time
-      await this.flushBuffered()
-    }
+    const opts = await this.connector()
+    this.connectOptions = opts
+    this.redis = createClient(opts)
+    this.registerSubscriptions()
 
-    // make this a cache including the value
-    // default 500ms or something
-    // this.bufferedGet = {}
-    this.inProgress = false
+    this.redis.addClient(this.clientId, {
+      message: (channel, message) => {
+        const subscription = this.subscriptions[channel]
+        if (subscription && message.type) {
+          subscription.emit('message', message)
+        }
+      },
+      log: this.log,
+      connect: type => {
+        this.connected[type] = true
+        this.sendQueueToRedis(type)
+        if (this.redis.allConnected) {
+          this.selvaClient.emit('connect')
+        }
+      },
+      disconnect: type => {
+        this.connected[type] = false
+        if (this.redis.allDisconnected) {
+          this.selvaClient.emit('disconnect')
+        }
+        if (type === 'client') {
+          this.connector().then(opts => {
+            if (
+              opts.host !== this.connectOptions.host ||
+              opts.port !== this.connectOptions.port ||
+              (opts.subscriptions && !this.connectOptions.subscriptions) ||
+              (this.connectOptions.subscriptions && !opts.subscriptions) ||
+              (opts.subscriptions &&
+                this.connectOptions.subscriptions &&
+                (opts.subscriptions.host !==
+                  this.connectOptions.subscriptions.host ||
+                  opts.subscriptions.port !==
+                    this.connectOptions.subscriptions.port))
+            ) {
+              this.redis.removeClient(this.clientId)
+              this.connect()
+            }
+          })
+        }
+      },
+      client: this
+    })
+
+    this.selvaClient.subscribeSchema()
   }
 }
-
-// extend import Methods.ts

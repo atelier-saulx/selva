@@ -16,14 +16,11 @@ test('Connect and re-connect', async t => {
 
   const server = await start({ port: current })
 
-  // client === client2
+  t.true(client.redis.redis === client2.redis.redis)
+
+  // ad some subs tests here
 
   await wait()
 
   await server.destroy()
-
-  console.log('hello do it')
-
-  t.true(true)
-  // same port means same
 })

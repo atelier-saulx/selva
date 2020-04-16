@@ -48,7 +48,7 @@ test.after(async _t => {
 })
 
 test.serial('get nested results', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   const matches = []
   const teams = []
@@ -126,10 +126,10 @@ test.serial('get nested results', async t => {
     }
   })
 
-  t.is(result.items.length, 10, 'items legnth')
+  t.is(result.items.length, 10, 'items length')
   t.is(result.items[0].teams.length, 2, 'has teams')
 
-  console.dir(result.$meta, { depth: 100 })
+  // console.dir(result, { depth: 100 })
   // t.is(result.items.length, )
   // fix tetest
 

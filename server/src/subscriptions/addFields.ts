@@ -1,5 +1,51 @@
-import { Schema, GetOptions } from '@saulx/selva'
-import makeAll from './makeAll'
+import { GetOptions, Schema, FieldSchema } from '@saulx/selva'
+import { isObjectLike } from './util'
+import { Subscription, Fields, RefsById } from './'
+
+function makeAll(path: string, schema: Schema, opts: GetOptions): GetOptions {
+  const newOpts: GetOptions = { ...opts }
+  delete newOpts.$all
+
+  const parts = path.split('.')
+  if (!newOpts.$id) {
+    return newOpts
+  }
+
+  const typeName = schema.prefixToTypeMapping[newOpts.$id.substr(0, 2)]
+  const type = schema.types[typeName]
+  if (!type) {
+    return newOpts
+  }
+
+  let prop: FieldSchema = {
+    type: 'object',
+    properties: type.fields
+  }
+
+  for (let i = 0; i < parts.length; i++) {
+    if (!parts[i]) {
+      break
+    }
+
+    if (!isObjectLike(prop)) {
+      break
+    } else {
+      prop = prop.properties[parts[i]]
+    }
+  }
+
+  if (isObjectLike(prop)) {
+    for (const propName in prop.properties) {
+      newOpts[propName] = true
+    }
+  } else if (prop.type === 'text') {
+    for (const lang of schema.languages) {
+      newOpts[lang] = true
+    }
+  }
+
+  return newOpts
+}
 
 function addFields(
   path: string,
@@ -14,7 +60,8 @@ function addFields(
         addFields(path, fields, schema, makeAll(path, schema, opts))
         return
       } else if (key === '$inherit') {
-        // TODO(jim): mystical subscription things
+        // TODO: (jim): mystical subscription things
+        // have to fix query again
         fields.add('.ancestors')
         return
       } else if (key === '$field') {
@@ -44,4 +91,81 @@ function addFields(
   }
 }
 
-export default addFields
+function addFieldsToSubscription(
+  subscription: Subscription,
+  fieldMap: Fields,
+  schema: Schema,
+  channel: string,
+  refsById: RefsById
+) {
+  // add fields directly to subscription
+
+  if (!subscription) {
+    console.error('CANNOT FIND SUBSCRIPTION')
+    return
+  }
+
+  const { fields, get } = subscription
+  // subscriptionsByField
+  addFields('', fields, schema, get)
+
+  for (const field of fields) {
+    let current = fieldMap[get.$id + field]
+    if (!current) {
+      fieldMap[get.$id + field] = current = new Set()
+    }
+    current.add(channel)
+  }
+
+  // remove just check if its empty
+
+  if (refsById[get.$id]) {
+    for (const refSource in refsById[get.$id]) {
+      let current = fieldMap[get.$id + '.' + refSource]
+      if (!current) {
+        fieldMap[get.$id + '.' + refSource] = current = new Set()
+      }
+      current.add(channel)
+    }
+  }
+}
+
+function removeFieldsFromSubscription(
+  subscription: Subscription,
+  fieldMap: Fields,
+  channel: string,
+  refsById: RefsById
+) {
+  // add fields directly to subscription
+
+  const { fields, get } = subscription
+
+  for (const field of fields) {
+    const current = fieldMap[get.$id + field]
+    if (current) {
+      current.delete(channel)
+      if (current.size === 0) {
+        delete fieldMap[get.$id + field]
+      }
+    }
+  }
+
+  if (refsById[get.$id]) {
+    for (const refSource in refsById[get.$id]) {
+      const current = fieldMap[get.$id + '.' + refSource]
+      if (current) {
+        current.delete(channel)
+        if (current.size === 0) {
+          delete fieldMap[get.$id + '.' + refSource]
+        }
+      }
+    }
+  }
+
+  // console.log('remove fields', channel.slice(-5), get.$id, fields)
+}
+
+// this will become very annoying....
+// function removeFields
+
+export { addFieldsToSubscription, removeFieldsFromSubscription }

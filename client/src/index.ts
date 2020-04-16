@@ -1,11 +1,12 @@
 import { default as RedisClient, ConnectOptions } from './redis'
-// import { id, IdOptions } from './id'
 import { set, SetOptions } from './set'
 import { ModifyOptions, ModifyResult } from './modifyTypes'
 import { deleteItem, DeleteOptions } from './delete'
 import { get, GetOptions, GetResult } from './get'
 import { observe } from './observe/index'
+import Observable from './observe/observable'
 import { readFileSync } from 'fs'
+import { EventEmitter } from 'events'
 import { join as pathJoin } from 'path'
 import {
   Schema,
@@ -20,19 +21,25 @@ import getTypeFromId from './getTypeFromId'
 import digest from './digest'
 import { IdOptions } from '../lua/src/id'
 import { v4 as uuid } from 'uuid'
-
-const MAX_SCHEMA_UPDATE_RETRIES = 5
-
+const MAX_SCHEMA_UPDATE_RETRIES = 100
 export type LogEntry = { level: LogLevel; msg: string }
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
 export type LogFn = (log: LogEntry) => void
+
+export { default as prefixes } from './prefixes'
 
 export type SelvaOptions = {
   loglevel?: LogLevel
   log?: LogFn
 }
 
+const wait = (t: number = 0): Promise<void> =>
+  new Promise(r => setTimeout(r, t))
+
+// split this up and clean it!
+
 let SCRIPTS
+
 try {
   SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
     (obj, scriptName) => {
@@ -40,7 +47,6 @@ try {
       if (!distPath.endsWith('dist')) {
         distPath = pathJoin(distPath, 'dist')
       }
-
       return Object.assign(obj, {
         [scriptName]: readFileSync(
           pathJoin(distPath, 'lua', `${scriptName}.lua`),
@@ -55,36 +61,68 @@ try {
   process.exit(1)
 }
 
-const defaultLogging: LogFn = log => {
-  if (log.level === 'warning') {
-    console.warn('LUA: ' + log.msg)
-  } else {
-    console[log.level]('LUA: ' + log.msg)
-  }
-}
-
-export class SelvaClient {
+export class SelvaClient extends EventEmitter {
   public schema: Schema
   public searchIndexes: SearchIndexes
   public redis: RedisClient
-  private loglevel: LogLevel = 'warning'
-  private clientId: string
+  private loglevel: LogLevel = 'off'
+  public clientId: string
+  private schemaObservable: Observable<Schema>
 
   constructor(
-    opts: ConnectOptions | (() => Promise<ConnectOptions>),
+    opts:
+      | ConnectOptions
+      | (() => Promise<ConnectOptions>)
+      | Promise<ConnectOptions>,
     selvaOpts?: SelvaOptions
   ) {
+    super()
     this.clientId = uuid()
-    this.redis = new RedisClient(opts)
-
-    this.redis.subscriptionManager.configureLogs(
-      this.clientId,
-      (selvaOpts && selvaOpts.log) || defaultLogging
-    )
-
     if (selvaOpts && selvaOpts.loglevel) {
       this.loglevel = selvaOpts.loglevel
+    } else {
+      this.loglevel = 'off'
+      if (!selvaOpts) {
+        selvaOpts = {}
+      }
+      selvaOpts.loglevel = 'off'
     }
+
+    this.setMaxListeners(100)
+    this.redis = new RedisClient(opts, this, selvaOpts)
+  }
+
+  subscribeSchema() {
+    if (this.schemaObservable) {
+      return this.schemaObservable
+    }
+
+    const obs = this.redis.subscribe(`___selva_subscription:schema_update`, {})
+
+    this.schemaObservable = new Observable<Schema>(observe => {
+      const sub = obs.subscribe({
+        next: (_x: any) => {
+          this.getSchema().then(() => {
+            observe.next(this.schema)
+          })
+        },
+        error: observe.error,
+        complete: observe.complete
+      })
+
+      return <any>sub
+    })
+
+    this.schemaObservable.subscribe(
+      _ => {
+        // skip
+      },
+      e => {
+        console.error('Error fetching schema', e)
+      }
+    )
+
+    return this.schemaObservable
   }
 
   async conformToSchema(props: SetOptions): Promise<SetOptions> {
@@ -92,27 +130,29 @@ export class SelvaClient {
       return null
     }
 
-    if (!props.type) {
-      if (props.$id) {
-        props.type = await getTypeFromId(this, props.$id)
-      } else {
-        const typePayload = await this.get({
-          $alias: props.$alias,
-          type: true,
-          id: true
-        })
+    if (props.$id !== 'root') {
+      if (!props.type) {
+        if (props.$id) {
+          props.type = await getTypeFromId(this, props.$id)
+        } else {
+          const typePayload = await this.get({
+            $alias: props.$alias,
+            type: true,
+            id: true
+          })
 
-        props.type = typePayload.type
-        props.$id = typePayload.id
+          props.type = typePayload.type
+          props.$id = typePayload.id
+        }
+      }
+
+      if (!props.type) {
+        return null
       }
     }
 
-    if (!props.type) {
-      return null
-    }
-
     const typeSchema =
-      props.type === 'root'
+      props.$id === 'root'
         ? this.schema.rootType
         : this.schema.types[props.type]
 
@@ -206,6 +246,7 @@ export class SelvaClient {
   }
 
   async destroy() {
+    this.removeAllListeners()
     this.redis.destroy()
   }
 
@@ -216,7 +257,8 @@ export class SelvaClient {
       SCRIPTS.id,
       0,
       [],
-      [JSON.stringify(props)]
+      [JSON.stringify(props)],
+      'client'
     )
   }
 
@@ -234,11 +276,9 @@ export class SelvaClient {
 
   async updateSchema(props: SchemaOptions, retry?: number) {
     retry = retry || 0
-
     if (!props.types) {
       props.types = {}
     }
-
     const newSchema = newSchemaDefinition(this.schema, <Schema>props)
     try {
       const updated = await this.redis.loadAndEvalScript(
@@ -246,14 +286,13 @@ export class SelvaClient {
         SCRIPTS['update-schema'],
         0,
         [],
-        [`${this.loglevel}:${this.clientId}`, JSON.stringify(newSchema)]
+        [`${this.loglevel}:${this.clientId}`, JSON.stringify(newSchema)],
+        'client'
       )
-
       if (updated) {
         this.schema = JSON.parse(updated)
       }
     } catch (e) {
-      console.error('Error updating schema', e.stack)
       if (
         e.stack.includes(
           'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
@@ -264,11 +303,15 @@ export class SelvaClient {
             `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
           )
         }
-
         await this.getSchema()
+        await wait(retry * 200)
         await this.updateSchema(props, retry + 1)
       } else {
-        throw e
+        if (e.code === 'NR_CLOSED') {
+          // canhappen with load and eval script
+        } else {
+          throw e
+        }
       }
     }
   }
@@ -293,10 +336,10 @@ export class SelvaClient {
           this.schema.sha,
           JSON.stringify(opts)
         ],
+        'client',
         { batchingEnabled: true }
       )
     } catch (e) {
-      console.error('Error running modify', e)
       if (
         e.stack &&
         e.stack.includes(
@@ -323,7 +366,9 @@ export class SelvaClient {
       SCRIPTS.fetch,
       0,
       [],
-      [`${this.loglevel}:${this.clientId}`, JSON.stringify(opts)]
+      [`${this.loglevel}:${this.clientId}`, JSON.stringify(opts)],
+      'client'
+      // { batchingEnabled: true } prob needs this?
     )
 
     return JSON.parse(str)
@@ -339,11 +384,16 @@ export class SelvaClient {
 }
 
 export function connect(
-  opts: ConnectOptions | (() => Promise<ConnectOptions>),
+  opts:
+    | ConnectOptions
+    | (() => Promise<ConnectOptions>)
+    | Promise<ConnectOptions>,
   selvaOpts?: SelvaOptions
 ): SelvaClient {
-  return new SelvaClient(opts, selvaOpts)
+  const client = new SelvaClient(opts, selvaOpts)
+  return client
 }
 
 export * from './schema/index'
 export * from './get/types'
+export { ConnectOptions } from './redis'

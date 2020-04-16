@@ -80,9 +80,9 @@ export function hincrby(key: string, field: string, increment: number): number {
   return redis.call('hincrby', key, field, tostring(increment))
 }
 
-export function sadd(key: string, ...members: string[]): boolean {
+export function sadd(key: string, ...members: string[]): number {
   const result = redis.call('sadd', key, ...members)
-  return result === 1
+  return result
 }
 
 export function sismember(key: string, value: string): boolean {
@@ -142,8 +142,16 @@ export function zscore(key: string, member: string): number {
   return tonumber(redis.call('zscore', key, member))
 }
 
-export function exists(...keys: string[]): number {
-  return redis.call('exists', ...keys)
+export function exists(...keys: string[]): boolean {
+  return redis.call('exists', ...keys) === 1
+}
+
+export function expire(key: string, timeInSeconds: number) {
+  return redis.call('exists', key, tostring(timeInSeconds))
+}
+
+export function pexpire(key: string, timeInMs: number) {
+  return redis.call('pexists', key, tostring(timeInMs))
 }
 
 export function set(key: string, val: string): boolean {

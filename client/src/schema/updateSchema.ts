@@ -70,6 +70,8 @@ export function newSchemaDefinition(
         typeDef.fields[fieldName] = newSchema.rootType.fields[fieldName]
       }
     }
+
+    schema.rootType = typeDef
   } else {
     schema.rootType = oldSchema.rootType
   }
@@ -79,6 +81,10 @@ export function newSchemaDefinition(
 
 function newLanguages(oldLangs: string[], newLangs: string[]): string[] {
   const langs: Set<string> = new Set()
+
+  if (!Array.isArray(oldLangs)) {
+    oldLangs = ['en']
+  }
   for (const lang of oldLangs) {
     langs.add(lang)
   }

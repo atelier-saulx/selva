@@ -250,8 +250,6 @@ test.serial('find - ancestors - regions', async t => {
     })
   ])
 
-  console.log(regions)
-
   for (let i = 0; i < 11; i++) {
     await client.set({
       type: 'team',
@@ -297,6 +295,6 @@ test.serial('find - ancestors - regions', async t => {
         { name: 'team region 0' }
       ]
     },
-    'hello'
+    'dutch teams'
   )
 })

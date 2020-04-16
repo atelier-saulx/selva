@@ -4,7 +4,7 @@ import { getTypeFromId } from '../typeIdMapping'
 import { GetResult, GetItem } from '~selva/get/types'
 import { setNestedResult } from './nestedFields'
 import getByType from './getByType'
-import { ensureArray, splitString } from '../util'
+import { ensureArray, splitString, isArray } from '../util'
 import * as logger from '../logger'
 import getWithField from 'lua/src/get/field'
 import { GetFieldFn } from './types'
@@ -40,6 +40,11 @@ function prepareRequiredFieldSegments(fields: string[]): string[][] {
   return requiredFields
 }
 
+type Query = {
+  ids: Record<string, true>
+  fields: Record<string, true>
+}
+
 function setFromAncestors(
   getField: GetFieldFn,
   result: GetResult,
@@ -71,7 +76,7 @@ function setFromAncestors(
 
   let validParents: Id[] = []
   for (let i = 0; i < parents.length; i++) {
-    if (parents[i] !== 'root' && ancestorDepthMap[parents[i]]) {
+    if (ancestorDepthMap[parents[i]]) {
       validParents[validParents.length] = parents[i]
     }
   }
@@ -84,6 +89,10 @@ function setFromAncestors(
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
+      if (includeMeta) {
+        result.$meta.inherit[id].ids[parent] = true
+      }
+
       if (
         !tryAncestorCondition ||
         (tryAncestorCondition && tryAncestorCondition(parent))
@@ -148,7 +157,7 @@ function setFromAncestors(
 
       const parentsOfParents = redis.smembers(parent + '.parents')
       for (const parentOfParents of parentsOfParents) {
-        if (parentOfParents !== 'root' && ancestorDepthMap[parentOfParents]) {
+        if (ancestorDepthMap[parentOfParents]) {
           next[next.length] = parentOfParents
         }
       }
@@ -270,7 +279,11 @@ export default function inherit(
   includeMeta?: boolean,
   fieldFrom?: string | string[]
 ) {
-  logger.info(`INHERITING FIELD ${field}`)
+  logger.info(`INHERIT DAT FIELD ${field}`, result, includeMeta)
+
+  // add from where it inherited and make a descendants there
+  // how to check if descandents in it checl if in acnestors
+
   const inherit = props.$inherit
   if (inherit) {
     if (inherit === true) {

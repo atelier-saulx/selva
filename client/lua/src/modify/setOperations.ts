@@ -5,6 +5,9 @@ import * as redis from '../redis'
 import { markForAncestorRecalculation } from './ancestors'
 import { deleteItem } from './delete'
 import sendEvent from './events'
+import { log, info, configureLogger } from '../logger'
+import globals from '../globals'
+import { arrayIsEqual } from '../util'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -20,6 +23,10 @@ export function resetSet(
   hierarchy: boolean = true
 ): void {
   const setKey = getSetKey(id, field)
+  const current = redis.smembers(setKey)
+  if (arrayIsEqual(current, value)) {
+    return
+  }
 
   if (hierarchy) {
     if (field === 'parents') {
@@ -38,6 +45,8 @@ export function resetSet(
   } else {
     redis.sadd(setKey, ...value)
   }
+
+  sendEvent(id, field, 'update')
 }
 
 export function addToSet(
@@ -48,15 +57,21 @@ export function addToSet(
   hierarchy: boolean = true
 ): void {
   const setKey = getSetKey(id, field)
-  redis.sadd(setKey, ...value)
 
   if (hierarchy) {
     if (field === 'parents') {
       addToParents(id, value, modify)
     } else if (field === 'children') {
-      addToChildren(id, value, modify)
+      value = addToChildren(id, value, modify)
     } else if (field === 'aliases') {
       addAlias(id, value)
+    }
+  }
+
+  if (value.length > 0) {
+    const added = redis.sadd(setKey, ...value)
+    if (added > 0) {
+      sendEvent(id, field, 'update')
     }
   }
 }
@@ -79,6 +94,8 @@ export function removeFromSet(
       removeAlias(id, value)
     }
   }
+
+  sendEvent(id, field, 'update')
 }
 
 export function resetParents(
@@ -87,13 +104,8 @@ export function resetParents(
   value: Id[],
   modify: FnModify
 ): void {
+  // TODO: can be passed from "above"
   const parents = redis.smembers(id + '.parents')
-  // bail if parents are unchanged
-  // needs to be commented for now as we set before recalculating ancestors
-  // this will likely change as we optimize ancestor calculation
-  // if (arrayIsEqual(parents, value)) {
-  //   return
-  // }
 
   // clean up existing parents
   for (const parent of parents) {
@@ -104,29 +116,37 @@ export function resetParents(
 
   // add new parents
   for (const parent of value) {
-    redis.sadd(parent + '.children', id)
-    sendEvent(parent, 'children', 'update')
-
     // recurse if necessary
-    if (redis.exists(parent)) {
+    if (!redis.exists(parent)) {
       modify({ $id: parent })
     }
+
+    redis.sadd(parent + '.children', id)
+    sendEvent(parent, 'children', 'update')
   }
 
   markForAncestorRecalculation(id)
 }
 
 export function addToParents(id: string, value: Id[], modify: FnModify): void {
+  let numAdded = 0
   for (const parent of value) {
     const childrenKey = parent + '.children'
-    redis.sadd(childrenKey, id)
-    sendEvent(parent, 'children', 'update')
-    if (!redis.exists(parent)) {
-      modify({ $id: parent })
+
+    const added = redis.sadd(childrenKey, id)
+    numAdded += added
+    if (added === 1) {
+      if (!redis.exists(parent)) {
+        modify({ $id: parent })
+      }
+
+      sendEvent(parent, 'children', 'update')
     }
   }
 
-  markForAncestorRecalculation(id)
+  if (numAdded > 0) {
+    markForAncestorRecalculation(id)
+  }
 }
 
 export function removeFromParents(id: string, value: Id[]): void {
@@ -144,9 +164,9 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
     // if the child is an object
     // automatic creation is attempted
     if (type(child) === 'table') {
-      if ((<any>child).$id) {
+      if ((<any>child).$id || (<any>child).$alias) {
         child = modify(<any>child) || ''
-      } else if (!(<any>child).$id && (<any>child).type !== null) {
+      } else if ((<any>child).type !== null) {
         ;(<any>child).$id = genId({ type: (<any>child).type })
         child = modify(<any>child) || ''
       } else {
@@ -159,13 +179,38 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
 
     if (child !== '') {
       if (!redis.exists(child)) {
-        modify({ $id: child, parents: { $add: id } })
-      } else {
-        redis.sadd(child + '.parents', id)
-        sendEvent(child, 'parents', 'update')
-
-        markForAncestorRecalculation(child)
+        modify({ $id: child })
       }
+
+      const added = redis.sadd(child + '.parents', id)
+      if (added === 1) {
+        markForAncestorRecalculation(child)
+        sendEvent(child, 'parents', 'update')
+      }
+    }
+  }
+
+  if (
+    globals.$_batchOpts &&
+    globals.$_batchOpts.refField &&
+    globals.$_batchOpts.refField.resetReference === 'children'
+  ) {
+    if (globals.$_batchOpts.refField.last) {
+      const batchId = globals.$_batchOpts.batchId
+      const bufferedChildren = redis.smembers(
+        `___selva_reset_children:${batchId}`
+      )
+
+      // run cleanup at the end of the partial batch that processes large reference arrays
+      for (const child of bufferedChildren) {
+        const parentKey = child + '.parents'
+        const size = redis.scard(parentKey)
+        if (size === 0) {
+          deleteItem(child)
+        }
+      }
+
+      redis.del(`___selva_reset_children:${batchId}`)
     }
   }
 
@@ -189,22 +234,46 @@ export function resetChildren(
   value: Id[],
   modify: FnModify
 ): Id[] {
+  let batchId = null
+  if (
+    globals.$_batchOpts &&
+    globals.$_batchOpts.refField &&
+    globals.$_batchOpts.refField.resetReference === 'children'
+  ) {
+    batchId = globals.$_batchOpts.batchId
+  }
+
   const children = redis.smembers(setKey)
-  // if (arrayIsEqual(children, value)) {
-  //   return
-  // }
+  if (arrayIsEqual(children, value)) {
+    return children
+  }
+
   for (const child of children) {
     const parentKey = child + '.parents'
     redis.srem(parentKey, id)
-    const size = redis.scard(parentKey)
+  }
+
+  redis.del(setKey)
+  const newChildren = addToChildren(id, value, modify)
+  for (const child of children) {
+    const parentKey = child + '.parents'
+    // bit special but good for perf to skip this in batching mode
+    const size = batchId ? 1 : redis.scard(parentKey)
     if (size === 0) {
       deleteItem(child)
     } else {
       markForAncestorRecalculation(child)
     }
   }
-  redis.del(setKey)
-  return addToChildren(id, value, modify)
+
+  if (batchId) {
+    if (children && children.length >= 1) {
+      redis.sadd(`___selva_reset_children:${batchId}`, ...children)
+      redis.expire(`___selva_reset_children:${batchId}`, 60 * 15) // expires in 15 minutes
+    }
+  }
+
+  return newChildren
 }
 
 export function resetAlias(id: string, value: Id[]): void {

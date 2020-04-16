@@ -5,34 +5,6 @@ import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
-import { performance, PerformanceObserver } from 'perf_hooks'
-
-let totalTime = 0
-let t
-let cnt = 0
-const obs = new PerformanceObserver(items => {
-  totalTime += items.getEntries()[0].duration
-  performance.clearMarks()
-  cnt++
-  clearTimeout(t)
-  t = setTimeout(() => {
-    console.log(
-      'SPEND',
-      totalTime,
-      'ms in publish parser',
-      'called ',
-      cnt,
-      'times',
-      'avg',
-      totalTime / cnt,
-      'ms'
-    )
-    cnt = 0
-    totalTime = 0
-  }, 500)
-})
-obs.observe({ entryTypes: ['measure'] })
-
 let srv
 let port: number
 test.before(async t => {
@@ -82,12 +54,7 @@ test.after(async _t => {
 })
 
 test.serial('subscription find', async t => {
-  const client = connect(
-    {
-      port
-    },
-    { loglevel: 'info' }
-  )
+  const client = connect({ port })
 
   const matches = []
   const teams = []
@@ -169,7 +136,7 @@ test.serial('subscription find', async t => {
     $id: matches[1].$id,
     value: 8
   })
-  await wait(300)
+  await wait(1000)
   t.is(cnt, 3)
 
   sub.unsubscribe()
@@ -215,7 +182,7 @@ test.serial('subscription find', async t => {
     cnt2++
   })
 
-  await wait(300)
+  await wait(1000)
   t.is(cnt2, 1)
 
   let matchTeam
@@ -233,7 +200,7 @@ test.serial('subscription find', async t => {
 
   await Promise.all(matches.map(t => client.set(t)))
 
-  await wait(300)
+  await wait(1000)
   t.is(cnt2, 2)
 
   sub2.unsubscribe()
@@ -263,15 +230,18 @@ test.serial('subscription find', async t => {
   })
 
   let cnt3 = 0
-  obs3.subscribe(s => {
+  obs3.subscribe(d => {
+    console.log('incoming cnt 3', d)
     cnt3++
   })
 
-  await wait(300)
+  await wait(1000)
   // how to handle large responses ???
 
   // remove unpack
-  const amount = 5000 // 10k wrong 5k fine
+
+  // for now 1k
+  const amount = 10 // 10k wrong 5k fine
 
   const x = []
   for (let i = 0; i < amount; i++) {
@@ -286,14 +256,18 @@ test.serial('subscription find', async t => {
 
   var d = Date.now()
   const ids = await Promise.all(x)
-  console.log('SET 5k', Date.now() - d, 'ms')
+  console.log('SET 1k', Date.now() - d, 'ms')
 
-  await wait(1000)
+  await wait(2000)
+
+  console.log('set single')
   client.set({
     $id: ids[6],
     name: 'FLURRRRP'
   })
-  await wait(1000)
+  await wait(7000)
 
+  console.log('check for cnt')
   t.is(cnt3, 3)
+  await wait(2000)
 })

@@ -128,9 +128,15 @@ test.serial(
   async t => {
     const client = connect({ port }, { loglevel: 'info' })
 
+    const child = await client.set({
+      type: 'match',
+      title: { en: 'child' }
+    })
+
     const match1 = await client.set({
       type: 'match',
-      title: { en: 'yesh' }
+      title: { en: 'yesh' },
+      children: { $add: child }
     })
 
     t.deepEqualIgnoreOrder(
@@ -138,11 +144,13 @@ test.serial(
         $id: match1,
         $language: 'en',
         id: true,
-        title: true
+        title: true,
+        children: true
       }),
       {
         id: match1,
-        title: 'yesh'
+        title: 'yesh',
+        children: [child]
       }
     )
 
@@ -150,7 +158,8 @@ test.serial(
       $id: match1,
       $source: 'yesh-source',
       type: 'match',
-      title: { en: 'yesh2' }
+      title: { en: 'yesh2' },
+      children: { $delete: child }
     })
 
     t.deepEqualIgnoreOrder(
@@ -170,7 +179,8 @@ test.serial(
       $id: match1,
       $source: 'noes-source',
       type: 'match',
-      title: { en: 'yesh3' }
+      title: { en: 'yesh3' },
+      children: { $add: child }
     })
 
     t.deepEqualIgnoreOrder(
@@ -178,11 +188,13 @@ test.serial(
         $id: match1,
         $language: 'en',
         id: true,
-        title: true
+        title: true,
+        children: true
       }),
       {
         id: match1,
-        title: 'yesh2'
+        title: 'yesh2',
+        children: []
       }
     )
 
@@ -190,7 +202,8 @@ test.serial(
       $id: match1,
       $source: 'yesh-source',
       type: 'match',
-      title: { en: 'yesh4' }
+      title: { en: 'yesh4' },
+      children: { $add: child }
     })
 
     t.deepEqualIgnoreOrder(
@@ -198,11 +211,13 @@ test.serial(
         $id: match1,
         $language: 'en',
         id: true,
-        title: true
+        title: true,
+        children: true
       }),
       {
         id: match1,
-        title: 'yesh4'
+        title: 'yesh4',
+        children: [child]
       }
     )
 
@@ -216,22 +231,30 @@ test.serial(
   async t => {
     const client = connect({ port }, { loglevel: 'info' })
 
+    const child = await client.set({
+      type: 'match',
+      title: { en: 'child' }
+    })
+
     const match1 = await client.set({
       type: 'match',
-      title: { en: 'yesh' }
+      title: { en: 'yesh' },
+      children: { $add: child }
     })
 
     t.deepEqualIgnoreOrder(
       await client.get({
-        $id: match1,
         $source: 'yesh-source',
+        $id: match1,
         $language: 'en',
         id: true,
-        title: true
+        title: true,
+        children: true
       }),
       {
         id: match1,
-        title: 'yesh'
+        title: 'yesh',
+        children: [child]
       }
     )
 
@@ -239,7 +262,8 @@ test.serial(
       $id: match1,
       $source: { $overwrite: true, $name: 'yesh-source' },
       type: 'match',
-      title: { en: 'yesh2' }
+      title: { en: 'yesh2' },
+      children: { $delete: child }
     })
 
     t.deepEqualIgnoreOrder(
@@ -247,11 +271,13 @@ test.serial(
         $id: match1,
         $language: 'en',
         id: true,
-        title: true
+        title: true,
+        children: true
       }),
       {
         id: match1,
-        title: 'yesh2'
+        title: 'yesh2',
+        children: []
       }
     )
 
@@ -262,7 +288,8 @@ test.serial(
         $name: 'no-source'
       },
       type: 'match',
-      title: { en: 'yesh3' }
+      title: { en: 'yesh3' },
+      children: { $add: child }
     })
 
     t.deepEqualIgnoreOrder(
@@ -270,11 +297,13 @@ test.serial(
         $id: match1,
         $language: 'en',
         id: true,
-        title: true
+        title: true,
+        children: true
       }),
       {
         id: match1,
-        title: 'yesh2'
+        title: 'yesh2',
+        children: []
       }
     )
 
@@ -282,7 +311,8 @@ test.serial(
       $id: match1,
       $source: { $overwrite: ['yesh-source'], $name: 'yesh-box' },
       type: 'match',
-      title: { en: 'yesh4' }
+      title: { en: 'yesh4' },
+      children: { $add: child }
     })
 
     t.deepEqualIgnoreOrder(
@@ -290,13 +320,37 @@ test.serial(
         $id: match1,
         $language: 'en',
         id: true,
-        title: true
+        title: true,
+        children: true
       }),
       {
         id: match1,
-        title: 'yesh4'
+        title: 'yesh4',
+        children: [child]
       }
     )
+
+    // broken test for children/parents
+    // await client.set({
+    //   $id: child,
+    //   $source: { $name: 'random-guy' },
+    //   parents: { $delete: match1 }
+    // })
+
+    // t.deepEqualIgnoreOrder(
+    //   await client.get({
+    //     $id: match1,
+    //     $language: 'en',
+    //     id: true,
+    //     title: true,
+    //     children: true
+    //   }),
+    //   {
+    //     id: match1,
+    //     title: 'yesh4',
+    //     children: [child]
+    //   }
+    // )
 
     await client.delete('root')
     client.destroy()

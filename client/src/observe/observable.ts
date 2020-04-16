@@ -2,6 +2,7 @@ type SubscriptionObserver<T> = {
   next: (value: T) => void
   error: (err: Error) => void
   complete: () => void
+  version?: string
   closed: boolean // implemented as getter
 }
 
@@ -28,7 +29,7 @@ class Subscription<T> {
     if (this.observer.start) {
       this.observer.start(this)
 
-      // if alreadfy closed
+      // if already closed
       if (this.closed) {
         return
       }
@@ -72,6 +73,8 @@ class Subscription<T> {
     }
 
     try {
+      // why like this :/
+      // just handle this from the client itself
       const cleanup = this.observe(subObserver)
       this.cleanup =
         typeof cleanup === 'function'

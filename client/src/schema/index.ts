@@ -145,12 +145,10 @@ export const defaultFields: Record<string, FieldSchema> = {
     type: 'string'
   },
   children: {
-    type: 'references',
-    search: { index: 'default', type: ['TAG'] }
+    type: 'references'
   },
   parents: {
-    type: 'references',
-    search: { index: 'default', type: ['TAG'] }
+    type: 'references'
   },
   ancestors: {
     type: 'references',

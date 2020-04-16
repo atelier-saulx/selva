@@ -22,6 +22,7 @@ import { addFieldToSearch } from './search'
 import sendEvent from './events'
 import { setUpdatedAt, setCreatedAt } from './timestamps'
 import { cleanUpSuggestions } from './delete'
+import globals from '../globals'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -112,8 +113,6 @@ function setInternalArrayStructure(
   if (field.indexOf('.') !== -1) {
     redis.hset(id, field, '___selva_$set')
   }
-
-  sendEvent(id, field, 'update')
 }
 
 function setObject(
@@ -129,8 +128,9 @@ function setObject(
       const result = redis.hsetnx(id, field, item.$default)
       if (result === 0) {
         redis.hincrby(id, field, item.$increment)
-        sendEvent(id, field, 'update')
       }
+
+      sendEvent(id, field, 'update')
       return
     }
 
@@ -139,7 +139,12 @@ function setObject(
     redis.hincrby(id, field, item.$increment)
     sendEvent(id, field, 'update')
   } else if (item.$ref) {
-    redis.hset(id, `${field}.$ref`, item.$ref)
+    const current = redis.hget(id, item.$ref)
+    if (current !== `${field}.$ref`) {
+      redis.hset(id, `${field}.$ref`, item.$ref)
+    }
+
+    sendEvent(id, field, 'update')
   } else {
     setField(id, field, item, false, source)
   }
@@ -153,7 +158,41 @@ function setField(
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   if (isSetPayload(value) && field) {
+    if (source) {
+      const sourceString: string | null = !source
+        ? null
+        : type(source) === 'string'
+        ? source
+        : (<any>source).$name
+
+      if (sourceString && !(<any>source).$overwrite) {
+        const currentSource = redis.hget(id, '$source_' + field)
+        if (currentSource && currentSource !== '' && currentSource !== source) {
+          // ignore updates from different sources
+          return
+        }
+      } else if (sourceString && isArray((<any>source).$overwrite)) {
+        const currentSource = redis.hget(id, '$source_' + field)
+
+        const sourceAry = <string[]>(<any>source).$overwrite
+        let matching = false
+        for (const sourceId of sourceAry) {
+          if (sourceId === currentSource) {
+            matching = true
+          }
+        }
+
+        if (!matching) {
+          // ignore updates from different sources if no overwrite specified for this source
+          return
+        }
+      }
+
+      redis.hset(id, '$source_' + field, sourceString)
+    }
+
     setInternalArrayStructure(id, field, value)
+
     return
   }
 
@@ -217,10 +256,17 @@ function setField(
     redis.hset(id, '$source_' + field, sourceString)
   }
 
+  const current = redis.hget(id, field)
+  const strVal = tostring(value)
+
+  if (current === strVal) {
+    return
+  }
+
   if (fromDefault) {
-    redis.hsetnx(id, field, tostring(value))
+    redis.hsetnx(id, field, strVal)
   } else {
-    redis.hset(id, field, tostring(value))
+    redis.hset(id, field, strVal)
   }
 
   addFieldToSearch(id, field, value)
@@ -251,7 +297,7 @@ function removeSpecified(
   id: Id,
   path: string,
   payload: Record<string, any>
-): string[] {
+): void {
   let falses: string[] = []
   let onlyFalse = true
   for (const key in payload) {
@@ -273,47 +319,52 @@ function removeSpecified(
         }
 
         redis.hdel(id, keyPath)
+        redis.hdel(id, '$source_' + keyPath)
+        sendEvent(id, keyPath, 'update')
       } else if (payload[key] === false) {
         falses[falses.length] = keyPath
       } else if (type(payload[key]) === 'table') {
-        const nested = removeSpecified(id, keyPath, payload[key])
-        for (const item of nested) {
-          falses[falses.length] = item
-        }
+        onlyFalse = false
+        removeSpecified(id, keyPath, payload[key])
       }
     }
   }
 
-  // only run this top level
-  if (onlyFalse && path === '') {
+  if (onlyFalse) {
     const allKeys = redis.hkeys(id)
     logger.info('allKeys', allKeys)
     logger.info('falses', falses)
     for (const key of allKeys) {
       let skip = false
-      for (const setAsFalse of falses) {
-        if (
-          stringStartsWith(key, setAsFalse) ||
-          stringEndsWith(key, '.ancestors') ||
-          key === 'type' ||
-          key === 'createdAt' ||
-          key === 'updatedAt'
-        ) {
-          skip = true
-          break
+      if (stringStartsWith(key, path)) {
+        for (const setAsFalse of falses) {
+          if (
+            stringStartsWith(key, setAsFalse) ||
+            stringEndsWith(key, '.ancestors') ||
+            key === 'type' ||
+            key === 'createdAt' ||
+            key === 'updatedAt'
+          ) {
+            skip = true
+            break
+          }
         }
-      }
 
-      if (!skip) {
-        redis.hdel(id, key)
+        if (!skip) {
+          redis.hdel(id, '$source_' + key)
+          redis.hdel(id, key)
+          sendEvent(id, key, 'update')
+        }
       }
     }
   }
-
-  return falses
 }
 
 function update(payload: SetOptions): Id | null {
+  if (payload.$_batchOpts) {
+    globals.$_batchOpts = payload.$_batchOpts
+  }
+
   if (!payload.$id) {
     if (payload.$alias) {
       const accessAliases: string[] = ensureArray(payload.$alias)

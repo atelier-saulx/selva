@@ -1,12 +1,14 @@
+import { ClientType } from './redisWrapper'
+
 type args = (string | number)[]
 
 abstract class RedisMethods {
   abstract queue(
     command: string,
-    args: args,
+    args: (string | number)[],
     resolve: (x: any) => void,
     reject: (x: Error) => void,
-    subscriber?: boolean
+    type?: ClientType
   ): void
 
   async command(key: string, ...args: args): Promise<any> {
@@ -332,6 +334,12 @@ abstract class RedisMethods {
   async sunion(...key: string[]): Promise<any[]> {
     return new Promise((resolve, reject) => {
       this.queue('sunion', key, resolve, reject)
+    })
+  }
+
+  async publish(channel: string, value: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.queue('publish', [channel, value], resolve, reject)
     })
   }
 

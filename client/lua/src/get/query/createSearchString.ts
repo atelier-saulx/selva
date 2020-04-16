@@ -138,7 +138,7 @@ const addField = (
       for (let i = 0; i < words.length; i++) {
         const suggestion: string[] = redis.pcall(
           'ft.sugget',
-          `sug_${language}`,
+          `sug`,
           words[i],
           'MAX',
           '20'

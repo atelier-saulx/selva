@@ -51,15 +51,17 @@ export type Sort = {
   $order?: 'asc' | 'desc'
 }
 
-export type List = {
-  $offset?: number
-  $limit?: number
-  $sort?: Sort | Sort[]
-  $find?: Find
-}
+export type List =
+  | true
+  | {
+      $offset?: number
+      $limit?: number
+      $sort?: Sort | Sort[]
+      $find?: Find
+    }
 
 export type GetField<T> = {
-  $field?: string | string[]
+  $field?: string | string[] | { path: string | string[]; value: GetOptions }
   $inherit?: Inherit
   $list?: List
   $find?: Find
@@ -99,4 +101,5 @@ export type GetOptions = GetItem & {
   $id?: Id
   $version?: string
   $language?: string
+  $rawAncestors?: true
 }

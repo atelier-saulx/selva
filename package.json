@@ -17,5 +17,15 @@
     "watchServer": "cd server && yarn watch",
     "watchClientTests": "cd client && yarn watch",
     "watch": "watch"
+  },
+  "prettier": "@saulx/prettier-config",
+  "eslintConfig": {
+    "extends": "@saulx/eslint-config"
+  },
+  "devDependencies": {
+    "eslint": "^6.5.1",
+    "prettier": "^1.18.2",
+    "@saulx/eslint-config": "https://github.com/atelier-saulx/eslint-config",
+    "@saulx/prettier-config": "https://github.com/atelier-saulx/prettier-config"
   }
 }

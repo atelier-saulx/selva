@@ -1,5 +1,5 @@
 import * as logger from '../../logger'
-import { GetOptions, GetResult } from '~selva/get/types'
+import { GetOptions, GetResult, Sort } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
@@ -11,6 +11,7 @@ import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
 import parseSubscriptions from './parseSubscriptions'
+import { setNestedResult } from '../nestedFields'
 
 const parseNested = (
   opts: GetOptions,
@@ -19,7 +20,7 @@ const parseNested = (
   traverse?: string | string[]
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
-    if (opts.$list.$find) {
+    if (typeof opts.$list === 'object' && opts.$list.$find) {
       if (!opts.$list.$find.$traverse) {
         opts.$list.$find.$traverse = traverse
       }
@@ -74,6 +75,7 @@ const parseQuery = (
 
   let resultIds: any[] | undefined = []
   let resultFork: Fork | undefined
+
   const meta: Meta = { ids: resultIds }
 
   if (getOptions.$list || getOptions.$find) {
@@ -136,8 +138,21 @@ const parseQuery = (
       }
     }
 
-    for (const id in idMap) {
-      resultIds[resultIds.length] = id
+    if (
+      getOptions.$list &&
+      typeof getOptions.$list === 'object' &&
+      (getOptions.$list.$limit ||
+        getOptions.$list.$offset ||
+        getOptions.$list.$sort)
+    ) {
+      for (const id in idMap) {
+        resultIds[resultIds.length] = id
+      }
+      resultIds = parseList(resultIds, getOptions.$list)
+    } else {
+      for (const id in idMap) {
+        resultIds[resultIds.length] = id
+      }
     }
   } else if (getOptions.$list) {
     resultIds = parseList(resultIds, getOptions.$list)
@@ -165,16 +180,18 @@ const parseQuery = (
         $find: find.$find
       }
 
-      if (getOptions.$list && getOptions.$list.$sort) {
-        opts.$list.$sort = getOptions.$list.$sort
-      }
+      if (typeof getOptions.$list === 'object') {
+        if (getOptions.$list && getOptions.$list.$sort) {
+          opts.$list.$sort = getOptions.$list.$sort
+        }
 
-      if (getOptions.$list && getOptions.$list.$offset) {
-        opts.$list.$offset = getOptions.$list.$offset
-      }
+        if (getOptions.$list && getOptions.$list.$offset) {
+          opts.$list.$offset = getOptions.$list.$offset
+        }
 
-      if (getOptions.$list && getOptions.$list.$limit) {
-        opts.$list.$limit = getOptions.$list.$limit
+        if (getOptions.$list && getOptions.$list.$limit) {
+          opts.$list.$limit = getOptions.$list.$limit
+        }
       }
 
       if (resultIds.length !== 0) {
@@ -231,14 +248,20 @@ const parseQuery = (
     }
   }
 
-  const sort = getOptions.$list && getOptions.$list.$sort
+  const sort =
+    getOptions.$list &&
+    typeof getOptions.$list === 'object' &&
+    getOptions.$list.$sort
 
   meta.ast = resultFork
-  meta.sort = sort
+  if (sort) {
+    meta.sort = sort
+  }
   meta.ids = resultIds
 
   if (
     getOptions.$list &&
+    typeof getOptions.$list === 'object' &&
     getOptions.$list.$find &&
     getOptions.$list.$find.$traverse
   ) {
@@ -289,14 +312,21 @@ const queryGet = (
     if (!result.$meta.query) {
       result.$meta.query = []
     }
-    parseSubscriptions(result.$meta.query, meta, ids, getOptions, traverse)
+    parseSubscriptions(
+      result.$meta.query,
+      meta,
+      ids,
+      getOptions,
+      result,
+      language,
+      traverse
+    )
   }
 
-  // hey smurky boys
   if (getOptions.$find) {
-    result[resultField] = results.length ? results[0] : {}
+    setNestedResult(result, resultField, results.length ? results[0] : {})
   } else {
-    result[resultField] = results
+    setNestedResult(result, resultField, results)
   }
 
   if (err) {

@@ -9,6 +9,10 @@ function createSearchArgs(
   fork: Fork
 ): string[] {
   let $list = getOptions.$list
+  if ($list === true) {
+    $list = {}
+  }
+
   let isNoList = false
   if (!$list) {
     if (getOptions.$find) {

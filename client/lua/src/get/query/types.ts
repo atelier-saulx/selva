@@ -30,6 +30,7 @@ export type FieldSubscription = {
 }
 
 export type QuerySubscription = {
+  language?: string
   idFields?: Record<string, true>
   queryId: string
   ids?: Record<string, true>
