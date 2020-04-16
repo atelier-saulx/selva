@@ -271,6 +271,12 @@ const parseQuery = (
 
           const snurf = ballz[0]
 
+          if (snurf.time && snurf.time.nextRefresh) {
+            setMeta(undefined, undefined, {
+              ___refreshAt: snurf.time.nextRefresh
+            })
+          }
+
           const fields = snurf.fields
 
           logger.info('flapperdrol', meta.traverse, snurf)

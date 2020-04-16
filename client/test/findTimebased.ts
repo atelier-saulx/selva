@@ -190,8 +190,8 @@ test.serial('find - already started', async t => {
           }
         }
       })
-    ).$meta.query[0].time,
-    { nextRefresh }
+    ).$meta.___refreshAt,
+    nextRefresh
   )
 
   console.log(
