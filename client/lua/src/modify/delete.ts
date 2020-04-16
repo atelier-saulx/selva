@@ -2,7 +2,12 @@ import { Id, FieldSchemaOther } from '~selva/schema/index'
 import { markForAncestorRecalculation } from './ancestors'
 import * as r from '../redis'
 import sendEvent from './events'
-import { stringEndsWith, splitString, stringStartsWith } from 'lua/src/util'
+import {
+  stringEndsWith,
+  splitString,
+  stringStartsWith,
+  joinString
+} from 'lua/src/util'
 import { getSchema } from 'lua/src/schema/index'
 import { getTypeFromId } from 'lua/src/typeIdMapping'
 import * as logger from '../logger'
@@ -107,9 +112,8 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
 
   cleanUpAliases(id)
 
-  sendEvent(id, '', 'delete')
-
   const vals = r.hgetall(id)
+  const existingFields: string[] = []
   for (let i = 0; i < vals.length; i += 2) {
     // FIXME: a bit hacky, always assumes we have english enabled
     if (
@@ -118,6 +122,11 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
       !stringStartsWith(vals[i], '$source_')
     ) {
       cleanUpSuggestions(id, vals[i])
+    } else if (
+      !stringStartsWith(vals[i], '___escaped') &&
+      !stringStartsWith(vals[i], '$source_')
+    ) {
+      existingFields[existingFields.length] = vals[i]
     }
 
     // found a set value, cleaning up the set key
@@ -127,5 +136,8 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
   }
 
   // returns true if it existed
-  return r.del(id) > 0
+  const result = r.del(id) > 0
+
+  sendEvent(id, '', 'delete:' + joinString(existingFields, ','))
+  return result
 }
