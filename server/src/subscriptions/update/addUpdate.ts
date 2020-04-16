@@ -54,7 +54,7 @@ const addUpdate = async (
     // handle batch mechanism
     subscription.inProgress = true
 
-    await sendUpdate(subscriptionManager, subscription, isDelete)
+    await sendUpdate(subscriptionManager, subscription)
     subscription.inProgress = false
   }
 }

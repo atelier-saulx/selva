@@ -4,6 +4,7 @@ import traverseTree from './traverseTree'
 import addUpdate from './addUpdate'
 
 const prefixLength = prefixes.events.length
+const deleteLength = 'delete:'.length
 
 const addListeners = (subsManager: SubscriptionManager) => {
   // process.nextTick
@@ -26,8 +27,7 @@ const addListeners = (subsManager: SubscriptionManager) => {
         if (message === 'update') {
           traverseTree(subsManager, eventName)
         } else if (message.startsWith('delete')) {
-          const fields = message.slice('delete:'.length).split(',')
-          console.log(fields)
+          const fields = message.slice(deleteLength).split(',')
           fields.forEach(v => {
             traverseTree(subsManager, eventName + '.' + v)
           })
