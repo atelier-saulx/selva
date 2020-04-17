@@ -601,7 +601,11 @@ export class RedisWrapper {
     this.scriptShas[type] = {}
   }
 
-  execBatch(origSlice: RedisCommand[], type: ClientType): Promise<void> {
+  execBatch(
+    origSlice: RedisCommand[],
+    type: ClientType,
+    noEval?: boolean
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.isBusy[type]) {
         console.log('Server is busy - retrying in 5 seconds')
@@ -622,9 +626,10 @@ export class RedisWrapper {
         // dont need this type
         const batch = this[type].batch()
 
-        const slice = isEmpty(this.scriptBatchingEnabled[type])
-          ? origSlice
-          : this.batchEvalScriptArgs(origSlice, type)
+        const slice =
+          noEval || isEmpty(this.scriptBatchingEnabled[type])
+            ? origSlice
+            : this.batchEvalScriptArgs(origSlice, type)
 
         slice.forEach(({ command, args }) => {
           if (!batch[command]) {
@@ -646,7 +651,7 @@ export class RedisWrapper {
               if (v instanceof Error) {
                 if (v.message.indexOf('BUSY') !== -1) {
                   hasBusy = true
-                  busySlice.push(origSlice[i])
+                  busySlice.push(slice[i])
                 } else if (slice[i].reject) {
                   slice[i].reject(v)
                 } else {
@@ -658,7 +663,7 @@ export class RedisWrapper {
             })
             if (hasBusy) {
               this.isBusy[type] = true
-              this.execBatch(busySlice, type).then(v => {
+              this.execBatch(busySlice, type, true).then(v => {
                 resolve()
               })
             } else {
