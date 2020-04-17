@@ -13,6 +13,12 @@ export default class SubscriptionManager {
   public client: SelvaClient
 
   public incomingCount: number = 0
+
+  public stagedForUpdates: Set<Subscription> = new Set()
+
+  public stagedInProgess: boolean = false
+
+  public stagedTimeout: NodeJS.Timeout
   // public isDestroyed: boolean = false
   // to check if the server is still ok
   public serverHeartbeatTimeout: NodeJS.Timeout
@@ -95,12 +101,17 @@ export default class SubscriptionManager {
         channel + '_tree',
         channel + '_version'
       )
-      this.subscriptions[channel].version = version
-      this.subscriptions[channel].tree = JSON.parse(tree)
-      this.subscriptions[channel].treeVersion = hash(tree)
-      addSubscriptionToTree(this, subscription)
+
+      if (!tree) {
+        addUpdate(this, subscription)
+      } else {
+        this.subscriptions[channel].version = version
+        this.subscriptions[channel].tree = JSON.parse(tree)
+        this.subscriptions[channel].treeVersion = hash(tree)
+        addSubscriptionToTree(this, subscription)
+      }
     } else {
-      await addUpdate(this, subscription)
+      addUpdate(this, subscription)
     }
   }
 
@@ -224,6 +235,11 @@ export default class SubscriptionManager {
 
     this.subscriptions = {}
     this.tree = {}
+
+    this.stagedInProgess = false
+    this.stagedForUpdates = new Set()
+    clearTimeout(this.stagedTimeout)
+
     clearTimeout(this.revalidateSubscriptionsTimeout)
     clearTimeout(this.serverHeartbeatTimeout)
     clearTimeout(this.refreshNowQueriesTimeout)

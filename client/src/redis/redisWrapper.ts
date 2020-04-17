@@ -6,7 +6,7 @@ import { ClientObject, RedisCommand } from './types'
 import prefixes from '../prefixes'
 
 const redisClients: Record<string, RedisWrapper> = {}
-const HEARTBEAT_TIMER = 5e3
+const HEARTBEAT_TIMER = 15e3
 
 const isEmpty = (obj: { [k: string]: any }): boolean => {
   for (const _k in obj) {
