@@ -135,7 +135,7 @@ export function addSubscriptionToTree(
     if (!tree) {
       console.error('No tree on subscription', subscription)
     } else {
-      console.log('add sub tree', subscription.get, tree)
+      // console.log('add sub tree', subscription.get, tree)
 
       if (tree.___refreshAt) {
         subscription.refreshAt = tree.___refreshAt

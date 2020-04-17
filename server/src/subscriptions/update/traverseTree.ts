@@ -9,6 +9,11 @@ const traverse = (
   // make it batch
   const path = channel.split('.')
   const id = path[0]
+
+  if (id === 're4XknOjM') {
+    console.log(id, path)
+  }
+
   let segment = subscriptionManager.tree
   let prefix: string | undefined
   for (let i = 1; i < path.length; i++) {
@@ -17,6 +22,10 @@ const traverse = (
       if (segment.___ids) {
         const subs = segment.___ids[id]
         if (subs) {
+          if (id === 're4XknOjM') {
+            console.log('YESH TITLE', id, path)
+          }
+
           subs.forEach(subscription => {
             if (!subscription.inProgress) {
               addUpdate(subscriptionManager, subscription)
