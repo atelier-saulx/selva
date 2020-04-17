@@ -54,7 +54,7 @@ test.serial('subscription list', async t => {
   const match = await client.set({
     $language: 'en',
     type: 'match',
-    title: 'football',
+    title: 'football match',
     parents: [sport]
   })
 
@@ -87,7 +87,7 @@ test.serial('subscription list', async t => {
 
   t.plan(1)
   obs.subscribe(res => {
-    t.deepEqual(res.items, [{ title: 'football' }])
+    t.deepEqual(res.items, [{ title: 'football match' }])
   })
 
   await wait(1000)
