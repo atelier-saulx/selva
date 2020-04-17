@@ -646,7 +646,7 @@ export class RedisWrapper {
               if (v instanceof Error) {
                 if (v.message.indexOf('BUSY') !== -1) {
                   hasBusy = true
-                  busySlice.push(slice[i])
+                  busySlice.push(origSlice[i])
                 } else if (slice[i].reject) {
                   slice[i].reject(v)
                 } else {
