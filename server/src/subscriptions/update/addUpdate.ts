@@ -7,32 +7,32 @@ var delayCount = 0
 const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   console.log(
     'SEND UPDATES - handled events:',
+    subscriptionManager.stagedForUpdates.size,
     subscriptionManager.incomingCount
   )
 
   subscriptionManager.stagedForUpdates.forEach(subscription => {
     subscription.inProgress = false
-
-    console.log('update subscription', subscription.channel)
+    console.log('update subscription and clear inProgress', subscription.get)
+    subscriptionManager.stagedForUpdates.delete(subscription)
     sendUpdate(subscriptionManager, subscription)
       .then(v => {
-        console.log('SEND UPDATE FOR', subscription.channel)
+        // console.log('SEND UPDATE FOR', subscription.channel)
       })
       .catch(err => {
         console.log('WRONG ERROR IN SENDUPDATE', err)
       })
   })
 
-  subscriptionManager.stagedForUpdates = new Set()
   subscriptionManager.stagedInProgess = false
   subscriptionManager.incomingCount = 0
   delayCount = 0
 }
 
-const rate = 5
+const rate = 3
 
 const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
-  if (totalTime < 5e3) {
+  if (totalTime < 10e3) {
     const lastIncoming = subscriptionManager.incomingCount
     delayCount++
     console.log('delay #', delayCount, lastIncoming)
@@ -44,7 +44,6 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
         // subscriptionManager.incomingCount = 0
         // increase time
         time *= 1.5
-
         // delay again
         subscriptionManager.stagedTimeout = setTimeout(() => {
           delay(subscriptionManager, time, totalTime + time)
@@ -72,11 +71,13 @@ const addUpdate = (
   custom?: { type: string; payload?: any }
 ) => {
   if (subscription.inProgress) {
+    if (!subscriptionManager.stagedInProgess) {
+      console.error('CANNOT HAVE BATCH UPDATES IN PROGRESS + SUBS IN PROGRESS')
+    }
     console.log('Sub in progess')
   } else {
-    subscription.inProgress = true
-
     if (custom) {
+      subscription.inProgress = true
       sendUpdate(subscriptionManager, subscription, custom)
         .then(v => {
           subscription.inProgress = false
@@ -87,7 +88,7 @@ const addUpdate = (
         })
     } else {
       subscriptionManager.stagedForUpdates.add(subscription)
-
+      subscription.inProgress = true
       if (!subscriptionManager.stagedInProgess) {
         subscriptionManager.stagedInProgess = true
         subscriptionManager.stagedTimeout = setTimeout(() => {
