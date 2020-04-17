@@ -13,8 +13,6 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
 
   subscriptionManager.stagedForUpdates.forEach(subscription => {
     subscription.inProgress = false
-    console.log('update subscription and clear inProgress', subscription.get)
-    subscriptionManager.stagedForUpdates.delete(subscription)
     sendUpdate(subscriptionManager, subscription)
       .then(v => {
         // console.log('SEND UPDATE FOR', subscription.channel)
@@ -24,6 +22,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
       })
   })
 
+  subscriptionManager.stagedForUpdates = new Set()
   subscriptionManager.stagedInProgess = false
   subscriptionManager.incomingCount = 0
   delayCount = 0
