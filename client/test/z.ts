@@ -58,27 +58,63 @@ test.serial('subscription list', async t => {
     parents: [sport]
   })
 
+  // const obs = await client.observe({
+  //   $id: match,
+  //   $language: 'en',
+  //   items: {
+  //     title: true,
+  //     $list: {
+  //       $limit: 10,
+  //       $find: {
+  //         $traverse: 'ancestors',
+  //         $filter: {
+  //           $field: 'type',
+  //           $operator: '=',
+  //           $value: 'sport'
+  //         },
+  //         $find: {
+  //           $traverse: 'descendants',
+  //           $filter: {
+  //             $field: 'type',
+  //             $operator: '=',
+  //             $value: 'match'
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // })
+
   const obs = await client.observe({
     $id: match,
     $language: 'en',
-    items: {
+    sports: {
       title: true,
       $list: {
         $limit: 10,
         $find: {
           $traverse: 'ancestors',
-          $filter: {
-            $field: 'type',
-            $operator: '=',
-            $value: 'sport'
-          },
-          $find: {
-            $traverse: 'descendants',
-            $filter: {
+          $filter: [
+            {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
+              $value: 'sport'
             }
+          ]
+        }
+      },
+      matches: {
+        title: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              }
+            ]
           }
         }
       }
@@ -87,7 +123,14 @@ test.serial('subscription list', async t => {
 
   t.plan(1)
   obs.subscribe(res => {
-    t.deepEqual(res.items, [{ title: 'football match' }])
+    console.log(
+      'res',
+      res.sports.map(s => s.matches)
+    )
+    t.deepEqual(
+      res.sports.map(s => s.matches),
+      [[{ title: 'football match' }]]
+    )
   })
 
   await wait(1000)
