@@ -240,21 +240,13 @@ export default class SubscriptionManager {
 
     this.subscriptions = {}
     this.tree = {}
-<<<<<<< HEAD
 
     this.stagedInProgess = false
     this.stagedForUpdates = new Set()
     clearTimeout(this.stagedTimeout)
-
-=======
-    this.stagedForUpdates = new Set()
-    this.stagedInProgess = false
->>>>>>> master
     clearTimeout(this.revalidateSubscriptionsTimeout)
     clearTimeout(this.serverHeartbeatTimeout)
     clearTimeout(this.refreshNowQueriesTimeout)
-
-    clearTimeout(this.stagedTimeout)
   }
 
   async connect(opts: ConnectOptions): Promise<void> {
