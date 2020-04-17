@@ -50,7 +50,7 @@ const sendUpdate = async (
     const newTreeJson = JSON.stringify(newTree)
     const newTreeVersion = hash(newTreeJson)
 
-    if (treeVersion !== newTreeVersion) {
+    if (treeVersion && treeVersion !== newTreeVersion) {
       if (treeVersion) {
         removeSubscriptionFromTree(subscriptionManager, subscription)
       }
@@ -70,7 +70,7 @@ const sendUpdate = async (
     // remove tree ?
   }
 
-  if (currentVersion === newVersion) {
+  if (currentVersion && currentVersion === newVersion) {
     return
   }
 

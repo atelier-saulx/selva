@@ -12,7 +12,7 @@ const addListeners = async (
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {
         if (client !== subsManager.client.redis.redis.uuid) {
-          console.log('received new client on server', client)
+          // console.log('received new client on server', client)
           subsManager.clients[client] = { subscriptions: new Set(), lastTs: ts }
           subsManager.client.redis.byType.hset(
             'sClient',
@@ -22,6 +22,7 @@ const addListeners = async (
           )
         }
       } else {
+        // console.log('client heartbeat', client, ts)
         subsManager.clients[client].lastTs = ts
         subsManager.client.redis.byType.hset(
           'sClient',
@@ -32,11 +33,11 @@ const addListeners = async (
       }
     } else if (channel === prefixes.new) {
       const { client, channel } = JSON.parse(message)
-      console.log('Got a create sub on (server)', channel.slice(-5))
+      console.log('Got a create sub on (server)', channel)
       subsManager.addClientSubscription(client, channel)
     } else if (channel === prefixes.remove) {
       const { client, channel } = JSON.parse(message)
-      console.log('Got a remove sub on (server)', channel.slice(-5))
+      console.log('Got a remove sub on (server)', channel)
       subsManager.removeClientSubscription(client, channel)
     }
   })

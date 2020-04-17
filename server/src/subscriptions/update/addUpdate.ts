@@ -40,18 +40,11 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
     subscriptionManager.stagedTimeout = setTimeout(() => {
       const incoming = subscriptionManager.incomingCount - lastIncoming
       if (incoming / time > rate) {
-        // too fast ait a bit longer
-        // reset count
-        // subscriptionManager.incomingCount = 0
-        // increase time
         time *= 1.5
-
-        // delay again
         subscriptionManager.stagedTimeout = setTimeout(() => {
           delay(subscriptionManager, time, totalTime + time)
         }, time)
       } else {
-        // do it
         sendUpdates(subscriptionManager)
       }
     }, time)
@@ -72,11 +65,10 @@ const addUpdate = async (
   subscription: Subscription,
   custom?: { type: string; payload?: any }
 ) => {
-  if (subscription.inProgress) {
-    console.log('Sub in progess')
+  if (subscription.inProgress && subscriptionManager.stagedInProgess) {
+    console.log('Sub in progress')
   } else {
     // handle batch mechanism
-    subscription.inProgress = true
 
     if (custom) {
       await sendUpdate(subscriptionManager, subscription, custom)

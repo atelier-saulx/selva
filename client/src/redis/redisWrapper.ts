@@ -121,7 +121,10 @@ export class RedisWrapper {
         this.sClient.hget(prefixes.clients, this.uuid, (err, r) => {
           if (!err && r) {
             if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
-              console.log('Client timedout - re send subscriptions')
+              console.log(
+                'Client timedout - re send subscriptions',
+                Date.now() - HEARTBEAT_TIMER * 5
+              )
               this.sendSubcriptions()
             }
           }
