@@ -13,10 +13,10 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   subscriptionManager.stagedForUpdates.forEach(subscription => {
     subscription.inProgress = false
 
-    console.log('update subscription', subscription.channel)
+    console.log('try updating subscription', subscription.channel)
     sendUpdate(subscriptionManager, subscription)
       .then(v => {
-        console.log('SEND UPDATE FOR', subscription.channel)
+        console.log('DID SEND UPDATE FOR', subscription.channel)
       })
       .catch(err => {
         console.log('WRONG ERROR IN SENDUPDATE', err)

@@ -156,7 +156,8 @@ export function removeSubscriptionFromTree(
     let { tree } = subscription
     subsmanager.stagedForUpdates.delete(subscription)
     if (!tree) {
-      console.error('Remove - tree on subscription', subscription)
+      // no tree created yet
+      // console.error('Remove - tree on subscription', subscription)
     } else {
       if (tree.___refreshAt) {
         delete subscription.refreshAt
