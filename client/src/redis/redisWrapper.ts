@@ -668,14 +668,14 @@ export class RedisWrapper {
               })
             } else {
               this.isBusy[type] = false
-            }
-            if (slice.length > 1e3) {
-              process.nextTick(() => {
-                // let it gc a bit
+              if (slice.length > 1e3) {
+                process.nextTick(() => {
+                  // let it gc a bit
+                  resolve()
+                })
+              } else {
                 resolve()
-              })
-            } else {
-              resolve()
+              }
             }
           }
         })

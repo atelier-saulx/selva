@@ -13,16 +13,17 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
 
   subscriptionManager.stagedForUpdates.forEach(subscription => {
     subscription.inProgress = false
+    console.log('update subscription and clear inProgress', subscription.get)
+    subscriptionManager.stagedForUpdates.delete(subscription)
     sendUpdate(subscriptionManager, subscription)
       .then(v => {
-        // console.log('SEND UPDATE FOR', subscription.channel)
+        console.log('SEND UPDATE FOR', subscription.channel)
       })
       .catch(err => {
         console.log('WRONG ERROR IN SENDUPDATE', err)
       })
   })
 
-  subscriptionManager.stagedForUpdates = new Set()
   subscriptionManager.stagedInProgess = false
   subscriptionManager.incomingCount = 0
   delayCount = 0
@@ -42,7 +43,7 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
         // reset count
         // subscriptionManager.incomingCount = 0
         // increase time
-        time *= 1.5
+        time *= 1.1
         // delay again
         subscriptionManager.stagedTimeout = setTimeout(() => {
           delay(subscriptionManager, time, totalTime + time)
@@ -54,7 +55,7 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
     }, time)
   } else {
     console.log(
-      '5 seconds pass drain',
+      '10 seconds pass drain',
       totalTime,
       'incoming',
       subscriptionManager.incomingCount
