@@ -133,7 +133,8 @@ export function addSubscriptionToTree(
     let { tree } = subscription
 
     if (!tree) {
-      console.error('No tree on subscription', subscription)
+      console.error('Add no tree on subscription', subscription)
+      // wrong
     } else {
       if (tree.___refreshAt) {
         subscription.refreshAt = tree.___refreshAt
@@ -153,8 +154,9 @@ export function removeSubscriptionFromTree(
     console.log('remove schema')
   } else {
     let { tree } = subscription
+    subsmanager.stagedForUpdates.delete(subscription)
     if (!tree) {
-      console.error('No tree on subscription', subscription)
+      console.error('Remove - tree on subscription', subscription)
     } else {
       if (tree.___refreshAt) {
         delete subscription.refreshAt

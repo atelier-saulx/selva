@@ -6,7 +6,7 @@ import { ClientObject, RedisCommand } from './types'
 import prefixes from '../prefixes'
 
 const redisClients: Record<string, RedisWrapper> = {}
-const HEARTBEAT_TIMER = 5e3
+const HEARTBEAT_TIMER = 15e3
 
 const isEmpty = (obj: { [k: string]: any }): boolean => {
   for (const _k in obj) {
@@ -121,7 +121,10 @@ export class RedisWrapper {
         this.sClient.hget(prefixes.clients, this.uuid, (err, r) => {
           if (!err && r) {
             if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
-              console.log('Client timedout - re send subscriptions')
+              console.log(
+                'Client timedout - re send subscriptions',
+                Date.now() - HEARTBEAT_TIMER * 5
+              )
               this.sendSubcriptions()
             }
           }

@@ -17,9 +17,14 @@ export default class SubscriptionManager {
   // to check if the server is still ok
   public serverHeartbeatTimeout: NodeJS.Timeout
 
+  public stagedInProgess: boolean = false
+  public stagedTimeout: NodeJS.Timeout
+
   public refreshNowQueriesTimeout: NodeJS.Timeout
   // revalidates subs ones in a while
   public revalidateSubscriptionsTimeout: NodeJS.Timeout
+
+  public stagedForUpdates: Set<Subscription> = new Set()
 
   public refreshSubscriptions: RefreshSubscriptions
 
@@ -95,10 +100,14 @@ export default class SubscriptionManager {
         channel + '_tree',
         channel + '_version'
       )
-      this.subscriptions[channel].version = version
-      this.subscriptions[channel].tree = JSON.parse(tree)
-      this.subscriptions[channel].treeVersion = hash(tree)
-      addSubscriptionToTree(this, subscription)
+      if (!tree) {
+        await addUpdate(this, subscription)
+      } else {
+        this.subscriptions[channel].version = version
+        this.subscriptions[channel].tree = JSON.parse(tree)
+        this.subscriptions[channel].treeVersion = hash(tree)
+        addSubscriptionToTree(this, subscription)
+      }
     } else {
       await addUpdate(this, subscription)
     }
@@ -224,9 +233,13 @@ export default class SubscriptionManager {
 
     this.subscriptions = {}
     this.tree = {}
+    this.stagedForUpdates = new Set()
+    this.stagedInProgess = false
     clearTimeout(this.revalidateSubscriptionsTimeout)
     clearTimeout(this.serverHeartbeatTimeout)
     clearTimeout(this.refreshNowQueriesTimeout)
+
+    clearTimeout(this.stagedTimeout)
   }
 
   async connect(opts: ConnectOptions): Promise<void> {
