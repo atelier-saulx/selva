@@ -8,6 +8,7 @@ import sendEvent from './events'
 import { log, info, configureLogger } from '../logger'
 import globals from '../globals'
 import { arrayIsEqual } from '../util'
+import checkSource from './source'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -20,7 +21,8 @@ export function resetSet(
   field: string,
   value: Id[],
   modify: FnModify,
-  hierarchy: boolean = true
+  hierarchy: boolean = true,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   const setKey = getSetKey(id, field)
   const current = redis.smembers(setKey)
@@ -30,9 +32,9 @@ export function resetSet(
 
   if (hierarchy) {
     if (field === 'parents') {
-      resetParents(id, setKey, value, modify)
+      resetParents(id, setKey, value, modify, source)
     } else if (field === 'children') {
-      value = resetChildren(id, setKey, value, modify)
+      value = resetChildren(id, setKey, value, modify, source)
     } else if (field === 'aliases') {
       resetAlias(id, value)
     }
@@ -54,15 +56,16 @@ export function addToSet(
   field: string,
   value: Id[],
   modify: FnModify,
-  hierarchy: boolean = true
+  hierarchy: boolean = true,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   const setKey = getSetKey(id, field)
 
   if (hierarchy) {
     if (field === 'parents') {
-      addToParents(id, value, modify)
+      addToParents(id, value, modify, source)
     } else if (field === 'children') {
-      value = addToChildren(id, value, modify)
+      value = addToChildren(id, value, modify, source)
     } else if (field === 'aliases') {
       addAlias(id, value)
     }
@@ -80,16 +83,17 @@ export function removeFromSet(
   id: string,
   field: string,
   value: Id[],
-  hierarchy: boolean = true
+  hierarchy: boolean = true,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   const setKey = getSetKey(id, field)
   redis.srem(setKey, ...value)
 
   if (hierarchy) {
     if (field === 'parents') {
-      removeFromParents(id, value)
+      removeFromParents(id, value, source)
     } else if (field === 'children') {
-      removeFromChildren(id, value)
+      removeFromChildren(id, value, source)
     } else if (field === 'aliases') {
       removeAlias(id, value)
     }
@@ -102,14 +106,17 @@ export function resetParents(
   id: string,
   setKey: string,
   value: Id[],
-  modify: FnModify
+  modify: FnModify,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   // TODO: can be passed from "above"
   const parents = redis.smembers(id + '.parents')
 
   // clean up existing parents
   for (const parent of parents) {
-    redis.srem(parent + '.children', id)
+    if (checkSource(parent, 'children', source)) {
+      redis.srem(parent + '.children', id)
+    }
   }
 
   redis.del(setKey)
@@ -128,19 +135,26 @@ export function resetParents(
   markForAncestorRecalculation(id)
 }
 
-export function addToParents(id: string, value: Id[], modify: FnModify): void {
+export function addToParents(
+  id: string,
+  value: Id[],
+  modify: FnModify,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
+): void {
   let numAdded = 0
   for (const parent of value) {
     const childrenKey = parent + '.children'
 
-    const added = redis.sadd(childrenKey, id)
-    numAdded += added
-    if (added === 1) {
-      if (!redis.exists(parent)) {
-        modify({ $id: parent })
-      }
+    if (checkSource(parent, 'children', source)) {
+      const added = redis.sadd(childrenKey, id)
+      numAdded += added
+      if (added === 1) {
+        if (!redis.exists(parent)) {
+          modify({ $id: parent })
+        }
 
-      sendEvent(parent, 'children', 'update')
+        sendEvent(parent, 'children', 'update')
+      }
     }
   }
 
@@ -149,15 +163,26 @@ export function addToParents(id: string, value: Id[], modify: FnModify): void {
   }
 }
 
-export function removeFromParents(id: string, value: Id[]): void {
+export function removeFromParents(
+  id: string,
+  value: Id[],
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
+): void {
   for (const parent of value) {
-    redis.srem(parent + '.children', id)
+    if (checkSource(parent, 'children', source)) {
+      redis.srem(parent + '.children', id)
+    }
   }
 
   markForAncestorRecalculation(id)
 }
 
-export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
+export function addToChildren(
+  id: string,
+  value: Id[],
+  modify: FnModify,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
+): Id[] {
   const result: string[] = []
   for (let i = 0; i < value.length; i++) {
     let child = value[i]
@@ -182,10 +207,12 @@ export function addToChildren(id: string, value: Id[], modify: FnModify): Id[] {
         modify({ $id: child })
       }
 
-      const added = redis.sadd(child + '.parents', id)
-      if (added === 1) {
-        markForAncestorRecalculation(child)
-        sendEvent(child, 'parents', 'update')
+      if (checkSource(child, 'parents', source)) {
+        const added = redis.sadd(child + '.parents', id)
+        if (added === 1) {
+          markForAncestorRecalculation(child)
+          sendEvent(child, 'parents', 'update')
+        }
       }
     }
   }
@@ -232,7 +259,8 @@ export function resetChildren(
   id: string,
   setKey: string,
   value: Id[],
-  modify: FnModify
+  modify: FnModify,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): Id[] {
   let batchId = null
   if (
@@ -254,7 +282,7 @@ export function resetChildren(
   }
 
   redis.del(setKey)
-  const newChildren = addToChildren(id, value, modify)
+  const newChildren = addToChildren(id, value, modify, source)
   for (const child of children) {
     const parentKey = child + '.parents'
     // bit special but good for perf to skip this in batching mode
@@ -287,10 +315,16 @@ export function resetAlias(id: string, value: Id[]): void {
   addAlias(id, value)
 }
 
-export function removeFromChildren(id: string, value: Id[]): void {
+export function removeFromChildren(
+  id: string,
+  value: Id[],
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
+): void {
   for (const child of value) {
-    redis.srem(child + '.parents', id)
-    markForAncestorRecalculation(child)
+    if (checkSource(child, 'parents', source)) {
+      redis.srem(child + '.parents', id)
+      markForAncestorRecalculation(child)
+    }
   }
 }
 

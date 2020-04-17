@@ -36,6 +36,27 @@ function getField(
   }
 
   if (props.$id && field) {
+    if (props.$id.$field) {
+      const idResult = {}
+      getWithField(
+        idResult,
+        schema,
+        id,
+        'idResult',
+        ensureArray(props.$id.$field),
+        language,
+        version
+      )
+
+      const nestedId = getNestedField(idResult, 'idResult')
+      if (!nestedId) {
+        setNestedResult(result, field, {})
+        return true
+      }
+
+      props.$id = nestedId
+    }
+
     const intermediateResult = {}
     getField(
       props,

@@ -641,3 +641,49 @@ test.serial('get - $field with object structure', async t => {
     }
   )
 })
+
+test.serial('get - nested query with $field in $id', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'viB'
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'viB',
+    title: {
+      en: 'nice!!!'
+    },
+    value: 27
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      id: true,
+      thing: {
+        $id: { $field: 'title.en' },
+        title: true
+      }
+    }),
+    {
+      id: 'viA',
+      thing: {
+        title: {
+          en: 'nice!!!'
+        }
+      }
+    }
+  )
+})
