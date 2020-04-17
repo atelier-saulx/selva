@@ -641,17 +641,19 @@ export class RedisWrapper {
             reject(err)
           } else {
             let hasBusy = false
+            let busySlice = []
             reply.forEach((v: any, i: number) => {
               if (v instanceof Error) {
                 if (v.message.indexOf('BUSY') !== -1) {
                   hasBusy = true
-                  this.queue(
-                    slice[i].command,
-                    slice[i].args,
-                    slice[i].resolve,
-                    slice[i].reject,
-                    type
-                  )
+                  busySlice.push(slice[i])
+                  // this.queue(
+                  //   slice[i].command,
+                  //   slice[i].args,
+                  //   slice[i].resolve,
+                  //   slice[i].reject,
+                  //   type
+                  // )
                 } else if (slice[i].reject) {
                   slice[i].reject(v)
                 } else {
@@ -663,7 +665,7 @@ export class RedisWrapper {
             })
             if (hasBusy) {
               this.isBusy[type] = true
-              this.execBatch(origSlice, type).then(v => {
+              this.execBatch(busySlice, type).then(v => {
                 resolve()
               })
             } else {
