@@ -469,6 +469,7 @@ export class RedisWrapper {
         }
       })
       if (this.connected.sub && clientObj.log) {
+        console.log('add logs')
         this.sub.subscribe(`${prefixes.log}:${client}`)
       }
     } else {
@@ -637,7 +638,6 @@ export class RedisWrapper {
 
         batch.exec((err: Error, reply: any[]) => {
           if (err) {
-            // console.error(err)
             reject(err)
           } else {
             let hasBusy = false
@@ -647,13 +647,6 @@ export class RedisWrapper {
                 if (v.message.indexOf('BUSY') !== -1) {
                   hasBusy = true
                   busySlice.push(slice[i])
-                  // this.queue(
-                  //   slice[i].command,
-                  //   slice[i].args,
-                  //   slice[i].resolve,
-                  //   slice[i].reject,
-                  //   type
-                  // )
                 } else if (slice[i].reject) {
                   slice[i].reject(v)
                 } else {
