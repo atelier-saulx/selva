@@ -8,6 +8,7 @@ import sendEvent from './events'
 import { log, info, configureLogger } from '../logger'
 import globals from '../globals'
 import { arrayIsEqual } from '../util'
+import checkSource from './source'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -90,9 +91,9 @@ export function removeFromSet(
 
   if (hierarchy) {
     if (field === 'parents') {
-      removeFromParents(id, value)
+      removeFromParents(id, value, source)
     } else if (field === 'children') {
-      removeFromChildren(id, value)
+      removeFromChildren(id, value, source)
     } else if (field === 'aliases') {
       removeAlias(id, value)
     }
@@ -113,7 +114,9 @@ export function resetParents(
 
   // clean up existing parents
   for (const parent of parents) {
-    redis.srem(parent + '.children', id)
+    if (checkSource(parent, 'children', source)) {
+      redis.srem(parent + '.children', id)
+    }
   }
 
   redis.del(setKey)
@@ -142,14 +145,16 @@ export function addToParents(
   for (const parent of value) {
     const childrenKey = parent + '.children'
 
-    const added = redis.sadd(childrenKey, id)
-    numAdded += added
-    if (added === 1) {
-      if (!redis.exists(parent)) {
-        modify({ $id: parent })
-      }
+    if (checkSource(parent, 'children', source)) {
+      const added = redis.sadd(childrenKey, id)
+      numAdded += added
+      if (added === 1) {
+        if (!redis.exists(parent)) {
+          modify({ $id: parent })
+        }
 
-      sendEvent(parent, 'children', 'update')
+        sendEvent(parent, 'children', 'update')
+      }
     }
   }
 
@@ -164,7 +169,9 @@ export function removeFromParents(
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   for (const parent of value) {
-    redis.srem(parent + '.children', id)
+    if (checkSource(parent, 'children', source)) {
+      redis.srem(parent + '.children', id)
+    }
   }
 
   markForAncestorRecalculation(id)
@@ -200,10 +207,12 @@ export function addToChildren(
         modify({ $id: child })
       }
 
-      const added = redis.sadd(child + '.parents', id)
-      if (added === 1) {
-        markForAncestorRecalculation(child)
-        sendEvent(child, 'parents', 'update')
+      if (checkSource(child, 'parents', source)) {
+        const added = redis.sadd(child + '.parents', id)
+        if (added === 1) {
+          markForAncestorRecalculation(child)
+          sendEvent(child, 'parents', 'update')
+        }
       }
     }
   }
@@ -273,7 +282,7 @@ export function resetChildren(
   }
 
   redis.del(setKey)
-  const newChildren = addToChildren(id, value, modify)
+  const newChildren = addToChildren(id, value, modify, source)
   for (const child of children) {
     const parentKey = child + '.parents'
     // bit special but good for perf to skip this in batching mode
@@ -306,10 +315,16 @@ export function resetAlias(id: string, value: Id[]): void {
   addAlias(id, value)
 }
 
-export function removeFromChildren(id: string, value: Id[]): void {
+export function removeFromChildren(
+  id: string,
+  value: Id[],
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
+): void {
   for (const child of value) {
-    redis.srem(child + '.parents', id)
-    markForAncestorRecalculation(child)
+    if (checkSource(child, 'parents', source)) {
+      redis.srem(child + '.parents', id)
+      markForAncestorRecalculation(child)
+    }
   }
 }
 

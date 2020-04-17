@@ -1,5 +1,6 @@
 import { isArray } from '../util'
 import * as redis from '../redis'
+import * as logger from '../logger'
 
 export default function allowSet(
   id: string,

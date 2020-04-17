@@ -164,7 +164,7 @@ function setField(
       return
     }
 
-    setInternalArrayStructure(id, field, value)
+    setInternalArrayStructure(id, field, value, source)
     return
   }
 
