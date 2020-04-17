@@ -43,18 +43,11 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
     subscriptionManager.stagedTimeout = setTimeout(() => {
       const incoming = subscriptionManager.incomingCount - lastIncoming
       if (incoming / time > rate) {
-        // too fast ait a bit longer
-        // reset count
-        // subscriptionManager.incomingCount = 0
-        // increase time
         time *= 1.5
-
-        // delay again
         subscriptionManager.stagedTimeout = setTimeout(() => {
           delay(subscriptionManager, time, totalTime + time)
         }, time)
       } else {
-        // do it
         sendUpdates(subscriptionManager)
       }
     }, time)
@@ -91,14 +84,14 @@ const addUpdate = async (
       if (!subscriptionManager.stagedInProgess) {
         subscriptionManager.stagedInProgess = true
         subscriptionManager.stagedTimeout = setTimeout(() => {
-          console.log('go send')
-          sendUpdates(subscriptionManager)
+          // console.log('go send')
+          // sendUpdates(subscriptionManager)
 
-          // if (subscriptionManager.incomingCount < 1000) {
-          //   sendUpdates(subscriptionManager)
-          // } else {
-          //   delay(subscriptionManager)
-          // }
+          if (subscriptionManager.incomingCount < 1000) {
+            sendUpdates(subscriptionManager)
+          } else {
+            delay(subscriptionManager)
+          }
         }, 100)
       }
     }
