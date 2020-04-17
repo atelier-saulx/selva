@@ -1,48 +1,71 @@
 import SubscriptionManager from '../subsManager'
 import sendUpdate from './sendUpdate'
 import { Subscription } from '../'
-/*
-  if (!subscription) {
-    console.error(`Cannot find subscription on server ${channel.slice(-5)}`)
-    return
+
+var delayCount = 0
+
+const sendUpdates = (subscriptionManager: SubscriptionManager) => {
+  console.log(
+    'SEND UPDATES - handled events:',
+    subscriptionManager.incomingCount
+  )
+
+  subscriptionManager.stagedForUpdates.forEach(subscription => {
+    subscription.inProgress = false
+
+    console.log('update subscription', subscription.channel)
+    sendUpdate(subscriptionManager, subscription)
+      .then(v => {
+        console.log('SEND UPDATE FOR', subscription.channel)
+      })
+      .catch(err => {
+        console.log('WRONG ERROR IN SENDUPDATE', err)
+      })
+  })
+
+  console.log('yesh done updating')
+  subscriptionManager.stagedForUpdates = new Set()
+  subscriptionManager.stagedInProgess = false
+  subscriptionManager.incomingCount = 0
+  delayCount = 0
+}
+
+const rate = 5
+
+const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
+  if (totalTime < 20e3) {
+    const lastIncoming = subscriptionManager.incomingCount
+    delayCount++
+    console.log('delay #', delayCount, lastIncoming)
+    subscriptionManager.stagedTimeout = setTimeout(() => {
+      const incoming = subscriptionManager.incomingCount - lastIncoming
+      if (incoming / time > rate) {
+        // too fast ait a bit longer
+        // reset count
+        // subscriptionManager.incomingCount = 0
+        // increase time
+        time *= 1.5
+
+        // delay again
+        subscriptionManager.stagedTimeout = setTimeout(() => {
+          delay(subscriptionManager, time, totalTime + time)
+        }, time)
+      } else {
+        // do it
+        sendUpdates(subscriptionManager)
+      }
+    }, time)
+  } else {
+    console.log(
+      '20 seconds pass drain',
+      totalTime,
+      'incoming',
+      subscriptionManager.incomingCount
+    )
+    // do it now
+    sendUpdates(subscriptionManager)
   }
-
-*/
-
-// const addToUpdateQueue = (subsManager: SubscriptionManager, key: string) => {
-//   if (!subsManager.inProgress[key]) {
-//     subsManager.inProgress[key] = true
-//     batchUpdates.push(key)
-//     if (!inProgress) {
-//       inProgress = true
-//       // want to manage the time update based on amount of things
-//       setTimeout(
-//         () => {
-//           // maybe check amount and slowly drain
-//           console.log('QUERIES TO EXEC', batchUpdates.length)
-//           // check size for drainage
-//           for (let i = 0; i < batchUpdates.length; i++) {
-//             const key = batchUpdates[i]
-//             subsManager.sendUpdate(key).catch(err => {
-//               console.error(`Error query update from subscription ${key}`, err)
-//             })
-//           }
-//           batchUpdates = []
-//           inProgress = false
-//           subsManager.cleanUpProgress()
-//           memberMemCache = {}
-//         },
-//         subsManager.incomingCount > 15000
-//           ? 1500
-//           : subsManager.incomingCount > 1000
-//           ? 1000
-//           : subsManager.incomingCount > 500
-//           ? 500
-//           : 100
-//       )
-//     }
-//   }
-// }
+}
 
 const addUpdate = async (
   subscriptionManager: SubscriptionManager,
@@ -55,8 +78,24 @@ const addUpdate = async (
     // handle batch mechanism
     subscription.inProgress = true
 
-    await sendUpdate(subscriptionManager, subscription, custom)
-    subscription.inProgress = false
+    if (custom) {
+      await sendUpdate(subscriptionManager, subscription, custom)
+      subscription.inProgress = false
+    } else {
+      subscriptionManager.stagedForUpdates.add(subscription)
+
+      if (!subscriptionManager.stagedInProgess) {
+        subscriptionManager.stagedInProgess = true
+        subscriptionManager.stagedTimeout = setTimeout(() => {
+          const { incomingCount } = subscriptionManager
+          if (incomingCount < 1000) {
+            sendUpdates(subscriptionManager)
+          } else {
+            delay(subscriptionManager)
+          }
+        }, 100)
+      }
+    }
   }
 }
 
