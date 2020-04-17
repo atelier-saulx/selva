@@ -49,6 +49,11 @@ function getField(
       )
 
       const nestedId = getNestedField(idResult, 'idResult')
+      if (!nestedId) {
+        setNestedResult(result, field, {})
+        return true
+      }
+
       props.$id = nestedId
     }
 

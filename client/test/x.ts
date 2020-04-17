@@ -102,6 +102,7 @@ test.serial('subscription list', async t => {
 
   t.plan(1)
   obs.subscribe(res => {
+    console.log('res', JSON.stringify(res, null, 2))
     t.pass('should still fire even though sport does not have teams')
   })
 
