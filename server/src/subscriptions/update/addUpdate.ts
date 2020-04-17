@@ -29,7 +29,8 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   delayCount = 0
 }
 
-const rate = 3
+// 3 per ms
+const eventsPerMs = 3
 
 const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
   if (totalTime < 10e3) {
@@ -38,7 +39,7 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
     console.log('delay #', delayCount, lastIncoming)
     subscriptionManager.stagedTimeout = setTimeout(() => {
       const incoming = subscriptionManager.incomingCount - lastIncoming
-      if (incoming / time > rate) {
+      if (incoming / time > eventsPerMs) {
         // too fast ait a bit longer
         // reset count
         // subscriptionManager.incomingCount = 0
