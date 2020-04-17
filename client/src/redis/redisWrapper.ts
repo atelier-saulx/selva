@@ -6,7 +6,7 @@ import { ClientObject, RedisCommand } from './types'
 import prefixes from '../prefixes'
 
 const redisClients: Record<string, RedisWrapper> = {}
-const HEARTBEAT_TIMER = 15e3
+const HEARTBEAT_TIMER = 5e3
 
 const isEmpty = (obj: { [k: string]: any }): boolean => {
   for (const _k in obj) {
@@ -52,7 +52,7 @@ export class RedisWrapper {
 
   public scriptShas: { [client: string]: { [scriptName: string]: string } } = {}
 
-  public isBusy: boolean = false
+  public isBusy: { [client: string]: boolean } = {}
 
   public subscriptions: Record<
     string,
@@ -117,7 +117,7 @@ export class RedisWrapper {
     clearTimeout(this.heartbeatTimout)
 
     const setHeartbeat = () => {
-      if (this.connected.client) {
+      if (this.connected.sClient) {
         this.sClient.hget(prefixes.clients, this.uuid, (err, r) => {
           if (!err && r) {
             if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
@@ -222,6 +222,7 @@ export class RedisWrapper {
     this.stopHeartbeat()
     this.stopClientLogging()
     this.inProgress = {}
+    this.isBusy = {}
   }
 
   emit(type: string, value: any, client?: string) {
@@ -255,7 +256,9 @@ export class RedisWrapper {
 
       const typeOpts = Object.assign({}, opts, {
         retryStrategy: () => {
+          console.log('RETRY connect', type)
           if (tries > 100) {
+            console.log('node client is broken - restart', type)
             this.reconnect()
           } else {
             if (tries === 0 && this.connected[type] === true) {
@@ -279,6 +282,7 @@ export class RedisWrapper {
       client.on('ready', () => {
         tries = 0
         this.connected[type] = true
+        this.isBusy[type] = false
         // ----------------------------------------------------
         client.removeAllListeners('message')
         client.removeAllListeners('pmessage')
@@ -598,12 +602,12 @@ export class RedisWrapper {
 
   execBatch(origSlice: RedisCommand[], type: ClientType): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.isBusy) {
+      if (this.isBusy[type]) {
         console.log('Server is busy - retrying in 5 seconds')
         setTimeout(() => {
-          this.isBusy = false
+          this.isBusy[type] = false
           // need to rerun the batch ofc
-          if (!this.allConnected) {
+          if (!this.connected[type]) {
             console.log('DC while busy add to buffer again!')
             this.buffer[type].push(...origSlice)
             // add this
@@ -656,9 +660,12 @@ export class RedisWrapper {
               }
             })
             if (hasBusy) {
-              this.isBusy = true
+              this.isBusy[type] = true
+              this.execBatch(origSlice, type).then(v => {
+                resolve()
+              })
             } else {
-              this.isBusy = false
+              this.isBusy[type] = false
             }
             if (slice.length > 1e3) {
               process.nextTick(() => {

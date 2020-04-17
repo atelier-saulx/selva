@@ -23,7 +23,6 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
       })
   })
 
-  console.log('yesh done updating')
   subscriptionManager.stagedForUpdates = new Set()
   subscriptionManager.stagedInProgess = false
   subscriptionManager.incomingCount = 0
@@ -33,7 +32,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
 const rate = 5
 
 const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
-  if (totalTime < 20e3) {
+  if (totalTime < 5e3) {
     const lastIncoming = subscriptionManager.incomingCount
     delayCount++
     console.log('delay #', delayCount, lastIncoming)
@@ -57,7 +56,7 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
     }, time)
   } else {
     console.log(
-      '20 seconds pass drain',
+      '5 seconds pass drain',
       totalTime,
       'incoming',
       subscriptionManager.incomingCount
@@ -67,7 +66,7 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
   }
 }
 
-const addUpdate = async (
+const addUpdate = (
   subscriptionManager: SubscriptionManager,
   subscription: Subscription,
   custom?: { type: string; payload?: any }
@@ -75,12 +74,17 @@ const addUpdate = async (
   if (subscription.inProgress) {
     console.log('Sub in progess')
   } else {
-    // handle batch mechanism
     subscription.inProgress = true
 
     if (custom) {
-      await sendUpdate(subscriptionManager, subscription, custom)
-      subscription.inProgress = false
+      sendUpdate(subscriptionManager, subscription, custom)
+        .then(v => {
+          subscription.inProgress = false
+        })
+        .catch(err => {
+          console.error('error in custom sendUpdate', err)
+          subscription.inProgress = false
+        })
     } else {
       subscriptionManager.stagedForUpdates.add(subscription)
 
