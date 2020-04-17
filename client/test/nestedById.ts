@@ -4,7 +4,7 @@ import { start } from '@saulx/selva-server'
 
 import getPort from 'get-port'
 
-test('Create fields from $ids', async t => {
+test.skip('Create fields from $ids', async t => {
   const port = await getPort()
   const server = await start({ port })
 
