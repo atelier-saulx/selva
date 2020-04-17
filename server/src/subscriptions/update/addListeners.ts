@@ -16,12 +16,11 @@ const addListeners = (subsManager: SubscriptionManager) => {
       // use this for batching here
       // merge tree for checks?
       if (message === 'schema_update') {
-        addUpdate(
-          subsManager,
-          subsManager.subscriptions['___selva_subscription:schema_update'],
-          { type: message }
-        )
-        return
+        const subscription =
+          subsManager.subscriptions['___selva_subscription:schema_update']
+        if (subscription) {
+          addUpdate(subsManager, subscription, { type: message })
+        }
       } else {
         const eventName = channel.slice(prefixLength)
         // make this batch as well (the check)

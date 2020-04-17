@@ -85,53 +85,8 @@ test.serial('subscription list', async t => {
     }
   })
 
-  // const obs = await client.observe({
-  //   $id: match,
-  //   $language: 'en',
-  //   sports: {
-  //     title: true,
-  //     $list: {
-  //       $limit: 10,
-  //       $find: {
-  //         $traverse: 'ancestors',
-  //         $filter: [
-  //           {
-  //             $field: 'type',
-  //             $operator: '=',
-  //             $value: 'sport'
-  //           }
-  //         ]
-  //       }
-  //     },
-  //     matches: {
-  //       title: true,
-  //       $list: {
-  //         $find: {
-  //           $traverse: 'descendants',
-  //           $filter: [
-  //             {
-  //               $field: 'type',
-  //               $operator: '=',
-  //               $value: 'match'
-  //             }
-  //           ]
-  //         }
-  //       }
-  //     }
-  //   }
-  // })
-
   t.plan(1)
   obs.subscribe(res => {
-    // console.log(
-    //   'res',
-    //   res.sports.map(s => s.matches)
-    // )
-    // t.deepEqual(
-    //   res.sports.map(s => s.matches),
-    //   [[{ title: 'football match' }]]
-    // )
-    console.log('res', res)
     t.deepEqual(res.items, [{ title: 'football match' }])
   })
 
