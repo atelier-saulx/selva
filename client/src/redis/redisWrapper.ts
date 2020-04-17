@@ -612,7 +612,9 @@ export class RedisWrapper {
             this.buffer[type].push(...origSlice)
             // add this
           } else {
-            this.execBatch(origSlice, type)
+            this.execBatch(origSlice, type).then(() => {
+              resolve()
+            })
           }
         }, 5e3)
       } else {
