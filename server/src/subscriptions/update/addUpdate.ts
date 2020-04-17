@@ -11,6 +11,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   )
 
   const s = subscriptionManager.stagedForUpdates
+
   subscriptionManager.stagedForUpdates = new Set()
   subscriptionManager.stagedInProgess = false
   subscriptionManager.incomingCount = 0
