@@ -10,6 +10,7 @@ export type RedisSetParams =
       $value?: string[] | Id
       $add?: Id[] | Id | SetItem[]
       $delete?: Id[] | Id
+      $noRoot?: boolean
     }
 
 export type HierarchySet = RedisSetParams & {

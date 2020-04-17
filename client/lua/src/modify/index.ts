@@ -97,14 +97,16 @@ function setInternalArrayStructure(
   const hierarchy = value.$hierarchy === false ? false : true
 
   if (isArray(value)) {
-    resetSet(id, field, value, update, hierarchy, source)
+    resetSet(id, field, value, update, hierarchy, false, source)
   } else if (type(value) === 'string') {
-    resetSet(id, field, ensureArray(value), update, hierarchy, source)
+    resetSet(id, field, ensureArray(value), update, hierarchy, false, source)
   } else if (value.$value) {
-    resetSet(id, field, value, update, hierarchy, source)
+    const noRoot = value.$noRoot || false
+    resetSet(id, field, value.$value, update, hierarchy, noRoot, source)
   } else {
     if (value.$add) {
-      addToSet(id, field, value.$add, update, hierarchy, source)
+      const noRoot = value.$noRoot || false
+      addToSet(id, field, value.$add, update, hierarchy, noRoot, source)
     }
     if (value.$delete) {
       removeFromSet(id, field, value.$delete, hierarchy, source)

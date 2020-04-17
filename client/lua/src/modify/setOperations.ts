@@ -22,6 +22,7 @@ export function resetSet(
   value: Id[],
   modify: FnModify,
   hierarchy: boolean = true,
+  noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   const setKey = getSetKey(id, field)
@@ -32,9 +33,9 @@ export function resetSet(
 
   if (hierarchy) {
     if (field === 'parents') {
-      resetParents(id, setKey, value, modify, source)
+      resetParents(id, setKey, value, modify, noRoot, source)
     } else if (field === 'children') {
-      value = resetChildren(id, setKey, value, modify, source)
+      value = resetChildren(id, setKey, value, modify, noRoot, source)
     } else if (field === 'aliases') {
       resetAlias(id, value)
     }
@@ -57,15 +58,16 @@ export function addToSet(
   value: Id[],
   modify: FnModify,
   hierarchy: boolean = true,
+  noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   const setKey = getSetKey(id, field)
 
   if (hierarchy) {
     if (field === 'parents') {
-      addToParents(id, value, modify, source)
+      addToParents(id, value, modify, noRoot, source)
     } else if (field === 'children') {
-      value = addToChildren(id, value, modify, source)
+      value = addToChildren(id, value, modify, noRoot, source)
     } else if (field === 'aliases') {
       addAlias(id, value)
     }
@@ -107,6 +109,7 @@ export function resetParents(
   setKey: string,
   value: Id[],
   modify: FnModify,
+  noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   // TODO: can be passed from "above"
@@ -125,7 +128,11 @@ export function resetParents(
   for (const parent of value) {
     // recurse if necessary
     if (!redis.exists(parent)) {
-      modify({ $id: parent })
+      if (noRoot) {
+        modify({ $id: parent, parents: [] })
+      } else {
+        modify({ $id: parent })
+      }
     }
 
     redis.sadd(parent + '.children', id)
@@ -139,6 +146,7 @@ export function addToParents(
   id: string,
   value: Id[],
   modify: FnModify,
+  noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   let numAdded = 0
@@ -150,7 +158,11 @@ export function addToParents(
       numAdded += added
       if (added === 1) {
         if (!redis.exists(parent)) {
-          modify({ $id: parent })
+          if (noRoot) {
+            modify({ $id: parent, parents: [] })
+          } else {
+            modify({ $id: parent })
+          }
         }
 
         sendEvent(parent, 'children', 'update')
@@ -181,6 +193,7 @@ export function addToChildren(
   id: string,
   value: Id[],
   modify: FnModify,
+  noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): Id[] {
   const result: string[] = []
@@ -204,7 +217,11 @@ export function addToChildren(
 
     if (child !== '') {
       if (!redis.exists(child)) {
-        modify({ $id: child })
+        if (noRoot) {
+          modify({ $id: child, parents: [] })
+        } else {
+          modify({ $id: child })
+        }
       }
 
       if (checkSource(child, 'parents', source)) {
@@ -260,6 +277,7 @@ export function resetChildren(
   setKey: string,
   value: Id[],
   modify: FnModify,
+  noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): Id[] {
   let batchId = null
@@ -282,7 +300,7 @@ export function resetChildren(
   }
 
   redis.del(setKey)
-  const newChildren = addToChildren(id, value, modify, source)
+  const newChildren = addToChildren(id, value, modify, noRoot, source)
   for (const child of children) {
     const parentKey = child + '.parents'
     // bit special but good for perf to skip this in batching mode
