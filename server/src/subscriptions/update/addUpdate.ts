@@ -72,8 +72,8 @@ const addUpdate = async (
   subscription: Subscription,
   custom?: { type: string; payload?: any }
 ) => {
-  if (subscription.inProgress) {
-    console.log('Sub in progess')
+  if (subscription.inProgress && !subscriptionManager.stagedForUpdates) {
+    console.log('Sub in progress')
   } else {
     // handle batch mechanism
     subscription.inProgress = true
@@ -87,12 +87,13 @@ const addUpdate = async (
       if (!subscriptionManager.stagedInProgess) {
         subscriptionManager.stagedInProgess = true
         subscriptionManager.stagedTimeout = setTimeout(() => {
-          const { incomingCount } = subscriptionManager
-          if (incomingCount < 1000) {
-            sendUpdates(subscriptionManager)
-          } else {
-            delay(subscriptionManager)
-          }
+          sendUpdates(subscriptionManager)
+
+          // if (subscriptionManager.incomingCount < 1000) {
+          //   sendUpdates(subscriptionManager)
+          // } else {
+          //   delay(subscriptionManager)
+          // }
         }, 100)
       }
     }
