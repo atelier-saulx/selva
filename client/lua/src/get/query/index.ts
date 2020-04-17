@@ -167,9 +167,6 @@ const parseQuery = (
     // need to do something here for nested queries
     if (find && find.$find) {
       // nested find
-      if (getOptions.$list) {
-        table.remove(resultIds, 1)
-      }
       const opts: GetOptions = { id: true }
       for (let key in getOptions) {
         if (key !== '$find' && key !== '$list' && key !== '$id') {
