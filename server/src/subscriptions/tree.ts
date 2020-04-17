@@ -155,7 +155,12 @@ export function removeSubscriptionFromTree(
     console.log('remove schema')
   } else {
     let { tree } = subscription
-    subsmanager.stagedForUpdates.delete(subscription)
+
+    // dont have to remove just wait
+    // if (subsmanager.stagedForUpdates.has(subscription) {
+    //   console.log('want to remove', subscription.get)
+    //   // subsmanager.stagedForUpdates.delete(subscription)
+    // }
     if (!tree) {
       // console.error('No tree on subscription', subscription)
     } else {

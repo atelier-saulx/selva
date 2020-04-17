@@ -22,13 +22,21 @@ const traverse = (
       if (segment.___ids) {
         const subs = segment.___ids[id]
         if (subs) {
-          if (id === 're4XknOjM') {
-            console.log('YESH TITLE', id, path)
-          }
-
           subs.forEach(subscription => {
             if (!subscription.inProgress) {
+              if (id === 're4XknOjM') {
+                console.log('YESH -->', id, path, subscription.get)
+              }
               addUpdate(subscriptionManager, subscription)
+            } else {
+              if (id === 're4XknOjM') {
+                console.log(
+                  'NO  NOT IN PROGRESS -->',
+                  id,
+                  path,
+                  subscription.get
+                )
+              }
             }
           })
         }
