@@ -541,12 +541,14 @@ function getByType(
     return false
   }
 
-  if (metaKeys) {
-    setMeta(field, metaKeys)
-  } else {
-    setMeta(field, {
-      ___ids: id
-    })
+  if (field !== 'type' && field !== 'id') {
+    if (metaKeys) {
+      setMeta(field, metaKeys)
+    } else {
+      setMeta(field, {
+        ___ids: id
+      })
+    }
   }
 
   const fn = types[prop.type] || string
