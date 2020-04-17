@@ -908,3 +908,32 @@ test.serial('createdAt not set if provided in modify props', async t => {
 
 //   await client.delete('root')
 // })
+
+test.serial('can disable autoadding of root', async t => {
+  const client = connect({
+    port
+  })
+
+  const m1 = await client.set({
+    type: 'match'
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(m1 + '.parents'), ['root'])
+
+  const m2 = await client.set({
+    type: 'match',
+    parents: { $noRoot: true }
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(m2 + '.parents'), [])
+
+  const m3 = await client.set({
+    type: 'match',
+    children: { $value: 'maMatch3', $noRoot: true }
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers('maMatch3.parents'), [])
+
+  await client.delete('root')
+  await client.destroy()
+})

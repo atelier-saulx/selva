@@ -54,6 +54,8 @@ export default (
         }
       } else if (k === '$delete') {
         result[field].$delete = verifySimple(payload[k])
+      } else if (k === '$value') {
+        result[field].$delete = verifySimple(payload[k])
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
           throw new Error(
@@ -61,6 +63,12 @@ export default (
           )
         }
         result[field].$hierarchy = payload[k]
+      } else if (k === '$noRoot') {
+        if (typeof payload[k] !== 'boolean') {
+          throw new Error(`Wrong payload type for $noRoot in references ${k}`)
+        }
+
+        result[field].$noRoot = payload[k]
       } else if (k === '$_itemCount') {
         // ignore this internal field if setting with a split payload
       } else {
