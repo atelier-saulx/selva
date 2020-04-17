@@ -330,29 +330,146 @@ test.serial(
       }
     )
 
-    // broken test for children/parents
-    // await client.set({
-    //   $id: child,
-    //   $source: { $name: 'random-guy' },
-    //   parents: { $delete: match1 }
-    // })
-
-    // t.deepEqualIgnoreOrder(
-    //   await client.get({
-    //     $id: match1,
-    //     $language: 'en',
-    //     id: true,
-    //     title: true,
-    //     children: true
-    //   }),
-    //   {
-    //     id: match1,
-    //     title: 'yesh4',
-    //     children: [child]
-    //   }
-    // )
-
     await client.delete('root')
     client.destroy()
   }
 )
+
+test.serial('children/parents update checks source on create', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const child1 = await client.set({
+    $id: 'maChild1',
+    type: 'match',
+    $source: 'first',
+    $language: 'en',
+    title: 'child1'
+  })
+
+  const match1 = await client.set({
+    $id: 'maMatch1',
+    type: 'match',
+    $source: 'second',
+    $language: 'en',
+    title: 'yesh1',
+    children: [child1]
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: match1,
+      title: true,
+      children: true
+    }),
+    {
+      title: 'yesh1',
+      children: [child1]
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: child1,
+      title: true,
+      parents: true
+    }),
+    {
+      title: 'child1',
+      parents: ['root']
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('children/parents update checks source on delete', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const child2 = await client.set({
+    $id: 'maChild2',
+    type: 'match',
+    $source: 'first',
+    $language: 'en',
+    title: 'child2'
+  })
+
+  const match2 = await client.set({
+    $id: 'maMatch2',
+    type: 'match',
+    $source: 'first',
+    $language: 'en',
+    title: 'yesh2',
+    children: [child2]
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: match2,
+      title: true,
+      children: true
+    }),
+    {
+      title: 'yesh2',
+      children: [child2]
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: child2,
+      title: true,
+      parents: true
+    }),
+    {
+      title: 'child2',
+      parents: ['root', match2]
+    }
+  )
+
+  // reset $source
+  await client.set({
+    $id: 'maMatch2',
+    $source: { $name: 'second', $overwrite: true },
+    children: { $add: [] }
+  })
+
+  await client.set({
+    $id: 'maMatch2',
+    $source: 'second',
+    children: { $delete: child2 }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: match2,
+      title: true,
+      children: true
+    }),
+    {
+      title: 'yesh2',
+      children: []
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: child2,
+      title: true,
+      parents: true
+    }),
+    {
+      title: 'child2',
+      parents: ['root', match2]
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
