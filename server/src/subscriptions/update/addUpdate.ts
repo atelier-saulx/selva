@@ -10,7 +10,12 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     subscriptionManager.incomingCount
   )
 
-  subscriptionManager.stagedForUpdates.forEach(subscription => {
+  const s = subscriptionManager.stagedForUpdates
+  subscriptionManager.stagedForUpdates = new Set()
+  subscriptionManager.stagedInProgess = false
+  subscriptionManager.incomingCount = 0
+
+  s.forEach(subscription => {
     subscription.inProgress = false
 
     console.log('try updating subscription', subscription.channel)
@@ -24,9 +29,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   })
 
   console.log('yesh done updating')
-  subscriptionManager.stagedForUpdates = new Set()
-  subscriptionManager.stagedInProgess = false
-  subscriptionManager.incomingCount = 0
+
   delayCount = 0
 }
 
@@ -88,6 +91,7 @@ const addUpdate = async (
       if (!subscriptionManager.stagedInProgess) {
         subscriptionManager.stagedInProgess = true
         subscriptionManager.stagedTimeout = setTimeout(() => {
+          console.log('go send')
           sendUpdates(subscriptionManager)
 
           // if (subscriptionManager.incomingCount < 1000) {

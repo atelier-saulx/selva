@@ -271,7 +271,7 @@ export default class SubscriptionManager {
 
       this.client.on('disconnect', () => {
         console.log('disconnect server-client')
-        // this.clear()
+        this.clear()
       })
     })
   }
