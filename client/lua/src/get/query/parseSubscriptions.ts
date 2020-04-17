@@ -124,34 +124,20 @@ const parseGet = (
 }
 
 function parseSubscriptions(
-  querySubs: QuerySubscription[],
   meta: Meta,
   ids: string[],
   getOptions: GetOptions,
-  result: GetResult,
   language?: string,
   traverse?: string | string[]
-) {
-  let sub: QuerySubscription | undefined
+): QuerySubscription {
   const queryId = redis.sha1hex(cjson.encode(getOptions))
 
-  for (let i = 0; i < querySubs.length; i++) {
-    if (querySubs[i].queryId === queryId) {
-      sub = querySubs[i]
-      break
-    }
+  let sub: QuerySubscription = {
+    member: [],
+    fields: {},
+    queryId,
+    language
   }
-  if (!sub) {
-    sub = {
-      member: [],
-      fields: {},
-      queryId,
-      language
-    }
-    querySubs[querySubs.length] = sub
-  }
-
-  parseGet(getOptions, sub.fields, [])
 
   if (meta.ast) {
     const newAst: Fork = { isFork: meta.ast.isFork }
@@ -259,15 +245,7 @@ function parseSubscriptions(
     }
   }
 
-  // if (result.$meta && result.$meta.inherit) {
-  //   // merge them
-  //   const together = {}
-
-  //   for (const key in result.$meta.inherit) {
-  //   }
-
-  //   logger.info(result.$meta.inherit)
-  // }
+  return sub
 }
 
 export default parseSubscriptions

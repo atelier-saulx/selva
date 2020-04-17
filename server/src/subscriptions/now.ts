@@ -1,5 +1,6 @@
 import SubscriptionManager from './subsManager'
-
+import { Subscription } from './'
+import addUpdate from './update/addUpdate'
 const MAX_TIMEOUT = 10 * 60 * 60 * 1000 // 10 minutes
 
 export function updateTimeout(subsManager: SubscriptionManager) {
@@ -8,12 +9,15 @@ export function updateTimeout(subsManager: SubscriptionManager) {
     subsManager.refreshNowQueriesTimeout = undefined
   }
 
-  if (!subsManager.nowBasedQueries) {
-    subsManager.nowBasedQueries = { nextRefresh: MAX_TIMEOUT, queries: [] }
+  if (!subsManager.refreshSubscriptions) {
+    subsManager.refreshSubscriptions = {
+      nextRefresh: MAX_TIMEOUT,
+      subscriptions: []
+    }
   }
 
   let tm = Math.min(
-    subsManager.nowBasedQueries.nextRefresh - Date.now() + 10,
+    subsManager.refreshSubscriptions.nextRefresh - Date.now() + 10,
     MAX_TIMEOUT
   )
   if (tm < 0) {
@@ -23,18 +27,18 @@ export function updateTimeout(subsManager: SubscriptionManager) {
   subsManager.refreshNowQueriesTimeout = setTimeout(() => {
     const updates: Promise<void>[] = []
 
-    if (!subsManager.nowBasedQueries.queries.length) {
-      subsManager.nowBasedQueries.nextRefresh = MAX_TIMEOUT
+    if (!subsManager.refreshSubscriptions.subscriptions.length) {
+      subsManager.refreshSubscriptions.nextRefresh = MAX_TIMEOUT
       return updateTimeout(subsManager)
     }
 
     const now = Date.now()
     while (
-      subsManager.nowBasedQueries.queries.length &&
-      subsManager.nowBasedQueries.queries[0].nextRefresh <= now
+      subsManager.refreshSubscriptions.subscriptions.length &&
+      subsManager.refreshSubscriptions.subscriptions[0].refreshAt <= now
     ) {
-      const entry = subsManager.nowBasedQueries.queries.shift()
-      updates.push(subsManager.sendUpdate(entry.subId))
+      const subscription = subsManager.refreshSubscriptions.subscriptions.shift()
+      addUpdate(subsManager, subscription)
     }
 
     Promise.all(updates)
@@ -42,11 +46,12 @@ export function updateTimeout(subsManager: SubscriptionManager) {
         console.error('Failed to update now queries', e)
       })
       .finally(() => {
-        if (subsManager.nowBasedQueries.queries.length) {
-          subsManager.nowBasedQueries.nextRefresh =
-            subsManager.nowBasedQueries.queries[0].nextRefresh
+        if (subsManager.refreshSubscriptions.subscriptions.length) {
+          subsManager.refreshSubscriptions.nextRefresh =
+            subsManager.refreshSubscriptions.subscriptions[0].refreshAt
         } else {
-          subsManager.nowBasedQueries.nextRefresh = Date.now() + MAX_TIMEOUT
+          subsManager.refreshSubscriptions.nextRefresh =
+            Date.now() + MAX_TIMEOUT
         }
 
         updateTimeout(subsManager)
@@ -54,32 +59,49 @@ export function updateTimeout(subsManager: SubscriptionManager) {
   }, tm)
 }
 
-export function updateQueries(
+export function removeSubscription(
   subsManager: SubscriptionManager,
-  entry: { subId: string; nextRefresh: number }
+  subscription: Subscription
 ) {
-  const nextRefresh = entry.nextRefresh
+  const refreshSubs = subsManager.refreshSubscriptions.subscriptions
+  for (let i = 0; i < refreshSubs.length; i++) {
+    if (refreshSubs[i] === subscription) {
+      refreshSubs.splice(i, 1)
+      break
+    }
+  }
+}
 
-  if (!subsManager.nowBasedQueries) {
-    subsManager.nowBasedQueries = {
+export function addSubscription(
+  subsManager: SubscriptionManager,
+  subscription: Subscription
+) {
+  const nextRefresh = subscription.refreshAt
+
+  if (!subsManager.refreshSubscriptions) {
+    subsManager.refreshSubscriptions = {
       nextRefresh,
-      queries: [entry]
+      subscriptions: [subscription]
     }
   } else {
-    if (subsManager.nowBasedQueries.nextRefresh > nextRefresh) {
-      subsManager.nowBasedQueries.nextRefresh = nextRefresh
+    if (subsManager.refreshSubscriptions.nextRefresh > nextRefresh) {
+      subsManager.refreshSubscriptions.nextRefresh = nextRefresh
     }
 
     // binary search insert
     let l = 0
-    let r = subsManager.nowBasedQueries.queries.length - 1
+    let r = subsManager.refreshSubscriptions.subscriptions.length - 1
     let idx = 0
     while (l <= r) {
       idx = Math.floor((l + r) / 2)
-      if (subsManager.nowBasedQueries.queries[idx].nextRefresh < nextRefresh) {
+      if (
+        subsManager.refreshSubscriptions.subscriptions[idx].refreshAt <
+        nextRefresh
+      ) {
         l = idx + 1
       } else if (
-        subsManager.nowBasedQueries.queries[idx].nextRefresh > nextRefresh
+        subsManager.refreshSubscriptions.subscriptions[idx].refreshAt >
+        nextRefresh
       ) {
         r = idx - 1
       } else {
@@ -88,7 +110,7 @@ export function updateQueries(
     }
     idx++
 
-    subsManager.nowBasedQueries.queries.splice(idx, 0, entry)
+    subsManager.refreshSubscriptions.subscriptions.splice(idx, 0, subscription)
   }
 
   updateTimeout(subsManager)

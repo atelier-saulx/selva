@@ -3,15 +3,17 @@ import { GetOptions, GetResult, Sort } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
-import { Fork, Meta } from './types'
+import { Fork, Meta, QuerySubscription } from './types'
 import printAst from './printAst'
 import { isFork, getFind } from './util'
-import { emptyArray, ensureArray, isArray } from '../../util'
+import { emptyArray, ensureArray, isArray, splitString } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import { Schema } from '../../../../src/schema/index'
 import parseSubscriptions from './parseSubscriptions'
-import { setNestedResult } from '../nestedFields'
+import { setNestedResult, setMeta } from '../nestedFields'
+
+import globals from '../../globals'
 
 const parseNested = (
   opts: GetOptions,
@@ -58,7 +60,6 @@ const parseQuery = (
   traverse?: string | string[],
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   getResult?: GetResult
 ): [
   {
@@ -105,7 +106,7 @@ const parseQuery = (
       }
 
       const args = createSearchArgs(getOptions, query, resultFork)
-      printAst(resultFork, args)
+      // printAst(resultFork, args)
       const queryResult: string[] = redis.call('ft.search', 'default', ...args)
       if (queryResult) {
         if (queries.length === 1) {
@@ -123,7 +124,7 @@ const parseQuery = (
           string.sub(q, 2, q.length - 1),
           resultFork
         )
-        printAst(resultFork, args)
+        // printAst(resultFork, args)
         const queryResult: string[] = redis.call(
           'ft.search',
           'default',
@@ -203,7 +204,6 @@ const parseQuery = (
           undefined,
           language,
           version,
-          includeMeta,
           getResult
         )
 
@@ -224,52 +224,131 @@ const parseQuery = (
         }
       }
     } else {
-      for (let i = 0; i < resultIds.length; i++) {
-        const result: GetResult =
-          includeMeta && getResult && getResult.$meta
-            ? { $meta: getResult.$meta }
-            : {}
-        getField(
-          getOptions,
-          schema,
-          result,
-          resultIds[i],
-          '',
-          language,
-          version,
-          includeMeta,
-          '$'
-        )
-        if (result.$meta) {
-          delete result.$meta
+      const sort =
+        getOptions.$list &&
+        typeof getOptions.$list === 'object' &&
+        getOptions.$list.$sort
+
+      meta.ast = resultFork
+      if (sort) {
+        meta.sort = sort
+      }
+      // meta.ids = resultIds
+
+      if (
+        getOptions.$list &&
+        typeof getOptions.$list === 'object' &&
+        getOptions.$list.$find &&
+        getOptions.$list.$find.$traverse
+      ) {
+        meta.traverse = getOptions.$list.$find.$traverse
+      } else if (getOptions.$find && getOptions.$find.$traverse) {
+        meta.traverse = getOptions.$find.$traverse
+      } else if (traverse) {
+        meta.traverse = traverse
+      }
+
+      if (resultFork) {
+        let getMeta: any
+        if (globals.$meta) {
+          const subMeta = parseSubscriptions(
+            meta,
+            resultIds,
+            getOptions,
+            language,
+            traverse
+          )
+
+          if (subMeta.time && subMeta.time.nextRefresh) {
+            setMeta(undefined, undefined, {
+              ___refreshAt: subMeta.time.nextRefresh
+            })
+          }
+
+          const fields = subMeta.fields
+
+          if (meta.traverse === 'descendants') {
+            if (subMeta.member.length > 1) {
+              logger.info('HOW CAN THIS BE MULTIPLE MEMBERS')
+            }
+
+            let members = subMeta.member[0]
+
+            const memberId = redis.sha1hex(cjson.encode(members)).substr(0, 10)
+
+            setMeta(undefined, undefined, {
+              ___contains: { [memberId]: members }
+            })
+
+            const type = subMeta.type
+
+            getMeta = {}
+
+            if (type) {
+              getMeta.___types = {}
+              for (let i = 0; i < type.length; i++) {
+                getMeta.___types[type[i]] = { [memberId]: true }
+              }
+            } else {
+              getMeta.___any = {
+                [memberId]: true
+              }
+            }
+
+            for (let key in fields) {
+              setMeta(key, getMeta)
+            }
+          } else {
+            // can choose to make this in member checks
+            setMeta(meta.traverse, { ___ids: ids })
+            for (let key in fields) {
+              setMeta(key, { ___ids: resultIds })
+            }
+          }
         }
-        results[results.length] = result
+
+        for (let i = 0; i < resultIds.length; i++) {
+          const r: GetResult = {}
+          getField(
+            getOptions,
+            schema,
+            r,
+            resultIds[i],
+            '',
+            language,
+            version,
+            '$',
+            meta.traverse === 'descendants' ? getMeta : undefined
+          )
+          results[results.length] = r
+        }
+      } else {
+        if (meta.traverse) {
+          setMeta(meta.traverse, { ___ids: ids })
+        }
+
+        if (meta.sort) {
+          for (const sort of ensureArray(meta.sort)) {
+            setMeta(sort.$field, { ___ids: resultIds })
+          }
+        }
+
+        for (let i = 0; i < resultIds.length; i++) {
+          const r: GetResult = {}
+          getField(
+            getOptions,
+            schema,
+            r,
+            resultIds[i],
+            '',
+            language,
+            version,
+            '$'
+          )
+          results[results.length] = r
+        }
       }
     }
-  }
-
-  const sort =
-    getOptions.$list &&
-    typeof getOptions.$list === 'object' &&
-    getOptions.$list.$sort
-
-  meta.ast = resultFork
-  if (sort) {
-    meta.sort = sort
-  }
-  meta.ids = resultIds
-
-  if (
-    getOptions.$list &&
-    typeof getOptions.$list === 'object' &&
-    getOptions.$list.$find &&
-    getOptions.$list.$find.$traverse
-  ) {
-    meta.traverse = getOptions.$list.$find.$traverse
-  } else if (getOptions.$find && getOptions.$find.$traverse) {
-    meta.traverse = getOptions.$find.$traverse
-  } else if (traverse) {
-    meta.traverse = traverse
   }
 
   return [{ results, meta }, null]
@@ -284,8 +363,7 @@ const queryGet = (
   ids?: string[],
   traverse?: string | string[],
   language?: string,
-  version?: string,
-  includeMeta?: boolean
+  version?: string
 ): string | null => {
   if (!ids) {
     ids = [getOptions.$id || 'root']
@@ -299,7 +377,6 @@ const queryGet = (
     traverse,
     language,
     version,
-    includeMeta,
     result
   )
 
@@ -307,20 +384,6 @@ const queryGet = (
 
   if (!results.length || results.length === 0) {
     results = emptyArray()
-  }
-  if (includeMeta && meta) {
-    if (!result.$meta.query) {
-      result.$meta.query = []
-    }
-    parseSubscriptions(
-      result.$meta.query,
-      meta,
-      ids,
-      getOptions,
-      result,
-      language,
-      traverse
-    )
   }
 
   if (getOptions.$find) {

@@ -21,11 +21,13 @@ export type UpdateEvent = {
   version?: string
 }
 
-export type DeleteEvent = {
-  type: 'delete'
+export type CustomEvent = {
+  type: string
+  payload?: any
+  version?: string
 }
 
-export type Event = UpdateEvent | DeleteEvent
+export type Event = UpdateEvent | CustomEvent
 
 export type ClientObject = {
   connect: (type: string) => void

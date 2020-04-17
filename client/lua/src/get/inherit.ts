@@ -53,7 +53,6 @@ function setFromAncestors(
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   fieldFrom?: string | string[],
   merge?: boolean,
   tryAncestorCondition?: (ancestor: Id) => boolean,
@@ -89,10 +88,6 @@ function setFromAncestors(
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
-      if (includeMeta) {
-        result.$meta.inherit[id].ids[parent] = true
-      }
-
       if (
         !tryAncestorCondition ||
         (tryAncestorCondition && tryAncestorCondition(parent))
@@ -106,8 +101,7 @@ function setFromAncestors(
               field,
               fieldFrom,
               language,
-              version,
-              includeMeta
+              version
             )
           ) {
             return true
@@ -122,8 +116,6 @@ function setFromAncestors(
             '',
             language,
             version,
-            //includeMeta,
-            false, // FIXME: maybe need to support this here too?
             '$inherit'
           )
 
@@ -139,16 +131,7 @@ function setFromAncestors(
           }
         } else {
           if (
-            getByType(
-              result,
-              schema,
-              parent,
-              field,
-              language,
-              version,
-              includeMeta,
-              merge
-            )
+            getByType(result, schema, parent, field, language, version, merge)
           ) {
             return true
           }
@@ -183,8 +166,7 @@ function inheritItem(
   item: string[],
   required: string[],
   language?: string,
-  version?: string,
-  includeMeta?: boolean
+  version?: string
 ) {
   const requiredFields: string[][] = prepareRequiredFieldSegments(required)
 
@@ -210,8 +192,6 @@ function inheritItem(
         '',
         language,
         version,
-        // includeMeta, // FIXME: do we need to support this? don't think so
-        false,
         '$inherit'
       )
       setNestedResult(result, field, intermediateResult)
@@ -225,7 +205,6 @@ function inheritItem(
         '',
         language,
         version,
-        includeMeta,
         '',
         false,
         (ancestor: Id) => {
@@ -276,15 +255,15 @@ export default function inherit(
   field: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
   fieldFrom?: string | string[]
 ) {
-  logger.info(`INHERIT DAT FIELD ${field}`, result, includeMeta)
+  logger.info(`INHERIT DAT FIELD ${field}`, result)
 
   // add from where it inherited and make a descendants there
   // how to check if descandents in it checl if in acnestors
 
   const inherit = props.$inherit
+
   if (inherit) {
     if (inherit === true) {
       return setFromAncestors(
@@ -295,33 +274,78 @@ export default function inherit(
         field,
         language,
         version,
-        includeMeta,
         fieldFrom,
         true
       )
     } else if (inherit.$type) {
-      const types: string[] = ensureArray(inherit.$type)
-      return setFromAncestors(
-        getField,
-        result,
-        schema,
-        id,
-        field,
-        language,
-        version,
-        includeMeta,
-        fieldFrom,
-        inherit.$merge !== undefined ? inherit.$merge : true,
-        (ancestor: Id) => {
-          for (const type of types) {
-            if (type === getTypeFromId(ancestor)) {
-              return true
-            }
-          }
+      const required = ensureArray(inherit.$required)
+      const requiredFields: string[][] = prepareRequiredFieldSegments(required)
 
-          return false
+      const types: string[] = ensureArray(inherit.$type)
+
+      const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+      const len = ancestorsWithScores.length
+      if (len === 0) {
+        setNestedResult(result, field, {})
+        return
+      }
+
+      const ancestorsByType = getAncestorsByType(types, ancestorsWithScores)
+      for (const itemType of types) {
+        const matches = ancestorsByType[itemType]
+        if (matches.length === 1) {
+          getField(
+            props,
+            schema,
+            result,
+            matches[0],
+            field,
+            language,
+            version,
+            '$inherit'
+          )
+          return
+        } else if (matches.length > 1) {
+          setFromAncestors(
+            getField,
+            result,
+            schema,
+            id,
+            field,
+            language,
+            version,
+            '',
+            false,
+            (ancestor: Id) => {
+              for (const match of matches) {
+                if (match === ancestor) {
+                  return true
+                }
+              }
+
+              return false
+            },
+            (result: any) => {
+              if (required.length === 0) {
+                return true
+              }
+
+              for (const requiredField of requiredFields) {
+                let prop: any = result
+                for (const segment of requiredField) {
+                  prop = prop[segment]
+                  if (!prop) {
+                    return false
+                  }
+                }
+              }
+
+              return true
+            },
+            ancestorsWithScores
+          )
         }
-      )
+      }
     } else if (inherit.$name) {
       const names: string[] = ensureArray(inherit.$name)
       return setFromAncestors(
@@ -332,7 +356,6 @@ export default function inherit(
         field,
         language,
         version,
-        includeMeta,
         fieldFrom,
         inherit.$merge !== undefined ? inherit.$merge : true,
         (ancestor: Id) => {
@@ -357,8 +380,7 @@ export default function inherit(
         ensureArray(inherit.$item),
         ensureArray(inherit.$required),
         language,
-        version,
-        includeMeta
+        version
       )
     } else if (inherit.$merge !== undefined) {
       // if only merge specified, same as inherit: true with merge off
@@ -370,7 +392,6 @@ export default function inherit(
         field,
         language,
         version,
-        includeMeta,
         fieldFrom,
         inherit.$merge
       )

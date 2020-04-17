@@ -2,20 +2,30 @@
 
 ## About
 
-🌴 Selva is a realtime mixed acyclic graph database.
+Selva is a realtime acyclic graph database.
 
-It was built to handle massively scalable data structures with complex hierarchies and taxonomies. Documents or graph vertices can have any number or combination of parents and children. Field values can be augmented with data from other members of its hierarchy allowing for useful defaults based on the document context.  
-All of this with real-time updates and transparent subscriptions making it perfect to drive dynamic websites and applications.
+It was built to handle massively scalable data structures with complex hierarchies and taxonomies, with real-time updates, transparent subscriptions, and powerful queries.
+
+Documents or graph vertices can have any number or combination of parents and children. Field values can be augmented with data from other members of its hierarchy allowing for efficient inheritance of data.
 
 Here are some of its features:
 
-  - Real-time engine and subscription model.
-  - Versioning system for the data itself allowing branches of data to be merged and revised into the master data, allowing content creators to try changes before date is published to a live system. It allows collaborative version editing in real-time.
-  - Schemas enforce data types with builtin validation.
-  - Persistence layer using GIT-LFS allowing backups every 5 mins and all versions of the data to available at all times.
-  - Custom query language and indexes optimized for the undirected acyclic graph data structure.
-  - Simple JSON based query language DSL.
-  - Client API uses web sockets to subscribe to data and transparently keep content updated in real-time.
+- Real-time engine and subscription model
+
+- Schemas enforce data types with built-in validation
+
+- Persistence layer using GIT-LFS allowing backups every 5 minutes and access to all versions of the data available at all times
+
+- JSON-based DSL for queries
+
+- Optional indexes optimised for the graph data structure
+
+- I18n and search included
+
+- Client API uses web sockets to subscribe to data and transparently keep content updated in real-time
+
+- Versioning system for the data allows branches of data to be merged and revised into the master data, allowing content creators to try changes before data is published to a live system
+
 
 ## Documentation
 

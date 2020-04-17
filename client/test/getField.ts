@@ -155,7 +155,7 @@ test.serial('get - simple alias', async t => {
 })
 
 test.serial('get - simple alias with variable', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'viB',
@@ -638,6 +638,52 @@ test.serial('get - $field with object structure', async t => {
       id: 'viA',
       wrappingObject: {},
       value: 25
+    }
+  )
+})
+
+test.serial('get - nested query with $field in $id', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'viB'
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'viB',
+    title: {
+      en: 'nice!!!'
+    },
+    value: 27
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      id: true,
+      thing: {
+        $id: { $field: 'title.en' },
+        title: true
+      }
+    }),
+    {
+      id: 'viA',
+      thing: {
+        title: {
+          en: 'nice!!!'
+        }
+      }
     }
   )
 })

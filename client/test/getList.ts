@@ -362,6 +362,7 @@ test.serial('get - simple $list with query $field of one field', async t => {
   t.deepEqual(
     c,
     {
+      $isNull: true,
       otherName: [
         { value: 0, name: 'flurp0' },
         { value: 1, name: 'flurp1' },

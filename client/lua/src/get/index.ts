@@ -3,7 +3,7 @@ import { Id } from '~selva/schema/index'
 import getByType from './getByType'
 import { Schema } from '../../../src/schema/index'
 import * as logger from '../logger'
-import { setNestedResult, getNestedField } from './nestedFields'
+import { setNestedResult, getNestedField, setMeta } from './nestedFields'
 import inherit from './inherit'
 import getWithField, { resolveAll, isObjectField } from './field'
 import getArray from './getArray'
@@ -13,40 +13,9 @@ import makeNewGetOptions from './all'
 import getQuery from './query/index'
 import * as r from '../redis'
 
-// add error handling
+import global from '../globals'
 
-function addInheritMeta(
-  props: GetOptions,
-  field: string | string[],
-  result: GetResult,
-  id: string
-) {
-  const inherit = props.$inherit
-  if (inherit) {
-    if (!result.$meta.inherit) {
-      result.$meta.inherit = {}
-    }
-    if (!result.$meta.inherit[id]) {
-      result.$meta.inherit[id] = {
-        ids: {},
-        fields: {}
-      }
-    }
-    if (inherit !== true && inherit.$item) {
-      logger.info('ADD META FOR INHERIT', field, props)
-    } else {
-      if (field) {
-        if (isArray(field)) {
-          for (let i = 0; i < field.length; i++) {
-            result.$meta.inherit[id].fields[field[i]] = true
-          }
-        } else {
-          result.$meta.inherit[id].fields[field] = true
-        }
-      }
-    }
-  }
-}
+// add error handling
 
 function getField(
   props: GetItem,
@@ -56,8 +25,8 @@ function getField(
   field?: string,
   language?: string,
   version?: string,
-  includeMeta?: boolean,
-  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter' // when from inherit
+  ignore?: '$' | '$inherit' | '$list' | '$find' | '$filter', // when from inherit
+  metaKeys?: any
 ): boolean {
   let hasAlias = false
 
@@ -67,7 +36,27 @@ function getField(
   }
 
   if (props.$id && field) {
-    //FIXME: meta
+    if (props.$id.$field) {
+      const idResult = {}
+      getWithField(
+        idResult,
+        schema,
+        id,
+        'idResult',
+        ensureArray(props.$id.$field),
+        language,
+        version
+      )
+
+      const nestedId = getNestedField(idResult, 'idResult')
+      if (!nestedId) {
+        setNestedResult(result, field, {})
+        return true
+      }
+
+      props.$id = nestedId
+    }
+
     const intermediateResult = {}
     getField(
       props,
@@ -77,7 +66,6 @@ function getField(
       undefined,
       language,
       version,
-      false,
       ignore
     )
 
@@ -143,8 +131,7 @@ function getField(
         ids,
         sourceField,
         language,
-        version,
-        includeMeta
+        version
       )
       if (err) {
         // can return an error now
@@ -165,9 +152,6 @@ function getField(
           language,
           version
         )
-        if (props.$inherit && includeMeta === true) {
-          addInheritMeta(props, $field, result, id)
-        }
 
         getWithField(
           intermediateResult,
@@ -194,9 +178,6 @@ function getField(
           language,
           version
         )
-        if (props.$inherit && includeMeta === true) {
-          addInheritMeta(props, props.$field, result, id)
-        }
 
         if (
           getWithField(
@@ -206,8 +187,7 @@ function getField(
             field,
             props.$field,
             language,
-            version,
-            includeMeta
+            version
           )
         ) {
           return true
@@ -223,17 +203,22 @@ function getField(
         props = makeNewGetOptions(id, field || '', schema, props)
       }
 
-      if (props.$inherit && includeMeta === true) {
-        addInheritMeta(props, <string>field, result, id)
-      }
-
       for (const key in props) {
         if (key[0] !== '$') {
           hasKeys = true
           const f = field && field.length > 0 ? field + '.' + key : key
           if (props[key] === true) {
             if (
-              !getByType(result, schema, id, f, language, version, includeMeta)
+              !getByType(
+                result,
+                schema,
+                id,
+                f,
+                language,
+                version,
+                false,
+                metaKeys
+              )
             ) {
               isComplete = false
             }
@@ -249,7 +234,6 @@ function getField(
               f,
               language,
               version,
-              includeMeta,
               ignore
             )
           } else {
@@ -259,16 +243,7 @@ function getField(
             }
 
             if (
-              getField(
-                props[key],
-                schema,
-                result,
-                id,
-                f,
-                language,
-                version,
-                includeMeta
-              )
+              getField(props[key], schema, result, id, f, language, version)
             ) {
               isComplete = false
             }
@@ -296,11 +271,15 @@ function getField(
       props.$inherit &&
       (!isComplete || !hasKeys)
     ) {
-      if (!hasAlias && !hasKeys) {
-        if (props.$inherit && includeMeta === true) {
-          addInheritMeta(props, <string>field, result, id)
+      // inheritance
+      setMeta(
+        'ancestors',
+        metaKeys || {
+          ___ids: id
         }
+      )
 
+      if (!hasAlias && !hasKeys) {
         const complete = getByType(
           result,
           schema,
@@ -308,7 +287,8 @@ function getField(
           <string>field,
           language,
           version,
-          includeMeta
+          false,
+          metaKeys
         )
 
         if (!complete) {
@@ -321,7 +301,6 @@ function getField(
             <string>field,
             language,
             version,
-            includeMeta,
             hasAlias ? <string[]>props.$field : undefined
           )
         }
@@ -335,7 +314,6 @@ function getField(
           <string>field,
           language,
           version,
-          includeMeta,
           hasAlias ? <string[]>props.$field : undefined
         )
       }
@@ -354,7 +332,8 @@ function getField(
         <string>field,
         language,
         version,
-        includeMeta
+        false,
+        metaKeys
       )
       if (!complete) {
         setNestedResult(result, <string>field, props.$default)
@@ -409,10 +388,11 @@ function get(opts: GetOptions): GetResult {
   }
 
   if (includeMeta) {
-    result.$meta = { $refs: {} }
+    global.$meta = {}
+    result.$meta = global.$meta
   }
 
-  getField(opts, schema, result, id, undefined, language, version, includeMeta)
+  getField(opts, schema, result, id, undefined, language, version)
 
   if (rawAncestors) {
     const obj = getRawAncestors(id)
@@ -421,6 +401,10 @@ function get(opts: GetOptions): GetResult {
       arr[arr.length] = id
     }
     result.rawAncestors = arr
+  }
+
+  if (!r.exists(id)) {
+    result.$isNull = true
   }
 
   return <any>result

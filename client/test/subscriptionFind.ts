@@ -121,7 +121,7 @@ test.serial('subscription find', async t => {
     console.log('furpy!', cnt, d)
   })
 
-  await wait(300)
+  await wait(1000)
   t.is(cnt, 1)
 
   await client.set({
@@ -243,6 +243,8 @@ test.serial('subscription find', async t => {
   // for now 1k
   const amount = 10 // 10k wrong 5k fine
 
+  console.log('snurkels')
+
   const x = []
   for (let i = 0; i < amount; i++) {
     x.push(
@@ -256,7 +258,7 @@ test.serial('subscription find', async t => {
 
   var d = Date.now()
   const ids = await Promise.all(x)
-  console.log('SET 1k', Date.now() - d, 'ms')
+  console.log('SET ', amount, Date.now() - d, 'ms')
 
   await wait(2000)
 
@@ -265,7 +267,7 @@ test.serial('subscription find', async t => {
     $id: ids[6],
     name: 'FLURRRRP'
   })
-  await wait(7000)
+  await wait(1000)
 
   console.log('check for cnt')
   t.is(cnt3, 3)

@@ -42,7 +42,7 @@ test.serial('basic id based subscriptions', async t => {
   const sub = observable.subscribe(d => {
     if (o1counter === 0) {
       // gets start event
-      t.deepEqualIgnoreOrder(d, { yesh: '' })
+      t.is(d.yesh, '')
     } else if (o1counter === 1) {
       // gets update event
       t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })
@@ -74,7 +74,7 @@ test.serial('basic id based subscriptions', async t => {
       })
     } else if (o2counter === 1) {
       // gets delete event
-      t.is(d, null)
+      t.true(d.$isNull)
     } else {
       t.fail
     }
@@ -144,7 +144,7 @@ test.serial('using $field works', async t => {
   const sub = observable.subscribe(d => {
     if (o1counter === 0) {
       // gets start event
-      t.deepEqualIgnoreOrder(d, { id: 'root' })
+      t.deepEqualIgnoreOrder(d, { id: 'root', $isNull: true })
     } else if (o1counter === 1) {
       // gets update event
       t.deepEqualIgnoreOrder(d, { id: 'root', aliasedField: 'so nice' })
@@ -287,7 +287,7 @@ test.serial('basic $inherit when ancestors change', async t => {
   await client.delete('root')
 })
 
-test.serial.only(
+test.serial(
   'subscription client side reconnection test -- no event if no changes',
   async t => {
     const port = await getPort()
@@ -319,7 +319,7 @@ test.serial.only(
       console.log(d)
       if (o1counter === 0) {
         // gets start event
-        t.deepEqualIgnoreOrder(d, { yesh: '' })
+        t.deepEqualIgnoreOrder(d, { yesh: '', $isNull: true })
       } else if (o1counter === 1) {
         // reconnect event
         t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })
@@ -394,7 +394,7 @@ test.serial(
       console.log(d)
       if (o1counter === 0) {
         // gets start event
-        t.deepEqualIgnoreOrder(d, { yesh: '' })
+        t.deepEqualIgnoreOrder(d, { yesh: '', $isNull: true })
       } else if (o1counter === 1) {
         // gets update event
         t.deepEqualIgnoreOrder(d, { yesh: 'so nice' })
