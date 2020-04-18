@@ -95,7 +95,7 @@ test.serial('subscription list', async t => {
     }
   })
 
-  t.plan(2)
+  t.plan(1)
   obs.subscribe(res => {
     t.deepEqual(res.items, [{ title: 'football match' }])
   })
