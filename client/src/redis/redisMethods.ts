@@ -285,6 +285,12 @@ abstract class RedisMethods {
     })
   }
 
+  async save(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      this.queue('save', [], v => resolve(v === 'OK'), reject)
+    })
+  }
+
   async sadd(key: string, ...member: string[]): Promise<boolean> {
     return new Promise((resolve, reject) => {
       this.queue('sadd', [key, ...member], v => resolve(v === 1), reject)
