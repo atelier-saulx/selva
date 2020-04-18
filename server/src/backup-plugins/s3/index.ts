@@ -50,6 +50,11 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
     },
     async loadBackup(rdbFilePath: string, rdbLastModified: Date) {
       const objects = await s3.listObjects(bucketName)
+      if (!objects.length) {
+        console.log('No backups found')
+        return
+      }
+
       const latest = objects.reduce((max, o) => {
         if (new Date(o.Key) > new Date(max.Key)) {
           return o
@@ -61,7 +66,7 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
       if (!rdbLastModified || new Date(latest.Key) > rdbLastModified) {
         console.log(`New backup found from ${latest.Key}`)
         const body: Buffer = <Buffer>await s3.getObject(bucketName, latest.Key)
-        fs.writeFile(rdbFilePath, body)
+        await fs.writeFile(rdbFilePath, body)
       } else {
         console.log('No newer backup found')
       }
