@@ -433,7 +433,7 @@ test.serial('get - simple $field with $inherit: true', async t => {
 })
 
 test.serial('get - simple $field with $inherit: $type', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'cuA',

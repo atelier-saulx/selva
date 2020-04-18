@@ -2,7 +2,7 @@ import * as redis from '../redis'
 import { Id, Schema } from '~selva/schema/index'
 import { getTypeFromId } from '../typeIdMapping'
 import { GetResult, GetItem } from '~selva/get/types'
-import { setNestedResult } from './nestedFields'
+import { setNestedResult, getNestedField } from './nestedFields'
 import getByType from './getByType'
 import { ensureArray, splitString, isArray } from '../util'
 import * as logger from '../logger'
@@ -294,19 +294,41 @@ export default function inherit(
       for (const itemType of types) {
         const matches = ancestorsByType[itemType]
         if (matches.length === 1) {
-          getField(
-            props,
-            schema,
-            result,
-            matches[0],
-            field,
-            language,
-            version,
-            '$inherit'
-          )
-          return
+          if (props.$field) {
+            for (const $field of ensureArray(props.$field)) {
+              const intermediateResult = {}
+              const completed = getByType(
+                intermediateResult,
+                schema,
+                matches[0],
+                <string>$field,
+                language,
+                version
+              )
+              if (completed) {
+                setNestedResult(
+                  result,
+                  field,
+                  getNestedField(intermediateResult, <string>$field)
+                )
+                return
+              }
+            }
+          } else {
+            const completed = getByType(
+              result,
+              schema,
+              matches[0],
+              field,
+              language,
+              version
+            )
+            if (completed) {
+              return
+            }
+          }
         } else if (matches.length > 1) {
-          setFromAncestors(
+          const completed = setFromAncestors(
             getField,
             result,
             schema,
@@ -325,25 +347,13 @@ export default function inherit(
 
               return false
             },
-            (result: any) => {
-              if (required.length === 0) {
-                return true
-              }
-
-              for (const requiredField of requiredFields) {
-                let prop: any = result
-                for (const segment of requiredField) {
-                  prop = prop[segment]
-                  if (!prop) {
-                    return false
-                  }
-                }
-              }
-
-              return true
-            },
+            undefined,
             ancestorsWithScores
           )
+
+          if (completed) {
+            return
+          }
         }
       }
     } else if (inherit.$name) {
@@ -369,7 +379,6 @@ export default function inherit(
         }
       )
     } else if (inherit.$item) {
-      logger.info('INHERITING with $item')
       inheritItem(
         getField,
         props,

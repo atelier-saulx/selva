@@ -827,7 +827,7 @@ test.serial('get - hierarchy', async t => {
 })
 
 test.serial('get - $inherit', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   /*
     root
@@ -1005,7 +1005,7 @@ test.serial('get - $inherit', async t => {
     await client.get({
       $id: 'cuC',
       image: {
-        $inherit: { $type: ['custom', 'club'], $required: ['image.thumb'] }
+        $inherit: { $type: ['custom', 'club'] }
       }
     }),
     {
