@@ -20,8 +20,6 @@ const backups = require('../../lib/backups')
 
   const server = start({
     port: 6061,
-    modules: ['redisearch'],
-    developmentLogging: true,
     backups: {
       loadBackup: true,
       scheduled: { intervalInMinutes: 1 },
@@ -34,7 +32,6 @@ const backups = require('../../lib/backups')
         }
       })
     }
-    // TODO: accept backupFn as a promise, awaited in server.start()
   })
 
   setTimeout(() => {
