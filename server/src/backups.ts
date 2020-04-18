@@ -27,8 +27,13 @@ export type LoadBackup = (
 export async function loadBackup(redisDir: string, backupFns: BackupFns) {
   const dumpFile = pathJoin(redisDir, 'dump.rdb')
   try {
-    const stat = await fs.stat(dumpFile)
+    let stat = await fs.stat(dumpFile)
+    console.log(
+      `Existing backup found from ${stat.mtime} of ${stat.size} bytes`
+    )
     await backupFns.loadBackup(dumpFile, stat.mtime)
+    stat = await fs.stat(dumpFile)
+    console.log(`Backup load completed, size: ${stat.size} bytes`)
   } catch (e) {
     await backupFns.loadBackup(dumpFile)
   }

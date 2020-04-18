@@ -55,8 +55,11 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
       })
 
       if (!rdbLastModified || new Date(latest.Key) > rdbLastModified) {
+        console.log(`New backup found from ${latest.Key}`)
         const body: Buffer = <Buffer>await s3.getObject(bucketName, latest.Key)
         fs.writeFile(rdbFilePath, body)
+      } else {
+        console.log('No newer backup found')
       }
     }
   }
