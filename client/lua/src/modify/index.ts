@@ -306,6 +306,8 @@ function removeSpecified(
 }
 
 function update(payload: SetOptions): Id | null {
+  const { $operation = 'upsert' } = payload
+
   if (payload.$_batchOpts) {
     globals.$_batchOpts = payload.$_batchOpts
   }
@@ -354,7 +356,12 @@ function update(payload: SetOptions): Id | null {
     return null
   }
 
-  const exists = redis.hexists(payload.$id, 'type')
+  const exists = redis.exists(payload.$id)
+  if (!exists && $operation === 'update') {
+    return null
+  } else if (exists && $operation === 'insert') {
+    return null
+  }
 
   if (!exists) {
     // we always end up here if it's a new record

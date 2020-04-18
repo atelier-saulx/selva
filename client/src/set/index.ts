@@ -53,6 +53,13 @@ export const parseSetObject = (
           throw new Error('Wrong type for $id ' + payload[key])
         }
         result[key] = payload[key]
+      } else if (key === '$operation') {
+        const val = payload[key]
+        if (val !== 'update' && val !== 'insert' && val !== 'upsert') {
+          throw new Error('Wrong type for $operation ' + payload[key])
+        }
+
+        result[key] = payload[key]
       } else if (key === '$source') {
         if (
           typeof payload[key] !== 'string' &&
