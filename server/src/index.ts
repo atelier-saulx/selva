@@ -132,7 +132,6 @@ export const startInternal = async function({
       const backUp = async (_bail: (e: Error) => void) => {
         await scheduleBackups(
           process.cwd(),
-          port,
           backups.scheduled.intervalInMinutes,
           backupFns
         )
