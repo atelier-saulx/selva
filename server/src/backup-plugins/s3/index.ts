@@ -19,10 +19,14 @@ async function cleanUpOldBackups(
 ): Promise<void> {
   const objects = await s3.listObjects(bucketName)
   const oldBackups = objects.filter(object => {
-    const validSince = new Date(
-      Date.now() - 1000 * 60 * 60 * 12 * retentionInDays
-    )
-    return new Date(object.Key) < validSince
+    try {
+      const validSince = new Date(
+        Date.now() - 1000 * 60 * 60 * 12 * retentionInDays
+      )
+      return new Date(object.Key) < validSince
+    } catch (_e) {
+      return false
+    }
   })
 
   await Promise.all(
