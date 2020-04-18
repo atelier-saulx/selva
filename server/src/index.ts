@@ -11,6 +11,9 @@ import {
 import cleanExit from './cleanExit'
 import SubscriptionManager from './subscriptions'
 
+export * as s3Backups from './backup-plugins/s3'
+export * as dropboxBackups from './backup-plugins/dropbox'
+
 type Service = {
   port: number
   host: string
