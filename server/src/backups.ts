@@ -91,6 +91,8 @@ export async function scheduleBackups(
 
     const timeOfDay = msSinceMidnight()
     if (timeOfDay >= nextBackup) {
+      console.log('Trying to create backup', String(timeOfDay))
+
       try {
         await backupFns.sendBackup(pathJoin(redisDir, 'dump.rdb'))
         await new Promise((resolve, reject) => {
@@ -103,8 +105,17 @@ export async function scheduleBackups(
             }
           )
         })
+
+        console.log('Backup created', String(timeOfDay))
       } catch (e) {
-        console.error(`Failed to back up ${e}`)
+        console.error(`Failed to back up ${String(timeOfDay)} ${e}`)
+        const delay = Math.max(nextBackup - timeOfDay, 1000 * 60) // wait at least 1 minute in between runs
+        if (delay > 5 * 60 * 1000) {
+          // if we wait more than 5 minutes, we should probably close and reopen the redis connection
+          redis.end(false)
+          redis = null
+        }
+        await new Promise((resolve, _reject) => setTimeout(resolve, delay))
       }
     } else {
       const delay = Math.max(nextBackup - timeOfDay, 1000 * 60) // wait at least 1 minute in between runs

@@ -113,6 +113,8 @@ export const startInternal = async function({
     }
   }
 
+  const args = ['--port', String(port), '--protected-mode', 'no']
+
   if (backups) {
     if (backups.backupFns instanceof Promise) {
       backupFns = await backups.backupFns
@@ -125,6 +127,8 @@ export const startInternal = async function({
     }
 
     if (backups.scheduled) {
+      args.push('--save', '10', '1')
+
       const backUp = async (_bail: (e: Error) => void) => {
         await scheduleBackups(
           process.cwd(),
@@ -142,8 +146,6 @@ export const startInternal = async function({
       })
     }
   }
-
-  const args = ['--port', String(port), '--protected-mode', 'no']
 
   if (modules) {
     modules = [...new Set([...defaultModules, ...modules])]
