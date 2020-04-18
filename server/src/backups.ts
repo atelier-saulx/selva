@@ -10,10 +10,10 @@ function msSinceMidnight(d: Date = new Date()) {
   return Date.now() - d.getTime()
 }
 
-async function nextBackupTime(
+function nextBackupTime(
   lastBackupTime: number,
   backupInterval: number
-): Promise<number> {
+): number {
   return Math.ceil(lastBackupTime / backupInterval) * backupInterval
 }
 
@@ -53,49 +53,51 @@ export async function saveAndBackUp(
   }
 }
 
-export async function scheduleBackups(
+export function scheduleBackups(
   redisDir: string,
   intervalInMinutes: number,
   backupFns: BackupFns
 ) {
-  const dumpPath = pathJoin(redisDir, 'dump.rdb')
-  await new Promise((resolve, _reject) => setTimeout(resolve, 500))
-  const backupInterval = intervalInMinutes * 60 * 1000
+  let timeout = null
+  const backup = () => {
+    console.log(`Scheduling backup in ${intervalInMinutes} minutes`)
+    timeout = setTimeout(() => {
+      runBackup(redisDir, backupFns)
+        .then(() => {
+          console.log('Backup successfully created')
+        })
+        .catch(e => {
+          console.log('error', e)
+        })
+        .finally(() => {
+          backup()
+        })
+    }, intervalInMinutes * 60 * 1e3)
+  }
 
-  while (true) {
-    const timeOfDay = msSinceMidnight()
+  backup()
 
-    const nextBackup = await nextBackupTime(
-      msSinceMidnight(new Date(LAST_RUN)),
-      backupInterval
-    )
-
-    console.log('NEXT BACKUP TIME', nextBackup, nextBackup - timeOfDay)
-    LAST_RUN = Date.now()
-
-    const stat = await fs.stat(dumpPath)
-    if (stat.mtime < new Date(LAST_BACKUP_TIMESTAMP)) {
-      console.log(`No changes since ${stat.mtime}, skipping backup`)
-      const delay = Math.max(nextBackup - timeOfDay, 1000 * 60) // wait at least 1 minute in between runs
-      await new Promise((resolve, _reject) => setTimeout(resolve, delay))
-      continue
-    }
-
-    if (nextBackup >= 0) {
-      console.log('Trying to create backup', String(timeOfDay))
-
-      try {
-        await backupFns.sendBackup(dumpPath)
-        LAST_BACKUP_TIMESTAMP = Date.now()
-        console.log('Backup created', String(timeOfDay))
-      } catch (e) {
-        console.error(`Failed to back up ${String(timeOfDay)} ${e}`)
-        const delay = Math.max(nextBackup - timeOfDay, 1000 * 60) // wait at least 1 minute in between runs
-        await new Promise((resolve, _reject) => setTimeout(resolve, delay))
-      }
-    } else {
-      const delay = Math.max(nextBackup - timeOfDay, 1000 * 60) // wait at least 1 minute in between runs
-      await new Promise((resolve, _reject) => setTimeout(resolve, delay))
+  return () => {
+    if (timeout) {
+      clearTimeout(timeout)
     }
   }
+}
+
+export async function runBackup(redisDir: string, backupFns: BackupFns) {
+  const dumpPath = pathJoin(redisDir, 'dump.rdb')
+  const timeOfDay = msSinceMidnight()
+
+  LAST_RUN = Date.now()
+
+  const stat = await fs.stat(dumpPath)
+  if (stat.mtime < new Date(LAST_BACKUP_TIMESTAMP)) {
+    console.log(`No changes since ${stat.mtime}, skipping backup`)
+    return
+  }
+
+  console.log('Trying to create backup', String(timeOfDay))
+
+  await backupFns.sendBackup(dumpPath)
+  LAST_BACKUP_TIMESTAMP = Date.now()
 }

@@ -76,6 +76,7 @@ export const startInternal = async function({
   subscriptions,
   seperateSubsmanager
 }: FnStart): Promise<SelvaServer> {
+  let backupCleanup: () => void
   let port: number
   let backupFns: BackupFns
   if (verbose) console.info('Start db 🌈')
@@ -132,20 +133,11 @@ export const startInternal = async function({
     if (backups.scheduled) {
       args.push('--save', '10', '1')
 
-      const backUp = async (_bail: (e: Error) => void) => {
-        await scheduleBackups(
-          process.cwd(),
-          backups.scheduled.intervalInMinutes,
-          backupFns
-        )
-      }
-
-      retry(backUp, { forever: true }).catch(e => {
-        console.error(`Backups failed ${e.stack}`)
-        execSync(`redis-cli -p ${port} shutdown`)
-        redisDb.kill()
-        process.exit(1)
-      })
+      backupCleanup = scheduleBackups(
+        process.cwd(),
+        backups.scheduled.intervalInMinutes,
+        backupFns
+      )
     }
   }
 
@@ -233,6 +225,10 @@ export const startInternal = async function({
     destroy: async () => {
       execSync(`redis-cli -p ${port} shutdown`)
       redisDb.kill()
+      if (backupCleanup) {
+        backupCleanup()
+      }
+
       if (subs) {
         await subs.destroy()
       }
