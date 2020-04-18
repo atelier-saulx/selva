@@ -21,7 +21,7 @@ const backups = require('../../dist/backups')
   const server = start({
     port: 6061,
     backups: {
-      // loadBackup: true,
+      loadBackup: true,
       scheduled: { intervalInMinutes: 0.5 },
       backupFns: mkS3({
         endpoint: ENDPOINT,

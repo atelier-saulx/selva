@@ -127,7 +127,9 @@ export const startInternal = async function({
     }
 
     if (backups.loadBackup) {
+      console.log('Loading backup')
       await loadBackup(process.cwd(), backupFns)
+      console.log('Backup loaded')
     }
 
     if (backups.scheduled) {
