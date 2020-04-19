@@ -9,15 +9,17 @@ const deleteLength = 'delete:'.length
 const addListeners = (subsManager: SubscriptionManager) => {
   // process.nextTick
 
-  // setInterval(() => {
-  //   console.log('handled ', subsManager.incomingCount, 'in last 10 sec')
-  //   subsManager.incomingCount = 0
-  // }, 10e3)
+  let collect = 0
+  setInterval(() => {
+    console.log('handled ', collect, 'in last 5 sec')
+    collect = 0
+  }, 5e3)
 
   subsManager.client.redis.redis.sub.on(
     'pmessage',
     (_pattern, channel, message) => {
       subsManager.incomingCount++
+      collect++
       // use this for batching here
       // merge tree for checks?
       if (message === 'schema_update') {
