@@ -9,6 +9,7 @@ import { log, info, configureLogger } from '../logger'
 import globals from '../globals'
 import { arrayIsEqual } from '../util'
 import checkSource from './source'
+import { markUpdated } from './timestamps'
 
 type FnModify = (payload: SetOptions) => Id | null
 
@@ -49,6 +50,7 @@ export function resetSet(
     redis.sadd(setKey, ...value)
   }
 
+  markUpdated(id)
   sendEvent(id, field, 'update')
 }
 
@@ -76,6 +78,7 @@ export function addToSet(
   if (value.length > 0) {
     const added = redis.sadd(setKey, ...value)
     if (added > 0) {
+      markUpdated(id)
       sendEvent(id, field, 'update')
     }
   }
@@ -101,6 +104,7 @@ export function removeFromSet(
     }
   }
 
+  markUpdated(id)
   sendEvent(id, field, 'update')
 }
 
@@ -136,6 +140,7 @@ export function resetParents(
     }
 
     redis.sadd(parent + '.children', id)
+    markUpdated(id)
     sendEvent(parent, 'children', 'update')
   }
 
@@ -165,6 +170,7 @@ export function addToParents(
           }
         }
 
+        markUpdated(id)
         sendEvent(parent, 'children', 'update')
       }
     }
@@ -228,6 +234,7 @@ export function addToChildren(
         const added = redis.sadd(child + '.parents', id)
         if (added === 1) {
           markForAncestorRecalculation(child)
+          markUpdated(id)
           sendEvent(child, 'parents', 'update')
         }
       }

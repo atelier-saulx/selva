@@ -937,3 +937,72 @@ test.serial('can disable autoadding of root', async t => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('createdAt not set if nothing changed', async t => {
+  const client = connect({
+    port
+  })
+
+  const before = Date.now()
+  const person = await client.set({
+    $language: 'en',
+    type: 'person',
+    title: 'yesh'
+  })
+  const after = Date.now()
+
+  let result = await client.get({
+    $language: 'en',
+    $id: person,
+    id: true,
+    title: true,
+    createdAt: true,
+    updatedAt: true
+  })
+
+  let createdAt = result.createdAt
+  let updatedAt = result.updatedAt
+  delete result.createdAt
+  delete result.updatedAt
+
+  t.deepEqual(result, {
+    id: person,
+    title: 'yesh'
+  })
+
+  t.true(
+    typeof createdAt === 'number' && createdAt <= after && createdAt >= before
+  )
+
+  t.deepEqual(createdAt, updatedAt)
+
+  await client.set({
+    $language: 'en',
+    type: 'person',
+    title: 'yesh',
+    children: []
+  })
+
+  result = await client.get({
+    $language: 'en',
+    $id: person,
+    id: true,
+    title: true,
+    createdAt: true,
+    updatedAt: true
+  })
+
+  createdAt = result.createdAt
+  updatedAt = result.updatedAt
+  delete result.createdAt
+  delete result.updatedAt
+
+  t.true(
+    typeof createdAt === 'number' && createdAt <= after && createdAt >= before
+  )
+
+  t.deepEqual(createdAt, updatedAt)
+
+  await client.delete('root')
+  await client.destroy()
+})

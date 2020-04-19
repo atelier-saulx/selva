@@ -20,7 +20,7 @@ import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
 import { addFieldToSearch } from './search'
 import sendEvent from './events'
-import { setUpdatedAt, setCreatedAt } from './timestamps'
+import { setUpdatedAt, setCreatedAt, markUpdated } from './timestamps'
 import { cleanUpSuggestions } from './delete'
 import globals from '../globals'
 import checkSource from './source'
@@ -134,6 +134,7 @@ function setObject(
         redis.hincrby(id, field, item.$increment)
       }
 
+      markUpdated(id)
       sendEvent(id, field, 'update')
       return
     }
@@ -141,6 +142,7 @@ function setObject(
     setField(id, field, item.$default, true, source)
   } else if (item.$increment) {
     redis.hincrby(id, field, item.$increment)
+    markUpdated(id)
     sendEvent(id, field, 'update')
   } else if (item.$ref) {
     const current = redis.hget(id, item.$ref)
@@ -148,6 +150,7 @@ function setObject(
       redis.hset(id, `${field}.$ref`, item.$ref)
     }
 
+    markUpdated(id)
     sendEvent(id, field, 'update')
   } else {
     setField(id, field, item, false, source)
@@ -208,6 +211,8 @@ function setField(
     return
   }
 
+  markUpdated(id)
+
   if (fromDefault) {
     redis.hsetnx(id, field, strVal)
   } else {
@@ -265,6 +270,7 @@ function removeSpecified(
 
         redis.hdel(id, keyPath)
         redis.hdel(id, '$source_' + keyPath)
+        markUpdated(id)
         sendEvent(id, keyPath, 'update')
       } else if (payload[key] === false) {
         falses[falses.length] = keyPath
@@ -298,6 +304,7 @@ function removeSpecified(
         if (!skip) {
           redis.hdel(id, '$source_' + key)
           redis.hdel(id, key)
+          markUpdated(id)
           sendEvent(id, key, 'update')
         }
       }
@@ -356,6 +363,7 @@ function update(payload: SetOptions): Id | null {
     return null
   }
 
+  let createdAt: number | undefined = undefined
   const exists = redis.exists(payload.$id)
   if (!exists && $operation === 'update') {
     return null
@@ -375,12 +383,11 @@ function update(payload: SetOptions): Id | null {
       payload.parents = { $add: ['root'] }
     }
 
-    setCreatedAt(payload, payload.$id, payload.type)
-  } else {
-    setUpdatedAt(payload, payload.$id, payload.type)
+    createdAt = setCreatedAt(payload.$id, payload.type)
   }
 
   setField(payload.$id, null, payload, false, payload.$source)
+  setUpdatedAt(payload, payload.$id, payload.type, createdAt)
   return payload.$id
 }
 
