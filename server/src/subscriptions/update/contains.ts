@@ -19,12 +19,20 @@ const createBatch = (subsManager: SubscriptionManager) => {
         console.error(err)
       } else {
         d.forEach((m, i) => {
-          if (!m) {
+          if (!m || !Array.isArray(m)) {
+            console.log(
+              'Cannot find members or wrongly formatted',
+              fieldsInBatch[i],
+              m
+            )
             m = []
-          } else {
-            console.log('cannot find members', fieldsInBatch[i])
           }
           const field = fieldsInBatch[i]
+
+          if (memberMemCache[field]) {
+            subsManager.memberMemCacheSize++
+          }
+
           const members = (memberMemCache[field] = {})
           m.forEach(v => (members[v] = true))
           const listeners = fieldsProgress[field]

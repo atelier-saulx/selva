@@ -10,6 +10,13 @@ const traverse = (
   const path = channel.split('.')
   const id = path[0]
 
+  // we can add this to tree
+  if (subscriptionManager.memberMemCache[channel]) {
+    console.log('Remove from memcache update!', path)
+    delete subscriptionManager.memberMemCache[channel]
+    subscriptionManager.memberMemCacheSize--
+  }
+
   let segment = subscriptionManager.tree
   let prefix: string | undefined
   for (let i = 1; i < path.length; i++) {

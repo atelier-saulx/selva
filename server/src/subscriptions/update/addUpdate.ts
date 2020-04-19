@@ -5,22 +5,22 @@ import { Subscription } from '../'
 var delayCount = 0
 
 const sendUpdates = (subscriptionManager: SubscriptionManager) => {
-  console.log(
-    'SEND UPDATES - handled events:',
-    subscriptionManager.stagedForUpdates.size,
-    subscriptionManager.incomingCount
-  )
+  // console.log(
+  //   'SEND UPDATES - handled events:',
+  //   subscriptionManager.stagedForUpdates.size,
+  //   subscriptionManager.incomingCount
+  // )
 
   subscriptionManager.stagedForUpdates.forEach(subscription => {
     subscription.inProgress = false
-    console.log(
-      'update subscription and clear inProgress',
-      subscription.channel
-    )
+    // console.log(
+    //   'update subscription and clear inProgress',
+    //   subscription.channel
+    // )
     subscriptionManager.stagedForUpdates.delete(subscription)
     sendUpdate(subscriptionManager, subscription)
       .then(v => {
-        console.log('SEND UPDATE FOR', subscription.channel)
+        // console.log('SEND UPDATE FOR', subscription.channel)
       })
       .catch(err => {
         console.log('WRONG ERROR IN SENDUPDATE')
@@ -29,7 +29,12 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
 
   subscriptionManager.stagedInProgess = false
   subscriptionManager.incomingCount = 0
-  subscriptionManager.memberMemCache = {}
+
+  if (subscriptionManager.memberMemCacheSize > 1e5) {
+    console.log('memberMemCache is larger then 100k flush')
+    subscriptionManager.memberMemCache = {}
+    subscriptionManager.memberMemCacheSize = 0
+  }
   delayCount = 0
 }
 

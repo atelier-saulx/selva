@@ -20,6 +20,7 @@ export default class SubscriptionManager {
 
   public stagedTimeout: NodeJS.Timeout
 
+  public memberMemCacheSize: number = 0
   public memberMemCache: Record<string, Record<string, true>> = {}
   // public isDestroyed: boolean = false
   // to check if the server is still ok

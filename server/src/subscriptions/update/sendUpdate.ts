@@ -16,11 +16,9 @@ const sendUpdate = async (
   if (channel === '___selva_subscription:schema_update') {
     let value = ''
     let version = ''
-    console.log('do it schema time')
     const schema = await subscriptionManager.client.getSchema()
     version = schema.schema.sha
     value = JSON.stringify({ type: 'update', payload: schema.schema })
-    console.log('--> here we go send it!', version)
     await subscriptionManager.client.redis.byType.hmset(
       'sClient',
       prefixes.cache,
