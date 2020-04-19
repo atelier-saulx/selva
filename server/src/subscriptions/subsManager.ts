@@ -137,10 +137,19 @@ export default class SubscriptionManager {
 
   async updateSubscriptionData() {
     const { byType } = this.client.redis
-    const [subscriptions, clients] = await Promise.all([
+    let [subscriptions, clients] = await Promise.all([
       byType.hgetall('sClient', prefixes.subscriptions),
       byType.hgetall('sClient', prefixes.clients)
     ])
+
+    if (!subscriptions) {
+      subscriptions = {}
+    }
+
+    if (!clients) {
+      clients = {}
+    }
+
     const now = Date.now()
     const cleanUpQ = []
 

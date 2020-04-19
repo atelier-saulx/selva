@@ -147,6 +147,7 @@ export class RedisWrapper {
   }
 
   emitChannel(channel: string, client?: string) {
+    console.log('emit', channel)
     this.queue(
       'hmget',
       [prefixes.cache, channel, channel + '_version'],
