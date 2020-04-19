@@ -32,11 +32,11 @@ const addListeners = async (
       }
     } else if (channel === prefixes.new) {
       const { client, channel } = JSON.parse(message)
-      console.log('Got a create sub on (server)', channel.slice(-5))
+      console.log('Got a create sub on (server)', channel)
       subsManager.addClientSubscription(client, channel)
     } else if (channel === prefixes.remove) {
       const { client, channel } = JSON.parse(message)
-      console.log('Got a remove sub on (server)', channel.slice(-5))
+      console.log('Got a remove sub on (server)', channel)
       subsManager.removeClientSubscription(client, channel)
     }
   })

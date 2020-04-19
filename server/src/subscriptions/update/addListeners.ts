@@ -19,7 +19,7 @@ const addListeners = (subsManager: SubscriptionManager) => {
         const subscription =
           subsManager.subscriptions['___selva_subscription:schema_update']
         if (subscription) {
-          addUpdate(subsManager, subscription, { type: message })
+          addUpdate(subsManager, subscription)
         }
       } else {
         const eventName = channel.slice(prefixLength)

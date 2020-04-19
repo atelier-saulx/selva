@@ -27,7 +27,7 @@ test.serial('basic schema based subscriptions', async t => {
     o1counter++
   })
 
-  await wait(500)
+  await wait(2000)
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
