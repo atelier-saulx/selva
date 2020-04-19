@@ -1,5 +1,5 @@
 import * as logger from '../../logger'
-import { GetOptions, GetResult, Sort } from '~selva/get/types'
+import { GetOptions, GetResult, Sort, Inherit } from '~selva/get/types'
 import createSearchString from './createSearchString'
 import parseFind from './parseFind/index'
 import createSearchArgs from './createSearchArgs'
@@ -16,28 +16,39 @@ import { setNestedResult, setMeta } from '../nestedFields'
 import globals from '../../globals'
 
 const parseNested = (
+  getField: GetFieldFn,
   opts: GetOptions,
   ids: string[],
   meta: Meta,
   traverse?: string | string[]
 ): [Fork | string[], string | null] => {
   if (opts.$list) {
+    let $inherit: Inherit | undefined = undefined
+    if (typeof opts.$list === 'object' && opts.$list.$inherit) {
+      $inherit = opts.$list.$inherit
+    }
+
     if (typeof opts.$list === 'object' && opts.$list.$find) {
       if (!opts.$list.$find.$traverse) {
         opts.$list.$find.$traverse = traverse
       }
-      return parseFind(opts.$list.$find, ids, meta)
+      const o: any = opts.$list.$find
+      if ($inherit) {
+        o.$inherit = $inherit
+      }
+      return parseFind(getField, o, ids, meta)
     } else {
       if (!traverse) {
         return [{ isFork: true }, '$list without find needs traverse']
       } else {
-        return parseFind(
-          {
-            $fields: ensureArray(traverse)
-          },
-          ids,
-          meta
-        )
+        const o: any = {
+          $fields: ensureArray(traverse)
+        }
+
+        if ($inherit) {
+          o.$inherit = $inherit
+        }
+        return parseFind(getField, o, ids, meta)
       }
     }
   } else if (opts.$find) {
@@ -46,7 +57,7 @@ const parseNested = (
     if (!opts.$find.$traverse) {
       opts.$find.$traverse = traverse
     }
-    const result = parseFind(opts.$find, ids, meta)
+    const result = parseFind(getField, opts.$find, ids, meta)
     return result
   }
   return [{ isFork: true }, 'Not a valid query']
@@ -80,7 +91,7 @@ const parseQuery = (
   const meta: Meta = { ids: resultIds }
 
   if (getOptions.$list || getOptions.$find) {
-    const [r, err] = parseNested(getOptions, ids, meta, traverse)
+    const [r, err] = parseNested(getField, getOptions, ids, meta, traverse)
     if (err) {
       return [{ results }, err]
     }
