@@ -469,7 +469,6 @@ export class RedisWrapper {
         }
       })
       if (this.connected.sub && clientObj.log) {
-        console.log('add logs')
         this.sub.subscribe(`${prefixes.log}:${client}`)
       }
     } else {

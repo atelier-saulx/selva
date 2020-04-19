@@ -13,7 +13,8 @@ import {
   SearchIndexes,
   SchemaOptions,
   Id,
-  FieldSchemaObject
+  FieldSchemaObject,
+  GetSchemaResult
 } from './schema'
 import { newSchemaDefinition } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
@@ -102,9 +103,7 @@ export class SelvaClient extends EventEmitter {
     this.schemaObservable = new Observable<Schema>(observe => {
       const sub = obs.subscribe({
         next: (_x: any) => {
-          this.getSchema().then(() => {
-            observe.next(this.schema)
-          })
+          observe.next(_x)
         },
         error: observe.error,
         complete: observe.complete

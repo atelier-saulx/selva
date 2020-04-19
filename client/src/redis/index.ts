@@ -7,7 +7,7 @@ import {
   clientTypes,
   ClientType
 } from './redisWrapper'
-import { Event, RedisCommand, UpdateEvent, CustomEvent } from './types'
+import { Event, RedisCommand, UpdateEvent } from './types'
 import { EventEmitter } from 'events'
 // adds FT commands to redis
 import './redisSearch'
@@ -123,14 +123,12 @@ export default class RedisClient extends RedisMethods {
       this.subscriptions[channel] || this.createSubscription(channel, getOpts)
     subscription.count++
     return new Observable(observer => {
-      const listener = (event: UpdateEvent | CustomEvent) => {
+      const listener = (event: UpdateEvent) => {
         if (event.type === 'update') {
           if (observer.version !== event.version) {
             observer.version = event.version
             observer.next(event.payload)
           }
-        } else if (event.type) {
-          observer.next(event.payload)
         }
       }
       subscription.on('message', listener)

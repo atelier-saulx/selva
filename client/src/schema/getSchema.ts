@@ -4,10 +4,14 @@ import { Schema, SearchIndexes, GetSchemaResult, rootDefaultFields } from '.'
 const wait = (t: number = 0): Promise<void> =>
   new Promise(r => setTimeout(r, t))
 
-async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
+async function getSchema(
+  client: SelvaClient,
+  retry: number = 0
+): Promise<GetSchemaResult> {
   let schema: Schema = {
     languages: [],
     types: {},
+    sha: 'default',
     rootType: { fields: rootDefaultFields },
     idSeedCounter: 0,
     prefixToTypeMapping: {}
@@ -22,8 +26,14 @@ async function getSchema(client: SelvaClient): Promise<GetSchemaResult> {
   )
 
   if (!fetchedTypes) {
-    await wait(20)
-    return getSchema(client)
+    // means empty schema
+    if (retry > 30) {
+      console.log('max retries use default schema')
+    } else {
+      // console.log('no fetched types wait a bit')
+      await wait(20)
+      return getSchema(client, ++retry)
+    }
   }
 
   if (fetchedTypes) {

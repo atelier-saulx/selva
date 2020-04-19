@@ -21,13 +21,7 @@ export type UpdateEvent = {
   version?: string
 }
 
-export type CustomEvent = {
-  type: string
-  payload?: any
-  version?: string
-}
-
-export type Event = UpdateEvent | CustomEvent
+export type Event = UpdateEvent
 
 export type ClientObject = {
   connect: (type: string) => void
