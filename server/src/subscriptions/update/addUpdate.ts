@@ -29,6 +29,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
 
   subscriptionManager.stagedInProgess = false
   subscriptionManager.incomingCount = 0
+  subscriptionManager.memberMemCache = {}
   delayCount = 0
 }
 

@@ -6,18 +6,24 @@ import addUpdate from './addUpdate'
 let execBatch
 let fieldsProgress = {}
 let fieldsInBatch = []
-let memberMemCache = {}
 
 type Contains = { $field: string; $value: string[] }
 
 const createBatch = (subsManager: SubscriptionManager) => {
+  const memberMemCache = subsManager.memberMemCache
+
   execBatch = subsManager.client.redis.redis.client.batch()
   process.nextTick(() => {
     execBatch.exec((err, d) => {
       if (err) {
         console.error(err)
       } else {
-        d.forEach((m = [], i) => {
+        d.forEach((m, i) => {
+          if (!m) {
+            m = []
+          } else {
+            console.log('cannot find members', fieldsInBatch[i])
+          }
           const field = fieldsInBatch[i]
           const members = (memberMemCache[field] = {})
           m.forEach(v => (members[v] = true))
@@ -83,6 +89,7 @@ const membersContainsId = (
   subscriptions: Set<Subscription>
 ): boolean => {
   const value = m.$value
+  const memberMemCache = subsManager.memberMemCache
 
   if (m.$field === 'ancestors') {
     for (let k = 0; k < value.length; k++) {
