@@ -9,10 +9,10 @@ function makeSubscriptionId(opts: GetOptions) {
   return hash.digest('hex')
 }
 
-export async function observe(
+export function observe(
   client: SelvaClient,
   props: GetOptions
-): Promise<Observable<GetResult>> {
+): Observable<GetResult> {
   const subscriptionId = makeSubscriptionId(props)
 
   // props optional
@@ -20,6 +20,7 @@ export async function observe(
     `___selva_subscription:${subscriptionId}`,
     props
   )
+
   return new Observable<GetResult>(observe => {
     const sub = obs.subscribe({
       next: (x: GetResult) => {
