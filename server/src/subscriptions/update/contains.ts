@@ -17,7 +17,7 @@ const createBatch = (subsManager: SubscriptionManager) => {
       if (err) {
         console.error(err)
       } else {
-        d.forEach((m, i) => {
+        d.forEach((m = [], i) => {
           const field = fieldsInBatch[i]
           const members = (memberMemCache[field] = {})
           m.forEach(v => (members[v] = true))
