@@ -9,6 +9,11 @@ const deleteLength = 'delete:'.length
 const addListeners = (subsManager: SubscriptionManager) => {
   // process.nextTick
 
+  // setInterval(() => {
+  //   console.log('handled ', subsManager.incomingCount, 'in last 10 sec')
+  //   subsManager.incomingCount = 0
+  // }, 10e3)
+
   subsManager.client.redis.redis.sub.on(
     'pmessage',
     (_pattern, channel, message) => {
@@ -32,6 +37,10 @@ const addListeners = (subsManager: SubscriptionManager) => {
             traverseTree(subsManager, eventName + '.' + v)
           })
         }
+      }
+
+      if (!subsManager.stagedInProgess) {
+        subsManager.incomingCount = 0
       }
     }
   )
