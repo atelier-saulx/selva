@@ -58,6 +58,7 @@ export type List =
       $limit?: number
       $sort?: Sort | Sort[]
       $find?: Find
+      $inherit?: Inherit
     }
 
 export type GetField<T> = {

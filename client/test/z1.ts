@@ -69,15 +69,16 @@ test.serial('inherit references $list', async t => {
       $id: child,
       $language: 'en',
       menu: {
-        $inherit: true,
         title: true,
-        $list: true
+        $list: {
+          $inherit: true
+        }
       }
     }),
     {
       menu: [
         {
-          title: 'menu'
+          title: 'menu item'
         }
       ]
     }
