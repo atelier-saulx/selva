@@ -60,7 +60,7 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
         // reset count
         // subscriptionManager.incomingCount = 0
         // increase time
-        time *= 1.1
+        time = Math.round(time * 1.1)
         // delay again
         subscriptionManager.stagedTimeout = setTimeout(() => {
           delay(subscriptionManager, time, totalTime + time)
