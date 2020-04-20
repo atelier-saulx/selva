@@ -20,6 +20,8 @@ export default class SubscriptionManager {
 
   public stagedTimeout: NodeJS.Timeout
 
+  public isBusy: boolean = false
+
   public memberMemCacheSize: number = 0
   public memberMemCache: Record<string, Record<string, true>> = {}
   // public isDestroyed: boolean = false
@@ -281,6 +283,13 @@ export default class SubscriptionManager {
         if (!isResolved) {
           isResolved = true
           resolve()
+        }
+      })
+
+      this.client.on('busy', type => {
+        if (type === 'client') {
+          console.log('Server is busy', type)
+          this.isBusy = true
         }
       })
 

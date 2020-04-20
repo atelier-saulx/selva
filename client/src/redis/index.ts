@@ -272,6 +272,9 @@ export default class RedisClient extends RedisMethods {
           this.selvaClient.emit('connect')
         }
       },
+      busy: type => {
+        this.selvaClient.emit('busy', type)
+      },
       disconnect: type => {
         this.connected[type] = false
         if (this.redis.allDisconnected) {
@@ -299,7 +302,6 @@ export default class RedisClient extends RedisMethods {
       },
       client: this
     })
-
     // this.selvaClient.subscribeSchema()
   }
 }

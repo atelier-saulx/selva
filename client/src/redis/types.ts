@@ -28,5 +28,6 @@ export type ClientObject = {
   disconnect: (type: string) => void
   message: (channel: string, message: { [key: string]: any }) => void
   log?: LogFn
+  busy: (type: string) => void
   client: Redis
 }

@@ -147,7 +147,6 @@ export class RedisWrapper {
   }
 
   emitChannel(channel: string, client?: string) {
-    console.log('emit', channel)
     this.queue(
       'hmget',
       [prefixes.cache, channel, channel + '_version'],
@@ -609,6 +608,7 @@ export class RedisWrapper {
     return new Promise((resolve, reject) => {
       if (this.isBusy[type]) {
         console.log('Server is busy - retrying in 5 seconds')
+        this.emit('busy', type)
         setTimeout(() => {
           this.isBusy[type] = false
           // need to rerun the batch ofc
