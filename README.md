@@ -157,13 +157,15 @@ const result = await client.get({
 Or subscribe to changes.
 
 ```js
-await client.subscribe({
+const obs = client.subscribe({
   $id: 'moSoylentGreen',
   $language: 'en',
   title: true,
   year: true,
   director: true
-}, (id, data) => {
+})
+
+const sub = obs.subscribe((data) => {
   // render the data
   // (will also be run one time when subscribing)
   console.log('Data changed: ', data)
