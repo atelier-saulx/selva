@@ -1,9 +1,12 @@
 import * as http from 'http'
 import { ConnectOptions } from '@saulx/selva'
-import mkHandlers from './handler'
+import mkHandlers, { Middleware } from './handler'
 
-function createServer(selvaConnectOpts: ConnectOptions) {
-  const handlers = mkHandlers(selvaConnectOpts)
+function createServer(
+  selvaConnectOpts: ConnectOptions,
+  middlewares?: Middleware[]
+) {
+  const handlers = mkHandlers(selvaConnectOpts, middlewares)
 
   const srv = http.createServer((req, res) => {
     if (req.url === '/get') {
@@ -24,8 +27,12 @@ function createServer(selvaConnectOpts: ConnectOptions) {
   return srv
 }
 
-function start(selvaConnectOpts: ConnectOptions, port?: number): () => void {
-  const srv = createServer(selvaConnectOpts)
+function start(
+  selvaConnectOpts: ConnectOptions,
+  middlewares?: Middleware[],
+  port?: number
+): () => void {
+  const srv = createServer(selvaConnectOpts, middlewares)
   srv.listen(port)
 
   return () => {

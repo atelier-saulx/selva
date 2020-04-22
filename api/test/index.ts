@@ -145,7 +145,7 @@ test.after(async _t => {
 
 test.serial('test api ping/pong', async t => {
   const srvPort = await getPort()
-  const cleanup = apiStart({ port }, srvPort)
+  const cleanup = apiStart({ port }, [], srvPort)
 
   const res = await fetch(`http://localhost:${srvPort}/ping`, {
     method: 'POST',
@@ -160,7 +160,7 @@ test.serial('test api ping/pong', async t => {
 
 test.serial('get $value through api', async t => {
   const srvPort = await getPort()
-  const cleanup = apiStart({ port }, srvPort)
+  const cleanup = apiStart({ port }, [], srvPort)
 
   const res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
@@ -183,7 +183,7 @@ test.serial('get $value through api', async t => {
 
 test.serial('set and get simple through api', async t => {
   const srvPort = await getPort()
-  const cleanup = apiStart({ port }, srvPort)
+  const cleanup = apiStart({ port }, [], srvPort)
 
   await fetch(`http://localhost:${srvPort}/set`, {
     method: 'POST',
@@ -223,7 +223,7 @@ test.serial('set and get simple through api', async t => {
 
 test.serial('delete simple through api', async t => {
   const srvPort = await getPort()
-  const cleanup = apiStart({ port }, srvPort)
+  const cleanup = apiStart({ port }, [], srvPort)
 
   let res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
@@ -284,7 +284,7 @@ test.serial('delete simple through api', async t => {
 
 test.serial('new schema and entry through api', async t => {
   const srvPort = await getPort()
-  const cleanup = apiStart({ port }, srvPort)
+  const cleanup = apiStart({ port }, [], srvPort)
 
   let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
     method: 'POST',
@@ -333,6 +333,104 @@ test.serial('new schema and entry through api', async t => {
     id: 'ye1',
     hello: 'friend'
   })
+
+  cleanup()
+})
+
+test.serial('non-post throws', async t => {
+  const srvPort = await getPort()
+  const cleanup = apiStart({ port }, [], srvPort)
+
+  let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
+    method: 'PUT',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      types: {
+        yeshyeshyesh: {
+          prefix: 'ye',
+          fields: {
+            hello: { type: 'string' }
+          }
+        }
+      }
+    })
+  })
+
+  t.is(res.status, 400)
+
+  cleanup()
+})
+
+test.serial('test funky middleware', async t => {
+  const srvPort = await getPort()
+  const cleanup = apiStart(
+    { port },
+    [
+      (_client, _req, res, next) => {
+        res.statusCode = 418
+        res.end("I'm a teapot")
+        next(false)
+      }
+    ],
+    srvPort
+  )
+
+  let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      types: {
+        yeshyeshyesh: {
+          prefix: 'ye',
+          fields: {
+            hello: { type: 'string' }
+          }
+        }
+      }
+    })
+  })
+
+  t.is(res.status, 418)
+  t.is(await res.text(), "I'm a teapot")
+
+  cleanup()
+})
+
+test.serial('test funky passing funky middleware', async t => {
+  const srvPort = await getPort()
+  const cleanup = apiStart(
+    { port },
+    [
+      (_client, _req, res, next) => {
+        res.setHeader('x-my-special-header', 'flurpy')
+        next(true)
+      }
+    ],
+    srvPort
+  )
+
+  let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      types: {
+        yeshyeshyesh: {
+          prefix: 'ye',
+          fields: {
+            hello: { type: 'string' }
+          }
+        }
+      }
+    })
+  })
+
+  t.is(res.headers.get('x-my-special-header'), 'flurpy')
 
   cleanup()
 })

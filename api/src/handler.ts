@@ -1,45 +1,98 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import { json } from 'body-parser'
-import { connect, ConnectOptions } from '@saulx/selva'
+import { connect, ConnectOptions, SelvaClient } from '@saulx/selva'
+
+export type MiddlewareNext = (proceed: boolean) => void
+
+export type Middleware = (
+  client: SelvaClient,
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: MiddlewareNext
+) => void
 
 const jsonParser = json({ limit: '50mb' })
 
-function checkPost(req: IncomingMessage, res: ServerResponse): boolean {
+function checkPost(
+  _client: SelvaClient,
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: MiddlewareNext
+): void {
   if (req.method !== 'POST') {
     console.error(`Unsupported method ${req.method} on ${req.url}`)
     res.statusCode = 400
     res.end('Bad request')
-    return false
+    return next(false)
   }
 
-  return true
+  next(true)
 }
 
+function parseJson(
+  _client: SelvaClient,
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: MiddlewareNext
+): void {
+  jsonParser(req, res, err => {
+    if (err) {
+      console.error('Error parsing request body', err)
+      res.statusCode = 400
+      res.end('Bad request')
+      return next(false)
+    }
+
+    next(true)
+  })
+}
+
+function applyMiddleware(
+  client: SelvaClient,
+  middleware: Middleware[],
+  handler: (req: IncomingMessage, res: ServerResponse) => void
+): (req: IncomingMessage, res: ServerResponse) => void {
+  return (req, res) => {
+    let i = -1
+    const next = (proceed: boolean) => {
+      if (!proceed) {
+        return
+      }
+
+      i++
+      if (i >= middleware.length) {
+        handler(req, res)
+        return
+      }
+
+      middleware[i](client, req, res, next)
+    }
+
+    next(true)
+  }
+}
+
+const defaultMiddleware: Middleware[] = [checkPost, parseJson]
+
 export default function(
-  connectOptions: ConnectOptions
+  connectOptions: ConnectOptions,
+  middlewares?: Middleware[]
 ): {
   get: (req: IncomingMessage, res: ServerResponse) => void
   set: (req: IncomingMessage, res: ServerResponse) => void
   delete: (req: IncomingMessage, res: ServerResponse) => void
   updateSchema: (req: IncomingMessage, res: ServerResponse) => void
 } {
+  const middleware: Middleware[] = defaultMiddleware.concat(middlewares || [])
+
   const client = connect(connectOptions)
 
   return {
-    get: (req: IncomingMessage, res: ServerResponse) => {
-      // TODO: middleware
-      if (!checkPost(req, res)) {
-        return
-      }
-
-      // TODO: middleware
-      jsonParser(req, res, err => {
-        if (err) {
-          console.error('Error parsing request body', err)
-          res.statusCode = 400
-          res.end('Bad request')
-          return
-        }
+    get: applyMiddleware(
+      client,
+      middleware,
+      (req: IncomingMessage, res: ServerResponse) => {
+        // TODO: middleware
         const body: any = (<any>req).body
         client
           .get(body)
@@ -54,21 +107,12 @@ export default function(
             res.end('Internal server error')
             return
           })
-      })
-    },
-    set: (req: IncomingMessage, res: ServerResponse) => {
-      if (!checkPost(req, res)) {
-        return
       }
-
-      jsonParser(req, res, err => {
-        if (err) {
-          console.error('Error parsing request body', err)
-          res.statusCode = 400
-          res.end('Bad request')
-          return
-        }
-
+    ),
+    set: applyMiddleware(
+      client,
+      middleware,
+      (req: IncomingMessage, res: ServerResponse) => {
         const body: any = (<any>req).body
         if (!body.$source) {
           body.$source = {
@@ -80,7 +124,7 @@ export default function(
           .set(body)
           .then(result => {
             if (!result) {
-              console.error('Nothing was created', err)
+              console.error('Nothing was created')
               res.statusCode = 400
               res.end('Bad request')
               return
@@ -95,21 +139,12 @@ export default function(
             res.end('Internal server error')
             return
           })
-      })
-    },
-    delete: (req: IncomingMessage, res: ServerResponse) => {
-      if (!checkPost(req, res)) {
-        return
       }
-
-      jsonParser(req, res, err => {
-        if (err) {
-          console.error('Error parsing request body', err)
-          res.statusCode = 400
-          res.end('Bad request')
-          return
-        }
-
+    ),
+    delete: applyMiddleware(
+      client,
+      middleware,
+      (req: IncomingMessage, res: ServerResponse) => {
         const body: any = (<any>req).body
 
         client
@@ -125,21 +160,12 @@ export default function(
             res.end('Internal server error')
             return
           })
-      })
-    },
-    updateSchema: (req: IncomingMessage, res: ServerResponse) => {
-      if (!checkPost(req, res)) {
-        return
       }
-
-      jsonParser(req, res, err => {
-        if (err) {
-          console.error('Error parsing request body', err)
-          res.statusCode = 400
-          res.end('Bad request')
-          return
-        }
-
+    ),
+    updateSchema: applyMiddleware(
+      client,
+      middleware,
+      (req: IncomingMessage, res: ServerResponse) => {
         const body: any = (<any>req).body
         client
           .updateSchema(body)
@@ -154,7 +180,7 @@ export default function(
             res.end('Internal server error ' + e.message)
             return
           })
-      })
-    }
+      }
+    )
   }
 }
