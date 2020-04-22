@@ -1,6 +1,7 @@
 {
   "name": "@saulx/selva-api",
   "version": "0.1.0",
+  "main": "./dist/index.js",
   "description": "API server and API utilities for selva",
   "scripts": {
     "build": "yarn buildTs",
