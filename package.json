@@ -4,6 +4,7 @@
   "workspaces": [
     "client",
     "server",
+    "api",
     "tools"
   ],
   "scripts": {
