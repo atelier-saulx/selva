@@ -153,7 +153,6 @@ test.serial('test api ping/pong', async t => {
   })
 
   const body = await res.text()
-  console.log('DERP', body)
   t.is(body, 'hellooo')
 
   cleanup()
@@ -217,6 +216,122 @@ test.serial('set and get simple through api', async t => {
   t.deepEqualIgnoreOrder(body, {
     id: 'maMatch1',
     title: 'ja de'
+  })
+
+  cleanup()
+})
+
+test.serial('delete simple through api', async t => {
+  const srvPort = await getPort()
+  const cleanup = apiStart({ port }, srvPort)
+
+  let res = await fetch(`http://localhost:${srvPort}/get`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1',
+      $language: 'de',
+      id: true,
+      title: true
+    })
+  })
+
+  let body = await res.json()
+  t.deepEqualIgnoreOrder(body, {
+    id: 'maMatch1',
+    title: 'ja de'
+  })
+
+  res = await fetch(`http://localhost:${srvPort}/delete`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1'
+    })
+  })
+
+  body = await res.json()
+  t.deepEqualIgnoreOrder(body, {
+    isRemoved: true
+  })
+
+  res = await fetch(`http://localhost:${srvPort}/get`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1',
+      $language: 'de',
+      id: true,
+      title: true
+    })
+  })
+
+  body = await res.json()
+  t.deepEqualIgnoreOrder(body, {
+    id: 'maMatch1',
+    $isNull: true,
+    title: ''
+  })
+
+  cleanup()
+})
+
+test.serial('new schema and entry through api', async t => {
+  const srvPort = await getPort()
+  const cleanup = apiStart({ port }, srvPort)
+
+  let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      types: {
+        yeshyeshyesh: {
+          prefix: 'ye',
+          fields: {
+            hello: { type: 'string' }
+          }
+        }
+      }
+    })
+  })
+
+  console.log('res', await res.json())
+
+  await fetch(`http://localhost:${srvPort}/set`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'ye1',
+      hello: 'friend'
+    })
+  })
+
+  res = await fetch(`http://localhost:${srvPort}/get`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'ye1',
+      id: true,
+      hello: true
+    })
+  })
+
+  const body = await res.json()
+  t.deepEqualIgnoreOrder(body, {
+    id: 'ye1',
+    hello: 'friend'
   })
 
   cleanup()

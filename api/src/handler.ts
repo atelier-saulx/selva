@@ -5,10 +5,15 @@ import { connect, ConnectOptions } from '@saulx/selva'
 const jsonParser = json({ limit: '50mb' })
 
 export default function(
-  method: 'get' | 'set',
+  method: 'get' | 'set' | 'delete' | 'update_schema',
   connectOptions: ConnectOptions
 ): (req: IncomingMessage, res: ServerResponse) => void {
-  if (method !== 'set' && method !== 'get') {
+  if (
+    method !== 'set' &&
+    method !== 'get' &&
+    method !== 'delete' &&
+    method !== 'update_schema'
+  ) {
     throw new Error(`Unsupported method ${method}`)
   }
 
@@ -46,7 +51,7 @@ export default function(
             res.end('Internal server error')
             return
           })
-      } else {
+      } else if (method === 'set') {
         if (!body.$source) {
           body.$source = {
             $name: 'api',
@@ -72,6 +77,34 @@ export default function(
             console.error('Error getting get response', e)
             res.statusCode = 500
             res.end('Internal server error')
+            return
+          })
+      } else if (method === 'delete') {
+        client
+          .delete(body)
+          .then(isRemoved => {
+            res.statusCode = 200
+            res.setHeader('content-type', 'application/json')
+            res.end(JSON.stringify({ isRemoved: !!isRemoved }))
+          })
+          .catch(e => {
+            console.error('Error deleting', e)
+            res.statusCode = 500
+            res.end('Internal server error')
+            return
+          })
+      } else {
+        client
+          .updateSchema(body)
+          .then(() => {
+            res.statusCode = 200
+            res.setHeader('content-type', 'application/json')
+            res.end(JSON.stringify(client.schema))
+          })
+          .catch(e => {
+            console.error('Error setting schema', e)
+            res.statusCode = 500
+            res.end('Internal server error ' + e.message)
             return
           })
       }
