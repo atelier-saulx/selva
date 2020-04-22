@@ -4,40 +4,43 @@ import { connect, ConnectOptions } from '@saulx/selva'
 
 const jsonParser = json({ limit: '50mb' })
 
-export default function(
-  method: 'get' | 'set' | 'delete' | 'update_schema',
-  connectOptions: ConnectOptions
-): (req: IncomingMessage, res: ServerResponse) => void {
-  if (
-    method !== 'set' &&
-    method !== 'get' &&
-    method !== 'delete' &&
-    method !== 'update_schema'
-  ) {
-    throw new Error(`Unsupported method ${method}`)
+function checkPost(req: IncomingMessage, res: ServerResponse): boolean {
+  if (req.method !== 'POST') {
+    console.error(`Unsupported method ${req.method} on ${req.url}`)
+    res.statusCode = 400
+    res.end('Bad request')
+    return false
   }
 
+  return true
+}
+
+export default function(
+  connectOptions: ConnectOptions
+): {
+  get: (req: IncomingMessage, res: ServerResponse) => void
+  set: (req: IncomingMessage, res: ServerResponse) => void
+  delete: (req: IncomingMessage, res: ServerResponse) => void
+  updateSchema: (req: IncomingMessage, res: ServerResponse) => void
+} {
   const client = connect(connectOptions)
 
-  return (req: IncomingMessage, res: ServerResponse) => {
-    if (req.method !== 'POST') {
-      console.error(`Unsupported method ${req.method} on ${req.url}`)
-      res.statusCode = 400
-      res.end('Bad request')
-      return
-    }
-
-    jsonParser(req, res, err => {
-      if (err) {
-        console.error('Error parsing request body', err)
-        res.statusCode = 400
-        res.end('Bad request')
+  return {
+    get: (req: IncomingMessage, res: ServerResponse) => {
+      // TODO: middleware
+      if (!checkPost(req, res)) {
         return
       }
 
-      // note: populated by jsonParser
-      const body: any = (<any>req).body
-      if (method === 'get') {
+      // TODO: middleware
+      jsonParser(req, res, err => {
+        if (err) {
+          console.error('Error parsing request body', err)
+          res.statusCode = 400
+          res.end('Bad request')
+          return
+        }
+        const body: any = (<any>req).body
         client
           .get(body)
           .then(result => {
@@ -51,14 +54,28 @@ export default function(
             res.end('Internal server error')
             return
           })
-      } else if (method === 'set') {
+      })
+    },
+    set: (req: IncomingMessage, res: ServerResponse) => {
+      if (!checkPost(req, res)) {
+        return
+      }
+
+      jsonParser(req, res, err => {
+        if (err) {
+          console.error('Error parsing request body', err)
+          res.statusCode = 400
+          res.end('Bad request')
+          return
+        }
+
+        const body: any = (<any>req).body
         if (!body.$source) {
           body.$source = {
             $name: 'api',
             $overwrite: true
           }
         }
-
         client
           .set(body)
           .then(result => {
@@ -68,7 +85,6 @@ export default function(
               res.end('Bad request')
               return
             }
-
             res.statusCode = 200
             res.setHeader('content-type', 'application/json')
             res.end(JSON.stringify({ id: result }))
@@ -79,7 +95,23 @@ export default function(
             res.end('Internal server error')
             return
           })
-      } else if (method === 'delete') {
+      })
+    },
+    delete: (req: IncomingMessage, res: ServerResponse) => {
+      if (!checkPost(req, res)) {
+        return
+      }
+
+      jsonParser(req, res, err => {
+        if (err) {
+          console.error('Error parsing request body', err)
+          res.statusCode = 400
+          res.end('Bad request')
+          return
+        }
+
+        const body: any = (<any>req).body
+
         client
           .delete(body)
           .then(isRemoved => {
@@ -93,7 +125,22 @@ export default function(
             res.end('Internal server error')
             return
           })
-      } else {
+      })
+    },
+    updateSchema: (req: IncomingMessage, res: ServerResponse) => {
+      if (!checkPost(req, res)) {
+        return
+      }
+
+      jsonParser(req, res, err => {
+        if (err) {
+          console.error('Error parsing request body', err)
+          res.statusCode = 400
+          res.end('Bad request')
+          return
+        }
+
+        const body: any = (<any>req).body
         client
           .updateSchema(body)
           .then(() => {
@@ -107,7 +154,7 @@ export default function(
             res.end('Internal server error ' + e.message)
             return
           })
-      }
-    })
+      })
+    }
   }
 }

@@ -1,22 +1,19 @@
 import * as http from 'http'
 import { ConnectOptions } from '@saulx/selva'
-import handler from './handler'
+import mkHandlers from './handler'
 
 function createServer(selvaConnectOpts: ConnectOptions) {
-  const getHandler = handler('get', selvaConnectOpts)
-  const setHandler = handler('set', selvaConnectOpts)
-  const delHandler = handler('delete', selvaConnectOpts)
-  const schemaHandler = handler('update_schema', selvaConnectOpts)
+  const handlers = mkHandlers(selvaConnectOpts)
 
   const srv = http.createServer((req, res) => {
     if (req.url === '/get') {
-      return getHandler(req, res)
+      return handlers.get(req, res)
     } else if (req.url === '/set') {
-      return setHandler(req, res)
+      return handlers.set(req, res)
     } else if (req.url === '/delete') {
-      return delHandler(req, res)
+      return handlers.delete(req, res)
     } else if (req.url === '/update_schema') {
-      return schemaHandler(req, res)
+      return handlers.updateSchema(req, res)
     } else {
       // pong
       req.pipe(res)
@@ -36,4 +33,4 @@ function start(selvaConnectOpts: ConnectOptions, port?: number): () => void {
   }
 }
 
-export { handler, createServer, start }
+export { mkHandlers as createHandlers, createServer, start }
