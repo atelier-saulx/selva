@@ -32,7 +32,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('$language should be applied in nested text', async t => {
+test.serial('multiple subscribes on same thing', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   const root = await client.set({
     $id: 'root',
