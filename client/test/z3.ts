@@ -42,16 +42,28 @@ test.serial('multiple subscribes on same thing', async t => {
 
   let n = 3
 
-  t.plan(n)
+  t.plan(6)
 
   while (n--) {
-    client
-      .observe({
-        $id: 'root'
-      })
-      .subscribe(data => {
-        t.pass('subscribe fires')
-      })
+    const obs = client.observe({
+      $id: 'root',
+      id: true,
+      title: true
+    })
+
+    let i = n
+    obs.subscribe(data => {
+      console.log('data', i, data)
+      t.pass('subscribe fires')
+    })
+
     await wait(500)
   }
+
+  await client.set({
+    $id: 'root',
+    $language: 'en',
+    title: 'Home!'
+  })
+  await wait(500)
 })
