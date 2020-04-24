@@ -349,6 +349,19 @@ test.serial('get - root', async t => {
     }
   )
 
+  t.deepEqual(
+    await client.get({
+      id: true,
+      value: true,
+      children: true
+    }),
+    {
+      id: 'root',
+      value: 2555,
+      children: [match]
+    }
+  )
+
   await client.set({
     $id: 'root',
     nested: { fun: 'yes fun' }
@@ -1283,3 +1296,92 @@ test.serial(
     client.destroy()
   }
 )
+
+test.serial('get - basic with many ids', async t => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!'
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: { en: 'nice!' },
+      value: 25
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: ['viA', 'viZ'],
+      auth: true
+    }),
+    {
+      auth: { role: { id: ['root'], type: 'admin' } }
+    },
+    'get role'
+  )
+
+  t.deepEqual(
+    await client.get({
+      $alias: ['abba', 'viA'],
+      auth: { role: { id: true } }
+    }),
+    {
+      auth: { role: { id: ['root'] } }
+    },
+    'get role nested'
+  )
+
+  await client.set({
+    $id: 'viA',
+    aliases: { $add: 'abba' }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $alias: ['abba', 'viZ'],
+      auth: { role: { id: true } }
+    }),
+    {
+      auth: { role: { id: ['root'] } }
+    },
+    'get role nested'
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: ['viZ', 'viY'],
+      $language: 'en',
+      id: true,
+      title: true
+    }),
+    {
+      $isNull: true,
+      id: 'viZ',
+      title: ''
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})

@@ -374,7 +374,7 @@ const queryGet = (
   version?: string
 ): string | null => {
   if (!ids) {
-    ids = [getOptions.$id || 'root']
+    ids = [<string>getOptions.$id || 'root']
   }
 
   const [r, err] = parseQuery(

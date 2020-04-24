@@ -99,7 +99,8 @@ export type GetResult = {
 }
 
 export type GetOptions = GetItem & {
-  $id?: Id
+  $id?: Id | Id[]
+  $alias?: string | string[]
   $version?: string
   $language?: string
   $rawAncestors?: true
