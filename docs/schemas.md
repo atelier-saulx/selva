@@ -10,6 +10,15 @@ They allow for data to be automatically validated and the right type of index to
     - [Field index types](#field-indexes-types)
     - [Field data types](#field-data-types)
 
+### Default fields
+
+These fields are added automatically as part of each type.
+
+ - `name`: _string_
+ - `children`: _references_
+ - `parents`: _references_
+
+
 ### _root_ object
 
 #### Properties
