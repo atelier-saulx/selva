@@ -292,9 +292,9 @@ function validateFilter(
   } else if (filter.$operator === '=' || filter.$operator === '!=') {
     if (
       !filter.$value ||
-      typeof filter.$value !== 'string' ||
-      typeof filter.$value !== 'number' ||
-      !Array.isArray(filter.$value)
+      (typeof filter.$value !== 'string' &&
+        typeof filter.$value !== 'number' &&
+        !Array.isArray(filter.$value))
     ) {
       err(
         `$value of ${filter.$operator} filter should be provided and should be a string or number or an array of strings or numbers'`
@@ -303,8 +303,7 @@ function validateFilter(
   } else if (filter.$operator === '<' || filter.$operator === '>') {
     if (
       !filter.$value ||
-      typeof filter.$value !== 'string' ||
-      typeof filter.$value !== 'number'
+      (typeof filter.$value !== 'string' && typeof filter.$value !== 'number')
     ) {
       err(
         `$value of ${filter.$operator} filter should be provided and should be a string or number'`
@@ -313,9 +312,9 @@ function validateFilter(
   } else if (filter.$operator === '..') {
     if (
       !filter.$value ||
-      typeof filter.$value !== 'string' ||
-      typeof filter.$value !== 'number' ||
-      !Array.isArray(filter.$value)
+      (typeof filter.$value !== 'string' &&
+        typeof filter.$value !== 'number' &&
+        !Array.isArray(filter.$value))
     ) {
       err(
         `$value of ${filter.$operator} filter should be provided and should be a string or number or an array of strings or numbers'`
@@ -558,6 +557,9 @@ function validateTopLevel(
             )
           }
         }
+      } else if (field === '$includeMeta') {
+        // internal option
+        continue
       } else if (field === '$alias') {
         if (typeof props.$alias !== 'string' && !Array.isArray(props.$alias)) {
           throw new Error(
