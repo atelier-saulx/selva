@@ -567,12 +567,18 @@ function validateTopLevel(
         if (typeof props.$rawAncestors !== 'boolean') {
           throw new Error(`$rawAncestors should be a boolean value`)
         }
+      } else if (field === '$all') {
+        if (typeof props.$all !== 'boolean') {
+          throw new Error(
+            `Operator $all for ${path}.$all must be a boolean, got ${props.$all}`
+          )
+        }
       } else {
-        // TODO: validate certain GetField options, like $all
         throw new Error(`
           Top level query operator ${field} is not supported. Did you mean one of the following supported top level query options?
             - $id
             - $alias
+            - $all
             - $version
             - $language
           `)
