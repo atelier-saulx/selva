@@ -189,7 +189,7 @@ function validateFilter(
         or for exists filter
 
         {
-          $operator: 'exists'
+          $operator: 'exists' | 'notExists'
           $field: string
 
           $and: Filter (chain more filters with and clause) (optional)
@@ -212,16 +212,17 @@ function validateFilter(
     filter.$operator !== '<' &&
     filter.$operator !== '..' &&
     filter.$operator !== 'distance' &&
-    filter.$operator !== 'exists'
+    filter.$operator !== 'exists' &&
+    filter.$operator !== 'notExists'
   ) {
     err(
-      `Unsupported $operator ${filter.$operator}, has to be one of =, !=, >, <, .., distance, exists`
+      `Unsupported $operator ${filter.$operator}, has to be one of =, !=, >, <, .., distance, exists, notExists`
     )
   }
 
-  if (filter.$operator === 'exists') {
+  if (filter.$operator === 'exists' || filter.$operator === 'notExists') {
     if (filter.$value) {
-      err(`$value not allowed for filter type 'exists'`)
+      err(`$value not allowed for filter type 'exists/notExists'`)
     }
 
     const allowed = checkAllowed(

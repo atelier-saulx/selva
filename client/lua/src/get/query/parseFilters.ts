@@ -1,4 +1,4 @@
-import { FilterAST, Fork } from './types'
+import { FilterAST, Fork, Value } from './types'
 import addSearch from './addSearch'
 import { Filter, GeoFilter } from '~selva/get/types'
 import { isFork } from './util'
@@ -54,7 +54,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   const filter: FilterAST = {
     $value: isGeoFilterValue(filterOpt)
       ? convertGeoFilterValue(filterOpt)
-      : filterOpt.$value,
+      : <Value>filterOpt.$value,
     $operator: o,
     $field: filterOpt.$field,
     $search: search
