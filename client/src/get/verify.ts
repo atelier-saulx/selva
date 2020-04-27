@@ -96,7 +96,7 @@ function validateInherit(
       }
 
       if (!Array.isArray(inherit.$item) && typeof inherit.$item !== 'string') {
-        err(`Inherit by $type must target a specific type or array of types`)
+        err(`Inherit by $item must target a specific type or array of types`)
       }
 
       if (
@@ -465,6 +465,10 @@ function validateNested(
   if (props === true) {
     // TODO: validate from schema if id?
     return
+  }
+
+  if (props.$id || props.$alias) {
+    return validateTopLevel(client, props, path)
   }
 
   for (const field in props) {
