@@ -1,4 +1,4 @@
-import { GetOptions, Inherit, List } from './types'
+import { GetOptions, Inherit, List, Sort } from './types'
 import { SelvaClient } from '..'
 
 function checkAllowed(props: GetOptions, allowed: Set<string>): true | string {
@@ -52,15 +52,15 @@ function validateInherit(
 
     throw new Error(
       `${mainMsg} for ${path}.$inherit. Required type boolean or object with any of the following singatures: 
-    {
-      $item: Id | Id[]
-      $required?: Id | Id[]
-    }
-
-    {
-      $type?: string | string[] or $name?: string | string[] but not both
-      $merge?: boolean
-    }
+        {
+          $item: string | string[] (type)
+          $required: string | string[] (field name) (optional)
+        } 
+        or
+        {
+          $type: string | string[] or $name?: string | string[] but not both (optional)
+          $merge: boolean (optional)
+        }
     `
     )
   }
@@ -117,6 +117,28 @@ function validateInherit(
   err()
 }
 
+function validateSort(client: SelvaClient, sort: Sort, path: string): void {
+  const err = (mainMsg?: string): never => {
+    if (!mainMsg) {
+      mainMsg = 'Unsupported type in operator $sort'
+    }
+
+    throw new Error(
+      `${mainMsg} for ${path}.$sort. Required type object with the following properties:
+        {
+          $field: string
+          $order: 'asc' | 'desc' (optional)
+        }
+    `
+    )
+  }
+
+  const allowed = checkAllowed(sort, new Set(['$field', '$order']))
+  if (allowed !== true) {
+    err(`Unsupported operator or field ${allowed}`)
+  }
+}
+
 function validateList(client: SelvaClient, list: List, path: string): void {
   const err = (mainMsg?: string): never => {
     if (!mainMsg) {
@@ -151,13 +173,17 @@ function validateList(client: SelvaClient, list: List, path: string): void {
 
         // TODO: put these in an object so they don't have to be copied
         InheritOptions:
-          {
-            $type?: string | string[]
-            $name?: string | string[]
-            $item?: Id | Id[]
-            $merge: boolean
-            $required?: Id | Id[]
-          }
+        true
+        or
+        {
+          $item: string | string[] (type)
+          $required: string | string[] (field name) (optional)
+        } 
+        or
+        {
+          $type: string | string[] or $name?: string | string[] but not both (optional)
+          $merge: boolean (optional)
+        }
     `
     )
   }
@@ -167,6 +193,26 @@ function validateList(client: SelvaClient, list: List, path: string): void {
   }
 
   if (typeof list === 'object') {
+    for (const field in list) {
+      if (!field.startsWith('$')) {
+        err(
+          `Only operators starting with $ are allowed in $list, ${field} not allowed`
+        )
+      } else if (field === '$offset') {
+        if (typeof list.$offset !== 'number') {
+          err(`$offset has to be an number, ${list.$offset} specified`)
+        }
+      } else if (field === '$limit') {
+        if (typeof list.$limit !== 'number') {
+          err(`$limit has to be an number, ${list.$limit} specified`)
+        }
+      } else if (field === '$sort') {
+      } else if (field === '$find') {
+      } else if (field === '$inherit') {
+      } else {
+        err(`Operator ${field} not allowed`)
+      }
+    }
   }
 
   err()
