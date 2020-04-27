@@ -1,4 +1,4 @@
-import { GetOptions, Inherit, List, Sort } from './types'
+import { GetOptions, Inherit, List, Sort, Find, Filter } from './types'
 import { SelvaClient } from '..'
 
 function checkAllowed(props: GetOptions, allowed: Set<string>): true | string {
@@ -137,6 +137,121 @@ function validateSort(client: SelvaClient, sort: Sort, path: string): void {
   if (allowed !== true) {
     err(`Unsupported operator or field ${allowed}`)
   }
+
+  if (!sort.$field || typeof sort.$field !== 'string') {
+    err(`Unsupported type of operator $field with value ${sort.$field}`)
+  }
+
+  if (sort.$order) {
+    const order = sort.$order.toLowerCase()
+    if (order !== 'asc' && order !== 'desc') {
+      err(`Unsupported sort order ${sort.$order}, 'asc'|'desc' required`)
+    }
+  }
+}
+
+function validateFilter(
+  client: SelvaClient,
+  filter: Filter,
+  path: string
+): void {
+  const err = (mainMsg?: string): never => {
+    if (!mainMsg) {
+      mainMsg = 'Unsupported type in operator $filter'
+    }
+
+    throw new Error(
+      `${mainMsg} for ${path}.$filter. Required type object with the following properties:
+        {
+          $operator: '=' | '!=' | '>' | '<' | '..'
+          $field: string
+          $value: string | number | (string | number)[]
+
+          $and: Filter (chain more filters with and clause) (optional)
+          $or: Filter (chain more filters with or clause) (optional)
+        }
+        
+        or for geo filters
+
+        {      
+          $operator: 'distance'
+          $field: string
+          $value: {
+            $lat: number
+            $lon: number
+            $radius: number
+          }
+
+          $and: Filter (chain more filters with and clause) (optional)
+          $or: Filter (chain more filters with or clause) (optional)
+        }
+
+        or for exists filter
+
+        {
+          $operator: 'exists'
+          $field: string
+
+          $and: Filter (chain more filters with and clause) (optional)
+          $or: Filter (chain more filters with or clause) (optional)
+        }
+    `
+    )
+  }
+
+  // TODO
+}
+
+function validateFind(client: SelvaClient, find: Find, path: string): void {
+  const err = (mainMsg?: string): never => {
+    if (!mainMsg) {
+      mainMsg = 'Unsupported type in operator $find'
+    }
+
+    throw new Error(
+      `${mainMsg} for ${path}.$sort. Required type object with the following properties:
+        {
+          $traverse: 'descendants' | 'ancestors' | string | string[] (optional)
+          $filter: FilterOptions | FilterOptions[] (and by default) (optional)
+          $find: FindOptions (find within results of the find) (optional)
+
+
+        FilterOptions:
+          {
+            $operator: '=' | '!=' | '>' | '<' | '..'
+            $field: string
+            $value: string | number | (string | number)[]
+            $and: FilterOptions (adds an additional condition) (optional)
+            $or: FilterOptions (adds optional condition) (optional)
+          }
+        `
+    )
+  }
+
+  const allowed = checkAllowed(find, new Set(['$traverse', '$filter', '$find']))
+  if (allowed !== true) {
+    err(`Unsupported operator or field ${allowed}`)
+  }
+
+  if (find.$traverse) {
+    if (typeof find.$traverse !== 'string' && !Array.isArray(find.$traverse)) {
+      err(`Unupported type for $traverse ${find.$traverse}`)
+    }
+  }
+
+  if (find.$find) {
+    validateFind(client, find.$find, path + '.$find')
+  }
+
+  if (find.$filter) {
+    if (Array.isArray(find.$filter)) {
+      for (const filter of find.$filter) {
+        validateFilter(client, filter, path + '.$find')
+      }
+    } else {
+      validateFilter(client, find.$filter, path + '.$find')
+    }
+  }
 }
 
 function validateList(client: SelvaClient, list: List, path: string): void {
@@ -158,7 +273,7 @@ function validateList(client: SelvaClient, list: List, path: string): void {
         FindOptions:
           {
             $traverse: 'descendants' | 'ancestors' | string | string[] (optional)
-            $filter: Filter | FilterOptions[] (optional)
+            $filter: Filter | FilterOptions[] (and by default) (optional)
             $find: FindOptions (recursive find to find within the results) (optional) 
           }
 
@@ -207,12 +322,23 @@ function validateList(client: SelvaClient, list: List, path: string): void {
           err(`$limit has to be an number, ${list.$limit} specified`)
         }
       } else if (field === '$sort') {
+        if (Array.isArray(list.$sort)) {
+          for (const sort of list.$sort) {
+            validateSort(client, sort, path + '.$list')
+          }
+        } else {
+          validateSort(client, list.$sort, path + '.$list')
+        }
       } else if (field === '$find') {
+        validateFind(client, list.$find, path + '.$find')
       } else if (field === '$inherit') {
+        validateInherit(client, list.$inherit, path + '.$inherit')
       } else {
         err(`Operator ${field} not allowed`)
       }
     }
+
+    return
   }
 
   err()
@@ -236,10 +362,21 @@ function validateNested(
       } else if (field === '$inherit') {
         validateInherit(client, props.$inherit, path)
       } else if (field === '$list') {
+        validateList(client, props.$list, path)
       } else if (field === '$find') {
+        validateFind(client, props.$find, path)
       } else if (field === '$default') {
+        // TODO: validate from schema if id?
+        continue
       } else if (field === '$all') {
+        if (typeof props.$all !== 'boolean') {
+          throw new Error(
+            `Operator $all for ${path}.$all must be a boolean, got ${props.$all}`
+          )
+        }
       } else if (field === '$value') {
+        // basically anything is allowed in $value
+        continue
       } else {
         throw new Error(
           `Operator ${field} is not supported in nested fields for ${path +
@@ -252,6 +389,7 @@ function validateNested(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
+      validateNested(client, props[field], path + '.' + field)
     }
   }
 }
