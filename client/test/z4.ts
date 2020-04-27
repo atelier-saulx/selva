@@ -84,9 +84,27 @@ test.serial('yes', async t => {
 
   await wait(500)
 
-  t.deepEqual(results, [
+  await client.set({
+    $id: 'ra1',
+    aliases: { $add: ['c'] },
+    niceSet: { $add: ['c'] }
+  })
+
+  await wait(500)
+
+  await client.set({
+    $id: 'ra1',
+    aliases: { $delete: ['c'] },
+    niceSet: { $delete: ['c'] }
+  })
+
+  await wait(500)
+
+  t.deepEqualIgnoreOrder(results, [
     { niceSet: [], aliases: [] },
     { niceSet: ['a'], aliases: ['a'] },
+    { niceSet: ['b'], aliases: ['b'] },
+    { niceSet: ['b', 'c'], aliases: ['b', 'c'] },
     { niceSet: ['b'], aliases: ['b'] }
   ])
 })
