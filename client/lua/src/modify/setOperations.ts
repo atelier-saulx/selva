@@ -39,6 +39,8 @@ export function resetSet(
       value = resetChildren(id, setKey, value, modify, noRoot, source)
     } else if (field === 'aliases') {
       resetAlias(id, value)
+    } else {
+      redis.del(setKey)
     }
   } else {
     redis.del(setKey)
@@ -337,6 +339,7 @@ export function resetAlias(id: string, value: Id[]): void {
     }
   }
 
+  redis.del(id + '.aliases')
   addAlias(id, value)
 }
 
