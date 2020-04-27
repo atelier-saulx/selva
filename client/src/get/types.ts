@@ -23,7 +23,7 @@ export type GeoFilter = {
 }
 
 export type ExistsFilter = {
-  $operator: 'distance'
+  $operator: 'exists'
   $field: string
   $value: undefined // makes copmiling this easier, nice...
   $and?: Filter
@@ -31,6 +31,7 @@ export type ExistsFilter = {
 }
 
 export type Filter =
+  | ExistsFilter
   | GeoFilter
   | {
       $operator: '=' | '!=' | '>' | '<' | '..'

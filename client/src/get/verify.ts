@@ -161,7 +161,7 @@ function validateFilter(
     }
 
     throw new Error(
-      `${mainMsg} for ${path}.$filter. Required type object with the following properties:
+      `${mainMsg} for ${path}. Required type object with the following properties:
         {
           $operator: '=' | '!=' | '>' | '<' | '..'
           $field: string
@@ -199,7 +199,119 @@ function validateFilter(
     )
   }
 
-  // TODO
+  if (!filter.$field || typeof filter.$field !== 'string') {
+    err(
+      `Filter ${filter.$operator} should have a string field, got ${filter.$field}`
+    )
+  }
+
+  if (
+    filter.$operator !== '=' &&
+    filter.$operator !== '!=' &&
+    filter.$operator !== '>' &&
+    filter.$operator !== '<' &&
+    filter.$operator !== '..' &&
+    filter.$operator !== 'distance' &&
+    filter.$operator !== 'exists'
+  ) {
+    err(
+      `Unsupported $operator ${filter.$operator}, has to be one of =, !=, >, <, .., distance, exists`
+    )
+  }
+
+  if (filter.$operator === 'exists') {
+    if (filter.$value) {
+      err(`$value not allowed for filter type 'exists'`)
+    }
+
+    const allowed = checkAllowed(
+      filter,
+      new Set(['$operator', '$field', '$and', '$or'])
+    )
+
+    if (allowed !== true) {
+      err(`Unsupported operator or field ${allowed}`)
+    }
+  } else if (filter.$operator === 'distance') {
+    if (!filter.$value || typeof filter.$value !== 'object') {
+      err(
+        `$value of distance filter should be provided and should be an object with $lat, $lon and $radius'`
+      )
+    }
+
+    if (!filter.$value.$lat || !filter.$value.$lon || !filter.$value.$radius) {
+      err(
+        `$value of distance filter should be provided and should be an object with $lat, $lon and $radius'`
+      )
+    }
+
+    if (typeof filter.$value.$lat !== 'number') {
+      err(
+        `$value.$lat of distance filter should be provided and should be a number`
+      )
+    }
+
+    if (typeof filter.$value.$lon !== 'number') {
+      err(
+        `$value.$lon of distance filter should be provided and should be a number`
+      )
+    }
+
+    if (typeof filter.$value.$radius !== 'number') {
+      err(
+        `$value.$radius of distance filter should be provided and should be a number`
+      )
+    }
+
+    const allowed = checkAllowed(
+      filter,
+      new Set(['$operator', '$field', '$value', '$and', '$or'])
+    )
+
+    if (allowed !== true) {
+      err(`Unsupported operator or field ${allowed}`)
+    }
+  } else if (filter.$operator === '=' || filter.$operator === '!=') {
+    if (
+      !filter.$value ||
+      typeof filter.$value !== 'string' ||
+      typeof filter.$value !== 'number' ||
+      !Array.isArray(filter.$value)
+    ) {
+      err(
+        `$value of ${filter.$operator} filter should be provided and should be a string or number or an array of strings or numbers'`
+      )
+    }
+  } else if (filter.$operator === '<' || filter.$operator === '>') {
+    if (
+      !filter.$value ||
+      typeof filter.$value !== 'string' ||
+      typeof filter.$value !== 'number'
+    ) {
+      err(
+        `$value of ${filter.$operator} filter should be provided and should be a string or number'`
+      )
+    }
+  } else if (filter.$operator === '..') {
+    if (
+      !filter.$value ||
+      typeof filter.$value !== 'string' ||
+      typeof filter.$value !== 'number' ||
+      !Array.isArray(filter.$value)
+    ) {
+      err(
+        `$value of ${filter.$operator} filter should be provided and should be a string or number or an array of strings or numbers'`
+      )
+    }
+  }
+
+  if (filter.$and) {
+    validateFilter(client, filter.$and, path + '.$and')
+  }
+
+  if (filter.$or) {
+    validateFilter(client, filter.$or, path + '.$or')
+  }
 }
 
 function validateFind(client: SelvaClient, find: Find, path: string): void {
