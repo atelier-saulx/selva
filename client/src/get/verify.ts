@@ -71,6 +71,10 @@ function validateInherit(
 
   // TODO: check more types in $name and $type
   if (typeof inherit === 'object') {
+    if (inherit.$merge && typeof inherit.$merge !== 'boolean') {
+      err(`$merge should be boolean`)
+    }
+
     if (inherit.$type) {
       if (inherit.$name) {
         err('Both $type and $name are not supported')
@@ -90,7 +94,10 @@ function validateInherit(
 
       return
     } else if (inherit.$item) {
-      const allowed = checkAllowed(inherit, new Set(['$item', '$required']))
+      const allowed = checkAllowed(
+        inherit,
+        new Set(['$item', '$required', '$merge'])
+      )
       if (allowed !== true) {
         err(`Field or operator ${allowed} not allowed in inherit with $type`)
       }
@@ -100,6 +107,7 @@ function validateInherit(
       }
 
       if (
+        inherit.$required &&
         !Array.isArray(inherit.$required) &&
         typeof inherit.$required !== 'string'
       ) {
@@ -109,9 +117,18 @@ function validateInherit(
       }
 
       return
+    } else if (inherit.$merge !== undefined) {
+      const allowed = checkAllowed(inherit, new Set(['$merge']))
+      if (allowed !== true) {
+        err(
+          `Field or operator ${allowed} not allowed, only $merge is allowed when no $type, $name or $item specified`
+        )
+      }
+
+      return
     }
 
-    err(`Object for $inherit without furhter operators specified`)
+    err(`Object for $inherit without further operators specified`)
   }
 
   err()
