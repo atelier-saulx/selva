@@ -112,7 +112,9 @@ export default function validateTopLevel(
             throw new Error(
               `$language ${
                 props.$language
-              } is unsupported, should be a string and one of ${[].join(', ')}`
+              } is unsupported, should be a string and one of: ${client.schema.languages.join(
+                ', '
+              )}`
             )
           }
         }

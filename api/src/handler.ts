@@ -13,6 +13,17 @@ export type Middleware = (
 
 const jsonParser = json({ limit: '50mb' })
 
+function sendError(
+  res: ServerResponse,
+  error: Error,
+  code: number = 500
+): void {
+  res.setHeader('content-type', 'application/json')
+  res.statusCode = code
+
+  res.end(JSON.stringify({ error: error.message }))
+}
+
 function checkPost(
   _client: SelvaClient,
   req: IncomingMessage,
@@ -103,9 +114,7 @@ export default function(
           })
           .catch(e => {
             console.error('Error getting get response', e)
-            res.statusCode = 500
-            res.end('Internal server error')
-            return
+            return sendError(res, e)
           })
       }
     ),
@@ -135,9 +144,7 @@ export default function(
           })
           .catch(e => {
             console.error('Error getting get response', e)
-            res.statusCode = 500
-            res.end('Internal server error')
-            return
+            return sendError(res, e)
           })
       }
     ),
@@ -156,9 +163,7 @@ export default function(
           })
           .catch(e => {
             console.error('Error deleting', e)
-            res.statusCode = 500
-            res.end('Internal server error')
-            return
+            return sendError(res, e)
           })
       }
     ),
@@ -176,9 +181,7 @@ export default function(
           })
           .catch(e => {
             console.error('Error setting schema', e)
-            res.statusCode = 500
-            res.end('Internal server error ' + e.message)
-            return
+            return sendError(res, e)
           })
       }
     )
