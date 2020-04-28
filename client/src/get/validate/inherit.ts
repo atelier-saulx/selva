@@ -32,7 +32,6 @@ export default function validateInherit(
     return
   }
 
-  // TODO: check more types in $name and $type
   if (typeof inherit === 'object') {
     if (inherit.$merge && typeof inherit.$merge !== 'boolean') {
       err(`$merge should be boolean`)
@@ -101,7 +100,11 @@ export default function validateInherit(
       return
     }
 
-    err(`Object for $inherit without further operators specified`)
+    err(
+      `Object for $inherit without valid operators specified ${Object.keys(
+        inherit
+      )}`
+    )
   }
 
   err()

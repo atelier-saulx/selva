@@ -14,7 +14,6 @@ function validateNested(
   path: string
 ): void {
   if (props === true) {
-    // TODO: validate from schema if id?
     return
   }
 
@@ -24,7 +23,6 @@ function validateNested(
 
   for (const field in props) {
     if (field.startsWith('$')) {
-      // TODO: validate that options that aren't supported together are not put together
       if (field === '$field') {
         validateField(client, props.$field, path)
       } else if (field === '$inherit') {
@@ -34,7 +32,6 @@ function validateNested(
       } else if (field === '$find') {
         validateFind(client, props.$find, path)
       } else if (field === '$default') {
-        // TODO: validate from schema if id?
         continue
       } else if (field === '$all') {
         if (typeof props.$all !== 'boolean') {
