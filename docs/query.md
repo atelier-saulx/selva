@@ -23,18 +23,16 @@ Selva uses a JSON query DSL to specify the data to be retrieved or subscribed fr
 
 [Available data types](#available-data-types)
 
-## Clauses
+## Fields and Operators
 
-### Default fields
-
- - `name`: _string_
- - `children`: _references_
- - `parents`: _references_
+Selva query DSL uses a JSON formatted object to represent both the database queries and data format for the _documents_ returned. The property keys in the object can be _fields_ or _operators_. The values for each property can be a boolean type to include the _document_ field in the result or another nested object with more fields and operators making it possible to compose complex data structures.
+The _fields_ can be existing properties of the documents, or new fields added dynamically as part of the result.
+_Operators_ do not show as fields but have a special meaning to Selva and manipulate the result adding, transforming, or including subqueries to the _document_ _fields_.
 
 ### `<any field name>`: _boolean_, _object_
 
 When truthy, includes the named field in the result.  
-Objects can be nested, and other clauses used, to shape the exact format needed in the result.
+Objects can be nested, and other fields and operators specified.
 
 ```javascript
 const result = await get({
@@ -62,8 +60,7 @@ const result = await get({
 
 ### `$all`: _boolean_
 
-Includes all the fields for the obect at the level where the clause is used.  
-[References](./glossary.md#references) are not included. (?)
+Includes all the fields in the document.
 
 ```javascript
 const result = await get({
@@ -121,7 +118,7 @@ const result = await client.get({
 
 ### `$field`: _string_, _Array&lt;string&gt;_
 
-The `$field` clause is used to alias a field to another field in the same document.
+The `$field` operator is used to alias a field to another field in the same document.
 
 ```javascript
 const result = await client.get({
@@ -138,7 +135,7 @@ const result = await client.get({
 })
 ```
 
-Because _text datatype_ fields interanlly are a simple nested object, the `$field` clause can be used to get a specific language from a text field.
+Because _text datatype_ fields interanlly are a simple nested object, the `$field` operator can be used to get a specific language from a text field.
 ```javascript
 const result = await client.get({
   $id: 'mo2001ASpaceOdyssey',
@@ -146,7 +143,7 @@ const result = await client.get({
 })
 ```
 
-The `$field` clause can take an Array instead of a string. The array can have several field names or paths for the alias to point to. The first that is defined in the document will be returned.
+The `$field` operator can take an Array instead of a string. The array can have several field names or paths for the alias to point to. The first that is defined in the document will be returned.
 
 ```javascript
 const = await client.get({
@@ -179,7 +176,7 @@ Used in conjuction with the `$find` operator.
 
 ### `$sort`: _object_
 
-Property of `$list` clause.  
+Property of `$list` operator.  
 Sorts the `$list` results according to the following properties:
 
   - `$field`: _string_ - Name of the field to sort by.
@@ -203,7 +200,7 @@ const result = await client.get({
 
 ### `$offset`: _integer_
 
-Property of `$list` clause.  
+Property of `$list` operator.  
 Shows results of a `$list` starting at the specified index.
 
 ```javascript
@@ -224,7 +221,7 @@ const result = await client.get({
 
 ### `$limit`: _integer_
 
-Property of `$list` clause.  
+Property of `$list` operator.  
 Limits the `$list` amount of items returned in a `$list`.
 
 [See test](../client/test/examples/clauses/list.ts)
@@ -232,7 +229,7 @@ Limits the `$list` amount of items returned in a `$list`.
 ### `$find`: _object_
 
 Traverses ancestors or descendants and assigns matched results to a field.
-Can be used inside a `$list` clause to specify collection search terms or independently to reference a single document to a field. In that case it will return the first matched document.
+Can be used inside a `$list` operator to specify collection search terms or independently to reference a single document to a field. In that case it will return the first matched document.
 
 ### `$traverse`: _string_
 
@@ -244,14 +241,14 @@ Sets direction to search the document hierarchy.
 
 Property of `$find`.
 
-Sets a search term for the `$find` clause.
+Sets a search term for the `$find` operator.
 Has the following properties:
 
   - `$operator`: _string_ - Operator to use in the comparisson. Allowdd values are: `=`, `>`, `<`, `..`, `!=`, `distance`, `exists`, `notExists`.
   - `$field`: _string_ - Field name to compare the value to.
   - `$value`: _string_ - Value to compare the field to.
 
-Search terms can be composed with the `$or` and `$and` clauses, and nested to create complex logic.
+Search terms can be composed with the `$or` and `$and` operators, and nested to create complex logic.
 If an array of search terms is used, each term acts as an AND.
 
 ```javascript
