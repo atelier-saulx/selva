@@ -244,7 +244,6 @@ test.serial(
 
     t.deepEqualIgnoreOrder(
       await client.get({
-        $source: 'yesh-source',
         $id: match1,
         $language: 'en',
         id: true,

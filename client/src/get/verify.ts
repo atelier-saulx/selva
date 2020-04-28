@@ -338,7 +338,7 @@ function validateFind(client: SelvaClient, find: Find, path: string): void {
     }
 
     throw new Error(
-      `${mainMsg} for ${path}.$sort. Required type object with the following properties:
+      `${mainMsg} for ${path}.$find. Required type object with the following properties:
         {
           $traverse: 'descendants' | 'ancestors' | string | string[] (optional)
           $filter: FilterOptions | FilterOptions[] (and by default) (optional)

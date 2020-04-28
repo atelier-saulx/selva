@@ -119,7 +119,7 @@ test.serial('layout query', async t => {
         children: {
           title: true,
           $list: {
-            $range: [0, 100],
+            $limit: 100,
             $find: {
               $traverse: 'descendants',
               $filter: [
