@@ -1,5 +1,5 @@
-import { GetOptions, Inherit, List, Sort, Find, Filter } from './types'
-import { SelvaClient } from '..'
+import { GetOptions, Inherit, List, Sort, Find, Filter } from '../types'
+import { SelvaClient } from '../..'
 
 function checkAllowed(props: GetOptions, allowed: Set<string>): true | string {
   for (const key in props) {
