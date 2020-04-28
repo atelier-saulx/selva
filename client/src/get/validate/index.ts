@@ -40,8 +40,12 @@ function validateNested(
           )
         }
       } else if (field === '$value') {
-        // basically anything is allowed in $value
-        continue
+        const allowed = checkAllowed(props, new Set(['$value']))
+        if (allowed !== true) {
+          throw new Error(
+            `Operator $value should not exist with any other operators, ${allowed} found`
+          )
+        }
       } else {
         throw new Error(
           `Operator ${field} is not supported in nested fields for ${path +
