@@ -137,6 +137,7 @@ function getField(
       if (err) {
         // can return an error now
         logger.error(err)
+        error(err)
       }
     }
     return true
