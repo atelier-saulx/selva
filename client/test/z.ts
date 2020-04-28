@@ -58,7 +58,7 @@ test.serial('subscription list', async t => {
     parents: [sport]
   })
 
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: match,
     $language: 'en',
     items: {

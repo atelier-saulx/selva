@@ -23,7 +23,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
         // console.log('SEND UPDATE FOR', subscription.channel)
       })
       .catch(err => {
-        console.log('WRONG ERROR IN SENDUPDATE')
+        console.log('WRONG ERROR IN SENDUPDATE', err)
       })
   })
 

@@ -390,7 +390,7 @@ const queryGet = (
 
   let { results, meta } = r
 
-  if (!results.length || results.length === 0) {
+  if ((!results.length || results.length === 0) && !getOptions.$find) {
     setNestedResult(result, resultField, emptyArray())
 
     if (err) {

@@ -130,10 +130,11 @@ export default function validateFilter(
       !filter.$value ||
       (typeof filter.$value !== 'string' &&
         typeof filter.$value !== 'number' &&
+        typeof filter.$value !== 'boolean' &&
         !Array.isArray(filter.$value))
     ) {
       err(
-        `$value of ${filter.$operator} filter should be provided and should be a string or number or an array of strings or numbers'`
+        `$value of ${filter.$operator} filter should be provided and should be a string, number, boolean or an array of them, got ${filter.$value}`
       )
     }
   } else if (filter.$operator === '<' || filter.$operator === '>') {
@@ -150,10 +151,11 @@ export default function validateFilter(
       !filter.$value ||
       (typeof filter.$value !== 'string' &&
         typeof filter.$value !== 'number' &&
+        typeof filter.$value !== 'boolean' &&
         !Array.isArray(filter.$value))
     ) {
       err(
-        `$value of ${filter.$operator} filter should be provided and should be a string or number or an array of strings or numbers'`
+        `$value of ${filter.$operator} filter should be provided and should be a string, number, boolean or an array of them, got ${filter.$value}`
       )
     }
   }

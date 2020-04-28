@@ -103,16 +103,18 @@ export default function validateTopLevel(
           throw new Error(`$version should be a string`)
         }
       } else if (field === '$language') {
-        if (
-          typeof props.$language !== 'string' ||
-          !client.schema.languages ||
-          !client.schema.languages.includes(props.$language)
-        ) {
-          throw new Error(
-            `$language ${
-              props.$language
-            } is unsupported, should be a string and one of ${[].join(', ')}`
-          )
+        if (client.schema) {
+          if (
+            typeof props.$language !== 'string' ||
+            !client.schema.languages ||
+            !client.schema.languages.includes(props.$language)
+          ) {
+            throw new Error(
+              `$language ${
+                props.$language
+              } is unsupported, should be a string and one of ${[].join(', ')}`
+            )
+          }
         }
       } else if (field === '$rawAncestors') {
         if (typeof props.$rawAncestors !== 'boolean') {
@@ -143,4 +145,3 @@ export default function validateTopLevel(
     }
   }
 }
-
