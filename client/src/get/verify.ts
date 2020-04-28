@@ -80,6 +80,10 @@ function validateInherit(
         err('Both $type and $name are not supported')
       }
 
+      if (!Array.isArray(inherit.$type) && typeof inherit.$type !== 'string') {
+        err(`Inherit by $type must target a specific type or array of types`)
+      }
+
       const allowed = checkAllowed(inherit, new Set(['$type', '$merge']))
       if (allowed !== true) {
         err(`Field or operator ${allowed} not allowed in inherit with $type`)
@@ -87,6 +91,12 @@ function validateInherit(
 
       return
     } else if (inherit.$name) {
+      if (!Array.isArray(inherit.$name) && typeof inherit.$name !== 'string') {
+        err(
+          `Inherit by $name must target a specific name (string) or array of names`
+        )
+      }
+
       const allowed = checkAllowed(inherit, new Set(['$name', '$merge']))
       if (allowed !== true) {
         err(`Field or operator ${allowed} not allowed in inherit with $name`)
