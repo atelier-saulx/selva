@@ -107,16 +107,21 @@ export default function validateTopLevel(
           throw new Error(`$version should be a string`)
         }
       } else if (field === '$language') {
+        if (typeof props.$language !== 'string') {
+          throw new Error(
+            `$language ${props.$language} is unsupported, should be a string`
+          )
+        }
+
         if (client.schema) {
           if (
-            typeof props.$language !== 'string' ||
             !client.schema.languages ||
             !client.schema.languages.includes(props.$language)
           ) {
             throw new Error(
               `$language ${
                 props.$language
-              } is unsupported, should be a string and one of: ${client.schema.languages.join(
+              } is unsupported, should be one of: ${client.schema.languages.join(
                 ', '
               )}`
             )

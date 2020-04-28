@@ -14,7 +14,7 @@ export default function validateInherit(
     }
 
     throw new Error(
-      `${mainMsg} for ${path}.$inherit. Required type boolean or object with any of the following singatures: 
+      `${mainMsg} for ${path}.$inherit. Required type boolean or object with any of the following signatures: 
         {
           $item: string | string[] (type)
           $required: string | string[] (field name) (optional)
