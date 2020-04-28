@@ -86,9 +86,9 @@ export default function validateList(
           validateSort(client, list.$sort, path + '.$list')
         }
       } else if (field === '$find') {
-        validateFind(client, list.$find, path + '.$find')
+        validateFind(client, list.$find, path + '.$list')
       } else if (field === '$inherit') {
-        validateInherit(client, list.$inherit, path + '.$inherit')
+        validateInherit(client, list.$inherit, path + '.$list')
       } else {
         err(`Operator ${field} not allowed`)
       }

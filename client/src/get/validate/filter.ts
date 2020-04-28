@@ -14,7 +14,7 @@ export default function validateFilter(
     }
 
     throw new Error(
-      `${mainMsg} for ${path}. Required type object with the following properties:
+      `${mainMsg} for filter in ${path}. Required type object with the following properties:
         {
           $operator: '=' | '!=' | '>' | '<' | '..'
           $field: string
