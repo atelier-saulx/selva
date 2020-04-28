@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva-server",
-  "version": "0.2.32",
+  "version": "0.2.34",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -59,6 +59,6 @@
     "dropbox": "^4.0.30",
     "node-fetch": "^2.6.0",
     "redis": "^2.8.0",
-    "@saulx/selva": "0.2.35"
+    "@saulx/selva": "0.2.37"
   }
 }
