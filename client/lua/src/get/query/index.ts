@@ -391,7 +391,13 @@ const queryGet = (
   let { results, meta } = r
 
   if (!results.length || results.length === 0) {
-    results = emptyArray()
+    setNestedResult(result, resultField, emptyArray())
+
+    if (err) {
+      logger.error(err)
+      return err
+    }
+    return null
   }
 
   if (getOptions.$find) {
