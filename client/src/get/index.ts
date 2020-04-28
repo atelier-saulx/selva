@@ -1,6 +1,6 @@
 import { SelvaClient } from '..'
 import { GetResult, GetOptions } from './types'
-import validate from './verify'
+import validate from './validate'
 
 async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   validate(client, props)
