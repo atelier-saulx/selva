@@ -1,6 +1,6 @@
 import { SetOptions, BatchOpts, BatchRefFieldOpts } from './types'
 import { SelvaClient } from '..'
-import { Schema } from '../schema'
+import { Schema, TypeSchema } from '../schema'
 import fieldParsers from './fieldParsers'
 import { verifiers } from './fieldParsers/simple'
 import { configureLogger } from 'lua/src/logger'
@@ -8,6 +8,35 @@ import { v4 as uuid } from 'uuid'
 
 // import { MAX_BATCH_SIZE } from '../redis'
 const MAX_BATCH_SIZE = 5500
+
+const ALLOWED_OPTIONS_DOCS = `
+Record identification (if neither $id or $alias is provided, 'root' id is assumed)
+- $id 
+- $alias
+General set operators
+- $language: string (optional) (used to automatically fetch specified language from 'text' type fields and properties)
+- $merge: boolean (optional) (whether set fields are merged to existing record fields, or set to override)
+- $version: string (optional) TODO: version is not functional yet, coming soon
+`
+
+// TODO: add link to set payload by type
+function allowedFieldsDoc(schemas: Schema, type?: string): string {
+  let typeSchema: TypeSchema
+  if (type) {
+    typeSchema = schemas.types[type]
+  }
+
+  if (typeSchema) {
+    let str = ''
+    for (const key in typeSchema.fields) {
+      str += `        - ${key}: ${typeSchema.fields[key].type} \n`
+    }
+
+    return str
+  }
+
+  return ''
+}
 
 export const parseSetObject = (
   payload: SetOptions,
@@ -80,7 +109,7 @@ export const parseSetObject = (
         result[key] = payload[key]
       } else if (key === '$version') {
         if (typeof payload[key] !== 'string') {
-          throw new Error('Wrong type for $version')
+          throw new Error('Wrong type for $version, string required')
         }
         console.warn('$version is not implemented yet!')
         result[key] = payload[key]
@@ -89,16 +118,36 @@ export const parseSetObject = (
           typeof payload[key] !== 'string' ||
           String(payload[key]).length > 100
         ) {
-          throw new Error(`Wrong type for language ${payload[key]}`)
+          throw new Error(
+            `Wrong type for language ${payload[key]}, string required`
+          )
+        }
+
+        if (
+          schemas &&
+          schemas.languages &&
+          !schemas.languages.includes(payload[key])
+        ) {
+          throw new Error(
+            `Wrong value for language ${
+              payload[key]
+            }, schema allows the following languages to be set: ${schemas.languages.join(
+              ', '
+            )}`
+          )
         }
       } else if (key === '$_itemCount') {
         // ignore
         result[key] = payload[key]
       } else {
-        throw new Error(`Wrong option on set object ${key}`)
+        throw new Error(`Unsupported operator on set ${key}. Did you mean one following set operators?
+          ${ALLOWED_OPTIONS_DOCS}`)
       }
     } else if (!fields[key]) {
-      throw new Error(`Cannot find field ${key} in ${type} from set-object`)
+      throw new Error(`
+        Cannot find field ${key} in ${type}. Did you mean one of the following properties?
+${allowedFieldsDoc(schemas, type)}
+        `)
     } else {
       const fn = fieldParsers[fields[key].type]
       fn(schemas, key, payload[key], result, fields[key], type, $lang)
