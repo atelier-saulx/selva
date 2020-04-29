@@ -504,7 +504,7 @@ Only _object_ specific operator is the [`$merge`](#object-merge-boolean) operato
 - Object field type operators
   - [`$merge`](#object-merge---boolean)
 
-### `$increment` - _string_
+### `$increment` - _number_
 
 Number fields support the `$increment` operator, which itself takes a number value. If specified, the number value in the database is incremented by the specified amount. If not set, the number is assumed 0 and the `$increment` value is effectively set to the field, unless [`$default`](#default-any) is specified in which case it is set before applying the `$increment`. The increment can be negative and fractional.
 
