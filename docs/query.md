@@ -3,8 +3,8 @@
 
 Selva uses a JSON query DSL to specify the data to be retrieved or subscribed from the database.
 
-- [**$id**](#id-string-string)
-- [**$alias**](#alias-string-string)
+- [**$id**](#id-string---string)
+- [**$alias**](#alias-string---string)
 - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
   - [**$value**](#value-any)
   - [**$default**](#default-any)
