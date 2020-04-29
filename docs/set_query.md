@@ -427,8 +427,20 @@ const result = await client.set({
 No operators exist for field of the _geo_ type.
 
 ### _set_ type
+
+Fields with _set_ type accept javascript array values where all entries correspond to the item type specified in the schema.
+
+TODO: or object with internal array-like operators
+
 ### _references_ type
+
+Only value accepted in the javascript arrays for _references_ type fields are id-format strings.
+
+TODO: or object with internal array-like operators
+
 ### _object_ type
+
+TODO: basically just recursion?
 
 ## Search
 
