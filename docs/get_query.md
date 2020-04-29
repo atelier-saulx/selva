@@ -20,6 +20,118 @@
       - [**$or**](#or-object)
       - [**$and**](#and-object)
 
+## Query structure
+
+Queries are objects that hold the data structure to be returned, as well as the operators that shape it.
+
+```javascript
+const result = await get({
+  $language: 'en',      // operator that sets the language to return in text fields
+  $id: 'muASxsd3',      // operator that sets the id of the document to return
+
+  title: true,          // includes the document fields title and
+  year: true,           // year to the results
+
+  technicalData: {      // adds the field technicalData which is
+    runtime: true,      // a object data type with nested properties.
+    camera: {           // Only `runtime` and `camera.lens` properties are
+      lens: true        // included in the result
+    }
+  }
+})
+
+// returns:
+// {
+//   title: '2001: A Space Odyssey',
+//   year: 1968,
+//   technicalData: {
+//     runtime: 97
+//     camera: {
+//       lens: '5-perf 65mm'
+//     }
+//   }
+// }
+```
+
+They can mirror the existing structure in the document to filter its contents or dynamically added to include fields inherited from its ancestors. See `$inherit` for more details.
+
+```javascript
+const result = await get({
+  $language: 'en',
+  $id: 'muASxsd3',
+  title: true,
+  icon: { $inherit: true }, // icon is not part of the movie type
+                            // but inherited from the parent document with
+                            // type "genre"
+})
+
+// returns:
+// {
+//   title: '2001: A Space Odyssey',
+//   icon: 'http://example.com/an_icon.png'
+// }
+```
+
+A query can also have other queries nested directly in the field value or as part of a `$field` operator.
+
+```javascript
+const result = await get({
+  $language: 'en',
+  $id: 'muASxsd3',
+  title: true,
+  otherMovie: {
+    $id: 'muFDedx2',    // adds another query
+    title: true         // as the value of `otherMovie` field
+  }
+})
+
+// returns:
+// {
+//   title: '2001: A Space Odyssey',
+//   otherMovie: {
+//     title: 'Soylent Green'
+//   }
+// }
+```
+
+Array syntax can also be used to concatenate different individual queries. The result of each query is concatenated in the returned array.
+
+```javascript
+const result = await get({
+  $language: 'en',
+  $id: 'muASxsd3',
+  title: true,
+  type: true,             // default field type that holds the documetn type
+  extraFields: [
+    {
+      $id: 'muFDedx2',
+      title: true,
+      type: true
+    },
+    {
+      $id: 'geGhfr4D',
+      title: true,
+      type: true
+    }
+  ]
+})
+
+// returns:
+// {
+//   title: '2001: A Space Odyssey',
+//   type: 'movie',
+//   extraFields: [
+//     {
+//       title: 'Soylent Green',
+//       type: 'movie',
+//     },
+//     {
+//       title: 'Sci-fi',
+//       type: 'genre',
+//     }
+//   ]
+// }
+```
 ## `$id`: _string_  | _string[]_
 
 Id of the object to get. If it is an array, the first existing record is used for the query.
