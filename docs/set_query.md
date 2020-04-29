@@ -46,8 +46,7 @@ If a new record is created, these aliases are created for it automatically.
 
 NOTE: if the record does exist already, the missing aliases are not created.
 
-To add new aliases to existing records:
-TODO: add link to `references` type set operations / syntax
+To add new aliases to existing records add to or set the `aliases` default field which is a _set_ field of `string` items. For more information see the [_set_](#set-type) documentation.
 
 ## `$operation` : _string_
 
@@ -252,7 +251,6 @@ See [here](#text-type) for more details in the field type documentation.
 
 ## Any field name
 
-TODO: add reference to schema docs
 Any and all field names can be set that exist in the schema of the provided type of record. Some operators exist that are specific to the type of field being set. Accepted values and operators for each field type are outlined below.
 
   - [**digest**](#digest-type)
@@ -274,6 +272,8 @@ Any and all field names can be set that exist in the schema of the provided type
   - [**references**](#references-type)
   - [**object**](#object-type)
 
+For more information, please refer to the [schema documentation](./schemas.md).
+
 ### _type_ type
 
 The type property is normally only provided when creating a new record with the following syntax:
@@ -287,7 +287,7 @@ const result = await client.set({
 })
 ```
 
-If type is specified in other cases, it must always match the type of the existing record, as well as the schema prefix of that type. (TODO: link to schema docs). Type can never be overwritten for existing records.
+If type is specified in other cases, it must always match the type of the existing record, as well as the schema [prefix](./schemas.md#properties-1) of that type. Type can never be overwritten for existing records.
 
 ### _digest_ type
 
@@ -310,8 +310,9 @@ Resulting record in database:
 }
 */
 
-TODO: basic set operators
 ```
+
+TODO: basic set operators
 
 ### _timestamp_ type
 
@@ -520,16 +521,140 @@ Resulting record in database:
 
 ### `$value` - _any_
 
-TODO
+Using the `$value` operator is practically always allowed instead of passing the value directly. It is rarely useful by itself, an is often only used if other operators are used with it, so specify what the actual value is to be set.
+
+```javascript
+const result = await client.set({
+  $id: 'maASxsd3',
+  type: 'match',
+  value: { $value: 10 } // same as value: 10
+})
+```
 
 ### `$ref` - _string_
 
-TODO
+The `$ref` option allows referencing other fields within the same object. Whenever the value of the field is read in a query, it actually resolves to the reference stored in it.
 
-### `$merge` - _boolean_
+```javascript
+const result = await client.set({
+  $id: 'maASxsd3',
+  type: 'match',
+  value: { $ref: 'otherValue' },
+  otherValue: 10
+})
+```
+
+The reference operator can be used in conjunction with other options, such as `$default`:
+
+```javascript
+const result = await client.set({
+  $id: 'maASxsd3',
+  type: 'match',
+  value: { $default: { $ref: 'otherValue' } }, // the reference is established only if `.value` is not set
+  otherValue: 10
+})
+```
+
+### object `$merge` - _boolean_
+
+Default value: `true`
+
+The `$merge` option operates exactly the same way as the top-level set [`$merge` operator](#merge-boolean), but in the context of the fields of the object type. When an object is set with `$merge: false`, only the set fields will remain in the database. 
 
 ### `$add` - _any_
 
+The `$add` operator can be used to add one or more entries to a _set_ or _references_ type field. A single item type value or an array of item type values may be specified to `$add`. All the existing values in the set will remain, but no duplicates are allowed.
+
+
+```javascript
+Let's assume the following record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  availableSeats: ['a2', 'a3', 'b5']
+}
+*/ 
+
+let result = await client.set({
+  id: 'maASxsd3',
+  availableSeats: { $add: 'b12' }
+})
+
+/*
+Value of `const result`: `maASxsd3`
+Resulting record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  availableSeats: ['a2', 'a3', 'b5', 'b12']
+}
+*/
+
+result = await client.set({
+  id: 'maASxsd3',
+  availableSeats: { $add: ['b13', 'b14'] }
+})
+
+/*
+Value of `const result`: `maASxsd3`
+Resulting record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  availableSeats: ['a2', 'a3', 'b5', 'b12', 'b13', 'b14']
+}
+*/
+```
+
 ### `$delete` - _any_
 
+The `$delete` operator can be used to remove one or more entries to a _set_ or _references_ type field. A single item type value or an array of item type values may be specified to `$delete`.
+
+
+```javascript
+Let's assume the following record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  availableSeats: ['a2', 'a3', 'b5', 'b12', 'b13', 'b14']
+}
+*/ 
+
+let result = await client.set({
+  id: 'maASxsd3',
+  availableSeats: { $delete: ['b13', 'b14'] }
+})
+
+/*
+Value of `const result`: `maASxsd3`
+Resulting record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  availableSeats: ['a2', 'a3', 'b5', 'b12']
+}
+*/
+
+result = await client.set({
+  id: 'maASxsd3',
+  availableSeats: { $delete: 'b12' }
+})
+
+/*
+Value of `const result`: `maASxsd3`
+Resulting record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  availableSeats: ['a2', 'a3', 'b5']
+}
+*/
+```
+
 ### `$hierarchy` - _boolean_
+
+Potentially dangerous to use advanced feature. Take care using this option.
+
+Default value: `true`
+
+The `$hierarchy` operator only applies to a very special case of _references_ type fields: `children` and `parents`. When `$hierarchy` is set to `true` (default), if parents of the record being set are updated, their children will be updated to reflect the changes in the record. The same applies to parents of its children, if the `children` field is updated. When set to `false`, this default behaviour is ignored.
