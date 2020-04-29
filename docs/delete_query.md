@@ -1,7 +1,7 @@
 # _Delete_ Method Query Reference
 
-  - [**$id**](#id-string)
-  - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
+  - [**$id**](#id--string)
+  - [**&lt;any field name&gt;**](#any-field-name--boolean)
 
 ## `$id` : _string_
 
@@ -19,7 +19,7 @@ const result = await client.delete({
 }) // or simply client.delete('root')
 ```
 
-## &lt;any field name&gt;
+## &lt;any field name&gt; : _boolean_
 
 When fields are specified, a `boolean` value may be provided with it. A `true` value marks the field to be deleted. 
 
