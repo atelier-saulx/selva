@@ -1,5 +1,6 @@
 # _Get_ Method Query Reference
 
+
   - [**$id**](#id-string---string)
   - [**$alias**](#alias-string---string)
   - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
@@ -81,8 +82,10 @@ const result = await get({
   director: { $default: 'Unknown director' }
 })
 ```
+
 [See test](../client/test/examples/clauses/default.ts)
 
+ 
 ### `$inherit`: _boolean_
 
 If the value for the field is not set in the document, search for the field in the ancestors.
@@ -99,7 +102,7 @@ const result = await client.get({
 
 ### `$field`: _string_, _Array&lt;string&gt;_
 
-The `$field` operator is used to alias a field to another field in the same document.
+The `$field` operator is used to create a field that fetches its results from another field.
 
 ```javascript
 const result = await client.get({
@@ -132,6 +135,17 @@ const = await client.get({
   by: { $field: ['producer', 'director'] }
 })
 ```
+
+The path for the `$field` operator can have variable expansion with the `${path_for_field}` syntax.
+In the example below, the `$field` operator path gets the language from the __value__ of a field called `preferedLanguage`.
+
+```javascript
+const = await client.get({
+  $id: 'mo2001ASpaceOdyssey',
+  titleInPreferedLanguage: { $field: 'title.${preferedLanguage}' }
+})
+```
+The field the path points to can exist in the same document or through `$inherit` and `$find` be part of another document.
 
 [See test](../client/test/examples/clauses/field.ts)
 
