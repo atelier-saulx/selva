@@ -2,6 +2,7 @@
 
   - [**$id**](#id-string)
   - [**$alias**](#alias-string---string)
+  - [**$merge**](#merge-boolean)
   - [**operation**](#operation-string)
   - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
 
@@ -158,5 +159,88 @@ result = await client.set({
 /*
 If the record exists, value of `const result`: `maASxsd3`
 If the record does not exist, value of `const result`: `undefined`. In this case nothing is set in the database and the record remains as it was.
+*/
+```
+
+## `$merge`: _boolean_
+
+Default value: `true`
+
+The `$merge` operator can be used to specify whether any fields specified in the `.set()` should overwrite everything that exists in the database for that record currently (if it is updated), or whether any fields specified will be added or overwritten only if provided.
+
+
+```javascript
+/*
+Let's assume the following record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  value: 10,
+  title: {
+    en: 'yes'
+  }
+}
+*/ 
+
+const result = await client.set({
+  $merge: true, // optional, defaults to true
+  type: 'match',
+  title: {
+    en: 'hello',
+    de: 'hallo'
+  },
+  name: 'match'
+})
+
+/*
+Value of `const result`: `maASxsd3`
+Resulting record in database:
+{
+
+  id: 'maASxsd3',
+  type: 'match',
+  value: 10, // value remains
+  title: {
+    en: 'hello', // .en is overwritten
+    de: 'hallo' // .de is merged in
+  },
+  name: 'match' // name is merged in
+}
+*/
+
+/* With $merge: false */
+
+/*
+Let's assume the following record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  value: 10,
+  title: {
+    en: 'yes'
+  }
+}
+*/ 
+
+const result = await client.set({
+  $merge: false,
+  title: {
+    de: 'hallo'
+  },
+  name: 'match'
+})
+
+/*
+Value of `const result`: `maASxsd3`
+Resulting record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  title: {
+    de: 'hallo' // .de is added but .en is deleted
+  },
+  name: 'match' // name is added but value is deleted
+}
+
 */
 ```
