@@ -312,64 +312,93 @@ Resulting record in database:
 
 ```
 
-TODO: basic set operators
+The following operators are available with the _digest_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
 
 ### _timestamp_ type
 
 Field type _timestamp_ accepts positive numeric values after the epoch (in milliseconds). In addition, it also accept one string value: `'now'`. When `'now'` is provided, it is automatically converted to the current time in milliseconds since epoch.
 
-TODO: basic set operators
+The following operators are available with the _timestamp_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _url_ type
 
 The _url_ field type accepts any `string` values that are valid URLs.
 
-TODO: basic set operators
+The following operators are available with the _url_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _email_ type
 
 The _email_ field type accepts any `string` values that are valid email addresses.
 
-TODO: basic set operators
+The following operators are available with the _email_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _phone_ type
 
 The _phone_ field type accepts any `string` values that are valid phone numbers.
 
-TODO: basic set operators
+The following operators are available with the _phone_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _string_ type
 
 The _string_ type accepts any `string` values.
 
-TODO: basic set operators
+The following operators are available with the _string_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _int_ type
 
 The _int_ type accepts any `number` values that are representable as an integer.
 
-TODO: increment
-TODO: basic set operators
+The following operators are available with the _int_ type:
+- [`$increment`](#default-increment-number)
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _float_ type
 
 The _float_ type accepts any `number` values that are representable as floating point numbers.
 
-TODO: increment
-TODO: basic set operators
+The following operators are available with the _float_ type:
+- [`$increment`](#default-increment-number)
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _number_ type
 
 The _number_ type accepts any `number` values.
 
-TODO: increment
-TODO: basic set operators
+The following operators are available with the _number_ type:
+- [`$increment`](#default-increment-number)
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _boolean_ type
 
 The _boolean_ type accepts a `boolean` value, `true` or `false`.
 
-TODO: basic set operators
+The following operators are available with the _boolean_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _text_ type
 
@@ -401,21 +430,25 @@ const result = await client.set({
 ```
 
 The following operators are supported both on the _text_ field itself, as well as all the language keys:
-- TODO: $value link
-- TODO: $default link
-- TODO: $ref link
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
 
 ### _array_ type
 
 Fields with _array_ type accept javascript array values where all entries correspond to the item type specified in the schema. 
 
-No operators exist for _array_.
+The following operators are available with the _array_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
 
 ### _json_ type
 
 The _json_ type allows any javascript values, unless `properties` has been defined for it in the schema. In that case, an `object` type value must be provided that contains only values that contain properties set in that schema definition.
 
-No operators exist for field of the _json_ type.
+The following operators are available with the _json_ type:
+- [`$default`](#default-any)
+- [`$value`](#value-any)
 
 ### _geo_ type
 
@@ -439,19 +472,37 @@ No operators exist for field of the _geo_ type.
 Fields with _set_ type accept javascript array values where all entries correspond to the item type specified in the schema. They also accept a single item of the item type to set a list of one item. Any value set will reset the currently stored values of the _set_.
 
 To add and remove items from the set, the following operators are supported:
-TODO: or object with internal array-like operators
+- [`$default`](#default-any)
+- [`$value`](#value-any)
+- [`$ref`](#ref-string)
+- [`$add`](#add-any)
+- [`$delete`](#delete-any)
 
 ### _references_ type
 
 Same as _set_ but items are always id strings.
 
-TODO: or object with internal array-like operators
-
 ### _object_ type
 
-TODO: basically just recursion?
+The _object_ type can receive a javascript object as long as it only contains properties specified in the schema. All operators and values of the object properties are allowed based on the type of the property.
+
+Only _object_ specific operator is the [`$merge`](#object-merge-boolean) operator.
 
 ## Field operators
+
+- Basic field type operators
+  - [`$default`](#default-any)
+  - [`$value`](#value-any)
+  - [`$ref`](#ref-string)
+- Number field type operators
+  - [`$increment`](#increment-number)
+- Set and reference field type operators
+  - [`$add`](#add-any)
+  - [`$delete`](#delete-any)
+- Reference only field type operators
+  - [`$hierarchy`](#hierarchy-boolean)
+- Object field type operators
+  - [`$merge`](#object-merge-boolean)
 
 ### `$increment` - _string_
 
