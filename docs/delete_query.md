@@ -2,3 +2,7 @@
 
   - [**$id**](#id-string---string)
   - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
+
+## Deleting records
+
+

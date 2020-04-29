@@ -6,6 +6,7 @@
   - [**$language**](#language-string)
   - [**operation**](#operation-string)
   - [**&lt;any field name&gt;**](#any-field-name)
+    - [Field operators](#field-operators)
 
 ## `$id`: _string_ 
 
