@@ -3,6 +3,7 @@
   - [**$id**](#id-string)
   - [**$alias**](#alias-string---string)
   - [**$merge**](#merge-boolean)
+  - [**$language**](#language-string)
   - [**operation**](#operation-string)
   - [**&lt;any field name&gt;**](#any-field-name)
 
@@ -245,12 +246,15 @@ Resulting record in database:
 */
 ```
 
+## `$language` : _string_
+
+See [here](#text-type) for more details in the field type documentation.
+
 ## Any field name
 
 TODO: add reference to schema docs
 Any and all field names can be set that exist in the schema of the provided type of record. Some operators exist that are specific to the type of field being set. Accepted values and operators for each field type are outlined below.
 
-  - [**id**](#id-type)
   - [**digest**](#digest-type)
   - [**timestamp**](#timestamp-type)
   - [**url**](#url-type)
@@ -270,22 +274,162 @@ Any and all field names can be set that exist in the schema of the provided type
   - [**references**](#references-type)
   - [**object**](#object-type)
 
-### _id_ type
-### _digest_ type
-### _timestamp_ type
-### _url_ type
-### _email_ type
-### _phone_ type
 ### _type_ type
+
+The type property is normally only provided when creating a new record with the following syntax:
+
+```javascript
+const result = await client.set({
+  type: 'match',
+  title: {
+    en: 'hello'
+  }
+})
+```
+
+If type is specified in other cases, it must always match the type of the existing record, as well as the schema prefix of that type. (TODO: link to schema docs). Type can never be overwritten for existing records.
+
+### _digest_ type
+
+Only values of type `string` are accepted for the _digest_ type. Any value provided will be automatically passed through a SHA256 hashing algorithm. The digest is stored in the database instead of the actual passed string value.
+
+```javascript
+const result = await client.set({
+  $id: 'usASxsd3',
+  type: 'user',
+  password: 'top_secret_password' // field with type 'digest'
+})
+
+/*
+Value of `const result`: `usASxsd3`
+Resulting record in database:
+{
+  id: 'usASxsd3',
+  type: 'user',
+  password: '4bc838fb5a7160b6433be6c4e188ed1fee0cc08337789bd5d6c77994ad6b50c8' // using default secret 'selva-client'
+}
+*/
+
+TODO: basic set operators
+```
+
+### _timestamp_ type
+
+Field type _timestamp_ accepts positive numeric values after the epoch (in milliseconds). In addition, it also accept one string value: `'now'`. When `'now'` is provided, it is automatically converted to the current time in milliseconds since epoch.
+
+TODO: basic set operators
+
+### _url_ type
+
+The _url_ field type accepts any `string` values that are valid URLs.
+
+TODO: basic set operators
+
+### _email_ type
+
+The _email_ field type accepts any `string` values that are valid email addresses.
+
+TODO: basic set operators
+
+### _phone_ type
+
+The _phone_ field type accepts any `string` values that are valid phone numbers.
+
+TODO: basic set operators
+
 ### _string_ type
+
+The _string_ type accepts any `string` values.
+
+TODO: basic set operators
+
 ### _int_ type
+
+The _int_ type accepts any `number` values that are representable as an integer.
+
+TODO: basic set operators
+
 ### _float_ type
+
+The _float_ type accepts any `number` values that are representable as floating point numbers.
+
+TODO: basic set operators
+
 ### _number_ type
+
+The _number_ type accepts any `number` values.
+
+TODO: basic set operators
+
 ### _boolean_ type
+
+The _boolean_ type accepts a `boolean` value, `true` or `false`.
+
+TODO: basic set operators
+
 ### _text_ type
+
+The _text_ type accepts depends on whether the top level operator `$language` has been set.
+
+If `$langauge is set`, _text_ fields only accept string values, and the value is set in the language field of the _text_ entry corresponding to the language.
+
+```javascript
+const result = await client.set({
+  $language: 'en',
+  $id: 'maASxsd3',
+  type: 'match',
+  title: 'the super bowl 2020' 
+})
+```
+
+If the `$language` operator is not present, the _text_ type field accepts an object value with properties set to any languages that are present in the schema.
+
+```javascript
+const result = await client.set({
+  $language: 'en',
+  $id: 'maASxsd3',
+  type: 'match',
+  title: {
+    en: 'the super bowl 2020' ,
+    de: 'das super bowl 2020'
+  }
+})
+```
+
+No operators exist for _text_.
+
 ### _array_ type
+
+Fields with _array_ type accept javascript array values where all entries correspond to the item type specified in the schema. 
+
+No operators exist for _array_.
+
 ### _json_ type
+
+The _json_ type allows any javascript values, unless `properties` has been defined for it in the schema. In that case, an `object` type value must be provided that contains only values that contain properties set in that schema definition.
+
+No operators exist for field of the _json_ type.
+
 ### _geo_ type
+
+Fields with type _geo_ must always be set with an object where all of the following properties are set:
+```javascript
+const result = await client.set({
+  $id: 'maASxsd3',
+  type: 'match',
+  geoField: {
+    lat: 60, // latitude, has to be a number (required field)
+    lon: 0.2, // longitude, has to be a number (required field)
+  }
+})
+```
+
+No operators exist for field of the _geo_ type.
+
 ### _set_ type
 ### _references_ type
 ### _object_ type
+
+## Search
+
+TODO
