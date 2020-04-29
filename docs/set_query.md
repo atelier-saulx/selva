@@ -347,18 +347,21 @@ TODO: basic set operators
 
 The _int_ type accepts any `number` values that are representable as an integer.
 
+TODO: increment
 TODO: basic set operators
 
 ### _float_ type
 
 The _float_ type accepts any `number` values that are representable as floating point numbers.
 
+TODO: increment
 TODO: basic set operators
 
 ### _number_ type
 
 The _number_ type accepts any `number` values.
 
+TODO: increment
 TODO: basic set operators
 
 ### _boolean_ type
@@ -396,7 +399,10 @@ const result = await client.set({
 })
 ```
 
-No operators exist for _text_.
+The following operators are supported both on the _text_ field itself, as well as all the language keys:
+- TODO: $value link
+- TODO: $default link
+- TODO: $ref link
 
 ### _array_ type
 
@@ -413,6 +419,7 @@ No operators exist for field of the _json_ type.
 ### _geo_ type
 
 Fields with type _geo_ must always be set with an object where all of the following properties are set:
+
 ```javascript
 const result = await client.set({
   $id: 'maASxsd3',
@@ -428,13 +435,14 @@ No operators exist for field of the _geo_ type.
 
 ### _set_ type
 
-Fields with _set_ type accept javascript array values where all entries correspond to the item type specified in the schema.
+Fields with _set_ type accept javascript array values where all entries correspond to the item type specified in the schema. They also accept a single item of the item type to set a list of one item. Any value set will reset the currently stored values of the _set_.
 
+To add and remove items from the set, the following operators are supported:
 TODO: or object with internal array-like operators
 
 ### _references_ type
 
-Only value accepted in the javascript arrays for _references_ type fields are id-format strings.
+Same as _set_ but items are always id strings.
 
 TODO: or object with internal array-like operators
 
@@ -442,6 +450,86 @@ TODO: or object with internal array-like operators
 
 TODO: basically just recursion?
 
-## Search
+## Field operators
+
+### `$increment` - _string_
+
+Number fields support the `$increment` operator, which itself takes a number value. If specified, the number value in the database is incremented by the specified amount. If not set, the number is assumed 0 and the `$increment` value is effectively set to the field, unless [`$default`](#default-any) is specified in which case it is set before applying the `$increment`. The increment can be negative and fractional.
+
+```javascript
+const result = await client.set({
+  $id: 'maASxsd3',
+  type: 'match',
+  value: { $increment: 10 } // can be applied to int, float, number fields
+})
+```
+
+### `$default` - _any_
+
+If provided, the value put in `$default` has to correspond the type of the field the operator is used on. It is only set if no value currently exists fo that field of the record.
+
+```javascript
+Let's assume the following record in database:
+{
+  id: 'maASxsd3',
+  type: 'match',
+  title: {
+    en: 'yes'
+  }
+}
+*/ 
+
+let result = await client.set({
+  id: 'maASxsd3',
+  value: { $default: 10 }
+})
+
+/*
+Value of `const result`: `maASxsd3`
+Resulting record in database:
+{
+
+  id: 'maASxsd3',
+  type: 'match',
+  value: 10, // value is set, as it was empty
+  title: {
+    en: 'yes'
+  }
+}
+*/
+
+result = await client.set({
+  id: 'maASxsd3',
+  value: { $default: 11 }
+})
+
+/*
+Value of `const result`: `maASxsd3`
+Resulting record in database:
+{
+
+  id: 'maASxsd3',
+  type: 'match',
+  value: 10, // value is still 10, as it had already been set
+  title: {
+    en: 'yes'
+  }
+}
+*/
+```
+
+### `$value` - _any_
 
 TODO
+
+### `$ref` - _string_
+
+TODO
+
+### `$merge` - _boolean_
+
+### `$add` - _any_
+
+### `$delete` - _any_
+
+### `$hierarchy` - _boolean_
