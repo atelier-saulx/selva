@@ -4,7 +4,7 @@
   - [**$alias**](#alias-string---string)
   - [**$merge**](#merge-boolean)
   - [**operation**](#operation-string)
-  - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
+  - [**&lt;any field name&gt;**](#any-field-name)
 
 ## `$id`: _string_ 
 
@@ -244,3 +244,48 @@ Resulting record in database:
 
 */
 ```
+
+## Any field name
+
+TODO: add reference to schema docs
+Any and all field names can be set that exist in the schema of the provided type of record. Some operators exist that are specific to the type of field being set. Accepted values and operators for each field type are outlined below.
+
+  - [**id**](#id-type)
+  - [*digest**](#digest-type)
+  - [**timestamp**](#timestamp-type)
+  - [**url**](#url-type)
+  - [**email**](#email-type)
+  - [**phone**](#phone-type)
+  - [**type**](#type-type)
+  - [**string**](#string-type)
+  - [**int**](#int-type)
+  - [**float**](#float-type)
+  - [**number**](#number-type)
+  - [**boolean**](#boolean-type)
+  - [**text**](#text-type)
+  - [**array**](#array-type)
+  - [**json**](#json-type)
+  - [**geo**](#geo-type)
+  - [**set**](#set-type)
+  - [**references**](#references-type)
+  - [**object**](#object-type)
+
+### _id_ type
+### _digest_ type
+### _timestamp_ type
+### _url_ type
+### _email_ type
+### _phone_ type
+### _type_ type
+### _string_ type
+### _int_ type
+### _float_ type
+### _number_ type
+### _boolean_ type
+### _text_ type
+### _array_ type
+### _json_ type
+### _geo_ type
+### _set_ type
+### _references_ type
+### _object_ type
