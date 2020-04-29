@@ -366,7 +366,7 @@ The following operators are available with the _string_ type:
 The _int_ type accepts any `number` values that are representable as an integer.
 
 The following operators are available with the _int_ type:
-- [`$increment`](#default-increment---number)
+- [`$increment`](#increment---number)
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -376,7 +376,7 @@ The following operators are available with the _int_ type:
 The _float_ type accepts any `number` values that are representable as floating point numbers.
 
 The following operators are available with the _float_ type:
-- [`$increment`](#default-increment---number)
+- [`$increment`](#increment---number)
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -386,7 +386,7 @@ The following operators are available with the _float_ type:
 The _number_ type accepts any `number` values.
 
 The following operators are available with the _number_ type:
-- [`$increment`](#default-increment---number)
+- [`$increment`](#increment---number)
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
