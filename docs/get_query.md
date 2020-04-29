@@ -7,6 +7,9 @@
     - [**$value**](#value-any)
     - [**$default**](#default-any)
     - [**$inherit**](#inherit-boolean)
+      - [**$type**](#type-string-arraystring)
+      - [**item**](#item-string-arraystring)
+      - [**required**](#required-string-arraystring)
     - [**$field**](#field-string-arraystring)
     - [**$list**](#list-boolean-object)
       - [**$sort**](#sort-object)
@@ -211,6 +214,86 @@ const result = await client.get({
 })
 ```
 [See test](../client/test/examples/clauses/inherit.ts)
+
+#### `$type`: _string_, _array&lt;string&gt;_
+
+Limits inheritance to a type or array of types.
+
+```javascript
+// `icon` is not set in the 'moSoylentGreen' document
+// but exists in the parent genre document
+const result = await client.get({
+  $id: 'moSoylentGreen',
+  icon: {
+    $field: 'icon',                                 // inherit the field icon only
+    $inherit: { $type: ['genre', 'collection'] }    // fron ancestors of type genre or collection
+  }                                                // whichever comes first.
+})
+```
+
+Should be used in conjunction with the [`$field`](#field-string-arraystring) operator.
+
+#### `$item`: _string_, _array&lt;string&gt;_
+
+Inherits multiple fields from an ancestor.
+
+```javascript
+// `icon` is not set in the 'moSoylentGreen' document
+// but exists in the parent genre type and its parent collection type.
+const result = await client.get({
+  $language: 'en',
+  $id: 'moSoylentGreen',
+  title: true,
+  parentImage: {
+    title: true,
+    image: true,                                    // image does not exist in genre but
+    icon: true,                                     // icon exists so fields from genre
+    $inherit: { $type: ['genre', 'collection'] }    // are included.
+  }
+})
+
+// returns:
+// {
+//   title: 'Soylent Green',
+//   parentImage: {
+//     title: 'Sci-fi',
+//     icon: 'http://example.com/genre_icon.png'
+//   }
+// }
+```
+
+#### `$required`: _string_, _array&lt;string&gt;_
+
+Requires existing fields when using `$item`.
+
+```javascript
+// `icon` is not set in the 'moSoylentGreen' document
+// but exists in the parent genre type and its parent collection type.
+const result = await client.get({
+  $language: 'en',
+  $id: 'moSoylentGreen',
+  title: true,
+  parentImage: {
+    title: true,
+    image: true,
+    icon: true,
+    $inherit: {
+      $type: ['genre', 'collection'],   // even though genre is an ancestor closer to the
+      $required: ['image']              // target document, it does not have image. So
+     }                                  // fields from the type collection are
+   }                                    // returned instead.
+})
+
+// returns:
+// {
+//   title: 'Soylent Green',
+//   parentImage: {
+//     title: 'Sci-fi',
+//     icon: 'http://example.com/collection_icon.png'
+//     image: 'http://example.com/collection_image.jpg'
+//   }
+// }
+```
 
 ### `$field`: _string_, _Array&lt;string&gt;_
 
