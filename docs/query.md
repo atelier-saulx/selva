@@ -3,8 +3,8 @@
 
 Selva uses a JSON query DSL to specify the data to be retrieved or subscribed from the database.
 
-- [**$id**](#id-string)
-- [**$alias**](#alias)
+- [**$id**](#id-string-string)
+- [**$alias**](#alias-string-string)
 - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
   - [**$value**](#value-any)
   - [**$default**](#default-any)
@@ -54,10 +54,22 @@ const result = await get({
 })
 ```
 
-### `$id`: _string_
+### `$id`: _string_  | _string[]_
 
-Id of the object to get.  
-If omited, the _root_ object is returned. Can only be used at the root of the query object.
+Id of the object to get. If it is an array, the first existing record is used for the query.
+If omited, the _root_ object id is assumed. Can only be used at the top level of a query object.
+
+```javascript
+const result = await get({
+  $id: 'muASxsd3'
+})
+```
+
+
+### `$alias`: _string_  | _string[]_
+
+Alias of the object to get. If it is an array, the first existing record is used for the query.
+An id can also be passed as $alias. If the specified alias does not exist, the value is tried as an id lookup also before moving to the next entry if an array is specified.
 
 ```javascript
 const result = await get({
