@@ -140,7 +140,7 @@ const = await client.get({
 Sets the field to return a collection of documents.
 Used in conjuction with the `$find` operator.
 
-Requires the use of [`$find`](#find-object)
+Needs a [`$find`](#find-object) operator to gather the items to return in the list.
 
 #### `$sort`: _object_
 
@@ -193,9 +193,6 @@ Property of `$list` operator.
 Limits the `$list` amount of items returned in a `$list`.
 
 [See test](../client/test/examples/clauses/list.ts)
-
-#### `$find`: _object_
-See [`$find`](#find-object)
 
 
 
