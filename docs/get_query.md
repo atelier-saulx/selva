@@ -225,13 +225,10 @@ Limits inheritance to a type or array of types.
 const result = await client.get({
   $id: 'moSoylentGreen',
   icon: {
-    $field: 'icon',                                 // inherit the field icon only
     $inherit: { $type: ['genre', 'collection'] }    // fron ancestors of type genre or collection
   }                                                // whichever comes first.
 })
 ```
-
-Should be used in conjunction with the [`$field`](#field-string-arraystring) operator.
 
 #### `$item`: _string_, _array&lt;string&gt;_
 
