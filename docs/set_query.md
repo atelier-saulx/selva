@@ -251,7 +251,7 @@ TODO: add reference to schema docs
 Any and all field names can be set that exist in the schema of the provided type of record. Some operators exist that are specific to the type of field being set. Accepted values and operators for each field type are outlined below.
 
   - [**id**](#id-type)
-  - [*digest**](#digest-type)
+  - [**digest**](#digest-type)
   - [**timestamp**](#timestamp-type)
   - [**url**](#url-type)
   - [**email**](#email-type)
