@@ -1,24 +1,31 @@
+
 # Selva Query DSL Documentation
 
 Selva uses a JSON query DSL to specify the data to be retrieved or subscribed from the database.
 
-  - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
-  - [**$id**](#id-string)
-  - [**$all**](#all-boolean)
+- [**$id**](#id-string)
+- [**$alias**](#alias)
+- [**&lt;any field name&gt;**](#any-field-name-boolean-object)
   - [**$value**](#value-any)
   - [**$default**](#default-any)
-  - [**$language**](#language-string)
-  - [**$field**](#field-string-arraystring)
   - [**$inherit**](#inherit-boolean)
+  - [**$field**](#field-string-arraystring)
   - [**$list**](#list-boolean-object)
   - [**$sort**](#sort-object)
   - [**$offset**](#offset-integer)
   - [**$limit**](#limit-integer)
   - [**$find**](#find-object)
+    - [**$traverse**](#traverse-string)
+    - [**$filter**](#filter-object-array)
+  	- [**$or**](#or-object)
+    - [**$and**](#and-object)
+- [**$all**](#all-boolean)
+- [**$language**](#language-string)
+- [**$find**](#find-object)
   - [**$traverse**](#traverse-string)
   - [**$filter**](#filter-object-array)
-  - [**$or**](#or-object)
-  - [**$and**](#and-object)
+    - [**$or**](#or-object)
+    - [**$and**](#and-object)
 
 
 [Available data types](#available-data-types)
