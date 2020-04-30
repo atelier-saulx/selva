@@ -145,10 +145,10 @@ The `TAG` index type is most commonly applied to values of the following field t
 
 but can also be applied to the following types:
 
-- number
-- float
-- int
-- timestamp
+- _number_
+- _float_
+- _int_
+- _timestamp_
 
 The _type_ field is automatically indexed as a `TAG`.
 
@@ -164,13 +164,13 @@ The filter will match the field values as an exact match of the values.
 
 The `NUMERIC` index type is most commonly applied to values of the following field types:
 
-- number
-- float
-- int
+- _number
+- _float_
+- _int_
 
 but can also be applied to the following types:
 
-- timestamp
+- _timestamp_
 
 When indexed as `NUMERIC`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
 
