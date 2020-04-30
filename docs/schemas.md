@@ -194,6 +194,7 @@ The `SORTABLE` index type is most commonly applied to values of the following fi
 but can also be applied to the following types:
 
 - _string_ (as `TAG`)
+- _text_ (as `TEXT-LANGUAGE`)
 
 When indexed as `SORTABLE`, the field becomes queryable with [`$sort`](./get_query.md#sort-object).
 
