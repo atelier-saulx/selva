@@ -118,7 +118,7 @@ There are several types of indexes avaliable. One field may have multiple index 
 
 The following combinations are supported:
 - `['TAG']`
-- `['TAG', 'EXISTS']
+- `['TAG', 'EXISTS']`
 - `['NUMERIC']`
 - `['NUMERIC', 'EXISTS']`
 - `['NUMERIC', 'SORTABLE']`
