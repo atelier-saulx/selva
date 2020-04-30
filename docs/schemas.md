@@ -110,13 +110,13 @@ For the fields to be searchable, it needs an index.
 There are several types of indexes avaliable. One field may have multiple index types.
 
 
-  - `EXISTS`
-  - `TAG`
-  - `NUMERIC`
-  - `SORTABLE`
-  - `TEXT-LANGUAGE`
-  - `GEO`
-  - `TEXT-LANGUAGE-SUG`
+  - [`EXISTS`](#exists)
+  - [`TAG`](#tag)
+  - [`NUMERIC`](#numeric)
+  - [`SORTABLE`](#sortable)
+  - [`TEXT-LANGUAGE`](#text-language)
+  - [`GEO`](#geo)
+  - [`TEXT-LANGUAGE-SUG`](#text-language-sug)
 
 The following combinations are supported:
 - `['TAG']`
