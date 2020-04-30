@@ -182,6 +182,21 @@ When indexed as `NUMERIC`, the field becomes queryable with [`$filter`](./get_qu
 - `$operator: '<'` (smaller than `$value`)
 - `$operator: '..'` (is in the range from `$value[0]` to `$value[1]`)
 
+##### SORTABLE
+
+The `SORTABLE` index type is most commonly applied to values of the following field types (indexed as `NUMERIC`):
+
+- _number_
+- _float_
+- _int_
+- _timestamp_
+
+but can also be applied to the following types:
+
+- _string_ (as `TAG`)
+
+When indexed as `SORTABLE`, the field becomes queryable with [`$sort`](./get_query.md#sort-object).
+
 ##### TEXT-LANGUAGE
 
 The `TEXT-LANGUAGE` index type con be applied to the `text` type only.
