@@ -260,3 +260,5 @@ The `EXISTS` index type con be applied to thea any type. When other indexing is 
   - `array`
   - [`object`](#object-type)
   - `json`
+
+For more information on what kind of values are stored in each of these types, you can visit the [set query](./set_query.md#any-field-name) documentation.
