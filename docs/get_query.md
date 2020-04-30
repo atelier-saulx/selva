@@ -478,13 +478,13 @@ The `$operator` operator accepts the following comparisson options:
   - `distance`:  
     Geo comparisson. `$value` should be and object with the format `{ $lon: _longitude_, $lat: _latitute_, $radius: _radius_ }`.  
     Only applicable to `geo` data type.  
-    Requires a `GEO` index on the field schema.
+    Requires a `GEO` [index](schemas.md#field-indexes-types) on the field schema.
   - `exists`:  
     Field must exist in the document.  
-    Requires a `EXISTS` index on the field schema.
+    Requires a `EXISTS` [index](schemas.md#field-indexes-types) on the field schema.
   - `notExists`:  
     Field must not exist in the document.  
-    Requires a `EXISTS` index on the field schema.
+    Requires a `EXISTS` [index](schemas.md#field-indexes-types) on the field schema.
 
 Search terms can be composed with the `$or` and `$and` operators, and nested to create complex logic.
 If an array of search terms is used, each term acts as an AND.
