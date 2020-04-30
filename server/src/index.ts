@@ -34,6 +34,7 @@ export type Subscriptions = {
 
 type FnStart = {
   port?: number | Promise<number>
+  dir?: string
   service?: Service | Promise<Service>
   replica?: Service | Promise<Service>
   modules?: string[]
@@ -71,6 +72,7 @@ export const startInternal = async function({
   service,
   modules,
   replica,
+  dir = process.cwd(),
   verbose = false,
   backups = null,
   subscriptions,
@@ -117,7 +119,7 @@ export const startInternal = async function({
     }
   }
 
-  const args = ['--port', String(port), '--protected-mode', 'no']
+  const args = ['--port', String(port), '--protected-mode', 'no', '--dir', dir]
 
   if (backups) {
     if (backups.backupFns instanceof Promise) {
@@ -136,7 +138,7 @@ export const startInternal = async function({
       args.push('--save', '10', '1')
 
       backupCleanup = scheduleBackups(
-        process.cwd(),
+        dir,
         backups.scheduled.intervalInMinutes,
         backupFns
       )
