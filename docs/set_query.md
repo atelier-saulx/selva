@@ -405,7 +405,7 @@ The following operators are available with the _boolean_ type:
 
 The _text_ type accepts depends on whether the top level operator `$language` has been set.
 
-If `$langauge is set`, _text_ fields only accept string values, and the value is set in the language field of the _text_ entry corresponding to the language.
+If `$langauge` is set, _text_ fields only accept string values, and the value is set in the language field of the _text_ entry corresponding to the language.
 
 ```javascript
 const result = await client.set({
@@ -522,6 +522,7 @@ const result = await client.set({
 If provided, the value put in `$default` has to correspond the type of the field the operator is used on. It is only set if no value currently exists fo that field of the record.
 
 ```javascript
+/*
 Let's assume the following record in database:
 {
   id: 'maASxsd3',
@@ -619,6 +620,7 @@ The `$add` operator can be used to add one or more entries to a _set_ or _refere
 
 
 ```javascript
+/*
 Let's assume the following record in database:
 {
   id: 'maASxsd3',
@@ -664,6 +666,7 @@ The `$delete` operator can be used to remove one or more entries to a _set_ or _
 
 
 ```javascript
+/*
 Let's assume the following record in database:
 {
   id: 'maASxsd3',
