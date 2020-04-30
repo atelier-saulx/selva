@@ -459,7 +459,7 @@ Has the following properties:
   - `$field`: _string_ - Field name to compare the value to.
   - `$value`: _string_ - Value to compare the field to.
 
-Find operations depend on indexes for comparison. See [Field Indexes] (schemas.md#field-indexes) for a description of the available index types and compatible comparison operators.
+Find operations depend on indexes for comparison. See [Field Indexes](schemas.md#field-indexes) for a description of the available index types and compatible comparison operators.
 
 Search terms can be composed with the `$or` and `$and` operators, and nested to create complex logic.
 If an array of search terms is used, each term acts as an AND.
