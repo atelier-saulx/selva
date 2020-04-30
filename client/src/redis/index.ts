@@ -20,6 +20,7 @@ class Subscription extends EventEmitter {
   public count: number = 0
   constructor(getOpts: GetOptions) {
     super()
+    this.setMaxListeners(1e3)
     this.getOpts = getOpts
   }
 }
