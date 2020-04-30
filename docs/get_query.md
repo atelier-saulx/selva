@@ -432,7 +432,7 @@ Filters document data to a set language on fields that support it.
 const result = await client.get({
   $language: 'en',
   $id: 'mo2001ASpaceOdyssey',
-  title: true
+  title: true // value of `title` becomes the value of `title.en`
 })
 ```
 [See test](../client/test/examples/clauses/language.ts)
