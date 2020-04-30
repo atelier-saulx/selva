@@ -455,9 +455,36 @@ Property of `$find`.
 Sets a search term for the `$find` operator.
 Has the following properties:
 
-  - `$operator`: _string_ - Operator to use in the comparisson. Allowdd values are: `=`, `>`, `<`, `..`, `!=`, `distance`, `exists`, `notExists`.
+  - `$operator`: _string_ - Operator to use in the comparisson.
   - `$field`: _string_ - Field name to compare the value to.
   - `$value`: _string_ - Value to compare the field to.
+
+The `$operator` operator accepts the following comparisson options:
+
+  - `=`:
+    Field value must be equal to `$value`.
+  - `>`:
+    Field value bust be bigger than `$value`.
+    Only applicable to numeric data types.
+  - `<`:
+    Field value bust be smaller than `$value`.
+    Only applicable to numeric data types.
+  - `..`:
+    Range comparisson. `$value` should be an array with the format `[_min_, _max_]`.
+    Field value must be bigger than _min_ and smaller than _max_.
+    Only applicable to numeric data types.
+  - `!=`:
+    Field value must be different to `$value`.
+  - `distance`:
+    Geo comparisson. `$value` should be and object with the format `{ $lon: _longitude_, $lat: _latitute_, $radius: _radius_ }`.
+    Only applicable to `geo` data type.
+    Requires a `GEO` index on the field schema.
+  - `exists`:
+    Field must exist in the document.
+    Requires a `EXISTS` index on the field schema.
+  - `notExists`:
+    Field must not exist in the document.
+    Requires a `EXISTS` index on the field schema.
 
 Search terms can be composed with the `$or` and `$and` operators, and nested to create complex logic.
 If an array of search terms is used, each term acts as an AND.
