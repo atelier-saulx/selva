@@ -20,6 +20,7 @@ const backups = require('../../dist/backups')
 
   const server = start({
     port: 6061,
+    dir: '/Users/tonykova/git/saulx/selva/server/examples/',
     backups: {
       loadBackup: true,
       scheduled: { intervalInMinutes: 0.5 },

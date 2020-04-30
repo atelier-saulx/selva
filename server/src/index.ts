@@ -181,7 +181,6 @@ export const startInternal = async function({
   }
 
   try {
-    const dir = args[args.indexOf('--dir') + 1]
     execSync(`redis-cli -p ${port} config set dir ${dir}`)
     execSync(`redis-cli -p ${port} shutdown`)
   } catch (e) {}
