@@ -62,7 +62,7 @@ Defines the fields available to each type.
 | ---  | ---  | ---       | ---         |
 | `type` | string | | Two character string that identifies the type. Used as a prefix for each object/id |
 | `fields` | Object | | [Data type](#fielddatatypes) for the field.
-| `search` | Object | optional | [Index](#fieldindexes) type for the field.
+| `search` | Object | optional | [Index](#field-indexes) type for the field.
 
 #### `Object` type
 
