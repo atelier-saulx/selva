@@ -98,9 +98,11 @@ Field indexes are described in the schema objects of the following format:
 ```
 {
   index: 'default' // a `string` value, optional, defaults to the `default` index
-  type: ['TAG', 'EXISTS'] // array of field index types, see [index types](#fieldindextypes) for more information
+  type: ['TAG', 'EXISTS'] // array of field index types
 }
 ```
+
+See [index types](#fieldindextypes) below for more information.
 
 #### Field indexes types
 
@@ -164,7 +166,7 @@ The filter will match the field values as an exact match of the values.
 
 The `NUMERIC` index type is most commonly applied to values of the following field types:
 
-- _number
+- _number_
 - _float_
 - _int_
 
