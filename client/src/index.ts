@@ -101,19 +101,17 @@ export class SelvaClient extends EventEmitter {
 
     const obs = this.redis.subscribe(`___selva_subscription:schema_update`, {})
 
-    const schemaObservable = (this.schemaObservable = new Observable<Schema>(
-      observe => {
-        const sub = obs.subscribe({
-          next: (_x: any) => {
-            observe.next(_x)
-          },
-          error: observe.error,
-          complete: observe.complete
-        })
+    this.schemaObservable = new Observable<Schema>(observe => {
+      const sub = obs.subscribe({
+        next: (_x: any) => {
+          observe.next(_x)
+        },
+        error: observe.error,
+        complete: observe.complete
+      })
 
-        return <any>sub
-      }
-    ))
+      return <any>sub
+    })
 
     return this.schemaObservable
   }
