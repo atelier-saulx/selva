@@ -70,7 +70,11 @@ export default function validateTopLevel(
 ): void {
   for (const field in props) {
     if (field.startsWith('$')) {
-      if (field === '$id') {
+      if (field === '$db') {
+        if (typeof props.$db !== 'string') {
+          throw new Error(`${path}.$db ${props.$db} should be a string`)
+        }
+      } else if (field === '$id') {
         if (typeof props.$id !== 'string' && !Array.isArray(props.$id)) {
           if (path !== '' && typeof props.$id === 'object') {
             const allowed = checkAllowed(props.$id, new Set(['$field']))
@@ -140,6 +144,7 @@ export default function validateTopLevel(
       } else {
         throw new Error(`
           Top level query operator ${field} is not supported. Did you mean one of the following supported top level query options?
+            - $db
             - $id
             - $alias
             - $all
