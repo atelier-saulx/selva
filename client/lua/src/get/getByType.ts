@@ -569,6 +569,14 @@ function getByType(
         getNestedField(intermediateResult, remainingPath)
       )
 
+      if (metaKeys) {
+        setMeta(field, metaKeys)
+      } else {
+        setMeta(field, {
+          ___ids: id
+        })
+      }
+
       return true
     } else {
       if (!prop || prop.type !== 'object') {
