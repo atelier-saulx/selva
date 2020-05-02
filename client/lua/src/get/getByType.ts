@@ -535,11 +535,12 @@ function getByType(
       )
       setNestedResult(result, field, getNestedField(intermediateResult, field))
       return true
-    } else if (prop && prop.type === 'reference' && i < paths.length - 1) {
+    } else if (prop && prop.type === 'reference') {
       let pathSoFar: string = ''
-      for (let j = 0; j <= i; j++) {
-        pathSoFar += paths[j]
+      for (let j = 0; j < i - 1; j++) {
+        pathSoFar += paths[j] + '.'
       }
+      pathSoFar += paths[i - 1]
 
       const reference = redis.hget(id, pathSoFar)
       if (!reference) {
@@ -547,7 +548,7 @@ function getByType(
       }
 
       let remainingPath: string = ''
-      for (let j = i + 1; i < paths.length; j++) {
+      for (let j = i; j < paths.length; j++) {
         remainingPath += paths[j]
       }
 

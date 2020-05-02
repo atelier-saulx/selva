@@ -57,7 +57,7 @@ test.after(async _t => {
 })
 
 test.serial('simple singular reference', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     $id: 'maA',
@@ -74,16 +74,20 @@ test.serial('simple singular reference', async t => {
     specialMatch: match1
   })
 
-  console.log(
+  t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'clA',
       $language: 'en',
       title: true,
       specialMatch: true
-    })
+    }),
+    {
+      title: 'yesh club',
+      specialMatch: match1
+    }
   )
 
-  console.log(
+  t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'clA',
       $language: 'en',
@@ -91,6 +95,12 @@ test.serial('simple singular reference', async t => {
       specialMatch: {
         title: true
       }
-    })
+    }),
+    {
+      title: 'yesh club',
+      specialMatch: {
+        title: 'yesh match'
+      }
+    }
   )
 })
