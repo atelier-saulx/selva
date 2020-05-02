@@ -93,13 +93,15 @@ test.serial('simple singular reference', async t => {
       $language: 'en',
       title: true,
       specialMatch: {
-        title: true
+        title: true,
+        description: { $default: 'no description' }
       }
     }),
     {
       title: 'yesh club',
       specialMatch: {
-        title: 'yesh match'
+        title: 'yesh match',
+        description: 'no description'
       }
     }
   )

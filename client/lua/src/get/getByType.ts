@@ -553,7 +553,7 @@ function getByType(
       }
 
       const intermediateResult = {}
-      getByType(
+      const completed = getByType(
         intermediateResult,
         schema,
         reference,
@@ -577,7 +577,7 @@ function getByType(
         })
       }
 
-      return true
+      return completed
     } else {
       if (!prop || prop.type !== 'object') {
         return false
