@@ -15,6 +15,11 @@ test.before(async t => {
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'en_us', 'en_uk', 'de', 'nl'],
+    rootType: {
+      fields: {
+        value: { type: 'number' }
+      }
+    },
     types: {
       club: {
         prefix: 'cl',
@@ -39,6 +44,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          value: { type: 'number' },
           title: { type: 'text' },
           description: { type: 'text' }
         }
@@ -119,3 +125,63 @@ test.serial('simple singular reference', async t => {
     }
   )
 })
+
+test.serial('singular reference inherit', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'maB',
+    value: 112
+  })
+
+  const match1 = await client.set({
+    $id: 'maA',
+    title: {
+      en: 'yesh match'
+    },
+    parents: {
+      $add: 'maB'
+    }
+  })
+
+  const club1 = await client.set({
+    $id: 'clA',
+    title: {
+      en: 'yesh club'
+    },
+    specialMatch: match1
+  })
+
+  // const club1 = await client.set({
+  //   $id: 'clA',
+  //   title: {
+  //     en: 'yesh club'
+  //   },
+  //   specialMatch: {
+  //     $id: 'maA',
+  //     title: {
+  //       en: 'yesh match'
+  //     }
+  //   }
+  // })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      title: true,
+      specialMatch: {
+        title: true,
+        value: { $inherit: true }
+      }
+    }),
+    {
+      title: 'yesh club',
+      specialMatch: {
+        title: 'yesh match',
+        value: 112
+      }
+    }
+  )
+})
+

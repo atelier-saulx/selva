@@ -3,7 +3,12 @@ import { Id } from '~selva/schema/index'
 import getByType from './getByType'
 import { Schema } from '../../../src/schema/index'
 import * as logger from '../logger'
-import { setNestedResult, getNestedField, setMeta } from './nestedFields'
+import {
+  setNestedResult,
+  getNestedField,
+  setMeta,
+  getNestedSchema
+} from './nestedFields'
 import inherit from './inherit'
 import getWithField, { resolveAll, isObjectField } from './field'
 import getArray from './getArray'
@@ -203,6 +208,35 @@ function getField(
     if (!hasAlias) {
       if (props.$all) {
         props = makeNewGetOptions(id, field || '', schema, props)
+      }
+
+      const nestedSchema = getNestedSchema(id, <string>field)
+      if (nestedSchema && nestedSchema.type === 'reference') {
+        const intermediateResult = {}
+        const reference = r.hget(id, <string>field)
+        if (!reference) {
+          // TODO: $inherit
+          return true
+        }
+
+        const completed = getField(
+          props,
+          schema,
+          intermediateResult,
+          reference,
+          undefined,
+          language,
+          version,
+          ignore,
+          metaKeys
+        )
+
+        if (!completed) {
+          // TODO: $inherit?
+        }
+
+        setNestedResult(result, <string>field, intermediateResult)
+        return true
       }
 
       for (const key in props) {

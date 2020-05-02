@@ -535,49 +535,6 @@ function getByType(
       )
       setNestedResult(result, field, getNestedField(intermediateResult, field))
       return true
-    } else if (prop && prop.type === 'reference') {
-      let pathSoFar: string = ''
-      for (let j = 0; j < i - 1; j++) {
-        pathSoFar += paths[j] + '.'
-      }
-      pathSoFar += paths[i - 1]
-
-      const reference = redis.hget(id, pathSoFar)
-      if (!reference) {
-        return false
-      }
-
-      let remainingPath: string = ''
-      for (let j = i; j < paths.length; j++) {
-        remainingPath += paths[j]
-      }
-
-      const intermediateResult = {}
-      const completed = getByType(
-        intermediateResult,
-        schema,
-        reference,
-        remainingPath,
-        language,
-        version,
-        merge
-      )
-
-      setNestedResult(
-        result,
-        field,
-        getNestedField(intermediateResult, remainingPath)
-      )
-
-      if (metaKeys) {
-        setMeta(field, metaKeys)
-      } else {
-        setMeta(field, {
-          ___ids: id
-        })
-      }
-
-      return completed
     } else {
       if (!prop || prop.type !== 'object') {
         return false
