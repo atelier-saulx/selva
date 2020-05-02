@@ -74,6 +74,19 @@ test.serial('simple singular reference', async t => {
     specialMatch: match1
   })
 
+  // const club1 = await client.set({
+  //   $id: 'clA',
+  //   title: {
+  //     en: 'yesh club'
+  //   },
+  //   specialMatch: {
+  //     $id: 'maA',
+  //     title: {
+  //       en: 'yesh match'
+  //     }
+  //   }
+  // })
+
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'clA',
@@ -83,7 +96,7 @@ test.serial('simple singular reference', async t => {
     }),
     {
       title: 'yesh club',
-      specialMatch: match1
+      specialMatch: 'maA'
     }
   )
 
