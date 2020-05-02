@@ -106,7 +106,7 @@ export default function getSingularReference(
 
   const intermediateResult = {}
 
-  const completed = getField(
+  getField(
     props,
     schema,
     intermediateResult,
@@ -118,10 +118,7 @@ export default function getSingularReference(
     metaKeys
   )
 
-  if (!completed) {
-    // TODO: $inherit?
-  }
-
   setNestedResult(result, <string>resultField, intermediateResult)
+
   return true
 }
