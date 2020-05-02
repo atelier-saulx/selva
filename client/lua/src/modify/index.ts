@@ -20,9 +20,10 @@ import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
 import { addFieldToSearch } from './search'
 import sendEvent from './events'
-import { setUpdatedAt, setCreatedAt } from './timestamps'
+import { setUpdatedAt, setCreatedAt, markUpdated } from './timestamps'
 import { cleanUpSuggestions } from './delete'
 import globals from '../globals'
+import checkSource from './source'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -90,22 +91,25 @@ function removeFields(
 function setInternalArrayStructure(
   id: string,
   field: string,
-  value: any
+  value: any,
+  source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   const hierarchy = value.$hierarchy === false ? false : true
 
   if (isArray(value)) {
-    resetSet(id, field, value, update, hierarchy)
+    resetSet(id, field, value, update, hierarchy, false, source)
   } else if (type(value) === 'string') {
-    resetSet(id, field, ensureArray(value), update, hierarchy)
+    resetSet(id, field, ensureArray(value), update, hierarchy, false, source)
   } else if (value.$value) {
-    resetSet(id, field, value, update, hierarchy)
+    const noRoot = value.$noRoot || false
+    resetSet(id, field, value.$value, update, hierarchy, noRoot, source)
   } else {
     if (value.$add) {
-      addToSet(id, field, value.$add, update, hierarchy)
+      const noRoot = value.$noRoot || false
+      addToSet(id, field, value.$add, update, hierarchy, noRoot, source)
     }
     if (value.$delete) {
-      removeFromSet(id, field, value.$delete, hierarchy)
+      removeFromSet(id, field, value.$delete, hierarchy, source)
     }
   }
 
@@ -130,6 +134,7 @@ function setObject(
         redis.hincrby(id, field, item.$increment)
       }
 
+      markUpdated(id)
       sendEvent(id, field, 'update')
       return
     }
@@ -137,6 +142,7 @@ function setObject(
     setField(id, field, item.$default, true, source)
   } else if (item.$increment) {
     redis.hincrby(id, field, item.$increment)
+    markUpdated(id)
     sendEvent(id, field, 'update')
   } else if (item.$ref) {
     const current = redis.hget(id, item.$ref)
@@ -144,6 +150,7 @@ function setObject(
       redis.hset(id, `${field}.$ref`, item.$ref)
     }
 
+    markUpdated(id)
     sendEvent(id, field, 'update')
   } else {
     setField(id, field, item, false, source)
@@ -158,41 +165,11 @@ function setField(
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
   if (isSetPayload(value) && field) {
-    if (source) {
-      const sourceString: string | null = !source
-        ? null
-        : type(source) === 'string'
-        ? source
-        : (<any>source).$name
-
-      if (sourceString && !(<any>source).$overwrite) {
-        const currentSource = redis.hget(id, '$source_' + field)
-        if (currentSource && currentSource !== '' && currentSource !== source) {
-          // ignore updates from different sources
-          return
-        }
-      } else if (sourceString && isArray((<any>source).$overwrite)) {
-        const currentSource = redis.hget(id, '$source_' + field)
-
-        const sourceAry = <string[]>(<any>source).$overwrite
-        let matching = false
-        for (const sourceId of sourceAry) {
-          if (sourceId === currentSource) {
-            matching = true
-          }
-        }
-
-        if (!matching) {
-          // ignore updates from different sources if no overwrite specified for this source
-          return
-        }
-      }
-
-      redis.hset(id, '$source_' + field, sourceString)
+    if (!checkSource(id, field, source)) {
+      return
     }
 
-    setInternalArrayStructure(id, field, value)
-
+    setInternalArrayStructure(id, field, value, source)
     return
   }
 
@@ -223,37 +200,8 @@ function setField(
     return
   }
 
-  if (source) {
-    const sourceString: string | null = !source
-      ? null
-      : type(source) === 'string'
-      ? source
-      : (<any>source).$name
-
-    if (sourceString && !(<any>source).$overwrite) {
-      const currentSource = redis.hget(id, '$source_' + field)
-      if (currentSource && currentSource !== '' && currentSource !== source) {
-        // ignore updates from different sources
-        return
-      }
-    } else if (sourceString && isArray((<any>source).$overwrite)) {
-      const currentSource = redis.hget(id, '$source_' + field)
-
-      const sourceAry = <string[]>(<any>source).$overwrite
-      let matching = false
-      for (const sourceId of sourceAry) {
-        if (sourceId === currentSource) {
-          matching = true
-        }
-      }
-
-      if (!matching) {
-        // ignore updates from different sources if no overwrite specified for this source
-        return
-      }
-    }
-
-    redis.hset(id, '$source_' + field, sourceString)
+  if (!checkSource(id, field, source)) {
+    return
   }
 
   const current = redis.hget(id, field)
@@ -262,6 +210,8 @@ function setField(
   if (current === strVal) {
     return
   }
+
+  markUpdated(id)
 
   if (fromDefault) {
     redis.hsetnx(id, field, strVal)
@@ -320,6 +270,7 @@ function removeSpecified(
 
         redis.hdel(id, keyPath)
         redis.hdel(id, '$source_' + keyPath)
+        markUpdated(id)
         sendEvent(id, keyPath, 'update')
       } else if (payload[key] === false) {
         falses[falses.length] = keyPath
@@ -353,6 +304,7 @@ function removeSpecified(
         if (!skip) {
           redis.hdel(id, '$source_' + key)
           redis.hdel(id, key)
+          markUpdated(id)
           sendEvent(id, key, 'update')
         }
       }
@@ -361,6 +313,8 @@ function removeSpecified(
 }
 
 function update(payload: SetOptions): Id | null {
+  const { $operation = 'upsert' } = payload
+
   if (payload.$_batchOpts) {
     globals.$_batchOpts = payload.$_batchOpts
   }
@@ -409,7 +363,13 @@ function update(payload: SetOptions): Id | null {
     return null
   }
 
-  const exists = redis.hexists(payload.$id, 'type')
+  let createdAt: number | undefined = undefined
+  const exists = redis.exists(payload.$id)
+  if (!exists && $operation === 'update') {
+    return null
+  } else if (exists && $operation === 'insert') {
+    return null
+  }
 
   if (!exists) {
     // we always end up here if it's a new record
@@ -423,12 +383,11 @@ function update(payload: SetOptions): Id | null {
       payload.parents = { $add: ['root'] }
     }
 
-    setCreatedAt(payload, payload.$id, payload.type)
-  } else {
-    setUpdatedAt(payload, payload.$id, payload.type)
+    createdAt = setCreatedAt(payload.$id, payload.type)
   }
 
   setField(payload.$id, null, payload, false, payload.$source)
+  setUpdatedAt(payload, payload.$id, payload.type, createdAt)
   return payload.$id
 }
 

@@ -23,7 +23,7 @@ export type GeoFilter = {
 }
 
 export type ExistsFilter = {
-  $operator: 'distance'
+  $operator: 'exists' | 'notExists'
   $field: string
   $value: undefined // makes copmiling this easier, nice...
   $and?: Filter
@@ -31,6 +31,7 @@ export type ExistsFilter = {
 }
 
 export type Filter =
+  | ExistsFilter
   | GeoFilter
   | {
       $operator: '=' | '!=' | '>' | '<' | '..'
@@ -58,6 +59,7 @@ export type List =
       $limit?: number
       $sort?: Sort | Sort[]
       $find?: Find
+      $inherit?: Inherit
     }
 
 export type GetField<T> = {
@@ -98,7 +100,8 @@ export type GetResult = {
 }
 
 export type GetOptions = GetItem & {
-  $id?: Id
+  $id?: Id | Id[]
+  $alias?: string | string[]
   $version?: string
   $language?: string
   $rawAncestors?: true

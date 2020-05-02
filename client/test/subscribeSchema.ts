@@ -27,6 +27,8 @@ test.serial('basic schema based subscriptions', async t => {
     o1counter++
   })
 
+  await wait(2000)
+
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -34,7 +36,7 @@ test.serial('basic schema based subscriptions', async t => {
     }
   })
 
-  await wait(500 * 2)
+  await wait(500)
 
   console.log('----------------------------------')
   console.log('set some things')
@@ -52,14 +54,29 @@ test.serial('basic schema based subscriptions', async t => {
     }
   })
 
-  await wait(500 * 2)
+  await wait(500)
 
   console.log('----------------------------------')
   console.log('unsubscribe')
 
   sub.unsubscribe()
 
-  await wait(500 * 2)
-
+  await wait(500)
   t.is(o1counter, 3)
+  console.log('----------------------------------')
+  console.log('best')
+  const observable2 = client.subscribeSchema()
+  var cnt = 0
+  const sub2 = observable2.subscribe(d => {
+    console.log('GOOOOO')
+    cnt++
+  })
+
+  await wait(500)
+
+  t.is(cnt, 1)
+
+  sub2.unsubscribe()
+
+  await wait(1500)
 })

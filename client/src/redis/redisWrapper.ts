@@ -52,7 +52,7 @@ export class RedisWrapper {
 
   public scriptShas: { [client: string]: { [scriptName: string]: string } } = {}
 
-  public isBusy: boolean = false
+  public isBusy: { [client: string]: boolean } = {}
 
   public subscriptions: Record<
     string,
@@ -117,7 +117,7 @@ export class RedisWrapper {
     clearTimeout(this.heartbeatTimout)
 
     const setHeartbeat = () => {
-      if (this.connected.client) {
+      if (this.connected.sClient) {
         this.sClient.hget(prefixes.clients, this.uuid, (err, r) => {
           if (!err && r) {
             if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
@@ -222,6 +222,7 @@ export class RedisWrapper {
     this.stopHeartbeat()
     this.stopClientLogging()
     this.inProgress = {}
+    this.isBusy = {}
   }
 
   emit(type: string, value: any, client?: string) {
@@ -255,7 +256,9 @@ export class RedisWrapper {
 
       const typeOpts = Object.assign({}, opts, {
         retryStrategy: () => {
+          console.log('RETRY connect', type)
           if (tries > 100) {
+            console.log('node client is broken - restart', type)
             this.reconnect()
           } else {
             if (tries === 0 && this.connected[type] === true) {
@@ -279,6 +282,7 @@ export class RedisWrapper {
       client.on('ready', () => {
         tries = 0
         this.connected[type] = true
+        this.isBusy[type] = false
         // ----------------------------------------------------
         client.removeAllListeners('message')
         client.removeAllListeners('pmessage')
@@ -596,28 +600,36 @@ export class RedisWrapper {
     this.scriptShas[type] = {}
   }
 
-  execBatch(origSlice: RedisCommand[], type: ClientType): Promise<void> {
+  execBatch(
+    origSlice: RedisCommand[],
+    type: ClientType,
+    noEval?: boolean
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.isBusy) {
+      if (this.isBusy[type]) {
         console.log('Server is busy - retrying in 5 seconds')
+        this.emit('busy', type)
         setTimeout(() => {
-          this.isBusy = false
+          this.isBusy[type] = false
           // need to rerun the batch ofc
-          if (!this.allConnected) {
+          if (!this.connected[type]) {
             console.log('DC while busy add to buffer again!')
             this.buffer[type].push(...origSlice)
             // add this
           } else {
-            this.execBatch(origSlice, type)
+            this.execBatch(origSlice, type).then(() => {
+              resolve()
+            })
           }
         }, 5e3)
       } else {
         // dont need this type
         const batch = this[type].batch()
 
-        const slice = isEmpty(this.scriptBatchingEnabled[type])
-          ? origSlice
-          : this.batchEvalScriptArgs(origSlice, type)
+        const slice =
+          noEval || isEmpty(this.scriptBatchingEnabled[type])
+            ? origSlice
+            : this.batchEvalScriptArgs(origSlice, type)
 
         slice.forEach(({ command, args }) => {
           if (!batch[command]) {
@@ -631,21 +643,15 @@ export class RedisWrapper {
 
         batch.exec((err: Error, reply: any[]) => {
           if (err) {
-            // console.error(err)
             reject(err)
           } else {
             let hasBusy = false
+            let busySlice = []
             reply.forEach((v: any, i: number) => {
               if (v instanceof Error) {
                 if (v.message.indexOf('BUSY') !== -1) {
                   hasBusy = true
-                  this.queue(
-                    slice[i].command,
-                    slice[i].args,
-                    slice[i].resolve,
-                    slice[i].reject,
-                    type
-                  )
+                  busySlice.push(slice[i])
                 } else if (slice[i].reject) {
                   slice[i].reject(v)
                 } else {
@@ -656,17 +662,20 @@ export class RedisWrapper {
               }
             })
             if (hasBusy) {
-              this.isBusy = true
-            } else {
-              this.isBusy = false
-            }
-            if (slice.length > 1e3) {
-              process.nextTick(() => {
-                // let it gc a bit
+              this.isBusy[type] = true
+              this.execBatch(busySlice, type, true).then(v => {
                 resolve()
               })
             } else {
-              resolve()
+              this.isBusy[type] = false
+              if (slice.length > 1e3) {
+                process.nextTick(() => {
+                  // let it gc a bit
+                  resolve()
+                })
+              } else {
+                resolve()
+              }
             }
           }
         })

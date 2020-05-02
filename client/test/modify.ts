@@ -908,3 +908,101 @@ test.serial('createdAt not set if provided in modify props', async t => {
 
 //   await client.delete('root')
 // })
+
+test.serial('can disable autoadding of root', async t => {
+  const client = connect({
+    port
+  })
+
+  const m1 = await client.set({
+    type: 'match'
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(m1 + '.parents'), ['root'])
+
+  const m2 = await client.set({
+    type: 'match',
+    parents: { $noRoot: true }
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers(m2 + '.parents'), [])
+
+  const m3 = await client.set({
+    type: 'match',
+    children: { $value: 'maMatch3', $noRoot: true }
+  })
+
+  t.deepEqualIgnoreOrder(await client.redis.smembers('maMatch3.parents'), [])
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('createdAt not set if nothing changed', async t => {
+  const client = connect({
+    port
+  })
+
+  const before = Date.now()
+  const person = await client.set({
+    $language: 'en',
+    type: 'person',
+    title: 'yesh'
+  })
+  const after = Date.now()
+
+  let result = await client.get({
+    $language: 'en',
+    $id: person,
+    id: true,
+    title: true,
+    createdAt: true,
+    updatedAt: true
+  })
+
+  let createdAt = result.createdAt
+  let updatedAt = result.updatedAt
+  delete result.createdAt
+  delete result.updatedAt
+
+  t.deepEqual(result, {
+    id: person,
+    title: 'yesh'
+  })
+
+  t.true(
+    typeof createdAt === 'number' && createdAt <= after && createdAt >= before
+  )
+
+  t.deepEqual(createdAt, updatedAt)
+
+  await client.set({
+    $language: 'en',
+    type: 'person',
+    title: 'yesh',
+    children: []
+  })
+
+  result = await client.get({
+    $language: 'en',
+    $id: person,
+    id: true,
+    title: true,
+    createdAt: true,
+    updatedAt: true
+  })
+
+  createdAt = result.createdAt
+  updatedAt = result.updatedAt
+  delete result.createdAt
+  delete result.updatedAt
+
+  t.true(
+    typeof createdAt === 'number' && createdAt <= after && createdAt >= before
+  )
+
+  t.deepEqual(createdAt, updatedAt)
+
+  await client.delete('root')
+  await client.destroy()
+})

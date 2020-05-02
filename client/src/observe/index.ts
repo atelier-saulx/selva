@@ -9,20 +9,34 @@ function makeSubscriptionId(opts: GetOptions) {
   return hash.digest('hex')
 }
 
-export async function observe(
+export function observe(
   client: SelvaClient,
   props: GetOptions
-): Promise<Observable<GetResult>> {
+): Observable<GetResult> {
   const subscriptionId = makeSubscriptionId(props)
+  const channel = `___selva_subscription:${subscriptionId}`
+  let cached: boolean = false
 
   // props optional
-  const obs = client.redis.subscribe(
-    `___selva_subscription:${subscriptionId}`,
-    props
-  )
+  if (client.redis.obs[channel]) {
+    cached = true
+  }
+
+  const obs = client.redis.subscribe(channel, props)
+
   return new Observable<GetResult>(observe => {
+    if (cached) {
+      client.get(props).then(result => {
+        // check if we still need the initial event or if latest is not anymore "cached"
+        if (cached) {
+          observe.next(result)
+        }
+      })
+    }
+
     const sub = obs.subscribe({
       next: (x: GetResult) => {
+        cached = false
         observe.next(x)
       },
       error: observe.error,

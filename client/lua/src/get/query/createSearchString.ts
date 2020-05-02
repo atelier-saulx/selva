@@ -96,7 +96,7 @@ const addField = (
       filter.$value = `${joinAny(filter.$value, '|')}`
     }
 
-    filter.$value = escapeNonASCII(<string>filter.$value)
+    filter.$value = escapeNonASCII(tostring(filter.$value))
 
     if (operator === '!=') {
       return `(-(@${filter.$field}:{${filter.$value}}))`

@@ -1,12 +1,20 @@
 import parseFilters from '../parseFilters'
 import { Fork, Meta } from '../types'
 import { isArray } from '../../../util'
-import { Find, Filter } from '~selva/get/types'
+import { Find, Filter, Inherit } from '~selva/get/types'
 import parseFindIds from './ids'
 import * as redis from '../../../redis'
 import * as logger from '../../../logger'
+import { GetFieldFn } from '../../types'
+import { getSchema } from '../../../schema/index'
+import { getNestedField } from '../../nestedFields'
 
-const getIds = (traverse: string, ids: string[]): string[] => {
+const getIds = (
+  getField: GetFieldFn,
+  traverse: string,
+  ids: string[],
+  $inherit?: Inherit
+): string[] => {
   if (traverse === 'ancestors') {
     if (ids.length === 1) {
       return redis.zrange(ids[0] + '.ancestors')
@@ -26,6 +34,22 @@ const getIds = (traverse: string, ids: string[]): string[] => {
     }
   } else {
     if (ids.length === 1) {
+      if ($inherit) {
+        const intermediateResult = {}
+        getField(
+          {
+            id: true,
+            [traverse]: { $inherit }
+          },
+          getSchema(),
+          intermediateResult,
+          ids[0],
+          ''
+        )
+
+        return getNestedField(intermediateResult, traverse)
+      }
+
       return redis.smembers(ids[0] + '.' + traverse)
     } else {
       const fields: string[] = []
@@ -39,11 +63,12 @@ const getIds = (traverse: string, ids: string[]): string[] => {
 
 // pass meta along
 function parseFind(
-  opts: Find & { $fields?: string[] },
+  getField: GetFieldFn,
+  opts: Find & { $fields?: string[]; $inherit?: Inherit },
   ids: string[],
   meta: Meta
 ): [Fork | string[], string | null] {
-  let { $traverse, $filter: filterRaw, $fields } = opts
+  let { $traverse, $filter: filterRaw, $fields, $inherit } = opts
   if (!filterRaw) {
     filterRaw = opts.$filter = []
   }
@@ -73,19 +98,19 @@ function parseFind(
       }
     } else if ($traverse === 'ancestors') {
       // for loop here
-      const ancestors = getIds($traverse, ids)
+      const ancestors = getIds(getField, $traverse, ids)
       return parseFindIds(filters, ancestors, meta)
     } else if (isArray($traverse)) {
       // short hand to do iteration over multiple ids
       return parseFindIds(filters, $traverse, meta)
     } else {
-      const resultIds = getIds($traverse, ids)
+      const resultIds = getIds(getField, $traverse, ids, $inherit)
       return parseFindIds(filters, resultIds, meta)
     }
   } else if ($fields) {
     let resultIds: string[] = []
     for (const field of $fields) {
-      let res = getIds(field, ids)
+      let res = getIds(getField, field, ids, $inherit)
       if (res && res.length > 0) {
         resultIds = res
         break

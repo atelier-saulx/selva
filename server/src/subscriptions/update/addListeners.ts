@@ -9,19 +9,25 @@ const deleteLength = 'delete:'.length
 const addListeners = (subsManager: SubscriptionManager) => {
   // process.nextTick
 
+  let collect = 0
+  setInterval(() => {
+    console.log('handled ', collect, 'in last 5 sec')
+    collect = 0
+  }, 5e3)
+
   subsManager.client.redis.redis.sub.on(
     'pmessage',
     (_pattern, channel, message) => {
       subsManager.incomingCount++
+      collect++
       // use this for batching here
       // merge tree for checks?
       if (message === 'schema_update') {
-        addUpdate(
-          subsManager,
-          subsManager.subscriptions['___selva_subscription:schema_update'],
-          { type: message }
-        )
-        return
+        const subscription =
+          subsManager.subscriptions['___selva_subscription:schema_update']
+        if (subscription) {
+          addUpdate(subsManager, subscription)
+        }
       } else {
         const eventName = channel.slice(prefixLength)
         // make this batch as well (the check)
@@ -33,6 +39,10 @@ const addListeners = (subsManager: SubscriptionManager) => {
             traverseTree(subsManager, eventName + '.' + v)
           })
         }
+      }
+
+      if (!subsManager.stagedInProgess) {
+        subsManager.incomingCount = 0
       }
     }
   )

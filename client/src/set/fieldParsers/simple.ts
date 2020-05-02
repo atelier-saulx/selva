@@ -105,7 +105,7 @@ for (const key in verifiers) {
         ) {
           if (payload[k].$ref) {
             if (typeof payload[k].$ref !== 'string') {
-              throw new Error(`Non-string ref provided for ${key}.${k}`)
+              throw new Error(`Non-string $ref provided for ${key}.${k}`)
             }
             payload[k] = `___selva_$ref:${payload[k].$ref}`
           } else {
@@ -134,7 +134,11 @@ for (const key in verifiers) {
         result[field] = converter(payload)
       }
     } else {
-      throw new Error(`Incorrect payload for type "${key}" "${payload}"`)
+      throw new Error(
+        `Incorrect payload for ${field} of type ${key}: ${JSON.stringify(
+          payload
+        )}`
+      )
     }
   }
 }

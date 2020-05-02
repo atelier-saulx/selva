@@ -14,3 +14,4 @@ declare function type(
   | 'table'
 
 declare function next(this: void, table: any, index?: any): any
+declare function error(this: void, err: string): never

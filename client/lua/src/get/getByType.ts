@@ -508,7 +508,14 @@ function getByType(
   const paths = splitString(field, '.')
   let prop = typeSchema.fields[paths[0]]
   for (let i = 1; i < paths.length; i++) {
-    if (prop && prop.type === 'text' && i === paths.length - 1) {
+    if (language && prop && prop.type === 'text') {
+      field = ''
+      for (let j = 0; j < i - 1; j++) {
+        field += paths[j] + '.'
+      }
+      field += paths[i - 1]
+      break
+    } else if (prop && prop.type === 'text' && i === paths.length - 1) {
       prop = { type: 'string' }
     } else if (prop && prop.type === 'json') {
       const json = types.json
@@ -576,12 +583,14 @@ function getByType(
     return false
   }
 
-  if (metaKeys) {
-    setMeta(field, metaKeys)
-  } else {
-    setMeta(field, {
-      ___ids: id
-    })
+  if (field !== 'type' && field !== 'id') {
+    if (metaKeys) {
+      setMeta(field, metaKeys)
+    } else {
+      setMeta(field, {
+        ___ids: id
+      })
+    }
   }
 
   const fn = types[prop.type] || string

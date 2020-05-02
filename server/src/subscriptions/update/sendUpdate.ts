@@ -6,28 +6,31 @@ import { Subscription } from '../'
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
-  subscription: Subscription,
-  custom?: { type: string; payload?: any }
+  subscription: Subscription
 ) => {
   const channel = subscription.channel
 
   const getOptions = subscription.get
   getOptions.$includeMeta = true
 
-  if (custom) {
-    const event = JSON.stringify(custom)
+  if (channel === '___selva_subscription:schema_update') {
+    let value = ''
+    let version = ''
+    const schema = await subscriptionManager.client.getSchema()
+    version = schema.schema.sha
+    value = JSON.stringify({ type: 'update', payload: schema.schema })
     await subscriptionManager.client.redis.byType.hmset(
       'sClient',
       prefixes.cache,
       channel,
-      event,
+      value,
       channel + '_version',
-      ''
+      version
     )
     await subscriptionManager.client.redis.byType.publish(
       'sClient',
       channel,
-      ''
+      version
     )
     return
   }

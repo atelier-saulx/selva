@@ -11,6 +11,9 @@ import {
 import cleanExit from './cleanExit'
 import SubscriptionManager from './subscriptions'
 
+export * as s3Backups from './backup-plugins/s3'
+export * as dropboxBackups from './backup-plugins/dropbox'
+
 type Service = {
   port: number
   host: string
@@ -31,6 +34,7 @@ export type Subscriptions = {
 
 type FnStart = {
   port?: number | Promise<number>
+  dir?: string
   service?: Service | Promise<Service>
   replica?: Service | Promise<Service>
   modules?: string[]
@@ -68,11 +72,13 @@ export const startInternal = async function({
   service,
   modules,
   replica,
+  dir = process.cwd(),
   verbose = false,
   backups = null,
   subscriptions,
   seperateSubsmanager
 }: FnStart): Promise<SelvaServer> {
+  let backupCleanup: () => void
   let port: number
   let backupFns: BackupFns
   if (verbose) console.info('Start db 🌈')
@@ -113,6 +119,8 @@ export const startInternal = async function({
     }
   }
 
+  const args = ['--port', String(port), '--protected-mode', 'no', '--dir', dir]
+
   if (backups) {
     if (backups.backupFns instanceof Promise) {
       backupFns = await backups.backupFns
@@ -121,29 +129,23 @@ export const startInternal = async function({
     }
 
     if (backups.loadBackup) {
+      console.log('Loading backup')
       await loadBackup(process.cwd(), backupFns)
+      console.log('Backup loaded')
     }
 
     if (backups.scheduled) {
-      const backUp = async (_bail: (e: Error) => void) => {
-        await scheduleBackups(
-          process.cwd(),
-          port,
-          backups.scheduled.intervalInMinutes,
-          backupFns
-        )
-      }
+      args.push('--save', '30', '10000')
+      args.push('--save', '300', '10')
+      args.push('--save', '600', '1')
 
-      retry(backUp, { forever: true }).catch(e => {
-        console.error(`Backups failed ${e.stack}`)
-        execSync(`redis-cli -p ${port} shutdown`)
-        redisDb.kill()
-        process.exit(1)
-      })
+      backupCleanup = scheduleBackups(
+        dir,
+        backups.scheduled.intervalInMinutes,
+        backupFns
+      )
     }
   }
-
-  const args = ['--port', String(port), '--protected-mode', 'no']
 
   if (modules) {
     modules = [...new Set([...defaultModules, ...modules])]
@@ -181,7 +183,6 @@ export const startInternal = async function({
   }
 
   try {
-    const dir = args[args.indexOf('--dir') + 1]
     execSync(`redis-cli -p ${port} config set dir ${dir}`)
     execSync(`redis-cli -p ${port} shutdown`)
   } catch (e) {}
@@ -229,6 +230,10 @@ export const startInternal = async function({
     destroy: async () => {
       execSync(`redis-cli -p ${port} shutdown`)
       redisDb.kill()
+      if (backupCleanup) {
+        backupCleanup()
+      }
+
       if (subs) {
         await subs.destroy()
       }

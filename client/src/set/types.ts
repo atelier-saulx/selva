@@ -10,6 +10,7 @@ export type RedisSetParams =
       $value?: string[] | Id
       $add?: Id[] | Id | SetItem[]
       $delete?: Id[] | Id
+      $noRoot?: boolean
     }
 
 export type HierarchySet = RedisSetParams & {
@@ -60,6 +61,7 @@ export type BatchOpts = {
 
 export type SetOptions = SetItem & {
   $id?: Id
+  $operation?: 'upsert' | 'insert' | 'update' // defaults to 'upsert'
   $_batchOpts?: BatchOpts
   $language?: string
   $merge?: boolean

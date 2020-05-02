@@ -378,6 +378,8 @@ function convertSearch(f: FieldSchema): SearchRaw {
       field.type === 'timestamp'
     ) {
       return { type: ['NUMERIC', 'SORTABLE'] }
+    } else if (field.type === 'boolean') {
+      return { type: ['TAG'] }
     } else if (field.type === 'text') {
       return { type: ['TEXT-LANGUAGE'] }
     } else if (field.type === 'geo') {

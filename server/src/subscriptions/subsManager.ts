@@ -13,6 +13,17 @@ export default class SubscriptionManager {
   public client: SelvaClient
 
   public incomingCount: number = 0
+
+  public stagedForUpdates: Set<Subscription> = new Set()
+
+  public stagedInProgess: boolean = false
+
+  public stagedTimeout: NodeJS.Timeout
+
+  public isBusy: boolean = false
+
+  public memberMemCacheSize: number = 0
+  public memberMemCache: Record<string, Record<string, true>> = {}
   // public isDestroyed: boolean = false
   // to check if the server is still ok
   public serverHeartbeatTimeout: NodeJS.Timeout
@@ -95,12 +106,17 @@ export default class SubscriptionManager {
         channel + '_tree',
         channel + '_version'
       )
-      this.subscriptions[channel].version = version
-      this.subscriptions[channel].tree = JSON.parse(tree)
-      this.subscriptions[channel].treeVersion = hash(tree)
-      addSubscriptionToTree(this, subscription)
+
+      if (!tree) {
+        addUpdate(this, subscription)
+      } else {
+        this.subscriptions[channel].version = version
+        this.subscriptions[channel].tree = JSON.parse(tree)
+        this.subscriptions[channel].treeVersion = hash(tree)
+        addSubscriptionToTree(this, subscription)
+      }
     } else {
-      await addUpdate(this, subscription)
+      addUpdate(this, subscription)
     }
   }
 
@@ -126,10 +142,19 @@ export default class SubscriptionManager {
 
   async updateSubscriptionData() {
     const { byType } = this.client.redis
-    const [subscriptions, clients] = await Promise.all([
+    let [subscriptions, clients] = await Promise.all([
       byType.hgetall('sClient', prefixes.subscriptions),
       byType.hgetall('sClient', prefixes.clients)
     ])
+
+    if (!subscriptions) {
+      subscriptions = {}
+    }
+
+    if (!clients) {
+      clients = {}
+    }
+
     const now = Date.now()
     const cleanUpQ = []
 
@@ -224,6 +249,11 @@ export default class SubscriptionManager {
 
     this.subscriptions = {}
     this.tree = {}
+
+    this.stagedInProgess = false
+    this.stagedForUpdates = new Set()
+    clearTimeout(this.stagedTimeout)
+
     clearTimeout(this.revalidateSubscriptionsTimeout)
     clearTimeout(this.serverHeartbeatTimeout)
     clearTimeout(this.refreshNowQueriesTimeout)
@@ -253,6 +283,13 @@ export default class SubscriptionManager {
         if (!isResolved) {
           isResolved = true
           resolve()
+        }
+      })
+
+      this.client.on('busy', type => {
+        if (type === 'client') {
+          console.log('Server is busy', type)
+          this.isBusy = true
         }
       })
 

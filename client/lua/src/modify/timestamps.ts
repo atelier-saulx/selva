@@ -6,11 +6,13 @@ import sendEvent from './events'
 import { getTypeFromId } from '../typeIdMapping'
 import { SetOptions } from '~selva/set/types'
 
-export function setCreatedAt(payload: SetOptions, id: string, type?: string) {
-  if (payload.createdAt) {
-    return setUpdatedAt(payload, id, type)
-  }
+const UPDATED: Record<string, true> = {}
 
+export function markUpdated(id: string): void {
+  UPDATED[id] = true
+}
+
+export function setCreatedAt(id: string, type?: string): number | undefined {
   if (!type) {
     type = getTypeFromId(id)
   }
@@ -23,7 +25,7 @@ export function setCreatedAt(payload: SetOptions, id: string, type?: string) {
   if (fields && fields.createdAt && fields.createdAt.type === 'timestamp') {
     redis.hset(id, 'createdAt', time)
     sendEvent(id, 'createdAt', 'update')
-    setUpdatedAt(payload, id, type, time)
+    return time
   }
 }
 
@@ -39,6 +41,10 @@ export function setUpdatedAt(
 
   if (!type) {
     type = getTypeFromId(id)
+  }
+
+  if (!UPDATED[id]) {
+    return
   }
 
   const schema = getSchema()

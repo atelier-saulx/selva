@@ -21,18 +21,13 @@ export type UpdateEvent = {
   version?: string
 }
 
-export type CustomEvent = {
-  type: string
-  payload?: any
-  version?: string
-}
-
-export type Event = UpdateEvent | CustomEvent
+export type Event = UpdateEvent
 
 export type ClientObject = {
   connect: (type: string) => void
   disconnect: (type: string) => void
   message: (channel: string, message: { [key: string]: any }) => void
   log?: LogFn
+  busy: (type: string) => void
   client: Redis
 }

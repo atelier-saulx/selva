@@ -7,7 +7,7 @@ import {
   clientTypes,
   ClientType
 } from './redisWrapper'
-import { Event, RedisCommand, UpdateEvent, CustomEvent } from './types'
+import { Event, RedisCommand, UpdateEvent } from './types'
 import { EventEmitter } from 'events'
 // adds FT commands to redis
 import './redisSearch'
@@ -20,6 +20,7 @@ class Subscription extends EventEmitter {
   public count: number = 0
   constructor(getOpts: GetOptions) {
     super()
+    this.setMaxListeners(1e3)
     this.getOpts = getOpts
   }
 }
@@ -112,48 +113,56 @@ export default class RedisClient extends RedisMethods {
       getOpts
     ))
 
+    console.log('create sub', channel)
+
     if (this.redis) {
+      console.log('subscribe', channel)
       this.redis.subscribe(this.clientId, channel, getOpts)
     }
     return subscription
   }
 
+  public obs: Record<string, Observable<GetResult>> = {}
+
   subscribe(channel: string, getOpts: GetOptions): Observable<GetResult> {
-    const subscription =
-      this.subscriptions[channel] || this.createSubscription(channel, getOpts)
-    subscription.count++
-    return new Observable(observer => {
-      const listener = (event: UpdateEvent | CustomEvent) => {
+    if (this.obs[channel]) {
+      return this.obs[channel]
+    }
+
+    return (this.obs[channel] = new Observable(observer => {
+      const subscription =
+        this.subscriptions[channel] || this.createSubscription(channel, getOpts)
+      subscription.count++
+      const listener = (event: UpdateEvent) => {
         if (event.type === 'update') {
           if (observer.version !== event.version) {
             observer.version = event.version
             observer.next(event.payload)
           }
-        } else if (event.type) {
-          observer.next(event.payload)
         }
       }
       subscription.on('message', listener)
-
       if (
         this.redis &&
-        this.redis.allConnected &&
+        this.redis.connected.sClient &&
         this.redis.subscriptions[channel] &&
         this.redis.subscriptions[channel].version
       ) {
         this.redis.emitChannel(channel, this.clientId)
       }
-
       return () => {
+        // console.log('REMOVE OBSERVER', subscription.count)
         subscription.count--
         subscription.removeListener('message', listener)
         if (subscription.count === 0) {
+          delete this.obs[channel]
+          // console.log('UNSUBSCRIBE REDIS')
           this.redis.unsubscribe(this.clientId, channel)
           subscription.removeAllListeners()
           delete this.subscriptions[channel]
         }
       }
-    })
+    }))
   }
 
   private async registerSubscriptions() {
@@ -264,6 +273,9 @@ export default class RedisClient extends RedisMethods {
           this.selvaClient.emit('connect')
         }
       },
+      busy: type => {
+        this.selvaClient.emit('busy', type)
+      },
       disconnect: type => {
         this.connected[type] = false
         if (this.redis.allDisconnected) {
@@ -291,7 +303,6 @@ export default class RedisClient extends RedisMethods {
       },
       client: this
     })
-
-    this.selvaClient.subscribeSchema()
+    // this.selvaClient.subscribeSchema()
   }
 }

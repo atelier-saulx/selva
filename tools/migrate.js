@@ -3,7 +3,7 @@ const { start } = require('@saulx/selva-server')
 const fs = require('fs').promises
 const os = require('os')
 const path = require('path')
-const _ = require('lodash')
+const chunk = require('lodash.chunk')
 
 const IGNORE_UNTIL = null
 
@@ -406,39 +406,6 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
             try {
               const value = JSON.parse(item[itemKey])
               if (itemKey === 'video') {
-                /*
-                  video: [{
-                    type: 'vod',
-                    mp4: 'haha'
-                    m3u8: 'haha'
-                  }, {
-                    type: 'pano',
-                    mp4: 'haha'
-                    m3u8: 'haha'
-                  }, {
-                    {
-                    type: 'live',
-                    mp4: 'haha'
-                    m3u8: 'haha'
-                  }
-                  }
-                ]
-                ===>
-                video: {
-                  vod: {
-                    mp4:
-                    hls:
-                  },
-                  pano: {
-                    mp4:
-                    hls:
-                  },
-                  live: {
-                    mp4:
-                    hls:
-                  }
-                }
-                */
                 if (Array.isArray(value)) {
                   const video = {}
                   let pass
@@ -662,16 +629,9 @@ async function migrate() {
 
   for (let db of dump) {
     clean(db)
-    // console.log(db.vi0dMzRO)
-    // console.log(db.sp1ZyDjY0)
-    // continue
-    // db.root.url = db.root.url.filter(val => val)
-    // db = { rez5lmBya: db.rez5lmBya, uuid: db.uuid }
     const keys = Object.keys(db)
-    const batches = _.chunk(keys, 3000)
-    // const batches = [['root'], ['vi0dMzRO'] /*, ['sp1ZyDjY0']*/] //'rez5lmBya']]
+    const batches = chunk(keys, 3000)
     for (const batch of batches) {
-      // console.log('batch', batch)
       let promises = []
       for (const key of batch) {
         // ignore deprecated
@@ -759,8 +719,6 @@ async function migrate() {
           newPayload.aliases = (newPayload.aliases || []).concat(aliases)
         }
 
-        // delete newPayload.title
-        // console.log('inserting', newPayload)
         promises.push(client.set(newPayload))
 
         await new Promise((resolve, _reject) => {

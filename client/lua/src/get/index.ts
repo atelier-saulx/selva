@@ -36,6 +36,27 @@ function getField(
   }
 
   if (props.$id && field) {
+    if (props.$id.$field) {
+      const idResult = {}
+      getWithField(
+        idResult,
+        schema,
+        id,
+        'idResult',
+        ensureArray(props.$id.$field),
+        language,
+        version
+      )
+
+      const nestedId = getNestedField(idResult, 'idResult')
+      if (!nestedId) {
+        setNestedResult(result, field, {})
+        return true
+      }
+
+      props.$id = nestedId
+    }
+
     const intermediateResult = {}
     getField(
       props,
@@ -78,14 +99,15 @@ function getField(
             return false
           }
 
+          const resolvedId = resolveId(ensureArray(props.$field.value.$id), [])
           sourceField = resolveAll(
-            props.$field.value.$id,
+            resolvedId,
             schema,
             ensureArray(props.$field.path),
             language,
             version
           )
-          ids = [props.$field.value.$id]
+          ids = [resolvedId]
         } else {
           sourceField = resolveAll(
             id,
@@ -115,6 +137,7 @@ function getField(
       if (err) {
         // can return an error now
         logger.error(err)
+        error(err)
       }
     }
     return true
@@ -135,7 +158,7 @@ function getField(
         getWithField(
           intermediateResult,
           schema,
-          props.$field.value.$id,
+          resolveId(ensureArray(props.$field.value.$id), []),
           'intermediate',
           $field,
           language,
@@ -339,30 +362,50 @@ function getRawAncestors(
   return result
 }
 
+function resolveId(ids: Id[], aliases: string[]) {
+  for (const id of ids) {
+    if (r.exists(id)) {
+      return id
+    }
+  }
+
+  for (const alias of aliases) {
+    const aliased = r.hget('___selva_aliases', alias)
+    if (aliased && aliased.length > 0) {
+      return aliased
+    }
+
+    // also check if the alias is a valid id
+    if (r.exists(alias)) {
+      return alias
+    }
+  }
+
+  if (ids.length === 0) {
+    return 'root'
+  } else {
+    return ids[0]
+  }
+}
+
 function get(opts: GetOptions): GetResult {
   const schema = getSchema()
   const result: GetResult = {}
 
   let {
     $version: version,
-    $id: id,
-    $alias: alias,
+    $id: ids,
+    $alias: aliases,
     $language: language,
     $includeMeta: includeMeta,
     $rawAncestors: rawAncestors
   } = opts
 
-  if (alias) {
-    const aliased = r.hget('___selva_aliases', alias)
-    if (aliased && aliased.length > 0) {
-      id = aliased
-    } else {
-      // try with $alias as $id
-      delete opts.$alias
-      opts.$id = alias
-      return get(opts)
-    }
-  } else if (!id) {
+  let id = resolveId(ensureArray(ids), ensureArray(aliases))
+  // make the job of queries a bit easier
+  opts.$id = id
+
+  if (!id) {
     id = 'root'
   }
 

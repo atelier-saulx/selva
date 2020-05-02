@@ -1,0 +1,64 @@
+{
+  "name": "@saulx/selva-api",
+  "version": "0.1.11",
+  "main": "./dist/index.js",
+  "description": "API server and API utilities for selva",
+  "scripts": {
+    "build": "yarn buildTs",
+    "start": "tsc && node dist/index.js",
+    "test": "ava --verbose",
+    "buildTs": "tsc",
+    "watchTs": "tsc --watch",
+    "clean": "rm -rf ./dist"
+  },
+  "devDependencies": {
+    "@saulx/selva-server": "0.2.43",
+    "@types/body-parser": "^1.19.0",
+    "@types/node-fetch": "^2.5.6",
+    "ava": "2.4.0",
+    "get-port": "^5.1.1",
+    "husky": "^3.0.8",
+    "lint-staged": "^9.4.2",
+    "node-fetch": "^2.6.0",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.3"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.ts",
+      "!test/assertions"
+    ],
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "/pre-commit": "lint-staged",
+      "/pre-push": "node services/db/lib/start & lerna run test --parallel --since origin -- -- --fail-fast; kill $!",
+      "/post-merge": "lerna bootstrap --since $(git rev-parse HEAD) --include-filtered-dependencies"
+    }
+  },
+  "lint-staged": {
+    "{js,json}": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.ts": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "dependencies": {
+    "@saulx/selva": "0.2.46",
+    "body-parser": "^1.19.0"
+  }
+}

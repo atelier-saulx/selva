@@ -2,7 +2,7 @@ import * as redis from '../redis'
 import { Id, Schema } from '~selva/schema/index'
 import { getTypeFromId } from '../typeIdMapping'
 import { GetResult, GetItem } from '~selva/get/types'
-import { setNestedResult } from './nestedFields'
+import { setNestedResult, getNestedField } from './nestedFields'
 import getByType from './getByType'
 import { ensureArray, splitString, isArray } from '../util'
 import * as logger from '../logger'
@@ -263,6 +263,7 @@ export default function inherit(
   // how to check if descandents in it checl if in acnestors
 
   const inherit = props.$inherit
+
   if (inherit) {
     if (inherit === true) {
       return setFromAncestors(
@@ -277,27 +278,84 @@ export default function inherit(
         true
       )
     } else if (inherit.$type) {
+      const required = ensureArray(inherit.$required)
+      const requiredFields: string[][] = prepareRequiredFieldSegments(required)
+
       const types: string[] = ensureArray(inherit.$type)
-      return setFromAncestors(
-        getField,
-        result,
-        schema,
-        id,
-        field,
-        language,
-        version,
-        fieldFrom,
-        inherit.$merge !== undefined ? inherit.$merge : true,
-        (ancestor: Id) => {
-          for (const type of types) {
-            if (type === getTypeFromId(ancestor)) {
-              return true
+
+      const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+      const len = ancestorsWithScores.length
+      if (len === 0) {
+        setNestedResult(result, field, {})
+        return
+      }
+
+      const ancestorsByType = getAncestorsByType(types, ancestorsWithScores)
+      for (const itemType of types) {
+        const matches = ancestorsByType[itemType]
+        if (matches.length === 1) {
+          if (props.$field) {
+            for (const $field of ensureArray(props.$field)) {
+              const intermediateResult = {}
+              const completed = getByType(
+                intermediateResult,
+                schema,
+                matches[0],
+                <string>$field,
+                language,
+                version
+              )
+              if (completed) {
+                setNestedResult(
+                  result,
+                  field,
+                  getNestedField(intermediateResult, <string>$field)
+                )
+                return
+              }
+            }
+          } else {
+            const completed = getByType(
+              result,
+              schema,
+              matches[0],
+              field,
+              language,
+              version
+            )
+            if (completed) {
+              return
             }
           }
+        } else if (matches.length > 1) {
+          const completed = setFromAncestors(
+            getField,
+            result,
+            schema,
+            id,
+            field,
+            language,
+            version,
+            '',
+            false,
+            (ancestor: Id) => {
+              for (const match of matches) {
+                if (match === ancestor) {
+                  return true
+                }
+              }
 
-          return false
+              return false
+            },
+            undefined,
+            ancestorsWithScores
+          )
+
+          if (completed) {
+            return
+          }
         }
-      )
+      }
     } else if (inherit.$name) {
       const names: string[] = ensureArray(inherit.$name)
       return setFromAncestors(
@@ -321,7 +379,6 @@ export default function inherit(
         }
       )
     } else if (inherit.$item) {
-      logger.info('INHERITING with $item')
       inheritItem(
         getField,
         props,

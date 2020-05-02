@@ -450,7 +450,6 @@ test.serial('get - simple $list nested query structure', async t => {
           name: true,
           value: true,
           $list: {
-            $traveres: 'children',
             $sort: { $field: 'value', $order: 'asc' },
             $limit: 10
           }
