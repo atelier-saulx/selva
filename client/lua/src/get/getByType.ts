@@ -3,7 +3,12 @@ import { Id, FieldSchema } from '~selva/schema/index'
 import * as redis from '../redis'
 import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
-import { setNestedResult, getNestedField, setMeta } from './nestedFields'
+import {
+  setNestedResult,
+  getNestedField,
+  setMeta,
+  getNestedSchema
+} from './nestedFields'
 import { Schema } from '../../../src/schema/index'
 import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
@@ -16,6 +21,15 @@ import {
   markEmptyArraysInJSON
 } from '../util'
 import * as logger from '../logger'
+
+const getDotIndex = (str: string): number => {
+  for (let i = str.length - 1; i > 1; i--) {
+    if (str[i] === '.') {
+      return i
+    }
+  }
+  return -1
+}
 
 const id = (
   result: GetResult,
@@ -495,57 +509,29 @@ function getByType(
   metaKeys?: any
 ): boolean {
   // version still missing!
-  const type = getTypeFromId(id)
-  // logger.info(
-  //   `getting field with id ${id} for field ${field} from type ${type}`
-  // )
-  const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
-  if (!typeSchema || !typeSchema.fields) {
-    logger.info(`No schema for type ${type}`)
-    return true
-  }
 
-  const paths = splitString(field, '.')
-  let prop = typeSchema.fields[paths[0]]
-  for (let i = 1; i < paths.length; i++) {
-    if (language && prop && prop.type === 'text') {
-      field = ''
-      for (let j = 0; j < i - 1; j++) {
-        field += paths[j] + '.'
+  let prop: any
+  const lastDotIdx = getDotIndex(field)
+  if (lastDotIdx >= 0) {
+    // could be a text
+    const beforeDot = field.substr(0, lastDotIdx)
+    const maybeTextProp = getNestedSchema(id, beforeDot)
+    if (maybeTextProp && maybeTextProp.type === 'text') {
+      logger.info('IS IT A TEXT PROP?', field)
+      if (language) {
+        prop = maybeTextProp
+        field = beforeDot
+      } else {
+        prop = { type: 'string' }
       }
-      field += paths[i - 1]
-      break
-    } else if (prop && prop.type === 'text' && i === paths.length - 1) {
-      prop = { type: 'string' }
-    } else if (prop && prop.type === 'json') {
-      const json = types.json
-      const intermediateResult = {}
-      const pathToJson: string[] = []
-      for (let j = 0; j < i; j++) {
-        pathToJson[j] = paths[j]
-      }
-
-      json(
-        intermediateResult,
-        schema,
-        id,
-        joinString(pathToJson, '.'),
-        language,
-        version
-      )
-      setNestedResult(result, field, getNestedField(intermediateResult, field))
-      return true
     } else {
-      if (!prop || prop.type !== 'object') {
-        return false
-      }
-
-      prop = prop.properties[paths[i]]
+      prop = getNestedSchema(id, field)
     }
+  } else {
+    prop = getNestedSchema(id, field)
   }
 
   if (!prop) {
-    // logger.info(`No type for field ${field} in schema ${cjson.encode(schema)}`)
     return false
   }
 

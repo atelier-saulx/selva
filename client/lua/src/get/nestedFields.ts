@@ -48,7 +48,7 @@ export function getNestedSchema(id: string, field: string): FieldSchema | null {
   }
 
   const fields = splitString(field, '.')
-  const typeSchema = schema.types[type]
+  const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
   if (!typeSchema || !typeSchema.fields) {
     return null
   }
