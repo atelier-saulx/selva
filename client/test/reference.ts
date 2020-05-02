@@ -124,6 +124,9 @@ test.serial('simple singular reference', async t => {
       }
     }
   )
+
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('singular reference inherit', async t => {
@@ -183,6 +186,9 @@ test.serial('singular reference inherit', async t => {
       }
     }
   )
+
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('singular reference $field', async t => {
@@ -233,4 +239,78 @@ test.serial('singular reference $field', async t => {
       }
     }
   )
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('singular reference inherit reference', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'clB',
+    specialMatch: 'maA'
+  })
+
+  await client.set({
+    $id: 'maB',
+    value: 9001
+  })
+
+  const match1 = await client.set({
+    $id: 'maA',
+    title: {
+      en: 'yesh match'
+    },
+    parents: {
+      $add: 'maB'
+    }
+  })
+
+  const club1 = await client.set({
+    $id: 'clA',
+    title: {
+      en: 'yesh club'
+    },
+    parents: {
+      $add: 'clB'
+    }
+  })
+
+  // const club1 = await client.set({
+  //   $id: 'clA',
+  //   title: {
+  //     en: 'yesh club'
+  //   },
+  //   specialMatch: {
+  //     $id: 'maA',
+  //     title: {
+  //       en: 'yesh match'
+  //     }
+  //   }
+  // })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      title: true,
+      special: {
+        $field: 'specialMatch',
+        $inherit: true,
+        title: true,
+        value: { $inherit: true }
+      }
+    }),
+    {
+      title: 'yesh club',
+      special: {
+        title: 'yesh match',
+        value: 9001
+      }
+    }
+  )
+
+  await client.delete('root')
+  await client.destroy()
 })

@@ -39,20 +39,16 @@ export function getNestedSchema(id: string, field: string): FieldSchema | null {
   const schema = getSchema()
 
   let typeCache = SCHEMA_PATH_CACHE[type]
-  logger.info('YES', typeCache)
   if (!typeCache) {
     typeCache = SCHEMA_PATH_CACHE[type] = {}
   }
-  logger.info('YES', typeCache)
 
   if (typeCache[field]) {
     return typeCache[field]
   }
 
   const fields = splitString(field, '.')
-  logger.info('fields', fields)
   const typeSchema = schema.types[type]
-  logger.info('TYPE SCHEMA', typeSchema)
   if (!typeSchema || !typeSchema.fields) {
     return null
   }
@@ -66,7 +62,6 @@ export function getNestedSchema(id: string, field: string): FieldSchema | null {
   for (let i = 1; i < fields.length; i++) {
     const segment = fields[i]
 
-    logger.info('PROP', prop)
     if (!prop || !prop.properties) {
       return null
     }
