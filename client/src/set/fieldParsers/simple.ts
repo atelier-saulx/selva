@@ -60,6 +60,9 @@ export const verifiers = {
   },
   id: (payload: string) => {
     return typeof payload === 'string' && payload.length < 20
+  },
+  reference: (payload: string) => {
+    return typeof payload === 'string' && payload.length < 20
   }
 }
 

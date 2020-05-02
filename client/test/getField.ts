@@ -257,13 +257,13 @@ test.serial('get - alias with variables', async t => {
       $id: 'viD',
       id: true,
       niceFromJson: {
-        $field: '${title.en}.complexNice.${type}.superSecret'
+        $field: '${title.en}.complexNice.${type}'
       },
       value: true
     }),
     {
       id: 'viD',
-      niceFromJson: 'yesh!',
+      niceFromJson: { superSecret: 'yesh!' },
       value: 25
     }
   )

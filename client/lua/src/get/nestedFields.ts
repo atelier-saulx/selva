@@ -3,6 +3,11 @@ import { splitString, ensureArray } from '../util'
 import * as logger from '../logger'
 
 import globals from '../globals'
+import { getSchema } from '../schema/index'
+import { FieldSchema } from '~selva/schema/index'
+import { getTypeFromId } from '../typeIdMapping'
+
+const SCHEMA_PATH_CACHE: Record<string, Record<string, FieldSchema>> = {}
 
 export const getNestedField = (result: GetResult, field: string): any => {
   if (!field || field === '') {
@@ -23,6 +28,51 @@ export const getNestedField = (result: GetResult, field: string): any => {
   } else {
     return result[field]
   }
+}
+
+export function getNestedSchema(id: string, field: string): FieldSchema | null {
+  if (!field || field === '') {
+    return null
+  }
+
+  const type = getTypeFromId(id)
+  const schema = getSchema()
+
+  let typeCache = SCHEMA_PATH_CACHE[type]
+  if (!typeCache) {
+    typeCache = SCHEMA_PATH_CACHE[type] = {}
+  }
+
+  if (typeCache[field]) {
+    return typeCache[field]
+  }
+
+  const fields = splitString(field, '.')
+  const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
+  if (!typeSchema || !typeSchema.fields) {
+    return null
+  }
+
+  let prop: any = typeSchema.fields[fields[0]]
+  if (!prop) {
+    return null
+  }
+
+  let str = fields[0]
+  for (let i = 1; i < fields.length; i++) {
+    const segment = fields[i]
+
+    if (!prop || !prop.properties) {
+      return null
+    }
+
+    prop = prop.properties[segment]
+
+    str += '.' + segment
+    typeCache[str] = prop
+  }
+
+  return prop
 }
 
 export const setNestedResult = (
