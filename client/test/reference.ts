@@ -185,3 +185,52 @@ test.serial('singular reference inherit', async t => {
   )
 })
 
+test.serial('singular reference $field', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    $id: 'maA',
+    title: {
+      en: 'yesh match'
+    }
+  })
+
+  const club1 = await client.set({
+    $id: 'clA',
+    title: {
+      en: 'yesh club'
+    },
+    specialMatch: match1
+  })
+
+  // const club1 = await client.set({
+  //   $id: 'clA',
+  //   title: {
+  //     en: 'yesh club'
+  //   },
+  //   specialMatch: {
+  //     $id: 'maA',
+  //     title: {
+  //       en: 'yesh match'
+  //     }
+  //   }
+  // })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      title: true,
+      match: {
+        $field: 'specialMatch',
+        title: true
+      }
+    }),
+    {
+      title: 'yesh club',
+      match: {
+        title: 'yesh match'
+      }
+    }
+  )
+})

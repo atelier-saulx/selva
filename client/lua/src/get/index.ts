@@ -3,12 +3,7 @@ import { Id } from '~selva/schema/index'
 import getByType from './getByType'
 import { Schema } from '../../../src/schema/index'
 import * as logger from '../logger'
-import {
-  setNestedResult,
-  getNestedField,
-  setMeta,
-  getNestedSchema
-} from './nestedFields'
+import { setNestedResult, getNestedField, setMeta } from './nestedFields'
 import inherit from './inherit'
 import getWithField, { resolveAll, isObjectField } from './field'
 import getArray from './getArray'
@@ -16,6 +11,7 @@ import { getSchema } from '../schema/index'
 import { ensureArray, isArray } from 'lua/src/util'
 import makeNewGetOptions from './all'
 import getQuery from './query/index'
+import checkSingleReference from './reference'
 import * as r from '../redis'
 
 import global from '../globals'
@@ -187,6 +183,23 @@ function getField(
         )
 
         if (
+          checkSingleReference(
+            result,
+            props,
+            getField,
+            id,
+            props.$field,
+            field,
+            language,
+            version,
+            ignore,
+            metaKeys
+          )
+        ) {
+          return true
+        }
+
+        if (
           getWithField(
             result,
             schema,
@@ -210,32 +223,20 @@ function getField(
         props = makeNewGetOptions(id, field || '', schema, props)
       }
 
-      const nestedSchema = getNestedSchema(id, <string>field)
-      if (nestedSchema && nestedSchema.type === 'reference') {
-        const intermediateResult = {}
-        const reference = r.hget(id, <string>field)
-        if (!reference) {
-          // TODO: $inherit
-          return true
-        }
-
-        const completed = getField(
+      if (
+        checkSingleReference(
+          result,
           props,
-          schema,
-          intermediateResult,
-          reference,
-          undefined,
+          getField,
+          id,
+          field,
+          field,
           language,
           version,
           ignore,
           metaKeys
         )
-
-        if (!completed) {
-          // TODO: $inherit?
-        }
-
-        setNestedResult(result, <string>field, intermediateResult)
+      ) {
         return true
       }
 
