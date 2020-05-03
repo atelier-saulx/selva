@@ -164,6 +164,16 @@ function setField(
   fromDefault: boolean,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
+  if (
+    field &&
+    field !== '' &&
+    type(value) === 'table' &&
+    (value.$id || value.$alias || value.type)
+  ) {
+    const reference = update(value)
+    return setField(id, field, reference, fromDefault, source)
+  }
+
   if (isSetPayload(value) && field) {
     if (!checkSource(id, field, source)) {
       return

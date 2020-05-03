@@ -12,6 +12,7 @@ export type FieldType =
   | 'boolean'
   | 'number'
   | 'int'
+  | 'reference'
   | 'references'
   | 'string'
   | 'text'

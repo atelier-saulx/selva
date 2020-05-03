@@ -135,7 +135,9 @@ export const startInternal = async function({
     }
 
     if (backups.scheduled) {
-      args.push('--save', '10', '1')
+      args.push('--save', '30', '10000')
+      args.push('--save', '300', '10')
+      args.push('--save', '600', '1')
 
       backupCleanup = scheduleBackups(
         dir,

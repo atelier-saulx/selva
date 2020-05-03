@@ -11,6 +11,7 @@ import { getSchema } from '../schema/index'
 import { ensureArray, isArray } from 'lua/src/util'
 import makeNewGetOptions from './all'
 import getQuery from './query/index'
+import checkSingleReference from './reference'
 import * as r from '../redis'
 
 import global from '../globals'
@@ -182,6 +183,23 @@ function getField(
         )
 
         if (
+          checkSingleReference(
+            result,
+            props,
+            getField,
+            id,
+            props.$field,
+            field,
+            language,
+            version,
+            ignore,
+            metaKeys
+          )
+        ) {
+          return true
+        }
+
+        if (
           getWithField(
             result,
             schema,
@@ -203,6 +221,23 @@ function getField(
     if (!hasAlias) {
       if (props.$all) {
         props = makeNewGetOptions(id, field || '', schema, props)
+      }
+
+      if (
+        checkSingleReference(
+          result,
+          props,
+          getField,
+          id,
+          field,
+          field,
+          language,
+          version,
+          ignore,
+          metaKeys
+        )
+      ) {
+        return true
       }
 
       for (const key in props) {
