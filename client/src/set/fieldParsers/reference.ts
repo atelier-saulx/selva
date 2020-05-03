@@ -5,7 +5,7 @@ import { verifiers } from './simple'
 
 const id = verifiers.id
 
-const verifySimple = payload => {
+const verifySimple = (payload: any) => {
   if (id(payload)) {
     return payload
   } else {
@@ -41,6 +41,6 @@ export default (
       )
     }
 
-    result[field] = payload
+    result[field] = verifySimple(payload)
   }
 }
