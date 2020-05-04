@@ -63,6 +63,9 @@ async function combineResults(
             delete q.getOpts.$db
             const r = await selva.get({ listResult: q.getOpts })
             g[parts[parts.length - 1]] = r.listResult
+          } else {
+            const r = await get(client, q.getOpts)
+            g[parts[parts.length - 1]] = r
           }
         })
       )

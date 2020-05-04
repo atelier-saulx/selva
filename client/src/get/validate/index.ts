@@ -45,11 +45,7 @@ async function transformDb(
       type: 'nested_query'
     })
 
-    // FIXME: mark this instead of sending it with the request unless necessary
-    // to save bandwidth later staple the results together
-    // like we want to do eventually with text search db
-    const result = await selva.get(props)
-    return { $value: result }
+    return { $value: {} }
   } else {
     addExtraQuery(extraQueries, {
       getOpts: props,
