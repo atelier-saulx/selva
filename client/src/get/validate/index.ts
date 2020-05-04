@@ -3,6 +3,7 @@ import { SelvaClient } from '../..'
 
 import checkAllowed from './checkAllowed'
 
+// TODO: $db for nested queries in $field.value
 import validateField from './field'
 import validateInherit from './inherit'
 import validateList from './list'
@@ -10,19 +11,47 @@ import validateFind from './find'
 
 async function transformDb(
   client: SelvaClient,
-  props: GetOptions | true,
+  props: GetOptions,
   path: string
-): Promise<GetOptions> {
-  return {}
+): Promise<GetOptions | true> {
+  const selva = global.SELVAS[props.$db]
+  if (!selva) {
+    throw new Error(
+      `$db found at ${path}.$db with GetOptions ${JSON.stringify(
+        props
+      )}, but no database named ${props.$db} exists`
+    )
+  }
+
+  if (props.$id || props.$alias) {
+    // nested queries
+    const result = await selva.get(props)
+    // FIXME: mark this instead of sending it with the request unless necessary
+    // to save bandwidth later staple the results together
+    // like we want to do eventually with text search db
+    return { $value: result }
+  } else if (props.$list) {
+    // assume references
+    // TODO: staple result back in
+    return true
+  } else {
+    // assume reference
+    // TODO: staple result back in
+    return true
+  }
 }
 
 async function validateNested(
   client: SelvaClient,
   props: GetOptions | true,
   path: string
-): Promise<void | GetOptions> {
+): Promise<void | GetOptions | true> {
   if (props === true) {
     return
+  }
+
+  if (props.$db) {
+    return await transformDb(client, props, path)
   }
 
   if (props.$id || props.$alias) {
@@ -31,11 +60,7 @@ async function validateNested(
 
   for (const field in props) {
     if (field.startsWith('$')) {
-      if (field === '$db') {
-        const newProps = await transformDb(client, props, path)
-        delete props.$db
-        return newProps
-      } else if (field === '$field') {
+      if (field === '$field') {
         await validateField(client, props.$field, path)
       } else if (field === '$inherit') {
         validateInherit(client, props.$inherit, path)
