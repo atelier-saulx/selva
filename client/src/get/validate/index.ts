@@ -44,10 +44,11 @@ async function transformDb(
       path,
       type: 'nested_query'
     })
-    const result = await selva.get(props)
+
     // FIXME: mark this instead of sending it with the request unless necessary
     // to save bandwidth later staple the results together
     // like we want to do eventually with text search db
+    const result = await selva.get(props)
     return { $value: result }
   } else {
     addExtraQuery(extraQueries, {
@@ -55,6 +56,10 @@ async function transformDb(
       path,
       type: props.$list ? 'references' : 'reference'
     })
+
+    if (props.$field) {
+      return { $field: props.$field }
+    }
 
     // TODO: staple result back in
     return true
