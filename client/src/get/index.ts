@@ -3,16 +3,27 @@ import { GetResult, GetOptions } from './types'
 import validate, { ExtraQueries } from './validate'
 
 async function combineResults(
-  _client: SelvaClient,
+  client: SelvaClient,
   extraQueries: ExtraQueries,
   getResult: GetResult
 ) {
+  if (Object.keys(extraQueries).length === 0) {
+    return
+  }
+
+  console.log(
+    'GET RESULT',
+    JSON.stringify(getResult, null, 2),
+    'EXTRA QUERIES',
+    extraQueries
+  )
   await Promise.all(
     Object.entries(extraQueries).map(async ([db, query]) => {
       const selva = global.SELVAS[db]
       await Promise.all(
         query.map(async q => {
           const parts = q.path.substr(1).split('.')
+
           let g = getResult
           for (let i = 0; i < parts.length - 2; i++) {
             const part = parts[i]
@@ -26,7 +37,8 @@ async function combineResults(
 
           if (q.type === 'reference') {
             q.getOpts.$id = g[parts[parts.length - 1]]
-            const r = await selva.get(q.getOpts)
+            console.log('Q', q, g)
+            const r = await get(client, q.getOpts)
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
             if (q.getOpts.$list === true) {
@@ -55,7 +67,9 @@ async function combineResults(
 async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
-  const getResult = await client.fetch(props)
+  const getResult = props.$db
+    ? await global.SELVAS[props.$db].fetch(props)
+    : await client.fetch(props)
   await combineResults(client, extraQueries, getResult)
   return getResult
 }

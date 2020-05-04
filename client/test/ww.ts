@@ -40,7 +40,9 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
-          rando: { type: 'string' }
+          rando: { type: 'string' },
+          sport: { type: 'reference' },
+          sports: { type: 'references' }
         }
       }
     }
@@ -152,6 +154,98 @@ test.serial('$db with reference/references', async t => {
       matches: [
         {
           rando: 'rando match!'
+        }
+      ]
+    }
+  )
+
+  await client1.delete('root')
+  await client2.delete('root')
+  await client1.destroy()
+  await client2.destroy()
+})
+
+test.serial.only('nested $db with reference/references', async t => {
+  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+
+  await client1.set({
+    $id: 'sp1',
+    type: 'sport',
+    rando: 'rando sport!',
+    matches: ['ma1'],
+    match: 'ma1'
+  })
+
+  const client2 = connect({ port: port2 }, { loglevel: 'info' })
+  global.SELVAS.sportdb = client1
+  global.SELVAS.matchdb = client2
+
+  await client2.set({
+    $id: 'ma1',
+    type: 'match',
+    rando: 'rando match!',
+    sport: 'sp1',
+    sports: ['sp1']
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client1.get({
+      $id: 'sp1',
+      rando: true,
+      match: {
+        $db: 'matchdb',
+        rando: true,
+        sport: {
+          $db: 'sportdb',
+          rando: true
+        },
+        sports: {
+          $db: 'sportdb',
+          rando: true,
+          $list: true
+        }
+      },
+      matches: {
+        $db: 'matchdb',
+        rando: true,
+        // FIXME
+        // sport: {
+        //   $db: 'sportdb',
+        //   rando: true
+        // },
+        // sports: {
+        //   $db: 'sportdb',
+        //   rando: true,
+        //   $list: true
+        // },
+        $list: true
+      }
+    }),
+    {
+      rando: 'rando sport!',
+      match: {
+        rando: 'rando match!',
+        sport: {
+          rando: 'rando sport!'
+        },
+        sports: [
+          {
+            rando: 'rando sport!'
+          }
+        ]
+      },
+      matches: [
+        {
+          rando: 'rando match!'
+          // FIXME
+          // sport: {
+          //   rando: 'rando sport!'
+          // },
+          // sports: [
+          //   {
+          //     rando: 'rando sport!'
+          //   }
+          // ]
         }
       ]
     }
