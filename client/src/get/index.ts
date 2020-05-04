@@ -12,9 +12,11 @@ async function combineResults(
   }
 
   if (Object.keys(getResult).length === 1 && getResult.listResult) {
-    for (let i = 0; i < getResult.listResult.length; i++) {
-      combineResults(client, extraQueries, getResult.listResult[i])
-    }
+    await Promise.all(
+      getResult.listResult.map(res => {
+        return combineResults(client, extraQueries, res)
+      })
+    )
     return
   }
 
