@@ -25,7 +25,7 @@ export function addExtraQuery(extraQueries: ExtraQueries, query: ExtraQuery) {
 
 async function transformDb(
   extraQueries: ExtraQueries,
-  client: SelvaClient,
+  _client: SelvaClient,
   props: GetOptions,
   path: string
 ): Promise<GetOptions | true> {
@@ -57,7 +57,6 @@ async function transformDb(
       return { $field: props.$field }
     }
 
-    // TODO: staple result back in
     return true
   }
 }
