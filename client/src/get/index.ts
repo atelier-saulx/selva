@@ -11,18 +11,23 @@ async function combineResults(
     return
   }
 
-  console.log(
-    'GET RESULT',
-    JSON.stringify(getResult, null, 2),
-    'EXTRA QUERIES',
-    extraQueries
-  )
+  if (Object.keys(getResult).length === 1 && getResult.listResult) {
+    for (let i = 0; i < getResult.listResult.length; i++) {
+      combineResults(client, extraQueries, getResult.listResult[i])
+    }
+    return
+  }
+
   await Promise.all(
     Object.entries(extraQueries).map(async ([db, query]) => {
       const selva = global.SELVAS[db]
       await Promise.all(
         query.map(async q => {
           const parts = q.path.substr(1).split('.')
+
+          if (parts[0] === 'listResult') {
+            parts.shift()
+          }
 
           let g = getResult
           for (let i = 0; i < parts.length - 2; i++) {
@@ -37,7 +42,6 @@ async function combineResults(
 
           if (q.type === 'reference') {
             q.getOpts.$id = g[parts[parts.length - 1]]
-            console.log('Q', q, g)
             const r = await get(client, q.getOpts)
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {

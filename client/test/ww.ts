@@ -165,7 +165,7 @@ test.serial('$db with reference/references', async t => {
   await client2.destroy()
 })
 
-test.serial.only('nested $db with reference/references', async t => {
+test.serial('nested $db with reference/references', async t => {
   const client1 = connect({ port: port1 }, { loglevel: 'info' })
 
   await client1.set({
@@ -208,16 +208,15 @@ test.serial.only('nested $db with reference/references', async t => {
       matches: {
         $db: 'matchdb',
         rando: true,
-        // FIXME
-        // sport: {
-        //   $db: 'sportdb',
-        //   rando: true
-        // },
-        // sports: {
-        //   $db: 'sportdb',
-        //   rando: true,
-        //   $list: true
-        // },
+        sport: {
+          $db: 'sportdb',
+          rando: true
+        },
+        sports: {
+          $db: 'sportdb',
+          rando: true,
+          $list: true
+        },
         $list: true
       }
     }),
@@ -236,16 +235,15 @@ test.serial.only('nested $db with reference/references', async t => {
       },
       matches: [
         {
-          rando: 'rando match!'
-          // FIXME
-          // sport: {
-          //   rando: 'rando sport!'
-          // },
-          // sports: [
-          //   {
-          //     rando: 'rando sport!'
-          //   }
-          // ]
+          rando: 'rando match!',
+          sport: {
+            rando: 'rando sport!'
+          },
+          sports: [
+            {
+              rando: 'rando sport!'
+            }
+          ]
         }
       ]
     }
