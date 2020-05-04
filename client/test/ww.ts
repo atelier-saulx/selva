@@ -110,7 +110,7 @@ test.serial('$db with nested query', async t => {
   await client2.destroy()
 })
 
-test.serial.only('$db with reference', async t => {
+test.serial('$db with reference/references', async t => {
   const client1 = connect({ port: port1 }, { loglevel: 'info' })
 
   await client1.set({
@@ -130,8 +130,7 @@ test.serial.only('$db with reference', async t => {
     rando: 'rando match!'
   })
 
-  // t.deepEqualIgnoreOrder(
-  console.log(
+  t.deepEqualIgnoreOrder(
     await client1.get({
       $id: 'sp1',
       rando: true,
@@ -139,7 +138,6 @@ test.serial.only('$db with reference', async t => {
         $db: 'matchdb',
         rando: true
       },
-      // TODO: move to another test
       matches: {
         $db: 'matchdb',
         rando: true,
@@ -150,7 +148,12 @@ test.serial.only('$db with reference', async t => {
       rando: 'rando sport!',
       match: {
         rando: 'rando match!'
-      }
+      },
+      matches: [
+        {
+          rando: 'rando match!'
+        }
+      ]
     }
   )
 
