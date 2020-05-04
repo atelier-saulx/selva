@@ -8,11 +8,19 @@ import validateInherit from './inherit'
 import validateList from './list'
 import validateFind from './find'
 
-function validateNested(
+async function transformDb(
   client: SelvaClient,
   props: GetOptions | true,
   path: string
-): void {
+): Promise<GetOptions> {
+  return {}
+}
+
+async function validateNested(
+  client: SelvaClient,
+  props: GetOptions | true,
+  path: string
+): Promise<void | GetOptions> {
   if (props === true) {
     return
   }
@@ -23,8 +31,12 @@ function validateNested(
 
   for (const field in props) {
     if (field.startsWith('$')) {
-      if (field === '$field') {
-        validateField(client, props.$field, path)
+      if (field === '$db') {
+        const newProps = await transformDb(client, props, path)
+        delete props.$db
+        return newProps
+      } else if (field === '$field') {
+        await validateField(client, props.$field, path)
       } else if (field === '$inherit') {
         validateInherit(client, props.$inherit, path)
       } else if (field === '$list') {
@@ -58,16 +70,24 @@ function validateNested(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      validateNested(client, props[field], path + '.' + field)
+      const modified = await validateNested(
+        client,
+        props[field],
+        path + '.' + field
+      )
+
+      if (modified) {
+        props[field] = modified
+      }
     }
   }
 }
 
-export default function validateTopLevel(
+export default async function validateTopLevel(
   client: SelvaClient,
   props: GetOptions,
   path: string = ''
-): void {
+): Promise<void> {
   for (const field in props) {
     if (field.startsWith('$')) {
       if (field === '$db') {
@@ -157,7 +177,14 @@ export default function validateTopLevel(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      validateNested(client, props[field], path + '.' + field)
+      const modified = await validateNested(
+        client,
+        props[field],
+        path + '.' + field
+      )
+      if (modified) {
+        props[field] = modified
+      }
     }
   }
 }

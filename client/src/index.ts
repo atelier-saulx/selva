@@ -1,3 +1,15 @@
+// TODO: start remove dirty globals
+declare global {
+  module NodeJS {
+    interface Global {
+      SELVAS: Record<string, SelvaClient>
+    }
+  }
+}
+
+global.SELVAS = {}
+// TODO: end remove dirty globals
+
 import { default as RedisClient, ConnectOptions } from './redis'
 import { set, SetOptions } from './set'
 import { ModifyOptions, ModifyResult } from './modifyTypes'

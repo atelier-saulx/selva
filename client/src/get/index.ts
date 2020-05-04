@@ -3,7 +3,7 @@ import { GetResult, GetOptions } from './types'
 import validate from './validate'
 
 async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
-  validate(client, props)
+  await validate(client, props)
   const getResult = await client.fetch(props)
   // TODO: verify props
   return getResult
