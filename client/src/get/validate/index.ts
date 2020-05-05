@@ -47,17 +47,28 @@ async function transformDb(
 
     return { $value: {} }
   } else {
+    let val: GetOptions | true = true
+
     addExtraQuery(extraQueries, {
       getOpts: props,
       path,
-      type: props.$list ? 'references' : 'reference'
+      type: props.$list || props.$find ? 'references' : 'reference'
     })
 
     if (props.$field) {
-      return { $field: props.$field }
+      val = { $field: props.$field }
+    } else if (
+      props.$list &&
+      typeof props.$list === 'object' &&
+      props.$list.$find &&
+      props.$list.$find.$traverse
+    ) {
+      val = { $field: props.$list.$find.$traverse }
+    } else if (props.$find && props.$find.$traverse) {
+      val = { $field: props.$find.$traverse }
     }
 
-    return true
+    return val
   }
 }
 

@@ -47,22 +47,31 @@ async function combineResults(
             const r = await get(client, q.getOpts)
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
-            if (q.getOpts.$list === true) {
-              q.getOpts.$list = {
-                $find: {
+            if (q.getOpts.$list) {
+              if (q.getOpts.$list === true) {
+                q.getOpts.$list = {
+                  $find: {
+                    $traverse: g[parts[parts.length - 1]]
+                  }
+                }
+              } else if (q.getOpts.$list.$find) {
+                q.getOpts.$list.$find.$traverse = g[parts[parts.length - 1]]
+              } else {
+                // $list but no $find
+                q.getOpts.$list.$find = {
                   $traverse: g[parts[parts.length - 1]]
                 }
               }
-            } else if (q.getOpts.$list.$find) {
-              q.getOpts.$list.$find.$traverse = g[parts[parts.length - 1]]
-            } else {
-              // $list but no $find
-              q.getOpts.$list.$find = { $traverse: g[parts[parts.length - 1]] }
-            }
 
-            delete q.getOpts.$db
-            const r = await selva.get({ listResult: q.getOpts })
-            g[parts[parts.length - 1]] = r.listResult
+              delete q.getOpts.$db
+              const r = await selva.get({ listResult: q.getOpts })
+              g[parts[parts.length - 1]] = r.listResult
+            } else if (q.getOpts.$find) {
+              q.getOpts.$find.$traverse = g[parts[parts.length - 1]]
+              delete q.getOpts.$db
+              const r = await selva.get({ listResult: q.getOpts })
+              g[parts[parts.length - 1]] = r.listResult
+            }
           } else {
             const r = await get(client, q.getOpts)
             g[parts[parts.length - 1]] = r
