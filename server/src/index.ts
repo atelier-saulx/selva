@@ -9,7 +9,7 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   }
 }
 
-const validate(opts: ServerOptions, required: string[], illegal: string:[]): string | undefined => {
+const validate(opts: ServerOptions, required: string[], illegal: string[]): string | undefined => {
   for  (const field of required) {
     if (!opts[field]) {
       return `${field} is required`
