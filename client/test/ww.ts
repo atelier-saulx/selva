@@ -407,7 +407,7 @@ test.serial('$db with $find', async t => {
   await client2.destroy()
 })
 
-test.serial.skip('$db with $list.$find.$find', async t => {
+test.serial.only('$db with $list.$find.$find', async t => {
   const client1 = connect({ port: port1 }, { loglevel: 'info' })
 
   await client1.set({
@@ -465,6 +465,7 @@ test.serial.skip('$db with $list.$find.$find', async t => {
               }
             ],
             $find: {
+              $db: 'sportdb',
               $filter: [
                 {
                   $operator: '=',
