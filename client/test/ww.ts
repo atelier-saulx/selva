@@ -41,6 +41,7 @@ test.before(async t => {
         prefix: 'ma',
         fields: {
           rando: { type: 'string' },
+          value: { type: 'number', search: true },
           sport: { type: 'reference' },
           sports: { type: 'references' }
         }
@@ -244,6 +245,87 @@ test.serial('nested $db with reference/references', async t => {
               rando: 'rando sport!'
             }
           ]
+        }
+      ]
+    }
+  )
+
+  await client1.delete('root')
+  await client2.delete('root')
+  await client1.destroy()
+  await client2.destroy()
+})
+
+test.serial('$db with $list with filter and multiple', async t => {
+  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+
+  await client1.set({
+    $id: 'sp1',
+    type: 'sport',
+    rando: 'rando sport!',
+    matches: ['ma1', 'ma2', 'ma3']
+  })
+
+  const client2 = connect({ port: port2 }, { loglevel: 'info' })
+  global.SELVAS.matchdb = client2
+
+  await client2.set({
+    $id: 'ma1',
+    type: 'match',
+    value: 1,
+    rando: 'rando match 1!'
+  })
+
+  await client2.set({
+    $id: 'ma2',
+    type: 'match',
+    value: 2,
+    rando: 'rando match 2!'
+  })
+
+  await client2.set({
+    $id: 'ma3',
+    type: 'match',
+    value: 3,
+    rando: 'rando match 3!'
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client1.get({
+      $id: 'sp1',
+      rando: true,
+      matches: {
+        $db: 'matchdb',
+        rando: true,
+        value: true,
+        $list: {
+          $sort: {
+            $field: 'value',
+            $order: 'asc'
+          },
+          $find: {
+            $filter: [
+              {
+                $operator: '..',
+                $field: 'value',
+                $value: [2, 3]
+              }
+            ]
+          }
+        }
+      }
+    }),
+    {
+      rando: 'rando sport!',
+      matches: [
+        {
+          rando: 'rando match 2!',
+          value: 2
+        },
+
+        {
+          rando: 'rando match 3!',
+          value: 3
         }
       ]
     }
