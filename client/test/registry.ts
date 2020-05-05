@@ -1,15 +1,19 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { startRegistry } from '@saulx/selva-server'
+import { startRegistry, startOrigin } from '@saulx/selva-server'
 // import './assertions'
 // import { wait } from './assertions'
 
 // let srv
 
 startRegistry({}).then(server => {
-  const x = connect({ port: server.port })
+  startOrigin({ name: 'default', registry: { port: server.port } }).then(
+    origin => {
+      const x = connect({ port: server.port })
 
-  console.log('start client')
+      console.log('start origin also started dat registry')
+    }
+  )
 })
 
 // connect

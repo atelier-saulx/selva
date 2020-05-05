@@ -1,6 +1,7 @@
 import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
 import getPort from 'get-port'
+import chalk from 'chalk'
 
 const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   let parsedOpts: ServerOptions
@@ -72,6 +73,7 @@ export async function startOrigin(opts: Options): Promise<SelvaServer> {
   // name default will be the fallback (or 'main' ?)
   const err = validate(parsedOpts, ['registry', 'name'], ['replica'])
   if (err) {
+    console.error(`Error starting origin selvaServer ${chalk.red(err)}`)
     throw new Error(err)
   }
   return startServer('origin', parsedOpts)
@@ -85,6 +87,7 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
     ['registry', 'replica', 'backups', 'name']
   )
   if (err) {
+    console.error(`Error starting registry selvaServer ${chalk.red(err)}`)
     throw new Error(err)
   }
   return startServer('registry', parsedOpts)

@@ -19,7 +19,7 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
         ? m
         : path.join(
             __dirname,
-            '../',
+            '../../',
             'modules',
             'binaries',
             platform,

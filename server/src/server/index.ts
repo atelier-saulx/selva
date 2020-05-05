@@ -1,7 +1,7 @@
 import { ServerType } from '@saulx/selva'
 import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
-import start from './start'
+import startRedis from './startRedis'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -14,7 +14,13 @@ export class SelvaServer extends EventEmitter {
   }
 
   start(opts: ServerOptions) {
-    start(this, opts)
+    startRedis(this, opts)
+
+    // after this check what type you are
+
+    // check if opts.registry
+
+    // handle monitoring to registry
   }
 
   destroy() {}

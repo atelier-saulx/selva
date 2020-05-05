@@ -54,6 +54,7 @@
     "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
+    "chalk": "^4.0.0",
     "get-port": "^5.1.1",
     "aws-sdk": "^2.616.0",
     "dropbox": "^4.0.30",
