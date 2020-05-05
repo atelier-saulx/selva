@@ -82,7 +82,7 @@ export async function startOrigin(opts: Options): Promise<SelvaServer> {
   // default name is 'main'
   const err = validate(parsedOpts, ['registry', 'name'], ['replica'])
   if (err) {
-    console.error(`Error starting origin selvaServer ${chalk.red(err)}`)
+    console.error(`Error starting origin selva server ${chalk.red(err)}`)
     throw new Error(err)
   }
   return startServer('origin', parsedOpts)
@@ -96,7 +96,7 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
     ['registry', 'replica', 'backups', 'name', 'main']
   )
   if (err) {
-    console.error(`Error starting registry selvaServer ${chalk.red(err)}`)
+    console.error(`Error starting registry selva server ${chalk.red(err)}`)
     throw new Error(err)
   }
   return startServer('registry', parsedOpts)
