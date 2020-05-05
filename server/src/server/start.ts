@@ -52,10 +52,10 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
 
   const redisDb = spawn('redis-server', args)
 
+  // not so nice
   const emit = (...args) => {
     server.emit('data', ...args)
   }
-
   redisDb.stderr.on('data', emit)
   redisDb.stdout.on('data', emit)
   redisDb.on('close', (...args) => {

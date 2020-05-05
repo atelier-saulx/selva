@@ -22,6 +22,9 @@ export class SelvaClient extends EventEmitter {
       }
       clientOpts.loglevel = 'off'
     }
+
+    console.log('yesh getting those options to connect to a registry!', opts)
+
     // this.redis = new Redis(opts, this, clientOpts)
   }
 
