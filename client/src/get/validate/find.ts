@@ -7,7 +7,8 @@ import validateFilter from './filter'
 export default function validateFind(
   client: SelvaClient,
   find: Find,
-  path: string
+  path: string,
+  findInFind: boolean = false
 ): void {
   const err = (mainMsg?: string): never => {
     if (!mainMsg) {
@@ -34,9 +35,18 @@ export default function validateFind(
     )
   }
 
-  const allowed = checkAllowed(find, new Set(['$traverse', '$filter', '$find']))
+  const allowed = checkAllowed(
+    find,
+    new Set(['$traverse', '$filter', '$find', '$db'])
+  )
   if (allowed !== true) {
     err(`Unsupported operator or field ${allowed}`)
+  }
+
+  if (find.$db && !findInFind) {
+    err(
+      `Unupported field $db in ${find}, $find.$db supported only when finds are directly nested: $find.$find.$db`
+    )
   }
 
   if (find.$traverse) {
@@ -46,7 +56,7 @@ export default function validateFind(
   }
 
   if (find.$find) {
-    validateFind(client, find.$find, path + '.$find')
+    validateFind(client, find.$find, path + '.$find', true)
   }
 
   if (find.$filter) {

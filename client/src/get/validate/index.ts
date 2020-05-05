@@ -99,6 +99,9 @@ async function validateNested(
       } else if (field === '$list') {
         validateList(client, props.$list, path)
       } else if (field === '$find') {
+        if (props.$find.$db) {
+          console.log('HELLOO', props)
+        }
         validateFind(client, props.$find, path)
       } else if (field === '$default') {
         continue
