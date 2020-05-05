@@ -1,12 +1,25 @@
 import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
+import getPort from 'get-port'
 
 const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
+  let parsedOpts: ServerOptions
   if (typeof opts === 'function') {
-    return opts()
+    parsedOpts = await opts()
   } else {
-    return opts
+    parsedOpts = await opts
   }
+  if (!parsedOpts.port) {
+    parsedOpts.port = await getPort()
+    console.log('Generated port', parsedOpts.port)
+  }
+
+  if (!parsedOpts.dir) {
+    parsedOpts.dir = process.cwd(),
+
+  }
+
+  return parsedOpts
 }
 
 const validate = (
@@ -19,13 +32,23 @@ const validate = (
       return `${field} is required`
     }
   }
+  
   for (const field of illegal) {
     if (opts[field]) {
       return `${field} is not a valid option`
     }
   }
-  if (opts.port && typeof opts.port !== 'number') {
+
+  if (!opts.port) {
+    return `no port provided`
+  }
+
+  if (typeof opts.port !== 'number') {
     return `port is not a number ${opts.port}`
+  }
+
+  if (typeof opts.dir !== 'string') {
+    return `string is not a string ${opts.dir}`
   }
 }
 
@@ -40,7 +63,11 @@ export async function startOrigin(opts: Options): Promise<SelvaServer> {
 
 export async function startRegistry(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
-  const err = validate(parsedOpts, [], ['registry', 'replica', 'backup'])
+  const err = validate(
+    parsedOpts,
+    [],
+    ['registry', 'replica', 'backups']
+  )
   if (err) {
     throw new Error(err)
   }
@@ -52,4 +79,6 @@ export async function startReplica(opts: Options) {}
 
 export async function startSubscriptionManager(opts: Options) {}
 
+// make a registry, then add origin, then add subs manager
+// backups may be a bit problematic here :/
 export async function start(opts: Options) {}

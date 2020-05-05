@@ -22,7 +22,6 @@ export class SelvaClient extends EventEmitter {
       }
       clientOpts.loglevel = 'off'
     }
-
     // this.redis = new Redis(opts, this, clientOpts)
   }
 

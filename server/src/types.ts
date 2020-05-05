@@ -13,6 +13,7 @@ export type ServerOptions = {
   host?: string
   name?: string
   replica?: string
+  dir?: string
 }
 
 export type Options =
