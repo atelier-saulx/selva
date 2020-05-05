@@ -6,10 +6,10 @@ import { startRegistry, startOrigin } from '@saulx/selva-server'
 
 // let srv
 
-startRegistry({}).then(server => {
-  startOrigin({ name: 'main', registry: { port: server.port } }).then(
+startRegistry({}).then(registry => {
+  startOrigin({ name: 'main', registry: { port: registry.port } }).then(
     origin => {
-      const x = connect({ port: server.port })
+      const x = connect({ port: registry.port })
 
       console.log('start origin also started dat registry')
     }
