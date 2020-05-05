@@ -15,12 +15,23 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   }
 
   if (!parsedOpts.dir) {
-    parsedOpts.dir = process.cwd(),
+    parsedOpts.dir = process.cwd()
+  }
 
+  if (parsedOpts.modules) {
+    if (Array.isArray(parsedOpts.modules)) {
+      parsedOpts.modules = [
+        ...new Set([...defaultModules, ...parsedOpts.modules])
+      ]
+    }
+  } else {
+    parsedOpts.modules = defaultModules
   }
 
   return parsedOpts
 }
+
+const defaultModules = ['redisearch', 'selva']
 
 const validate = (
   opts: ServerOptions,
@@ -32,7 +43,7 @@ const validate = (
       return `${field} is required`
     }
   }
-  
+
   for (const field of illegal) {
     if (opts[field]) {
       return `${field} is not a valid option`
@@ -50,11 +61,16 @@ const validate = (
   if (typeof opts.dir !== 'string') {
     return `string is not a string ${opts.dir}`
   }
+
+  if (!Array.isArray(opts.modules)) {
+    return `Modules needs to be an array of strings`
+  }
 }
 
 export async function startOrigin(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
-  const err = validate(parsedOpts, ['registry'], ['replica'])
+  // name default will be the fallback (or 'main' ?)
+  const err = validate(parsedOpts, ['registry', 'name'], ['replica'])
   if (err) {
     throw new Error(err)
   }
@@ -66,7 +82,7 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
   const err = validate(
     parsedOpts,
     [],
-    ['registry', 'replica', 'backups']
+    ['registry', 'replica', 'backups', 'name']
   )
   if (err) {
     throw new Error(err)
