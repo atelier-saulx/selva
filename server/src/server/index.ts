@@ -5,6 +5,8 @@ import start from './start'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
+  public port: number
+
   constructor(type: ServerType) {
     super()
     this.setMaxListeners(10000)

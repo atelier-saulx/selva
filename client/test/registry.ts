@@ -1,6 +1,6 @@
 import test from 'ava'
 import { SelvaClient } from '../src/index'
-// import { start } from '@saulx/selva-server'
+import { startRegistry } from '@saulx/selva-server'
 // import './assertions'
 // import { wait } from './assertions'
 
@@ -9,6 +9,10 @@ import { SelvaClient } from '../src/index'
 const x = new SelvaClient({})
 
 console.log(x)
+
+startRegistry({}).then(server => {
+  console.log(server.port)
+})
 
 // connect
 
