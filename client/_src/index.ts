@@ -23,44 +23,10 @@ import digest from './digest'
 import { IdOptions } from '../lua/src/id'
 import { v4 as uuid } from 'uuid'
 const MAX_SCHEMA_UPDATE_RETRIES = 100
-export type LogEntry = { level: LogLevel; msg: string }
-export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
-export type LogFn = (log: LogEntry) => void
 
 export { default as prefixes } from './prefixes'
 
-export type SelvaOptions = {
-  loglevel?: LogLevel
-  log?: LogFn
-}
-
-const wait = (t: number = 0): Promise<void> =>
-  new Promise(r => setTimeout(r, t))
-
 // split this up and clean it!
-
-let SCRIPTS
-
-try {
-  SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
-    (obj, scriptName) => {
-      let distPath = pathJoin(__dirname, '..')
-      if (!distPath.endsWith('dist')) {
-        distPath = pathJoin(distPath, 'dist')
-      }
-      return Object.assign(obj, {
-        [scriptName]: readFileSync(
-          pathJoin(distPath, 'lua', `${scriptName}.lua`),
-          'utf8'
-        )
-      })
-    },
-    {}
-  )
-} catch (e) {
-  console.error(`Failed to read modify.lua ${e.stack}`)
-  process.exit(1)
-}
 
 export class SelvaClient extends EventEmitter {
   public schema: Schema
@@ -69,52 +35,6 @@ export class SelvaClient extends EventEmitter {
   private loglevel: LogLevel = 'off'
   public clientId: string
   private schemaObservable: Observable<Schema>
-
-  constructor(
-    opts:
-      | ConnectOptions
-      | (() => Promise<ConnectOptions>)
-      | Promise<ConnectOptions>,
-    selvaOpts?: SelvaOptions
-  ) {
-    super()
-    this.clientId = uuid()
-    if (selvaOpts && selvaOpts.loglevel) {
-      this.loglevel = selvaOpts.loglevel
-    } else {
-      this.loglevel = 'off'
-      if (!selvaOpts) {
-        selvaOpts = {}
-      }
-      selvaOpts.loglevel = 'off'
-    }
-
-    this.setMaxListeners(100)
-    this.redis = new RedisClient(opts, this, selvaOpts)
-  }
-
-  subscribeSchema() {
-    console.log('SUBSCRIBE SCHEMA')
-    if (this.schemaObservable) {
-      return this.schemaObservable
-    }
-
-    const obs = this.redis.subscribe(`___selva_subscription:schema_update`, {})
-
-    this.schemaObservable = new Observable<Schema>(observe => {
-      const sub = obs.subscribe({
-        next: (_x: any) => {
-          observe.next(_x)
-        },
-        error: observe.error,
-        complete: observe.complete
-      })
-
-      return <any>sub
-    })
-
-    return this.schemaObservable
-  }
 
   async conformToSchema(props: SetOptions): Promise<SetOptions> {
     if (!props.$id && !props.type && !props.$alias) {

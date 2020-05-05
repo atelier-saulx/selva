@@ -1,12 +1,14 @@
 import test from 'ava'
-// import { connect } from '../src/index'
+import { SelvaClient } from '../src/index'
 // import { start } from '@saulx/selva-server'
 // import './assertions'
 // import { wait } from './assertions'
 
 // let srv
 
-console.log('crazy time')
+const x = new SelvaClient({})
+
+console.log(x)
 
 // connect
 

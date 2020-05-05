@@ -1,6 +1,7 @@
 import { SelvaClient } from '.'
 import { Id } from './schema'
 
+// needs to change
 export const getTypeFromIdSync = (client: SelvaClient, id: Id): string => {
   return client.schema.prefixToTypeMapping[id.slice(0, 2)]
 }

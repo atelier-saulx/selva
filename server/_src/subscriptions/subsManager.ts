@@ -5,9 +5,11 @@ import addListenersUpdate from './update/addListeners'
 import addUpdate from './update/addUpdate'
 import { hash } from './util'
 // for add listeners...
-import { Worker } from 'worker_threads'
+// import { Worker } from 'worker_threads'
 
 import { Subscription, Tree, RefreshSubscriptions } from './'
+
+// make all these functions seperate like tree does not make sense other wise
 
 export default class SubscriptionManager {
   public client: SelvaClient
