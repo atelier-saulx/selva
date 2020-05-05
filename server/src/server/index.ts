@@ -1,4 +1,4 @@
-import { ServerType } from '@saulx/selva'
+import { ServerType, connect, SelvaClient } from '@saulx/selva'
 import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
@@ -6,6 +6,7 @@ import startRedis from './startRedis'
 export class SelvaServer extends EventEmitter {
   public type: ServerType
   public port: number
+  public registry: SelvaClient
 
   constructor(type: ServerType) {
     super()
@@ -15,6 +16,13 @@ export class SelvaServer extends EventEmitter {
 
   start(opts: ServerOptions) {
     startRedis(this, opts)
+
+    if (opts.registry) {
+      this.registry = connect(opts.registry)
+      console.log('create registry client')
+      // important to define that you want to get stuff from the registry! - do it in nested methods
+      // in get and set you can also pass 'registry'
+    }
 
     // after this check what type you are
 

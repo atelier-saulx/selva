@@ -51,6 +51,10 @@ const validate = (
     }
   }
 
+  if (opts.name === 'registry') {
+    return `Registry is a reserved name`
+  }
+
   if (!opts.port) {
     return `no port provided`
   }
@@ -70,7 +74,8 @@ const validate = (
 
 export async function startOrigin(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
-  // name default will be the fallback (or 'main' ?)
+
+  // default name is 'main'
   const err = validate(parsedOpts, ['registry', 'name'], ['replica'])
   if (err) {
     console.error(`Error starting origin selvaServer ${chalk.red(err)}`)
