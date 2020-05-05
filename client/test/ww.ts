@@ -21,6 +21,7 @@ test.before(async t => {
       sport: {
         prefix: 'sp',
         fields: {
+          value: { type: 'number', search: true },
           rando: { type: 'string' },
           matches: { type: 'references' },
           match: { type: 'reference' }
@@ -397,6 +398,97 @@ test.serial('$db with $find', async t => {
         rando: 'rando match 3!',
         value: 3
       }
+    }
+  )
+
+  await client1.delete('root')
+  await client2.delete('root')
+  await client1.destroy()
+  await client2.destroy()
+})
+
+test.serial.skip('$db with $list.$find.$find', async t => {
+  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+
+  await client1.set({
+    $id: 'sp1',
+    type: 'sport',
+    value: 1,
+    rando: 'rando sport!',
+    matches: ['ma1', 'ma2', 'ma3']
+  })
+
+  const client2 = connect({ port: port2 }, { loglevel: 'info' })
+  global.SELVAS.matchdb = client2
+
+  await client2.set({
+    $id: 'ma1',
+    type: 'match',
+    value: 1,
+    rando: 'rando match 1!'
+  })
+
+  await client2.set({
+    $id: 'ma2',
+    type: 'match',
+    value: 2,
+    rando: 'rando match 2!'
+  })
+
+  await client2.set({
+    $id: 'ma3',
+    type: 'match',
+    value: 3,
+    rando: 'rando match 3!'
+  })
+
+  //t.deepEqualIgnoreOrder(
+  console.log(
+    await client1.get({
+      $id: 'sp1',
+      rando: true,
+      sports: {
+        $db: 'matchdb',
+        rando: true,
+        value: true,
+        $list: {
+          $sort: {
+            $field: 'value',
+            $order: 'asc'
+          },
+          $find: {
+            $filter: [
+              {
+                $operator: '..',
+                $field: 'value',
+                $value: [2, 3]
+              }
+            ],
+            $find: {
+              $filter: [
+                {
+                  $operator: '=',
+                  $field: 'value',
+                  $value: 1
+                }
+              ]
+            }
+          }
+        }
+      }
+    }),
+    {
+      rando: 'rando sport!',
+      sports: [
+        {
+          rando: 'rando sport!',
+          value: 1
+        },
+        {
+          rando: 'rando sport!',
+          value: 1
+        }
+      ]
     }
   )
 
