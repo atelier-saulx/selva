@@ -2,21 +2,25 @@ import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
 
 const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
- if (typeof opts === 'function') {
+  if (typeof opts === 'function') {
     return opts()
-  } else { 
+  } else {
     return opts
   }
 }
 
-const validate(opts: ServerOptions, required: string[], illegal: string[]): string | undefined => {
-  for  (const field of required) {
+const validate = (
+  opts: ServerOptions,
+  required: string[],
+  illegal: string[]
+): string | undefined => {
+  for (const field of required) {
     if (!opts[field]) {
       return `${field} is required`
     }
   }
-  for  (const field of illegal) {
-    if (opts[illegal]) {
+  for (const field of illegal) {
+    if (opts[field]) {
       return `${field} is not a valid option`
     }
   }
@@ -25,7 +29,7 @@ const validate(opts: ServerOptions, required: string[], illegal: string[]): stri
   }
 }
 
-export async function startOrigin(opts: Options):Promise<SelvaServer>  {
+export async function startOrigin(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
   const err = validate(parsedOpts, ['registry'], ['replica'])
   if (err) {
@@ -34,7 +38,7 @@ export async function startOrigin(opts: Options):Promise<SelvaServer>  {
   return startServer('origin', parsedOpts)
 }
 
-export async function startRegistry(opts: Options):Promise<SelvaServer> {
+export async function startRegistry(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
   const err = validate(parsedOpts, [], ['registry', 'replica', 'backup'])
   if (err) {
