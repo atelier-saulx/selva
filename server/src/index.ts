@@ -29,6 +29,10 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
     parsedOpts.modules = defaultModules
   }
 
+  if (parsedOpts.default && !parsedOpts.name) {
+    parsedOpts.name = 'default'
+  }
+
   return parsedOpts
 }
 
@@ -89,7 +93,7 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
   const err = validate(
     parsedOpts,
     [],
-    ['registry', 'replica', 'backups', 'name']
+    ['registry', 'replica', 'backups', 'name', 'main']
   )
   if (err) {
     console.error(`Error starting registry selvaServer ${chalk.red(err)}`)

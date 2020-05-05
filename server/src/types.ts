@@ -15,6 +15,7 @@ export type ServerOptions = {
   replica?: string
   modules?: string[]
   dir?: string
+  default?: boolean
 }
 
 export type Options =

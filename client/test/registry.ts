@@ -7,7 +7,7 @@ import { startRegistry, startOrigin } from '@saulx/selva-server'
 // let srv
 
 startRegistry({}).then(registry => {
-  startOrigin({ name: 'main', registry: { port: registry.port } }).then(
+  startOrigin({ default: true, registry: { port: registry.port } }).then(
     origin => {
       const x = connect({ port: registry.port })
 
