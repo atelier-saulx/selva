@@ -17,7 +17,7 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   modules.forEach(m => {
     const platform = process.platform + '_' + process.arch
     const p =
-      // if it contains ".so"" then dont do this
+      // if it contains ".so"" then don't do this
       m.indexOf('.so') !== -1
         ? m
         : path.join(
