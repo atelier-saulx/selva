@@ -25,5 +25,7 @@ class Redis extends RedisMethods {
     resolve: (x: any) => void = () => {},
     reject: (x: Error) => void = () => {},
     opts: Type = { name: 'default' }
-  ) {}
+  ) {
+    console.log('lullz')
+  }
 }
