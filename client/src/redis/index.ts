@@ -31,3 +31,5 @@ class Redis extends RedisMethods {
     console.log('lullz', command)
   }
 }
+
+export default Redis

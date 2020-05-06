@@ -61,6 +61,7 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   redisDb.on('close', (...args) => {
     console.log('redis closed?')
     server.emit('close', ...args)
+  }
 
   // want to make nice nice
   console.log(redisDb)
