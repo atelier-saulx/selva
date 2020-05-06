@@ -407,10 +407,10 @@ test.serial('$db with $find', async t => {
   await client2.destroy()
 })
 
-test.serial.only('$db with $list.$find.$find', async t => {
+test.serial('$db with $list.$find.$find', async t => {
   const client1 = connect({ port: port1 }, { loglevel: 'info' })
   const client2 = connect({ port: port2 }, { loglevel: 'info' })
-  global.SELVAS.sportsdb = client1
+  global.SELVAS.sportdb = client1
   global.SELVAS.matchdb = client2
 
   await client1.set({
@@ -445,8 +445,7 @@ test.serial.only('$db with $list.$find.$find', async t => {
     rando: 'rando match 3!'
   })
 
-  //t.deepEqualIgnoreOrder(
-  console.log(
+  t.deepEqualIgnoreOrder(
     await client1.get({
       $id: 'sp1',
       rando: true,
@@ -486,10 +485,6 @@ test.serial.only('$db with $list.$find.$find', async t => {
     {
       rando: 'rando sport!',
       sports: [
-        {
-          rando: 'rando sport!',
-          value: 1
-        },
         {
           rando: 'rando sport!',
           value: 1

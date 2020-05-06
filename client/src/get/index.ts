@@ -65,7 +65,53 @@ async function combineResults(
 
               delete q.getOpts.$db
               const r = await selva.get({ listResult: q.getOpts })
-              g[parts[parts.length - 1]] = r.listResult
+              if (r.listResult[0] && r.listResult[0].__$find) {
+                console.log('HEYYOOOOOOOO', r.listResult[0].__$find)
+                let fieldKeys = {}
+                for (const key in q.getOpts) {
+                  if (!key.startsWith('$') && key !== '__$find') {
+                    fieldKeys[key] = q.getOpts[key]
+                  }
+                }
+
+                const findOpts = r.listResult[0].__$find.opts
+                const findIds = r.listResult.reduce((acc, e) => {
+                  acc.add(...e.__$find.ids)
+                  return acc
+                }, new Set())
+                const db = findOpts.$db
+                delete findOpts.$db
+                console.log('FIRST RESPONSE', JSON.stringify(r, null, 2))
+                console.log(
+                  'UUUUUUUUH',
+                  JSON.stringify(
+                    {
+                      $db: db,
+                      listResult: {
+                        ...fieldKeys,
+                        $list: {
+                          $find: { ...findOpts, $traverse: [...findIds] }
+                        }
+                      }
+                    },
+                    null,
+                    2
+                  )
+                )
+                const nestedResult = await selva.get({
+                  $db: db,
+                  listResult: {
+                    ...fieldKeys,
+                    $list: {
+                      $find: { ...findOpts, $traverse: [...findIds] }
+                    }
+                  }
+                })
+                console.log('OOOOOOOOO', nestedResult)
+                g[parts[parts.length - 1]] = nestedResult.listResult
+              } else {
+                g[parts[parts.length - 1]] = r.listResult
+              }
             } else if (q.getOpts.$find) {
               q.getOpts.$find.$traverse = g[parts[parts.length - 1]]
               delete q.getOpts.$db

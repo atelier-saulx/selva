@@ -1,4 +1,4 @@
-import { GetOptions } from '../types'
+import { GetOptions, Find } from '../types'
 import { SelvaClient } from '../..'
 
 import checkAllowed from './checkAllowed'
@@ -60,12 +60,17 @@ async function transformDb(
     } else if (
       props.$list &&
       typeof props.$list === 'object' &&
-      props.$list.$find &&
-      props.$list.$find.$traverse
+      props.$list.$find
     ) {
-      val = { $field: props.$list.$find.$traverse }
-    } else if (props.$find && props.$find.$traverse) {
-      val = { $field: props.$find.$traverse }
+      console.log('TRANSFORMING LIST FIND', props)
+      if (props.$list.$find.$traverse) {
+        val = { $field: props.$list.$find.$traverse }
+      }
+    } else if (props.$find) {
+      console.log('TRANSFORMING FIND', props)
+      if (props.$find.$traverse) {
+        val = { $field: props.$find.$traverse }
+      }
     }
 
     return val
@@ -97,9 +102,9 @@ async function validateNested(
       } else if (field === '$inherit') {
         validateInherit(client, props.$inherit, path)
       } else if (field === '$list') {
-        validateList(client, props.$list, path)
+        validateList(props, client, props.$list, path)
       } else if (field === '$find') {
-        validateFind(client, props.$find, path)
+        validateFind(props, client, props.$find, path)
       } else if (field === '$default') {
         continue
       } else if (field === '$all') {
