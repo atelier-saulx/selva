@@ -12,7 +12,8 @@
     "buildLua": " scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ../bin/transpileScript $script; done && node ./lua/postprocessLuaTests.js",
     "buildTs": "tsc",
     "watchTs": "tsc --watch",
-    "clean": "rm -rf ./dist"
+    "clean": "rm -rf ./dist",
+    "generate-redis-methods": "node ./src/redis/methods/generator/index.js"
   },
   "husky": {
     "hooks": {

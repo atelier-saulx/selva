@@ -1,19 +1,13 @@
 import { RedisClient } from 'redis'
-import { RedisCommand } from '../types'
-import { ServerType } from '../../types'
+import { RedisCommand, Client } from '../types'
+import './redisSearch'
+// getClient
+//   addSelvaClient
 
-// script shas
-type client = {
-  subscriber: RedisClient
-  publisher: RedisClient
-  buffer: RedisCommand[]
-  name: string // for logging
-  id: string // url:port
-  connected: boolean
-  bufferInProgress: boolean
-  busy: boolean // can be written from the registry
-  heartbeatTimout: NodeJS.Timeout
-  type: ServerType
-}
+// subscribe
+// unsubscribe
 
-// subscriptions - not relevant for every client
+// removeSelvaClient
+
+// addCommandToQueue
+//   process subscribe here as well (for normal redis)

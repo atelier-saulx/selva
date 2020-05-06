@@ -1,31 +1,19 @@
 import { EventEmitter } from 'events'
-import { v4 as uuid } from 'uuid'
 import { ConnectOptions, ClientOpts, LogLevel, ServerType } from './types'
 import digest from './digest'
+import Redis from './redis'
 
 export class SelvaClient extends EventEmitter {
   public id: string
-  public loglevel: LogLevel = 'off'
-  // public redis: Redis
+  public redis: Redis
 
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
     super()
     this.setMaxListeners(10000)
-    this.id = uuid()
-
-    if (clientOpts && clientOpts.loglevel) {
-      this.loglevel = clientOpts.loglevel
-    } else {
-      this.loglevel = 'off'
-      if (!clientOpts) {
-        clientOpts = {}
-      }
-      clientOpts.loglevel = 'off'
+    if (!clientOpts) {
+      clientOpts = {}
     }
-
-    console.log('yesh getting those options to connect to a registry!', opts)
-
-    // this.redis = new Redis(opts, this, clientOpts)
+    this.redis = new Redis(this, opts, clientOpts)
   }
 
   digest(payload: string) {
