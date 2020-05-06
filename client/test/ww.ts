@@ -409,6 +409,9 @@ test.serial('$db with $find', async t => {
 
 test.serial.only('$db with $list.$find.$find', async t => {
   const client1 = connect({ port: port1 }, { loglevel: 'info' })
+  const client2 = connect({ port: port2 }, { loglevel: 'info' })
+  global.SELVAS.sportsdb = client1
+  global.SELVAS.matchdb = client2
 
   await client1.set({
     $id: 'sp1',
@@ -418,13 +421,11 @@ test.serial.only('$db with $list.$find.$find', async t => {
     matches: ['ma1', 'ma2', 'ma3']
   })
 
-  const client2 = connect({ port: port2 }, { loglevel: 'info' })
-  global.SELVAS.matchdb = client2
-
   await client2.set({
     $id: 'ma1',
     type: 'match',
     value: 1,
+    sports: ['sp1'],
     rando: 'rando match 1!'
   })
 
@@ -432,13 +433,15 @@ test.serial.only('$db with $list.$find.$find', async t => {
     $id: 'ma2',
     type: 'match',
     value: 2,
-    rando: 'rando match 2!'
+    rando: 'rando match 2!',
+    sports: ['sp1']
   })
 
   await client2.set({
     $id: 'ma3',
     type: 'match',
     value: 3,
+    sports: ['sp1'],
     rando: 'rando match 3!'
   })
 
@@ -457,6 +460,7 @@ test.serial.only('$db with $list.$find.$find', async t => {
             $order: 'asc'
           },
           $find: {
+            $traverse: 'matches',
             $filter: [
               {
                 $operator: '..',
@@ -465,6 +469,7 @@ test.serial.only('$db with $list.$find.$find', async t => {
               }
             ],
             $find: {
+              $traverse: 'sports',
               $db: 'sportdb',
               $filter: [
                 {

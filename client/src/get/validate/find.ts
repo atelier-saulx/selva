@@ -56,6 +56,7 @@ export default function validateFind(
   }
 
   if (find.$find) {
+    console.log('find.$find', find)
     validateFind(client, find.$find, path + '.$find', true)
   }
 
