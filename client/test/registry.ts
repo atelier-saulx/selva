@@ -10,7 +10,6 @@ startRegistry({}).then(registry => {
   startOrigin({ default: true, registry: { port: registry.port } }).then(
     origin => {
       const x = connect({ port: registry.port })
-
       console.log('start origin also started dat registry')
     }
   )
