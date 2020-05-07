@@ -109,4 +109,5 @@ export async function startSubscriptionManager(opts: Options) {}
 
 // make a registry, then add origin, then add subs manager
 // backups may be a bit problematic here :/
+// maybe we can put the registry and subs manager in a different db in redis and only back up the "main db"? hmmmmmmmmmmmmm let me see (tony notes)
 export async function start(opts: Options) {}
