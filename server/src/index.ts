@@ -12,7 +12,6 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   }
   if (!parsedOpts.port) {
     parsedOpts.port = await getPort()
-    console.log('Generated port', parsedOpts.port)
   }
 
   if (!parsedOpts.dir) {
