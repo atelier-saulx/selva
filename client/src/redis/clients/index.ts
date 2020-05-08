@@ -127,7 +127,7 @@ export function addRedisClient(
 ) {}
 
 export function getClient(
-  selvaRedisClient: Redis,
+  selvaRedisClient: RedisSelvaClient,
   name: string,
   type: ServerType,
   port: number,
