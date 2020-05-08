@@ -2,8 +2,8 @@ import { spawn, ChildProcess } from 'child_process'
 import pidusage, { Status } from 'pidusage'
 import { EventEmitter } from 'events'
 
-const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
-// const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every minute
+// const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
+const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every second
 
 export default class ProcessManager extends EventEmitter {
   private command: string
@@ -17,16 +17,18 @@ export default class ProcessManager extends EventEmitter {
     this.args = args
   }
 
-  private startLoadMeasurements() {
-    const collect = async () => {
-      if (this.childProcess && this.childProcess.pid) {
-        const stats = await pidusage(this.childProcess.pid)
-        this.emit('stats', stats)
-      }
+  protected async collect(): Promise<any> {
+    if (this.childProcess && this.childProcess.pid) {
+      return await pidusage(this.childProcess.pid)
     }
+  }
 
+  private startLoadMeasurements() {
     this.loadMeasurementsTimeout = setTimeout(() => {
-      collect()
+      this.collect()
+        .then(data => {
+          this.emit('stats', data)
+        })
         .catch(e => {
           console.error(
             `Error collecting load measurements from ${this.command}`,
@@ -42,6 +44,7 @@ export default class ProcessManager extends EventEmitter {
   private stopLoadMeasurements() {
     if (this.loadMeasurementsTimeout) {
       clearTimeout(this.loadMeasurementsTimeout)
+      this.loadMeasurementsTimeout = undefined
     }
   }
 
@@ -98,22 +101,24 @@ export default class ProcessManager extends EventEmitter {
   }
 }
 
-// TODO: remove test stuff
-const pm = new ProcessManager('redis-server', [
-  '--loadmodule',
-  './modules/binaries/darwin_x64/redisearch.so',
-  '--loadmodule',
-  './modules/binaries/darwin_x64/selva.so'
-])
+if (module === require.main) {
+  // TODO: remove test stuff
+  const pm = new ProcessManager('redis-server', [
+    '--loadmodule',
+    './modules/binaries/darwin_x64/redisearch.so',
+    '--loadmodule',
+    './modules/binaries/darwin_x64/selva.so'
+  ])
 
-pm.on('stdout', console.log)
-pm.on('stats', console.log)
-pm.on('stderr', console.error)
+  pm.on('stdout', console.log)
+  pm.on('stats', console.log)
+  pm.on('stderr', console.error)
 
-pm.start()
+  pm.start()
 
-setTimeout(() => {
-  console.log('Closing...')
-  pm.destroy()
-  process.exit(0)
-}, 5e3)
+  setTimeout(() => {
+    console.log('Closing...')
+    pm.destroy()
+    process.exit(0)
+  }, 5e3)
+}
