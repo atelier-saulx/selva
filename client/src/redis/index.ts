@@ -1,9 +1,9 @@
 import { SelvaClient } from '../'
 import { ClientOpts, ConnectOptions } from '../types'
-import { RedisCommand, Type, Client } from './types'
+import { RedisCommand, Type } from './types'
 import RedisMethods from './methods'
 import { v4 as uuidv4 } from 'uuid'
-import { getClient } from './clients'
+import { getClient, Client } from './clients'
 
 // now connect to registry make make
 // re attach to different clients if they stop working
