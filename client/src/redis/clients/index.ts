@@ -1,8 +1,59 @@
 import { RedisClient } from 'redis'
-import { RedisCommand, Client } from '../types'
+import { RedisCommand } from '../types'
 import Redis from '../'
 import './redisSearch'
 import { ServerType } from '../../types'
+import { EventEmitter } from 'events'
+import createRedisClient from './createRedisClient'
+
+type ClientOpts = {
+  name: string
+  type: ServerType
+  host: string
+  port: number
+  id: string
+}
+
+export class Client extends EventEmitter {
+  public subscriber: RedisClient
+  public publisher: RedisClient
+  public queue: RedisCommand[]
+  public queueInProgress: boolean
+  public name: string // for logging
+  public type: ServerType // for logs
+  public id: string // url:port
+  public connected: boolean
+  public serverIsBusy: boolean // can be written from the registry
+  public scripts: {
+    batchingEnabled: { [scriptSha: string]: boolean }
+    sha: { [scriptName: string]: string }
+  }
+  public clients: Set<Redis>
+  public heartbeatTimout?: NodeJS.Timeout
+
+  constructor({ name, type, host, port, id }: ClientOpts) {
+    super()
+    this.setMaxListeners(10000)
+
+    this.name = name
+    this.type = type
+    this.id = id
+
+    this.clients = new Set()
+
+    this.subscriber = createRedisClient(this, host, port)
+    this.publisher = createRedisClient(this, host, port)
+
+    this.scripts = { batchingEnabled: {}, sha: {} }
+
+    this.serverIsBusy = false
+
+    this.queueInProgress = false
+    this.queue = []
+
+    this.connected = false
+  }
+}
 
 const clients: Map<string, Client> = new Map()
 
@@ -47,11 +98,6 @@ const clients: Map<string, Client> = new Map()
 
 const destroyClient = () => {}
 
-const createRedisClient = (port, host): RedisClient => {
-  // add reconn options on the redis clients!
-  return new RedisClient({ port, host })
-}
-
 const createClient = (
   name: string,
   type: ServerType,
@@ -59,27 +105,18 @@ const createClient = (
   port: number,
   host: string
 ): Client => {
-  const client: Client = {
+  const client: Client = new Client({
+    id,
     name,
     type,
-    id,
-    clients: new Set(),
-    subscriber: createRedisClient(port, host),
-    publisher: createRedisClient(port, host),
-    scripts: {
-      batchingEnabled: {},
-      sha: {}
-    },
-    busy: false,
-    queueInProgress: false,
-    queue: [],
-    connected: false
-  }
-
+    port,
+    host
+  })
   console.log('create client')
-
   return client
 }
+
+const addRedisClient = () => {}
 
 // removeRedisClient (from client)
 // addRedisClient (from client)
@@ -96,6 +133,8 @@ export function getClient(
   const id = url + port
   let client = clients.get(id)
   if (!client) {
-    createClient(name, type, id, port, url)
+    client = createClient(name, type, id, port, url)
   }
+
+  return client
 }

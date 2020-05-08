@@ -1,16 +1,19 @@
-import { EventEmitter } from 'events'
 import { SelvaClient } from '../'
 import { ClientOpts, ConnectOptions } from '../types'
-import { RedisCommand, Client, Type } from './types'
+import { RedisCommand, Type, Client } from './types'
 import RedisMethods from './methods'
 import { v4 as uuidv4 } from 'uuid'
+import { getClient } from './clients'
 
 // now connect to registry make make
+// re attach to different clients if they stop working
 
 class Redis extends RedisMethods {
   public selvaClient: SelvaClient
 
   public queue: RedisCommand[]
+
+  public registry: Client
 
   public id: string
 
@@ -23,6 +26,22 @@ class Redis extends RedisMethods {
     this.id = uuidv4()
     this.selvaClient = selvaClient
 
+    // opts for logs
+
+    if (
+      typeof connectOptions !== 'function' &&
+      !(connectOptions instanceof Promise)
+    ) {
+      console.log('start with non async connect')
+      // need an emitter or attach to publisher
+      this.registry = getClient(
+        this,
+        'registry',
+        'registry',
+        connectOptions.port,
+        connectOptions.host
+      )
+    }
     // connect to registy here
   }
 
