@@ -28,7 +28,7 @@ export class Client extends EventEmitter {
     batchingEnabled: { [scriptSha: string]: boolean }
     sha: { [scriptName: string]: string }
   }
-  public clients: Set<Redis>
+  public clients: Set<RedisSelvaClient>
   public heartbeatTimout?: NodeJS.Timeout
 
   constructor({ name, type, host, port, id }: ClientOpts) {
