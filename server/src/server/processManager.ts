@@ -10,7 +10,6 @@ export default class ProcessManager extends EventEmitter {
     super()
     this.command = command
     this.args = args
-    this.start()
   }
 
   start() {
