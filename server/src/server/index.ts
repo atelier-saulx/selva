@@ -22,13 +22,18 @@ export class SelvaServer extends EventEmitter {
       )} on port ${chalk.blue(opts.port)}`
     )
 
+    console.log(opts)
+
     startRedis(this, opts)
 
     if (opts.registry) {
+      console.log('create registry client on the server')
       this.registry = connect(opts.registry)
-      console.log('create registry client')
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
+    } else if (this.type === 'registry') {
+      console.log('im the registry - register myself')
+      this.registry = connect({ port: opts.port })
     }
     // after this check what type you are
     // check if opts.registry
