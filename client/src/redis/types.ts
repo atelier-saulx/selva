@@ -1,5 +1,6 @@
 import { RedisClient } from 'redis'
 import { ServerType } from '../types'
+import Redis from './'
 
 type Resolvable = {
   resolve?: (x: any) => void
@@ -14,8 +15,8 @@ export type RedisCommand = Resolvable & {
 }
 
 export type Type = {
-  name: string
-  type: ServerType
+  name?: string
+  type?: ServerType
   id?: string // url:port for specifics e.g. a single replica, a single subscription manager
 }
 
@@ -35,4 +36,6 @@ export type Client = {
     batchingEnabled: { [scriptSha: string]: boolean }
     sha: { [scriptName: string]: string }
   }
+
+  clients: Set<Redis>
 }

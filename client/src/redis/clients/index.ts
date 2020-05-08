@@ -5,15 +5,16 @@ import './redisSearch'
 // getClient
 //   addSelvaClient
 
-// --- in coming add command queue ---
+// removeSelvaClient
 
+// addCommandToQueue
+// --- in coming add command queue ---
 // handle these special
 // subscribe
 // unsubscribe
 // psubscribe
 // punsubcribe
 
-// removeSelvaClient
-
-// addCommandToQueue
-// process subscribe here as well (for normal redis)
+// selvaSubscribe
+// selvaUnsubscribe
+// loadAndEvalScript
