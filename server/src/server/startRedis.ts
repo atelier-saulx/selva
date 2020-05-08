@@ -4,12 +4,17 @@ import { ServerOptions } from '../types'
 import path from 'path'
 import fs from 'fs'
 import { spawn, execSync } from 'child_process'
+import chalk from 'chalk'
 
 // this is only for the 'raw' redis
 // no handling of registry, no different types, no subscriptions stuff
 // has to be replaced with a nice wrapper that makes it a little bit more reliable
 export default async (server: SelvaServer, opts: ServerOptions) => {
-  console.info(`Start SelvaServer ${server.type} on port ${opts.port} 🌈`)
+  console.info(
+    `Start SelvaServer ${chalk.blue(server.type)} on port ${chalk.blue(
+      opts.port
+    )}`
+  )
   const { port, dir, modules } = opts
 
   const args = ['--port', String(port), '--protected-mode', 'no', '--dir', dir]
@@ -47,9 +52,9 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   }
 
   try {
-    execSync(`redis-cli -p ${port} config set dir ${dir}`)
+    execSync(`redis-cli -p ${port} config set dir ${dir}`, { stdio: 'ignore' })
     execSync(`redis-cli -p ${port} shutdown`)
-  } catch (e) {}
+  } catch (_err) {}
 
   server.port = opts.port
 
@@ -61,10 +66,11 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   }
   redisDb.stderr.on('data', emit)
   redisDb.stdout.on('data', emit)
-  redisDb.on('close', (...args) => {
-    console.log('redis closed?')
+
+  redisDb.stdout.on('close', () => {
+    console.log(chalk.blue(`Redis server on ${port} closed`))
     server.emit('close', ...args)
-  }
+  })
 
   // want to make nice nice
   // console.log(redisDb)
