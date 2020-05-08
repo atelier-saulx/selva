@@ -4,6 +4,8 @@ import { ClientOpts, ConnectOptions } from '../types'
 import { RedisCommand, Client, Type } from './types'
 import RedisMethods from './methods'
 
+// now connect to registry make make
+
 class Redis extends RedisMethods {
   public selvaClient: SelvaClient
 
@@ -25,5 +27,9 @@ class Redis extends RedisMethods {
     resolve: (x: any) => void = () => {},
     reject: (x: Error) => void = () => {},
     opts: Type = { name: 'default' }
-  ) {}
+  ) {
+    console.log('lullz', command)
+  }
 }
+
+export default Redis

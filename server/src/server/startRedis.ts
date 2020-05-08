@@ -5,6 +5,9 @@ import path from 'path'
 import fs from 'fs'
 import { spawn, execSync } from 'child_process'
 
+// this is only for the 'raw' redis
+// no handling of registry, no different types, no subscriptions stuff
+// has to be replaced with a nice wrapper that makes it a little bit more reliable
 export default async (server: SelvaServer, opts: ServerOptions) => {
   console.info(`Start SelvaServer ${server.type} on port ${opts.port} 🌈`)
   const { port, dir, modules } = opts
@@ -14,7 +17,7 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   modules.forEach(m => {
     const platform = process.platform + '_' + process.arch
     const p =
-      // if it contains ".so"" then dont do this
+      // if it contains ".so"" then don't do this
       m.indexOf('.so') !== -1
         ? m
         : path.join(
@@ -61,7 +64,8 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   redisDb.on('close', (...args) => {
     console.log('redis closed?')
     server.emit('close', ...args)
+  }
 
   // want to make nice nice
-  console.log(redisDb)
+  // console.log(redisDb)
 }
