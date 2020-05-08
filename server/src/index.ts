@@ -12,7 +12,6 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   }
   if (!parsedOpts.port) {
     parsedOpts.port = await getPort()
-    console.log('Generated port', parsedOpts.port)
   }
 
   if (!parsedOpts.dir) {
@@ -90,11 +89,15 @@ export async function startOrigin(opts: Options): Promise<SelvaServer> {
 
 export async function startRegistry(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
+
   const err = validate(
     parsedOpts,
     [],
     ['registry', 'replica', 'backups', 'name', 'main']
   )
+
+  parsedOpts.name = 'registry'
+
   if (err) {
     console.error(`Error starting registry selva server ${chalk.red(err)}`)
     throw new Error(err)

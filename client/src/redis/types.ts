@@ -1,4 +1,3 @@
-import { RedisClient } from 'redis'
 import { ServerType } from '../types'
 
 type Resolvable = {
@@ -17,17 +16,4 @@ export type Type = {
   name?: string
   type?: ServerType
   id?: string // url:port for specifics e.g. a single replica, a single subscription manager
-}
-
-export type Client = {
-  subscriber: RedisClient
-  publisher: RedisClient
-  queue: RedisCommand[]
-  name: string // for logging
-  id: string // url:port
-  connected: boolean
-  bufferInProgress: boolean
-  busy: boolean // can be written from the registry
-  heartbeatTimout: NodeJS.Timeout
-  type: ServerType
 }
