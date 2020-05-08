@@ -166,6 +166,21 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
 
   let schema = client.schema
 
+  if (!payload.type && !payload.$id && payload.$alias) {
+    let aliases = payload.$alias
+    if (!Array.isArray(payload.$alias)) {
+      aliases = [aliases]
+    }
+
+    for (const alias of aliases) {
+      const id = await client.redis.hget(`___selva_aliases`, alias)
+      if (id) {
+        payload.$id = id
+        break
+      }
+    }
+  }
+
   let parsed
   try {
     parsed = parseSetObject(payload, schema)
