@@ -8,7 +8,7 @@ export default class RedisManager extends ProcessManager {
   }
 
   protected async collect(): Promise<any> {
-    const resources = await super.collect()
+    const runtimeInfo = await super.collect()
 
     const info = await promisify(exec)('redis-cli INFO')
     const infoLines = info.stdout.split('\r\n')
@@ -28,7 +28,7 @@ export default class RedisManager extends ProcessManager {
       }
     }, {})
 
-    return { redisInfo, resources }
+    return { redisInfo, runtimeInfo }
   }
 }
 
