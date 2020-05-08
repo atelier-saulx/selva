@@ -74,7 +74,7 @@ test.serial('basic schema based subscriptions', async t => {
 
   await wait(500)
 
-  t.is(cnt, 1)
+  t.is(cnt, 2)
 
   sub2.unsubscribe()
 
