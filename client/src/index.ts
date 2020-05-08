@@ -96,7 +96,21 @@ export class SelvaClient extends EventEmitter {
   subscribeSchema() {
     console.log('SUBSCRIBE SCHEMA')
     if (this.schemaObservable) {
-      return this.schemaObservable
+      return new Observable<Schema>(observe => {
+        if (this.schema) {
+          observe.next(this.schema)
+        }
+
+        const sub = this.schemaObservable.subscribe({
+          next: (_x: any) => {
+            observe.next(_x)
+          },
+          error: observe.error,
+          complete: observe.complete
+        })
+
+        return <any>sub
+      })
     }
 
     const obs = this.redis.subscribe(`___selva_subscription:schema_update`, {})
@@ -113,7 +127,17 @@ export class SelvaClient extends EventEmitter {
       return <any>sub
     })
 
-    return this.schemaObservable
+    return new Observable<Schema>(observe => {
+      const sub = this.schemaObservable.subscribe({
+        next: (_x: any) => {
+          observe.next(_x)
+        },
+        error: observe.error,
+        complete: observe.complete
+      })
+
+      return <any>sub
+    })
   }
 
   async conformToSchema(props: SetOptions): Promise<SetOptions> {
