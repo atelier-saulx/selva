@@ -3,11 +3,13 @@ import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
 import chalk from 'chalk'
+import ProcessManager from './processManager'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
   public port: number
   public registry: SelvaClient
+  public pm: ProcessManager
 
   constructor(type: ServerType) {
     super()
@@ -19,7 +21,7 @@ export class SelvaServer extends EventEmitter {
     console.info(
       `Start SelvaServer ${chalk.white(opts.name)} of type ${chalk.blue(
         this.type
-      )} on port ${chalk.blue(opts.port)}`
+      )} on port ${chalk.blue(String(opts.port))}`
     )
 
     console.log(opts)
@@ -40,7 +42,12 @@ export class SelvaServer extends EventEmitter {
     // handle monitoring to registry
   }
 
-  destroy() {}
+  destroy() {
+    if (this.pm) {
+      this.pm.destroy()
+      this.pm = undefined
+    }
+  }
 }
 
 export const startServer = (

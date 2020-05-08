@@ -1,15 +1,48 @@
 import { spawn, ChildProcess } from 'child_process'
+import pidusage, { Status } from 'pidusage'
 import { EventEmitter } from 'events'
+
+const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
+// const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every minute
 
 export default class ProcessManager extends EventEmitter {
   private command: string
   private args: string[]
   private childProcess: ChildProcess
+  private loadMeasurementsTimeout: NodeJS.Timeout
 
   constructor(command: string, args: string[]) {
     super()
     this.command = command
     this.args = args
+  }
+
+  private startLoadMeasurements() {
+    const collect = async () => {
+      if (this.childProcess && this.childProcess.pid) {
+        const stats = await pidusage(this.childProcess.pid)
+        this.emit('stats', stats)
+      }
+    }
+
+    this.loadMeasurementsTimeout = setTimeout(() => {
+      collect()
+        .catch(e => {
+          console.error(
+            `Error collecting load measurements from ${this.command}`,
+            e
+          )
+        })
+        .finally(() => {
+          this.startLoadMeasurements()
+        })
+    }, LOAD_MEASUREMENTS_INTERVAL)
+  }
+
+  private stopLoadMeasurements() {
+    if (this.loadMeasurementsTimeout) {
+      clearTimeout(this.loadMeasurementsTimeout)
+    }
   }
 
   start() {
@@ -40,9 +73,13 @@ export default class ProcessManager extends EventEmitter {
 
     this.childProcess.on('exit', exitHandler)
     this.childProcess.on('close', exitHandler)
+
+    this.startLoadMeasurements()
   }
 
   destroy() {
+    this.stopLoadMeasurements()
+
     if (this.childProcess) {
       this.childProcess.removeAllListeners()
       this.removeAllListeners() // yesh?
@@ -60,3 +97,23 @@ export default class ProcessManager extends EventEmitter {
     }
   }
 }
+
+// TODO: remove test stuff
+const pm = new ProcessManager('redis-server', [
+  '--loadmodule',
+  './modules/binaries/darwin_x64/redisearch.so',
+  '--loadmodule',
+  './modules/binaries/darwin_x64/selva.so'
+])
+
+pm.on('stdout', console.log)
+pm.on('stats', console.log)
+pm.on('stderr', console.error)
+
+pm.start()
+
+setTimeout(() => {
+  console.log('Closing...')
+  pm.destroy()
+  process.exit(0)
+}, 5e3)

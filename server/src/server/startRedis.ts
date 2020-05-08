@@ -5,6 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import { spawn, execSync } from 'child_process'
 import chalk from 'chalk'
+import ProcessManager from './processManager'
 
 // this is only for the 'raw' redis
 // no handling of registry, no different types, no subscriptions stuff
@@ -53,19 +54,23 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
 
   server.port = opts.port
 
-  const redisDb = spawn('redis-server', args)
+  server.pm = new ProcessManager('redis-server', args)
+  server.pm.start()
+  server.pm.on('stdout', s => server.emit('stdout', s))
+  server.pm.on('stderr', s => server.emit('stderr', s))
+  // const redisDb = spawn('redis-server', args)
 
-  // not so nice
-  const emit = (...args) => {
-    server.emit('data', ...args)
-  }
-  redisDb.stderr.on('data', emit)
-  redisDb.stdout.on('data', emit)
+  // // not so nice
+  // const emit = (...args) => {
+  //   server.emit('data', ...args)
+  // }
+  // redisDb.stderr.on('data', emit)
+  // redisDb.stdout.on('data', emit)
 
-  redisDb.stdout.on('close', () => {
-    console.log(chalk.blue(`Redis server on ${port} closed`))
-    server.emit('close', ...args)
-  })
+  // redisDb.stdout.on('close', () => {
+  //   console.log(chalk.blue(`Redis server on ${port} closed`))
+  //   server.emit('close', ...args)
+  // })
 
   // want to make nice nice
   // console.log(redisDb)
