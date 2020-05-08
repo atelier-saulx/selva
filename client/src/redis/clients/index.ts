@@ -1,6 +1,6 @@
 import { RedisClient } from 'redis'
 import { RedisCommand } from '../types'
-import Redis from '../'
+import RedisSelvaClient from '../'
 import './redisSearch'
 import { ServerType } from '../../types'
 import { EventEmitter } from 'events'
@@ -116,12 +116,15 @@ const createClient = (
   return client
 }
 
-const addRedisClient = () => {}
+export function removeRedisClient(
+  client: Client,
+  selvaRedisClient: RedisSelvaClient
+) {}
 
-// removeRedisClient (from client)
-// addRedisClient (from client)
-
-export function addRedisClient() {}
+export function addRedisClient(
+  client: Client,
+  selvaRedisClient: RedisSelvaClient
+) {}
 
 export function getClient(
   selvaRedisClient: Redis,
