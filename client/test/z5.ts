@@ -26,7 +26,6 @@ test.after(async _t => {
 
 test.serial('yes', async t => {
   const client = connect({ port }, { loglevel: 'info' })
-  const obs = client.subscribeSchema()
 
   await client.updateSchema({
     languages: ['en'],
@@ -39,13 +38,13 @@ test.serial('yes', async t => {
 
   await wait(500)
   let cnt = 0
-  obs.subscribe(schema => {
+  client.subscribeSchema().subscribe(schema => {
     cnt++
   })
 
   await wait(500)
 
-  obs.subscribe(schema => {
+  client.subscribeSchema().subscribe(schema => {
     cnt++
   })
 
