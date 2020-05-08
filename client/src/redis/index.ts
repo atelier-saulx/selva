@@ -22,6 +22,8 @@ class Redis extends RedisMethods {
     super()
     this.id = uuidv4()
     this.selvaClient = selvaClient
+
+    // connect to registy here
   }
 
   addCommandToQueue(
@@ -34,7 +36,9 @@ class Redis extends RedisMethods {
     console.log('lullz', command)
   }
 
-  drainQueue() {
+  async drainQueue() {
+    // here we handle which command has to go to which server
+    // await update of registry
     // drain it good
   }
 }
