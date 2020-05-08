@@ -90,11 +90,15 @@ export async function startOrigin(opts: Options): Promise<SelvaServer> {
 
 export async function startRegistry(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
+
   const err = validate(
     parsedOpts,
     [],
     ['registry', 'replica', 'backups', 'name', 'main']
   )
+
+  parsedOpts.name = 'registry'
+
   if (err) {
     console.error(`Error starting registry selva server ${chalk.red(err)}`)
     throw new Error(err)

@@ -2,6 +2,7 @@ import { ServerType, connect, SelvaClient } from '@saulx/selva'
 import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
+import chalk from 'chalk'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -15,7 +16,14 @@ export class SelvaServer extends EventEmitter {
   }
 
   start(opts: ServerOptions) {
+    console.info(
+      `Start SelvaServer ${chalk.white(opts.name)} of type ${chalk.blue(
+        this.type
+      )} on port ${chalk.blue(opts.port)}`
+    )
+
     startRedis(this, opts)
+
     if (opts.registry) {
       this.registry = connect(opts.registry)
       console.log('create registry client')

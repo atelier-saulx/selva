@@ -10,11 +10,6 @@ import chalk from 'chalk'
 // no handling of registry, no different types, no subscriptions stuff
 // has to be replaced with a nice wrapper that makes it a little bit more reliable
 export default async (server: SelvaServer, opts: ServerOptions) => {
-  console.info(
-    `Start SelvaServer ${chalk.blue(server.type)} on port ${chalk.blue(
-      opts.port
-    )}`
-  )
   const { port, dir, modules } = opts
 
   const args = ['--port', String(port), '--protected-mode', 'no', '--dir', dir]
