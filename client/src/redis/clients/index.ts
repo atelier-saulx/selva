@@ -41,8 +41,8 @@ export class Client extends EventEmitter {
 
     this.clients = new Set()
 
-    this.subscriber = createRedisClient(this, host, port)
-    this.publisher = createRedisClient(this, host, port)
+    this.subscriber = createRedisClient(this, host, port, 'subscriber')
+    this.publisher = createRedisClient(this, host, port, 'publisher')
 
     this.scripts = { batchingEnabled: {}, sha: {} }
 
