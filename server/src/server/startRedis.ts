@@ -5,7 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import { spawn, execSync } from 'child_process'
 import chalk from 'chalk'
-import ProcessManager from './processManager'
+import RedisManager from './redisManager'
 
 // this is only for the 'raw' redis
 // no handling of registry, no different types, no subscriptions stuff
@@ -54,10 +54,11 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
 
   server.port = opts.port
 
-  server.pm = new ProcessManager('redis-server', args)
+  server.pm = new RedisManager(args)
   server.pm.start()
   server.pm.on('stdout', s => server.emit('stdout', s))
   server.pm.on('stderr', s => server.emit('stderr', s))
+  server.pm.on('stats', s => server.emit('perf_metrics', s))
   // const redisDb = spawn('redis-server', args)
 
   // // not so nice
