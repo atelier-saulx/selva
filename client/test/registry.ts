@@ -1,5 +1,5 @@
 import test from 'ava'
-import { connect } from '../src/index'
+import { connect, constants } from '../src/index'
 import { startRegistry, startOrigin } from '@saulx/selva-server'
 import { wait } from './assertions'
 
@@ -22,7 +22,12 @@ test('hello ik ben één test', async t => {
   )
 
   console.log('---------->', y)
+
+  client.redis.subscribe({ type: 'registry' }, constants.REGISTRY_UPDATE_STATS)
+
   // console.log(await xy.redis.hmget({ type: 'registry' }))
+
+  await wait(5000)
 
   t.true(true)
 })

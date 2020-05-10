@@ -3,6 +3,8 @@ import { ConnectOptions, ClientOpts, LogLevel, ServerType } from './types'
 import digest from './digest'
 import Redis from './redis'
 
+export * as constants from './constants'
+
 export class SelvaClient extends EventEmitter {
   public id: string
   public redis: Redis

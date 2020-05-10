@@ -3,14 +3,17 @@ import { promisify } from 'util'
 import ProcessManager from './processManager'
 
 export default class RedisManager extends ProcessManager {
+  private redisPort: number
+
   constructor(args: string[]) {
     super('redis-server', args)
+    this.redisPort = Number(args[args.indexOf('--port') + 1])
   }
 
   protected async collect(): Promise<any> {
     const runtimeInfo = await super.collect()
 
-    const info = await promisify(exec)('redis-cli INFO')
+    const info = await promisify(exec)(`redis-cli -p ${this.redisPort} INFO`)
     const infoLines = info.stdout.split('\r\n')
     const redisInfo = infoLines.reduce((acc, line) => {
       if (line.startsWith('#')) {

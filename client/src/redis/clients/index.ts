@@ -111,6 +111,10 @@ export class Client extends EventEmitter {
 
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
     this.publisher = createRedisClient(this, host, port, 'publisher')
+
+    this.publisher.on('message', v => {
+      console.log(v)
+    })
   }
 }
 

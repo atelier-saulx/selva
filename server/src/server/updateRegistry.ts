@@ -1,4 +1,4 @@
-import { SelvaClient } from '@saulx/selva'
+import { SelvaClient, constants } from '@saulx/selva'
 import { RegistryInfo } from '../types'
 
 export default async function updateRegistry(
@@ -20,8 +20,14 @@ export default async function updateRegistry(
   }
   const id = info.host + ':' + info.port
 
-  return Promise.all([
+  await Promise.all([
     client.redis.sadd({ type: 'registry' }, 'servers', id),
     client.redis.hmset({ type: 'registry' }, id, ...args)
   ])
+
+  if (info.stats) {
+    client.redis.publish(constants.REGISTRY_UPDATE_STATS, id)
+  } else {
+    client.redis.publish(constants.REGISTRY_UPDATE, id)
+  }
 }
