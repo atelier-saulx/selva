@@ -17,7 +17,11 @@ test('hello ik ben één test', async t => {
 
   const x = await client.redis.smembers({ type: 'registry' }, 'servers')
 
-  console.log('---------->', x)
+  const y = await Promise.all(
+    x.map(v => client.redis.hgetall({ type: 'registry' }, v))
+  )
+
+  console.log('---------->', y)
   // console.log(await xy.redis.hmget({ type: 'registry' }))
 
   t.true(true)

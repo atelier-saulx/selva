@@ -20,8 +20,6 @@ const drainQueue = (client: Client, q = client.queue) => {
     client.queueInProgress = true
     process.nextTick(() => {
       if (client.connected) {
-        console.log('connect!')
-
         let nextQ: RedisCommand[]
         const parsedQ = []
         for (let i = 0; i < q.length; i++) {
@@ -57,7 +55,7 @@ const drainQueue = (client: Client, q = client.queue) => {
         })
       } else {
         client.queueInProgress = false
-        console.log('not connected wait a little bit')
+        console.log('Not connected wait a little bit')
       }
     })
   }
