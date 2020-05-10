@@ -15,5 +15,6 @@ export type RedisCommand = Resolvable & {
 export type Type = {
   name?: string
   type?: ServerType
-  id?: string // url:port for specifics e.g. a single replica, a single subscription manager
+  host?: string
+  port?: number
 }
