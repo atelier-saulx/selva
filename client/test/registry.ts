@@ -25,8 +25,9 @@ test('hello ik ben één test', async t => {
 
   client.redis.subscribe({ type: 'registry' }, constants.REGISTRY_UPDATE_STATS)
 
-  // console.log(await xy.redis.hmget({ type: 'registry' }))
+  // client.redis.on({ type: 'registry' }, constants.REGISTRY_UPDATE_STATS)
 
+  // console.log(await xy.redis.hmget({ type: 'registry' }))
   await wait(5000)
 
   t.true(true)
