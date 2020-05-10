@@ -179,12 +179,12 @@ const createClient = (
   return client
 }
 
-export function removeRedisClient(
+export function removeRedisSelvaClient(
   client: Client,
   selvaRedisClient: RedisSelvaClient
 ) {}
 
-export function addRedisClient(
+export function addRedisSelvaClient(
   client: Client,
   selvaRedisClient: RedisSelvaClient
 ) {}
