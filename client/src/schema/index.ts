@@ -1,4 +1,4 @@
-import SelvaClient from '..'
+import { SelvaClient } from '..'
 
 // export function subscribeSchema(client: SelvaClient): Observable<Schema> {}
 

@@ -19,6 +19,10 @@ export class SelvaClient extends EventEmitter {
   digest(payload: string) {
     return digest(payload)
   }
+
+  destroy() {
+    console.log('destroy client - not implemented yet!')
+  }
 }
 
 export function connect(
