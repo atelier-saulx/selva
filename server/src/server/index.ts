@@ -1,8 +1,9 @@
 import { ServerType, connect, SelvaClient } from '@saulx/selva'
-import { ServerOptions } from '../types'
+import { ServerOptions, Stats } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
 import chalk from 'chalk'
+import updateRegistry from './updateRegistry'
 import ProcessManager from './processManager'
 
 export class SelvaServer extends EventEmitter {
@@ -18,14 +19,6 @@ export class SelvaServer extends EventEmitter {
   }
 
   attachStatusListeners(opts: ServerOptions) {
-    this.on('perf_metrics', v => {
-      console.log('lullz perf_metrics NOW', v)
-    })
-
-    this.on('busy', () => {})
-
-    this.on('subscription', () => {})
-
     const info = {
       name: opts.name,
       type: this.type,
@@ -33,11 +26,43 @@ export class SelvaServer extends EventEmitter {
       host: opts.host
     }
 
-    this.updateRegistry()
-  }
+    this.on('stats', rawStats => {
+      const stats: Stats = {
+        memory: rawStats.runtimeInfo.memory,
+        redisMemory: Number(rawStats.redisInfo.used_memory),
+        cpu: rawStats.runtimeInfo.cpu,
+        luaMemory: Number(rawStats.redisInfo.used_memory_lua),
+        totalMemoryAvailable: Number(rawStats.redisInfo.total_system_memory),
+        memoryFragmentationRatio: Number(
+          rawStats.redisInfo.mem_fragmentation_ratio
+        ),
+        lastSaveTime: Number(rawStats.redisInfo.rdb_last_save_time),
+        uptime: rawStats.runtimeInfo.elapsed,
+        lastSaveError:
+          rawStats.redisInfo.last_bgsave_status === 'ok' ? false : true,
+        totalNetInputBytes: Number(rawStats.redisInfo.total_net_input_bytes),
+        totalNetOutputBytes: Number(rawStats.redisInfo.total_net_output_bytes),
+        activeChannels: Number(rawStats.redisInfo.pubsub_channels),
+        opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
+        timestamp: rawStats.runtimeInfo.timestamp
+      }
 
-  updateRegistry(info) {
-    // this.registry
+      updateRegistry(
+        this.registry,
+        Object.assign(
+          {
+            stats
+          },
+          info
+        )
+      )
+    })
+
+    this.on('busy', () => {})
+
+    this.on('subscription', () => {})
+
+    updateRegistry(this.registry, info)
   }
 
   start(opts: ServerOptions) {

@@ -58,7 +58,8 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   server.pm.start()
   server.pm.on('stdout', s => server.emit('stdout', s))
   server.pm.on('stderr', s => server.emit('stderr', s))
-  server.pm.on('stats', o => server.emit('perf_metrics', o))
+
+  server.pm.on('stats', o => server.emit('stats', o))
   // const redisDb = spawn('redis-server', args)
 
   // // not so nice

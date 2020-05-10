@@ -78,6 +78,10 @@ const validate = (
     return `no port provided`
   }
 
+  if (!opts.host) {
+    return `no host provided`
+  }
+
   if (typeof opts.port !== 'number') {
     return `port is not a number ${opts.port}`
   }
