@@ -3,9 +3,7 @@ import { RegistryInfo } from '../types'
 
 export default async function updateRegistry(
   client: SelvaClient,
-  info: RegistryInfo,
-  host: string,
-  port: number
+  info: RegistryInfo
 ) {
   console.log('write to registry', info)
 
@@ -20,12 +18,10 @@ export default async function updateRegistry(
       args.push(key, JSON.stringify(info[key]))
     }
   }
+  const id = info.host + ':' + info.port
 
-  return client.redis.hmset(
-    {
-      name: 'registry',
-      type: 'registry'
-    },
-    ...args
-  )
+  return Promise.all([
+    client.redis.sadd({ type: 'registry' }, 'servers', id),
+    client.redis.hmset({ type: 'registry' }, id, ...args)
+  ])
 }

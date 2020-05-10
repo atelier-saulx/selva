@@ -3,7 +3,7 @@ import { ClientOpts, ConnectOptions } from '../types'
 import { RedisCommand, Type } from './types'
 import RedisMethods from './methods'
 import { v4 as uuidv4 } from 'uuid'
-import { getClient, Client } from './clients'
+import { getClient, Client, addCommandToQueue } from './clients'
 
 // now connect to registry make make
 // re attach to different clients if they stop working
@@ -44,14 +44,10 @@ class RedisSelvaClient extends RedisMethods {
     // connect to registy here
   }
 
-  addCommandToQueue(
-    command: string,
-    args: (string | number)[],
-    resolve: (x: any) => void = () => {},
-    reject: (x: Error) => void = () => {},
-    type: Type = { name: 'default' }
-  ) {
-    console.log('lullz', command, type)
+  addCommandToQueue(command: RedisCommand, type: Type = { name: 'default' }) {
+    if (type.type === 'registry') {
+      addCommandToQueue(this.registry, command)
+    }
   }
 
   async drainQueue() {

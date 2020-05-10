@@ -4,14 +4,11 @@ const path = require('path')
 
 let template = `
 type args = (string | number)[]
-import { Type } from '../types'
+import { Type, RedisCommand } from '../types'
 
 abstract class RedisMethods {
   abstract addCommandToQueue(
-    command: string,
-    args: (string | number)[],
-    resolve: (x: any) => void,
-    reject: (x: Error) => void,
+    redisCommand: RedisCommand,
     opts?: Type
   ): void
   async command(opts: Type, key: string, ...args: args): Promise<any>
@@ -20,11 +17,11 @@ abstract class RedisMethods {
     if (typeof opts === 'object') {
       return new Promise((resolve, reject) => {
         const [key, ...commandArgs] = args
-        this.addCommandToQueue(<string>key, commandArgs, resolve, reject, opts)
+        this.addCommandToQueue({ command: <string>key, args: commandArgs, resolve, reject }, opts)
       })
     } else {
       return new Promise((resolve, reject) => {
-        this.addCommandToQueue(opts, args, resolve, reject)
+        this.addCommandToQueue({ command: opts, args, resolve, reject })
       })
     }
   }
@@ -52,11 +49,11 @@ async ${command}(...args: args): Promise<any>
 async ${command}(opts: any, ...args: args): Promise<any> {
   if (typeof opts === 'object') {
     return new Promise((resolve, reject) => {
-      this.addCommandToQueue('${command}', args, resolve, reject, opts)
+      this.addCommandToQueue({ command: '${command}', args, resolve, reject }, opts)
     })
   } else {
     return new Promise((resolve, reject) => {
-      this.addCommandToQueue('${command}', [opts, ...args], resolve, reject)
+      this.addCommandToQueue({ command: '${command}', args: [opts, ...args], resolve, reject })
     })
   }
 }

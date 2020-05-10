@@ -9,6 +9,7 @@ import ProcessManager from './processManager'
 export class SelvaServer extends EventEmitter {
   public type: ServerType
   public port: number
+  public host: string
   public registry: SelvaClient
   public pm: ProcessManager
 
@@ -71,6 +72,9 @@ export class SelvaServer extends EventEmitter {
         this.type
       )} on port ${chalk.blue(String(opts.port))}`
     )
+
+    this.port = opts.port
+    this.host = opts.host
 
     startRedis(this, opts)
 

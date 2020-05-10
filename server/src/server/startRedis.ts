@@ -52,8 +52,6 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
     execSync(`redis-cli -p ${port} shutdown`)
   } catch (_err) {}
 
-  server.port = opts.port
-
   server.pm = new RedisManager(args)
   server.pm.start()
   server.pm.on('stdout', s => server.emit('stdout', s))

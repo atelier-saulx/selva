@@ -1,18 +1,26 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { startRegistry, startOrigin } from '@saulx/selva-server'
-// import './assertions'
-// import { wait } from './assertions'
+import { wait } from './assertions'
 
 // let srv
 
-startRegistry({}).then(registry => {
-  startOrigin({ default: true, registry: { port: registry.port } }).then(
-    origin => {
-      const x = connect({ port: registry.port })
-      console.log('start origin also started dat registry')
-    }
-  )
+test('hello ik ben één test', async t => {
+  const registry = await startRegistry({})
+
+  const origin = await startOrigin({
+    default: true,
+    registry: { port: registry.port, host: registry.host }
+  })
+
+  const client = connect({ port: registry.port })
+
+  const x = await client.redis.smembers({ type: 'registry' }, 'servers')
+
+  console.log('---------->', x)
+  // console.log(await xy.redis.hmget({ type: 'registry' }))
+
+  t.true(true)
 })
 
 // connect

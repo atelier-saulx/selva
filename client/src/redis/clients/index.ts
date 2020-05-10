@@ -5,6 +5,7 @@ import './redisSearch'
 import { ServerType } from '../../types'
 import { EventEmitter } from 'events'
 import createRedisClient from './createRedisClient'
+import execBatch from './execBatch'
 
 type ClientOpts = {
   name: string
@@ -12,6 +13,54 @@ type ClientOpts = {
   host: string
   port: number
   id: string
+}
+
+const drainQueue = (client: Client, q = client.queue) => {
+  if (!client.queueInProgress) {
+    client.queueInProgress = true
+    process.nextTick(() => {
+      if (client.connected) {
+        console.log('connect!')
+
+        let nextQ: RedisCommand[]
+        const parsedQ = []
+        for (let i = 0; i < q.length; i++) {
+          console.log(i)
+          const redisCommand = q[i]
+          const { command, resolve, args } = redisCommand
+          if (command === 'subscribe') {
+            client.subscriber.subscribe(...(<string[]>args))
+            resolve(true)
+          } else if (command === 'psubscribe') {
+            client.subscriber.psubscribe(...(<string[]>args))
+            resolve(true)
+          } else {
+            // is it load and eval script time?
+            // TODO: TONY magic 🍕
+            // esle
+            parsedQ.push(redisCommand)
+            if (parsedQ.length >= 5e3) {
+              nextQ = q.slice(i)
+              break
+            }
+          }
+        }
+        client.queue = []
+        execBatch(client, parsedQ).finally(() => {
+          if (nextQ) {
+            drainQueue(client, nextQ)
+          } else if (client.queue.length) {
+            drainQueue(client, client.queue)
+          } else {
+            client.queueInProgress = false
+          }
+        })
+      } else {
+        client.queueInProgress = false
+        console.log('not connected wait a little bit')
+      }
+    })
+  }
 }
 
 export class Client extends EventEmitter {
@@ -41,9 +90,6 @@ export class Client extends EventEmitter {
 
     this.clients = new Set()
 
-    this.subscriber = createRedisClient(this, host, port, 'subscriber')
-    this.publisher = createRedisClient(this, host, port, 'publisher')
-
     this.scripts = { batchingEnabled: {}, sha: {} }
 
     this.serverIsBusy = false
@@ -52,6 +98,21 @@ export class Client extends EventEmitter {
     this.queue = []
 
     this.connected = false
+
+    this.on('connect', () => {
+      console.log('CONNECT!')
+
+      this.connected = true
+      drainQueue(this)
+    })
+
+    this.on('disconnect', () => {
+      this.connected = false
+      this.queueInProgress = false
+    })
+
+    this.subscriber = createRedisClient(this, host, port, 'subscriber')
+    this.publisher = createRedisClient(this, host, port, 'publisher')
   }
 }
 
@@ -140,4 +201,12 @@ export function getClient(
   }
 
   return client
+}
+
+export function addCommandToQueue(client: Client, redisCommand: RedisCommand) {
+  client.queue.push(redisCommand)
+  console.log('SNURKY')
+  if (!client.queueInProgress) {
+    drainQueue(client)
+  }
 }
