@@ -8,7 +8,7 @@ import { getClient, Client } from './clients'
 // now connect to registry make make
 // re attach to different clients if they stop working
 
-class Redis extends RedisMethods {
+class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
 
   public queue: RedisCommand[]
@@ -27,7 +27,6 @@ class Redis extends RedisMethods {
     this.selvaClient = selvaClient
 
     // opts for logs
-
     if (
       typeof connectOptions !== 'function' &&
       !(connectOptions instanceof Promise)
@@ -50,9 +49,9 @@ class Redis extends RedisMethods {
     args: (string | number)[],
     resolve: (x: any) => void = () => {},
     reject: (x: Error) => void = () => {},
-    opts: Type = { name: 'default' }
+    type: Type = { name: 'default' }
   ) {
-    console.log('lullz', command)
+    console.log('lullz', command, type)
   }
 
   async drainQueue() {
@@ -62,4 +61,4 @@ class Redis extends RedisMethods {
   }
 }
 
-export default Redis
+export default RedisSelvaClient

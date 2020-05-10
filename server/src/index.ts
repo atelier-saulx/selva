@@ -2,6 +2,7 @@ import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
 import getPort from 'get-port'
 import chalk from 'chalk'
+import os from 'os'
 
 const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   let parsedOpts: ServerOptions
@@ -12,6 +13,21 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   }
   if (!parsedOpts.port) {
     parsedOpts.port = await getPort()
+  }
+
+  if (!parsedOpts.host) {
+    const network = os.networkInterfaces()
+    let ip
+    for (let key in network) {
+      const r = network[key].find(
+        v => v.family === 'IPv4' && v.internal === false
+      )
+      if (r) {
+        ip = r
+        break
+      }
+    }
+    parsedOpts.host = (ip && ip.address) || '0.0.0.0'
   }
 
   if (!parsedOpts.dir) {

@@ -17,14 +17,35 @@ export class SelvaServer extends EventEmitter {
     this.type = type
   }
 
+  attachStatusListeners(opts: ServerOptions) {
+    this.on('perf_metrics', v => {
+      console.log('lullz perf_metrics NOW', v)
+    })
+
+    this.on('busy', () => {})
+
+    this.on('subscription', () => {})
+
+    const info = {
+      name: opts.name,
+      type: this.type,
+      port: opts.port,
+      host: opts.host
+    }
+
+    this.updateRegistry()
+  }
+
+  updateRegistry(info) {
+    // this.registry
+  }
+
   start(opts: ServerOptions) {
     console.info(
       `Start SelvaServer ${chalk.white(opts.name)} of type ${chalk.blue(
         this.type
       )} on port ${chalk.blue(String(opts.port))}`
     )
-
-    console.log(opts)
 
     startRedis(this, opts)
 
@@ -37,6 +58,8 @@ export class SelvaServer extends EventEmitter {
       console.log('im the registry - register myself')
       this.registry = connect({ port: opts.port })
     }
+
+    this.attachStatusListeners(opts)
     // after this check what type you are
     // check if opts.registry
     // handle monitoring to registry
