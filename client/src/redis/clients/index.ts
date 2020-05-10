@@ -207,7 +207,6 @@ export function getClient(
 
 export function addCommandToQueue(client: Client, redisCommand: RedisCommand) {
   client.queue.push(redisCommand)
-  console.log('SNURKY')
   if (!client.queueInProgress) {
     drainQueue(client)
   }
