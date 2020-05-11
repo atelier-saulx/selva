@@ -8,12 +8,16 @@ import {
 import { RedisCommand } from './types'
 import RedisMethods from './methods'
 import { v4 as uuidv4 } from 'uuid'
+import { GetSchemaResult } from '../schema/types'
 import { getClient, Client, addCommandToQueue } from './clients'
+import getSchema from './getSchema'
 
 // now connect to registry make make
 // re attach to different clients if they stop working
 
 type Callback = (payload: any) => void
+
+// add schema handling subscriptions / unsubscribe destorying making clients
 
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
@@ -44,6 +48,8 @@ class RedisSelvaClient extends RedisMethods {
     } else {
       console.log('start with non async connect')
       // need an emitter or attach to publisher
+
+      // schema: boolean = false
       this.registry = getClient(
         this,
         'registry',
@@ -71,7 +77,11 @@ class RedisSelvaClient extends RedisMethods {
     }
   }
 
-  on(type: ServerSelector, event: string, callback: Callback): void
+  async getSchema(selector: ServerSelector): Promise<GetSchemaResult> {
+    return getSchema(this, selector)
+  }
+
+  on(selector: ServerSelector, event: string, callback: Callback): void
   on(event: string, callback: Callback): void
   on(selector: any, event: any, callback?: any): void {
     if (!this.registry) {
