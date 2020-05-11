@@ -1,4 +1,4 @@
-import { SelvaClient, ServerType } from '../'
+import { SelvaClient, ServerType, connect } from '../'
 import { ClientOpts, ConnectOptions } from '../types'
 import { RedisCommand, Type } from './types'
 import RedisMethods from './methods'
@@ -13,8 +13,8 @@ type Callback = (payload: any) => void
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
 
-  public queue: RedisCommand[]
-  public listenerQueue: { opts: Type; event: string; callback: Callback }[]
+  public queue: { command: RedisCommand; type: Type }[] = []
+  public listenerQueue: { type: Type; event: string; callback: Callback }[] = []
 
   public registry: Client
 
@@ -28,12 +28,11 @@ class RedisSelvaClient extends RedisMethods {
     super()
     this.id = uuidv4()
     this.selvaClient = selvaClient
-
     // opts for logs
-    if (
-      typeof connectOptions !== 'function' &&
-      !(connectOptions instanceof Promise)
-    ) {
+
+    if (typeof connectOptions === 'function') {
+    } else if (connectOptions instanceof Promise) {
+    } else {
       console.log('start with non async connect')
       // need an emitter or attach to publisher
       this.registry = getClient(
@@ -47,29 +46,35 @@ class RedisSelvaClient extends RedisMethods {
     // connect to registy here
   }
 
-  on(opts: Type, event: string, callback: Callback): void
+  on(type: Type, event: string, callback: Callback): void
   on(event: string, callback: Callback): void
 
-  on(opts: any, event: any, callback?: any): void {
-    // same here if !registry
-    if (typeof opts === 'string') {
-      callback = event
-      event = opts
-      // if replica is available
-      opts = { name: 'default', type: 'replica' }
-    }
-
-    if (opts.type === 'registry') {
-      this.registry.subscriber.on(event, callback)
+  on(type: any, event: any, callback?: any): void {
+    if (!this.registry) {
+      this.listenerQueue.push({ type, event, callback })
     } else {
+      if (typeof type === 'string') {
+        callback = event
+        event = type
+        // if replica is available
+        type = { name: 'default', type: 'replica' }
+      }
+
+      if (type.type === 'registry') {
+        this.registry.subscriber.on(event, callback)
+      } else {
+      }
     }
   }
 
   addCommandToQueue(command: RedisCommand, type: Type = { name: 'default' }) {
-    // needs to add to queue if registry does not exists
-    if (type.type === 'registry') {
-      addCommandToQueue(this.registry, command)
+    if (!this.registry) {
+      this.queue.push({ command, type })
     } else {
+      if (type.type === 'registry') {
+        addCommandToQueue(this.registry, command)
+      } else {
+      }
     }
   }
 }
