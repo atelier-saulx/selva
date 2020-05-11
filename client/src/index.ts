@@ -27,6 +27,10 @@ export class SelvaClient extends EventEmitter {
     return this.redis.getSchema({name: name || 'default'})
   }
 
+  updateSchema(name?: string): Promise<void> {
+    return
+  }
+
   destroy() {
     console.log('destroy client - not implemented yet!')
   }

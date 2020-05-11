@@ -6,6 +6,7 @@ import { ServerType } from '../../types'
 import { EventEmitter } from 'events'
 import createRedisClient from './createRedisClient'
 import execBatch from './execBatch'
+import { loadScripts } from './scripts'
 
 type ClientOpts = {
   name: string
@@ -197,6 +198,10 @@ export function getClient(
   let client = clients.get(id)
   if (!client) {
     client = createClient(name, type, id, port, url)
+  }
+
+  if (type === 'origin' || /* TODO: remove */ type === 'registry') {
+    loadScripts(client)
   }
 
   return client
