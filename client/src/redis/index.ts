@@ -1,5 +1,10 @@
 import { SelvaClient, ServerType, connect } from '../'
-import { ClientOpts, ConnectOptions, ServerSelector } from '../types'
+import {
+  ClientOpts,
+  ConnectOptions,
+  ServerSelector,
+  ServerDescriptor
+} from '../types'
 import { RedisCommand } from './types'
 import RedisMethods from './methods'
 import { v4 as uuidv4 } from 'uuid'
@@ -50,14 +55,19 @@ class RedisSelvaClient extends RedisMethods {
     // connect to registy here
   }
 
-  async getServerName(selector: ServerSelector): Promise<string> {
+  async getServerDescriptor(
+    selector: ServerSelector
+  ): Promise<ServerDescriptor> {
+    const descriptor = {}
+
     if (selector.name) {
-      return selector.name
+      // not enoguh ofc
+      return { name: selector.name }
     } else if (selector.type === 'registry') {
-      return selector.name
+      return { name: 'registry' }
     } else {
       // find it in the registry!
-      return 'default'
+      return { name: 'default' }
     }
   }
 

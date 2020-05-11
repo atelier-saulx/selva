@@ -30,3 +30,11 @@ export type ServerSelector = {
   host?: string
   port?: number
 }
+
+// TODO: make non optional
+export type ServerDescriptor = {
+  name: string
+  type?: ServerType
+  host?: string
+  port?: number
+}
