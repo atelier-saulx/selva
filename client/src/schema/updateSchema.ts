@@ -242,7 +242,7 @@ export async function updateSchema(
   try {
     const updated = await client.redis.evalsha(
       { name },
-      `${SCRIPT}:update-schema`,
+      `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it
       0,
       `${this.loglevel}:${this.clientId}`,
       JSON.stringify(newSchema)
