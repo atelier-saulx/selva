@@ -30,7 +30,23 @@ test('hello ik ben één test', async t => {
   })
 
   // console.log(await xy.redis.hmget({ type: 'registry' }))
-  await wait(5000)
+  await wait(1000)
+
+  console.log('UPDATE SCHEMA')
+  await client.updateSchema(
+    {
+      types: {
+        helloType: {
+          fields: {
+            title: { type: 'text' }
+          }
+        }
+      }
+    },
+    'registry'
+  )
+
+  console.log('getSchema()', await client.getSchema('registry'))
 
   t.true(true)
 })

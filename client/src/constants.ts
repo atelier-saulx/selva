@@ -1,3 +1,4 @@
+export const SCRIPT = '___selva_script'
 export const LOG = '___selva_lua_logs'
 export const SERVER_HEARTBEAT = '___selva_subscription:server_heartbeat'
 export const HEARTBEAT = '___selva_subscription:heartbeat'

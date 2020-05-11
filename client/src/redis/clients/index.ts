@@ -6,7 +6,8 @@ import { ServerType } from '../../types'
 import { EventEmitter } from 'events'
 import createRedisClient from './createRedisClient'
 import execBatch from './execBatch'
-import { loadScripts } from './scripts'
+import { loadScripts, getScriptSha } from './scripts'
+import * as constants from '../../constants'
 
 type ClientOpts = {
   name: string
@@ -33,6 +34,17 @@ const drainQueue = (client: Client, q = client.queue) => {
             client.subscriber.psubscribe(...(<string[]>args))
             resolve(true)
           } else {
+            if (redisCommand.command.toLowerCase() === 'evalsha') {
+              console.log('EVALSHA', redisCommand)
+              const script = redisCommand.args[0]
+              if (
+                typeof script === 'string' &&
+                script.startsWith(constants.SCRIPT)
+              ) {
+                redisCommand.args[0] = getScriptSha(script)
+              }
+            }
+
             // is it load and eval script time?
             // TODO: TONY magic 🍕
             // esle

@@ -1,4 +1,14 @@
-import { Schema, TypeSchema, FieldSchema, rootDefaultFields } from '.'
+import { SelvaClient } from '../'
+import { SCRIPT } from '../constants'
+import {
+  Schema,
+  TypeSchema,
+  FieldSchema,
+  rootDefaultFields,
+  SchemaOptions
+} from '.'
+
+const MAX_SCHEMA_UPDATE_RETRIES = 100
 
 export function newSchemaDefinition(
   oldSchema: Schema,
@@ -208,4 +218,58 @@ function newFieldDefinition(
   }
 
   return newField
+}
+
+export async function updateSchema(
+  client: SelvaClient,
+  props: SchemaOptions,
+  name?: string,
+  retry?: number
+) {
+  console.log('Try number', retry)
+  const wait = (t: number = 0): Promise<void> =>
+    new Promise(r => setTimeout(r, t))
+
+  retry = retry || 0
+  if (!props.types) {
+    props.types = {}
+  }
+  const newSchema = newSchemaDefinition(
+    (await client.getSchema(name)).schema,
+    <Schema>props
+  )
+
+  try {
+    const updated = await client.redis.evalsha(
+      { name },
+      `${SCRIPT}:update-schema`,
+      0,
+      `${this.loglevel}:${this.clientId}`,
+      JSON.stringify(newSchema)
+    )
+    // if (updated) {
+    //   this.schema = JSON.parse(updated)
+    // }
+  } catch (e) {
+    if (
+      e.stack.includes(
+        'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
+      )
+    ) {
+      if (retry >= MAX_SCHEMA_UPDATE_RETRIES) {
+        throw new Error(
+          `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
+        )
+      }
+      // await this.getSchema()
+      await wait(retry * 200)
+      await this.updateSchema(props, retry + 1)
+    } else {
+      if (e.code === 'NR_CLOSED') {
+        // canhappen with load and eval script
+      } else {
+        throw e
+      }
+    }
+  }
 }
