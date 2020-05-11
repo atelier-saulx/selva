@@ -60,7 +60,6 @@ class RedisSelvaClient extends RedisMethods {
     }
 
     if (opts.type === 'registry') {
-      console.log('add it!', event, callback)
       this.registry.subscriber.on(event, callback)
     } else {
     }
