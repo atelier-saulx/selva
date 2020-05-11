@@ -73,5 +73,4 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   // })
 
   // want to make nice nice
-  // console.log(redisDb)
 }

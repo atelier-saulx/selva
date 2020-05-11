@@ -5,7 +5,7 @@ export default async function updateRegistry(
   client: SelvaClient,
   info: RegistryInfo
 ) {
-  console.log('write to registry', info)
+  // console.log('write to registry', info)
 
   const args = []
 
@@ -26,8 +26,12 @@ export default async function updateRegistry(
   ])
 
   if (info.stats) {
-    client.redis.publish(constants.REGISTRY_UPDATE_STATS, id)
+    client.redis.publish(
+      { type: 'registry' },
+      constants.REGISTRY_UPDATE_STATS,
+      id
+    )
   } else {
-    client.redis.publish(constants.REGISTRY_UPDATE, id)
+    client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
   }
 }
