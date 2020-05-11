@@ -20,7 +20,7 @@ async function getSchema(
 
   let searchIndexes: SearchIndexes = {}
 
-  const dbName = await client.redis.getServerName(selector)
+  const { name } = await client.redis.getServerDescriptor(selector)
 
   const [fetchedTypes, fetchedIndexes] = await client.redis.hmget(
     selector,
