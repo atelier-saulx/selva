@@ -50,9 +50,19 @@ class RedisSelvaClient extends RedisMethods {
     // connect to registy here
   }
 
+  async getServerName(selector: ServerSelector): Promise<string> {
+    if (selector.name) {
+      return selector.name
+    } else if (selector.type === 'registry') {
+      return selector.name
+    } else {
+      // find it in the registry!
+      return 'default'
+    }
+  }
+
   on(type: ServerSelector, event: string, callback: Callback): void
   on(event: string, callback: Callback): void
-
   on(selector: any, event: any, callback?: any): void {
     if (!this.registry) {
       this.listenerQueue.push({ selector, event, callback })

@@ -5,8 +5,8 @@ import { ServerSelector } from '../types'
 import { wait } from '../util'
 
 async function getSchema(
-  selector: ServerSelector,
   client: SelvaClient,
+  selector: ServerSelector,
   retry: number = 0
 ): Promise<GetSchemaResult> {
   let schema: Schema = {
@@ -19,6 +19,8 @@ async function getSchema(
   }
 
   let searchIndexes: SearchIndexes = {}
+
+  const dbName = await client.redis.getServerName(selector)
 
   const [fetchedTypes, fetchedIndexes] = await client.redis.hmget(
     selector,
@@ -34,7 +36,7 @@ async function getSchema(
     } else {
       // console.log('no fetched types wait a bit')
       await wait(20)
-      return getSchema(selector, client, ++retry)
+      return getSchema(client, selector, ++retry)
     }
   }
 
