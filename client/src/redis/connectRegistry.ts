@@ -29,9 +29,18 @@ const connectRegistry = (
         parsedConnectOptions.port,
         parsedConnectOptions.host
       )
-      client.registry.once('disconnect', () => {
-        console.log('o o maybe changed - registry is dc!')
-      })
+      const dcHandler = async () => {
+        const newConnectionOptions = await connectOptions()
+        if (
+          newConnectionOptions.host !== prevConnectOptions.host ||
+          newConnectionOptions.port !== prevConnectOptions.port
+        ) {
+          client.registry.removeListener('disconnect', dcHandler)
+          client.registry = undefined
+          connectRegistry(client, connectOptions)
+        }
+      }
+      client.registry.on('disconnect', dcHandler)
       drainQueue(client)
     })
   } else if (connectOptions instanceof Promise) {
