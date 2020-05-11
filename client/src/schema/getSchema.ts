@@ -1,10 +1,13 @@
 import { SelvaClient } from '../'
-import { Schema, SearchIndexes, GetSchemaResult, rootDefaultFields } from '.'
+import { rootDefaultFields } from './constants'
+import { Schema, SearchIndexes, GetSchemaResult } from './types'
+import { ServerSelector } from '../types'
 
 const wait = (t: number = 0): Promise<void> =>
   new Promise(r => setTimeout(r, t))
 
 async function getSchema(
+  selector: ServerSelector,
   client: SelvaClient,
   retry: number = 0
 ): Promise<GetSchemaResult> {
@@ -20,6 +23,7 @@ async function getSchema(
   let searchIndexes: SearchIndexes = {}
 
   const [fetchedTypes, fetchedIndexes] = await client.redis.hmget(
+    selector,
     '___selva_schema',
     'types',
     'searchIndexes'
@@ -32,7 +36,7 @@ async function getSchema(
     } else {
       // console.log('no fetched types wait a bit')
       await wait(20)
-      return getSchema(client, ++retry)
+      return getSchema(selector, client, ++retry)
     }
   }
 
@@ -44,8 +48,8 @@ async function getSchema(
     searchIndexes = JSON.parse(fetchedIndexes)
   }
 
-  client.schema = schema
-  client.searchIndexes = searchIndexes // FIXME: do we need this?
+  // client.schema = schema
+  // client.searchIndexes = searchIndexes // FIXME: do we need this?
 
   return { schema, searchIndexes }
 }

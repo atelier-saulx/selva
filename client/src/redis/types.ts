@@ -1,5 +1,3 @@
-import { ServerType } from '../types'
-
 type Resolvable = {
   resolve?: (x: any) => void
   reject?: (x: Error) => void
@@ -10,11 +8,4 @@ export type RedisCommand = Resolvable & {
   type?: string
   args: (string | number)[]
   hash?: number
-}
-
-export type Type = {
-  name?: string
-  type?: ServerType
-  host?: string
-  port?: number
 }

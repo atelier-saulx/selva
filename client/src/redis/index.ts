@@ -1,6 +1,6 @@
 import { SelvaClient, ServerType, connect } from '../'
-import { ClientOpts, ConnectOptions } from '../types'
-import { RedisCommand, Type } from './types'
+import { ClientOpts, ConnectOptions, ServerSelector } from '../types'
+import { RedisCommand } from './types'
 import RedisMethods from './methods'
 import { v4 as uuidv4 } from 'uuid'
 import { getClient, Client, addCommandToQueue } from './clients'
@@ -13,8 +13,12 @@ type Callback = (payload: any) => void
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
 
-  public queue: { command: RedisCommand; type: Type }[] = []
-  public listenerQueue: { type: Type; event: string; callback: Callback }[] = []
+  public queue: { command: RedisCommand; type: ServerSelector }[] = []
+  public listenerQueue: {
+    type: ServerSelector
+    event: string
+    callback: Callback
+  }[] = []
 
   public registry: Client
 
@@ -46,7 +50,7 @@ class RedisSelvaClient extends RedisMethods {
     // connect to registy here
   }
 
-  on(type: Type, event: string, callback: Callback): void
+  on(type: ServerSelector, event: string, callback: Callback): void
   on(event: string, callback: Callback): void
 
   on(type: any, event: any, callback?: any): void {
@@ -67,7 +71,10 @@ class RedisSelvaClient extends RedisMethods {
     }
   }
 
-  addCommandToQueue(command: RedisCommand, type: Type = { name: 'default' }) {
+  addCommandToQueue(
+    command: RedisCommand,
+    type: ServerSelector = { name: 'default' }
+  ) {
     if (!this.registry) {
       this.queue.push({ command, type })
     } else {

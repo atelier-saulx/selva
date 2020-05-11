@@ -4,14 +4,15 @@ const path = require('path')
 
 let template = `
 type args = (string | number)[]
-import { Type, RedisCommand } from '../types'
+import { RedisCommand } from '../types'
+import { ServerSelector } from '../../types'
 
 abstract class RedisMethods {
   abstract addCommandToQueue(
     redisCommand: RedisCommand,
-    opts?: Type
+    opts?: ServerSelector
   ): void
-  async command(opts: Type, key: string, ...args: args): Promise<any>
+  async command(opts: ServerSelector, key: string, ...args: args): Promise<any>
   async command(key: string, ...args: args): Promise<any>
   async command(opts: any, ...args: args): Promise<any> {
     if (typeof opts === 'object') {
@@ -44,7 +45,7 @@ for (const key in redis.RedisClient.prototype) {
 
     methods.push(
       `
-async ${command}(opts: Type, ...args: args): Promise<any>
+async ${command}(opts: ServerSelector, ...args: args): Promise<any>
 async ${command}(...args: args): Promise<any>
 async ${command}(opts: any, ...args: args): Promise<any> {
   if (typeof opts === 'object') {

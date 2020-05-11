@@ -23,3 +23,10 @@ export type ConnectOptions =
   | Connect
   | (() => Promise<Connect>)
   | Promise<Connect>
+
+export type ServerSelector = {
+  name?: string
+  type?: ServerType
+  host?: string
+  port?: number
+}
