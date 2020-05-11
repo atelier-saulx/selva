@@ -19,6 +19,62 @@ type Callback = (payload: any) => void
 
 // add schema handling subscriptions / unsubscribe destorying making clients
 
+const drainQueue = (client: RedisSelvaClient) => {
+  client.queue.forEach(({ command, selector }) => {
+    client.addCommandToQueue(command, selector)
+  })
+  client.listenerQueue.forEach(({ event, callback, selector }) => {
+    client.on(selector, event, callback)
+  })
+  client.listenerQueue = []
+  client.queue = []
+}
+
+const connectRegistry = (
+  client: RedisSelvaClient,
+  connectOptions: ConnectOptions
+) => {
+  if (typeof connectOptions === 'function') {
+    let prevConnectOptions
+    connectOptions().then(parsedConnectOptions => {
+      console.log('hello!')
+      prevConnectOptions = parsedConnectOptions
+      client.registry = getClient(
+        client,
+        'registry',
+        'registry',
+        parsedConnectOptions.port,
+        parsedConnectOptions.host
+      )
+      client.registry.once('disconnect', () => {
+        console.log('o o maybe changed - registry is dc!')
+      })
+      drainQueue(client)
+    })
+  } else if (connectOptions instanceof Promise) {
+    connectOptions.then(parsedConnectOptions => {
+      client.registry = getClient(
+        client,
+        'registry',
+        'registry',
+        parsedConnectOptions.port,
+        parsedConnectOptions.host
+      )
+      drainQueue(client)
+    })
+  } else {
+    console.log('start with non async connect')
+    client.registry = getClient(
+      client,
+      'registry',
+      'registry',
+      connectOptions.port,
+      connectOptions.host
+    )
+    drainQueue(client)
+  }
+}
+
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
 
@@ -41,24 +97,7 @@ class RedisSelvaClient extends RedisMethods {
     super()
     this.id = uuidv4()
     this.selvaClient = selvaClient
-    // opts for logs
-
-    if (typeof connectOptions === 'function') {
-    } else if (connectOptions instanceof Promise) {
-    } else {
-      console.log('start with non async connect')
-      // need an emitter or attach to publisher
-
-      // schema: boolean = false
-      this.registry = getClient(
-        this,
-        'registry',
-        'registry',
-        connectOptions.port,
-        connectOptions.host
-      )
-    }
-    // connect to registy here
+    connectRegistry(this, connectOptions)
   }
 
   async getServerDescriptor(
