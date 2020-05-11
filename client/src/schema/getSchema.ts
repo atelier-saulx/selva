@@ -2,9 +2,7 @@ import { SelvaClient } from '../'
 import { rootDefaultFields } from './constants'
 import { Schema, SearchIndexes, GetSchemaResult } from './types'
 import { ServerSelector } from '../types'
-
-const wait = (t: number = 0): Promise<void> =>
-  new Promise(r => setTimeout(r, t))
+import { wait } from '../util'
 
 async function getSchema(
   selector: ServerSelector,

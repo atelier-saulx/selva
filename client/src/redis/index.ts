@@ -13,9 +13,9 @@ type Callback = (payload: any) => void
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
 
-  public queue: { command: RedisCommand; type: ServerSelector }[] = []
+  public queue: { command: RedisCommand; selector: ServerSelector }[] = []
   public listenerQueue: {
-    type: ServerSelector
+    selector: ServerSelector
     event: string
     callback: Callback
   }[] = []
@@ -53,18 +53,18 @@ class RedisSelvaClient extends RedisMethods {
   on(type: ServerSelector, event: string, callback: Callback): void
   on(event: string, callback: Callback): void
 
-  on(type: any, event: any, callback?: any): void {
+  on(selector: any, event: any, callback?: any): void {
     if (!this.registry) {
-      this.listenerQueue.push({ type, event, callback })
+      this.listenerQueue.push({ selector, event, callback })
     } else {
-      if (typeof type === 'string') {
+      if (typeof selector === 'string') {
         callback = event
-        event = type
+        event = selector
         // if replica is available
-        type = { name: 'default', type: 'replica' }
+        selector = { name: 'default', type: 'replica' }
       }
 
-      if (type.type === 'registry') {
+      if (selector.type === 'registry') {
         this.registry.subscriber.on(event, callback)
       } else {
       }
@@ -73,12 +73,12 @@ class RedisSelvaClient extends RedisMethods {
 
   addCommandToQueue(
     command: RedisCommand,
-    type: ServerSelector = { name: 'default' }
+    selector: ServerSelector = { name: 'default' }
   ) {
     if (!this.registry) {
-      this.queue.push({ command, type })
+      this.queue.push({ command, selector })
     } else {
-      if (type.type === 'registry') {
+      if (selector.type === 'registry') {
         addCommandToQueue(this.registry, command)
       } else {
       }
