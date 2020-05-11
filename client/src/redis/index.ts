@@ -1,4 +1,4 @@
-import { SelvaClient } from '../'
+import { SelvaClient, ServerType } from '../'
 import { ClientOpts, ConnectOptions } from '../types'
 import { RedisCommand, Type } from './types'
 import RedisMethods from './methods'
@@ -8,10 +8,13 @@ import { getClient, Client, addCommandToQueue } from './clients'
 // now connect to registry make make
 // re attach to different clients if they stop working
 
+type Callback = (payload: any) => void
+
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
 
   public queue: RedisCommand[]
+  public listenerQueue: { opts: Type; event: string; callback: Callback }[]
 
   public registry: Client
 
@@ -44,16 +47,30 @@ class RedisSelvaClient extends RedisMethods {
     // connect to registy here
   }
 
-  addCommandToQueue(command: RedisCommand, type: Type = { name: 'default' }) {
-    if (type.type === 'registry') {
-      addCommandToQueue(this.registry, command)
+  on(opts: Type, event: string, callback: Callback): void
+  on(event: string, callback: Callback): void
+
+  on(opts: any, event: any, callback?: any): void {
+    // same here if !registry
+    if (typeof opts === 'string') {
+      callback = event
+      event = opts
+      // if replica is available
+      opts = { name: 'default', type: 'replica' }
+    }
+
+    if (opts.type === 'registry') {
+      this.registry.publisher.on(event, callback)
+    } else {
     }
   }
 
-  async drainQueue() {
-    // here we handle which command has to go to which server
-    // await update of registry
-    // drain it good
+  addCommandToQueue(command: RedisCommand, type: Type = { name: 'default' }) {
+    // needs to add to queue if registry does not exists
+    if (type.type === 'registry') {
+      addCommandToQueue(this.registry, command)
+    } else {
+    }
   }
 }
 
