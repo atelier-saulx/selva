@@ -49,12 +49,6 @@ class RedisSelvaClient extends RedisMethods {
       addCommandToQueue(this.registry, command)
     }
   }
-
-  async drainQueue() {
-    // here we handle which command has to go to which server
-    // await update of registry
-    // drain it good
-  }
 }
 
 export default RedisSelvaClient
