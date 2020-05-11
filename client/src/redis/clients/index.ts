@@ -23,7 +23,6 @@ const drainQueue = (client: Client, q = client.queue) => {
         let nextQ: RedisCommand[]
         const parsedQ = []
         for (let i = 0; i < q.length; i++) {
-          console.log(i)
           const redisCommand = q[i]
           const { command, resolve, args } = redisCommand
           if (command === 'subscribe') {
@@ -111,10 +110,6 @@ export class Client extends EventEmitter {
 
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
     this.publisher = createRedisClient(this, host, port, 'publisher')
-
-    this.publisher.on('message', v => {
-      console.log(v)
-    })
   }
 }
 
