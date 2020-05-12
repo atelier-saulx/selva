@@ -29,15 +29,6 @@ async function transformDb(
   props: GetOptions,
   path: string
 ): Promise<GetOptions | true> {
-  const selva = global.SELVAS[props.$db]
-  if (!selva) {
-    throw new Error(
-      `$db found at ${path}.$db with GetOptions ${JSON.stringify(
-        props
-      )}, but no database named ${props.$db} exists`
-    )
-  }
-
   if (props.$id || props.$alias) {
     addExtraQuery(extraQueries, {
       getOpts: props,
