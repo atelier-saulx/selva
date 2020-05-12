@@ -1,6 +1,7 @@
 import { ConnectOptions } from '../types'
 import { getClient } from './clients'
 import RedisSelvaClient from './'
+import { REGISTRY_UPDATE } from '../constants'
 
 const drainQueue = (client: RedisSelvaClient) => {
   client.queue.forEach(({ command, selector }) => {
@@ -13,6 +14,22 @@ const drainQueue = (client: RedisSelvaClient) => {
   client.queue = []
 }
 
+const createRegistryClient = (
+  client: RedisSelvaClient,
+  port: number,
+  host: string
+) => {
+  client.registry = getClient(client, 'registry', 'registry', port, host)
+  client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
+
+  // view of the registry if its not there async fn needs to wait for it
+  // this.registry
+
+  client.on({ type: 'registry' }, 'message', () => {
+    console.log('REGISTRY UPDATED (could be a new client!')
+  })
+}
+
 const connectRegistry = (
   client: RedisSelvaClient,
   connectOptions: ConnectOptions
@@ -20,12 +37,9 @@ const connectRegistry = (
   if (typeof connectOptions === 'function') {
     let prevConnectOptions
     connectOptions().then(parsedConnectOptions => {
-      console.log('hello!')
       prevConnectOptions = parsedConnectOptions
-      client.registry = getClient(
+      createRegistryClient(
         client,
-        'registry',
-        'registry',
         parsedConnectOptions.port,
         parsedConnectOptions.host
       )
@@ -45,10 +59,8 @@ const connectRegistry = (
     })
   } else if (connectOptions instanceof Promise) {
     connectOptions.then(parsedConnectOptions => {
-      client.registry = getClient(
+      createRegistryClient(
         client,
-        'registry',
-        'registry',
         parsedConnectOptions.port,
         parsedConnectOptions.host
       )
@@ -56,13 +68,7 @@ const connectRegistry = (
     })
   } else {
     console.log('start with non async connect')
-    client.registry = getClient(
-      client,
-      'registry',
-      'registry',
-      connectOptions.port,
-      connectOptions.host
-    )
+    createRegistryClient(client, connectOptions.port, connectOptions.host)
     drainQueue(client)
   }
 }
