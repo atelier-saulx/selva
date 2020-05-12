@@ -135,18 +135,20 @@ class RedisSelvaClient extends RedisMethods {
       this.queue.push({ command, selector })
     } else {
       if (selector.type === 'registry' || selector.name === 'registry') {
+        // this is nessecary scince you need to start somewhere
         addCommandToQueue(this.registry, command)
       } else {
         this.getServerDescriptor(selector).then(descriptor => {
-          // addCommandToQueue(this.registry, command)
-          let myClient = getClient(
-            this,
-            descriptor.name,
-            descriptor.type,
-            descriptor.port,
-            descriptor.host
+          addCommandToQueue(
+            getClient(
+              this,
+              descriptor.name,
+              descriptor.type,
+              descriptor.port,
+              descriptor.host
+            ),
+            command
           )
-          addCommandToQueue(myClient, command)
         })
       }
     }

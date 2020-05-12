@@ -43,7 +43,17 @@ async function combineResults(
           }
 
           if (q.type === 'reference') {
+            console.log(
+              '--->ref',
+              g,
+              g.user,
+              parts,
+              g[parts[parts.length - 1]],
+              parts[parts.length - 1]
+            )
+
             q.getOpts.$id = g[parts[parts.length - 1]]
+
             const r = await get(client, q.getOpts)
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
@@ -132,12 +142,15 @@ async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
 
-  const getResult = await client.redis.evalsha(
-    { name: props.$db || 'default', type: 'replica' },
-    `${SCRIPT}:fetch`,
-    0,
-    `${this.loglevel}:${this.clientId}`,
-    JSON.stringify(props)
+  const getResult = JSON.parse(
+    await client.redis.evalsha(
+      { name: props.$db || 'default', type: 'replica' },
+      `${SCRIPT}:fetch`,
+      0,
+      `undefined:undefined`,
+      // `${client.loglevel}:${client.clientId}`,
+      JSON.stringify(props)
+    )
   )
 
   await combineResults(client, extraQueries, getResult)

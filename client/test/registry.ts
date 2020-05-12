@@ -13,6 +13,11 @@ test('hello ik ben één test', async t => {
     registry: { port: registry.port, host: registry.host }
   })
 
+  const users = await startOrigin({
+    name: 'users',
+    registry: { port: registry.port, host: registry.host }
+  })
+
   const client = connect({ port: registry.port })
 
   const x = await client.redis.smembers({ type: 'registry' }, 'servers')
@@ -39,7 +44,8 @@ test('hello ik ben één test', async t => {
           prefix: 'ht',
           fields: {
             title: { type: 'text' },
-            value: { type: 'number' }
+            value: { type: 'number' },
+            user: { type: 'reference' }
           }
         }
       }
@@ -47,15 +53,32 @@ test('hello ik ben één test', async t => {
     // 'registry'
   )
 
+  await client.updateSchema(
+    {
+      types: {
+        helloType: {
+          prefix: 'ht',
+          fields: {
+            title: { type: 'text' },
+            value: { type: 'number' }
+          }
+        }
+      }
+    },
+    'users'
+  )
+
   console.log('getSchema()', await client.getSchema())
 
+  await client.redis.hmset('ht1', 'value', 1, 'title.en', 'murk', 'user', 'ht2')
+
   await client.redis.hmset(
-    // { name: 'registry' },
-    'ht1',
+    { name: 'users' },
+    'ht2',
     'value',
-    1,
+    2,
     'title.en',
-    'murk'
+    'murk in the users'
   )
 
   const xx = await client.get({
@@ -63,7 +86,8 @@ test('hello ik ben één test', async t => {
     $id: 'ht1',
     $language: 'en',
     value: true,
-    title: true
+    title: true,
+    user: { $db: 'users', value: true, title: true }
   })
 
   console.log(xx)
