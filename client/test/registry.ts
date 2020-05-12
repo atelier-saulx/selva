@@ -36,8 +36,10 @@ test('hello ik ben één test', async t => {
     {
       types: {
         helloType: {
+          prefix: 'ht',
           fields: {
-            title: { type: 'text' }
+            title: { type: 'text' },
+            value: { type: 'number' }
           }
         }
       }
@@ -46,6 +48,25 @@ test('hello ik ben één test', async t => {
   )
 
   console.log('getSchema()', await client.getSchema('registry'))
+
+  await client.redis.hmset(
+    { name: 'registry' },
+    'ht1',
+    'value',
+    1,
+    'title.en',
+    'murk'
+  )
+
+  const xx = await client.get({
+    $db: 'registry',
+    $id: 'ht1',
+    $language: 'en',
+    value: true,
+    title: true
+  })
+
+  console.log(xx)
 
   t.true(true)
 })
