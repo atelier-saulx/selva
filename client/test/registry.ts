@@ -23,7 +23,7 @@ test('hello ik ben één test', async t => {
 
   console.log('---------->', y)
 
-  client.redis.subscribe({ type: 'registry' }, constants.REGISTRY_UPDATE_STATS)
+  // client.redis.subscribe({ type: 'registry' }, constants.REGISTRY_UPDATE_STATS)
 
   client.redis.on({ type: 'registry' }, 'message', v => {
     // console.log('shiiit', v)

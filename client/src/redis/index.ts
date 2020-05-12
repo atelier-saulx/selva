@@ -5,7 +5,7 @@ import {
   ServerSelector,
   ServerDescriptor
 } from '../types'
-import { RedisCommand } from './types'
+import { RedisCommand, Servers, ServersById } from './types'
 import RedisMethods from './methods'
 import { v4 as uuidv4 } from 'uuid'
 import { GetSchemaResult } from '../schema/types'
@@ -32,6 +32,10 @@ class RedisSelvaClient extends RedisMethods {
 
   public registry: Client
 
+  public servers: Servers
+
+  public serversById: ServersById
+
   public id: string
 
   constructor(
@@ -48,17 +52,50 @@ class RedisSelvaClient extends RedisMethods {
   async getServerDescriptor(
     selector: ServerSelector
   ): Promise<ServerDescriptor> {
-    const descriptor = {}
+    const retry = (): Promise<ServerDescriptor> =>
+      new Promise((resolve, reject) => {
+        this.registry.once('servers_updated', () => {
+          resolve(this.getServerDescriptor(selector))
+        })
+      })
 
-    if (selector.name) {
-      // not enoguh ofc
-      return { name: selector.name }
-    } else if (selector.type === 'registry') {
-      return { name: 'registry' }
-    } else {
-      // find it in the registry!
-      return { name: 'default' }
+    if (!this.servers) {
+      return retry()
     }
+    if (selector.host && selector.port) {
+      const server = this.serversById[`${selector.host}:${selector.port}`]
+      if (!server) {
+        return retry()
+      }
+      return server
+    }
+    if (!selector.name) {
+      if (selector.type === 'registry') {
+        selector.name = 'registry'
+      } else {
+        selector.name = 'default'
+      }
+    }
+    if (!selector.type) {
+      if (selector.name === 'registry') {
+        selector.type = 'registry'
+      } else {
+        selector.type = 'origin'
+      }
+    }
+
+    if (
+      !this.servers[selector.name] ||
+      !this.servers[selector.name][selector.type]
+    ) {
+      return retry()
+    }
+
+    const servers = this.servers[selector.name][selector.type]
+    const server = servers[Math.floor(Math.random() * servers.length)]
+
+    console.log('hello', server)
+    return server
   }
 
   async getSchema(selector: ServerSelector): Promise<GetSchemaResult> {

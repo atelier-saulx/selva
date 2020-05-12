@@ -1,4 +1,9 @@
-import { ServerType, connect, SelvaClient } from '@saulx/selva'
+import {
+  ServerType,
+  connect,
+  SelvaClient,
+  ServerDescriptor
+} from '@saulx/selva'
 import { ServerOptions, Stats } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
@@ -20,11 +25,15 @@ export class SelvaServer extends EventEmitter {
   }
 
   attachStatusListeners(opts: ServerOptions) {
-    const info = {
+    const info: ServerDescriptor = {
       name: opts.name,
       type: this.type,
       port: opts.port,
       host: opts.host
+    }
+
+    if (opts.default) {
+      info.default = true
     }
 
     this.on('stats', rawStats => {

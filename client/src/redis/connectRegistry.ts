@@ -1,7 +1,8 @@
-import { ConnectOptions } from '../types'
+import { ConnectOptions, ServerDescriptor } from '../types'
 import { getClient } from './clients'
 import RedisSelvaClient from './'
 import { REGISTRY_UPDATE } from '../constants'
+import { Servers, ServersById } from './types'
 
 const drainQueue = (client: RedisSelvaClient) => {
   client.queue.forEach(({ command, selector }) => {
@@ -14,6 +15,46 @@ const drainQueue = (client: RedisSelvaClient) => {
   client.queue = []
 }
 
+const getServers = async (client: RedisSelvaClient) => {
+  delete client.servers
+  const serverList =
+    (await client.smembers({ type: 'registry' }, 'servers')) || []
+  const servers: Servers = {}
+  const serversById: ServersById = {}
+  const result: ServerDescriptor[] = await Promise.all(
+    serverList.map(
+      async (id: string): Promise<ServerDescriptor> => {
+        const [host, port, name, type, def] = await client.hmget(
+          { type: 'registry' },
+          id,
+          'host',
+          'port',
+          'name',
+          'type',
+          'default'
+        )
+        const descriptor = { host, port, name, type, default: def || false }
+        serversById[id] = descriptor
+        return descriptor
+      }
+    )
+  )
+  for (const server of result) {
+    if (!servers[server.name]) {
+      servers[server.name] = {}
+      if (server.default) {
+        servers.default = servers[server.name]
+      }
+    }
+    if (!servers[server.name][server.type]) {
+      servers[server.name][server.type] = []
+    }
+    servers[server.name][server.type].push(server)
+  }
+  client.servers = servers
+  client.registry.emit('servers_updated', servers)
+}
+
 const createRegistryClient = (
   client: RedisSelvaClient,
   port: number,
@@ -21,12 +62,13 @@ const createRegistryClient = (
 ) => {
   client.registry = getClient(client, 'registry', 'registry', port, host)
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
-  // view of the registry if its not there async fn needs to wait for it
-  // this.registry
-
-  client.on({ type: 'registry' }, 'message', () => {
-    console.log('REGISTRY UPDATED (could be a new client!')
+  client.on({ type: 'registry' }, 'message', channel => {
+    if (channel === REGISTRY_UPDATE) {
+      console.log('REGISTRY UPDATED (could be a new client!')
+      getServers(client)
+    }
   })
+  getServers(client)
 }
 
 const connectRegistry = (

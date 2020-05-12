@@ -12,7 +12,7 @@ global.SELVAS = {}
 
 
 import { EventEmitter } from 'events'
-import { ConnectOptions, ClientOpts, LogLevel, ServerType } from './types'
+import { ConnectOptions, ServerDescriptor, ClientOpts, LogLevel, ServerType } from './types'
 import digest from './digest'
 import Redis from './redis'
 import {GetSchemaResult, SchemaOptions, Id} from './schema'
@@ -74,4 +74,4 @@ export function connect(
   return client
 }
 
-export { ConnectOptions, ServerType }
+export { ConnectOptions, ServerType, ServerDescriptor }

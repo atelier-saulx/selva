@@ -5,8 +5,6 @@ export default async function updateRegistry(
   client: SelvaClient,
   info: RegistryInfo
 ) {
-  // console.log('write to registry', info)
-
   const args = []
 
   for (let key in info) {
@@ -15,7 +13,7 @@ export default async function updateRegistry(
     } else if (key === 'subscriptions') {
       args.push(key, JSON.stringify([...info[key].values()]))
     } else {
-      args.push(key, JSON.stringify(info[key]))
+      args.push(key, info[key])
     }
   }
   const id = info.host + ':' + info.port
