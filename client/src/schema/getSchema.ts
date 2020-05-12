@@ -4,6 +4,7 @@ import { Schema, SearchIndexes, GetSchemaResult } from './types'
 import { ServerSelector } from '../types'
 import { wait } from '../util'
 
+// we want to remove
 async function getSchema(
   client: SelvaClient,
   selector: ServerSelector,
@@ -19,8 +20,6 @@ async function getSchema(
   }
 
   let searchIndexes: SearchIndexes = {}
-
-  const { name } = await client.redis.getServerDescriptor(selector)
 
   const [fetchedTypes, fetchedIndexes] = await client.redis.hmget(
     selector,

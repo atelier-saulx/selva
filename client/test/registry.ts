@@ -43,14 +43,14 @@ test('hello ik ben één test', async t => {
           }
         }
       }
-    },
-    'registry'
+    }
+    // 'registry'
   )
 
-  console.log('getSchema()', await client.getSchema('registry'))
+  console.log('getSchema()', await client.getSchema())
 
   await client.redis.hmset(
-    { name: 'registry' },
+    // { name: 'registry' },
     'ht1',
     'value',
     1,
@@ -59,7 +59,7 @@ test('hello ik ben één test', async t => {
   )
 
   const xx = await client.get({
-    $db: 'registry',
+    // $db: 'registry',
     $id: 'ht1',
     $language: 'en',
     value: true,
@@ -67,6 +67,12 @@ test('hello ik ben één test', async t => {
   })
 
   console.log(xx)
+
+  console.log(
+    'db - registry',
+    await client.redis.keys({ name: 'registry' }, '*')
+  )
+  console.log('db - default', await client.redis.keys('*'))
 
   t.true(true)
 })

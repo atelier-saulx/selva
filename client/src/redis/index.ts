@@ -88,6 +88,11 @@ class RedisSelvaClient extends RedisMethods {
       !this.servers[selector.name] ||
       !this.servers[selector.name][selector.type]
     ) {
+      if (this.servers[selector.name] && selector.type === 'replica') {
+        selector.type = 'origin'
+        return this.getServerDescriptor(selector)
+      }
+
       return retry()
     }
 
@@ -134,6 +139,14 @@ class RedisSelvaClient extends RedisMethods {
       } else {
         this.getServerDescriptor(selector).then(descriptor => {
           // addCommandToQueue(this.registry, command)
+          let myClient = getClient(
+            this,
+            descriptor.name,
+            descriptor.type,
+            descriptor.port,
+            descriptor.host
+          )
+          addCommandToQueue(myClient, command)
         })
       }
     }
