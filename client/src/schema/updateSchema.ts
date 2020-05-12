@@ -239,9 +239,13 @@ export async function updateSchema(
     <Schema>props
   )
 
+  const descriptor = await client.redis.getServerDescriptor({
+    name: name || 'default'
+  })
+
   try {
     const updated = await client.redis.evalsha(
-      { name },
+      descriptor,
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it
       0,
       `${this.loglevel}:${this.clientId}`,
