@@ -23,7 +23,6 @@ async function combineResults(
 
   await Promise.all(
     Object.entries(extraQueries).map(async ([db, query]) => {
-      const selva = global.SELVAS[db]
       await Promise.all(
         query.map(async q => {
           const parts = q.path.substr(1).split('.')
@@ -65,7 +64,7 @@ async function combineResults(
               }
 
               delete q.getOpts.$db
-              const r = await selva.get({ listResult: q.getOpts })
+              const r = await client.get({ listResult: q.getOpts })
               if (r.listResult[0] && r.listResult[0].__$find) {
                 console.log('HEYYOOOOOOOO', r.listResult[0].__$find)
                 let fieldKeys = {}
@@ -99,7 +98,7 @@ async function combineResults(
                     2
                   )
                 )
-                const nestedResult = await selva.get({
+                const nestedResult = await client.get({
                   $db: db,
                   listResult: {
                     ...fieldKeys,
@@ -116,7 +115,7 @@ async function combineResults(
             } else if (q.getOpts.$find) {
               q.getOpts.$find.$traverse = g[parts[parts.length - 1]]
               delete q.getOpts.$db
-              const r = await selva.get({ listResult: q.getOpts })
+              const r = await client.get({ listResult: q.getOpts })
               g[parts[parts.length - 1]] = r.listResult
             }
           } else {
