@@ -1,5 +1,6 @@
 import { SelvaClient } from '..'
 import { GetResult, GetOptions } from './types'
+import { SCRIPT } from '../constants'
 import validate, { ExtraQueries } from './validate'
 
 async function combineResults(
@@ -131,12 +132,17 @@ async function combineResults(
 async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
-  // const getResult = props.$db
-  //   ? await global.SELVAS[props.$db].fetch(props)
-  //   : await client.fetch(props)
-  // await combineResults(client, extraQueries, getResult)
-  // return getResult
-  return {}
+
+  const getResult = await client.redis.evalsha(
+    { name: props.$db || 'default' },
+    `${SCRIPT}:fetch`,
+    0,
+    `${this.loglevel}:${this.clientId}`,
+    JSON.stringify(props)
+  )
+
+  await combineResults(client, extraQueries, getResult)
+  return getResult
 }
 
 export { get, GetResult, GetOptions }
