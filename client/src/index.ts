@@ -19,11 +19,12 @@ import {GetSchemaResult, SchemaOptions, Id} from './schema'
 import { updateSchema } from './schema/updateSchema'
 import {GetOptions, GetResult, get} from './get'
 import {SetOptions, set} from './set'
+import {IdOptions} from 'lua/src/id'
 
 export * as constants from './constants'
 
 export class SelvaClient extends EventEmitter {
-  public id: string
+  public clientId: string
   public redis: Redis
 
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
@@ -33,6 +34,11 @@ export class SelvaClient extends EventEmitter {
       clientOpts = {}
     }
     this.redis = new Redis(this, opts, clientOpts)
+  }
+
+  id(props: IdOptions): Promise<string> {
+    // TODO    
+    return Promise.resolve('abcd')
   }
 
   get(getOpts: GetOptions): Promise<GetResult> {
