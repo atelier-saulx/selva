@@ -132,8 +132,12 @@ async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
 
+  const descriptor = await client.redis.getServerDescriptor({
+    name: props.$db || 'default'
+  })
+
   const getResult = await client.redis.evalsha(
-    { name: props.$db || 'default' },
+    descriptor,
     `${SCRIPT}:fetch`,
     0,
     `${this.loglevel}:${this.clientId}`,
