@@ -33,7 +33,13 @@ const getServers = async (client: RedisSelvaClient) => {
           'type',
           'default'
         )
-        const descriptor = { host, port, name, type, default: def || false }
+        const descriptor = {
+          host,
+          port: Number(port),
+          name,
+          type,
+          default: def || false
+        }
         serversById[id] = descriptor
         return descriptor
       }

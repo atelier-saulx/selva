@@ -2,8 +2,8 @@ import { spawn, ChildProcess } from 'child_process'
 import pidusage, { Status } from 'pidusage'
 import { EventEmitter } from 'events'
 
-// const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
-const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every second
+const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
+// const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every second
 
 export default class ProcessManager extends EventEmitter {
   private command: string

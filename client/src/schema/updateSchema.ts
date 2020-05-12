@@ -237,12 +237,15 @@ export async function updateSchema(
   if (!props.types) {
     props.types = {}
   }
+
+  console.log('get schema?')
   const newSchema = newSchemaDefinition(
     (await client.getSchema(descriptor.name)).schema,
     <Schema>props
   )
 
   try {
+    console.log('go try! update!')
     const updated = await client.redis.evalsha(
       descriptor,
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it

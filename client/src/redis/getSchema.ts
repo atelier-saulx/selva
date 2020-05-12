@@ -3,6 +3,7 @@ import { rootDefaultFields } from '../schema/constants'
 import { Schema, SearchIndexes, GetSchemaResult } from '../schema/types'
 import { ServerSelector } from '../types'
 import { wait } from '../util'
+import { SCHEMA } from '../constants'
 
 async function getSchema(
   client: RedisSelvaClient,
@@ -20,11 +21,10 @@ async function getSchema(
 
   let searchIndexes: SearchIndexes = {}
 
-  const { name } = await client.getServerDescriptor(selector)
-
+  console.log('GET SCHEMA ----------------->', selector)
   const [fetchedTypes, fetchedIndexes] = await client.hmget(
     selector,
-    '___selva_schema',
+    SCHEMA,
     'types',
     'searchIndexes'
   )

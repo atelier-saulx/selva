@@ -6,6 +6,8 @@ export default function execBatch(
   queue: RedisCommand[]
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    // return resolve()
+    console.log('exec batch!')
     if (client.serverIsBusy) {
       console.log('Server is busy - retrying in 5 seconds')
       client.emit('busy')
@@ -15,9 +17,11 @@ export default function execBatch(
           console.log('DC while busy add to buffer again!')
           client.queue.push(...queue)
         } else {
-          execBatch(client, queue).then(() => {
-            resolve()
-          })
+          execBatch(client, queue)
+            .then(() => {
+              resolve()
+            })
+            .catch(err => reject(err))
         }
       }, 5e3)
     } else {
@@ -51,17 +55,25 @@ export default function execBatch(
           })
           if (hasBusy) {
             client.serverIsBusy = true
-            execBatch(client, busySlice).then(() => {
-              resolve()
-            })
+            execBatch(client, busySlice)
+              .then(() => {
+                console.log('exec batch from busy! DONE')
+
+                resolve()
+              })
+              .catch(err => reject(err))
           } else {
             client.serverIsBusy = false
             if (queue.length > 1e3) {
               process.nextTick(() => {
                 // let it gc a bit
+                console.log('exec batch! DONE large')
+
                 resolve()
               })
             } else {
+              console.log('exec batch! DONE NORMAL!')
+
               resolve()
             }
           }

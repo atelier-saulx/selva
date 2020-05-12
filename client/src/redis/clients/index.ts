@@ -17,11 +17,16 @@ type ClientOpts = {
   id: string
 }
 
-const drainQueue = (client: Client, q = client.queue) => {
+const drainQueue = (client: Client, q?: RedisCommand[]) => {
   if (!client.queueInProgress) {
+    console.log('PUT IN PROGRESS')
     client.queueInProgress = true
     process.nextTick(() => {
       if (client.connected) {
+        if (!q) {
+          q = client.queue
+          client.queue = []
+        }
         let nextQ: RedisCommand[]
         const parsedQ = []
         for (let i = 0; i < q.length; i++) {
@@ -37,17 +42,18 @@ const drainQueue = (client: Client, q = client.queue) => {
             if (redisCommand.command.toLowerCase() === 'evalsha') {
               console.log('EVALSHA', redisCommand)
               const script = redisCommand.args[0]
+
               if (
                 typeof script === 'string' &&
                 script.startsWith(constants.SCRIPT)
               ) {
-                redisCommand.args[0] = getScriptSha(script)
+                redisCommand.args[0] = getScriptSha(
+                  (<string>redisCommand.args[0]).slice(
+                    constants.SCRIPT.length + 1
+                  )
+                )
               }
             }
-
-            // is it load and eval script time?
-            // TODO: TONY magic 🍕
-            // esle
             parsedQ.push(redisCommand)
             if (parsedQ.length >= 5e3) {
               nextQ = q.slice(i)
@@ -55,13 +61,21 @@ const drainQueue = (client: Client, q = client.queue) => {
             }
           }
         }
-        client.queue = []
+        console.log('go batch')
+
         execBatch(client, parsedQ).finally(() => {
+          console.log(nextQ)
+          console.log(client.queue.length)
+          console.log('SNURFELS Q IS DONE!')
           if (nextQ) {
+            client.queueInProgress = false
             drainQueue(client, nextQ)
           } else if (client.queue.length) {
-            drainQueue(client, client.queue)
+            console.log('go drain more!')
+            client.queueInProgress = false
+            drainQueue(client)
           } else {
+            console.log('QUE OUT OF PROGRESS!')
             client.queueInProgress = false
           }
         })
@@ -183,7 +197,6 @@ const createClient = (
     port,
     host
   })
-  console.log('create client')
   return client
 }
 
@@ -223,5 +236,7 @@ export function addCommandToQueue(client: Client, redisCommand: RedisCommand) {
   client.queue.push(redisCommand)
   if (!client.queueInProgress) {
     drainQueue(client)
+  } else {
+    console.log('o! new thing queue in  progress', redisCommand.command)
   }
 }
