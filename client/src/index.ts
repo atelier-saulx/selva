@@ -53,12 +53,12 @@ export class SelvaClient extends EventEmitter {
     return digest(payload)
   }
 
-  getSchema(name?: string): Promise<GetSchemaResult> {
-    return this.redis.getSchema({name: name || 'default'})
+  getSchema(name: string = 'default'): Promise<GetSchemaResult> {
+    return this.redis.getSchema({ name: name })
   }
 
-  updateSchema(opts: SchemaOptions, name?: string): Promise<void> {
-    return updateSchema(this, opts, name)
+  updateSchema(opts: SchemaOptions, name: string = 'default'): Promise<void> {
+    return updateSchema(this, opts, { name })
   }
 
   destroy() {

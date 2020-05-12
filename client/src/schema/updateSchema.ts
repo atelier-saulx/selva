@@ -7,6 +7,7 @@ import {
   rootDefaultFields,
   SchemaOptions
 } from '.'
+import { ServerSelector } from '../types'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
@@ -223,25 +224,23 @@ function newFieldDefinition(
 export async function updateSchema(
   client: SelvaClient,
   props: SchemaOptions,
-  name?: string,
+  selector: ServerSelector,
   retry?: number
 ) {
   console.log('Try number', retry)
   const wait = (t: number = 0): Promise<void> =>
     new Promise(r => setTimeout(r, t))
 
+  const descriptor = await client.redis.getServerDescriptor(selector)
+
   retry = retry || 0
   if (!props.types) {
     props.types = {}
   }
   const newSchema = newSchemaDefinition(
-    (await client.getSchema(name)).schema,
+    (await client.getSchema(descriptor.name)).schema,
     <Schema>props
   )
-
-  const descriptor = await client.redis.getServerDescriptor({
-    name: name || 'default'
-  })
 
   try {
     const updated = await client.redis.evalsha(
