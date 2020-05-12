@@ -21,7 +21,6 @@ const createRegistryClient = (
 ) => {
   client.registry = getClient(client, 'registry', 'registry', port, host)
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
-
   // view of the registry if its not there async fn needs to wait for it
   // this.registry
 
