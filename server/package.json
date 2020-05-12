@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva-server",
-  "version": "0.2.43",
+  "version": "0.2.44",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -55,7 +55,7 @@
     "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
-    "@saulx/selva": "0.2.46",
+    "@saulx/selva": "0.2.47",
     "aws-sdk": "^2.616.0",
     "chalk": "^4.0.0",
     "dropbox": "^4.0.30",

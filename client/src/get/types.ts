@@ -42,6 +42,7 @@ export type Filter =
     }
 
 export type Find = {
+  $db?: string
   $traverse?: 'descendants' | 'ancestors' | string | string[]
   $filter?: Filter | Filter[]
   $find?: Find

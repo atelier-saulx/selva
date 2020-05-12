@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "0.2.46",
+  "version": "0.2.47",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
@@ -59,7 +59,7 @@
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3",
     "typescript-to-lua": "^0.30.1",
-    "@saulx/selva-server": "0.2.43"
+    "@saulx/selva-server": "0.2.44"
   },
   "dependencies": {
     "@types/uuid": "^3.4.6",

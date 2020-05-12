@@ -73,7 +73,7 @@ test.serial('subscription list', async t => {
     })
   })
 
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: 'root',
     children: {
       teams: [

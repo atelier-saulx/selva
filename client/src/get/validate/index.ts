@@ -1,36 +1,110 @@
-import { GetOptions } from '../types'
+import { GetOptions, Find } from '../types'
 import { SelvaClient } from '../..'
 
 import checkAllowed from './checkAllowed'
 
+// TODO: $db for nested queries in $field.value
 import validateField from './field'
 import validateInherit from './inherit'
 import validateList from './list'
 import validateFind from './find'
 
-function validateNested(
+export type ExtraQuery = {
+  getOpts: GetOptions
+  path: string
+  type: 'reference' | 'references' | 'nested_query'
+}
+export type ExtraQueries = Record<string, ExtraQuery[]>
+
+export function addExtraQuery(extraQueries: ExtraQueries, query: ExtraQuery) {
+  const db = query.getOpts.$db
+  const current = extraQueries[db] || []
+  current.push(query)
+  extraQueries[db] = current
+}
+
+async function transformDb(
+  extraQueries: ExtraQueries,
+  _client: SelvaClient,
+  props: GetOptions,
+  path: string
+): Promise<GetOptions | true> {
+  const selva = global.SELVAS[props.$db]
+  if (!selva) {
+    throw new Error(
+      `$db found at ${path}.$db with GetOptions ${JSON.stringify(
+        props
+      )}, but no database named ${props.$db} exists`
+    )
+  }
+
+  if (props.$id || props.$alias) {
+    addExtraQuery(extraQueries, {
+      getOpts: props,
+      path,
+      type: 'nested_query'
+    })
+
+    return { $value: {} }
+  } else {
+    let val: GetOptions | true = true
+
+    addExtraQuery(extraQueries, {
+      getOpts: props,
+      path,
+      type: props.$list || props.$find ? 'references' : 'reference'
+    })
+
+    if (props.$field) {
+      val = { $field: props.$field }
+    } else if (
+      props.$list &&
+      typeof props.$list === 'object' &&
+      props.$list.$find
+    ) {
+      console.log('TRANSFORMING LIST FIND', props)
+      if (props.$list.$find.$traverse) {
+        val = { $field: props.$list.$find.$traverse }
+      }
+    } else if (props.$find) {
+      console.log('TRANSFORMING FIND', props)
+      if (props.$find.$traverse) {
+        val = { $field: props.$find.$traverse }
+      }
+    }
+
+    return val
+  }
+}
+
+async function validateNested(
+  extraQueries: ExtraQueries,
   client: SelvaClient,
   props: GetOptions | true,
   path: string
-): void {
+): Promise<void | GetOptions | true> {
   if (props === true) {
     return
   }
 
+  if (props.$db) {
+    return await transformDb(extraQueries, client, props, path)
+  }
+
   if (props.$id || props.$alias) {
-    return validateTopLevel(client, props, path)
+    return validateTopLevel(extraQueries, client, props, path)
   }
 
   for (const field in props) {
     if (field.startsWith('$')) {
       if (field === '$field') {
-        validateField(client, props.$field, path)
+        await validateField(extraQueries, client, props.$field, path)
       } else if (field === '$inherit') {
         validateInherit(client, props.$inherit, path)
       } else if (field === '$list') {
-        validateList(client, props.$list, path)
+        validateList(props, client, props.$list, path)
       } else if (field === '$find') {
-        validateFind(client, props.$find, path)
+        validateFind(props, client, props.$find, path)
       } else if (field === '$default') {
         continue
       } else if (field === '$all') {
@@ -58,19 +132,33 @@ function validateNested(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      validateNested(client, props[field], path + '.' + field)
+      const modified = await validateNested(
+        extraQueries,
+        client,
+        props[field],
+        path + '.' + field
+      )
+
+      if (modified) {
+        props[field] = modified
+      }
     }
   }
 }
 
-export default function validateTopLevel(
+export default async function validateTopLevel(
+  extraQueries: ExtraQueries,
   client: SelvaClient,
   props: GetOptions,
   path: string = ''
-): void {
+): Promise<void> {
   for (const field in props) {
     if (field.startsWith('$')) {
-      if (field === '$id') {
+      if (field === '$db') {
+        if (typeof props.$db !== 'string') {
+          throw new Error(`${path}.$db ${props.$db} should be a string`)
+        }
+      } else if (field === '$id') {
         if (typeof props.$id !== 'string' && !Array.isArray(props.$id)) {
           if (path !== '' && typeof props.$id === 'object') {
             const allowed = checkAllowed(props.$id, new Set(['$field']))
@@ -140,6 +228,7 @@ export default function validateTopLevel(
       } else {
         throw new Error(`
           Top level query operator ${field} is not supported. Did you mean one of the following supported top level query options?
+            - $db
             - $id
             - $alias
             - $all
@@ -152,7 +241,15 @@ export default function validateTopLevel(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      validateNested(client, props[field], path + '.' + field)
+      const modified = await validateNested(
+        extraQueries,
+        client,
+        props[field],
+        path + '.' + field
+      )
+      if (modified) {
+        props[field] = modified
+      }
     }
   }
 }
