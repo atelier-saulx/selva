@@ -3,7 +3,6 @@ import { SelvaClient } from '../..'
 
 import checkAllowed from './checkAllowed'
 
-// TODO: $db for nested queries in $field.value
 import validateField from './field'
 import validateInherit from './inherit'
 import validateList from './list'
