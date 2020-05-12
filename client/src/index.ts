@@ -15,8 +15,10 @@ import { EventEmitter } from 'events'
 import { ConnectOptions, ClientOpts, LogLevel, ServerType } from './types'
 import digest from './digest'
 import Redis from './redis'
-import {GetSchemaResult, SchemaOptions} from './schema'
+import {GetSchemaResult, SchemaOptions, Id} from './schema'
 import { updateSchema } from './schema/updateSchema'
+import {GetOptions, GetResult, get} from './get'
+import {SetOptions, set} from './set'
 
 export * as constants from './constants'
 
@@ -31,6 +33,14 @@ export class SelvaClient extends EventEmitter {
       clientOpts = {}
     }
     this.redis = new Redis(this, opts, clientOpts)
+  }
+
+  get(getOpts: GetOptions): Promise<GetResult> {
+    return get(this, getOpts)
+  }
+
+  set(setOpts: SetOptions): Promise<Id | undefined> {
+    return set(this, setOpts)
   }
 
   digest(payload: string) {

@@ -201,20 +201,21 @@ export default async function validateTopLevel(
           )
         }
 
-        if (client.schema) {
-          if (
-            !client.schema.languages ||
-            !client.schema.languages.includes(props.$language)
-          ) {
-            throw new Error(
-              `$language ${
-                props.$language
-              } is unsupported, should be one of: ${client.schema.languages.join(
-                ', '
-              )}`
-            )
-          }
-        }
+        // TODO
+        // if (client.schema) {
+        //   if (
+        //     !client.schema.languages ||
+        //     !client.schema.languages.includes(props.$language)
+        //   ) {
+        //     throw new Error(
+        //       `$language ${
+        //         props.$language
+        //       } is unsupported, should be one of: ${client.schema.languages.join(
+        //         ', '
+        //       )}`
+        //     )
+        //   }
+        // }
       } else if (field === '$rawAncestors') {
         if (typeof props.$rawAncestors !== 'boolean') {
           throw new Error(`$rawAncestors should be a boolean value`)

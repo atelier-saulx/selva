@@ -130,16 +130,13 @@ async function combineResults(
 
 async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
-  validate(extraQueries, client, props)
-  // const getResult = await client.fetch(props)
-  // return getResult
-  return {}
-  // await validate(extraQueries, client, props)
+  await validate(extraQueries, client, props)
   // const getResult = props.$db
   //   ? await global.SELVAS[props.$db].fetch(props)
   //   : await client.fetch(props)
   // await combineResults(client, extraQueries, getResult)
   // return getResult
+  return {}
 }
 
 export { get, GetResult, GetOptions }
