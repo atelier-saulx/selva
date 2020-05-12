@@ -1,4 +1,4 @@
-import { GetOptions, Find } from '../types'
+import { GetOptions } from '../types'
 import { SelvaClient } from '../..'
 
 import checkAllowed from './checkAllowed'
