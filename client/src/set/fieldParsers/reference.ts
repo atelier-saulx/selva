@@ -1,4 +1,4 @@
-import { parseSetObject } from '..'
+import parseSetObject from '../validate'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
 import { verifiers } from './simple'
