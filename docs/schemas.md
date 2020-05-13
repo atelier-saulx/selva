@@ -251,7 +251,7 @@ The `distance` operator can be used to return only results within a certain radi
 
 ##### EXISTS
 
-The `EXISTS` index type con be applied to thea any type. When other indexing is enabled, it can be added as the last index type. It enables the following [`$filter`](./get_query.md#filter-object-array) operators:
+The `EXISTS` index type can be applied to any type. When other indexing is enabled, it can be added as the last index type. It enables the following [`$filter`](./get_query.md#filter-object-array) operators:
 
 - `$operator: 'exists'` (filter matches only records where the field has been set)
 - `$operator: 'notExists'` (filter matches only records where the field has _not_ been set)
