@@ -5,9 +5,11 @@ import Redis from './redis'
 import { GetSchemaResult, SchemaOptions, Id } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
-import { GetOptions, GetResult, get } from './get'
-import { SetOptions, set } from './set'
-import { IdOptions } from 'lua/src/id'
+import {GetOptions, GetResult, get} from './get'
+import {SetOptions, set} from './set'
+import {IdOptions} from 'lua/src/id'
+import id from './id'
+import {DeleteOptions, deleteItem} from './delete'
 import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -20,7 +22,6 @@ export class SelvaClient extends EventEmitter {
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
     super()
     this.uuid = uuidv4()
-
     this.setMaxListeners(10000)
     if (!clientOpts) {
       clientOpts = {}
@@ -29,8 +30,7 @@ export class SelvaClient extends EventEmitter {
   }
 
   id(props: IdOptions): Promise<string> {
-    // TODO    
-    return Promise.resolve('abcd')
+    return id(this, props)
   }
 
   get(getOpts: GetOptions): Promise<GetResult> {
@@ -39,6 +39,10 @@ export class SelvaClient extends EventEmitter {
 
   set(setOpts: SetOptions): Promise<Id | undefined> {
     return set(this, setOpts)
+  }
+
+  delete(deleteOpts: DeleteOptions): Promise<boolean> {
+    return deleteItem(this, deleteOpts)
   }
 
   digest(payload: string) {
