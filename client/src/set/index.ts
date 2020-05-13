@@ -82,6 +82,11 @@ export const parseSetObject = (
           throw new Error('Wrong type for $id ' + payload[key])
         }
         result[key] = payload[key]
+      } else if (key === '$db') {
+        if (typeof payload[key] !== 'string') {
+          throw new Error('Wrong type for $db string expected: ' + payload[key])
+        }
+        result[key] = payload[key]
       } else if (key === '$operation') {
         const val = payload[key]
         if (val !== 'update' && val !== 'insert' && val !== 'upsert') {
@@ -301,7 +306,6 @@ async function setInBatches(
           payload.$id = await client.id({
             type: payload.type
           })
-          payload.$id = undefined
         }
 
         if (payload[field].$add) {

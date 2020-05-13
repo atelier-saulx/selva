@@ -81,24 +81,14 @@ test('hello ik ben één test', async t => {
     user: 'ht2'
   })
 
-  await client.redis.hmset(
-    { name: 'users' },
-    'ht2',
-    'value',
-    2,
-    'title.en',
-    'murk in the users'
-  )
-
-  // FIXME
-  // await client.set({
-  //   $db: 'users',
-  //   $id: 'ht2',
-  //   value: 2,
-  //   title: {
-  //     en: 'murk in the users'
-  //   }
-  // })
+  await client.set({
+    $db: 'users',
+    $id: 'ht2',
+    value: 2,
+    title: {
+      en: 'murk in the users'
+    }
+  })
 
   const xx = await client.get({
     // $db: 'registry',
