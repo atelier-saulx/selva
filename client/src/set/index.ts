@@ -3,8 +3,8 @@ import { SelvaClient } from '..'
 import { Schema, TypeSchema } from '../schema'
 import fieldParsers from './fieldParsers'
 import { verifiers } from './fieldParsers/simple'
-import { configureLogger } from 'lua/src/logger'
 import { v4 as uuid } from 'uuid'
+import { SCRIPT } from '../constants'
 
 // import { MAX_BATCH_SIZE } from '../redis'
 const MAX_BATCH_SIZE = 5500
@@ -156,46 +156,50 @@ ${allowedFieldsDoc(schemas, type)}
   return result
 }
 
+async function _set(
+  client: SelvaClient,
+  payload: SetOptions,
+  schemaSha: string,
+  db?: string
+): Promise<string> {
+  const res = await client.redis.evalsha(
+    { name: db || 'default' },
+    `${SCRIPT}:modify`,
+    0,
+    `undefined:undefined`,
+    schemaSha,
+    JSON.stringify({
+      kind: 'update',
+      payload
+    })
+  )
+
+  return res[0]
+}
+
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
-  // TODO
-  // let gotSchema = false
-  // if (!client.schema) {
-  //   await client.getSchema()
-  //   gotSchema = true
-  // }
-  // // need to check if it updated
-  // let schema = client.schema
-  // let parsed
-  // try {
-  //   parsed = parseSetObject(payload, schema)
-  // } catch (err) {
-  //   if (!gotSchema) {
-  //     delete client.schema
-  //     return set(client, payload)
-  //   } else {
-  //     throw err
-  //   }
-  // }
-  // if (parsed.$_itemCount > MAX_BATCH_SIZE) {
-  //   const [id] = await setInBatches(client, parsed, 0, {
-  //     $_batchOpts: { batchId: uuid() }
-  //   })
-  //   return id
-  // }
-  // // need to check for error of schema
-  // const modifyResult = await client.modify({
-  //   kind: 'update',
-  //   payload: <SetOptions & { $id: string }>parsed // assure TS that id is actually set :|
-  // })
-  // return <string>modifyResult
-  return undefined
+  const schemaResp = await client.getSchema(payload.$db)
+  const schema = schemaResp.schema
+  const parsed = parseSetObject(payload, schema)
+
+  if (parsed.$_itemCount > MAX_BATCH_SIZE) {
+    const [id] = await setInBatches(schema, client, parsed, 0, {
+      $_batchOpts: { batchId: uuid() },
+      db: payload.$db
+    })
+    return id
+  }
+
+  return _set(client, parsed, schema.sha, payload.$db)
 }
 
 async function setInBatches(
+  schemas: Schema,
   client: SelvaClient,
   payload: SetOptions | SetOptions[],
   depth: number,
   context?: {
+    db?: string
     id?: string
     alias?: string | string[]
     field?: string
@@ -220,11 +224,9 @@ async function setInBatches(
             return i
           }
 
-          // TODO
-          // const id = await client.id({
-          //   type: i.type
-          // })
-          const id = undefined
+          const id = await client.id({
+            type: i.type
+          })
 
           i.$id = id
           return i
@@ -256,11 +258,7 @@ async function setInBatches(
               [field]: entries
             }
 
-      // TODO
-      // await client.modify({
-      //   kind: 'update',
-      //   payload: <SetOptions & { $id: string }>opts // assure TS that id is actually set :|
-      // })
+      await _set(client, opts, schemas.sha, context.db)
 
       const ids = entries.map(e => {
         if (typeof e === 'string') {
@@ -278,18 +276,14 @@ async function setInBatches(
   }
 
   if (payload.$_itemCount < MAX_BATCH_SIZE && payload.$_itemCount !== 0) {
-    // TODO
-    // const id = await client.modify({
-    //   kind: 'update',
-    //   payload: <SetOptions & { $id: string }>payload // assure TS that id is actually set :|
-    // })
-    const id = undefined
+    const id = await _set(client, payload, schemas.sha, context.db)
 
     payload.$id = <string>id
     payload.$_itemCount = 0
     return [<string>id]
   }
 
+  const db: string | undefined = payload.$db || context.db || 'default'
   const { $_batchOpts } = context
   const size = payload.$_itemCount
   let fieldNames: string[] = []
@@ -304,15 +298,15 @@ async function setInBatches(
         fieldNames.push(field)
       } else if (payload[field].$_itemCount > MAX_BATCH_SIZE) {
         if (!payload.$id && !payload.$alias) {
-          // TODO
-          // payload.$id = await client.id({
-          //   type: payload.type
-          // })
+          payload.$id = await client.id({
+            type: payload.type
+          })
           payload.$id = undefined
         }
 
         if (payload[field].$add) {
-          await setInBatches(client, payload[field].$add, depth + 1, {
+          await setInBatches(schemas, client, payload[field].$add, depth + 1, {
+            db,
             id: payload.$id,
             alias: payload.$alias,
             field,
@@ -320,7 +314,8 @@ async function setInBatches(
             $_batchOpts
           })
         } else if (Array.isArray(payload[field])) {
-          await setInBatches(client, payload[field], depth + 1, {
+          await setInBatches(schemas, client, payload[field], depth + 1, {
+            db,
             id: payload.$id,
             alias: payload.$alias,
             field,
@@ -357,17 +352,15 @@ async function setInBatches(
   }
 
   newPayload.$_itemCount = MAX_BATCH_SIZE - remainingBatchSize
-  // TODO
-  // const id = await client.modify({
-  //   kind: 'update',
-  //   payload: <SetOptions & { $id: string }>newPayload // assure TS that id is actually set :|
-  // })
-  const id = undefined
+  const id = await _set(client, newPayload, schemas.sha, db)
 
   if (missingFieldsCount) {
     missingPayload.$id = <string>id
     missingPayload.$_itemCount = size - newPayload.$_itemCount
-    await setInBatches(client, missingPayload, depth, { $_batchOpts })
+    await setInBatches(schemas, client, missingPayload, depth, {
+      $_batchOpts,
+      db
+    })
   }
 
   return [<string>id]

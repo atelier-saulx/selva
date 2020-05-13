@@ -39,6 +39,7 @@ test('hello ik ben één test', async t => {
   console.log('UPDATE SCHEMA')
   await client.updateSchema(
     {
+      languages: ['en'],
       types: {
         helloType: {
           prefix: 'ht',
@@ -55,6 +56,7 @@ test('hello ik ben één test', async t => {
 
   await client.updateSchema(
     {
+      languages: ['en'],
       types: {
         helloType: {
           prefix: 'ht',
@@ -70,7 +72,14 @@ test('hello ik ben één test', async t => {
 
   console.log('getSchema()', await client.getSchema())
 
-  await client.redis.hmset('ht1', 'value', 1, 'title.en', 'murk', 'user', 'ht2')
+  await client.set({
+    $id: 'ht1',
+    value: 1,
+    title: {
+      en: 'murk'
+    },
+    user: 'ht2'
+  })
 
   await client.redis.hmset(
     { name: 'users' },
@@ -80,6 +89,16 @@ test('hello ik ben één test', async t => {
     'title.en',
     'murk in the users'
   )
+
+  // FIXME
+  // await client.set({
+  //   $db: 'users',
+  //   $id: 'ht2',
+  //   value: 2,
+  //   title: {
+  //     en: 'murk in the users'
+  //   }
+  // })
 
   const xx = await client.get({
     // $db: 'registry',

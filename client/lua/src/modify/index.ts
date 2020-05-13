@@ -355,17 +355,8 @@ function update(payload: SetOptions): Id | null {
         type(payload.type) === 'string'
           ? payload.type
           : (<any>payload.type).$value
-      if (
-        (payload.externalId && type(payload.externalId) === 'string') ||
-        isArray(<any>payload.externalId)
-      ) {
-        payload.$id = genId({
-          type: itemType,
-          externalId: <any>payload.externalId
-        })
-      } else {
-        payload.$id = genId({ type: itemType })
-      }
+
+      payload.$id = genId({ type: itemType })
     }
   }
 
