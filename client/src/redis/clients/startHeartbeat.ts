@@ -1,5 +1,6 @@
 import { Client } from './'
 import { CLIENTS, HEARTBEAT } from '../../constants'
+
 const HEARTBEAT_TIMER = 5e3
 
 const startHeartbeat = (client: Client) => {

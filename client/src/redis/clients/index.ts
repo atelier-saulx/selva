@@ -35,7 +35,6 @@ export class Client extends EventEmitter {
   }
   public clients: Set<RedisSelvaClient>
   public heartbeatTimout?: NodeJS.Timeout
-
   constructor({ name, type, host, port, id }: ClientOpts) {
     super()
     this.setMaxListeners(10000)
@@ -49,7 +48,6 @@ export class Client extends EventEmitter {
     this.queueInProgress = false
     this.queue = []
     this.connected = false
-
     this.on('connect', () => {
       if (!this.connected) {
         console.log('client connected', name)
@@ -59,24 +57,24 @@ export class Client extends EventEmitter {
           type === 'subscriptionManager' &&
           process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
         ) {
-          console.log('start it!')
           startHeartbeat(this)
+          // resend subs here?
         }
       }
     })
-
     this.on('disconnect', () => {
       this.connected = false
       this.queueInProgress = false
       clearTimeout(this.heartbeatTimout)
     })
-
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
     this.publisher = createRedisClient(this, host, port, 'publisher')
   }
 }
 
 const clients: Map<string, Client> = new Map()
+
+// sharing on or just putting a seperate on per subscription and handling it from somewhere else?
 
 const createClient = (
   name: string,
@@ -95,21 +93,23 @@ const createClient = (
   return client
 }
 
-const destroyClient = () => {
-  // remove hearthbeat
-}
+// const destroyClient = () => {
+//   // remove hearthbeat
+// }
 
-export function removeRedisSelvaClient(
-  client: Client,
-  selvaRedisClient: RedisSelvaClient
-) {}
+// export function removeRedisSelvaClient(
+//   client: Client,
+//   selvaRedisClient: RedisSelvaClient
+// ) {
+//   // if zero remove the client
+// }
 
-export function addRedisSelvaClient(
-  client: Client,
-  selvaRedisClient: RedisSelvaClient
-) {
-  //
-}
+// export function addRedisSelvaClient(
+//   client: Client,
+//   selvaRedisClient: RedisSelvaClient
+// ) {
+//   // add to a client
+// }
 
 export function getClient(
   selvaRedisClient: RedisSelvaClient,
@@ -118,21 +118,17 @@ export function getClient(
   port: number,
   url: string = '0.0.0.0'
 ) {
-  // if origin || registry
-
   const id = url + ':' + port
   let client = clients.get(id)
   if (!client) {
     client = createClient(name, type, id, port, url)
     clients.set(id, client)
   }
-
   if (type === 'origin' || /* TODO: remove */ type === 'registry') {
     loadScripts(client)
   }
-
-  addRedisSelvaClient(client, selvaRedisClient)
-
+  // think a bit more about this
+  // addRedisSelvaClient(client, selvaRedisClient)
   return client
 }
 
