@@ -9,7 +9,7 @@ async function deleteItem(
   const db = typeof payload === 'string' ? 'default' : payload.$db || 'default'
   const schemaResp = await client.getSchema(db)
 
-  const res = await client.redis.evalsha(
+  return await client.redis.evalsha(
     { name: db || 'default' },
     `${SCRIPT}:modify`,
     0,
@@ -20,8 +20,6 @@ async function deleteItem(
       payload
     })
   )
-
-  return res[0]
 }
 
 export { deleteItem, DeleteOptions }

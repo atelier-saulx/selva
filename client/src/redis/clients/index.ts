@@ -22,6 +22,10 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
     console.log('PUT IN PROGRESS')
     client.queueInProgress = true
     process.nextTick(() => {
+      let modify: RedisCommand
+      let modifyResolvers = []
+      let modifyRejects = []
+
       if (client.connected) {
         if (!q) {
           q = client.queue
@@ -53,7 +57,22 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
                   )
                 )
               }
+
+              if (script === `${constants.SCRIPT}:modify`) {
+                console.log('MODIFY', q.length)
+                if (!modify) {
+                  modify = redisCommand
+                } else {
+                  console.log('HMMMMMM', ...redisCommand.args.slice(2))
+                  modify.args.push(...redisCommand.args.slice(2))
+                }
+
+                modifyResolvers.push(redisCommand.resolve)
+                modifyRejects.push(redisCommand.reject)
+                continue
+              }
             }
+
             parsedQ.push(redisCommand)
             if (parsedQ.length >= 5e3) {
               nextQ = q.slice(i)
@@ -61,6 +80,25 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
             }
           }
         }
+
+        if (modify) {
+          console.log('COMBINED', modify)
+          modify.resolve = results => {
+            for (let i = 0; i < results.length; i++) {
+              modifyResolvers[i](results[i])
+            }
+          }
+
+          modify.reject = err => {
+            modifyRejects.forEach(reject => {
+              reject(err)
+            })
+          }
+
+          parsedQ.push(modify)
+          modify = undefined
+        }
+
         console.log('go batch')
 
         execBatch(client, parsedQ).finally(() => {

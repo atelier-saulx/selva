@@ -11,7 +11,7 @@ export async function _set(
   schemaSha: string,
   db?: string
 ): Promise<string> {
-  const res = await client.redis.evalsha(
+  return await client.redis.evalsha(
     { name: db || 'default' },
     `${SCRIPT}:modify`,
     0,
@@ -22,8 +22,6 @@ export async function _set(
       payload
     })
   )
-
-  return res[0]
 }
 
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
