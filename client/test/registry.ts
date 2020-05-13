@@ -81,23 +81,36 @@ test('hello ik ben één test', async t => {
 
   console.log('getSchema()', await client.getSchema())
 
-  await client.set({
-    $id: 'ht1',
-    value: 1,
-    title: {
-      en: 'murk'
-    },
-    user: 'ht2'
-  })
+  console.log(
+    'SETS',
+    await Promise.all([
+      client.set({
+        $id: 'ht1',
+        value: 1,
+        title: {
+          en: 'murk'
+        },
+        user: 'ht2'
+      }),
 
-  await client.set({
-    $db: 'users',
-    $id: 'ht2',
-    value: 2,
-    title: {
-      en: 'murk in the users'
-    }
-  })
+      client.set({
+        $db: 'users',
+        $id: 'ht2',
+        value: 2,
+        title: {
+          en: 'murk in the users'
+        }
+      }),
+      client.set({
+        $id: 'ht3',
+        value: 1,
+        title: {
+          en: 'murk'
+        },
+        user: 'ht2'
+      })
+    ])
+  )
 
   const xx = await client.get({
     // $db: 'registry',
@@ -131,6 +144,33 @@ test('hello ik ben één test', async t => {
     title: true,
     user: { $db: 'users', value: true, title: true }
   })
+
+  await Promise.all([
+    client.set({
+      $id: 'ht1',
+      value: 1,
+      title: {
+        en: 'murk'
+      },
+      user: 'ht2'
+    }),
+    client.set({
+      $id: 'ht3',
+      value: 1,
+      title: {
+        en: 'murk'
+      },
+      user: 'ht2'
+    }),
+    client.set({
+      $id: 'ht4',
+      value: 1,
+      title: {
+        en: 'murk'
+      },
+      user: 'ht2'
+    })
+  ])
 
   console.log('xxx', xxx)
 

@@ -5,9 +5,8 @@ import './redisSearch'
 import { ServerType } from '../../types'
 import { EventEmitter } from 'events'
 import createRedisClient from './createRedisClient'
-import execBatch from './execBatch'
-import { loadScripts, getScriptSha } from './scripts'
-import * as constants from '../../constants'
+import { loadScripts } from './scripts'
+import drainQueue from './drainQueue'
 
 type ClientOpts = {
   name: string
@@ -15,69 +14,6 @@ type ClientOpts = {
   host: string
   port: number
   id: string
-}
-
-const drainQueue = (client: Client, q?: RedisCommand[]) => {
-  if (!client.queueInProgress) {
-    client.queueInProgress = true
-    process.nextTick(() => {
-      if (client.connected) {
-        if (!q) {
-          q = client.queue
-          client.queue = []
-        }
-        let nextQ: RedisCommand[]
-        const parsedQ = []
-        for (let i = 0; i < q.length; i++) {
-          const redisCommand = q[i]
-          const { command, resolve, args } = redisCommand
-          if (command === 'subscribe') {
-            client.subscriber.subscribe(...(<string[]>args))
-            resolve(true)
-          } else if (command === 'psubscribe') {
-            client.subscriber.psubscribe(...(<string[]>args))
-            resolve(true)
-          } else {
-            if (redisCommand.command.toLowerCase() === 'evalsha') {
-              // console.log('EVALSHA', redisCommand)
-              const script = redisCommand.args[0]
-
-              if (
-                typeof script === 'string' &&
-                script.startsWith(constants.SCRIPT)
-              ) {
-                redisCommand.args[0] = getScriptSha(
-                  (<string>redisCommand.args[0]).slice(
-                    constants.SCRIPT.length + 1
-                  )
-                )
-              }
-            }
-            parsedQ.push(redisCommand)
-            if (parsedQ.length >= 5e3) {
-              nextQ = q.slice(i)
-              break
-            }
-          }
-        }
-
-        execBatch(client, parsedQ).finally(() => {
-          if (nextQ) {
-            client.queueInProgress = false
-            drainQueue(client, nextQ)
-          } else if (client.queue.length) {
-            client.queueInProgress = false
-            drainQueue(client)
-          } else {
-            client.queueInProgress = false
-          }
-        })
-      } else {
-        client.queueInProgress = false
-        console.log('Not connected wait a little bit')
-      }
-    })
-  }
 }
 
 export class Client extends EventEmitter {
