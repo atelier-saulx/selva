@@ -6,7 +6,7 @@ import { SelvaServer } from './'
 const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
   const info: ServerDescriptor = {
     name: opts.name,
-    type: this.type,
+    type: server.type,
     port: opts.port,
     host: opts.host
   }
