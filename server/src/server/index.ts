@@ -1,15 +1,15 @@
-import {
-  ServerType,
-  connect,
-  SelvaClient,
-  ServerDescriptor
-} from '@saulx/selva'
-import { ServerOptions, Stats } from '../types'
+import { ServerType, connect, SelvaClient } from '@saulx/selva'
+import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
 import chalk from 'chalk'
-import updateRegistry from './updateRegistry'
 import ProcessManager from './processManager'
+import { Worker } from 'worker_threads'
+import attachStatusListeners from './attachStatusListeners'
+import {
+  startSubscriptionManager,
+  stopSubscriptionManager
+} from './subscriptionManager'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -17,62 +17,12 @@ export class SelvaServer extends EventEmitter {
   public host: string
   public registry: SelvaClient
   public pm: ProcessManager
+  public subscriptionManager: Worker
 
   constructor(type: ServerType) {
     super()
     this.setMaxListeners(10000)
     this.type = type
-  }
-
-  attachStatusListeners(opts: ServerOptions) {
-    const info: ServerDescriptor = {
-      name: opts.name,
-      type: this.type,
-      port: opts.port,
-      host: opts.host
-    }
-
-    if (opts.default) {
-      info.default = true
-    }
-
-    this.on('stats', rawStats => {
-      const stats: Stats = {
-        memory: rawStats.runtimeInfo.memory,
-        redisMemory: Number(rawStats.redisInfo.used_memory),
-        cpu: rawStats.runtimeInfo.cpu,
-        luaMemory: Number(rawStats.redisInfo.used_memory_lua),
-        totalMemoryAvailable: Number(rawStats.redisInfo.total_system_memory),
-        memoryFragmentationRatio: Number(
-          rawStats.redisInfo.mem_fragmentation_ratio
-        ),
-        lastSaveTime: Number(rawStats.redisInfo.rdb_last_save_time),
-        uptime: rawStats.runtimeInfo.elapsed,
-        lastSaveError:
-          rawStats.redisInfo.last_bgsave_status === 'ok' ? false : true,
-        totalNetInputBytes: Number(rawStats.redisInfo.total_net_input_bytes),
-        totalNetOutputBytes: Number(rawStats.redisInfo.total_net_output_bytes),
-        activeChannels: Number(rawStats.redisInfo.pubsub_channels),
-        opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
-        timestamp: rawStats.runtimeInfo.timestamp
-      }
-
-      updateRegistry(
-        this.registry,
-        Object.assign(
-          {
-            stats
-          },
-          info
-        )
-      )
-    })
-
-    this.on('busy', () => {})
-
-    this.on('subscription', () => {})
-
-    updateRegistry(this.registry, info)
   }
 
   start(opts: ServerOptions) {
@@ -97,16 +47,26 @@ export class SelvaServer extends EventEmitter {
       this.registry = connect({ port: opts.port })
     }
 
-    this.attachStatusListeners(opts)
+    attachStatusListeners(this, opts)
+
+    if (this.type === 'subscriptionManager') {
+      startSubscriptionManager(opts).then(worker => {
+        this.subscriptionManager = worker
+      })
+    }
+
     // after this check what type you are
     // check if opts.registry
     // handle monitoring to registry
   }
 
-  destroy() {
+  async destroy() {
     if (this.pm) {
       this.pm.destroy()
       this.pm = undefined
+    }
+    if (this.type === 'subscriptionManager') {
+      await stopSubscriptionManager(this.subscriptionManager)
     }
   }
 }
