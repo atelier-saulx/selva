@@ -207,7 +207,7 @@ When indexed as `TEXT-LANGUAGE`, the field becomes queryable with [`$filter`](./
 - `$operator: '='` 
 - `$operator: '!='` 
 
-The text match will be a text search approximate string match, including preprocessig such as:
+The text match will be a text search approximate string match, including preprocessing such as:
 - Removing special characters
 - Word stemming
 - Excluding most common words if they don't affect the search results
