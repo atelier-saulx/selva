@@ -1,9 +1,9 @@
 import { RedisCommand } from '../types'
 import './redisSearch'
-import { ServerType } from '../../types'
 import execBatch from './execBatch'
 import { getScriptSha } from './scripts'
 import * as constants from '../../constants'
+import { Client } from './'
 
 const drainQueue = (client: Client, q?: RedisCommand[]) => {
   if (!client.queueInProgress) {
