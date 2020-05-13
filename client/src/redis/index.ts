@@ -119,6 +119,10 @@ class RedisSelvaClient extends RedisMethods {
       if (selector.type === 'registry') {
         this.registry.subscriber.on(event, callback)
       } else {
+        if (!selector.type && !selector.host) {
+          selector.type = 'replica'
+        }
+
         this.getServerDescriptor(selector).then(descriptor => {
           const client = getClient(
             this,
@@ -153,6 +157,10 @@ class RedisSelvaClient extends RedisMethods {
       if (selector.type === 'registry') {
         this.registry.subscriber.removeListener(event, callback)
       } else {
+        if (!selector.type && !selector.host) {
+          selector.type = 'replica'
+        }
+
         this.getServerDescriptor(selector).then(descriptor => {
           const client = getClient(
             this,

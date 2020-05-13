@@ -28,7 +28,6 @@ export type SubscriptionManager = {
   stagedForUpdates: Set<Subscription>
   stagedInProgess: boolean
   stagedTimeout?: NodeJS.Timeout
-  isBusy: boolean
   memberMemCacheSize: number
   memberMemCache: Record<string, Record<string, true>>
   // to check if the server is still ok
