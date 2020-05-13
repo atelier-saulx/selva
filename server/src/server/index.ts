@@ -35,7 +35,7 @@ export class SelvaServer extends EventEmitter {
     this.port = opts.port
     this.host = opts.host
 
-    startRedis(this, opts)
+    await startRedis(this, opts)
 
     if (opts.registry) {
       console.log('create registry client on the server')
