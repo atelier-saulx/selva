@@ -53,8 +53,11 @@ export class Client extends EventEmitter {
     this.connected = false
 
     this.on('connect', () => {
-      this.connected = true
-      drainQueue(this)
+      if (!this.connected) {
+        console.log('client connected', name)
+        this.connected = true
+        drainQueue(this)
+      }
     })
 
     this.on('disconnect', () => {
@@ -146,10 +149,11 @@ export function getClient(
 ) {
   // if origin || registry
 
-  const id = url + port
+  const id = url + ':' + port
   let client = clients.get(id)
   if (!client) {
     client = createClient(name, type, id, port, url)
+    clients.set(id, client)
   }
 
   if (type === 'origin' || /* TODO: remove */ type === 'registry') {

@@ -13,7 +13,10 @@ const addListeners = async (
   const redis = subsManager.client.redis
 
   // this is on the subs manager
+
   redis.on(selector, 'message', (channel, message) => {
+    console.log('HELLO MAKE IT NICE', channel, message)
+
     if (channel === HEARTBEAT) {
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {

@@ -63,6 +63,7 @@ class RedisSelvaClient extends RedisMethods {
       if (!server) {
         return retry()
       }
+
       return server
     }
     if (!selector.name) {
@@ -130,6 +131,9 @@ class RedisSelvaClient extends RedisMethods {
             descriptor.port,
             descriptor.host
           )
+
+          console.log('GO SUBSCRIBE FOR THIS BOY', event, callback, descriptor)
+
           client.subscriber.on(event, callback)
         })
       }
@@ -186,6 +190,8 @@ class RedisSelvaClient extends RedisMethods {
         addCommandToQueue(this.registry, command)
       } else {
         this.getServerDescriptor(selector).then(descriptor => {
+          console.log(command.command, command.args, descriptor)
+
           addCommandToQueue(
             getClient(
               this,

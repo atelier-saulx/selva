@@ -24,6 +24,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           const redisCommand = q[i]
           const { command, resolve, args } = redisCommand
           if (command === 'subscribe') {
+            console.log('yes do it subscribe it', args, client.name, client.id)
             client.subscriber.subscribe(...(<string[]>args))
             resolve(true)
           } else if (command === 'psubscribe') {
@@ -98,7 +99,6 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         })
       } else {
         client.queueInProgress = false
-        console.log('Not connected wait a little bit')
       }
     })
   }

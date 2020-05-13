@@ -33,7 +33,7 @@ export function loadScripts(client: Client): void {
       command: 'SCRIPT',
       args: ['LOAD', SCRIPTS[scriptName].content],
       resolve: sha => {
-        console.log('LOADED SCRIPT', scriptName, 'WITH', sha)
+        // console.log('LOADED SCRIPT', scriptName, 'WITH', sha)
         SCRIPTS[scriptName].sha = sha
       }
     })

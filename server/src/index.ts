@@ -131,7 +131,14 @@ export async function startReplica(opts: Options) {}
 export async function startSubscriptionManager(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
   // default name is 'main'
-  const err = validate(parsedOpts, ['registry', 'name'], ['replica', 'backups'])
+  const err = validate(
+    parsedOpts,
+    ['registry'],
+    ['replica', 'name', 'default', 'backups']
+  )
+
+  parsedOpts.name = 'subscriptionManager'
+
   if (err) {
     console.error(
       `Error starting subscription Mmnager selva server ${chalk.red(err)}`
