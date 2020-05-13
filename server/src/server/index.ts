@@ -25,7 +25,7 @@ export class SelvaServer extends EventEmitter {
     this.type = type
   }
 
-  start(opts: ServerOptions) {
+  async start(opts: ServerOptions) {
     console.info(
       `Start SelvaServer ${chalk.white(opts.name)} of type ${chalk.blue(
         this.type
@@ -50,14 +50,8 @@ export class SelvaServer extends EventEmitter {
     attachStatusListeners(this, opts)
 
     if (this.type === 'subscriptionManager') {
-      startSubscriptionManager(opts).then(worker => {
-        this.subscriptionManager = worker
-      })
+      this.subscriptionManager = await startSubscriptionManager(opts)
     }
-
-    // after this check what type you are
-    // check if opts.registry
-    // handle monitoring to registry
   }
 
   async destroy() {
@@ -71,11 +65,11 @@ export class SelvaServer extends EventEmitter {
   }
 }
 
-export const startServer = (
+export const startServer = async (
   type: ServerType,
   opts: ServerOptions
-): SelvaServer => {
+): Promise<SelvaServer> => {
   const server = new SelvaServer(type)
-  server.start(opts)
+  await server.start(opts)
   return server
 }
