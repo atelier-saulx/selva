@@ -24,7 +24,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           const redisCommand = q[i]
           const { command, resolve, args } = redisCommand
           if (command === 'subscribe') {
-            console.log('yes do it subscribe it', args, client.name, client.id)
+            // console.log('yes do it subscribe it', args, client.name, client.id)
             client.subscriber.subscribe(...(<string[]>args))
             resolve(true)
           } else if (command === 'psubscribe') {
@@ -50,7 +50,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
                 if (!modify) {
                   modify = redisCommand
                 } else {
-                  console.log('HMMMMMM', ...redisCommand.args.slice(2))
+                  // console.log('HMMMMMM', ...redisCommand.args.slice(2))
                   modify.args.push(...redisCommand.args.slice(2))
                 }
 
@@ -69,7 +69,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         }
 
         if (modify) {
-          console.log('COMBINED', modify)
+          // console.log('COMBINED', modify)
           modify.resolve = results => {
             for (let i = 0; i < results.length; i++) {
               modifyResolvers[i](results[i])

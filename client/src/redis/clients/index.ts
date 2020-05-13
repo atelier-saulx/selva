@@ -8,9 +8,7 @@ import createRedisClient from './createRedisClient'
 import { loadScripts } from './scripts'
 import drainQueue from './drainQueue'
 import { v4 as uuidv4 } from 'uuid'
-import { CLIENTS, HEARTBEAT } from '../../constants'
-
-const HEARTBEAT_TIMER = 5e3
+import startHeartbeat from './startHeartbeat'
 
 type ClientOpts = {
   name: string
@@ -41,21 +39,15 @@ export class Client extends EventEmitter {
   constructor({ name, type, host, port, id }: ClientOpts) {
     super()
     this.setMaxListeners(10000)
-
     this.uuid = uuidv4()
     this.name = name
     this.type = type
     this.id = id
-
     this.clients = new Set()
-
     this.scripts = { batchingEnabled: {}, sha: {} }
-
     this.serverIsBusy = false
-
     this.queueInProgress = false
     this.queue = []
-
     this.connected = false
 
     this.on('connect', () => {
@@ -63,12 +55,20 @@ export class Client extends EventEmitter {
         console.log('client connected', name)
         this.connected = true
         drainQueue(this)
+        if (
+          type === 'subscriptionManager' &&
+          process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
+        ) {
+          console.log('start it!')
+          startHeartbeat(this)
+        }
       }
     })
 
     this.on('disconnect', () => {
       this.connected = false
       this.queueInProgress = false
+      clearTimeout(this.heartbeatTimout)
     })
 
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
@@ -77,30 +77,6 @@ export class Client extends EventEmitter {
 }
 
 const clients: Map<string, Client> = new Map()
-
-const startSubsrptionManagerHeartbeat = (client: Client) => {
-  const setHeartbeat = () => {
-    if (client.connected) {
-      client.publisher.hget(CLIENTS, client.uuid, (err, r) => {
-        if (!err && r) {
-          if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
-            console.log('Client timedout - re send subscriptions')
-            this.sendSubcriptions()
-          }
-        }
-      })
-      client.publisher.publish(
-        HEARTBEAT,
-        JSON.stringify({
-          client: this.uuid,
-          ts: Date.now()
-        })
-      )
-      client.heartbeatTimout = setTimeout(setHeartbeat, HEARTBEAT_TIMER)
-    }
-  }
-  setHeartbeat()
-}
 
 const createClient = (
   name: string,
@@ -116,12 +92,6 @@ const createClient = (
     port,
     host
   })
-  if (
-    type === 'subscriptionManager' &&
-    process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
-  ) {
-    startSubsrptionManagerHeartbeat(client)
-  }
   return client
 }
 

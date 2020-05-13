@@ -190,8 +190,7 @@ class RedisSelvaClient extends RedisMethods {
         addCommandToQueue(this.registry, command)
       } else {
         this.getServerDescriptor(selector).then(descriptor => {
-          console.log(command.command, command.args, descriptor)
-
+          // console.log(command.command, command.args, descriptor)
           addCommandToQueue(
             getClient(
               this,

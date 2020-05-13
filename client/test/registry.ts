@@ -187,6 +187,10 @@ test('hello ik ben één test', async t => {
   //   })
   // )
 
+  client.redis.smembers(sManager, constants.CLIENTS).then(v => {
+    console.log(v)
+  })
+
   await wait(10e3)
 
   t.true(true)
