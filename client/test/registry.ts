@@ -1,6 +1,10 @@
 import test from 'ava'
 import { connect, constants } from '../src/index'
-import { startRegistry, startOrigin } from '@saulx/selva-server'
+import {
+  startRegistry,
+  startOrigin,
+  startSubscriptionManager
+} from '@saulx/selva-server'
 import { wait } from './assertions'
 
 // let srv
@@ -15,6 +19,11 @@ test('hello ik ben één test', async t => {
 
   const users = await startOrigin({
     name: 'users',
+    registry: { port: registry.port, host: registry.host }
+  })
+
+  const subsManagerForOriginBitches = await startSubscriptionManager({
+    default: true,
     registry: { port: registry.port, host: registry.host }
   })
 

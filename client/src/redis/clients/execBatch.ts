@@ -7,7 +7,6 @@ export default function execBatch(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     // return resolve()
-    console.log('exec batch!')
     if (client.serverIsBusy) {
       console.log('Server is busy - retrying in 5 seconds')
       client.emit('busy')
@@ -57,8 +56,6 @@ export default function execBatch(
             client.serverIsBusy = true
             execBatch(client, busySlice)
               .then(() => {
-                console.log('exec batch from busy! DONE')
-
                 resolve()
               })
               .catch(err => reject(err))
@@ -67,13 +64,10 @@ export default function execBatch(
             if (queue.length > 1e3) {
               process.nextTick(() => {
                 // let it gc a bit
-                console.log('exec batch! DONE large')
 
                 resolve()
               })
             } else {
-              console.log('exec batch! DONE NORMAL!')
-
               resolve()
             }
           }

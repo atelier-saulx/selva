@@ -29,8 +29,6 @@ try {
 
 export function loadScripts(client: Client): void {
   for (const scriptName in SCRIPTS) {
-    console.log('snurf', scriptName)
-
     addCommandToQueue(client, {
       command: 'SCRIPT',
       args: ['LOAD', SCRIPTS[scriptName].content],

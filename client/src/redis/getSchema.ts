@@ -21,7 +21,7 @@ async function getSchema(
 
   let searchIndexes: SearchIndexes = {}
 
-  console.log('GET SCHEMA ----------------->', selector)
+  // console.log('GET SCHEMA ----------------->', selector)
   const [fetchedTypes, fetchedIndexes] = await client.hmget(
     selector,
     SCHEMA,

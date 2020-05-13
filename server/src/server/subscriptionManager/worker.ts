@@ -64,7 +64,7 @@ const createSubscriptionManager = (
     originListeners: {}
   }
 
-  client.on('connect', () => {
+  client.redis.registry.on('connect', () => {
     console.log(chalk.white('Connected subscriptionManager selva client'))
 
     addListeners(subsManager)
@@ -79,9 +79,9 @@ const createSubscriptionManager = (
     )
   })
 
-  client.on('disconnect', () => {
+  client.redis.registry.on('disconnect', () => {
     console.log('disconnect server-client')
-    this.clear()
+    clear(subsManager)
   })
 
   return subsManager

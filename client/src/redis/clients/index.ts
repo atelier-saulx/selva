@@ -19,7 +19,6 @@ type ClientOpts = {
 
 const drainQueue = (client: Client, q?: RedisCommand[]) => {
   if (!client.queueInProgress) {
-    console.log('PUT IN PROGRESS')
     client.queueInProgress = true
     process.nextTick(() => {
       if (client.connected) {
@@ -40,7 +39,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
             resolve(true)
           } else {
             if (redisCommand.command.toLowerCase() === 'evalsha') {
-              console.log('EVALSHA', redisCommand)
+              // console.log('EVALSHA', redisCommand)
               const script = redisCommand.args[0]
 
               if (
@@ -61,21 +60,15 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
             }
           }
         }
-        console.log('go batch')
 
         execBatch(client, parsedQ).finally(() => {
-          console.log(nextQ)
-          console.log(client.queue.length)
-          console.log('SNURFELS Q IS DONE!')
           if (nextQ) {
             client.queueInProgress = false
             drainQueue(client, nextQ)
           } else if (client.queue.length) {
-            console.log('go drain more!')
             client.queueInProgress = false
             drainQueue(client)
           } else {
-            console.log('QUE OUT OF PROGRESS!')
             client.queueInProgress = false
           }
         })
@@ -124,8 +117,6 @@ export class Client extends EventEmitter {
     this.connected = false
 
     this.on('connect', () => {
-      console.log('CONNECT!')
-
       this.connected = true
       drainQueue(this)
     })
@@ -236,7 +227,5 @@ export function addCommandToQueue(client: Client, redisCommand: RedisCommand) {
   client.queue.push(redisCommand)
   if (!client.queueInProgress) {
     drainQueue(client)
-  } else {
-    console.log('o! new thing queue in  progress', redisCommand.command)
   }
 }

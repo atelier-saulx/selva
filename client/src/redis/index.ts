@@ -49,7 +49,7 @@ class RedisSelvaClient extends RedisMethods {
     selector: ServerSelector
   ): Promise<ServerDescriptor> {
     const retry = (): Promise<ServerDescriptor> =>
-      new Promise((resolve, reject) => {
+      new Promise(resolve => {
         this.registry.once('servers_updated', () => {
           resolve(this.getServerDescriptor(selector))
         })
@@ -95,7 +95,6 @@ class RedisSelvaClient extends RedisMethods {
     const servers = this.servers[selector.name][selector.type]
     const server = servers[Math.floor(Math.random() * servers.length)]
 
-    console.log('hello', server)
     return server
   }
 

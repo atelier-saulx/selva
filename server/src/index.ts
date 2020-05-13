@@ -113,7 +113,7 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
   const err = validate(
     parsedOpts,
     [],
-    ['registry', 'replica', 'backups', 'name', 'main']
+    ['registry', 'replica', 'backups', 'name', 'default']
   )
 
   parsedOpts.name = 'registry'
@@ -128,7 +128,18 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
 // 1 extra new thing - monitor server / stats
 export async function startReplica(opts: Options) {}
 
-export async function startSubscriptionManager(opts: Options) {}
+export async function startSubscriptionManager(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+  // default name is 'main'
+  const err = validate(parsedOpts, ['registry', 'name'], ['replica', 'backups'])
+  if (err) {
+    console.error(
+      `Error starting subscription Mmnager selva server ${chalk.red(err)}`
+    )
+    throw new Error(err)
+  }
+  return startServer('subscriptionManager', parsedOpts)
+}
 
 // make a registry, then add origin, then add subs manager
 // backups may be a bit problematic here :/

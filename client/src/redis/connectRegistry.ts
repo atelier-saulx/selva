@@ -57,6 +57,7 @@ const getServers = async (client: RedisSelvaClient) => {
     }
     servers[server.name][server.type].push(server)
   }
+  client.serversById = serversById
   client.servers = servers
   client.registry.emit('servers_updated', servers)
 }
@@ -70,7 +71,7 @@ const createRegistryClient = (
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
   client.on({ type: 'registry' }, 'message', channel => {
     if (channel === REGISTRY_UPDATE) {
-      console.log('REGISTRY UPDATED (could be a new client!')
+      // console.log('REGISTRY UPDATED (could be a new client!')
       getServers(client)
     }
   })
@@ -114,7 +115,6 @@ const connectRegistry = (
       drainQueue(client)
     })
   } else {
-    console.log('start with non async connect')
     createRegistryClient(client, connectOptions.port, connectOptions.host)
     drainQueue(client)
   }
