@@ -37,7 +37,7 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     }
 
     updateRegistry(
-      this.registry,
+      server.registry,
       Object.assign(
         {
           stats
@@ -51,7 +51,7 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
 
   server.on('subscription', () => {})
 
-  updateRegistry(this.registry, info)
+  updateRegistry(server.registry, info)
 }
 
 export default attachStatusListeners
