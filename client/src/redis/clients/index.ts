@@ -7,6 +7,10 @@ import { EventEmitter } from 'events'
 import createRedisClient from './createRedisClient'
 import { loadScripts } from './scripts'
 import drainQueue from './drainQueue'
+import { v4 as uuidv4 } from 'uuid'
+import { CLIENTS, HEARTBEAT } from '../../constants'
+
+const HEARTBEAT_TIMER = 5e3
 
 type ClientOpts = {
   name: string
@@ -25,6 +29,7 @@ export class Client extends EventEmitter {
   public type: ServerType // for logs
   public id: string // url:port
   public connected: boolean
+  public uuid: string
   public serverIsBusy: boolean // can be written from the registry
   public scripts: {
     batchingEnabled: { [scriptSha: string]: boolean }
@@ -37,6 +42,7 @@ export class Client extends EventEmitter {
     super()
     this.setMaxListeners(10000)
 
+    this.uuid = uuidv4()
     this.name = name
     this.type = type
     this.id = id
@@ -72,46 +78,29 @@ export class Client extends EventEmitter {
 
 const clients: Map<string, Client> = new Map()
 
-// addSelvaClient  (createClient(type, id, selvaClient))
-// removeSelvaClient
-
-// addCommandToQueue
-// --- in coming add command queue ---
-// handle these special
-// subscribe
-// unsubscribe
-// psubscribe
-// punsubcribe
-
-// selvaSubscribe
-// selvaUnsubscribe
-// loadAndEvalScript
-
-// export type Client = {
-//     subscriber: RedisClient
-//     publisher: RedisClient
-//     queue: RedisCommand[]
-
-//     name: string // for logging
-//     type: ServerType // for logging as well
-
-// url: string
-// port: string
-//     id: string // url:port
-//     connected: boolean
-//     bufferInProgress: boolean
-//     busy: boolean // can be written from the registry
-//     heartbeatTimout: NodeJS.Timeout
-
-//     scripts: {
-//       batchingEnabled: { [scriptSha: string]: boolean }
-//       sha: { [scriptName: string]: string }
-//     }
-
-//     clients: Set<Redis>
-//   }
-
-const destroyClient = () => {}
+const startSubsrptionManagerHeartbeat = (client: Client) => {
+  const setHeartbeat = () => {
+    if (client.connected) {
+      client.publisher.hget(CLIENTS, client.uuid, (err, r) => {
+        if (!err && r) {
+          if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {
+            console.log('Client timedout - re send subscriptions')
+            this.sendSubcriptions()
+          }
+        }
+      })
+      client.publisher.publish(
+        HEARTBEAT,
+        JSON.stringify({
+          client: this.uuid,
+          ts: Date.now()
+        })
+      )
+      client.heartbeatTimout = setTimeout(setHeartbeat, HEARTBEAT_TIMER)
+    }
+  }
+  setHeartbeat()
+}
 
 const createClient = (
   name: string,
@@ -127,7 +116,14 @@ const createClient = (
     port,
     host
   })
+  if (type === 'subscriptionManager') {
+    startSubsrptionManagerHeartbeat(client)
+  }
   return client
+}
+
+const destroyClient = () => {
+  // remove hearthbeat
 }
 
 export function removeRedisSelvaClient(
@@ -138,7 +134,9 @@ export function removeRedisSelvaClient(
 export function addRedisSelvaClient(
   client: Client,
   selvaRedisClient: RedisSelvaClient
-) {}
+) {
+  //
+}
 
 export function getClient(
   selvaRedisClient: RedisSelvaClient,
@@ -159,6 +157,8 @@ export function getClient(
   if (type === 'origin' || /* TODO: remove */ type === 'registry') {
     loadScripts(client)
   }
+
+  addRedisSelvaClient(client, selvaRedisClient)
 
   return client
 }

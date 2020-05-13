@@ -6,7 +6,6 @@ import {
   startSubscriptionManager
 } from '@saulx/selva-server'
 import { wait } from './assertions'
-import { RedisClient } from 'redis'
 
 // let srv
 
@@ -172,40 +171,21 @@ test('hello ik ben één test', async t => {
     })
   ])
 
-  console.log('xxx', xxx)
-
   const sManager = {
     host: subsManagerForOriginBitches.host,
     port: subsManagerForOriginBitches.port
   }
 
-  console.log('go do it!', sManager)
+  console.log('----- Go do it!', sManager)
 
-  const redisClient = new RedisClient({
-    port: subsManagerForOriginBitches.port,
-    host: subsManagerForOriginBitches.host
-  })
-
-  console.log('go do it! 2!', sManager)
-
-  redisClient.on('message', msg => {
-    console.log('snurfels', msg)
-  })
-
-  redisClient.subscribe(constants.HEARTBEAT)
-
-  redisClient.on('connect', () => {
-    console.log('connected???')
-
-    client.redis.publish(
-      sManager,
-      constants.HEARTBEAT,
-      JSON.stringify({
-        client: client.uuid,
-        ts: Date.now()
-      })
-    )
-  })
+  // client.redis.publish(
+  //   sManager,
+  //   constants.HEARTBEAT,
+  //   JSON.stringify({
+  //     client: client.uuid,
+  //     ts: Date.now()
+  //   })
+  // )
 
   await wait(2e3)
 
