@@ -74,4 +74,4 @@ export function connect(
   return client
 }
 
-export { ConnectOptions, ServerType, ServerDescriptor }
+export { ConnectOptions, ServerType, ServerDescriptor, GetOptions }
