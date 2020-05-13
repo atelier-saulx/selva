@@ -59,7 +59,6 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
               }
 
               if (script === `${constants.SCRIPT}:modify`) {
-                console.log('MODIFY', q.length)
                 if (!modify) {
                   modify = redisCommand
                 } else {
