@@ -98,6 +98,8 @@ test('hello ik ben één test', async t => {
   )
   console.log('db - default', await client.redis.keys('*'))
 
+  console.log('YEEESH ID', await client.id({ type: 'helloType' }))
+
   t.true(true)
 })
 

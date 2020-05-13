@@ -7,6 +7,7 @@ import { updateSchema } from './schema/updateSchema'
 import {GetOptions, GetResult, get} from './get'
 import {SetOptions, set} from './set'
 import {IdOptions} from 'lua/src/id'
+import id from './id'
 
 export * as constants from './constants'
 
@@ -24,8 +25,7 @@ export class SelvaClient extends EventEmitter {
   }
 
   id(props: IdOptions): Promise<string> {
-    // TODO    
-    return Promise.resolve('abcd')
+    return id(this, props)
   }
 
   get(getOpts: GetOptions): Promise<GetResult> {
