@@ -12,19 +12,13 @@ const addListeners = async (
   const { selector } = subsManager
   const redis = subsManager.client.redis
 
-  // this is on the subs manager
-
   redis.on(selector, 'message', (channel, message) => {
-    console.log('HELLO MAKE IT NICE', channel, message)
-
     if (channel === HEARTBEAT) {
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {
-        if (client !== subsManager.client.uuid) {
-          // console.log('received new client on server', client)
-          subsManager.clients[client] = { subscriptions: new Set(), lastTs: ts }
-          redis.hset(selector, CLIENTS, client, ts)
-        }
+        console.log('received new client on server', client)
+        subsManager.clients[client] = { subscriptions: new Set(), lastTs: ts }
+        redis.hset(selector, CLIENTS, client, ts)
       } else {
         subsManager.clients[client].lastTs = ts
         redis.hset(selector, CLIENTS, client, ts)

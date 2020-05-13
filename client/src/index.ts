@@ -21,6 +21,7 @@ export class SelvaClient extends EventEmitter {
 
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
     super()
+    // uuid is used for logs
     this.uuid = uuidv4()
     this.setMaxListeners(10000)
     if (!clientOpts) {

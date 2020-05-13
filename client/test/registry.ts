@@ -187,7 +187,7 @@ test('hello ik ben één test', async t => {
   //   })
   // )
 
-  await wait(2e3)
+  await wait(10e3)
 
   t.true(true)
 })

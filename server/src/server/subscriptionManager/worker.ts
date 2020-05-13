@@ -6,6 +6,8 @@ import addListeners from './addListeners'
 import chalk from 'chalk'
 import updateSubscriptionData from './updateSubscriptionData'
 
+process.env.SELVA_SERVER_TYPE = 'subscriptionManager'
+
 const { SERVER_HEARTBEAT } = constants
 
 const clear = (subsManager: SubscriptionManager) => {

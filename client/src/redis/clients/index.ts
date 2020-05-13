@@ -116,7 +116,10 @@ const createClient = (
     port,
     host
   })
-  if (type === 'subscriptionManager') {
+  if (
+    type === 'subscriptionManager' &&
+    process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
+  ) {
     startSubsrptionManagerHeartbeat(client)
   }
   return client
