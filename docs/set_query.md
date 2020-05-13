@@ -14,7 +14,7 @@ Id of the object to set. If set, it has precedence over `$alias`. Used to look u
 
 ## `$alias`: _string_  | _string[]_
 
-When no `$id` is provided, `$alias` can be used to reference user provided alternative names to records, such as human readable identifiers or url paths and the like. 
+When no `$id` is provided, `$alias` can be used to reference user-provided alternative names to records, such as human readable identifiers, or url paths and the like. 
 
 ```javascript
 const result = await client.set({
@@ -27,7 +27,7 @@ const result = await client.set({
 })
 ```
 
-If `type` is provided, such as it is above, if the provided `$alias` option doesn't resolve to an existing id a new record will be created, and the provided `$alias` created for it automatically. This behaviour can be controlled with `$operation` also.
+When `type` is provided, such as it is above, if the provided `$alias` option doesn't resolve to an existing id, a new record will be created, and the provided `$alias` created for it automatically. This behaviour can be controlled with `$operation` also.
 
 One can provide a list of aliases instead of a single alias. In this case all the aliases will be checked before failure or creating a new record if `type` is provided and the `$operation` allows for it.
 
@@ -319,7 +319,7 @@ The following operators are available with the _digest_ type:
 
 ### _timestamp_ type
 
-Field type _timestamp_ accepts positive numeric values after the epoch (in milliseconds). In addition, it also accept one string value: `'now'`. When `'now'` is provided, it is automatically converted to the current time in milliseconds since epoch.
+Field type _timestamp_ accepts positive numeric values after the epoch (in milliseconds). In addition, it also accepts one string value: `'now'`. When `'now'` is provided, it is automatically converted to the current time in milliseconds since epoch.
 
 The following operators are available with the _timestamp_ type:
 - [`$default`](#default---any)
@@ -425,7 +425,7 @@ const result = await client.set({
   type: 'match',
   title: {
     en: 'the super bowl 2020' ,
-    de: 'das super bowl 2020'
+    de: 'das super schüssel 2020'
   }
 })
 ```
