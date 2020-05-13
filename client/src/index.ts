@@ -8,6 +8,7 @@ import {GetOptions, GetResult, get} from './get'
 import {SetOptions, set} from './set'
 import {IdOptions} from 'lua/src/id'
 import id from './id'
+import {DeleteOptions, deleteItem} from './delete'
 
 export * as constants from './constants'
 
@@ -34,6 +35,10 @@ export class SelvaClient extends EventEmitter {
 
   set(setOpts: SetOptions): Promise<Id | undefined> {
     return set(this, setOpts)
+  }
+
+  delete(deleteOpts: DeleteOptions): Promise<boolean> {
+    return deleteItem(this, deleteOpts)
   }
 
   digest(payload: string) {

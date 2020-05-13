@@ -109,6 +109,22 @@ test('hello ik ben één test', async t => {
 
   console.log('YEEESH ID', await client.id({ type: 'helloType' }))
 
+  await client.delete({
+    $db: 'users',
+    $id: 'ht2'
+  })
+
+  const xxx = await client.get({
+    // $db: 'registry',
+    $id: 'ht1',
+    $language: 'en',
+    value: true,
+    title: true,
+    user: { $db: 'users', value: true, title: true }
+  })
+
+  console.log('xxx', xxx)
+
   t.true(true)
 })
 
