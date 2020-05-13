@@ -1,5 +1,4 @@
-import SubscriptionManager from './subsManager'
-import { Subscription } from './'
+import { Subscription, SubscriptionManager } from './types'
 import addUpdate from './update/addUpdate'
 const MAX_TIMEOUT = 10 * 60 * 60 * 1000 // 10 minutes
 

@@ -1,7 +1,9 @@
-import SubscriptionManager from './subsManager'
-import { Subscription, SubTree, Tree } from './'
-import { prefixes } from '@saulx/selva'
+import { Subscription, SubTree, Tree, SubscriptionManager } from './types'
+import { constants } from '@saulx/selva'
 import * as now from './now'
+
+const { SCHEMA_SUBSCRIPTION } = constants
+
 // const example = {
 //   ___refreshAt: Date.now() + 3000,
 //   ___contains: {
@@ -127,7 +129,7 @@ export function addSubscriptionToTree(
   subscription: Subscription
 ) {
   const channel = subscription.channel
-  if (channel === prefixes.schemaSubscription) {
+  if (channel === SCHEMA_SUBSCRIPTION) {
     console.log('add schema')
   } else {
     let { tree } = subscription
@@ -151,7 +153,7 @@ export function removeSubscriptionFromTree(
   subscription: Subscription
 ) {
   const channel = subscription.channel
-  if (channel === prefixes.schemaSubscription) {
+  if (channel === SCHEMA_SUBSCRIPTION) {
     console.log('remove schema')
   } else {
     let { tree } = subscription

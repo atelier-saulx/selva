@@ -1,39 +1,31 @@
-import { GetOptions } from '@saulx/selva'
 import { ServerOptions } from '../../types'
-
+import { SubscriptionManagerState } from './types'
 import { Worker } from 'worker_threads'
 import path from 'path'
 
-export type Tree = Record<string, any>
-
-export type SubTree = Record<string, any>
-
-export type RefreshSubscriptions = {
-  nextRefresh: number
-  subscriptions: Subscription[]
-}
-
-export type Subscription = {
-  clients: Set<string>
-  get: GetOptions
-  version?: string
-  tree?: SubTree
-  treeVersion?: string
-  inProgress?: boolean
-  channel: string
-  refreshAt?: number
+const connect = async (
+  state: SubscriptionManagerState,
+  opts: ServerOptions
+) => {
+  // TODO: Fix changing url of registry
+  if (typeof opts.registry === 'function') {
+    opts.registry = await opts.registry()
+  } else if (opts.registry instanceof Promise) {
+    opts.registry = await opts.registry
+  }
+  state.worker.postMessage(JSON.stringify({ event: 'connect', payload: opts }))
 }
 
 export const startSubscriptionManager = (
-  opts: ServerOptions
-): Promise<Worker> => {
+  opts: ServerOptions,
+  state: SubscriptionManagerState = {}
+): Promise<SubscriptionManagerState> => {
   return new Promise(resolve => {
     const worker = (this.worker = new Worker(
       path.join(__dirname, '/worker.js')
     ))
-    worker.once('connect', () => {
-      resolve(worker)
-    })
+    state = { worker }
+    worker.once('connect', () => resolve(state))
     worker.on('message', message => {
       try {
         const obj = JSON.parse(message)
@@ -42,18 +34,23 @@ export const startSubscriptionManager = (
         }
       } catch (_err) {}
     })
-    worker.postMessage(JSON.stringify({ event: 'connect', payload: opts }))
+    connect(state, opts)
   })
 }
 
-export const stopSubscriptionManager = (worker: Worker): Promise<void> => {
+export const stopSubscriptionManager = (
+  state: SubscriptionManagerState
+): Promise<void> => {
   return new Promise(resolve => {
     console.log('Destroy subs worker')
-    worker.once('destroyComplete', async () => {
+    state.worker.once('destroyComplete', async () => {
       console.log('Destroy complete!')
-      worker.removeAllListeners()
+      state.worker.removeAllListeners()
+      delete state.worker
       resolve()
     })
-    worker.postMessage(JSON.stringify({ event: 'destroy' }))
+    state.worker.postMessage(JSON.stringify({ event: 'destroy' }))
   })
 }
+
+export { SubscriptionManagerState }

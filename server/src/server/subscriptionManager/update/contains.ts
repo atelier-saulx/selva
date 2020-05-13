@@ -1,56 +1,53 @@
-import { Subscription } from '../'
-import SubscriptionManager from '../subsManager'
+import { Subscription, SubscriptionManager } from '../types'
 import addUpdate from './addUpdate'
+import { RedisCommand } from '@saulx/selva'
 
-// clean this up more
-let execBatch
 let fieldsProgress = {}
-let fieldsInBatch = []
+let fieldsInQueue = []
+let queueIsBeingDrained = false
+let queue: RedisCommand[] = []
 
 type Contains = { $field: string; $value: string[] }
 
-const createBatch = (subsManager: SubscriptionManager) => {
-  const memberMemCache = subsManager.memberMemCache
-
-  execBatch = subsManager.client.redis.redis.client.batch()
+const drainQueue = (subsManager: SubscriptionManager) => {
+  const { memberMemCache, client, selector } = subsManager
+  const redis = client.redis
+  queueIsBeingDrained = true
   process.nextTick(() => {
-    execBatch.exec((err, d) => {
-      if (err) {
-        console.error(err)
-      } else {
-        d.forEach((m, i) => {
-          if (!m || !Array.isArray(m)) {
-            console.log(
-              'Cannot find members or wrongly formatted',
-              fieldsInBatch[i],
-              m
-            )
-            m = []
+    let cnt = queue.length
+    const q = queue
+    const fieldsInProgressNow = fieldsProgress
+    for (let i = 0; i < q.length; i++) {
+      const command = q[i]
+      const field = fieldsInQueue[i]
+      // making a batch fn is nice for optmizations (for later!)
+      command.resolve = m => {
+        cnt--
+        if (!m) m = []
+        if (memberMemCache[field]) {
+          subsManager.memberMemCacheSize++
+        }
+        const members = (memberMemCache[field] = {})
+        m.forEach(v => (members[v] = true))
+        const listeners = fieldsInProgressNow[field]
+        for (let i = 0; i < listeners.length - 1; i += 2) {
+          const v = listeners[i + 1]
+          if (members[v]) {
+            const s = listeners[i]
+            s.forEach(subs => {
+              addUpdate(subsManager, subs)
+            })
           }
-          const field = fieldsInBatch[i]
-
-          if (memberMemCache[field]) {
-            subsManager.memberMemCacheSize++
-          }
-
-          const members = (memberMemCache[field] = {})
-          m.forEach(v => (members[v] = true))
-          const listeners = fieldsProgress[field]
-          for (let i = 0; i < listeners.length - 1; i += 2) {
-            const v = listeners[i + 1]
-            if (members[v]) {
-              const s = listeners[i]
-              s.forEach(subs => {
-                addUpdate(subsManager, subs)
-              })
-            }
-          }
-        })
+        }
+        if (cnt === 0) {
+          queueIsBeingDrained = false
+        }
       }
-      fieldsProgress = {}
-      fieldsInBatch = []
-      execBatch = undefined
-    })
+      redis.addCommandToQueue(command, selector)
+    }
+    fieldsProgress = {}
+    fieldsInQueue = []
+    queue = []
   })
 }
 
@@ -60,12 +57,15 @@ const addAncestorsToBatch = (
   field: string,
   v: string
 ) => {
-  if (!execBatch) {
-    createBatch(subsManager)
+  if (!queueIsBeingDrained) {
+    drainQueue(subsManager)
   }
   if (!fieldsProgress[field]) {
-    execBatch.zrange(field, 0, -1)
-    fieldsInBatch.push(field)
+    queue.push({
+      command: 'zrange',
+      args: [field, 0, -1]
+    })
+    fieldsInQueue.push(field)
     fieldsProgress[field] = [subscriptions, v]
   } else {
     fieldsProgress[field].push(subscriptions, v)
@@ -78,12 +78,15 @@ const addMembersToBatch = (
   field: string,
   v: string
 ) => {
-  if (!execBatch) {
-    createBatch(subsManager)
+  if (!queueIsBeingDrained) {
+    drainQueue(subsManager)
   }
   if (!fieldsProgress[field]) {
-    execBatch.smembers(field)
-    fieldsInBatch.push(field)
+    queue.push({
+      command: 'smembers',
+      args: [field]
+    })
+    fieldsInQueue.push(field)
     fieldsProgress[field] = [subscriptions, v]
   } else {
     fieldsProgress[field].push(subscriptions, v)
@@ -98,7 +101,6 @@ const membersContainsId = (
 ): boolean => {
   const value = m.$value
   const memberMemCache = subsManager.memberMemCache
-
   if (m.$field === 'ancestors') {
     for (let k = 0; k < value.length; k++) {
       const v = value[k]
@@ -125,7 +127,6 @@ const membersContainsId = (
       }
     }
   }
-
   return false
 }
 
@@ -136,7 +137,6 @@ const contains = (
   subs: Set<Subscription>
 ) => {
   let inProgress = true
-
   for (const sub of subs.values()) {
     if (!sub.inProgress) {
       inProgress = false
@@ -146,7 +146,6 @@ const contains = (
   if (!inProgress) {
     const memberCheck =
       subManager.tree.___contains && subManager.tree.___contains[contains]
-
     if (memberCheck) {
       if (membersContainsId(subManager, id, <Contains>memberCheck, subs)) {
         subs.forEach(s => {
@@ -154,7 +153,6 @@ const contains = (
         })
       }
     }
-    // ------
   }
 }
 

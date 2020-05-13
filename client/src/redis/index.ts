@@ -7,7 +7,6 @@ import {
 } from '../types'
 import { RedisCommand, Servers, ServersById } from './types'
 import RedisMethods from './methods'
-import { v4 as uuidv4 } from 'uuid'
 import { GetSchemaResult } from '../schema/types'
 import { getClient, Client, addCommandToQueue } from './clients'
 import getSchema from './getSchema'
@@ -16,7 +15,7 @@ import connectRegistry from './connectRegistry'
 // now connect to registry make make
 // re attach to different clients if they stop working
 
-type Callback = (payload: any) => void
+type Callback = (...args: any[]) => void
 
 // add schema handling subscriptions / unsubscribe destorying making clients
 
@@ -36,15 +35,12 @@ class RedisSelvaClient extends RedisMethods {
 
   public serversById: ServersById
 
-  public id: string
-
   constructor(
     selvaClient: SelvaClient,
     connectOptions: ConnectOptions,
     opts: ClientOpts
   ) {
     super()
-    this.id = uuidv4()
     this.selvaClient = selvaClient
     connectRegistry(this, connectOptions)
   }
@@ -123,6 +119,50 @@ class RedisSelvaClient extends RedisMethods {
       if (selector.type === 'registry') {
         this.registry.subscriber.on(event, callback)
       } else {
+        this.getServerDescriptor(selector).then(descriptor => {
+          const client = getClient(
+            this,
+            descriptor.name,
+            descriptor.type,
+            descriptor.port,
+            descriptor.host
+          )
+          client.subscriber.on(event, callback)
+        })
+      }
+    }
+  }
+
+  removeListener(
+    selector: ServerSelector,
+    event: string,
+    callback: Callback
+  ): void
+  removeListener(event: string, callback: Callback): void
+  removeListener(selector: any, event: any, callback?: any): void {
+    if (!this.registry) {
+      this.listenerQueue.push({ selector, event, callback })
+    } else {
+      if (typeof selector === 'string') {
+        callback = event
+        event = selector
+        // if replica is available
+        selector = { name: 'default', type: 'replica' }
+      }
+
+      if (selector.type === 'registry') {
+        this.registry.subscriber.removeListener(event, callback)
+      } else {
+        this.getServerDescriptor(selector).then(descriptor => {
+          const client = getClient(
+            this,
+            descriptor.name,
+            descriptor.type,
+            descriptor.port,
+            descriptor.host
+          )
+          client.subscriber.removeListener(event, callback)
+        })
       }
     }
   }

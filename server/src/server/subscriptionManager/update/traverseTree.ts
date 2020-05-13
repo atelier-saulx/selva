@@ -1,4 +1,4 @@
-import SubscriptionManager from '../subsManager'
+import { SubscriptionManager } from '../types'
 import addUpdate from './addUpdate'
 import contains from './contains'
 

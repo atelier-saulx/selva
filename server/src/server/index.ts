@@ -4,11 +4,11 @@ import { EventEmitter } from 'events'
 import startRedis from './startRedis'
 import chalk from 'chalk'
 import ProcessManager from './processManager'
-import { Worker } from 'worker_threads'
 import attachStatusListeners from './attachStatusListeners'
 import {
   startSubscriptionManager,
-  stopSubscriptionManager
+  stopSubscriptionManager,
+  SubscriptionManagerState
 } from './subscriptionManager'
 
 export class SelvaServer extends EventEmitter {
@@ -17,7 +17,7 @@ export class SelvaServer extends EventEmitter {
   public host: string
   public registry: SelvaClient
   public pm: ProcessManager
-  public subscriptionManager: Worker
+  public subscriptionManager: SubscriptionManagerState
 
   constructor(type: ServerType) {
     super()

@@ -2,20 +2,25 @@ import { EventEmitter } from 'events'
 import { ConnectOptions, ServerDescriptor, ClientOpts, LogLevel, ServerType } from './types'
 import digest from './digest'
 import Redis from './redis'
-import {GetSchemaResult, SchemaOptions, Id} from './schema'
+import { GetSchemaResult, SchemaOptions, Id } from './schema'
+import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
-import {GetOptions, GetResult, get} from './get'
-import {SetOptions, set} from './set'
-import {IdOptions} from 'lua/src/id'
+import { GetOptions, GetResult, get } from './get'
+import { SetOptions, set } from './set'
+import { IdOptions } from 'lua/src/id'
+import { RedisCommand } from './redis/types'
+import { v4 as uuidv4 } from 'uuid'
 
 export * as constants from './constants'
 
 export class SelvaClient extends EventEmitter {
-  public clientId: string
   public redis: Redis
+  public uuid: string
 
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
     super()
+    this.uuid = uuidv4()
+
     this.setMaxListeners(10000)
     if (!clientOpts) {
       clientOpts = {}
@@ -61,4 +66,4 @@ export function connect(
   return client
 }
 
-export { ConnectOptions, ServerType, ServerDescriptor, GetOptions }
+export { ConnectOptions, ServerType, ServerDescriptor, GetOptions, FieldSchemaObject, RedisCommand }

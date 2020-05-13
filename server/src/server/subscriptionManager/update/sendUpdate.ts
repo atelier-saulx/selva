@@ -1,47 +1,31 @@
-import { prefixes } from '@saulx/selva'
-import SubscriptionManager from '../subsManager'
+import { constants } from '@saulx/selva'
 import { addSubscriptionToTree, removeSubscriptionFromTree } from '../tree'
 import { hash } from '../util'
-import { Subscription } from '../'
+import { Subscription, SubscriptionManager } from '../types'
+
+const { CACHE } = constants
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
   subscription: Subscription
 ) => {
   const channel = subscription.channel
+  const { client, selector } = subscriptionManager
+  const redis = client.redis
 
   const getOptions = subscription.get
   getOptions.$includeMeta = true
 
-  if (channel === '___selva_subscription:schema_update') {
-    let value = ''
-    let version = ''
-    const schema = await subscriptionManager.client.getSchema()
-    version = schema.schema.sha
-    value = JSON.stringify({ type: 'update', payload: schema.schema })
-    await subscriptionManager.client.redis.byType.hmset(
-      'sClient',
-      prefixes.cache,
-      channel,
-      value,
-      channel + '_version',
-      version
-    )
-    await subscriptionManager.client.redis.byType.publish(
-      'sClient',
-      channel,
-      version
-    )
-    return
-  }
+  // SCHEMA UPDATES
 
-  const payload = await subscriptionManager.client.get(getOptions)
+  const payload = await client.get(getOptions)
 
   // call $meta tree
   const newTree = payload.$meta
 
   delete payload.$meta
 
+  // make this without payload
   const resultStr = JSON.stringify({ type: 'update', payload })
   const currentVersion = subscription.version
   const newVersion = hash(resultStr)
@@ -52,7 +36,6 @@ const sendUpdate = async (
   if (newTree) {
     const newTreeJson = JSON.stringify(newTree)
     const newTreeVersion = hash(newTreeJson)
-
     if (treeVersion !== newTreeVersion) {
       if (treeVersion) {
         removeSubscriptionFromTree(subscriptionManager, subscription)
@@ -60,14 +43,7 @@ const sendUpdate = async (
       subscription.treeVersion = newTreeVersion
       subscription.tree = newTree
       addSubscriptionToTree(subscriptionManager, subscription)
-      q.push(
-        subscriptionManager.client.redis.byType.hset(
-          'sClient',
-          prefixes.cache,
-          channel + '_tree',
-          newTreeJson
-        )
-      )
+      q.push(redis.hset(selector, CACHE, channel + '_tree', newTreeJson))
     }
   } else if (treeVersion) {
     // remove tree ?
@@ -80,9 +56,9 @@ const sendUpdate = async (
   subscription.version = newVersion
 
   q.push(
-    subscriptionManager.client.redis.byType.hmset(
-      'sClient',
-      prefixes.cache,
+    redis.hmset(
+      selector,
+      CACHE,
       channel,
       resultStr,
       channel + '_version',
@@ -92,11 +68,7 @@ const sendUpdate = async (
 
   await Promise.all(q)
 
-  await subscriptionManager.client.redis.byType.publish(
-    'sClient',
-    channel,
-    newVersion
-  )
+  await redis.publish(selector, channel, newVersion)
 }
 
 export default sendUpdate
