@@ -10,7 +10,7 @@ import getServerDescriptor from './getServerDescriptor'
 import handleListener from './handleListener'
 import Observable from '../observe/observable'
 import { GetOptions, GetResult } from '../get/types'
-import { createSubscription, Subscription } from './subscription'
+import { createObservable, ObserverEmitter } from './observers'
 
 // add schema handling subscriptions / unsubscribe destorying making clients
 class RedisSelvaClient extends RedisMethods {
@@ -30,7 +30,7 @@ class RedisSelvaClient extends RedisMethods {
 
   // dont rly need more then this
   public observables: Record<string, Observable<GetResult>> = {}
-  public subscriptions: Record<string, Subscription> = {}
+  public observerEmitters: Record<string, ObserverEmitter> = {}
 
   constructor(
     selvaClient: SelvaClient,
@@ -47,7 +47,7 @@ class RedisSelvaClient extends RedisMethods {
   }
 
   observe(channel: string, props: GetOptions): Observable<GetResult> {
-    return createSubscription(this, channel, props)
+    return createObservable(this, channel, props)
   }
 
   on(selector: ServerSelector, event: string, callback: Callback): void
@@ -78,16 +78,7 @@ class RedisSelvaClient extends RedisMethods {
         addCommandToQueue(this.registry, command)
       } else {
         getServerDescriptor(this, selector).then(descriptor => {
-          addCommandToQueue(
-            getClient(
-              this,
-              descriptor.name,
-              descriptor.type,
-              descriptor.port,
-              descriptor.host
-            ),
-            command
-          )
+          addCommandToQueue(getClient(this, descriptor), command)
         })
       }
     }

@@ -5,6 +5,7 @@ import addUpdate from './update/addUpdate'
 import { addSubscriptionToTree } from './tree'
 import { addOriginListeners } from './originListeners'
 import updateRegistry from './updateRegistrySubscriptions'
+import { get } from '@saulx/selva/dist/src/get'
 
 const { CACHE, SUBSCRIPTIONS } = constants
 
@@ -35,8 +36,14 @@ const addClientSubscription = async (
 
 const parseOrigins = (
   getOptions: GetOptions,
-  origins: Set<string> = new Set()
+  origins?: Set<string>
 ): Set<string> => {
+  if (!origins) {
+    origins = new Set()
+    if (!getOptions.$db) {
+      origins.add('default')
+    }
+  }
   for (let key in getOptions) {
     if (key === '$db') {
       origins.add(getOptions[key])

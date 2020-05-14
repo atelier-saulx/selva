@@ -26,13 +26,7 @@ const handleListener = (
         selector.type = 'replica'
       }
       getServerDescriptor(redisSelvaClient, selector).then(descriptor => {
-        const client = getClient(
-          redisSelvaClient,
-          descriptor.name,
-          descriptor.type,
-          descriptor.port,
-          descriptor.host
-        )
+        const client = getClient(redisSelvaClient, descriptor)
         client.subscriber[method](event, callback)
       })
     }

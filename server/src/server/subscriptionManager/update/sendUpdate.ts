@@ -18,6 +18,8 @@ const sendUpdate = async (
 
   // SCHEMA UPDATES
 
+  console.log('snurky', getOptions)
+
   const payload = await client.get(getOptions)
 
   // call $meta tree

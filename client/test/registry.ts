@@ -195,13 +195,24 @@ test('hello ik ben één test', async t => {
   client
     .observe({
       $id: 'ht1',
-      value: true
+      value: true,
+      user: {
+        $db: 'users',
+        value: true
+      }
     })
     .subscribe(v => {
       console.log('hello!', v)
     })
 
-  await wait(10e3)
+  await wait(500)
+
+  client.set({
+    $id: 'ht1',
+    value: 2
+  })
+
+  await wait(2e3)
 
   t.true(true)
 })

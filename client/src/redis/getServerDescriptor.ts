@@ -25,15 +25,21 @@ const getServerDescriptor = async (
     return server
   }
   if (!selector.name) {
-    if (selector.type === 'registry') {
-      selector.name = 'registry'
+    if (
+      selector.type === 'registry' ||
+      selector.type === 'subscriptionManager'
+    ) {
+      selector.name = selector.type
     } else {
       selector.name = 'default'
     }
   }
   if (!selector.type) {
-    if (selector.name === 'registry') {
-      selector.type = 'registry'
+    if (
+      selector.name === 'registry' ||
+      selector.name === 'subscriptionManager'
+    ) {
+      selector.type = selector.name
     } else {
       selector.type = 'origin'
     }

@@ -23,6 +23,8 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
   // handle specific id!
   console.log('update for ', id)
 
+  // if subscriptionManger get subscriptions!
+
   delete client.servers
   const serverList =
     (await client.smembers({ type: 'registry' }, 'servers')) || []
@@ -89,7 +91,12 @@ const createRegistryClient = (
   port: number,
   host: string
 ) => {
-  client.registry = getClient(client, 'registry', 'registry', port, host)
+  client.registry = getClient(client, {
+    port,
+    host,
+    name: 'registry',
+    type: 'registry'
+  })
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
   client.on({ type: 'registry' }, 'message', (channel, payload) => {
     if (channel === REGISTRY_UPDATE) {

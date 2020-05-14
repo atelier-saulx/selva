@@ -19,6 +19,8 @@ const addOriginListeners = (
   if (!subsManager.originListeners[name]) {
     const selector = { name }
 
+    console.log('ADD DAT ORIGIN COME ON!', name)
+
     const listener = (_pattern, channel, message) => {
       subsManager.incomingCount++
       collect++

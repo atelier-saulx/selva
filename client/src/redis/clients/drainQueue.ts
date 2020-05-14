@@ -23,6 +23,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         for (let i = 0; i < q.length; i++) {
           const redisCommand = q[i]
           const { command, resolve, args } = redisCommand
+
           if (command === 'subscribe') {
             // console.log('yes do it subscribe it', args, client.name, client.id)
             client.subscriber.subscribe(...(<string[]>args))
