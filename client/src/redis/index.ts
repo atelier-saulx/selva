@@ -29,8 +29,8 @@ class RedisSelvaClient extends RedisMethods {
   public serversById: ServersById
 
   // dont rly need more then this
-  public observables: Record<string, Observable<GetResult>>
-  public subscriptions: Record<string, Subscription>
+  public observables: Record<string, Observable<GetResult>> = {}
+  public subscriptions: Record<string, Subscription> = {}
 
   constructor(
     selvaClient: SelvaClient,

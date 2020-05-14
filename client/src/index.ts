@@ -12,6 +12,7 @@ import id from './id'
 import {DeleteOptions, deleteItem} from './delete'
 import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
+import { observe } from './observe'
 
 export * as constants from './constants'
 
@@ -36,6 +37,10 @@ export class SelvaClient extends EventEmitter {
 
   get(getOpts: GetOptions): Promise<GetResult> {
     return get(this, getOpts)
+  }
+
+  observe(props: GetOptions) {
+    return observe(this, props)
   }
 
   set(setOpts: SetOptions): Promise<Id | undefined> {

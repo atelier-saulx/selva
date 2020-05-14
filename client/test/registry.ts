@@ -188,8 +188,18 @@ test('hello ik ben één test', async t => {
   // )
 
   client.redis.smembers(sManager, constants.CLIENTS).then(v => {
-    console.log(v)
+    console.log('clients!', v)
   })
+
+  console.log('go subscribe!')
+  client
+    .observe({
+      $id: 'ht1',
+      value: true
+    })
+    .subscribe(v => {
+      console.log('hello!', v)
+    })
 
   await wait(10e3)
 
