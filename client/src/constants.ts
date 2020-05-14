@@ -11,4 +11,6 @@ export const EVENTS = '___selva_events:'
 export const SCHEMA_SUBSCRIPTION = '___selva_subscription:schema_update'
 export const REGISTRY_UPDATE = '__selva_registry_update'
 export const REGISTRY_UPDATE_STATS = '__selva_registry_update_stats'
+export const REGISTRY_UPDATE_SUBSCRIPTION =
+  '__selva_registry_update_subscriptions'
 export const SCHEMA = '___selva_schema'

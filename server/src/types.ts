@@ -39,13 +39,13 @@ export type Stats = {
 }
 
 export type RegistryInfo = {
-  subscriptions?: Set<string>
+  subscriptions?: Record<string, 'created' | 'removed'>
   busy?: boolean
-  name: string
-  type: ServerType
+  name?: string
+  type?: ServerType
+  stats?: Stats
   host: string
   port: number
-  stats?: Stats
 }
 
 export type Options =

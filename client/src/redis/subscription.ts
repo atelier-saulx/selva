@@ -40,7 +40,6 @@ const createSubscription = (
   const subscription = new Subscription()
 
   const obs = new Observable(observer => {
-    console.log('yes')
     subscription.count++
     return () => {
       subscription.count--

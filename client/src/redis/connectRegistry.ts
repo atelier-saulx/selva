@@ -1,7 +1,11 @@
 import { ConnectOptions, ServerDescriptor } from '../types'
 import { getClient } from './clients'
 import RedisSelvaClient from './'
-import { REGISTRY_UPDATE, REGISTRY_UPDATE_STATS } from '../constants'
+import {
+  REGISTRY_UPDATE,
+  REGISTRY_UPDATE_STATS,
+  REGISTRY_UPDATE_SUBSCRIPTION
+} from '../constants'
 import { Servers, ServersById } from './types'
 
 const drainQueue = (client: RedisSelvaClient) => {
@@ -15,7 +19,10 @@ const drainQueue = (client: RedisSelvaClient) => {
   client.queue = []
 }
 
-const getServers = async (client: RedisSelvaClient) => {
+const getServers = async (client: RedisSelvaClient, id?: string) => {
+  // handle specific id!
+  console.log('update for ', id)
+
   delete client.servers
   const serverList =
     (await client.smembers({ type: 'registry' }, 'servers')) || []
@@ -62,6 +69,21 @@ const getServers = async (client: RedisSelvaClient) => {
   client.registry.emit('servers_updated', servers)
 }
 
+type SubscriptionUpdates = {
+  host: string
+  port: number
+  subscriptions: Record<string, 'removed' | 'created'>
+}
+
+const updateSubscriptions = (
+  client: RedisSelvaClient,
+  subscriptionUpdates: SubscriptionUpdates
+) => {
+  console.log('mmm yesh', subscriptionUpdates)
+
+  // client.registry.emit('subscription_updated', subscriptionUpdates)
+}
+
 const createRegistryClient = (
   client: RedisSelvaClient,
   port: number,
@@ -69,19 +91,15 @@ const createRegistryClient = (
 ) => {
   client.registry = getClient(client, 'registry', 'registry', port, host)
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
-  client.on({ type: 'registry' }, 'message', channel => {
+  client.on({ type: 'registry' }, 'message', (channel, payload) => {
     if (channel === REGISTRY_UPDATE) {
       // console.log('REGISTRY UPDATED (could be a new client!')
-
       // start with putting it in here!
-      getServers(client)
+      getServers(client, <string>payload)
+    } else if (channel === REGISTRY_UPDATE_SUBSCRIPTION) {
+      // client.registry.emit('subscriptions_updated', )
+      updateSubscriptions(client, <SubscriptionUpdates>JSON.parse(payload))
     }
-
-    // else if (channel === REGISTRY_UPDATE_SUBSCRIPTION) {
-    // handle this a little bit smarter!
-    // emit what happened
-    //   client.registry.emit('servers_updated', servers)
-    // }
   })
 
   getServers(client)

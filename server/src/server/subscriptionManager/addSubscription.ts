@@ -4,6 +4,7 @@ import { hash } from './util'
 import addUpdate from './update/addUpdate'
 import { addSubscriptionToTree } from './tree'
 import { addOriginListeners } from './originListeners'
+import updateRegistry from '../updateRegistry'
 
 const { CACHE, SUBSCRIPTIONS } = constants
 
@@ -64,6 +65,11 @@ const addSubscription = async (
   for (const origin of subscription.origins) {
     addOriginListeners(origin, subsManager, subscription)
   }
+
+  updateRegistry(subsManager.client, {
+    ...subsManager.selector,
+    subscriptions: { [channel]: 'created' }
+  })
 
   subsManager.subscriptions[channel] = subscription
   if (await redis.hexists(selector, CACHE, channel)) {

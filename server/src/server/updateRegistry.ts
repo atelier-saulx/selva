@@ -10,12 +10,11 @@ export default async function updateRegistry(
   for (let key in info) {
     if (key === 'stats') {
       args.push(key, JSON.stringify(info[key]))
-    } else if (key === 'subscriptions') {
-      args.push(key, JSON.stringify([...info[key].values()]))
     } else {
       args.push(key, info[key])
     }
   }
+
   const id = info.host + ':' + info.port
 
   await Promise.all([
