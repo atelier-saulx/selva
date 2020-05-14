@@ -128,7 +128,6 @@ export default class RedisClient extends RedisMethods {
     if (this.obs[channel]) {
       return this.obs[channel]
     }
-
     return (this.obs[channel] = new Observable(observer => {
       const subscription =
         this.subscriptions[channel] || this.createSubscription(channel, getOpts)
