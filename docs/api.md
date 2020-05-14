@@ -507,7 +507,7 @@ _Observable_ that can be subscribed to for changes. The first event is always th
 #### Examples
 
 ```js
-const sub = await client.observe({
+const sub = client.observe({
   $id: 'myId',
   $language: 'en',
   $title: true
