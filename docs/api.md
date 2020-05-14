@@ -495,7 +495,7 @@ Executes the query and subscribes to future changes. The return value is an _Obs
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      [Query](query.md) to be executed.
+      [Query](./query.md) to be executed.
     </td>
   </tr>
 </table>
@@ -507,12 +507,11 @@ _Observable_ that can be subscribed to for changes. The first event is always th
 #### Examples
 
 ```js
-const sub = await client.observe(
-  {
-    $id: 'myId',
-    $language: 'en',
-    $title: true
-  }).subscribe(d => {
+const sub = await client.observe({
+  $id: 'myId',
+  $language: 'en',
+  $title: true
+}).subscribe(d => {
   console.log('result data', d)
 })
 
