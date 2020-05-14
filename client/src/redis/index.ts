@@ -28,7 +28,7 @@ class RedisSelvaClient extends RedisMethods {
   constructor(
     selvaClient: SelvaClient,
     connectOptions: ConnectOptions,
-    opts: ClientOpts
+    opts: ClientOpts // for logs
   ) {
     super()
     this.selvaClient = selvaClient
