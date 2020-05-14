@@ -466,7 +466,7 @@ Retrieves data from the database.
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      <a href="./query.md">Query</a> to be executed.
+      <a href="./get_query.md">Query</a> to be executed.
     </td>
   </tr>
 </table>
@@ -495,7 +495,7 @@ Executes the query and subscribes to future changes. The return value is an _Obs
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      <a href="./query.md">Query</a> to be executed.
+      <a href="./get_query.md">Query</a> to be executed.
     </td>
   </tr>
 </table>
