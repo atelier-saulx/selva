@@ -2,6 +2,7 @@ import { SubscriptionManager } from './types'
 import { constants } from '@saulx/selva'
 import { removeSubscriptionFromTree } from './tree'
 import { removeOriginListeners } from './originListeners'
+import updateRegistry from './updateRegistrySubscriptions'
 
 const { CACHE, SUBSCRIPTIONS } = constants
 
@@ -39,6 +40,12 @@ const removeSubscription = async (
 ) => {
   const { selector, client, subscriptions } = subsManager
   const { redis } = client
+
+  updateRegistry(subsManager.client, {
+    ...subsManager.selector,
+    subscriptions: { [channel]: 'removed' }
+  })
+
   cleanUpQ.push(redis.hdel(selector, SUBSCRIPTIONS, channel))
   cleanUpQ.push(redis.del(selector, channel))
   cleanUpQ.push(

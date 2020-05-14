@@ -39,7 +39,6 @@ export type Stats = {
 }
 
 export type RegistryInfo = {
-  subscriptions?: Record<string, 'created' | 'removed'>
   busy?: boolean
   name?: string
   type?: ServerType

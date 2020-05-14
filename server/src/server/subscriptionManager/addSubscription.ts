@@ -4,7 +4,7 @@ import { hash } from './util'
 import addUpdate from './update/addUpdate'
 import { addSubscriptionToTree } from './tree'
 import { addOriginListeners } from './originListeners'
-import updateRegistry from '../updateRegistry'
+import updateRegistry from './updateRegistrySubscriptions'
 
 const { CACHE, SUBSCRIPTIONS } = constants
 
