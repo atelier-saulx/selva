@@ -8,6 +8,9 @@ import getSchema from './getSchema'
 import connectRegistry from './connectRegistry'
 import getServerDescriptor from './getServerDescriptor'
 import handleListener from './handleListener'
+import Observable from '../observe/observable'
+import { GetOptions, GetResult } from '../get/types'
+import { createSubscription, Subscription } from './subscription'
 
 // add schema handling subscriptions / unsubscribe destorying making clients
 class RedisSelvaClient extends RedisMethods {
@@ -25,6 +28,10 @@ class RedisSelvaClient extends RedisMethods {
 
   public serversById: ServersById
 
+  // dont rly need more then this
+  public observables: Record<string, Observable<GetResult>>
+  public subscriptions: Record<string, Subscription>
+
   constructor(
     selvaClient: SelvaClient,
     connectOptions: ConnectOptions,
@@ -37,6 +44,10 @@ class RedisSelvaClient extends RedisMethods {
 
   async getSchema(selector: ServerSelector): Promise<GetSchemaResult> {
     return getSchema(this, selector)
+  }
+
+  observe(channel: string, props: GetOptions): Observable<GetResult> {
+    return createSubscription(this, channel, props)
   }
 
   on(selector: ServerSelector, event: string, callback: Callback): void

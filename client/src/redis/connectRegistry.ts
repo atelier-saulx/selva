@@ -1,7 +1,7 @@
 import { ConnectOptions, ServerDescriptor } from '../types'
 import { getClient } from './clients'
 import RedisSelvaClient from './'
-import { REGISTRY_UPDATE } from '../constants'
+import { REGISTRY_UPDATE, REGISTRY_UPDATE_STATS } from '../constants'
 import { Servers, ServersById } from './types'
 
 const drainQueue = (client: RedisSelvaClient) => {
@@ -72,9 +72,18 @@ const createRegistryClient = (
   client.on({ type: 'registry' }, 'message', channel => {
     if (channel === REGISTRY_UPDATE) {
       // console.log('REGISTRY UPDATED (could be a new client!')
+
+      // start with putting it in here!
       getServers(client)
     }
+
+    // else if (channel === REGISTRY_UPDATE_SUBSCRIPTION) {
+    // handle this a little bit smarter!
+    // emit what happened
+    //   client.registry.emit('servers_updated', servers)
+    // }
   })
+
   getServers(client)
 }
 
