@@ -7,7 +7,7 @@
   - Client
     - **[connect()](#connectoptions)**
     - **[set()](#clientsetpayload)**
-    - **[get()](#clientsubscribequery-callbackid-data)**
+    - **[get()](#clientgetquery)**
     - **[observe()](#clientobservequery)**
     - **[id()](#clientidoptions)**
     - **[getSchema()](#clientgetschema)**
@@ -466,7 +466,7 @@ Retrieves data from the database.
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      [Query](query.md) to be executed.
+      <a href="./query.md">Query</a> to be executed.
     </td>
   </tr>
 </table>
@@ -495,7 +495,7 @@ Executes the query and subscribes to future changes. The return value is an _Obs
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      [Query](./query.md) to be executed.
+      <a href="./query.md">Query</a> to be executed.
     </td>
   </tr>
 </table>
