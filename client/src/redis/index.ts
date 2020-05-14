@@ -1,27 +1,17 @@
-import { SelvaClient, ServerType, connect } from '../'
-import {
-  ClientOpts,
-  ConnectOptions,
-  ServerSelector,
-  ServerDescriptor
-} from '../types'
-import { RedisCommand, Servers, ServersById } from './types'
+import { SelvaClient } from '../'
+import { ClientOpts, ConnectOptions, ServerSelector } from '../types'
+import { RedisCommand, Servers, ServersById, Callback } from './types'
 import RedisMethods from './methods'
 import { GetSchemaResult } from '../schema/types'
 import { getClient, Client, addCommandToQueue } from './clients'
 import getSchema from './getSchema'
 import connectRegistry from './connectRegistry'
-
-// now connect to registry make make
-// re attach to different clients if they stop working
-
-type Callback = (...args: any[]) => void
+import getServerDescriptor from './getServerDescriptor'
+import handleListener from './handleListener'
 
 // add schema handling subscriptions / unsubscribe destorying making clients
-
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
-
   public queue: { command: RedisCommand; selector: ServerSelector }[] = []
   public listenerQueue: {
     selector: ServerSelector
@@ -45,60 +35,6 @@ class RedisSelvaClient extends RedisMethods {
     connectRegistry(this, connectOptions)
   }
 
-  async getServerDescriptor(
-    selector: ServerSelector
-  ): Promise<ServerDescriptor> {
-    const retry = (): Promise<ServerDescriptor> =>
-      new Promise(resolve => {
-        this.registry.once('servers_updated', () => {
-          resolve(this.getServerDescriptor(selector))
-        })
-      })
-
-    if (!this.servers) {
-      return retry()
-    }
-    if (selector.host && selector.port) {
-      const server = this.serversById[`${selector.host}:${selector.port}`]
-      if (!server) {
-        return retry()
-      }
-
-      return server
-    }
-    if (!selector.name) {
-      if (selector.type === 'registry') {
-        selector.name = 'registry'
-      } else {
-        selector.name = 'default'
-      }
-    }
-    if (!selector.type) {
-      if (selector.name === 'registry') {
-        selector.type = 'registry'
-      } else {
-        selector.type = 'origin'
-      }
-    }
-
-    if (
-      !this.servers[selector.name] ||
-      !this.servers[selector.name][selector.type]
-    ) {
-      if (this.servers[selector.name] && selector.type === 'replica') {
-        selector.type = 'origin'
-        return this.getServerDescriptor(selector)
-      }
-
-      return retry()
-    }
-
-    const servers = this.servers[selector.name][selector.type]
-    const server = servers[Math.floor(Math.random() * servers.length)]
-
-    return server
-  }
-
   async getSchema(selector: ServerSelector): Promise<GetSchemaResult> {
     return getSchema(this, selector)
   }
@@ -106,34 +42,7 @@ class RedisSelvaClient extends RedisMethods {
   on(selector: ServerSelector, event: string, callback: Callback): void
   on(event: string, callback: Callback): void
   on(selector: any, event: any, callback?: any): void {
-    if (!this.registry) {
-      this.listenerQueue.push({ selector, event, callback })
-    } else {
-      if (typeof selector === 'string') {
-        callback = event
-        event = selector
-        // if replica is available
-        selector = { name: 'default', type: 'replica' }
-      }
-      if (selector.type === 'registry') {
-        this.registry.subscriber.on(event, callback)
-      } else {
-        if (!selector.type && !selector.host) {
-          selector.type = 'replica'
-        }
-        this.getServerDescriptor(selector).then(descriptor => {
-          const client = getClient(
-            this,
-            descriptor.name,
-            descriptor.type,
-            descriptor.port,
-            descriptor.host
-          )
-          console.log('GO SUBSCRIBE FOR THIS BOY', event, callback, descriptor)
-          client.subscriber.on(event, callback)
-        })
-      }
-    }
+    handleListener(this, 'on', selector, event, callback)
   }
 
   removeListener(
@@ -143,33 +52,7 @@ class RedisSelvaClient extends RedisMethods {
   ): void
   removeListener(event: string, callback: Callback): void
   removeListener(selector: any, event: any, callback?: any): void {
-    if (!this.registry) {
-      this.listenerQueue.push({ selector, event, callback })
-    } else {
-      if (typeof selector === 'string') {
-        callback = event
-        event = selector
-        // if replica is available
-        selector = { name: 'default', type: 'replica' }
-      }
-      if (selector.type === 'registry') {
-        this.registry.subscriber.removeListener(event, callback)
-      } else {
-        if (!selector.type && !selector.host) {
-          selector.type = 'replica'
-        }
-        this.getServerDescriptor(selector).then(descriptor => {
-          const client = getClient(
-            this,
-            descriptor.name,
-            descriptor.type,
-            descriptor.port,
-            descriptor.host
-          )
-          client.subscriber.removeListener(event, callback)
-        })
-      }
-    }
+    handleListener(this, 'removeListener', selector, event, callback)
   }
 
   addCommandToQueue(
@@ -183,8 +66,7 @@ class RedisSelvaClient extends RedisMethods {
         // this is nessecary scince you need to start somewhere
         addCommandToQueue(this.registry, command)
       } else {
-        this.getServerDescriptor(selector).then(descriptor => {
-          // console.log(command.command, command.args, descriptor)
+        getServerDescriptor(this, selector).then(descriptor => {
           addCommandToQueue(
             getClient(
               this,

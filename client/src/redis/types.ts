@@ -15,3 +15,5 @@ export type RedisCommand = Resolvable & {
 export type Servers = Record<string, Record<string, ServerDescriptor[]>>
 
 export type ServersById = Record<string, ServerDescriptor>
+
+export type Callback = (...args: any[]) => void
