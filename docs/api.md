@@ -8,7 +8,7 @@
     - **[connect()](#connectoptions)**
     - **[set()](#clientsetpayload)**
     - **[get()](#clientsubscribequery-callbackid-data)**
-    - **[observe()](#clientobserve)**
+    - **[observe()](#clientobservequery)**
     - **[id()](#clientidoptions)**
     - **[getSchema()](#clientgetschema)**
     - **[updateSchema()](#clientupdateschemaschema)**
