@@ -69,6 +69,7 @@ const addUpdate = (
   subscriptionManager: SubscriptionManager,
   subscription: Subscription
 ) => {
+  console.log('ADDING UPDATE FOR', subscription.get)
   if (subscription.inProgress) {
     if (!subscriptionManager.stagedInProgess) {
       console.error('CANNOT HAVE BATCH UPDATES IN PROGRESS + SUBS IN PROGRESS')

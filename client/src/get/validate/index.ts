@@ -11,6 +11,7 @@ import validateFind from './find'
 export type ExtraQuery = {
   getOpts: GetOptions
   path: string
+  placeholder: GetOptions | true
   type: 'reference' | 'references' | 'nested_query'
 }
 export type ExtraQueries = Record<string, ExtraQuery[]>
@@ -22,28 +23,21 @@ export function addExtraQuery(extraQueries: ExtraQueries, query: ExtraQuery) {
   extraQueries[db] = current
 }
 
-async function transformDb(
+function transformDb(
   extraQueries: ExtraQueries,
   _client: SelvaClient,
   props: GetOptions,
   path: string
-): Promise<GetOptions | true> {
+): void {
   if (props.$id || props.$alias) {
     addExtraQuery(extraQueries, {
       getOpts: props,
       path,
+      placeholder: { $value: {} },
       type: 'nested_query'
     })
-
-    return { $value: {} }
   } else {
     let val: GetOptions | true = true
-
-    addExtraQuery(extraQueries, {
-      getOpts: props,
-      path,
-      type: props.$list || props.$find ? 'references' : 'reference'
-    })
 
     if (props.$field) {
       val = { $field: props.$field }
@@ -63,22 +57,27 @@ async function transformDb(
       }
     }
 
-    return val
+    addExtraQuery(extraQueries, {
+      getOpts: props,
+      path,
+      placeholder: val,
+      type: props.$list || props.$find ? 'references' : 'reference'
+    })
   }
 }
 
-async function validateNested(
+function validateNested(
   extraQueries: ExtraQueries,
   client: SelvaClient,
   props: GetOptions | true,
   path: string
-): Promise<void | GetOptions | true> {
+): void {
   if (props === true) {
     return
   }
 
   if (props.$db) {
-    return await transformDb(extraQueries, client, props, path)
+    return transformDb(extraQueries, client, props, path)
   }
 
   if (props.$id || props.$alias) {
@@ -88,7 +87,7 @@ async function validateNested(
   for (const field in props) {
     if (field.startsWith('$')) {
       if (field === '$field') {
-        await validateField(extraQueries, client, props.$field, path)
+        validateField(extraQueries, client, props.$field, path)
       } else if (field === '$inherit') {
         validateInherit(client, props.$inherit, path)
       } else if (field === '$list') {
@@ -122,26 +121,17 @@ async function validateNested(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      const modified = await validateNested(
-        extraQueries,
-        client,
-        props[field],
-        path + '.' + field
-      )
-
-      if (modified) {
-        props[field] = modified
-      }
+      validateNested(extraQueries, client, props[field], path + '.' + field)
     }
   }
 }
 
-export default async function validateTopLevel(
+export default function validateTopLevel(
   extraQueries: ExtraQueries,
   client: SelvaClient,
   props: GetOptions,
   path: string = ''
-): Promise<void> {
+): void {
   for (const field in props) {
     if (field.startsWith('$')) {
       if (field === '$db') {
@@ -232,15 +222,7 @@ export default async function validateTopLevel(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      const modified = await validateNested(
-        extraQueries,
-        client,
-        props[field],
-        path + '.' + field
-      )
-      if (modified) {
-        props[field] = modified
-      }
+      validateNested(extraQueries, client, props[field], path + '.' + field)
     }
   }
 }

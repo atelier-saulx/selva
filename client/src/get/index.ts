@@ -1,7 +1,7 @@
 import { SelvaClient } from '..'
 import { GetResult, GetOptions } from './types'
 import { SCRIPT } from '../constants'
-import validate, { ExtraQueries } from './validate'
+import validate, { ExtraQueries, ExtraQuery } from './validate'
 import { deepMerge } from './deepMerge'
 
 async function combineResults(
@@ -122,13 +122,59 @@ async function combineResults(
   )
 }
 
+function getExtraQueriesByField(
+  extraQueries: ExtraQueries
+): Record<string, ExtraQuery> {
+  const map: Record<string, ExtraQuery> = {}
+  for (const db in extraQueries) {
+    for (const q of extraQueries[db]) {
+      map[q.path] = q
+    }
+  }
+
+  return map
+}
+
+function makeNewGetOptions(
+  extraQueries: Record<string, ExtraQuery>,
+  getOpts: GetOptions,
+  newOpts: GetOptions = {},
+  path: string = ''
+): GetOptions {
+  if (Object.keys(extraQueries).length === 0) {
+    return getOpts
+  }
+
+  for (const key in getOpts) {
+    const newPath = path + '.' + key
+    console.log('CHECKING IF', newPath, 'IN', extraQueries)
+    if (extraQueries[newPath]) {
+      newOpts[key] = extraQueries[newPath].placeholder
+    } else if (typeof getOpts[key] === 'object') {
+      newOpts[key] = {}
+      makeNewGetOptions(extraQueries, getOpts[key], newOpts[key], newPath)
+    } else {
+      newOpts[key] = getOpts[key]
+    }
+  }
+
+  return newOpts
+}
+
 async function get(
   client: SelvaClient,
   props: GetOptions,
   meta?: any
 ): Promise<GetResult> {
+  console.log('ORIG GET', props)
   const extraQueries: ExtraQueries = {}
-  await validate(extraQueries, client, props)
+  validate(extraQueries, client, props)
+  const newProps = makeNewGetOptions(
+    getExtraQueriesByField(extraQueries),
+    props
+  )
+  console.log('EXTRA QUERIES', extraQueries)
+  console.log('NEW OPTIONS', newProps)
 
   const getResult = JSON.parse(
     await client.redis.evalsha(
@@ -137,7 +183,7 @@ async function get(
       0,
       `undefined:undefined`,
       // `${client.loglevel}:${client.clientId}`,
-      JSON.stringify(props)
+      JSON.stringify(newProps)
     )
   )
 

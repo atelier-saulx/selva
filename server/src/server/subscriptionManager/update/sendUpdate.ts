@@ -20,7 +20,7 @@ const sendUpdate = async (
 
   console.log('snurky', getOptions)
 
-  const payload = await client.get(getOptions)
+  const payload = await client.get(JSON.parse(JSON.stringify(getOptions)))
 
   // call $meta tree
   const newTree = payload.$meta
@@ -70,6 +70,7 @@ const sendUpdate = async (
 
   await Promise.all(q)
 
+  console.log('PUBLISHING', selector, channel, newVersion)
   await redis.publish(selector, channel, newVersion)
 }
 

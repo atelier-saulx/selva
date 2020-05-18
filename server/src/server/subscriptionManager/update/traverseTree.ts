@@ -2,7 +2,6 @@ import { SubscriptionManager } from '../types'
 import addUpdate from './addUpdate'
 import contains from './contains'
 
-// TODO
 const traverse = (
   subscriptionManager: SubscriptionManager,
   channel: string,

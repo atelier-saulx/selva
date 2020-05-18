@@ -111,6 +111,15 @@ test('hello ik ben één test', async t => {
     ])
   )
 
+  console.log(
+    'YESH USER',
+    await client.get({
+      $db: 'users',
+      $id: 'ht2',
+      value: true
+    })
+  )
+
   const xx = await client.get({
     // $db: 'registry',
     $id: 'ht1',
@@ -231,11 +240,20 @@ test('hello ik ben één test', async t => {
 
   await wait(2e3)
 
-  client.set({
+  await client.set({
     $db: 'users',
     $id: 'ht2',
     value: 11
   })
+
+  console.log(
+    'YESH USER',
+    await client.get({
+      $db: 'users',
+      $id: 'ht2',
+      value: true
+    })
+  )
 
   await wait(5e3)
 
