@@ -247,7 +247,7 @@ When indexed as `GEO`, the field becomes queryable with [`$filter`](./get_query.
 
 - `$operator: 'distance'`
 
-The `distance` operator can be used to return only results within a certain radius of a lot/lon location.
+The `distance` operator can be used to return only results within a certain radius of a lat/lon location.
 
 ##### EXISTS
 
