@@ -20,7 +20,7 @@ const sendUpdate = async (
 
   console.log('snurky', getOptions)
 
-  const payload = await client.get(JSON.parse(JSON.stringify(getOptions)))
+  const payload = await client.get(getOptions)
 
   // call $meta tree
   const newTree = payload.$meta
