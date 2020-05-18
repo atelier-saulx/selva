@@ -36,11 +36,11 @@ const addOriginListeners = (
         const eventName = channel.slice(prefixLength)
         // make this batch as well (the check)
         if (message === 'update') {
-          traverseTree(subsManager, eventName)
+          traverseTree(subsManager, eventName, name)
         } else if (message && message.startsWith('delete')) {
           const fields = message.slice(deleteLength).split(',')
           fields.forEach((v: string) => {
-            traverseTree(subsManager, eventName + '.' + v)
+            traverseTree(subsManager, eventName + '.' + v, name)
           })
         }
       }

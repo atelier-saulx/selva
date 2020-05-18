@@ -29,7 +29,8 @@ export type SubscriptionManager = {
   stagedInProgess: boolean
   stagedTimeout?: NodeJS.Timeout
   memberMemCacheSize: number
-  memberMemCache: Record<string, Record<string, true>>
+  // cache by database name and by field
+  memberMemCache: Record<string, Record<string, Record<string, true>>>
   // to check if the server is still ok
   serverHeartbeatTimeout?: NodeJS.Timeout
   refreshNowQueriesTimeout?: NodeJS.Timeout

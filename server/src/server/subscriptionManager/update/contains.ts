@@ -95,11 +95,12 @@ const addMembersToBatch = (
 
 const membersContainsId = (
   subsManager: SubscriptionManager,
-  id: string,
+  context: { id: string; db: string },
   m: Contains,
   subscriptions: Set<Subscription>
 ): boolean => {
   const value = m.$value
+
   const memberMemCache = subsManager.memberMemCache
   if (m.$field === 'ancestors') {
     for (let k = 0; k < value.length; k++) {
@@ -107,8 +108,8 @@ const membersContainsId = (
       if (v === 'root') {
         return true
       }
-      const field = `${id}.ancestors`
-      let f = memberMemCache[field]
+      const field = `${context.id}.ancestors`
+      let f = memberMemCache[context.db][field]
       if (!f) {
         addAncestorsToBatch(subsManager, subscriptions, field, v)
       } else if (f[v]) {
@@ -118,8 +119,8 @@ const membersContainsId = (
   } else {
     for (let k = 0; k < value.length; k++) {
       const v = value[k]
-      const field = `${id}.${m.$field}`
-      let f = memberMemCache[field]
+      const field = `${context.id}.${m.$field}`
+      let f = memberMemCache[context.db][field]
       if (!f) {
         addMembersToBatch(subsManager, subscriptions, field, v)
       } else if (f[v]) {
@@ -133,7 +134,7 @@ const membersContainsId = (
 const contains = (
   subManager: SubscriptionManager,
   contains: string,
-  id: string,
+  context: { id: string; db: string },
   subs: Set<Subscription>
 ) => {
   let inProgress = true
@@ -144,10 +145,12 @@ const contains = (
     }
   }
   if (!inProgress) {
+    console.log('CHECKING', context, subManager.tree)
     const memberCheck =
-      subManager.tree.___contains && subManager.tree.___contains[contains]
+      subManager.tree[context.db].___contains &&
+      subManager.tree[context.db].___contains[contains]
     if (memberCheck) {
-      if (membersContainsId(subManager, id, <Contains>memberCheck, subs)) {
+      if (membersContainsId(subManager, context, <Contains>memberCheck, subs)) {
         subs.forEach(s => {
           addUpdate(subManager, s)
         })

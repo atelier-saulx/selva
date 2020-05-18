@@ -45,26 +45,35 @@ const addTreeNested = (
 
 const addToTree = (
   subscription: Subscription,
-  targetTree: Tree,
-  tree: SubTree
+  targetTrees: Tree,
+  treesByDb: SubTree
 ) => {
-  for (const key in tree) {
-    if (key === '___refreshAt') {
-      // not handled in tree
-    } else if (key === '___contains') {
-      for (let k in tree.___contains) {
-        if (!targetTree.___contains) {
-          targetTree.___contains = {}
+  for (const dbName in treesByDb) {
+    const tree = treesByDb[dbName]
+    if (!targetTrees[dbName]) {
+      targetTrees[dbName] = {}
+    }
+
+    const targetTree = targetTrees[dbName]
+
+    for (const key in tree) {
+      if (key === '___refreshAt') {
+        // not handled in tree
+      } else if (key === '___contains') {
+        for (let k in tree.___contains) {
+          if (!targetTree.___contains) {
+            targetTree.___contains = {}
+          }
+          // add count
+          targetTree.___contains[k] = tree.___contains[k]
         }
-        // add count
-        targetTree.___contains[k] = tree.___contains[k]
+      } else {
+        addTreeNested(
+          subscription,
+          targetTree[key] || (targetTree[key] = {}),
+          tree[key]
+        )
       }
-    } else {
-      addTreeNested(
-        subscription,
-        targetTree[key] || (targetTree[key] = {}),
-        tree[key]
-      )
     }
   }
 }
@@ -106,17 +115,21 @@ const removeTreeNested = (
 const removeFromTree = (
   subscription: Subscription,
   targetTree: Tree,
-  tree: SubTree
+  treesByDb: SubTree
 ) => {
-  for (const key in tree) {
-    if (key === '___refreshAt') {
-    } else if (key === '___contains') {
-      // merge on top
-    } else {
-      if (targetTree[key]) {
-        if (!removeTreeNested(subscription, targetTree[key], tree[key])) {
-          if (isEmpty(targetTree[key])) {
-            delete targetTree[key]
+  for (const dbName in treesByDb) {
+    const tree = treesByDb[dbName]
+
+    for (const key in tree) {
+      if (key === '___refreshAt') {
+      } else if (key === '___contains') {
+        // merge on top
+      } else {
+        if (targetTree[key]) {
+          if (!removeTreeNested(subscription, targetTree[key], tree[key])) {
+            if (isEmpty(targetTree[key])) {
+              delete targetTree[key]
+            }
           }
         }
       }

@@ -2,25 +2,32 @@ import { SubscriptionManager } from '../types'
 import addUpdate from './addUpdate'
 import contains from './contains'
 
+// TODO
 const traverse = (
   subscriptionManager: SubscriptionManager,
-  channel: string
+  channel: string,
+  dbName: string
 ) => {
   // make it batch
   const path = channel.split('.')
   const id = path[0]
 
   // we can add this to tree
-  if (subscriptionManager.memberMemCache[channel]) {
+  if (
+    subscriptionManager.memberMemCache[dbName] &&
+    subscriptionManager.memberMemCache[dbName][channel]
+  ) {
     console.log('Remove from memcache update!', path)
-    delete subscriptionManager.memberMemCache[channel]
+    delete subscriptionManager.memberMemCache[dbName][channel]
     subscriptionManager.memberMemCacheSize--
   }
 
-  let segment = subscriptionManager.tree
+  let segment = subscriptionManager.tree[dbName]
   let prefix: string | undefined
   for (let i = 1; i < path.length; i++) {
+    console.log('NEW SEGMENT', segment, path[i])
     segment = segment[path[i]]
+    console.log('SEGMENT', segment)
     if (segment) {
       if (segment.___ids) {
         const subs = segment.___ids[id]
@@ -40,7 +47,12 @@ const traverse = (
         const match = segment.___types[prefix]
         if (match) {
           for (let containsId in match) {
-            contains(subscriptionManager, containsId, id, match[containsId])
+            contains(
+              subscriptionManager,
+              containsId,
+              { id, db: dbName },
+              match[containsId]
+            )
           }
         }
       }
@@ -50,7 +62,7 @@ const traverse = (
           contains(
             subscriptionManager,
             containsId,
-            id,
+            { id, db: dbName },
             segment.__any[containsId]
           )
         }
