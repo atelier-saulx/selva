@@ -25,9 +25,7 @@ const traverse = (
   let segment = subscriptionManager.tree[dbName]
   let prefix: string | undefined
   for (let i = 1; i < path.length; i++) {
-    console.log('NEW SEGMENT', segment, path[i])
     segment = segment[path[i]]
-    console.log('SEGMENT', segment)
     if (segment) {
       if (segment.___ids) {
         const subs = segment.___ids[id]

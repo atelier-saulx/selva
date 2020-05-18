@@ -219,7 +219,7 @@ test('hello ik ben één test', async t => {
       }
     })
     .subscribe(v => {
-      console.log('YOYOYO', v)
+      console.log('WHAT WHAT', v)
     })
 
   await wait(500)
