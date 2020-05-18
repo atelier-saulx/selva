@@ -147,7 +147,6 @@ function makeNewGetOptions(
 
   for (const key in getOpts) {
     const newPath = path + '.' + key
-    console.log('CHECKING IF', newPath, 'IN', extraQueries)
     if (extraQueries[newPath]) {
       newOpts[key] = extraQueries[newPath].placeholder
     } else if (typeof getOpts[key] === 'object') {
