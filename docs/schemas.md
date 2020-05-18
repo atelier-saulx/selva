@@ -200,7 +200,7 @@ When indexed as `SORTABLE`, the field becomes queryable with [`$sort`](./get_que
 
 ##### TEXT-LANGUAGE
 
-The `TEXT-LANGUAGE` index type con be applied to the `text` type only.
+The `TEXT-LANGUAGE` index type can be applied to the `text` type only.
 
 When indexed as `TEXT-LANGUAGE`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
 
