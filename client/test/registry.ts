@@ -219,7 +219,7 @@ test('hello ik ben één test', async t => {
       }
     })
     .subscribe(v => {
-      console.log('hello!', v)
+      console.log('YOYOYO', v)
     })
 
   await wait(500)
@@ -230,6 +230,14 @@ test('hello ik ben één test', async t => {
   })
 
   await wait(2e3)
+
+  client.set({
+    $db: 'users',
+    $id: 'ht2',
+    value: 11
+  })
+
+  await wait(5e3)
 
   t.true(true)
 })

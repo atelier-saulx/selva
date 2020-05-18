@@ -145,6 +145,15 @@ async function get(
     if (!meta) {
       meta = { [props.$db || 'default']: getResult.$meta }
     } else {
+      if (getResult.$meta.___refreshAt) {
+        if (
+          !meta.___refreshAt ||
+          meta.___refreshAt > getResult.$meta.___refreshAt
+        ) {
+          meta.___refreshAt = getResult.$meta.___refreshAt
+        }
+      }
+
       deepMerge(meta, {
         [props.$db || 'default']: getResult.$meta
       })
