@@ -123,6 +123,19 @@ test('hello ik ben één test', async t => {
   console.log(xx)
 
   console.log(
+    'YESHBOX',
+    await client.get({
+      $includeMeta: true,
+      // $db: 'registry',
+      $id: 'ht1',
+      $language: 'en',
+      value: true,
+      title: true,
+      user: { $db: 'users', value: true, title: true }
+    })
+  )
+
+  console.log(
     'db - registry',
     await client.redis.keys({ name: 'registry' }, '*')
   )

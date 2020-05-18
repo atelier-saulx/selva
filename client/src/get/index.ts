@@ -2,11 +2,13 @@ import { SelvaClient } from '..'
 import { GetResult, GetOptions } from './types'
 import { SCRIPT } from '../constants'
 import validate, { ExtraQueries } from './validate'
+import { deepMerge } from './deepMerge'
 
 async function combineResults(
   client: SelvaClient,
   extraQueries: ExtraQueries,
-  getResult: GetResult
+  getResult: GetResult,
+  meta?: any
 ) {
   if (Object.keys(extraQueries).length === 0) {
     return
@@ -15,7 +17,7 @@ async function combineResults(
   if (Object.keys(getResult).length === 1 && getResult.listResult) {
     await Promise.all(
       getResult.listResult.map(res => {
-        return combineResults(client, extraQueries, res)
+        return combineResults(client, extraQueries, res, meta)
       })
     )
     return
@@ -43,18 +45,10 @@ async function combineResults(
           }
 
           if (q.type === 'reference') {
-            console.log(
-              '--->ref',
-              g,
-              g.user,
-              parts,
-              g[parts[parts.length - 1]],
-              parts[parts.length - 1]
-            )
-
             q.getOpts.$id = g[parts[parts.length - 1]]
+            q.getOpts.$includeMeta = !!meta
 
-            const r = await get(client, q.getOpts)
+            const r = await get(client, q.getOpts, meta)
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
             if (q.getOpts.$list) {
@@ -74,9 +68,9 @@ async function combineResults(
               }
 
               delete q.getOpts.$db
-              const r = await client.get({ listResult: q.getOpts })
+              q.getOpts.$includeMeta = !!meta
+              const r = await get(client, { listResult: q.getOpts }, meta)
               if (r.listResult[0] && r.listResult[0].__$find) {
-                console.log('HEYYOOOOOOOO', r.listResult[0].__$find)
                 let fieldKeys = {}
                 for (const key in q.getOpts) {
                   if (!key.startsWith('$') && key !== '__$find') {
@@ -91,33 +85,21 @@ async function combineResults(
                 }, new Set())
                 const db = findOpts.$db
                 delete findOpts.$db
-                console.log('FIRST RESPONSE', JSON.stringify(r, null, 2))
-                console.log(
-                  'UUUUUUUUH',
-                  JSON.stringify(
-                    {
-                      $db: db,
-                      listResult: {
-                        ...fieldKeys,
-                        $list: {
-                          $find: { ...findOpts, $traverse: [...findIds] }
-                        }
+                q.getOpts.$includeMeta = !!meta
+                const nestedResult = await get(
+                  client,
+                  {
+                    $db: db,
+                    listResult: {
+                      ...fieldKeys,
+                      $list: {
+                        $find: { ...findOpts, $traverse: [...findIds] }
                       }
-                    },
-                    null,
-                    2
-                  )
-                )
-                const nestedResult = await client.get({
-                  $db: db,
-                  listResult: {
-                    ...fieldKeys,
-                    $list: {
-                      $find: { ...findOpts, $traverse: [...findIds] }
                     }
-                  }
-                })
-                console.log('OOOOOOOOO', nestedResult)
+                  },
+                  meta
+                )
+
                 g[parts[parts.length - 1]] = nestedResult.listResult
               } else {
                 g[parts[parts.length - 1]] = r.listResult
@@ -125,11 +107,13 @@ async function combineResults(
             } else if (q.getOpts.$find) {
               q.getOpts.$find.$traverse = g[parts[parts.length - 1]]
               delete q.getOpts.$db
-              const r = await client.get({ listResult: q.getOpts })
+              q.getOpts.$includeMeta = !!meta
+              const r = await get(client, { listResult: q.getOpts }, meta)
               g[parts[parts.length - 1]] = r.listResult
             }
           } else {
-            const r = await get(client, q.getOpts)
+            q.getOpts.$includeMeta = !!meta
+            const r = await get(client, q.getOpts, meta)
             g[parts[parts.length - 1]] = r
           }
         })
@@ -138,7 +122,11 @@ async function combineResults(
   )
 }
 
-async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
+async function get(
+  client: SelvaClient,
+  props: GetOptions,
+  meta?: any
+): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
 
@@ -153,7 +141,22 @@ async function get(client: SelvaClient, props: GetOptions): Promise<GetResult> {
     )
   )
 
-  await combineResults(client, extraQueries, getResult)
+  if (meta || props.$includeMeta) {
+    if (!meta) {
+      meta = { [props.$db || 'default']: getResult.$meta }
+    } else {
+      deepMerge(meta, {
+        [props.$db || 'default']: getResult.$meta
+      })
+    }
+  }
+
+  await combineResults(client, extraQueries, getResult, meta)
+
+  if (props.$includeMeta) {
+    getResult.$meta = meta
+  }
+
   return getResult
 }
 
