@@ -124,15 +124,19 @@ test('hello ik ben één test', async t => {
 
   console.log(
     'YESHBOX',
-    await client.get({
-      $includeMeta: true,
-      // $db: 'registry',
-      $id: 'ht1',
-      $language: 'en',
-      value: true,
-      title: true,
-      user: { $db: 'users', value: true, title: true }
-    })
+    JSON.stringify(
+      await client.get({
+        $includeMeta: true,
+        // $db: 'registry',
+        $id: 'ht1',
+        $language: 'en',
+        value: true,
+        title: true,
+        user: { $db: 'users', value: true, title: true }
+      }),
+      null,
+      2
+    )
   )
 
   console.log(
