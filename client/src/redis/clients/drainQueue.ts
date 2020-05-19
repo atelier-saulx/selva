@@ -72,7 +72,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         if (modify) {
           // console.log('COMBINED', modify)
           modify.resolve = results => {
-            for (let i = 0; i < results.length; i++) {
+            for (let i = 0; i < modifyResolvers.length; i++) {
               modifyResolvers[i](results[i])
             }
           }
