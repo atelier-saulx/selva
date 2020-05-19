@@ -68,8 +68,9 @@ async function combineResults(
               }
 
               delete q.getOpts.$db
-              q.getOpts.$includeMeta = !!meta
-              const r = await get(client, { listResult: q.getOpts }, meta, true)
+              const gopts: GetOptions = { listResult: q.getOpts }
+              gopts.$includeMeta = !!meta
+              const r = await get(client, gopts, meta, true)
               if (r.listResult[0] && r.listResult[0].__$find) {
                 let fieldKeys = {}
                 for (const key in q.getOpts) {
@@ -85,21 +86,17 @@ async function combineResults(
                 }, new Set())
                 const db = findOpts.$db
                 delete findOpts.$db
-                q.getOpts.$includeMeta = !!meta
-                const nestedResult = await get(
-                  client,
-                  {
-                    $db: db,
-                    listResult: {
-                      ...fieldKeys,
-                      $list: {
-                        $find: { ...findOpts, $traverse: [...findIds] }
-                      }
+                const gopts: GetOptions = {
+                  $db: db,
+                  listResult: {
+                    ...fieldKeys,
+                    $list: {
+                      $find: { ...findOpts, $traverse: [...findIds] }
                     }
-                  },
-                  meta,
-                  true
-                )
+                  }
+                }
+                gopts.$includeMeta = !!meta
+                const nestedResult = await get(client, gopts, meta, true)
 
                 g[parts[parts.length - 1]] = nestedResult.listResult
               } else {
@@ -108,8 +105,9 @@ async function combineResults(
             } else if (q.getOpts.$find) {
               q.getOpts.$find.$traverse = g[parts[parts.length - 1]]
               delete q.getOpts.$db
-              q.getOpts.$includeMeta = !!meta
-              const r = await get(client, { listResult: q.getOpts }, meta, true)
+              const gopts: GetOptions = { listResult: q.getOpts }
+              gopts.$includeMeta = !!meta
+              const r = await get(client, gopts, meta, true)
               g[parts[parts.length - 1]] = r.listResult
             }
           } else {

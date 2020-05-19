@@ -1,6 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { start } from '@saulx/selva-server'
+import { start, startOrigin } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
@@ -8,7 +8,6 @@ import getPort from 'get-port'
 let srv1
 let srv2
 let port1: number
-let port2: number
 test.before(async t => {
   port1 = await getPort()
   srv1 = await start({
@@ -30,28 +29,30 @@ test.before(async t => {
     }
   })
 
-  port2 = await getPort()
-  srv2 = await start({
-    port: port2
-  })
-  const client2 = connect({ port: port2 })
-  await client2.updateSchema({
-    languages: ['en'],
-    types: {
-      match: {
-        prefix: 'ma',
-        fields: {
-          rando: { type: 'string' },
-          value: { type: 'number', search: true },
-          sport: { type: 'reference' },
-          sports: { type: 'references' }
-        }
-      }
-    }
+  srv2 = await startOrigin({
+    name: 'matchdb',
+    registry: { port: port1 }
   })
 
+  await client1.updateSchema(
+    {
+      languages: ['en'],
+      types: {
+        match: {
+          prefix: 'ma',
+          fields: {
+            rando: { type: 'string' },
+            value: { type: 'number', search: true },
+            sport: { type: 'reference' },
+            sports: { type: 'references' }
+          }
+        }
+      }
+    },
+    'matchdb'
+  )
+
   await client1.destroy()
-  await client2.destroy()
 })
 
 test.after(async _t => {
@@ -59,12 +60,10 @@ test.after(async _t => {
   let d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
-  await client.destroy()
   await srv1.destroy()
 
-  client = connect({ port: port2 })
   d = Date.now()
-  await client.delete('root')
+  await client.delete({ $id: 'root', $db: 'matchdb' })
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv2.destroy()
@@ -81,10 +80,8 @@ test.serial('$db with nested query', async t => {
     match: 'ma1'
   })
 
-  const client2 = connect({ port: port2 }, { loglevel: 'info' })
-  global.SELVAS.matchdb = client2
-
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
     rando: 'rando match!'
@@ -109,12 +106,10 @@ test.serial('$db with nested query', async t => {
   )
 
   await client1.delete('root')
-  await client2.delete('root')
   await client1.destroy()
-  await client2.destroy()
 })
 
-test.serial('$db with reference/references', async t => {
+test.serial.only('$db with reference/references', async t => {
   const client1 = connect({ port: port1 }, { loglevel: 'info' })
 
   await client1.set({
@@ -125,10 +120,8 @@ test.serial('$db with reference/references', async t => {
     match: 'ma1'
   })
 
-  const client2 = connect({ port: port2 }, { loglevel: 'info' })
-  global.SELVAS.matchdb = client2
-
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
     rando: 'rando match!'
@@ -162,9 +155,7 @@ test.serial('$db with reference/references', async t => {
   )
 
   await client1.delete('root')
-  await client2.delete('root')
   await client1.destroy()
-  await client2.destroy()
 })
 
 test.serial('nested $db with reference/references', async t => {
@@ -178,11 +169,8 @@ test.serial('nested $db with reference/references', async t => {
     match: 'ma1'
   })
 
-  const client2 = connect({ port: port2 }, { loglevel: 'info' })
-  global.SELVAS.sportdb = client1
-  global.SELVAS.matchdb = client2
-
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
     rando: 'rando match!',
@@ -198,11 +186,11 @@ test.serial('nested $db with reference/references', async t => {
         $db: 'matchdb',
         rando: true,
         sport: {
-          $db: 'sportdb',
+          $db: 'default',
           rando: true
         },
         sports: {
-          $db: 'sportdb',
+          $db: 'default',
           rando: true,
           $list: true
         }
@@ -211,11 +199,11 @@ test.serial('nested $db with reference/references', async t => {
         $db: 'matchdb',
         rando: true,
         sport: {
-          $db: 'sportdb',
+          $db: 'default',
           rando: true
         },
         sports: {
-          $db: 'sportdb',
+          $db: 'default',
           rando: true,
           $list: true
         },
@@ -252,9 +240,7 @@ test.serial('nested $db with reference/references', async t => {
   )
 
   await client1.delete('root')
-  await client2.delete('root')
   await client1.destroy()
-  await client2.destroy()
 })
 
 test.serial('$db with $list with filter and multiple', async t => {
@@ -267,24 +253,24 @@ test.serial('$db with $list with filter and multiple', async t => {
     matches: ['ma1', 'ma2', 'ma3']
   })
 
-  const client2 = connect({ port: port2 }, { loglevel: 'info' })
-  global.SELVAS.matchdb = client2
-
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
     value: 1,
     rando: 'rando match 1!'
   })
 
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma2',
     type: 'match',
     value: 2,
     rando: 'rando match 2!'
   })
 
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma3',
     type: 'match',
     value: 3,
@@ -333,9 +319,7 @@ test.serial('$db with $list with filter and multiple', async t => {
   )
 
   await client1.delete('root')
-  await client2.delete('root')
   await client1.destroy()
-  await client2.destroy()
 })
 
 test.serial('$db with $find', async t => {
@@ -348,24 +332,24 @@ test.serial('$db with $find', async t => {
     matches: ['ma1', 'ma2', 'ma3']
   })
 
-  const client2 = connect({ port: port2 }, { loglevel: 'info' })
-  global.SELVAS.matchdb = client2
-
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
     value: 1,
     rando: 'rando match 1!'
   })
 
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma2',
     type: 'match',
     value: 2,
     rando: 'rando match 2!'
   })
 
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma3',
     type: 'match',
     value: 3,
@@ -402,16 +386,11 @@ test.serial('$db with $find', async t => {
   )
 
   await client1.delete('root')
-  await client2.delete('root')
   await client1.destroy()
-  await client2.destroy()
 })
 
 test.serial('$db with $list.$find.$find', async t => {
   const client1 = connect({ port: port1 }, { loglevel: 'info' })
-  const client2 = connect({ port: port2 }, { loglevel: 'info' })
-  global.SELVAS.sportdb = client1
-  global.SELVAS.matchdb = client2
 
   await client1.set({
     $id: 'sp1',
@@ -421,7 +400,8 @@ test.serial('$db with $list.$find.$find', async t => {
     matches: ['ma1', 'ma2', 'ma3']
   })
 
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
     value: 1,
@@ -429,7 +409,8 @@ test.serial('$db with $list.$find.$find', async t => {
     rando: 'rando match 1!'
   })
 
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma2',
     type: 'match',
     value: 2,
@@ -437,7 +418,8 @@ test.serial('$db with $list.$find.$find', async t => {
     sports: ['sp1']
   })
 
-  await client2.set({
+  await client1.set({
+    $db: 'matchdb',
     $id: 'ma3',
     type: 'match',
     value: 3,
@@ -469,7 +451,7 @@ test.serial('$db with $list.$find.$find', async t => {
             ],
             $find: {
               $traverse: 'sports',
-              $db: 'sportdb',
+              $db: 'default',
               $filter: [
                 {
                   $operator: '=',
@@ -494,7 +476,5 @@ test.serial('$db with $list.$find.$find', async t => {
   )
 
   await client1.delete('root')
-  await client2.delete('root')
   await client1.destroy()
-  await client2.destroy()
 })
