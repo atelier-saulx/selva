@@ -13,6 +13,7 @@ import {DeleteOptions, deleteItem} from './delete'
 import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
 import { observe } from './observe'
+import conformToSchema from './conformToSchema'
 
 export * as constants from './constants'
 
@@ -61,6 +62,10 @@ export class SelvaClient extends EventEmitter {
 
   updateSchema(opts: SchemaOptions, name: string = 'default'): Promise<void> {
     return updateSchema(this, opts, { name })
+  }
+  
+  conformToSchema(props: SetOptions, dbName: string = 'default') {
+    return conformToSchema(this, props, dbName)
   }
 
   destroy() {
