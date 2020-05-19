@@ -170,6 +170,8 @@ test('hello ik ben één test', async t => {
     user: { $db: 'users', value: true, title: true }
   })
 
+  console.log('xxx', xxx)
+
   await Promise.all([
     client.set({
       $id: 'ht1',
@@ -245,15 +247,6 @@ test('hello ik ben één test', async t => {
     $id: 'ht2',
     value: 11
   })
-
-  console.log(
-    'YESH USER',
-    await client.get({
-      $db: 'users',
-      $id: 'ht2',
-      value: true
-    })
-  )
 
   await wait(5e3)
 

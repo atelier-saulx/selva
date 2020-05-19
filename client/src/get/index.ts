@@ -48,7 +48,7 @@ async function combineResults(
             q.getOpts.$id = g[parts[parts.length - 1]]
             q.getOpts.$includeMeta = !!meta
 
-            const r = await get(client, q.getOpts, meta)
+            const r = await get(client, q.getOpts, meta, true)
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
             if (q.getOpts.$list) {
@@ -69,7 +69,7 @@ async function combineResults(
 
               delete q.getOpts.$db
               q.getOpts.$includeMeta = !!meta
-              const r = await get(client, { listResult: q.getOpts }, meta)
+              const r = await get(client, { listResult: q.getOpts }, meta, true)
               if (r.listResult[0] && r.listResult[0].__$find) {
                 let fieldKeys = {}
                 for (const key in q.getOpts) {
@@ -97,7 +97,8 @@ async function combineResults(
                       }
                     }
                   },
-                  meta
+                  meta,
+                  true
                 )
 
                 g[parts[parts.length - 1]] = nestedResult.listResult
@@ -108,12 +109,12 @@ async function combineResults(
               q.getOpts.$find.$traverse = g[parts[parts.length - 1]]
               delete q.getOpts.$db
               q.getOpts.$includeMeta = !!meta
-              const r = await get(client, { listResult: q.getOpts }, meta)
+              const r = await get(client, { listResult: q.getOpts }, meta, true)
               g[parts[parts.length - 1]] = r.listResult
             }
           } else {
             q.getOpts.$includeMeta = !!meta
-            const r = await get(client, q.getOpts, meta)
+            const r = await get(client, q.getOpts, meta, true)
             g[parts[parts.length - 1]] = r
           }
         })
@@ -163,7 +164,8 @@ function makeNewGetOptions(
 async function get(
   client: SelvaClient,
   props: GetOptions,
-  meta?: any
+  meta?: any,
+  nested: boolean = false
 ): Promise<GetResult> {
   console.log('ORIG GET', props)
   const extraQueries: ExtraQueries = {}
@@ -172,8 +174,6 @@ async function get(
     getExtraQueriesByField(extraQueries),
     props
   )
-  console.log('EXTRA QUERIES', extraQueries)
-  console.log('NEW OPTIONS', newProps)
 
   const getResult = JSON.parse(
     await client.redis.evalsha(
@@ -202,12 +202,14 @@ async function get(
       deepMerge(meta, {
         [props.$db || 'default']: getResult.$meta
       })
+
+      delete getResult.$meta
     }
   }
 
   await combineResults(client, extraQueries, getResult, meta)
 
-  if (props.$includeMeta) {
+  if (props.$includeMeta && !nested) {
     getResult.$meta = meta
   }
 
