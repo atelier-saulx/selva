@@ -296,7 +296,7 @@ test.serial('find - already started subscription', async t => {
   })
 
   t.plan(5)
-  const observable = await client.observe({
+  const observable = client.observe({
     $includeMeta: true,
     $id: 'root',
     items: {
@@ -320,7 +320,7 @@ test.serial('find - already started subscription', async t => {
 
   let o1counter = 0
   const sub = observable.subscribe(d => {
-    console.log('d', d)
+    console.log('odata', d)
     if (o1counter === 0) {
       // gets start event
       t.true(d.items.length === 3)

@@ -49,6 +49,11 @@ const addToTree = (
   treesByDb: SubTree
 ) => {
   for (const dbName in treesByDb) {
+    if (dbName === '___refreshAt') {
+      // not handled in tree
+      continue
+    }
+
     const tree = treesByDb[dbName]
     if (!targetTrees[dbName]) {
       targetTrees[dbName] = {}
@@ -57,9 +62,7 @@ const addToTree = (
     const targetTree = targetTrees[dbName]
 
     for (const key in tree) {
-      if (key === '___refreshAt') {
-        // not handled in tree
-      } else if (key === '___contains') {
+      if (key === '___contains') {
         for (let k in tree.___contains) {
           if (!targetTree.___contains) {
             targetTree.___contains = {}
@@ -118,11 +121,15 @@ const removeFromTree = (
   treesByDb: SubTree
 ) => {
   for (const dbName in treesByDb) {
+    if (dbName === '___refreshAt') {
+      // do nothing, it's a top level thing
+      continue
+    }
+
     const tree = treesByDb[dbName]
 
     for (const key in tree) {
-      if (key === '___refreshAt') {
-      } else if (key === '___contains') {
+      if (key === '___contains') {
         // merge on top
       } else {
         if (targetTree[key]) {
