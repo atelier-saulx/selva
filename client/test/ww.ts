@@ -13,8 +13,8 @@ test.before(async t => {
   srv1 = await start({
     port: port1
   })
-  const client1 = connect({ port: port1 })
-  await client1.updateSchema({
+  const client = connect({ port: port1 })
+  await client.updateSchema({
     languages: ['en'],
     types: {
       sport: {
@@ -34,7 +34,7 @@ test.before(async t => {
     registry: { port: port1 }
   })
 
-  await client1.updateSchema(
+  await client.updateSchema(
     {
       languages: ['en'],
       types: {
@@ -52,7 +52,7 @@ test.before(async t => {
     'matchdb'
   )
 
-  await client1.destroy()
+  await client.destroy()
 })
 
 test.after(async _t => {
@@ -70,9 +70,9 @@ test.after(async _t => {
 })
 
 test.serial('$db with nested query', async t => {
-  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+  const client = connect({ port: port1 }, { loglevel: 'info' })
 
-  await client1.set({
+  await client.set({
     $id: 'sp1',
     type: 'sport',
     rando: 'rando sport!',
@@ -80,7 +80,7 @@ test.serial('$db with nested query', async t => {
     match: 'ma1'
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
@@ -88,7 +88,7 @@ test.serial('$db with nested query', async t => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client1.get({
+    await client.get({
       $id: 'sp1',
       rando: true,
       match: {
@@ -105,14 +105,14 @@ test.serial('$db with nested query', async t => {
     }
   )
 
-  await client1.delete('root')
-  await client1.destroy()
+  await client.delete('root')
+  await client.destroy()
 })
 
-test.serial.only('$db with reference/references', async t => {
-  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+test.serial('$db with reference/references', async t => {
+  const client = connect({ port: port1 }, { loglevel: 'info' })
 
-  await client1.set({
+  await client.set({
     $id: 'sp1',
     type: 'sport',
     rando: 'rando sport!',
@@ -120,7 +120,7 @@ test.serial.only('$db with reference/references', async t => {
     match: 'ma1'
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
@@ -128,7 +128,7 @@ test.serial.only('$db with reference/references', async t => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client1.get({
+    await client.get({
       $id: 'sp1',
       rando: true,
       match: {
@@ -154,14 +154,14 @@ test.serial.only('$db with reference/references', async t => {
     }
   )
 
-  await client1.delete('root')
-  await client1.destroy()
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('nested $db with reference/references', async t => {
-  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+  const client = connect({ port: port1 }, { loglevel: 'info' })
 
-  await client1.set({
+  await client.set({
     $id: 'sp1',
     type: 'sport',
     rando: 'rando sport!',
@@ -169,7 +169,7 @@ test.serial('nested $db with reference/references', async t => {
     match: 'ma1'
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
@@ -179,7 +179,7 @@ test.serial('nested $db with reference/references', async t => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client1.get({
+    await client.get({
       $id: 'sp1',
       rando: true,
       match: {
@@ -239,21 +239,21 @@ test.serial('nested $db with reference/references', async t => {
     }
   )
 
-  await client1.delete('root')
-  await client1.destroy()
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('$db with $list with filter and multiple', async t => {
-  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+  const client = connect({ port: port1 }, { loglevel: 'info' })
 
-  await client1.set({
+  await client.set({
     $id: 'sp1',
     type: 'sport',
     rando: 'rando sport!',
     matches: ['ma1', 'ma2', 'ma3']
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
@@ -261,7 +261,7 @@ test.serial('$db with $list with filter and multiple', async t => {
     rando: 'rando match 1!'
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma2',
     type: 'match',
@@ -269,7 +269,7 @@ test.serial('$db with $list with filter and multiple', async t => {
     rando: 'rando match 2!'
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma3',
     type: 'match',
@@ -278,7 +278,7 @@ test.serial('$db with $list with filter and multiple', async t => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client1.get({
+    await client.get({
       $id: 'sp1',
       rando: true,
       matches: {
@@ -318,21 +318,21 @@ test.serial('$db with $list with filter and multiple', async t => {
     }
   )
 
-  await client1.delete('root')
-  await client1.destroy()
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('$db with $find', async t => {
-  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+  const client = connect({ port: port1 }, { loglevel: 'info' })
 
-  await client1.set({
+  await client.set({
     $id: 'sp1',
     type: 'sport',
     rando: 'rando sport!',
     matches: ['ma1', 'ma2', 'ma3']
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
@@ -340,7 +340,7 @@ test.serial('$db with $find', async t => {
     rando: 'rando match 1!'
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma2',
     type: 'match',
@@ -348,7 +348,7 @@ test.serial('$db with $find', async t => {
     rando: 'rando match 2!'
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma3',
     type: 'match',
@@ -357,7 +357,7 @@ test.serial('$db with $find', async t => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client1.get({
+    await client.get({
       $id: 'sp1',
       rando: true,
       match: {
@@ -385,14 +385,14 @@ test.serial('$db with $find', async t => {
     }
   )
 
-  await client1.delete('root')
-  await client1.destroy()
+  await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('$db with $list.$find.$find', async t => {
-  const client1 = connect({ port: port1 }, { loglevel: 'info' })
+  const client = connect({ port: port1 }, { loglevel: 'info' })
 
-  await client1.set({
+  await client.set({
     $id: 'sp1',
     type: 'sport',
     value: 1,
@@ -400,7 +400,7 @@ test.serial('$db with $list.$find.$find', async t => {
     matches: ['ma1', 'ma2', 'ma3']
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma1',
     type: 'match',
@@ -409,7 +409,7 @@ test.serial('$db with $list.$find.$find', async t => {
     rando: 'rando match 1!'
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma2',
     type: 'match',
@@ -418,7 +418,7 @@ test.serial('$db with $list.$find.$find', async t => {
     sports: ['sp1']
   })
 
-  await client1.set({
+  await client.set({
     $db: 'matchdb',
     $id: 'ma3',
     type: 'match',
@@ -428,7 +428,7 @@ test.serial('$db with $list.$find.$find', async t => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client1.get({
+    await client.get({
       $id: 'sp1',
       rando: true,
       sports: {
@@ -475,6 +475,6 @@ test.serial('$db with $list.$find.$find', async t => {
     }
   )
 
-  await client1.delete('root')
-  await client1.destroy()
+  await client.delete('root')
+  await client.destroy()
 })
