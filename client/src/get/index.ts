@@ -59,32 +59,29 @@ async function combineResults(
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
             if (q.getOpts.$list) {
-              if (q.getOpts.$list === true) {
-                q.getOpts.$list = {
-                  $find: {
-                    $traverse: g[parts[parts.length - 1]]
-                  }
-                }
-              } else if (q.getOpts.$list.$find) {
-                q.getOpts.$list.$find.$traverse = g[parts[parts.length - 1]]
-              } else {
-                // $list but no $find
-                q.getOpts.$list.$find = {
-                  $traverse: g[parts[parts.length - 1]]
-                }
-              }
-
               const { $db: _db, ...gopts } = q.getOpts
               const r = await get(
                 client,
                 {
                   $includeMeta: !!meta,
                   $db: db,
-                  listResult: gopts
+                  listResult: {
+                    ...gopts,
+                    $list: {
+                      ...(gopts.$list === true ? {} : gopts.$list),
+                      $find: {
+                        ...(gopts.$list === true
+                          ? {}
+                          : gopts.$list.$find || {}),
+                        $traverse: g[parts[parts.length - 1]]
+                      }
+                    }
+                  }
                 },
                 meta,
                 true
               )
+
               if (r.listResult[0] && r.listResult[0].__$find) {
                 let fieldKeys = {}
                 for (const key in q.getOpts) {
@@ -221,7 +218,6 @@ async function get(
       JSON.stringify(newProps)
     )
   )
-  console.log('getResult', props, newProps, getResult)
 
   if (meta || props.$includeMeta) {
     if (!meta) {
