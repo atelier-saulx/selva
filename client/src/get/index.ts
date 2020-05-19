@@ -137,20 +137,19 @@ function getExtraQueriesByField(
 function makeNewGetOptions(
   extraQueries: Record<string, ExtraQuery>,
   getOpts: GetOptions,
-  newOpts: GetOptions = {},
   path: string = ''
 ): GetOptions {
   if (Object.keys(extraQueries).length === 0) {
     return getOpts
   }
 
+  const newOpts = {}
   for (const key in getOpts) {
     const newPath = path + '.' + key
     if (extraQueries[newPath]) {
       newOpts[key] = extraQueries[newPath].placeholder
     } else if (typeof getOpts[key] === 'object') {
-      newOpts[key] = {}
-      makeNewGetOptions(extraQueries, getOpts[key], newOpts[key], newPath)
+      newOpts[key] = makeNewGetOptions(extraQueries, getOpts[key], newPath)
     } else {
       newOpts[key] = getOpts[key]
     }
@@ -165,7 +164,6 @@ async function get(
   meta?: any,
   nested: boolean = false
 ): Promise<GetResult> {
-  console.log('ORIG GET', props)
   const extraQueries: ExtraQueries = {}
   validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
