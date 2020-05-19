@@ -43,6 +43,11 @@ const createObservable = (
   })
 
   const obs = new Observable(observer => {
+    observerEmitter.on('update', obj => {
+      // TODO: needs more things
+      observer.next(obj.payload)
+    })
+
     observerEmitter.count++
     return () => {
       observerEmitter.count--
@@ -55,10 +60,6 @@ const createObservable = (
         }
       }
     }
-  })
-
-  observerEmitter.on('update', obj => {
-    console.log('flapper drol', obj)
   })
 
   redisSelvaClient.observables[channel] = obs
