@@ -109,7 +109,7 @@ test.serial('$db with nested query', async t => {
   await client.destroy()
 })
 
-test.serial.only('$db with reference/references', async t => {
+test.serial('$db with reference/references', async t => {
   const client = connect({ port: port1 }, { loglevel: 'info' })
 
   await client.set({
@@ -158,7 +158,7 @@ test.serial.only('$db with reference/references', async t => {
   await client.destroy()
 })
 
-test.serial('nested $db with reference/references', async t => {
+test.serial.only('nested $db with reference/references', async t => {
   const client = connect({ port: port1 }, { loglevel: 'info' })
 
   await client.set({

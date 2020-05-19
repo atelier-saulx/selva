@@ -46,6 +46,7 @@ async function combineResults(
 
           if (q.type === 'reference') {
             q.getOpts.$id = g[parts[parts.length - 1]]
+            q.getOpts.$db = db
             q.getOpts.$includeMeta = !!meta
 
             const r = await get(client, q.getOpts, meta, true)
@@ -70,6 +71,7 @@ async function combineResults(
               delete q.getOpts.$db
               const gopts: GetOptions = { listResult: q.getOpts }
               gopts.$includeMeta = !!meta
+              gopts.$db = db
               const r = await get(client, gopts, meta, true)
               if (r.listResult[0] && r.listResult[0].__$find) {
                 let fieldKeys = {}
@@ -96,6 +98,7 @@ async function combineResults(
                   }
                 }
                 gopts.$includeMeta = !!meta
+                gopts.$db = db
                 const nestedResult = await get(client, gopts, meta, true)
 
                 g[parts[parts.length - 1]] = nestedResult.listResult
@@ -107,11 +110,13 @@ async function combineResults(
               delete q.getOpts.$db
               const gopts: GetOptions = { listResult: q.getOpts }
               gopts.$includeMeta = !!meta
+              gopts.$db = db
               const r = await get(client, gopts, meta, true)
               g[parts[parts.length - 1]] = r.listResult
             }
           } else {
             q.getOpts.$includeMeta = !!meta
+            q.getOpts.$db = db
             const r = await get(client, q.getOpts, meta, true)
             g[parts[parts.length - 1]] = r
           }
