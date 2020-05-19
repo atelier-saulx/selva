@@ -37,7 +37,7 @@ test.serial('basic id based subscriptions', async t => {
 
   t.plan(4)
 
-  const observable = await client.observe({ $id: 'root', yesh: true })
+  const observable = client.observe({ $id: 'root', yesh: true })
   let o1counter = 0
   const sub = observable.subscribe(d => {
     if (o1counter === 0) {
@@ -60,7 +60,7 @@ test.serial('basic id based subscriptions', async t => {
 
   let o2counter = 0
   console.log('\n\nsecond sub!')
-  const other = await client.observe({ $id: thing, $all: true, aliases: false })
+  const other = client.observe({ $id: thing, $all: true, aliases: false })
   const sub2 = other.subscribe(d => {
     console.log('incoming 2', d)
 
@@ -134,7 +134,7 @@ test.serial('using $field works', async t => {
 
   t.plan(2)
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: 'root',
     id: true,
     aliasedField: { $field: 'yesh' }
@@ -193,7 +193,7 @@ test.serial('refs resolve and get tracked correctly', async t => {
 
   await wait(1000 * 1)
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: yesh,
     id: true,
     yesh: true
@@ -251,7 +251,7 @@ test.serial('basic $inherit when ancestors change', async t => {
     type: 'yeshType'
   })
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: thing,
     id: true,
     yesh: { $inherit: true }
@@ -313,7 +313,7 @@ test.serial(
 
     t.plan(3)
 
-    const observable = await client.observe({ $id: 'root', yesh: true })
+    const observable = client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
     const sub = observable.subscribe(d => {
       console.log(d)
@@ -388,7 +388,7 @@ test.serial(
 
     t.plan(3)
 
-    const observable = await client.observe({ $id: 'root', yesh: true })
+    const observable = client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
     const sub = observable.subscribe(d => {
       console.log(d)
@@ -479,7 +479,7 @@ test.serial.skip(
 
     t.plan(2)
 
-    const observable = await client.observe({ $id: 'root', yesh: true })
+    const observable = client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
 
     const sub = observable.subscribe(d => {
@@ -499,7 +499,8 @@ test.serial.skip(
     await wait(1000 * 5)
     console.log('close subs')
     // should get no event after reconnection
-    server.closeSubscriptions()
+    // TODO
+    // server.closeSubscriptions()
     await wait(1000 * 5)
 
     console.log('set')
@@ -521,7 +522,8 @@ test.serial.skip(
     await wait(1000 * 1)
     console.log('open subs')
 
-    server.openSubscriptions()
+    // TODO
+    // server.openSubscriptions()
     await wait(1000 * 5)
 
     console.log('done shludl have done all!')
