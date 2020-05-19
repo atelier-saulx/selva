@@ -556,6 +556,73 @@ test.serial('array, json and set', async t => {
   ])
 })
 
+test.serial('set empty object', async t => {
+  const client = connect({
+    port
+  })
+
+  await client.updateSchema({
+    types: {
+      hmmhmm: {
+        prefix: 'hm',
+        fields: {
+          flurpy: {
+            type: 'object',
+            properties: {
+              hello: {
+                type: 'string'
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  const id = await client.set({
+    type: 'hmmhmm',
+    flurpy: {}
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id,
+      flurpy: true
+    }),
+    {}
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id,
+      flurpy: {
+        hello: true
+      }
+    }),
+    {
+      flurpy: {
+        hello: ''
+      }
+    }
+  )
+
+  await client.set({
+    $id: id,
+    flurpy: { hello: 'yes' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id,
+      flurpy: true
+    }),
+    {
+      flurpy: {
+        hello: 'yes'
+      }
+    }
+  )
+})
+
 test.serial('$increment, $default', async t => {
   const client = connect({
     port
