@@ -1,16 +1,9 @@
 import test from 'ava'
-import {
-  connect,
-  Fields,
-  Schema,
-  SchemaOptions,
-  FieldSchema
-} from '../src/index'
+import { connect } from '../src/index'
+import { Schema, SchemaOptions, Fields, FieldSchema } from '../src/schema'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait } from './assertions'
 import getPort from 'get-port'
-
 const mangleResults = (
   correctSchema: Schema | SchemaOptions,
   schemaResult: Schema
