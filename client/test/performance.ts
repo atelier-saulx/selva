@@ -1,33 +1,39 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { start } from '@saulx/selva-server'
+import {
+  startRegistry,
+  startOrigin,
+  startSubscriptionManager
+} from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 import vm from 'vm'
 import m from 'module'
 
+let registry
 let srv
+let subs
 let port: number
 let vms
-let portSubs: number
 
 test.before(async t => {
   port = await getPort()
-  portSubs = await getPort()
   // small test
-  srv = await start({
-    port: new Promise(r => {
-      setTimeout(() => r(port), 100)
-    }),
-    subscriptions: {
-      port: new Promise(r => {
-        setTimeout(() => r(portSubs), 100)
-      })
-    }
+  registry = await startRegistry({
+    port
   })
 
-  const client = connect({ port, subscriptions: { port: portSubs } })
+  srv = await startOrigin({
+    default: true,
+    registry: { port }
+  })
+
+  subs = await startSubscriptionManager({
+    registry: { port }
+  })
+
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -57,20 +63,19 @@ test.after(async _t => {
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await subs.destroy()
+  await registry.destroy()
 })
 
 test.serial('perf - Set a lot of things', async t => {
   //@ts-ignore
   const total = (global.total = {})
 
-  const code = function(i, port, portSubs) {
+  const code = function(i, port) {
     console.log(`Start vm ${i}`)
     const { connect } = require('../src/index')
     const client = connect({
-      port,
-      subscriptions: {
-        port: portSubs
-      }
+      port
     })
 
     client.on('connect', () => {
@@ -102,6 +107,7 @@ test.serial('perf - Set a lot of things', async t => {
           })
         }
 
+        console.log('hey setting things')
         await client.set({
           $id: 'root',
           children: q //{ $add: q }
@@ -139,12 +145,9 @@ test.serial('perf - Set a lot of things', async t => {
   for (let i = 0; i < clientAmount; i++) {
     let wrappedRequire = require
     vms.push(
-      vm.runInThisContext(
-        m.wrap(`(${code.toString()})(${i},${port}, ${portSubs})`),
-        {
-          filename: `client-vm${i}.js`
-        }
-      )(
+      vm.runInThisContext(m.wrap(`(${code.toString()})(${i},${port})`), {
+        filename: `client-vm${i}.js`
+      })(
         exports,
         wrappedRequire,
         module,
@@ -184,7 +187,7 @@ test.serial('perf - Set a lot of things', async t => {
 
   const client = connect({ port })
 
-  const s = await client.observe({
+  const s = client.observe({
     items: {
       value: true,
       id: true,
@@ -206,7 +209,7 @@ test.serial('perf - Set a lot of things', async t => {
     console.log('hey update', d)
   })
 
-  const s2 = await client.observe({
+  const s2 = client.observe({
     items: {
       value: true,
       id: true,
