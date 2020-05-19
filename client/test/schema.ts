@@ -1,5 +1,6 @@
 import test from 'ava'
-import { connect, Fields, Schema, SchemaOptions } from '../src/index'
+import { connect } from '../src/index'
+import { Schema, SchemaOptions, Fields } from '../src/schema'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
@@ -76,6 +77,9 @@ test.serial.only('schemas - basic', async t => {
     languages: ['nl', 'en'],
     rootType: {
       fields: {
+        children: { type: 'references' },
+        id: { type: 'id' },
+        type: { type: 'type' },
         value: { type: 'number' }
       }
     },
@@ -313,7 +317,11 @@ test.serial.only('schemas - basic', async t => {
     )
   )
 
-  const info2 = await client.redis.ftInfo('default')
+  const info2 = await client.redis.command(
+    { name: 'default' },
+    'FT.INFO',
+    'default'
+  )
   const fields2 = info2[info2.indexOf('fields') + 1]
 
   // does not drop and create a new one for now...
@@ -345,7 +353,11 @@ test.serial.only('schemas - basic', async t => {
     }
   })
 
-  const info = await client.redis.ftInfo('default')
+  const info = await client.redis.command(
+    { name: 'default' },
+    'FT.INFO',
+    'default'
+  )
   const fields = info[info.indexOf('fields') + 1]
 
   t.deepEqual(
@@ -403,8 +415,6 @@ test.serial.only('schemas - basic', async t => {
     },
     'updated hierarchy schema'
   )
-
-  t.is(await client.getTypeFromId('maflurpy'), 'match')
 
   await client.updateSchema({
     types: {
@@ -582,7 +592,11 @@ test.serial('schemas - search indexes', async t => {
     languages: ['nl', 'en', 'de']
   })
 
-  const info = await client.redis.ftInfo('default')
+  const info = await client.redis.command(
+    { name: 'default' },
+    'FT.INFO',
+    'default'
+  )
   const fields = info[info.indexOf('fields') + 1]
 
   t.deepEqual(
