@@ -35,7 +35,16 @@ export class SelvaServer extends EventEmitter {
     this.port = opts.port
     this.host = opts.host
 
-    await startRedis(this, opts)
+    if (
+      !(
+        typeof opts.registry === 'object' &&
+        !(opts.registry instanceof Promise) &&
+        opts.host === opts.registry.host &&
+        opts.port === opts.registry.port
+      )
+    ) {
+      await startRedis(this, opts)
+    }
 
     if (opts.registry) {
       console.log('create registry client on the server')
@@ -62,6 +71,8 @@ export class SelvaServer extends EventEmitter {
     if (this.type === 'subscriptionManager') {
       await stopSubscriptionManager(this.subscriptionManager)
     }
+
+    this.emit('close')
   }
 }
 

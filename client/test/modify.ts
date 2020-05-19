@@ -4,6 +4,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import { dumpDb, idExists } from './assertions'
 import getPort from 'get-port'
+import { wait } from '../src/util'
 
 let srv
 let port: number
@@ -83,6 +84,8 @@ test.before(async t => {
     }
   })
 
+  console.log('SCHEMA SET')
+
   await client.destroy()
 })
 
@@ -94,12 +97,15 @@ test.after(async _t => {
 })
 
 test.serial('root', async t => {
+  console.log('CONNECTING')
   const client = connect(
     {
       port
     },
     { loglevel: 'info' }
   )
+
+  console.log('CONNECTED')
 
   const match = await client.set({
     type: 'match'

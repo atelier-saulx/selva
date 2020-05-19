@@ -151,4 +151,57 @@ export async function startSubscriptionManager(opts: Options) {
 // make a registry, then add origin, then add subs manager
 // backups may be a bit problematic here :/
 // maybe we can put the registry and subs manager in a different db in redis and only back up the "main db"? hmmmmmmmmmmmmm let me see (tony notes)
-export async function start(opts: Options) {}
+export async function start(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+
+  // TODO: for now all in different ports, fix later
+  const err = validate(
+    parsedOpts,
+    [],
+    ['registry', 'replica', 'backups', 'name', 'default']
+  )
+
+  if (err) {
+    console.error(`Error starting registry selva server ${chalk.red(err)}`)
+    throw new Error(err)
+  }
+
+  // const registry = await startServer('registry', parsedOpts)
+  // const origin = await startOrigin(
+  //   Object.assign({}, parsedOpts, {
+  //     name: 'default',
+  //     default: true,
+  //     registry
+  //   })
+  // )
+
+  // const subs = await startSubscriptionManager(
+  //   Object.assign({}, parsedOpts, {
+  //     registry: {
+  //       port: parsedOpts.port,
+  //       host: parsedOpts.host
+  //     }
+  //   })
+  // )
+
+  const registry = await startServer('registry', parsedOpts)
+  const origin = await startOrigin({
+    name: 'default',
+    default: true,
+    registry
+  })
+
+  const subs = await startSubscriptionManager({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host
+    }
+  })
+
+  registry.on('close', () => {
+    origin.destroy()
+    subs.destroy()
+  })
+
+  return registry
+}

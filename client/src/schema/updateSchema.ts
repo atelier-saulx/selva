@@ -236,7 +236,7 @@ export async function updateSchema(
     props.types = {}
   }
 
-  console.log('get schema?')
+  console.log('get schema?', selector)
   const newSchema = newSchemaDefinition(
     (await client.getSchema(selector.name)).schema,
     <Schema>props
