@@ -185,6 +185,8 @@ function makeNewGetOptions(
     const newPath = path + '.' + key
     if (extraQueries[newPath]) {
       newOpts[key] = extraQueries[newPath].placeholder
+    } else if (Array.isArray(getOpts[key])) {
+      newOpts[key] = getOpts[key]
     } else if (typeof getOpts[key] === 'object') {
       newOpts[key] = makeNewGetOptions(extraQueries, getOpts[key], newPath)
     } else {
