@@ -24,6 +24,7 @@ test.serial('basic schema based subscriptions', async t => {
   const observable = client.subscribeSchema()
   let o1counter = 0
   const sub = observable.subscribe(d => {
+    console.log('HMMMMMmm', d)
     o1counter++
   })
 
@@ -68,7 +69,7 @@ test.serial('basic schema based subscriptions', async t => {
   const observable2 = client.subscribeSchema()
   var cnt = 0
   const sub2 = observable2.subscribe(d => {
-    console.log('GOOOOO')
+    console.log('GOOOOO', d)
     cnt++
   })
 

@@ -49,7 +49,6 @@ export function observe(
 }
 
 export function observeSchema(client: SelvaClient, dbName: string) {
-  console.log('SUBSCRIBE SCHEMA')
   if (client.schemaObservables[dbName]) {
     return new Observable<Schema>(observe => {
       if (client.schemas[dbName]) {
@@ -76,7 +75,6 @@ export function observeSchema(client: SelvaClient, dbName: string) {
   client.schemaObservables[dbName] = new Observable<Schema>(observe => {
     const sub = obs.subscribe({
       next: (_x: any) => {
-        console.log('HEYOOO', _x)
         observe.next(_x)
       },
       error: observe.error,
@@ -89,6 +87,7 @@ export function observeSchema(client: SelvaClient, dbName: string) {
   return new Observable<Schema>(observe => {
     const sub = client.schemaObservables[dbName].subscribe({
       next: (_x: any) => {
+        client.schemas[dbName] = _x
         observe.next(_x)
       },
       error: observe.error,
