@@ -131,7 +131,19 @@ test.serial('perf - Set a lot of things', async t => {
         await client.get({
           $id: 'root',
           title: true,
-          children: { $list: true, title: true }
+          children: { $list: true, id: true }
+        })
+
+        await client.get({
+          $id: 'root',
+          title: true,
+          children: { $list: true, id: true }
+        })
+
+        await client.get({
+          $id: 'root',
+          title: true,
+          children: { $list: true, id: true }
         })
 
         // await Promise.all(q)
