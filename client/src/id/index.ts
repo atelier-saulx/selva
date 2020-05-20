@@ -1,4 +1,3 @@
-import { getSchema } from '../schema/getSchema'
 import { v4 as uuid } from 'uuid'
 import { SelvaClient } from '..'
 import { IdOptions } from 'lua/src/id'
