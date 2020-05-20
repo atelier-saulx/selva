@@ -45,6 +45,7 @@ const createObservable = (
   const obs = new Observable(observer => {
     observerEmitter.on('update', obj => {
       // TODO: needs more things
+      console.log('flurpy durpy', obj)
       observer.next(obj.payload)
     })
 
