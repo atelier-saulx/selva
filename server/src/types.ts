@@ -12,7 +12,6 @@ export type ServerOptions = {
   port?: number
   host?: string
   name?: string
-  replica?: string
   modules?: string[]
   dir?: string
   default?: boolean

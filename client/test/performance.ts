@@ -3,7 +3,8 @@ import { connect } from '../src/index'
 import {
   startRegistry,
   startOrigin,
-  startSubscriptionManager
+  startSubscriptionManager,
+  startReplica
 } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
@@ -13,6 +14,7 @@ import m from 'module'
 
 let registry
 let srv
+let snurf
 let subs
 let port: number
 let vms
@@ -25,6 +27,11 @@ test.before(async t => {
   })
 
   srv = await startOrigin({
+    default: true,
+    registry: { port }
+  })
+
+  snurf = await startReplica({
     default: true,
     registry: { port }
   })
@@ -65,6 +72,7 @@ test.after(async _t => {
   await srv.destroy()
   await subs.destroy()
   await registry.destroy()
+  await snurf.destroy()
 })
 
 test.serial('perf - Set a lot of things', async t => {
@@ -84,7 +92,7 @@ test.serial('perf - Set a lot of things', async t => {
 
     let iteration = 1
     let time = 0
-    let amount = 1500
+    let amount = 5000
     const setLoop = async () => {
       // @ts-ignore
       if (global.stopped) {
@@ -107,7 +115,6 @@ test.serial('perf - Set a lot of things', async t => {
           })
         }
 
-        console.log('hey setting things')
         await client.set({
           $id: 'root',
           children: q //{ $add: q }
@@ -137,7 +144,7 @@ test.serial('perf - Set a lot of things', async t => {
 
   const vms = []
 
-  const clientAmount = 2
+  const clientAmount = 5
 
   for (let i = 0; i < clientAmount; i++) {
     let wrappedRequire = require
@@ -229,7 +236,7 @@ test.serial('perf - Set a lot of things', async t => {
     console.log('hey update 2', d)
   })
 
-  await wait(10e3)
+  await wait(20e3)
   clearInterval(int)
   // @ts-ignore
   global.stopped = true

@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { ConnectOptions, ServerDescriptor, ClientOpts, LogLevel, ServerType } from './types'
+import { ConnectOptions, ServerDescriptor, ClientOpts, LogLevel, ServerType, ServerSelector } from './types'
 import digest from './digest'
 import Redis from './redis'
 import { GetSchemaResult, SchemaOptions, Id } from './schema'
@@ -14,6 +14,7 @@ import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
 import { observe } from './observe'
 import conformToSchema from './conformToSchema'
+import getServerDescriptor from './redis/getServerDescriptor'
 
 export * as constants from './constants'
 
@@ -66,6 +67,11 @@ export class SelvaClient extends EventEmitter {
   
   conformToSchema(props: SetOptions, dbName: string = 'default') {
     return conformToSchema(this, props, dbName)
+  }
+
+  
+  getServerDescriptor (opts: ServerSelector): Promise<ServerDescriptor> {
+    return getServerDescriptor(this.redis,opts )
   }
 
   destroy() {

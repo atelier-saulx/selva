@@ -2,6 +2,8 @@ const fs = require('fs')
 const redis = require('redis')
 const path = require('path')
 
+// TODO: use replica fro all read operations if type !== subs manager && type !== '
+
 let template = `
 type args = (string | number)[]
 import { RedisCommand } from '../types'

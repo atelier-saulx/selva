@@ -36,11 +36,16 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
     }
   })
 
-  // if (replica // connect) {
+  if (server.type === 'replica') {
+    console.log('hello is there a registry?')
 
-  // is connectoptions
-  //   args.push('--replicaof', replica.host, String(replica.port))
-  // }
+    const origin = await server.registry.getServerDescriptor({
+      name: opts.name,
+      type: 'origin'
+    })
+    console.log('yo mofos its a replica!', origin)
+    args.push('--replicaof', origin.host, String(origin.port))
+  }
 
   const tmpPath = path.join(process.cwd(), './tmp')
   if (!fs.existsSync(tmpPath)) {

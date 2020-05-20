@@ -99,7 +99,7 @@ export async function startOrigin(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
 
   // default name is 'main'
-  const err = validate(parsedOpts, ['registry', 'name'], ['replica'])
+  const err = validate(parsedOpts, ['registry', 'name'], [])
   if (err) {
     console.error(`Error starting origin selva server ${chalk.red(err)}`)
     throw new Error(err)
@@ -113,7 +113,7 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
   const err = validate(
     parsedOpts,
     [],
-    ['registry', 'replica', 'backups', 'name', 'default']
+    ['registry', 'backups', 'name', 'default']
   )
 
   parsedOpts.name = 'registry'
@@ -126,16 +126,22 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
 }
 
 // 1 extra new thing - monitor server / stats
-export async function startReplica(opts: Options) {}
+export async function startReplica(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+
+  // default name is 'main'
+  const err = validate(parsedOpts, ['registry', 'name'], ['backups'])
+  if (err) {
+    console.error(`Error starting origin selva server ${chalk.red(err)}`)
+    throw new Error(err)
+  }
+  return startServer('replica', parsedOpts)
+}
 
 export async function startSubscriptionManager(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
   // default name is 'main'
-  const err = validate(
-    parsedOpts,
-    ['registry'],
-    ['replica', 'name', 'default', 'backups']
-  )
+  const err = validate(parsedOpts, ['registry'], ['name', 'default', 'backups'])
 
   parsedOpts.name = 'subscriptionManager'
 
@@ -158,7 +164,7 @@ export async function start(opts: Options) {
   const err = validate(
     parsedOpts,
     [],
-    ['registry', 'replica', 'backups', 'name', 'default']
+    ['registry', 'backups', 'name', 'default']
   )
 
   if (err) {

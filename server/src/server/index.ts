@@ -35,17 +35,6 @@ export class SelvaServer extends EventEmitter {
     this.port = opts.port
     this.host = opts.host
 
-    if (
-      !(
-        typeof opts.registry === 'object' &&
-        !(opts.registry instanceof Promise) &&
-        opts.host === opts.registry.host &&
-        opts.port === opts.registry.port
-      )
-    ) {
-      await startRedis(this, opts)
-    }
-
     if (opts.registry) {
       console.log('create registry client on the server')
       this.registry = connect(opts.registry)
@@ -55,6 +44,8 @@ export class SelvaServer extends EventEmitter {
       console.log('im the registry - register myself')
       this.registry = connect({ port: opts.port })
     }
+
+    await startRedis(this, opts)
 
     attachStatusListeners(this, opts)
 
