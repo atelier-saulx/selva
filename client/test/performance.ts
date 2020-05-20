@@ -14,7 +14,8 @@ import m from 'module'
 
 let registry
 let srv
-let snurf
+let replicas = []
+let replicasAmount = 5
 let subs
 let port: number
 let vms
@@ -31,10 +32,14 @@ test.before(async t => {
     registry: { port }
   })
 
-  snurf = await startReplica({
-    default: true,
-    registry: { port }
-  })
+  for (let i = 0; i < 5; i++) {
+    replicas.push(
+      await startReplica({
+        default: true,
+        registry: { port }
+      })
+    )
+  }
 
   subs = await startSubscriptionManager({
     registry: { port }
@@ -72,7 +77,10 @@ test.after(async _t => {
   await srv.destroy()
   await subs.destroy()
   await registry.destroy()
-  await snurf.destroy()
+
+  for (let i = 0; i < 5; i++) {
+    await replicas[i].destroy()
+  }
 })
 
 test.serial('perf - Set a lot of things', async t => {
