@@ -18,9 +18,8 @@ const sendUpdate = async (
 
   // SCHEMA UPDATES
   if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
-    console.log('SENDING SCHEMA UPDATE FOR', channel)
-    const schemaResp = await redis.getSchema(selector)
-    console.log('SCHEMA RESP', schemaResp)
+    const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
+    const schemaResp = await redis.getSchema({ name: dbName })
     const version = schemaResp.schema.sha
     const value = JSON.stringify({ type: 'update', payload: schemaResp.schema })
     await redis.hmset(
