@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import { ConnectOptions, ServerDescriptor, ClientOpts, LogLevel, ServerType, ServerSelector } from './types'
 import digest from './digest'
 import Redis from './redis'
-import { GetSchemaResult, SchemaOptions, Id } from './schema'
+import { GetSchemaResult, SchemaOptions, Id, Schema } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import {GetOptions, GetResult, get} from './get'
@@ -12,15 +12,18 @@ import id from './id'
 import {DeleteOptions, deleteItem} from './delete'
 import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
-import { observe } from './observe'
+import { observe , observeSchema} from './observe'
 import conformToSchema from './conformToSchema'
 import getServerDescriptor from './redis/getServerDescriptor'
+import Observable from './observe/observable'
 
 export * as constants from './constants'
 
 export class SelvaClient extends EventEmitter {
   public redis: Redis
   public uuid: string
+  public schemaObservables: Record<string, Observable<Schema>> = {}
+  public schemas: Record<string, Schema> = {}
 
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
     super()
@@ -63,6 +66,10 @@ export class SelvaClient extends EventEmitter {
 
   updateSchema(opts: SchemaOptions, name: string = 'default'): Promise<void> {
     return updateSchema(this, opts, { name })
+  }
+
+  subscribeSchema(name: string = 'default'): Observable<Schema> {
+    return observeSchema(this, name)
   }
   
   conformToSchema(props: SetOptions, dbName: string = 'default') {

@@ -28,7 +28,7 @@ const addOriginListeners = (
       // merge tree for checks?
       if (message === 'schema_update') {
         const subscription =
-          subsManager.subscriptions['___selva_subscription:schema_update']
+          subsManager.subscriptions[`${constants.SCHEMA_SUBSCRIPTION}:${name}`]
         if (subscription) {
           addUpdate(subsManager, subscription)
         }

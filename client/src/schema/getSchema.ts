@@ -47,7 +47,7 @@ async function getSchema(
     searchIndexes = JSON.parse(fetchedIndexes)
   }
 
-  // client.schema = schema
+  client.schemas[selector.name] = schema
   // client.searchIndexes = searchIndexes // FIXME: do we need this?
 
   return { schema, searchIndexes }

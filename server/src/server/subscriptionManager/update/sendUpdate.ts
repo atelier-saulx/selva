@@ -17,6 +17,22 @@ const sendUpdate = async (
   getOptions.$includeMeta = true
 
   // SCHEMA UPDATES
+  if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
+    console.log('SENDING SCHEMA UPDATE FOR', channel)
+    const schemaResp = await redis.getSchema(selector)
+    const version = schemaResp.schema.sha
+    const value = JSON.stringify(schemaResp.schema)
+    await redis.hmset(
+      selector,
+      CACHE,
+      channel,
+      value,
+      channel + '_version',
+      version
+    )
+    await redis.publish(selector, channel, version)
+    return
+  }
 
   console.log('snurky', getOptions)
 
