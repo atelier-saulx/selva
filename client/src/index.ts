@@ -5,6 +5,7 @@ import Redis from './redis'
 import { GetSchemaResult, SchemaOptions, Id, Schema } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
+import { getSchema } from './schema/getSchema'
 import {GetOptions, GetResult, get} from './get'
 import {SetOptions, set} from './set'
 import {IdOptions} from 'lua/src/id'
@@ -85,7 +86,7 @@ export class SelvaClient extends EventEmitter {
   }
 
   getSchema(name: string = 'default'): Promise<GetSchemaResult> {
-    return this.redis.getSchema({ name: name })
+    return getSchema(this, { name: name })
   }
 
   async updateSchema(opts: SchemaOptions, name: string = 'default'): Promise<void> {

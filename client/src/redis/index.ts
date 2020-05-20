@@ -10,7 +10,6 @@ import { RedisCommand, Servers, ServersById, Callback } from './types'
 import RedisMethods from './methods'
 import { GetSchemaResult } from '../schema/types'
 import { getClient, Client, addCommandToQueue } from './clients'
-import getSchema from './getSchema'
 import connectRegistry from './connectRegistry'
 import getServerDescriptor from './getServerDescriptor'
 import handleListener from './handleListener'
@@ -43,10 +42,6 @@ class RedisSelvaClient extends RedisMethods {
     super()
     this.selvaClient = selvaClient
     connectRegistry(this, connectOptions)
-  }
-
-  async getSchema(selector: ServerSelector): Promise<GetSchemaResult> {
-    return getSchema(this, selector)
   }
 
   observe(channel: string, props: GetOptions): Observable<GetResult> {

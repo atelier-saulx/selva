@@ -25,8 +25,8 @@ export async function _set(
 }
 
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
-  const schemaResp = await client.getSchema(payload.$db)
-  const schema = schemaResp.schema
+  console.log('SCHEMAS', client.schemas)
+  const schema = client.schemas[payload.$db || 'default']
   const parsed = parseSetObject(payload, schema)
 
   if (parsed.$_itemCount > MAX_BATCH_SIZE) {
