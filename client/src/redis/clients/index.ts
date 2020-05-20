@@ -22,7 +22,6 @@ type ClientOpts = {
 }
 
 export class Client extends EventEmitter {
-  public selvaRedisClient: RedisSelvaClient
   public subscriber: RedisClient
   public publisher: RedisClient
   public queue: RedisCommand[]
@@ -40,12 +39,8 @@ export class Client extends EventEmitter {
   }
   public clients: Set<RedisSelvaClient>
   public heartbeatTimout?: NodeJS.Timeout
-  constructor(
-    selvaRedisClient: RedisSelvaClient,
-    { name, type, host, port, id }: ClientOpts
-  ) {
+  constructor({ name, type, host, port, id }: ClientOpts) {
     super()
-    this.selvaRedisClient = selvaRedisClient
     this.setMaxListeners(10000)
     this.uuid = uuidv4()
     this.name = name
@@ -93,7 +88,9 @@ export class Client extends EventEmitter {
       this.subscriber.on('message', (channel, msg) => {
         if (channel.startsWith(constants.LOG)) {
           const log = JSON.parse(msg)
-          this.selvaRedisClient.selvaClient.logFn(log, this.name)
+          for (const client of this.clients) {
+            client.selvaClient.emit('log', { dbName: this.name, log })
+          }
         }
       })
     }
@@ -110,7 +107,7 @@ const createClient = (
 ): Client => {
   const { type, name, port, host } = descriptor
   const id = `${host}:${port}`
-  const client: Client = new Client(selvaRedisClient, {
+  const client: Client = new Client({
     id,
     name,
     type,
@@ -151,6 +148,8 @@ export function getClient(
   if (type === 'origin' || type === 'replica') {
     loadScripts(client)
   }
+
+  client.clients.add(selvaRedisClient)
   // think a bit more about this
   // addRedisSelvaClient(client, selvaRedisClient)
   return client

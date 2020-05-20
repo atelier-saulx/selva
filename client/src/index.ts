@@ -40,6 +40,10 @@ export class SelvaClient extends EventEmitter {
     this.logFn =
       clientOpts.log || ((l: LogEntry, dbName: string) => console.log(`LUA: [{${dbName}} ${l.level}] ${l.msg}`))
 
+    this.on('log', ({ dbName, log }) => {
+      this.logFn(log, dbName)
+    })
+
     this.redis = new Redis(this, opts)
   }
 
