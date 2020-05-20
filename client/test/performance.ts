@@ -15,7 +15,7 @@ import m from 'module'
 let registry
 let srv
 let replicas = []
-let replicasAmount = 5
+let replicasAmount = 0
 let subs
 let port: number
 let vms
@@ -32,7 +32,7 @@ test.before(async t => {
     registry: { port }
   })
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < replicasAmount; i++) {
     replicas.push(
       await startReplica({
         default: true,
@@ -78,7 +78,7 @@ test.after(async _t => {
   await subs.destroy()
   await registry.destroy()
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < replicasAmount; i++) {
     await replicas[i].destroy()
   }
 })
@@ -100,7 +100,7 @@ test.serial('perf - Set a lot of things', async t => {
 
     let iteration = 1
     let time = 0
-    let amount = 5000
+    let amount = 1500
     const setLoop = async () => {
       // @ts-ignore
       if (global.stopped) {
@@ -125,8 +125,13 @@ test.serial('perf - Set a lot of things', async t => {
 
         await client.set({
           $id: 'root',
-          children: q //{ $add: q }
-          // children: { $add: q }
+          children: q
+        })
+
+        await client.get({
+          $id: 'root',
+          title: true,
+          children: { $list: true, title: true }
         })
 
         // await Promise.all(q)
