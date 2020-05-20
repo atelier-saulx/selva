@@ -40,11 +40,23 @@ export class SelvaClient extends EventEmitter {
     this.redis = new Redis(this, opts, clientOpts)
   }
 
+  private async initializeSchema(opts: any) {
+    const dbName = (typeof opts === 'object' && opts.$db) || 'default'
+
+    if (!this.schemas[dbName]) {
+       await this.getSchema(dbName)
+    }
+
+    if (!this.schemaObservables[dbName]) {
+      // this.subscribeSchema()
+    }
+  }
+
   id(props: IdOptions): Promise<string> {
     return id(this, props)
   }
 
-  get(getOpts: GetOptions): Promise<GetResult> {
+  async get(getOpts: GetOptions): Promise<GetResult> {
     return get(this, getOpts)
   }
 
@@ -52,7 +64,8 @@ export class SelvaClient extends EventEmitter {
     return observe(this, props)
   }
 
-  set(setOpts: SetOptions): Promise<Id | undefined> {
+  async set(setOpts: SetOptions): Promise<Id | undefined> {
+    await this.initializeSchema(setOpts)
     return set(this, setOpts)
   }
 
@@ -68,7 +81,8 @@ export class SelvaClient extends EventEmitter {
     return this.redis.getSchema({ name: name })
   }
 
-  updateSchema(opts: SchemaOptions, name: string = 'default'): Promise<void> {
+  async updateSchema(opts: SchemaOptions, name: string = 'default'): Promise<void> {
+    await this.initializeSchema({ $db: name })
     return updateSchema(this, opts, { name })
   }
 
