@@ -128,12 +128,14 @@ test.serial('perf - Set a lot of things', async t => {
           children: q
         })
 
-        for (let i = 0; i < 100; i++) {
-          await client.get({
+        for (let i = 0; i < 1000; i++) {
+          const x = await client.get({
             $id: 'root',
             title: true,
-            children: {
+            x: {
+              id: true,
               $list: {
+                $limit: 3,
                 $find: {
                   $traverse: 'descendants',
                   $filter: {
@@ -142,8 +144,7 @@ test.serial('perf - Set a lot of things', async t => {
                     $value: 800
                   }
                 }
-              },
-              id: true
+              }
             }
           })
         }
@@ -154,7 +155,11 @@ test.serial('perf - Set a lot of things', async t => {
         iteration++
 
         //@ts-ignore
-        global.total[i] = { amount: iteration * amount, time }
+        global.total[i] = {
+          amount: iteration * amount,
+          time,
+          queries: 1000 * iteration
+        }
 
         // await wait(1e3)
 
@@ -196,6 +201,14 @@ test.serial('perf - Set a lot of things', async t => {
     return a
   }
 
+  const getTotalX = () => {
+    let a = 0
+    for (let key in total) {
+      a += total[key].queries
+    }
+    return a
+  }
+
   const getTotalTime = () => {
     let t = 0
     for (let key in total) {
@@ -210,6 +223,8 @@ test.serial('perf - Set a lot of things', async t => {
     const s = Math.round((Date.now() - time) / 1000) - getTotalTime()
 
     console.log(
+      ` ${Math.round(getTotalX() / s)} queries`,
+
       `${Math.round(
         getTotal() / s
       )}/s Processed ${getTotal()} items in ${s}s using ${clientAmount} clients`
