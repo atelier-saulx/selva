@@ -103,10 +103,7 @@ const clients: Map<string, Client> = new Map()
 
 // sharing on or just putting a seperate on per subscription and handling it from somewhere else?
 
-const createClient = (
-  selvaRedisClient: RedisSelvaClient,
-  descriptor: ServerDescriptor
-): Client => {
+const createClient = (descriptor: ServerDescriptor): Client => {
   const { type, name, port, host } = descriptor
   const id = `${host}:${port}`
   const client: Client = new Client({
@@ -143,7 +140,7 @@ export function getClient(
   const id = host + ':' + port
   let client = clients.get(id)
   if (!client) {
-    client = createClient(selvaRedisClient, descriptor)
+    client = createClient(descriptor)
     clients.set(id, client)
   }
   if (type === 'origin' || type === 'replica') {
