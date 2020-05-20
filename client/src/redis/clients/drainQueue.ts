@@ -45,10 +45,6 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
                     constants.SCRIPT.length + 1
                   )
                 )
-
-                const logArgs = (<string>redisCommand.args[2]).split(':')
-                logArgs[1] = client.uuid
-                redisCommand.args[2] = logArgs.join(':')
               }
 
               if (script === `${constants.SCRIPT}:modify`) {

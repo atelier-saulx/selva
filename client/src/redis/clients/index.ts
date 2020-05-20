@@ -2,7 +2,7 @@ import { RedisClient } from 'redis'
 import { RedisCommand } from '../types'
 import RedisSelvaClient from '../'
 import './redisSearch'
-import { ServerType, ServerDescriptor } from '../../types'
+import { ServerType, ServerDescriptor, LogEntry } from '../../types'
 import { EventEmitter } from 'events'
 import createRedisClient from './createRedisClient'
 import { loadScripts } from './scripts'
@@ -87,9 +87,11 @@ export class Client extends EventEmitter {
     } else {
       this.subscriber.on('message', (channel, msg) => {
         if (channel.startsWith(constants.LOG)) {
-          const log = JSON.parse(msg)
+          const log: LogEntry = JSON.parse(msg)
           for (const client of this.clients) {
-            client.selvaClient.emit('log', { dbName: this.name, log })
+            if (client.selvaClient.uuid === log.clientId) {
+              client.selvaClient.emit('log', { dbName: this.name, log })
+            }
           }
         }
       })
@@ -143,13 +145,18 @@ export function getClient(
   if (!client) {
     client = createClient(selvaRedisClient, descriptor)
     clients.set(id, client)
-    client.subscriber.subscribe(`${constants.LOG}:${client.uuid}`)
   }
   if (type === 'origin' || type === 'replica') {
     loadScripts(client)
   }
 
-  client.clients.add(selvaRedisClient)
+  if (!client.clients.has(selvaRedisClient)) {
+    client.subscriber.subscribe(
+      `${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`
+    )
+    client.clients.add(selvaRedisClient)
+  }
+
   // think a bit more about this
   // addRedisSelvaClient(client, selvaRedisClient)
   return client
