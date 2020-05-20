@@ -9,10 +9,7 @@ function hash(str: string): number {
   return hash >>> 0
 }
 
-async function getIdPrefix(
-  client: SelvaClient,
-  { db, type }: IdOptions
-): Promise<string> {
+function getIdPrefix(client: SelvaClient, { db, type }: IdOptions): string {
   const schema = client.schemas[db || 'default']
 
   const typeSchema = schema.types[type]
@@ -23,11 +20,8 @@ async function getIdPrefix(
   return typeSchema.prefix
 }
 
-export default async function genId(
-  client: SelvaClient,
-  idOpts: IdOptions
-): Promise<string> {
-  const prefix = await getIdPrefix(client, idOpts)
+export default function genId(client: SelvaClient, idOpts: IdOptions): string {
+  const prefix = getIdPrefix(client, idOpts)
   return prefix + hash(uuid()).toString(16)
 }
 

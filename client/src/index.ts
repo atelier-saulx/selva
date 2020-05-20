@@ -60,7 +60,7 @@ export class SelvaClient extends EventEmitter {
     }
   }
 
-  id(props: IdOptions): Promise<string> {
+  id(props: IdOptions): string {
     return id(this, props)
   }
 
