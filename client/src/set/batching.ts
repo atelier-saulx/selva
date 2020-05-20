@@ -4,7 +4,7 @@ import { Schema } from '../schema'
 import { _set } from '.'
 
 // import { MAX_BATCH_SIZE } from '../redis'
-export const MAX_BATCH_SIZE = 5500
+export const MAX_BATCH_SIZE = 3500
 
 export async function setInBatches(
   schemas: Schema,

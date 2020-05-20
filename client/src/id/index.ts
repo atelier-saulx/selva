@@ -14,8 +14,7 @@ async function getIdPrefix(
   client: SelvaClient,
   { db, type }: IdOptions
 ): Promise<string> {
-  const schemaResp = await getSchema(client, { name: db || 'default' })
-  const schema = schemaResp.schema
+  const schema = client.schemas[db || 'default']
 
   const typeSchema = schema.types[type]
   if (!typeSchema) {
