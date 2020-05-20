@@ -22,6 +22,7 @@ export * as constants from './constants'
 export class SelvaClient extends EventEmitter {
   public redis: Redis
   public uuid: string
+  public loglevel: string
   public schemaObservables: Record<string, Observable<Schema>> = {}
   public schemas: Record<string, Schema> = {}
 
@@ -31,8 +32,11 @@ export class SelvaClient extends EventEmitter {
     this.uuid = uuidv4()
     this.setMaxListeners(10000)
     if (!clientOpts) {
-      clientOpts = {}
+      clientOpts = {  }
     }
+
+    this.loglevel = clientOpts.loglevel || 'warning'
+
     this.redis = new Redis(this, opts, clientOpts)
   }
 

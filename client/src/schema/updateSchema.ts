@@ -248,7 +248,7 @@ export async function updateSchema(
       selector,
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it
       0,
-      `${this.loglevel}:${this.clientId}`,
+      `${client.loglevel}:${client.uuid}`,
       JSON.stringify(newSchema)
     )
     // if (updated) {

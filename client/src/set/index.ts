@@ -15,7 +15,7 @@ export async function _set(
     { name: db || 'default' },
     `${SCRIPT}:modify`,
     0,
-    `undefined:undefined`,
+    `${client.loglevel}:${client.uuid}`,
     schemaSha,
     JSON.stringify({
       kind: 'update',

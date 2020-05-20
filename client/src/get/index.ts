@@ -215,7 +215,7 @@ async function get(
       { name: props.$db || 'default', type: 'replica' },
       `${SCRIPT}:fetch`,
       0,
-      `undefined:undefined`,
+      `${client.loglevel}:${client.uuid}`,
       // `${client.loglevel}:${client.clientId}`,
       JSON.stringify(newProps)
     )

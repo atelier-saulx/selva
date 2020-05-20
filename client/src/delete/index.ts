@@ -13,7 +13,7 @@ async function deleteItem(
     { name: db || 'default' },
     `${SCRIPT}:modify`,
     0,
-    `undefined:undefined`,
+    `${client.loglevel}:${client.uuid}`,
     schemaResp.schema.sha,
     JSON.stringify({
       kind: 'delete',
