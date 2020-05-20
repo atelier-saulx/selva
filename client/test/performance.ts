@@ -15,7 +15,7 @@ import m from 'module'
 let registry
 let srv
 let replicas = []
-let replicasAmount = 0
+let replicasAmount = 5
 let subs
 let port: number
 let vms
@@ -128,23 +128,25 @@ test.serial('perf - Set a lot of things', async t => {
           children: q
         })
 
-        await client.get({
-          $id: 'root',
-          title: true,
-          children: { $list: true, id: true }
-        })
-
-        await client.get({
-          $id: 'root',
-          title: true,
-          children: { $list: true, id: true }
-        })
-
-        await client.get({
-          $id: 'root',
-          title: true,
-          children: { $list: true, id: true }
-        })
+        for (let i = 0; i < 100; i++) {
+          await client.get({
+            $id: 'root',
+            title: true,
+            children: {
+              $list: {
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: {
+                    $field: 'value',
+                    $operator: '>',
+                    $value: 800
+                  }
+                }
+              },
+              id: true
+            }
+          })
+        }
 
         // await Promise.all(q)
         time += 1
