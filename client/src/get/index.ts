@@ -216,7 +216,6 @@ async function get(
       `${SCRIPT}:fetch`,
       0,
       `${client.loglevel}:${client.uuid}`,
-      // `${client.loglevel}:${client.clientId}`,
       JSON.stringify(newProps)
     )
   )

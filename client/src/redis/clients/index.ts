@@ -22,6 +22,7 @@ type ClientOpts = {
 }
 
 export class Client extends EventEmitter {
+  public selvaRedisClient: RedisSelvaClient
   public subscriber: RedisClient
   public publisher: RedisClient
   public queue: RedisCommand[]
@@ -39,8 +40,12 @@ export class Client extends EventEmitter {
   }
   public clients: Set<RedisSelvaClient>
   public heartbeatTimout?: NodeJS.Timeout
-  constructor({ name, type, host, port, id }: ClientOpts) {
+  constructor(
+    selvaRedisClient: RedisSelvaClient,
+    { name, type, host, port, id }: ClientOpts
+  ) {
     super()
+    this.selvaRedisClient = selvaRedisClient
     this.setMaxListeners(10000)
     this.uuid = uuidv4()
     this.name = name
@@ -80,11 +85,15 @@ export class Client extends EventEmitter {
     if (isSubscriptionManager) {
       this.observers = {}
       this.subscriber.on('message', (channel, msg) => {
-        if (channel.startsWith(constants.LOG)) {
-          // TODO: use log()
-          console.log(msg)
-        } else if (this.observers[channel]) {
+        if (this.observers[channel]) {
           getObserverValue(this, channel)
+        }
+      })
+    } else {
+      this.subscriber.on('message', (channel, msg) => {
+        if (channel.startsWith(constants.LOG)) {
+          const log = JSON.parse(msg)
+          this.selvaRedisClient.selvaClient.logFn(log, this.name)
         }
       })
     }
@@ -95,10 +104,13 @@ const clients: Map<string, Client> = new Map()
 
 // sharing on or just putting a seperate on per subscription and handling it from somewhere else?
 
-const createClient = (descriptor: ServerDescriptor): Client => {
+const createClient = (
+  selvaRedisClient: RedisSelvaClient,
+  descriptor: ServerDescriptor
+): Client => {
   const { type, name, port, host } = descriptor
   const id = `${host}:${port}`
-  const client: Client = new Client({
+  const client: Client = new Client(selvaRedisClient, {
     id,
     name,
     type,
@@ -132,11 +144,9 @@ export function getClient(
   const id = host + ':' + port
   let client = clients.get(id)
   if (!client) {
-    client = createClient(descriptor)
+    client = createClient(selvaRedisClient, descriptor)
     clients.set(id, client)
-    client.subscriber.subscribe(
-      `${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`
-    )
+    client.subscriber.subscribe(`${constants.LOG}:${client.uuid}`)
   }
   if (type === 'origin' || type === 'replica') {
     loadScripts(client)
