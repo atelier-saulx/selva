@@ -251,9 +251,10 @@ export async function updateSchema(
       `${client.loglevel}:${client.uuid}`,
       JSON.stringify(newSchema)
     )
-    // if (updated) {
-    //   this.schema = JSON.parse(updated)
-    // }
+
+    if (updated) {
+      client.schemas[selector.name] = JSON.parse(updated)
+    }
   } catch (e) {
     if (
       e.stack.includes(
