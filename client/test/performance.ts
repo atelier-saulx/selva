@@ -128,28 +128,32 @@ test.serial('perf - Set a lot of things', async t => {
           children: q
         })
 
+        const x = []
+
         for (let i = 0; i < 1000; i++) {
-          const x = await client.get({
-            $id: 'root',
-            title: true,
-            x: {
-              id: true,
-              $list: {
-                $limit: 3,
-                $find: {
-                  $traverse: 'descendants',
-                  $filter: {
-                    $field: 'value',
-                    $operator: '>',
-                    $value: 800
+          x.push(
+            client.get({
+              $id: 'root',
+              title: true,
+              x: {
+                id: true,
+                $list: {
+                  $limit: 3,
+                  $find: {
+                    $traverse: 'descendants',
+                    $filter: {
+                      $field: 'value',
+                      $operator: '>',
+                      $value: 800
+                    }
                   }
                 }
               }
-            }
-          })
+            })
+          )
         }
 
-        // await Promise.all(q)
+        await Promise.all(x)
         time += 1
 
         iteration++
