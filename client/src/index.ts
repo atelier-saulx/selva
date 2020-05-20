@@ -32,7 +32,7 @@ export class SelvaClient extends EventEmitter {
     this.uuid = uuidv4()
     this.setMaxListeners(10000)
     if (!clientOpts) {
-      clientOpts = {  }
+      clientOpts = {}
     }
 
     this.loglevel = clientOpts.loglevel || 'warning'

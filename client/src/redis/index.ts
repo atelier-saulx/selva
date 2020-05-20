@@ -1,5 +1,11 @@
 import { SelvaClient } from '../'
-import { ClientOpts, ConnectOptions, ServerSelector } from '../types'
+import {
+  ClientOpts,
+  ConnectOptions,
+  ServerSelector,
+  LogFn,
+  LogEntry
+} from '../types'
 import { RedisCommand, Servers, ServersById, Callback } from './types'
 import RedisMethods from './methods'
 import { GetSchemaResult } from '../schema/types'
@@ -23,6 +29,7 @@ class RedisSelvaClient extends RedisMethods {
   }[] = []
 
   public registry: Client
+  public logFn: LogFn
 
   public servers: Servers
 
@@ -39,6 +46,10 @@ class RedisSelvaClient extends RedisMethods {
   ) {
     super()
     this.selvaClient = selvaClient
+    this.logFn =
+      opts.log ||
+      ((l: LogEntry, dbName: string) =>
+        console.log(`LUA: [{${dbName}} ${l.level}] ${l.msg}`))
     connectRegistry(this, connectOptions)
   }
 

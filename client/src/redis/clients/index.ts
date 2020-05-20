@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid'
 import startHeartbeat from './startHeartbeat'
 import { ObserverEmitter } from '../observers'
 import { getObserverValue } from './observers'
+import * as constants from '../../constants'
 
 type ClientOpts = {
   name: string
@@ -78,8 +79,11 @@ export class Client extends EventEmitter {
 
     if (isSubscriptionManager) {
       this.observers = {}
-      this.subscriber.on('message', channel => {
-        if (this.observers[channel]) {
+      this.subscriber.on('message', (channel, msg) => {
+        if (channel.startsWith(constants.LOG)) {
+          // TODO: use log()
+          console.log(msg)
+        } else if (this.observers[channel]) {
           getObserverValue(this, channel)
         }
       })
@@ -130,8 +134,10 @@ export function getClient(
   if (!client) {
     client = createClient(descriptor)
     clients.set(id, client)
+    // TODO: add selva client id
+    client.subscriber.subscribe(`${constants.LOG}`)
   }
-  if (type === 'origin' || /* TODO: remove */ type === 'registry') {
+  if (type === 'origin' || type === 'replica') {
     loadScripts(client)
   }
   // think a bit more about this
