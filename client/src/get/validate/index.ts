@@ -181,21 +181,21 @@ export default function validateTopLevel(
           )
         }
 
-        // TODO
-        // if (client.schema) {
-        //   if (
-        //     !client.schema.languages ||
-        //     !client.schema.languages.includes(props.$language)
-        //   ) {
-        //     throw new Error(
-        //       `$language ${
-        //         props.$language
-        //       } is unsupported, should be one of: ${client.schema.languages.join(
-        //         ', '
-        //       )}`
-        //     )
-        //   }
-        // }
+        const schema = client.schemas[props.$db || 'default']
+        if (schema) {
+          if (
+            !schema.languages ||
+            !schema.languages.includes(props.$language)
+          ) {
+            throw new Error(
+              `$language ${
+                props.$language
+              } is unsupported, should be one of: ${schema.languages.join(
+                ', '
+              )}`
+            )
+          }
+        }
       } else if (field === '$rawAncestors') {
         if (typeof props.$rawAncestors !== 'boolean') {
           throw new Error(`$rawAncestors should be a boolean value`)
