@@ -22,7 +22,6 @@ const addOriginListeners = (
     console.log('ADD DAT ORIGIN COME ON!', name)
 
     const listener = (_pattern, channel, message) => {
-      console.log('EVENT', channel, name, subsManager.tree[name])
       subsManager.incomingCount++
       collect++
       // use this for batching here

@@ -78,8 +78,8 @@ test.serial('perf - Set a lot of things', async t => {
       port
     })
 
-    client.on('connect', () => {
-      console.log('connect main client!')
+    client.redis.registry.on('connect', () => {
+      console.log('ceonnect vm client!')
     })
 
     let iteration = 1
@@ -132,10 +132,7 @@ test.serial('perf - Set a lot of things', async t => {
       }
     }
 
-    client.on('connect', () => {
-      console.log(`Connected ${i}`)
-      setTimeout(setLoop, 1e3)
-    })
+    setTimeout(setLoop, 1e3)
   }
 
   const vms = []
