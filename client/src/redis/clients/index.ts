@@ -134,8 +134,9 @@ export function getClient(
   if (!client) {
     client = createClient(descriptor)
     clients.set(id, client)
-    // TODO: add selva client id
-    client.subscriber.subscribe(`${constants.LOG}`)
+    client.subscriber.subscribe(
+      `${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`
+    )
   }
   if (type === 'origin' || type === 'replica') {
     loadScripts(client)

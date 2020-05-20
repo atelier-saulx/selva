@@ -39,17 +39,9 @@ class RedisSelvaClient extends RedisMethods {
   public observables: Record<string, Observable<GetResult>> = {}
   public observerEmitters: Record<string, ObserverEmitter> = {}
 
-  constructor(
-    selvaClient: SelvaClient,
-    connectOptions: ConnectOptions,
-    opts: ClientOpts // for logs
-  ) {
+  constructor(selvaClient: SelvaClient, connectOptions: ConnectOptions) {
     super()
     this.selvaClient = selvaClient
-    this.logFn =
-      opts.log ||
-      ((l: LogEntry, dbName: string) =>
-        console.log(`LUA: [{${dbName}} ${l.level}] ${l.msg}`))
     connectRegistry(this, connectOptions)
   }
 

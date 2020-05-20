@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { ConnectOptions, ServerDescriptor, ClientOpts, LogLevel, ServerType, ServerSelector } from './types'
+import { ConnectOptions, ServerDescriptor, ClientOpts, LogLevel, ServerType, ServerSelector, LogFn, LogEntry } from './types'
 import digest from './digest'
 import Redis from './redis'
 import { GetSchemaResult, SchemaOptions, Id, Schema } from './schema'
@@ -22,6 +22,7 @@ export * as constants from './constants'
 export class SelvaClient extends EventEmitter {
   public redis: Redis
   public uuid: string
+  public logFn: LogFn
   public loglevel: string
   public schemaObservables: Record<string, Observable<Schema>> = {}
   public schemas: Record<string, Schema> = {}
@@ -36,8 +37,10 @@ export class SelvaClient extends EventEmitter {
     }
 
     this.loglevel = clientOpts.loglevel || 'warning'
+    this.logFn =
+      clientOpts.log || ((l: LogEntry, dbName: string) => console.log(`LUA: [{${dbName}} ${l.level}] ${l.msg}`))
 
-    this.redis = new Redis(this, opts, clientOpts)
+    this.redis = new Redis(this, opts)
   }
 
   private async initializeSchema(opts: any) {
