@@ -132,7 +132,7 @@ export async function startReplica(opts: Options) {
   // default name is 'main'
   const err = validate(parsedOpts, ['registry', 'name'], ['backups'])
   if (err) {
-    console.error(`Error starting origin selva server ${chalk.red(err)}`)
+    console.error(`Error starting replica selva server ${chalk.red(err)}`)
     throw new Error(err)
   }
   return startServer('replica', parsedOpts)
@@ -211,3 +211,5 @@ export async function start(opts: Options) {
 
   return registry
 }
+
+export { SelvaServer }

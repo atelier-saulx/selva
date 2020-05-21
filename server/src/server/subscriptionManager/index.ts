@@ -42,9 +42,7 @@ export const stopSubscriptionManager = (
   state: SubscriptionManagerState
 ): Promise<void> => {
   return new Promise(resolve => {
-    console.log('Destroy subs worker')
     state.worker.once('destroyComplete', async () => {
-      console.log('Destroy complete!')
       state.worker.removeAllListeners()
       delete state.worker
       resolve()

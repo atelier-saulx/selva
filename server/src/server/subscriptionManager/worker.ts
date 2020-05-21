@@ -3,7 +3,6 @@ import { SubscriptionManager } from './types'
 import { SelvaClient, constants } from '@saulx/selva'
 import { parentPort } from 'worker_threads'
 import addListeners from './addListeners'
-import chalk from 'chalk'
 import updateSubscriptionData from './updateSubscriptionData'
 
 process.env.SELVA_SERVER_TYPE = 'subscriptionManager'
@@ -45,8 +44,6 @@ const revalidateSubscriptions = (subsManager: SubscriptionManager) => {
 const createSubscriptionManager = (
   opts: ServerOptions
 ): SubscriptionManager => {
-  console.log(chalk.white('Start subscriptionManager worker'))
-
   const client = new SelvaClient(opts.registry)
 
   const subsManager: SubscriptionManager = {
@@ -67,8 +64,6 @@ const createSubscriptionManager = (
   }
 
   client.redis.registry.on('connect', () => {
-    console.log(chalk.white('Connected subscriptionManager selva client'))
-
     addListeners(subsManager)
     startServerHeartbeat(subsManager)
     updateSubscriptionData(subsManager)
@@ -82,7 +77,6 @@ const createSubscriptionManager = (
   })
 
   client.redis.registry.on('disconnect', () => {
-    console.log('disconnect server-client')
     clear(subsManager)
   })
 
@@ -110,7 +104,6 @@ parentPort.on('message', (message: string) => {
       }
       subsManager = createSubscriptionManager(<ServerOptions>payload)
     } else if (event === 'destroy') {
-      console.log('Destroy subs client')
       destroy(subsManager)
     }
   } catch (_err) {}

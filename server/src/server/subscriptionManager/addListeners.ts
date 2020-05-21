@@ -8,13 +8,10 @@ const { HEARTBEAT, CLIENTS, REMOVE_SUBSCRIPTION, NEW_SUBSCRIPTION } = constants
 const addListeners = async (
   subsManager: SubscriptionManager
 ): Promise<void> => {
-  console.log('Server add listeners')
   const { selector } = subsManager
   const redis = subsManager.client.redis
 
   redis.on(selector, 'message', (channel, message) => {
-    console.log('YO', channel)
-
     if (channel === HEARTBEAT) {
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {

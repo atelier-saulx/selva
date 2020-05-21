@@ -37,13 +37,10 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   })
 
   if (server.type === 'replica') {
-    console.log('hello is there a registry?')
-
     const origin = await server.registry.getServerDescriptor({
       name: opts.name,
       type: 'origin'
     })
-    console.log('yo mofos its a replica!', origin)
     args.push('--replicaof', origin.host, String(origin.port))
   }
 
