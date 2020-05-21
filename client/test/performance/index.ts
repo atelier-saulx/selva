@@ -22,7 +22,7 @@ test.after(async _t => {
 test.serial('Perf - Set a lot of things', async t => {
   console.log('perf it!')
 
-  const time = await run(
+  const result = await run(
     async client => {
       console.log('GO')
       client.set({
@@ -32,10 +32,13 @@ test.serial('Perf - Set a lot of things', async t => {
       await wait(50)
     },
     {
+      label: 'simple set',
       clients: 2,
       time: 1e3
     }
   )
+
+  //   console.log(result)
 
   t.true(true)
 })
