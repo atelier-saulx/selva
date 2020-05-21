@@ -67,7 +67,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
         const clientsSet: Set<string> = new Set()
         for (let i = subscriptionClients.length - 1; i >= 0; i--) {
           const client = subscriptionClients[i]
-          if (client in this.clients) {
+          if (client in subsManager.clients) {
             clientsSet.add(client)
           } else {
             subscriptionClients.splice(i, 1)
