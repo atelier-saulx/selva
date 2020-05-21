@@ -22,6 +22,10 @@ const traverse = (
   }
 
   let segment = subscriptionManager.tree[dbName]
+  if (!segment) {
+    return
+  }
+
   let prefix: string | undefined
   for (let i = 1; i < path.length; i++) {
     segment = segment[path[i]]
