@@ -74,7 +74,7 @@ export async function stop() {
 
 const startClient = (
   fn: (client: SelvaClient) => void,
-  opts: { time: number; clients: number }
+  opts: { label?: string; time: number; clients: number }
 ): Promise<void> => {
   return new Promise(r => {
     const worker = (this.worker = new Worker(
@@ -103,15 +103,51 @@ const startClient = (
 
 export async function run(
   fn: (client: SelvaClient) => void,
-  opts: { time: number; clients: number } = { time: 5e3, clients: 5 }
-): Promise<number> {
+  opts: { label?: string; time: number; clients: number } = {
+    time: 5e3,
+    clients: 5
+  }
+): Promise<{ total: number; mean: number; iterations: number }> {
   const q = []
+
+  console.log(
+    chalk.blue(
+      `Start performance test with ${chalk.white(
+        opts.clients
+      )} clients for ${chalk.white(opts.time / 1000)} seconds`
+    )
+  )
+
   for (let i = 0; i < opts.clients; i++) {
     q.push(startClient(fn, opts))
   }
   const results = await Promise.all(q)
+
+  let mean: number
+  let total = 0
+  let label = opts.label || ''
+  let totalIterations = 0
+
   results.forEach((v, i) => {
-    console.log('client', i, v.payload.time.length, 'iterations')
+    totalIterations += v.payload.time.length
+    v.payload.time.forEach(t => {
+      total += t
+    })
   })
-  return 10
+
+  mean = total / totalIterations
+
+  let totalPerClient = total / opts.clients
+
+  console.log(
+    chalk.blue(
+      `${label || 'Test'} result ${chalk.white(
+        totalIterations
+      )} iterations in ${chalk.white(opts.time / 1000)} seconds ${chalk.white(
+        mean
+      ) + ' ms'} / iteration`
+    )
+  )
+
+  return { total: totalPerClient, mean, iterations: totalIterations }
 }
