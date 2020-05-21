@@ -35,8 +35,8 @@ export async function start({ replicas = 0, subsManagers = 0 } = {}): Promise<{
   origin = await startOrigin({
     registry: { port },
     default: true,
-    port: 6379,
-    attachToExisting: true
+    port: 6379
+    // attachToExisting: true
   })
 
   const client = connect({ port })

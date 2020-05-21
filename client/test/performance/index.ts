@@ -25,12 +25,10 @@ test.serial('Perf - Simple increment', async t => {
       const x = []
       const p = []
 
-      let tmp = []
-
-      for (let i = 0; i < 10000; i++) {
-        x.push({ flap: 'x' })
-        tmp.push('redis.call("hset", "x", "y", 1)')
-        tmp.push('redis.call("publish", "x", "y")')
+      for (let i = 0; i < 1000; i++) {
+        x.push('yabbadabba:yabbadabba')
+        x.push('yabbadabbayabbadabbayabbadabba')
+        x.push(JSON.stringify({ flap: 'x' }))
       }
 
       // json parse?
@@ -49,10 +47,25 @@ test.serial('Perf - Simple increment', async t => {
 
       p.push(
         client.redis.eval(
-          `${tmp.join('\n')}
-          cjson.decode('${JSON.stringify(x)}')
-           return 1`,
-          0
+          `local i = 0
+          local j = 0
+
+          local result = {}
+          while i < #ARGV do
+            cjson.decode(ARGV[i + 3])
+            redis.call("hset", "x", "y", 1)
+            redis.call("publish", "x", "y")
+
+            result[j] = "yabbadabba"
+
+            do
+              i = i + 3
+              j = j + 1
+            end
+          end
+          return cjson.encode(result)`,
+          0,
+          ...x
         )
       )
 
