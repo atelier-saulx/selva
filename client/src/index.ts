@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { ConnectOptions, ServerDescriptor, ClientOpts, LogLevel, ServerType, ServerSelector, LogFn, LogEntry } from './types'
+import { ConnectOptions, ServerDescriptor, ClientOpts, ServerType, ServerSelector, LogFn, LogEntry } from './types'
 import digest from './digest'
 import Redis from './redis'
 import { GetSchemaResult, SchemaOptions, Id, Schema } from './schema'
@@ -52,15 +52,16 @@ export class SelvaClient extends EventEmitter {
     const dbName = (typeof opts === 'object' && opts.$db) || 'default'
 
     if (!this.schemas[dbName]) {
-       await this.getSchema(dbName)
+      await this.getSchema(dbName)
     }
 
     if (!this.schemaObservables[dbName]) {
-      // this.subscribeSchema()
+      this.subscribeSchema()
     }
   }
 
-  id(props: IdOptions): string {
+  async id(props: IdOptions): Promise<string> {
+    await this.initializeSchema({ $db: props.db || 'default' })
     return id(this, props)
   }
 
