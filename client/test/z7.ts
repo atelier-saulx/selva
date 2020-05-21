@@ -39,13 +39,13 @@ test.serial(
 
     await client.set({
       type: 'sport',
-      $id: 'sp1',
+      $id: 'sp11',
       parents: {
         $add: []
       }
     })
 
-    t.deepEqualIgnoreOrder(await client.get({ $id: 'sp1', ancestors: true }), {
+    t.deepEqualIgnoreOrder(await client.get({ $id: 'sp11', ancestors: true }), {
       ancestors: ['root']
     })
   }
