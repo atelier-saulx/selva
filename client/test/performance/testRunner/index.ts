@@ -144,8 +144,8 @@ export async function run(
       `${label || 'Test'} result ${chalk.white(
         totalIterations
       )} iterations in ${chalk.white(opts.time / 1000)} seconds ${chalk.white(
-        mean
-      ) + ' ms'} / iteration`
+        totalIterations / (opts.time / 1e3)
+      )} / second`
     )
   )
 
