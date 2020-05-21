@@ -25,51 +25,96 @@ test.serial('Perf - Simple increment', async t => {
       const x = []
       const p = []
 
-      for (let i = 0; i < 1000; i++) {
-        x.push('yabbadabba:yabbadabba')
-        x.push('yabbadabbayabbadabbayabbadabba')
+      for (let i = 0; i < 1e4; i++) {
+        // x.push('yabbadabba:yabbadabba')
+        // x.push('yabbadabbayabbadabbayabbadabba')
         x.push(JSON.stringify({ flap: 'x' }))
+        // x.push({ flap: 'x' })
       }
-
-      // json parse?
-      // stringify it
-
-      // for (let i = 0; i < 1000; i++) {
-      //   // p.push(
-      //   //   client.set({
-      //   //     $id: 'root',
-      //   //     value: i
-      //   //   })
-      //   // )
-      //   // p.push(client.redis.set('flurp', i))
-      //   p.push(client.redis.eval('return redis.call("hset", "x", "y", 1)', 0))
-      // }
-
-      p.push(
-        client.redis.eval(
-          `local i = 0
+      //@ts-ignore
+      if (!global.isEVALSHA) {
+        p.push(
+          client.redis.command(
+            'script',
+            'load',
+            `local i = 0
           local j = 0
 
           local result = {}
           while i < #ARGV do
-            cjson.decode(ARGV[i + 3])
+            cjson.decode(ARGV[i + 1])
             redis.call("hset", "x", "y", 1)
             redis.call("publish", "x", "y")
 
-            result[j] = "yabbadabba"
+            result[j + 1] = "yabbadabba"
 
             do
-              i = i + 3
+              i = i + 1
               j = j + 1
             end
           end
-          return cjson.encode(result)`,
-          0,
-          ...x
+          return cjson.encode(result)`
+          )
         )
-      )
 
-      await Promise.all(p)
+        const y = await Promise.all(p)
+        console.log(y)
+        //@ts-ignore
+        global.isEVALSHA = y[0]
+      } else {
+        // json parse?
+        // stringify it
+
+        // for (let i = 0; i < 1000; i++) {
+        //   // p.push(
+        //   //   client.set({
+        //   //     $id: 'root',
+        //   //     value: i
+        //   //   })
+        //   // )
+        //   // p.push(client.redis.set('flurp', i))
+        //   p.push(client.redis.eval('return redis.call("hset", "x", "y", 1)', 0))
+        // }
+
+        // cjson add arround 10ms
+        //@ts-ignore
+
+        // for (let i = 0; i < 1e3; i++) {
+        // p.push(
+        //   client.redis.eval(
+        //     `local i = 0
+        // local j = 0
+
+        // local result = {}
+        // local x = cjson.decode('${JSON.stringify(x)}')
+        // while i < #x do
+        //   redis.call("hset", "x", "y", 1)
+        //   redis.call("publish", "x", "y")
+        //   result[j + 1] = "yabbadabba"
+        //   do
+        //     i = i + 1
+        //     j = j + 1
+        //   end
+        // end
+        // return cjson.encode(result)`,
+        //     0
+        //   )
+        // )
+        // }
+
+        // for (let i = 0; i < 1e4; i++) {
+
+        // make nice!
+        p.push(client.redis.command('selva.id'))
+        // }
+
+        // for (let i = 0; i < 1e3; i++) {
+        //   //@ts-ignore
+        // p.push(client.redis.evalsha(global.isEVALSHA, 0, ...x))
+        // }
+
+        await Promise.all(p)
+      }
     },
     {
       label: 'Simple increment',

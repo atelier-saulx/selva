@@ -4,6 +4,8 @@
 #include "../rmutil/strings.h"
 #include "../rmutil/test_util.h"
 
+
+
 char *genUuid(char *uuid_str) {
   uuid_t uuid;
 
@@ -19,6 +21,7 @@ int hash(char *hash_str, char *str, size_t strlen) {
   while (i) {
     hash = (hash * 33) ^ (int)(str[--i]);
   }
+  
 
   return sprintf(hash_str, "%x", (unsigned int)hash >> 0);
 }
@@ -27,28 +30,44 @@ int GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   // init auto memory for created strings
   RedisModule_AutoMemory(ctx);
 
-  if (argc > 2) {
-    return RedisModule_WrongArity(ctx);
+  // if (argc > 2) {
+  //   return RedisModule_WrongArity(ctx);
+  // }
+
+  RedisModuleCallReply *r;
+
+  for (int i = 0; i < 10000; i++) {
+    r =
+      RedisModule_Call(ctx, "hset", "ccc", "foo", "bar");
+    r =
+      RedisModule_Call(ctx, "publish", "x", "y");
   }
 
-  if (argc == 2) {
-    const char *uuid_str = RedisModule_StringPtrLen(argv[1], NULL);
-    char hash_str[37];
-    hash(hash_str, uuid_str, strlen(uuid_str));
-    RedisModuleString *reply =
-        RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
-    RedisModule_ReplyWithString(ctx, reply);
-    return REDISMODULE_OK;
-  } else {
-    char uuid_str[37];
-    genUuid(uuid_str);
-    char hash_str[37];
-    hash(hash_str, uuid_str, 37);
-    RedisModuleString *reply =
-        RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
-    RedisModule_ReplyWithString(ctx, reply);
-    return REDISMODULE_OK;
-  }
+
+  RedisModuleString *reply =
+    RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
+
+  // if (argc == 2) {
+  //   const char *uuid_str = RedisModule_StringPtrLen(argv[1], NULL);
+  //   char hash_str[37];
+  //   hash(hash_str, uuid_str, strlen(uuid_str));
+  //   RedisModuleString *reply =
+  //       RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
+  //   RedisModule_ReplyWithString(ctx, reply);
+  //   return REDISMODULE_OK;
+  // } else {
+  //   char uuid_str[37];
+  //   genUuid(uuid_str);
+  //   char hash_str[37];
+  //   hash(hash_str, uuid_str, 37);
+  //   RedisModuleString *reply =
+  //       RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
+  //   RedisModule_ReplyWithString(ctx, reply);
+  //   return REDISMODULE_OK;
+  // }
+  RedisModule_ReplyWithString(ctx, reply);
+  return REDISMODULE_OK;
+
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {

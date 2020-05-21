@@ -32,3 +32,6 @@ redisSearchCommands.forEach(cmd => {
   // @ts-ignore
   redis.add_command(`FT.${cmd}`)
 })
+
+// @ts-ignore
+redis.add_command('selva.id')
