@@ -1,19 +1,27 @@
 import { EventEmitter } from 'events'
-import { ConnectOptions, ServerDescriptor, ClientOpts, ServerType, ServerSelector, LogFn, LogEntry } from './types'
+import {
+  ConnectOptions,
+  ServerDescriptor,
+  ClientOpts,
+  ServerType,
+  ServerSelector,
+  LogFn,
+  LogEntry
+} from './types'
 import digest from './digest'
 import Redis from './redis'
 import { GetSchemaResult, SchemaOptions, Id, Schema } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
-import {GetOptions, GetResult, get} from './get'
-import {SetOptions, set} from './set'
-import {IdOptions} from 'lua/src/id'
+import { GetOptions, GetResult, get } from './get'
+import { SetOptions, set } from './set'
+import { IdOptions } from 'lua/src/id'
 import id from './id'
-import {DeleteOptions, deleteItem} from './delete'
+import { DeleteOptions, deleteItem } from './delete'
 import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
-import { observe , observeSchema} from './observe'
+import { observe, observeSchema } from './observe'
 import conformToSchema from './conformToSchema'
 import getServerDescriptor from './redis/getServerDescriptor'
 import Observable from './observe/observable'
@@ -39,7 +47,9 @@ export class SelvaClient extends EventEmitter {
 
     this.loglevel = clientOpts.loglevel || 'warning'
     this.logFn =
-      clientOpts.log || ((l: LogEntry, dbName: string) => console.log(`LUA: [{${dbName}} ${l.level}] ${l.msg}`))
+      clientOpts.log ||
+      ((l: LogEntry, dbName: string) =>
+        console.log(`LUA: [{${dbName}} ${l.level}] ${l.msg}`))
 
     this.on('log', ({ dbName, log }) => {
       this.logFn(log, dbName)
@@ -91,7 +101,10 @@ export class SelvaClient extends EventEmitter {
     return getSchema(this, { name: name })
   }
 
-  async updateSchema(opts: SchemaOptions, name: string = 'default'): Promise<void> {
+  async updateSchema(
+    opts: SchemaOptions,
+    name: string = 'default'
+  ): Promise<void> {
     await this.initializeSchema({ $db: name })
     return updateSchema(this, opts, { name })
   }
@@ -99,14 +112,13 @@ export class SelvaClient extends EventEmitter {
   subscribeSchema(name: string = 'default'): Observable<Schema> {
     return observeSchema(this, name)
   }
-  
+
   conformToSchema(props: SetOptions, dbName: string = 'default') {
     return conformToSchema(this, props, dbName)
   }
 
-  
-  getServerDescriptor (opts: ServerSelector): Promise<ServerDescriptor> {
-    return getServerDescriptor(this.redis,opts )
+  getServerDescriptor(opts: ServerSelector): Promise<ServerDescriptor> {
+    return getServerDescriptor(this.redis, opts)
   }
 
   destroy() {
@@ -122,4 +134,11 @@ export function connect(
   return client
 }
 
-export { ConnectOptions, ServerType, ServerDescriptor, GetOptions, FieldSchemaObject, RedisCommand }
+export {
+  ConnectOptions,
+  ServerType,
+  ServerDescriptor,
+  GetOptions,
+  FieldSchemaObject,
+  RedisCommand
+}
