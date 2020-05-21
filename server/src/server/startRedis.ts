@@ -13,6 +13,10 @@ import RedisManager from './redisManager'
 export default async (server: SelvaServer, opts: ServerOptions) => {
   const { port, dir, modules } = opts
 
+  if (opts.attachToExisting) {
+    return
+  }
+
   const args = ['--port', String(port), '--protected-mode', 'no', '--dir', dir]
 
   modules.forEach(m => {

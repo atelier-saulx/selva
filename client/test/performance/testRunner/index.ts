@@ -17,10 +17,10 @@ let origin: SelvaServer
 let replicasList: SelvaServer[] = []
 let subsManagersList: SelvaServer[] = []
 
-let replicaAmount = 5
-let subManagerAmount = 5
+let replicaAmount = 0
+let subManagerAmount = 0
 
-export async function start({ replicas = 5, subsManagers = 5 } = {}): Promise<{
+export async function start({ replicas = 0, subsManagers = 0 } = {}): Promise<{
   registry: SelvaServer
 }> {
   replicaAmount = replicas
@@ -31,11 +31,17 @@ export async function start({ replicas = 5, subsManagers = 5 } = {}): Promise<{
     port
   })
 
-  origin = await startOrigin({ registry: { port }, default: true })
+  // attach yourself
+  origin = await startOrigin({
+    registry: { port },
+    default: true,
+    port: 6379,
+    attachToExisting: true
+  })
 
   const client = connect({ port })
 
-  client.updateSchema({
+  await client.updateSchema({
     rootType: {
       fields: { value: { type: 'number' } }
     },
@@ -73,7 +79,7 @@ export async function stop() {
 }
 
 const startClient = (
-  fn: (client: SelvaClient) => void,
+  fn: string,
   opts: { label?: string; time: number; clients: number }
 ): Promise<void> => {
   return new Promise(r => {
@@ -89,11 +95,13 @@ const startClient = (
         }
       } catch (_err) {}
     })
+
     const payload = JSON.stringify({
       event: 'start',
       payload: {
-        fn: fn.toString(),
-        time: opts.time
+        fn,
+        time: opts.time,
+        port: registry.port
       }
     })
 
@@ -109,6 +117,10 @@ export async function run(
   }
 ): Promise<{ total: number; mean: number; iterations: number }> {
   const q = []
+  const fnString = `return new Promise(r => {  
+    const x = ${fn.toString()}
+    x(client).then(r)  
+  })`
 
   console.log(
     chalk.blue(
@@ -119,7 +131,7 @@ export async function run(
   )
 
   for (let i = 0; i < opts.clients; i++) {
-    q.push(startClient(fn, opts))
+    q.push(startClient(fnString, opts))
   }
   const results = await Promise.all(q)
 
@@ -141,8 +153,8 @@ export async function run(
 
   console.log(
     chalk.blue(
-      `${label || 'Test'} iterations ${chalk.white(
-        totalIterations / (opts.time / 1e3)
+      `${label || 'Test'} ops ${chalk.white(
+        totalIterations / (totalPerClient / 1e3)
       )} / second`
     )
   )

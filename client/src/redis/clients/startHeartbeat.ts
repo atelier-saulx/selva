@@ -6,7 +6,7 @@ const HEARTBEAT_TIMER = 5e3
 const startHeartbeat = (client: Client) => {
   const setHeartbeat = () => {
     if (client.connected) {
-      console.log('CONNECTED')
+      // console.log('CONNECTED')
       client.publisher.hget(CLIENTS, client.uuid, (err, r) => {
         if (!err && r) {
           if (Number(r) < Date.now() - HEARTBEAT_TIMER * 5) {

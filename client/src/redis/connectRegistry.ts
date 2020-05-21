@@ -96,6 +96,11 @@ const createRegistryClient = (
     name: 'registry',
     type: 'registry'
   })
+
+  client.registry.on('connect', () => {
+    client.selvaClient.emit('connect')
+  })
+
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
   client.on({ type: 'registry' }, 'message', (channel, payload) => {
     if (channel === REGISTRY_UPDATE) {

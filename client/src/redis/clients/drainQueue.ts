@@ -40,24 +40,30 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
                 typeof script === 'string' &&
                 script.startsWith(constants.SCRIPT)
               ) {
-                redisCommand.args[0] = getScriptSha(
+                const sha = getScriptSha(
                   (<string>redisCommand.args[0]).slice(
                     constants.SCRIPT.length + 1
                   )
                 )
-              }
 
-              if (script === `${constants.SCRIPT}:modify`) {
-                if (!modify) {
-                  modify = redisCommand
+                if (!sha) {
+                  client.queue.push(redisCommand)
+                  continue
                 } else {
-                  // console.log('HMMMMMM', ...redisCommand.args.slice(2))
-                  modify.args.push(...redisCommand.args.slice(2))
-                }
+                  redisCommand.args[0] = sha
+                  if (script === `${constants.SCRIPT}:modify`) {
+                    if (!modify) {
+                      modify = redisCommand
+                    } else {
+                      // console.log('HMMMMMM', ...redisCommand.args.slice(2))
+                      modify.args.push(...redisCommand.args.slice(2))
+                    }
 
-                modifyResolvers.push(redisCommand.resolve)
-                modifyRejects.push(redisCommand.reject)
-                continue
+                    modifyResolvers.push(redisCommand.resolve)
+                    modifyRejects.push(redisCommand.reject)
+                    continue
+                  }
+                }
               }
             }
 
@@ -87,6 +93,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           modify = undefined
         }
 
+        const d = Date.now()
         execBatch(client, parsedQ).finally(() => {
           if (nextQ) {
             client.queueInProgress = false

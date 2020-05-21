@@ -142,9 +142,9 @@ export function getClient(
   if (!client) {
     client = createClient(descriptor)
     clients.set(id, client)
-  }
-  if (type === 'origin' || type === 'replica') {
-    loadScripts(client)
+    if (type === 'origin' || type === 'replica') {
+      loadScripts(client)
+    }
   }
 
   if (!client.clients.has(selvaRedisClient)) {

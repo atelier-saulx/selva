@@ -32,7 +32,10 @@ export default function execBatch(
           batch[command](...args)
         }
       })
+      let d = Date.now()
       batch.exec((err: Error, reply: any[]) => {
+        console.log('result', queue.length, Date.now() - d, 'ms')
+
         if (err) {
           reject(err)
         } else {

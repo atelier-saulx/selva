@@ -15,6 +15,7 @@ export type ServerOptions = {
   modules?: string[]
   dir?: string
   default?: boolean
+  attachToExisting?: boolean
 }
 
 export type Stats = {
