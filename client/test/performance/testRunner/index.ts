@@ -141,9 +141,7 @@ export async function run(
 
   console.log(
     chalk.blue(
-      `${label || 'Test'} result ${chalk.white(
-        totalIterations
-      )} iterations ${chalk.white(
+      `${label || 'Test'} iterations ${chalk.white(
         totalIterations / (opts.time / 1e3)
       )} / second`
     )

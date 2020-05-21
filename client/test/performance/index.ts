@@ -33,7 +33,7 @@ test.serial('Perf - Set a lot of things', async t => {
     },
     {
       label: 'simple set',
-      clients: 2,
+      clients: 10,
       time: 1e3
     }
   )
