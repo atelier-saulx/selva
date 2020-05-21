@@ -36,12 +36,10 @@ export class SelvaServer extends EventEmitter {
     this.host = opts.host
 
     if (opts.registry) {
-      console.log('create registry client on the server')
       this.registry = connect(opts.registry)
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
-      console.log('im the registry - register myself')
       this.registry = connect({ port: opts.port })
     }
 

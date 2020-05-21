@@ -82,7 +82,6 @@ const createSubscriptionManager = (
   })
 
   client.redis.registry.on('disconnect', () => {
-    console.log('disconnect server-client')
     clear(subsManager)
   })
 
@@ -110,7 +109,6 @@ parentPort.on('message', (message: string) => {
       }
       subsManager = createSubscriptionManager(<ServerOptions>payload)
     } else if (event === 'destroy') {
-      console.log('Destroy subs client')
       destroy(subsManager)
     }
   } catch (_err) {}
