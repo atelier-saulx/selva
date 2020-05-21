@@ -211,3 +211,5 @@ export async function start(opts: Options) {
 
   return registry
 }
+
+export { SelvaServer }
