@@ -6,7 +6,7 @@ import {
   startSubscriptionManager,
   startReplica
 } from '@saulx/selva-server'
-import './assertions'
+import { wait } from '../assertions'
 import { start, stop, run } from './testRunner'
 
 let registry
@@ -20,16 +20,20 @@ test.after(async _t => {
 })
 
 test.serial('Perf - Set a lot of things', async t => {
+  console.log('perf it!')
+
   const time = await run(
-    client => {
+    async client => {
+      console.log('GO')
       client.set({
         $id: 'root',
         value: ~~(Math.random() * 100)
       })
+      await wait(50)
     },
     {
-      clients: 5,
-      time: 10e3
+      clients: 2,
+      time: 1e3
     }
   )
 

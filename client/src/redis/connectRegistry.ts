@@ -21,7 +21,6 @@ const drainQueue = (client: RedisSelvaClient) => {
 
 const getServers = async (client: RedisSelvaClient, id?: string) => {
   // handle specific id!
-  console.log('update for ', id)
 
   // if subscriptionManger get subscriptions!
 

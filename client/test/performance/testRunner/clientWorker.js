@@ -1,18 +1,21 @@
-import { connect, SelvaClient } from '../../../src/index'
-import { parentPort } from 'worker_threads'
-let client: SelvaClient
-parentPort.on('message', (message: string) => {
+const { connect } = require('../../../dist/src/index')
+const { parentPort } = require('worker_threads')
+
+let client
+parentPort.on('message', message => {
   try {
     const { event, payload } = JSON.parse(message)
+
     if (event === 'start') {
       client = connect({ port: payload.port })
+
       setTimeout(() => {
-        const result: { time: number[]; startTime: number } = {
+        const result = {
           time: [],
           startTime: Date.now()
         }
+        // eslint-disable-next-line
         const fn = new Function(payload.fn)
-        console.log(fn)
         const setLoop = async () => {
           const s = Date.now()
           await fn(client)

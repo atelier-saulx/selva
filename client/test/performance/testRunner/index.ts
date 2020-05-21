@@ -11,11 +11,11 @@ import getPort from 'get-port'
 import { Worker } from 'worker_threads'
 import path from 'path'
 
-let registry
-let origin
+let registry: SelvaServer
+let origin: SelvaServer
 // let origin2
-let replicasList = []
-let subsManagersList = []
+let replicasList: SelvaServer[] = []
+let subsManagersList: SelvaServer[] = []
 
 let replicaAmount = 5
 let subManagerAmount = 5
@@ -31,15 +31,31 @@ export async function start({ replicas = 5, subsManagers = 5 } = {}): Promise<{
     port
   })
 
-  origin = startOrigin({ registry: { port } })
+  origin = await startOrigin({ registry: { port }, default: true })
+
+  const client = connect({ port })
+
+  client.updateSchema({
+    rootType: {
+      fields: { value: { type: 'number' } }
+    },
+    types: {
+      thing: {
+        fields: { value: { type: 'number' } }
+      }
+    }
+  })
+
   // origin2 = startOrigin({ name: 'origin2', registry: { port } })
 
   for (let i = 0; i < replicaAmount; i++) {
-    replicasList.push(startReplica({ registry: { port } }))
+    replicasList.push(await startReplica({ registry: { port }, default: true }))
   }
 
   for (let i = 0; i < subManagerAmount; i++) {
-    subsManagersList.push(startSubscriptionManager({ registry: { port } }))
+    subsManagersList.push(
+      await startSubscriptionManager({ registry: { port } })
+    )
   }
 
   return { registry }
@@ -64,33 +80,38 @@ const startClient = (
     const worker = (this.worker = new Worker(
       path.join(__dirname, '/clientWorker.js')
     ))
-    worker.postMessage(
-      JSON.stringify({ event: 'start', fn: fn.toString(), time: opts.time })
-    )
     worker.on('message', message => {
       try {
         const obj = JSON.parse(message)
         if (obj.event === 'complete') {
-          console.log(obj)
           r(obj)
+          worker.terminate()
         }
       } catch (_err) {}
     })
+    const payload = JSON.stringify({
+      event: 'start',
+      payload: {
+        fn: fn.toString(),
+        time: opts.time
+      }
+    })
+
+    worker.postMessage(payload)
   })
 }
 
 export async function run(
   fn: (client: SelvaClient) => void,
-  opts: { time: number; clients: number }
+  opts: { time: number; clients: number } = { time: 5e3, clients: 5 }
 ): Promise<number> {
-  console.log('lets run it!')
   const q = []
   for (let i = 0; i < opts.clients; i++) {
     q.push(startClient(fn, opts))
   }
   const results = await Promise.all(q)
   results.forEach((v, i) => {
-    console.log('client', i, v.time.length, 'iterations')
+    console.log('client', i, v.payload.time.length, 'iterations')
   })
   return 10
 }
