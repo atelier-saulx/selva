@@ -5,7 +5,6 @@
 #include "../rmutil/test_util.h"
 
 
-
 char *genUuid(char *uuid_str) {
   uuid_t uuid;
 
@@ -21,7 +20,7 @@ int hash(char *hash_str, char *str, size_t strlen) {
   while (i) {
     hash = (hash * 33) ^ (int)(str[--i]);
   }
-  
+
 
   return sprintf(hash_str, "%x", (unsigned int)hash >> 0);
 }
@@ -34,14 +33,16 @@ int GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   //   return RedisModule_WrongArity(ctx);
   // }
 
-  RedisModuleCallReply *r;
+  RedisModuleString *keyStr = RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants") * sizeof(char));
+  RedisModuleString *val = RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
 
+  RedisModuleKey *key = RedisModule_OpenKey(ctx, keyStr, REDISMODULE_WRITE);
   for (int i = 0; i < 10000; i++) {
-    r =
-      RedisModule_Call(ctx, "hset", "ccc", "foo", "bar");
-    r =
-      RedisModule_Call(ctx, "publish", "x", "y");
+    RedisModule_StringSet(key, val);
+    RedisModuleCallReply *r = RedisModule_Call(ctx, "publish", "x", "y");
   }
+
+  RedisModule_CloseKey(key);
 
 
   RedisModuleString *reply =

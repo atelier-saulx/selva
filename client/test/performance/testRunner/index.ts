@@ -39,6 +39,10 @@ export async function start({ replicas = 0, subsManagers = 0 } = {}): Promise<{
     // attachToExisting: true
   })
 
+  origin.pm.on('stdout', log => {
+    console.log(log)
+  })
+
   const client = connect({ port })
 
   await client.updateSchema({
