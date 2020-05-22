@@ -106,7 +106,7 @@ test.serial('Perf - Simple increment', async t => {
 
         // make nice!
         // 1800 -> 200 -- 9x
-        p.push(client.redis.command('selva.id', ...x))
+        p.push(client.redis.command('selva.flurpypants'))
         // }
 
         // for (let i = 0; i < 1e3; i++) {

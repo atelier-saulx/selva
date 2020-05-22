@@ -35,3 +35,5 @@ redisSearchCommands.forEach(cmd => {
 
 // @ts-ignore
 redis.add_command('selva.id')
+// @ts-ignore
+redis.add_command('selva.flurpypants')
