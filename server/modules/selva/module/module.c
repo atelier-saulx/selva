@@ -27,7 +27,6 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   // init auto memory for created strings
   RedisModule_AutoMemory(ctx);
 
-
   RedisModuleString *keyStr = RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants") * sizeof(char));
   RedisModuleString *val = RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
   RedisModuleKey *key = RedisModule_OpenKey(ctx, keyStr, REDISMODULE_WRITE);
@@ -44,6 +43,26 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
 }
 
+// id, key, value [, ... key, value]]
+int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+  RedisModule_AutoMemory(ctx);
+
+  RedisModuleString *id = argv[1];
+
+  RedisModuleKey *idKey = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
+  for (int i = 2; i < argc; i += 2) {
+    RedisModuleString *field = argv[i];
+    RedisModuleString *value = argv[i + 1];
+
+    RedisModule_HashSet(idKey, REDISMODULE_HASH_NONE, field, value, NULL);
+  }
+
+  RedisModule_CloseKey(idKey);
+
+  RedisModule_ReplyWithString(ctx, id);
+
+  return REDISMODULE_OK;
+}
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
 
@@ -53,6 +72,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   }
 
   if (RedisModule_CreateCommand(ctx, "selva.id", SelvaCommand_GenId, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+    return REDISMODULE_ERR;
+  }
+
+
+  if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
     return REDISMODULE_ERR;
   }
 
