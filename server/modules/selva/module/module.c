@@ -14,7 +14,7 @@ int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
   }
 
   char hash_str[37];
-  SelvaId_GenId(hash_str);
+  SelvaId_GenId("", hash_str);
 
   RedisModuleString *reply =
       RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
@@ -51,9 +51,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   size_t id_size;
   const char *id_str = RedisModule_StringPtrLen(id, &id_size);
 
-  if (id_size == 0) {
+  if (id_size == 2) {
     char hash_str[37];
-    SelvaId_GenId(hash_str);
+    SelvaId_GenId(id_str, hash_str);
     // TODO: add prefix by schema.types[typeName].prefix
     id_str = hash_str;
     id = RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
