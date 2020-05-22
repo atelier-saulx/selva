@@ -48,16 +48,26 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   RedisModule_AutoMemory(ctx);
 
   RedisModuleString *id = argv[1];
+  size_t id_size;
+  const char *id_str = RedisModule_StringPtrLen(id, &id_size);
 
-  RedisModuleKey *idKey = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
+  if (id_size == 0) {
+    char hash_str[37];
+    SelvaId_GenId(hash_str);
+    // TODO: add prefix by schema.types[typeName].prefix
+    id_str = hash_str;
+    id = RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
+  }
+
+  RedisModuleKey *id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
   for (int i = 2; i < argc; i += 2) {
     RedisModuleString *field = argv[i];
     RedisModuleString *value = argv[i + 1];
 
-    RedisModule_HashSet(idKey, REDISMODULE_HASH_NONE, field, value, NULL);
+    RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
   }
 
-  RedisModule_CloseKey(idKey);
+  RedisModule_CloseKey(id_key);
 
   RedisModule_ReplyWithString(ctx, id);
 
