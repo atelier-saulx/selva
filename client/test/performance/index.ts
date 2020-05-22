@@ -65,16 +65,16 @@ test.serial('Perf - Simple increment', async t => {
         // json parse?
         // stringify it
 
-        // for (let i = 0; i < 1000; i++) {
-        //   // p.push(
-        //   //   client.set({
-        //   //     $id: 'root',
-        //   //     value: i
-        //   //   })
-        //   // )
-        //   // p.push(client.redis.set('flurp', i))
-        //   p.push(client.redis.eval('return redis.call("hset", "x", "y", 1)', 0))
-        // }
+        for (let i = 0; i < 10000; i++) {
+          p.push(
+            client.set({
+              $id: 'root',
+              value: i
+            })
+          )
+          // p.push(client.redis.set('flurp', i))
+          // p.push(client.redis.eval('return redis.call("hset", "x", "y", 1)', 0))
+        }
 
         // cjson add arround 10ms
         //@ts-ignore
@@ -105,7 +105,7 @@ test.serial('Perf - Simple increment', async t => {
         // for (let i = 0; i < 1e4; i++) {
 
         // make nice!
-        p.push(client.redis.command('selva.id'))
+        // p.push(client.redis.command('selva.id'))
         // }
 
         // for (let i = 0; i < 1e3; i++) {
