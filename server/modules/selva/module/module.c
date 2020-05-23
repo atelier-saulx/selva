@@ -4,6 +4,7 @@
 #include "../rmutil/test_util.h"
 
 #include "./id/id.h"
+#include "./modify/modify.h"
 
 int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   // init auto memory for created strings
@@ -43,7 +44,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
 }
 
-// id, key, value [, ... key, value]]
+// id, type, key, value [, ... type, key, value]]
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx);
 
@@ -54,7 +55,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   if (id_size == 2) {
     char hash_str[37];
     SelvaId_GenId(id_str, hash_str);
-    // TODO: add prefix by schema.types[typeName].prefix
     id_str = hash_str;
     id = RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
   }
