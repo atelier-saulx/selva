@@ -6,7 +6,6 @@ import {
   startSubscriptionManager,
   startReplica
 } from '@saulx/selva-server'
-import { wait } from '../assertions'
 import { start, stop, run } from './testRunner'
 
 let registry
@@ -19,7 +18,7 @@ test.after(async _t => {
   await stop()
 })
 
-test.serial('Perf - Simple increment', async t => {
+test.skip('Perf - Simple increment', async t => {
   const result = await run(
     async client => {
       const x = []
@@ -133,25 +132,63 @@ test.serial('Perf - Simple increment', async t => {
   t.true(result.iterations > 1e6)
 })
 
-// test.serial('Perf - Simple increment and adding meta', async t => {
-//   const result = await run(
-//     async client => {
-//       await client.set({
-//         $id: 'root',
-//         value: { $increment: 1 },
-//         children: [
-//           {
-//             type: 'thing',
-//             value: 1
-//           }
-//         ]
-//       })
-//     },
-//     {
-//       label: 'Simple increment add meta',
-//       clients: 10,
-//       time: 2e3
-//     }
-//   )
-//   t.true(result.iterations > 1e6)
-// })
+test.skip('Perf - Simple increment and adding meta', async t => {
+  const result = await run(
+    async client => {
+      await client.set({
+        $id: 'root',
+        value: { $increment: 1 },
+        children: [
+          {
+            type: 'thing',
+            value: 1
+          }
+        ]
+      })
+    },
+    {
+      label: 'Simple increment add meta',
+      clients: 10,
+      time: 2e3
+    }
+  )
+  t.true(result.iterations > 1e6)
+})
+
+test.serial('Perf - Subscriptions', async t => {
+  const result = await run(
+    async client => {
+      const sub = client
+        .observe({
+          $id: 'root',
+          value: true
+        })
+        .subscribe(x => {
+          // sub.unsubscribe()
+          setTimeout(() => sub.unsubscribe(), ~~(Math.random() * 100))
+        })
+
+      await client.set({
+        $id: 'root',
+        value: Math.floor(Date.now() / 1e3),
+        children: [
+          {
+            $id: 'th1',
+            type: 'thing',
+            value: 1
+          }
+        ]
+      })
+
+      //@ts-ignore
+      await wait(100)
+    },
+    {
+      label: 'Observe',
+      clients: 20,
+      time: 5e3
+    }
+  )
+
+  t.true(result.iterations > 1e6)
+})

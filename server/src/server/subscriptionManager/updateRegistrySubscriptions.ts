@@ -9,7 +9,7 @@ type Subscriptions = {
 let subscriptions: Record<string, 'created' | 'removed'> = {}
 let publishInProgress = false
 
-export default async function updateRegistry(
+export default function updateRegistry(
   client: SelvaClient,
   info: Subscriptions
 ) {
@@ -25,11 +25,11 @@ export default async function updateRegistry(
         const event = subscriptions[key]
         if (event === 'created') {
           q.push(
-            client.redis.sadd({ type: 'registry' }, `${id}_subscriptions`, id)
+            client.redis.sadd({ type: 'registry' }, `${id}_subscriptions`, key)
           )
         } else if (event === 'removed') {
           q.push(
-            client.redis.srem({ type: 'registry' }, `${id}_subscriptions`, id)
+            client.redis.srem({ type: 'registry' }, `${id}_subscriptions`, key)
           )
         }
       }

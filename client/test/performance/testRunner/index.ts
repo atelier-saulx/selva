@@ -17,8 +17,8 @@ let origin: SelvaServer
 let replicasList: SelvaServer[] = []
 let subsManagersList: SelvaServer[] = []
 
-let replicaAmount = 0
-let subManagerAmount = 0
+let replicaAmount = 5
+let subManagerAmount = 5
 
 export async function start({ replicas = 0, subsManagers = 0 } = {}): Promise<{
   registry: SelvaServer
@@ -36,7 +36,6 @@ export async function start({ replicas = 0, subsManagers = 0 } = {}): Promise<{
     registry: { port },
     default: true,
     port: 6379
-    // attachToExisting: true
   })
 
   origin.pm.on('stdout', log => {
@@ -51,6 +50,7 @@ export async function start({ replicas = 0, subsManagers = 0 } = {}): Promise<{
     },
     types: {
       thing: {
+        prefix: 'th',
         fields: { value: { type: 'number' } }
       }
     }

@@ -75,6 +75,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
           }
         }
         if (clientsSet.size) {
+          console.log('ADD FROM UPDATE')
           addSubscription(
             subsManager,
             channel,

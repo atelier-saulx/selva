@@ -4,6 +4,20 @@ import { Subscription, SubscriptionManager } from '../types'
 var delayCount = 0
 
 const sendUpdates = (subscriptionManager: SubscriptionManager) => {
+  console.log(
+    'subsManager',
+    subscriptionManager.client.uuid.slice(-6),
+    'Handled',
+    subscriptionManager.incomingCount,
+    'incoming',
+    [...subscriptionManager.stagedForUpdates.values()].map(v =>
+      v.channel.slice(-6)
+    ),
+    'outgoing updates'
+  )
+
+  // seeing a double subscriptions no good
+
   subscriptionManager.stagedForUpdates.forEach(subscription => {
     subscription.inProgress = false
     subscriptionManager.stagedForUpdates.delete(subscription)
@@ -17,6 +31,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   })
 
   subscriptionManager.stagedInProgess = false
+
   subscriptionManager.incomingCount = 0
 
   if (subscriptionManager.memberMemCacheSize > 1e5) {
@@ -69,7 +84,6 @@ const addUpdate = (
   subscriptionManager: SubscriptionManager,
   subscription: Subscription
 ) => {
-  console.log('ADDING UPDATE FOR', subscription.get)
   if (subscription.inProgress) {
     if (!subscriptionManager.stagedInProgess) {
       console.error('CANNOT HAVE BATCH UPDATES IN PROGRESS + SUBS IN PROGRESS')
