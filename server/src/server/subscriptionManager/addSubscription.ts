@@ -6,8 +6,6 @@ import { addSubscriptionToTree } from './tree'
 import { addOriginListeners } from './originListeners'
 import updateRegistry from './updateRegistrySubscriptions'
 
-const { performance } = require('perf_hooks')
-
 const { CACHE, SUBSCRIPTIONS } = constants
 
 const addClientSubscription = async (
@@ -94,7 +92,6 @@ const addSubscription = (
   clients: Set<string>,
   getOptions: GetOptions
 ) => {
-  console.log('add sub', channel)
   const subscription: Subscription = {
     clients,
     channel,
