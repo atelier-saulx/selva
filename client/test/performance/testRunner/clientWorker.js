@@ -5,6 +5,8 @@ const { promisify } = require('util')
 const { exec } = require('child_process')
 const execPromise = promisify(exec)
 
+const wait = (time = 100) => new Promise(resolve => setTimeout(resolve, time))
+
 let client
 parentPort.on('message', message => {
   try {
@@ -21,10 +23,10 @@ parentPort.on('message', message => {
       client.on('connect', () => {
         console.info('connect!')
         // eslint-disable-next-line
-        const fn = new Function('client', 'execPromise', payload.fn)
+        const fn = new Function('client', 'execPromise', 'wait', payload.fn)
         const setLoop = async () => {
           const s = Date.now()
-          await fn(client, execPromise)
+          await fn(client, execPromise, wait)
           result.time.push(Date.now() - s)
           if (Date.now() - result.startTime > payload.time) {
             parentPort.postMessage(

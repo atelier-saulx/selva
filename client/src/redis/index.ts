@@ -1,4 +1,4 @@
-import { SelvaClient } from '../'
+import { SelvaClient, ServerDescriptor } from '../'
 import {
   ClientOpts,
   ConnectOptions,
@@ -31,8 +31,8 @@ class RedisSelvaClient extends RedisMethods {
   public logFn: LogFn
 
   public servers: Servers
-
   public serversById: ServersById
+  public subsManagers: ServerDescriptor[]
 
   // dont rly need more then this
   public observables: Record<string, Observable<GetResult>> = {}

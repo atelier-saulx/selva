@@ -29,6 +29,7 @@ export type ServerSelector = {
   type?: ServerType
   host?: string
   port?: number
+  subscription?: string
 }
 
 // TODO: make non optional
@@ -38,4 +39,5 @@ export type ServerDescriptor = {
   host: string
   port: number
   default?: boolean
+  subscriptions?: Set<string>
 }

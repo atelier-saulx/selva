@@ -19,16 +19,19 @@ const drainQueue = (client: RedisSelvaClient) => {
   client.queue = []
 }
 
+const sortSubsManagers = (a, b) => {
+  a = a.subscriptions.size
+  b = b.subscriptions.size
+  return a > b ? 1 : b > a ? -1 : 0
+}
+
 const getServers = async (client: RedisSelvaClient, id?: string) => {
-  // handle specific id!
-
-  // if subscriptionManger get subscriptions!
-
   delete client.servers
   const serverList =
     (await client.smembers({ type: 'registry' }, 'servers')) || []
   const servers: Servers = {}
   const serversById: ServersById = {}
+  const subsManagers = []
   const result: ServerDescriptor[] = await Promise.all(
     serverList.map(
       async (id: string): Promise<ServerDescriptor> => {
@@ -41,13 +44,21 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
           'type',
           'default'
         )
-        const descriptor = {
+        const descriptor: ServerDescriptor = {
           host,
           port: Number(port),
           name,
           type,
           default: def ? true : false
         }
+
+        if (type === 'subscriptionManager') {
+          const subsKey = `${id}_subscriptions`
+          const subs = await client.smembers({ type: 'registry' }, subsKey)
+          descriptor.subscriptions = new Set(subs || [])
+          subsManagers.push(descriptor)
+        }
+
         serversById[id] = descriptor
         return descriptor
       }
@@ -65,6 +76,10 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
     }
     servers[server.name][server.type].push(server)
   }
+
+  subsManagers.sort(sortSubsManagers)
+
+  client.subsManagers = subsManagers
   client.serversById = serversById
   client.servers = servers
   client.registry.emit('servers_updated', servers)
@@ -80,8 +95,23 @@ const updateSubscriptions = (
   client: RedisSelvaClient,
   subscriptionUpdates: SubscriptionUpdates
 ) => {
-  console.log('mmm yesh', subscriptionUpdates)
-
+  if (!client.servers) {
+    return
+  }
+  const { host, port, subscriptions } = subscriptionUpdates
+  const id = host + ':' + port
+  const server = client.serversById[id]
+  if (server) {
+    for (let channel in subscriptions) {
+      if (subscriptions[channel] === 'created') {
+        server.subscriptions.add(channel)
+      } else if (subscriptions[channel] === 'removed') {
+        server.subscriptions.delete(channel)
+      }
+    }
+    client.subsManagers.sort(sortSubsManagers)
+  }
+  // does not matter that much but may ne nice
   // client.registry.emit('subscription_updated', subscriptionUpdates)
 }
 
@@ -102,13 +132,13 @@ const createRegistryClient = (
   })
 
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
+  client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_SUBSCRIPTION)
+
   client.on({ type: 'registry' }, 'message', (channel, payload) => {
     if (channel === REGISTRY_UPDATE) {
-      // console.log('REGISTRY UPDATED (could be a new client!')
-      // start with putting it in here!
+      // can be handled more effiecently
       getServers(client, <string>payload)
     } else if (channel === REGISTRY_UPDATE_SUBSCRIPTION) {
-      // client.registry.emit('subscriptions_updated', )
       updateSubscriptions(client, <SubscriptionUpdates>JSON.parse(payload))
     }
   })

@@ -6,7 +6,6 @@ import {
   startSubscriptionManager,
   startReplica
 } from '@saulx/selva-server'
-import { wait } from '../assertions'
 import { start, stop, run } from './testRunner'
 
 let registry
@@ -165,12 +164,13 @@ test.serial('Perf - Subscriptions', async t => {
           value: true
         })
         .subscribe(x => {
-          setTimeout(() => sub.unsubscribe(), ~~(Math.random() * 1000))
+          // sub.unsubscribe()
+          // setTimeout(() => sub.unsubscribe(), ~~(Math.random() * 1000))
         })
 
       await client.set({
         $id: 'root',
-        value: 1,
+        value: Math.floor(Date.now() / 1e3),
         children: [
           {
             $id: 'th1',
@@ -179,10 +179,13 @@ test.serial('Perf - Subscriptions', async t => {
           }
         ]
       })
+
+      //@ts-ignore
+      await wait(100)
     },
     {
       label: 'Observe',
-      clients: 3,
+      clients: 20,
       time: 5e3
     }
   )

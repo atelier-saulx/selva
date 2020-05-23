@@ -122,7 +122,7 @@ export class SelvaClient extends EventEmitter {
   }
 
   destroy() {
-    console.log('destroy client - not implemented yet!')
+    // console.log('destroy client - not implemented yet!')
   }
 }
 

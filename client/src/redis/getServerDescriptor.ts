@@ -56,14 +56,22 @@ const getServerDescriptor = async (
       selector.type = 'origin'
       return getServerDescriptor(selvaRedisClient, selector)
     }
-
     return retry()
   }
 
   const servers = selvaRedisClient.servers[selector.name][selector.type]
-  const server = servers[Math.floor(Math.random() * servers.length)]
-
-  return server
+  if (selector.type === 'subscriptionManager' && selector.subscription) {
+    const channel = selector.subscription
+    const subsManagers = selvaRedisClient.subsManagers
+    for (let i = 0, len = subsManagers.length; i < len; i++) {
+      if (subsManagers[i].subscriptions.has(channel)) {
+        return subsManagers[i]
+      }
+    }
+    return subsManagers[0]
+  } else {
+    return servers[Math.floor(Math.random() * servers.length)]
+  }
 }
 
 export default getServerDescriptor
