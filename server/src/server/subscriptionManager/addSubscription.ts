@@ -5,7 +5,8 @@ import addUpdate from './update/addUpdate'
 import { addSubscriptionToTree } from './tree'
 import { addOriginListeners } from './originListeners'
 import updateRegistry from './updateRegistrySubscriptions'
-import { get } from '@saulx/selva/dist/src/get'
+
+const { performance } = require('perf_hooks')
 
 const { CACHE, SUBSCRIPTIONS } = constants
 
@@ -22,12 +23,16 @@ const addClientSubscription = async (
       redis.smembers(selector, channel)
     ])
     if (getOptions && clients.length) {
-      await addSubscription(
-        subsManager,
-        channel,
-        new Set(clients),
-        JSON.parse(getOptions)
-      )
+      if (subsManager.subscriptions[channel]) {
+        subsManager.subscriptions[channel].clients.add(client)
+      } else {
+        addSubscription(
+          subsManager,
+          channel,
+          new Set(clients),
+          JSON.parse(getOptions)
+        )
+      }
     }
   } else {
     subsManager.subscriptions[channel].clients.add(client)
@@ -54,50 +59,56 @@ const parseOrigins = (
   return origins
 }
 
-const addSubscription = async (
+const updateSubscription = async (
+  subsManager: SubscriptionManager,
+  channel: string,
+  subscription: Subscription
+) => {
+  const { selector, client } = subsManager
+  const { redis } = client
+  if (await redis.hexists(selector, CACHE, channel)) {
+    if (subsManager.subscriptions[channel]) {
+      const [tree, version] = await redis.hmget(
+        selector,
+        CACHE,
+        channel + '_tree',
+        channel + '_version'
+      )
+      if (!tree) {
+        addUpdate(subsManager, subscription)
+      } else {
+        subsManager.subscriptions[channel].version = version
+        subsManager.subscriptions[channel].tree = JSON.parse(tree)
+        subsManager.subscriptions[channel].treeVersion = hash(tree)
+        addSubscriptionToTree(subsManager, subscription)
+      }
+    } else {
+      addUpdate(subsManager, subscription)
+    }
+  }
+}
+
+const addSubscription = (
   subsManager: SubscriptionManager,
   channel: string,
   clients: Set<string>,
   getOptions: GetOptions
 ) => {
-  const { selector, client } = subsManager
-  const { redis } = client
   const subscription: Subscription = {
     clients,
     channel,
     get: getOptions,
     origins: [...parseOrigins(getOptions).values()]
   }
-
+  subsManager.subscriptions[channel] = subscription
   for (const origin of subscription.origins) {
     addOriginListeners(origin, subsManager, subscription)
   }
-
   updateRegistry(subsManager.client, {
     ...subsManager.selector,
     subscriptions: { [channel]: 'created' }
   })
-
-  subsManager.subscriptions[channel] = subscription
-  if (await redis.hexists(selector, CACHE, channel)) {
-    const [tree, version] = await redis.hmget(
-      selector,
-      CACHE,
-      channel + '_tree',
-      channel + '_version'
-    )
-
-    if (!tree) {
-      addUpdate(subsManager, subscription)
-    } else {
-      subsManager.subscriptions[channel].version = version
-      subsManager.subscriptions[channel].tree = JSON.parse(tree)
-      subsManager.subscriptions[channel].treeVersion = hash(tree)
-      addSubscriptionToTree(subsManager, subscription)
-    }
-  } else {
-    addUpdate(subsManager, subscription)
-  }
+  updateSubscription(subsManager, channel, subscription)
 }
 
 export { addSubscription, addClientSubscription }

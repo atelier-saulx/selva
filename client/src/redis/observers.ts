@@ -10,7 +10,7 @@ class ObserverEmitter extends EventEmitter {
   public count: number = 0
   constructor() {
     super()
-    this.setMaxListeners(1e3)
+    this.setMaxListeners(1e4)
   }
 }
 
@@ -44,7 +44,6 @@ const createObservable = (
 
   const obs = new Observable(observer => {
     observerEmitter.on('update', obj => {
-      console.log('flurpy durpy', obj, observer.version)
       if (obj.type === 'update') {
         if (obj.version !== observer.version) {
           observer.version = obj.version

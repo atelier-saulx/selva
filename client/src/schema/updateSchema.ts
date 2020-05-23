@@ -227,7 +227,8 @@ export async function updateSchema(
   selector: ServerSelector,
   retry?: number
 ) {
-  console.log('Try number', retry)
+  console.log('update schema!')
+
   const wait = (t: number = 0): Promise<void> =>
     new Promise(r => setTimeout(r, t))
 
@@ -236,7 +237,6 @@ export async function updateSchema(
     props.types = {}
   }
 
-  console.log('get schema?', selector)
   const newSchema = newSchemaDefinition(
     (await client.getSchema(selector.name)).schema,
     <Schema>props

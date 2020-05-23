@@ -63,6 +63,8 @@ const removeSubscription = async (
       removeOriginListeners(origin, subsManager, subscription)
     }
     removeSubscriptionFromTree(subsManager, subscription)
+    // check if this is ok!
+    // subsManager.stagedForUpdates.delete(subscription)
     delete subscriptions[channel]
   }
 }
