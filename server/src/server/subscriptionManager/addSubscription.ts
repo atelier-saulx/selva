@@ -66,8 +66,8 @@ const updateSubscription = async (
 ) => {
   const { selector, client } = subsManager
   const { redis } = client
-  if (await redis.hexists(selector, CACHE, channel)) {
-    if (subsManager.subscriptions[channel]) {
+  if (subsManager.subscriptions[channel]) {
+    if (await redis.hexists(selector, CACHE, channel)) {
       const [tree, version] = await redis.hmget(
         selector,
         CACHE,
@@ -94,6 +94,7 @@ const addSubscription = (
   clients: Set<string>,
   getOptions: GetOptions
 ) => {
+  console.log('add sub', channel)
   const subscription: Subscription = {
     clients,
     channel,
@@ -108,7 +109,7 @@ const addSubscription = (
     ...subsManager.selector,
     subscriptions: { [channel]: 'created' }
   })
-  updateSubscription(subsManager, channel, subscription)
+  updateSubscription(subsManager, channel, subscription).then(() => {})
 }
 
 export { addSubscription, addClientSubscription }

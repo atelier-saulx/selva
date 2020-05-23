@@ -56,10 +56,12 @@ const addOriginListeners = (
     const { client } = subsManager
     const redis = client.redis
     let collect = 0
-    setInterval(() => {
-      console.log('handled ', collect, 'in last 5 sec')
-      collect = 0
-    }, 5e3)
+
+    // store more of these things as metrics
+    // setInterval(() => {
+    //   console.log('handled ', collect, 'in last 5 sec')
+    //   collect = 0
+    // }, 5e3)
 
     // check every origin - you have to connect to them :D
     redis.on(selector, 'pmessage', listener)
