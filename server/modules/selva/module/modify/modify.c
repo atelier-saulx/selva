@@ -13,10 +13,11 @@
 int fd = -1;
 struct sockaddr_un addr;
 
-int SelvaModify_SendAsyncTask(enum SelvaModify_AsyncTask async_task_type, int payload_size, char *payload, uint8_t retries) {
+int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) {
   if (fd == -1) {
     fd = socket(PF_UNIX, SOCK_DGRAM, 0);
     if (fd < 0) {
+      fprintf(stderr, "Unable to open file descriptor for %s\n", CLIENT_SOCK_FILE);
       fd = -1;
       goto error;
     }
@@ -28,13 +29,15 @@ int SelvaModify_SendAsyncTask(enum SelvaModify_AsyncTask async_task_type, int pa
 
 
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+      fprintf(stderr, "Error connecting\n");
       goto error;
     }
   }
 
   char buf[1024];
-  sprintf(buf, "%c%s\n", async_task_type, payload);
+  sprintf(buf, "%s\n", payload);
   if (write(fd, buf, 1 + payload_size + 1) != 0) {
+    fprintf(stderr, "Error writing to socket\n");
     goto error;
   }
 
@@ -53,5 +56,5 @@ error:
     exit(1);
   }
 
-  return SelvaModify_SendAsyncTask(async_task_type, payload_size, payload, --retries);
+  return SelvaModify_SendAsyncTask(payload_size, payload, --retries);
 }
