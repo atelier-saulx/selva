@@ -24,12 +24,12 @@ int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) 
 
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strcpy(addr.sun_path, CLIENT_SOCK_FILE);
+    strncpy(addr.sun_path, CLIENT_SOCK_FILE, sizeof(addr.sun_path)-1);
     unlink(CLIENT_SOCK_FILE);
 
 
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-      fprintf(stderr, "Error connecting\n");
+      fprintf(stderr, "Error connecting to %s\n", addr.sun_path);
       goto error;
     }
   }
@@ -50,7 +50,6 @@ error:
 
   fd = -1;
 
-  fprintf(stderr, "Error opening unix domain socket\n");
   if (retries <= 0) {
     fprintf(stderr, "Retries exceeded\n");
     exit(1);

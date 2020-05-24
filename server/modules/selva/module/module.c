@@ -75,7 +75,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     strcpy(payload_str, field_str);
     strcpy(payload_str, " ");
     strcpy(payload_str, "update");
-    SelvaModify_SendAsyncTask(7 + 1 + field_size + 1 + 6, payload_str, 3);
+    strcpy(payload_str, "\0");
+    SelvaModify_SendAsyncTask(7 + 1 + field_size + 1 + 6 + 1, payload_str, 3);
   }
 
   RedisModule_CloseKey(id_key);
