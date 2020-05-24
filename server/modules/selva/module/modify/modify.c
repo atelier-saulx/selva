@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <string.h>
@@ -9,6 +10,8 @@
 #include "./modify.h"
 
 #define CLIENT_SOCK_FILE "/tmp/selva.sock"
+
+extern int errno;
 
 int fd = -1;
 struct sockaddr_un addr;
@@ -29,7 +32,7 @@ int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) 
 
 
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-      fprintf(stderr, "Error connecting to %s\n", addr.sun_path);
+      fprintf(stderr, "Error (%s) connecting to %s\n", strerror(errno), addr.sun_path);
       goto error;
     }
   }

@@ -66,6 +66,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
 
+    // TODO: prepare indexing
+
     // prepare publish
     size_t field_size;
     const char *field_str = RedisModule_StringPtrLen(field, &field_size);
@@ -76,6 +78,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     strcpy(payload_str, " ");
     strcpy(payload_str, "update");
     strcpy(payload_str, "\0");
+
+    // publish
     SelvaModify_SendAsyncTask(7 + 1 + field_size + 1 + 6 + 1, payload_str, 3);
   }
 
