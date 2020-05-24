@@ -45,7 +45,7 @@ export class SelvaServer extends EventEmitter {
     }
 
     if (this.type === 'origin') {
-      startAsyncTaskWorker()
+      // startAsyncTaskWorker()
     }
 
     await startRedis(this, opts)
@@ -66,7 +66,7 @@ export class SelvaServer extends EventEmitter {
       await stopSubscriptionManager(this.subscriptionManager)
     }
 
-    stopAsyncTaskWorker()
+    // stopAsyncTaskWorker()
 
     this.emit('close')
   }
