@@ -19,6 +19,6 @@ struct SelvaModify_Basic {
   char *$increment;
 };
 
-int SelvaModify_SendAsyncTask(enum SelvaModify_AsyncTask async_task_type, int payload_length, char *payload, uint8_t retries);
+int SelvaModify_SendAsyncTask(enum SelvaModify_AsyncTask async_task_type, int payload_size, char *payload, uint8_t retries);
 
 #endif /* SELVA_MODIFY */
