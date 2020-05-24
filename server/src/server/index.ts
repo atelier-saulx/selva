@@ -10,6 +10,7 @@ import {
   stopSubscriptionManager,
   SubscriptionManagerState
 } from './subscriptionManager'
+import { startAsyncTaskWorker, stopAsyncTaskWorker } from './asyncTask'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -43,6 +44,10 @@ export class SelvaServer extends EventEmitter {
       this.registry = connect({ port: opts.port })
     }
 
+    if (this.type === 'origin') {
+      startAsyncTaskWorker()
+    }
+
     await startRedis(this, opts)
 
     attachStatusListeners(this, opts)
@@ -60,6 +65,8 @@ export class SelvaServer extends EventEmitter {
     if (this.type === 'subscriptionManager') {
       await stopSubscriptionManager(this.subscriptionManager)
     }
+
+    stopAsyncTaskWorker()
 
     this.emit('close')
   }

@@ -18,7 +18,7 @@ struct sockaddr_un addr;
 
 int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) {
   if (fd == -1) {
-    fd = socket(PF_UNIX, SOCK_DGRAM, 0);
+    fd = socket(PF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
       fprintf(stderr, "Unable to open file descriptor for %s\n", CLIENT_SOCK_FILE);
       fd = -1;
@@ -39,7 +39,7 @@ int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) 
   char buf[1024];
   sprintf(buf, "%s\n", payload);
   if (write(fd, buf, 1 + payload_size + 1) != 0) {
-    fprintf(stderr, "Error writing to socket\n");
+    fprintf(stderr, "Error (%s) writing to socket\n", strerror(errno));
     goto error;
   }
 
