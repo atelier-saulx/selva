@@ -36,9 +36,12 @@ int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) 
     }
   }
 
-  char buf[1024];
-  sprintf(buf, "%s\n", payload);
-  if (write(fd, buf, 1 + payload_size + 1) != 0) {
+  if (write(fd, payload, payload_size) != payload_size) {
+    fprintf(stderr, "Error (%s) writing to socket\n", strerror(errno));
+    goto error;
+  }
+
+  if (write(fd, "\n", 1) != 1) {
     fprintf(stderr, "Error (%s) writing to socket\n", strerror(errno));
     goto error;
   }

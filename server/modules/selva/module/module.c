@@ -60,9 +60,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   }
 
   RedisModuleKey *id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
-  for (int i = 2; i < argc; i += 2) {
-    RedisModuleString *field = argv[i];
-    RedisModuleString *value = argv[i + 1];
+  for (int i = 2; i < argc; i += 3) {
+    RedisModuleString *type = argv[i];
+    RedisModuleString *field = argv[i + 1];
+    RedisModuleString *value = argv[i + 2];
 
     RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
 
@@ -71,15 +72,18 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     // prepare publish
     size_t field_size;
     const char *field_str = RedisModule_StringPtrLen(field, &field_size);
-    char payload_str[7 + field_size + 6];
+    int payload_size = 7 + 1 + id_size + 1 + field_size + 1;
+    char payload_str[payload_size];
     strcpy(payload_str, "publish");
-    strcpy(payload_str, " ");
-    strcpy(payload_str, field_str);
-    strcpy(payload_str, " ");
-    strcpy(payload_str, "update");
+    strcpy(payload_str + 7, " ");
+    strcpy(payload_str + 7 + 1, id_str);
+    strcpy(payload_str + 7 + 1 + id_size, ".");
+    strcpy(payload_str + 7 + 1 + id_size + 1, field_str);
+    strcpy(payload_str + 7 + 1 + id_size + 1 + field_size, " ");
+    strcpy(payload_str + 7 + 1 + id_size + 1 + field_size + 1, "update");
 
     // publish
-    SelvaModify_SendAsyncTask(7 + 1 + field_size + 1 + 6, payload_str, 3);
+    SelvaModify_SendAsyncTask(payload_size, payload_str, 3);
   }
 
   RedisModule_CloseKey(id_key);
