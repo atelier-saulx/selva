@@ -74,20 +74,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     const char *field_str = RedisModule_StringPtrLen(field, &field_size);
     int payload_size = 7 + 1 + id_size + 1 + field_size + 1 + 6;
     char payload_str[payload_size];
-    char *payload_iterator = payload_str;
-    memcpy(payload_iterator, "publish", 7);
-    payload_iterator += 7;
-    memcpy(payload_iterator, " ", 1);
-    payload_iterator++;
-    memcpy(payload_iterator, id_str, id_size);
-    payload_iterator += id_size;
-    memcpy(payload_iterator, ".", 1);
-    payload_iterator++;
-    memcpy(payload_iterator, field_str, field_size);
-    payload_iterator += field_size;
-    memcpy(payload_iterator, " ", 1);
-    payload_iterator++;
-    memcpy(payload_iterator, "update", 6);
+    SelvaModify_PreparePublishPayload(payload_str, id_str, id_size, field_str, field_size);
 
     // publish
     SelvaModify_SendAsyncTask(payload_size, payload_str, 3);

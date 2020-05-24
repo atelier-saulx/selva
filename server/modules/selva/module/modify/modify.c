@@ -62,3 +62,20 @@ error:
 
   return SelvaModify_SendAsyncTask(payload_size, payload, --retries);
 }
+
+void SelvaModify_PreparePublishPayload(char *payload_str, char *id_str, size_t id_size, char *field_str, size_t field_size) {
+  char *payload_iterator = payload_str;
+  memcpy(payload_iterator, "publish", 7);
+  payload_iterator += 7;
+  memcpy(payload_iterator, " ", 1);
+  payload_iterator++;
+  memcpy(payload_iterator, id_str, id_size);
+  payload_iterator += id_size;
+  memcpy(payload_iterator, ".", 1);
+  payload_iterator++;
+  memcpy(payload_iterator, field_str, field_size);
+  payload_iterator += field_size;
+  memcpy(payload_iterator, " ", 1);
+  payload_iterator++;
+  memcpy(payload_iterator, "update", 6);
+}
