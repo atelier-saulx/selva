@@ -17,7 +17,7 @@ type SubscriberFn<T> = (
   observer: SubscriptionObserver<T>
 ) => (() => void) | Subscription<T>
 
-class Subscription<T> {
+export class Subscription<T> {
   private observe: SubscriberFn<T>
   public observer: Observer<T>
   private cleanup: () => void

@@ -16,7 +16,9 @@ export default (
   }
   const r: SetOptions = (result[field] = {})
 
+  let hasKeys = false
   for (let key in payload) {
+    hasKeys = true
     if (key[0] === '$') {
       if (key === '$merge') {
         if (!(payload[key] === true || payload[key] === false)) {
@@ -43,5 +45,10 @@ export default (
 
       fn(schema, key, payload[key], r, fields.properties[key], type, $lang)
     }
+  }
+
+  if (!hasKeys) {
+    // omit completely empty objects, so they are not mistaken for arrays
+    delete result[field]
   }
 }
