@@ -2,6 +2,7 @@ import { SubscriptionManager, Subscription } from './types'
 import { constants } from '@saulx/selva'
 import traverseTree from './update/traverseTree'
 import addUpdate from './update/addUpdate'
+import { ServerSelector } from '@saulx/selva/dist/src/types'
 
 const { EVENTS } = constants
 
@@ -17,7 +18,7 @@ const addOriginListeners = (
   // we need to use name and unsubscribe as well
 
   if (!subsManager.originListeners[name]) {
-    const selector = { name }
+    const selector: ServerSelector = { name, type: 'replica' }
 
     const listener = (_pattern, channel, message) => {
       subsManager.incomingCount++

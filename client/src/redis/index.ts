@@ -1,14 +1,7 @@
 import { SelvaClient, ServerDescriptor } from '../'
-import {
-  ClientOpts,
-  ConnectOptions,
-  ServerSelector,
-  LogFn,
-  LogEntry
-} from '../types'
+import { ConnectOptions, ServerSelector, LogFn } from '../types'
 import { RedisCommand, Servers, ServersById, Callback } from './types'
 import RedisMethods from './methods'
-import { GetSchemaResult } from '../schema/types'
 import { getClient, Client, addCommandToQueue } from './clients'
 import connectRegistry from './connectRegistry'
 import getServerDescriptor from './getServerDescriptor'
@@ -34,7 +27,6 @@ class RedisSelvaClient extends RedisMethods {
   public serversById: ServersById
   public subsManagers: ServerDescriptor[]
 
-  // dont rly need more then this
   public observables: Record<string, Observable<GetResult>> = {}
   public observerEmitters: Record<string, ObserverEmitter> = {}
 

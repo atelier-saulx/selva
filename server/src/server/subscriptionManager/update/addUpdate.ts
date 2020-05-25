@@ -45,14 +45,14 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
 }
 
 // 3 per ms
-const eventsPerMs = 3
+const eventsPerMs = 5
 
 const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
   if (totalTime < 10e3) {
     const lastIncoming = subscriptionManager.incomingCount
 
     delayCount++
-    console.log('delay #', delayCount, lastIncoming)
+    console.log('Sendupdate delay #', delayCount, lastIncoming)
     subscriptionManager.stagedTimeout = setTimeout(() => {
       const incoming = subscriptionManager.incomingCount - lastIncoming
       if (incoming / time > eventsPerMs) {
@@ -97,7 +97,7 @@ const addUpdate = (
       subscriptionManager.stagedInProgess = true
       subscriptionManager.stagedTimeout = setTimeout(() => {
         const { incomingCount } = subscriptionManager
-        if (incomingCount < 1000) {
+        if (incomingCount < 5000) {
           sendUpdates(subscriptionManager)
         } else {
           delay(subscriptionManager)
