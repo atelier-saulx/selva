@@ -8,8 +8,11 @@ import Observable from '../observe/observable'
 
 class ObserverEmitter extends EventEmitter {
   public count: number = 0
-  constructor() {
+  public isSend: boolean = false
+  public getOptions: GetOptions
+  constructor(getOptions) {
     super()
+    this.getOptions = getOptions
     this.setMaxListeners(1e4)
   }
 }
@@ -28,7 +31,7 @@ const createObservable = (
 
   // does this need to be an event emitter or can we just send the command?
   // with one listener
-  const observerEmitter = new ObserverEmitter()
+  const observerEmitter = new ObserverEmitter(opts)
   let isRemoved = false
   let client: Client
 
@@ -39,7 +42,7 @@ const createObservable = (
   }).then(descriptor => {
     if (!isRemoved) {
       client = getClient(redisSelvaClient, descriptor)
-      startObserver(client, channel, opts, observerEmitter)
+      startObserver(client, channel, observerEmitter)
     }
   })
 

@@ -8,6 +8,7 @@ import {
   CACHE
 } from '../../constants'
 
+// get them for all
 export const getObserverValue = (
   client: Client,
   channel: string,
@@ -21,13 +22,23 @@ export const getObserverValue = (
         const obj = JSON.parse(data)
         obj.version = version
         if (observerEmitter) {
+          observerEmitter.isSend = true
           observerEmitter.emit('update', obj)
         } else {
           if (client.observers[channel]) {
             client.observers[channel].forEach(observerEmitter => {
+              observerEmitter.isSend = true
               observerEmitter.emit('update', obj)
             })
           }
+        }
+      } else {
+        if (observerEmitter) {
+          observerEmitter.isSend = true
+        } else if (client.observers[channel]) {
+          client.observers[channel].forEach(observerEmitter => {
+            observerEmitter.isSend = true
+          })
         }
       }
     },
@@ -40,27 +51,34 @@ export const getObserverValue = (
   })
 }
 
+export function sendObserver(
+  client: Client,
+  channel: string,
+  getOptions: GetOptions
+) {
+  addCommandToQueue(client, {
+    command: 'hsetnx',
+    args: [SUBSCRIPTIONS, channel, JSON.stringify(getOptions)]
+  })
+  addCommandToQueue(client, {
+    command: 'sadd',
+    args: [channel, client.uuid]
+  })
+  addCommandToQueue(client, {
+    command: 'publish',
+    args: [NEW_SUBSCRIPTION, JSON.stringify({ client: client.uuid, channel })]
+  })
+  client.subscriber.subscribe(channel)
+}
+
 export function startObserver(
   client: Client,
   channel: string,
-  getOptions: GetOptions,
   observerEmitter: ObserverEmitter
 ) {
   if (!client.observers[channel]) {
     client.observers[channel] = new Set()
-    addCommandToQueue(client, {
-      command: 'hsetnx',
-      args: [SUBSCRIPTIONS, channel, JSON.stringify(getOptions)]
-    })
-    addCommandToQueue(client, {
-      command: 'sadd',
-      args: [channel, client.uuid]
-    })
-    addCommandToQueue(client, {
-      command: 'publish',
-      args: [NEW_SUBSCRIPTION, JSON.stringify({ client: client.uuid, channel })]
-    })
-    client.subscriber.subscribe(channel)
+    sendObserver(client, channel, observerEmitter.getOptions)
   }
   client.observers[channel].add(observerEmitter)
   getObserverValue(client, channel, observerEmitter)

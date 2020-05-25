@@ -10,7 +10,7 @@ import drainQueue from './drainQueue'
 import { v4 as uuidv4 } from 'uuid'
 import startHeartbeat from './startHeartbeat'
 import { ObserverEmitter } from '../observers'
-import { getObserverValue } from './observers'
+import { getObserverValue, sendObserver } from './observers'
 import * as constants from '../../constants'
 
 type ClientOpts = {
@@ -65,6 +65,19 @@ export class Client extends EventEmitter {
         drainQueue(this)
         if (isSubscriptionManager) {
           startHeartbeat(this)
+          for (const channel in this.observers) {
+            let sendSubs = false
+            this.observers[channel].forEach(obs => {
+              if (!sendSubs) {
+                sendObserver(this, channel, obs.getOptions)
+                sendSubs = true
+              }
+              getObserverValue(this, channel, obs)
+            })
+          }
+
+          // if allrdy send not if they are in the queue!
+          console.log('resend those subs', this.observers)
           // resend subs here?
         }
       }
@@ -102,7 +115,6 @@ export class Client extends EventEmitter {
 const clients: Map<string, Client> = new Map()
 
 // sharing on or just putting a seperate on per subscription and handling it from somewhere else?
-
 const createClient = (descriptor: ServerDescriptor): Client => {
   const { type, name, port, host } = descriptor
   const id = `${host}:${port}`
