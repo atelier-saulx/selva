@@ -132,28 +132,28 @@ test.skip('Perf - Simple increment', async t => {
   t.true(result.iterations > 1e6)
 })
 
-test.skip('Perf - Simple increment and adding meta', async t => {
-  const result = await run(
-    async client => {
-      await client.set({
-        $id: 'root',
-        value: { $increment: 1 },
-        children: [
-          {
-            type: 'thing',
-            value: 1
-          }
-        ]
-      })
-    },
-    {
-      label: 'Simple increment add meta',
-      clients: 10,
-      time: 2e3
-    }
-  )
-  t.true(result.iterations > 1e6)
-})
+// test.skip('Perf - Simple increment and adding meta', async t => {
+//   const result = await run(
+//     async client => {
+//       await client.set({
+//         $id: 'root',
+//         value: { $increment: 1 },
+//         children: [
+//           {
+//             type: 'thing',
+//             value: 1
+//           }
+//         ]
+//       })
+//     },
+//     {
+//       label: 'Simple increment add meta',
+//       clients: 10,
+//       time: 2e3
+//     }
+//   )
+//   t.true(result.iterations > 1e6)
+// })
 
 test.serial('Perf - Subscriptions', async t => {
   const result = await run(
@@ -185,8 +185,8 @@ test.serial('Perf - Subscriptions', async t => {
     },
     {
       label: 'Observe',
-      clients: 20,
-      time: 5e3
+      clients: 100,
+      time: 100e3
     }
   )
 

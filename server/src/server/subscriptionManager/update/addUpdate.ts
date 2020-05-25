@@ -13,7 +13,8 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     [...subscriptionManager.stagedForUpdates.values()].map(v =>
       v.channel.slice(-6)
     ),
-    'outgoing updates'
+    'outgoing updates',
+    Date.now()
   )
 
   // seeing a double subscriptions no good

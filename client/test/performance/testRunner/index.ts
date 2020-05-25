@@ -18,7 +18,7 @@ let replicasList: SelvaServer[] = []
 let subsManagersList: SelvaServer[] = []
 
 let replicaAmount = 5
-let subManagerAmount = 5
+let subManagerAmount = 10
 
 export async function start({ replicas = 0, subsManagers = 0 } = {}): Promise<{
   registry: SelvaServer

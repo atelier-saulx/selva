@@ -40,7 +40,6 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
   RedisModule_ReplyWithString(ctx, reply);
   return REDISMODULE_OK;
-
 }
 
 // id, key, value [, ... key, value]]
