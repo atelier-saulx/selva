@@ -14,7 +14,7 @@ Here are some of its features:
 
 - Schemas enforce data types with built-in validation
 
-- Persistence layer using GIT-LFS allowing backups every 5 minutes and access to all versions of the data available at all times
+- Persistence layer using any s3 enpoint allowing backups every 5 minutes and access to all versions of the data available at all times
 
 - JSON-based DSL for queries
 
