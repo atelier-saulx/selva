@@ -68,17 +68,18 @@ export class Client extends EventEmitter {
           for (const channel in this.observers) {
             let sendSubs = false
             this.observers[channel].forEach(obs => {
-              if (!sendSubs) {
-                sendObserver(this, channel, obs.getOptions)
+              if (obs.isSend) {
+                if (!sendSubs) {
+                  sendObserver(this, channel, obs.getOptions)
+                  sendSubs = true
+                }
+                console.log('resend those subs')
+                getObserverValue(this, channel, obs)
+              } else {
                 sendSubs = true
               }
-              getObserverValue(this, channel, obs)
             })
           }
-
-          // if allrdy send not if they are in the queue!
-          console.log('resend those subs', this.observers)
-          // resend subs here?
         }
       }
     })

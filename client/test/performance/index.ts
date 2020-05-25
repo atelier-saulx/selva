@@ -165,7 +165,7 @@ test.serial('Perf - Subscriptions', async t => {
         })
         .subscribe(x => {
           // sub.unsubscribe()
-          setTimeout(() => sub.unsubscribe(), ~~(Math.random() * 100))
+          setTimeout(() => sub.unsubscribe(), ~~(Math.random() * 50))
         })
 
       await client.set({
