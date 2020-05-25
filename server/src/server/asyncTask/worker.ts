@@ -1,7 +1,19 @@
 import * as net from 'net'
 import * as fs from 'fs'
 
+import { compile, deserialize } from 'data-record'
+
 const SOCKET_PATH = '/tmp/selva.sock'
+
+const STRUCT_DEF = compile(
+  [
+    { name: 'type', type: 'uint32_le' },
+    { name: 'id', type: 'cstring', size: 10 },
+    { name: 'fieldName', type: 'cstring_p' },
+    { name: 'value', type: 'cstring_p' }
+  ],
+  { align: true }
+)
 
 try {
   fs.unlinkSync(SOCKET_PATH)
@@ -41,7 +53,10 @@ net
       }
 
       if (got === size) {
-        console.log('RESULT', buf.toString('hex'))
+        const result = deserialize(STRUCT_DEF, buf)
+        console.log('RESULT', result)
+        result.type = result.type === 0 ? 'publish' : 'ft.add'
+        console.log('RESULT', result)
         buf = undefined
         size = 0
         got = 0
