@@ -14,8 +14,6 @@ const mangleResults = (
     delete schemaResult.sha
   }
 
-  console.log(schemaResult.types, correctSchema.types)
-
   for (const type in schemaResult.types) {
     if (!correctSchema.types[type].prefix) {
       delete schemaResult.types[type].prefix
@@ -196,8 +194,6 @@ test.serial.only('schemas - basic', async t => {
     yesh: 'a meta value',
     data: ['in an array']
   })
-
-  console.log(schemaResult)
 
   mangleResults(schema, schemaResult)
   t.deepEqual(schemaResult, schema, 'correct schema')
