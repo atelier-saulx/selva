@@ -4,6 +4,7 @@
 #include "../rmutil/test_util.h"
 
 #include "./id/id.h"
+#include "./modify/modify.h"
 
 int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   // init auto memory for created strings
@@ -42,7 +43,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   return REDISMODULE_OK;
 }
 
-// id, key, value [, ... key, value]]
+// id, type, key, value [, ... type, key, value]]
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx);
 
@@ -53,17 +54,29 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   if (id_size == 2) {
     char hash_str[37];
     SelvaId_GenId(id_str, hash_str);
-    // TODO: add prefix by schema.types[typeName].prefix
     id_str = hash_str;
     id = RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
   }
 
   RedisModuleKey *id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
-  for (int i = 2; i < argc; i += 2) {
-    RedisModuleString *field = argv[i];
-    RedisModuleString *value = argv[i + 1];
+  for (int i = 2; i < argc; i += 3) {
+    RedisModuleString *type = argv[i];
+    RedisModuleString *field = argv[i + 1];
+    RedisModuleString *value = argv[i + 2];
 
     RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
+
+    // TODO: prepare indexing
+
+    // prepare publish
+    size_t field_size;
+    const char *field_str = RedisModule_StringPtrLen(field, &field_size);
+    int payload_size = 7 + 1 + id_size + 1 + field_size + 1 + 6;
+    char payload_str[payload_size];
+    SelvaModify_PreparePublishPayload(payload_str, id_str, id_size, field_str, field_size);
+
+    // publish
+    SelvaModify_SendAsyncTask(payload_size, payload_str, 3);
   }
 
   RedisModule_CloseKey(id_key);

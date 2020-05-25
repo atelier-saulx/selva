@@ -1,0 +1,81 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/un.h>
+#include <sys/socket.h>
+#include <string.h>
+
+#include "./modify.h"
+
+#define CLIENT_SOCK_FILE "/tmp/selva.sock"
+
+extern int errno;
+
+int fd = -1;
+struct sockaddr_un addr;
+
+int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) {
+  if (fd == -1) {
+    fd = socket(PF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) {
+      fprintf(stderr, "Unable to open file descriptor for %s\n", CLIENT_SOCK_FILE);
+      fd = -1;
+      goto error;
+    }
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, CLIENT_SOCK_FILE, sizeof(addr.sun_path)-1);
+
+
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+      fprintf(stderr, "Error (%s) connecting to %s\n", strerror(errno), addr.sun_path);
+      goto error;
+    }
+  }
+
+  if (write(fd, payload, payload_size) != payload_size) {
+    fprintf(stderr, "Error (%s) writing to socket\n", strerror(errno));
+    goto error;
+  }
+
+  if (write(fd, "\n", 1) != 1) {
+    fprintf(stderr, "Error (%s) writing to socket\n", strerror(errno));
+    goto error;
+  }
+
+  return 0;
+
+error:
+  if (fd > 0) {
+    close(fd);
+  }
+
+  fd = -1;
+
+  if (retries <= 0) {
+    fprintf(stderr, "Retries exceeded\n");
+    exit(1);
+  }
+
+  return SelvaModify_SendAsyncTask(payload_size, payload, --retries);
+}
+
+void SelvaModify_PreparePublishPayload(char *payload_str, char *id_str, size_t id_size, char *field_str, size_t field_size) {
+  char *payload_iterator = payload_str;
+  memcpy(payload_iterator, "publish", 7);
+  payload_iterator += 7;
+  memcpy(payload_iterator, " ", 1);
+  payload_iterator++;
+  memcpy(payload_iterator, id_str, id_size);
+  payload_iterator += id_size;
+  memcpy(payload_iterator, ".", 1);
+  payload_iterator++;
+  memcpy(payload_iterator, field_str, field_size);
+  payload_iterator += field_size;
+  memcpy(payload_iterator, " ", 1);
+  payload_iterator++;
+  memcpy(payload_iterator, "update", 6);
+}
