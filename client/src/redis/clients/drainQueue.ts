@@ -12,12 +12,12 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
       let modify: RedisCommand
       let modifyResolvers = []
       let modifyRejects = []
-
       if (client.connected) {
         if (!q) {
           q = client.queue
           client.queue = []
         }
+        client.queueBeingDrained = q
         let nextQ: RedisCommand[]
         const parsedQ = []
         for (let i = 0; i < q.length; i++) {
@@ -94,17 +94,25 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         }
 
         const d = Date.now()
-        execBatch(client, parsedQ).finally(() => {
-          if (nextQ) {
+        execBatch(client, parsedQ)
+          .then(() => {
+            client.queueBeingDrained = []
+            if (nextQ) {
+              client.queueInProgress = false
+              drainQueue(client, nextQ)
+            } else if (client.queue.length) {
+              client.queueInProgress = false
+              drainQueue(client)
+            } else {
+              client.queueInProgress = false
+            }
+          })
+          .catch(err => {
+            console.log('Error executing batch', err)
+            client.queue.concat(client.queueBeingDrained)
+            client.queueBeingDrained = []
             client.queueInProgress = false
-            drainQueue(client, nextQ)
-          } else if (client.queue.length) {
-            client.queueInProgress = false
-            drainQueue(client)
-          } else {
-            client.queueInProgress = false
-          }
-        })
+          })
       } else {
         client.queueInProgress = false
       }

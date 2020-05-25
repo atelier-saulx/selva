@@ -8,6 +8,7 @@ import {
   SchemaOptions
 } from '.'
 import { ServerSelector } from '../types'
+import { wait } from '../util'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
@@ -227,11 +228,6 @@ export async function updateSchema(
   selector: ServerSelector,
   retry?: number
 ) {
-  console.log('update schema!')
-
-  const wait = (t: number = 0): Promise<void> =>
-    new Promise(r => setTimeout(r, t))
-
   retry = retry || 0
   if (!props.types) {
     props.types = {}
@@ -243,7 +239,6 @@ export async function updateSchema(
   )
 
   try {
-    console.log('go try! update!')
     const updated = await client.redis.evalsha(
       selector,
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it

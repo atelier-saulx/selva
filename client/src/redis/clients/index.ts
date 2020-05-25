@@ -59,6 +59,7 @@ export class Client extends EventEmitter {
   public connected: boolean
   public observers: Record<string, Set<ObserverEmitter>>
   public uuid: string
+  public queueBeingDrained: RedisCommand[]
   public serverIsBusy: boolean // can be written from the registry
   public scripts: {
     batchingEnabled: { [scriptSha: string]: boolean }
@@ -79,6 +80,7 @@ export class Client extends EventEmitter {
     this.serverIsBusy = false
     this.queueInProgress = false
     this.queue = []
+    this.queueBeingDrained = []
     this.connected = false
 
     const isSubscriptionManager =
@@ -86,6 +88,10 @@ export class Client extends EventEmitter {
       process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
 
     this.on('hard-disconnect', () => {
+      // find different server for it
+
+      console.log('hard dc - prob need to reconnect to somethign new')
+
       this.subscriber = createRedisClient(this, host, port, 'subscriber')
       this.publisher = createRedisClient(this, host, port, 'publisher')
       addListeners(this)
@@ -116,6 +122,8 @@ export class Client extends EventEmitter {
     })
     this.on('disconnect', () => {
       // on dc we actualy want to re-select if it had a selector!
+      this.queue.concat(this.queueBeingDrained)
+      this.queueBeingDrained = []
       this.connected = false
       this.queueInProgress = false
       clearTimeout(this.heartbeatTimout)
