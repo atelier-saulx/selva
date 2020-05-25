@@ -96,14 +96,6 @@ const addSubscription = (
   clients: Set<string>,
   getOptions: GetOptions
 ) => {
-  // if (subsManager.subscriptions[channel]) {
-  //   console.log('HOW!?')
-  //   clients.forEach(v => {
-  //     subsManager.subscriptions[channel].clients.add(v)
-  //   })
-  //   return
-  // }
-
   const subscription: Subscription = {
     clients,
     channel,
