@@ -93,7 +93,7 @@ void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str,
   publish_task.field_name = (const char *)struct_size;
   publish_task.field_name_len = field_size;
   publish_task.value = (const char *)struct_size + field_size;
-  publish_task.value_len = struct_size + value_size;
+  publish_task.value_len = value_size;
 
   char *ptr = payload_str;
 
