@@ -334,10 +334,10 @@ test.serial(
 
     await wait(1000)
     // should get no event after reconnection
-    client.redis.redis.disconnect()
-    await wait(1000 * 5)
-    client.redis.redis.reconnect()
-    await wait(1000 * 5)
+    // client.redis.disconnect()
+    // await wait(1000 * 5)
+    // client.redis.redis.reconnect()
+    // await wait(1000 * 5)
 
     console.log('set so nice')
     await client.set({
@@ -412,9 +412,9 @@ test.serial(
     console.log('dc and rc')
 
     // should get no event after reconnection
-    client.redis.redis.disconnect()
-    await wait(1000 * 5)
-    client.redis.redis.reconnect()
+    // client.redis.redis.disconnect()
+    // await wait(1000 * 5)
+    // client.redis.redis.reconnect()
     console.log('----------------------------------')
 
     console.log('set')
@@ -429,7 +429,7 @@ test.serial(
 
     console.log('reconnect')
 
-    client.redis.redis.reconnect()
+    // client.redis.redis.reconnect()
     console.log('----------------------------------')
 
     console.log('set again')
