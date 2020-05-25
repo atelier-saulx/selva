@@ -21,6 +21,32 @@ type ClientOpts = {
   id: string
 }
 
+const addListeners = (client: Client) => {
+  const type = client.type
+  const isSubscriptionManager =
+    type === 'subscriptionManager' &&
+    process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
+
+  if (isSubscriptionManager) {
+    client.subscriber.on('message', (channel, msg) => {
+      if (client.observers[channel]) {
+        getObserverValue(client, channel)
+      }
+    })
+  } else {
+    client.subscriber.on('message', (channel, msg) => {
+      if (channel.startsWith(constants.LOG)) {
+        const log: LogEntry = JSON.parse(msg)
+        for (const cl of client.clients) {
+          if (cl.selvaClient.uuid === log.clientId) {
+            cl.selvaClient.emit('log', { dbName: client.name, log })
+          }
+        }
+      }
+    })
+  }
+}
+
 export class Client extends EventEmitter {
   public subscriber: RedisClient
   public publisher: RedisClient
@@ -58,6 +84,12 @@ export class Client extends EventEmitter {
       type === 'subscriptionManager' &&
       process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
 
+    this.on('node-redis-crash', () => {
+      this.subscriber = createRedisClient(this, host, port, 'subscriber')
+      this.publisher = createRedisClient(this, host, port, 'publisher')
+      addListeners(this)
+    })
+
     this.on('connect', () => {
       if (!this.connected) {
         this.connected = true
@@ -91,23 +123,9 @@ export class Client extends EventEmitter {
 
     if (isSubscriptionManager) {
       this.observers = {}
-      this.subscriber.on('message', (channel, msg) => {
-        if (this.observers[channel]) {
-          getObserverValue(this, channel)
-        }
-      })
-    } else {
-      this.subscriber.on('message', (channel, msg) => {
-        if (channel.startsWith(constants.LOG)) {
-          const log: LogEntry = JSON.parse(msg)
-          for (const client of this.clients) {
-            if (client.selvaClient.uuid === log.clientId) {
-              client.selvaClient.emit('log', { dbName: this.name, log })
-            }
-          }
-        }
-      })
     }
+
+    addListeners(this)
   }
 }
 
@@ -127,15 +145,18 @@ const createClient = (descriptor: ServerDescriptor): Client => {
   return client
 }
 
-// const destroyClient = () => {
-//   // remove hearthbeat
-// }
+const destroyClient = (client: Client) => {
+  // remove hearthbeat
+  // for each client tell that this client is destroyed
+}
+
 // export function removeRedisSelvaClient(
 //   client: Client,
 //   selvaRedisClient: RedisSelvaClient
 // ) {
 //   // if zero remove the client
 // }
+
 // export function addRedisSelvaClient(
 //   client: Client,
 //   selvaRedisClient: RedisSelvaClient

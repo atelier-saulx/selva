@@ -38,7 +38,6 @@ const createObservable = (
   getServerDescriptor(redisSelvaClient, {
     type: 'subscriptionManager',
     subscription: channel
-    // channel
   }).then(descriptor => {
     if (!isRemoved) {
       client = getClient(redisSelvaClient, descriptor)
