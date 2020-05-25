@@ -64,14 +64,17 @@ error:
 }
 
 void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, size_t id_size, const char *field_str, size_t field_size) {
+  size_t struct_size = sizeof(struct SelvaModify_AsyncTask);
+
   struct SelvaModify_AsyncTask publish_task;
   publish_task.type = SELVA_MODIFY_ASYNC_TASK_PUBLISH;
   memcpy(publish_task.id, id_str, 10);
-  publish_task.fieldName = field_str;
+  publish_task.field_name = (const char *)struct_size;
+  publish_task.field_name_len = field_size;
   publish_task.value = NULL;
+  publish_task.value_len = 0;
 
   char *ptr = payload_str;
-  size_t struct_size = sizeof(struct SelvaModify_AsyncTask);
 
   int total_size = struct_size + field_size;
   memcpy(ptr, &total_size, sizeof(int));
@@ -83,14 +86,16 @@ void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, si
 }
 
 void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, size_t id_size, const char *field_str, size_t field_size, const char *value_str, size_t value_size) {
+  size_t struct_size = sizeof(struct SelvaModify_AsyncTask);
   struct SelvaModify_AsyncTask publish_task;
   publish_task.type = SELVA_MODIFY_ASYNC_TASK_INDEX;
   memcpy(publish_task.id, id_str, 10);
-  publish_task.fieldName = field_str;
-  publish_task.value = NULL;
+  publish_task.field_name = (const char *)struct_size;
+  publish_task.field_name_len = field_size;
+  publish_task.value = (const char *)struct_size + field_size;
+  publish_task.value_len = struct_size + value_size;
 
   char *ptr = payload_str;
-  size_t struct_size = sizeof(struct SelvaModify_AsyncTask);
 
   int total_size = struct_size + field_size + value_size;
   memcpy(ptr, &total_size, sizeof(int));

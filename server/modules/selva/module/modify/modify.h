@@ -22,8 +22,10 @@ enum SelvaModify_AsyncTaskType {
 struct SelvaModify_AsyncTask {
   enum SelvaModify_AsyncTaskType type;
   char id[10];
-  const char *fieldName;
+  const char *field_name;
+  size_t field_name_len;
   const char *value;
+  size_t value_len;
 };
 
 int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries);
