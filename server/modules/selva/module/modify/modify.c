@@ -63,19 +63,42 @@ error:
   return SelvaModify_SendAsyncTask(payload_size, payload, --retries);
 }
 
-void SelvaModify_PreparePublishPayload(char *payload_str, char *id_str, size_t id_size, char *field_str, size_t field_size) {
-  char *payload_iterator = payload_str;
-  memcpy(payload_iterator, "publish", 7);
-  payload_iterator += 7;
-  memcpy(payload_iterator, " ", 1);
-  payload_iterator++;
-  memcpy(payload_iterator, id_str, id_size);
-  payload_iterator += id_size;
-  memcpy(payload_iterator, ".", 1);
-  payload_iterator++;
-  memcpy(payload_iterator, field_str, field_size);
-  payload_iterator += field_size;
-  memcpy(payload_iterator, " ", 1);
-  payload_iterator++;
-  memcpy(payload_iterator, "update", 6);
+void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, size_t id_size, const char *field_str, size_t field_size) {
+  struct SelvaModify_AsyncTask publish_task;
+  publish_task.type = SELVA_MODIFY_ASYNC_TASK_PUBLISH;
+  memcpy(publish_task.id, id_str, 10);
+  publish_task.fieldName = field_str;
+  publish_task.value = NULL;
+
+  char *ptr = payload_str;
+  size_t struct_size = sizeof(struct SelvaModify_AsyncTask);
+
+  int total_size = struct_size + field_size;
+  memcpy(ptr, &total_size, sizeof(int));
+
+  memcpy(ptr, &publish_task, struct_size);
+  ptr += struct_size;
+
+  memcpy(ptr, field_str, field_size);
+}
+
+void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, size_t id_size, const char *field_str, size_t field_size, const char *value_str, size_t value_size) {
+  struct SelvaModify_AsyncTask publish_task;
+  publish_task.type = SELVA_MODIFY_ASYNC_TASK_INDEX;
+  memcpy(publish_task.id, id_str, 10);
+  publish_task.fieldName = field_str;
+  publish_task.value = NULL;
+
+  char *ptr = payload_str;
+  size_t struct_size = sizeof(struct SelvaModify_AsyncTask);
+
+  int total_size = struct_size + field_size + value_size;
+  memcpy(ptr, &total_size, sizeof(int));
+
+  memcpy(ptr, &publish_task, struct_size);
+  ptr += struct_size;
+
+  memcpy(ptr, field_str, field_size);
+  ptr += field_size;
+  memcpy(ptr, value_str, value_size);
 }
