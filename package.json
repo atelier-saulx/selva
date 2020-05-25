@@ -8,7 +8,9 @@
     "tools"
   ],
   "scripts": {
-    "publish-script": "yarn build && node ./bin/publish.js && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
+    "publish-major": "yarn build && node ./bin/publish.js major && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
+    "publish-minor": "yarn build && node ./bin/publish.js minor && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
+    "publish-patch": "yarn build && node ./bin/publish.js && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
     "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist",
     "test": "cd client && yarn test",
     "build": "yarn buildClient && yarn buildServer && yarn buildApi",

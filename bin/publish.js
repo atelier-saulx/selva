@@ -19,8 +19,11 @@ pkgs.forEach(v => {
   const version = v.version.split('.')
   if (bump === 'major') {
     version[0] = version[0] * 1 + 1
+    version[1] = 0
+    version[2] = 0
   } else if (bump === 'minor') {
     version[1] = version[1] * 1 + 1
+    version[2] = 0
   } else {
     version[2] = version[2] * 1 + 1
   }
