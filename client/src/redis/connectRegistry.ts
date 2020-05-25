@@ -82,7 +82,7 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
 
   subsManagers.sort(sortSubsManagers)
 
-  if (client.subsManagers.length) {
+  if (client.subsManagers && client.subsManagers.length) {
     for (let i = 0; i > client.subsManagers.length; i++) {
       const id = `${client.subsManagers[i].host}:${client.subsManagers[i].port}`
       if (!subManagerObj[id]) {

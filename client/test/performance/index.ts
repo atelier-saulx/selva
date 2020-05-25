@@ -11,7 +11,9 @@ import { start, stop, run } from './testRunner'
 let registry
 
 test.before(async t => {
+  console.log('go make')
   registry = (await start()).registry
+  console.log('its start')
 })
 
 test.after(async _t => {
@@ -156,7 +158,6 @@ test.skip('Perf - Simple increment', async t => {
 // })
 
 test.serial('Perf - Subscriptions', async t => {
-  console.log('yo')
   const result = await run(
     async client => {
       const sub = client
