@@ -48,10 +48,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   RedisModule_AutoMemory(ctx);
 
   RedisModuleString *id = argv[1];
-  size_t id_size;
-  const char *id_str = RedisModule_StringPtrLen(id, &id_size);
+  size_t id_len;
+  const char *id_str = RedisModule_StringPtrLen(id, &id_len);
 
-  if (id_size == 2) {
+  if (id_len == 2) {
     char hash_str[37];
     SelvaId_GenId(id_str, hash_str);
     id_str = hash_str;
@@ -66,19 +66,28 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
 
-    // TODO: prepare indexing
+    size_t field_len;
+    const char *field_str = RedisModule_StringPtrLen(field, &field_len);
 
-    // prepare publish
-    size_t field_size;
-    const char *field_str = RedisModule_StringPtrLen(field, &field_size);
+    size_t type_len;
+    const char *type_str = RedisModule_StringPtrLen(type, &type_len);
 
-    int payload_size = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_size;
-    char payload_str[payload_size];
-    SelvaModify_PreparePublishPayload(payload_str, id_str, id_size, field_str, field_size);
+    if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE) {
+      size_t value_len;
+      const char *value_str = RedisModule_StringPtrLen(value, &value_len);
+      int indexing_str_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
+      char indexing_str[indexing_str_len];
+      SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len, value_str, value_len);
+      SelvaModify_SendAsyncTask(indexing_str_len, indexing_str, 3);
+    }
+
+    int payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len;
+    char payload_str[payload_len];
+    SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
 
     // publish
-    printf("Sending async task with struct %zu and field %zu\n", sizeof(struct SelvaModify_AsyncTask), field_size);
-    SelvaModify_SendAsyncTask(payload_size, payload_str, 3);
+    printf("Sending async task with struct %zu and field %zu\n", sizeof(struct SelvaModify_AsyncTask), field_len);
+    SelvaModify_SendAsyncTask(payload_len, payload_str, 3);
   }
 
   RedisModule_CloseKey(id_key);

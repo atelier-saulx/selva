@@ -16,7 +16,7 @@ extern int errno;
 int fd = -1;
 struct sockaddr_un addr;
 
-int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) {
+int SelvaModify_SendAsyncTask(int payload_len, char *payload, uint8_t retries) {
   if (fd == -1) {
     fd = socket(PF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
@@ -36,7 +36,7 @@ int SelvaModify_SendAsyncTask(int payload_size, char *payload, uint8_t retries) 
     }
   }
 
-  if (write(fd, payload, payload_size) != payload_size) {
+  if (write(fd, payload, payload_len) != payload_len) {
     fprintf(stderr, "Error (%s) writing to socket\n", strerror(errno));
     goto error;
   }
@@ -55,52 +55,52 @@ error:
     exit(1);
   }
 
-  return SelvaModify_SendAsyncTask(payload_size, payload, --retries);
+  return SelvaModify_SendAsyncTask(payload_len, payload, --retries);
 }
 
-void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, size_t id_size, const char *field_str, size_t field_size) {
-  size_t struct_size = sizeof(struct SelvaModify_AsyncTask);
+void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, size_t id_len, const char *field_str, size_t field_len) {
+  size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
 
   struct SelvaModify_AsyncTask publish_task;
   publish_task.type = SELVA_MODIFY_ASYNC_TASK_PUBLISH;
   memcpy(publish_task.id, id_str, 10);
-  publish_task.field_name = (const char *)struct_size;
-  publish_task.field_name_len = field_size;
+  publish_task.field_name = (const char *)struct_len;
+  publish_task.field_name_len = field_len;
   publish_task.value = NULL;
   publish_task.value_len = 0;
 
   char *ptr = payload_str;
 
-  int32_t total_size = struct_size + field_size;
-  memcpy(ptr, &total_size, sizeof(int32_t));
+  int32_t total_len = struct_len + field_len;
+  memcpy(ptr, &total_len, sizeof(int32_t));
   ptr += sizeof(int32_t);
 
-  memcpy(ptr, &publish_task, struct_size);
-  ptr += struct_size;
+  memcpy(ptr, &publish_task, struct_len);
+  ptr += struct_len;
 
-  memcpy(ptr, field_str, field_size);
+  memcpy(ptr, field_str, field_len);
 }
 
-void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, size_t id_size, const char *field_str, size_t field_size, const char *value_str, size_t value_size) {
-  size_t struct_size = sizeof(struct SelvaModify_AsyncTask);
+void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, size_t id_len, const char *field_str, size_t field_len, const char *value_str, size_t value_len) {
+  size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
   struct SelvaModify_AsyncTask publish_task;
   publish_task.type = SELVA_MODIFY_ASYNC_TASK_INDEX;
   memcpy(publish_task.id, id_str, 10);
-  publish_task.field_name = (const char *)struct_size;
-  publish_task.field_name_len = field_size;
-  publish_task.value = (const char *)struct_size + field_size;
-  publish_task.value_len = value_size;
+  publish_task.field_name = (const char *)struct_len;
+  publish_task.field_name_len = field_len;
+  publish_task.value = (const char *)struct_len + field_len;
+  publish_task.value_len = value_len;
 
   char *ptr = payload_str;
 
-  int32_t total_size = struct_size + field_size + value_size;
-  memcpy(ptr, &total_size, sizeof(int32_t));
+  int32_t total_len = struct_len + field_len + value_len;
+  memcpy(ptr, &total_len, sizeof(int32_t));
   ptr += sizeof(int32_t);
 
-  memcpy(ptr, &publish_task, struct_size);
-  ptr += struct_size;
+  memcpy(ptr, &publish_task, struct_len);
+  ptr += struct_len;
 
-  memcpy(ptr, field_str, field_size);
-  ptr += field_size;
-  memcpy(ptr, value_str, value_size);
+  memcpy(ptr, field_str, field_len);
+  ptr += field_len;
+  memcpy(ptr, value_str, value_len);
 }
