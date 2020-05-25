@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva-api",
-  "version": "0.1.11",
+  "version": "0.1.18",
   "main": "./dist/index.js",
   "description": "API server and API utilities for selva",
   "scripts": {
@@ -12,7 +12,7 @@
     "clean": "rm -rf ./dist"
   },
   "devDependencies": {
-    "@saulx/selva-server": "0.2.43",
+    "@saulx/selva-server": "0.2.50",
     "@types/body-parser": "^1.19.0",
     "@types/node-fetch": "^2.5.6",
     "ava": "2.4.0",
@@ -58,7 +58,7 @@
     ]
   },
   "dependencies": {
-    "@saulx/selva": "0.2.46",
+    "@saulx/selva": "0.2.53",
     "body-parser": "^1.19.0"
   }
 }

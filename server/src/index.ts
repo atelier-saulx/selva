@@ -1,312 +1,200 @@
-import retry from 'async-retry'
-import { spawn, execSync } from 'child_process'
-import fs from 'fs'
-import path from 'path'
-import {
-  BackupFns,
-  scheduleBackups,
-  saveAndBackUp,
-  loadBackup
-} from './backups'
-import cleanExit from './cleanExit'
-import SubscriptionManager from './subscriptions'
+import { Options, ServerOptions } from './types'
+import { SelvaServer, startServer } from './server'
+import getPort from 'get-port'
+import chalk from 'chalk'
+import os from 'os'
 
-export * as s3Backups from './backup-plugins/s3'
-export * as dropboxBackups from './backup-plugins/dropbox'
-
-type Service = {
-  port: number
-  host: string
-}
-
-// make abstraction on top
-
-export type Subscriptions = {
-  port?: number | Promise<number>
-  service?: Service | Promise<Service>
-  host?: number | Promise<number>
-  selvaServer?: {
-    port?: number | Promise<number>
-    service?: Service | Promise<Service>
-    host?: string | Promise<string>
+const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
+  let parsedOpts: ServerOptions
+  if (typeof opts === 'function') {
+    parsedOpts = await opts()
+  } else {
+    parsedOpts = await opts
   }
-}
-
-type FnStart = {
-  port?: number | Promise<number>
-  dir?: string
-  service?: Service | Promise<Service>
-  replica?: Service | Promise<Service>
-  modules?: string[]
-  verbose?: boolean
-  backups?: {
-    loadBackup?: boolean
-    scheduled?: { intervalInMinutes: number }
-    backupFns: BackupFns | Promise<BackupFns>
+  if (!parsedOpts.port) {
+    parsedOpts.port = await getPort()
   }
-  seperateSubsmanager?: boolean
-  subscriptions?: Subscriptions | boolean
-}
 
-export type SelvaServer = {
-  on: (
-    type: 'log' | 'data' | 'close' | 'error',
-    cb: (data: any) => void
-  ) => void
-  destroy: () => Promise<void>
-  backup: () => Promise<void>
-  openSubscriptions: () => Promise<void>
-  closeSubscriptions: () => void
-  subsManagerServer?: SelvaServer
+  if (!parsedOpts.host) {
+    const network = os.networkInterfaces()
+    let ip
+    for (let key in network) {
+      const r = network[key].find(
+        v => v.family === 'IPv4' && v.internal === false
+      )
+      if (r) {
+        ip = r
+        break
+      }
+    }
+    parsedOpts.host = (ip && ip.address) || '0.0.0.0'
+  }
+
+  if (!parsedOpts.dir) {
+    parsedOpts.dir = process.cwd()
+  }
+
+  if (parsedOpts.modules) {
+    if (Array.isArray(parsedOpts.modules)) {
+      parsedOpts.modules = [
+        ...new Set([...defaultModules, ...parsedOpts.modules])
+      ]
+    }
+  } else {
+    parsedOpts.modules = defaultModules
+  }
+
+  if (parsedOpts.default && !parsedOpts.name) {
+    parsedOpts.name = 'default'
+  }
+
+  return parsedOpts
 }
 
 const defaultModules = ['redisearch', 'selva']
 
-const wait = (): Promise<void> =>
-  new Promise(resolve => {
-    setTimeout(resolve, 100)
-  })
-
-export const startInternal = async function({
-  port: portOpt,
-  service,
-  modules,
-  replica,
-  dir = process.cwd(),
-  verbose = false,
-  backups = null,
-  subscriptions,
-  seperateSubsmanager
-}: FnStart): Promise<SelvaServer> {
-  let backupCleanup: () => void
-  let port: number
-  let backupFns: BackupFns
-  if (verbose) console.info('Start db 🌈')
-  if (service instanceof Promise) {
-    if (verbose) {
-      console.info('awaiting service')
-    }
-    service = await service
-
-    if (verbose) {
-      console.info('service', service)
+const validate = (
+  opts: ServerOptions,
+  required: string[],
+  illegal: string[]
+): string | undefined => {
+  for (const field of required) {
+    if (!opts[field]) {
+      return `${field} is required`
     }
   }
 
-  if (portOpt instanceof Promise) {
-    if (verbose) {
-      console.info('awaiting port')
-    }
-    port = await portOpt
-  } else {
-    port = portOpt
-  }
-
-  if (replica instanceof Promise) {
-    if (verbose) {
-      console.info('awaiting db to replicate')
-    }
-    replica = await replica
-    if (verbose) {
-      console.info('replica', replica)
+  for (const field of illegal) {
+    if (opts[field]) {
+      return `${field} is not a valid option`
     }
   }
 
-  if (!port && service) {
-    port = service.port
-    if (verbose) {
-      console.info('listen on port', port)
-    }
+  if (opts.name === 'registry') {
+    return `Registry is a reserved name`
   }
 
-  const args = ['--port', String(port), '--protected-mode', 'no', '--dir', dir]
-
-  if (backups) {
-    if (backups.backupFns instanceof Promise) {
-      backupFns = await backups.backupFns
-    } else {
-      backupFns = backups.backupFns
-    }
-
-    if (backups.loadBackup) {
-      console.log('Loading backup')
-      await loadBackup(process.cwd(), backupFns)
-      console.log('Backup loaded')
-    }
-
-    if (backups.scheduled) {
-      args.push('--save', '30', '10000')
-      args.push('--save', '300', '10')
-      args.push('--save', '600', '1')
-
-      backupCleanup = scheduleBackups(
-        dir,
-        backups.scheduled.intervalInMinutes,
-        backupFns
-      )
-    }
+  if (!opts.port) {
+    return `no port provided`
   }
 
-  if (modules) {
-    modules = [...new Set([...defaultModules, ...modules])]
-  } else {
-    modules = defaultModules
+  if (!opts.host) {
+    return `no host provided`
   }
 
-  modules.forEach(m => {
-    const platform = process.platform + '_' + process.arch
-    const p = path.join(
-      __dirname,
-      '../',
-      'modules',
-      'binaries',
-      platform,
-      m + '.so'
+  if (typeof opts.port !== 'number') {
+    return `port is not a number ${opts.port}`
+  }
+
+  if (typeof opts.dir !== 'string') {
+    return `string is not a string ${opts.dir}`
+  }
+
+  if (!Array.isArray(opts.modules)) {
+    return `Modules needs to be an array of strings`
+  }
+}
+
+export async function startOrigin(opts: Options): Promise<SelvaServer> {
+  const parsedOpts = await resolveOpts(opts)
+
+  // default name is 'main'
+  const err = validate(parsedOpts, ['registry', 'name'], [])
+  if (err) {
+    console.error(`Error starting origin selva server ${chalk.red(err)}`)
+    throw new Error(err)
+  }
+  return startServer('origin', parsedOpts)
+}
+
+export async function startRegistry(opts: Options): Promise<SelvaServer> {
+  const parsedOpts = await resolveOpts(opts)
+
+  const err = validate(
+    parsedOpts,
+    [],
+    ['registry', 'backups', 'name', 'default']
+  )
+
+  parsedOpts.name = 'registry'
+
+  if (err) {
+    console.error(`Error starting registry selva server ${chalk.red(err)}`)
+    throw new Error(err)
+  }
+  return startServer('registry', parsedOpts)
+}
+
+// 1 extra new thing - monitor server / stats
+export async function startReplica(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+
+  // default name is 'main'
+  const err = validate(parsedOpts, ['registry', 'name'], ['backups'])
+  if (err) {
+    console.error(`Error starting replica selva server ${chalk.red(err)}`)
+    throw new Error(err)
+  }
+  return startServer('replica', parsedOpts)
+}
+
+export async function startSubscriptionManager(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+  // default name is 'main'
+  const err = validate(parsedOpts, ['registry'], ['name', 'default', 'backups'])
+
+  parsedOpts.name = 'subscriptionManager'
+
+  if (err) {
+    console.error(
+      `Error starting subscription Mmnager selva server ${chalk.red(err)}`
     )
-    if (fs.existsSync(p)) {
-      if (verbose) {
-        console.info(`  Load redis module "${m}"`)
-      }
-      args.push('--loadmodule', p)
-    } else {
-      console.warn(`${m} module does not exists for "${platform}"`)
+    throw new Error(err)
+  }
+  return startServer('subscriptionManager', parsedOpts)
+}
+
+// make a registry, then add origin, then add subs manager
+// backups may be a bit problematic here :/
+// maybe we can put the registry and subs manager in a different db in redis and only back up the "main db"? hmmmmmmmmmmmmm let me see (tony notes)
+export async function start(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+
+  // TODO: for now all in different ports, fix later
+  const err = validate(
+    parsedOpts,
+    [],
+    ['registry', 'backups', 'name', 'default']
+  )
+
+  if (err) {
+    console.error(`Error starting selva server ${chalk.red(err)}`)
+    throw new Error(err)
+  }
+
+  const registry = await startServer('registry', {
+    ...parsedOpts,
+    name: 'registry'
+  })
+  const origin = await startOrigin({
+    name: 'default',
+    default: true,
+    registry
+  })
+
+  const subs = await startSubscriptionManager({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host
     }
   })
 
-  if (replica) {
-    args.push('--replicaof', replica.host, String(replica.port))
-  }
+  registry.on('close', () => {
+    origin.destroy()
+    subs.destroy()
+  })
 
-  const tmpPath = path.join(process.cwd(), './tmp')
-  if (!fs.existsSync(tmpPath)) {
-    fs.mkdirSync(tmpPath)
-  }
-
-  try {
-    execSync(`redis-cli -p ${port} config set dir ${dir}`)
-    execSync(`redis-cli -p ${port} shutdown`)
-  } catch (e) {}
-
-  const redisDb = spawn('redis-server', args)
-
-  let subs
-
-  if (subscriptions) {
-    if (typeof subscriptions === 'object') {
-      subs = new SubscriptionManager()
-
-      console.log(`subs enabled ${subscriptions}`, port)
-
-      if (seperateSubsmanager) {
-        await subs.createServer(subscriptions, seperateSubsmanager)
-      }
-
-      // may need to create another server ":/"
-
-      await subs.connect(subscriptions)
-    }
-  }
-
-  const redisServer: SelvaServer = {
-    on: (type: 'data' | 'close' | 'error', cb: (data: any) => void) => {
-      if (type === 'error') {
-        redisDb.stderr.on('data', cb)
-      } else if (type === 'data') {
-        redisDb.stdout.on('data', cb)
-      } else {
-        redisDb.on('close', cb)
-      }
-    },
-    closeSubscriptions: () => {
-      if (subs) {
-        subs.destroy()
-      }
-    },
-    openSubscriptions: async () => {
-      if (subs && typeof subscriptions === 'object') {
-        await subs.connect(subscriptions)
-      }
-    },
-    destroy: async () => {
-      execSync(`redis-cli -p ${port} shutdown`)
-      redisDb.kill()
-      if (backupCleanup) {
-        backupCleanup()
-      }
-
-      if (subs) {
-        await subs.destroy()
-      }
-      await wait()
-    },
-    backup: async () => {
-      // make a manual backup if available
-      if (!backupFns) {
-        throw new Error(`No backup options supplied`)
-      }
-
-      await saveAndBackUp(process.cwd(), port, backupFns)
-    }
-  }
-
-  cleanExit(port)
-
-  if (verbose) console.info(`🌈 Succesfully started db on port ${port}`)
-
-  return redisServer
+  return registry
 }
 
-export const start = async (opts: FnStart): Promise<SelvaServer> => {
-  if (opts.subscriptions) {
-    if (opts.subscriptions === true) {
-      // prob want seperate thing to be the default
-      opts.subscriptions = {
-        port: opts.port,
-        service: opts.service,
-        selvaServer: {
-          service: opts.service,
-          port: opts.port
-        }
-      }
-      return startInternal(opts)
-    } else {
-      if (!opts.port && !opts.service) {
-        // just subs manager
-        opts.port = opts.subscriptions.port
-        opts.service = opts.subscriptions.service
-        return startInternal(opts)
-      } else {
-        if (!opts.subscriptions.selvaServer) {
-          opts.subscriptions.selvaServer = {
-            service: opts.service,
-            port: opts.port
-          }
-        }
-
-        if (opts.subscriptions.port || opts.subscriptions.service) {
-          opts.seperateSubsmanager = true
-          opts.subscriptions.selvaServer = {
-            service: opts.service,
-            port: opts.port
-          }
-          // needs to create a seperate subs manager
-          return startInternal(opts)
-        } else {
-          return startInternal(opts)
-        }
-      }
-    }
-  } else {
-    if (opts.subscriptions === undefined) {
-      opts.subscriptions = {
-        port: opts.port,
-        service: opts.service,
-        selvaServer: {
-          service: opts.service,
-          port: opts.port
-        }
-      }
-    }
-    return startInternal(opts)
-  }
-}
+export { SelvaServer }

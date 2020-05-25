@@ -11,6 +11,7 @@ import { getSchema } from '../schema/index'
 import { ensureArray, isArray } from 'lua/src/util'
 import makeNewGetOptions from './all'
 import getQuery from './query/index'
+import checkSingleReference from './reference'
 import * as r from '../redis'
 
 import global from '../globals'
@@ -101,13 +102,13 @@ function getField(
 
           const resolvedId = resolveId(ensureArray(props.$field.value.$id), [])
           sourceField = resolveAll(
-            resolvedId,
+            <string>resolvedId,
             schema,
             ensureArray(props.$field.path),
             language,
             version
           )
-          ids = [resolvedId]
+          ids = [<string>resolvedId]
         } else {
           sourceField = resolveAll(
             id,
@@ -158,7 +159,7 @@ function getField(
         getWithField(
           intermediateResult,
           schema,
-          resolveId(ensureArray(props.$field.value.$id), []),
+          <string>resolveId(ensureArray(props.$field.value.$id), []),
           'intermediate',
           $field,
           language,
@@ -182,6 +183,23 @@ function getField(
         )
 
         if (
+          checkSingleReference(
+            result,
+            props,
+            getField,
+            id,
+            props.$field,
+            field,
+            language,
+            version,
+            ignore,
+            metaKeys
+          )
+        ) {
+          return true
+        }
+
+        if (
           getWithField(
             result,
             schema,
@@ -203,6 +221,23 @@ function getField(
     if (!hasAlias) {
       if (props.$all) {
         props = makeNewGetOptions(id, field || '', schema, props)
+      }
+
+      if (
+        checkSingleReference(
+          result,
+          props,
+          getField,
+          id,
+          field,
+          field,
+          language,
+          version,
+          ignore,
+          metaKeys
+        )
+      ) {
+        return true
       }
 
       for (const key in props) {
@@ -362,7 +397,7 @@ function getRawAncestors(
   return result
 }
 
-function resolveId(ids: Id[], aliases: string[]) {
+function resolveId(ids: Id[], aliases: string[]): string | null {
   for (const id of ids) {
     if (r.exists(id)) {
       return id
@@ -381,10 +416,12 @@ function resolveId(ids: Id[], aliases: string[]) {
     }
   }
 
-  if (ids.length === 0) {
+  if (aliases.length === 0 && ids.length === 0) {
     return 'root'
-  } else {
+  } else if (ids.length > 0) {
     return ids[0]
+  } else {
+    return null
   }
 }
 
@@ -402,12 +439,14 @@ function get(opts: GetOptions): GetResult {
   } = opts
 
   let id = resolveId(ensureArray(ids), ensureArray(aliases))
-  // make the job of queries a bit easier
-  opts.$id = id
 
   if (!id) {
-    id = 'root'
+    result.$isNull = true
+    return <any>result
   }
+
+  // make the job of queries a bit easier
+  opts.$id = id
 
   if (includeMeta) {
     global.$meta = {}

@@ -148,7 +148,7 @@ test.serial('can delete a field', async t => {
     value: true
   })
 
-  t.deepEqual(await client.redis.hexists('root', 'value'), false)
+  t.deepEqual(await client.redis.hexists('root', 'value'), 0)
   t.deepEqual(await client.redis.smembers('root.children'), [match])
   t.deepEqual(await client.redis.hget(match, 'value'), '9002')
 
@@ -157,18 +157,18 @@ test.serial('can delete a field', async t => {
     value: true
   })
 
-  t.deepEqual(await client.redis.hexists('root', 'value'), false)
+  t.deepEqual(await client.redis.hexists('root', 'value'), 0)
   t.deepEqual(await client.redis.smembers('root.children'), [match])
-  t.deepEqual(await client.redis.hexists(match, 'value'), false)
+  t.deepEqual(await client.redis.hexists(match, 'value'), 0)
 
   await client.delete({
     $id: 'root',
     children: true
   })
 
-  t.deepEqual(await client.redis.hexists('root', 'value'), false)
+  t.deepEqual(await client.redis.hexists('root', 'value'), 0)
   t.deepEqual(await client.redis.smembers('root.children'), [])
-  t.deepEqual(await client.redis.hexists(match, 'value'), false)
+  t.deepEqual(await client.redis.hexists(match, 'value'), 0)
 
   await client.delete('root')
   await client.delete(match)
@@ -210,10 +210,10 @@ test.serial('can delete all but some fields', async t => {
     }
   })
 
-  t.deepEqual(await client.redis.hexists('root', 'value'), true)
+  t.deepEqual(await client.redis.hexists('root', 'value'), 1)
   t.deepEqual(await client.redis.smembers('root.children'), [match])
   t.deepEqual(await client.redis.hget('root', 'title.en'), 'no noes')
-  t.deepEqual(await client.redis.hexists('root', 'title.de'), false)
+  t.deepEqual(await client.redis.hexists('root', 'title.de'), 0)
 
   await client.delete({
     $id: match,
@@ -222,9 +222,9 @@ test.serial('can delete all but some fields', async t => {
     }
   })
 
-  t.deepEqual(await client.redis.hexists(match, 'value'), true)
+  t.deepEqual(await client.redis.hexists(match, 'value'), 1)
   t.deepEqual(await client.redis.hget(match, 'title.en'), 'yes yeesh')
-  t.deepEqual(await client.redis.hexists(match, 'title.de'), false)
+  t.deepEqual(await client.redis.hexists(match, 'title.de'), 0)
 
   await client.delete({
     $id: 'root',
@@ -234,7 +234,7 @@ test.serial('can delete all but some fields', async t => {
     children: true
   })
 
-  t.deepEqual(await client.redis.hexists('root', 'title.en'), false)
+  t.deepEqual(await client.redis.hexists('root', 'title.en'), 0)
   t.deepEqual(await client.redis.smembers('root.children'), [])
 
   await client.delete('root')
@@ -275,7 +275,7 @@ test.serial('can delete a field when only nested specified', async t => {
     }
   })
 
-  t.deepEqual(await client.redis.hexists(match, 'title.en'), false)
+  t.deepEqual(await client.redis.hexists(match, 'title.en'), 0)
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
   t.deepEqual(await client.redis.smembers('root.children'), [match])
   t.deepEqual(await client.redis.hget(match, 'title.de'), 'ja text')

@@ -1,14 +1,15 @@
 import { GetOptions } from '../types'
 import { SelvaClient } from '../..'
-import validateTopLevel from '.'
+import validateTopLevel, { ExtraQueries } from '.'
 
 import checkAllowed from './checkAllowed'
 
-export default function validateField(
+export default async function validateField(
+  extraQueries: ExtraQueries,
   client: SelvaClient,
   field: string | string[] | { path: string | string[]; value: GetOptions },
   path: string
-): void {
+): Promise<void> {
   if (typeof field === 'string') {
     return
   }
@@ -25,7 +26,7 @@ export default function validateField(
       )
     }
 
-    return validateTopLevel(client, field.value, path)
+    return await validateTopLevel(extraQueries, client, field.value, path)
   }
 
   throw new Error(

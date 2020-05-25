@@ -1,4 +1,4 @@
-import { List } from '../types'
+import { List, GetOptions } from '../types'
 import { SelvaClient } from '../..'
 
 import validateInherit from './inherit'
@@ -7,6 +7,7 @@ import validateFind from './find'
 import validateSort from './sort'
 
 export default function validateList(
+  parentProp: GetOptions,
   client: SelvaClient,
   list: List,
   path: string
@@ -86,7 +87,7 @@ export default function validateList(
           validateSort(client, list.$sort, path + '.$list')
         }
       } else if (field === '$find') {
-        validateFind(client, list.$find, path + '.$list')
+        validateFind(parentProp, client, list.$find, path + '.$list')
       } else if (field === '$inherit') {
         validateInherit(client, list.$inherit, path + '.$list')
       } else {

@@ -4,6 +4,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import { dumpDb, idExists } from './assertions'
 import getPort from 'get-port'
+import { wait } from '../src/util'
 
 let srv
 let port: number
@@ -83,6 +84,8 @@ test.before(async t => {
     }
   })
 
+  console.log('SCHEMA SET')
+
   await client.destroy()
 })
 
@@ -94,12 +97,15 @@ test.after(async _t => {
 })
 
 test.serial('root', async t => {
+  console.log('CONNECTING')
   const client = connect(
     {
       port
     },
     { loglevel: 'info' }
   )
+
+  console.log('CONNECTED')
 
   const match = await client.set({
     type: 'match'
@@ -548,6 +554,73 @@ test.serial('array, json and set', async t => {
       flap: '6734082360af7f0c5aef4123f43abc44c4fbf19e8b251a316d7b9da95fde448e'
     }
   ])
+})
+
+test.serial('set empty object', async t => {
+  const client = connect({
+    port
+  })
+
+  await client.updateSchema({
+    types: {
+      hmmhmm: {
+        prefix: 'hm',
+        fields: {
+          flurpy: {
+            type: 'object',
+            properties: {
+              hello: {
+                type: 'string'
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  const id = await client.set({
+    type: 'hmmhmm',
+    flurpy: {}
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id,
+      flurpy: true
+    }),
+    {}
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id,
+      flurpy: {
+        hello: true
+      }
+    }),
+    {
+      flurpy: {
+        hello: ''
+      }
+    }
+  )
+
+  await client.set({
+    $id: id,
+    flurpy: { hello: 'yes' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id,
+      flurpy: true
+    }),
+    {
+      flurpy: {
+        hello: 'yes'
+      }
+    }
+  )
 })
 
 test.serial('$increment, $default', async t => {

@@ -1,6 +1,6 @@
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
-import { parseSetObject } from '../'
+import parseSetObject from '../validate'
 import { verifiers } from './simple'
 
 const id = verifiers.id
@@ -38,24 +38,32 @@ export default (
     !Array.isArray(payload) &&
     payload !== null
   ) {
+    let hasKeys = false
     result[field] = {}
     for (let k in payload) {
       if (k === '$add') {
         const parsed = parseObjectArray(payload[k], schema, $lang)
         if (parsed) {
           result[field].$add = parsed
+          hasKeys = true
         } else if (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
           result[field].$add = [parseSetObject(payload[k], schema, $lang)]
+          hasKeys = true
         } else {
-          result[field].$add = verifySimple(payload[k])
+          if (payload[k].length) {
+            result[field].$add = verifySimple(payload[k])
+            hasKeys = true
+          }
         }
       } else if (k === '$delete') {
         result[field].$delete = verifySimple(payload[k])
+        hasKeys = true
       } else if (k === '$value') {
         result[field].$delete = verifySimple(payload[k])
+        hasKeys = true
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
           throw new Error(
@@ -63,17 +71,23 @@ export default (
           )
         }
         result[field].$hierarchy = payload[k]
+        hasKeys = true
       } else if (k === '$noRoot') {
         if (typeof payload[k] !== 'boolean') {
           throw new Error(`Wrong payload type for $noRoot in references ${k}`)
         }
 
         result[field].$noRoot = payload[k]
+        hasKeys = true
       } else if (k === '$_itemCount') {
         // ignore this internal field if setting with a split payload
       } else {
         throw new Error(`Wrong key for references ${k}`)
       }
+    }
+
+    if (!hasKeys) {
+      delete result[field]
     }
   } else {
     result[field] =

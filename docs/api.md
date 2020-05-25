@@ -7,9 +7,8 @@
   - Client
     - **[connect()](#connectoptions)**
     - **[set()](#clientsetpayload)**
-    - **[get()](#clientsubscribequery-callbackid-data)**
-    - **[subscribe()](#clientunsubscribeid-callback)**
-    - **[unsubscribe()](#clientunsubscribeid-callback)**
+    - **[get()](#clientgetquery)**
+    - **[observe()](#clientobservequery)**
     - **[id()](#clientidoptions)**
     - **[getSchema()](#clientgetschema)**
     - **[updateSchema()](#clientupdateschemaschema)**
@@ -467,7 +466,7 @@ Retrieves data from the database.
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      [Query](query.md) to be executed.
+      <a href="./get_query.md">Query</a> to be executed.
     </td>
   </tr>
 </table>
@@ -476,87 +475,9 @@ Retrieves data from the database.
 
 Promise resolving to the fetched data.
 
-### _client_.subscribe(_query_, _callback(id, data)_)
+### _client_.observe(_query_)
 
-Executes the query and subscribes to future changes.
-
-#### Parameters
-
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Attributes</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tr>
-    <td valign="top"><code>query</code></td>
-    <td valign="top">object</td>
-    <td valign="top"></td>
-    <td>
-      [Query](query.md) to be executed.
-    </td>
-  </tr>
-  <tr>
-    <td valign="top"><code>callback</code></td>
-    <td valign="top">function</td>
-    <td valign="top"></td>
-    <td>
-      Function to be executed on data change. Sends the `id`, and `data` that has changed.
-    </td>
-  </tr>
-</table>
-
-#### Returns
-
-Promise resolving to an observable (?? needs better definition)
-
-#### Examples
-
-```js
-const result = await client.subscribe(
-  {
-    id: 'myId',
-    version: 'mySpecialversion' // optional
-  },
-  (id, msg) => {
-    console.log(`Fired for ${id} with message: ${msg}`)
-  }
-)
-```
-
-```js
-const result = await client.subscribe(
-  {
-    id: 'myId',
-    date: 123123123,
-    version: 'mySpecialversion' // optional
-  },
-  (id, msg) => {
-    console.log(`Fired for ${id} with message: ${msg}`)
-  }
-)
-```
-
-or with an array for ids
-
-```js
-const result = await client.subscribe(
-  {
-    id: ['myId', 'myOtherId'],
-    version: 'mySpecialversion' // optional
-  },
-  (id, msg) => {
-    console.log(`Fired for ${id} with message: ${msg}`)
-  }
-)
-```
-
-### _client_.unsubscribe(_id_, _callback_)
-
-Removes a previously created subscription.
+Executes the query and subscribes to future changes. The return value is an _Observable_ instance with a `.subscribe()` function for starting to listen on data changes. The returned `Subscription` instance can then be `.unsubscribe()`'ed.
 
 #### Parameters
 
@@ -574,33 +495,29 @@ Removes a previously created subscription.
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      [Query](query.md) used in the subscription.
-    </td>
-  </tr>
-  <tr>
-    <td valign="top"><code>callback</code></td>
-    <td valign="top">function</td>
-    <td valign="top"></td>
-    <td>
-      Function used in the subscription.
+      <a href="./get_query.md">Query</a> to be executed.
     </td>
   </tr>
 </table>
 
 #### Returns
 
-Promise resolving in the subscription was found.
+_Observable_ that can be subscribed to for changes. The first event is always the current state of the query.
 
 #### Examples
 
 ```js
-const result = await client.unsubscribe(
-  {
-    id: 'myId',
-    version: 'mySpecialversion' // optional
-  },
-  myCallback // if omitted will remove all listeners
-)
+const sub = client.observe({
+  $id: 'myId',
+  $language: 'en',
+  $title: true
+}).subscribe(d => {
+  console.log('result data', d)
+})
+
+setTimeout(() => {
+  sub.unsubscribe()
+}, 10000)
 ```
 
 ### _client_.id(_options_)

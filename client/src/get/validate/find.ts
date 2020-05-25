@@ -1,10 +1,11 @@
-import { Find } from '../types'
+import { Find, GetOptions } from '../types'
 import { SelvaClient } from '../..'
 
 import checkAllowed from './checkAllowed'
 import validateFilter from './filter'
 
 export default function validateFind(
+  parentProp: GetOptions,
   client: SelvaClient,
   find: Find,
   path: string
@@ -34,7 +35,10 @@ export default function validateFind(
     )
   }
 
-  const allowed = checkAllowed(find, new Set(['$traverse', '$filter', '$find']))
+  const allowed = checkAllowed(
+    find,
+    new Set(['$traverse', '$filter', '$find', '$db'])
+  )
   if (allowed !== true) {
     err(`Unsupported operator or field ${allowed}`)
   }
@@ -46,7 +50,16 @@ export default function validateFind(
   }
 
   if (find.$find) {
-    validateFind(client, find.$find, path + '.$find')
+    console.log('find.$find', find)
+    validateFind(parentProp, client, find.$find, path + '.$find')
+
+    if (find.$find.$db) {
+      parentProp.__$find = {
+        opts: { $value: find.$find },
+        ids: { $field: find.$find.$traverse }
+      }
+      delete find.$find
+    }
   }
 
   if (find.$filter) {

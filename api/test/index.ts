@@ -413,22 +413,25 @@ test.serial('test funky passing funky middleware', async t => {
     srvPort
   )
 
-  let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      types: {
-        yeshyeshyesh: {
-          prefix: 'ye',
-          fields: {
-            hello: { type: 'string' }
+  let res = await fetch(
+    `http://localhost:${srvPort}/update_schema?dbName=default`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        types: {
+          yeshyeshyesh: {
+            prefix: 'ye',
+            fields: {
+              hello: { type: 'string' }
+            }
           }
         }
-      }
-    })
-  })
+      })
+    }
+  )
 
   t.is(res.headers.get('x-my-special-header'), 'flurpy')
 

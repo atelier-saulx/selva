@@ -8,7 +8,7 @@ export function log(clientId: string, loglevel: LogLevel, msg: any): void {
   redis.call(
     'PUBLISH',
     `___selva_lua_logs:${clientId}`,
-    cjson.encode({ level: loglevel, msg })
+    cjson.encode({ level: loglevel, msg, clientId })
   )
 }
 

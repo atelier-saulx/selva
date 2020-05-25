@@ -12,10 +12,8 @@ const createRedisClient = (
   let isConnected: boolean = false
 
   const retryStrategy = () => {
-    console.log('RETRY connection')
-    if (tries > 100) {
-      console.log('Node client is broken - restart (not handled yet)')
-      // recreate client
+    if (tries > 60) {
+      client.emit('hard-disconnect')
     } else {
       if (tries === 0 && isConnected === true) {
         isConnected = false
@@ -37,6 +35,8 @@ const createRedisClient = (
     host,
     retry_strategy: retryStrategy
   })
+
+  redisClient.setMaxListeners(1e4)
 
   redisClient.on('ready', () => {
     tries = 0

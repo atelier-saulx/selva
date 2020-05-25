@@ -26,14 +26,14 @@ all: rmutil module.so
 rmutil: FORCE
 	$(MAKE) -C $(RMUTIL_LIBDIR)
 
-module.so: module.o
+module.so: module.o id/id.o modify/modify.o
 ifeq ($(uname_S),Linux)
-	$(LD) -o $@ module.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc  -luuid
+	$(LD) -o $@ module.o id/id.o modify/modify.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc  -luuid
 else
-	$(LD) -o $@ module.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc 
+	$(LD) -o $@ module.o id/id.o modify/modify.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc 
 endif
 
 clean:
-	rm -rf *.xo *.so *.o
+	rm -rf *.xo *.so *.o id/*.o
 
 FORCE:

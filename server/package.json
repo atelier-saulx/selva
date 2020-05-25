@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva-server",
-  "version": "0.2.43",
+  "version": "0.2.50",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -45,9 +45,9 @@
     "selva-server": "/bin/index.js"
   },
   "devDependencies": {
+    "@types/pidusage": "^2.0.1",
     "@types/redis": "^2.8.14",
     "ava": "2.4.0",
-    "get-port": "^5.1.1",
     "husky": "^3.0.8",
     "lint-staged": "^9.4.2",
     "ts-node": "^8.5.4",
@@ -56,9 +56,12 @@
   },
   "dependencies": {
     "aws-sdk": "^2.616.0",
+    "chalk": "^4.0.0",
     "dropbox": "^4.0.30",
+    "get-port": "^5.1.1",
     "node-fetch": "^2.6.0",
+    "pidusage": "^2.0.18",
     "redis": "^2.8.0",
-    "@saulx/selva": "0.2.46"
+    "@saulx/selva": "0.2.53"
   }
 }

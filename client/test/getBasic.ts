@@ -427,16 +427,17 @@ test.serial('get - basic', async t => {
     'get role'
   )
 
-  t.deepEqual(
-    await client.get({
-      $id: 'viA',
-      auth: { role: { id: true } }
-    }),
-    {
-      auth: { role: { id: ['root'] } }
-    },
-    'get role nested'
-  )
+  // not supported without 'properties'
+  // t.deepEqual(
+  //   await client.get({
+  //     $id: 'viA',
+  //     auth: { role: { id: true } }
+  //   }),
+  //   {
+  //     auth: { role: { id: ['root'] } }
+  //   },
+  //   'get role nested'
+  // )
 
   await client.delete('root')
 
@@ -1332,23 +1333,21 @@ test.serial('get - basic with many ids', async t => {
   t.deepEqual(
     await client.get({
       $id: ['viA', 'viZ'],
-      auth: true
+      value: true
     }),
     {
-      auth: { role: { id: ['root'], type: 'admin' } }
-    },
-    'get role'
+      value: 25
+    }
   )
 
   t.deepEqual(
     await client.get({
       $alias: ['abba', 'viA'],
-      auth: { role: { id: true } }
+      value: true
     }),
     {
-      auth: { role: { id: ['root'] } }
-    },
-    'get role nested'
+      value: 25
+    }
   )
 
   await client.set({
@@ -1359,12 +1358,11 @@ test.serial('get - basic with many ids', async t => {
   t.deepEqual(
     await client.get({
       $alias: ['abba', 'viZ'],
-      auth: { role: { id: true } }
+      value: true
     }),
     {
-      auth: { role: { id: ['root'] } }
-    },
-    'get role nested'
+      value: 25
+    }
   )
 
   t.deepEqual(

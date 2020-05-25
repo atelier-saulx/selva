@@ -52,7 +52,7 @@ test.before(async t => {
             type: 'boolean',
             search: { type: ['TAG'] },
             meta: { type: 'enabled' }
-          },
+          }
         }
       },
       team: {
@@ -134,7 +134,7 @@ test.serial('yes', async t => {
           }
         }
       },
-      league: {
+      team: {
         id: true,
         title: true,
         $find: {
@@ -143,7 +143,7 @@ test.serial('yes', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'league'
+              $value: 'team'
             }
           ]
         }
@@ -157,23 +157,23 @@ test.serial('yes', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'match',
+              $value: 'match'
             },
-            // {
-            //   $field: 'published',
-            //   $operator: '=',
-            //   $value: true
-            // },
-            // {
-            //   $field: 'date',
-            //   $operator: '>',
-            //   $value: 1577883600000
-            // },
-            // {
-            //   $field: 'date',
-            //   $operator: '<',
-            //   $value: 1580515199000
-            // }
+            {
+              $field: 'published',
+              $operator: '=',
+              $value: true
+            },
+            {
+              $field: 'date',
+              $operator: '>',
+              $value: 1577883600000
+            },
+            {
+              $field: 'date',
+              $operator: '<',
+              $value: 1580515199000
+            }
           ]
         }
       }
@@ -183,5 +183,5 @@ test.serial('yes', async t => {
   console.log(JSON.stringify(result, null, 2))
   t.truthy(result.matches && result.matches.length)
   t.truthy(result.matches[0].teams && result.matches[0].teams.length)
-  t.truthy(result.matches[0].league && result.matches[0].league.title)
+  t.truthy(result.matches[0].team && result.matches[0].team.title)
 })

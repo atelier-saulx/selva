@@ -1,6 +1,7 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import { json } from 'body-parser'
 import { connect, ConnectOptions, SelvaClient } from '@saulx/selva'
+import * as url from 'url'
 
 export type MiddlewareNext = (proceed: boolean) => void
 
@@ -171,13 +172,19 @@ export default function(
       client,
       middleware,
       (req: IncomingMessage, res: ServerResponse) => {
+        console.log('HELLLO')
+        const parsedUrl = url.parse(req.url, true)
+
+        const dbName: string =
+          <string>(parsedUrl.query && parsedUrl.query.dbName) || 'default'
+
         const body: any = (<any>req).body
         client
           .updateSchema(body)
           .then(() => {
             res.statusCode = 200
             res.setHeader('content-type', 'application/json')
-            res.end(JSON.stringify(client.schema))
+            res.end(JSON.stringify(client.schemas[dbName]))
           })
           .catch(e => {
             console.error('Error setting schema', e)

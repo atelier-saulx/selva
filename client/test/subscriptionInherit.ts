@@ -74,7 +74,7 @@ test.serial('inherit object nested field from root youzi', async t => {
     results.push(p)
   })
 
-  await wait(1000)
+  await wait(2000)
 
   await client.set({
     $id: 'root',
@@ -83,10 +83,11 @@ test.serial('inherit object nested field from root youzi', async t => {
     }
   })
 
-  await wait(1000)
+  await wait(2000)
 
   subs.unsubscribe()
 
+  console.log('myesh', results)
   t.deepEqual(results, [
     { flapper: { snurk: 'hello' } },
     { flapper: { snurk: 'snurkels' } }

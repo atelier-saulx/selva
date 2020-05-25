@@ -8,7 +8,66 @@ import validateInherit from './inherit'
 import validateList from './list'
 import validateFind from './find'
 
+export type ExtraQuery = {
+  getOpts: GetOptions
+  path: string
+  placeholder: GetOptions | true
+  type: 'reference' | 'references' | 'nested_query'
+}
+export type ExtraQueries = Record<string, ExtraQuery[]>
+
+export function addExtraQuery(extraQueries: ExtraQueries, query: ExtraQuery) {
+  const db = query.getOpts.$db
+  const current = extraQueries[db] || []
+  current.push(query)
+  extraQueries[db] = current
+}
+
+function transformDb(
+  extraQueries: ExtraQueries,
+  _client: SelvaClient,
+  props: GetOptions,
+  path: string
+): void {
+  if (props.$id || props.$alias) {
+    addExtraQuery(extraQueries, {
+      getOpts: props,
+      path,
+      placeholder: { $value: {} },
+      type: 'nested_query'
+    })
+  } else {
+    let val: GetOptions | true = true
+
+    if (props.$field) {
+      val = { $field: props.$field }
+    } else if (
+      props.$list &&
+      typeof props.$list === 'object' &&
+      props.$list.$find
+    ) {
+      console.log('TRANSFORMING LIST FIND', props)
+      if (props.$list.$find.$traverse) {
+        val = { $field: props.$list.$find.$traverse }
+      }
+    } else if (props.$find) {
+      console.log('TRANSFORMING FIND', props)
+      if (props.$find.$traverse) {
+        val = { $field: props.$find.$traverse }
+      }
+    }
+
+    addExtraQuery(extraQueries, {
+      getOpts: props,
+      path,
+      placeholder: val,
+      type: props.$list || props.$find ? 'references' : 'reference'
+    })
+  }
+}
+
 function validateNested(
+  extraQueries: ExtraQueries,
   client: SelvaClient,
   props: GetOptions | true,
   path: string
@@ -17,20 +76,24 @@ function validateNested(
     return
   }
 
+  if (props.$db) {
+    return transformDb(extraQueries, client, props, path)
+  }
+
   if (props.$id || props.$alias) {
-    return validateTopLevel(client, props, path)
+    return validateTopLevel(extraQueries, client, props, path)
   }
 
   for (const field in props) {
     if (field.startsWith('$')) {
       if (field === '$field') {
-        validateField(client, props.$field, path)
+        validateField(extraQueries, client, props.$field, path)
       } else if (field === '$inherit') {
         validateInherit(client, props.$inherit, path)
       } else if (field === '$list') {
-        validateList(client, props.$list, path)
+        validateList(props, client, props.$list, path)
       } else if (field === '$find') {
-        validateFind(client, props.$find, path)
+        validateFind(props, client, props.$find, path)
       } else if (field === '$default') {
         continue
       } else if (field === '$all') {
@@ -58,19 +121,24 @@ function validateNested(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      validateNested(client, props[field], path + '.' + field)
+      validateNested(extraQueries, client, props[field], path + '.' + field)
     }
   }
 }
 
 export default function validateTopLevel(
+  extraQueries: ExtraQueries,
   client: SelvaClient,
   props: GetOptions,
   path: string = ''
 ): void {
   for (const field in props) {
     if (field.startsWith('$')) {
-      if (field === '$id') {
+      if (field === '$db') {
+        if (typeof props.$db !== 'string') {
+          throw new Error(`${path}.$db ${props.$db} should be a string`)
+        }
+      } else if (field === '$id') {
         if (typeof props.$id !== 'string' && !Array.isArray(props.$id)) {
           if (path !== '' && typeof props.$id === 'object') {
             const allowed = checkAllowed(props.$id, new Set(['$field']))
@@ -113,15 +181,16 @@ export default function validateTopLevel(
           )
         }
 
-        if (client.schema) {
+        const schema = client.schemas[props.$db || 'default']
+        if (schema) {
           if (
-            !client.schema.languages ||
-            !client.schema.languages.includes(props.$language)
+            !schema.languages ||
+            !schema.languages.includes(props.$language)
           ) {
             throw new Error(
               `$language ${
                 props.$language
-              } is unsupported, should be one of: ${client.schema.languages.join(
+              } is unsupported, should be one of: ${schema.languages.join(
                 ', '
               )}`
             )
@@ -140,6 +209,7 @@ export default function validateTopLevel(
       } else {
         throw new Error(`
           Top level query operator ${field} is not supported. Did you mean one of the following supported top level query options?
+            - $db
             - $id
             - $alias
             - $all
@@ -152,7 +222,7 @@ export default function validateTopLevel(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      validateNested(client, props[field], path + '.' + field)
+      validateNested(extraQueries, client, props[field], path + '.' + field)
     }
   }
 }

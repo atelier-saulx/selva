@@ -17,7 +17,8 @@ const getIds = (
 ): string[] => {
   if (traverse === 'ancestors') {
     if (ids.length === 1) {
-      return redis.zrange(ids[0] + '.ancestors')
+      const ancestors = redis.zrange(ids[0] + '.ancestors')
+      return ancestors
     } else {
       const rMap: Record<string, true> = {}
       const ancestors: string[] = []

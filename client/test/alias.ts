@@ -123,6 +123,26 @@ test.after(async _t => {
   await srv.destroy()
 })
 
+test.serial('get non-existing by $alias', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'does_not_exists',
+      id: true,
+      title: true,
+      aliases: true
+    }),
+    {
+      $isNull: true
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
+
 test.serial('set alias and get by $alias', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 

@@ -2,6 +2,7 @@ import simple from './simple'
 import text from './text'
 import geo from './geo'
 import references from './references'
+import reference from './reference'
 import set from './set'
 import json from './json'
 import object from './object'
@@ -12,6 +13,7 @@ const fieldParsers = {
   text,
   geo,
   set,
+  reference,
   references,
   json,
   object,

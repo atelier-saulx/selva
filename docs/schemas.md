@@ -66,7 +66,7 @@ Defines the fields available to each type.
 
 #### `Object` type
 
-Object allow for nested structures, but unlike the JSON type, they allow it's properties to have type validation and indexes.
+Object allow for nested structures, but unlike the JSON type, they allow its properties to have type validation and indexes.
 In field of type object, the subfield `properties` is a reserved field name for this feature.
 
 ##### Example
@@ -200,14 +200,14 @@ When indexed as `SORTABLE`, the field becomes queryable with [`$sort`](./get_que
 
 ##### TEXT-LANGUAGE
 
-The `TEXT-LANGUAGE` index type con be applied to the `text` type only.
+The `TEXT-LANGUAGE` index type can be applied to the `text` type only.
 
 When indexed as `TEXT-LANGUAGE`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
 
 - `$operator: '='` 
 - `$operator: '!='` 
 
-The text match will be a text search approximate string match, including preprocennig such as:
+The text match will be a text search approximate string match, including preprocessing such as:
 - Removing special characters
 - Word stemming
 - Excluding most common words if they don't affect the search results
@@ -228,7 +228,7 @@ $value: '%%heyyo%%' // would match "hello", with two character substitutions fro
 
 ##### TEXT-LANGUAGE-SUG
 
-The `TEXT-LANGUAGE-SUG` index type con be applied to the `text` type only.
+The `TEXT-LANGUAGE-SUG` index type can be applied to the `text` type only.
 
 When indexed as `TEXT-LANGUAGE-SUG`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
 
@@ -241,17 +241,17 @@ No operators are possible in the `$value` filter property itself, unlike with `T
 
 ##### GEO
 
-The `GEO` index type con be applied to the `geo` type only.
+The `GEO` index type can be applied to the `geo` type only.
 
 When indexed as `GEO`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operator:
 
 - `$operator: 'distance'`
 
-The `distance` operator can be used to return only results within a certain radius of a lot/lon location.
+The `distance` operator can be used to return only results within a certain radius of a lat/lon location.
 
 ##### EXISTS
 
-The `EXISTS` index type con be applied to thea any type. When other indexing is enabled, it can be added as the last index type. It enables the following [`$filter`](./get_query.md#filter-object-array) operators:
+The `EXISTS` index type can be applied to any type. When other indexing is enabled, it can be added as the last index type. It enables the following [`$filter`](./get_query.md#filter-object-array) operators:
 
 - `$operator: 'exists'` (filter matches only records where the field has been set)
 - `$operator: 'notExists'` (filter matches only records where the field has _not_ been set)

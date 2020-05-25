@@ -1,6 +1,4 @@
-import { GetResult, GetOptions } from '../get/types'
-import Redis from './'
-import { LogFn } from '..'
+import { ServerDescriptor } from '../types'
 
 type Resolvable = {
   resolve?: (x: any) => void
@@ -14,20 +12,8 @@ export type RedisCommand = Resolvable & {
   hash?: number
 }
 
-// different heartbeat event will be gone
-export type UpdateEvent = {
-  type: 'update'
-  payload: GetResult
-  version?: string
-}
+export type Servers = Record<string, Record<string, ServerDescriptor[]>>
 
-export type Event = UpdateEvent
+export type ServersById = Record<string, ServerDescriptor>
 
-export type ClientObject = {
-  connect: (type: string) => void
-  disconnect: (type: string) => void
-  message: (channel: string, message: { [key: string]: any }) => void
-  log?: LogFn
-  busy: (type: string) => void
-  client: Redis
-}
+export type Callback = (...args: any[]) => void

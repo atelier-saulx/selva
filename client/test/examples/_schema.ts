@@ -1,6 +1,4 @@
-import { SchemaOptions } from '@saulx/selva'
-
-export const schema:SchemaOptions = {
+export const schema: any = {
   languages: ['en', 'nl'],
   types: {
     genre: {

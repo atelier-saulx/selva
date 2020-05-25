@@ -431,10 +431,11 @@ test.serial('children/parents update checks source on delete', async t => {
   )
 
   // reset $source
+  const maMatch2 = await client.get({ $id: 'maMatch2', children: true })
   await client.set({
     $id: 'maMatch2',
     $source: { $name: 'second', $overwrite: true },
-    children: { $add: [] }
+    children: maMatch2.children
   })
 
   await client.set({

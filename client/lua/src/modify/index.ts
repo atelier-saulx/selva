@@ -164,6 +164,16 @@ function setField(
   fromDefault: boolean,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
+  if (
+    field &&
+    field !== '' &&
+    type(value) === 'table' &&
+    (value.$id || value.$alias || value.type)
+  ) {
+    const reference = update(value)
+    return setField(id, field, reference, fromDefault, source)
+  }
+
   if (isSetPayload(value) && field) {
     if (!checkSource(id, field, source)) {
       return
@@ -345,17 +355,8 @@ function update(payload: SetOptions): Id | null {
         type(payload.type) === 'string'
           ? payload.type
           : (<any>payload.type).$value
-      if (
-        (payload.externalId && type(payload.externalId) === 'string') ||
-        isArray(<any>payload.externalId)
-      ) {
-        payload.$id = genId({
-          type: itemType,
-          externalId: <any>payload.externalId
-        })
-      } else {
-        payload.$id = genId({ type: itemType })
-      }
+
+      payload.$id = genId({ type: itemType })
     }
   }
 

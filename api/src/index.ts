@@ -1,6 +1,7 @@
 import * as http from 'http'
 import { ConnectOptions } from '@saulx/selva'
 import mkHandlers, { Middleware } from './handler'
+import * as url from 'url'
 
 function createServer(
   selvaConnectOpts: ConnectOptions,
@@ -9,13 +10,15 @@ function createServer(
   const handlers = mkHandlers(selvaConnectOpts, middlewares)
 
   const srv = http.createServer((req, res) => {
-    if (req.url === '/get') {
+    const path = url.parse(req.url).pathname
+
+    if (path === '/get') {
       return handlers.get(req, res)
-    } else if (req.url === '/set') {
+    } else if (path === '/set') {
       return handlers.set(req, res)
-    } else if (req.url === '/delete') {
+    } else if (path === '/delete') {
       return handlers.delete(req, res)
-    } else if (req.url === '/update_schema') {
+    } else if (path === '/update_schema') {
       return handlers.updateSchema(req, res)
     } else {
       // pong

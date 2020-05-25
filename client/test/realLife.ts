@@ -143,23 +143,21 @@ const layoutSubsTest = async (t, layoutSub) => {
       $id: match,
       layout: layoutSub // one test passes true / other passes { $inherit: true }
     })
-    .then(layoutObs =>
-      layoutObs.subscribe(async res => {
-        if (pageSub) {
-          pageSub.unsubscribe()
-        }
-        query = {
-          $id: match,
-          $language: 'en',
-          ...res.layout.match
-        }
-        pageObs = await client.observe(query)
-        pageSub = pageObs.subscribe(res => {
-          layout = res
-          fireCount++
-        })
+    .subscribe(async res => {
+      if (pageSub) {
+        pageSub.unsubscribe()
+      }
+      query = {
+        $id: match,
+        $language: 'en',
+        ...res.layout.match
+      }
+      pageObs = await client.observe(query)
+      pageSub = pageObs.subscribe(res => {
+        layout = res
+        fireCount++
       })
-    )
+    })
 
   while (updateCount <= 2) {
     updateCount++
@@ -294,22 +292,20 @@ const layoutWithRefsTest = async t => {
       $id: match,
       layout: true //{ $inherit: true } // change this to { $inherit: true } to break it
     })
-    .then(layoutObs =>
-      layoutObs.subscribe(async res => {
-        if (pageSub) {
-          pageSub.unsubscribe()
-        }
-        pageObs = await client.observe({
-          $id: match,
-          $language: 'en',
-          ...res.layout.match
-        })
-        pageSub = pageObs.subscribe(res => {
-          layout = res
-          fireCount++
-        })
+    .subscribe(async res => {
+      if (pageSub) {
+        pageSub.unsubscribe()
+      }
+      pageObs = await client.observe({
+        $id: match,
+        $language: 'en',
+        ...res.layout.match
       })
-    )
+      pageSub = pageObs.subscribe(res => {
+        layout = res
+        fireCount++
+      })
+    })
 
   await wait(100)
   t.is(totalCount, fireCount)
@@ -337,7 +333,7 @@ test.serial('layout without inheritance or refs', t => layoutSubsTest(t, true))
 test.serial('layout using $inherit: true - own layout, no refs', t =>
   layoutSubsTest(t, { $inherit: true })
 )
-test.serial.only('layout with inheritance', async t => {
+test.serial('layout with inheritance', async t => {
   const client = connect({ port })
   // creating data
   await client.set({
@@ -381,14 +377,35 @@ test.serial.only('layout with inheritance', async t => {
   })
 
   const results = []
-  const matchLayoutObs = await client.observe({
+  const matchLayoutObs = client.observe({
     $id: match,
     layout: { match: { $inherit: true } }
   })
 
+  let lay
+
   matchLayoutObs.subscribe(async ({ layout }) => {
-    console.log('---------', layout)
+    lay = layout
   })
 
   await wait(500)
+
+  t.deepEqual(lay, {
+    match: {
+      id: true,
+      components: [
+        {
+          component: {
+            $value: 'comp1-0'
+          },
+          title: {
+            $field: 'title'
+          },
+          description: {
+            $field: 'description'
+          }
+        }
+      ]
+    }
+  })
 })

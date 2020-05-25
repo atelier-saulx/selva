@@ -1,6 +1,6 @@
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
-import { parseSetObject } from '../'
+import parseSetObject from '../validate'
 import parsers from './simple'
 
 const verifySimple = (payload, verify) => {
