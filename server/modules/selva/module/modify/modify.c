@@ -78,6 +78,7 @@ void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, si
 
   int32_t total_size = struct_size + field_size;
   memcpy(ptr, &total_size, sizeof(int32_t));
+  ptr += sizeof(int32_t);
 
   memcpy(ptr, &publish_task, struct_size);
   ptr += struct_size;
@@ -99,6 +100,7 @@ void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str,
 
   int32_t total_size = struct_size + field_size + value_size;
   memcpy(ptr, &total_size, sizeof(int32_t));
+  ptr += sizeof(int32_t);
 
   memcpy(ptr, &publish_task, struct_size);
   ptr += struct_size;
