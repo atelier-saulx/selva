@@ -20,11 +20,11 @@ let subsManagersList: SelvaServer[] = []
 let replicaAmount = 5
 let subManagerAmount = 10
 
-export async function start({ replicas = 0, subsManagers = 0 } = {}): Promise<{
+export async function start({ replicas = 5, subsManagers = 5 } = {}): Promise<{
   registry: SelvaServer
 }> {
   replicaAmount = replicas
-  subsManagers = subsManagers
+  subManagerAmount = subsManagers
   const port = await getPort()
   // small test
   registry = await startRegistry({
