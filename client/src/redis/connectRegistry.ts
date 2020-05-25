@@ -131,6 +131,10 @@ const createRegistryClient = (
     client.selvaClient.emit('connect')
   })
 
+  client.registry.on('disconnect', () => {
+    client.selvaClient.emit('disconnect')
+  })
+
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_SUBSCRIPTION)
 
