@@ -64,7 +64,7 @@ const removeSubscription = async (
     }
     removeSubscriptionFromTree(subsManager, subscription)
     // check if this is ok!
-    // subsManager.stagedForUpdates.delete(subscription)
+    subsManager.stagedForUpdates.delete(subscription)
     delete subscriptions[channel]
   }
 }
