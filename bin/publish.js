@@ -1,4 +1,4 @@
-console.log(process.argv)
+console.info(process.argv)
 
 const bump = process.argv[2] || 'patch'
 
