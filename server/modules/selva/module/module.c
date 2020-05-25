@@ -71,7 +71,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     // prepare publish
     size_t field_size;
     const char *field_str = RedisModule_StringPtrLen(field, &field_size);
-    int payload_size = sizeof(int) + sizeof(struct SelvaModify_AsyncTask) + field_size;
+    int payload_size = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_size;
     char payload_str[payload_size];
     SelvaModify_PreparePublishPayload(payload_str, id_str, id_size, field_str, field_size);
 
