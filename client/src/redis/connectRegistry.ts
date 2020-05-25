@@ -7,6 +7,7 @@ import {
   REGISTRY_UPDATE_SUBSCRIPTION
 } from '../constants'
 import { Servers, ServersById } from './types'
+import { subsmanagerRemoved } from './observers'
 
 const drainQueue = (client: RedisSelvaClient) => {
   client.queue.forEach(({ command, selector }) => {
@@ -31,6 +32,7 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
     (await client.smembers({ type: 'registry' }, 'servers')) || []
   const servers: Servers = {}
   const serversById: ServersById = {}
+  const subManagerObj: Record<string, true> = {}
   const subsManagers = []
   const result: ServerDescriptor[] = await Promise.all(
     serverList.map(
@@ -57,6 +59,7 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
           const subs = await client.smembers({ type: 'registry' }, subsKey)
           descriptor.subscriptions = new Set(subs || [])
           subsManagers.push(descriptor)
+          subManagerObj[id] = true
         }
 
         serversById[id] = descriptor
@@ -78,6 +81,15 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
   }
 
   subsManagers.sort(sortSubsManagers)
+
+  if (client.subsManagers.length) {
+    for (let i = 0; i > client.subsManagers.length; i++) {
+      const id = `${client.subsManagers[i].host}:${client.subsManagers[i].port}`
+      if (!subManagerObj[id]) {
+        subsmanagerRemoved(client, id)
+      }
+    }
+  }
 
   client.subsManagers = subsManagers
   client.serversById = serversById

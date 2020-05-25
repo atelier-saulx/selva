@@ -86,13 +86,6 @@ export class Client extends EventEmitter {
       process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
 
     this.on('hard-disconnect', () => {
-      // prob want to handle this in the highger level selva client
-      // if (this.type === 'subscriptionManager' || this.type === 'replica') {
-      // try to re-call getDescriptor
-      // if (this.clients.size) {
-      // getServerDescriptor(this.clients.values()
-      // }
-      // }
       this.subscriber = createRedisClient(this, host, port, 'subscriber')
       this.publisher = createRedisClient(this, host, port, 'publisher')
       addListeners(this)
