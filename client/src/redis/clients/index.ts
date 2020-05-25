@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid'
 import startHeartbeat from './startHeartbeat'
 import { ObserverEmitter } from '../observers'
 import { getObserverValue, sendObserver } from './observers'
+import getServerDescriptor from '../getServerDescriptor'
 import * as constants from '../../constants'
 
 type ClientOpts = {
@@ -84,7 +85,14 @@ export class Client extends EventEmitter {
       type === 'subscriptionManager' &&
       process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
 
-    this.on('node-redis-crash', () => {
+    this.on('hard-disconnect', () => {
+      // prob want to handle this in the highger level selva client
+      // if (this.type === 'subscriptionManager' || this.type === 'replica') {
+      // try to re-call getDescriptor
+      // if (this.clients.size) {
+      // getServerDescriptor(this.clients.values()
+      // }
+      // }
       this.subscriber = createRedisClient(this, host, port, 'subscriber')
       this.publisher = createRedisClient(this, host, port, 'publisher')
       addListeners(this)
@@ -114,6 +122,7 @@ export class Client extends EventEmitter {
       }
     })
     this.on('disconnect', () => {
+      // on dc we actualy want to re-select if it had a selector!
       this.connected = false
       this.queueInProgress = false
       clearTimeout(this.heartbeatTimout)

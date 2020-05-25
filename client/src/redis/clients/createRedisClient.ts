@@ -12,9 +12,8 @@ const createRedisClient = (
   let isConnected: boolean = false
 
   const retryStrategy = () => {
-    if (tries > 200) {
-      console.log('Node client is broken - restart')
-      client.emit('node-redis-crash')
+    if (tries > 60) {
+      client.emit('hard-disconnect')
     } else {
       if (tries === 0 && isConnected === true) {
         isConnected = false
