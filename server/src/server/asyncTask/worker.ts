@@ -1,43 +1,60 @@
-const SOCKET_PATH = '/tmp/selva.sock'
-
 import * as net from 'net'
 import * as fs from 'fs'
+
+const SOCKET_PATH = '/tmp/selva.sock'
 
 try {
   fs.unlinkSync(SOCKET_PATH)
 } catch (_e) {}
 
-let i = 0
-let currentLen = 0
-let current: Buffer | undefined
-
 net
   .createServer(socket => {
-    socket.on('data', d => {
-      if (!current) {
-        currentLen = d.readInt32LE(0)
-        console.log('FOUND NEW BUFFER WITH LEN', currentLen)
-        current = new Buffer(currentLen)
-        i = 0
+    let size: number
+    let buf: Buffer
+    let got = 0
+
+    const drain = () => {
+      console.log('DRAINING')
+      if (!buf) {
+        const sizeRaw: Buffer = socket.read(4)
+        if (!sizeRaw) {
+          return
+        }
+
+        size = sizeRaw.readInt32LE(0)
+        console.log('SIZE', size)
+        buf = Buffer.alloc(size)
       }
 
-      d.copy(current, i, 0)
-      i += d.byteLength
-      currentLen -= d.byteLength
+      while (got < size) {
+        const chunk: Buffer = socket.read(size - got)
+        if (!chunk) {
+          console.log('no chunk', got, size)
+          return
+        }
 
-      console.log('CURRENT', currentLen)
-      if (currentLen < 0) {
-        console.log(current.toString())
-        const newCurrentLen = d.readInt32LE(-currentLen - 1)
-        current = new Buffer(newCurrentLen)
-        d.copy(current, 0, -currentLen)
-        i = d.byteLength + currentLen
+        console.log('read', chunk.length)
+        console.log('read chunk', chunk.toString('hex'))
 
-        currentLen = newCurrentLen + currentLen
-      } else if (currentLen === 0) {
-        console.log(current.toString())
-        current = undefined
+        chunk.copy(buf, got)
+        got += buf.length
       }
-    })
+
+      if (got === size) {
+        console.log('RESULT', buf.toString('hex'))
+        buf = undefined
+        size = 0
+        got = 0
+        drain()
+      } else {
+        console.log('waiting for more data', got, size)
+      }
+
+      // while (null !== (chunk = socket.read())) {
+      //   console.log(`Received ${chunk.length} bytes of data.`)
+      // }
+    }
+
+    socket.on('readable', drain)
   })
   .listen(SOCKET_PATH)
