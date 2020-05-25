@@ -46,5 +46,8 @@
     ".fusebox/": "explorerExcludedFiles",
     ".dynamodb/": "explorerExcludedFiles",
     ".tern-port": "explorerExcludedFiles"
+  },
+  "files.associations": {
+    "string.h": "c"
   }
 }
