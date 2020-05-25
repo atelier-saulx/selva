@@ -33,7 +33,7 @@ export default class RedisManager extends ProcessManager {
       }, {})
       return { redisInfo, runtimeInfo }
     } catch (err) {
-      return { redisInfo: {}, runtimeInfo }
+      return { redisInfo: {}, runtimeInfo, shutdown: true }
     }
   }
 }
