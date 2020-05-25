@@ -64,26 +64,28 @@ const updateSubscription = async (
 ) => {
   const { selector, client } = subsManager
   const { redis } = client
-  if (subsManager.subscriptions[channel]) {
+  if (subsManager.subscriptions[channel] === subscription) {
     if (await redis.hexists(selector, CACHE, channel)) {
-      if (subsManager.subscriptions[channel]) {
+      if (subsManager.subscriptions[channel] === subscription) {
         const [tree, version] = await redis.hmget(
           selector,
           CACHE,
           channel + '_tree',
           channel + '_version'
         )
-        if (!tree) {
-          addUpdate(subsManager, subscription)
-        } else {
-          subsManager.subscriptions[channel].version = version
-          subsManager.subscriptions[channel].tree = JSON.parse(tree)
-          subsManager.subscriptions[channel].treeVersion = hash(tree)
-          addSubscriptionToTree(subsManager, subscription)
+        if (subsManager.subscriptions[channel] === subscription) {
+          if (!tree) {
+            addUpdate(subsManager, subscription)
+          } else {
+            subsManager.subscriptions[channel].version = version
+            subsManager.subscriptions[channel].tree = JSON.parse(tree)
+            subsManager.subscriptions[channel].treeVersion = hash(tree)
+            addSubscriptionToTree(subsManager, subscription)
+          }
         }
       }
     } else {
-      if (subsManager.subscriptions[channel]) {
+      if (subsManager.subscriptions[channel] === subscription) {
         addUpdate(subsManager, subscription)
       }
     }

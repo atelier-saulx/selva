@@ -13,8 +13,8 @@ const removeClientSubscription = async (
 ) => {
   const { selector } = subsManager
   const redis = subsManager.client.redis
-  const clients = await redis.smembers(selector, channel)
   const sub = subsManager.subscriptions[channel]
+  const clients = await redis.smembers(selector, channel)
   const cleanUpQ = []
   let len = clients.length
   if (clients.indexOf(client) !== -1) {
@@ -57,6 +57,7 @@ const removeSubscription = async (
       channel + '_tree'
     )
   )
+
   if (channel in subscriptions) {
     const subscription = subscriptions[channel]
     for (const origin of subscription.origins) {

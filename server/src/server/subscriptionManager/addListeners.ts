@@ -15,7 +15,7 @@ const addListeners = async (
     if (channel === HEARTBEAT) {
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {
-        console.log('Received new client on server', client)
+        // console.log('Received new client on server', client)
         subsManager.clients[client] = { subscriptions: new Set(), lastTs: ts }
         redis.hset(selector, CLIENTS, client, ts)
       } else {

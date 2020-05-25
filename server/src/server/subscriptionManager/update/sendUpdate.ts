@@ -49,6 +49,13 @@ const sendUpdate = async (
   const treeVersion = subscription.treeVersion
   const q = []
 
+  // if sub is removed
+  if (
+    subscriptionManager.subscriptions[subscription.channel] !== subscription
+  ) {
+    return
+  }
+
   if (newTree) {
     const newTreeJson = JSON.stringify(newTree)
     const newTreeVersion = hash(newTreeJson)

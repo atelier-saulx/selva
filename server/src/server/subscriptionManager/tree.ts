@@ -128,14 +128,20 @@ const removeFromTree = (
 
     const tree = treesByDb[dbName]
 
+    const targetByDb = targetTree[dbName]
+
+    if (!targetByDb) {
+      continue
+    }
+
     for (const key in tree) {
       if (key === '___contains') {
         // merge on top
       } else {
-        if (targetTree[key]) {
-          if (!removeTreeNested(subscription, targetTree[key], tree[key])) {
-            if (isEmpty(targetTree[key])) {
-              delete targetTree[key]
+        if (targetByDb[key]) {
+          if (!removeTreeNested(subscription, targetByDb[key], tree[key])) {
+            if (isEmpty(targetByDb[key])) {
+              delete targetByDb[key]
             }
           }
         }
@@ -149,6 +155,12 @@ export function addSubscriptionToTree(
   subscription: Subscription
 ) {
   const channel = subscription.channel
+
+  if (subsmanager.subscriptions[subscription.channel] !== subscription) {
+    console.log('DONT ADD')
+    return
+  }
+
   if (channel === SCHEMA_SUBSCRIPTION) {
     console.log('add schema')
   } else {
@@ -174,7 +186,7 @@ export function removeSubscriptionFromTree(
 ) {
   const channel = subscription.channel
   if (channel === SCHEMA_SUBSCRIPTION) {
-    console.log('remove schema')
+    console.log('REMOVE SCHEMA')
   } else {
     let { tree } = subscription
 

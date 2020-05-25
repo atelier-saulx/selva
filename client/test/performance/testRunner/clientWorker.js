@@ -21,7 +21,6 @@ parentPort.on('message', message => {
       }
 
       client.on('connect', () => {
-        console.info('connect!')
         // eslint-disable-next-line
         const fn = new Function('client', 'execPromise', 'wait', payload.fn)
         const setLoop = async () => {

@@ -1,5 +1,6 @@
 import sendUpdate from './sendUpdate'
 import { Subscription, SubscriptionManager } from '../types'
+import { removeSubscriptionFromTree } from '../tree'
 
 var delayCount = 0
 
@@ -11,7 +12,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     subscriptionManager.incomingCount,
     'incoming',
     [...subscriptionManager.stagedForUpdates.values()].map(v =>
-      v.channel.slice(-6)
+      v.channel.slice(-10)
     ),
     'outgoing updates',
     Date.now()

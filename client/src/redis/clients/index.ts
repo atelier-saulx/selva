@@ -60,7 +60,6 @@ export class Client extends EventEmitter {
 
     this.on('connect', () => {
       if (!this.connected) {
-        console.log('client connected', name)
         this.connected = true
         drainQueue(this)
         if (isSubscriptionManager) {
@@ -73,7 +72,6 @@ export class Client extends EventEmitter {
                   sendObserver(this, channel, obs.getOptions)
                   sendSubs = true
                 }
-                console.log('resend those subs')
                 getObserverValue(this, channel, obs)
               } else {
                 sendSubs = true
