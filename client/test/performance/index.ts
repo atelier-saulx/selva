@@ -156,6 +156,7 @@ test.skip('Perf - Simple increment', async t => {
 // })
 
 test.serial('Perf - Subscriptions', async t => {
+  console.log('yo')
   const result = await run(
     async client => {
       const sub = client
