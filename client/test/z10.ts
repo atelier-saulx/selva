@@ -42,5 +42,5 @@ test.serial('inherit references $list', async t => {
       }
     }
   })
-  t.deepEqualIgnoreOrder(res, { menu: [] })
+  t.deepEqualIgnoreOrder(res, { $isNull: true, menu: [] })
 })

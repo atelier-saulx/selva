@@ -48,7 +48,16 @@ const getIds = (
           ''
         )
 
-        return getNestedField(intermediateResult, traverse)
+        const nestedResult: string[] = getNestedField(
+          intermediateResult,
+          traverse
+        )
+
+        if (nestedResult[0] === '___selva_empty_array') {
+          return []
+        }
+
+        return nestedResult
       }
 
       return redis.smembers(ids[0] + '.' + traverse)
