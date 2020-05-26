@@ -24,8 +24,11 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           const redisCommand = q[i]
           const { command, resolve, args } = redisCommand
 
+          // need to make nice
+          // if (command === 'selva.modify') {
+          // } else
+
           if (command === 'subscribe') {
-            // console.log('yes do it subscribe it', args, client.name, client.id)
             client.subscriber.subscribe(...(<string[]>args))
             resolve(true)
           } else if (command === 'psubscribe') {
@@ -33,9 +36,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
             resolve(true)
           } else {
             if (redisCommand.command.toLowerCase() === 'evalsha') {
-              // console.log('EVALSHA', redisCommand)
               const script = redisCommand.args[0]
-
               if (
                 typeof script === 'string' &&
                 script.startsWith(constants.SCRIPT)
@@ -45,7 +46,6 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
                     constants.SCRIPT.length + 1
                   )
                 )
-
                 if (!sha) {
                   client.queue.push(redisCommand)
                   continue
@@ -55,7 +55,6 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
                     if (!modify) {
                       modify = redisCommand
                     } else {
-                      // console.log('HMMMMMM', ...redisCommand.args.slice(2))
                       modify.args.push(...redisCommand.args.slice(2))
                     }
 

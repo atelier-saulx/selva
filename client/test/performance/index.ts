@@ -27,10 +27,7 @@ test.serial('Perf - Simple increment', async t => {
       const p = []
 
       for (let i = 0; i < 1e4; i++) {
-        // x.push('yabbadabba:yabbadabba')
-        // x.push('yabbadabbayabbadabbayabbadabba')
         x.push(0, 'flap', i + '')
-        // x.push({ flap: 'x' })
       }
       //@ts-ignore
       if (!global.isEVALSHA) {
@@ -57,6 +54,45 @@ test.serial('Perf - Simple increment', async t => {
           return cjson.encode(result)`
           )
         )
+
+        // simple string
+        // client.set({
+        //   flap: 'xxxx'
+        // })
+
+        // // number
+        // client.set({
+        //   flap: 1
+        // })
+
+        // // children
+        // client.set({
+        //   children: [
+        //     {
+        //       flap: 2
+        //     }
+        //   ]
+        // })
+
+        // children - broken type
+        // client.set({
+        //   children: {
+        //     $add: {
+        //       flap: 3
+        //     }
+        //   }
+        // })
+
+        // children
+        // client.set({
+        //   children: {
+        //     $add: [
+        //       {
+        //         flap: 3
+        //       }
+        //     ]
+        //   }
+        // })
 
         const y = await Promise.all(p)
         console.log(y)
