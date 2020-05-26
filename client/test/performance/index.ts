@@ -20,7 +20,7 @@ test.after(async _t => {
   await stop()
 })
 
-test.skip('Perf - Simple increment', async t => {
+test.serial('Perf - Simple increment', async t => {
   const result = await run(
     async client => {
       const x = []
@@ -29,7 +29,7 @@ test.skip('Perf - Simple increment', async t => {
       for (let i = 0; i < 1e4; i++) {
         // x.push('yabbadabba:yabbadabba')
         // x.push('yabbadabbayabbadabbayabbadabba')
-        x.push(JSON.stringify({ flap: 'x' }))
+        x.push(0, 'flap', i + '')
         // x.push({ flap: 'x' })
       }
       //@ts-ignore
@@ -107,7 +107,7 @@ test.skip('Perf - Simple increment', async t => {
 
         // make nice!
         // 1800 -> 200 -- 9x
-        p.push(client.redis.command('selva.flurpypants'))
+        p.push(client.redis.command('selva.modify', 'root', ...x))
         // }
 
         // for (let i = 0; i < 1e3; i++) {
@@ -157,7 +157,7 @@ test.skip('Perf - Simple increment', async t => {
 //   t.true(result.iterations > 1e6)
 // })
 
-test.serial('Perf - Subscriptions', async t => {
+test.skip('Perf - Subscriptions', async t => {
   const result = await run(
     async client => {
       const sub = client
