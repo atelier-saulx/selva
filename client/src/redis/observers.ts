@@ -28,7 +28,6 @@ const attachClient = (
 ) => {
   if (!redisSelvaClient.registry) {
     redisSelvaClient.selvaClient.once('connect', () => {
-      console.log('go connect yesh')
       attachClient(redisSelvaClient, observerEmitter, channel)
     })
   } else {
