@@ -35,15 +35,6 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     goto error;
   }
 
-  // for(;;) {
-  //   reply = redisCommand(ctx, "PUBLISH %b %b", "test_channel", (size_t) 12, "hello world!", (size_t) 12);
-  //   freeReplyObject(reply);
-  //   reply = NULL;
-
-  //   sleep(1);
-  // }
-
-
   for (;;) {
     char *next;
     int has_queue = queue_peek(&queue, (void **)&next);
@@ -53,7 +44,6 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     }
 
     int32_t size = *((int32_t *)next);
-    printf("Reading %d bytes\n", size);
     next += sizeof(int32_t);
     char read_buffer[size];
     char *read_ptr = read_buffer;
@@ -75,7 +65,20 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
     struct SelvaModify_AsyncTask *task = (struct SelvaModify_AsyncTask *) read_buffer;
     task->field_name = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask));
-    printf("Task type %d for field (%zu) %s\n", task->type, task->field_name_len, task->field_name);
+    task->value = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask) + task->field_name_len);
+    if (task->type == SELVA_MODIFY_ASYNC_TASK_PUBLISH) {
+      char channel[11 + task->field_name_len];
+      memcpy(channel, task->id, 10);
+      memcpy(channel + 10, ".", 1);
+      memcpy(channel + 11, task->field_name, task->field_name_len);
+
+      reply = redisCommand(ctx, "PUBLISH %b %b", channel, (size_t) (11 + task->field_name_len), "update", (size_t) 6);
+
+      freeReplyObject(reply);
+      reply = NULL;
+    } else if (task->type == SELVA_MODIFY_ASYNC_TASK_INDEX) {
+      printf("TODO: index field %s with %s\n", task->field_name, task->value);
+    }
   }
 
 error:
