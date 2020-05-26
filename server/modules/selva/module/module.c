@@ -82,6 +82,22 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     if (*type_str == SELVA_MODIFY_ARG_DEFAULT || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
       RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, value, NULL);
+    } else if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
+      size_t value_len;
+      const char *value_str = RedisModule_StringPtrLen(value, &value_len);
+
+      struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
+      // TODO: call inline function
+      if (incrementOpts->$default_len) {
+        RedisModuleString *default_value = RedisModule_CreateString(ctx, incrementOpts->$default, incrementOpts->$default_len);
+        RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, default_value, NULL);
+      }
+
+      if (incrementOpts->$increment_len) {
+        RedisModuleString *increment_value = RedisModule_CreateString(ctx, incrementOpts->$increment, incrementOpts->$increment_len);
+        RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, increment_value, NULL);
+      }
+    } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
     } else {
       // normal set
       RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
