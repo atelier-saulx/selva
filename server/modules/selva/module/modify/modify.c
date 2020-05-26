@@ -22,7 +22,7 @@ static inline int min(int a, int b) {
 }
 
 pthread_t thread_id = NULL;
-char* queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
+char queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
 queue_cb_t queue = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, RING_BUFFER_LENGTH);
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
