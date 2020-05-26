@@ -1,7 +1,7 @@
 import { RedisClient } from 'redis'
+import './redisSearch'
 import { RedisCommand } from '../types'
 import RedisSelvaClient from '../'
-import './redisSearch'
 import { ServerType, ServerDescriptor, LogEntry } from '../../types'
 import { EventEmitter } from 'events'
 import createRedisClient from './createRedisClient'
