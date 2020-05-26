@@ -38,6 +38,8 @@ error:
     freeReplyObject(reply);
   }
 
+  redisFree(ctx);
+
   return NULL;
 }
 
