@@ -26,7 +26,7 @@ net
     let got = 0
 
     const drain = () => {
-      console.log('DRAINING')
+      // console.log('DRAINING')
       if (!buf) {
         const sizeRaw: Buffer = socket.read(4)
         if (!sizeRaw) {
@@ -34,7 +34,7 @@ net
         }
 
         size = sizeRaw.readInt32LE(0)
-        console.log('SIZE', size)
+        // console.log('SIZE', size)
         buf = Buffer.alloc(size)
       }
 
@@ -45,8 +45,8 @@ net
           return
         }
 
-        console.log('read', chunk.length)
-        console.log('read chunk', chunk.toString('hex'))
+        // console.log('read', chunk.length)
+        // console.log('read chunk', chunk.toString('hex'))
 
         chunk.copy(buf, got)
         got += buf.length
@@ -54,9 +54,9 @@ net
 
       if (got === size) {
         const result = deserialize(STRUCT_DEF, buf)
-        console.log('RESULT', result)
+        // console.log('RESULT', result)
         result.type = result.type === 0 ? 'publish' : 'ft.add'
-        console.log('RESULT', result)
+        // console.log('RESULT', result)
         buf = undefined
         size = 0
         got = 0

@@ -23,12 +23,12 @@ int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
   return REDISMODULE_OK;
 }
 
-
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   // init auto memory for created strings
   RedisModule_AutoMemory(ctx);
 
-  RedisModuleString *keyStr = RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants") * sizeof(char));
+  RedisModuleString *keyStr =
+      RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants") * sizeof(char));
   RedisModuleString *val = RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
   RedisModuleKey *key = RedisModule_OpenKey(ctx, keyStr, REDISMODULE_WRITE);
   for (int i = 0; i < 10000; i++) {
@@ -37,8 +37,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   }
 
   RedisModule_CloseKey(key);
-  RedisModuleString *reply =
-    RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
+  RedisModuleString *reply = RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
   RedisModule_ReplyWithString(ctx, reply);
   return REDISMODULE_OK;
 }
@@ -75,9 +74,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE) {
       size_t value_len;
       const char *value_str = RedisModule_StringPtrLen(value, &value_len);
-      int indexing_str_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
+      int indexing_str_len =
+          sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
       char indexing_str[indexing_str_len];
-      SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len, value_str, value_len);
+      SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
+                                           value_str, value_len);
       SelvaModify_SendAsyncTask(indexing_str_len, indexing_str, 3);
     }
 
@@ -86,7 +87,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
 
     // publish
-    printf("Sending async task with struct %zu and field %zu\n", sizeof(struct SelvaModify_AsyncTask), field_len);
+    // printf("Sending async task with struct %zu and field %zu\n", sizeof(struct
+    // SelvaModify_AsyncTask), field_len);
     SelvaModify_SendAsyncTask(payload_len, payload_str, 3);
   }
 
@@ -104,16 +106,18 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     return REDISMODULE_ERR;
   }
 
-  if (RedisModule_CreateCommand(ctx, "selva.id", SelvaCommand_GenId, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+  if (RedisModule_CreateCommand(ctx, "selva.id", SelvaCommand_GenId, "readonly", 1, 1, 1) ==
+      REDISMODULE_ERR) {
     return REDISMODULE_ERR;
   }
 
-
-  if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+  if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) ==
+      REDISMODULE_ERR) {
     return REDISMODULE_ERR;
   }
 
-  if (RedisModule_CreateCommand(ctx, "selva.flurpypants", SelvaCommand_Flurpy, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+  if (RedisModule_CreateCommand(ctx, "selva.flurpypants", SelvaCommand_Flurpy, "readonly", 1, 1,
+                                1) == REDISMODULE_ERR) {
     return REDISMODULE_ERR;
   }
 
