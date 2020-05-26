@@ -26,15 +26,21 @@ const attachClient = (
   observerEmitter: ObserverEmitter,
   channel: string
 ) => {
-  getServerDescriptor(redisSelvaClient, {
-    type: 'subscriptionManager',
-    subscription: channel
-  }).then(descriptor => {
-    if (!observerEmitter.isRemoved) {
-      observerEmitter.client = getClient(redisSelvaClient, descriptor)
-      startObserver(observerEmitter.client, channel, observerEmitter)
-    }
-  })
+  if (!redisSelvaClient.registry) {
+    redisSelvaClient.selvaClient.once('connect', () => {
+      attachClient(redisSelvaClient, observerEmitter, channel)
+    })
+  } else {
+    getServerDescriptor(redisSelvaClient, {
+      type: 'subscriptionManager',
+      subscription: channel
+    }).then(descriptor => {
+      if (!observerEmitter.isRemoved) {
+        observerEmitter.client = getClient(redisSelvaClient, descriptor)
+        startObserver(observerEmitter.client, channel, observerEmitter)
+      }
+    })
+  }
 }
 
 const createObservable = (
