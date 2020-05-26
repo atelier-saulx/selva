@@ -74,7 +74,7 @@ test.serial('Perf - Simple increment', async t => {
         //   ]
         // })
 
-        // children - broken type
+        // children - brokçen type
         // client.set({
         //   children: {
         //     $add: {
