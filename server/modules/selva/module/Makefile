@@ -28,9 +28,9 @@ rmutil: FORCE
 
 module.so: module.o id/id.o modify/modify.o
 ifeq ($(uname_S),Linux)
-	$(LD) -o $@ module.o id/id.o modify/modify.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc  -luuid
+	$(LD) -o $@ module.o id/id.o modify/modify.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc  -luuid -lhiredis -lcrypto -lssl
 else
-	$(LD) -o $@ module.o id/id.o modify/modify.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc 
+	$(LD) -o $@ module.o id/id.o modify/modify.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc -lhiredis -lcrypto -lssl
 endif
 
 clean:

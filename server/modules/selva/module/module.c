@@ -77,7 +77,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       char indexing_str[indexing_str_len];
       SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
                                            value_str, value_len);
-      SelvaModify_SendAsyncTask(indexing_str_len, indexing_str, 3);
+      SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
     }
 
     if (*type_str == SELVA_MODIFY_ARG_DEFAULT || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
@@ -133,11 +133,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     // RedisModule_Call(ctx, "publish", field_str, "update");
     SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
-
-    // publish
-    // printf("Sending async task with struct %zu and field %zu\n", sizeof(struct
-    // SelvaModify_AsyncTask), field_len);
-    // SelvaModify_SendAsyncTask(payload_len, payload_str, 3);
+    SelvaModify_SendAsyncTask(payload_len, payload_str);
   }
 
   RedisModule_CloseKey(id_key);

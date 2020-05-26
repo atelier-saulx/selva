@@ -2,60 +2,52 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <errno.h>
-#include <sys/un.h>
-#include <sys/socket.h>
 #include <string.h>
+#include <pthread.h>
+
+#include <hiredis/hiredis.h>
 
 #include "./modify.h"
 
-#define CLIENT_SOCK_FILE "/tmp/selva.sock"
+#define RING_BUFFER_BLOCK_SIZE 128
+#define RING_BUFFER_LENGTH 16000
 
-extern int errno;
+pthread_t thread_id = NULL;
 
-int fd = -1;
-struct sockaddr_un addr;
+void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
+  // TODO: proper args, env?
+  redisContext *ctx = redisConnect("127.0.0.1", 6379);
+  redisReply *reply = NULL;
 
-int SelvaModify_SendAsyncTask(int payload_len, char *payload, uint8_t retries) {
-  if (fd == -1) {
-    fd = socket(PF_UNIX, SOCK_STREAM, 0);
-    if (fd < 0) {
-      fprintf(stderr, "Unable to open file descriptor for %s\n", CLIENT_SOCK_FILE);
-      fd = -1;
-      goto error;
-    }
-
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, CLIENT_SOCK_FILE, sizeof(addr.sun_path)-1);
-
-
-    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-      fprintf(stderr, "Error (%s) connecting to %s\n", strerror(errno), addr.sun_path);
-      goto error;
-    }
-  }
-
-  if (write(fd, payload, payload_len) != payload_len) {
-    fprintf(stderr, "Error (%s) writing to socket\n", strerror(errno));
+  if (ctx->err) {
+    fprintf(stderr, "Error connecting to the redis instance\n");
     goto error;
   }
 
-  return 0;
+  for(;;) {
+    reply = redisCommand(ctx, "PUBLISH %b %b", "test_channel", (size_t) 12, "hello world!", (size_t) 12);
+    freeReplyObject(reply);
+    reply = NULL;
+
+    sleep(1);
+  }
 
 error:
-  if (fd > 0) {
-    close(fd);
+  thread_id = NULL;
+  if (reply != NULL) {
+    freeReplyObject(reply);
   }
 
-  fd = -1;
+  return NULL;
+}
 
-  if (retries <= 0) {
-    fprintf(stderr, "Retries exceeded\n");
-    exit(1);
+int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
+  if (thread_id == NULL) {
+    pthread_create(&thread_id, NULL, SelvaModify_AsyncTaskWorkerMain, NULL);
   }
 
-  return SelvaModify_SendAsyncTask(payload_len, payload, --retries);
+  // TODO: put in the ring buffer pls
+  return 0;
 }
 
 void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, size_t id_len, const char *field_str, size_t field_len) {
