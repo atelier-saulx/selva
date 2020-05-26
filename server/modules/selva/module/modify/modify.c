@@ -66,7 +66,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         continue;
       }
 
-      memcpy(read_ptr, next, min(block_remaining, remaining));
+      memcpy(read_ptr, next + (RING_BUFFER_BLOCK_SIZE - block_remaining), min(block_remaining, remaining));
       queue_skip(&queue, 1);
       remaining -= block_remaining;
       block_remaining = RING_BUFFER_BLOCK_SIZE;
