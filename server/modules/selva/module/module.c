@@ -98,6 +98,31 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, increment_value, NULL);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
+      size_t value_len;
+      const char *value_str = RedisModule_StringPtrLen(value, &value_len);
+
+      struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;
+      // TODO: call inline function
+      if (referenceOpts->$value_len) {
+          // TODO: remove all
+          for (unsigned int i = 0; i < referenceOpts->$value_len; i += 10) {
+            // TODO: set
+          }
+      } else {
+        if (referenceOpts->$add_len) {
+          for (unsigned int i = 0; i < referenceOpts->$add_len; i += 10) {
+            // TODO: sadd blabla
+          }
+        }
+
+        if (referenceOpts->$delete_len) {
+          for (unsigned int i = 0; i < referenceOpts->$delete_len; i += 10) {
+            // TODO: srem blabla
+          }
+        }
+      }
+
+      // TODO: hierarchy
     } else {
       // normal set
       RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
