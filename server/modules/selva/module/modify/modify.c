@@ -45,8 +45,8 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
 
   for (;;) {
-    void *next;
-    int has_queue = queue_peek(&queue, &next);
+    char *next;
+    int has_queue = queue_peek(&queue, (void **)&next);
     if (!has_queue) {
       usleep(100);
       continue;
@@ -55,12 +55,12 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     int32_t size = *((int32_t *)next);
     printf("Reading %d bytes\n", size);
     next += sizeof(int32_t);
-    void *read_buffer[size];
-    void *read_ptr = read_buffer;
+    char read_buffer[size];
+    char *read_ptr = read_buffer;
     int32_t remaining = size;
     int32_t block_remaining = RING_BUFFER_BLOCK_SIZE - sizeof(int32_t);
     while (remaining > 0) {
-      int has_queue = queue_peek(&queue, &next);
+      int has_queue = queue_peek(&queue, (void **)&next);
       if (!has_queue) {
         usleep(100);
         continue;
