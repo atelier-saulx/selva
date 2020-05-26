@@ -18,9 +18,9 @@ let replicasList: SelvaServer[] = []
 let subsManagersList: SelvaServer[] = []
 
 let replicaAmount = 0
-let subManagerAmount = 10
+let subManagerAmount = 0
 
-export async function start({ replicas = 0, subsManagers = 5 } = {}): Promise<{
+export async function start({ replicas = 5, subsManagers = 5 } = {}): Promise<{
   registry: SelvaServer
 }> {
   replicaAmount = replicas
@@ -36,6 +36,11 @@ export async function start({ replicas = 0, subsManagers = 5 } = {}): Promise<{
     registry: { port },
     default: true,
     port: 6379
+  })
+
+  const aaaa = await startOrigin({
+    registry: { port },
+    name: 'other'
   })
 
   origin.pm.on('stdout', log => {
@@ -55,6 +60,21 @@ export async function start({ replicas = 0, subsManagers = 5 } = {}): Promise<{
       }
     }
   })
+
+  await client.updateSchema(
+    {
+      rootType: {
+        fields: { value: { type: 'number' } }
+      },
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: { value: { type: 'number' } }
+        }
+      }
+    },
+    'other'
+  )
 
   // origin2 = startOrigin({ name: 'origin2', registry: { port } })
 

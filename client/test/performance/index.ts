@@ -200,13 +200,18 @@ test.serial('Perf - Simple increment', async t => {
 //   t.true(result.iterations > 1e6)
 // })
 
-test.skip('Perf - Subscriptions', async t => {
+test.serial('Perf - Subscriptions', async t => {
   const result = await run(
     async client => {
       const sub = client
         .observe({
           $id: 'root',
-          value: true
+          value: true,
+          flaperdrol: {
+            $db: 'other',
+            $id: 'root',
+            value: true
+          }
         })
         .subscribe(x => {
           // sub.unsubscribe()
