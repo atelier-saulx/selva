@@ -13,7 +13,7 @@
 #define RING_BUFFER_BLOCK_SIZE 128
 #define RING_BUFFER_LENGTH 16000
 
-inline int min(int a, int b) {
+static inline int min(int a, int b) {
   if (a > b) {
     return b;
   }
@@ -43,12 +43,39 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
   //   sleep(1);
   // }
 
+
   for (;;) {
-    void *data;
-    int result = queue_pop(&queue, &data);
-    if (result) {
-      int32_t *total_len = (int32_t *)data;
+    void *next;
+    int has_queue = queue_peek(&queue, &next);
+    if (!has_queue) {
+      usleep(100);
+      continue;
     }
+
+    int32_t size = *((int32_t *)next);
+    printf("Reading %d bytes\n", size);
+    next += sizeof(int32_t);
+    void *read_buffer[size];
+    void *read_ptr = read_buffer;
+    int32_t remaining = size;
+    int32_t block_remaining = RING_BUFFER_BLOCK_SIZE - sizeof(int32_t);
+    while (remaining > 0) {
+      int has_queue = queue_peek(&queue, &next);
+      if (!has_queue) {
+        usleep(100);
+        continue;
+      }
+
+      memcpy(read_ptr, next, min(block_remaining, remaining));
+      queue_skip(&queue, 1);
+      remaining -= block_remaining;
+      block_remaining = RING_BUFFER_BLOCK_SIZE;
+    }
+
+
+    struct SelvaModify_AsyncTask *task = (struct SelvaModify_AsyncTask *) read_buffer;
+    task->field_name = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask));
+    printf("Task type %d for field (%zu) %s\n", task->type, task->field_name_len, task->field_name);
   }
 
 error:
@@ -68,14 +95,10 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
   }
 
   for (unsigned int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
-    while (1) {
-      void *ptr = queue_alloc_get(&queue);
-      if (ptr != NULL) {
-        memcpy(ptr, payload, payload_len);
-        queue_alloc_commit(&queue);
-        break;
-      }
-    }
+    void *ptr;
+    while (!(ptr = queue_alloc_get(&queue)));
+    memcpy(ptr, payload, payload_len);
+    queue_alloc_commit(&queue);
   }
 
   return 0;

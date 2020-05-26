@@ -33,8 +33,8 @@
  */
 
 #include <stdint.h>
-#include <kstring.h>
-#include <queue_r.h>
+#include <string.h>
+#include "./queue_r.h"
 
 queue_cb_t queue_create(void * data_array, size_t block_size, size_t array_size)
 {
