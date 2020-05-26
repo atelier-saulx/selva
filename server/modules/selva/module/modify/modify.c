@@ -8,11 +8,22 @@
 #include <hiredis/hiredis.h>
 
 #include "./modify.h"
+#include "./queue_r.h"
 
 #define RING_BUFFER_BLOCK_SIZE 128
 #define RING_BUFFER_LENGTH 16000
 
+inline int min(int a, int b) {
+  if (a > b) {
+    return b;
+  }
+
+  return a;
+}
+
 pthread_t thread_id = NULL;
+void* queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
+queue_cb_t queue = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, RING_BUFFER_LENGTH);
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
   // TODO: proper args, env?
@@ -24,12 +35,20 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     goto error;
   }
 
-  for(;;) {
-    reply = redisCommand(ctx, "PUBLISH %b %b", "test_channel", (size_t) 12, "hello world!", (size_t) 12);
-    freeReplyObject(reply);
-    reply = NULL;
+  // for(;;) {
+  //   reply = redisCommand(ctx, "PUBLISH %b %b", "test_channel", (size_t) 12, "hello world!", (size_t) 12);
+  //   freeReplyObject(reply);
+  //   reply = NULL;
 
-    sleep(1);
+  //   sleep(1);
+  // }
+
+  for (;;) {
+    void *data;
+    int result = queue_pop(&queue, &data);
+    if (result) {
+      int32_t *total_len = (int32_t *)data;
+    }
   }
 
 error:
@@ -48,7 +67,17 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
     pthread_create(&thread_id, NULL, SelvaModify_AsyncTaskWorkerMain, NULL);
   }
 
-  // TODO: put in the ring buffer pls
+  for (unsigned int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
+    while (1) {
+      void *ptr = queue_alloc_get(&queue);
+      if (ptr != NULL) {
+        memcpy(ptr, payload, payload_len);
+        queue_alloc_commit(&queue);
+        break;
+      }
+    }
+  }
+
   return 0;
 }
 
