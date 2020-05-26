@@ -84,12 +84,14 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     int payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len;
     char payload_str[payload_len];
-    SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
+
+    // RedisModule_Call(ctx, "publish", field_str, "update");
+    // SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
 
     // publish
     // printf("Sending async task with struct %zu and field %zu\n", sizeof(struct
     // SelvaModify_AsyncTask), field_len);
-    SelvaModify_SendAsyncTask(payload_len, payload_str, 3);
+    // SelvaModify_SendAsyncTask(payload_len, payload_str, 3);
   }
 
   RedisModule_CloseKey(id_key);

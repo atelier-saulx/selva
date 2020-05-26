@@ -107,7 +107,14 @@ test.serial('Perf - Simple increment', async t => {
 
         // make nice!
         // 1800 -> 200 -- 9x
-        p.push(client.redis.command('selva.modify', 'root', ...x))
+
+        // p.push(client.redis.command('selva.modify', 'root', ...x))
+
+        // for (let i = 0; i < 1e4; i++) {
+        //   p.push(
+        //     client.redis.command('selva.modify', 'root', 0, 'flap', i + '')
+        //   )
+        // }
         // }
 
         // for (let i = 0; i < 1e3; i++) {
