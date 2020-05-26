@@ -39,8 +39,10 @@ export function getNestedSchema(id: string, field: string): FieldSchema | null {
   const schema = getSchema()
 
   let typeCache = SCHEMA_PATH_CACHE[type]
+
   if (!typeCache) {
-    typeCache = SCHEMA_PATH_CACHE[type] = {}
+    typeCache = {}
+    SCHEMA_PATH_CACHE[type] = typeCache
   }
 
   if (typeCache[field]) {
