@@ -6,6 +6,8 @@ import os from 'os'
 import { join } from 'path'
 import fs from 'fs'
 
+export * as s3Backups from './backup-plugins/s3'
+
 const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   let parsedOpts: ServerOptions
   if (typeof opts === 'function') {
