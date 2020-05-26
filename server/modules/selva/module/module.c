@@ -63,15 +63,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString *field = argv[i + 1];
     RedisModuleString *value = argv[i + 2];
 
-    RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
-
     size_t field_len;
     const char *field_str = RedisModule_StringPtrLen(field, &field_len);
 
     size_t type_len;
     const char *type_str = RedisModule_StringPtrLen(type, &type_len);
 
-    if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE) {
+    if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
       size_t value_len;
       const char *value_str = RedisModule_StringPtrLen(value, &value_len);
       int indexing_str_len =
@@ -80,6 +78,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
                                            value_str, value_len);
       SelvaModify_SendAsyncTask(indexing_str_len, indexing_str, 3);
+    }
+
+    if (*type_str == SELVA_MODIFY_ARG_DEFAULT || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
+      RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, value, NULL);
+    } else {
+      // normal set
+      RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
     }
 
     int payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len;
