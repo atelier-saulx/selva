@@ -47,11 +47,10 @@ static inline uint8_t next_queue_idx() {
 }
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
-
   uint64_t thread_idx = (uint64_t)argv;
   printf("Started worker number %llu\n", thread_idx);
 
-  queue_cb_t queue = queues[thread_idx];
+  queue_cb_t *queue = queues + thread_idx;
 
   // TODO: proper args, env?
   redisContext *ctx = redisConnect("127.0.0.1", 6379);
@@ -64,7 +63,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
   for (;;) {
     char *next;
-    int has_queue = queue_peek(&queue, (void **)&next);
+    int has_queue = queue_peek(queue, (void **)&next);
     if (!has_queue) {
       usleep(100);
       continue;
@@ -77,14 +76,14 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     int32_t remaining = size;
     int32_t block_remaining = RING_BUFFER_BLOCK_SIZE - sizeof(int32_t);
     while (remaining > 0) {
-      int has_queue = queue_peek(&queue, (void **)&next);
+      int has_queue = queue_peek(queue, (void **)&next);
       if (!has_queue) {
         usleep(100);
         continue;
       }
 
       memcpy(read_ptr, next + (RING_BUFFER_BLOCK_SIZE - block_remaining), min(block_remaining, remaining));
-      queue_skip(&queue, 1);
+      queue_skip(queue, 1);
       remaining -= block_remaining;
       block_remaining = RING_BUFFER_BLOCK_SIZE;
     }
@@ -130,7 +129,6 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
     }
   }
 
-  // printf("Sending publish with size %d / %d\n", payload_len, RING_BUFFER_BLOCK_SIZE);
   uint8_t first_worker_idx = next_queue_idx();
   uint8_t worker_idx = first_worker_idx;
   if (queue_isfull(&queues[worker_idx])) {
@@ -148,7 +146,6 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
 
   for (unsigned int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
     char *ptr;
-    // while (!(ptr = queue_alloc_get(&queue)));
     ptr = queue_alloc_get(&queues[worker_idx]);
     if (ptr != NULL) {
       memcpy(ptr, payload, payload_len);
