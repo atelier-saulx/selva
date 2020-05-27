@@ -28,20 +28,33 @@ test.serial('basic schema based subscriptions', async t => {
 
   const obssnurk = client.subscribeSchema('snurk')
 
+  let snurkCnt = 0
   obssnurk.subscribe(x => {
-    console.log('its snurk', x)
+    snurkCnt++
+    console.log('SNURK', x.rootType)
+    if (snurkCnt === 2) {
+      console.log(x.rootType.fields)
+      if (!x.rootType.fields.snurk) {
+        throw new Error('does not have snurk!')
+      }
+    }
   })
+  await wait(2000)
 
-  console.log('---------')
+  console.log('----------------------------------')
+
+  console.log('update snurk')
   await client.updateSchema(
     {
       languages: ['en', 'de', 'nl'],
       rootType: {
-        fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+        fields: { snurk: { type: 'string' } }
       }
     },
     'snurk'
   )
+
+  console.log('snurk updated')
 
   const observable = client.subscribeSchema()
   let o1counter = 0
@@ -96,6 +109,8 @@ test.serial('basic schema based subscriptions', async t => {
   await wait(500)
 
   t.is(cnt, 1)
+
+  t.is(snurkCnt, 2)
 
   sub2.unsubscribe()
 
