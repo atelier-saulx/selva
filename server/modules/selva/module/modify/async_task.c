@@ -140,12 +140,13 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
     char *ptr;
     // while (!(ptr = queue_alloc_get(&queue)));
     ptr = queue_alloc_get(&queues[worker_idx]);
-    total_publishes++;
     if (ptr != NULL) {
       memcpy(ptr, payload, payload_len);
       queue_alloc_commit(&queues[worker_idx]);
     }
   }
+
+  total_publishes++;
 
   return 0;
 }
