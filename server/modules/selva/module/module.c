@@ -71,9 +71,27 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     size_t type_len;
     const char *type_str = RedisModule_StringPtrLen(type, &type_len);
 
+    size_t value_len;
+    const char *value_str = RedisModule_StringPtrLen(value, &value_len);
+
+    size_t current_value_len;
+    RedisModuleString *current_value;
+    RedisModule_HashGet(id_key, REDISMODULE_HASH_NONE, field, &current_value, NULL);
+    const char *current_value_str;
+
+    if (current_value == NULL) {
+      current_value = NULL;
+      current_value_len = 0;
+    } else {
+      current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
+    }
+
+    if (current_value_len == value_len && memcmp(current_value, value, current_value_len) == 0) {
+      printf("Current value is equal to the specified value for key %s and value %s\n", field_str, value_str);
+      continue;
+    }
+
     if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
-      size_t value_len;
-      const char *value_str = RedisModule_StringPtrLen(value, &value_len);
       int indexing_str_len =
         sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
       char indexing_str[indexing_str_len];
@@ -83,17 +101,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     if (*type_str == SELVA_MODIFY_ARG_DEFAULT || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
-      bool exists;
-      RedisModule_HashGet(id_key, REDISMODULE_HASH_EXISTS, field, &exists, NULL);
-      if (exists) {
+      if (current_value != NULL) {
         publish = false;
       } else {
         RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
-      size_t value_len;
-      const char *value_str = RedisModule_StringPtrLen(value, &value_len);
-
       struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
       // TODO: call inline function
       if (incrementOpts->$default_len) {
@@ -107,9 +120,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, increment_value, NULL);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
-      size_t value_len;
-      const char *value_str = RedisModule_StringPtrLen(value, &value_len);
-
       struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;
       // TODO: call inline function
       if (referenceOpts->$value_len) {
