@@ -131,7 +131,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         char indexing_str[indexing_str_len];
         SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
             increment_str, num_str_size);
-        // SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
+        SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
       struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;

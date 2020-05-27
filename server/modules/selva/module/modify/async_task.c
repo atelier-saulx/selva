@@ -39,7 +39,7 @@ static void initialize_queues() {
   }
 }
 
-uint8_t queue_idx = 0;
+static uint8_t queue_idx = 0;
 static inline uint8_t next_queue_idx() {
   uint8_t idx = queue_idx;
   queue_idx = (queue_idx + 1) % HIREDIS_WORKER_COUNT;
@@ -105,7 +105,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
       freeReplyObject(reply);
       reply = NULL;
     } else if (task->type == SELVA_MODIFY_ASYNC_TASK_INDEX) {
-      printf("TODO: index field %s with %s\n", task->field_name, task->value);
+      printf("TODO: index field %.*s with %.*s\n", (int)task->field_name_len, task->field_name, (int)task->value_len, task->value);
     } else {
       printf("Unsupported task type %d\n", task->type);
     }
