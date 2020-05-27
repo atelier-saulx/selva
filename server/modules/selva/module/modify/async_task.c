@@ -11,7 +11,7 @@
 #include "./queue_r.h"
 
 #define RING_BUFFER_BLOCK_SIZE 128
-#define RING_BUFFER_LENGTH 3000000
+#define RING_BUFFER_LENGTH 300000
 
 #define HIREDIS_WORKER_COUNT 4
 
@@ -29,7 +29,7 @@ uint64_t missed_publishes = 0;
 pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { NULL };
 
 char queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
-queue_cb_t queue = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, RING_BUFFER_LENGTH);
+queue_cb_t queue = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem));
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
   uint64_t thread_idx = (uint64_t)argv;
@@ -121,7 +121,7 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
       queue_alloc_commit(&queue);
     } else {
       missed_publishes++;
-      // printf("MISSED PUBLISH: %llu / %llu \n", missed_publishes, total_publishes);
+      printf("MISSED PUBLISH: %llu / %llu \n", missed_publishes, total_publishes);
     }
   }
 
