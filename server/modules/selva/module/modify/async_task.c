@@ -14,7 +14,6 @@
 #define RING_BUFFER_LENGTH 100000
 
 #define HIREDIS_WORKER_COUNT 4
-#define HIREDIS_WORKER_MAX_IDX 3
 
 static inline int min(int a, int b) {
   if (a > b) {
@@ -30,7 +29,7 @@ uint64_t missed_publishes = 0;
 pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { NULL };
 
 char queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
-queue_cb_t queues [HIREDIS_WORKER_COUNT] = { [0 ... HIREDIS_WORKER_MAX_IDX] = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem)) };
+queue_cb_t queues [HIREDIS_WORKER_COUNT] = { [0 ... HIREDIS_WORKER_COUNT-1] = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem)) };
 
 uint8_t queue_idx = 0;
 static inline uint8_t next_queue_idx() {
