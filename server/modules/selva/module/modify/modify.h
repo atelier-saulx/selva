@@ -2,6 +2,8 @@
 #ifndef SELVA_MODIFY
 #define SELVA_MODIFY
 
+#include <stdbool.h>
+
 enum SelvaModify_ArgType {
   SELVA_MODIFY_ARG_VALUE = '0',
   SELVA_MODIFY_ARG_INDEXED_VALUE = '1',
@@ -12,7 +14,7 @@ enum SelvaModify_ArgType {
 };
 
 struct SelvaModify_OpIncrement {
-  // boolean indexed;
+  bool indexed;
 
   char *$default;
   size_t $default_len;
