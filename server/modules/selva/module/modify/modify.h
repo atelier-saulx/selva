@@ -14,7 +14,7 @@ enum SelvaModify_ArgType {
 };
 
 struct SelvaModify_OpIncrement {
-  bool indexed;
+  bool index;
 
   char *$default;
   size_t $default_len;
