@@ -3,7 +3,6 @@ import { SetOptions, BatchOpts, BatchRefFieldOpts } from './types'
 import { Schema } from '../schema'
 import { _set } from '.'
 
-// import { MAX_BATCH_SIZE } from '../redis'
 export const MAX_BATCH_SIZE = 3500
 
 export async function setInBatches(

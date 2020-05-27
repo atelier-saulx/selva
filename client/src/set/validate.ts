@@ -154,4 +154,3 @@ ${allowedFieldsDoc(schemas, type)}
   }
   return result
 }
-
