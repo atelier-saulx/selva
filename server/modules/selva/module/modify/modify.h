@@ -15,16 +15,9 @@ enum SelvaModify_ArgType {
 
 struct SelvaModify_OpIncrement {
   bool index;
-
-  char *$default;
-  size_t $default_len;
-
+  int $default;
   int $increment;
 };
-
-static inline void SelvaModify_OpIncrement_align(struct SelvaModify_OpIncrement *op) {
-  op->$default = (char *)(op + sizeof(struct SelvaModify_OpIncrement));
-}
 
 struct SelvaModify_OpReferences {
   // filled with multiple ids of length 10
