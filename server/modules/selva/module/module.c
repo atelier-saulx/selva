@@ -116,18 +116,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
       if (current_value != NULL) {
         publish = false;
-      } else {
-        int num_str_size = (int)ceil(log10(incrementOpts->$default));
-        char default_str[num_str_size];
-        sprintf(default_str, "%d", incrementOpts->$default);
-
-        RedisModuleString *default_value =
-          RedisModule_CreateString(ctx, default_str, num_str_size);
-        RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, default_value, NULL);
       }
 
       if (incrementOpts->$increment) {
-        int num = atoi(value_str);
+        int num = current_value == NULL ? incrementOpts->$default : atoi(current_value_str);
+        printf("INCREMENTING %d by %d\n", num, incrementOpts->$increment);
         num += incrementOpts->$increment;
         int num_str_size = (int)ceil(log10(num));
         char increment_str[num_str_size];
@@ -136,6 +129,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModuleString *increment =
             RedisModule_CreateString(ctx, increment_str, num_str_size);
         RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, increment, NULL);
+
+        publish = true;
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
       struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;
