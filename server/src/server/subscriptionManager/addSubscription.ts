@@ -54,7 +54,7 @@ const parseOrigins = (
     if (key === '$db') {
       origins.add(getOptions[key])
     } else if (typeof getOptions[key] === 'object') {
-      parseOrigins(getOptions[key], origins)
+      parseOrigins(channel, getOptions[key], origins)
     }
   }
   return origins
