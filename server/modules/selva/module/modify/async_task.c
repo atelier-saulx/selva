@@ -11,7 +11,7 @@
 #include "./queue_r.h"
 
 #define RING_BUFFER_BLOCK_SIZE 128
-#define RING_BUFFER_LENGTH 3000000
+#define RING_BUFFER_LENGTH 300000
 
 static inline int min(int a, int b) {
   if (a > b) {
@@ -20,6 +20,9 @@ static inline int min(int a, int b) {
 
   return a;
 }
+
+uint64_t total_publishes = 0;
+uint64_t missed_publishes = 0;
 
 pthread_t thread_id = NULL;
 char queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
@@ -103,9 +106,13 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
     char *ptr;
     // while (!(ptr = queue_alloc_get(&queue)));
     ptr = queue_alloc_get(&queue);
+    total_publishes++;
     if (ptr != NULL) {
       memcpy(ptr, payload, payload_len);
       queue_alloc_commit(&queue);
+    } else {
+      missed_publishes++;
+      printf("MISSED PUBLISH: %llu / %llu \n", missed_publishes, total_publishes);
     }
   }
 
