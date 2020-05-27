@@ -1,15 +1,20 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { start } from '@saulx/selva-server'
+import { start, startOrigin } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
+let srv2
 let port: number
 test.before(async () => {
   port = await getPort()
   srv = await start({
     port
+  })
+  srv2 = await startOrigin({
+    registry: { port },
+    name: 'snurk'
   })
   console.log('ok server started!')
 })
@@ -21,10 +26,26 @@ test.after(async () => {
 test.serial('basic schema based subscriptions', async t => {
   const client = connect({ port })
 
+  const obssnurk = client.subscribeSchema('snurk')
+
+  obssnurk.subscribe(x => {
+    console.log('its snurk', x)
+  })
+
+  console.log('---------')
+  await client.updateSchema(
+    {
+      languages: ['en', 'de', 'nl'],
+      rootType: {
+        fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      }
+    },
+    'snurk'
+  )
+
   const observable = client.subscribeSchema()
   let o1counter = 0
   const sub = observable.subscribe(d => {
-    console.log('HMMMMMmm', d)
     o1counter++
   })
 
@@ -69,7 +90,6 @@ test.serial('basic schema based subscriptions', async t => {
   const observable2 = client.subscribeSchema()
   var cnt = 0
   const sub2 = observable2.subscribe(d => {
-    console.log('GOOOOO', d)
     cnt++
   })
 
