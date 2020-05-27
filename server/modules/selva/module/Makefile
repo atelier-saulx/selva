@@ -28,9 +28,9 @@ rmutil: FORCE
 
 module.so: module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o
 ifeq ($(uname_S),Linux)
-	$(LD) -o $@ module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc  -luuid -lhiredis
+	$(LD) -o $@ module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1g/lib/ -lrmutil -lc  -luuid -lhiredis -lcrypto -lssl
 else
-	$(LD) -o $@ module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc -lhiredis
+	$(LD) -o $@ module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1g/lib/ -lrmutil -lc -lhiredis -lcrypto -lssl
 endif
 
 clean:
