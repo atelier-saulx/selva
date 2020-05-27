@@ -19,13 +19,11 @@ struct SelvaModify_OpIncrement {
   char *$default;
   size_t $default_len;
 
-  char *$increment;
-  size_t $increment_len;
+  int $increment;
 };
 
 static inline void SelvaModify_OpIncrement_align(struct SelvaModify_OpIncrement *op) {
   op->$default = (char *)(op + sizeof(struct SelvaModify_OpIncrement));
-  op->$increment = (char *)(op + sizeof(struct SelvaModify_OpIncrement) + op->$default_len);
 }
 
 struct SelvaModify_OpReferences {

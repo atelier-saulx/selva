@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "../redismodule.h"
 #include "../rmutil/util.h"
 #include "../rmutil/strings.h"
@@ -114,16 +116,25 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       SelvaModify_OpIncrement_align(incrementOpts);
 
       if (incrementOpts->$default_len) {
-        RedisModuleString *default_value =
+        if (current_value != NULL) {
+          publish = false;
+        } else {
+          RedisModuleString *default_value =
             RedisModule_CreateString(ctx, incrementOpts->$default, incrementOpts->$default_len);
-        RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, default_value, NULL);
+          RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, default_value, NULL);
+        }
       }
 
-      if (incrementOpts->$increment_len) {
-        // TODO: wrong
-        RedisModuleString *increment_value =
-            RedisModule_CreateString(ctx, incrementOpts->$increment, incrementOpts->$increment_len);
-        RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, increment_value, NULL);
+      if (incrementOpts->$increment) {
+        int num = atoi(value_str);
+        num += incrementOpts->$increment;
+        int num_str_size = (int)ceil(log10(num));
+        char increment_str[num_str_size];
+        sprintf(increment_str, "%d", num);
+
+        RedisModuleString *increment =
+            RedisModule_CreateString(ctx, increment_str, num_str_size);
+        RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, increment, NULL);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
       struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;
