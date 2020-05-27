@@ -86,7 +86,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
     }
 
-    if (current_value_len == value_len && memcmp(current_value, value, current_value_len) == 0) {
+    if (
+        *type_str != SELVA_MODIFY_ARG_OP_INCREMENT &&
+        *type_str != SELVA_MODIFY_ARG_OP_REFERENCES &&
+        current_value_len == value_len &&
+        memcmp(current_value, value, current_value_len) == 0
+       ) {
       printf("Current value is equal to the specified value for key %s and value %s\n", field_str, value_str);
       continue;
     }
