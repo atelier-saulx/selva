@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #include <hiredis/hiredis.h>
 
@@ -28,8 +29,9 @@ uint64_t missed_publishes = 0;
 
 pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { NULL };
 
-char queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
-queue_cb_t queues [HIREDIS_WORKER_COUNT] = { [0 ... HIREDIS_WORKER_COUNT-1] = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem)) };
+bool queues_init = true;
+char queue_mem[HIREDIS_WORKER_COUNT][RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
+queue_cb_t queues[HIREDIS_WORKER_COUNT];
 
 uint8_t queue_idx = 0;
 static inline uint8_t next_queue_idx() {
@@ -116,6 +118,13 @@ error:
 }
 
 int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
+  if (queues_init) {
+    queues_init = false;
+    for (uint8_t i = 0; i < HIREDIS_WORKER_COUNT; i++) {
+      queues[i] = QUEUE_INITIALIZER(queue_mem[i], RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem[i]));
+    }
+  }
+
   for (int64_t i = 0; i < 4; i++) {
     if (thread_ids[i] == NULL) {
       pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);
