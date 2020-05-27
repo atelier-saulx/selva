@@ -99,6 +99,8 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
       reply = NULL;
     } else if (task->type == SELVA_MODIFY_ASYNC_TASK_INDEX) {
       printf("TODO: index field %s with %s\n", task->field_name, task->value);
+    } else {
+      printf("Unsupported task type %d\n", task->type);
     }
   }
 

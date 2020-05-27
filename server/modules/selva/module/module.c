@@ -114,23 +114,24 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     } else if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
       struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
 
-      if (current_value != NULL) {
-        publish = false;
-      }
+      int num = current_value == NULL ? incrementOpts->$default : atoi(current_value_str);
+      num += incrementOpts->$increment;
 
-      if (incrementOpts->$increment) {
-        int num = current_value == NULL ? incrementOpts->$default : atoi(current_value_str);
-        printf("INCREMENTING %d by %d\n", num, incrementOpts->$increment);
-        num += incrementOpts->$increment;
-        int num_str_size = (int)ceil(log10(num));
-        char increment_str[num_str_size];
-        sprintf(increment_str, "%d", num);
+      int num_str_size = (int)ceil(log10(num));
+      char increment_str[num_str_size];
+      sprintf(increment_str, "%d", num);
 
-        RedisModuleString *increment =
-            RedisModule_CreateString(ctx, increment_str, num_str_size);
-        RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, increment, NULL);
+      RedisModuleString *increment =
+        RedisModule_CreateString(ctx, increment_str, num_str_size);
+      RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, increment, NULL);
 
-        publish = true;
+      if (incrementOpts->index) {
+        int indexing_str_len =
+          sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + num_str_size;
+        char indexing_str[indexing_str_len];
+        SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
+            increment_str, num_str_size);
+        // SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
       struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;
@@ -165,7 +166,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       int payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len;
       char payload_str[payload_len];
 
-      // RedisModule_Call(ctx, "publish", field_str, "update");
       SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
       SelvaModify_SendAsyncTask(payload_len, payload_str);
     }
