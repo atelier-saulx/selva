@@ -14,7 +14,7 @@ enum SelvaModify_ArgType {
 };
 
 struct SelvaModify_OpIncrement {
-  bool index;
+  int index;
   int $default;
   int $increment;
 };
