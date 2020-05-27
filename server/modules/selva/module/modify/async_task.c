@@ -11,9 +11,10 @@
 #include "./queue_r.h"
 
 #define RING_BUFFER_BLOCK_SIZE 128
-#define RING_BUFFER_LENGTH 300000
+#define RING_BUFFER_LENGTH 100000
 
 #define HIREDIS_WORKER_COUNT 4
+#define HIREDIS_WORKER_MAX_IDX 3
 
 static inline int min(int a, int b) {
   if (a > b) {
@@ -29,11 +30,21 @@ uint64_t missed_publishes = 0;
 pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { NULL };
 
 char queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
-queue_cb_t queue = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem));
+queue_cb_t queues [HIREDIS_WORKER_COUNT] = { [0 ... HIREDIS_WORKER_MAX_IDX] = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem)) };
+
+uint8_t queue_idx = 0;
+static inline uint8_t next_queue_idx() {
+  uint8_t idx = queue_idx;
+  queue_idx = (queue_idx + 1) % HIREDIS_WORKER_COUNT;
+  return idx;
+}
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
+
   uint64_t thread_idx = (uint64_t)argv;
   printf("Started worker number %llu\n", thread_idx);
+
+  queue_cb_t queue = queues[thread_idx];
 
   // TODO: proper args, env?
   redisContext *ctx = redisConnect("127.0.0.1", 6379);
@@ -111,17 +122,29 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
   }
 
   // printf("Sending publish with size %d / %d\n", payload_len, RING_BUFFER_BLOCK_SIZE);
+  uint8_t first_worker_idx = next_queue_idx();
+  uint8_t worker_idx = first_worker_idx;
+  if (queue_isfull(&queues[worker_idx])) {
+    do {
+      worker_idx = next_queue_idx();
+    } while(queue_isfull(&queues[worker_idx]) && worker_idx != first_worker_idx);
+
+    if (worker_idx == first_worker_idx) {
+      missed_publishes++;
+      printf("MISSED PUBLISH: %llu / %llu \n", missed_publishes, total_publishes);
+      return 1;
+    }
+  }
+
+
   for (unsigned int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
     char *ptr;
     // while (!(ptr = queue_alloc_get(&queue)));
-    ptr = queue_alloc_get(&queue);
+    ptr = queue_alloc_get(&queues[worker_idx]);
     total_publishes++;
     if (ptr != NULL) {
       memcpy(ptr, payload, payload_len);
-      queue_alloc_commit(&queue);
-    } else {
-      missed_publishes++;
-      printf("MISSED PUBLISH: %llu / %llu \n", missed_publishes, total_publishes);
+      queue_alloc_commit(&queues[worker_idx]);
     }
   }
 
