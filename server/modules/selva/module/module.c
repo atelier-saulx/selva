@@ -5,6 +5,7 @@
 
 #include "./id/id.h"
 #include "./modify/modify.h"
+#include "./modify/async_task.h"
 
 int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   // init auto memory for created strings
