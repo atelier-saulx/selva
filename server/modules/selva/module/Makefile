@@ -28,9 +28,9 @@ rmutil: FORCE
 
 module.so: module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o
 ifeq ($(uname_S),Linux)
-	$(LD) -o $@ module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc  -luuid -lhiredis -lcrypto -lssl
+	$(LD) -o $@ module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc  -luuid -lhiredis
 else
-	$(LD) -o $@ module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc -lhiredis -lcrypto -lssl
+	$(LD) -o $@ module.o id/id.o modify/modify.o modify/async_task.o modify/queue_r.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc -lhiredis
 endif
 
 clean:

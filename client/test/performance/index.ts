@@ -27,7 +27,7 @@ test.serial('Perf - Simple increment', async t => {
       const p = []
 
       for (let i = 0; i < 1e4; i++) {
-        x.push(0, 'flap', i + '')
+        x.push(0, 'flap', ~~(Math.random() * 10000) + '')
       }
       //@ts-ignore
       if (!global.isEVALSHA) {
