@@ -157,8 +157,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       char payload_str[payload_len];
 
       // RedisModule_Call(ctx, "publish", field_str, "update");
-      // SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
-      // SelvaModify_SendAsyncTask(payload_len, payload_str);
+      SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
+      SelvaModify_SendAsyncTask(payload_len, payload_str);
     }
   }
 
