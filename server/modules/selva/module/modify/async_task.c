@@ -11,7 +11,7 @@
 #include "./queue_r.h"
 
 #define RING_BUFFER_BLOCK_SIZE 128
-#define RING_BUFFER_LENGTH 300000
+#define RING_BUFFER_LENGTH 3000000
 
 static inline int min(int a, int b) {
   if (a > b) {
@@ -102,6 +102,7 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
     pthread_create(&thread_id, NULL, SelvaModify_AsyncTaskWorkerMain, NULL);
   }
 
+  printf("Sending publish with size %d / %d\n", payload_len, RING_BUFFER_BLOCK_SIZE);
   for (unsigned int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
     char *ptr;
     // while (!(ptr = queue_alloc_get(&queue)));
