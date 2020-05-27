@@ -19,7 +19,7 @@ int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
   SelvaId_GenId("", hash_str);
 
   RedisModuleString *reply =
-    RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
+      RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
   RedisModule_ReplyWithString(ctx, reply);
   return REDISMODULE_OK;
 }
@@ -29,7 +29,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   RedisModule_AutoMemory(ctx);
 
   RedisModuleString *keyStr =
-    RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants") * sizeof(char));
+      RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants") * sizeof(char));
   RedisModuleString *val = RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
   RedisModuleKey *key = RedisModule_OpenKey(ctx, keyStr, REDISMODULE_WRITE);
   for (int i = 0; i < 10000; i++) {
@@ -86,22 +86,20 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
     }
 
-    if (
-        *type_str != SELVA_MODIFY_ARG_OP_INCREMENT &&
-        *type_str != SELVA_MODIFY_ARG_OP_REFERENCES &&
-        current_value_len == value_len &&
-        memcmp(current_value, value, current_value_len) == 0
-       ) {
-      printf("Current value is equal to the specified value for key %s and value %s\n", field_str, value_str);
+    if (*type_str != SELVA_MODIFY_ARG_OP_INCREMENT && *type_str != SELVA_MODIFY_ARG_OP_REFERENCES &&
+        current_value_len == value_len && memcmp(current_value, value, current_value_len) == 0) {
+      printf("Current value is equal to the specified value for key %s and value %s\n", field_str,
+             value_str);
       continue;
     }
 
-    if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
+    if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE ||
+        *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
       int indexing_str_len =
-        sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
+          sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
       char indexing_str[indexing_str_len];
       SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
-          value_str, value_len);
+                                           value_str, value_len);
       SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
     }
 
@@ -115,13 +113,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
       // TODO: call inline function
       if (incrementOpts->$default_len) {
-        RedisModuleString *default_value = RedisModule_CreateString(ctx, incrementOpts->$default, incrementOpts->$default_len);
+        RedisModuleString *default_value =
+            RedisModule_CreateString(ctx, incrementOpts->$default, incrementOpts->$default_len);
         RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, default_value, NULL);
       }
 
       if (incrementOpts->$increment_len) {
         // TODO: wrong
-        RedisModuleString *increment_value = RedisModule_CreateString(ctx, incrementOpts->$increment, incrementOpts->$increment_len);
+        RedisModuleString *increment_value =
+            RedisModule_CreateString(ctx, incrementOpts->$increment, incrementOpts->$increment_len);
         RedisModule_HashSet(id_key, REDISMODULE_HASH_NX, field, increment_value, NULL);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
@@ -157,8 +157,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       char payload_str[payload_len];
 
       // RedisModule_Call(ctx, "publish", field_str, "update");
-      SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
-      SelvaModify_SendAsyncTask(payload_len, payload_str);
+      // SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
+      // SelvaModify_SendAsyncTask(payload_len, payload_str);
     }
   }
 
@@ -187,7 +187,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   }
 
   if (RedisModule_CreateCommand(ctx, "selva.flurpypants", SelvaCommand_Flurpy, "readonly", 1, 1,
-        1) == REDISMODULE_ERR) {
+                                1) == REDISMODULE_ERR) {
     return REDISMODULE_ERR;
   }
 

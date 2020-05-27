@@ -102,6 +102,7 @@ export async function stop() {
   }
 }
 
+let cnt = 0
 const startClient = (
   fn: string,
   opts: { label?: string; time: number; clients: number }
@@ -125,7 +126,8 @@ const startClient = (
       payload: {
         fn,
         time: opts.time,
-        port: registry.port
+        port: registry.port,
+        index: ++cnt
       }
     })
 
@@ -134,7 +136,7 @@ const startClient = (
 }
 
 export async function run(
-  fn: (client: SelvaClient) => void,
+  fn: (client: SelvaClient, index: number) => void,
   opts: { label?: string; time: number; clients: number } = {
     time: 5e3,
     clients: 5

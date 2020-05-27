@@ -22,12 +22,12 @@ test.after(async _t => {
 
 test.serial('Perf - Simple increment', async t => {
   const result = await run(
-    async client => {
+    async (client, index) => {
       const x = []
       const p = []
 
       for (let i = 0; i < 1e4; i++) {
-        x.push(0, 'flap', ~~(Math.random() * 10000) + '')
+        x.push(0, 'flap', i + '.' + index)
       }
       //@ts-ignore
       if (!global.isEVALSHA) {

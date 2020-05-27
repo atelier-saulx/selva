@@ -21,11 +21,18 @@ parentPort.on('message', message => {
       }
 
       client.on('connect', () => {
+        const index = payload.index
         // eslint-disable-next-line
-        const fn = new Function('client', 'execPromise', 'wait', payload.fn)
+        const fn = new Function(
+          'client',
+          'index',
+          'execPromise',
+          'wait',
+          payload.fn
+        )
         const setLoop = async () => {
           const s = Date.now()
-          await fn(client, execPromise, wait)
+          await fn(client, index, execPromise, wait)
           result.time.push(Date.now() - s)
           if (Date.now() - result.startTime > payload.time) {
             parentPort.postMessage(
