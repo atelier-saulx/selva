@@ -111,7 +111,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
       struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
-      // TODO: call inline function
+      SelvaModify_OpIncrement_align(incrementOpts);
+
       if (incrementOpts->$default_len) {
         RedisModuleString *default_value =
             RedisModule_CreateString(ctx, incrementOpts->$default, incrementOpts->$default_len);
@@ -126,7 +127,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
       struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;
-      // TODO: call inline function
+      SelvaModify_OpReferences_align(referenceOpts);
+
       if (referenceOpts->$value_len) {
         // TODO: remove all
         for (unsigned int i = 0; i < referenceOpts->$value_len; i += 10) {
