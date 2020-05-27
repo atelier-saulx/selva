@@ -11,7 +11,7 @@
 #include "./queue_r.h"
 
 #define RING_BUFFER_BLOCK_SIZE 128
-#define RING_BUFFER_LENGTH 16000
+#define RING_BUFFER_LENGTH 3000000
 
 static inline int min(int a, int b) {
   if (a > b) {
@@ -62,7 +62,6 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
       block_remaining = RING_BUFFER_BLOCK_SIZE;
     }
 
-
     struct SelvaModify_AsyncTask *task = (struct SelvaModify_AsyncTask *) read_buffer;
     task->field_name = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask));
     task->value = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask) + task->field_name_len);
@@ -73,6 +72,9 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
       memcpy(channel + 11, task->field_name, task->field_name_len);
 
       reply = redisCommand(ctx, "PUBLISH %b %b", channel, (size_t) (11 + task->field_name_len), "update", (size_t) 6);
+      if (reply == NULL) {
+        printf("Error occurred in publish %s\n", ctx->errstr);
+      }
 
       freeReplyObject(reply);
       reply = NULL;
@@ -98,10 +100,13 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
   }
 
   for (unsigned int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
-    void *ptr;
-    while (!(ptr = queue_alloc_get(&queue)));
-    memcpy(ptr, payload, payload_len);
-    queue_alloc_commit(&queue);
+    char *ptr;
+    // while (!(ptr = queue_alloc_get(&queue)));
+    ptr = queue_alloc_get(&queue);
+    if (ptr != NULL) {
+      memcpy(ptr, payload, payload_len);
+      queue_alloc_commit(&queue);
+    }
   }
 
   return 0;
