@@ -13,6 +13,8 @@
 #define RING_BUFFER_BLOCK_SIZE 128
 #define RING_BUFFER_LENGTH 3000000
 
+#define HIREDIS_WORKER_COUNT 4
+
 static inline int min(int a, int b) {
   if (a > b) {
     return b;
@@ -24,11 +26,15 @@ static inline int min(int a, int b) {
 uint64_t total_publishes = 0;
 uint64_t missed_publishes = 0;
 
-pthread_t thread_id = NULL;
+pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { NULL };
+
 char queue_mem[RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
 queue_cb_t queue = QUEUE_INITIALIZER(queue_mem, RING_BUFFER_BLOCK_SIZE, RING_BUFFER_LENGTH);
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
+  uint64_t thread_idx = (uint64_t)argv;
+  printf("Started worker number %llu\n", thread_idx);
+
   // TODO: proper args, env?
   redisContext *ctx = redisConnect("127.0.0.1", 6379);
   redisReply *reply = NULL;
@@ -87,7 +93,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
   }
 
 error:
-  thread_id = NULL;
+  thread_ids[thread_idx] = NULL;
   if (reply != NULL) {
     freeReplyObject(reply);
   }
@@ -98,11 +104,13 @@ error:
 }
 
 int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
-  if (thread_id == NULL) {
-    pthread_create(&thread_id, NULL, SelvaModify_AsyncTaskWorkerMain, NULL);
+  for (int64_t i = 0; i < 4; i++) {
+    if (thread_ids[i] == NULL) {
+      pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);
+    }
   }
 
-  printf("Sending publish with size %d / %d\n", payload_len, RING_BUFFER_BLOCK_SIZE);
+  // printf("Sending publish with size %d / %d\n", payload_len, RING_BUFFER_BLOCK_SIZE);
   for (unsigned int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
     char *ptr;
     // while (!(ptr = queue_alloc_get(&queue)));
