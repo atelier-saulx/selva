@@ -200,7 +200,7 @@ test.serial('Perf - Simple increment', async t => {
 //   t.true(result.iterations > 1e6)
 // })
 
-test.serial('Perf - Subscriptions', async t => {
+test.skip('Perf - Subscriptions', async t => {
   const result = await run(
     async client => {
       const sub = client
