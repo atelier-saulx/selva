@@ -121,7 +121,7 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
       queue_alloc_commit(&queue);
     } else {
       missed_publishes++;
-      printf("MISSED PUBLISH: %llu / %llu \n", missed_publishes, total_publishes);
+      // printf("MISSED PUBLISH: %llu / %llu \n", missed_publishes, total_publishes);
     }
   }
 
