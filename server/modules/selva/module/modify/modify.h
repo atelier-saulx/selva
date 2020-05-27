@@ -21,6 +21,10 @@ struct SelvaModify_OpIncrement {
   size_t $increment_len;
 };
 
+static inline void SelvaModify_OpIncrement_align(struct SelvaModify_OpIncrement *op) {
+  op->$default = (char *)(op + sizeof(struct SelvaModify_OpIncrement));
+  op->$increment = (char *)(op + sizeof(struct SelvaModify_OpIncrement) + op->$default_len);
+}
 
 struct SelvaModify_OpReferences {
   // filled with multiple ids of length 10
@@ -37,5 +41,10 @@ struct SelvaModify_OpReferences {
   size_t $value_len;
 };
 
+static inline void SelvaModify_OpReferences_align(struct SelvaModify_OpReferences *op) {
+  op->$add = (char *)(op + sizeof(struct SelvaModify_OpReferences));
+  op->$delete = (char *)(op + sizeof(struct SelvaModify_OpReferences) + op->$add_len);
+  op->$value = (char *)(op + sizeof(struct SelvaModify_OpReferences) + op->$add_len + op->$delete_len);
+}
 
 #endif /* SELVA_MODIFY */
