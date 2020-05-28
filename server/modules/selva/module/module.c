@@ -100,23 +100,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
       struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
-
-      int num = current_value == NULL
-        ? incrementOpts->$default
-        : atoi(current_value_str);
-      num += incrementOpts->$increment;
-
-      int num_str_size = (int)ceil(log10(num));
-      char increment_str[num_str_size];
-      sprintf(increment_str, "%d", num);
-
-      RedisModuleString *increment =
-        RedisModule_CreateString(ctx, increment_str, num_str_size);
-      RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, increment, NULL);
-
-      if (incrementOpts->index) {
-        SelvaModify_Index(id_str, id_len, field_str, field_len, increment_str, num_str_size);
-      }
+      SelvaModify_ModifyIncrement(ctx, id_key, id_str, id_len, field, field_str, field_len,
+          current_value, current_value_str, current_value_len, incrementOpts);
     } else if (*type_str == SELVA_MODIFY_ARG_OP_SET) {
       struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
       SelvaModify_OpSet_align(setOpts);

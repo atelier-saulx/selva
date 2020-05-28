@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -96,4 +97,35 @@ void SelvaModify_ModifySet(
   }
 
   RedisModule_CloseKey(set_key);
+}
+
+void SelvaModify_ModifyIncrement(
+  RedisModuleCtx *ctx,
+  RedisModuleKey *id_key,
+  const char *id_str,
+  size_t id_len,
+  RedisModuleString *field,
+  const char *field_str,
+  size_t field_len,
+  RedisModuleString *current_value,
+  const char *current_value_str,
+  size_t current_value_len,
+  struct SelvaModify_OpIncrement *incrementOpts
+) {
+  int num = current_value == NULL
+    ? incrementOpts->$default
+    : atoi(current_value_str);
+  num += incrementOpts->$increment;
+
+  int num_str_size = (int)ceil(log10(num));
+  char increment_str[num_str_size];
+  sprintf(increment_str, "%d", num);
+
+  RedisModuleString *increment =
+    RedisModule_CreateString(ctx, increment_str, num_str_size);
+  RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, increment, NULL);
+
+  if (incrementOpts->index) {
+    SelvaModify_Index(id_str, id_len, field_str, field_len, increment_str, num_str_size);
+  }
 }
