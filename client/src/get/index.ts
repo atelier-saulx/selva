@@ -222,6 +222,9 @@ async function get(
 
   if (meta || props.$includeMeta) {
     if (!meta) {
+      if (!getResult.$meta) {
+        getResult.$meta = {}
+      }
       meta = { [props.$db || 'default']: getResult.$meta }
       meta.___refreshAt = getResult.$meta.___refreshAt
     } else {
