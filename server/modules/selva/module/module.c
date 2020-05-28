@@ -98,12 +98,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE ||
         *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
-      int indexing_str_len =
-          sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
-      char indexing_str[indexing_str_len];
-      SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
-                                           value_str, value_len);
-      SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
+      SelvaModify_Index(id_str, id_len, field_str, field_len, value_str, value_len);
     }
 
     if (*type_str == SELVA_MODIFY_ARG_DEFAULT || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
