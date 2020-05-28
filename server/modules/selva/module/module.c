@@ -143,11 +143,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     if (publish) {
-      int payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len;
-      char payload_str[payload_len];
-
-      SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
-      SelvaModify_SendAsyncTask(payload_len, payload_str);
+      SelvaModify_Publish(id_str, id_len, field_str, field_len);
     }
   }
 

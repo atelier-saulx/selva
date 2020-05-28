@@ -52,6 +52,14 @@ static inline void SelvaModify_Index(const char *id_str, size_t id_len, const ch
   SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
 }
 
+static inline void SelvaModify_Publish(const char *id_str, size_t id_len, const char *field_str, size_t field_len) {
+  int payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len;
+  char payload_str[payload_len];
+
+  SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
+  SelvaModify_SendAsyncTask(payload_len, payload_str);
+}
+
 void SelvaModify_ModifySet(
   RedisModuleCtx *ctx,
   RedisModuleKey *id_key,
