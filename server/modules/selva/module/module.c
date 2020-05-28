@@ -80,10 +80,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     size_t current_value_len;
     RedisModuleString *current_value;
     RedisModule_HashGet(id_key, REDISMODULE_HASH_NONE, field, &current_value, NULL);
-    const char *current_value_str;
+    const char *current_value_str = NULL;
 
     if (current_value == NULL) {
-      current_value = NULL;
       current_value_len = 0;
     } else {
       current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
