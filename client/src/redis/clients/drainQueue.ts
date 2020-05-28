@@ -55,7 +55,6 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
                     if (!modify) {
                       modify = redisCommand
                     } else {
-                      // console.log('HMMMMMM', ...redisCommand.args.slice(2))
                       modify.args.push(...redisCommand.args.slice(2))
                     }
 

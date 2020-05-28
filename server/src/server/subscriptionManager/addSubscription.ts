@@ -38,10 +38,13 @@ const addClientSubscription = async (
 }
 
 const parseOrigins = (
+  channel: string,
   getOptions: GetOptions,
   origins?: Set<string>
 ): Set<string> => {
-  if (!origins) {
+  if (channel.startsWith('___selva_subscription:schema_update:')) {
+    return new Set([channel.split('___selva_subscription:schema_update:')[1]])
+  } else if (!origins) {
     origins = new Set()
     if (!getOptions.$db) {
       origins.add('default')
@@ -51,7 +54,7 @@ const parseOrigins = (
     if (key === '$db') {
       origins.add(getOptions[key])
     } else if (typeof getOptions[key] === 'object') {
-      parseOrigins(getOptions[key], origins)
+      parseOrigins(channel, getOptions[key], origins)
     }
   }
   return origins
@@ -102,8 +105,9 @@ const addSubscription = (
     clients,
     channel,
     get: getOptions,
-    origins: [...parseOrigins(getOptions).values()]
+    origins: [...parseOrigins(channel, getOptions).values()]
   }
+
   subsManager.subscriptions[channel] = subscription
   for (const origin of subscription.origins) {
     addOriginListeners(origin, subsManager, subscription)
