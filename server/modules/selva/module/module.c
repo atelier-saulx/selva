@@ -138,24 +138,45 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;
       SelvaModify_OpReferences_align(referenceOpts);
 
+      // add in the hash that it's a set/references field
+      RedisModuleString *set_field_identifier = RedisModule_CreateString(ctx, "___selva_$set", 13);
+      RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, set_field_identifier, NULL);
+
+      // TODO: optimize that this is copied only once, we now do this for sending publish and indexing also
+      char set_key_str[id_len + 1 + field_len];
+      memcpy(set_key_str, id_str, id_len);
+      memcpy(set_key_str + id_len, ".", 1);
+      memcpy(set_key_str + id_len + 1, field_str, field_len);
+      RedisModuleString *_set_key = RedisModule_CreateString(ctx, set_key_str, id_len + 1 + field_len);
+      RedisModuleKey *set_key = RedisModule_OpenKey(ctx, _set_key, REDISMODULE_WRITE);
+
       if (referenceOpts->$value_len) {
-        // TODO: remove all
+        printf("GOT REF VALUE (%d) %.*s\n", (int)referenceOpts->$value_len, (int)referenceOpts->$value_len, referenceOpts->$value);
+        RedisModule_DeleteKey(set_key);
+
         for (unsigned int i = 0; i < referenceOpts->$value_len; i += 10) {
-          // TODO: set
+          RedisModuleString *ref = RedisModule_CreateString(ctx, referenceOpts->$value + i, 10);
+          RedisModule_ZsetAdd(set_key, 0, ref, NULL);
         }
       } else {
         if (referenceOpts->$add_len) {
           for (unsigned int i = 0; i < referenceOpts->$add_len; i += 10) {
-            // TODO: sadd blabla
+            RedisModuleString *ref = RedisModule_CreateString(ctx, referenceOpts->$add + i, 10);
+            // TODO: check if anything was actually added or not for hierarchy
+            RedisModule_ZsetAdd(set_key, 0, ref, NULL);
           }
         }
 
         if (referenceOpts->$delete_len) {
           for (unsigned int i = 0; i < referenceOpts->$delete_len; i += 10) {
-            // TODO: srem blabla
+            RedisModuleString *ref = RedisModule_CreateString(ctx, referenceOpts->$delete + i, 10);
+            // TODO: check if anything was actually removed or not for hierarchy
+            RedisModule_ZsetRem(set_key, ref, NULL);
           }
         }
       }
+
+      RedisModule_CloseKey(set_key);
 
       // TODO: hierarchy
     } else {
