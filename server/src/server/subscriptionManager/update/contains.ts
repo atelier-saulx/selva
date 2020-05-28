@@ -10,7 +10,7 @@ let queue: { context: { id: string; db: string }; command: RedisCommand }[] = []
 type Contains = { $field: string; $value: string[] }
 
 const drainQueue = (subsManager: SubscriptionManager) => {
-  const { memberMemCache, client, selector } = subsManager
+  const { memberMemCache, client } = subsManager
   const redis = client.redis
   queueIsBeingDrained = true
   process.nextTick(() => {
@@ -23,9 +23,7 @@ const drainQueue = (subsManager: SubscriptionManager) => {
       // making a batch fn is nice for optmizations (for later!)
       command.command.resolve = m => {
         cnt--
-        if (!m) {
-          m = []
-        }
+        if (!m) m = []
 
         if (!memberMemCache[command.context.db]) {
           memberMemCache[command.context.db] = {}
@@ -52,7 +50,7 @@ const drainQueue = (subsManager: SubscriptionManager) => {
         }
       }
 
-      redis.addCommandToQueue(command.command, selector)
+      redis.addCommandToQueue(command.command, { name: command.context.db })
     }
     fieldsProgress = {}
     fieldsInQueue = []
@@ -162,7 +160,6 @@ const contains = (
     }
   }
   if (!inProgress) {
-    console.log('CHECKING', context, subManager.tree)
     const memberCheck =
       subManager.tree[context.db].___contains &&
       subManager.tree[context.db].___contains[contains]
