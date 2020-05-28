@@ -89,7 +89,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
     }
 
-    if (*type_str != SELVA_MODIFY_ARG_OP_INCREMENT && *type_str != SELVA_MODIFY_ARG_OP_REFERENCES &&
+    if (*type_str != SELVA_MODIFY_ARG_OP_INCREMENT && *type_str != SELVA_MODIFY_ARG_OP_SET &&
         current_value_len == value_len && memcmp(current_value, value, current_value_len) == 0) {
       // printf("Current value is equal to the specified value for key %s and value %s\n", field_str,
       //        value_str);
@@ -134,9 +134,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             increment_str, num_str_size);
         SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
       }
-    } else if (*type_str == SELVA_MODIFY_ARG_OP_REFERENCES) {
-      struct SelvaModify_OpReferences *referenceOpts = (struct SelvaModify_OpReferences *)value_str;
-      SelvaModify_OpReferences_align(referenceOpts);
+    } else if (*type_str == SELVA_MODIFY_ARG_OP_SET) {
+      struct SelvaModify_OpSet *referenceOpts = (struct SelvaModify_OpSet *)value_str;
+      SelvaModify_OpSet_align(referenceOpts);
 
       // add in the hash that it's a set/references field
       RedisModuleString *set_field_identifier = RedisModule_CreateString(ctx, "___selva_$set", 13);
