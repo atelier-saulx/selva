@@ -135,8 +135,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_SET) {
-      struct SelvaModify_OpSet *referenceOpts = (struct SelvaModify_OpSet *)value_str;
-      SelvaModify_OpSet_align(referenceOpts);
+      struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
+      SelvaModify_OpSet_align(setOpts);
 
       // add in the hash that it's a set/references field
       RedisModuleString *set_field_identifier = RedisModule_CreateString(ctx, "___selva_$set", 13);
@@ -150,27 +150,69 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       RedisModuleString *_set_key = RedisModule_CreateString(ctx, set_key_str, id_len + 1 + field_len);
       RedisModuleKey *set_key = RedisModule_OpenKey(ctx, _set_key, REDISMODULE_WRITE);
 
-      if (referenceOpts->$value_len) {
+      if (setOpts->$value_len) {
         RedisModule_DeleteKey(set_key);
 
-        for (unsigned int i = 0; i < referenceOpts->$value_len; i += 10) {
-          RedisModuleString *ref = RedisModule_CreateString(ctx, referenceOpts->$value + i, 10);
-          RedisModule_ZsetAdd(set_key, 0, ref, NULL);
+        if (setOpts->is_reference) {
+          for (unsigned int i = 0; i < setOpts->$value_len; i += 10) {
+            RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$value + i, 10);
+            RedisModule_ZsetAdd(set_key, 0, ref, NULL);
+          }
+        } else {
+          char *ptr = setOpts->$value;
+          for (size_t i = 0; i < setOpts->$value_len; ) {
+            unsigned long part_len = strlen(ptr);
+
+            RedisModuleString *ref = RedisModule_CreateString(ctx, ptr, part_len);
+            RedisModule_ZsetAdd(set_key, 0, ref, NULL);
+
+            // +1 to skip the nullbyte
+            ptr += part_len + 1;
+            i += part_len + 1;
+          }
         }
       } else {
-        if (referenceOpts->$add_len) {
-          for (unsigned int i = 0; i < referenceOpts->$add_len; i += 10) {
-            RedisModuleString *ref = RedisModule_CreateString(ctx, referenceOpts->$add + i, 10);
-            // TODO: check if anything was actually added or not for hierarchy
-            RedisModule_ZsetAdd(set_key, 0, ref, NULL);
+        if (setOpts->$add_len) {
+          if (setOpts->is_reference) {
+            for (unsigned int i = 0; i < setOpts->$add_len; i += 10) {
+              RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$add + i, 10);
+              // TODO: check if anything was actually added or not for hierarchy
+              RedisModule_ZsetAdd(set_key, 0, ref, NULL);
+            }
+          } else {
+            char *ptr = setOpts->$add;
+            for (size_t i = 0; i < setOpts->$add_len; ) {
+              unsigned long part_len = strlen(ptr);
+
+              RedisModuleString *ref = RedisModule_CreateString(ctx, ptr, part_len);
+              RedisModule_ZsetAdd(set_key, 0, ref, NULL);
+
+              // +1 to skip the nullbyte
+              ptr += part_len + 1;
+              i += part_len + 1;
+            }
           }
         }
 
-        if (referenceOpts->$delete_len) {
-          for (unsigned int i = 0; i < referenceOpts->$delete_len; i += 10) {
-            RedisModuleString *ref = RedisModule_CreateString(ctx, referenceOpts->$delete + i, 10);
-            // TODO: check if anything was actually removed or not for hierarchy
-            RedisModule_ZsetRem(set_key, ref, NULL);
+        if (setOpts->$delete_len) {
+          if (setOpts->is_reference) {
+            for (unsigned int i = 0; i < setOpts->$delete_len; i += 10) {
+              RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$delete + i, 10);
+              // TODO: check if anything was actually removed or not for hierarchy
+              RedisModule_ZsetRem(set_key, ref, NULL);
+            }
+          } else {
+            char *ptr = setOpts->$delete;
+            for (size_t i = 0; i < setOpts->$delete_len; ) {
+              unsigned long part_len = strlen(ptr);
+
+              RedisModuleString *ref = RedisModule_CreateString(ctx, ptr, part_len);
+              RedisModule_ZsetRem(set_key, ref, NULL);
+
+              // +1 to skip the nullbyte
+              ptr += part_len + 1;
+              i += part_len + 1;
+            }
           }
         }
       }
