@@ -151,7 +151,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       RedisModuleKey *set_key = RedisModule_OpenKey(ctx, _set_key, REDISMODULE_WRITE);
 
       if (referenceOpts->$value_len) {
-        printf("GOT REF VALUE (%d) %.*s\n", (int)referenceOpts->$value_len, (int)referenceOpts->$value_len, referenceOpts->$value);
         RedisModule_DeleteKey(set_key);
 
         for (unsigned int i = 0; i < referenceOpts->$value_len; i += 10) {

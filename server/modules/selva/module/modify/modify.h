@@ -35,9 +35,9 @@ struct SelvaModify_OpReferences {
 };
 
 static inline void SelvaModify_OpReferences_align(struct SelvaModify_OpReferences *op) {
-  op->$add = (char *)(op + sizeof(struct SelvaModify_OpReferences));
-  op->$delete = (char *)(op + sizeof(struct SelvaModify_OpReferences) + op->$add_len);
-  op->$value = (char *)(op + sizeof(struct SelvaModify_OpReferences) + op->$add_len + op->$delete_len);
+  op->$add = (char *)((char *)op + sizeof(struct SelvaModify_OpReferences));
+  op->$delete = (char *)((char *)op + sizeof(struct SelvaModify_OpReferences) + op->$add_len);
+  op->$value = (char *)((char *)op + sizeof(struct SelvaModify_OpReferences) + op->$add_len + op->$delete_len);
 }
 
 #endif /* SELVA_MODIFY */
