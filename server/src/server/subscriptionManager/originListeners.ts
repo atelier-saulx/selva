@@ -85,6 +85,9 @@ const removeOriginListeners = (
     const redis = client.redis
     origin.subscriptions.delete(subscription)
     if (origin.subscriptions.size === 0) {
+      if (name in subsManager.memberMemCache) {
+        delete subsManager.memberMemCache[name]
+      }
       redis.punsubscribe({ name }, EVENTS + '*')
       redis.removeListener({ name }, 'pmessage', origin.listener)
       delete subsManager.originListeners[name]

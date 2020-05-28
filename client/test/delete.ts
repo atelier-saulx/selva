@@ -4,6 +4,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import { dumpDb } from './assertions'
 import getPort from 'get-port'
+import { wait } from '../src/util'
 
 let srv
 let port: number
@@ -283,3 +284,41 @@ test.serial('can delete a field when only nested specified', async t => {
   await client.delete(match)
   await client.destroy()
 })
+
+// test.serial.only('can delete child from root', async t => {
+//   const client = connect(
+//     {
+//       port
+//     },
+//     { loglevel: 'info' }
+//   )
+
+//   client
+//     .observe({
+//       $id: 'root',
+//       children: {
+//         id: true,
+//         title: true,
+//         $list: true
+//       }
+//     })
+//     .subscribe(res => console.log('-->', res))
+
+//   const match = await client.set({
+//     type: 'match',
+//     title: {
+//       en: 'yes text',
+//       de: 'ja text'
+//     }
+//   })
+
+//   await client.delete({
+//     $id: match
+//   })
+
+//   await wait(500)
+
+//   console.log('check me:', await client.get({ $id: 'root', children: true }))
+
+//   await client.destroy()
+// })
