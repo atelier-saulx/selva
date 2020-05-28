@@ -51,4 +51,16 @@ static inline void SelvaModify_Index(const char *id_str, size_t id_len, const ch
       value_str, value_len);
   SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
 }
+
+void SelvaModify_ModifySet(
+  RedisModuleCtx *ctx,
+  RedisModuleKey *id_key,
+  size_t id_len,
+  RedisModuleString *field,
+  size_t field_len,
+  const char *id_field,
+  size_t id_field_len,
+  struct SelvaModify_OpSet *setOpts
+);
+
 #endif /* SELVA_MODIFY */
