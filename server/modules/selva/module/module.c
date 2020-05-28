@@ -9,6 +9,18 @@
 #include "./modify/modify.h"
 #include "./modify/async_task.h"
 
+#define __to_str(_var) \
+  size_t _var##_len; \
+  const char * _var##_str = RedisModule_StringPtrLen(_var, & _var##_len);
+
+#define __to_str2(_var1, _var2) \
+  __to_str(_var1) \
+  __to_str(_var2)
+
+#define __to_str3(_var1, _var2, _var3) \
+  __to_str2(_var1, _var2) \
+  __to_str(_var3)
+
 int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   // init auto memory for created strings
   RedisModule_AutoMemory(ctx);
@@ -68,14 +80,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString *field = argv[i + 1];
     RedisModuleString *value = argv[i + 2];
 
-    size_t field_len;
-    const char *field_str = RedisModule_StringPtrLen(field, &field_len);
-
-    size_t type_len;
-    const char *type_str = RedisModule_StringPtrLen(type, &type_len);
-
-    size_t value_len;
-    const char *value_str = RedisModule_StringPtrLen(value, &value_len);
+    __to_str3(type, field, value);
 
     size_t current_value_len;
     RedisModuleString *current_value;
