@@ -122,12 +122,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, increment, NULL);
 
       if (incrementOpts->index) {
-        int indexing_str_len =
-          sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + num_str_size;
-        char indexing_str[indexing_str_len];
-        SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
-            increment_str, num_str_size);
-        SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
+        SelvaModify_Index(id_str, id_len, field_str, field_len, increment_str, num_str_size);
       }
     } else if (*type_str == SELVA_MODIFY_ARG_OP_SET) {
       struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
