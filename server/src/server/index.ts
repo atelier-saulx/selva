@@ -11,6 +11,7 @@ import {
   SubscriptionManagerState
 } from './subscriptionManager'
 import { startAsyncTaskWorker, stopAsyncTaskWorker } from './asyncTask'
+import { BackupFns, saveAndBackUp } from '../backups'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -19,6 +20,8 @@ export class SelvaServer extends EventEmitter {
   public registry: SelvaClient
   public pm: ProcessManager
   public subscriptionManager: SubscriptionManagerState
+  private backupFns: BackupFns
+  private backupDir: string
 
   constructor(type: ServerType) {
     super()
@@ -35,6 +38,8 @@ export class SelvaServer extends EventEmitter {
 
     this.port = opts.port
     this.host = opts.host
+    this.backupFns = await opts.backups.backupFns
+    this.backupDir = opts.dir
 
     if (opts.registry) {
       this.registry = connect(opts.registry)
@@ -69,6 +74,14 @@ export class SelvaServer extends EventEmitter {
     // stopAsyncTaskWorker()
 
     this.emit('close')
+  }
+
+  async backup() {
+    if (!this.backupFns) {
+      throw new Error(`No backup options supplied`)
+    }
+
+    await saveAndBackUp(this.backupDir, this.port, this.backupFns)
   }
 }
 
