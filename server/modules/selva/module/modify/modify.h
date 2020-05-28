@@ -51,5 +51,4 @@ static inline void SelvaModify_Index(const char *id_str, size_t id_len, const ch
       value_str, value_len);
   SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
 }
-
 #endif /* SELVA_MODIFY */
