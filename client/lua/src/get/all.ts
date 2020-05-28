@@ -27,8 +27,11 @@ export default function makeNewGetOptions(
   if (path.length === 0) {
     for (const field in typeSchema.fields) {
       if (
-        newOpts[field] === undefined &&
-        typeSchema.fields[field].type !== 'references'
+        field !== 'children' &&
+        field !== 'parents' &&
+        field !== 'ancestors' &&
+        field !== 'descendants' &&
+        newOpts[field] === undefined
       ) {
         newOpts[field] = true
       }
