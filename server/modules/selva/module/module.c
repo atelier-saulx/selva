@@ -119,10 +119,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else {
           RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
         }
+      } else {
+          RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
       }
-
-      // normal set
-      RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
     }
 
     if (publish) {
