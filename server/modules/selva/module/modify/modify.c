@@ -8,13 +8,19 @@
 void SelvaModify_ModifySet(
   RedisModuleCtx *ctx,
   RedisModuleKey *id_key,
+  const char *id_str,
   size_t id_len,
   RedisModuleString *field,
+  const char *field_str,
   size_t field_len,
-  const char *id_field_str,
-  size_t id_field_len,
   struct SelvaModify_OpSet *setOpts
 ) {
+  size_t id_field_len = id_len + 1 + field_len;
+  char id_field_str[id_field_len];
+  memcpy(id_field_str, id_str, id_len);
+  memcpy(id_field_str + id_len, ".", 1);
+  memcpy(id_field_str + id_len + 1, field_str, field_len);
+
   // add in the hash that it's a set/references field
   RedisModuleString *set_field_identifier = RedisModule_CreateString(ctx, "___selva_$set", 13);
   RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, set_field_identifier, NULL);

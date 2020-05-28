@@ -55,11 +55,11 @@ static inline void SelvaModify_Index(const char *id_str, size_t id_len, const ch
 void SelvaModify_ModifySet(
   RedisModuleCtx *ctx,
   RedisModuleKey *id_key,
+  const char *id_str,
   size_t id_len,
   RedisModuleString *field,
+  const char *field_str,
   size_t field_len,
-  const char *id_field,
-  size_t id_field_len,
   struct SelvaModify_OpSet *setOpts
 );
 

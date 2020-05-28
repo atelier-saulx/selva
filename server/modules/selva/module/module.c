@@ -120,14 +120,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     } else if (*type_str == SELVA_MODIFY_ARG_OP_SET) {
       struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
       SelvaModify_OpSet_align(setOpts);
-
-      // TODO: optimize that this is copied only once, we now do this for sending publish and indexing also
-      char set_key_str[id_len + 1 + field_len];
-      memcpy(set_key_str, id_str, id_len);
-      memcpy(set_key_str + id_len, ".", 1);
-      memcpy(set_key_str + id_len + 1, field_str, field_len);
-
-      SelvaModify_ModifySet(ctx, id_key, id_len, field, field_len, set_key_str, id_len + 1 + field_len, setOpts);
+      SelvaModify_ModifySet(ctx, id_key, id_str, id_len, field, field_str, field_len, setOpts);
       // TODO: hierarchy
     } else {
       if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE ||
