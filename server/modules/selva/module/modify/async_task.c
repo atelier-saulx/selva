@@ -24,12 +24,11 @@ static inline int min(int a, int b) {
   return a;
 }
 
-uint64_t total_publishes = 0;
-uint64_t missed_publishes = 0;
+static uint64_t total_publishes = 0;
+static uint64_t missed_publishes = 0;
 
-pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { NULL };
+static pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { NULL };
 
-bool queues_init = true;
 char queue_mem[HIREDIS_WORKER_COUNT][RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
 queue_cb_t queues[HIREDIS_WORKER_COUNT];
 __attribute__((constructor))

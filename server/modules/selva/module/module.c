@@ -45,6 +45,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   return REDISMODULE_OK;
 }
 
+// TODO: clean this up
 // id, type, key, value [, ... type, key, value]]
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx);
