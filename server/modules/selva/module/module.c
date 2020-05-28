@@ -103,7 +103,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
       struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
 
-      int num = current_value == NULL ? incrementOpts->$default : atoi(current_value_str);
+      int num = current_value == NULL
+        ? incrementOpts->$default
+        : atoi(current_value_str);
       num += incrementOpts->$increment;
 
       int num_str_size = (int)ceil(log10(num));
