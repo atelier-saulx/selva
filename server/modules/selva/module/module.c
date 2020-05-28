@@ -96,18 +96,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       continue;
     }
 
-    if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE ||
-        *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
-      SelvaModify_Index(id_str, id_len, field_str, field_len, value_str, value_len);
-    }
-
-    if (*type_str == SELVA_MODIFY_ARG_DEFAULT || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
-      if (current_value != NULL) {
-        publish = false;
-      } else {
-        RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
-      }
-    } else if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
+    if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
       struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
 
       int num = current_value == NULL ? incrementOpts->$default : atoi(current_value_str);
@@ -211,6 +200,19 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
       // TODO: hierarchy
     } else {
+      if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE ||
+          *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
+        SelvaModify_Index(id_str, id_len, field_str, field_len, value_str, value_len);
+      }
+
+      if (*type_str == SELVA_MODIFY_ARG_DEFAULT || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
+        if (current_value != NULL) {
+          publish = false;
+        } else {
+          RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
+        }
+      }
+
       // normal set
       RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
     }
