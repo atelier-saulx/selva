@@ -91,6 +91,8 @@ export function deleteItem(id: Id, hierarchy: boolean = true): boolean {
     const parents = r.smembers(id + '.parents')
     for (let parent of parents) {
       r.srem(parent + '.children', id)
+      // TODO: needed a parent update - slow now fix later
+      sendEvent(parent, 'children', 'update')
     }
     for (let child of children) {
       const key = child + '.parents'
