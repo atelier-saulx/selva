@@ -27,7 +27,6 @@ async function combineResults(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
         query.map(async q => {
-          console.log('EXTRA QUERY', JSON.stringify(q, null, 2))
           const parts = q.path.substr(1).split('.')
 
           if (parts[0] === 'listResult') {
@@ -35,7 +34,6 @@ async function combineResults(
           }
 
           let g = getResult
-          console.log('PFF', g, parts)
           for (let i = 0; i <= parts.length - 2; i++) {
             const part = parts[i]
 
@@ -60,7 +58,6 @@ async function combineResults(
             )
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
-            console.log('REFERENCES', g, parts, g[parts[parts.length - 1]])
             if (q.getOpts.$list) {
               const { $db: _db, ...gopts } = q.getOpts
               const r = await get(
@@ -155,8 +152,6 @@ async function combineResults(
             )
             g[parts[parts.length - 1]] = r
           }
-
-          console.log('RESULT', parts, g[parts[parts.length - 1]])
         })
       )
     })
@@ -212,7 +207,6 @@ async function get(
   meta?: any,
   nested: boolean = false
 ): Promise<GetResult> {
-  console.log('GET', JSON.stringify(props, null, 2))
   const extraQueries: ExtraQueries = {}
   validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
@@ -220,8 +214,6 @@ async function get(
     props
   )
 
-  console.log('EXTRA QUERIES', JSON.stringify(extraQueries, null, 2))
-  console.log('NEW PROPS', JSON.stringify(newProps, null, 2))
   const getResult = JSON.parse(
     await client.redis.evalsha(
       { name: props.$db || 'default', type: 'replica' },
@@ -231,7 +223,6 @@ async function get(
       JSON.stringify(newProps)
     )
   )
-  console.log('GET RESULT', getResult)
 
   if (meta || props.$includeMeta) {
     if (!meta) {
