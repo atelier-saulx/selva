@@ -27,7 +27,7 @@ async function combineResults(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
         query.map(async q => {
-          console.log('EXTRA QUERY', q)
+          console.log('EXTRA QUERY', JSON.stringify(q, null, 2))
           const parts = q.path.substr(1).split('.')
 
           if (parts[0] === 'listResult') {
@@ -59,6 +59,7 @@ async function combineResults(
             )
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
+            console.log('REFERENCES', g, parts, g[parts[parts.length - 1]])
             if (q.getOpts.$list) {
               const { $db: _db, ...gopts } = q.getOpts
               const r = await get(
@@ -189,7 +190,9 @@ function makeNewGetOptions(
     if (extraQueries[newPath]) {
       newOpts[key] = extraQueries[newPath].placeholder
     } else if (Array.isArray(getOpts[key])) {
-      newOpts[key] = getOpts[key]
+      newOpts[key] = getOpts[key].map((g, i) =>
+        makeNewGetOptions(extraQueries, g, newPath + '.' + i)
+      )
     } else if (typeof getOpts[key] === 'object') {
       newOpts[key] = makeNewGetOptions(extraQueries, getOpts[key], newPath)
     } else {
@@ -214,6 +217,8 @@ async function get(
     props
   )
 
+  console.log('EXTRA QUERIES', JSON.stringify(extraQueries, null, 2))
+  console.log('NEW PROPS', JSON.stringify(newProps, null, 2))
   const getResult = JSON.parse(
     await client.redis.evalsha(
       { name: props.$db || 'default', type: 'replica' },
@@ -223,6 +228,7 @@ async function get(
       JSON.stringify(newProps)
     )
   )
+  console.log('GET RESULT', getResult)
 
   if (meta || props.$includeMeta) {
     if (!meta) {

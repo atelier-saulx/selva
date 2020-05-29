@@ -103,66 +103,82 @@ test.serial('get - multi db', async t => {
     ]
   })
 
-  const x = {
-    component: {
-      $value: 'List'
-    },
-    title: {
-      $value: 'Players'
-    },
-    $db: 'users',
-    $id: 'root',
-    children: {
-      id: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: {
-            $value: 'user',
-            $field: 'type',
-            $operator: '='
-          }
-        }
-      },
-      title: {
-        $field: 'name'
+  console.log(
+    'WACKA WACKA',
+    await client.get({
+      $db: 'users',
+      hmmh: {
+        $field: 'children'
       }
-    }
-  }
-
-  const y = await client.get(x)
-
-  t.is(y.children.length, 1, 'simple multi db')
-
-  const x2 = {
-    component: {
-      $value: 'List'
-    },
-    title: {
-      $value: 'Players'
-    },
-    $db: 'users',
-    children: {
-      id: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: {
-            $value: 'user',
-            $field: 'type',
-            $operator: '='
-          }
-        }
-      },
-      title: {
-        $field: 'name'
+    }),
+    await client.get({
+      $db: 'users',
+      hmmh: {
+        $field: 'descendants'
       }
-    }
-  }
+    })
+  )
 
-  const y2 = await client.get(x2)
+  // const x = {
+  //   component: {
+  //     $value: 'List'
+  //   },
+  //   title: {
+  //     $value: 'Players'
+  //   },
+  //   $db: 'users',
+  //   $id: 'root',
+  //   children: {
+  //     id: true,
+  //     $list: {
+  //       $find: {
+  //         $traverse: 'descendants',
+  //         $filter: {
+  //           $value: 'user',
+  //           $field: 'type',
+  //           $operator: '='
+  //         }
+  //       }
+  //     },
+  //     title: {
+  //       $field: 'name'
+  //     }
+  //   }
+  // }
 
-  t.is(y2.children.length, 1, 'simple multi db without specifying id')
+  // const y = await client.get(x)
+
+  // t.is(y.children.length, 1, 'simple multi db')
+
+  // const x2 = {
+  //   component: {
+  //     $value: 'List'
+  //   },
+  //   title: {
+  //     $value: 'Players'
+  //   },
+  //   $db: 'users',
+  //   children: {
+  //     id: true,
+  //     $list: {
+  //       $find: {
+  //         $traverse: 'descendants',
+  //         $filter: {
+  //           $value: 'user',
+  //           $field: 'type',
+  //           $operator: '='
+  //         }
+  //       }
+  //     },
+  //     title: {
+  //       $field: 'name'
+  //     }
+  //   }
+  // }
+
+  // const y2 = await client.get(x2)
+
+  // t.is(y2.children.length, 1, 'simple multi db without specifying id')
 
   const xz = {
     component: {
