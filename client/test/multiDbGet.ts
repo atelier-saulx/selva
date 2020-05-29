@@ -164,6 +164,37 @@ test.serial('get - multi db', async t => {
 
   t.is(y2.children.length, 1, 'simple multi db without specifying id')
 
+  const xz = {
+    component: {
+      $value: 'List'
+    },
+    title: {
+      $value: 'Players'
+    },
+    // have to be able to omit id here
+    children: {
+      id: true,
+      $db: 'users',
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $value: 'user',
+            $field: 'type',
+            $operator: '='
+          }
+        }
+      },
+      title: {
+        $field: 'name'
+      }
+    }
+  }
+
+  const yz = await client.get(xz)
+
+  t.is(yz.children.length, 1, 'putting db in children field')
+
   const x3 = {
     components: [
       {
@@ -248,7 +279,6 @@ test.serial('get - multi db', async t => {
         title: {
           $value: 'Players'
         },
-        // have to be able to omit id here
         children: {
           $db: 'users',
           id: true,
