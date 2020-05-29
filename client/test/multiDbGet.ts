@@ -248,7 +248,6 @@ test.serial('get - multi db', async t => {
         title: {
           $value: 'Players'
         },
-        // have to be able to omit id here
         children: {
           $db: 'users',
           id: true,
