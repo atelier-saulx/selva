@@ -115,7 +115,8 @@ test.serial('get - multi db', async t => {
       $db: 'users',
       hmmh: {
         $field: 'descendants'
-      }
+      },
+      descendants: true
     })
   )
 
