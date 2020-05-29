@@ -27,6 +27,7 @@ async function combineResults(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
         query.map(async q => {
+          console.log('EXTRA QUERY', q)
           const parts = q.path.substr(1).split('.')
 
           if (parts[0] === 'listResult') {
@@ -152,6 +153,8 @@ async function combineResults(
             )
             g[parts[parts.length - 1]] = r
           }
+
+          console.log('RESULT', parts, g[parts[parts.length - 1]])
         })
       )
     })
@@ -203,6 +206,7 @@ async function get(
   meta?: any,
   nested: boolean = false
 ): Promise<GetResult> {
+  console.log('GET', JSON.stringify(props, null, 2))
   const extraQueries: ExtraQueries = {}
   validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(

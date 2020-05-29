@@ -84,6 +84,14 @@ function validateNested(
     return validateTopLevel(extraQueries, client, props, path)
   }
 
+  if (Array.isArray(props)) {
+    for (let i = 0; i < props.length; i++) {
+      validateNested(extraQueries, client, props[i], path + '.' + String(i))
+    }
+
+    return
+  }
+
   for (const field in props) {
     if (field.startsWith('$')) {
       if (field === '$field') {
