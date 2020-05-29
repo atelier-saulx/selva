@@ -17,6 +17,11 @@ test.before(async t => {
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: {
+        users: { type: 'references' }
+      }
+    },
     types: {
       custom: {
         prefix: 'cu',
@@ -83,6 +88,7 @@ test.serial('get - multi db', async t => {
 
   await client.set({
     $id: 'root',
+    users: ['us1'],
     children: [
       {
         $id: 'cu1',
@@ -164,37 +170,36 @@ test.serial('get - multi db', async t => {
 
   t.is(y2.children.length, 1, 'simple multi db without specifying id')
 
-  // FIXME: wrong
-  // const xz = {
-  //   component: {
-  //     $value: 'List'
-  //   },
-  //   title: {
-  //     $value: 'Players'
-  //   },
-  //   // have to be able to omit id here
-  //   children: {
-  //     id: true,
-  //     $db: 'users',
-  //     $list: {
-  //       $find: {
-  //         $traverse: 'descendants',
-  //         $filter: {
-  //           $value: 'user',
-  //           $field: 'type',
-  //           $operator: '='
-  //         }
-  //       }
-  //     },
-  //     title: {
-  //       $field: 'name'
-  //     }
-  //   }
-  // }
+  const xz = {
+    component: {
+      $value: 'List'
+    },
+    title: {
+      $value: 'Players'
+    },
+    // have to be able to omit id here
+    children: {
+      id: true,
+      $db: 'users',
+      $list: {
+        $find: {
+          $traverse: 'users',
+          $filter: {
+            $value: 'user',
+            $field: 'type',
+            $operator: '='
+          }
+        }
+      },
+      title: {
+        $field: 'name'
+      }
+    }
+  }
 
-  // const yz = await client.get(xz)
+  const yz = await client.get(xz)
 
-  // t.is(yz.children.length, 1, 'putting db in children field')
+  t.is(yz.children.length, 1, 'putting db in children field')
 
   const x3 = {
     components: [
@@ -271,42 +276,41 @@ test.serial('get - multi db', async t => {
     'using array multi db without specifying id'
   )
 
-  // FIXME: wrong
-  // const x5 = {
-  //   components: [
-  //     {
-  //       component: {
-  //         $value: 'List'
-  //       },
-  //       title: {
-  //         $value: 'Players'
-  //       },
-  //       children: {
-  //         $db: 'users',
-  //         id: true,
-  //         $list: {
-  //           $find: {
-  //             $traverse: 'descendants',
-  //             $filter: {
-  //               $value: 'user',
-  //               $field: 'type',
-  //               $operator: '='
-  //             }
-  //           }
-  //         },
-  //         title: {
-  //           $field: 'name'
-  //         }
-  //       }
-  //     }
-  //   ]
-  // }
+  const x5 = {
+    components: [
+      {
+        component: {
+          $value: 'List'
+        },
+        title: {
+          $value: 'Players'
+        },
+        children: {
+          $db: 'users',
+          id: true,
+          $list: {
+            $find: {
+              $traverse: 'users',
+              $filter: {
+                $value: 'user',
+                $field: 'type',
+                $operator: '='
+              }
+            }
+          },
+          title: {
+            $field: 'name'
+          }
+        }
+      }
+    ]
+  }
 
-  // const y5 = await client.get(x5)
+  const y5 = await client.get(x5)
 
-  // t.is(
-  //   y5.components[0].children.length,
-  //   1,
-  //   'using array multi db without id and putting field in children directly'
-  // )
+  t.is(
+    y5.components[0].children.length,
+    1,
+    'using array multi db without id and putting field in children directly'
+  )
 })
