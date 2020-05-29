@@ -54,6 +54,10 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
   server.on('subscription', () => {})
 
   // console.log('Registering server', info)
+  server.registry.on('connect', () => {
+    updateRegistry(server.registry, info)
+  })
+
   updateRegistry(server.registry, info)
 }
 

@@ -46,6 +46,7 @@ export class SelvaServer extends EventEmitter {
 
     if (opts.registry) {
       this.registry = connect(opts.registry)
+
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
