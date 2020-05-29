@@ -35,7 +35,8 @@ async function combineResults(
           }
 
           let g = getResult
-          for (let i = 0; i < parts.length - 2; i++) {
+          console.log('PFF', g, parts)
+          for (let i = 0; i <= parts.length - 2; i++) {
             const part = parts[i]
 
             if (!g[part]) {
