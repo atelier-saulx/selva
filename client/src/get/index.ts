@@ -190,10 +190,12 @@ function makeNewGetOptions(
     const newPath = path + '.' + key
     if (extraQueries[newPath]) {
       newOpts[key] = extraQueries[newPath].placeholder
-    } else if (Array.isArray(getOpts[key])) {
+    } else if (!key.startsWith('$') && Array.isArray(getOpts[key])) {
       newOpts[key] = getOpts[key].map((g, i) =>
         makeNewGetOptions(extraQueries, g, newPath + '.' + i)
       )
+    } else if (Array.isArray(getOpts[key])) {
+      newOpts[key] = getOpts[key]
     } else if (typeof getOpts[key] === 'object') {
       newOpts[key] = makeNewGetOptions(extraQueries, getOpts[key], newPath)
     } else {
