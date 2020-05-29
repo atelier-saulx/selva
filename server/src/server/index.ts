@@ -11,6 +11,7 @@ import {
   SubscriptionManagerState
 } from './subscriptionManager'
 import { startAsyncTaskWorker, stopAsyncTaskWorker } from './asyncTask'
+import { BackupFns, saveAndBackUp } from '../backups'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -19,6 +20,8 @@ export class SelvaServer extends EventEmitter {
   public registry: SelvaClient
   public pm: ProcessManager
   public subscriptionManager: SubscriptionManagerState
+  private backupFns: BackupFns
+  private backupDir: string
 
   constructor(type: ServerType) {
     super()
@@ -35,9 +38,15 @@ export class SelvaServer extends EventEmitter {
 
     this.port = opts.port
     this.host = opts.host
+    if (opts.backups) {
+      this.backupFns = await opts.backups.backupFns
+    }
+
+    this.backupDir = opts.dir
 
     if (opts.registry) {
       this.registry = connect(opts.registry)
+
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
@@ -71,6 +80,14 @@ export class SelvaServer extends EventEmitter {
     }
 
     this.emit('close')
+  }
+
+  async backup() {
+    if (!this.backupFns) {
+      throw new Error(`No backup options supplied`)
+    }
+
+    await saveAndBackUp(this.backupDir, this.port, this.backupFns)
   }
 }
 

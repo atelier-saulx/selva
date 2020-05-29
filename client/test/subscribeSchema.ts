@@ -1,15 +1,20 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { start } from '@saulx/selva-server'
+import { start, startOrigin } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
+let srv2
 let port: number
 test.before(async () => {
   port = await getPort()
   srv = await start({
     port
+  })
+  srv2 = await startOrigin({
+    registry: { port },
+    name: 'snurk'
   })
   console.log('ok server started!')
 })
@@ -21,10 +26,39 @@ test.after(async () => {
 test.serial('basic schema based subscriptions', async t => {
   const client = connect({ port })
 
+  const obssnurk = client.subscribeSchema('snurk')
+
+  let snurkCnt = 0
+  obssnurk.subscribe(x => {
+    snurkCnt++
+    console.log('SNURK', x.rootType)
+    if (snurkCnt === 2) {
+      console.log(x.rootType.fields)
+      if (!x.rootType.fields.snurk) {
+        throw new Error('does not have snurk!')
+      }
+    }
+  })
+  await wait(2000)
+
+  console.log('----------------------------------')
+
+  console.log('update snurk')
+  await client.updateSchema(
+    {
+      languages: ['en', 'de', 'nl'],
+      rootType: {
+        fields: { snurk: { type: 'string' } }
+      }
+    },
+    'snurk'
+  )
+
+  console.log('snurk updated')
+
   const observable = client.subscribeSchema()
   let o1counter = 0
   const sub = observable.subscribe(d => {
-    console.log('HMMMMMmm', d)
     o1counter++
   })
 
@@ -69,13 +103,14 @@ test.serial('basic schema based subscriptions', async t => {
   const observable2 = client.subscribeSchema()
   var cnt = 0
   const sub2 = observable2.subscribe(d => {
-    console.log('GOOOOO', d)
     cnt++
   })
 
   await wait(500)
 
   t.is(cnt, 1)
+
+  t.is(snurkCnt, 2)
 
   sub2.unsubscribe()
 

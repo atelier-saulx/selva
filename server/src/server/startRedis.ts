@@ -1,4 +1,3 @@
-import { ConnectOptions } from '@saulx/selva'
 import { SelvaServer } from './'
 import { ServerOptions } from '../types'
 import path from 'path'

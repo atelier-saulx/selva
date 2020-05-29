@@ -794,6 +794,24 @@ test.serial('get - field with empty array', async t => {
     dong: { dingdong: [] }
   })
 
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id,
+      $all: true
+    }),
+    {
+      id,
+      dong: { dingdong: [] },
+      type: 'lekkerType',
+      dingdongs: [],
+      refs: [],
+      name: '',
+      thing: [],
+      ding: { dong: [] },
+      aliases: []
+    }
+  )
+
   client.destroy()
 })
 

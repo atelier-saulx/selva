@@ -2,6 +2,7 @@ import { constants } from '@saulx/selva'
 import { addSubscriptionToTree, removeSubscriptionFromTree } from '../tree'
 import { hash } from '../util'
 import { Subscription, SubscriptionManager } from '../types'
+import { clear } from 'pidusage'
 
 const { CACHE } = constants
 

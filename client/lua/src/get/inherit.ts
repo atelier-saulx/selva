@@ -85,68 +85,74 @@ function setFromAncestors(
     return ancestorDepthMap[a] > ancestorDepthMap[b]
   })
 
+  const visited: Record<string, true> = {}
+
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
-      if (
-        !tryAncestorCondition ||
-        (tryAncestorCondition && tryAncestorCondition(parent))
-      ) {
-        if (fieldFrom && fieldFrom.length > 0) {
-          if (
-            getWithField(
-              result,
-              schema,
-              parent,
-              field,
-              fieldFrom,
-              language,
-              version
-            )
-          ) {
-            return true
-          }
-        } else if (field === '') {
-          const intermediateResult = !acceptAncestorCondition ? result : {}
-          getField(
-            props || {},
-            schema,
-            intermediateResult,
-            parent,
-            '',
-            language,
-            version,
-            '$inherit'
-          )
+      if (!visited[parent]) {
+        visited[parent] = true
 
-          if (!acceptAncestorCondition) {
-            return true
-          }
-
-          if (acceptAncestorCondition(intermediateResult)) {
-            for (const k in intermediateResult) {
-              result[k] = intermediateResult[k]
+        if (
+          !tryAncestorCondition ||
+          (tryAncestorCondition && tryAncestorCondition(parent))
+        ) {
+          if (fieldFrom && fieldFrom.length > 0) {
+            if (
+              getWithField(
+                result,
+                schema,
+                parent,
+                field,
+                fieldFrom,
+                language,
+                version
+              )
+            ) {
+              return true
             }
-            return true
+          } else if (field === '') {
+            const intermediateResult = !acceptAncestorCondition ? result : {}
+            getField(
+              props || {},
+              schema,
+              intermediateResult,
+              parent,
+              '',
+              language,
+              version,
+              '$inherit'
+            )
+
+            if (!acceptAncestorCondition) {
+              return true
+            }
+
+            if (acceptAncestorCondition(intermediateResult)) {
+              for (const k in intermediateResult) {
+                result[k] = intermediateResult[k]
+              }
+              return true
+            }
+          } else {
+            if (
+              getByType(result, schema, parent, field, language, version, merge)
+            ) {
+              return true
+            }
           }
-        } else {
-          if (
-            getByType(result, schema, parent, field, language, version, merge)
-          ) {
-            return true
+        }
+
+        const parentsOfParents = redis.smembers(parent + '.parents')
+        for (const parentOfParents of parentsOfParents) {
+          if (ancestorDepthMap[parentOfParents]) {
+            next[next.length] = parentOfParents
           }
         }
       }
 
-      const parentsOfParents = redis.smembers(parent + '.parents')
-      for (const parentOfParents of parentsOfParents) {
-        if (ancestorDepthMap[parentOfParents]) {
-          next[next.length] = parentOfParents
-        }
-      }
+      validParents = next
     }
-
-    validParents = next
   }
 
   return false

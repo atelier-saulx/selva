@@ -24,10 +24,6 @@ const addListeners = async (
       }
     } else if (channel === NEW_SUBSCRIPTION) {
       const { client, channel } = JSON.parse(message)
-      // console.log(
-      //   'Got a create sub on (server)',
-      //   subsManager.client.uuid.slice(-6)
-      // )
       addClientSubscription(subsManager, client, channel)
     } else if (channel === REMOVE_SUBSCRIPTION) {
       const { client, channel } = JSON.parse(message)

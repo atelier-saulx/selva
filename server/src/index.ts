@@ -3,6 +3,10 @@ import { SelvaServer, startServer } from './server'
 import getPort from 'get-port'
 import chalk from 'chalk'
 import os from 'os'
+import { join } from 'path'
+import fs from 'fs'
+
+export * as s3Backups from './backup-plugins/s3'
 
 const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   let parsedOpts: ServerOptions
@@ -31,7 +35,11 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   }
 
   if (!parsedOpts.dir) {
-    parsedOpts.dir = process.cwd()
+    parsedOpts.dir = join(process.cwd(), 'tmp')
+  }
+
+  if (!fs.existsSync(parsedOpts.dir)) {
+    fs.mkdirSync(parsedOpts.dir)
   }
 
   if (parsedOpts.modules) {

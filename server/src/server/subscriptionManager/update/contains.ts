@@ -5,12 +5,12 @@ import { RedisCommand } from '@saulx/selva'
 let fieldsProgress = {}
 let fieldsInQueue = []
 let queueIsBeingDrained = false
-let queue: RedisCommand[] = []
+let queue: { context: { id: string; db: string }; command: RedisCommand }[] = []
 
 type Contains = { $field: string; $value: string[] }
 
 const drainQueue = (subsManager: SubscriptionManager) => {
-  const { memberMemCache, client, selector } = subsManager
+  const { memberMemCache, client } = subsManager
   const redis = client.redis
   queueIsBeingDrained = true
   process.nextTick(() => {
@@ -21,13 +21,19 @@ const drainQueue = (subsManager: SubscriptionManager) => {
       const command = q[i]
       const field = fieldsInQueue[i]
       // making a batch fn is nice for optmizations (for later!)
-      command.resolve = m => {
+      command.command.resolve = m => {
         cnt--
         if (!m) m = []
-        if (memberMemCache[field]) {
+
+        if (!memberMemCache[command.context.db]) {
+          memberMemCache[command.context.db] = {}
+        }
+
+        if (!memberMemCache[command.context.db][field]) {
           subsManager.memberMemCacheSize++
         }
-        const members = (memberMemCache[field] = {})
+
+        const members = (memberMemCache[command.context.db][field] = {})
         m.forEach(v => (members[v] = true))
         const listeners = fieldsInProgressNow[field]
         for (let i = 0; i < listeners.length - 1; i += 2) {
@@ -43,7 +49,8 @@ const drainQueue = (subsManager: SubscriptionManager) => {
           queueIsBeingDrained = false
         }
       }
-      redis.addCommandToQueue(command, selector)
+
+      redis.addCommandToQueue(command.command, { name: command.context.db })
     }
     fieldsProgress = {}
     fieldsInQueue = []
@@ -55,15 +62,19 @@ const addAncestorsToBatch = (
   subsManager: SubscriptionManager,
   subscriptions: Set<Subscription>,
   field: string,
-  v: string
+  v: string,
+  context: { id: string; db: string }
 ) => {
   if (!queueIsBeingDrained) {
     drainQueue(subsManager)
   }
   if (!fieldsProgress[field]) {
     queue.push({
-      command: 'zrange',
-      args: [field, 0, -1]
+      command: {
+        command: 'zrange',
+        args: [field, 0, -1]
+      },
+      context
     })
     fieldsInQueue.push(field)
     fieldsProgress[field] = [subscriptions, v]
@@ -76,15 +87,19 @@ const addMembersToBatch = (
   subsManager: SubscriptionManager,
   subscriptions: Set<Subscription>,
   field: string,
-  v: string
+  v: string,
+  context: { id: string; db: string }
 ) => {
   if (!queueIsBeingDrained) {
     drainQueue(subsManager)
   }
   if (!fieldsProgress[field]) {
     queue.push({
-      command: 'smembers',
-      args: [field]
+      command: {
+        command: 'smembers',
+        args: [field]
+      },
+      context
     })
     fieldsInQueue.push(field)
     fieldsProgress[field] = [subscriptions, v]
@@ -109,9 +124,9 @@ const membersContainsId = (
         return true
       }
       const field = `${context.id}.ancestors`
-      let f = memberMemCache[context.db][field]
+      const f = memberMemCache[context.db] && memberMemCache[context.db][field]
       if (!f) {
-        addAncestorsToBatch(subsManager, subscriptions, field, v)
+        addAncestorsToBatch(subsManager, subscriptions, field, v, context)
       } else if (f[v]) {
         return true
       }
@@ -122,7 +137,7 @@ const membersContainsId = (
       const field = `${context.id}.${m.$field}`
       let f = memberMemCache[context.db][field]
       if (!f) {
-        addMembersToBatch(subsManager, subscriptions, field, v)
+        addMembersToBatch(subsManager, subscriptions, field, v, context)
       } else if (f[v]) {
         return true
       }
@@ -145,7 +160,6 @@ const contains = (
     }
   }
   if (!inProgress) {
-    console.log('CHECKING', context, subManager.tree)
     const memberCheck =
       subManager.tree[context.db].___contains &&
       subManager.tree[context.db].___contains[contains]

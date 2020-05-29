@@ -78,6 +78,7 @@ test.serial.only('schemas - basic', async t => {
     rootType: {
       fields: {
         children: { type: 'references' },
+        descendants: { type: 'references' },
         id: { type: 'id' },
         type: { type: 'type' },
         value: { type: 'number' }

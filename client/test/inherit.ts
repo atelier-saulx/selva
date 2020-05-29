@@ -83,6 +83,31 @@ test.serial('simple', async t => {
   t.true(result.icon === 'scifi.png')
 })
 
+test.serial('simple with circular', async t => {
+  const client = connect({ port: port })
+
+  const genre = await client.set({
+    $id: 'geScifi',
+    name: 'Sci-fi',
+    icon: 'scifi.png',
+    parents: ['moSoylentGreen']
+  })
+
+  await client.set({
+    $id: 'moSoylentGreen',
+    title: 'Soylent Green',
+    parents: [genre]
+  })
+
+  const result = await client.get({
+    $id: 'moSoylentGreen',
+    icon: { $inherit: true },
+    imaginary: { $inherit: true } // should not follow circular references to find this
+  })
+
+  t.true(result.icon === 'scifi.png')
+})
+
 test.serial('$all', async t => {
   const client = connect({ port: port }, { loglevel: 'info' })
 

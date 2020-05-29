@@ -173,5 +173,8 @@ export const rootDefaultFields: Record<string, FieldSchema> = {
   },
   children: {
     type: 'references'
+  },
+  descendants: {
+    type: 'references'
   }
 }

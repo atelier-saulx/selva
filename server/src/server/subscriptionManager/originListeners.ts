@@ -38,6 +38,7 @@ const addOriginListeners = (
           traverseTree(subsManager, eventName, name)
         } else if (message && message.startsWith('delete')) {
           const fields = message.slice(deleteLength).split(',')
+
           fields.forEach((v: string) => {
             traverseTree(subsManager, eventName + '.' + v, name)
           })
@@ -85,6 +86,9 @@ const removeOriginListeners = (
     const redis = client.redis
     origin.subscriptions.delete(subscription)
     if (origin.subscriptions.size === 0) {
+      if (name in subsManager.memberMemCache) {
+        delete subsManager.memberMemCache[name]
+      }
       redis.punsubscribe({ name }, EVENTS + '*')
       redis.removeListener({ name }, 'pmessage', origin.listener)
       delete subsManager.originListeners[name]
