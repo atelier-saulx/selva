@@ -2,8 +2,10 @@ import { spawn, ChildProcess } from 'child_process'
 import pidusage, { Status } from 'pidusage'
 import { EventEmitter } from 'events'
 
-const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
-// const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every second
+// const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
+const LOAD_MEASUREMENTS_INTERVAL = 10e3 // every 10 seconds
+
+console.log('--------??????????????????????????-------')
 
 export default class ProcessManager extends EventEmitter {
   private command: string
@@ -27,6 +29,7 @@ export default class ProcessManager extends EventEmitter {
     this.loadMeasurementsTimeout = setTimeout(() => {
       this.collect()
         .then(data => {
+          console.log('update stats!')
           this.emit('stats', data)
         })
         .catch(e => {
