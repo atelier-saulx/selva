@@ -11,7 +11,12 @@ import {
   SubscriptionManagerState
 } from './subscriptionManager'
 import { startAsyncTaskWorker, stopAsyncTaskWorker } from './asyncTask'
-import { BackupFns, saveAndBackUp, scheduleBackups } from '../backups'
+import {
+  BackupFns,
+  saveAndBackUp,
+  scheduleBackups,
+  loadBackup
+} from '../backups'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -52,6 +57,12 @@ export class SelvaServer extends EventEmitter {
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
       this.registry = connect({ port: opts.port })
+    }
+
+    if (opts.backups && opts.backups.loadBackup) {
+      console.log('Loading backup')
+      await loadBackup(this.backupDir, this.backupFns)
+      console.log('Backup loaded')
     }
 
     await startRedis(this, opts)
