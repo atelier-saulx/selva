@@ -11,7 +11,7 @@ import {
   SubscriptionManagerState
 } from './subscriptionManager'
 import { startAsyncTaskWorker, stopAsyncTaskWorker } from './asyncTask'
-import { BackupFns, saveAndBackUp } from '../backups'
+import { BackupFns, saveAndBackUp, scheduleBackups } from '../backups'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -22,6 +22,7 @@ export class SelvaServer extends EventEmitter {
   public subscriptionManager: SubscriptionManagerState
   private backupFns: BackupFns
   private backupDir: string
+  private backupCleanup: Function
 
   constructor(type: ServerType) {
     super()
@@ -53,11 +54,15 @@ export class SelvaServer extends EventEmitter {
       this.registry = connect({ port: opts.port })
     }
 
-    if (this.type === 'origin') {
-      // startAsyncTaskWorker()
-    }
-
     await startRedis(this, opts)
+
+    if (this.type === 'origin' && opts.backups && opts.backups.scheduled) {
+      this.backupCleanup = scheduleBackups(
+        opts.dir,
+        opts.backups.scheduled.intervalInMinutes,
+        this.backupFns
+      )
+    }
 
     attachStatusListeners(this, opts)
 
@@ -75,7 +80,10 @@ export class SelvaServer extends EventEmitter {
       await stopSubscriptionManager(this.subscriptionManager)
     }
 
-    // stopAsyncTaskWorker()
+    if (this.backupCleanup) {
+      this.backupCleanup()
+      this.backupCleanup = undefined
+    }
 
     this.emit('close')
   }
