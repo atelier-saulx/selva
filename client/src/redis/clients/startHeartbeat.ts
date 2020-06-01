@@ -1,11 +1,14 @@
-import { Client } from './'
+import { Client, addCommandToQueue } from './'
 import { CLIENTS, HEARTBEAT } from '../../constants'
-
 const HEARTBEAT_TIMER = 5e3
 
 const startHeartbeat = (client: Client) => {
   const setHeartbeat = () => {
     if (client.connected) {
+      addCommandToQueue(client, {
+        command: 'hset',
+        args: [CLIENTS, client.uuid, Date.now()]
+      })
       client.publisher.publish(
         HEARTBEAT,
         JSON.stringify({
@@ -16,6 +19,7 @@ const startHeartbeat = (client: Client) => {
       client.heartbeatTimout = setTimeout(setHeartbeat, HEARTBEAT_TIMER)
     }
   }
+
   setHeartbeat()
 }
 
