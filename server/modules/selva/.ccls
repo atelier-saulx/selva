@@ -5,7 +5,11 @@
 -lm
 -std=gnu99  
 -I
-../rmutil
+./include
+-I
+./rmutil
+-I
+./util
 -isystem
 /usr/local/include
 -isystem

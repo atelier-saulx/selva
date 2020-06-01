@@ -1,7 +1,7 @@
 # find the OS
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
-INCLUDE_DIR := ./ ./util
+INCLUDE_DIR := ./include ./util
 RMUTIL_LIBDIR := rmutil
 UTIL_LIBDIR := util
 
