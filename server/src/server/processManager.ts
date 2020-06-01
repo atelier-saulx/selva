@@ -3,7 +3,7 @@ import pidusage, { Status } from 'pidusage'
 import { EventEmitter } from 'events'
 
 // const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
-const LOAD_MEASUREMENTS_INTERVAL = 10e3 // every 10 seconds
+const LOAD_MEASUREMENTS_INTERVAL = 5e3 // every 10 seconds
 
 console.log('--------??????????????????????????-------')
 

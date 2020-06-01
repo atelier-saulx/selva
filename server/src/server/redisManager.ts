@@ -33,7 +33,9 @@ export default class RedisManager extends ProcessManager {
       }, {})
       return { redisInfo, runtimeInfo }
     } catch (err) {
-      return { redisInfo: {}, runtimeInfo, shutdown: true }
+      // store busy
+      console.log('!', err)
+      return { redisInfo: {}, runtimeInfo, err: err.message }
     }
   }
 }
