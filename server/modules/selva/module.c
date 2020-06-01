@@ -1,5 +1,6 @@
 #include <math.h>
 
+#include "cdefs.h"
 #include "redismodule.h"
 #include "rmutil/util.h"
 #include "rmutil/strings.h"
@@ -9,17 +10,32 @@
 #include "modify/modify.h"
 #include "modify/async_task.h"
 
-#define __to_str(_var) \
+#define TO_STR_1(_var) \
   size_t _var##_len; \
   const char * _var##_str = RedisModule_StringPtrLen(_var, & _var##_len);
 
-#define __to_str2(_var1, _var2) \
-  __to_str(_var1) \
-  __to_str(_var2)
+#define TO_STR_2(_var, ...) \
+  TO_STR_1(_var) \
+  TO_STR_1(__VA_ARGS__)
 
-#define __to_str3(_var1, _var2, _var3) \
-  __to_str2(_var1, _var2) \
-  __to_str(_var3)
+#define TO_STR_3(_var, ...) \
+  TO_STR_1(_var) \
+  TO_STR_2(__VA_ARGS__)
+
+#define TO_STR_4(_var, ...) \
+  TO_STR_1(_var) \
+  TO_STR_3(__VA_ARGS__)
+
+#define TO_STR_5(_var, ...) \
+  TO_STR_1(_var) \
+  TO_STR_5(__VA_ARGS__)
+
+#define TO_STR_6(_var, ...) \
+  TO_STR_1(_var) \
+  TO_STR_6(__VA_ARGS__)
+
+#define TO_STR(...) \
+    CONCATENATE(TO_STR_, UTIL_NARG(__VA_ARGS__))(__VA_ARGS__)
 
 int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   // init auto memory for created strings
@@ -80,7 +96,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString *field = argv[i + 1];
     RedisModuleString *value = argv[i + 2];
 
-    __to_str3(type, field, value);
+    TO_STR(type, field, value);
 
     size_t current_value_len = 0;
     RedisModuleString *current_value;
