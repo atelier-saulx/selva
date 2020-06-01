@@ -50,8 +50,10 @@ test.serial('correct validation #2', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   try {
     const res = await client.set({ $alias: 'RandomPollName', children: [] })
-    t.pass()
   } catch (e) {
-    t.fail()
+    t.assert(
+      e.stack,
+      `.set() without the type property requires an existing record or $id to be set with the wanted type prefix. No existing id found for alias "RandomPollName"`
+    )
   }
 })

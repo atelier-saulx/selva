@@ -40,6 +40,14 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
         break
       }
     }
+
+    if (!payload.$id) {
+      throw new Error(
+        `.set() without the type property requires an existing record or $id to be set with the wanted type prefix. No existing id found for alias ${JSON.stringify(
+          payload.$alias
+        )}`
+      )
+    }
   }
 
   const parsed = parseSetObject(payload, schema)
