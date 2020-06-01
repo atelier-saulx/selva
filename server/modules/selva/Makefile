@@ -36,6 +36,7 @@ check:
 	cppcheck --quiet -j 2 --inline-suppr \
 		--language=c --std=c99 --platform=unix64 \
 		--enable=all --addon=threadsafety.py --addon=cert.py \
+		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
 		-i $(RMUTIL_LIBDIR) $(IDIR) .
 

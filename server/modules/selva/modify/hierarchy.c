@@ -21,9 +21,9 @@ typedef struct _SelvaModify_HierarchyNode {
 } SelvaModify_HierarchyNode;
 
 
-int _Vector_BS_Compare(const void *a_raw, const void *b_raw) {
-  const SelvaModify_HierarchyNode *a = (SelvaModify_HierarchyNode *)a_raw;
-  const SelvaModify_HierarchyNode *b = (SelvaModify_HierarchyNode *)b_raw;
+int _Vector_BS_Compare(const void * restrict a_raw, const void * restrict b_raw) {
+  const SelvaModify_HierarchyNode *a = (const SelvaModify_HierarchyNode *)a_raw;
+  const SelvaModify_HierarchyNode *b = (const SelvaModify_HierarchyNode *)b_raw;
 
   return strncmp(a->id, b->id, 10);
 }

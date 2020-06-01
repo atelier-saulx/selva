@@ -24,10 +24,10 @@ static inline int min(int a, int b) {
   return a;
 }
 
-static uint64_t total_publishes = 0;
-static uint64_t missed_publishes = 0;
+static uint64_t total_publishes;
+static uint64_t missed_publishes;
 
-static pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { NULL };
+static pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { };
 
 char queue_mem[HIREDIS_WORKER_COUNT][RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
 queue_cb_t queues[HIREDIS_WORKER_COUNT];
@@ -47,7 +47,7 @@ static inline uint8_t next_queue_idx() {
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
   uint64_t thread_idx = (uint64_t)argv;
-  printf("Started worker number %llu\n", thread_idx);
+  printf("Started worker number %i\n", (int)thread_idx);
 
   queue_cb_t *queue = queues + thread_idx;
 
@@ -62,8 +62,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
   for (;;) {
     char *next;
-    int has_queue = queue_peek(queue, (void **)&next);
-    if (!has_queue) {
+    if (!queue_peek(queue, (void **)&next)) {
       usleep(100);
       continue;
     }
@@ -75,8 +74,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     int32_t remaining = size;
     int32_t block_remaining = RING_BUFFER_BLOCK_SIZE - sizeof(int32_t);
     while (remaining > 0) {
-      int has_queue = queue_peek(queue, (void **)&next);
-      if (!has_queue) {
+      if (!queue_peek(queue, (void **)&next)) {
         usleep(100);
         continue;
       }
@@ -111,7 +109,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
   }
 
 error:
-  thread_ids[thread_idx] = NULL;
+  thread_ids[thread_idx] = 0;
   if (reply != NULL) {
     freeReplyObject(reply);
   }
@@ -123,7 +121,7 @@ error:
 
 int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
   for (int64_t i = 0; i < 4; i++) {
-    if (thread_ids[i] == NULL) {
+    if (thread_ids[i] == 0) {
       pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);
     }
   }
@@ -137,7 +135,7 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
 
     if (worker_idx == first_worker_idx) {
       missed_publishes++;
-      printf("MISSED PUBLISH: %llu / %llu \n", missed_publishes, total_publishes);
+      printf("MISSED PUBLISH: %lli / %lli \n", (long long)missed_publishes, (long long)total_publishes);
       return 1;
     }
   }
