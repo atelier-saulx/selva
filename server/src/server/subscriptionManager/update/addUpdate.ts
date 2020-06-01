@@ -37,6 +37,10 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   subscriptionManager.incomingCount = 0
   subscriptionManager.memberMemCache = {}
 
+  if (subscriptionManager.memberMemCacheSize > 1e5) {
+    console.log('memberMemCache is larger then 100k flush')
+    subscriptionManager.memberMemCacheSize = 0
+  }
   delayCount = 0
 }
 

@@ -31,7 +31,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('inherit references $list', async t => {
+test.serial('correct validation #1', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   try {
     const res = await client.get({
@@ -43,5 +43,15 @@ test.serial('inherit references $list', async t => {
       e.stack,
       `Field .pollId should be a boolean or an object, got RandomPollName`
     )
+  }
+})
+
+test.serial('correct validation #2', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+  try {
+    const res = await client.set({ $alias: 'RandomPollName', children: [] })
+    t.pass()
+  } catch (e) {
+    t.fail()
   }
 })

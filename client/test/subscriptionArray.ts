@@ -46,6 +46,17 @@ test.after(async _t => {
 
 test.serial('subscribe array', async t => {
   const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'ma1',
+    results: [
+      { score: 11, points: 1 },
+      { score: 10, points: 111 }
+    ]
+  })
+
+  await wait(500)
+
   client
     .observe({
       $id: 'ma1',
@@ -60,13 +71,8 @@ test.serial('subscribe array', async t => {
   await client.set({
     $id: 'ma1',
     results: [
-      {
-        score: 1,
-        points: 1
-      },
-      {
-        score: 2
-      }
+      { score: 553, points: 1 },
+      { score: 10, points: 111 }
     ]
   })
 
