@@ -37,9 +37,11 @@ test.serial('inherit references $list', async t => {
     const res = await client.get({
       pollId: 'RandomPollName'
     })
-    t.pass()
   } catch (e) {
     console.error(e)
-    t.fail()
+    t.assert(
+      e.stack,
+      `Field .pollId should be a boolean or an object, got RandomPollName`
+    )
   }
 })

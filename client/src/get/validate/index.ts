@@ -92,6 +92,13 @@ function validateNested(
     return
   }
 
+  const typeOf = typeof props
+  if (typeOf !== 'object' && typeOf !== 'boolean') {
+    throw new Error(
+      `Field ${path} should be a boolean or an object, got ${props}`
+    )
+  }
+
   for (const field in props) {
     if (field.startsWith('$')) {
       if (field === '$field') {
