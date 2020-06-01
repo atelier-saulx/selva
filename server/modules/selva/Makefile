@@ -33,7 +33,11 @@ module.so: module.o id/id.o modify/modify.o modify/async_task.o
 	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1g/lib/ $(SHOBJ_LDLIBS)
 
 check:
-	cppcheck --quiet -j 2 --language=c --std=c99 --platform=unix64 --inline-suppr --enable=all --addon=threadsafety.py --addon=cert.py --library=redis_cppcheck.cfg -i $(RMUTIL_LIBDIR) $(IDIR) .
+	cppcheck --quiet -j 2 --inline-suppr \
+		--language=c --std=c99 --platform=unix64 \
+		--enable=all --addon=threadsafety.py --addon=cert.py \
+		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
+		-i $(RMUTIL_LIBDIR) $(IDIR) .
 
 clean: FORCE
 	find . -type f -name "*.a" -exec rm -f {} \;
