@@ -33,6 +33,8 @@ Vector *Vector_New(size_t initial_len) {
   vec->full_len = initial_len;
   vec->read_len = 0;
   vec->data = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode *) * initial_len);
+
+  return vec;
 }
 
 void Vector_Insert(Vector *vec, SelvaModify_HierarchyNode *el) {
