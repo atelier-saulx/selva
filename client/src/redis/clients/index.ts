@@ -24,9 +24,7 @@ type ClientOpts = {
 
 const addListeners = (client: Client) => {
   const type = client.type
-  const isSubscriptionManager =
-    type === 'subscriptionManager' &&
-    process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
+  const isSubscriptionManager = type === 'subscriptionManager'
 
   if (isSubscriptionManager) {
     client.subscriber.on('message', (channel, msg) => {
@@ -83,9 +81,7 @@ export class Client extends EventEmitter {
     this.queueBeingDrained = []
     this.connected = false
 
-    const isSubscriptionManager =
-      type === 'subscriptionManager' &&
-      process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
+    const isSubscriptionManager = type === 'subscriptionManager'
 
     this.on('hard-disconnect', () => {
       // find different server for it
