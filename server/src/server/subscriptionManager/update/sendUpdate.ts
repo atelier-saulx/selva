@@ -18,7 +18,10 @@ const sendUpdate = async (
   getOptions.$includeMeta = true
 
   // SCHEMA UPDATES
+
   if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
+    console.log('go schema fun!')
+
     const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
     const schemaResp = await client.getSchema(dbName)
     const version = schemaResp.schema.sha

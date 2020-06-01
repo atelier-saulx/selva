@@ -1,6 +1,10 @@
 import { GetOptions, GetResult } from '../get/types'
 import { EventEmitter } from 'events'
-import { startObserver, stopObserver } from './clients/observers'
+import {
+  startObserver,
+  stopObserver,
+  getObserverValue
+} from './clients/observers'
 import { getClient, Client } from './clients'
 import getServerDescriptor from './getServerDescriptor'
 import RedisSelvaClient from './'
@@ -49,14 +53,17 @@ const createObservable = (
   opts: GetOptions
 ): Observable<GetResult> => {
   if (redisSelvaClient.observables[channel]) {
+    getObserverValue(
+      redisSelvaClient.observerEmitters[channel].client,
+      channel,
+      redisSelvaClient.observerEmitters[channel]
+    )
     return redisSelvaClient.observables[channel]
   }
 
   // does this need to be an event emitter or can we just send the command?
   // with one listener
   const observerEmitter = new ObserverEmitter(opts, channel)
-
-  attachClient(redisSelvaClient, observerEmitter, channel)
 
   const obs = new Observable(observer => {
     observerEmitter.on('update', obj => {
@@ -84,6 +91,8 @@ const createObservable = (
 
   redisSelvaClient.observables[channel] = obs
   redisSelvaClient.observerEmitters[channel] = observerEmitter
+
+  attachClient(redisSelvaClient, observerEmitter, channel)
 
   return obs
 }

@@ -49,45 +49,14 @@ export function observe(
 }
 
 export function observeSchema(client: SelvaClient, dbName: string) {
-  if (client.schemaObservables[dbName]) {
-    return new Observable<Schema>(observe => {
-      if (client.schemas[dbName]) {
-        observe.next(client.schemas[dbName])
-      }
-
-      const sub = client.schemaObservables[dbName].subscribe({
-        next: (_x: any) => {
-          observe.next(_x)
-        },
-        error: observe.error,
-        complete: observe.complete
-      })
-
-      return <any>sub
-    })
-  }
-
   const obs = client.redis.observe(
     `___selva_subscription:schema_update:${dbName}`,
     {}
   )
 
-  client.schemaObservables[dbName] = new Observable<Schema>(observe => {
+  return new Observable<Schema>(observe => {
     const sub = obs.subscribe({
       next: (_x: any) => {
-        observe.next(_x)
-      },
-      error: observe.error,
-      complete: observe.complete
-    })
-
-    return <any>sub
-  })
-
-  return new Observable<Schema>(observe => {
-    const sub = client.schemaObservables[dbName].subscribe({
-      next: (_x: any) => {
-        client.schemas[dbName] = _x
         observe.next(_x)
       },
       error: observe.error,
