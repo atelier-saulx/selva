@@ -8,8 +8,8 @@
 
 #include <hiredis/hiredis.h>
 
-#include "./async_task.h"
-#include "./queue_r.h"
+#include "async_task.h"
+#include "queue_r.h"
 
 #define RING_BUFFER_BLOCK_SIZE 128
 #define RING_BUFFER_LENGTH 100000

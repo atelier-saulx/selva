@@ -5,9 +5,9 @@ endif
 
 CFLAGS ?= -g -fPIC -O3 -std=gnu99 -Wall -Wno-unused-function
 CFLAGS += -I$(RM_INCLUDE_DIR)
-CC=gcc
+CC := gcc
 
-OBJS=util.o strings.o sds.o vector.o alloc.o periodic.o
+OBJS := util.o strings.o sds.o vector.o alloc.o periodic.o
 
 all: librmutil.a
 

@@ -1,13 +1,13 @@
 #include <math.h>
 
-#include "../redismodule.h"
-#include "../rmutil/util.h"
-#include "../rmutil/strings.h"
-#include "../rmutil/test_util.h"
+#include "redismodule.h"
+#include "rmutil/util.h"
+#include "rmutil/strings.h"
+#include "rmutil/test_util.h"
 
-#include "./id/id.h"
-#include "./modify/modify.h"
-#include "./modify/async_task.h"
+#include "id/id.h"
+#include "modify/modify.h"
+#include "modify/async_task.h"
 
 #define __to_str(_var) \
   size_t _var##_len; \

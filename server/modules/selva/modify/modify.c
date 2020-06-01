@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../redismodule.h"
+#include "redismodule.h"
 
-#include "./modify.h"
+#include "modify.h"
 
 void SelvaModify_ModifySet(
   RedisModuleCtx *ctx,
