@@ -96,7 +96,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString *field = argv[i + 1];
     RedisModuleString *value = argv[i + 2];
 
-    TO_STR(type, field, value);
+    TO_STR_3(type, field, value);
 
     size_t current_value_len = 0;
     RedisModuleString *current_value;
