@@ -23,13 +23,11 @@ export default class ProcessManager extends EventEmitter {
     }
   }
 
-  private startLoadMeasurements() {
-    let isFirst = true
+  private startLoadMeasurements(isNotFirst) {
     this.loadMeasurementsTimeout = setTimeout(
       () => {
         this.collect()
           .then(data => {
-            isFirst = false
             this.emit('stats', data)
           })
           .catch(e => {
@@ -39,10 +37,10 @@ export default class ProcessManager extends EventEmitter {
             )
           })
           .finally(() => {
-            this.startLoadMeasurements()
+            this.startLoadMeasurements(true)
           })
       },
-      isFirst ? 0 : LOAD_MEASUREMENTS_INTERVAL
+      isNotFirst ? 0 : LOAD_MEASUREMENTS_INTERVAL
     )
   }
 
