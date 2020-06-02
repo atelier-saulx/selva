@@ -48,6 +48,7 @@ clean: FORCE
 	find . -type f -name "*.o" -exec rm -f {} \;
 	find . -type f -name "*.so" -exec rm -f {} \;
 	find . -type f -name "*.xo" -exec rm -f {} \;
+	$(MAKE) -C test clean
 
 FORCE:
 
