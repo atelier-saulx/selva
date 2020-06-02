@@ -1,13 +1,17 @@
 #include <stdlib.h>
 
-void *RedisModule_Alloc(size_t size) {
+void *_RedisModule_Alloc(size_t size) {
     return calloc(1, size);
 }
 
-void *RedisModule_Realloc(void *ptr, size_t size) {
+void *_RedisModule_Realloc(void *ptr, size_t size) {
     return realloc(ptr, size);
 }
 
-void RedisModule_Free(void *ptr) {
+void _RedisModule_Free(void *ptr) {
     free(ptr);
 }
+
+void * (*RedisModule_Alloc)(size_t size) = _RedisModule_Alloc;
+void * (*RedisModule_Realloc)(void *ptr, size_t size) = _RedisModule_Realloc;
+void (*RedisModule_Free)(void *ptr) = _RedisModule_Free;
