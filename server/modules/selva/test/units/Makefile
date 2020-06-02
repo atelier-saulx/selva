@@ -14,7 +14,7 @@ PU_UU = 1
 # test case descriptions. 0 = disabled; 1 = enabled.
 PU_REPORT_ORIENTED = 1
 
-CCFLAGS =
+CCFLAGS = -g
 
 # Location of punit makefile
 # Do not touch
