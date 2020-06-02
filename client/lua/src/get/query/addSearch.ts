@@ -22,7 +22,9 @@ function addSearch(filter: Filter): [string[], null | string] {
       ]
     }
   } else {
-    return [[], `Cannot search fields that are not indexed ${filter.$field}`]
+    // this will be ignored after
+    return [[], null]
+    // return [[], `Cannot search fields that are not indexed ${filter.$field}`]
   }
 
   return [search, null]
