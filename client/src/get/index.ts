@@ -18,7 +18,7 @@ async function combineResults(
   if (Object.keys(getResult).length === 1 && getResult.listResult) {
     await Promise.all(
       getResult.listResult.map(res => {
-        return combineResults(client, extraQueries, res, meta)
+        return combineResults(client, extraQueries, $language, res, meta)
       })
     )
     return
