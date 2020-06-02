@@ -46,6 +46,11 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
     },
     async loadBackup(rdbFilePath: string, rdbLastModified: Date) {
       const objects = await s3.listObjects(bucketName)
+      if (!objects.length) {
+        console.log(`Bucket ${bucketName} is empty, skipping backup loading`)
+        return
+      }
+
       const latest = objects.reduce((max, o) => {
         if (new Date(o.Key) > new Date(max.Key)) {
           return o
