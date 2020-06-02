@@ -7,6 +7,7 @@ import { deepMerge } from './deepMerge'
 async function combineResults(
   client: SelvaClient,
   extraQueries: ExtraQueries,
+  $language: string | undefined,
   getResult: GetResult,
   meta?: any
 ) {
@@ -27,6 +28,7 @@ async function combineResults(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
         query.map(async q => {
+          console.log('PROCESSING EXTRA QUERY for', db, q)
           const parts = q.path.substr(1).split('.')
 
           if (parts[0] === 'listResult') {
@@ -45,9 +47,17 @@ async function combineResults(
           }
 
           if (q.type === 'reference') {
+            console.log('SINGLE REF TRYING', getResult, parts, {
+              $language,
+              $id: g[parts[parts.length - 1]],
+              $db: db,
+              $includeMeta: !!meta,
+              ...q.getOpts
+            })
             const r = await get(
               client,
               {
+                $language,
                 $id: g[parts[parts.length - 1]],
                 $db: db,
                 $includeMeta: !!meta,
@@ -56,6 +66,17 @@ async function combineResults(
               meta,
               true
             )
+
+            console.log(
+              'SINGLE REF COMBINE',
+              {
+                $id: g[parts[parts.length - 1]],
+                $db: db,
+                $includeMeta: !!meta,
+                ...q.getOpts
+              },
+              r
+            )
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
             if (q.getOpts.$list) {
@@ -63,6 +84,7 @@ async function combineResults(
               const r = await get(
                 client,
                 {
+                  $language,
                   $includeMeta: !!meta,
                   $db: db,
                   listResult: {
@@ -99,6 +121,7 @@ async function combineResults(
                 const nestedResult = await get(
                   client,
                   {
+                    $language,
                     $includeMeta: !!meta,
                     $db: db,
                     listResult: {
@@ -124,6 +147,7 @@ async function combineResults(
               const r = await get(
                 client,
                 {
+                  $language,
                   $db: db,
                   $includeMeta: !!meta,
                   listResult: {
@@ -143,6 +167,7 @@ async function combineResults(
             const r = await get(
               client,
               {
+                $language,
                 $includeMeta: !!meta,
                 $db: db,
                 ...q.getOpts
@@ -208,11 +233,14 @@ async function get(
   nested: boolean = false
 ): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
+  console.log('PROPS', props)
   validate(extraQueries, client, props)
+  console.log('EXRTA QUERIES', extraQueries)
   const newProps = makeNewGetOptions(
     getExtraQueriesByField(extraQueries),
     props
   )
+  console.log('NEW PROPS', JSON.stringify(newProps, null, 2))
 
   const getResult = JSON.parse(
     await client.redis.evalsha(
@@ -249,7 +277,7 @@ async function get(
     }
   }
 
-  await combineResults(client, extraQueries, getResult, meta)
+  await combineResults(client, extraQueries, props.$language, getResult, meta)
 
   if (props.$includeMeta && !nested) {
     getResult.$meta = meta
