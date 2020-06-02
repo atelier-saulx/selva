@@ -67,12 +67,6 @@ async function combineResults(
           }
 
           if (q.type === 'reference') {
-              $language,
-              $id: g[parts[parts.length - 1]],
-              $db: db,
-              $includeMeta: !!meta,
-              ...q.getOpts
-            })
             const r = await get(
               client,
               {
