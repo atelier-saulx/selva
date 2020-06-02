@@ -38,13 +38,11 @@ const sendUpdate = async (
   }
 
   let time
+  console.log(getOptions)
   if (getOptions.userComponents) {
     console.log('go start', getOptions.userComponents)
     time = setTimeout(() => {
-      console.log(
-        'TIMEOUT OUT',
-        getOptions.console.log('go start', getOptions.userComponents)
-      )
+      console.log('TIMEOUT OUT')
     }, 2e3)
   }
   const payload = await client.get(getOptions)
@@ -52,6 +50,7 @@ const sendUpdate = async (
   if (getOptions.userComponents) {
     console.log('fixed', getOptions.userComponents)
   }
+  clearTimeout(time)
 
   // call $meta tree
   const newTree = payload.$meta

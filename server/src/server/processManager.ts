@@ -23,7 +23,7 @@ export default class ProcessManager extends EventEmitter {
     }
   }
 
-  private startLoadMeasurements(isNotFirst) {
+  private startLoadMeasurements(isNotFirst: boolean = false) {
     this.loadMeasurementsTimeout = setTimeout(
       () => {
         this.collect()

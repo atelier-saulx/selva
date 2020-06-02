@@ -40,6 +40,6 @@ export type ServerDescriptor = {
   host: string
   port: number
   default?: boolean
-  stats?: { [key: string]: any }
+  stats?: any
   subscriptions?: Set<string>
 }
