@@ -44,7 +44,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('subscribe array', async t => {
+test.serial.skip('subscribe array', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({

@@ -96,3 +96,160 @@ test.serial('find - single', async t => {
     singleMatch: { name: 'match0' }
   })
 })
+
+test.serial('find - single with no wrapping', async t => {
+  // simple nested - single query
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const team = await client.set({
+    $id: 'te0',
+    type: 'team',
+    name: 'team0'
+  })
+  const matches = []
+  for (let i = 0; i < 11; i++) {
+    matches.push({
+      $id: await client.id({ type: 'match' }),
+      type: 'match',
+      name: 'match' + i,
+      parents: [team]
+    })
+  }
+
+  await Promise.all(matches.map(v => client.set(v)))
+
+  // console.log('r', r)
+  // t.fail()
+  const r = await client.get({
+    $id: 'te0',
+    name: true,
+    $find: {
+      $traverse: 'children',
+      $filter: [
+        {
+          $field: 'type',
+          $operator: '=',
+          $value: 'match'
+        },
+        {
+          $field: 'name',
+          $operator: '=',
+          $value: 'match0'
+        }
+      ]
+    }
+  })
+
+  console.log('>>', r)
+  t.deepEqual(r, {
+    name: 'match0'
+  })
+})
+
+test.serial('find - single in array', async t => {
+  // simple nested - single query
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const team = await client.set({
+    $id: 'te0',
+    type: 'team',
+    name: 'team0'
+  })
+  const matches = []
+  for (let i = 0; i < 11; i++) {
+    matches.push({
+      $id: await client.id({ type: 'match' }),
+      type: 'match',
+      name: 'match' + i,
+      parents: [team]
+    })
+  }
+
+  await Promise.all(matches.map(v => client.set(v)))
+
+  // console.log('r', r)
+  // t.fail()
+  const r = await client.get({
+    $id: 'te0',
+    results: [
+      {
+        singleMatch: {
+          name: true,
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'name',
+                $operator: '=',
+                $value: 'match0'
+              }
+            ]
+          }
+        }
+      }
+    ]
+  })
+
+  console.log('>>', r)
+  t.deepEqual(r, {
+    results: [{ singleMatch: { name: 'match0' } }]
+  })
+})
+
+test.serial('find - single no wrapping in array', async t => {
+  // simple nested - single query
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const team = await client.set({
+    $id: 'te0',
+    type: 'team',
+    name: 'team0'
+  })
+  const matches = []
+  for (let i = 0; i < 11; i++) {
+    matches.push({
+      $id: await client.id({ type: 'match' }),
+      type: 'match',
+      name: 'match' + i,
+      parents: [team]
+    })
+  }
+
+  await Promise.all(matches.map(v => client.set(v)))
+
+  // console.log('r', r)
+  // t.fail()
+  const r = await client.get({
+    $id: 'te0',
+    results: [
+      {
+        name: true,
+        $find: {
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
+            },
+            {
+              $field: 'name',
+              $operator: '=',
+              $value: 'match0'
+            }
+          ]
+        }
+      }
+    ]
+  })
+
+  console.log('>>', r)
+  t.deepEqual(r, {
+    results: [{ name: 'match0' }]
+  })
+})

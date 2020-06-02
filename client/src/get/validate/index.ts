@@ -221,11 +221,17 @@ export default function validateTopLevel(
             `Operator $all for ${path}.$all must be a boolean, got ${props.$all}`
           )
         }
+      } else if (field === '$list') {
+        validateList(props, client, props.$list, path)
+      } else if (field === '$find') {
+        validateFind(props, client, props.$find, path)
       } else {
         throw new Error(`
           Top level query operator ${field} is not supported. Did you mean one of the following supported top level query options?
             - $db
             - $id
+            - $find
+            - $list
             - $alias
             - $all
             - $version
