@@ -298,3 +298,63 @@ test.serial('find - ancestors - regions', async t => {
     'dutch teams'
   )
 })
+
+test.serial('find - ancestors - regions - no wrapping', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+  const teams = []
+
+  const regions = await Promise.all([
+    client.set({
+      type: 'region',
+      name: 'REGION De'
+    }),
+    client.set({
+      type: 'region',
+      name: 'REGION Nl'
+    })
+  ])
+
+  for (let i = 0; i < 11; i++) {
+    await client.set({
+      type: 'team',
+      name: 'team region ' + i,
+      parents: {
+        $add: i < 6 ? regions[0] : regions[1]
+      }
+    })
+  }
+
+  const dutchteams = await client.get({
+    name: true,
+    $list: {
+      $find: {
+        $traverse: 'descendants',
+        $filter: [
+          {
+            $field: 'ancestors',
+            $operator: '=',
+            $value: regions[0]
+          },
+          {
+            $field: 'type',
+            $operator: '=',
+            $value: 'team'
+          }
+        ]
+      }
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    dutchteams,
+    [
+      { name: 'team region 5' },
+      { name: 'team region 4' },
+      { name: 'team region 3' },
+      { name: 'team region 2' },
+      { name: 'team region 1' },
+      { name: 'team region 0' }
+    ],
+    'dutch teams'
+  )
+})
