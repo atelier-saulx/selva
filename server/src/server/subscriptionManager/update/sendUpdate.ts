@@ -3,6 +3,7 @@ import { addSubscriptionToTree, removeSubscriptionFromTree } from '../tree'
 import { hash } from '../util'
 import { Subscription, SubscriptionManager } from '../types'
 import { clear } from 'pidusage'
+import { get } from '@saulx/selva/dist/src/get'
 
 const { CACHE } = constants
 
@@ -20,8 +21,6 @@ const sendUpdate = async (
   // SCHEMA UPDATES
 
   if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
-    console.log('go schema fun!')
-
     const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
     const schemaResp = await client.getSchema(dbName)
     const version = schemaResp.schema.sha
@@ -38,7 +37,21 @@ const sendUpdate = async (
     return
   }
 
+  let time
+  if (getOptions.userComponents) {
+    console.log('go start', getOptions.userComponents)
+    time = setTimeout(() => {
+      console.log(
+        'TIMEOUT OUT',
+        getOptions.console.log('go start', getOptions.userComponents)
+      )
+    }, 2e3)
+  }
   const payload = await client.get(getOptions)
+
+  if (getOptions.userComponents) {
+    console.log('fixed', getOptions.userComponents)
+  }
 
   // call $meta tree
   const newTree = payload.$meta
