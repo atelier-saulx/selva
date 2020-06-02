@@ -145,24 +145,53 @@ test.serial('make it nice with users', async t => {
       'YEEEEEEEEEEES',
       JSON.stringify(
         await client.get({
-          $db: 'users',
           $language: 'en',
-          $id: 'us1',
-          favorites: {
-            $db: 'default',
-            id: true,
-            title: true,
-            $list: true
-          },
-          watching: {
-            id: true,
-            item: {
-              $db: 'default',
-              id: true,
-              title: true
+          components: [
+            {
+              component: { $value: 'favorites' },
+              $db: 'users',
+              $id: 'us1',
+              favorites: {
+                $db: 'default',
+                id: true,
+                title: true,
+                $list: true
+              }
             },
-            $list: true
-          }
+            {
+              component: { $value: 'watching' },
+              $db: 'users',
+              $id: 'us1',
+              watching: {
+                id: true,
+                item: {
+                  $db: 'default',
+                  id: true,
+                  title: true
+                },
+                $list: true
+              }
+            },
+            {
+              component: { $value: 'matches' },
+              matches: {
+                id: true,
+                title: true,
+                $list: {
+                  $find: {
+                    $traverse: 'descendants',
+                    $filter: [
+                      {
+                        $operator: '=',
+                        $field: 'type',
+                        $value: 'match'
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
         }),
         null,
         2

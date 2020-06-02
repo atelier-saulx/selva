@@ -39,8 +39,8 @@ async function combineResults(
           for (let i = 0; i <= parts.length - 2; i++) {
             const part = parts[i]
 
-            if (Array.isArray(g[part])) {
-              console.log('HMMHMM')
+            if (Array.isArray(g[part]) && isNaN(<any>parts[i + 1])) {
+              console.log('HMMHMM', parts, part)
               const newQuery: ExtraQuery = {
                 type: q.type,
                 getOpts: q.getOpts,
@@ -51,7 +51,7 @@ async function combineResults(
 
               return Promise.all(
                 g[part].map(r => {
-                  combineResults(
+                  return combineResults(
                     client,
                     { [db]: [newQuery] },
                     $language,
