@@ -28,7 +28,6 @@ async function combineResults(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
         query.map(async q => {
-          console.log('PROCESSING EXTRA QUERY for', db, q)
           const parts = q.path.substr(1).split('.')
 
           if (parts[0] === 'listResult') {
@@ -40,14 +39,12 @@ async function combineResults(
             const part = parts[i]
 
             if (Array.isArray(g[part]) && isNaN(<any>parts[i + 1])) {
-              console.log('HMMHMM', parts, part)
               const newQuery: ExtraQuery = {
                 type: q.type,
                 getOpts: q.getOpts,
                 path: '.' + parts.slice(i + 1).join('.'),
                 placeholder: q.placeholder
               }
-              console.log('NEW QUERY', newQuery, g[part])
 
               return Promise.all(
                 g[part].map(r => {
@@ -70,7 +67,6 @@ async function combineResults(
           }
 
           if (q.type === 'reference') {
-            console.log('SINGLE REF TRYING', getResult, parts, {
               $language,
               $id: g[parts[parts.length - 1]],
               $db: db,
@@ -90,16 +86,6 @@ async function combineResults(
               true
             )
 
-            console.log(
-              'SINGLE REF COMBINE',
-              {
-                $id: g[parts[parts.length - 1]],
-                $db: db,
-                $includeMeta: !!meta,
-                ...q.getOpts
-              },
-              r
-            )
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
             if (q.getOpts.$list) {
@@ -256,14 +242,11 @@ async function get(
   nested: boolean = false
 ): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
-  console.log('PROPS', props)
   validate(extraQueries, client, props)
-  console.log('EXRTA QUERIES', extraQueries)
   const newProps = makeNewGetOptions(
     getExtraQueriesByField(extraQueries),
     props
   )
-  console.log('NEW PROPS', JSON.stringify(newProps, null, 2))
 
   const getResult = JSON.parse(
     await client.redis.evalsha(
