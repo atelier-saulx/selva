@@ -142,28 +142,31 @@ test.serial('make it nice with users', async t => {
 
   try {
     console.log(
-      await client.get({
-        $db: 'users',
-        $language: 'en',
-        $id: 'us1',
-        favorites: {
-          $db: 'default',
-          id: true,
-          title: true,
-          $list: true
-        }
-        // watching: {
-        //   id: true,
-        //   // TODO: broken, single ref inside list references query result is broken
-        //   item: {
-        //     $db: 'default',
-        //     id: true,
-        //     // TODO: broken, $language isn't inherited here
-        //     title: { $field: 'title.en' }
-        //   },
-        //   $list: true
-        // }
-      })
+      'YEEEEEEEEEEES',
+      JSON.stringify(
+        await client.get({
+          $db: 'users',
+          $language: 'en',
+          $id: 'us1',
+          favorites: {
+            $db: 'default',
+            id: true,
+            title: true,
+            $list: true
+          },
+          watching: {
+            id: true,
+            item: {
+              $db: 'default',
+              id: true,
+              title: true
+            },
+            $list: true
+          }
+        }),
+        null,
+        2
+      )
     )
   } catch (e) {
     console.error(e)

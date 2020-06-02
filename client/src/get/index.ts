@@ -39,6 +39,29 @@ async function combineResults(
           for (let i = 0; i <= parts.length - 2; i++) {
             const part = parts[i]
 
+            if (Array.isArray(g[part])) {
+              console.log('HMMHMM')
+              const newQuery: ExtraQuery = {
+                type: q.type,
+                getOpts: q.getOpts,
+                path: '.' + parts.slice(i + 1).join('.'),
+                placeholder: q.placeholder
+              }
+              console.log('NEW QUERY', newQuery, g[part])
+
+              return Promise.all(
+                g[part].map(r => {
+                  combineResults(
+                    client,
+                    { [db]: [newQuery] },
+                    $language,
+                    r,
+                    meta
+                  )
+                })
+              )
+            }
+
             if (!g[part]) {
               g[part] = {}
             }
