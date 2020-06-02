@@ -5,8 +5,6 @@ import { parentPort } from 'worker_threads'
 import addListeners from './addListeners'
 import updateSubscriptionData from './updateSubscriptionData'
 
-process.env.SELVA_SERVER_TYPE = 'subscriptionManager'
-
 const { SERVER_HEARTBEAT } = constants
 
 const clear = (subsManager: SubscriptionManager) => {

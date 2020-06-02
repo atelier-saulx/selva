@@ -5,6 +5,7 @@ export type LogFn = (log: LogEntry, dbName: string) => void
 export type ClientOpts = {
   loglevel?: LogLevel
   log?: LogFn
+  serverType?: string
 }
 
 export type ServerType =
@@ -39,5 +40,6 @@ export type ServerDescriptor = {
   host: string
   port: number
   default?: boolean
+  stats?: { [key: string]: any }
   subscriptions?: Set<string>
 }

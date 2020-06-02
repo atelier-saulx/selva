@@ -24,22 +24,26 @@ export default class ProcessManager extends EventEmitter {
   }
 
   private startLoadMeasurements() {
-    this.loadMeasurementsTimeout = setTimeout(() => {
-      this.collect()
-        .then(data => {
-          console.log('update stats!')
-          this.emit('stats', data)
-        })
-        .catch(e => {
-          console.error(
-            `Error collecting load measurements from ${this.command}`,
-            e
-          )
-        })
-        .finally(() => {
-          this.startLoadMeasurements()
-        })
-    }, LOAD_MEASUREMENTS_INTERVAL)
+    let isFirst = true
+    this.loadMeasurementsTimeout = setTimeout(
+      () => {
+        this.collect()
+          .then(data => {
+            isFirst = false
+            this.emit('stats', data)
+          })
+          .catch(e => {
+            console.error(
+              `Error collecting load measurements from ${this.command}`,
+              e
+            )
+          })
+          .finally(() => {
+            this.startLoadMeasurements()
+          })
+      },
+      isFirst ? 0 : LOAD_MEASUREMENTS_INTERVAL
+    )
   }
 
   private stopLoadMeasurements() {

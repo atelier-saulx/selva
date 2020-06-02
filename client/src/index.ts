@@ -35,6 +35,7 @@ export class SelvaClient extends EventEmitter {
   public loglevel: string
   public schemaObservables: Record<string, Observable<Schema>> = {}
   public schemas: Record<string, Schema> = {}
+  public serverType: string
 
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
     super()
@@ -54,6 +55,8 @@ export class SelvaClient extends EventEmitter {
     this.on('log', ({ dbName, log }) => {
       this.logFn(log, dbName)
     })
+
+    this.serverType = clientOpts.serverType
 
     this.redis = new Redis(this, opts)
   }

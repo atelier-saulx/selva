@@ -49,9 +49,9 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     }
   })
 
-  server.on('busy', () => {})
-
-  server.on('subscription', () => {})
+  server.on('busy', () => {
+    // set busy status
+  })
 
   server.registry.on('connect', () => {
     console.log('Registering server', info)

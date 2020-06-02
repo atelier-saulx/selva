@@ -29,7 +29,6 @@ export default async function updateRegistry(
       id
     )
   } else {
-    console.log('hello')
     client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
   }
 }
