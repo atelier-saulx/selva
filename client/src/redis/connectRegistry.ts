@@ -37,20 +37,23 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
   const result: ServerDescriptor[] = await Promise.all(
     serverList.map(
       async (id: string): Promise<ServerDescriptor> => {
-        const [host, port, name, type, def] = await client.hmget(
+        const [host, port, name, type, def, stats] = await client.hmget(
           { type: 'registry' },
           id,
           'host',
           'port',
           'name',
           'type',
-          'default'
+          'default',
+          'stats'
         )
+
         const descriptor: ServerDescriptor = {
           host,
           port: Number(port),
           name,
           type,
+          stats: stats ? JSON.parse(stats) : {},
           default: def ? true : false
         }
 
@@ -150,8 +153,17 @@ const createRegistryClient = (
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_SUBSCRIPTION)
 
+  if (client.selvaClient.serverType === 'registry') {
+    console.log('go')
+    client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_STATS)
+  }
+
   client.on({ type: 'registry' }, 'message', (channel, payload) => {
-    if (channel === REGISTRY_UPDATE) {
+    if (
+      channel === REGISTRY_UPDATE ||
+      (client.selvaClient.serverType === 'registry' &&
+        channel === REGISTRY_UPDATE_STATS)
+    ) {
       // can be handled more effiecently
       getServers(client, <string>payload)
     } else if (channel === REGISTRY_UPDATE_SUBSCRIPTION) {
