@@ -19,6 +19,7 @@ import { SetOptions, set } from './set'
 import { IdOptions } from 'lua/src/id'
 import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
+import { deleteType, deleteField } from './delete/adminOperations'
 import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
 import { observe, observeSchema } from './observe'
@@ -114,6 +115,14 @@ export class SelvaClient extends EventEmitter {
 
   subscribeSchema(name: string = 'default'): Observable<Schema> {
     return observeSchema(this, name)
+  }
+
+  deleteType(name: string, dbName: string = 'default'): Promise<void> {
+    return deleteType(this, name, { name: dbName })
+  }
+
+  deleteField(type: string, name: string, dbName: string = 'default'): Promise<void> {
+    return deleteField(this, type, name, { name: dbName })
   }
 
   conformToSchema(props: SetOptions, dbName: string = 'default') {
