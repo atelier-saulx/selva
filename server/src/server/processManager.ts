@@ -5,8 +5,6 @@ import { EventEmitter } from 'events'
 // const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
 const LOAD_MEASUREMENTS_INTERVAL = 5e3 // every 10 seconds
 
-console.log('--------??????????????????????????-------')
-
 export default class ProcessManager extends EventEmitter {
   private command: string
   private args: string[]
