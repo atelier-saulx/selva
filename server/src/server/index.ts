@@ -17,6 +17,7 @@ import {
   scheduleBackups,
   loadBackup
 } from '../backups'
+import { registryManager } from './registryManager'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -79,6 +80,10 @@ export class SelvaServer extends EventEmitter {
 
     if (this.type === 'subscriptionManager') {
       this.subscriptionManager = await startSubscriptionManager(opts)
+    }
+
+    if (this.type === 'registry') {
+      registryManager(this)
     }
   }
 
