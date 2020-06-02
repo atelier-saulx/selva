@@ -190,6 +190,11 @@ export default function validateTopLevel(
           throw new Error(`$version should be a string`)
         }
       } else if (field === '$language') {
+        if (props.$language === undefined) {
+          delete props.$language
+          continue
+        }
+
         if (typeof props.$language !== 'string') {
           throw new Error(
             `$language ${props.$language} is unsupported, should be a string`
