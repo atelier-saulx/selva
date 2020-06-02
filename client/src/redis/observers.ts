@@ -53,11 +53,13 @@ const createObservable = (
   opts: GetOptions
 ): Observable<GetResult> => {
   if (redisSelvaClient.observables[channel]) {
-    getObserverValue(
-      redisSelvaClient.observerEmitters[channel].client,
-      channel,
-      redisSelvaClient.observerEmitters[channel]
-    )
+    if (redisSelvaClient.observerEmitters[channel].client) {
+      getObserverValue(
+        redisSelvaClient.observerEmitters[channel].client,
+        channel,
+        redisSelvaClient.observerEmitters[channel]
+      )
+    }
     return redisSelvaClient.observables[channel]
   }
 

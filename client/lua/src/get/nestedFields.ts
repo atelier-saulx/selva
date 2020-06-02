@@ -82,6 +82,14 @@ export const setNestedResult = (
   field: string,
   value: any
 ) => {
+  if (field === '') {
+    for (const k in value) {
+      result[k] = value[k]
+    }
+
+    return
+  }
+
   const fields = splitString(field, '.')
   const len = fields.length
   if (len > 1) {

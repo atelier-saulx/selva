@@ -322,7 +322,7 @@ const parseQuery = (
             schema,
             r,
             resultIds[i],
-            '',
+            undefined,
             language,
             version,
             '$',

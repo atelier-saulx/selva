@@ -83,64 +83,59 @@ function getField(
   ) {
     // field that needs to get the result
 
-    if (field) {
-      let sourceField: string | string[] = field
-      let ids: string[] = [id]
+    let sourceField: string | string[] = field || ''
+    let ids: string[] = [id]
 
-      if (
-        !(
-          props.$list &&
-          typeof props.$list === 'object' &&
-          props.$list.$find
-        ) &&
-        props.$field
-      ) {
-        if (isObjectField(props.$field)) {
-          if (!props.$field.value.$id) {
-            return false
-          }
-
-          const resolvedId = resolveId(ensureArray(props.$field.value.$id), [])
-          sourceField = resolveAll(
-            <string>resolvedId,
-            schema,
-            ensureArray(props.$field.path),
-            language,
-            version
-          )
-          ids = [<string>resolvedId]
-        } else {
-          sourceField = resolveAll(
-            id,
-            schema,
-            ensureArray(props.$field),
-            language,
-            version
-          )
+    if (
+      !(props.$list && typeof props.$list === 'object' && props.$list.$find) &&
+      props.$field
+    ) {
+      if (isObjectField(props.$field)) {
+        if (!props.$field.value.$id) {
+          return false
         }
-      }
 
-      // clean up this property so we don't use it in gets with lists
-      delete props.$field
-
-      // allways need a field for getQuery
-      const err = getQuery(
-        getField,
-        schema,
-        result,
-        props,
-        field,
-        ids,
-        sourceField,
-        language,
-        version
-      )
-      if (err) {
-        // can return an error now
-        logger.error(err)
-        error(err)
+        const resolvedId = resolveId(ensureArray(props.$field.value.$id), [])
+        sourceField = resolveAll(
+          <string>resolvedId,
+          schema,
+          ensureArray(props.$field.path),
+          language,
+          version
+        )
+        ids = [<string>resolvedId]
+      } else {
+        sourceField = resolveAll(
+          id,
+          schema,
+          ensureArray(props.$field),
+          language,
+          version
+        )
       }
     }
+
+    // clean up this property so we don't use it in gets with lists
+    delete props.$field
+
+    // allways need a field for getQuery
+    const err = getQuery(
+      getField,
+      schema,
+      result,
+      props,
+      field || '',
+      ids,
+      sourceField,
+      language,
+      version
+    )
+    if (err) {
+      // can return an error now
+      logger.error(err)
+      error(err)
+    }
+
     return true
   } else {
     if (props.$field && field) {
