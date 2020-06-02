@@ -1,0 +1,3 @@
+# Ignore punit bins and objs
+*/bin/
+*/obj/

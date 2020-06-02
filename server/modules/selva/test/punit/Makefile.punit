@@ -1,0 +1,129 @@
+# PUnit #######################################################################
+# PUnit, a portable unit testing framework for C.
+# Inspired by: http://www.jera.com/techinfo/jtns/jtn002.html
+#
+# Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+# Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+# Dirs ########################################################################
+IDIR += ../punit
+IDIR := $(patsubst %,-I%,$(subst :, ,$(IDIR)))
+IDIR_TEST := $(patsubst %,-I%,$(subst :, ,$(IDIR_TEST)))
+
+ODIR = obj
+BDIR = bin
+###############################################################################
+
+# PUnit #######################################################################
+# Sources
+PU_SRC += ../punit/punit.c
+ifeq ($(PU_UU),1)
+	PU_SRC += ../punit/unixunit.c
+endif
+
+DIRS := "$(ODIR)" "$(BDIR)"
+# Objs
+PU_OBJ = $(patsubst %,./$(ODIR)/%,$(notdir $(PU_SRC:.c=.o)))
+###############################################################################
+
+# Tests #######################################################################
+include $(wildcard *.mk)
+###############################################################################
+
+CC ?= gcc
+CCFLAGS += -Wall -pedantic -MMD -DPU_TEST_BUILD
+# Link math?
+ifeq ($(PU_LMATH),1)
+	CCFLAGS += -lm -DPU_LMATH
+endif
+# Report oriented?
+ifeq ($(PU_REPORT_ORIENTED),1)
+    CCFLAGS += -DPU_REPORT_ORIENTED
+endif
+
+# Clever way to get a space char
+space = $(empty) $(empty)
+
+# List of existing test
+TEST_LIST = $(filter-out test,$(subst -,$(space),$(basename $(notdir $(TEST_SRC)))))
+SRC = $(sort $(foreach name,$(TEST_LIST),$(SRC-$(name))))
+OBJ = $(patsubst %,./$(ODIR)/%,$(notdir $(SRC:.c=.o)))
+
+TEST_EXECUTABLES = $(TEST_SRC:%.c=$(BDIR)/%)
+
+# Set test set name if ont set yet
+TSETNAME ?= ${shell pwd | sed 's|.*/||'}
+
+# TEST_SRC test sources
+# SRC = MUT source modules
+
+#### Targets ##################################################################
+all: punit $(PU_OBJ) $(OBJ) $(TEST_EXECUTABLES) run
+	@echo "'make all' done"
+
+help:
+	@echo Targets
+	@echo =======
+	@echo "all      Compile all binaries and run tests"
+	@echo "punit    Compile unit test framework"
+
+$(DIRS):
+	mkdir -p $@
+
+punit: $(DIRS) $(PU_SRC)
+
+$(PU_OBJ): $(PU_SRC)
+	$(eval CUR_SRC := $(notdir $(@:.o=.c)))
+	$(eval CUR_SRC := $(filter $(foreach file,$(CUR_SRC), %/$(file)), $(PU_SRC)))
+	$(CC) $(IDIR) $(CCFLAGS) -c $(CUR_SRC) -o ./$@
+
+# MUTs
+$(OBJ): $(SRC)
+	@echo "Build MUT: $@"
+	@echo "=================================================================="
+	$(eval CUR_SRC := $(notdir $(@:.o=.c)))
+	$(eval CUR_SRC := $(filter $(foreach file,$(CUR_SRC), %/$(file)), $(SRC)))
+	$(CC) $(IDIR) $(IDIR_TEST) $(CCFLAGS) -c $(CUR_SRC) -o $@
+	@echo "=================================================================="
+
+# Tests
+bin/%: %.c $(PU_OBJ)
+	$(eval TESTNAME := $(filter-out test,$(subst -,$(space),$(basename $(notdir $@)))))
+	@echo "Build test: $(TESTNAME)"
+	@echo "=================================================================="
+	$(eval DEPS := $(patsubst %,./$(ODIR)/%,$(notdir $(SRC-$(TESTNAME):.c=.o))))
+	$(CC) $(CCFLAGS) $(IDIR) $(IDIR_TEST) $^ $(DEPS) -o ./$@
+	@echo "=================================================================="
+
+# Run tests
+run: $(TEST_EXECUTABLES)
+	@echo "Run all tests: $(TSETNAME)"
+	@echo "=================================================================="
+	@$(foreach exe,$^,echo "$(exe):"; $(exe); )
+
+.PHONY: clean
+
+clean:
+	$(RM) ./$(ODIR)/* ./$(BDIR)/*

@@ -27,7 +27,7 @@ rmutil: FORCE
 	$(MAKE) -C $(RMUTIL_LIBDIR)
 
 util: FORCE
-	$(MAKE) -C ./util
+	$(MAKE) -C util
 
 module.so: module.o id/id.o modify/modify.o modify/async_task.o
 	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1g/lib/ $(SHOBJ_LDLIBS)
@@ -40,6 +40,9 @@ check:
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
 		-i $(RMUTIL_LIBDIR) $(IDIR) .
 
+test:
+	$(MAKE) -C test
+
 clean: FORCE
 	find . -type f -name "*.a" -exec rm -f {} \;
 	find . -type f -name "*.o" -exec rm -f {} \;
@@ -48,4 +51,4 @@ clean: FORCE
 
 FORCE:
 
-.PHONY: check
+.PHONY: check test
