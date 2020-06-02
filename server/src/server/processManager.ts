@@ -40,7 +40,7 @@ export default class ProcessManager extends EventEmitter {
             this.startLoadMeasurements(true)
           })
       },
-      isNotFirst ? 0 : LOAD_MEASUREMENTS_INTERVAL
+      isNotFirst ? LOAD_MEASUREMENTS_INTERVAL : 0
     )
   }
 
