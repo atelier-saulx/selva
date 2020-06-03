@@ -4,6 +4,7 @@ import { start, startOrigin } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
+import { FieldSchemaArrayLike } from '../src/schema'
 
 let srv1
 let srv2
@@ -180,6 +181,17 @@ test.serial('admin deletes', async t => {
       }
     }
   }
+
+  await client.castField(
+    'user',
+    'favorites',
+    <FieldSchemaArrayLike>{ type: 'set', items: { type: 'string' } },
+    'users'
+  )
+  console.log(
+    'HMM YES',
+    JSON.stringify(await client.getSchema('users'), null, 2)
+  )
 
   await client.delete('root')
   await client.destroy()

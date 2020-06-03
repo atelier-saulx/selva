@@ -10,7 +10,7 @@ import {
 } from './types'
 import digest from './digest'
 import Redis from './redis'
-import { GetSchemaResult, SchemaOptions, Id, Schema } from './schema'
+import { GetSchemaResult, SchemaOptions, Id, Schema, FieldSchema } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
@@ -19,7 +19,7 @@ import { SetOptions, set } from './set'
 import { IdOptions } from 'lua/src/id'
 import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
-import { deleteType, deleteField } from './delete/adminOperations'
+import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
 import { observe, observeSchema } from './observe'
@@ -123,6 +123,10 @@ export class SelvaClient extends EventEmitter {
 
   deleteField(type: string, name: string, dbName: string = 'default'): Promise<void> {
     return deleteField(this, type, name, { name: dbName })
+  }
+
+  castField(type: string, name: string, newType: FieldSchema, dbName: string = 'default'): Promise<void> {
+    return castField(this, type, name, newType, { name: dbName })
   }
 
   conformToSchema(props: SetOptions, dbName: string = 'default') {
