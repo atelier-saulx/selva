@@ -37,6 +37,24 @@ export class SelvaClient extends EventEmitter {
   public schemaObservables: Record<string, Observable<Schema>> = {}
   public schemas: Record<string, Schema> = {}
   public serverType: string
+ 
+  public admin: {
+    deleteType(name: string, dbName?: string): Promise<void>,
+    deleteField(type: string, name: string, dbName?: string): Promise<void>,
+    castField(type: string, name: string, newType: FieldSchema, dbName?: string): Promise<void>
+  } = {
+    deleteType: (name: string, dbName: string = 'default') => {
+      return deleteType(this, name, { name: dbName })
+    },
+
+    deleteField: (type: string, name: string, dbName: string = 'default') => {
+      return deleteField(this, type, name, { name: dbName })
+    },
+
+    castField: (type: string, name: string, newType: FieldSchema, dbName: string = 'default') => {
+      return castField(this, type, name, newType, { name: dbName })
+    }
+  }
 
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
     super()
@@ -115,18 +133,6 @@ export class SelvaClient extends EventEmitter {
 
   subscribeSchema(name: string = 'default'): Observable<Schema> {
     return observeSchema(this, name)
-  }
-
-  deleteType(name: string, dbName: string = 'default'): Promise<void> {
-    return deleteType(this, name, { name: dbName })
-  }
-
-  deleteField(type: string, name: string, dbName: string = 'default'): Promise<void> {
-    return deleteField(this, type, name, { name: dbName })
-  }
-
-  castField(type: string, name: string, newType: FieldSchema, dbName: string = 'default'): Promise<void> {
-    return castField(this, type, name, newType, { name: dbName })
   }
 
   conformToSchema(props: SetOptions, dbName: string = 'default') {

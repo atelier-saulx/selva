@@ -143,7 +143,7 @@ test.serial('admin deletes', async t => {
 
   let firstSchema = await client.getSchema()
   let firstKeys = await client.redis.keys('*')
-  await client.deleteType('match')
+  await client.admin.deleteType('match')
   delete firstSchema.schema.types.match
   t.deepEqualIgnoreOrder(
     firstSchema.schema.types,
@@ -160,11 +160,11 @@ test.serial('admin deletes', async t => {
     }
   }
 
-  await client.deleteField('watching', 'time', 'users')
+  await client.admin.deleteField('watching', 'time', 'users')
 
   firstSchema = await client.getSchema('users')
   firstKeys = await client.redis.keys({ name: 'users' }, '*')
-  await client.deleteField('watching', 'time', 'users')
+  await client.admin.deleteField('watching', 'time', 'users')
   delete firstSchema.schema.types.watching.fields.time
   t.deepEqualIgnoreOrder(
     firstSchema.schema.types,
@@ -182,7 +182,7 @@ test.serial('admin deletes', async t => {
     }
   }
 
-  await client.castField(
+  await client.admin.castField(
     'user',
     'favorites',
     <FieldSchemaArrayLike>{ type: 'set', items: { type: 'string' } },
