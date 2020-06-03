@@ -5,6 +5,7 @@
 #include "redismodule.h"
 #include "cdefs.h"
 #include "tree.h"
+#include "svector.h"
 #include "hierarchy.h"
 
 #define INITIAL_VECTOR_LEN 2
@@ -46,7 +47,7 @@ static SelvaModify_HierarchyNode *SelvaModify_NewNode(Selva_NodeId id) {
     SelvaModify_HierarchyNode *node = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode));
     if (!node) {
         /* TODO Panic */
-        return;
+        return NULL;
     }
 
     memset(node, 0, sizeof(SelvaModify_HierarchyNode));
@@ -55,17 +56,19 @@ static SelvaModify_HierarchyNode *SelvaModify_NewNode(Selva_NodeId id) {
     /* TODO Check errors /\ */
 
     memcpy(node->id, id, SELVA_NODE_ID_SIZE);
+
+    return node;
 }
 
-static int SelvaModify_CrossInsert(SelvaModify_HierarchyNode *node, SelvaModify_HierarchyNode_Relationship rel, size_t n, Selva_NodeId *nodes) {
+static int SelvaModify_CrossInsert(SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, Selva_NodeId *nodes) {
     for (size_t i = 0; i < n; i++) {
         SelvaModify_HierarchySearchFilter filter;
         Selva_NodeId *adjacentId = nodes + i;
-        SelvaModify_HierarchyNode adjacent;
+        SelvaModify_HierarchyNode *adjacent;
 
         memcpy(&filter.id, adjacentId, SELVA_NODE_ID_SIZE);
 
-        adjacent = RB_FIND(hierarchy_index_tree, &hierarchy_index_head, &filter);
+        adjacent = RB_FIND(hierarchy_index_tree, &hierarchy_index_head, (SelvaModify_HierarchyNode *)(&filter));
         if (!adjacent) {
             /* TODO Panic: parent not found */
             continue;
@@ -100,7 +103,9 @@ int SelvaModify_SetHierarchy(Selva_NodeId id, size_t nr_parents, Selva_NodeId *p
 }
 
 char *SelvaModify_FindParents(Selva_NodeId id) {
+    return NULL;
 }
 
 char *SelvaModify_FindChildren(Selva_NodeId id) {
+    return NULL;
 }

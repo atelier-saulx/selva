@@ -27,6 +27,8 @@
 #ifndef	_SYS_TREE_H_
 #define	_SYS_TREE_H_
 
+#include "cdefs.h"
+
 /*
  * This file defines data structures for different types of trees:
  * splay trees and red-black trees.
@@ -293,7 +295,7 @@ struct name {								\
 	struct type *rbh_root; /* root of the tree */			\
 }
 
-#define RB_INITIALIZER(root)						\
+#define RB_INITIALIZER()						\
 	{ NULL }
 
 #define RB_INIT(root) do {						\

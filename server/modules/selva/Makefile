@@ -29,7 +29,7 @@ rmutil: FORCE
 util: FORCE
 	$(MAKE) -C util
 
-module.so: module.o id/id.o modify/modify.o modify/async_task.o
+module.so: module.o id/id.o modify/modify.o modify/async_task.o modify/hierarchy.o
 	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1g/lib/ $(SHOBJ_LDLIBS)
 
 check:

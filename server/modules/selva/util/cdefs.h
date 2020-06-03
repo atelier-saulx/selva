@@ -21,6 +21,26 @@
     29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, \
     12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0
 
+#ifndef __GLOBL1
+#define  __GLOBL1(sym) __asm__(".globl " #sym)
+#define  __GLOBL(sym) __GLOBL1(sym)
+#endif
+
+#ifndef __used
+#define __used __attribute__((__used__))
+#endif
+
+#ifndef __unused
+#define __unused __attribute__((__unused__))
+#endif
+
+#ifndef __section
+#define __section(x) __attribute__((__section__(x)))
+#endif
+
+#define __constructor   __attribute__((constructor))
+#define __destructor    __attribute__((destructor))
+
 #define num_elem(x) (sizeof(x) / sizeof(*(x)))
 
 #endif /* _UTIL_CDEFS_H_ */
