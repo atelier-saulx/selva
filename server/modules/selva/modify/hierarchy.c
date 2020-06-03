@@ -12,7 +12,7 @@
 
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
-    struct timespec traversal_mark;
+    struct timespec visit_stamp;
     Vector parents;
     Vector children;
     RB_ENTRY(SelvaModify_HierarchyNode) _index_entry;
@@ -27,6 +27,14 @@ typedef struct SelvaModify_HierarchySearchFilter {
     Selva_NodeId id;
 } SelvaModify_HierarchySearchFilter;
 
+/**
+ * Current transaction timestamp.
+ * Set before traversal begins and is used for marking visited nodes. Due to the
+ * marking being a timestamp it's not necessary to clear it afterwards, which
+ * could be a costly operation itself.
+ */
+static timespec current_trx_ts;
+
 static RB_HEAD(hierarchy_index_tree, SelvaModify_HierarchyNode) hierarchy_index_head = RB_INITIALIZER();
 
 static int Vector_BS_Compare(const void ** restrict a_raw, const void ** restrict b_raw) {
@@ -39,6 +47,11 @@ static int Vector_BS_Compare(const void ** restrict a_raw, const void ** restric
 static int SelvaModify_HierarchyNode_Compare(const SelvaModify_HierarchyNode *a, const SelvaModify_HierarchyNode *b) {
     return strncmp(a->id, b->id, SELVA_NODE_ID_SIZE);
 }
+
+#define timespec_cmp(tvp, uvp, cmp)             \
+    (((tvp)->tv_sec == (uvp)->tv_sec)           \
+        ? ((tvp)->tv_nsec cmp (uvp)->tv_nsec)   \
+        : ((tvp)->tv_sec cmp (uvp)->tv_sec))
 
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare);
 RB_GENERATE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare);
@@ -60,15 +73,18 @@ static SelvaModify_HierarchyNode *SelvaModify_NewNode(Selva_NodeId id) {
     return node;
 }
 
-static int SelvaModify_CrossInsert(SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, Selva_NodeId *nodes) {
-    for (size_t i = 0; i < n; i++) {
+static SelvaModify_HierarchyNode *findNode(Selva_NodeId id) {
         SelvaModify_HierarchySearchFilter filter;
-        Selva_NodeId *adjacentId = nodes + i;
-        SelvaModify_HierarchyNode *adjacent;
 
         memcpy(&filter.id, adjacentId, SELVA_NODE_ID_SIZE);
+        return RB_FIND(hierarchy_index_tree, &hierarchy_index_head, (SelvaModify_HierarchyNode *)(&filter));
+}
 
-        adjacent = RB_FIND(hierarchy_index_tree, &hierarchy_index_head, (SelvaModify_HierarchyNode *)(&filter));
+static int SelvaModify_CrossInsert(SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, Selva_NodeId *nodes) {
+    for (size_t i = 0; i < n; i++) {
+        Selva_NodeId *adjacentId = nodes + i;
+        SelvaModify_HierarchyNode *adjacent = findNode(id);
+
         if (!adjacent) {
             /* TODO Panic: parent not found */
             continue;
@@ -102,10 +118,17 @@ int SelvaModify_SetHierarchy(Selva_NodeId id, size_t nr_parents, Selva_NodeId *p
     return 0;
 }
 
-char *SelvaModify_FindParents(Selva_NodeId id) {
-    return NULL;
+Vector *SelvaModify_FindParents(Selva_NodeId id) {
+    SelvaModify_HierarchyNode *node = findNode(id);
+    Vector
+
+    if (!node) {
+        return -1;
+    }
+
+    return 0;
 }
 
-char *SelvaModify_FindChildren(Selva_NodeId id) {
-    return NULL;
+int SelvaModify_FindChildren(Selva_NodeId id, Selva_NodeId **children) {
+    return -1;
 }
