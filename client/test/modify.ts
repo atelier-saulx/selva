@@ -126,6 +126,42 @@ test.serial('root', async t => {
   await client.destroy()
 })
 
+test.serial('root.children $delete: []', async t => {
+  console.log('CONNECTING')
+  const client = connect(
+    {
+      port
+    },
+    { loglevel: 'info' }
+  )
+
+  console.log('CONNECTED')
+
+  const match = await client.set({
+    type: 'match'
+  })
+
+  const root = await client.set({
+    $id: 'root',
+    children: [match]
+  })
+
+  t.deepEqual(root, 'root')
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.set({
+    $id: 'root',
+    children: { $delete: [] }
+  })
+
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.delete('root')
+  t.deepEqual(await dumpDb(client), [])
+
+  await client.destroy()
+})
+
 test.serial('basic', async t => {
   const client = connect({
     port

@@ -65,6 +65,10 @@ export function addToSet(
   noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
+  if (value.length === 0) {
+    return
+  }
+
   const setKey = getSetKey(id, field)
 
   if (hierarchy) {
@@ -93,6 +97,10 @@ export function removeFromSet(
   hierarchy: boolean = true,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): void {
+  if (value.length === 0) {
+    return
+  }
+
   const setKey = getSetKey(id, field)
   redis.srem(setKey, ...value)
 
