@@ -206,6 +206,24 @@ static char * test_remove_middle(void)
     return NULL;
 }
 
+static char * test_foreach(void)
+{
+    struct data el[] = { { 1 }, { 2 }, { 3 } };
+
+    Vector_Init(&vec, 3, compar);
+    for (size_t i = 0; i < num_elem(el); i++) {
+        Vector_Insert(&vec, &el[i]);
+    }
+
+
+    struct data *d;
+    VECTOR_FOREACH(d, &vec) {
+        pu_assert_ptr_equal("el[0] is pointing to the correct item", d, &el[i]);
+    }
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);

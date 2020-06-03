@@ -33,7 +33,7 @@ typedef struct SelvaModify_HierarchySearchFilter {
  * marking being a timestamp it's not necessary to clear it afterwards, which
  * could be a costly operation itself.
  */
-static timespec current_trx_ts;
+static struct timespec current_trx_ts;
 
 static RB_HEAD(hierarchy_index_tree, SelvaModify_HierarchyNode) hierarchy_index_head = RB_INITIALIZER();
 
@@ -73,17 +73,17 @@ static SelvaModify_HierarchyNode *SelvaModify_NewNode(Selva_NodeId id) {
     return node;
 }
 
-static SelvaModify_HierarchyNode *findNode(Selva_NodeId id) {
+static SelvaModify_HierarchyNode *findNode(const Selva_NodeId id) {
         SelvaModify_HierarchySearchFilter filter;
 
-        memcpy(&filter.id, adjacentId, SELVA_NODE_ID_SIZE);
+        memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
         return RB_FIND(hierarchy_index_tree, &hierarchy_index_head, (SelvaModify_HierarchyNode *)(&filter));
 }
 
 static int SelvaModify_CrossInsert(SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, Selva_NodeId *nodes) {
     for (size_t i = 0; i < n; i++) {
         Selva_NodeId *adjacentId = nodes + i;
-        SelvaModify_HierarchyNode *adjacent = findNode(id);
+        SelvaModify_HierarchyNode *adjacent = findNode(*adjacentId);
 
         if (!adjacent) {
             /* TODO Panic: parent not found */
@@ -118,9 +118,8 @@ int SelvaModify_SetHierarchy(Selva_NodeId id, size_t nr_parents, Selva_NodeId *p
     return 0;
 }
 
-Vector *SelvaModify_FindParents(Selva_NodeId id) {
+int SelvaModify_FindParents(Selva_NodeId id, Selva_NodeId **parents) {
     SelvaModify_HierarchyNode *node = findNode(id);
-    Vector
 
     if (!node) {
         return -1;
