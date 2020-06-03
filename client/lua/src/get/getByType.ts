@@ -517,7 +517,6 @@ function getByType(
     const beforeDot = field.substr(0, lastDotIdx)
     const maybeTextProp = getNestedSchema(id, beforeDot)
     if (maybeTextProp && maybeTextProp.type === 'text') {
-      logger.info('IS IT A TEXT PROP?', field)
       if (language) {
         prop = maybeTextProp
         field = beforeDot

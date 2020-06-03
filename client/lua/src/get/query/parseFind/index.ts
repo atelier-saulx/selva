@@ -115,7 +115,6 @@ function parseFind(
       return parseFindIds(filters, $traverse, meta)
     } else {
       const resultIds = getIds(getField, $traverse, ids, $inherit)
-      logger.info('getting some ids', resultIds)
       return parseFindIds(filters, resultIds, meta)
     }
   } else if ($fields) {

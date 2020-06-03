@@ -211,12 +211,18 @@ function makeNewGetOptions(
   const newOpts = {}
   for (const key in getOpts) {
     const newPath = path + '.' + key
+    // console.log('checking', newPath, 'in', extraQueries)
     if (extraQueries[newPath]) {
       newOpts[key] = extraQueries[newPath].placeholder
     } else if (!key.startsWith('$') && Array.isArray(getOpts[key])) {
-      newOpts[key] = getOpts[key].map((g, i) =>
-        makeNewGetOptions(extraQueries, g, newPath + '.' + i)
-      )
+      newOpts[key] = getOpts[key].map((g, i) => {
+        console.log('nice', extraQueries, newPath + '.' + i)
+        if (extraQueries[newPath + '.' + i]) {
+          return extraQueries[newPath + '.' + i].placeholder
+        }
+
+        return makeNewGetOptions(extraQueries, g, newPath + '.' + i)
+      })
     } else if (Array.isArray(getOpts[key])) {
       newOpts[key] = getOpts[key]
     } else if (typeof getOpts[key] === 'object') {
@@ -224,6 +230,12 @@ function makeNewGetOptions(
     } else {
       newOpts[key] = getOpts[key]
     }
+  }
+
+  // @ts-ignore
+  if (newOpts.userComponents) {
+    // @ts-ignore
+    console.log(newOpts.userComponents)
   }
 
   return newOpts
@@ -242,6 +254,9 @@ async function get(
     props
   )
 
+  // console.log('BLAASAARRXX', newProps)
+  console.log('NEW PROPS', JSON.stringify(newProps, null, 2))
+  // console.log('EXTRA QUERIES', JSON.stringify(extraQueries, null, 2))
   const getResult = JSON.parse(
     await client.redis.evalsha(
       { name: props.$db || 'default', type: 'replica' },

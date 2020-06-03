@@ -76,7 +76,9 @@ function validateNested(
     return
   }
 
+  console.log('validateNested', props)
   if (props.$db) {
+    console.log('yes found $db', props.$db)
     return transformDb(extraQueries, client, props, path)
   }
 
