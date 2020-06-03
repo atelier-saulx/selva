@@ -119,10 +119,26 @@ int SelvaModify_SetHierarchy(Selva_NodeId id, size_t nr_parents, Selva_NodeId *p
 }
 
 int SelvaModify_FindParents(Selva_NodeId id, Selva_NodeId **parents) {
+    int nr = 0;
     SelvaModify_HierarchyNode *node = findNode(id);
+    Selva_NodeId *plist = RedisModule_Alloc(sizeof(Selva_NodeId));
 
     if (!node) {
         return -1;
+    }
+
+    // TODO just the actual traversal is missing
+    SelvaModify_HierarchyNode *parent;
+    VECTOR_FOREACH(parent, &node->parents) {
+        Selva_NodeId *newPlist = RedisModule_Realloc(plist, ++nr * sizeof(Selva_NodeId));
+        if (!newPlist) {
+            /* TODO Panic: alloc failed */
+            RedisModule_Free(plist);
+            return -1;
+        }
+        plist = newPlist;
+
+        memcpy(plist + nr - 1, parent->id, sizeof(Selva_NodeId));
     }
 
     return 0;

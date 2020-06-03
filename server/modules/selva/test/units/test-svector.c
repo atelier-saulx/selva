@@ -215,10 +215,10 @@ static char * test_foreach(void)
         Vector_Insert(&vec, &el[i]);
     }
 
-
+    size_t i = 0;
     struct data *d;
     VECTOR_FOREACH(d, &vec) {
-        pu_assert_ptr_equal("el[0] is pointing to the correct item", d, &el[i]);
+        pu_assert_ptr_equal("el[0] is pointing to the correct item", d, &el[i++]);
     }
 
     return NULL;
@@ -236,4 +236,5 @@ void all_tests(void)
     pu_def_test(test_remove_last, PU_RUN);
     pu_def_test(test_remove_first, PU_RUN);
     pu_def_test(test_remove_middle, PU_RUN);
+    pu_def_test(test_foreach, PU_RUN);
 }

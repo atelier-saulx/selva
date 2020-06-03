@@ -16,9 +16,9 @@ void Vector_Insert(Vector *vec, void *el);
 void *Vector_Search(const Vector * restrict vec, void *key);
 void *Vector_Remove(Vector * restrict vec, void *key);
 
-#define VECTOR_FOREACH(var, vec)                                \
-    for (var = vec->vec_data, size_t CONCATENATE(vec, _i) = 0;  \
-         CONCATENATE(vec, _i) < vec->vec_last;                  \
-         CONCATENATE(vec, _i)++)
+#define VECTOR_FOREACH(var, vec)                                                                            \
+    for (typeof(var) var ## _end = (typeof(var))*(vec)->vec_data + (vec)->vec_last, var = *(vec)->vec_data; \
+         (void *)var < (void *)var ## _end;                                                                 \
+         var++)
 
 #endif /* _UTIL_SVECTOR_H_ */
