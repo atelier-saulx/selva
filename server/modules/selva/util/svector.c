@@ -53,13 +53,13 @@ void Vector_Insert(Vector *vec, void *el) {
 }
 
 void *Vector_Search(const Vector * restrict vec, void *key) {
-    void **pp = bsearch(key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+    void **pp = bsearch(&key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
 
     return !pp ? NULL : *pp;
 }
 
 void *Vector_Remove(Vector * restrict vec, void *key) {
-    void **pp = bsearch(key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+    void **pp = bsearch(&key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
     if (!pp) {
         return NULL;
     }

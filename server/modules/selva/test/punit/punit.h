@@ -83,8 +83,8 @@
  * @param right value.
  */
 #define pu_assert_ptr_equal(message, left, right) do { if (!(left == right)) { \
-        printf("FAILED: %s:%d: %s == %s\n\tleft:\t%lu\n\tright:\t%lu\n",       \
-            __FILE__, __LINE__, #left, #right, (unsigned long)(left), (unsigned long)(right)); \
+        printf("FAILED: %s:%d: %s == %s\n\tleft:\t%zx\n\tright:\t%zx\n",       \
+            __FILE__, __LINE__, #left, #right, (size_t)(left), (size_t)(right)); \
         return message; }                                                      \
 } while(0)
 

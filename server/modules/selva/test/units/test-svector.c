@@ -100,6 +100,23 @@ static char * test_insert_many(void)
     return NULL;
 }
 
+static char * test_search(void)
+{
+    struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
+
+    Vector_Init(&vec, 5, compar);
+
+    for (size_t i = 0; i < num_elem(el); i++) {
+        Vector_Insert(&vec, &el[i]);
+    }
+
+    const struct data *res = Vector_Search(&vec, &(struct data){ 15 });
+
+    pu_assert_ptr_equal("found the right one", res, &el[2]);
+
+    return NULL;
+}
+
 static char * test_remove_one(void)
 {
     struct data el1 = {
@@ -111,6 +128,22 @@ static char * test_remove_one(void)
     Vector_Remove(&vec, &el1);
 
     pu_assert_equal("last is zeroed", vec.vec_last, 0);
+
+    return NULL;
+}
+
+static char * test_remove_one_compound_literal(void)
+{
+    struct data el1 = {
+        .id = 10,
+    };
+
+    Vector_Init(&vec, 5, compar);
+    Vector_Insert(&vec, &el1);
+    struct data *rem = Vector_Remove(&vec, &(struct data){ 10 });
+
+    pu_assert_equal("last is zeroed", vec.vec_last, 0);
+    pu_assert_ptr_equal("the removed item was returned", rem, &el1);
 
     return NULL;
 }
@@ -173,31 +206,16 @@ static char * test_remove_middle(void)
     return NULL;
 }
 
-static char * test_remove_one_compound_literal(void)
-{
-    struct data el1 = {
-        .id = 10,
-    };
-
-    Vector_Init(&vec, 5, compar);
-    Vector_Insert(&vec, &el1);
-    struct data *rem = Vector_Remove(&vec, &(struct data){ 10 });
-
-    pu_assert_equal("last is zeroed", vec.vec_last, 0);
-    pu_assert_ptr_equal("the removed item was returned", rem, &el1);
-
-    return NULL;
-}
-
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
     pu_def_test(test_insert_one, PU_RUN);
     pu_def_test(test_insert_two_desc, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
-    pu_def_test(test_remove_one, PU_SKIP);
-    pu_def_test(test_remove_last, PU_SKIP);
-    pu_def_test(test_remove_first, PU_SKIP);
-    pu_def_test(test_remove_middle, PU_SKIP);
-    pu_def_test(test_remove_one_compound_literal, PU_SKIP);
+    pu_def_test(test_search, PU_RUN);
+    pu_def_test(test_remove_one, PU_RUN);
+    pu_def_test(test_remove_one_compound_literal, PU_RUN);
+    pu_def_test(test_remove_last, PU_RUN);
+    pu_def_test(test_remove_first, PU_RUN);
+    pu_def_test(test_remove_middle, PU_RUN);
 }
