@@ -36,6 +36,7 @@ void Vector_Insert(Vector *vec, void *el) {
             new_data = RedisModule_Alloc(new_size);
             if (!new_data) {
                 /* TODO Panic */
+                return;
             }
 
             memcpy(new_data, vec_data, VEC_SIZE(vec->vec_len));
@@ -45,7 +46,6 @@ void Vector_Insert(Vector *vec, void *el) {
         vec->vec_data = new_data;
         vec->vec_len = new_len;
         vec_data = new_data;
-        vec_len = new_len;
     }
 
     vec_data[i] = el;

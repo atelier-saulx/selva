@@ -12,8 +12,8 @@ struct Vector vec;
 
 static int compar(const void ** restrict ap, const void ** restrict bp)
 {
-    const struct data *a = *(struct data **)ap;
-    const struct data *b = *(struct data **)bp;
+    const struct data *a = *(const struct data **)ap;
+    const struct data *b = *(const struct data **)bp;
 
     return a->id - b->id;
 }
