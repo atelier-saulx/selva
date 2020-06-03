@@ -47,7 +47,13 @@ test.before(async t => {
           prefix: 'us',
           fields: {
             watching: { type: 'references' },
-            favorites: { type: 'references' }
+            favorites: { type: 'references' },
+            testObject: {
+              type: 'object',
+              properties: {
+                testProp: { type: 'string' }
+              }
+            }
           }
         }
       }
@@ -186,6 +192,13 @@ test.serial('admin deletes', async t => {
     'user',
     'favorites',
     <FieldSchemaArrayLike>{ type: 'set', items: { type: 'string' } },
+    'users'
+  )
+
+  await client.admin.castField(
+    'user',
+    'testObject.testProp',
+    { type: 'number' },
     'users'
   )
   console.log(
