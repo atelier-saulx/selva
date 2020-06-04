@@ -28,12 +28,15 @@ const sortSubsManagers = (a, b) => {
 
 const getServers = async (client: RedisSelvaClient, id?: string) => {
   delete client.servers
-  const serverList =
+  const serverList = (
     (await client.smembers({ type: 'registry' }, 'servers')) || []
+  ).filter(v => !!v)
   const servers: Servers = {}
   const serversById: ServersById = {}
   const subManagerObj: Record<string, true> = {}
   const subsManagers = []
+
+  // console.log('get servers!', serverList)
   const result: ServerDescriptor[] = await Promise.all(
     serverList.map(
       async (id: string): Promise<ServerDescriptor> => {
@@ -85,12 +88,8 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
 
   subsManagers.sort(sortSubsManagers)
 
-  // if origin dc'ed
-  // if replica dc'ed
-  // handle special
-
   if (client.subsManagers && client.subsManagers.length) {
-    for (let i = 0; i > client.subsManagers.length; i++) {
+    for (let i = 0; i < client.subsManagers.length; i++) {
       const id = `${client.subsManagers[i].host}:${client.subsManagers[i].port}`
       if (!subManagerObj[id]) {
         subsmanagerRemoved(client, id)
