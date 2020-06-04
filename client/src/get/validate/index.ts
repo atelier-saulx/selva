@@ -46,12 +46,10 @@ function transformDb(
       typeof props.$list === 'object' &&
       props.$list.$find
     ) {
-      console.log('TRANSFORMING LIST FIND', props)
       if (props.$list.$find.$traverse) {
         val = { $field: props.$list.$find.$traverse }
       }
     } else if (props.$find) {
-      console.log('TRANSFORMING FIND', props)
       if (props.$find.$traverse) {
         val = { $field: props.$find.$traverse }
       }
@@ -76,9 +74,7 @@ function validateNested(
     return
   }
 
-  console.log('validateNested', props)
   if (props.$db) {
-    console.log('yes found $db', props.$db)
     return transformDb(extraQueries, client, props, path)
   }
 

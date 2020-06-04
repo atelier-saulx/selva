@@ -172,7 +172,6 @@ export default function(
       client,
       middleware,
       (req: IncomingMessage, res: ServerResponse) => {
-        console.log('HELLLO')
         const parsedUrl = url.parse(req.url, true)
 
         const dbName: string =

@@ -83,14 +83,50 @@ export class Client extends EventEmitter {
 
     const isSubscriptionManager = type === 'subscriptionManager'
 
+    this.on('disconnect', () => {
+      console.log('make dc come on')
+    })
+
     this.on('hard-disconnect', () => {
       // find different server for it
 
-      console.log('hard dc - prob need to reconnect to somethign new')
+      console.log(
+        'hard dc - prob need to reconnect to somethign new',
+        port,
+        host,
+        type
+      )
 
-      this.subscriber = createRedisClient(this, host, port, 'subscriber')
-      this.publisher = createRedisClient(this, host, port, 'publisher')
-      addListeners(this)
+      this.subscriber.quit()
+      this.publisher.quit()
+
+      if (type === 'registry') {
+        this.subscriber = createRedisClient(this, host, port, 'subscriber')
+        this.publisher = createRedisClient(this, host, port, 'publisher')
+        addListeners(this)
+      } else {
+        if (type === 'subscriptionManager') {
+          console.log('ok subs manager we can throw this away')
+          destroyClient(this)
+        } else {
+          const clients = [...this.clients.values()]
+          const aSelvaClient = clients[0]
+          getServerDescriptor(aSelvaClient, {
+            type,
+            name
+          }).then(descriptor => {
+            let newClient
+            clients.forEach(selvaClient => {
+              newClient = getClient(selvaClient, descriptor)
+            })
+            const q = [...this.queue, ...this.queueBeingDrained]
+            destroyClient(this)
+            q.forEach(command => {
+              addCommandToQueue(newClient, command)
+            })
+          })
+        }
+      }
     })
 
     this.on('connect', () => {
@@ -152,8 +188,12 @@ const createClient = (descriptor: ServerDescriptor): Client => {
 }
 
 const destroyClient = (client: Client) => {
-  // remove hearthbeat
-  // for each client tell that this client is destroyed
+  client.queue = []
+  client.clients = new Set()
+  clients.delete(client.id)
+  client.observers = {}
+  client.queueBeingDrained = []
+  client.removeAllListeners()
 }
 
 // export function removeRedisSelvaClient(

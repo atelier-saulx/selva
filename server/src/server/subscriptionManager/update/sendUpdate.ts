@@ -37,19 +37,12 @@ const sendUpdate = async (
     return
   }
 
-  let time
-  console.log(getOptions)
-  if (getOptions.userComponents) {
-    console.log('go start', getOptions.userComponents)
-    time = setTimeout(() => {
-      console.log('TIMEOUT OUT')
-    }, 2e3)
-  }
+  let time = setTimeout(() => {
+    console.log('TIMEOUT OUT', getOptions)
+  }, 2e3)
+
   const payload = await client.get(getOptions)
 
-  if (getOptions.userComponents) {
-    console.log('fixed', getOptions.userComponents)
-  }
   clearTimeout(time)
 
   // call $meta tree

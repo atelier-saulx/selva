@@ -254,9 +254,6 @@ async function get(
     props
   )
 
-  // console.log('BLAASAARRXX', newProps)
-  console.log('NEW PROPS', JSON.stringify(newProps, null, 2))
-  // console.log('EXTRA QUERIES', JSON.stringify(extraQueries, null, 2))
   const getResult = JSON.parse(
     await client.redis.evalsha(
       { name: props.$db || 'default', type: 'replica' },

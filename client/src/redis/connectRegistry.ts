@@ -85,6 +85,10 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
 
   subsManagers.sort(sortSubsManagers)
 
+  // if origin dc'ed
+  // if replica dc'ed
+  // handle special
+
   if (client.subsManagers && client.subsManagers.length) {
     for (let i = 0; i > client.subsManagers.length; i++) {
       const id = `${client.subsManagers[i].host}:${client.subsManagers[i].port}`
@@ -142,11 +146,15 @@ const createRegistryClient = (
     type: 'registry'
   })
 
+  console.log('make registry come on', port)
+
   client.registry.on('connect', () => {
+    console.log('this bitch needs to connect it now')
     client.selvaClient.emit('connect')
   })
 
   client.registry.on('disconnect', () => {
+    console.log('registry def dc')
     client.selvaClient.emit('disconnect')
   })
 
@@ -154,7 +162,6 @@ const createRegistryClient = (
   client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_SUBSCRIPTION)
 
   if (client.selvaClient.serverType === 'registry') {
-    console.log('go')
     client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_STATS)
   }
 

@@ -18,5 +18,5 @@
     "outDir": "./dist"
   },
   "strict": true,
-  "exclude": ["node_modules", "test", "dist", "_src"]
+  "exclude": ["node_modules", "src/test", "dist", "_src"]
 }

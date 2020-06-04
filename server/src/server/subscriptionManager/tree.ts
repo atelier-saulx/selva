@@ -157,12 +157,11 @@ export function addSubscriptionToTree(
   const channel = subscription.channel
 
   if (subsmanager.subscriptions[subscription.channel] !== subscription) {
-    console.log('DONT ADD')
     return
   }
 
   if (channel === SCHEMA_SUBSCRIPTION) {
-    console.log('add schema')
+    // console.log('add schema')
   } else {
     let { tree } = subscription
 

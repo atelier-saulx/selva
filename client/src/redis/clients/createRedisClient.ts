@@ -11,13 +11,16 @@ const createRedisClient = (
   let retryTimer = 0
   let isConnected: boolean = false
 
+  const startClientTimer = setTimeout(() => {
+    client.emit('hard-disconnect')
+  }, 20e3)
+
   const retryStrategy = () => {
-    if (tries > 60) {
+    if (tries > 5) {
       client.emit('hard-disconnect')
     } else {
       if (tries === 0 && isConnected === true) {
         isConnected = false
-        // only send this once not twice (for each client type)
         if (label === 'publisher') {
           client.emit('disconnect', label)
         }
@@ -39,6 +42,7 @@ const createRedisClient = (
   redisClient.setMaxListeners(1e4)
 
   redisClient.on('ready', () => {
+    clearTimeout(startClientTimer)
     tries = 0
     retryTimer = 0
     isConnected = true
