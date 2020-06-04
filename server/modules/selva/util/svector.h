@@ -12,9 +12,15 @@ typedef struct Vector {
 } Vector;
 
 Vector *Vector_Init(Vector *vec, size_t initial_len, int (*compar)(const void **a, const void **b));
+void Vector_Destroy(Vector *vec);
 void Vector_Insert(Vector *vec, void *el);
 void *Vector_Search(const Vector * restrict vec, void *key);
 void *Vector_Remove(Vector * restrict vec, void *key);
+void *Vector_Pop(Vector * restrict vec);
+
+static inline size_t Vector_Size(Vector * restrict vec) {
+    return vec->vec_last;
+}
 
 #define VECTOR_FOREACH(var, vec)                                                                            \
     for (typeof(var) var ## _end = (typeof(var))*(vec)->vec_data + (vec)->vec_last, var = *(vec)->vec_data; \

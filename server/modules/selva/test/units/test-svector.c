@@ -20,12 +20,12 @@ static int compar(const void ** restrict ap, const void ** restrict bp)
 
 static void setup(void)
 {
-    free(vec.vec_data);
     memset(&vec, 0, sizeof(struct Vector));
 }
 
 static void teardown(void)
 {
+    free(vec.vec_data);
 }
 
 static char * test_init_works(void)
@@ -36,6 +36,17 @@ static char * test_init_works(void)
     pu_assert_ptr_equal("compar is set", vec.vec_compar, compar);
     pu_assert_equal("length is correct", vec.vec_len, 100);
     pu_assert_equal("last is zeroed", vec.vec_last, 0);
+
+    return NULL;
+}
+
+static char * test_can_destroy(void)
+{
+    Vector *vecP = Vector_Init(&vec, 100, compar);
+
+    Vector_Destroy(vecP);
+    // multiple times
+    Vector_Destroy(vecP);
 
     return NULL;
 }
@@ -206,6 +217,26 @@ static char * test_remove_middle(void)
     return NULL;
 }
 
+static char * test_pop(void)
+{
+    struct data el[] = { { 1 }, { 2 }, { 3 } };
+
+    Vector_Init(&vec, 3, NULL);
+    for (size_t i = 0; i < num_elem(el); i++) {
+        Vector_Insert(&vec, &el[i]);
+    }
+
+    pu_assert_ptr_equal("Pops el[2]", Vector_Pop(&vec), &el[2]);
+    pu_assert_ptr_equal("Pops el[1]", Vector_Pop(&vec), &el[1]);
+
+    Vector_Insert(&vec, &el[0]);
+    pu_assert_ptr_equal("Pops el[0]", Vector_Pop(&vec), &el[0]);
+    pu_assert_ptr_equal("Pops el[0]", Vector_Pop(&vec), &el[0]);
+    pu_assert_equal("Vector size is zeroed", Vector_Size(&vec), 0);
+
+    return NULL;
+}
+
 static char * test_foreach(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
@@ -227,6 +258,7 @@ static char * test_foreach(void)
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
+    pu_def_test(test_can_destroy, PU_RUN);
     pu_def_test(test_insert_one, PU_RUN);
     pu_def_test(test_insert_two_desc, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
@@ -236,5 +268,6 @@ void all_tests(void)
     pu_def_test(test_remove_last, PU_RUN);
     pu_def_test(test_remove_first, PU_RUN);
     pu_def_test(test_remove_middle, PU_RUN);
+    pu_def_test(test_pop, PU_RUN);
     pu_def_test(test_foreach, PU_RUN);
 }

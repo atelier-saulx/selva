@@ -22,6 +22,14 @@ Vector *Vector_Init(Vector *vec, size_t initial_len, int (*compar)(const void **
     return vec;
 }
 
+void Vector_Destroy(Vector *vec) {
+    RedisModule_Free(vec->vec_data);
+
+    vec->vec_len = 0;
+    vec->vec_last = 0;
+    vec->vec_data = NULL;
+}
+
 void Vector_Insert(Vector *vec, void *el) {
     size_t i = vec->vec_last++;
     size_t vec_len = vec->vec_len;
@@ -49,16 +57,21 @@ void Vector_Insert(Vector *vec, void *el) {
     }
 
     vec_data[i] = el;
-    qsort(vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+
+    if (vec->vec_compar) {
+        qsort(vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+    }
 }
 
 void *Vector_Search(const Vector * restrict vec, void *key) {
+    /* TODO what if vec_compar is not set? */
     void **pp = bsearch(&key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
 
     return !pp ? NULL : *pp;
 }
 
 void *Vector_Remove(Vector * restrict vec, void *key) {
+    /* TODO what if vec_compar is not set? */
     void **pp = bsearch(&key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
     if (!pp) {
         return NULL;
@@ -72,4 +85,8 @@ void *Vector_Remove(Vector * restrict vec, void *key) {
     vec->vec_last--;
 
     return el;
+}
+
+void *Vector_Pop(Vector * restrict vec) {
+    return vec->vec_data[--vec->vec_last];
 }
