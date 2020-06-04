@@ -13,7 +13,7 @@ const createRedisClient = (
 
   const startClientTimer = setTimeout(() => {
     client.emit('hard-disconnect')
-  }, 20e3)
+  }, 30e3)
 
   const retryStrategy = () => {
     if (tries > 5) {
