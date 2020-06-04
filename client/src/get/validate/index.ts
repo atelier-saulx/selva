@@ -109,6 +109,8 @@ function validateNested(
         validateFind(props, client, props.$find, path)
       } else if (field === '$default') {
         continue
+      } else if (field === '$flatten') {
+        continue
       } else if (field === '$all') {
         if (typeof props.$all !== 'boolean') {
           throw new Error(
