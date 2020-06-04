@@ -107,7 +107,7 @@ function ancestryFromHierarchy(id: Id, parent: Id): string[] {
   }
 
   if (type(foundRule) === 'boolean' && foundRule === false) {
-    return []
+    return ['root', '0']
   }
 
   let finalAncestors: string[] = []
@@ -143,6 +143,10 @@ function ancestryFromHierarchy(id: Id, parent: Id): string[] {
   const depth = getDepth(parent)
   finalAncestors[finalAncestors.length] = parent
   finalAncestors[finalAncestors.length] = tostring(depth)
+
+  // ensure root
+  finalAncestors[finalAncestors.length] = 'root'
+  finalAncestors[finalAncestors.length] = '0'
 
   return finalAncestors
 }
