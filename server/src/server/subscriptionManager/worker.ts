@@ -36,7 +36,7 @@ const revalidateSubscriptions = (subsManager: SubscriptionManager) => {
   updateSubscriptionData(subsManager)
   subsManager.revalidateSubscriptionsTimeout = setTimeout(() => {
     revalidateSubscriptions(subsManager)
-  }, 1 * 30e3)
+  }, 1 * 5e3)
 }
 
 const createSubscriptionManager = (
