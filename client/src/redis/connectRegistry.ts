@@ -122,8 +122,12 @@ const updateSubscriptions = (
   if (server) {
     for (let channel in subscriptions) {
       if (subscriptions[channel] === 'created') {
+        if (!server.subscriptions) {
+          server.subscriptions = new Set()
+        }
+
         server.subscriptions.add(channel)
-      } else if (subscriptions[channel] === 'removed') {
+      } else if (subscriptions[channel] === 'removed' && server.subscriptions) {
         server.subscriptions.delete(channel)
       }
     }
