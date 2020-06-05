@@ -91,8 +91,8 @@ export class SelvaClient extends EventEmitter {
     console.log('done schema time', this.schemas[dbName])
 
     if (!this.schemaObservables[dbName]) {
-      this.subscribeSchema().subscribe((v: any) => {
-        console.log('update schema')
+      this.subscribeSchema(dbName).subscribe((v: any) => {
+        console.log('update schema!', dbName, v)
         this.schemas[dbName] = v        
       })
     }

@@ -94,7 +94,8 @@ export class Client extends EventEmitter {
         'hard dc - prob need to reconnect to somethign new',
         port,
         host,
-        type
+        type,
+        name
       )
 
       this.subscriber.quit()
