@@ -211,12 +211,10 @@ function makeNewGetOptions(
   const newOpts = {}
   for (const key in getOpts) {
     const newPath = path + '.' + key
-    // console.log('checking', newPath, 'in', extraQueries)
     if (extraQueries[newPath]) {
       newOpts[key] = extraQueries[newPath].placeholder
     } else if (!key.startsWith('$') && Array.isArray(getOpts[key])) {
       newOpts[key] = getOpts[key].map((g, i) => {
-        console.log('nice', extraQueries, newPath + '.' + i)
         if (extraQueries[newPath + '.' + i]) {
           return extraQueries[newPath + '.' + i].placeholder
         }
@@ -230,12 +228,6 @@ function makeNewGetOptions(
     } else {
       newOpts[key] = getOpts[key]
     }
-  }
-
-  // @ts-ignore
-  if (newOpts.userComponents) {
-    // @ts-ignore
-    console.log(newOpts.userComponents)
   }
 
   return newOpts
