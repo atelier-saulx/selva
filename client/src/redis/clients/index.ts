@@ -54,6 +54,15 @@ const reconnectClient = (client, retry: number = 0) => {
 
   const q = [...client.queue, ...client.queueBeingDrained]
 
+  if (!aSelvaClient) {
+    console.log(
+      'ok dont have a selva client here thats a problemo!',
+      client.clients
+    )
+
+    return
+  }
+
   getServerDescriptor(aSelvaClient, {
     type,
     name
