@@ -23,8 +23,8 @@ static inline size_t Vector_Size(Vector * restrict vec) {
 }
 
 #define VECTOR_FOREACH(var, vec)                                                                            \
-    for (typeof(var) var ## _end = (typeof(var))*(vec)->vec_data + (vec)->vec_last, var = *(vec)->vec_data; \
-         (void *)var < (void *)var ## _end;                                                                 \
+    for (typeof(var) var ## _end = (typeof(var))(vec)->vec_data + (vec)->vec_last, var = (vec)->vec_data ;  \
+         (void **)var < (void **)var ## _end;                                                               \
          var++)
 
 #endif /* _UTIL_SVECTOR_H_ */

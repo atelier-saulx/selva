@@ -188,14 +188,13 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
         return -1;
     }
 
-    Vector stack;
-    Vector_Init(&stack, 100, NULL);
     Selva_NodeId *list = NodeList_New(1);
 
+    Vector stack;
+    Vector_Init(&stack, 100, NULL);
     Vector_Insert(&stack, head);
     while (Vector_Size(&stack) > 0) {
         SelvaModify_HierarchyNode *node = Vector_Pop(&stack);
-        printf("Pop %.*s\n", SELVA_NODE_ID_SIZE, node->id);
 
         if (!Trx_IsStamped(&hierarchy->current_trx, &node->visit_stamp)) {
             /* Mark node as visited and add it to the list of ancestors */
@@ -209,11 +208,10 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
             }
 
             /* Add parents to the stack of unvisited nodes */
-            SelvaModify_HierarchyNode *parent;
+            SelvaModify_HierarchyNode **parent;
             /* cppcheck-suppress internalAstError */
             VECTOR_FOREACH(parent, &node->parents) {
-                printf("Push: (%p) %.*s\n", parent, SELVA_NODE_ID_SIZE, parent->id);
-                Vector_Insert(&stack, parent);
+                Vector_Insert(&stack, *parent);
             }
         }
     }
