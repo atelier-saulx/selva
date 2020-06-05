@@ -16,21 +16,8 @@ export function observe(
 ): Observable<GetResult> {
   const subscriptionId = makeSubscriptionId(props)
   const channel = `___selva_subscription:${subscriptionId}`
-  let cached: boolean = false
-
   const observable = client.redis.observe(channel, props)
-
-  return new Observable<GetResult>(observe => {
-    const sub = observable.subscribe({
-      next: (x: GetResult) => {
-        cached = false
-        observe.next(x)
-      },
-      error: observe.error,
-      complete: observe.complete
-    })
-    return <any>sub
-  })
+  return observable
 }
 
 export function observeSchema(client: SelvaClient, dbName: string) {
@@ -39,15 +26,5 @@ export function observeSchema(client: SelvaClient, dbName: string) {
     {}
   )
 
-  return new Observable<Schema>(observe => {
-    const sub = obs.subscribe({
-      next: (_x: any) => {
-        observe.next(_x)
-      },
-      error: observe.error,
-      complete: observe.complete
-    })
-
-    return <any>sub
-  })
+  return obs
 }
