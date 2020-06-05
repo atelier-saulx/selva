@@ -16,7 +16,7 @@ const createRedisClient = (
   }, 30e3)
 
   const retryStrategy = () => {
-    if (tries > 10) {
+    if (tries > 3) {
       client.emit('hard-disconnect')
     } else {
       if (tries === 0 && isConnected === true) {
