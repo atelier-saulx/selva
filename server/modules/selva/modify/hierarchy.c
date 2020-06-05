@@ -118,7 +118,6 @@ static int SelvaModify_CrossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify
     for (size_t i = 0; i < n; i++) {
         const Selva_NodeId *adjacentId = nodes + i;
 
-        printf("adj: %s\n", *adjacentId);
         SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, *adjacentId);
 
         if (!adjacent) {
@@ -175,23 +174,14 @@ static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, Selva_NodeId id, int nr
     return newList;
 }
 
-/*
- * procedure DFS-iterative(G, v) is
- *     let S be a stack
- *     S.push(v)
- *     while S is not empty do
- *         v = S.pop()
- *         if v is not labeled as discovered then
- *             label v as discovered
- *             for all edges from v to w in G.adjacentEdges(v) do
- *                 S.push(w)
+/**
+ * Find ancestors of a node using DFS.
  */
-
 int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors) {
     int nr_nodes = 0;
-    SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
 
-    if (!node) {
+    SelvaModify_HierarchyNode *head = findNode(hierarchy, id);
+    if (!head) {
         return -1;
     }
 
@@ -199,20 +189,19 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
     Vector_Init(&stack, 100, NULL);
     Selva_NodeId *list = NodeList_New(1);
 
-    Vector_Insert(&stack, node);
+    Vector_Insert(&stack, head);
     while (Vector_Size(&stack) > 0) {
-        SelvaModify_HierarchyNode *v = Vector_Pop(&stack);
+        SelvaModify_HierarchyNode *node = Vector_Pop(&stack);
 
-        printf("Checking %s\n", v->id);
-
-        if (!Trx_IsStamped(&hierarchy->current_trx, &v->visit_stamp)) {
-
+        if (!Trx_IsStamped(&hierarchy->current_trx, &node->visit_stamp)) {
             /* Mark node as visited and add it to the list of ancestors */
-            Trx_Stamp(&hierarchy->current_trx, &v->visit_stamp);
-            list = NodeList_Insert(list, v->id, ++nr_nodes);
-            if (!list) {
-                nr_nodes = -1;
-                goto err;
+            Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
+            if (node != head) {
+                list = NodeList_Insert(list, node->id, ++nr_nodes);
+                if (!list) {
+                    nr_nodes = -1;
+                    goto err;
+                }
             }
 
             /* Add parents to the stack of unvisited nodes */
