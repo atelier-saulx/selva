@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -116,9 +117,7 @@ static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, con
 
 static int SelvaModify_CrossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
     for (size_t i = 0; i < n; i++) {
-        const Selva_NodeId *adjacentId = nodes + i;
-
-        SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, *adjacentId);
+        SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
         if (!adjacent) {
             /* TODO Panic: parent not found */
@@ -143,6 +142,10 @@ static int SelvaModify_CrossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify
 // adding more than one node with no parents?
 int SelvaModify_SetHierarchy(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, size_t nr_parents, const Selva_NodeId *parents, size_t nr_children, const Selva_NodeId *children) {
     SelvaModify_HierarchyNode *node = newNode(id);
+
+    if (!node) {
+        return -1;
+    }
 
     if (RB_INSERT(hierarchy_index_tree, &hierarchy->head, node) != NULL) {
         /* TODO Panic: the same id was already there */
@@ -192,6 +195,7 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
     Vector_Insert(&stack, head);
     while (Vector_Size(&stack) > 0) {
         SelvaModify_HierarchyNode *node = Vector_Pop(&stack);
+        printf("Pop %.*s\n", SELVA_NODE_ID_SIZE, node->id);
 
         if (!Trx_IsStamped(&hierarchy->current_trx, &node->visit_stamp)) {
             /* Mark node as visited and add it to the list of ancestors */
@@ -206,7 +210,9 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
 
             /* Add parents to the stack of unvisited nodes */
             SelvaModify_HierarchyNode *parent;
+            /* cppcheck-suppress internalAstError */
             VECTOR_FOREACH(parent, &node->parents) {
+                printf("Push: %.*s\n", SELVA_NODE_ID_SIZE, parent->id);
                 Vector_Insert(&stack, parent);
             }
         }

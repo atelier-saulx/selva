@@ -43,3 +43,28 @@ def build_pretty_printer():
     pp = gdb.printing.RegexpCollectionPrettyPrinter("SelvaModify_HierarchyNode")
     pp.add_printer('SelvaModify_HierarchyNode', '^SelvaModify_HierarchyNode$', SelvaModify_HierarchyNode_Printer)
     return pp
+
+# Commands #####################################################################
+
+class SelvaModify_Vector_Print(gdb.Command):
+    "Print contents of a Vector"
+
+    def __init__(self):
+        super(SelvaModify_Vector_Print, self).__init__("print-vector",
+                gdb.COMMAND_DATA, gdb.COMPLETE_SYMBOL)
+
+    def invoke(self, arg, from_tty):
+        args = gdb.string_to_argv(arg)
+
+        try:
+            vec = gdb.parse_and_eval(args[0])
+            vType = gdb.lookup_type(args[1])
+        except:
+            gdb.write('No symbol "%s" in current context or invalid type %s.\n' % str(args[0]), str(args[1]))
+            return
+
+        arr =  vec['vec_data'].dereference().cast(vType.pointer().array(vec['vec_last']))
+        for i in range(vec['vec_last']):
+            print(str(i) + ': ' + str(arr[i].dereference()) + '\n')
+
+SelvaModify_Vector_Print()
