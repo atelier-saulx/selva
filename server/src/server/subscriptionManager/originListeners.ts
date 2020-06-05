@@ -68,6 +68,10 @@ const addOriginListeners = (
     // check every origin - you have to connect to them :D
     redis.on(selector, 'pmessage', listener)
 
+    client.on('reconnect', descriptor => {
+      console.log('hello', descriptor)
+    })
+
     // same EVERY SINGLE ONE - means you need a listener here on the registry
     redis.psubscribe(selector, EVENTS + '*')
   }

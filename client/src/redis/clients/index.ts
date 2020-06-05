@@ -49,6 +49,13 @@ const addListeners = (client: Client) => {
 export class Client extends EventEmitter {
   public subscriber: RedisClient
   public publisher: RedisClient
+  public redisSubscriptions: {
+    psubscribe: Record<string, true>
+    subscribe: Record<string, true>
+  } = {
+    psubscribe: {},
+    subscribe: {}
+  }
   public queue: RedisCommand[]
   public queueInProgress: boolean
   public name: string // for logging
@@ -116,10 +123,13 @@ export class Client extends EventEmitter {
             type,
             name
           }).then(descriptor => {
+            console.log('reconnecting to ', descriptor)
+
             let newClient
             clients.forEach(selvaClient => {
               newClient = getClient(selvaClient, descriptor)
             })
+
             const q = [...this.queue, ...this.queueBeingDrained]
             destroyClient(this)
             q.forEach(command => {
@@ -134,6 +144,15 @@ export class Client extends EventEmitter {
       if (!this.connected) {
         this.connected = true
         drainQueue(this)
+
+        for (const key in this.redisSubscriptions.subscribe) {
+          this.subscriber.subscribe(key)
+        }
+
+        for (const key in this.redisSubscriptions.psubscribe) {
+          this.subscriber.psubscribe(key)
+        }
+
         if (isSubscriptionManager) {
           startHeartbeat(this)
           for (const channel in this.observers) {
@@ -153,6 +172,7 @@ export class Client extends EventEmitter {
         }
       }
     })
+
     this.on('disconnect', () => {
       // on dc we actualy want to re-select if it had a selector!
       this.queue.concat(this.queueBeingDrained)

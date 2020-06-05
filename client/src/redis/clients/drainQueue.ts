@@ -24,11 +24,18 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           const redisCommand = q[i]
           const { command, resolve, args } = redisCommand
 
-          if (command === 'subscribe') {
-            // console.log('yes do it subscribe it', args, client.name, client.id)
+          if (command === 'punsubscribe') {
+            delete client.redisSubscriptions.psubscribe[args[0]]
+            client.subscriber.punsubscribe(...(<string[]>args))
+          } else if (command === 'unsubscribe') {
+            delete client.redisSubscriptions.subscribe[args[0]]
+            client.subscriber.unsubscribe(...(<string[]>args))
+          } else if (command === 'subscribe') {
+            client.redisSubscriptions.subscribe[args[0]] = true
             client.subscriber.subscribe(...(<string[]>args))
             resolve(true)
           } else if (command === 'psubscribe') {
+            client.redisSubscriptions.psubscribe[args[0]] = true
             client.subscriber.psubscribe(...(<string[]>args))
             resolve(true)
           } else {
