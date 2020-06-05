@@ -65,19 +65,17 @@ const addOriginListeners = (
 
     client.on('reconnect', ({ name: dbName }) => {
       if (name === dbName) {
-        console.log('RE-RUN ALL SUNSCRIPTIONS')
+        console.log('RE-RUN ALL SUBSCRIPTIONS')
         subsManager.originListeners[name].subscriptions.forEach(
           subscription => {
-            console.log('  ', subscription.get)
+            console.log('  ', subscription.channel)
             addUpdate(subsManager, subscription)
           }
         )
       }
     })
-    // check every origin - you have to connect to them :D
-    redis.on(selector, 'pmessage', listener)
 
-    // same EVERY SINGLE ONE - means you need a listener here on the registry
+    redis.on(selector, 'pmessage', listener)
     redis.psubscribe(selector, EVENTS + '*')
   }
 

@@ -67,7 +67,13 @@ const reconnectClient = (client, retry: number = 0) => {
     type,
     name
   }).then(descriptor => {
-    console.log('reconnecting to ', descriptor.port, retry)
+    console.log(
+      'reconnecting to ',
+      descriptor.port,
+      descriptor.name,
+      descriptor.type,
+      retry
+    )
 
     if (descriptor.host + ':' + descriptor.port === client.id && retry < 5) {
       console.log('TRYING TO RECONNECT TO THE SAME WAIT A BIT')
@@ -76,6 +82,10 @@ const reconnectClient = (client, retry: number = 0) => {
       }, 1e3)
       return
     }
+
+    // console.log('ok mr', clients, client.redisListeners)
+
+    console.log('do I have clients?', clients.length)
 
     let newClient
     clients.forEach(selvaClient => {
@@ -98,6 +108,15 @@ const reconnectClient = (client, retry: number = 0) => {
 
     newClient.redisSubscriptions = client.redisSubscriptions
 
+    for (const key in newClient.redisSubscriptions.subscribe) {
+      newClient.subscriber.subscribe(key)
+    }
+
+    for (const key in newClient.redisSubscriptions.psubscribe) {
+      newClient.subscriber.psubscribe(key)
+    }
+
+    console.log('yo bitch!', newClient.id, q.length, client.redisSubscriptions)
     q.forEach(command => {
       console.log('reapply command', command.command, command.args[0])
       addCommandToQueue(newClient, command)

@@ -86,6 +86,8 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
     servers[server.name][server.type].push(server)
   }
 
+  console.log('--->', servers)
+
   subsManagers.sort(sortSubsManagers)
 
   if (client.subsManagers && client.subsManagers.length) {

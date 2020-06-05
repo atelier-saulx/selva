@@ -25,7 +25,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     subscriptionManager.stagedForUpdates.delete(subscription)
     sendUpdate(subscriptionManager, subscription)
       .then(v => {
-        console.log('SEND UPDATE FOR', subscription.get)
+        console.log('SEND UPDATE FOR', subscription.channel)
       })
       .catch(err => {
         console.log('WRONG ERROR IN SENDUPDATE', err)
