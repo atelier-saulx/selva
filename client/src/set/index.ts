@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid'
 import { SCRIPT } from '../constants'
 import { setInBatches, MAX_BATCH_SIZE } from './batching'
 import parseSetObject from './validate'
+import { getSchema } from 'lua/src/schema'
 
 export async function _set(
   client: SelvaClient,
@@ -25,9 +26,7 @@ export async function _set(
 }
 
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
-  const schema =
-    client.schemas[payload.$db || 'default'] ||
-    (await client.getSchema(payload.$db))
+  const schema = client.schemas[payload.$db || 'default']
 
   if (!payload.type && !payload.$id && payload.$alias) {
     let aliases = payload.$alias
