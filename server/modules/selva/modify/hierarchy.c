@@ -212,7 +212,7 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
             SelvaModify_HierarchyNode *parent;
             /* cppcheck-suppress internalAstError */
             VECTOR_FOREACH(parent, &node->parents) {
-                printf("Push: %.*s\n", SELVA_NODE_ID_SIZE, parent->id);
+                printf("Push: (%p) %.*s\n", parent, SELVA_NODE_ID_SIZE, parent->id);
                 Vector_Insert(&stack, parent);
             }
         }
