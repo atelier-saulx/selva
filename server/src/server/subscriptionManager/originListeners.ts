@@ -20,7 +20,11 @@ const addOriginListeners = (
   if (!subsManager.originListeners[name]) {
     const selector: ServerSelector = { name, type: 'replica' }
 
+    console.log('ADD ORIGIN LISTENERS', name)
+
     const listener = (_pattern, channel, message) => {
+      console.info('------------', name, channel, message)
+
       subsManager.incomingCount++
       collect++
       // use this for batching here
@@ -59,18 +63,19 @@ const addOriginListeners = (
     const redis = client.redis
     let collect = 0
 
-    // store more of these things as metrics
-    // setInterval(() => {
-    //   console.log('handled ', collect, 'in last 5 sec')
-    //   collect = 0
-    // }, 5e3)
-
+    client.on('reconnect', ({ name: dbName }) => {
+      if (name === dbName) {
+        console.log('RE-RUN ALL SUNSCRIPTIONS')
+        subsManager.originListeners[name].subscriptions.forEach(
+          subscription => {
+            console.log('  ', subscription.get)
+            addUpdate(subsManager, subscription)
+          }
+        )
+      }
+    })
     // check every origin - you have to connect to them :D
     redis.on(selector, 'pmessage', listener)
-
-    client.on('reconnect', descriptor => {
-      console.log('hello', descriptor)
-    })
 
     // same EVERY SINGLE ONE - means you need a listener here on the registry
     redis.psubscribe(selector, EVENTS + '*')
@@ -90,6 +95,8 @@ const removeOriginListeners = (
     const redis = client.redis
     origin.subscriptions.delete(subscription)
     if (origin.subscriptions.size === 0) {
+      console.log('REMOVE ORIGIN LISTENERS', name)
+
       if (name in subsManager.memberMemCache) {
         delete subsManager.memberMemCache[name]
       }

@@ -88,17 +88,17 @@ export class SelvaClient extends EventEmitter {
       await this.getSchema(dbName)
     }
 
-    console.log('done schema time', this.schemas[dbName])
-
     if (!this.schemaObservables[dbName]) {
-      this.subscribeSchema(dbName).subscribe((v: any) => {
-        console.log('update schema!', dbName, v)
+      this.schemaObservables[dbName] = this.subscribeSchema(dbName)
+      this.schemaObservables[dbName].subscribe((v: any) => {
+        console.log('Update schema subscription --->', dbName, v)
         this.schemas[dbName] = v        
       })
     }
   }
 
   async id(props: IdOptions): Promise<string> {
+    // make this with $
     await this.initializeSchema({ $db: props.db || 'default' })
     return id(this, props)
   }

@@ -61,7 +61,8 @@ const createSubscriptionManager = (
     originListeners: {}
   }
 
-  client.redis.registry.on('connect', () => {
+  client.on('connect', () => {
+    console.log('CONNECT!')
     addListeners(subsManager)
     startServerHeartbeat(subsManager)
     updateSubscriptionData(subsManager)
@@ -74,7 +75,7 @@ const createSubscriptionManager = (
     )
   })
 
-  client.redis.registry.on('disconnect', () => {
+  client.on('disconnect', () => {
     clear(subsManager)
   })
 

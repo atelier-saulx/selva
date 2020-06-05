@@ -149,7 +149,7 @@ const createRegistryClient = (
     type: 'registry'
   })
 
-  console.log('make registry come on', port)
+  console.log('Make a registry', port)
 
   client.registry.on('connect', () => {
     console.log('this bitch needs to connect it now')

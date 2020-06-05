@@ -25,7 +25,9 @@ export async function _set(
 }
 
 async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
-  const schema = client.schemas[payload.$db || 'default']
+  const schema =
+    client.schemas[payload.$db || 'default'] ||
+    (await client.getSchema(payload.$db))
 
   if (!payload.type && !payload.$id && payload.$alias) {
     let aliases = payload.$alias

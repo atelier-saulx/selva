@@ -2,13 +2,14 @@ import { getClient } from './clients'
 import getServerDescriptor from './getServerDescriptor'
 import RedisSelvaClient from './'
 import { Callback } from './types'
+import handleListenerClient from './clients/handleListenerClient'
 
 const handleListener = (
   redisSelvaClient: RedisSelvaClient,
   method: string,
   selector: any,
   event: any,
-  callback?: any
+  callback?: Callback
 ) => {
   if (!redisSelvaClient.registry) {
     redisSelvaClient.listenerQueue.push({ selector, event, callback })
@@ -21,13 +22,14 @@ const handleListener = (
     }
     if (selector.type === 'registry') {
       redisSelvaClient.registry.subscriber[method](event, callback)
+      handleListenerClient(redisSelvaClient.registry, method, event, callback)
     } else {
       if (!selector.type && !selector.host) {
         selector.type = 'replica'
       }
       getServerDescriptor(redisSelvaClient, selector).then(descriptor => {
         const client = getClient(redisSelvaClient, descriptor)
-        client.subscriber[method](event, callback)
+        handleListenerClient(client, method, event, callback)
       })
     }
   }

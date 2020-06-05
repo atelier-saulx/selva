@@ -1,5 +1,5 @@
 import { RedisClient } from 'redis'
-import { RedisCommand } from '../types'
+import { RedisCommand, Callback } from '../types'
 import RedisSelvaClient from '../'
 import './redisSearch'
 import { ServerType, ServerDescriptor, LogEntry } from '../../types'
@@ -13,6 +13,7 @@ import { ObserverEmitter } from '../observers'
 import { getObserverValue, sendObserver } from './observers'
 import getServerDescriptor from '../getServerDescriptor'
 import * as constants from '../../constants'
+import handleListenerClient from './handleListenerClient'
 
 type ClientOpts = {
   name: string
@@ -46,6 +47,57 @@ const addListeners = (client: Client) => {
   }
 }
 
+const reconnectClient = (client, retry: number = 0) => {
+  const { type, name } = client
+  const clients = [...client.clients.values()]
+  const aSelvaClient = clients[0]
+
+  const q = [...client.queue, ...client.queueBeingDrained]
+
+  getServerDescriptor(aSelvaClient, {
+    type,
+    name
+  }).then(descriptor => {
+    console.log('reconnecting to ', descriptor.port, retry)
+
+    if (descriptor.host + ':' + descriptor.port === client.id && retry < 5) {
+      console.log('TRYING TO RECONNECT TO THE SAME WAIT A BIT')
+      setTimeout(() => {
+        reconnectClient(client, retry + 1)
+      }, 1e3)
+      return
+    }
+
+    let newClient
+    clients.forEach(selvaClient => {
+      setTimeout(() => {
+        selvaClient.selvaClient.emit('reconnect', descriptor)
+      }, 500)
+      newClient = getClient(selvaClient, descriptor)
+    })
+
+    for (let event in client.redisListeners) {
+      console.log(
+        're-applying listeners for',
+        event,
+        client.redisListeners[event].length
+      )
+      client.redisListeners[event].forEach(callback => {
+        handleListenerClient(newClient, 'on', event, callback)
+      })
+    }
+
+    newClient.redisSubscriptions = client.redisSubscriptions
+
+    q.forEach(command => {
+      console.log('reapply command', command.command, command.args[0])
+      addCommandToQueue(newClient, command)
+    })
+
+    destroyClient(client)
+  })
+}
+
 export class Client extends EventEmitter {
   public subscriber: RedisClient
   public publisher: RedisClient
@@ -56,6 +108,9 @@ export class Client extends EventEmitter {
     psubscribe: {},
     subscribe: {}
   }
+
+  // event, listeners
+  public redisListeners: Record<string, Callback[]> = {}
   public queue: RedisCommand[]
   public queueInProgress: boolean
   public name: string // for logging
@@ -117,25 +172,7 @@ export class Client extends EventEmitter {
           console.log('ok subs manager we can throw this away')
           destroyClient(this)
         } else {
-          const clients = [...this.clients.values()]
-          const aSelvaClient = clients[0]
-          getServerDescriptor(aSelvaClient, {
-            type,
-            name
-          }).then(descriptor => {
-            console.log('reconnecting to ', descriptor)
-
-            let newClient
-            clients.forEach(selvaClient => {
-              newClient = getClient(selvaClient, descriptor)
-            })
-
-            const q = [...this.queue, ...this.queueBeingDrained]
-            destroyClient(this)
-            q.forEach(command => {
-              addCommandToQueue(newClient, command)
-            })
-          })
+          reconnectClient(this)
         }
       }
     })
@@ -181,6 +218,7 @@ export class Client extends EventEmitter {
       this.queueInProgress = false
       clearTimeout(this.heartbeatTimout)
     })
+
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
     this.publisher = createRedisClient(this, host, port, 'publisher')
 
@@ -215,6 +253,8 @@ const destroyClient = (client: Client) => {
   client.observers = {}
   client.queueBeingDrained = []
   client.removeAllListeners()
+  client.redisListeners = {}
+  client.redisSubscriptions = { subscribe: {}, psubscribe: {} }
 }
 
 // export function removeRedisSelvaClient(
