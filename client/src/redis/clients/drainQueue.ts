@@ -1,9 +1,9 @@
 import { RedisCommand } from '../types'
 import './redisSearch'
 import execBatch from './execBatch'
-import { getScriptSha } from './scripts'
+import { getScriptSha, loadScripts } from './scripts'
 import * as constants from '../../constants'
-import { Client } from './'
+import { Client, addCommandToQueue } from './'
 
 const drainQueue = (client: Client, q?: RedisCommand[]) => {
   if (!client.queueInProgress) {
@@ -83,6 +83,14 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           }
 
           modify.reject = err => {
+            if (err.stack.includes('NOSCRIPT')) {
+              loadScripts(client, () => {
+                modify.args[0] = `${constants.SCRIPT}:modify`
+                addCommandToQueue(client, modify)
+              })
+              return
+            }
+
             modifyRejects.forEach(reject => {
               reject(err)
             })
