@@ -9,7 +9,11 @@
 -I
 ./rmutil
 -I
+./test/punit
+-I
 ./util
+-I
+./modify
 -isystem
 /usr/local/include
 -isystem
