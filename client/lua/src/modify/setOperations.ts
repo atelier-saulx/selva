@@ -218,7 +218,7 @@ export function addToChildren(
     // if the child is an object
     // automatic creation is attempted
     if (type(child) === 'table') {
-      if ((<any>child).parents) {
+      if (!(<any>child).parents) {
         ;(<any>child).parents = [id]
       }
 

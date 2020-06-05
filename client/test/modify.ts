@@ -1018,6 +1018,61 @@ test.serial('createdAt not set if provided in modify props', async t => {
 //   await client.delete('root')
 // })
 
+test.serial('no root in parents when adding nested', async t => {
+  const client = connect({
+    port
+  })
+
+  await client.set({
+    $id: 'ma1',
+    $language: 'en',
+    children: {
+      $add: [
+        {
+          $alias: 'hello',
+          type: 'match',
+          title: 'hello1'
+        },
+        {
+          $alias: 'hello2',
+          type: 'match',
+          title: 'hello2',
+          parents: ['root', 'ma1']
+        }
+      ]
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'hello',
+      parents: true,
+      title: true
+    }),
+    {
+      parents: ['ma1'],
+      title: 'hello1'
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'hello2',
+      parents: true,
+      title: true
+    }),
+    {
+      parents: ['root', 'ma1'],
+      title: 'hello2'
+    }
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})
+
 test.serial('can disable autoadding of root', async t => {
   const client = connect({
     port
