@@ -4,3 +4,4 @@
 *.db
 .vscode
 rmutil/test_vector
+test/units/.d
