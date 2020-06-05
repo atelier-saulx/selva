@@ -248,6 +248,7 @@ static char * test_foreach(void)
 
     size_t i = 0;
     struct data *d;
+    /* cppcheck-suppress internalAstError */
     VECTOR_FOREACH(d, &vec) {
         pu_assert_ptr_equal("el[0] is pointing to the correct item", d, &el[i++]);
     }

@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +44,7 @@ void Vector_Insert(Vector *vec, void *el) {
         if (!new_data) {
             new_data = RedisModule_Alloc(new_size);
             if (!new_data) {
+                assert(0);
                 /* TODO Panic */
                 return;
             }
@@ -61,10 +63,14 @@ void Vector_Insert(Vector *vec, void *el) {
     if (vec->vec_compar) {
         qsort(vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
     }
+
+    assert(vec->vec_last <= vec->vec_len);
 }
 
 void *Vector_Search(const Vector * restrict vec, void *key) {
     /* TODO what if vec_compar is not set? */
+    assert(("vec_compar must be set", vec->vec_compar));
+
     void **pp = bsearch(&key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
 
     return !pp ? NULL : *pp;
@@ -72,6 +78,8 @@ void *Vector_Search(const Vector * restrict vec, void *key) {
 
 void *Vector_Remove(Vector * restrict vec, void *key) {
     /* TODO what if vec_compar is not set? */
+    assert(("vec_compar must be set", vec->vec_compar));
+
     void **pp = bsearch(&key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
     if (!pp) {
         return NULL;
@@ -84,9 +92,17 @@ void *Vector_Remove(Vector * restrict vec, void *key) {
     }
     vec->vec_last--;
 
+    assert(vec->vec_last <= vec->vec_len);
+
     return el;
 }
 
 void *Vector_Pop(Vector * restrict vec) {
-    return vec->vec_data[--vec->vec_last];
+    if (vec->vec_last > 0) {
+        return vec->vec_data[--vec->vec_last];
+    }
+
+    assert(vec->vec_last <= vec->vec_len);
+
+    return NULL;
 }
