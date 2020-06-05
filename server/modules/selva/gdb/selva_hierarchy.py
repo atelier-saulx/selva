@@ -9,8 +9,6 @@ SelvaModify_HierarchyNode_Type = gdb.lookup_type('SelvaModify_HierarchyNode')
 def adjVectorToString(vec):
     list = '{ '
     arr =  vec['vec_data'].dereference().cast(SelvaModify_HierarchyNode_Type.pointer().array(vec['vec_last']))
-#    for adj in arr:
-#        list += adj
     for i in range(vec['vec_last']):
         list += str(arr[i].dereference()['id']) + ', '
 
@@ -33,13 +31,13 @@ class SelvaModify_HierarchyNode_Printer:
         node_parents = self.val['parents']
         node_children = self.val['children']
 
-        th = '{id: '            + str(node_id) + \
+        node = '{id: '            + str(node_id) + \
             ', visit_stamp: '   + hex(node_visit_stamp['tv_sec'])[2:] + hex(node_visit_stamp['tv_nsec'])[2:] + \
             ', parents: '       + adjVectorToString(node_parents) + \
             ', children: '      + adjVectorToString(node_children) + \
             '}'
 
-        return th
+        return node
 
 def build_pretty_printer():
     pp = gdb.printing.RegexpCollectionPrettyPrinter("SelvaModify_HierarchyNode")
