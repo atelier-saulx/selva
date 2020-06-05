@@ -218,6 +218,10 @@ export function addToChildren(
     // if the child is an object
     // automatic creation is attempted
     if (type(child) === 'table') {
+      if ((<any>child).parents) {
+        ;(<any>child).parents = [id]
+      }
+
       if ((<any>child).$id || (<any>child).$alias) {
         child = modify(<any>child) || ''
       } else if ((<any>child).type !== null) {
@@ -233,11 +237,12 @@ export function addToChildren(
 
     if (child !== '') {
       if (!redis.exists(child)) {
-        if (noRoot) {
-          modify({ $id: child, parents: [] })
-        } else {
-          modify({ $id: child })
-        }
+        // if (noRoot) {
+        //   modify({ $id: child, parents: [] })
+        // } else {
+        //   modify({ $id: child })
+        // }
+        modify({ $id: child, parents: [id] })
       }
 
       if (checkSource(child, 'parents', source)) {
