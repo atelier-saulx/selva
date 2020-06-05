@@ -1,6 +1,6 @@
 import { Client, addCommandToQueue } from './'
 import { CLIENTS, HEARTBEAT } from '../../constants'
-const HEARTBEAT_TIMER = 5e3
+const HEARTBEAT_TIMER = 1e3
 
 const startHeartbeat = (client: Client) => {
   const setHeartbeat = () => {
