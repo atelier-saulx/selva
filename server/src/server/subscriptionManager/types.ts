@@ -1,4 +1,4 @@
-import { GetOptions, SelvaClient } from '@saulx/selva'
+import { GetOptions, SelvaClient, ServerDescriptor } from '@saulx/selva'
 import { Worker } from 'worker_threads'
 
 export type Tree = Record<string, any>
@@ -43,7 +43,11 @@ export type SubscriptionManager = {
   selector: { port: number; host: string }
   originListeners: Record<
     string,
-    { subscriptions: Set<Subscription>; listener: (...args: any[]) => void }
+    {
+      subscriptions: Set<Subscription>
+      listener: (...args: any[]) => void
+      reconnectListener: (ServerDescriptor) => void
+    }
   >
 }
 

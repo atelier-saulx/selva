@@ -63,17 +63,22 @@ const addOriginListeners = (
     const redis = client.redis
     let collect = 0
 
-    client.on('reconnect', ({ name: dbName }) => {
+    subsManager.originListeners[name].reconnectListener = ({
+      name: dbName
+    }) => {
       if (name === dbName) {
         console.log('RE-RUN ALL SUBSCRIPTIONS')
-        subsManager.originListeners[name].subscriptions.forEach(
-          subscription => {
-            console.log('  ', subscription.channel)
+        const origin = subsManager.originListeners[name]
+        if (origin && origin.subscriptions) {
+          origin.subscriptions.forEach(subscription => {
+            console.log('  ---> re fire sub', subscription.channel)
             addUpdate(subsManager, subscription)
-          }
-        )
+          })
+        }
       }
-    })
+    }
+
+    client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
     redis.on(selector, 'pmessage', listener)
     redis.psubscribe(selector, EVENTS + '*')
@@ -99,6 +104,7 @@ const removeOriginListeners = (
         delete subsManager.memberMemCache[name]
       }
       redis.punsubscribe({ name }, EVENTS + '*')
+      client.removeListener('reconnect', origin.reconnectListener)
       redis.removeListener({ name }, 'pmessage', origin.listener)
       delete subsManager.originListeners[name]
     }
