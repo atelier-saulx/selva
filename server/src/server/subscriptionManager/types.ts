@@ -46,7 +46,7 @@ export type SubscriptionManager = {
     {
       subscriptions: Set<Subscription>
       listener: (...args: any[]) => void
-      reconnectListener: (ServerDescriptor) => void
+      reconnectListener: (descriptor: ServerDescriptor) => void
     }
   >
 }

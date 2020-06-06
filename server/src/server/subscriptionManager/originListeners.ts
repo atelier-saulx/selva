@@ -56,27 +56,24 @@ const addOriginListeners = (
 
     subsManager.originListeners[name] = {
       subscriptions: new Set(),
-      listener
+      listener,
+      reconnectListener: ({ name: dbName }) => {
+        if (name === dbName) {
+          console.log('RE-RUN ALL SUBSCRIPTIONS')
+          const origin = subsManager.originListeners[name]
+          if (origin && origin.subscriptions) {
+            origin.subscriptions.forEach(subscription => {
+              console.log('  ---> re fire sub', subscription.channel)
+              addUpdate(subsManager, subscription)
+            })
+          }
+        }
+      }
     }
 
     const { client } = subsManager
     const redis = client.redis
     let collect = 0
-
-    subsManager.originListeners[name].reconnectListener = ({
-      name: dbName
-    }) => {
-      if (name === dbName) {
-        console.log('RE-RUN ALL SUBSCRIPTIONS')
-        const origin = subsManager.originListeners[name]
-        if (origin && origin.subscriptions) {
-          origin.subscriptions.forEach(subscription => {
-            console.log('  ---> re fire sub', subscription.channel)
-            addUpdate(subsManager, subscription)
-          })
-        }
-      }
-    }
 
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
