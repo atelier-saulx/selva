@@ -502,7 +502,7 @@ test.serial('$field +  multiple options + inherit from root', async t => {
 })
 
 test.serial.only('$field + inherit from root + query root', async t => {
-  const client = connect({ port: port })
+  const client = connect({ port: port }, { loglevel: 'info' })
   const types = ['match', 'region', 'root', 'default']
 
   const layout = {
