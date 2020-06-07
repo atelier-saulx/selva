@@ -501,7 +501,7 @@ test.serial('$field +  multiple options + inherit from root', async t => {
   t.true(true)
 })
 
-test.serial.only('$field + inherit from root + query root', async t => {
+test.serial.skip('$field + inherit from root + query root', async t => {
   const client = connect({ port: port }, { loglevel: 'info' })
   const types = ['match', 'region', 'root', 'default']
 
