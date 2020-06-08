@@ -8,7 +8,7 @@ struct data {
     int id;
 };
 
-struct Vector vec;
+struct SVector vec;
 
 static int compar(const void ** restrict ap, const void ** restrict bp)
 {
@@ -20,7 +20,7 @@ static int compar(const void ** restrict ap, const void ** restrict bp)
 
 static void setup(void)
 {
-    memset(&vec, 0, sizeof(struct Vector));
+    memset(&vec, 0, sizeof(struct SVector));
 }
 
 static void teardown(void)
@@ -30,7 +30,7 @@ static void teardown(void)
 
 static char * test_init_works(void)
 {
-    Vector *vecP = Vector_Init(&vec, 100, compar);
+    SVector *vecP = SVector_Init(&vec, 100, compar);
 
     pu_assert_ptr_equal("the vector is returned", vecP, &vec);
     pu_assert_ptr_equal("compar is set", vec.vec_compar, compar);
@@ -42,11 +42,11 @@ static char * test_init_works(void)
 
 static char * test_can_destroy(void)
 {
-    Vector *vecP = Vector_Init(&vec, 100, compar);
+    SVector *vecP = SVector_Init(&vec, 100, compar);
 
-    Vector_Destroy(vecP);
+    SVector_Destroy(vecP);
     // multiple times
-    Vector_Destroy(vecP);
+    SVector_Destroy(vecP);
 
     return NULL;
 }
@@ -57,8 +57,8 @@ static char * test_insert_one(void)
         .id = 10,
     };
 
-    Vector_Init(&vec, 5, compar);
-    Vector_Insert(&vec, &el1);
+    SVector_Init(&vec, 5, compar);
+    SVector_Insert(&vec, &el1);
 
     pu_assert_equal("last is incremented", vec.vec_last, 1);
     pu_assert_ptr_equal("el1 was inserted", vec.vec_data[0], &el1);
@@ -75,9 +75,9 @@ static char * test_insert_two_desc(void)
         .id = 1,
     };
 
-    Vector_Init(&vec, 5, compar);
-    Vector_Insert(&vec, &el1);
-    Vector_Insert(&vec, &el2);
+    SVector_Init(&vec, 5, compar);
+    SVector_Insert(&vec, &el1);
+    SVector_Insert(&vec, &el2);
 
     pu_assert_equal("last is incremented", vec.vec_last, 2);
     pu_assert_ptr_equal("el1 was inserted correctly", vec.vec_data[1], &el1);
@@ -90,10 +90,10 @@ static char * test_insert_many(void)
 {
     struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
 
-    Vector_Init(&vec, 5, compar);
+    SVector_Init(&vec, 5, compar);
 
     for (size_t i = 0; i < num_elem(el); i++) {
-        Vector_Insert(&vec, &el[i]);
+        SVector_Insert(&vec, &el[i]);
     }
 
     pu_assert_equal("last is incremented", vec.vec_last, 8);
@@ -115,13 +115,13 @@ static char * test_search(void)
 {
     struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
 
-    Vector_Init(&vec, 5, compar);
+    SVector_Init(&vec, 5, compar);
 
     for (size_t i = 0; i < num_elem(el); i++) {
-        Vector_Insert(&vec, &el[i]);
+        SVector_Insert(&vec, &el[i]);
     }
 
-    const struct data *res = Vector_Search(&vec, &(struct data){ 15 });
+    const struct data *res = SVector_Search(&vec, &(struct data){ 15 });
 
     pu_assert_ptr_equal("found the right one", res, &el[2]);
 
@@ -134,9 +134,9 @@ static char * test_remove_one(void)
         .id = 10,
     };
 
-    Vector_Init(&vec, 5, compar);
-    Vector_Insert(&vec, &el1);
-    Vector_Remove(&vec, &el1);
+    SVector_Init(&vec, 5, compar);
+    SVector_Insert(&vec, &el1);
+    SVector_Remove(&vec, &el1);
 
     pu_assert_equal("last is zeroed", vec.vec_last, 0);
 
@@ -149,9 +149,9 @@ static char * test_remove_one_compound_literal(void)
         .id = 10,
     };
 
-    Vector_Init(&vec, 5, compar);
-    Vector_Insert(&vec, &el1);
-    struct data *rem = Vector_Remove(&vec, &(struct data){ 10 });
+    SVector_Init(&vec, 5, compar);
+    SVector_Insert(&vec, &el1);
+    struct data *rem = SVector_Remove(&vec, &(struct data){ 10 });
 
     pu_assert_equal("last is zeroed", vec.vec_last, 0);
     pu_assert_ptr_equal("the removed item was returned", rem, &el1);
@@ -168,10 +168,10 @@ static char * test_remove_last(void)
         .id = 2,
     };
 
-    Vector_Init(&vec, 3, compar);
-    Vector_Insert(&vec, &el1);
-    Vector_Insert(&vec, &el2);
-    Vector_Remove(&vec, &el2);
+    SVector_Init(&vec, 3, compar);
+    SVector_Insert(&vec, &el1);
+    SVector_Insert(&vec, &el2);
+    SVector_Remove(&vec, &el2);
 
     pu_assert_equal("last is decremented", vec.vec_last, 1);
     pu_assert_ptr_equal("el1 was is still there", vec.vec_data[0], &el1);
@@ -188,10 +188,10 @@ static char * test_remove_first(void)
         .id = 2,
     };
 
-    Vector_Init(&vec, 3, compar);
-    Vector_Insert(&vec, &el1);
-    Vector_Insert(&vec, &el2);
-    Vector_Remove(&vec, &el1);
+    SVector_Init(&vec, 3, compar);
+    SVector_Insert(&vec, &el1);
+    SVector_Insert(&vec, &el2);
+    SVector_Remove(&vec, &el1);
 
     pu_assert_equal("last is decremented", vec.vec_last, 1);
     pu_assert_ptr_equal("el2 was is still there", vec.vec_data[0], &el2);
@@ -203,12 +203,12 @@ static char * test_remove_middle(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
 
-    Vector_Init(&vec, 3, compar);
+    SVector_Init(&vec, 3, compar);
     for (size_t i = 0; i < num_elem(el); i++) {
-        Vector_Insert(&vec, &el[i]);
+        SVector_Insert(&vec, &el[i]);
     }
 
-    Vector_Remove(&vec, &(struct data){ 2 });
+    SVector_Remove(&vec, &(struct data){ 2 });
 
     pu_assert_equal("last is decremented", vec.vec_last, 2);
     pu_assert_ptr_equal("el[0] was is still there", vec.vec_data[0], &el[0]);
@@ -221,18 +221,18 @@ static char * test_pop(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
 
-    Vector_Init(&vec, 3, NULL);
+    SVector_Init(&vec, 3, NULL);
     for (size_t i = 0; i < num_elem(el); i++) {
-        Vector_Insert(&vec, &el[i]);
+        SVector_Insert(&vec, &el[i]);
     }
 
-    pu_assert_ptr_equal("Pops el[2]", Vector_Pop(&vec), &el[2]);
-    pu_assert_ptr_equal("Pops el[1]", Vector_Pop(&vec), &el[1]);
+    pu_assert_ptr_equal("Pops el[2]", SVector_Pop(&vec), &el[2]);
+    pu_assert_ptr_equal("Pops el[1]", SVector_Pop(&vec), &el[1]);
 
-    Vector_Insert(&vec, &el[0]);
-    pu_assert_ptr_equal("Pops el[0]", Vector_Pop(&vec), &el[0]);
-    pu_assert_ptr_equal("Pops el[0]", Vector_Pop(&vec), &el[0]);
-    pu_assert_equal("Vector size is zeroed", Vector_Size(&vec), 0);
+    SVector_Insert(&vec, &el[0]);
+    pu_assert_ptr_equal("Pops el[0]", SVector_Pop(&vec), &el[0]);
+    pu_assert_ptr_equal("Pops el[0]", SVector_Pop(&vec), &el[0]);
+    pu_assert_equal("Vector size is zeroed", SVector_Size(&vec), 0);
 
     return NULL;
 }
@@ -241,15 +241,15 @@ static char * test_foreach(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
 
-    Vector_Init(&vec, 3, compar);
+    SVector_Init(&vec, 3, compar);
     for (size_t i = 0; i < num_elem(el); i++) {
-        Vector_Insert(&vec, &el[i]);
+        SVector_Insert(&vec, &el[i]);
     }
 
     size_t i = 0;
     struct data **d;
     /* cppcheck-suppress internalAstError */
-    VECTOR_FOREACH(d, &vec) {
+    SVECTOR_FOREACH(d, &vec) {
         pu_assert_ptr_equal("el[0] is pointing to the correct item", *d, &el[i++]);
     }
 

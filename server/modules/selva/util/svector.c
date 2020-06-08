@@ -8,8 +8,8 @@
 #define VEC_SIZE(_len) (sizeof(void *) * (_len))
 #define VEC_COMPAR(_fn) ((int (*)(const void *, const void *))(_fn))
 
-Vector *Vector_Init(Vector *vec, size_t initial_len, int (*compar)(const void **a, const void **b)) {
-    *vec = (Vector){
+SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b)) {
+    *vec = (SVector){
         .vec_compar = compar,
         .vec_len = initial_len < 2 ? 2 : initial_len,
         .vec_last = 0,
@@ -23,7 +23,7 @@ Vector *Vector_Init(Vector *vec, size_t initial_len, int (*compar)(const void **
     return vec;
 }
 
-void Vector_Destroy(Vector *vec) {
+void SVector_Destroy(SVector *vec) {
     RedisModule_Free(vec->vec_data);
 
     vec->vec_len = 0;
@@ -31,7 +31,7 @@ void Vector_Destroy(Vector *vec) {
     vec->vec_data = NULL;
 }
 
-void Vector_Insert(Vector *vec, void *el) {
+void SVector_Insert(SVector *vec, void *el) {
     size_t i = vec->vec_last++;
     size_t vec_len = vec->vec_len;
     void **vec_data = vec->vec_data;
@@ -67,7 +67,7 @@ void Vector_Insert(Vector *vec, void *el) {
     assert(vec->vec_last <= vec->vec_len);
 }
 
-void *Vector_Search(const Vector * restrict vec, void *key) {
+void *SVector_Search(const SVector * restrict vec, void *key) {
     /* TODO what if vec_compar is not set? */
     assert(("vec_compar must be set", vec->vec_compar));
 
@@ -76,7 +76,7 @@ void *Vector_Search(const Vector * restrict vec, void *key) {
     return !pp ? NULL : *pp;
 }
 
-void *Vector_Remove(Vector * restrict vec, void *key) {
+void *SVector_Remove(SVector * restrict vec, void *key) {
     /* TODO what if vec_compar is not set? */
     assert(("vec_compar must be set", vec->vec_compar));
 
@@ -97,7 +97,7 @@ void *Vector_Remove(Vector * restrict vec, void *key) {
     return el;
 }
 
-void *Vector_Pop(Vector * restrict vec) {
+void *SVector_Pop(SVector * restrict vec) {
     if (vec->vec_last > 0) {
         return vec->vec_data[--vec->vec_last];
     }

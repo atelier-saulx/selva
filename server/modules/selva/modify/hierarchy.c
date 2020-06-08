@@ -16,8 +16,8 @@
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
     struct timespec visit_stamp;
-    Vector parents;
-    Vector children;
+    SVector parents;
+    SVector children;
     RB_ENTRY(SelvaModify_HierarchyNode) _index_entry;
 } SelvaModify_HierarchyNode;
 
@@ -46,7 +46,7 @@ typedef struct SelvaModify_Hierarchy {
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
 
-static int Vector_BS_Compare(const void ** restrict a_raw, const void ** restrict b_raw) {
+static int SVector_BS_Compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
     const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
 
@@ -90,8 +90,8 @@ static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
     };
 
     memset(node, 0, sizeof(SelvaModify_HierarchyNode));
-    Vector_Init(&node->parents, INITIAL_VECTOR_LEN, Vector_BS_Compare);
-    Vector_Init(&node->children, INITIAL_VECTOR_LEN, Vector_BS_Compare);
+    SVector_Init(&node->parents, INITIAL_VECTOR_LEN, SVector_BS_Compare);
+    SVector_Init(&node->children, INITIAL_VECTOR_LEN, SVector_BS_Compare);
     /* TODO Check errors /\ */
 
     memcpy(node->id, id, SELVA_NODE_ID_SIZE);
@@ -100,8 +100,8 @@ static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
 }
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
-    Vector_Destroy(&node->parents);
-    Vector_Destroy(&node->children);
+    SVector_Destroy(&node->parents);
+    SVector_Destroy(&node->children);
     RedisModule_Free(node);
 }
 
@@ -123,12 +123,12 @@ static int SelvaModify_CrossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify
 
         if (rel == RELATIONSHIP_CHILD) {
             /* node is a children to adjacent */
-            Vector_Insert(&node->parents, adjacent);
-            Vector_Insert(&adjacent->children, node);
+            SVector_Insert(&node->parents, adjacent);
+            SVector_Insert(&adjacent->children, node);
         } else {
             /* node is a parent to adjacent */
-            Vector_Insert(&node->children, adjacent);
-            Vector_Insert(&adjacent->parents, node);
+            SVector_Insert(&node->children, adjacent);
+            SVector_Insert(&adjacent->parents, node);
         }
     }
 
@@ -198,12 +198,12 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_No
 
     Selva_NodeId *list = NodeList_New(1);
 
-    Vector stack;
-    Vector_Init(&stack, 100, NULL);
-    Vector_Insert(&stack, head);
+    SVector stack;
+    SVector_Init(&stack, 100, NULL);
+    SVector_Insert(&stack, head);
 
-    while (Vector_Size(&stack) > 0) {
-        SelvaModify_HierarchyNode *node = Vector_Pop(&stack);
+    while (SVector_Size(&stack) > 0) {
+        SelvaModify_HierarchyNode *node = SVector_Pop(&stack);
 
         if (!Trx_IsStamped(&hierarchy->current_trx, &node->visit_stamp)) {
             /* Mark node as visited and add it to the list of ancestors/descendants */
@@ -218,17 +218,17 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_No
 
             /* Add parents/children to the stack of unvisited nodes */
             SelvaModify_HierarchyNode **it;
-            const Vector *vec = (Vector *)((char *)node + offset);
+            const SVector *vec = (SVector *)((char *)node + offset);
             /* cppcheck-suppress internalAstError */
-            VECTOR_FOREACH(it, vec) {
-                Vector_Insert(&stack, *it);
+            SVECTOR_FOREACH(it, vec) {
+                SVector_Insert(&stack, *it);
             }
         }
     }
 
     *res = list;
 err:
-    Vector_Destroy(&stack);
+    SVector_Destroy(&stack);
 
     return nr_nodes;
 }
