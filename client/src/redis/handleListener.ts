@@ -28,7 +28,6 @@ const handleListener = (
         selector.type = 'replica'
       }
       getServerDescriptor(redisSelvaClient, selector).then(descriptor => {
-        console.log('ADD ON LISTENER', method, event, descriptor)
         const client = getClient(redisSelvaClient, descriptor)
         handleListenerClient(client, method, event, callback)
       })
