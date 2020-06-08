@@ -17,6 +17,7 @@ static void SelvaNodeId_SortRes(size_t len) {
 }
 
 static char *SelvaNodeId_GetRes(size_t i) {
+    /* cppcheck-suppress threadsafety-threadsafety */
     static char id[sizeof(Selva_NodeId) + 1];
 
     memcpy(id, findRes[i], sizeof(Selva_NodeId));
