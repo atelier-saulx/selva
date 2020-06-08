@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -173,11 +174,20 @@ static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, Selva_NodeId id, int nr
     return newList;
 }
 
-/**
- * Find ancestors of a node using DFS.
- */
-int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors) {
+static int dfs(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **res, enum SelvaModify_HierarchyNode_Relationship dir) {
     int nr_nodes = 0;
+    size_t offset;
+
+    switch (dir) {
+    case RELATIONSHIP_PARENT:
+        offset = offsetof(SelvaModify_HierarchyNode, parents);
+        break;
+    case RELATIONSHIP_CHILD:
+        offset = offsetof(SelvaModify_HierarchyNode, children);
+        break;
+    default:
+        return -1;
+    }
 
     Trx_Begin(&hierarchy->current_trx);
 
@@ -196,7 +206,7 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
         SelvaModify_HierarchyNode *node = Vector_Pop(&stack);
 
         if (!Trx_IsStamped(&hierarchy->current_trx, &node->visit_stamp)) {
-            /* Mark node as visited and add it to the list of ancestors */
+            /* Mark node as visited and add it to the list of ancestors/descendants */
             Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
             if (node != head) {
                 list = NodeList_Insert(list, node->id, ++nr_nodes);
@@ -206,22 +216,30 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
                 }
             }
 
-            /* Add parents to the stack of unvisited nodes */
-            SelvaModify_HierarchyNode **parent;
+            /* Add parents/children to the stack of unvisited nodes */
+            SelvaModify_HierarchyNode **it;
+            const Vector *vec = (Vector *)((char *)node + offset);
             /* cppcheck-suppress internalAstError */
-            VECTOR_FOREACH(parent, &node->parents) {
-                Vector_Insert(&stack, *parent);
+            VECTOR_FOREACH(it, vec) {
+                Vector_Insert(&stack, *it);
             }
         }
     }
 
-    *ancestors = list;
+    *res = list;
 err:
     Vector_Destroy(&stack);
 
     return nr_nodes;
 }
 
+/**
+ * Find ancestors of a node using DFS.
+ */
+int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors) {
+    return dfs(hierarchy, id, ancestors, RELATIONSHIP_PARENT);
+}
+
 int SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants) {
-    return -1;
+    return dfs(hierarchy, id, descendants, RELATIONSHIP_CHILD);
 }
