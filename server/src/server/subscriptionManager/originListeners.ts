@@ -25,7 +25,7 @@ const addOriginListeners = async (
     const descriptor = await subsManager.client.getServerDescriptor(selector)
 
     const listener = (_pattern, channel, message) => {
-      console.info('----->>>>>>', name, channel, message)
+      // console.info('----->>>>>>', name, channel, message)
 
       subsManager.incomingCount++
       collect++
