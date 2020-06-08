@@ -73,7 +73,6 @@ static char * test_insert_chain_find_ancestors(void)
         SelvaModify_SetHierarchy(hierarchy, ids[i], num_elem(parents), parents, 0, NULL);
     }
 
-    SelvaModify_StartHierarchyTrx(hierarchy);
     const int nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "d" }), &findRes);
 
     pu_assert_equal("returned the right number of ancestors", nr_ancestors, 3);
@@ -97,7 +96,6 @@ static char * test_insert_acyclic_find_ancestors_1(void)
     SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
     SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_b", "grphnode_a" }), 0, NULL);
 
-    SelvaModify_StartHierarchyTrx(hierarchy);
     const int nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
 
     pu_assert_equal("returned the right number of ancestors", nr_ancestors, 2);
@@ -126,14 +124,12 @@ static char * test_insert_acyclic_find_ancestors_2(void)
     SelvaModify_SetHierarchy(hierarchy, "grphnode_e", 1, ((Selva_NodeId []){ "grphnode_d" }), 0, NULL);
 
     /* ancestors of c */
-    SelvaModify_StartHierarchyTrx(hierarchy);
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
     pu_assert_equal("returned the right number of ancestors", nr_ancestors, 1);
     pu_assert("results pointer was set", findRes != NULL);
     pu_assert_str_equal("c has b as an ancestor", SelvaNodeId_GetRes(0), "grphnode_a");
 
     /* ancestors of e */
-    SelvaModify_StartHierarchyTrx(hierarchy);
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_e" }), &findRes);
     pu_assert_equal("returned the right number of ancestors", nr_ancestors, 4);
     pu_assert("results pointer was set", findRes != NULL);
@@ -163,7 +159,6 @@ static char * test_insert_acyclic_find_ancestors_3(void)
     SelvaModify_SetHierarchy(hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
 
     /* ancestors of d */
-    SelvaModify_StartHierarchyTrx(hierarchy);
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_d" }), &findRes);
     SelvaNodeId_SortRes(nr_ancestors);
     pu_assert_equal("returned the right number of ancestors", nr_ancestors, 1);
@@ -171,7 +166,6 @@ static char * test_insert_acyclic_find_ancestors_3(void)
     pu_assert_str_equal("d has b as an ancestor", SelvaNodeId_GetRes(0), "grphnode_b");
 
     /* ancestors of c */
-    SelvaModify_StartHierarchyTrx(hierarchy);
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
     SelvaNodeId_SortRes(nr_ancestors);
     pu_assert_equal("returned the right number of ancestors", nr_ancestors, 3);

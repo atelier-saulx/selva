@@ -82,10 +82,6 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
     RedisModule_Free(hierarchy);
 }
 
-void SelvaModify_StartHierarchyTrx(SelvaModify_Hierarchy *hierarchy) {
-    Trx_Begin(&hierarchy->current_trx);
-}
-
 static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode));
     if (!node) {
@@ -183,6 +179,8 @@ static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, Selva_NodeId id, int nr
 int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors) {
     int nr_nodes = 0;
 
+    Trx_Begin(&hierarchy->current_trx);
+
     SelvaModify_HierarchyNode *head = findNode(hierarchy, id);
     if (!head) {
         return -1;
@@ -193,6 +191,7 @@ int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_Node
     Vector stack;
     Vector_Init(&stack, 100, NULL);
     Vector_Insert(&stack, head);
+
     while (Vector_Size(&stack) > 0) {
         SelvaModify_HierarchyNode *node = Vector_Pop(&stack);
 

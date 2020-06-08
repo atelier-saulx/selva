@@ -10,7 +10,6 @@ typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
 
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void);
 void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy);
-void SelvaModify_StartHierarchyTrx(SelvaModify_Hierarchy *hierarchy);
 int SelvaModify_SetHierarchy(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, size_t nr_parents, const Selva_NodeId *parents, size_t nr_children, const Selva_NodeId *children);
 int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors);
 int SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
