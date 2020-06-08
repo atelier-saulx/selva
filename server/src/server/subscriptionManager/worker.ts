@@ -1,11 +1,9 @@
 import { ServerOptions } from '../../types'
 import { SubscriptionManager } from './types'
-import { SelvaClient, constants } from '@saulx/selva'
+import { SelvaClient } from '@saulx/selva'
 import { parentPort } from 'worker_threads'
 import addListeners from './addListeners'
 import updateSubscriptionData from './updateSubscriptionData'
-
-const { SERVER_HEARTBEAT } = constants
 
 const clear = (subsManager: SubscriptionManager) => {
   subsManager.clients = {}
@@ -16,20 +14,7 @@ const clear = (subsManager: SubscriptionManager) => {
   subsManager.stagedForUpdates = new Set()
   clearTimeout(subsManager.stagedTimeout)
   clearTimeout(subsManager.revalidateSubscriptionsTimeout)
-  clearTimeout(subsManager.serverHeartbeatTimeout)
   clearTimeout(subsManager.refreshNowQueriesTimeout)
-}
-
-const startServerHeartbeat = (subsManager: SubscriptionManager) => {
-  const setHeartbeat = () => {
-    subsManager.client.redis.publish(
-      subsManager.selector,
-      SERVER_HEARTBEAT,
-      String(Date.now())
-    )
-    subsManager.serverHeartbeatTimeout = setTimeout(setHeartbeat, 2e3)
-  }
-  setHeartbeat()
 }
 
 const revalidateSubscriptions = (subsManager: SubscriptionManager) => {
@@ -64,7 +49,6 @@ const createSubscriptionManager = (
   client.on('connect', () => {
     console.log('CONNECT!')
     addListeners(subsManager)
-    startServerHeartbeat(subsManager)
     updateSubscriptionData(subsManager)
     revalidateSubscriptions(subsManager)
 
