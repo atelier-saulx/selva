@@ -81,9 +81,9 @@ export class SelvaServer extends EventEmitter {
 
     attachStatusListeners(this, opts)
 
-    if (this.type !== 'replica') {
-      heartbeat(this)
-    }
+    // if (this.type !== 'replica') {
+    //   heartbeat(this)
+    // }
 
     if (this.type === 'subscriptionManager') {
       this.subscriptionManager = await startSubscriptionManager(opts)

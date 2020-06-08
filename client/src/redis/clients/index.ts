@@ -185,13 +185,9 @@ export class Client extends EventEmitter {
 
     const isSubscriptionManager = type === 'subscriptionManager'
 
-    this.on('disconnect', () => {
-      console.log('make dc come on')
-    })
-
     this.on('hard-disconnect', () => {
       // find different server for it
-
+      this.emit('disconnect')
       console.log(
         'hard dc - prob need to reconnect to somethign new',
         port,
@@ -264,15 +260,15 @@ export class Client extends EventEmitter {
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
     this.publisher = createRedisClient(this, host, port, 'publisher')
 
-    this.subscriber.on('message', channel => {
-      if (channel === SERVER_HEARTBEAT) {
-        clearTimeout(this.serverHeartbeat)
-        this.serverHeartbeat = setTimeout(() => {
-          console.log('heart beat expired disconnect it!')
-          this.emit('hard-disconnect')
-        }, 20e3)
-      }
-    })
+    // this.subscriber.on('message', channel => {
+    //   if (channel === SERVER_HEARTBEAT) {
+    //     clearTimeout(this.serverHeartbeat)
+    //     this.serverHeartbeat = setTimeout(() => {
+    //       console.log('heart beat expired disconnect it!')
+    //       this.emit('hard-disconnect')
+    //     }, 20e3)
+    //   }
+    // })
 
     if (isSubscriptionManager) {
       this.observers = {}

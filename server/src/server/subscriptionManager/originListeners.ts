@@ -10,7 +10,7 @@ const prefixLength = EVENTS.length
 const deleteLength = 'delete:'.length
 
 // pass subscription
-const addOriginListeners = (
+const addOriginListeners = async (
   name: string,
   subsManager: SubscriptionManager,
   subscription: Subscription
@@ -22,8 +22,10 @@ const addOriginListeners = (
 
     console.log('ADD ORIGIN LISTENERS', name)
 
+    const descriptor = await subsManager.client.getServerDescriptor(selector)
+
     const listener = (_pattern, channel, message) => {
-      console.info('------------', name, channel, message)
+      console.info('----->>>>>>', name, channel, message)
 
       subsManager.incomingCount++
       collect++
@@ -77,8 +79,8 @@ const addOriginListeners = (
 
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
-    redis.on(selector, 'pmessage', listener)
-    redis.psubscribe(selector, EVENTS + '*')
+    redis.on(descriptor, 'pmessage', listener)
+    redis.psubscribe(descriptor, EVENTS + '*')
   }
 
   subsManager.originListeners[name].subscriptions.add(subscription)

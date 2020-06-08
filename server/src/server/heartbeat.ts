@@ -6,7 +6,7 @@ const startServerHeartbeat = (server: SelvaServer) => {
     server.registry.redis.publish(
       { host: server.host, port: server.port },
       constants.SERVER_HEARTBEAT,
-      String(Date.now())
+      ''
     )
     server.serverHeartbeatTimeout = setTimeout(setHeartbeat, 2e3)
   }
