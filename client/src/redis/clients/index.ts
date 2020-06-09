@@ -62,6 +62,10 @@ export class Client extends EventEmitter {
     subscribe: {}
   }
 
+  public isRemoved: boolean
+  public startClientTimer: NodeJS.Timeout
+  public serverHeartbeat: NodeJS.Timeout
+
   // event, listeners
   public redisListeners: Record<string, Callback[]> = {}
   public queue: RedisCommand[]
@@ -70,7 +74,6 @@ export class Client extends EventEmitter {
   public type: ServerType // for logs
   public id: string // url:port
   public connected: boolean
-  public serverHeartbeat: NodeJS.Timeout
   public observers: Record<string, Set<ObserverEmitter>>
   public uuid: string
   public queueBeingDrained: RedisCommand[]
@@ -110,6 +113,8 @@ export class Client extends EventEmitter {
         name
       )
 
+      this.subscriber.removeAllListeners()
+      this.publisher.removeAllListeners()
       this.subscriber.quit()
       this.publisher.quit()
 
@@ -177,16 +182,6 @@ export class Client extends EventEmitter {
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
     this.publisher = createRedisClient(this, host, port, 'publisher')
 
-    // this.subscriber.on('message', channel => {
-    //   if (channel === SERVER_HEARTBEAT) {
-    //     clearTimeout(this.serverHeartbeat)
-    //     this.serverHeartbeat = setTimeout(() => {
-    //       // console.log('heart beat expired disconnect it!')
-    //       // this.emit('hard-disconnect')
-    //     }, 20e3)
-    //   }
-    // })
-
     if (isSubscriptionManager) {
       this.observers = {}
     }
@@ -216,6 +211,7 @@ export const destroyClient = (client: Client) => {
   client.clients = new Set()
   clients.delete(client.id)
   client.observers = {}
+  client.isRemoved = true
   client.queueBeingDrained = []
   client.removeAllListeners()
   client.redisListeners = {}

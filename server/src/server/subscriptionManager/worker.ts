@@ -47,7 +47,6 @@ const createSubscriptionManager = (
   }
 
   client.on('connect', () => {
-    console.log('CONNECT!')
     addListeners(subsManager)
     updateSubscriptionData(subsManager)
     revalidateSubscriptions(subsManager)

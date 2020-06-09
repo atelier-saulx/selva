@@ -189,11 +189,6 @@ export function removeSubscriptionFromTree(
   } else {
     let { tree } = subscription
 
-    // dont have to remove just wait
-    // if (subsmanager.stagedForUpdates.has(subscription) {
-    //   console.log('want to remove', subscription.get)
-    //   // subsmanager.stagedForUpdates.delete(subscription)
-    // }
     if (!tree) {
       // console.error('No tree on subscription', subscription)
     } else {

@@ -1,5 +1,6 @@
 import { RedisClient } from 'redis'
 import { Client } from './'
+import { SERVER_HEARTBEAT } from '../../constants'
 
 const createRedisClient = (
   client: Client,
@@ -11,15 +12,21 @@ const createRedisClient = (
   let retryTimer = 0
   let isConnected: boolean = false
 
-  const startClientTimer = setTimeout(() => {
-    console.log('cannot get it ready!', host, port, label)
-    client.emit('hard-disconnect')
-  }, 30e3)
+  if (label === 'publisher') {
+    client.startClientTimer = setTimeout(() => {
+      console.log('cannot get it ready!', host, port, label)
+      client.emit('hard-disconnect')
+    }, 30e3)
+  }
 
   const retryStrategy = () => {
-    if (tries > 10) {
+    if (tries > 20) {
       console.log('HARD DC')
-      client.emit('hard-disconnect')
+      clearTimeout(client.serverHeartbeat)
+      clearTimeout(client.startClientTimer)
+      if (label === 'publisher') {
+        client.emit('hard-disconnect')
+      }
     } else {
       if (tries === 0 && isConnected === true) {
         isConnected = false
@@ -41,11 +48,25 @@ const createRedisClient = (
     retry_strategy: retryStrategy
   })
 
+  if (label === 'subscriber') {
+    redisClient.on('message', channel => {
+      if (channel === SERVER_HEARTBEAT) {
+        clearTimeout(client.serverHeartbeat)
+        client.serverHeartbeat = setTimeout(() => {
+          console.log('heart beat expired disconnect it!')
+          client.emit('hard-disconnect')
+        }, 30e3)
+      }
+    })
+  }
+
   redisClient.setMaxListeners(1e4)
 
   redisClient.on('ready', () => {
     console.log('is ready clear start timer')
-    clearTimeout(startClientTimer)
+    if (label === 'publisher') {
+      clearTimeout(client.startClientTimer)
+    }
     tries = 0
     retryTimer = 0
     isConnected = true

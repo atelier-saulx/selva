@@ -64,10 +64,6 @@ net
       } else {
         console.log('waiting for more data', got, size)
       }
-
-      // while (null !== (chunk = socket.read())) {
-      //   console.log(`Received ${chunk.length} bytes of data.`)
-      // }
     }
 
     socket.on('readable', drain)

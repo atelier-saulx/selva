@@ -1,5 +1,5 @@
 import { ConnectOptions, ServerDescriptor } from '../types'
-import { getClient } from './clients'
+import { getClient, destroyClient } from './clients'
 import RedisSelvaClient from './'
 import {
   REGISTRY_UPDATE,
@@ -145,6 +145,8 @@ const createRegistryClient = (
   port: number,
   host: string
 ) => {
+  clearTimeout(client.timeoutServers)
+
   client.registry = getClient(client, {
     port,
     host,
@@ -152,15 +154,11 @@ const createRegistryClient = (
     type: 'registry'
   })
 
-  console.log('Make a registry', port)
-
   client.registry.on('connect', () => {
-    console.log('this bitch needs to connect it now')
     client.selvaClient.emit('connect')
   })
 
   client.registry.on('disconnect', () => {
-    console.log('registry def dc')
     client.selvaClient.emit('disconnect')
   })
 
@@ -171,12 +169,22 @@ const createRegistryClient = (
     client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_STATS)
   }
 
+  const setTimeoutServer = () => {
+    clearTimeout(client.timeoutServers)
+    client.timeoutServers = setTimeout(() => {
+      getServers(client)
+    }, 30e3)
+  }
+
+  setTimeoutServer()
+
   client.on({ type: 'registry' }, 'message', (channel, payload) => {
     if (
       channel === REGISTRY_UPDATE ||
       (client.selvaClient.serverType === 'registry' &&
         channel === REGISTRY_UPDATE_STATS)
     ) {
+      setTimeoutServer()
       // can be handled more effiecently
       getServers(client, <string>payload)
     } else if (channel === REGISTRY_UPDATE_SUBSCRIPTION) {
@@ -206,6 +214,7 @@ const connectRegistry = (
           newConnectionOptions.host !== prevConnectOptions.host ||
           newConnectionOptions.port !== prevConnectOptions.port
         ) {
+          destroyClient(client.registry)
           client.registry.removeListener('disconnect', dcHandler)
           client.registry = undefined
           connectRegistry(client, connectOptions)

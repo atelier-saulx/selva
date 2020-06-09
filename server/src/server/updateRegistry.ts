@@ -17,6 +17,12 @@ export default async function updateRegistry(
 
   const id = info.host + ':' + info.port
 
+  const isNew = !(await client.redis.sismember(
+    { type: 'registry' },
+    'servers',
+    id
+  ))
+
   await Promise.all([
     client.redis.sadd({ type: 'registry' }, 'servers', id),
     client.redis.hmset({ type: 'registry' }, id, ...args)
@@ -28,6 +34,11 @@ export default async function updateRegistry(
       constants.REGISTRY_UPDATE_STATS,
       id
     )
+
+    if (isNew) {
+      console.log('ISNEW')
+      client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
+    }
   } else {
     client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
   }

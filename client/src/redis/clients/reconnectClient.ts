@@ -72,7 +72,7 @@ const reconnectClient = (client, retry: number = 0) => {
 
     for (const key in newClient.redisSubscriptions.psubscribe) {
       addCommandToQueue(newClient, {
-        command: 'subscpsubscriberibe',
+        command: 'psubscribe',
         args: [key]
       })
     }

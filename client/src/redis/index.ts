@@ -23,6 +23,8 @@ class RedisSelvaClient extends RedisMethods {
   public registry: Client
   public logFn: LogFn
 
+  public timeoutServers: NodeJS.Timeout
+
   public servers: Servers
   public serversById: ServersById
   public subsManagers: ServerDescriptor[]
