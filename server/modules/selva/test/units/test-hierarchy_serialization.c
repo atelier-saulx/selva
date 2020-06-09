@@ -58,7 +58,7 @@ static char * test_serialize_one_node(void)
     const node_id = io->next->string;
     const nr_children = io->next->next->uint64_val;
 
-    pu_assert_str_equal("node_id matches", node_id, id);
+    pu_assert("node_id matches", !strncmp(node_id, id, SELVA_NODE_ID_SIZE));
     pu_assert_equal("nr_children is correct", nr_children, 0);
 
     return NULL;
@@ -74,9 +74,9 @@ static char * test_serialize_two_nodes(void)
     const nr_children = io->next->next->uint64_val;
     const child_id = io->next->next->next->string;
 
-    pu_assert_str_equal("node_id matches", node_id, "grphnode_a");
+    pu_assert("node_id matches", !strncmp(node_id, "grphnode_a", SELVA_NODE_ID_SIZE));
     pu_assert_equal("nr_children is correct", nr_children, 1);
-    pu_assert_str_equal("child_id is correct", child_id, "grphnode_b");
+    pu_assert("child_id is correct", !strncmp(child_id, "grphnode_b", SELVA_NODE_ID_SIZE));
 
     return NULL;
 }

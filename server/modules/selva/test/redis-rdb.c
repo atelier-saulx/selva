@@ -4,14 +4,13 @@
 #include "redis-rdb.h"
 
 RedisModuleIO *RedisRdb_NewIo(void) {
-    RedisModuleIO *io = malloc(sizeof(RedisModuleIO));
+    RedisModuleIO *io = calloc(1, sizeof(RedisModuleIO));
     io->type = REDIS_MODULE_IO_TYPE_HEAD;
 
     return io;
 }
 
 static RedisModuleIO *RedisRdb_NewIoNode(RedisModuleIO *io, size_t stringSize) {
-    RedisModuleIO *next = io->next;
     RedisModuleIO *node = calloc(1, sizeof(RedisModuleIO) + stringSize);
 
     if (!node) {
@@ -19,8 +18,8 @@ static RedisModuleIO *RedisRdb_NewIoNode(RedisModuleIO *io, size_t stringSize) {
         abort();
     }
 
+    node->next = io->next;
     io->next = node;
-    node->next = next;
 
     return node;
 }

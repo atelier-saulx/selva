@@ -89,6 +89,7 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
         SelvaModify_DestroyNode(node);
     }
 
+    SVector_Destroy(&hierarchy->heads);
     RedisModule_Free(hierarchy);
 }
 
@@ -367,17 +368,16 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
     return NULL;
 }
 
-/* TODO Save RDB */
 void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
     SelvaModify_Hierarchy *hierarchy = (SelvaModify_Hierarchy *)value;
-    SelvaModify_HierarchyNode *head;
+    SelvaModify_HierarchyNode **head;
+    SVector stack;
 
+    SVector_Init(&stack, 100, NULL);
     Trx_Begin(&hierarchy->current_trx);
 
     SVECTOR_FOREACH(head, &hierarchy->heads) {
-        SVector stack;
-        SVector_Init(&stack, 100, NULL);
-        SVector_Insert(&stack, head);
+        SVector_Insert(&stack, *head);
 
         while (SVector_Size(&stack) > 0) {
             SelvaModify_HierarchyNode *node = SVector_Pop(&stack);
@@ -405,6 +405,8 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
             }
         }
     }
+
+    SVector_Destroy(&stack);
 }
 
 void HierarchyTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
