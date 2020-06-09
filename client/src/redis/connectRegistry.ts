@@ -86,7 +86,7 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
     servers[server.name][server.type].push(server)
   }
 
-  // console.log('--->', servers)
+  // need to check for diff
 
   subsManagers.sort(sortSubsManagers)
 
@@ -103,6 +103,7 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
   client.serversById = serversById
   client.servers = servers
   client.registry.emit('servers_updated', servers)
+  client.selvaClient.emit('servers_updated', servers)
 }
 
 type SubscriptionUpdates = {

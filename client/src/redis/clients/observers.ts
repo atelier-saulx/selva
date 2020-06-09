@@ -68,7 +68,10 @@ export function sendObserver(
     command: 'publish',
     args: [NEW_SUBSCRIPTION, JSON.stringify({ client: client.uuid, channel })]
   })
-  client.subscriber.subscribe(channel)
+  addCommandToQueue(client, {
+    command: 'subscribe',
+    args: [channel]
+  })
 }
 
 export function startObserver(

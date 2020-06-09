@@ -11,34 +11,23 @@ import { v4 as uuidv4 } from 'uuid'
 import startSubscriptionHeartbeat from './startSubscriptionHeartbeat'
 import { ObserverEmitter } from '../observers'
 import { getObserverValue, sendObserver } from './observers'
-import getServerDescriptor from '../getServerDescriptor'
 import * as constants from '../../constants'
-import handleListenerClient from './handleListenerClient'
 import { SERVER_HEARTBEAT } from '../../constants'
+import reconnectClient from './reconnectClient'
 
-type RedisSubscriptions = {
+console.log('o no nice')
+
+export type RedisSubscriptions = {
   psubscribe: Record<string, true>
   subscribe: Record<string, true>
 }
 
-type ClientOpts = {
+export type ClientOpts = {
   name: string
   type: ServerType
   host: string
   port: number
   id: string
-}
-
-const mergeSubscriptions = (
-  oldSubs: RedisSubscriptions,
-  newSubs: RedisSubscriptions
-) => {
-  for (let key in oldSubs.psubscribe) {
-    newSubs.psubscribe[key] = true
-  }
-  for (let key in oldSubs.subscribe) {
-    newSubs.subscribe[key] = true
-  }
 }
 
 const addListeners = (client: Client) => {
@@ -63,81 +52,6 @@ const addListeners = (client: Client) => {
       }
     })
   }
-}
-
-const reconnectClient = (client, retry: number = 0) => {
-  const { type, name } = client
-  const clients = [...client.clients.values()]
-  const aSelvaClient = clients[0]
-
-  const q = [...client.queue, ...client.queueBeingDrained]
-
-  if (!aSelvaClient) {
-    console.log(
-      'ok dont have a selva client here thats a problemo!',
-      client.clients
-    )
-
-    return
-  }
-
-  getServerDescriptor(aSelvaClient, {
-    type,
-    name
-  }).then(descriptor => {
-    console.log(
-      'reconnecting to ',
-      descriptor.port,
-      descriptor.name,
-      descriptor.type,
-      retry
-    )
-
-    if (descriptor.host + ':' + descriptor.port === client.id && retry < 5) {
-      console.log('TRYING TO RECONNECT TO THE SAME WAIT A BIT')
-      setTimeout(() => {
-        reconnectClient(client, retry + 1)
-      }, 1e3)
-      return
-    }
-
-    console.log('do I have clients?', clients.length)
-
-    let newClient
-    clients.forEach(selvaClient => {
-      setTimeout(() => {
-        selvaClient.selvaClient.emit('reconnect', descriptor)
-      }, 500)
-      newClient = getClient(selvaClient, descriptor)
-    })
-
-    for (let event in client.redisListeners) {
-      console.log(
-        're-applying listeners for',
-        event,
-        client.redisListeners[event].length
-      )
-      client.redisListeners[event].forEach(callback => {
-        handleListenerClient(newClient, 'on', event, callback)
-      })
-    }
-
-    mergeSubscriptions(client.redisSubscriptions, newClient.redisSubscriptions)
-
-    for (const key in newClient.redisSubscriptions.subscribe) {
-      newClient.subscriber.subscribe(key)
-    }
-
-    for (const key in newClient.redisSubscriptions.psubscribe) {
-      newClient.subscriber.psubscribe(key)
-    }
-
-    q.forEach(command => {
-      addCommandToQueue(newClient, command)
-    })
-
-    destroyClient(client)
-  })
 }
 
 export class Client extends EventEmitter {
@@ -219,14 +133,17 @@ export class Client extends EventEmitter {
         drainQueue(this)
 
         for (const key in this.redisSubscriptions.subscribe) {
-          this.subscriber.subscribe(key)
+          addCommandToQueue(this, { command: 'subscribe', args: [key] })
         }
 
         for (const key in this.redisSubscriptions.psubscribe) {
-          this.subscriber.psubscribe(key)
+          addCommandToQueue(this, { command: 'psubscribe', args: [key] })
         }
 
-        this.subscriber.subscribe(SERVER_HEARTBEAT)
+        addCommandToQueue(this, {
+          command: 'subscribe',
+          args: [SERVER_HEARTBEAT]
+        })
 
         if (isSubscriptionManager) {
           startSubscriptionHeartbeat(this)
@@ -264,8 +181,8 @@ export class Client extends EventEmitter {
     //   if (channel === SERVER_HEARTBEAT) {
     //     clearTimeout(this.serverHeartbeat)
     //     this.serverHeartbeat = setTimeout(() => {
-    //       console.log('heart beat expired disconnect it!')
-    //       this.emit('hard-disconnect')
+    //       // console.log('heart beat expired disconnect it!')
+    //       // this.emit('hard-disconnect')
     //     }, 20e3)
     //   }
     // })
@@ -294,7 +211,7 @@ const createClient = (descriptor: ServerDescriptor): Client => {
   return client
 }
 
-const destroyClient = (client: Client) => {
+export const destroyClient = (client: Client) => {
   client.queue = []
   client.clients = new Set()
   clients.delete(client.id)
@@ -335,9 +252,11 @@ export function getClient(
   }
 
   if (!client.clients.has(selvaRedisClient)) {
-    client.subscriber.subscribe(
-      `${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`
-    )
+    addCommandToQueue(client, {
+      command: 'subscribe',
+      args: [`${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`]
+    })
+
     client.clients.add(selvaRedisClient)
   }
 

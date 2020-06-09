@@ -9,7 +9,7 @@ import RedisManager from './redisManager'
 // this is only for the 'raw' redis
 // no handling of registry, no different types, no subscriptions stuff
 // has to be replaced with a nice wrapper that makes it a little bit more reliable
-export default async (server: SelvaServer, opts: ServerOptions) => {
+export default (server: SelvaServer, opts: ServerOptions) => {
   const { port, dir, modules } = opts
 
   if (opts.attachToExisting) {
@@ -40,11 +40,8 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   })
 
   if (server.type === 'replica') {
-    const origin = await server.selvaClient.getServerDescriptor({
-      name: opts.name,
-      type: 'origin'
-    })
-    args.push('--replicaof', origin.host, String(origin.port))
+    console.log(server.origin)
+    args.push('--replicaof', server.origin.host, String(server.origin.port))
   }
 
   const tmpPath = path.join(process.cwd(), './tmp')

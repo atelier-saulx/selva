@@ -12,11 +12,13 @@ const createRedisClient = (
   let isConnected: boolean = false
 
   const startClientTimer = setTimeout(() => {
+    console.log('cannot get it ready!', host, port, label)
     client.emit('hard-disconnect')
   }, 30e3)
 
   const retryStrategy = () => {
     if (tries > 10) {
+      console.log('HARD DC')
       client.emit('hard-disconnect')
     } else {
       if (tries === 0 && isConnected === true) {
@@ -42,6 +44,7 @@ const createRedisClient = (
   redisClient.setMaxListeners(1e4)
 
   redisClient.on('ready', () => {
+    console.log('is ready clear start timer')
     clearTimeout(startClientTimer)
     tries = 0
     retryTimer = 0

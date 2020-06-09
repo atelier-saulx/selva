@@ -1,4 +1,9 @@
-import { ServerType, connect, SelvaClient } from '@saulx/selva'
+import {
+  ServerType,
+  connect,
+  SelvaClient,
+  ServerDescriptor
+} from '@saulx/selva'
 import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
@@ -27,6 +32,7 @@ export class SelvaServer extends EventEmitter {
   public selvaClient: SelvaClient
   public serverHeartbeatTimeout?: NodeJS.Timeout
   public pm: ProcessManager
+  public origin: ServerDescriptor
   public subscriptionManager: SubscriptionManagerState
   private backupFns: BackupFns
   private backupDir: string
@@ -69,7 +75,45 @@ export class SelvaServer extends EventEmitter {
       console.log('Backup loaded')
     }
 
-    await startRedis(this, opts)
+    if (this.type === 'replica') {
+      this.selvaClient.on('servers_updated', async servers => {
+        if (!this.origin) {
+          return
+        }
+
+        const origin = await this.selvaClient.getServerDescriptor({
+          name: opts.name,
+          type: 'origin'
+        })
+
+        if (
+          origin.port !== this.origin.port ||
+          origin.host !== this.origin.host
+        ) {
+          console.log(
+            'ORIGIN CHANGED FOR REPLICA from',
+            this.origin.port,
+            'to',
+            origin.port
+          )
+
+          this.pm.destroy()
+          this.origin = origin
+
+          console.log('starts it on ', opts.port)
+          setTimeout(() => {
+            startRedis(this, opts)
+          }, 500)
+        }
+      })
+      this.origin = await this.selvaClient.getServerDescriptor({
+        name: opts.name,
+        type: 'origin'
+      })
+      startRedis(this, opts)
+    } else {
+      startRedis(this, opts)
+    }
 
     if (this.type === 'origin' && opts.backups && opts.backups.scheduled) {
       this.backupCleanup = scheduleBackups(
@@ -82,7 +126,7 @@ export class SelvaServer extends EventEmitter {
     attachStatusListeners(this, opts)
 
     if (this.type !== 'replica') {
-      heartbeat(this)
+      // heartbeat(this)
     }
 
     if (this.type === 'subscriptionManager') {
