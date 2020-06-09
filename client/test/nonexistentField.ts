@@ -19,7 +19,7 @@ test.before(async t => {
         prefix: 'us',
         fields: {
           name: {
-            type: 'string',
+            type: 'string'
           }
         }
       }
@@ -34,7 +34,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('invalid filter should not return result', async t => {
+test.serial.skip('invalid filter should not return result', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({
     $language: 'en',
