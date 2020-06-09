@@ -39,7 +39,7 @@ const sendUpdate = async (
 
   let time = setTimeout(() => {
     console.log('TIMEOUT OUT', getOptions)
-  }, 2e3)
+  }, 5e3)
 
   const payload = await client.get(getOptions)
 
