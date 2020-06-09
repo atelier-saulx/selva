@@ -63,6 +63,19 @@ const getDotIndex = (str: string): number => {
   return -1
 }
 
+export function hasSearch(id: string, field: string): boolean {
+  const searchIndex = getSearchIndexes()
+
+  for (const indexKey in searchIndex) {
+    const index = searchIndex[indexKey]
+    if (index[field]) {
+      return true
+    }
+  }
+
+  return false
+}
+
 export function addFieldToSearch(
   id: string,
   field: string,

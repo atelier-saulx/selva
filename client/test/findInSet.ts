@@ -19,11 +19,11 @@ test.before(async t => {
         fields: {
           roles: {
             type: 'set',
+            search: {
+              type: ['TAG']
+            },
             items: {
-              type: 'string',
-              search: {
-                type: ['TAG']
-              }
+              type: 'string'
             }
           }
         }

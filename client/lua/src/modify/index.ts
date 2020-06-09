@@ -10,7 +10,8 @@ import {
   joinString,
   ensureArray,
   stringStartsWith,
-  stringEndsWith
+  stringEndsWith,
+  joinAny
 } from '../util'
 import { resetSet, addToSet, removeFromSet } from './setOperations'
 import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
@@ -18,7 +19,7 @@ import { DeleteOptions } from '~selva/delete/types'
 import { deleteItem } from './delete'
 import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
-import { addFieldToSearch } from './search'
+import { addFieldToSearch, hasSearch } from './search'
 import sendEvent from './events'
 import { setUpdatedAt, setCreatedAt, markUpdated } from './timestamps'
 import { cleanUpSuggestions } from './delete'
@@ -88,6 +89,22 @@ function removeFields(
   }
 }
 
+function tryIndexSet(id: string, field: string, value?: any) {
+  if (hasSearch(id, field)) {
+    if (!value) {
+      value = redis.smembers(id + '.' + field)
+    }
+
+    if (!value) {
+      return
+    }
+
+    const asStr = joinAny(value, ',')
+    redis.hset(id, field, asStr)
+    addFieldToSearch(id, field, asStr)
+  }
+}
+
 function setInternalArrayStructure(
   id: string,
   field: string,
@@ -98,18 +115,23 @@ function setInternalArrayStructure(
 
   if (isArray(value)) {
     resetSet(id, field, value, update, hierarchy, false, source)
+    tryIndexSet(id, field, value)
   } else if (type(value) === 'string') {
     resetSet(id, field, ensureArray(value), update, hierarchy, false, source)
+    tryIndexSet(id, field, value)
   } else if (value.$value) {
     const noRoot = value.$noRoot || false
     resetSet(id, field, value.$value, update, hierarchy, noRoot, source)
+    tryIndexSet(id, field, value)
   } else {
     if (value.$add) {
       const noRoot = value.$noRoot || false
       addToSet(id, field, value.$add, update, hierarchy, noRoot, source)
+      tryIndexSet(id, field)
     }
     if (value.$delete) {
       removeFromSet(id, field, value.$delete, hierarchy, source)
+      tryIndexSet(id, field)
     }
   }
 
