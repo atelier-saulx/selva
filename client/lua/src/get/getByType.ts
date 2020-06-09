@@ -265,10 +265,19 @@ const array = (
   const value = redis.hget(id, field)
   let decoded: never[] | null =
     type(value) === 'string' ? cjson.decode(value) : null
-  if (decoded === null || decoded.length === 0 || !decoded.length) {
+  if (decoded === null) {
     decoded = emptyArray()
     setNestedResult(result, field, decoded)
     return false
+  } else if (decoded.length === 0) {
+    decoded = emptyArray()
+    setNestedResult(result, field, decoded)
+    return true
+  } else if (next(decoded) === null) {
+    // if it's somehow interpreted as empty object
+    decoded = emptyArray()
+    setNestedResult(result, field, decoded)
+    return true
   }
 
   setNestedResult(result, field, decoded)

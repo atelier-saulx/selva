@@ -14,6 +14,12 @@ import { getObserverValue, sendObserver } from './observers'
 import getServerDescriptor from '../getServerDescriptor'
 import * as constants from '../../constants'
 import handleListenerClient from './handleListenerClient'
+import { SERVER_HEARTBEAT } from '../../constants'
+
+type RedisSubscriptions = {
+  psubscribe: Record<string, true>
+  subscribe: Record<string, true>
+}
 
 type ClientOpts = {
   name: string
@@ -21,6 +27,18 @@ type ClientOpts = {
   host: string
   port: number
   id: string
+}
+
+const mergeSubscriptions = (
+  oldSubs: RedisSubscriptions,
+  newSubs: RedisSubscriptions
+) => {
+  for (let key in oldSubs.psubscribe) {
+    newSubs.psubscribe[key] = true
+  }
+  for (let key in oldSubs.subscribe) {
+    newSubs.subscribe[key] = true
+  }
 }
 
 const addListeners = (client: Client) => {
@@ -83,8 +101,6 @@ const reconnectClient = (client, retry: number = 0) => {
       return
     }
 
-    // console.log('ok mr', clients, client.redisListeners)
-
     console.log('do I have clients?', clients.length)
 
     let newClient
@@ -106,7 +122,7 @@ const reconnectClient = (client, retry: number = 0) => {
       })
     }
 
-    newClient.redisSubscriptions = client.redisSubscriptions
+    mergeSubscriptions(client.redisSubscriptions, newClient.redisSubscriptions)
 
     for (const key in newClient.redisSubscriptions.subscribe) {
       newClient.subscriber.subscribe(key)
@@ -116,9 +132,7 @@ const reconnectClient = (client, retry: number = 0) => {
       newClient.subscriber.psubscribe(key)
     }
 
-    console.log('yo bitch!', newClient.id, q.length, client.redisSubscriptions)
     q.forEach(command => {
-      console.log('reapply command', command.command, command.args[0])
       addCommandToQueue(newClient, command)
     })
 
@@ -129,10 +143,7 @@ const reconnectClient = (client, retry: number = 0) => {
 export class Client extends EventEmitter {
   public subscriber: RedisClient
   public publisher: RedisClient
-  public redisSubscriptions: {
-    psubscribe: Record<string, true>
-    subscribe: Record<string, true>
-  } = {
+  public redisSubscriptions: RedisSubscriptions = {
     psubscribe: {},
     subscribe: {}
   }
@@ -145,6 +156,7 @@ export class Client extends EventEmitter {
   public type: ServerType // for logs
   public id: string // url:port
   public connected: boolean
+  public serverHeartbeat: NodeJS.Timeout
   public observers: Record<string, Set<ObserverEmitter>>
   public uuid: string
   public queueBeingDrained: RedisCommand[]
@@ -173,13 +185,9 @@ export class Client extends EventEmitter {
 
     const isSubscriptionManager = type === 'subscriptionManager'
 
-    this.on('disconnect', () => {
-      console.log('make dc come on')
-    })
-
     this.on('hard-disconnect', () => {
       // find different server for it
-
+      this.emit('disconnect')
       console.log(
         'hard dc - prob need to reconnect to somethign new',
         port,
@@ -218,6 +226,8 @@ export class Client extends EventEmitter {
           this.subscriber.psubscribe(key)
         }
 
+        this.subscriber.subscribe(SERVER_HEARTBEAT)
+
         if (isSubscriptionManager) {
           startHeartbeat(this)
           for (const channel in this.observers) {
@@ -249,6 +259,16 @@ export class Client extends EventEmitter {
 
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
     this.publisher = createRedisClient(this, host, port, 'publisher')
+
+    // this.subscriber.on('message', channel => {
+    //   if (channel === SERVER_HEARTBEAT) {
+    //     clearTimeout(this.serverHeartbeat)
+    //     this.serverHeartbeat = setTimeout(() => {
+    //       console.log('heart beat expired disconnect it!')
+    //       this.emit('hard-disconnect')
+    //     }, 20e3)
+    //   }
+    // })
 
     if (isSubscriptionManager) {
       this.observers = {}
