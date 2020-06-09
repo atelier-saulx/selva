@@ -393,21 +393,21 @@ const text = (
     }
   } else {
     const value = redis.hget(id, field + '.' + language)
-    if (value) {
+    if (value && value !== '') {
       setNestedResult(result, field, value)
       return true
-    } else {
-      const keys = redis.hkeys(id)
-      for (let i = 0; i < keys.length; i++) {
-        if (stringStartsWith(keys[i], field + '.')) {
-          const value = redis.hget(id, keys[i])
-          if (value) {
-            setNestedResult(result, field, value)
-            return true
-          }
+    } else if (schema.languages) {
+      for (const lang of schema.languages) {
+        const value = redis.hget(id, field + '.' + lang)
+        if (value && value !== '') {
+          setNestedResult(result, field, value)
+          return true
         }
       }
 
+      setNestedResult(result, field, '')
+      return false
+    } else {
       setNestedResult(result, field, '')
       return false
     }

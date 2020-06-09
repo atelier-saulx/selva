@@ -1401,3 +1401,93 @@ test.serial('get - basic with many ids', async t => {
 
   client.destroy()
 })
+
+test.serial('get - basic with non-priority language', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      de: 'nice de!'
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice de!',
+      value: 25
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $language: 'nl',
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice de!',
+      value: 25
+    }
+  )
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      nl: 'nice nl!'
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice de!',
+      value: 25
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $language: 'nl',
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice nl!',
+      value: 25
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
