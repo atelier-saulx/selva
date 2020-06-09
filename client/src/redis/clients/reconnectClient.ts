@@ -67,11 +67,14 @@ const reconnectClient = (client, retry: number = 0) => {
     mergeSubscriptions(client.redisSubscriptions, newClient.redisSubscriptions)
 
     for (const key in newClient.redisSubscriptions.subscribe) {
-      newClient.subscriber.subscribe(key)
+      addCommandToQueue(newClient, { command: 'subscribe', args: [key] })
     }
 
     for (const key in newClient.redisSubscriptions.psubscribe) {
-      newClient.subscriber.psubscribe(key)
+      addCommandToQueue(newClient, {
+        command: 'subscpsubscriberibe',
+        args: [key]
+      })
     }
 
     q.forEach(command => {

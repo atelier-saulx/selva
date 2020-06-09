@@ -133,14 +133,17 @@ export class Client extends EventEmitter {
         drainQueue(this)
 
         for (const key in this.redisSubscriptions.subscribe) {
-          this.subscriber.subscribe(key)
+          addCommandToQueue(this, { command: 'subscribe', args: [key] })
         }
 
         for (const key in this.redisSubscriptions.psubscribe) {
-          this.subscriber.psubscribe(key)
+          addCommandToQueue(this, { command: 'psubscribe', args: [key] })
         }
 
-        this.subscriber.subscribe(SERVER_HEARTBEAT)
+        addCommandToQueue(this, {
+          command: 'subscribe',
+          args: [SERVER_HEARTBEAT]
+        })
 
         if (isSubscriptionManager) {
           startSubscriptionHeartbeat(this)
@@ -249,9 +252,11 @@ export function getClient(
   }
 
   if (!client.clients.has(selvaRedisClient)) {
-    client.subscriber.subscribe(
-      `${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`
-    )
+    addCommandToQueue(client, {
+      command: 'subscribe',
+      args: [`${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`]
+    })
+
     client.clients.add(selvaRedisClient)
   }
 
