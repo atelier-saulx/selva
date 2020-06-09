@@ -14,6 +14,7 @@ import { GetSchemaResult, SchemaOptions, Id, Schema, FieldSchema } from './schem
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
+import initializeSchema from './schema/initializeSchema'
 import { GetOptions, GetResult, get } from './get'
 import { SetOptions, set } from './set'
 import { IdOptions } from 'lua/src/id'
@@ -81,20 +82,8 @@ export class SelvaClient extends EventEmitter {
     this.redis = new Redis(this, opts)
   }
 
-  private async initializeSchema(opts: any) {
-    const dbName = (typeof opts === 'object' && opts.$db) || 'default'
-
-    if (!this.schemas[dbName]) {
-      await this.getSchema(dbName)
-    }
-
-    if (!this.schemaObservables[dbName]) {
-      this.schemaObservables[dbName] = this.subscribeSchema(dbName)
-      this.schemaObservables[dbName].subscribe((v: any) => {
-        // console.log('Update schema subscription --->', dbName, v)
-        this.schemas[dbName] = v        
-      })
-    }
+   async initializeSchema(opts: any) {
+    return initializeSchema(this, opts)
   }
 
   async id(props: IdOptions): Promise<string> {

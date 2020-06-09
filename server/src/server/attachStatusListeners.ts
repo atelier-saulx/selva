@@ -38,7 +38,7 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
       }
 
       updateRegistry(
-        server.registry,
+        server.selvaClient,
         Object.assign(
           {
             stats
@@ -53,13 +53,13 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     // set busy status
   })
 
-  server.registry.on('connect', () => {
+  server.selvaClient.on('connect', () => {
     console.log('Registering server', info)
-    updateRegistry(server.registry, info)
+    updateRegistry(server.selvaClient, info)
   })
 
   console.log('Registering server', info)
-  updateRegistry(server.registry, info)
+  updateRegistry(server.selvaClient, info)
 }
 
 export default attachStatusListeners

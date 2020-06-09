@@ -10,13 +10,13 @@ export const registryManager = (server: SelvaServer): Promise<void> => {
     console.log('start registry manager')
 
     const cleanIdle = async () => {
-      for (let key in server.registry.redis.serversById) {
-        const obj = server.registry.redis.serversById[key]
+      for (let key in server.selvaClient.redis.serversById) {
+        const obj = server.selvaClient.redis.serversById[key]
         const ts = obj.stats && obj.stats.timestamp
         if (ts) {
           // also add on exit hook!
           if (Date.now() - ts > 4e3) {
-            const redis = server.registry.redis
+            const redis = server.selvaClient.redis
             const id = `${obj.host}:${obj.port}`
             await Promise.all([
               redis.srem({ type: 'registry' }, 'servers', id),

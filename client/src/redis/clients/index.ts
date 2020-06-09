@@ -8,7 +8,7 @@ import createRedisClient from './createRedisClient'
 import { loadScripts } from './scripts'
 import drainQueue from './drainQueue'
 import { v4 as uuidv4 } from 'uuid'
-import startHeartbeat from './startHeartbeat'
+import startSubscriptionHeartbeat from './startSubscriptionHeartbeat'
 import { ObserverEmitter } from '../observers'
 import { getObserverValue, sendObserver } from './observers'
 import getServerDescriptor from '../getServerDescriptor'
@@ -229,7 +229,7 @@ export class Client extends EventEmitter {
         this.subscriber.subscribe(SERVER_HEARTBEAT)
 
         if (isSubscriptionManager) {
-          startHeartbeat(this)
+          startSubscriptionHeartbeat(this)
           for (const channel in this.observers) {
             let sendSubs = false
             this.observers[channel].forEach(obs => {

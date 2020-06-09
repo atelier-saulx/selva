@@ -40,7 +40,7 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   })
 
   if (server.type === 'replica') {
-    const origin = await server.registry.getServerDescriptor({
+    const origin = await server.selvaClient.getServerDescriptor({
       name: opts.name,
       type: 'origin'
     })

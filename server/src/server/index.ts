@@ -24,7 +24,7 @@ export class SelvaServer extends EventEmitter {
   public type: ServerType
   public port: number
   public host: string
-  public registry: SelvaClient
+  public selvaClient: SelvaClient
   public serverHeartbeatTimeout?: NodeJS.Timeout
   public pm: ProcessManager
   public subscriptionManager: SubscriptionManagerState
@@ -54,13 +54,13 @@ export class SelvaServer extends EventEmitter {
     this.backupDir = opts.dir
 
     if (opts.registry) {
-      this.registry = connect(opts.registry)
+      this.selvaClient = connect(opts.registry)
 
       //
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
-      this.registry = connect({ port: opts.port }, { serverType: this.type })
+      this.selvaClient = connect({ port: opts.port }, { serverType: this.type })
     }
 
     if (opts.backups && opts.backups.loadBackup) {
@@ -81,15 +81,13 @@ export class SelvaServer extends EventEmitter {
 
     attachStatusListeners(this, opts)
 
-    // if (this.type !== 'replica') {
-    //   heartbeat(this)
-    // }
+    if (this.type !== 'replica') {
+      heartbeat(this)
+    }
 
     if (this.type === 'subscriptionManager') {
       this.subscriptionManager = await startSubscriptionManager(opts)
-    }
-
-    if (this.type === 'registry') {
+    } else if (this.type === 'registry') {
       registryManager(this)
     }
   }
@@ -103,6 +101,7 @@ export class SelvaServer extends EventEmitter {
       await stopSubscriptionManager(this.subscriptionManager)
     }
 
+    // need to call destroy if it crashes
     clearTimeout(this.serverHeartbeatTimeout)
 
     if (this.backupCleanup) {

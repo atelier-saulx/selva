@@ -2,7 +2,9 @@ import { Client, addCommandToQueue } from './'
 import { CLIENTS, HEARTBEAT } from '../../constants'
 const HEARTBEAT_TIMER = 1e3
 
-const startHeartbeat = (client: Client) => {
+// subscription hearthbeat
+const startSubscriptionHeartbeat = (client: Client) => {
+  clearTimeout(client.heartbeatTimout)
   const setHeartbeat = () => {
     if (client.connected) {
       addCommandToQueue(client, {
@@ -23,4 +25,4 @@ const startHeartbeat = (client: Client) => {
   setHeartbeat()
 }
 
-export default startHeartbeat
+export default startSubscriptionHeartbeat
