@@ -6,6 +6,7 @@
 RedisModuleIO *RedisRdb_NewIo(void) {
     RedisModuleIO *io = calloc(1, sizeof(RedisModuleIO));
     io->type = REDIS_MODULE_IO_TYPE_HEAD;
+    io->last = io;
 
     return io;
 }
@@ -18,8 +19,10 @@ static RedisModuleIO *RedisRdb_NewIoNode(RedisModuleIO *io, size_t stringSize) {
         abort();
     }
 
-    node->next = io->next;
-    io->next = node;
+    if (io->last) {
+        io->last->next = node;
+    }
+    io->last = node;
 
     return node;
 }
@@ -32,6 +35,21 @@ void RedisRdb_FreeIo(RedisModuleIO *io) {
         next = node->next;
         free(node);
     }
+}
+
+size_t RedisRdb_CountIo(RedisModuleIO *io) {
+    size_t i = 0;
+    RedisModuleIO *next = io;
+
+    if (!io) {
+        return 0;
+    }
+
+    while ((next = next->next)) {
+        i++;
+    }
+
+    return i;
 }
 
 void _RedisModule_SaveUnsigned(RedisModuleIO *io, uint64_t value) {

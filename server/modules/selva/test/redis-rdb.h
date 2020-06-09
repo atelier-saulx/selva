@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 enum RedisModuleIOType {
-    REDIS_MODULE_IO_TYPE_HEAD,
+    REDIS_MODULE_IO_TYPE_HEAD = 0,
     REDIS_MODULE_IO_TYPE_UINT64,
     REDIS_MODULE_IO_TYPE_INT64,
     REDIS_MODULE_IO_TYPE_DOUBLE,
@@ -16,6 +16,7 @@ typedef struct RedisModuleIO {
     enum RedisModuleIOType type;
     struct RedisModuleIO *next;
     union {
+        struct RedisModuleIO *last;
         uint64_t uint64_val;
         int64_t int64_val;
         double double_val;
@@ -25,5 +26,6 @@ typedef struct RedisModuleIO {
 
 RedisModuleIO *RedisRdb_NewIo(void);
 void RedisRdb_FreeIo(RedisModuleIO *io);
+size_t RedisRdb_CountIo(RedisModuleIO *io);
 
 #endif /* REDIS_RDB_H */
