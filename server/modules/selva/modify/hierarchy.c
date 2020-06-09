@@ -391,12 +391,12 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
                  * NODE_ID | NR_CHILDREN | CHILD_ID_0,..
                  */
                 RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
-                RedisModule_SaveUnsigned(io, SVector_Size(&node->parents));
+                RedisModule_SaveUnsigned(io, SVector_Size(&node->children));
 
-                /* Add parents/children to the stack of unvisited nodes */
+                /* Add parents to the stack of unvisited nodes */
                 SelvaModify_HierarchyNode **itt;
                 /* cppcheck-suppress internalAstError */
-                SVECTOR_FOREACH(itt, &node->parents) {
+                SVECTOR_FOREACH(itt, &node->children) {
                     SelvaModify_HierarchyNode *it = *itt;
 
                     RedisModule_SaveStringBuffer(io, it->id, SELVA_NODE_ID_SIZE);
