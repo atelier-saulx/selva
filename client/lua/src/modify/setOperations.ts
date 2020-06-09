@@ -219,7 +219,7 @@ export function addToChildren(
     // automatic creation is attempted
     if (type(child) === 'table') {
       if (!(<any>child).parents) {
-        ;(<any>child).parents = [id]
+        ;(<any>child).parents = { $add: [id] }
       }
 
       if ((<any>child).$id || (<any>child).$alias) {
