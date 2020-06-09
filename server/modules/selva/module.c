@@ -153,6 +153,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
+  int Hierarchy_OnLoad(RedisModuleCtx *ctx);
 
   // Register the module itself
   if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
@@ -173,6 +174,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
                                 1) == REDISMODULE_ERR) {
     return REDISMODULE_ERR;
   }
+
+  Hierarchy_OnLoad(ctx);
 
   return REDISMODULE_OK;
 }

@@ -106,3 +106,7 @@ void *SVector_Pop(SVector * restrict vec) {
 
     return NULL;
 }
+
+void SVector_Clear(SVector * restrict vec) {
+    vec->vec_last = 0;
+}

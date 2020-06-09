@@ -17,6 +17,7 @@ void SVector_Insert(SVector *vec, void *el);
 void *SVector_Search(const SVector * restrict vec, void *key);
 void *SVector_Remove(SVector * restrict vec, void *key);
 void *SVector_Pop(SVector * restrict vec);
+void SVector_Clear(SVector * restrict vec);
 
 static inline size_t SVector_Size(SVector * restrict vec) {
     return vec->vec_last;

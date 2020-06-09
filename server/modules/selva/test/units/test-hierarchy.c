@@ -62,6 +62,117 @@ static char * test_insert_many(void)
     return NULL;
 }
 
+static char * test_alter_relationship_set(void)
+{
+    /*
+     *  a ---> c
+     *  b ---> d
+     * =>
+     *  a ---> c
+     *  b --/
+     *      \> d
+     */
+    int nr_ancestors;
+    int nr_descendants;
+
+    /* Create */
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+
+    /* Modify */
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 0, NULL, 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }));
+
+    /* ancestors of c */
+    nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
+    pu_assert_equal("returned the right number of ancestors", nr_ancestors, 2);
+    pu_assert("results pointer was set", findRes != NULL);
+    SelvaNodeId_SortRes(nr_ancestors);
+    pu_assert_str_equal("c has b as an ancestor", SelvaNodeId_GetRes(0), "grphnode_a");
+    pu_assert_str_equal("c has b as an ancestor", SelvaNodeId_GetRes(1), "grphnode_b");
+
+    /* ancestors of d */
+    nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_d" }), &findRes);
+    pu_assert_equal("returned the right number of ancestors", nr_ancestors, 1);
+    pu_assert("results pointer was set", findRes != NULL);
+    SelvaNodeId_SortRes(nr_ancestors);
+    pu_assert_str_equal("d has b as an ancestor", SelvaNodeId_GetRes(0), "grphnode_b");
+
+    /* descendants of a */
+    nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_a" }), &findRes);
+    pu_assert_equal("returned the right number of descendants", nr_descendants, 1);
+    pu_assert("results pointer was set", findRes != NULL);
+    SelvaNodeId_SortRes(nr_descendants);
+    pu_assert_str_equal("a has c as a descendant", SelvaNodeId_GetRes(0), "grphnode_c");
+
+    /* descendants of b */
+    nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_b" }), &findRes);
+    pu_assert_equal("returned the right number of descendants", nr_descendants, 2);
+    pu_assert("results pointer was set", findRes != NULL);
+    SelvaNodeId_SortRes(nr_descendants);
+    pu_assert_str_equal("b has c as a descendant", SelvaNodeId_GetRes(0), "grphnode_c");
+    pu_assert_str_equal("b has d as a descendant", SelvaNodeId_GetRes(1), "grphnode_d");
+
+    return NULL;
+}
+
+static char * test_get_heads(void)
+{
+    /*
+     *  e --> a --> c
+     *           /
+     *        b --> d
+     */
+
+    int n;
+
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+
+    n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
+    pu_assert_equal("returned the right number of heads", n, 2);
+    pu_assert("results pointer was set", findRes != NULL);
+    pu_assert_str_equal("b is a head", SelvaNodeId_GetRes(0), "grphnode_b");
+    pu_assert_str_equal("e is a head", SelvaNodeId_GetRes(1), "grphnode_e");
+
+    return NULL;
+}
+
+static char * test_get_heads_alter(void)
+{
+    /*
+     * b is no longer a head after a new relationship is added
+     *
+     *  e --> a --> c
+     *           /
+     *        b --> d
+     * =>
+     *  e --> a --> c
+     *    |     /
+     *    \-> b --> c
+     */
+
+    int n;
+
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 0, NULL);
+
+    n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
+    pu_assert_equal("returned the right number of heads", n, 1);
+    pu_assert("results pointer was set", findRes != NULL);
+    pu_assert_str_equal("e is a head", SelvaNodeId_GetRes(1), "grphnode_e");
+
+    return NULL;
+}
+
 static char * test_insert_chain_find_ancestors(void)
 {
     const Selva_NodeId ids[] = { "a", "b", "c", "d", "e", "f" };
@@ -220,20 +331,20 @@ static char * test_insert_acyclic_find_descendants_2(void)
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
     pu_assert_equal("returned the right number of descendants", nr_descendants, 2);
     pu_assert("results pointer was set", findRes != NULL);
-    pu_assert_str_equal("b has d as an ancestor", SelvaNodeId_GetRes(0), "grphnode_d");
-    pu_assert_str_equal("b has e as an ancestor", SelvaNodeId_GetRes(1), "grphnode_e");
+    pu_assert_str_equal("b has d as a descendant", SelvaNodeId_GetRes(0), "grphnode_d");
+    pu_assert_str_equal("b has e as a descendant", SelvaNodeId_GetRes(1), "grphnode_e");
 
-    /* ancestors of a */
+    /* descendants of a */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_a" }), &findRes);
     pu_assert_equal("returned the right number of descendants", nr_descendants, 4);
     pu_assert("results pointer was set", findRes != NULL);
     SelvaNodeId_SortRes(nr_descendants);
-    pu_assert_str_equal("a has b as an ancestor", SelvaNodeId_GetRes(0), "grphnode_b");
-    pu_assert_str_equal("a has c as an ancestor", SelvaNodeId_GetRes(1), "grphnode_c");
-    pu_assert_str_equal("a has d as an ancestor", SelvaNodeId_GetRes(2), "grphnode_d");
-    pu_assert_str_equal("a has e as an ancestor", SelvaNodeId_GetRes(3), "grphnode_e");
+    pu_assert_str_equal("a has b as a descendant", SelvaNodeId_GetRes(0), "grphnode_b");
+    pu_assert_str_equal("a has c as a descendant", SelvaNodeId_GetRes(1), "grphnode_c");
+    pu_assert_str_equal("a has d as a descendant", SelvaNodeId_GetRes(2), "grphnode_d");
+    pu_assert_str_equal("a has e as a descendant", SelvaNodeId_GetRes(3), "grphnode_e");
 
-    /* ancestors of b */
+    /* descendants of b */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_b" }), &findRes);
     pu_assert_equal("returned the right number of descendants", nr_descendants, 2);
     pu_assert("results pointer was set", findRes != NULL);
@@ -268,7 +379,7 @@ static char * test_insert_acyclic_find_descendants_3(void)
     pu_assert_str_equal("e has a as a descendant", SelvaNodeId_GetRes(0), "grphnode_a");
     pu_assert_str_equal("e has c as a descendant", SelvaNodeId_GetRes(1), "grphnode_c");
 
-    /* ancestors of b */
+    /* descendants of b */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_b" }), &findRes);
     SelvaNodeId_SortRes(nr_descendants);
     pu_assert_equal("returned the right number of descendants", nr_descendants, 2);
@@ -283,6 +394,8 @@ void all_tests(void)
 {
     pu_def_test(test_insert_one, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
+    pu_def_test(test_get_heads, PU_RUN);
+    pu_def_test(test_alter_relationship_set, PU_RUN);
     pu_def_test(test_insert_chain_find_ancestors, PU_RUN);
     pu_def_test(test_insert_acyclic_find_ancestors_1, PU_RUN);
     pu_def_test(test_insert_acyclic_find_ancestors_2, PU_RUN);
