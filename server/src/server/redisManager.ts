@@ -37,8 +37,6 @@ export default class RedisManager extends ProcessManager {
     const runtimeInfo = await super.collect()
 
     try {
-      console.log(this.name, this.type, this.redisHost, this.redisPort)
-
       let timeout
       const wait = () =>
         new Promise((_resolve, reject) => {
@@ -80,8 +78,7 @@ export default class RedisManager extends ProcessManager {
         return { isBusy: true, runtimeInfo }
       }
     } catch (err) {
-      // store busy
-      console.error('! cannot get info we may need to restart it!')
+      console.error('Cannot get info', err.message)
       return {
         redisInfo: {},
         runtimeInfo,

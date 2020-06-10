@@ -59,7 +59,7 @@ const createRedisClient = (
       if (channel === SERVER_HEARTBEAT && !isHarddc) {
         clearTimeout(client.serverHeartbeat)
         client.serverHeartbeat = setTimeout(() => {
-          console.log('heart beat expired disconnect it!')
+          console.error('🔥 heartbeat expired disconnect it!')
           isHarddc = true
           client.emit('hard-disconnect')
         }, 5 * 60e3) //  5 * 60e3
@@ -71,8 +71,8 @@ const createRedisClient = (
 
   redisClient.on('ready', () => {
     isHarddc = false
-    console.log('is ready clear start timer')
     if (label === 'publisher') {
+      console.log('is ready clear start timer')
       clearTimeout(client.startClientTimer)
     }
     tries = 0

@@ -150,7 +150,6 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         }
 
         if (parsedQ.length === 0) {
-          console.log('is zero')
           queueDone()
         } else {
           execBatch(client, parsedQ)
