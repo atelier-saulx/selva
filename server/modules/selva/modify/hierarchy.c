@@ -139,8 +139,6 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             continue;
         }
 
-        /* TODO if necessary, check whether a relationship between nodes already existed */
-
         if (rel == RELATIONSHIP_CHILD) { /* node is a child to adjacent */
             /* Do inserts only if the relationship doesn't exist already */
             if (initialNodeParentsSize == 0 || !SVector_Search(&node->parents, adjacent)) {
