@@ -139,6 +139,8 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             continue;
         }
 
+        /* TODO if necessary, check whether a relationship between nodes already existed */
+
         if (rel == RELATIONSHIP_CHILD) {
             /* node is a child to adjacent */
             SVector_Insert(&node->parents, adjacent);
@@ -251,8 +253,31 @@ int SelvaModify_AddHierarchy(
         const Selva_NodeId *parents,
         size_t nr_children,
         const Selva_NodeId *children) {
-    /* TODO AddHierarchy */
-    return -1;
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
+    int isNewNode = 0;
+
+    if (!node) {
+        node = newNode(id);
+        if (!node) {
+            return -1;
+        }
+        isNewNode = 1;
+    }
+
+    if (isNewNode) {
+        if (RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL) {
+            /* TODO Panic: the same id was already there */
+            SelvaModify_DestroyNode(node);
+
+            return -1;
+        }
+    }
+
+    /* TODO Error handling */
+    crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+
+    return 0;
 }
 
 int SelvaModify_DelHierarchy(
@@ -368,6 +393,15 @@ int SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_No
     return dfs(hierarchy, id, descendants, RELATIONSHIP_CHILD);
 }
 
+/**
+ * Wrap RedisModule_Free().
+ * The cleanup attribute in GCC/Clang doesn't support function pointers, so we must
+ * wrap the function pointer to be able to use it for this purpose.
+ */
+static void wrapFree(void *p) {
+    RedisModule_Free(p);
+}
+
 void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
     if (encver != HIERARCHY_ENCODING_VERSION) {
         /*
@@ -376,8 +410,55 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
          */
         return NULL;
     }
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy();
 
-    /* TODO Load RDB */
+    while (1) {
+        size_t len;
+        char *node_id __attribute__((cleanup(wrapFree)));
+
+        node_id = RedisModule_LoadStringBuffer(io, &len);
+
+        if (len != SELVA_NODE_ID_SIZE) {
+            goto error;
+        }
+
+        if (!memcmp(node_id, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
+            break;
+        }
+
+        uint64_t nr_children = RedisModule_LoadUnsigned(io);
+        Selva_NodeId *children __attribute__((cleanup(wrapFree))) = NULL;
+
+        if (nr_children > 0) {
+            children = RedisModule_Calloc(nr_children, SELVA_NODE_ID_SIZE);
+
+            if (!children) {
+                goto error;
+            }
+
+            /* Create/Update children */
+            for (uint64_t i = 0; i < nr_children; i++) {
+                char *child_id __attribute__((cleanup(wrapFree)));
+
+                child_id = RedisModule_LoadStringBuffer(io, &len);
+
+                if (len != SELVA_NODE_ID_SIZE) {
+                    goto error;
+                }
+
+                SelvaModify_AddHierarchy(hierarchy, child_id, 0, NULL, 0, NULL);
+                memcpy(children + i, child_id, SELVA_NODE_ID_SIZE);
+            }
+        }
+
+        /* Create the node itself */
+        SelvaModify_AddHierarchy(hierarchy, node_id, 0, NULL, nr_children, children);
+    }
+
+    return hierarchy;
+error:
+    SelvaModify_DestroyHierarchy(hierarchy);
+
     return NULL;
 }
 
