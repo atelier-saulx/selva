@@ -150,9 +150,9 @@ function setFromAncestors(
           }
         }
       }
-
-      validParents = next
     }
+
+    validParents = next
   }
 
   return false
