@@ -38,12 +38,24 @@ export default class RedisManager extends ProcessManager {
 
     try {
       console.log(this.name, this.type, this.redisHost, this.redisPort)
-      const info = await this.selvaClient.redis.info({
-        port: this.redisPort,
-        host: this.redisHost,
-        type: this.type,
-        name: this.name
-      })
+
+      let timeout
+      const wait = () =>
+        new Promise((_resolve, reject) => {
+          timeout = setTimeout(() => reject(new Error('timedout info')), 2e3)
+        })
+
+      const info = await Promise.race([
+        this.selvaClient.redis.info({
+          port: this.redisPort,
+          host: this.redisHost,
+          type: this.type,
+          name: this.name
+        }),
+        wait()
+      ])
+
+      clearTimeout(timeout)
 
       if (info) {
         const infoLines = info.split('\r\n')

@@ -13,7 +13,7 @@ const startServerHeartbeat = (server: SelvaServer) => {
       constants.SERVER_HEARTBEAT,
       ''
     )
-    server.serverHeartbeatTimeout = setTimeout(setHeartbeat, 2e3)
+    server.serverHeartbeatTimeout = setTimeout(setHeartbeat, 5e3)
   }
   setHeartbeat()
 }

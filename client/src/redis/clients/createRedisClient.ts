@@ -16,6 +16,7 @@ const createRedisClient = (
   if (label === 'publisher') {
     client.startClientTimer = setTimeout(() => {
       if (!isHarddc) {
+        clearTimeout(client.serverHeartbeat)
         console.log('cannot get it ready!', host, port, label)
         isHarddc = true
         client.emit('hard-disconnect')
@@ -61,7 +62,7 @@ const createRedisClient = (
           console.log('heart beat expired disconnect it!')
           isHarddc = true
           client.emit('hard-disconnect')
-        }, 30e3)
+        }, 5 * 60e3) //  5 * 60e3
       }
     })
   }
