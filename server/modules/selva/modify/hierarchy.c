@@ -58,11 +58,11 @@ static int SVector_BS_Compare(const void ** restrict a_raw, const void ** restri
     const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
     const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
 
-    return strncmp(a->id, b->id, SELVA_NODE_ID_SIZE);
+    return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
 }
 
 static int SelvaModify_HierarchyNode_Compare(const SelvaModify_HierarchyNode *a, const SelvaModify_HierarchyNode *b) {
-    return strncmp(a->id, b->id, SELVA_NODE_ID_SIZE);
+    return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
 }
 
 RB_GENERATE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
