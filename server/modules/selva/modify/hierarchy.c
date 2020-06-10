@@ -133,12 +133,17 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         }
 
         if (rel == RELATIONSHIP_CHILD) {
+            /* The node is no longer an orphan */
+            if (SVector_Size(&node->parents) == 0) {
+                SVector_Remove(&hierarchy->heads, node);
+            }
+
             /* node is a children to adjacent */
             SVector_Insert(&node->parents, adjacent);
             SVector_Insert(&adjacent->children, node);
         } else {
+            /* The adjacent node is no longer an orphan */
             if (SVector_Size(&adjacent->parents) == 0) {
-                /* No longer orphan */
                 SVector_Remove(&hierarchy->heads, adjacent);
             }
 
@@ -186,6 +191,11 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
         }
     }
     SVector_Clear(vec_a);
+
+    /*
+     * After this the caller should call SVector_Insert(&hierarchy->heads, node)
+     * if rel == RELATIONSHIP_CHILD.
+     */
 }
 
 int SelvaModify_SetHierarchy(
