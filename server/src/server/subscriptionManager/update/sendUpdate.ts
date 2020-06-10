@@ -107,7 +107,7 @@ const sendUpdate = async (
   if (subscription.processNext) {
     await wait(100)
     subscription.processNext = false
-    await sendUpdate(subscriptionManager, subscription)
+    return sendUpdate(subscriptionManager, subscription)
   }
 }
 

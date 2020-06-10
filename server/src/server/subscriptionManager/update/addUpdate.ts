@@ -11,6 +11,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     subscription.inProgress = false
     subscriptionManager.stagedForUpdates.delete(subscription)
     if (subscription.beingProcessed) {
+      // console.log('in progress dont add')
       subscription.processNext = true
     } else {
       cnt++
@@ -33,13 +34,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
       'beingProcessed',
       subscriptionManager.inProgressCount,
       'actual subscriptions being updated',
-      cnt,
-      'incoming',
-      [...subscriptionManager.stagedForUpdates.values()].map(v =>
-        v.channel.slice(-10)
-      ),
-      'outgoing updates',
-      Date.now()
+      cnt
     )
   }
 
