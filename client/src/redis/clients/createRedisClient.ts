@@ -21,7 +21,7 @@ const createRedisClient = (
         isHarddc = true
         client.emit('hard-disconnect')
       }
-    }, 30e3)
+    }, 60e3)
   }
 
   const retryStrategy = () => {
