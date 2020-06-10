@@ -11,20 +11,25 @@ const createRedisClient = (
   let tries = 0
   let retryTimer = 0
   let isConnected: boolean = false
+  let isHarddc: boolean = false
 
   if (label === 'publisher') {
     client.startClientTimer = setTimeout(() => {
-      console.log('cannot get it ready!', host, port, label)
-      client.emit('hard-disconnect')
+      if (!isHarddc) {
+        console.log('cannot get it ready!', host, port, label)
+        isHarddc = true
+        client.emit('hard-disconnect')
+      }
     }, 30e3)
   }
 
   const retryStrategy = () => {
     if (tries > 20) {
-      console.log('HARD DC')
       clearTimeout(client.serverHeartbeat)
       clearTimeout(client.startClientTimer)
-      if (label === 'publisher') {
+      if (label === 'publisher' && !isHarddc) {
+        console.log('HARD DC')
+        isHarddc = true
         client.emit('hard-disconnect')
       }
     } else {
@@ -50,10 +55,11 @@ const createRedisClient = (
 
   if (label === 'subscriber') {
     redisClient.on('message', channel => {
-      if (channel === SERVER_HEARTBEAT) {
+      if (channel === SERVER_HEARTBEAT && !isHarddc) {
         clearTimeout(client.serverHeartbeat)
         client.serverHeartbeat = setTimeout(() => {
           console.log('heart beat expired disconnect it!')
+          isHarddc = true
           client.emit('hard-disconnect')
         }, 30e3)
       }
@@ -63,6 +69,7 @@ const createRedisClient = (
   redisClient.setMaxListeners(1e4)
 
   redisClient.on('ready', () => {
+    isHarddc = false
     console.log('is ready clear start timer')
     if (label === 'publisher') {
       clearTimeout(client.startClientTimer)
