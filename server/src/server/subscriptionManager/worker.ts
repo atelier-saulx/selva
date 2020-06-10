@@ -38,6 +38,7 @@ const createSubscriptionManager = (
     memberMemCache: {},
     clients: {},
     subscriptions: {},
+    inProgressCount: 0,
     tree: {},
     selector: {
       port: opts.port,

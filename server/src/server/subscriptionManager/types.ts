@@ -20,10 +20,13 @@ export type Subscription = {
   channel: string
   refreshAt?: number
   origins: string[]
+  processNext?: boolean
+  beingProcessed?: boolean
 }
 
 export type SubscriptionManager = {
   client: SelvaClient
+  inProgressCount: number
   incomingCount: number
   stagedForUpdates: Set<Subscription>
   stagedInProgess: boolean

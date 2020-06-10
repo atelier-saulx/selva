@@ -5,32 +5,43 @@ import { removeSubscriptionFromTree } from '../tree'
 var delayCount = 0
 
 const sendUpdates = (subscriptionManager: SubscriptionManager) => {
-  console.log(
-    'subsManager',
-    subscriptionManager.client.uuid.slice(-6),
-    'Handled',
-    subscriptionManager.incomingCount,
-    'incoming',
-    [...subscriptionManager.stagedForUpdates.values()].map(v =>
-      v.channel.slice(-10)
-    ),
-    'outgoing updates',
-    Date.now()
-  )
-
   // seeing a double subscriptions no good
-
+  let cnt = 0
   subscriptionManager.stagedForUpdates.forEach(subscription => {
     subscription.inProgress = false
     subscriptionManager.stagedForUpdates.delete(subscription)
-    sendUpdate(subscriptionManager, subscription)
-      .then(v => {
-        // console.log('SEND UPDATE FOR', subscription.channel)
-      })
-      .catch(err => {
-        console.log('WRONG ERROR IN SENDUPDATE', err)
-      })
+    if (subscription.beingProcessed) {
+      subscription.processNext = true
+    } else {
+      cnt++
+      sendUpdate(subscriptionManager, subscription)
+        .then(v => {
+          // console.log('SEND UPDATE FOR', subscription.channel)
+        })
+        .catch(err => {
+          console.log('WRONG ERROR IN SENDUPDATE', err)
+        })
+    }
   })
+
+  if (cnt) {
+    console.log(
+      'subsManager',
+      subscriptionManager.client.uuid.slice(-6),
+      'Handled',
+      subscriptionManager.incomingCount,
+      'beingProcessed',
+      subscriptionManager.inProgressCount,
+      'actual subscriptions being updated',
+      cnt,
+      'incoming',
+      [...subscriptionManager.stagedForUpdates.values()].map(v =>
+        v.channel.slice(-10)
+      ),
+      'outgoing updates',
+      Date.now()
+    )
+  }
 
   subscriptionManager.stagedInProgess = false
 
@@ -44,8 +55,8 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   delayCount = 0
 }
 
-// 3 per ms
-const eventsPerMs = 3
+// 10 per ms
+const eventsPerMs = 10
 
 const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
   if (totalTime < 10e3) {
@@ -56,17 +67,11 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
     subscriptionManager.stagedTimeout = setTimeout(() => {
       const incoming = subscriptionManager.incomingCount - lastIncoming
       if (incoming / time > eventsPerMs) {
-        // too fast ait a bit longer
-        // reset count
-        // subscriptionManager.incomingCount = 0
-        // increase time
         time = Math.round(time * 1.1)
-        // delay again
         subscriptionManager.stagedTimeout = setTimeout(() => {
           delay(subscriptionManager, time, totalTime + time)
         }, time)
       } else {
-        // do it
         sendUpdates(subscriptionManager)
       }
     }, time)
@@ -77,7 +82,6 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
       'incoming',
       subscriptionManager.incomingCount
     )
-    // do it now
     sendUpdates(subscriptionManager)
   }
 }
@@ -97,7 +101,7 @@ const addUpdate = (
       subscriptionManager.stagedInProgess = true
       subscriptionManager.stagedTimeout = setTimeout(() => {
         const { incomingCount } = subscriptionManager
-        if (incomingCount < 1e3) {
+        if (incomingCount < 1e4) {
           sendUpdates(subscriptionManager)
         } else {
           delay(subscriptionManager)

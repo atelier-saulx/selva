@@ -2,8 +2,7 @@ import { constants } from '@saulx/selva'
 import { addSubscriptionToTree, removeSubscriptionFromTree } from '../tree'
 import { hash } from '../util'
 import { Subscription, SubscriptionManager } from '../types'
-import { clear } from 'pidusage'
-import { get } from '@saulx/selva/dist/src/get'
+import { wait } from '../../../util'
 
 const { CACHE } = constants
 
@@ -14,7 +13,8 @@ const sendUpdate = async (
   const channel = subscription.channel
   const { client, selector } = subscriptionManager
   const redis = client.redis
-
+  subscriptionManager.inProgressCount++
+  subscription.beingProcessed = true
   const getOptions = subscription.get
   getOptions.$includeMeta = true
 
@@ -101,6 +101,14 @@ const sendUpdate = async (
   await Promise.all(q)
 
   await redis.publish(selector, channel, newVersion)
+
+  subscription.beingProcessed = false
+  subscriptionManager.inProgressCount--
+  if (subscription.processNext) {
+    await wait(100)
+    subscription.processNext = false
+    await sendUpdate(subscriptionManager, subscription)
+  }
 }
 
 export default sendUpdate
