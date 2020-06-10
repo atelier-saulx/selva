@@ -18,7 +18,10 @@ test.before(async t => {
       match: {
         fields: {
           published: {
-            type: 'boolean'
+            type: 'boolean',
+            search: {
+              type: ['TAG']
+            }
           }
         }
       }
