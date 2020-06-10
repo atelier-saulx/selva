@@ -21,7 +21,7 @@ typedef struct RedisModuleIO {
         int64_t int64_val;
         double double_val;
         char string[0];
-    }
+    };
 } RedisModuleIO;
 
 RedisModuleIO *RedisRdb_NewIo(void);

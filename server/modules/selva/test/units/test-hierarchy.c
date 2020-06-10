@@ -3,28 +3,7 @@
 #include <string.h>
 #include "hierarchy.h"
 #include "cdefs.h"
-
-SelvaModify_Hierarchy *hierarchy;
-Selva_NodeId *findRes;
-
-static int SelvaNodeId_Compare(const void *a, const void *b) {
-
-    return memcmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);
-}
-
-static void SelvaNodeId_SortRes(size_t len) {
-    qsort(findRes, len, sizeof(Selva_NodeId), SelvaNodeId_Compare);
-}
-
-static char *SelvaNodeId_GetRes(size_t i) {
-    /* cppcheck-suppress threadsafety-threadsafety */
-    static char id[sizeof(Selva_NodeId) + 1];
-
-    memcpy(id, findRes[i], sizeof(Selva_NodeId));
-    id[sizeof(Selva_NodeId)] = '\0';
-
-    return id;
-}
+#include "../hierarchy-utils.h"
 
 static void setup(void)
 {
@@ -293,7 +272,7 @@ static char * test_insert_chain_find_ancestors(void)
     pu_assert_equal("returned the right number of ancestors", nr_ancestors, 3);
     pu_assert("results pointer was set", findRes != NULL);
 
-    for (size_t i = 0; i < nr_ancestors; i++) {
+    for (int i = 0; i < nr_ancestors; i++) {
         pu_assert("the returned ancestor ID is one of the real ancestors", strstr("abc", SelvaNodeId_GetRes(i)));
     }
 

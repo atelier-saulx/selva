@@ -48,7 +48,7 @@ typedef struct SelvaModify_Hierarchy {
     SVector heads;
 } SelvaModify_Hierarchy;
 
-static Selva_NodeId HIERARCHY_RDB_EOF;
+static const Selva_NodeId HIERARCHY_RDB_EOF __attribute__((nonstring));
 static RedisModuleType *HierarchyType;
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
@@ -298,7 +298,7 @@ static Selva_NodeId *NodeList_New(int nr_nodes) {
     return RedisModule_Alloc(nr_nodes * sizeof(Selva_NodeId));
 }
 
-static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, Selva_NodeId id, int nr_nodes) {
+static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, int nr_nodes) {
     Selva_NodeId *newList = RedisModule_Realloc(list, nr_nodes * sizeof(Selva_NodeId));
     if (!newList) {
         RedisModule_Free(list);

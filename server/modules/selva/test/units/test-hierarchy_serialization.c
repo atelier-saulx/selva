@@ -4,38 +4,9 @@
 #include "hierarchy.h"
 #include "cdefs.h"
 #include "../redis-rdb.h"
+#include "../hierarchy-utils.h"
 
 void HierarchyTypeRDBSave(RedisModuleIO *io, void *value);
-
-SelvaModify_Hierarchy *hierarchy;
-Selva_NodeId *findRes;
-RedisModuleIO *io;
-
-static Selva_NodeId HIERARCHY_RDB_EOF;
-
-static int SelvaNodeId_Compare(const void *a, const void *b) {
-
-    return memcmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);
-}
-
-static void SelvaNodeId_SortRes(size_t len) {
-    qsort(findRes, len, sizeof(Selva_NodeId), SelvaNodeId_Compare);
-}
-
-static char *SelvaNodeId_GetRes(size_t i) {
-    /* cppcheck-suppress threadsafety-threadsafety */
-    static char id[sizeof(Selva_NodeId) + 1];
-
-    memcpy(id, findRes[i], sizeof(Selva_NodeId));
-    id[sizeof(Selva_NodeId)] = '\0';
-
-    return id;
-}
-
-static void copyId2Buf(char buf[SELVA_NODE_ID_SIZE + 1], const Selva_NodeId id) {
-    memcpy(buf, id, SELVA_NODE_ID_SIZE);
-    buf[SELVA_NODE_ID_SIZE] = '\0';
-}
 
 static char str_buf[120];
 static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nrChildren, const Selva_NodeId *children) {
@@ -59,8 +30,8 @@ static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nr
     snprintf(msg_buf, msg_size, "the node id is stored as a string at [%zd]", index);
     pu_assert_equal(str_buf, ioNode->type, REDIS_MODULE_IO_TYPE_STRING);
 
-    copyId2Buf(actual, ioNode->string);
-    copyId2Buf(expected, expectedId);
+    SelvaNodeId_copy2buf(actual, ioNode->string);
+    SelvaNodeId_copy2buf(expected, expectedId);
 
     snprintf(msg_buf, msg_size, "the expected node id is found");
     pu_assert_str_equal(str_buf, actual, expected);
@@ -86,8 +57,8 @@ static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nr
         snprintf(msg_buf, msg_size, "the child id is stored as a string");
         pu_assert_equal(str_buf, ioNode->type, REDIS_MODULE_IO_TYPE_STRING);
 
-        copyId2Buf(actual, ioNode->string);
-        copyId2Buf(expected, children[i]);
+        SelvaNodeId_copy2buf(actual, ioNode->string);
+        SelvaNodeId_copy2buf(expected, children[i]);
 
         snprintf(msg_buf, msg_size, "the expected child id is found");
         pu_assert_str_equal(str_buf, actual, expected);

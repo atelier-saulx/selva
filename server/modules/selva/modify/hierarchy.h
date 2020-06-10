@@ -4,7 +4,7 @@
 
 #define SELVA_NODE_ID_SIZE 10
 
-typedef char Selva_NodeId[SELVA_NODE_ID_SIZE] __attribute__((nonstring));
+typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
 

@@ -60,6 +60,8 @@ void _RedisModule_SaveUnsigned(RedisModuleIO *io, uint64_t value) {
 }
 
 uint64_t _RedisModule_LoadUnsigned(RedisModuleIO *io) {
+    /* TODO */
+    return 0;
 }
 
 void _RedisModule_SaveSigned(RedisModuleIO *io, int64_t value) {
@@ -71,6 +73,7 @@ void _RedisModule_SaveSigned(RedisModuleIO *io, int64_t value) {
 
 int64_t _RedisModule_LoadSigned(RedisModuleIO *io) {
     /* TODO */
+    return 0;
 }
 
 #if 0
@@ -94,6 +97,7 @@ RedisModuleString *RedisModule_LoadString(RedisModuleIO *io) {
 
 char *_RedisModule_LoadStringBuffer(RedisModuleIO *io, size_t *lenptr) {
     /* TODO */
+    return NULL;
 }
 
 void _RedisModule_SaveDouble(RedisModuleIO *io, double value) {
@@ -105,6 +109,7 @@ void _RedisModule_SaveDouble(RedisModuleIO *io, double value) {
 
 double _RedisModule_LoadDouble(RedisModuleIO *io) {
     /* TODO */
+    return 0.0;
 }
 
 void (*RedisModule_SaveUnsigned)(RedisModuleIO *io, uint64_t value) = _RedisModule_SaveUnsigned;
