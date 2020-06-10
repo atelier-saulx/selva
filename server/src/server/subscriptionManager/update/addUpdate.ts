@@ -51,7 +51,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
 }
 
 // 10 per ms
-const eventsPerMs = 10
+const eventsPerMs = 100
 
 const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
   if (totalTime < 10e3) {
