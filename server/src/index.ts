@@ -52,7 +52,7 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
     parsedOpts.modules = defaultModules
   }
 
-  if (parsedOpts.default && !parsedOpts.name) {
+  if (parsedOpts.default ) {
     parsedOpts.name = 'default'
   }
 
@@ -112,7 +112,7 @@ export async function startOrigin(opts: Options): Promise<SelvaServer> {
     console.error(`Error starting origin selva server ${chalk.red(err)}`)
     throw new Error(err)
   }
-  if  (!parsedOpts.name && parsedOpts.default) {
+  if  (!parsedOpts.name) {
     parsedOpts.name = 'default'
   }
   return startServer('origin', parsedOpts)
