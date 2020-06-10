@@ -45,6 +45,7 @@ const createRedisClient = (
     if (retryTimer < 1e3) {
       retryTimer += 100
     }
+    // redisClient.emit('error', error)
     return retryTimer
   }
 
@@ -86,7 +87,7 @@ const createRedisClient = (
   redisClient.on('error', err => {
     if (err.code === 'ECONNREFUSED') {
       isConnected = false
-      if (label === 'publisher') {
+      if (label === 'publisher' && isConnected) {
         client.emit('disconnect', label)
       }
     } else {
