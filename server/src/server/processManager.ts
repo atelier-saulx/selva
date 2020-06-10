@@ -28,7 +28,11 @@ export default class ProcessManager extends EventEmitter {
       () => {
         this.collect()
           .then(data => {
-            this.emit('stats', data)
+            if (data.isBusy) {
+              this.emit('busy', data)
+            } else {
+              this.emit('stats', data)
+            }
           })
           .catch(e => {
             console.error(
