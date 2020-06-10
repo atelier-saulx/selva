@@ -73,20 +73,24 @@ function setFromAncestors(
       tonumber(ancestorsWithScores[i + 1]) || 0
   }
 
-  let validParents: Id[] = []
-  for (let i = 0; i < parents.length; i++) {
-    if (ancestorDepthMap[parents[i]]) {
-      validParents[validParents.length] = parents[i]
-    }
-  }
+  let validParents: Id[] = parents
 
   // we want to check parents from deepest to lowest depth
   table.sort(validParents, (a, b) => {
-    return ancestorDepthMap[a] > ancestorDepthMap[b]
+    const aDepth = ancestorDepthMap[a]
+      ? ancestorDepthMap[a]
+      : (ancestorDepthMap[id] && ancestorDepthMap[id] - 1) || 1
+
+    const bDepth = ancestorDepthMap[b]
+      ? ancestorDepthMap[a]
+      : (ancestorDepthMap[id] && ancestorDepthMap[id] - 1) || 1
+
+    return aDepth > bDepth
   })
 
   const visited: Record<string, true> = {}
 
+  logger.info('VALID PARENTS', validParents)
   while (validParents.length > 0) {
     const next: Id[] = []
     for (const parent of validParents) {
@@ -150,9 +154,9 @@ function setFromAncestors(
           }
         }
       }
-
-      validParents = next
     }
+
+    validParents = next
   }
 
   return false
