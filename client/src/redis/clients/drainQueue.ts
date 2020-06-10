@@ -72,27 +72,25 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
             )
             if (resolve) resolve(true)
           } else {
-            if (redisCommand.command.toLowerCase() === 'evalsha') {
-              const script = redisCommand.args[0]
+            if (command.toLowerCase() === 'evalsha') {
+              const script = args[0]
               if (
                 typeof script === 'string' &&
                 script.startsWith(constants.SCRIPT)
               ) {
                 const sha = getScriptSha(
-                  (<string>redisCommand.args[0]).slice(
-                    constants.SCRIPT.length + 1
-                  )
+                  (<string>args[0]).slice(constants.SCRIPT.length + 1)
                 )
                 if (!sha) {
                   client.queue.push(redisCommand)
                   continue
                 } else {
-                  redisCommand.args[0] = sha
+                  args[0] = sha
                   if (script === `${constants.SCRIPT}:modify`) {
                     if (!modify) {
                       modify = redisCommand
                     } else {
-                      modify.args.push(...redisCommand.args.slice(2))
+                      modify.args.push(...args.slice(2))
                     }
 
                     modifyResolvers.push(redisCommand.resolve)
@@ -114,7 +112,9 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         if (modify) {
           modify.resolve = results => {
             for (let i = 0; i < modifyResolvers.length; i++) {
-              modifyResolvers[i](results[i])
+              if (modifyResolvers[i]) {
+                modifyResolvers[i](results[i])
+              }
             }
           }
 
@@ -128,7 +128,9 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
             }
 
             modifyRejects.forEach(reject => {
-              reject(err)
+              if (reject) {
+                reject(err)
+              }
             })
           }
 
