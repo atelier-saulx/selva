@@ -124,6 +124,13 @@ static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, con
 }
 
 static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
+    const int initialNodeParentsSize = SVector_Size(&node->parents);
+
+    if (rel == RELATIONSHIP_CHILD && n > 0 && initialNodeParentsSize == 0) {
+        /* The node is no longer an orphan */
+        SVector_Remove(&hierarchy->heads, node);
+    }
+
     for (size_t i = 0; i < n; i++) {
         SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
@@ -133,12 +140,7 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         }
 
         if (rel == RELATIONSHIP_CHILD) {
-            /* The node is no longer an orphan */
-            if (SVector_Size(&node->parents) == 0) {
-                SVector_Remove(&hierarchy->heads, node);
-            }
-
-            /* node is a children to adjacent */
+            /* node is a child to adjacent */
             SVector_Insert(&node->parents, adjacent);
             SVector_Insert(&adjacent->children, node);
         } else {
