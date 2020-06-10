@@ -10,7 +10,7 @@ import RedisManager from './redisManager'
 // no handling of registry, no different types, no subscriptions stuff
 // has to be replaced with a nice wrapper that makes it a little bit more reliable
 export default (server: SelvaServer, opts: ServerOptions) => {
-  const { port, dir, modules } = opts
+  const { port, dir, modules, host } = opts
 
   if (opts.attachToExisting) {
     return
@@ -54,7 +54,11 @@ export default (server: SelvaServer, opts: ServerOptions) => {
     execSync(`redis-cli -p ${port} shutdown`)
   } catch (_err) {}
 
-  server.pm = new RedisManager(args)
+  server.pm = new RedisManager(args, {
+    port,
+    host,
+    selvaClient: server.selvaClient
+  })
   server.pm.start()
   server.pm.on('stdout', s => server.emit('stdout', s))
   server.pm.on('stderr', s => server.emit('stderr', s))
