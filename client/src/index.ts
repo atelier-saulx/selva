@@ -27,6 +27,7 @@ import { observe, observeSchema } from './observe'
 import conformToSchema from './conformToSchema'
 import getServerDescriptor from './redis/getServerDescriptor'
 import Observable from './observe/observable'
+import { getClient } from './redis/clients'
 
 
 export * as constants from './constants'
@@ -112,6 +113,10 @@ export class SelvaClient extends EventEmitter {
 
   digest(payload: string) {
     return digest(payload)
+  }
+
+  getClient(descriptor: ServerDescriptor) {
+   return getClient(this.redis, descriptor)
   }
 
   getSchema(name: string = 'default'): Promise<GetSchemaResult> {

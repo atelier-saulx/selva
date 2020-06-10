@@ -60,7 +60,7 @@ test.before(async t => {
   })
 
   const team1 = await client.id({ type: 'team' })
-  const amount = 125000
+  const amount = 50000
   const vids = 100
   const genMatches = (s = 0) => {
     const ch = []
@@ -156,81 +156,103 @@ test.after(async _t => {
 
 test.serial('find - descendants', async t => {
   // simple nested - single query
-  const client = connect({ port }, { loglevel: 'info' })
 
-  // extra option in find is index or auto from fields
-  let d = Date.now()
-  const { items: results } = await client.get({
-    items: {
-      name: true,
-      value: true,
-      status: true,
-      date: true,
-      id: true,
-      type: true,
-      $list: {
-        $sort: { $field: 'status', $order: 'desc' },
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
-              $operator: '=',
-              $field: 'type',
-              $value: 'match',
-              $and: {
+  try {
+    const client = connect({ port }, { loglevel: 'info' })
+
+    // extra option in find is index or auto from fields
+    let d = Date.now()
+    const { items: results } = await client.get({
+      items: {
+        name: true,
+        value: true,
+        status: true,
+        date: true,
+        id: true,
+        type: true,
+        $list: {
+          $sort: { $field: 'status', $order: 'desc' },
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
                 $operator: '=',
-                $field: 'status',
-                $value: [300, 2]
-              },
-              $or: {
-                $operator: '=',
-                $field: 'name',
-                $value: 'league 1',
+                $field: 'type',
+                $value: 'match',
+                $and: {
+                  $operator: '=',
+                  $field: 'status',
+                  $value: [300, 2]
+                },
                 $or: {
-                  $operator: '>',
-                  $field: 'value',
-                  $value: 4,
-                  $and: {
+                  $operator: '=',
+                  $field: 'name',
+                  $value: 'league 1',
+                  $or: {
                     $operator: '>',
                     $field: 'value',
-                    $value: 6,
+                    $value: 4,
                     $and: {
-                      $operator: '<',
+                      $operator: '>',
                       $field: 'value',
-                      $value: 8,
+                      $value: 6,
                       $and: {
-                        $operator: '>',
-                        $field: 'date',
-                        $value: 'now'
+                        $operator: '<',
+                        $field: 'value',
+                        $value: 8,
+                        $and: {
+                          $operator: '>',
+                          $field: 'date',
+                          $value: 'now'
+                        }
                       }
                     }
                   }
                 }
+              },
+              {
+                $operator: '!=',
+                $field: 'name',
+                $value: ['match1', 'match2', 'match3']
               }
-            },
-            {
-              $operator: '!=',
-              $field: 'name',
-              $value: ['match1', 'match2', 'match3']
-            }
-          ]
+            ]
+          }
         }
       }
-    }
-  })
+    })
 
-  console.log('Executing query (1100 resuls)', Date.now() - d, 'ms')
+    console.log('Executing query (1100 resuls)', Date.now() - d, 'ms')
 
-  const matches = results.filter(v => v.type === 'match')
-  const videos = results.filter(v => v.type === 'video')
-  const league = results.filter(v => v.type === 'league')
+    const matches = results.filter(v => v.type === 'match')
+    const videos = results.filter(v => v.type === 'video')
+    const league = results.filter(v => v.type === 'league')
 
-  t.is(matches.length, 997, 'query result matches')
-  t.is(videos.length, 3, 'query result videos')
-  t.is(league.length, 1, 'query result league')
+    t.is(matches.length, 997, 'query result matches')
+    t.is(videos.length, 3, 'query result videos')
+    t.is(league.length, 1, 'query result league')
 
-  const team = (
-    await client.get({
+    const team = (
+      await client.get({
+        items: {
+          id: true,
+          $list: {
+            $find: {
+              $traverse: 'descendants',
+              $filter: {
+                $field: 'type',
+                $operator: '=',
+                $value: 'team'
+              }
+            }
+          }
+        }
+      })
+    ).items
+
+    t.true(/te/.test(team[0].id), 'got id from team')
+
+    const { items: teamMatches } = await client.get({
+      $id: team[0].id,
       items: {
         id: true,
         $list: {
@@ -239,131 +261,114 @@ test.serial('find - descendants', async t => {
             $filter: {
               $field: 'type',
               $operator: '=',
-              $value: 'team'
+              $value: 'match'
             }
           }
         }
       }
     })
-  ).items
 
-  t.true(/te/.test(team[0].id), 'got id from team')
+    t.is(teamMatches.length, 1000)
 
-  const { items: teamMatches } = await client.get({
-    $id: team[0].id,
-    items: {
-      id: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: {
-            $field: 'type',
-            $operator: '=',
-            $value: 'match'
-          }
-        }
-      }
-    }
-  })
-
-  t.is(teamMatches.length, 1000)
-
-  const { items: teamMatchesRange } = await client.get({
-    $id: team[0].id,
-    items: {
-      id: true,
-      $list: {
-        $limit: 5,
-        $find: {
-          $traverse: 'descendants',
-          $filter: {
-            $field: 'type',
-            $operator: '=',
-            $value: 'match'
-          }
-        }
-      }
-    }
-  })
-
-  t.is(teamMatchesRange.length, 5)
-
-  const { items: videosSorted } = await client.get({
-    items: {
-      value: true,
-      $list: {
-        $sort: { $field: 'value', $order: 'desc' },
-        $limit: 5,
-        $find: {
-          $traverse: 'descendants',
-          $filter: {
-            $field: 'type',
-            $operator: '=',
-            $value: 'video'
-          }
-        }
-      }
-    }
-  })
-
-  t.deepEqual(
-    videosSorted.map(v => v.value),
-    [99, 98, 97, 96, 95]
-  )
-
-  const { items: empty } = await client.get({
-    items: {
-      name: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
+    const { items: teamMatchesRange } = await client.get({
+      $id: team[0].id,
+      items: {
+        id: true,
+        $list: {
+          $limit: 5,
+          $find: {
+            $traverse: 'descendants',
+            $filter: {
+              $field: 'type',
               $operator: '=',
-              $field: 'name',
-              $value: 'gurk'
-            },
-            {
-              $operator: '=',
-              $field: 'name',
-              $value: ['flap', 'gurk']
+              $value: 'match'
             }
-          ]
-        }
-      }
-    }
-  })
-
-  await wait(1000)
-
-  //@ts-ignore
-  t.deepEqual(empty, [], 'does not throw for TAG fields')
-
-  await wait(1000)
-
-  const { items: videosText } = await client.get({
-    items: {
-      value: true,
-      $list: {
-        $sort: { $field: 'value', $order: 'desc' },
-        $limit: 5,
-        $find: {
-          $traverse: 'descendants',
-          $filter: {
-            $field: 'title',
-            $operator: '=',
-            $value: 'flap'
           }
         }
       }
-    }
-  })
+    })
 
-  t.deepEqual(videosText, [
-    { value: 99 },
-    { value: 98 },
-    { value: 97 },
-    { value: 96 },
-    { value: 95 }
-  ])
+    t.is(teamMatchesRange.length, 5)
+
+    const { items: videosSorted } = await client.get({
+      items: {
+        value: true,
+        $list: {
+          $sort: { $field: 'value', $order: 'desc' },
+          $limit: 5,
+          $find: {
+            $traverse: 'descendants',
+            $filter: {
+              $field: 'type',
+              $operator: '=',
+              $value: 'video'
+            }
+          }
+        }
+      }
+    })
+
+    t.deepEqual(
+      videosSorted.map(v => v.value),
+      [99, 98, 97, 96, 95]
+    )
+
+    const { items: empty } = await client.get({
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $field: 'name',
+                $value: 'gurk'
+              },
+              {
+                $operator: '=',
+                $field: 'name',
+                $value: ['flap', 'gurk']
+              }
+            ]
+          }
+        }
+      }
+    })
+
+    await wait(1000)
+
+    //@ts-ignore
+    t.deepEqual(empty, [], 'does not throw for TAG fields')
+
+    await wait(1000)
+
+    const { items: videosText } = await client.get({
+      items: {
+        value: true,
+        $list: {
+          $sort: { $field: 'value', $order: 'desc' },
+          $limit: 5,
+          $find: {
+            $traverse: 'descendants',
+            $filter: {
+              $field: 'title',
+              $operator: '=',
+              $value: 'flap'
+            }
+          }
+        }
+      }
+    })
+
+    t.deepEqual(videosText, [
+      { value: 99 },
+      { value: 98 },
+      { value: 97 },
+      { value: 96 },
+      { value: 95 }
+    ])
+  } catch (err) {
+    console.error(err)
+  }
 })

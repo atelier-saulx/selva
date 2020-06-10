@@ -6,6 +6,7 @@ import * as constants from '../../constants'
 import { Client, addCommandToQueue } from './'
 
 const errListener = (client: Client, redisCommand: RedisCommand, err: any) => {
+  console.log(redisCommand.command, redisCommand.args, err)
   if (err) {
     console.log('---------------->', err)
     process.nextTick(() => {
@@ -31,9 +32,22 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         const parsedQ = []
         for (let i = 0; i < q.length; i++) {
           const redisCommand = q[i]
-          const { command, resolve, args } = redisCommand
-
-          if (command === 'punsubscribe') {
+          const { command, resolve, args, reject } = redisCommand
+          if (command === 'info') {
+            client.publisher.info((err, data) => {
+              if (err || !data) {
+                if (reject) {
+                  reject(err || new Error('no data'))
+                } else if (resolve) {
+                  resolve('')
+                }
+              } else {
+                if (resolve) {
+                  resolve(data)
+                }
+              }
+            })
+          } else if (command === 'punsubscribe') {
             delete client.redisSubscriptions.psubscribe[args[0]]
             client.subscriber.punsubscribe(...(<string[]>args), err =>
               errListener(client, redisCommand, err)

@@ -15,8 +15,6 @@ import * as constants from '../../constants'
 import { SERVER_HEARTBEAT } from '../../constants'
 import reconnectClient from './reconnectClient'
 
-console.log('o no nice')
-
 export type RedisSubscriptions = {
   psubscribe: Record<string, true>
   subscribe: Record<string, true>

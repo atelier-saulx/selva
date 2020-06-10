@@ -105,9 +105,10 @@ export function stopObserver(
           REMOVE_SUBSCRIPTION,
           JSON.stringify({ client: this.uuid, channel })
         ]
-        // resolve: () => this.removeSubscriptionsSet.delete(channel)
       })
-      client.subscriber.unsubscribe(channel)
+
+      addCommandToQueue(client, { command: 'unsubscribe', args: [channel] })
+
       delete client.observers[channel]
     }
   }

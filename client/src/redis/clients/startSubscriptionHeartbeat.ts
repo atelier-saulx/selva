@@ -11,13 +11,18 @@ const startSubscriptionHeartbeat = (client: Client) => {
         command: 'hset',
         args: [CLIENTS, client.uuid, Date.now()]
       })
-      client.publisher.publish(
-        HEARTBEAT,
-        JSON.stringify({
-          client: client.uuid,
-          ts: Date.now()
-        })
-      )
+
+      addCommandToQueue(client, {
+        command: 'publish',
+        args: [
+          HEARTBEAT,
+          JSON.stringify({
+            client: client.uuid,
+            ts: Date.now()
+          })
+        ]
+      })
+
       client.heartbeatTimout = setTimeout(setHeartbeat, HEARTBEAT_TIMER)
     }
   }
