@@ -985,6 +985,7 @@ test.serial('get - $inherit', async t => {
     }
   )
 
+  // console.log('ANCESTORS', await client.redis.zrange('cuC.ancestors', 0, -1))
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'cuC',

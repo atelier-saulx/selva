@@ -77,23 +77,24 @@ function setFromAncestors(
 
   // we want to check parents from deepest to lowest depth
   table.sort(validParents, (a, b) => {
-    const aDepth = ancestorDepthMap[a]
-      ? ancestorDepthMap[a]
-      : (ancestorDepthMap[id] && ancestorDepthMap[id] - 1) || 1
-
-    const bDepth = ancestorDepthMap[b]
-      ? ancestorDepthMap[a]
-      : (ancestorDepthMap[id] && ancestorDepthMap[id] - 1) || 1
+    const aDepth = ancestorDepthMap[a] || 0
+    const bDepth = ancestorDepthMap[b] || 0
 
     return aDepth > bDepth
   })
 
   const visited: Record<string, true> = {}
 
-  logger.info('VALID PARENTS', validParents)
   while (validParents.length > 0) {
+    // logger.info(
+    //   'VALID PARENTS',
+    //   validParents,
+    //   ancestorDepthMap,
+    //   ancestorsWithScores
+    // )
     const next: Id[] = []
     for (const parent of validParents) {
+      logger.info('TRYING PARENT', parent)
       if (!visited[parent]) {
         visited[parent] = true
 
@@ -149,9 +150,7 @@ function setFromAncestors(
 
         const parentsOfParents = redis.smembers(parent + '.parents')
         for (const parentOfParents of parentsOfParents) {
-          if (ancestorDepthMap[parentOfParents]) {
-            next[next.length] = parentOfParents
-          }
+          next[next.length] = parentOfParents
         }
       }
     }
