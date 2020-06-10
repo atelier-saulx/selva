@@ -27,21 +27,71 @@ const redisSearchCommands = [
   'CONFIG'
 ]
 
-redis.RedisClient.prototype.on_error = function(err) {
-  if (this.closing) {
+// redis.RedisClient.prototype.on_error = function(err) {
+//   if (this.closing) {
+//     return
+//   }
+//   err.message =
+//     'Redis connection to ' + this.address + ' failed - ' + err.message
+//   this.connected = false
+//   this.ready = false
+//   // Only emit the error if the retry_stategy option is not set
+//   // if (!this.options.retry_strategy) {
+//   this.emit('error', err)
+//   // }
+//   // 'error' events get turned into exceptions if they aren't listened for. If the user handled this error
+//   // then we should try to reconnect.
+//   this.connection_gone('error', err)
+// }
+
+redis.RedisClient.prototype.on_info_cmd = function(err, res) {
+  if (err) {
+    if (err.message.includes('BUSY')) {
+      this.on_ready()
+      return
+    }
+
+    if (err.message === "ERR unknown command 'info'") {
+      this.on_ready()
+      return
+    }
+    err.message = 'Ready check failed: ' + err.message
+    this.emit('error', err)
     return
   }
-  err.message =
-    'Redis connection to ' + this.address + ' failed - ' + err.message
-  this.connected = false
-  this.ready = false
-  // Only emit the error if the retry_stategy option is not set
-  // if (!this.options.retry_strategy) {
-  this.emit('error', err)
-  // }
-  // 'error' events get turned into exceptions if they aren't listened for. If the user handled this error
-  // then we should try to reconnect.
-  this.connection_gone('error', err)
+
+  /* istanbul ignore if: some servers might not respond with any info data. This is just a safety check that is difficult to test */
+  if (!res) {
+    this.on_ready()
+    return
+  }
+
+  if (!this.server_info.loading || this.server_info.loading === '0') {
+    // If the master_link_status exists but the link is not up, try again after 50 ms
+    if (
+      this.server_info.master_link_status &&
+      this.server_info.master_link_status !== 'up'
+    ) {
+      this.server_info.loading_eta_seconds = 0.05
+    } else {
+      // Eta loading should change
+      this.on_ready()
+      return
+    }
+  }
+
+  var retry_time = +this.server_info.loading_eta_seconds * 1000
+  if (retry_time > 1000) {
+    retry_time = 1000
+  }
+
+  setTimeout(
+    function(self) {
+      self.ready_check()
+    },
+    retry_time,
+    this
+  )
 }
 
 redisSearchCommands.forEach(cmd => {
