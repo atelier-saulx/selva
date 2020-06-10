@@ -18,8 +18,6 @@ const sendUpdate = async (
   const getOptions = subscription.get
   getOptions.$includeMeta = true
 
-  // SCHEMA UPDATES
-
   if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
     const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
     const schemaResp = await client.getSchema(dbName)
@@ -39,11 +37,9 @@ const sendUpdate = async (
 
   let time = setTimeout(() => {
     console.log('TIMEOUT OUT', channel, subscription.origins)
-  }, 5e3)
+  }, 15e3)
 
   const payload = await client.get(getOptions)
-
-  clearTimeout(time)
 
   // call $meta tree
   const newTree = payload.$meta
@@ -62,6 +58,10 @@ const sendUpdate = async (
   if (
     subscriptionManager.subscriptions[subscription.channel] !== subscription
   ) {
+    clearTimeout(time)
+    subscriptionManager.inProgressCount--
+    subscription.beingProcessed = false
+    console.log('SUBS CHANGED WTF NO')
     return
   }
 
@@ -82,6 +82,15 @@ const sendUpdate = async (
   }
 
   if (currentVersion === newVersion) {
+    clearTimeout(time)
+    subscriptionManager.inProgressCount--
+    if (subscription.processNext) {
+      await wait(100)
+      subscription.processNext = false
+      await sendUpdate(subscriptionManager, subscription)
+    } else {
+      subscription.beingProcessed = false
+    }
     return
   }
 
@@ -102,12 +111,15 @@ const sendUpdate = async (
 
   await redis.publish(selector, channel, newVersion)
 
-  subscription.beingProcessed = false
+  clearTimeout(time)
+
   subscriptionManager.inProgressCount--
   if (subscription.processNext) {
     await wait(100)
     subscription.processNext = false
-    return sendUpdate(subscriptionManager, subscription)
+    await sendUpdate(subscriptionManager, subscription)
+  } else {
+    subscription.beingProcessed = false
   }
 }
 
