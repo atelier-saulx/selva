@@ -124,7 +124,7 @@ static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, con
 }
 
 static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
-    const int initialNodeParentsSize = SVector_Size(&node->parents);
+    const size_t initialNodeParentsSize = SVector_Size(&node->parents);
 
     if (rel == RELATIONSHIP_CHILD && n > 0 && initialNodeParentsSize == 0) {
         /* The node is no longer an orphan */
@@ -141,19 +141,24 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
 
         /* TODO if necessary, check whether a relationship between nodes already existed */
 
-        if (rel == RELATIONSHIP_CHILD) {
-            /* node is a child to adjacent */
-            SVector_Insert(&node->parents, adjacent);
-            SVector_Insert(&adjacent->children, node);
-        } else {
+        if (rel == RELATIONSHIP_CHILD) { /* node is a child to adjacent */
+            /* Do inserts only if the relationship doesn't exist already */
+            if (initialNodeParentsSize == 0 || !SVector_Search(&node->parents, adjacent)) {
+                SVector_Insert(&node->parents, adjacent);
+                SVector_Insert(&adjacent->children, node);
+            }
+        } else { /* node is a parent to adjacent */
+            const size_t adjNodeParentsSize = SVector_Size(&adjacent->parents);
+
             /* The adjacent node is no longer an orphan */
-            if (SVector_Size(&adjacent->parents) == 0) {
+            if (adjNodeParentsSize == 0) {
                 SVector_Remove(&hierarchy->heads, adjacent);
             }
 
-            /* node is a parent to adjacent */
-            SVector_Insert(&node->children, adjacent);
-            SVector_Insert(&adjacent->parents, node);
+            if (adjNodeParentsSize == 0 || !SVector_Search(&adjacent->parents, node)) {
+                SVector_Insert(&node->children, adjacent);
+                SVector_Insert(&adjacent->parents, node);
+            }
         }
     }
 

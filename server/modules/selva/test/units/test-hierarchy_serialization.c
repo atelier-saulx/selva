@@ -42,38 +42,55 @@ static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nr
     RedisModuleIO *ioNode = io;
     char expected[SELVA_NODE_ID_SIZE + 1];
     char actual[SELVA_NODE_ID_SIZE + 1];
+    const size_t msg_size = sizeof(str_buf) - SELVA_NODE_ID_SIZE + 2;
+    char *msg_buf = str_buf + SELVA_NODE_ID_SIZE + 2;
 
-    pu_assert("children is set if nrChildren is non-zero", (nrChildren > 0 && !!children) || (nrChildren == 0 && !children));
+    /* Add the log prefix to the buffer */
+    snprintf(str_buf, sizeof(str_buf), "%.*s: ", SELVA_NODE_ID_SIZE, expectedId);
+
+    snprintf(msg_buf, msg_size, "children is set if nrChildren is non-zero");
+    pu_assert(str_buf, (nrChildren > 0 && !!children) || (nrChildren == 0 && !children));
 
     for (size_t i = 0; i < index + 1; i++) {
         ioNode = ioNode->next;
         pu_assert("ioNode is non-null", !!ioNode);
     }
 
-    snprintf(str_buf, sizeof(str_buf), "the node id is stored as a string at [%zd]", index);
+    snprintf(msg_buf, msg_size, "the node id is stored as a string at [%zd]", index);
     pu_assert_equal(str_buf, ioNode->type, REDIS_MODULE_IO_TYPE_STRING);
 
     copyId2Buf(actual, ioNode->string);
     copyId2Buf(expected, expectedId);
-    pu_assert_str_equal("the expected node id is found", actual, expected);
+
+    snprintf(msg_buf, msg_size, "the expected node id is found");
+    pu_assert_str_equal(str_buf, actual, expected);
 
     if (!memcmp(ioNode->string, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
         return NULL;
     }
 
     ioNode = ioNode->next;
-    pu_assert("the chain continues", ioNode);
-    pu_assert_equal("the correct number of children is set", ioNode->uint64_val, nrChildren);
+
+    snprintf(msg_buf, msg_size, "the chain continues");
+    pu_assert(str_buf, ioNode);
+
+    snprintf(msg_buf, msg_size, "the correct number of children is set");
+    pu_assert_equal(str_buf, ioNode->uint64_val, nrChildren);
 
     for (size_t i = 0; i < nrChildren; i++) {
         ioNode = ioNode->next;
 
-        pu_assert("ioNode representing a child is non-null", !!ioNode);
-        pu_assert_equal("the child id is stored as a string", ioNode->type, REDIS_MODULE_IO_TYPE_STRING);
+        snprintf(msg_buf, msg_size, "ioNode representing a child is non-null");
+        pu_assert(str_buf, !!ioNode);
+
+        snprintf(msg_buf, msg_size, "the child id is stored as a string");
+        pu_assert_equal(str_buf, ioNode->type, REDIS_MODULE_IO_TYPE_STRING);
 
         copyId2Buf(actual, ioNode->string);
         copyId2Buf(expected, children[i]);
-        pu_assert_str_equal("the expected child id is found", actual, expected);
+
+        snprintf(msg_buf, msg_size, "the expected child id is found");
+        pu_assert_str_equal(str_buf, actual, expected);
     }
 
     return NULL;
@@ -148,8 +165,96 @@ static char * test_serialize_two_nodes(void)
     return NULL;
 }
 
+static char * test_serialize_acyclic_1(void)
+{
+    /*
+     *  a -> b --> c
+     *   \-->--/
+     */
+    char *res;
+
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_AddHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
+
+    HierarchyTypeRDBSave(io, hierarchy);
+
+    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 10);
+
+    res = assert_node(0, "grphnode_a", 2, ((Selva_NodeId []){ "grphnode_b", "grphnode_c" }));
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(6, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_c"}));
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(4, "grphnode_c", 0, NULL);
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(9, HIERARCHY_RDB_EOF, 0, NULL);
+    if (res) {
+        return res;
+    }
+
+    return NULL;
+}
+
+static char * test_serialize_acyclic_2(void)
+{
+    /*
+     *  a --> c
+     *     /
+     *  b --> d
+     */
+    char *res;
+
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_c" }));
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+
+    HierarchyTypeRDBSave(io, hierarchy);
+
+    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 12);
+
+    res = assert_node(0, "grphnode_a", 1, ((Selva_NodeId []){ "grphnode_c" }));
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(3, "grphnode_c", 0, NULL);
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(5, "grphnode_b", 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }));
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(9, "grphnode_d", 0, NULL);
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(11, HIERARCHY_RDB_EOF, 0, NULL);
+    if (res) {
+        return res;
+    }
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_serialize_one_node, PU_RUN);
     pu_def_test(test_serialize_two_nodes, PU_RUN);
+    pu_def_test(test_serialize_acyclic_1, PU_RUN);
+    pu_def_test(test_serialize_acyclic_2, PU_RUN);
 }

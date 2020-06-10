@@ -62,6 +62,23 @@ static char * test_insert_many(void)
     return NULL;
 }
 
+static char * test_add_twice(void)
+{
+    const Selva_NodeId ids[] = { "a", "b", "c", "d", "e", "f" };
+
+    for (size_t i = 0; i < num_elem(ids); i++) {
+        int res;
+
+        res = SelvaModify_AddHierarchy(hierarchy, ids[i], 0, NULL, 0, NULL);
+        pu_assert_equal("a node was inserted", res, 0);
+
+        res = SelvaModify_AddHierarchy(hierarchy, ids[i], 0, NULL, 0, NULL);
+        pu_assert_equal("a node was inserted", res, 0);
+    }
+
+    return NULL;
+}
+
 static char * test_alter_relationship_set(void)
 {
     /*
@@ -292,7 +309,7 @@ static char * test_insert_acyclic_find_ancestors_1(void)
 
     SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
     SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_b", "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
 
     const int nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
 
@@ -480,6 +497,7 @@ void all_tests(void)
 {
     pu_def_test(test_insert_one, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
+    pu_def_test(test_add_twice, PU_RUN);
     pu_def_test(test_get_heads, PU_RUN);
     pu_def_test(test_get_heads_alter_set, PU_RUN);
     pu_def_test(test_get_heads_alter_add, PU_RUN);
