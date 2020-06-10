@@ -34,6 +34,7 @@ test.before(async t => {
     },
     types: {
       team: {
+        prefix: 'te',
         fields: {
           // @ts-ignore
           theme
@@ -41,6 +42,7 @@ test.before(async t => {
       },
 
       match: {
+        prefix: 'ma',
         hierarchy: {
           team: false
         },

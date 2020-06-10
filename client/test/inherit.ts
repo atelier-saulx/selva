@@ -84,7 +84,7 @@ test.serial('simple', async t => {
 })
 
 test.serial('simple with circular', async t => {
-  const client = connect({ port: port })
+  const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
     $id: 'geScifi',
