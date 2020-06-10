@@ -11,6 +11,8 @@ SelvaModify_Hierarchy *hierarchy;
 Selva_NodeId *findRes;
 RedisModuleIO *io;
 
+static Selva_NodeId HIERARCHY_RDB_EOF;
+
 static int SelvaNodeId_Compare(const void *a, const void *b) {
 
     return strncmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);
@@ -73,6 +75,10 @@ static char * assert_node(size_t index, Selva_NodeId expectedId, size_t nrChildr
     copyId2Buf(expected, expectedId);
     pu_assert_str_equal("the expected node id is found", actual, expected);
 
+    if (!strncmp(ioNode->string, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
+        return NULL;
+    }
+
     ioNode = ioNode->next;
     pu_assert("the chain continues", ioNode);
     pu_assert_equal("the correct number of children is set", ioNode->uint64_val, nrChildren);
@@ -93,16 +99,25 @@ static char * assert_node(size_t index, Selva_NodeId expectedId, size_t nrChildr
 
 static char * test_serialize_one_node(void)
 {
+    char *res;
     const Selva_NodeId id = "grphnode_a";
-    const int res = SelvaModify_SetHierarchy(hierarchy, id, 0, NULL, 0, NULL);
-
-    pu_assert_equal("a node was inserted", res, 0);
+    SelvaModify_SetHierarchy(hierarchy, id, 0, NULL, 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
 
-    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 2);
+    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 3);
 
-    return assert_node(0, id, 0, NULL);
+    res = assert_node(0, id, 0, NULL);
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(2, HIERARCHY_RDB_EOF, 0, NULL);
+    if (res) {
+        return res;
+    }
+
+    return NULL;
 }
 
 static char * test_serialize_two_nodes(void)
@@ -113,7 +128,7 @@ static char * test_serialize_two_nodes(void)
 
     HierarchyTypeRDBSave(io, hierarchy);
 
-    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 5);
+    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 6);
 
     res = assert_node(0, "grphnode_a", 1, ((Selva_NodeId []){ "grphnode_b" }));
     if (res) {
@@ -121,6 +136,11 @@ static char * test_serialize_two_nodes(void)
     }
 
     res = assert_node(3, "grphnode_b", 0, NULL);
+    if (res) {
+        return res;
+    }
+
+    res = assert_node(5, HIERARCHY_RDB_EOF, 0, NULL);
     if (res) {
         return res;
     }

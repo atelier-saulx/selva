@@ -14,8 +14,6 @@
 #define HIERARCHY_ENCODING_VERSION 0
 #define INITIAL_VECTOR_LEN 2
 
-static RedisModuleType *HierarchyType;
-
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
     struct timespec visit_stamp;
@@ -49,6 +47,9 @@ typedef struct SelvaModify_Hierarchy {
      */
     SVector heads;
 } SelvaModify_Hierarchy;
+
+static Selva_NodeId HIERARCHY_RDB_EOF;
+static RedisModuleType *HierarchyType;
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
@@ -407,6 +408,8 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
     }
 
     SVector_Destroy(&stack);
+
+    RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
 
 void HierarchyTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
