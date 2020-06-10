@@ -9,7 +9,7 @@ Selva_NodeId *findRes;
 
 static int SelvaNodeId_Compare(const void *a, const void *b) {
 
-    return strncmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);
+    return memcmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);
 }
 
 static void SelvaNodeId_SortRes(size_t len) {

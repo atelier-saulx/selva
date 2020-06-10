@@ -389,7 +389,9 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
 
                 /*
                  * Serialization format:
-                 * NODE_ID | NR_CHILDREN | CHILD_ID_0,..
+                 * NODE_ID1 | NR_CHILDREN | CHILD_ID_0,..
+                 * NODE_ID2 | NR_CHILDREN | ...
+                 * HIERARCHY_RDB_EOF
                  */
                 RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
                 RedisModule_SaveUnsigned(io, SVector_Size(&node->children));

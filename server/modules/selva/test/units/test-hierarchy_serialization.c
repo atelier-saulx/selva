@@ -15,7 +15,7 @@ static Selva_NodeId HIERARCHY_RDB_EOF;
 
 static int SelvaNodeId_Compare(const void *a, const void *b) {
 
-    return strncmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);
+    return memcmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);
 }
 
 static void SelvaNodeId_SortRes(size_t len) {
@@ -32,31 +32,13 @@ static char *SelvaNodeId_GetRes(size_t i) {
     return id;
 }
 
-static void setup(void)
-{
-    hierarchy = SelvaModify_NewHierarchy();
-    io = RedisRdb_NewIo();
-}
-
-static void teardown(void)
-{
-    SelvaModify_DestroyHierarchy(hierarchy);
-    hierarchy = NULL;
-
-    free(findRes);
-    findRes = NULL;
-
-    RedisRdb_FreeIo(io);
-    io = NULL;
-}
-
-static void copyId2Buf(char buf[SELVA_NODE_ID_SIZE + 1], Selva_NodeId id) {
+static void copyId2Buf(char buf[SELVA_NODE_ID_SIZE + 1], const Selva_NodeId id) {
     memcpy(buf, id, SELVA_NODE_ID_SIZE);
     buf[SELVA_NODE_ID_SIZE] = '\0';
 }
 
 static char str_buf[120];
-static char * assert_node(size_t index, Selva_NodeId expectedId, size_t nrChildren, Selva_NodeId *children) {
+static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nrChildren, const Selva_NodeId *children) {
     RedisModuleIO *ioNode = io;
     char expected[SELVA_NODE_ID_SIZE + 1];
     char actual[SELVA_NODE_ID_SIZE + 1];
@@ -75,7 +57,7 @@ static char * assert_node(size_t index, Selva_NodeId expectedId, size_t nrChildr
     copyId2Buf(expected, expectedId);
     pu_assert_str_equal("the expected node id is found", actual, expected);
 
-    if (!strncmp(ioNode->string, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
+    if (!memcmp(ioNode->string, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
         return NULL;
     }
 
@@ -95,6 +77,24 @@ static char * assert_node(size_t index, Selva_NodeId expectedId, size_t nrChildr
     }
 
     return NULL;
+}
+
+static void setup(void)
+{
+    hierarchy = SelvaModify_NewHierarchy();
+    io = RedisRdb_NewIo();
+}
+
+static void teardown(void)
+{
+    SelvaModify_DestroyHierarchy(hierarchy);
+    hierarchy = NULL;
+
+    free(findRes);
+    findRes = NULL;
+
+    RedisRdb_FreeIo(io);
+    io = NULL;
 }
 
 static char * test_serialize_one_node(void)
