@@ -147,12 +147,14 @@ const createRegistryClient = (
 ) => {
   clearTimeout(client.timeoutServers)
 
-  client.registry = getClient(client, {
+  const descriptor: ServerDescriptor = {
     port,
     host,
     name: 'registry',
     type: 'registry'
-  })
+  }
+
+  client.registry = getClient(client, descriptor)
 
   client.registry.on('connect', () => {
     client.selvaClient.emit('connect')
@@ -162,11 +164,11 @@ const createRegistryClient = (
     client.selvaClient.emit('disconnect')
   })
 
-  client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
-  client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_SUBSCRIPTION)
+  client.subscribe(descriptor, REGISTRY_UPDATE)
+  client.subscribe(descriptor, REGISTRY_UPDATE_SUBSCRIPTION)
 
   if (client.selvaClient.serverType === 'registry') {
-    client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_STATS)
+    client.subscribe(descriptor, REGISTRY_UPDATE_STATS)
   }
 
   const setTimeoutServer = () => {

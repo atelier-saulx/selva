@@ -14,8 +14,8 @@ test.before(async t => {
   })
 
   await wait(500)
-
-  const client = connect({ port }, { loglevel: 'info' })
+  // { loglevel: 'info' }
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -60,7 +60,7 @@ test.before(async t => {
   })
 
   const team1 = await client.id({ type: 'team' })
-  const amount = 25000
+  const amount = 125000
   const vids = 100
   const genMatches = (s = 0) => {
     const ch = []
