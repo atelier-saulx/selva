@@ -29,6 +29,7 @@ export class SelvaServer extends EventEmitter {
   public type: ServerType
   public port: number
   public host: string
+  public name: string
   public selvaClient: SelvaClient
   public serverHeartbeatTimeout?: NodeJS.Timeout
   public pm: ProcessManager
@@ -53,6 +54,7 @@ export class SelvaServer extends EventEmitter {
 
     this.port = opts.port
     this.host = opts.host
+    this.name = opts.name
     if (opts.backups) {
       this.backupFns = await opts.backups.backupFns
     }

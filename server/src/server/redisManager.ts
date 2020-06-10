@@ -1,33 +1,48 @@
 import ProcessManager from './processManager'
-import { SelvaClient } from '@saulx/selva'
+import { SelvaClient, ServerType } from '@saulx/selva'
 
 export default class RedisManager extends ProcessManager {
   private redisPort: number
   private redisHost: string
   private selvaClient: SelvaClient
+  private type: ServerType
+  private name: string
 
   constructor(
     args: string[],
     {
       host,
       port,
-      selvaClient
-    }: { host: string; port: number; selvaClient: SelvaClient }
+      selvaClient,
+      type,
+      name
+    }: {
+      host: string
+      port: number
+      selvaClient: SelvaClient
+      name: string
+      type: ServerType
+    }
   ) {
     super('redis-server', args)
 
     this.redisHost = host
     this.redisPort = port
     this.selvaClient = selvaClient
+    this.type = type
+    this.name = name
   }
 
   protected async collect(): Promise<any> {
     const runtimeInfo = await super.collect()
 
     try {
+      console.log(this.name, this.type, this.redisHost, this.redisPort)
       const info = await this.selvaClient.redis.info({
         port: this.redisPort,
-        host: this.redisHost
+        host: this.redisHost,
+        type: this.type,
+        name: this.name
       })
 
       if (info) {

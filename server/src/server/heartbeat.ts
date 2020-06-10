@@ -4,7 +4,12 @@ import { constants } from '@saulx/selva'
 const startServerHeartbeat = (server: SelvaServer) => {
   const setHeartbeat = () => {
     server.selvaClient.redis.publish(
-      { host: server.host, port: server.port },
+      {
+        host: server.host,
+        port: server.port,
+        type: server.type,
+        name: server.name
+      },
       constants.SERVER_HEARTBEAT,
       ''
     )

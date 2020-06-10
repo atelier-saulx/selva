@@ -106,11 +106,14 @@ const validate = (
 export async function startOrigin(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
 
-  // default name is 'main'
+  // default name is 'default'
   const err = validate(parsedOpts, ['registry', 'name'], [])
   if (err) {
     console.error(`Error starting origin selva server ${chalk.red(err)}`)
     throw new Error(err)
+  }
+  if  (!parsedOpts.name && parsedOpts.default) {
+    parsedOpts.name = 'default'
   }
   return startServer('origin', parsedOpts)
 }
@@ -142,6 +145,9 @@ export async function startReplica(opts: Options) {
   if (err) {
     console.error(`Error starting replica selva server ${chalk.red(err)}`)
     throw new Error(err)
+  }
+  if  (!parsedOpts.name && parsedOpts.default) {
+    parsedOpts.name = 'default'
   }
   return startServer('replica', parsedOpts)
 }

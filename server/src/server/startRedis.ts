@@ -57,6 +57,8 @@ export default (server: SelvaServer, opts: ServerOptions) => {
   server.pm = new RedisManager(args, {
     port,
     host,
+    name,
+    type: server.type,
     selvaClient: server.selvaClient
   })
   server.pm.start()

@@ -34,10 +34,12 @@ const reconnectClient = (client, retry: number = 0) => {
     return
   }
 
+  console.log('reconnecting', type, name)
   getServerDescriptor(aSelvaClient, {
     type,
     name
   }).then(descriptor => {
+    console.log('reconnect it!', type, name)
     if (descriptor.host + ':' + descriptor.port === client.id && retry < 5) {
       setTimeout(() => {
         reconnectClient(client, retry + 1)

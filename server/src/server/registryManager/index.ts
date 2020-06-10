@@ -14,7 +14,7 @@ export const registryManager = (server: SelvaServer): Promise<void> => {
         const ts = obj.stats && obj.stats.timestamp
         if (ts) {
           // also add on exit hook!
-          if (Date.now() - ts > 30e3) {
+          if (Date.now() - ts > 20e3) {
             const redis = server.selvaClient.redis
             const id = `${obj.host}:${obj.port}`
             await Promise.all([
