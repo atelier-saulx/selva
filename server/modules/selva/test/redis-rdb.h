@@ -15,6 +15,7 @@ enum RedisModuleIOType {
 typedef struct RedisModuleIO {
     enum RedisModuleIOType type;
     struct RedisModuleIO *next;
+    size_t string_size;
     union {
         struct RedisModuleIO *last;
         uint64_t uint64_val;
@@ -22,6 +23,7 @@ typedef struct RedisModuleIO {
         double double_val;
         char string[0];
     };
+    /* No more fields here */
 } RedisModuleIO;
 
 RedisModuleIO *RedisRdb_NewIo(void);

@@ -52,6 +52,20 @@ size_t RedisRdb_CountIo(RedisModuleIO *io) {
     return i;
 }
 
+static RedisModuleIO *RedisRdb_RemoveFirst(RedisModuleIO *io) {
+    RedisModuleIO *node = io->next;
+
+    if (node == io->last) {
+        io->last = NULL;
+    }
+
+    if (node) {
+        io->next = node->next;
+    }
+
+    return node;
+}
+
 void _RedisModule_SaveUnsigned(RedisModuleIO *io, uint64_t value) {
     RedisModuleIO *node = RedisRdb_NewIoNode(io, 0);
 
@@ -60,8 +74,18 @@ void _RedisModule_SaveUnsigned(RedisModuleIO *io, uint64_t value) {
 }
 
 uint64_t _RedisModule_LoadUnsigned(RedisModuleIO *io) {
-    /* TODO */
-    return 0;
+    RedisModuleIO *node = RedisRdb_RemoveFirst(io);
+
+    if (!node) {
+        fprintf(stderr, "RedisRdb mock EOF\n");
+        abort();
+    }
+
+    const uint64_t value = node->uint64_val;
+
+    free(node);
+
+    return value;
 }
 
 void _RedisModule_SaveSigned(RedisModuleIO *io, int64_t value) {
@@ -72,8 +96,18 @@ void _RedisModule_SaveSigned(RedisModuleIO *io, int64_t value) {
 }
 
 int64_t _RedisModule_LoadSigned(RedisModuleIO *io) {
-    /* TODO */
-    return 0;
+    RedisModuleIO *node = RedisRdb_RemoveFirst(io);
+
+    if (!node) {
+        fprintf(stderr, "RedisRdb mock EOF\n");
+        abort();
+    }
+
+    const int64_t value = node->int64_val;
+
+    free(node);
+
+    return value;
 }
 
 #if 0
@@ -87,6 +121,7 @@ void _RedisModule_SaveStringBuffer(RedisModuleIO *io, const char *str, size_t le
 
     node->type = REDIS_MODULE_IO_TYPE_STRING;
     memcpy(node->string, str, len);
+    node->string_size = len;
 }
 
 #if 0
@@ -96,8 +131,20 @@ RedisModuleString *RedisModule_LoadString(RedisModuleIO *io) {
 #endif
 
 char *_RedisModule_LoadStringBuffer(RedisModuleIO *io, size_t *lenptr) {
-    /* TODO */
-    return NULL;
+    RedisModuleIO *node = RedisRdb_RemoveFirst(io);
+
+    if (!node) {
+        fprintf(stderr, "RedisRdb mock EOF\n");
+        abort();
+    }
+
+    *lenptr = node->string_size;
+    char *str = malloc(node->string_size);
+
+    memcpy(str, node->string, node->string_size);
+    free(node);
+
+    return str;
 }
 
 void _RedisModule_SaveDouble(RedisModuleIO *io, double value) {
@@ -108,8 +155,18 @@ void _RedisModule_SaveDouble(RedisModuleIO *io, double value) {
 }
 
 double _RedisModule_LoadDouble(RedisModuleIO *io) {
-    /* TODO */
-    return 0.0;
+    RedisModuleIO *node = RedisRdb_RemoveFirst(io);
+
+    if (!node) {
+        fprintf(stderr, "RedisRdb mock EOF\n");
+        abort();
+    }
+
+    const double value = node->double_val;
+
+    free(node);
+
+    return value;
 }
 
 void (*RedisModule_SaveUnsigned)(RedisModuleIO *io, uint64_t value) = _RedisModule_SaveUnsigned;
