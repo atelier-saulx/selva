@@ -103,9 +103,12 @@ static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
     };
 
     memset(node, 0, sizeof(SelvaModify_HierarchyNode));
-    SVector_Init(&node->parents, INITIAL_VECTOR_LEN, SVector_BS_Compare);
-    SVector_Init(&node->children, INITIAL_VECTOR_LEN, SVector_BS_Compare);
-    /* TODO Check errors /\ */
+
+    if (!SVector_Init(&node->parents, INITIAL_VECTOR_LEN, SVector_BS_Compare) ||
+        !SVector_Init(&node->children, INITIAL_VECTOR_LEN, SVector_BS_Compare)) {
+        SelvaModify_DestroyNode(node);
+        return NULL;
+    }
 
     memcpy(node->id, id, SELVA_NODE_ID_SIZE);
 
