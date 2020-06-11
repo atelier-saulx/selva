@@ -454,7 +454,12 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_No
         }
     }
 
-    *res = list;
+    if (nr_nodes > 0) {
+        *res = list;
+    } else {
+        *res = NULL;
+        RedisModule_Free(list);
+    }
 err:
     SVector_Destroy(&stack);
 
@@ -493,9 +498,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
     while (1) {
         size_t len;
-        char *node_id __attribute__((cleanup(wrapFree)));
-
-        node_id = RedisModule_LoadStringBuffer(io, &len);
+        char *node_id __attribute__((cleanup(wrapFree))) = RedisModule_LoadStringBuffer(io, &len);
 
         if (len != SELVA_NODE_ID_SIZE) {
             goto error;
@@ -517,9 +520,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
             /* Create/Update children */
             for (uint64_t i = 0; i < nr_children; i++) {
-                char *child_id __attribute__((cleanup(wrapFree)));
-
-                child_id = RedisModule_LoadStringBuffer(io, &len);
+                char *child_id __attribute__((cleanup(wrapFree))) = RedisModule_LoadStringBuffer(io, &len);
 
                 if (len != SELVA_NODE_ID_SIZE) {
                     goto error;
@@ -666,7 +667,7 @@ int SelvaModify_Hierarchy_FindAncestorsCommand(RedisModuleCtx *ctx, RedisModuleS
     }
 
     Selva_NodeId nodeId;
-    Selva_NodeId *ancestors __attribute__((cleanup(wrapFree)));
+    Selva_NodeId *ancestors __attribute__((cleanup(wrapFree))) = NULL;
 
     /* TODO We should somehow send the responses directly, maybe a callback? */
     strncpy(nodeId, RedisModule_StringPtrLen(argv[2], NULL), SELVA_NODE_ID_SIZE);
