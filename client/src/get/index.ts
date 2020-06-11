@@ -1,7 +1,11 @@
 import { SelvaClient } from '..'
 import { GetResult, GetOptions } from './types'
 import { SCRIPT } from '../constants'
-import validate, { ExtraQueries, ExtraQuery } from './validate'
+import validate, {
+  ExtraQueries,
+  ExtraQuery,
+  PostGetExtraQuery
+} from './validate'
 import { deepMerge } from './deepMerge'
 
 async function combineResults(
@@ -28,6 +32,16 @@ async function combineResults(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
         query.map(async q => {
+          if (q.type === 'traverse') {
+            // these are processed before the main query
+            if (meta) {
+              deepMerge(meta, {
+                [q.$db || 'default']: q.meta
+              })
+            }
+            return
+          }
+
           const parts = q.path.substr(1).split('.')
 
           if (parts[0] === 'listResult') {
@@ -212,11 +226,20 @@ function makeNewGetOptions(
   for (const key in getOpts) {
     const newPath = path + '.' + key
     if (extraQueries[newPath]) {
-      newOpts[key] = extraQueries[newPath].placeholder
+      const extraQuery: ExtraQuery = extraQueries[newPath]
+      if (extraQuery.type === 'traverse') {
+        newOpts[key] = extraQuery.value
+      } else {
+        newOpts[key] = extraQuery.placeholder
+      }
     } else if (!key.startsWith('$') && Array.isArray(getOpts[key])) {
       newOpts[key] = getOpts[key].map((g, i) => {
-        if (extraQueries[newPath + '.' + i]) {
-          return extraQueries[newPath + '.' + i].placeholder
+        const extraQuery: PostGetExtraQuery = <PostGetExtraQuery>(
+          extraQueries[newPath + '.' + i]
+        )
+
+        if (extraQuery) {
+          return extraQuery.placeholder
         }
 
         return makeNewGetOptions(extraQueries, g, newPath + '.' + i)
@@ -240,7 +263,7 @@ async function get(
   nested: boolean = false
 ): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
-  validate(extraQueries, client, props)
+  await validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
     getExtraQueriesByField(extraQueries),
     props
