@@ -402,7 +402,9 @@ int SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_No
  * wrap the function pointer to be able to use it for this purpose.
  */
 static void wrapFree(void *p) {
-    RedisModule_Free(p);
+    void ** pp = (void **)p;
+
+    RedisModule_Free(*pp);
 }
 
 void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
