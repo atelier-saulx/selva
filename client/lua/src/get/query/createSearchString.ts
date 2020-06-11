@@ -141,7 +141,7 @@ const addField = (
           `sug`,
           words[i],
           'MAX',
-          '20'
+          '150'
         )
         logger.info('sugget', suggestion)
 
