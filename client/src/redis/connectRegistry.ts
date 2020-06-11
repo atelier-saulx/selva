@@ -36,7 +36,6 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
   const subManagerObj: Record<string, true> = {}
   const subsManagers = []
 
-  // console.log('get servers!', serverList)
   const result: ServerDescriptor[] = await Promise.all(
     serverList.map(
       async (id: string): Promise<ServerDescriptor> => {
