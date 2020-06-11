@@ -13,6 +13,13 @@ const sendUpdate = async (
   const channel = subscription.channel
   const { client, selector } = subscriptionManager
   const redis = client.redis
+
+  if (
+    subscriptionManager.subscriptions[subscription.channel] !== subscription
+  ) {
+    return
+  }
+
   subscriptionManager.inProgressCount++
   subscription.beingProcessed = true
   const getOptions = subscription.get
@@ -36,6 +43,7 @@ const sendUpdate = async (
   }
 
   let time = setTimeout(() => {
+    // log these somewhere!
     console.log('TIMEOUT OUT', channel, subscription.origins)
   }, 15e3)
 
@@ -61,7 +69,6 @@ const sendUpdate = async (
     clearTimeout(time)
     subscriptionManager.inProgressCount--
     subscription.beingProcessed = false
-    console.log('SUBS CHANGED WTF NO')
     return
   }
 
