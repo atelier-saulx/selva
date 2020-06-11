@@ -128,19 +128,27 @@ static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, con
         return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaModify_HierarchyNode *)(&filter));
 }
 
+static void mkHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
+    SVector_Insert(&hierarchy->heads, node);
+}
+
+static void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
+    SVector_Remove(&hierarchy->heads, node);
+}
+
 static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
     const size_t initialNodeParentsSize = SVector_Size(&node->parents);
 
     if (rel == RELATIONSHIP_CHILD && n > 0 && initialNodeParentsSize == 0) {
         /* The node is no longer an orphan */
-        SVector_Remove(&hierarchy->heads, node);
+        rmHead(hierarchy, node);
     }
 
     for (size_t i = 0; i < n; i++) {
         SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
         if (!adjacent) {
-            /* TODO Panic: parent not found */
+            /* TODO Panic: not found */
             continue;
         }
 
@@ -150,24 +158,62 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
                 SVector_Insert(&node->parents, adjacent);
                 SVector_Insert(&adjacent->children, node);
             }
-        } else { /* node is a parent to adjacent */
+        } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
             const size_t adjNodeParentsSize = SVector_Size(&adjacent->parents);
 
             /* The adjacent node is no longer an orphan */
             if (adjNodeParentsSize == 0) {
-                SVector_Remove(&hierarchy->heads, adjacent);
+                rmHead(hierarchy, adjacent);
             }
 
             if (adjNodeParentsSize == 0 || !SVector_Search(&adjacent->parents, node)) {
                 SVector_Insert(&node->children, adjacent);
                 SVector_Insert(&adjacent->parents, node);
             }
+        } else {
+            /* TODO Panic */
         }
     }
 
     return 0;
 }
 
+static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
+    const size_t initialNodeParentsSize = SVector_Size(&node->parents);
+
+    for (size_t i = 0; i < n; i++) {
+        SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
+
+        if (!adjacent) {
+            /* TODO Panic: not found */
+            continue;
+        }
+
+        if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
+            SVector_Remove(&adjacent->children, node);
+            SVector_Remove(&node->parents, adjacent);
+        } else if (rel == RELATIONSHIP_PARENT) { /* no longer a parent of adjacent */
+            SVector_Remove(&adjacent->parents, node);
+            SVector_Remove(&node->children, adjacent);
+
+            if (SVector_Size(&adjacent->parents) == 0) {
+                /* adjacent is an orphan now */
+                mkHead(hierarchy, adjacent);
+            }
+        } else {
+            /* TODO Panic */
+        }
+    }
+
+    if (rel == RELATIONSHIP_CHILD && initialNodeParentsSize > 0 && SVector_Size(&node->parents) == 0) {
+        /* node is an orphan now */
+        mkHead(hierarchy, node);
+    }
+}
+
+/**
+ * Remove all relationships rel of node.
+ */
 static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel) {
     size_t offset_a;
     size_t offset_b;
@@ -199,13 +245,13 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
 
         if (rel == RELATIONSHIP_PARENT && SVector_Size(vec_b) == 0) {
             /* This node is now orphan */
-            SVector_Insert(&hierarchy->heads, it);
+            mkHead(hierarchy, it);
         }
     }
     SVector_Clear(vec_a);
 
     /*
-     * After this the caller should call SVector_Insert(&hierarchy->heads, node)
+     * After this the caller should call mkHead(hierarchy, node)
      * if rel == RELATIONSHIP_CHILD.
      */
 }
@@ -243,7 +289,7 @@ int SelvaModify_SetHierarchy(
 
     if (nr_parents == 0) {
         /* This node is orphan */
-        SVector_Insert(&hierarchy->heads, node);
+        mkHead(hierarchy, node);
     }
 
     /* Set relationship relative to other nodes */
@@ -282,7 +328,7 @@ int SelvaModify_AddHierarchy(
 
         if (nr_parents == 0) {
             /* This node is orphan */
-            SVector_Insert(&hierarchy->heads, node);
+            mkHead(hierarchy, node);
         }
     }
 
@@ -300,8 +346,17 @@ int SelvaModify_DelHierarchy(
         const Selva_NodeId *parents,
         size_t nr_children,
         const Selva_NodeId *children) {
-    /* TODO DelHierarchy */
-    return -1;
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
+
+    if (!node) {
+        return -1;
+    }
+
+    /* TODO Error handling */
+    crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+
+    return 0;
 }
 
 static Selva_NodeId *NodeList_New(int nr_nodes) {
@@ -410,7 +465,7 @@ int SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_No
  * Wrap RedisModule_Free().
  */
 static void wrapFree(void *p) {
-    void ** pp = (void **)p;
+    void **pp = (void **)p;
 
     RedisModule_Free(*pp);
 }
