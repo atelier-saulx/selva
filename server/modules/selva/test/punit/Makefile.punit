@@ -53,7 +53,7 @@ include $(wildcard *.mk)
 ###############################################################################
 
 CC ?= gcc
-CCFLAGS += -Wall -MMD -DPU_TEST_BUILD
+CCFLAGS += --coverage -Wall -MMD -DPU_TEST_BUILD
 # Link math?
 ifeq ($(PU_LMATH),1)
 	CCFLAGS += -lm -DPU_LMATH

@@ -1,3 +1,7 @@
 # Ignore punit bins and objs
 */bin/
 */obj/
+
+*.gcov
+*.gcda
+*.gcno
