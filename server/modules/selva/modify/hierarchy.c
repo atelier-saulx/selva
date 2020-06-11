@@ -590,6 +590,87 @@ void HierarchyTypeFree(void *value) {
     SelvaModify_DestroyHierarchy(hierarchy);
 }
 
+int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc < 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    int type = RedisModule_KeyType(key);
+    if (type != REDISMODULE_KEYTYPE_EMPTY &&
+        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
+        return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+
+    /* Create an empty value object if the key is currently empty. */
+    SelvaModify_Hierarchy *hierarchy;
+    if (type == REDISMODULE_KEYTYPE_EMPTY) {
+        hierarchy = SelvaModify_NewHierarchy();
+        RedisModule_ModuleTypeSetValue(key, HierarchyType, hierarchy);
+    } else {
+        hierarchy = RedisModule_ModuleTypeGetValue(key);
+    }
+
+    /* Insert the new element. */
+    Selva_NodeId nodeId;
+    Selva_NodeId *parents = NULL;
+    const size_t nr_parents = argc - 3;
+
+    strncpy(nodeId, RedisModule_StringPtrLen(argv[2], NULL), SELVA_NODE_ID_SIZE);
+    parents = RedisModule_Calloc(nr_parents, sizeof(Selva_NodeId));
+    /* TODO Handle errors */
+
+    for (size_t i = 0; i < nr_parents; i++) {
+        strncpy(parents[i], RedisModule_StringPtrLen(argv[3 + i], NULL), SELVA_NODE_ID_SIZE);
+    }
+
+    SelvaModify_AddHierarchy(hierarchy, nodeId, nr_parents, parents, 0, NULL);
+
+    RedisModule_ReplyWithLongLong(ctx, 1);
+    RedisModule_ReplicateVerbatim(ctx);
+    return REDISMODULE_OK;
+}
+
+int SelvaModify_Hierarchy_FindAncestorsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    int type = RedisModule_KeyType(key);
+    if (type != REDISMODULE_KEYTYPE_EMPTY &&
+        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
+        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+
+    /* Create an empty value object if the key is currently empty. */
+    SelvaModify_Hierarchy *hierarchy = RedisModule_ModuleTypeGetValue(key);
+    if (!hierarchy) {
+        return RedisModule_ReplyWithArray(ctx, 0);
+    }
+
+    Selva_NodeId nodeId;
+    Selva_NodeId *ancestors __attribute__((cleanup(wrapFree)));
+
+    /* TODO We should somehow send the responses directly, maybe a callback? */
+    strncpy(nodeId, RedisModule_StringPtrLen(argv[2], NULL), SELVA_NODE_ID_SIZE);
+    const int nr_ancestors = SelvaModify_FindAncestors(hierarchy, nodeId, &ancestors);
+    if (nr_ancestors < 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR Unknown error"); /* TODO */
+    }
+
+    RedisModule_ReplyWithArray(ctx, nr_ancestors);
+    for (int i = 0; i < nr_ancestors; i++) {
+        RedisModule_ReplyWithStringBuffer(ctx, ancestors[i], SELVA_NODE_ID_SIZE);
+    }
+
+    return REDISMODULE_OK;
+}
+
 int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
     RedisModuleTypeMethods tm = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
@@ -599,12 +680,18 @@ int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         .free = HierarchyTypeFree,
     };
 
-    HierarchyType = RedisModule_CreateDataType(ctx, "HierarchyType-AZ", HIERARCHY_ENCODING_VERSION, &tm);
-    if (HierarchyType == NULL)
+    HierarchyType = RedisModule_CreateDataType(ctx, "hierarchy", HIERARCHY_ENCODING_VERSION, &tm);
+    if (HierarchyType == NULL) {
         return REDISMODULE_ERR;
+    }
 
-    //if (RedisModule_CreateCommand(ctx, "selva.hierarchy.set", HelloTypeInsert_RedisCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR)
-    //    return REDISMODULE_ERR;
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.add", SelvaModify_Hierarchy_AddNodeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.findancestors", SelvaModify_Hierarchy_FindAncestorsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
 
     return REDISMODULE_OK;
 }

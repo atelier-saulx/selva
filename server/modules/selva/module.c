@@ -55,6 +55,9 @@ int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 }
 
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+  REDISMODULE_NOT_USED(argv);
+  REDISMODULE_NOT_USED(argc);
+
   // init auto memory for created strings
   RedisModule_AutoMemory(ctx);
 
@@ -175,7 +178,5 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     return REDISMODULE_ERR;
   }
 
-  Hierarchy_OnLoad(ctx);
-
-  return REDISMODULE_OK;
+  return Hierarchy_OnLoad(ctx);
 }
