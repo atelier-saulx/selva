@@ -51,6 +51,7 @@ export default async function validateFind(
     const traverse = find.$traverse
     if (typeof traverse === 'object' && !Array.isArray(traverse)) {
       const result = await get(client, {
+        $includeMeta: true,
         $db: traverse.$db,
         $id: traverse.$id,
         traverse: {

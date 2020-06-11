@@ -145,6 +145,7 @@ test.serial('make it nice with users', async t => {
       'YEEEEEEEEEEES',
       JSON.stringify(
         await client.get({
+          $includeMeta: true,
           $language: 'en',
           components: [
             {
