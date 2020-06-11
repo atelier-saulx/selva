@@ -35,9 +35,7 @@ async function combineResults(
           if (q.type === 'traverse') {
             // these are processed before the main query
             if (meta) {
-              deepMerge(meta, {
-                [q.$db || 'default']: q.meta
-              })
+              deepMerge(meta, q.meta)
             }
             return
           }
