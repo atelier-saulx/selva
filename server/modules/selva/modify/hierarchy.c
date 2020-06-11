@@ -398,8 +398,6 @@ int SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_No
 
 /**
  * Wrap RedisModule_Free().
- * The cleanup attribute in GCC/Clang doesn't support function pointers, so we must
- * wrap the function pointer to be able to use it for this purpose.
  */
 static void wrapFree(void *p) {
     void ** pp = (void **)p;
