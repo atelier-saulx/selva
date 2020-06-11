@@ -226,6 +226,102 @@ test.serial('make it nice with users', async t => {
     t.fail()
   }
 
+  const sub = client
+    .observe({
+      $language: 'en',
+      components: [
+        // {
+        //   component: { $value: 'favorites' },
+        //   $db: 'users',
+        //   $id: 'us1',
+        //   favorites: {
+        //     $db: 'default',
+        //     id: true,
+        //     title: true,
+        //     $list: true
+        //   }
+        // },
+        // {
+        //   component: { $value: 'watching' },
+        //   $db: 'users',
+        //   $id: 'us1',
+        //   watching: {
+        //     id: true,
+        //     item: {
+        //       $db: 'default',
+        //       id: true,
+        //       title: true
+        //     },
+        //     $list: true
+        //   }
+        // },
+        // {
+        //   component: { $value: 'matches' },
+        //   matches: {
+        //     id: true,
+        //     title: true,
+        //     $list: {
+        //       $find: {
+        //         $traverse: 'descendants',
+        //         $filter: [
+        //           {
+        //             $operator: '=',
+        //             $field: 'type',
+        //             $value: 'match'
+        //           }
+        //         ]
+        //       }
+        //     }
+        //   }
+        // },
+        {
+          component: { $value: 'lolol' },
+          things: {
+            id: true,
+            title: true,
+            $list: {
+              $find: {
+                $traverse: {
+                  $db: 'users',
+                  $id: 'us2',
+                  $field: 'favorites'
+                },
+                $filter: [
+                  {
+                    $operator: '=',
+                    $field: 'title',
+                    $value: 'match 2'
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    })
+    .subscribe(yesh => {
+      console.log('SUBBYSUB', JSON.stringify(yesh))
+    })
+
+  await wait(5e3)
+
+  await client.set({
+    $id: 'ma3',
+    $language: 'en',
+    title: 'hmm match 2'
+  })
+
+  await client.set({
+    $db: 'users',
+    $id: 'us2',
+    favorites: {
+      $add: 'ma3'
+    }
+  })
+
+  await wait(5e3)
+  sub.unsubscribe()
+
   t.pass()
 
   await client.delete('root')
