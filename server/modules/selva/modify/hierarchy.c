@@ -274,6 +274,11 @@ int SelvaModify_AddHierarchy(
 
             return -1;
         }
+
+        if (nr_parents == 0) {
+            /* This node is orphan */
+            SVector_Insert(&hierarchy->heads, node);
+        }
     }
 
     /* TODO Error handling */
