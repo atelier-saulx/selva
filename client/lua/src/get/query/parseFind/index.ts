@@ -114,6 +114,7 @@ function parseFind(
       // short hand to do iteration over multiple ids
       return parseFindIds(filters, $traverse, meta)
     } else {
+      // @ts-ignore
       const resultIds = getIds(getField, $traverse, ids, $inherit)
       return parseFindIds(filters, resultIds, meta)
     }

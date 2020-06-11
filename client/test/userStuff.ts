@@ -20,7 +20,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text' }
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE'] } }
         }
       }
     }
@@ -185,6 +185,29 @@ test.serial('make it nice with users', async t => {
                         $operator: '=',
                         $field: 'type',
                         $value: 'match'
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              component: { $value: 'lolol' },
+              things: {
+                id: true,
+                title: true,
+                $list: {
+                  $find: {
+                    $traverse: {
+                      $db: 'users',
+                      $id: 'us2',
+                      $field: 'favorites'
+                    },
+                    $filter: [
+                      {
+                        $operator: '=',
+                        $field: 'title',
+                        $value: 'match 2'
                       }
                     ]
                   }

@@ -6,12 +6,15 @@ import validateInherit from './inherit'
 import validateFind from './find'
 import validateSort from './sort'
 
-export default function validateList(
+import { ExtraQueries } from '.'
+
+export default async function validateList(
+  extraQueries: ExtraQueries,
   parentProp: GetOptions,
   client: SelvaClient,
   list: List,
   path: string
-): void {
+): Promise<void> {
   const err = (mainMsg?: string): never => {
     if (!mainMsg) {
       mainMsg = 'Unsupported type in operator $list'
@@ -87,7 +90,13 @@ export default function validateList(
           validateSort(client, list.$sort, path + '.$list')
         }
       } else if (field === '$find') {
-        validateFind(parentProp, client, list.$find, path + '.$list')
+        await validateFind(
+          extraQueries,
+          parentProp,
+          client,
+          list.$find,
+          path + '.$list'
+        )
       } else if (field === '$inherit') {
         validateInherit(client, list.$inherit, path + '.$list')
       } else {

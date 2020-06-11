@@ -249,8 +249,10 @@ const parseQuery = (
         getOptions.$list.$find &&
         getOptions.$list.$find.$traverse
       ) {
+        // @ts-ignore
         meta.traverse = getOptions.$list.$find.$traverse
       } else if (getOptions.$find && getOptions.$find.$traverse) {
+        // @ts-ignore
         meta.traverse = getOptions.$find.$traverse
       } else if (traverse) {
         meta.traverse = traverse

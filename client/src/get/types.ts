@@ -41,9 +41,16 @@ export type Filter =
       $or?: Filter
     }
 
+export type TraverseOptions = {
+  $db?: string
+  $id?: string
+  $field: string
+  // TODO: add $filter, $limit, $offset
+}
+
 export type Find = {
   $db?: string
-  $traverse?: 'descendants' | 'ancestors' | string | string[]
+  $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
   $filter?: Filter | Filter[]
   $find?: Find
 }
