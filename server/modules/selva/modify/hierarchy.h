@@ -4,6 +4,31 @@
 
 #define SELVA_NODE_ID_SIZE 10
 
+/*
+ * Error codes.
+ */
+
+/**
+ * General error.
+ */
+#define SELVA_MODIFY_HIERARCHY_EGENERAL (-1)
+/**
+ * Operation not supported.
+ */
+#define SELVA_MODIFY_HIERARCHY_ENOTSUP  (-2)
+/**
+ * Out of memory.
+ */
+#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-3)
+/**
+ * Node or entity not found.
+ */
+#define SELVA_MODIFY_HIERARCHY_ENOENT   (-4)
+/**
+ * Node or entity already exist.
+ */
+#define SELVA_MODIFY_HIERARCHY_EEXIST   (-5)
+
 typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;

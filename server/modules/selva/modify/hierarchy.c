@@ -201,7 +201,7 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
                 mkHead(hierarchy, adjacent);
             }
         } else {
-            /* TODO Panic */
+            return SELVA_MODIFY_HIERARCHY_ENOTSUP;
         }
     }
 
@@ -209,6 +209,8 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         /* node is an orphan now */
         mkHead(hierarchy, node);
     }
+
+    return 0;
 }
 
 /**
@@ -269,7 +271,7 @@ int SelvaModify_SetHierarchy(
     if (!node) {
         node = newNode(id);
         if (!node) {
-            return -1;
+            return SELVA_MODIFY_HIERARCHY_ENOENT;
         }
         isNewNode = 1;
     }
@@ -279,7 +281,7 @@ int SelvaModify_SetHierarchy(
             /* TODO Panic: the same id was already there */
             SelvaModify_DestroyNode(node);
 
-            return -1;
+            return SELVA_MODIFY_HIERARCHY_EEXIST;
         }
     } else {
         /* Clear the existing node relationships */
@@ -313,7 +315,7 @@ int SelvaModify_AddHierarchy(
     if (!node) {
         node = newNode(id);
         if (!node) {
-            return -1;
+            return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
         isNewNode = 1;
     }
@@ -323,7 +325,7 @@ int SelvaModify_AddHierarchy(
             /* TODO Panic: the same id was already there */
             SelvaModify_DestroyNode(node);
 
-            return -1;
+            return SELVA_MODIFY_HIERARCHY_EEXIST;
         }
 
         if (nr_parents == 0) {
@@ -349,7 +351,7 @@ int SelvaModify_DelHierarchy(
     SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
 
     if (!node) {
-        return -1;
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
     /* TODO Error handling */
@@ -383,7 +385,7 @@ int SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId
     SVECTOR_FOREACH(it, &hierarchy->heads) {
         list = NodeList_Insert(list, (*it)->id, ++nr_nodes);
         if (!list) {
-            return -1;
+            return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
     }
 
@@ -403,14 +405,14 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_No
         offset = offsetof(SelvaModify_HierarchyNode, children);
         break;
     default:
-        return -1;
+        return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
     Trx_Begin(&hierarchy->current_trx);
 
     SelvaModify_HierarchyNode *head = findNode(hierarchy, id);
     if (!head) {
-        return -1;
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
     Selva_NodeId *list = NodeList_New(1);
@@ -428,7 +430,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_No
             if (node != head) {
                 list = NodeList_Insert(list, node->id, ++nr_nodes);
                 if (!list) {
-                    nr_nodes = -1;
+                    nr_nodes = SELVA_MODIFY_HIERARCHY_ENOMEM;
                     goto err;
                 }
             }
