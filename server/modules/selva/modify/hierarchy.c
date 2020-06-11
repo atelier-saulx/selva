@@ -51,6 +51,15 @@ typedef struct SelvaModify_Hierarchy {
 static const Selva_NodeId HIERARCHY_RDB_EOF __attribute__((nonstring));
 static RedisModuleType *HierarchyType;
 
+static const char * const hierarchyStrError[] = {
+    (const char *)"ERR No Error",
+    (const char *)"ERR EGENERAL Unknown error",
+    (const char *)"ERR ENOTSUP Operation not supported",
+    (const char *)"ERR ENOMEM Out of memory",
+    (const char *)"ERR ENOENT Not found",
+    (const char *)"ERR EEXIST Exist",
+};
+
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
 
@@ -626,7 +635,10 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
         strncpy(parents[i], RedisModule_StringPtrLen(argv[3 + i], NULL), SELVA_NODE_ID_SIZE);
     }
 
-    SelvaModify_AddHierarchy(hierarchy, nodeId, nr_parents, parents, 0, NULL);
+    int err = SelvaModify_AddHierarchy(hierarchy, nodeId, nr_parents, parents, 0, NULL);
+    if (err) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+    }
 
     RedisModule_ReplyWithLongLong(ctx, 1);
     RedisModule_ReplicateVerbatim(ctx);
@@ -660,7 +672,7 @@ int SelvaModify_Hierarchy_FindAncestorsCommand(RedisModuleCtx *ctx, RedisModuleS
     strncpy(nodeId, RedisModule_StringPtrLen(argv[2], NULL), SELVA_NODE_ID_SIZE);
     const int nr_ancestors = SelvaModify_FindAncestors(hierarchy, nodeId, &ancestors);
     if (nr_ancestors < 0) {
-        return RedisModule_ReplyWithError(ctx, "ERR Unknown error"); /* TODO */
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-nr_ancestors]);
     }
 
     RedisModule_ReplyWithArray(ctx, nr_ancestors);
