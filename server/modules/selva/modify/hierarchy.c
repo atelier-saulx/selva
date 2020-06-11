@@ -74,8 +74,10 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void) {
     }
 
     RB_INIT(&hierarchy->index_head);
-    SVector_Init(&hierarchy->heads, 1, SVector_BS_Compare);
-    /* TODO Check errors /\ */
+    if (!SVector_Init(&hierarchy->heads, 1, SVector_BS_Compare)) {
+        RedisModule_Free(hierarchy);
+        return NULL;
+    }
 
     return hierarchy;
 }
