@@ -6,8 +6,8 @@ import * as constants from '../../constants'
 import { Client, addCommandToQueue } from './'
 
 const errListener = (client: Client, redisCommand: RedisCommand, err: any) => {
-  console.log(redisCommand.command, redisCommand.args, err)
   if (err) {
+    console.log('---------------->', err)
     process.nextTick(() => {
       addCommandToQueue(client, redisCommand)
     })

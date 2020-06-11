@@ -103,7 +103,6 @@ export const subsmanagerRemoved = (
   redisSelvaClient: RedisSelvaClient,
   id: string
 ) => {
-  // go
   console.log('subs manager removed')
   for (const channel in redisSelvaClient.observerEmitters) {
     const observerEmitter = redisSelvaClient.observerEmitters[channel]
