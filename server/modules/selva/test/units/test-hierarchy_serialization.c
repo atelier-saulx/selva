@@ -27,7 +27,7 @@ static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nr
         pu_assert("ioNode is non-null", !!ioNode);
     }
 
-    snprintf(msg_buf, msg_size, "the node id is stored as a string at [%zd]", index);
+    snprintf(msg_buf, msg_size, "the node id is stored as a string at [%zu]", index);
     pu_assert_equal(str_buf, ioNode->type, REDIS_MODULE_IO_TYPE_STRING);
 
     SelvaNodeId_copy2buf(actual, ioNode->string);

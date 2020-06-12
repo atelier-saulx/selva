@@ -93,16 +93,16 @@ int SelvaModify_DelHierarchy(
 /**
  * Get orphan head nodes of the given hierarchy.
  */
-int SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res);
+ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res);
 
 /**
  * Get an unsorted list of ancestors fo a given node.
  */
-int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors);
+ssize_t SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors);
 
 /**
  * Get an unsorted list of descendants of a given node.
  */
-int SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
+ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
 
 #endif /* SELVA_MODIFY_HIERARCHY */

@@ -392,7 +392,7 @@ static Selva_NodeId *NodeList_New(int nr_nodes) {
     return RedisModule_Alloc(nr_nodes * sizeof(Selva_NodeId));
 }
 
-static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, int nr_nodes) {
+static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, size_t nr_nodes) {
     Selva_NodeId *newList = RedisModule_Realloc(list, nr_nodes * sizeof(Selva_NodeId));
     if (!newList) {
         RedisModule_Free(list);
@@ -404,10 +404,10 @@ static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, 
     return newList;
 }
 
-int SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res) {
+ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res) {
     SelvaModify_HierarchyNode **it;
     Selva_NodeId *list = NodeList_New(1);
-    int nr_nodes = 0;
+    ssize_t nr_nodes = 0;
 
     SVECTOR_FOREACH(it, &hierarchy->heads) {
         list = NodeList_Insert(list, (*it)->id, ++nr_nodes);
@@ -420,8 +420,8 @@ int SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId
     return nr_nodes;
 }
 
-static int dfs(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **res, enum SelvaModify_HierarchyNode_Relationship dir) {
-    int nr_nodes = 0;
+static ssize_t dfs(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **res, enum SelvaModify_HierarchyNode_Relationship dir) {
+    ssize_t nr_nodes = 0;
     size_t offset;
 
     switch (dir) {
@@ -487,11 +487,11 @@ err:
 /**
  * Find ancestors of a node using DFS.
  */
-int SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors) {
+ssize_t SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors) {
     return dfs(hierarchy, id, ancestors, RELATIONSHIP_PARENT);
 }
 
-int SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants) {
+ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants) {
     return dfs(hierarchy, id, descendants, RELATIONSHIP_CHILD);
 }
 

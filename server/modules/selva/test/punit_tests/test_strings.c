@@ -13,7 +13,7 @@ static void teardown(void)
 
 static char * test_ok(void)
 {
-    char str[] = "left string";
+    const char *str = "left string";
 
     pu_assert_str_equal("Strings are equal", str, "left string");
     return 0;
@@ -21,7 +21,7 @@ static char * test_ok(void)
 
 static char * test_fail(void)
 {
-    char str[] = "left string";
+    const char *str = "left string";
 
     pu_assert_str_equal("Strings are equal", str, "right string");
     return 0;
