@@ -1561,6 +1561,25 @@ test.serial.only('get - record', async t => {
       $language: 'en',
       id: true,
       title: true,
+      strRec: {
+        world: true
+      }
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      strRec: {
+        world: 'hmm'
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
       objRec: true
     }),
     {
@@ -1574,6 +1593,35 @@ test.serial.only('get - record', async t => {
         obj2: {
           hello: 'ffp',
           value: 12
+        }
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      objRec: {
+        myObj1: {
+          value: true
+        },
+        obj2: {
+          hello: true
+        }
+      }
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      objRec: {
+        myObj1: {
+          value: 12
+        },
+        obj2: {
+          hello: 'ffp'
         }
       }
     }
