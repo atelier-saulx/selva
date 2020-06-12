@@ -65,14 +65,24 @@ export function getNestedSchema(id: string, field: string): FieldSchema | null {
   for (let i = 1; i < fields.length; i++) {
     const segment = fields[i]
 
-    if (!prop || !prop.properties) {
+    if (!prop) {
       return null
     }
 
-    prop = prop.properties[segment]
+    if (prop.values) {
+      // record types skip the next key
+      prop = prop.values
+      i++
+    } else {
+      if (!prop.properties) {
+        return null
+      }
 
-    str += '.' + segment
-    typeCache[str] = prop
+      prop = prop.properties[segment]
+
+      str += '.' + segment
+      typeCache[str] = prop
+    }
   }
 
   return prop

@@ -18,6 +18,8 @@ import {
   markEmptyArraysInJSON
 } from '../util'
 
+import * as logger from '../logger'
+
 const getDotIndex = (str: string): number => {
   for (let i = str.length - 1; i > 1; i--) {
     if (str[i] === '.') {
@@ -360,6 +362,71 @@ const object = (
   return noKeys ? false : isComplete
 }
 
+const record = (
+  result: GetResult,
+  schema: Schema,
+  id: Id,
+  field: string,
+  language?: string,
+  version?: string,
+  merge?: boolean,
+  mergeProps?: any
+): boolean => {
+  logger.info('RECORD')
+  const keys = redis.hkeys(id)
+  let isComplete = true
+  let noKeys = true
+
+  let usedResult = merge ? {} : result
+  for (const key of keys) {
+    if (key.indexOf(field) === 0) {
+      noKeys = false
+
+      if (stringEndsWith(key, '$ref')) {
+        return resolveObjectRef(
+          usedResult,
+          schema,
+          id,
+          field,
+          getByType,
+          language,
+          version
+        )
+      }
+
+      if (!getByType(usedResult, schema, id, key, language, version)) {
+        isComplete = false
+      }
+    }
+  }
+
+  if (merge) {
+    for (const key of keys) {
+      if (key.indexOf(field) === 0) {
+        const keyPartsAfterField = splitString(
+          key.substring(field.length + 1),
+          '.'
+        )[0]
+        const topLevelPropertyField = field + '.' + keyPartsAfterField
+
+        const intermediate = getNestedField(usedResult, topLevelPropertyField)
+        const nested = getNestedField(result, topLevelPropertyField)
+        if (
+          !nested ||
+          nested === '' ||
+          (type(nested) === 'table' && next(nested) === null)
+        ) {
+          setNestedResult(result, topLevelPropertyField, intermediate)
+        }
+      }
+    }
+
+    return false
+  }
+
+  return noKeys ? false : isComplete
+}
+
 const text = (
   result: GetResult,
   schema: Schema,
@@ -487,6 +554,7 @@ const types = {
   int,
   boolean,
   object,
+  record,
   set: arrayLike,
   reference: string,
   references: arrayLike,
@@ -513,6 +581,7 @@ function getByType(
   merge?: boolean,
   metaKeys?: any
 ): boolean {
+  logger.info('getByType', id, field)
   // version still missing!
 
   let prop: any

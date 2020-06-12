@@ -1514,7 +1514,7 @@ test.serial('get - basic with non-priority language', async t => {
 })
 
 test.serial.only('get - record', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'viA',
@@ -1524,22 +1524,57 @@ test.serial.only('get - record', async t => {
     strRec: {
       hello: 'hallo',
       world: 'hmm'
+    },
+    objRec: {
+      myObj1: {
+        hello: 'pff',
+        value: 12
+      },
+      obj2: {
+        hello: 'ffp',
+        value: 12
+      }
     }
   })
 
   t.deepEqual(
     await client.get({
-      $id: 'maA',
+      $id: 'viA',
       $language: 'en',
+      id: true,
       title: true,
       strRec: true
     }),
     {
-      id: 'maA',
-      title: 'nice',
+      id: 'viA',
+      title: 'nice!',
       strRec: {
         hello: 'hallo',
         world: 'hmm'
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      objRec: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      objRec: {
+        myObj1: {
+          hello: 'pff',
+          value: 12
+        },
+        obj2: {
+          hello: 'ffp',
+          value: 12
+        }
       }
     }
   )
