@@ -296,6 +296,29 @@ test.serial('make it nice with users', async t => {
               }
             }
           }
+        },
+        {
+          component: { $value: 'hmmhmm' },
+          things: {
+            id: true,
+            title: true,
+            $list: {
+              $find: {
+                $traverse: {
+                  $db: 'users',
+                  $id: 'us3',
+                  $field: 'favorites'
+                },
+                $filter: [
+                  {
+                    $operator: '=',
+                    $field: 'title',
+                    $value: 'match 2'
+                  }
+                ]
+              }
+            }
+          }
         }
       ]
     })
