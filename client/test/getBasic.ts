@@ -34,6 +34,26 @@ test.before(async t => {
       lekkerType: {
         prefix: 'vi',
         fields: {
+          strRec: {
+            type: 'record',
+            values: {
+              type: 'string'
+            }
+          },
+          objRec: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                hello: {
+                  type: 'string'
+                },
+                value: {
+                  type: 'number'
+                }
+              }
+            }
+          },
           thing: { type: 'set', items: { type: 'string' } },
           ding: {
             type: 'object',
@@ -1485,6 +1505,42 @@ test.serial('get - basic with non-priority language', async t => {
       id: 'viA',
       title: 'nice nl!',
       value: 25
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial.only('get - record', async t => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!'
+    },
+    strRec: {
+      hello: 'hallo',
+      world: 'hmm'
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'maA',
+      $language: 'en',
+      title: true,
+      strRec: true
+    }),
+    {
+      id: 'maA',
+      title: 'nice',
+      strRec: {
+        hello: 'hallo',
+        world: 'hmm'
+      }
     }
   )
 

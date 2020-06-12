@@ -75,6 +75,13 @@ export type FieldSchemaJson = {
   meta?: any
 }
 
+export type FieldSchemaRecord = {
+  type: 'record'
+  values: FieldSchema
+  search?: SearchRaw | Search
+  meta?: any
+}
+
 export type FieldSchemaOther = {
   search?: SearchRaw | Search
   type: FieldType
@@ -93,6 +100,7 @@ export type FieldSchema =
   | FieldSchemaJson
   | FieldSchemaArrayLike
   | FieldSchemaOther
+  | FieldSchemaRecord
 
 export type Fields = Record<string, FieldSchema>
 
