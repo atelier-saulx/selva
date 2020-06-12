@@ -226,7 +226,7 @@ function makeNewGetOptions(
     if (extraQueries[newPath]) {
       const extraQuery: ExtraQuery = extraQueries[newPath]
       if (extraQuery.type === 'traverse') {
-        newOpts[key] = extraQuery.value
+        newOpts[key] = extraQuery.value || []
       } else {
         newOpts[key] = extraQuery.placeholder
       }
