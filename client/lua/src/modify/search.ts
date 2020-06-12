@@ -156,17 +156,35 @@ export function addFieldToSearch(
             }
 
             let hasPrecedence = false
+            let hasSecondaryPrecedence = true
+
+            // initialize hasSecondaryPrecedence
+            for (let i = 0; i < allLanguages.length; i++) {
+              const otherLang = allLanguages[i]
+              if (otherLang === lang) {
+                break
+              } else if (allSetLanguages[otherLang]) {
+                hasSecondaryPrecedence = false
+                break
+              }
+            }
+
             for (const otherLang of allLanguages) {
               const exists = allSetLanguages[otherLang]
               const escapedFieldName =
                 '___escaped:' + fieldToCheck + '.' + otherLang
 
+              if (exists) {
+                hasSecondaryPrecedence = false
+              }
+
               if (otherLang === lang) {
+                // do nothing
                 hasPrecedence = true
               } else {
                 let replaceValue = false
-                if (hasPrecedence && !exists) {
-                  replaceValue = true
+                if (!exists) {
+                  replaceValue = hasPrecedence || hasSecondaryPrecedence
                 }
 
                 if (replaceValue) {
