@@ -72,7 +72,6 @@ export function getNestedSchema(id: string, field: string): FieldSchema | null {
     if (prop.values) {
       // record types skip the next key
       prop = prop.values
-      i++
     } else {
       if (!prop.properties) {
         return null

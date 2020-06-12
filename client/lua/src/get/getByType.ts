@@ -372,7 +372,6 @@ const record = (
   merge?: boolean,
   mergeProps?: any
 ): boolean => {
-  logger.info('RECORD')
   const keys = redis.hkeys(id)
   let isComplete = true
   let noKeys = true
@@ -581,7 +580,6 @@ function getByType(
   merge?: boolean,
   metaKeys?: any
 ): boolean {
-  logger.info('getByType', id, field)
   // version still missing!
 
   let prop: any
