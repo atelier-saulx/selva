@@ -805,14 +805,14 @@ void DumpCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
     size_t *cur_nr_children = (size_t *)args[2];
 
     if (*nr_nodes > 0) {
-        RedisModule_ReplySetArrayLength(ctx, *cur_nr_children);
+        /* The parent node is the first node in the array, therefore + 1 */
+        RedisModule_ReplySetArrayLength(ctx, *cur_nr_children + 1);
         *cur_nr_children = 0;
     }
 
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     RedisModule_ReplyWithStringBuffer(ctx, node->id, SELVA_NODE_ID_SIZE);
     *nr_nodes = *nr_nodes + 1;
-
-    RedisModule_ReplyWithArray(ctx,REDISMODULE_POSTPONED_ARRAY_LEN);
 }
 
 void DumpCommand_PrintChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
@@ -845,21 +845,25 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return RedisModule_ReplyWithArray(ctx, 0);
     }
 
-    size_t nr_nodes;
-    size_t cur_nr_children;
+    size_t nr_nodes = 0;
+    size_t cur_nr_children = 0;
     void *args[] = { ctx, &nr_nodes, &cur_nr_children };
     TraversalCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
-        .node_cb = HierarchyRDBSaveNode,
+        .node_cb = DumpCommand_PrintNode,
         .node_arg = args,
-        .child_cb = HierarchyRDBSaveChild,
+        .child_cb = DumpCommand_PrintChild,
         .child_arg = args,
     };
 
 
-    RedisModule_ReplyWithArray(ctx,REDISMODULE_POSTPONED_ARRAY_LEN);
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     full_dfs(hierarchy, &cb);
+
+    if (nr_nodes > 0) {
+        RedisModule_ReplySetArrayLength(ctx, cur_nr_children + 1);
+    }
 
     RedisModule_ReplySetArrayLength(ctx, nr_nodes);
 
