@@ -1513,7 +1513,7 @@ test.serial('get - basic with non-priority language', async t => {
   client.destroy()
 })
 
-test.serial.only('get - record', async t => {
+test.serial('get - record', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
