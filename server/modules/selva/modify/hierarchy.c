@@ -153,21 +153,30 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         rmHead(hierarchy, node);
     }
 
-    for (size_t i = 0; i < n; i++) {
-        SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
+    if (rel == RELATIONSHIP_CHILD) { /* node is a child to adjacent */
+        for (size_t i = 0; i < n; i++) {
+            SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
-        if (!adjacent) {
-            /* TODO Panic: not found */
-            continue;
-        }
+            if (!adjacent) {
+                /* TODO Panic: not found */
+                continue;
+            }
 
-        if (rel == RELATIONSHIP_CHILD) { /* node is a child to adjacent */
             /* Do inserts only if the relationship doesn't exist already */
             if (initialNodeParentsSize == 0 || !SVector_Search(&node->parents, adjacent)) {
                 SVector_Insert(&node->parents, adjacent);
                 SVector_Insert(&adjacent->children, node);
             }
-        } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
+        }
+    } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
+        for (size_t i = 0; i < n; i++) {
+            SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
+
+            if (!adjacent) {
+                /* TODO Panic: not found */
+                continue;
+            }
+
             const size_t adjNodeParentsSize = SVector_Size(&adjacent->parents);
 
             /* The adjacent node is no longer an orphan */
@@ -179,29 +188,43 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
                 SVector_Insert(&node->children, adjacent);
                 SVector_Insert(&adjacent->parents, node);
             }
-        } else {
-            /* TODO Panic */
         }
+    } else {
+        return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
     return 0;
 }
 
 static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
-    const size_t initialNodeParentsSize = SVector_Size(&node->parents);
+    if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
+        const size_t initialNodeParentsSize = SVector_Size(&node->parents);
 
-    for (size_t i = 0; i < n; i++) {
-        SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
+        for (size_t i = 0; i < n; i++) {
+            SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
-        if (!adjacent) {
-            /* TODO Panic: not found */
-            continue;
-        }
+            if (!adjacent) {
+                /* TODO Panic: not found */
+                continue;
+            }
 
-        if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
             SVector_Remove(&adjacent->children, node);
             SVector_Remove(&node->parents, adjacent);
-        } else if (rel == RELATIONSHIP_PARENT) { /* no longer a parent of adjacent */
+        }
+
+        if (initialNodeParentsSize > 0 && SVector_Size(&node->parents) == 0) {
+            /* node is an orphan now */
+            mkHead(hierarchy, node);
+        }
+    } else if (rel == RELATIONSHIP_PARENT) { /* no longer a parent of adjacent */
+        for (size_t i = 0; i < n; i++) {
+            SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
+
+            if (!adjacent) {
+                /* TODO Panic: not found */
+                continue;
+            }
+
             SVector_Remove(&adjacent->parents, node);
             SVector_Remove(&node->children, adjacent);
 
@@ -209,14 +232,9 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
                 /* adjacent is an orphan now */
                 mkHead(hierarchy, adjacent);
             }
-        } else {
-            return SELVA_MODIFY_HIERARCHY_ENOTSUP;
         }
-    }
-
-    if (rel == RELATIONSHIP_CHILD && initialNodeParentsSize > 0 && SVector_Size(&node->parents) == 0) {
-        /* node is an orphan now */
-        mkHead(hierarchy, node);
+    } else {
+        return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
     return 0;
