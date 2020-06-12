@@ -587,13 +587,15 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
                 RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
                 RedisModule_SaveUnsigned(io, SVector_Size(&node->children));
 
-                /* Add parents to the stack of unvisited nodes */
                 SelvaModify_HierarchyNode **itt;
                 /* cppcheck-suppress internalAstError */
                 SVECTOR_FOREACH(itt, &node->children) {
                     SelvaModify_HierarchyNode *it = *itt;
 
+                    /* Save the ID of each child */
                     RedisModule_SaveStringBuffer(io, it->id, SELVA_NODE_ID_SIZE);
+
+                    /* Add children to the stack of unvisited nodes */
                     SVector_Insert(&stack, it);
                 }
             }
@@ -606,10 +608,44 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
 }
 
 void HierarchyTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-    /*
-     * TODO AOF Rewrite
-     * RedisModule_EmitAOF(aof,"HELLOTYPE.INSERT","sl",key,node->value);
-     */
+    SelvaModify_Hierarchy *hierarchy = (SelvaModify_Hierarchy *)value;
+    SelvaModify_HierarchyNode **head;
+    SVector stack;
+
+    SVector_Init(&stack, 100, NULL);
+    Trx_Begin(&hierarchy->current_trx);
+
+    SVECTOR_FOREACH(head, &hierarchy->heads) {
+        SVector_Insert(&stack, *head);
+
+        /* Create the head node */
+        RedisModule_EmitAOF(aof,"SELVA.HIERARCHY.ADD", "ss", key, (*head)->id);
+
+        while (SVector_Size(&stack) > 0) {
+            SelvaModify_HierarchyNode *node = SVector_Pop(&stack);
+
+            if (!Trx_IsStamped(&hierarchy->current_trx, &node->visit_stamp)) {
+                /* Mark node as visited */
+                Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
+
+
+                SelvaModify_HierarchyNode **itt;
+
+                /* cppcheck-suppress internalAstError */
+                SVECTOR_FOREACH(itt, &node->children) {
+                    SelvaModify_HierarchyNode *it = *itt;
+
+                    /* Create the children */
+                    RedisModule_EmitAOF(aof,"SELVA.HIERARCHY.ADD", "ss", key, node->id, it->id);
+
+                    /* Add children to the stack of unvisited nodes */
+                    SVector_Insert(&stack, it);
+                }
+            }
+        }
+    }
+
+    SVector_Destroy(&stack);
 }
 
 void HierarchyTypeFree(void *value) {
