@@ -1,7 +1,6 @@
-import { Id, FieldSchema } from '~selva/schema/index'
+import { Id } from '~selva/schema/index'
 
 import * as redis from '../redis'
-import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import {
   setNestedResult,
@@ -13,14 +12,11 @@ import { Schema } from '../../../src/schema/index'
 import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
   splitString,
-  stringStartsWith,
   stringEndsWith,
-  joinString,
   ensureArray,
   emptyArray,
   markEmptyArraysInJSON
 } from '../util'
-import * as logger from '../logger'
 
 const getDotIndex = (str: string): number => {
   for (let i = str.length - 1; i > 1; i--) {

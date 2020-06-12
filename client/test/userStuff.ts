@@ -22,6 +22,12 @@ test.before(async t => {
         fields: {
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE'] } }
         }
+      },
+      club: {
+        prefix: 'cl'
+      },
+      league: {
+        prefix: 'le'
       }
     }
   })
@@ -82,12 +88,18 @@ test.serial('make it nice with users', async t => {
           $id: 'ma1',
           title: {
             en: 'yesh match 1'
+          },
+          parents: {
+            $add: 'le1'
           }
         },
         {
           $id: 'ma2',
           title: {
             en: 'yesh match 2'
+          },
+          parents: {
+            $add: 'le1'
           }
         }
       ]
@@ -140,6 +152,12 @@ test.serial('make it nice with users', async t => {
     }
   })
 
+  await client.set({
+    $db: 'users',
+    $id: 'us3',
+    favorites: []
+  })
+
   try {
     console.log(
       'YEEEEEEEEEEES',
@@ -148,69 +166,156 @@ test.serial('make it nice with users', async t => {
           $includeMeta: true,
           $language: 'en',
           components: [
+            // {
+            //   component: { $value: 'favorites' },
+            //   $db: 'users',
+            //   $id: 'us1',
+            //   favorites: {
+            //     $db: 'default',
+            //     id: true,
+            //     title: true,
+            //     $list: true
+            //   }
+            // },
+            // {
+            //   component: { $value: 'watching' },
+            //   $db: 'users',
+            //   $id: 'us1',
+            //   watching: {
+            //     id: true,
+            //     item: {
+            //       $db: 'default',
+            //       id: true,
+            //       title: true
+            //     },
+            //     $list: true
+            //   }
+            // },
+            // {
+            //   component: { $value: 'matches' },
+            //   matches: {
+            //     id: true,
+            //     title: true,
+            //     $list: {
+            //       $find: {
+            //         $traverse: 'descendants',
+            //         $filter: [
+            //           {
+            //             $operator: '=',
+            //             $field: 'type',
+            //             $value: 'match'
+            //           }
+            //         ]
+            //       }
+            //     }
+            //   }
+            // },
+            // {
+            //   component: { $value: 'lolol' },
+            //   things: {
+            //     id: true,
+            //     title: true,
+            //     $list: {
+            //       $find: {
+            //         $traverse: {
+            //           $db: 'users',
+            //           $id: 'us2',
+            //           $field: 'favorites'
+            //         },
+            //         $filter: [
+            //           {
+            //             $operator: '=',
+            //             $field: 'title',
+            //             $value: 'match 2'
+            //           }
+            //         ]
+            //       }
+            //     }
+            //   }
+            // },
+            // {
+            //   component: { $value: 'hmmhmm' },
+            //   things: {
+            //     id: true,
+            //     title: true,
+            //     $list: {
+            //       $find: {
+            //         $traverse: {
+            //           $db: 'users',
+            //           $id: 'us3',
+            //           $field: 'favorites'
+            //         },
+            //         $filter: [
+            //           {
+            //             $operator: '=',
+            //             $field: 'title',
+            //             $value: 'match 2'
+            //           }
+            //         ]
+            //       }
+            //     }
+            //   }
+            // },
+            // {
+            //   component: { $value: 'GridLarge' },
+            //   title: { $value: 'My matches from leagues' },
+            //   children: {
+            //     title: true,
+            //     type: true,
+            //     id: true,
+            //     $list: {
+            //       $limit: 16,
+            //       $find: {
+            //         $traverse: {
+            //           $db: 'users',
+            //           $id: 'us3',
+            //           $field: 'favorites'
+            //         },
+            //         $filter: {
+            //           $field: 'type',
+            //           $operator: '=',
+            //           $value: 'league'
+            //         },
+            //         $find: {
+            //           $traverse: 'descendants',
+            //           $filter: {
+            //             $field: 'type',
+            //             $operator: '=',
+            //             $value: 'match'
+            //           }
+            //         }
+            //       }
+            //     }
+            //   }
+            // }
             {
-              component: { $value: 'favorites' },
-              $db: 'users',
-              $id: 'us1',
-              favorites: {
-                $db: 'default',
-                id: true,
+              component: { $value: 'GridLarge' },
+              title: { $value: 'My matches from clubs' },
+              children: {
                 title: true,
-                $list: true
-              }
-            },
-            {
-              component: { $value: 'watching' },
-              $db: 'users',
-              $id: 'us1',
-              watching: {
+                type: true,
                 id: true,
-                item: {
-                  $db: 'default',
-                  id: true,
-                  title: true
-                },
-                $list: true
-              }
-            },
-            {
-              component: { $value: 'matches' },
-              matches: {
-                id: true,
-                title: true,
                 $list: {
-                  $find: {
-                    $traverse: 'descendants',
-                    $filter: [
-                      {
-                        $operator: '=',
-                        $field: 'type',
-                        $value: 'match'
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            {
-              component: { $value: 'lolol' },
-              things: {
-                id: true,
-                title: true,
-                $list: {
+                  $limit: 16,
                   $find: {
                     $traverse: {
                       $db: 'users',
-                      $id: 'us2',
+                      $id: 'us3',
                       $field: 'favorites'
                     },
-                    $filter: [
-                      {
+                    $filter: {
+                      $field: 'type',
+                      $operator: '=',
+                      $value: 'clubs'
+                    },
+                    $find: {
+                      $traverse: 'descendants',
+                      $filter: {
+                        $field: 'type',
                         $operator: '=',
-                        $field: 'title',
-                        $value: 'match 2'
+                        $value: 'match'
                       }
-                    ]
+                    }
                   }
                 }
               }
@@ -230,50 +335,50 @@ test.serial('make it nice with users', async t => {
     .observe({
       $language: 'en',
       components: [
-        // {
-        //   component: { $value: 'favorites' },
-        //   $db: 'users',
-        //   $id: 'us1',
-        //   favorites: {
-        //     $db: 'default',
-        //     id: true,
-        //     title: true,
-        //     $list: true
-        //   }
-        // },
-        // {
-        //   component: { $value: 'watching' },
-        //   $db: 'users',
-        //   $id: 'us1',
-        //   watching: {
-        //     id: true,
-        //     item: {
-        //       $db: 'default',
-        //       id: true,
-        //       title: true
-        //     },
-        //     $list: true
-        //   }
-        // },
-        // {
-        //   component: { $value: 'matches' },
-        //   matches: {
-        //     id: true,
-        //     title: true,
-        //     $list: {
-        //       $find: {
-        //         $traverse: 'descendants',
-        //         $filter: [
-        //           {
-        //             $operator: '=',
-        //             $field: 'type',
-        //             $value: 'match'
-        //           }
-        //         ]
-        //       }
-        //     }
-        //   }
-        // },
+        {
+          component: { $value: 'favorites' },
+          $db: 'users',
+          $id: 'us1',
+          favorites: {
+            $db: 'default',
+            id: true,
+            title: true,
+            $list: true
+          }
+        },
+        {
+          component: { $value: 'watching' },
+          $db: 'users',
+          $id: 'us1',
+          watching: {
+            id: true,
+            item: {
+              $db: 'default',
+              id: true,
+              title: true
+            },
+            $list: true
+          }
+        },
+        {
+          component: { $value: 'matches' },
+          matches: {
+            id: true,
+            title: true,
+            $list: {
+              $find: {
+                $traverse: 'descendants',
+                $filter: [
+                  {
+                    $operator: '=',
+                    $field: 'type',
+                    $value: 'match'
+                  }
+                ]
+              }
+            }
+          }
+        },
         {
           component: { $value: 'lolol' },
           things: {
@@ -316,6 +421,70 @@ test.serial('make it nice with users', async t => {
                     $value: 'match 2'
                   }
                 ]
+              }
+            }
+          }
+        },
+        {
+          component: { $value: 'GridLarge' },
+          title: { $value: 'My matches from leagues' },
+          children: {
+            title: true,
+            type: true,
+            id: true,
+            $list: {
+              $limit: 16,
+              $find: {
+                $traverse: {
+                  $db: 'users',
+                  $id: 'us3',
+                  $field: 'favorites'
+                },
+                $filter: {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                },
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'match'
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          component: { $value: 'GridLarge' },
+          title: { $value: 'My matches from clubs' },
+          children: {
+            title: true,
+            type: true,
+            id: true,
+            $list: {
+              $limit: 16,
+              $find: {
+                $traverse: {
+                  $db: 'users',
+                  $id: 'us4',
+                  $field: 'favorites'
+                },
+                $filter: {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'clubs'
+                },
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'match'
+                  }
+                }
               }
             }
           }
