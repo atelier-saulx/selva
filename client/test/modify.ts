@@ -36,7 +36,8 @@ test.before(async t => {
           obj: {
             type: 'object',
             properties: {
-              hello: { type: 'string' }
+              hello: { type: 'string' },
+              hallo: { type: 'string' }
             }
           },
           settySet: {
@@ -1189,7 +1190,7 @@ test.serial('createdAt not set if nothing changed', async t => {
   await client.destroy()
 })
 
-test.serial.only('$delete: true', async t => {
+test.serial('$delete: true', async t => {
   console.log('CONNECTING')
   const client = connect(
     {
@@ -1258,8 +1259,194 @@ test.serial.only('$delete: true', async t => {
     }
   )
 
+  await client.set({
+    $id: 'maA',
+    title: { de: { $delete: true } }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yesh extra nice'
+      },
+      obj: {
+        hello: 'yes hello'
+      },
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    obj: { hello: { $delete: true }, hallo: 'mmmmh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yesh extra nice'
+      },
+      obj: {
+        hallo: 'mmmmh'
+      },
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    obj: { $delete: true }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yesh extra nice'
+      },
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    title: { $delete: true }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    reffyRef: { $delete: true },
+    title: { en: 'yes title is back!!!' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yes title is back!!!'
+      },
+      reffyRef: '',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    reffyRefs: { $delete: true }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yes title is back!!!'
+      },
+      reffyRef: '',
+      reffyRefs: [],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    settySet: { $delete: true }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yes title is back!!!'
+      },
+      reffyRef: '',
+      reffyRefs: [],
+      settySet: []
+    }
+  )
+
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [])
+  // t.deepEqual(await dumpDb(client), [])
 
   await client.destroy()
 })

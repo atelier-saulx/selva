@@ -137,9 +137,9 @@ function setInternalArrayStructure(
   }
 
   // if it's an object field, also set a set marker
-  if (field.indexOf('.') !== -1) {
-    redis.hset(id, field, '___selva_$set')
-  }
+  // if (field.indexOf('.') !== -1) {
+  redis.hset(id, field, '___selva_$set')
+  // }
 }
 
 function setObject(
@@ -202,7 +202,7 @@ function setField(
       return
     }
 
-    if (value.$delete === true) {
+    if (type(value) === 'table' && value.$delete === true) {
       const params = {}
       setNestedResult(params, <string>field, true)
       removeSpecified(id, '', params)
@@ -290,6 +290,7 @@ function removeSpecified(
 ): void {
   let falses: string[] = []
   let onlyFalse = true
+  let allKeys: string[] = []
   for (const key in payload) {
     if (key[0] !== '$') {
       const keyPath = path === '' ? key : path + '.' + key
@@ -308,9 +309,22 @@ function removeSpecified(
           cleanUpSuggestions(id, keyPath)
         }
 
-        redis.hdel(id, keyPath)
+        const deletedCount = redis.hdel(id, keyPath)
         redis.hdel(id, '$source_' + keyPath)
         markUpdated(id)
+
+        if (deletedCount === 0) {
+          // try to delete as object
+          if (allKeys.length === 0) {
+            allKeys = redis.hkeys(id)
+          }
+
+          for (const okey of allKeys) {
+            if (stringStartsWith(okey, keyPath)) {
+              redis.hdel(id, okey)
+            }
+          }
+        }
         sendEvent(id, keyPath, 'update')
       } else if (payload[key] === false) {
         falses[falses.length] = keyPath
