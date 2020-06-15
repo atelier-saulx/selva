@@ -38,6 +38,11 @@ export default (
   _fields: FieldSchemaOther,
   _type: string
 ): void => {
+  if (payload.$delete) {
+    result[field] = { $delete: true }
+    return
+  }
+
   refs(field, payload)
   verify(payload)
   result[field] = `${payload.lon},${payload.lat}`

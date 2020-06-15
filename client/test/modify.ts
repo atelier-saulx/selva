@@ -33,6 +33,24 @@ test.before(async t => {
           title: {
             type: 'text'
           },
+          obj: {
+            type: 'object',
+            properties: {
+              hello: { type: 'string' }
+            }
+          },
+          settySet: {
+            type: 'set',
+            items: {
+              type: 'string'
+            }
+          },
+          reffyRefs: {
+            type: 'references'
+          },
+          reffyRef: {
+            type: 'reference'
+          },
           createdAt: { type: 'timestamp' }
         }
       },
@@ -1168,5 +1186,80 @@ test.serial('createdAt not set if nothing changed', async t => {
   t.deepEqual(createdAt, updatedAt)
 
   await client.delete('root')
+  await client.destroy()
+})
+
+test.serial.only('$delete: true', async t => {
+  console.log('CONNECTING')
+  const client = connect(
+    {
+      port
+    },
+    { loglevel: 'info' }
+  )
+
+  console.log('CONNECTED')
+
+  const match = await client.set({
+    type: 'match'
+  })
+
+  const root = await client.set({
+    $id: 'root',
+    value: 9001
+  })
+
+  t.deepEqual(root, 'root')
+  t.deepEqual(await client.redis.hget('root', 'value'), '9001')
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.set({
+    $id: 'root',
+    value: { $delete: true }
+  })
+
+  t.deepEqual(await client.redis.hexists('root', 'value'), 0)
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.set({
+    $id: 'maA',
+    type: 'match',
+    title: { en: 'yesh extra nice', de: 'ja extra nice' },
+    obj: {
+      hello: 'yes hello'
+    },
+    reffyRef: 'root',
+    reffyRefs: ['root'],
+    settySet: { $add: 'hmmmm' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yesh extra nice',
+        de: 'ja extra nice'
+      },
+      obj: {
+        hello: 'yes hello'
+      },
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.delete('root')
+  t.deepEqual(await dumpDb(client), [])
+
   await client.destroy()
 })

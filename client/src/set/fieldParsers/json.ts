@@ -11,7 +11,9 @@ export default (
   type: string,
   $lang?: string
 ): void => {
-  if (payload.$ref) {
+  if (payload.$delete) {
+    result[field] = { $delete: true }
+  } else if (payload.$ref) {
     // TODO: verify that it references a json field
     result[field] = `___selva_$ref:${payload.$ref}`
     return

@@ -13,7 +13,9 @@ export default (
 ): void => {
   const arr = payload
   if (!Array.isArray(arr)) {
-    if (payload.$field) {
+    if (payload.$delete === true) {
+      result[field] = { $delete: true }
+    } else if (payload.$field) {
       // TODO: verify that it references an array field
       result[field] = `___selva_$ref:${payload[field]}`
       return

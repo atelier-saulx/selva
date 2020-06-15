@@ -31,6 +31,11 @@ export default (
       )
     }
 
+    if (payload.$delete === true) {
+      result[field] = { $delete: true }
+      return
+    }
+
     result[field] = parseSetObject(payload, schema, $lang)
   } else {
     if (typeof payload !== 'string') {

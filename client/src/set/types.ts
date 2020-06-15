@@ -9,7 +9,7 @@ export type RedisSetParams =
   | {
       $value?: string[] | Id
       $add?: Id[] | Id | SetItem[]
-      $delete?: Id[] | Id
+      $delete?: Id[] | Id | true
       $noRoot?: boolean
     }
 

@@ -59,7 +59,12 @@ export default (
           }
         }
       } else if (k === '$delete') {
-        result[field].$delete = verifySimple(payload[k])
+        if (payload.$delete === true) {
+          result[field].$delete = true
+        } else {
+          result[field].$delete = verifySimple(payload[k])
+        }
+
         hasKeys = true
       } else if (k === '$value') {
         result[field].$delete = verifySimple(payload[k])

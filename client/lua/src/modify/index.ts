@@ -25,6 +25,7 @@ import { setUpdatedAt, setCreatedAt, markUpdated } from './timestamps'
 import { cleanUpSuggestions } from './delete'
 import globals from '../globals'
 import checkSource from './source'
+import { setNestedResult } from '../get/nestedFields'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -198,6 +199,13 @@ function setField(
 
   if (isSetPayload(value) && field) {
     if (!checkSource(id, field, source)) {
+      return
+    }
+
+    if (value.$delete === true) {
+      const params = {}
+      setNestedResult(params, <string>field, true)
+      removeSpecified(id, '', params)
       return
     }
 

@@ -116,6 +116,8 @@ for (const key in verifiers) {
           // TODO: verify it references the same type
           result[field] = `___selva_$ref:${payload[k]}`
           return
+        } else if (k === '$delete') {
+          result[field] = { $delete: true }
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }
