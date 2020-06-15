@@ -86,7 +86,7 @@ static char * test_add_twice(void)
     return NULL;
 }
 
-static char * test_add_nonexisting_parent(void)
+static char * test_add_nonexisting_parent_1(void)
 {
     int err;
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
@@ -100,7 +100,21 @@ static char * test_add_nonexisting_parent(void)
     return NULL;
 }
 
-static char * test_add_nonexisting_child(void)
+static char * test_add_nonexisting_parent_2(void)
+{
+    int err;
+    const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
+
+    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
+    pu_assert_equal("a node was inserted", err, 0);
+
+    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 1, ids[1], 0, NULL);
+    pu_assert_equal("no error even if the parent didn't exist", err, 0);
+
+    return NULL;
+}
+
+static char * test_add_nonexisting_child_1(void)
 {
     int err;
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
@@ -110,6 +124,20 @@ static char * test_add_nonexisting_child(void)
 
     err = SelvaModify_AddHierarchy(hierarchy, ids[1], 0, NULL, 1, ids[2]);
     pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
+
+    return NULL;
+}
+
+static char * test_add_nonexisting_child_2(void)
+{
+    int err;
+    const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
+
+    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
+    pu_assert_equal("a node was inserted", err, 0);
+
+    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 1, ids[2]);
+    pu_assert_equal("no error even if the child didn't exist", err, 0);
 
     return NULL;
 }
@@ -709,8 +737,10 @@ void all_tests(void)
     pu_def_test(test_get_heads, PU_RUN);
     pu_def_test(test_get_heads_alter_set, PU_RUN);
     pu_def_test(test_get_heads_alter_add, PU_RUN);
-    pu_def_test(test_add_nonexisting_parent, PU_RUN);
-    pu_def_test(test_add_nonexisting_child, PU_RUN);
+    pu_def_test(test_add_nonexisting_parent_1, PU_RUN);
+    pu_def_test(test_add_nonexisting_parent_2, PU_RUN);
+    pu_def_test(test_add_nonexisting_child_1, PU_RUN);
+    pu_def_test(test_add_nonexisting_child_2, PU_RUN);
     pu_def_test(test_alter_relationship_set, PU_RUN);
     pu_def_test(test_alter_relationship_add, PU_RUN);
     pu_def_test(test_insert_chain_find_ancestors, PU_RUN);
