@@ -6,7 +6,9 @@ const r = redis.createClient(6379, '127.0.0.1')
 const dump = promisify(r['SELVA.HIERARCHY.dump']).bind(r)
 
 async function run() {
-  const arr = await promisify(r['SELVA.HIERARCHY.dump']).bind(r)(process.argv[2])
+  const [_, __, ...args] = process.argv;
+  const arr = await promisify(r['SELVA.HIERARCHY.dump']).bind(r)(...args)
+    console.log(arr);
 
   console.log('digraph {')
   for (const sub of arr) {

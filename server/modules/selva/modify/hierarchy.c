@@ -48,14 +48,21 @@ typedef struct SelvaModify_Hierarchy {
     SVector heads;
 } SelvaModify_Hierarchy;
 
-typedef void (*HierarchyNode_Callback)(SelvaModify_HierarchyNode *node, void *arg);
+typedef void (*HierarchyNode_HeadCallback)(SelvaModify_HierarchyNode *node, void *arg);
+
+/**
+ * Called for each node found during a traversal.
+ * @returns 0 to continue the traversal; 1 to interrupt the traversal.
+ */
+typedef int (*HierarchyNode_Callback)(SelvaModify_HierarchyNode *node, void *arg);
+
 typedef void (*HierarchyNode_ChildCallback)(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg);
 
 typedef struct TraversalCallback {
     /**
      * Called for each orphan head in the hierarchy.
      */
-    HierarchyNode_Callback head_cb;
+    HierarchyNode_HeadCallback head_cb;
     void * head_arg;
 
     /**
@@ -483,9 +490,16 @@ ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_No
     return nr_nodes;
 }
 
-static void HierarchyNode_Callback_Dummy(SelvaModify_HierarchyNode *node, void *arg) {
+static void HierarchyNode_HeadCallback_Dummy(SelvaModify_HierarchyNode *node, void *arg) {
     REDISMODULE_NOT_USED(node);
     REDISMODULE_NOT_USED(arg);
+}
+
+static int HierarchyNode_Callback_Dummy(SelvaModify_HierarchyNode *node, void *arg) {
+    REDISMODULE_NOT_USED(node);
+    REDISMODULE_NOT_USED(arg);
+
+    return 0;
 }
 
 static void HierarchyNode_ChildCallback_Dummy(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
@@ -496,11 +510,12 @@ static void HierarchyNode_ChildCallback_Dummy(SelvaModify_HierarchyNode *parent,
 
 /**
  * DFS from a given head towards children or parents.
- * Only node_cb() is supported.
  */
 static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head, enum SelvaModify_HierarchyNode_Relationship dir, const TraversalCallback * restrict cb) {
     size_t offset;
+    HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
+    HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
@@ -519,6 +534,8 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
     SVector_Init(&stack, 100, NULL);
     SVector_Insert(&stack, head);
 
+    head_cb(head, cb->head_arg);
+
     while (SVector_Size(&stack) > 0) {
         SelvaModify_HierarchyNode *node = SVector_Pop(&stack);
 
@@ -526,18 +543,26 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
             /* Mark node as visited */
             Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
 
-            node_cb(node, cb->node_arg);
+            if (node_cb(node, cb->node_arg)) {
+                goto out;
+            }
 
             /* Add parents/children to the stack of unvisited nodes */
-            SelvaModify_HierarchyNode **it;
+            SelvaModify_HierarchyNode **itt;
             const SVector *vec = (SVector *)((char *)node + offset);
             /* cppcheck-suppress internalAstError */
-            SVECTOR_FOREACH(it, vec) {
-                SVector_Insert(&stack, *it);
+            SVECTOR_FOREACH(itt, vec) {
+                SelvaModify_HierarchyNode *it = *itt;
+
+                child_cb(node, it, cb->child_arg);
+
+                /* Add to the stack of unvisited nodes */
+                SVector_Insert(&stack, it);
             }
         }
     }
 
+out:
     SVector_Destroy(&stack);
     return 0;
 }
@@ -549,7 +574,7 @@ static void full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback *
     SelvaModify_HierarchyNode **head;
     SVector stack;
 
-    HierarchyNode_Callback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_Callback_Dummy;
+    HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
 
@@ -568,7 +593,9 @@ static void full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback *
                 /* Mark node as visited */
                 Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
 
-                node_cb(node, cb->node_arg);
+                if (node_cb(node, cb->node_arg)) {
+                    goto out;
+                }
 
                 SelvaModify_HierarchyNode **itt;
                 /* cppcheck-suppress internalAstError */
@@ -577,17 +604,18 @@ static void full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback *
 
                     child_cb(node, it, cb->child_arg);
 
-                    /* Add children to the stack of unvisited nodes */
+                    /* Add to the stack of unvisited nodes */
                     SVector_Insert(&stack, it);
                 }
             }
         }
     }
 
+out:
     SVector_Destroy(&stack);
 }
 
-static void dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
+static int dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
     void **args = (void **)arg;
     SelvaModify_HierarchyNode *head = (SelvaModify_HierarchyNode *)args[0];
     ssize_t *nr_nodes = (ssize_t *)args[1];
@@ -600,6 +628,8 @@ static void dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
             *nr_nodes = SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
     }
+
+    return 0;
 }
 
 static ssize_t SelvaModify_FindDir(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, enum SelvaModify_HierarchyNode_Relationship dir, Selva_NodeId **res) {
@@ -710,14 +740,16 @@ error:
     return NULL;
 }
 
-void HierarchyRDBSaveNode(SelvaModify_HierarchyNode *node, void *arg) {
+static int HierarchyRDBSaveNode(SelvaModify_HierarchyNode *node, void *arg) {
     RedisModuleIO *io = (RedisModuleIO *)arg;
 
     RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
     RedisModule_SaveUnsigned(io, SVector_Size(&node->children));
+
+    return 0;
 }
 
-void HierarchyRDBSaveChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
+static void HierarchyRDBSaveChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
     REDISMODULE_NOT_USED(parent);
     RedisModuleIO *io = (RedisModuleIO *)arg;
 
@@ -746,7 +778,7 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
 
-void HierarchyAOFSaveHead(SelvaModify_HierarchyNode *node, void *arg) {
+static void HierarchyAOFSaveHead(SelvaModify_HierarchyNode *node, void *arg) {
     void **args = (void **)arg;
     RedisModuleIO *aof = (RedisModuleIO *)args[0];
     RedisModuleString *key = (RedisModuleString *)args[1];
@@ -755,7 +787,7 @@ void HierarchyAOFSaveHead(SelvaModify_HierarchyNode *node, void *arg) {
     RedisModule_EmitAOF(aof,"SELVA.HIERARCHY.ADD", "ss", key, node->id);
 }
 
-void HierarchyAOFSaveChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
+static void HierarchyAOFSaveChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
     void **args = (void **)arg;
     RedisModuleIO *aof = (RedisModuleIO *)args[0];
     RedisModuleString *key = (RedisModuleString *)args[1];
@@ -869,41 +901,101 @@ int SelvaModify_Hierarchy_FindAncestorsCommand(RedisModuleCtx *ctx, RedisModuleS
     return REDISMODULE_OK;
 }
 
-void DumpCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
+static int DumpCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
     void **args = (void **)arg;
     RedisModuleCtx *ctx = (RedisModuleCtx *)args[0];
-    size_t *nr_nodes = (size_t *)args[1];
-    size_t *cur_nr_children = (size_t *)args[2];
+    ssize_t * restrict nr_nodes = (ssize_t *)args[1];
+    ssize_t * restrict cur_nr_children = (ssize_t *)args[2];
+    ssize_t *stop = (ssize_t *)args[3];
 
-    if (*nr_nodes > 0) {
+    if (*nr_nodes == 0) {
+        /*
+         * This is is here because redis will crash if we'll call
+         * RedisModule_ReplyWithError() after starting an array reply.
+         * Hopefully the traversal function won't return an error after this.
+         */
+        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    } else if (*nr_nodes > 0) {
         /* The parent node is the first node in the array, therefore + 1 */
         RedisModule_ReplySetArrayLength(ctx, *cur_nr_children + 1);
         *cur_nr_children = 0;
     }
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+
+    if (*stop > 0 && *nr_nodes >= *stop) {
+        return 1;
+    }
+
     RedisModule_ReplyWithStringBuffer(ctx, node->id, SELVA_NODE_ID_SIZE);
     *nr_nodes = *nr_nodes + 1;
+
+    return 0;
 }
 
-void DumpCommand_PrintChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
+static void DumpCommand_PrintChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
     REDISMODULE_NOT_USED(parent);
     void **args = (void **)arg;
     RedisModuleCtx *ctx = (RedisModuleCtx *)args[0];
-    size_t *cur_nr_children = (size_t *)args[2];
+    ssize_t *cur_nr_children = (ssize_t *)args[2];
 
     RedisModule_ReplyWithStringBuffer(ctx, child->id, SELVA_NODE_ID_SIZE);
     *cur_nr_children = *cur_nr_children + 1;
 }
 
+/*
+ * KEY
+ * KEY STOP_AFTER_N
+ * KEY ANCESTORS|DESCENDANTS NODE_ID
+ * KEY ANCESTORS|DESCENDANTS NODE_ID STOP_AFTER_N
+ */
 int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    RedisModuleString *op = NULL;
+    RedisModuleString *keyName;
+    ssize_t stop = -1;
+    Selva_NodeId nodeId;
+    enum SelvaModify_HierarchyNode_Relationship dir;
 
-    if (argc != 2) {
+    if (argc == 3 || argc == 5) {
+        const long long si = --argc;
+        long long v;
+
+        if (RedisModule_StringToLongLong(argv[si], &v) != REDISMODULE_OK) {
+            RedisModule_ReplyWithError(ctx, "Invalid value for STOP");
+        }
+
+        if (v > 0) {
+            stop = v;
+        }
+    }
+
+    if (argc == 2) {
+        keyName = argv[1];
+    } else if (argc == 4) {
+        size_t len;
+        const char *str;
+
+        op = argv[2];
+        keyName = argv[1];
+
+        str = RedisModule_StringPtrLen(op, &len);
+        if (!strncmp("ancestors", str, len)) {
+            dir = RELATIONSHIP_PARENT;
+        } else if (!strncmp("descendants", str, len)) {
+            dir = RELATIONSHIP_CHILD;
+        } else {
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOTSUP]);
+        }
+
+        str = RedisModule_StringPtrLen(argv[3], &len);
+        memset(nodeId, 0, SELVA_NODE_ID_SIZE);
+        memcpy(nodeId, str, (SELVA_NODE_ID_SIZE > len) ? len : SELVA_NODE_ID_SIZE);
+    } else {
         return RedisModule_WrongArity(ctx);
     }
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ);
     int type = RedisModule_KeyType(key);
     if (type != REDISMODULE_KEYTYPE_EMPTY &&
         RedisModule_ModuleTypeGetType(key) != HierarchyType) {
@@ -916,9 +1008,9 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return RedisModule_ReplyWithArray(ctx, 0);
     }
 
-    size_t nr_nodes = 0;
-    size_t cur_nr_children = 0;
-    void *args[] = { ctx, &nr_nodes, &cur_nr_children };
+    ssize_t nr_nodes = 0;
+    ssize_t cur_nr_children = 0;
+    void *args[] = { ctx, &nr_nodes, &cur_nr_children, &stop };
     const TraversalCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
@@ -928,9 +1020,21 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
         .child_arg = args,
     };
 
+    if (op) {
+        int err;
 
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    full_dfs(hierarchy, &cb);
+        SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
+        if (!node) {
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
+        }
+
+        err = dfs(hierarchy, node, dir, &cb);
+        if (err < 0) {
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+        }
+    } else {
+        full_dfs(hierarchy, &cb);
+    }
 
     if (nr_nodes > 0) {
         RedisModule_ReplySetArrayLength(ctx, cur_nr_children + 1);
