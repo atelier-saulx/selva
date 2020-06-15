@@ -138,7 +138,7 @@ function setInternalArrayStructure(
 
   // if it's an object field, also set a set marker
   // if (field.indexOf('.') !== -1) {
-  redis.hset(id, field, '___selva_$set')
+  redis.hsetnx(id, field, '___selva_$set')
   // }
 }
 
