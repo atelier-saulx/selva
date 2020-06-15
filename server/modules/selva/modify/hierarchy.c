@@ -178,6 +178,7 @@ static void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *
 
 static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
     const size_t initialNodeParentsSize = SVector_Size(&node->parents);
+    int err = 0;
 
     if (rel == RELATIONSHIP_CHILD && n > 0 && initialNodeParentsSize == 0) {
         /* The node is no longer an orphan */
@@ -189,7 +190,8 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                return SELVA_MODIFY_HIERARCHY_ENOENT;
+                err = SELVA_MODIFY_HIERARCHY_ENOENT;
+                continue;
             }
 
             /* Do inserts only if the relationship doesn't exist already */
@@ -203,7 +205,8 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                return SELVA_MODIFY_HIERARCHY_ENOENT;
+                err = SELVA_MODIFY_HIERARCHY_ENOENT;
+                continue;
             }
 
             const size_t adjNodeParentsSize = SVector_Size(&adjacent->parents);
@@ -222,7 +225,7 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
-    return 0;
+    return err;
 }
 
 static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
