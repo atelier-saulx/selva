@@ -189,8 +189,7 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                /* TODO Panic: not found */
-                continue;
+                return SELVA_MODIFY_HIERARCHY_ENOENT;
             }
 
             /* Do inserts only if the relationship doesn't exist already */
@@ -204,8 +203,7 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                /* TODO Panic: not found */
-                continue;
+                return SELVA_MODIFY_HIERARCHY_ENOENT;
             }
 
             const size_t adjNodeParentsSize = SVector_Size(&adjacent->parents);
@@ -353,6 +351,7 @@ int SelvaModify_SetHierarchy(
     }
 
     /* Set relationship relative to other nodes */
+    /* TODO if isNewNode == 0 then errors are not handled */
     err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     if (err && isNewNode) {
         del_node(hierarchy, node);
@@ -400,6 +399,7 @@ int SelvaModify_AddHierarchy(
     }
 
     /* Update relationship relative to other nodes */
+    /* TODO if isNewNode == 0 then errors are not handled */
     err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     if (err && isNewNode) {
         del_node(hierarchy, node);

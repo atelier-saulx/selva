@@ -41,6 +41,34 @@ static char * test_insert_many(void)
     return NULL;
 }
 
+static char * test_set_nonexisting_parent(void)
+{
+    int err;
+    const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
+
+    err = SelvaModify_SetHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
+    pu_assert_equal("a node was inserted", err, 0);
+
+    err = SelvaModify_SetHierarchy(hierarchy, ids[2], 1, ids[1], 0, NULL);
+    pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
+
+    return NULL;
+}
+
+static char * test_set_nonexisting_child(void)
+{
+    int err;
+    const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
+
+    err = SelvaModify_SetHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
+    pu_assert_equal("a node was inserted", err, 0);
+
+    err = SelvaModify_SetHierarchy(hierarchy, ids[1], 0, NULL, 1, ids[2]);
+    pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
+
+    return NULL;
+}
+
 static char * test_add_twice(void)
 {
     const Selva_NodeId ids[] = { "a", "b", "c", "d", "e", "f" };
@@ -54,6 +82,34 @@ static char * test_add_twice(void)
         res = SelvaModify_AddHierarchy(hierarchy, ids[i], 0, NULL, 0, NULL);
         pu_assert_equal("a node was inserted", res, 0);
     }
+
+    return NULL;
+}
+
+static char * test_add_nonexisting_parent(void)
+{
+    int err;
+    const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
+
+    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
+    pu_assert_equal("a node was inserted", err, 0);
+
+    err = SelvaModify_AddHierarchy(hierarchy, ids[2], 1, ids[1], 0, NULL);
+    pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
+
+    return NULL;
+}
+
+static char * test_add_nonexisting_child(void)
+{
+    int err;
+    const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
+
+    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
+    pu_assert_equal("a node was inserted", err, 0);
+
+    err = SelvaModify_AddHierarchy(hierarchy, ids[1], 0, NULL, 1, ids[2]);
+    pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
 
     return NULL;
 }
@@ -647,10 +703,14 @@ void all_tests(void)
 {
     pu_def_test(test_insert_one, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
+    pu_def_test(test_set_nonexisting_parent, PU_RUN);
+    pu_def_test(test_set_nonexisting_child, PU_RUN);
     pu_def_test(test_add_twice, PU_RUN);
     pu_def_test(test_get_heads, PU_RUN);
     pu_def_test(test_get_heads_alter_set, PU_RUN);
     pu_def_test(test_get_heads_alter_add, PU_RUN);
+    pu_def_test(test_add_nonexisting_parent, PU_RUN);
+    pu_def_test(test_add_nonexisting_child, PU_RUN);
     pu_def_test(test_alter_relationship_set, PU_RUN);
     pu_def_test(test_alter_relationship_add, PU_RUN);
     pu_def_test(test_insert_chain_find_ancestors, PU_RUN);
