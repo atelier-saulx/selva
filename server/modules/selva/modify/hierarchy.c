@@ -84,6 +84,7 @@ static const char * const hierarchyStrError[] = {
 };
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
+static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel);
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
 
 static int SVector_BS_Compare(const void ** restrict a_raw, const void ** restrict b_raw) {
@@ -151,6 +152,13 @@ static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
     SVector_Destroy(&node->parents);
     SVector_Destroy(&node->children);
     RedisModule_Free(node);
+}
+
+static void del_node(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
+    removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+    removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+    RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
+    SelvaModify_DestroyNode(node);
 }
 
 static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
@@ -315,6 +323,7 @@ int SelvaModify_SetHierarchy(
         const Selva_NodeId *parents,
         size_t nr_children,
         const Selva_NodeId *children) {
+    int err;
     SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
     int isNewNode = 0;
 
@@ -328,7 +337,6 @@ int SelvaModify_SetHierarchy(
 
     if (isNewNode) {
         if (RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL) {
-            /* TODO Panic: the same id was already there */
             SelvaModify_DestroyNode(node);
 
             return SELVA_MODIFY_HIERARCHY_EEXIST;
@@ -345,9 +353,16 @@ int SelvaModify_SetHierarchy(
     }
 
     /* Set relationship relative to other nodes */
-    /* TODO Error handling */
-    crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
-    crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    if (err && isNewNode) {
+        del_node(hierarchy, node);
+        return err;
+    }
+    err = crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    if (err && isNewNode) {
+        del_node(hierarchy, node);
+        return err;
+    }
 
     return 0;
 }
@@ -359,6 +374,7 @@ int SelvaModify_AddHierarchy(
         const Selva_NodeId *parents,
         size_t nr_children,
         const Selva_NodeId *children) {
+    int err;
     SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
     int isNewNode = 0;
 
@@ -372,7 +388,6 @@ int SelvaModify_AddHierarchy(
 
     if (isNewNode) {
         if (RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL) {
-            /* TODO Panic: the same id was already there */
             SelvaModify_DestroyNode(node);
 
             return SELVA_MODIFY_HIERARCHY_EEXIST;
@@ -384,9 +399,17 @@ int SelvaModify_AddHierarchy(
         }
     }
 
-    /* TODO Error handling */
-    crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
-    crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    /* Update relationship relative to other nodes */
+    err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    if (err && isNewNode) {
+        del_node(hierarchy, node);
+        return err;
+    }
+    err = crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    if (err && isNewNode) {
+        del_node(hierarchy, node);
+        return err;
+    }
 
     return 0;
 }
@@ -404,9 +427,23 @@ int SelvaModify_DelHierarchy(
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
-    /* TODO Error handling */
+    /* TODO Error handling. Should it rollback? */
     crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+
+    return 0;
+}
+
+int SelvaModify_DelHierarchyNode(
+    SelvaModify_Hierarchy *hierarchy,
+    const Selva_NodeId id) {
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
+
+    if (!node) {
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
+    }
+
+    del_node(hierarchy, node);
 
     return 0;
 }

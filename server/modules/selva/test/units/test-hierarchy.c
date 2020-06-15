@@ -603,6 +603,45 @@ static char * test_del_2(void)
     return NULL;
 }
 
+static char * test_del_node(void)
+{
+    /*
+     * e is removed completely
+     *
+     *  e --> a ---> c
+     *   \       /
+     *    ----b ---> d
+     * =>
+     *        a ----> c
+     *           /
+     *         b ---> d
+     */
+
+    int nr_ancestors;
+
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_AddHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 0, NULL);
+
+    SelvaModify_DelHierarchyNode(hierarchy, ((Selva_NodeId){ "grphnode_e" }));
+
+    /* ancestors of c */
+    nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
+    pu_assert_equal("returned the right number of ancestors", nr_ancestors, 2);
+    pu_assert("results pointer was set", findRes != NULL);
+    SelvaNodeId_SortRes(nr_ancestors);
+    pu_assert_str_equal("c has a as a ancestor", SelvaNodeId_GetRes(0), "grphnode_a");
+    pu_assert_str_equal("c has b as a ancestor", SelvaNodeId_GetRes(1), "grphnode_b");
+
+    /* e doesn't exist */
+    const int err = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_e" }), &findRes);
+    pu_assert_equal("node e doesn't exist anymore", err, SELVA_MODIFY_HIERARCHY_ENOENT);
+
+    return NULL;
+}
 
 void all_tests(void)
 {
@@ -624,4 +663,5 @@ void all_tests(void)
     pu_def_test(test_insert_acyclic_modify, PU_RUN);
     pu_def_test(test_del_1, PU_RUN);
     pu_def_test(test_del_2, PU_RUN);
+    pu_def_test(test_del_node, PU_RUN);
 }

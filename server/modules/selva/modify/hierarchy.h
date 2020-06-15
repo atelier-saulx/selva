@@ -91,6 +91,13 @@ int SelvaModify_DelHierarchy(
         const Selva_NodeId *children);
 
 /**
+ * Delete a node from the hierarchy.
+ */
+int SelvaModify_DelHierarchyNode(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id);
+
+/**
  * Get orphan head nodes of the given hierarchy.
  */
 ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res);
