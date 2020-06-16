@@ -83,6 +83,8 @@ static char * test_deserialize_two_nodes(void)
     pu_assert_equal("returned the right number of heads", n, 1);
     pu_assert("results pointer was set", findRes != NULL);
     pu_assert_str_equal("a is a head", SelvaNodeId_GetRes(0), "grphnode_a");
+    free(findRes);
+    findRes = NULL;
 
     /* Assert ancestors */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_b" }), &findRes);
@@ -90,6 +92,8 @@ static char * test_deserialize_two_nodes(void)
     pu_assert("results pointer was set", findRes != NULL);
     SelvaNodeId_SortRes(nr_ancestors);
     pu_assert_str_equal("b has a as an ancestor", SelvaNodeId_GetRes(0), "grphnode_a");
+    free(findRes);
+    findRes = NULL;
 
     /* Assert descendants */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_a" }), &findRes);
@@ -97,6 +101,8 @@ static char * test_deserialize_two_nodes(void)
     pu_assert("results pointer was set", findRes != NULL);
     SelvaNodeId_SortRes(nr_descendants);
     pu_assert_str_equal("a has b as a descendant", SelvaNodeId_GetRes(0), "grphnode_b");
+    free(findRes);
+    findRes = NULL;
 
     return NULL;
 }
@@ -146,6 +152,8 @@ static char * test_deserialize_cyclic_hierarchy(void)
     pu_assert("results pointer was set", findRes != NULL);
     SelvaNodeId_SortRes(n);
     pu_assert_str_equal("e is a head", SelvaNodeId_GetRes(0), "grphnode_e");
+    free(findRes);
+    findRes = NULL;
 
     /* Assert ancestors */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
@@ -155,6 +163,8 @@ static char * test_deserialize_cyclic_hierarchy(void)
     pu_assert_str_equal("c has a as an ancestor", SelvaNodeId_GetRes(0), "grphnode_a");
     pu_assert_str_equal("c has b as an ancestor", SelvaNodeId_GetRes(1), "grphnode_b");
     pu_assert_str_equal("c has e as an ancestor", SelvaNodeId_GetRes(2), "grphnode_e");
+    free(findRes);
+    findRes = NULL;
 
     /* Assert descendants */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_a" }), &findRes);
@@ -162,6 +172,8 @@ static char * test_deserialize_cyclic_hierarchy(void)
     pu_assert("results pointer was set", findRes != NULL);
     SelvaNodeId_SortRes(nr_descendants);
     pu_assert_str_equal("a has c as a descendant", SelvaNodeId_GetRes(0), "grphnode_c");
+    free(findRes);
+    findRes = NULL;
 
     return NULL;
 }
@@ -207,6 +219,8 @@ static char * test_deserialize_multi_head(void)
     SelvaNodeId_SortRes(n);
     pu_assert_str_equal("a is a head", SelvaNodeId_GetRes(0), "grphnode_a");
     pu_assert_str_equal("b is a head", SelvaNodeId_GetRes(1), "grphnode_b");
+    free(findRes);
+    findRes = NULL;
 
     /* Assert ancestors */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
@@ -215,6 +229,8 @@ static char * test_deserialize_multi_head(void)
     SelvaNodeId_SortRes(nr_ancestors);
     pu_assert_str_equal("c has a as an ancestor", SelvaNodeId_GetRes(0), "grphnode_a");
     pu_assert_str_equal("c has b as an ancestor", SelvaNodeId_GetRes(1), "grphnode_b");
+    free(findRes);
+    findRes = NULL;
 
     /* Assert descendants */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_b" }), &findRes);
@@ -223,6 +239,8 @@ static char * test_deserialize_multi_head(void)
     SelvaNodeId_SortRes(nr_descendants);
     pu_assert_str_equal("b has c as a descendant", SelvaNodeId_GetRes(0), "grphnode_c");
     pu_assert_str_equal("b has d as a descendant", SelvaNodeId_GetRes(1), "grphnode_d");
+    free(findRes);
+    findRes = NULL;
 
     return NULL;
 }
