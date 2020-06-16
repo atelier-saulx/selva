@@ -34,7 +34,7 @@ export default (
         r.$delete = true
         return
       } else if (key === '$_itemCount') {
-        r.$ref = payload[key]
+        r.$_itemCount = payload[key]
         return
       } else {
         throw new Error(`Wrong option on object ${key}`)
