@@ -40,6 +40,23 @@ test.before(async t => {
               hallo: { type: 'string' }
             }
           },
+          nestedObj: {
+            type: 'object',
+            properties: {
+              a: {
+                type: 'object',
+                properties: {
+                  value: { type: 'string' }
+                }
+              },
+              b: {
+                type: 'object',
+                properties: {
+                  value: { type: 'string' }
+                }
+              }
+            }
+          },
           settySet: {
             type: 'set',
             items: {
@@ -1020,22 +1037,31 @@ test.serial('createdAt not set if provided in modify props', async t => {
   await client.destroy()
 })
 
-// test.serial('Reference field', async t => {
-//   const client = connect({
-//     port
-//   })
+test.serial('Set empty object', async t => {
+  const client = connect({
+    port
+  })
 
-//   client.set({
-//     $id: 'cuA',
-//     layout: {
-//       match: { components: [{ type: 'List', props: { x: true } }] },
-//       custom: { $field: 'layout.match' },
-//       video: { $field: 'layout.$type' }
-//     }
-//   })
+  const id = await client.set({
+    $id: 'maEmpty',
+    nestedObj: {
+      a: {},
+      b: {}
+    }
+  })
+  try {
+    const result = await client.get({
+      $id: id,
+      $all: true
+    })
 
-//   await client.delete('root')
-// })
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  await client.delete('root')
+})
 
 test.serial('no root in parents when adding nested', async t => {
   const client = connect({
