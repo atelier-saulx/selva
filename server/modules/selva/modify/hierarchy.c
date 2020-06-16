@@ -243,7 +243,10 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                /* TODO Panic: not found */
+                /*
+                 * The most Redis thing to do is probably to ignore any
+                 * missing nodes.
+                 */
                 continue;
             }
 
@@ -260,7 +263,10 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                /* TODO Panic: not found */
+                /*
+                 * The most Redis thing to do is probably to ignore any
+                 * missing nodes.
+                 */
                 continue;
             }
 
@@ -437,9 +443,12 @@ int SelvaModify_DelHierarchy(
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
-    /* TODO Error handling. Should it rollback? */
-    crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
-    crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    /*
+     * The most Redis thing to do is probably to ignore any
+     * missing nodes.
+     */
+    (void)crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    (void)crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
 
     return 0;
 }
@@ -695,6 +704,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
     SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy();
 
     while (1) {
+        int err;
         size_t len;
         char *node_id __attribute__((cleanup(wrapFree))) = RedisModule_LoadStringBuffer(io, &len);
 
@@ -711,7 +721,6 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
         if (nr_children > 0) {
             children = RedisModule_Calloc(nr_children, SELVA_NODE_ID_SIZE);
-
             if (!children) {
                 goto error;
             }
@@ -724,13 +733,22 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
                     goto error;
                 }
 
-                SelvaModify_AddHierarchy(hierarchy, child_id, 0, NULL, 0, NULL);
+                err = SelvaModify_AddHierarchy(hierarchy, child_id, 0, NULL, 0, NULL);
+                if (err) {
+                    /* TODO log error */
+                    return NULL;
+                }
+
                 memcpy(children + i, child_id, SELVA_NODE_ID_SIZE);
             }
         }
 
         /* Create the node itself */
-        SelvaModify_AddHierarchy(hierarchy, node_id, 0, NULL, nr_children, children);
+        err = SelvaModify_AddHierarchy(hierarchy, node_id, 0, NULL, nr_children, children);
+        if (err) {
+            /* TODO log error */
+            return NULL;
+        }
     }
 
     return hierarchy;

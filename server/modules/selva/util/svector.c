@@ -45,7 +45,7 @@ void SVector_Insert(SVector *vec, void *el) {
             new_data = RedisModule_Alloc(new_size);
             if (!new_data) {
                 assert(0);
-                /* TODO Panic */
+                /* TODO Panic: OOM */
                 return;
             }
 
