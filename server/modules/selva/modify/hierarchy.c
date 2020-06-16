@@ -559,7 +559,6 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
             /* Add parents/children to the stack of unvisited nodes */
             SelvaModify_HierarchyNode **itt;
             const SVector *vec = (SVector *)((char *)node + offset);
-            /* cppcheck-suppress internalAstError */
             SVECTOR_FOREACH(itt, vec) {
                 SelvaModify_HierarchyNode *it = *itt;
 
@@ -607,7 +606,6 @@ static void full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback *
                 }
 
                 SelvaModify_HierarchyNode **itt;
-                /* cppcheck-suppress internalAstError */
                 SVECTOR_FOREACH(itt, &node->children) {
                     SelvaModify_HierarchyNode *it = *itt;
 

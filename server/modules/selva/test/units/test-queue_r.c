@@ -113,7 +113,7 @@ static char * test_queue_alloc(void)
     int err;
 
     p = queue_alloc_get(&queue);
-    pu_assert("Alloc not null", p != NULL);
+    pu_assert("Alloc not null", p);
 
     *p = 5;
 

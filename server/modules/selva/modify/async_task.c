@@ -141,7 +141,7 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
   }
 
 
-  for (unsigned int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
+  for (int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
     char *ptr;
     ptr = queue_alloc_get(&queues[worker_idx]);
     if (ptr != NULL) {

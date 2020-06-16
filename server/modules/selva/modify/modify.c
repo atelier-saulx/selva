@@ -114,7 +114,7 @@ void SelvaModify_ModifyIncrement(
 ) {
   int num = current_value == NULL
     ? incrementOpts->$default
-    : atoi(current_value_str);
+    : strtol(current_value_str, NULL, 10);
   num += incrementOpts->$increment;
 
   int num_str_size = (int)ceil(log10(num));
