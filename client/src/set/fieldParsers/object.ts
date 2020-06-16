@@ -47,6 +47,11 @@ export default (
       const fn = fieldParsers[item.type]
 
       fn(schema, key, payload[key], r, fields.properties[key], type, $lang)
+
+      // check if nested things have been removed because there are empty objects or the like
+      if (Object.keys(result[field]).length === 0) {
+        hasKeys = false
+      }
     }
   }
 
