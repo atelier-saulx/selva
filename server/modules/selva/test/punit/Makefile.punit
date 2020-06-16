@@ -121,7 +121,7 @@ bin/%: %.c $(PU_OBJ)
 run: $(TEST_EXECUTABLES)
 	@echo "Run all tests: $(TSETNAME)"
 	@echo "=================================================================="
-	@$(foreach exe,$^,echo "$(exe):"; $(exe); )
+	@$(foreach exe,$^,echo "$(exe):"; $(WITH_VALGRIND) $(exe); )
 
 .PHONY: clean
 
