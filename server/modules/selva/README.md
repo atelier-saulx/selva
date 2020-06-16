@@ -12,12 +12,49 @@ Here's what you need to do to build your first module:
 Documentation
 -------------
 
-1. [API.md](API.md) - The official manual for writing Redis modules, copied from the Redis repo. 
-Read this before starting, as it's more than an API reference.
+### Redis
 
-2. [FUNCTIONS.md](FUNCTIONS.md) - Generated API reference documentation for both the Redis module API, and LibRMUtil.
+| File                                 | Description                           |
+|--------------------------------------|---------------------------------------|
+| [API.md](doc/redis/API.md) | The official manual for writing Redis modules, copied from the Redis repo. Read this before starting, as it's more than an API reference. |
+| [FUNCTIONS.md](doc/redis/FUNCTIONS.md) | Generated API reference documentation for both the Redis module API, and LibRMUtil. |
+| [TYPES.md](doc/redis/TYPES.md) | Describes the API for creating new data structures inside Redis modules, copied from the Redis repo. |
+| [BLOCK.md](doc/redis/BLOCK.md) | Describes the API for blocking a client while performing asynchronous tasks on a separate thread. |
 
-3. [TYPES.md](TYPES.md) - Describes the API for creating new data structures inside Redis modules, 
-copied from the Redis repo.
 
-4. [BLOCK.md](BLOCK.md) - Describes the API for blocking a client while performing asynchronous tasks on a separate thread.
+Debugging
+---------
+
+**hiearachy-dot-dump.js**
+
+Dump a hierarchy object in dot format.
+
+Dump the whole tree:
+
+```
+node hiearachy-dot-dump.js test
+```
+
+Limit the number of nodes traversed:
+
+```
+node hiearachy-dot-dump.js test 5
+```
+
+Dump the tree towards descendants starting from the node `a`:
+
+```
+node hiearachy-dot-dump.js test descendants a
+```
+
+Dump the three towards ancestors starting from the node `g`:
+
+```
+node hiearachy-dot-dump.js test ancestors g
+```
+
+Limit the number of nodes traversed:
+
+```
+node hiearachy-dot-dump.js test ancestors g 10
+```
