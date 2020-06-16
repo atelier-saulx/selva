@@ -9,10 +9,13 @@
 #include <hiredis/hiredis.h>
 
 #include "async_task.h"
+#include "hierarchy.h"
 #include "queue_r.h"
 
 #define RING_BUFFER_BLOCK_SIZE 128
 #define RING_BUFFER_LENGTH 100000
+
+#define PEEK_INTERVAL_US 100
 
 #define HIREDIS_WORKER_COUNT 4
 
@@ -63,7 +66,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
   for (;;) {
     char *next;
     if (!queue_peek(queue, (void **)&next)) {
-      usleep(100);
+      usleep(PEEK_INTERVAL_US);
       continue;
     }
 
@@ -75,7 +78,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     int32_t block_remaining = RING_BUFFER_BLOCK_SIZE - sizeof(int32_t);
     while (remaining > 0) {
       if (!queue_peek(queue, (void **)&next)) {
-        usleep(100);
+        usleep(PEEK_INTERVAL_US);
         continue;
       }
 
@@ -89,12 +92,12 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     task->field_name = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask));
     task->value = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask) + task->field_name_len);
     if (task->type == SELVA_MODIFY_ASYNC_TASK_PUBLISH) {
-      char channel[11 + task->field_name_len];
-      memcpy(channel, task->id, 10);
-      memcpy(channel + 10, ".", 1);
-      memcpy(channel + 11, task->field_name, task->field_name_len);
+      char channel[SELVA_NODE_ID_SIZE + 1 + task->field_name_len];
+      memcpy(channel, task->id, SELVA_NODE_ID_SIZE);
+      memcpy(channel + SELVA_NODE_ID_SIZE, ".", 1);
+      memcpy(channel + SELVA_NODE_ID_SIZE + 1, task->field_name, task->field_name_len);
 
-      reply = redisCommand(ctx, "PUBLISH %b %b", channel, (size_t) (11 + task->field_name_len), "update", (size_t) 6);
+      reply = redisCommand(ctx, "PUBLISH %b %b", channel, (size_t) (SELVA_NODE_ID_SIZE + 1 + task->field_name_len), "update", 6);
       if (reply == NULL) {
         printf("Error occurred in publish %s\n", ctx->errstr);
       }
@@ -120,7 +123,7 @@ error:
 }
 
 int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
-  for (int64_t i = 0; i < 4; i++) {
+  for (size_t i = 0; i < HIREDIS_WORKER_COUNT; i++) {
     if (thread_ids[i] == 0) {
       pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);
     }
@@ -160,7 +163,7 @@ void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, si
 
   struct SelvaModify_AsyncTask publish_task;
   publish_task.type = SELVA_MODIFY_ASYNC_TASK_PUBLISH;
-  memcpy(publish_task.id, id_str, 10);
+  memcpy(publish_task.id, id_str, SELVA_NODE_ID_SIZE);
   publish_task.field_name = (const char *)struct_len;
   publish_task.field_name_len = field_len;
   publish_task.value = NULL;
@@ -181,11 +184,12 @@ void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, si
 void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, size_t id_len, const char *field_str, size_t field_len, const char *value_str, size_t value_len) {
   size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
   struct SelvaModify_AsyncTask publish_task;
+
   publish_task.type = SELVA_MODIFY_ASYNC_TASK_INDEX;
-  memcpy(publish_task.id, id_str, 10);
+  memcpy(publish_task.id, id_str, SELVA_NODE_ID_SIZE);
   publish_task.field_name = (const char *)struct_len;
   publish_task.field_name_len = field_len;
-  publish_task.value = (const char *)struct_len + field_len;
+  publish_task.value = (const char *)(struct_len + field_len);
   publish_task.value_len = value_len;
 
   char *ptr = payload_str;
