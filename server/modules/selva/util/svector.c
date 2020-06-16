@@ -88,7 +88,7 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
     void *el = *pp;
 
     if (vec->vec_last < vec->vec_len) {
-        memmove(pp, pp + 1, (size_t)((uintptr_t)(vec->vec_data + vec->vec_last) - (uintptr_t)pp));
+        memmove(pp, pp + 1, (size_t)((uintptr_t)(vec->vec_data + vec->vec_last - 1) - (uintptr_t)pp));
     }
     vec->vec_last--;
 
