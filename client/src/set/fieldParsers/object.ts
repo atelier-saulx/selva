@@ -18,7 +18,6 @@ export default (
 
   let hasKeys = false
   for (let key in payload) {
-    hasKeys = true
     if (key[0] === '$') {
       if (key === '$merge') {
         if (!(payload[key] === true || payload[key] === false)) {
@@ -43,6 +42,7 @@ export default (
     } else if (!fields.properties[key]) {
       throw new Error(`Cannot find field ${key} in ${type} for object`)
     } else {
+      hasKeys = true
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
 
