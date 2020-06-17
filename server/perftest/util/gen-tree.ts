@@ -29,9 +29,14 @@ function guestimate(medianWidth: number, widthVar: number, maxDepth: number, cut
 }
 
 /**
- * Generate a non-cyclic single-parent tree.
+ * Generate a randomized single-parent tree.
+ * @param medianWidth avg number of children per node
+ * @param widthVar variance of the number of children
+ * @param maxDepth maximum depth of a non-acyclic descendant chain
+ * @param nrRandomParentsMax Maximum number of randomly selected parents
+ * @param cutProb probability that a chain doesn't reach the max length
  */
-export async function generateNSPTree(redis: any, key: string, medianWidth: number, widthVar: number, maxDepth: number, cutProb: number) {
+export async function generateTree(redis: any, key: string, medianWidth: number, widthVar: number, maxDepth: number, nrRandomParentsMax: number, cutProb: number) {
     const rnd = newRnd(MAIN_SEED);
     const rndParents = newRnd('parents');
     const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
@@ -41,7 +46,7 @@ export async function generateNSPTree(redis: any, key: string, medianWidth: numb
     let nodePool = [];
 
     function pickRandomParents() {
-        const n = getRandomInt(rndParents, 0, 10);
+        const n = getRandomInt(rndParents, 0, nrRandomParentsMax);
         const parents = new Set();
 
         for (let i = 0; i < n; i++) {
@@ -84,8 +89,10 @@ export async function generateNSPTree(redis: any, key: string, medianWidth: numb
     }
 
 
-    console.error('Estimating the amount of work...');
-    bar.start(guestimate(medianWidth, widthVar, maxDepth, cutProb), 1);
+    process.stderr.write('Estimating the amount of work...');
+    const nrNodes = guestimate(medianWidth, widthVar, maxDepth, cutProb);
+    process.stderr.write('done\nCreating nodes...\n');
+    bar.start(nrNodes, 1);
     await add('head');
     await gen('head', maxDepth);
     bar.stop();
