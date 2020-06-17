@@ -45,9 +45,11 @@
     "selva-server": "/bin/index.js"
   },
   "devDependencies": {
+    "@types/cli-progress": "^3.7.0",
     "@types/pidusage": "^2.0.1",
     "@types/redis": "^2.8.14",
     "ava": "2.4.0",
+    "cli-progress": "^3.8.2",
     "husky": "^3.0.8",
     "lint-staged": "^9.4.2",
     "ts-node": "^8.5.4",

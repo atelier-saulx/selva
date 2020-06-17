@@ -1,7 +1,8 @@
-import { PerformanceObserver } from 'perf_hooks';
 import printResult from './util/print-result';
+import testHierarchy from './hierarchy';
+import sleep from './util/sleep';
 
-const allTests = [];
+const allTests = [testHierarchy];
 
 function selectTests() {
 	if (process.argv.length > 2) {
@@ -23,19 +24,26 @@ function selectTests() {
 	return allTests;
 }
 
-const obs = new PerformanceObserver((list) => {
-	const entry = list.getEntries()[0];
-	const duration = entry.duration.toFixed(2);
-
-	printResult(entry.name, duration, 'ms');
-});
-obs.observe({ entryTypes: ['function'] });
-
 const tests = selectTests();
-for (const test of tests) {
-	const name = test.name;
-	console.log(name);
-	console.log('='.repeat(name.length));
-	test();
-	console.log();
+async function run() {
+    for (const test of tests) {
+        const name = test.name;
+        console.log(name);
+        console.log('='.repeat(name.length));
+
+        const results = await test();
+        for (const result of results) {
+            const [sub, value, unit] = result;
+            printResult(`${name}: ${sub}`, value, unit || '');
+        }
+    }
 }
+
+run()
+.catch((err) => {
+    console.error(err);
+    process.exit(1);
+})
+.then(() => {
+    sleep(100).then(() => process.exit(0));
+})
