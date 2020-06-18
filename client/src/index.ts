@@ -135,7 +135,8 @@ export class SelvaClient extends EventEmitter {
     return observeSchema(this, name)
   }
 
-  conformToSchema(props: SetOptions, dbName: string = 'default') {
+  async conformToSchema(props: SetOptions, dbName: string = 'default') {
+    await this.initializeSchema({ $db: dbName })
     return conformToSchema(this, props, dbName)
   }
 
