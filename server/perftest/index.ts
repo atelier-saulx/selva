@@ -32,9 +32,10 @@ async function run() {
         console.log('='.repeat(name.length));
 
         const results = await test();
+        console.log('**results**');
         for (const result of results) {
             const [sub, value, unit] = result;
-            printResult(`${name}: ${sub}`, value, unit || '');
+            printResult(`${sub}`, value, unit || '');
         }
     }
 }

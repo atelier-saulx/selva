@@ -14,6 +14,8 @@
 #define HIERARCHY_ENCODING_VERSION 0
 #define INITIAL_VECTOR_LEN 2
 
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
     struct timespec visit_stamp;
@@ -879,13 +881,47 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     return REDISMODULE_OK;
 }
 
-int SelvaModify_Hierarchy_FindAncestorsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
+static int read_dfs_dir(enum SelvaModify_HierarchyNode_Relationship *dir, RedisModuleString *arg) {
+    size_t len;
+    const char *str = RedisModule_StringPtrLen(arg, &len);
 
-    if (argc != 3) {
+    if (!strncmp("ancestors", str, len)) {
+        *dir = RELATIONSHIP_PARENT;
+    } else if (!strncmp("descendants", str, len)) {
+        *dir = RELATIONSHIP_CHILD;
+    } else {
+        return SELVA_MODIFY_HIERARCHY_ENOTSUP;
+    }
+
+    return 0;
+}
+
+static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
+    void **args = (void **)arg;
+    RedisModuleCtx *ctx = (RedisModuleCtx *)args[0];
+    SelvaModify_HierarchyNode *head = (SelvaModify_HierarchyNode *)args[1];
+    ssize_t * restrict nr_nodes = (ssize_t *)args[2];
+
+    if (likely(node != head)) {
+        RedisModule_ReplyWithStringBuffer(ctx, node->id, SELVA_NODE_ID_SIZE);
+        *nr_nodes = *nr_nodes + 1;
+    }
+
+    return 0;
+
+}
+
+int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    int err;
+
+    if (argc != 4) {
         return RedisModule_WrongArity(ctx);
     }
 
+    /*
+     * Open the Redis key.
+     */
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
     int type = RedisModule_KeyType(key);
     if (type != REDISMODULE_KEYTYPE_EMPTY &&
@@ -899,20 +935,41 @@ int SelvaModify_Hierarchy_FindAncestorsCommand(RedisModuleCtx *ctx, RedisModuleS
         return RedisModule_ReplyWithArray(ctx, 0);
     }
 
+    /*
+     * Get the direction parameter.
+     */
+    enum SelvaModify_HierarchyNode_Relationship dir;
+    err = read_dfs_dir(&dir, argv[2]);
+    if (err) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+    }
+
     Selva_NodeId nodeId;
-    Selva_NodeId *ancestors __attribute__((cleanup(wrapFree))) = NULL;
-
-    /* TODO We should somehow send the responses directly, maybe a callback? */
-    strncpy(nodeId, RedisModule_StringPtrLen(argv[2], NULL), SELVA_NODE_ID_SIZE);
-    const int nr_ancestors = SelvaModify_FindAncestors(hierarchy, nodeId, &ancestors);
-    if (nr_ancestors < 0) {
-        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-nr_ancestors]);
+    strncpy(nodeId, RedisModule_StringPtrLen(argv[3], NULL), SELVA_NODE_ID_SIZE);
+    SelvaModify_HierarchyNode *head = findNode(hierarchy, nodeId);
+    if (!head) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
     }
 
-    RedisModule_ReplyWithArray(ctx, nr_ancestors);
-    for (int i = 0; i < nr_ancestors; i++) {
-        RedisModule_ReplyWithStringBuffer(ctx, ancestors[i], SELVA_NODE_ID_SIZE);
+    ssize_t nr_nodes = 0;
+    void *args[] = { ctx, head, &nr_nodes };
+    const TraversalCallback cb = {
+        .head_cb = NULL,
+        .head_arg = NULL,
+        .node_cb = FindCommand_PrintNode,
+        .node_arg = args,
+        .child_cb = NULL,
+        .child_arg = NULL,
+    };
+
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    err = dfs(hierarchy, head, dir, &cb);
+    if (err != 0) {
+        /* FIXME This will make redis crash */
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
     }
+
+    RedisModule_ReplySetArrayLength(ctx, nr_nodes);
 
     return REDISMODULE_OK;
 }
@@ -989,19 +1046,16 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
     if (argc == 2) {
         keyName = argv[1];
     } else if (argc == 4) {
+        int err;
         size_t len;
         const char *str;
 
         op = argv[2];
         keyName = argv[1];
 
-        str = RedisModule_StringPtrLen(op, &len);
-        if (!strncmp("ancestors", str, len)) {
-            dir = RELATIONSHIP_PARENT;
-        } else if (!strncmp("descendants", str, len)) {
-            dir = RELATIONSHIP_CHILD;
-        } else {
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOTSUP]);
+        err = read_dfs_dir(&dir, op);
+        if (err) {
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
         }
 
         str = RedisModule_StringPtrLen(argv[3], &len);
@@ -1079,7 +1133,7 @@ int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.findancestors", SelvaModify_Hierarchy_FindAncestorsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

@@ -85,7 +85,6 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
 
             await gen(nodeId, nextDepth);
         }
-
     }
 
 
