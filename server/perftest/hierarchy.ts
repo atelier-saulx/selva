@@ -10,9 +10,9 @@ const TEST_KEY = 'test';
 export default async function hierarchy() {
     const findAncestors = promisify(redis['SELVA.HIERARCHY.findancestors']).bind(redis, TEST_KEY);
 
-    // Delete an existing hierarhy and create a fresh one
+    // Delete an existing hierarchy and create a fresh one
     await promisify(redis.del).bind(redis)(TEST_KEY);
-    await generateTree(redis, TEST_KEY, 3, 1, 40, 10, 0.45);
+    await generateTree(redis, TEST_KEY, 3, 1, 30, 10, 0.45);
 
     process.stderr.write('Taking a dump...');
     const fullDump = await promisify(redis['SELVA.HIERARCHY.dump']).bind(redis)(TEST_KEY);
