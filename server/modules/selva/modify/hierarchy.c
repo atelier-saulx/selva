@@ -881,7 +881,7 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     return REDISMODULE_OK;
 }
 
-static int read_dfs_dir(enum SelvaModify_HierarchyNode_Relationship *dir, RedisModuleString *arg) {
+static int parse_dfs_dir(enum SelvaModify_HierarchyNode_Relationship *dir, RedisModuleString *arg) {
     size_t len;
     const char *str = RedisModule_StringPtrLen(arg, &len);
 
@@ -939,7 +939,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Get the direction parameter.
      */
     enum SelvaModify_HierarchyNode_Relationship dir;
-    err = read_dfs_dir(&dir, argv[2]);
+    err = parse_dfs_dir(&dir, argv[2]);
     if (err) {
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
     }
@@ -1053,7 +1053,7 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
         op = argv[2];
         keyName = argv[1];
 
-        err = read_dfs_dir(&dir, op);
+        err = parse_dfs_dir(&dir, op);
         if (err) {
             return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
         }
