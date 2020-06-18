@@ -109,12 +109,12 @@ RB_GENERATE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry
 
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void) {
     SelvaModify_Hierarchy *hierarchy = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode));
-    if (!hierarchy) {
+    if (unlikely(!hierarchy)) {
         return NULL;
     }
 
     RB_INIT(&hierarchy->index_head);
-    if (!SVector_Init(&hierarchy->heads, 1, SVector_BS_Compare)) {
+    if (unlikely(!SVector_Init(&hierarchy->heads, 1, SVector_BS_Compare))) {
         RedisModule_Free(hierarchy);
         return NULL;
     }
@@ -138,14 +138,14 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
 
 static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode));
-    if (!node) {
+    if (unlikely(!node)) {
         return NULL;
     };
 
     memset(node, 0, sizeof(SelvaModify_HierarchyNode));
 
-    if (!SVector_Init(&node->parents, INITIAL_VECTOR_LEN, SVector_BS_Compare) ||
-        !SVector_Init(&node->children, INITIAL_VECTOR_LEN, SVector_BS_Compare)) {
+    if (unlikely(!SVector_Init(&node->parents, INITIAL_VECTOR_LEN, SVector_BS_Compare) ||
+        !SVector_Init(&node->children, INITIAL_VECTOR_LEN, SVector_BS_Compare))) {
         SelvaModify_DestroyNode(node);
         return NULL;
     }
@@ -343,14 +343,14 @@ int SelvaModify_SetHierarchy(
 
     if (!node) {
         node = newNode(id);
-        if (!node) {
+        if (unlikely(!node)) {
             return SELVA_MODIFY_HIERARCHY_ENOENT;
         }
         isNewNode = 1;
     }
 
     if (isNewNode) {
-        if (RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL) {
+        if (unlikely(RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL)) {
             SelvaModify_DestroyNode(node);
 
             return SELVA_MODIFY_HIERARCHY_EEXIST;
@@ -395,7 +395,7 @@ int SelvaModify_AddHierarchy(
 
     if (!node) {
         node = newNode(id);
-        if (!node) {
+        if (unlikely(!node)) {
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
         isNewNode = 1;
@@ -473,7 +473,7 @@ static Selva_NodeId *NodeList_New(int nr_nodes) {
 
 static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, size_t nr_nodes) {
     Selva_NodeId *newList = RedisModule_Realloc(list, nr_nodes * sizeof(Selva_NodeId));
-    if (!newList) {
+    if (unlikely(!newList)) {
         RedisModule_Free(list);
         return NULL;
     }
@@ -490,7 +490,7 @@ ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_No
 
     SVECTOR_FOREACH(it, &hierarchy->heads) {
         list = NodeList_Insert(list, (*it)->id, ++nr_nodes);
-        if (!list) {
+        if (unlikely(!list)) {
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
     }
@@ -631,7 +631,7 @@ static int dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
     if (*list && node != head) {
         *nr_nodes = *nr_nodes + 1;
         *list = NodeList_Insert(*list, node->id, *nr_nodes);
-        if (!(*list)) {
+        if (unlikely(!(*list))) {
             *nr_nodes = SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
     }

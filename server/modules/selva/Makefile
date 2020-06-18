@@ -17,7 +17,7 @@ else
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
 	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
 endif
-CFLAGS := $(IDIR) -Wall -Wextra -Wno-unused-value -g -fPIC -lc -lm -std=gnu99
+CFLAGS := $(IDIR) -Wall -Wextra -Wno-unused-value -g -O2 -fPIC -lc -lm -std=gnu99
 CC := gcc
 
 
