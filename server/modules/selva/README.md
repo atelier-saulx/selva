@@ -25,6 +25,8 @@ Documentation
 Debugging
 ---------
 
+### Dumping data using redis-cli
+
 **hiearachy-dot-dump.js**
 
 Dump a hierarchy object in dot format.
@@ -58,3 +60,42 @@ Limit the number of nodes traversed:
 ```
 node hiearachy-dot-dump.js test ancestors g 10
 ```
+
+### GDB
+
+Start the server as follows:
+
+```
+gdb --args redis-server --loadmodule ./module.so
+```
+
+**print-vector SYMBOL TYPE**
+
+```gdb
+(gdb) print-vector stack SelvaModify_HierarchyNode
+0: {id: "d\000\000\000\000\000\000\000\000", visit_stamp: 00, parents: { "c\000\000\000\000\000\000\000\000", }, children: { "e\000\000\000\000\000\000\000\000", }}
+```
+
+
+### Valgrind
+
+**Profiling with Valgrind**
+
+First start the server with Valgrind:
+
+```
+valgrind --tool=callgrind --simulate-cache=yes -s redis -server --loadmodule ./module.so
+```
+
+Then run something using the db, e.g. `ts-node index.ts` in `../../perftest/` dir.
+
+Once you are done, kill the redis server (e.g. `CTRL-C`).
+This will produce files named `callgrind.out.NUMBER`
+
+Callgrind fiels can be parsed using `callgrind_annotate`:
+
+```
+callgrind_annotate --auto=yes callgrind.out.1953257
+```
+
+There are also a number of GUI tools for parsing callgrind files.
