@@ -27,7 +27,7 @@ export default async function hierarchy() {
 
     // Delete an existing hierarchy and create a fresh one
     await promisify(redis.del).bind(redis)(TEST_KEY);
-    await generateTree(redis, TEST_KEY, 3, 1, 30, 10, 0.45);
+    await generateTree(redis, TEST_KEY, 3, 1, 15, 9, 0.2);
 
     process.stderr.write('Taking a dump...');
     const fullDump = (await promisify(redis['SELVA.HIERARCHY.dump']).bind(redis)(TEST_KEY))

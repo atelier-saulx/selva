@@ -41,13 +41,17 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
     const rndParents = newRnd('parents');
     const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
+    if (nrRandomParentsMax - widthVar < 0) {
+        throw new Error(`(nrRandomParentsMax - widthVar = ${nrRandomParentsMax} - ${widthVar}) must be greater than or equal to 0`);
+    }
+
     const getId = promisify(redis['SELVA.id']).bind(redis);
     const add = promisify(redis['SELVA.HIERARCHY.add']).bind(redis, key);
     let nodePool = [];
 
-    function pickRandomParents() {
-        const n = getRandomInt(rndParents, 0, nrRandomParentsMax);
-        const parents = new Set();
+    function pickRandomParents(curParents: string[]) {
+        const n = getRandomInt(rndParents, nrRandomParentsMax - widthVar, nrRandomParentsMax);
+        const parents = new Set(curParents);
 
         for (let i = 0; i < n; i++) {
             if (nodePool.length === 0) {
@@ -56,7 +60,8 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
 
             const node = nodePool[getRandomInt(rndParents, 0, nodePool.length)];
             parents.add(node);
-            if (rndParents() < 0.05) {
+            /* Drop a node from the pool */
+            if (rndParents() < cutProb / 10) {
                 const del = getRandomInt(rndParents, 0, nodePool.length);
                 nodePool = nodePool.splice(del, del);
             }
@@ -78,9 +83,9 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
             const nodeId = `${getRandomInt(rnd, 0, 9)}X${await getId()}`;
             //process.stdout.write(`${parentNodeId}->${nodeId} `);
     
-            const parents = pickRandomParents();
+            const parents = pickRandomParents([parentNodeId]);
             nodePool.push(nodeId);
-            await add(nodeId, ...[parentNodeId, ...parents]);
+            await add(nodeId, ...parents);
             bar.increment();
 
             await gen(nodeId, nextDepth);

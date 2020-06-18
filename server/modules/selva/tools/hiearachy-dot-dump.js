@@ -13,7 +13,7 @@ async function run() {
   for (const sub of arr) {
     const [node, ...children] = sub
     for (const child of children) {
-      console.log(`  "n${node.replace('\0', ' ')}" -> "n${child.replace('\0', ' ')}"`)
+      console.log(`  "n${node.startsWith('head') ? 'head' : node}" -> "n${child}"`)
     }
   }
   console.log('}')
