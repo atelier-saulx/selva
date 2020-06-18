@@ -16,7 +16,7 @@ int hash(const char *prefix, char *hash_str, char *str, size_t strlen) {
   while (i) {
     hash = (hash * 33) ^ (int)(str[--i]);
   }
-  return sprintf(hash_str, "%s%x", prefix, (unsigned int)hash >> 0);
+  return sprintf(hash_str, "%s%08x", prefix, (unsigned int)hash >> 0);
 }
 
 
