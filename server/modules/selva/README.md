@@ -61,6 +61,13 @@ Limit the number of nodes traversed:
 node hiearachy-dot-dump.js test ancestors g 10
 ```
 
+Render a png of a hierarchy:
+
+```
+node --max-old-space-size=4000 ./hiearachy-dot-dump.js test 300 | dot -Tpng > dump.png
+```
+
+
 ### GDB
 
 Start the server as follows:
