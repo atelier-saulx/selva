@@ -369,9 +369,9 @@ function removeSpecified(
 function update(payload: SetOptions): Id | null {
   const { $operation = 'upsert' } = payload
 
-  if (payload.$_batchOpts) {
-    globals.$_batchOpts = payload.$_batchOpts
-  }
+  // if (payload.$_batchOpts) {
+  //   globals.$_batchOpts = payload.$_batchOpts
+  // }
 
   if (!payload.$id) {
     if (payload.$alias) {

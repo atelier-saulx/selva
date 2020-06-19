@@ -256,29 +256,29 @@ export function addToChildren(
     }
   }
 
-  if (
-    globals.$_batchOpts &&
-    globals.$_batchOpts.refField &&
-    globals.$_batchOpts.refField.resetReference === 'children'
-  ) {
-    if (globals.$_batchOpts.refField.last) {
-      const batchId = globals.$_batchOpts.batchId
-      const bufferedChildren = redis.smembers(
-        `___selva_reset_children:${batchId}`
-      )
+  // if (
+  //   globals.$_batchOpts &&
+  //   globals.$_batchOpts.refField &&
+  //   globals.$_batchOpts.refField.resetReference === 'children'
+  // ) {
+  //   if (globals.$_batchOpts.refField.last) {
+  //     const batchId = globals.$_batchOpts.batchId
+  //     const bufferedChildren = redis.smembers(
+  //       `___selva_reset_children:${batchId}`
+  //     )
 
-      // run cleanup at the end of the partial batch that processes large reference arrays
-      for (const child of bufferedChildren) {
-        const parentKey = child + '.parents'
-        const size = redis.scard(parentKey)
-        if (size === 0) {
-          deleteItem(child)
-        }
-      }
+  //     // run cleanup at the end of the partial batch that processes large reference arrays
+  //     for (const child of bufferedChildren) {
+  //       const parentKey = child + '.parents'
+  //       const size = redis.scard(parentKey)
+  //       if (size === 0) {
+  //         deleteItem(child)
+  //       }
+  //     }
 
-      redis.del(`___selva_reset_children:${batchId}`)
-    }
-  }
+  //     redis.del(`___selva_reset_children:${batchId}`)
+  //   }
+  // }
 
   return result
 }
@@ -303,13 +303,13 @@ export function resetChildren(
   source?: string | { $overwrite?: boolean | string[]; $name: string }
 ): Id[] {
   let batchId = null
-  if (
-    globals.$_batchOpts &&
-    globals.$_batchOpts.refField &&
-    globals.$_batchOpts.refField.resetReference === 'children'
-  ) {
-    batchId = globals.$_batchOpts.batchId
-  }
+  // if (
+  //   globals.$_batchOpts &&
+  //   globals.$_batchOpts.refField &&
+  //   globals.$_batchOpts.refField.resetReference === 'children'
+  // ) {
+  //   batchId = globals.$_batchOpts.batchId
+  // }
 
   const children = redis.smembers(setKey)
   if (arrayIsEqual(children, value)) {
