@@ -34,7 +34,10 @@ export const verifiers = {
     return typeof payload === 'string' && payload.length < 30
   },
   timestamp: (payload: 'now' | number) => {
-    return payload === 'now' || (typeof payload === 'number' && payload > 0)
+    return (
+      payload === 'now' ||
+      (typeof payload === 'number' && Number.isInteger(payload) && payload > 0)
+    )
   },
   url: (payload: string) => {
     return typeof payload === 'string' && validURL(payload)
