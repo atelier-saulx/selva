@@ -897,16 +897,20 @@ static int parse_dfs_dir(enum SelvaModify_HierarchyNode_Relationship *dir, Redis
     return 0;
 }
 
-static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
-    void **args = (void **)arg;
-    RedisModuleCtx *ctx = (RedisModuleCtx *)args[0];
-    SelvaModify_HierarchyNode *head = (SelvaModify_HierarchyNode *)args[1];
-    ssize_t * restrict nr_nodes = (ssize_t *)args[2];
-    struct rpn_ctx *rpn_ctx = (struct rpn_ctx *)args[3];
-    const char *filter = (const char *)args[4];
-    size_t filter_len = (size_t)args[5];
+struct FindCommand_Args {
+    RedisModuleCtx *ctx;
+    SelvaModify_HierarchyNode *head;
+    ssize_t *nr_nodes;
+    struct rpn_ctx *rpn_ctx;
+    const char *filter;
+    size_t filter_len;
+};
 
-    if (likely(node != head)) {
+static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
+    struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
+    struct rpn_ctx *rpn_ctx = args->rpn_ctx;
+
+    if (likely(node != args->head)) {
         int take = 1;
 
         if (rpn_ctx) {
@@ -920,15 +924,17 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
             /*
              * Resolve the expression and get the result.
              */
-            if (rpn_bool(rpn_ctx, filter, filter_len, &take)) {
+            if (rpn_bool(rpn_ctx, args->filter, args->filter_len, &take)) {
                 /* TODO Error */
-                fprintf(stderr, "Invalid expression: \"%.*s\"\n", (int)filter_len, filter);
+                fprintf(stderr, "Invalid expression: \"%.*s\"\n", (int)args->filter_len, args->filter);
                 return 1;
             }
         }
 
         if (take) {
-            RedisModule_ReplyWithStringBuffer(ctx, node->id, SELVA_NODE_ID_SIZE);
+            ssize_t *nr_nodes = args->nr_nodes;
+
+            RedisModule_ReplyWithStringBuffer(args->ctx, node->id, SELVA_NODE_ID_SIZE);
             *nr_nodes = *nr_nodes + 1;
         }
     }
@@ -1004,19 +1010,19 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Run DFS.
      */
     ssize_t nr_nodes = 0;
-    void *args[] = {
-        ctx,
-        head,
-        &nr_nodes,
-        rpn_ctx,
-        filter_expression,
-        (void *)filter_len
+    struct FindCommand_Args args = {
+        .ctx = ctx,
+        .head = head,
+        .nr_nodes = &nr_nodes,
+        .rpn_ctx = rpn_ctx,
+        .filter = filter_expression,
+        .filter_len = filter_len
     };
     const TraversalCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
         .node_cb = FindCommand_PrintNode,
-        .node_arg = args,
+        .node_arg = &args,
         .child_cb = NULL,
         .child_arg = NULL,
     };
