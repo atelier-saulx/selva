@@ -64,7 +64,7 @@ given as arguments to the expression parser.
 | `L`      | `!a`               | Logical NOT operator. (unary)     | `1 L => 0`                |
 | `M`      | `a AND b`          | Logical AND operator.             | `1 1 M => 1`              |
 | `N`      | `a OR b`           | Logical OR operator.              | `0 1 N => 1`              |
-| `O`      | `!!a ^ !!b`        | Logical XOR operator.             | `1 1 O => 0`              |
+| `O`      | `!!a XOR !!b`      | Logical XOR operator.             | `1 1 O => 0`              |
 
 **Functions**
 
