@@ -120,7 +120,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           modify.reject = err => {
             if (err.stack.includes('NOSCRIPT')) {
               loadScripts(client, () => {
-                orig.args[0] = `${constants.SCRIPT}:modify`
+                orig.args[0] = getScriptSha('modify')
                 addCommandToQueue(client, orig)
               })
               return
