@@ -56,7 +56,15 @@ redis.RedisClient.prototype.on_info_cmd = function(err, res) {
       return
     }
     err.message = 'Ready check failed: ' + err.message
-    this.emit('error', err)
+    console.log(err.message)
+    setTimeout(
+      function(self) {
+        self.ready_check()
+      },
+      1e3,
+      this
+    )
+
     return
   }
 
