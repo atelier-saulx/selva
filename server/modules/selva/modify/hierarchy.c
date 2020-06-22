@@ -907,7 +907,7 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
     size_t filter_len = (size_t)args[5];
 
     if (likely(node != head)) {
-        int take = 0;
+        int take = 1;
 
         if (rpn_ctx) {
             char str[SELVA_NODE_ID_SIZE + 1];
