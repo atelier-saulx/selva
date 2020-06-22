@@ -1,5 +1,4 @@
 import { RedisCommand } from '../types'
-import './redisSearch'
 import execBatch from './execBatch'
 import { getScriptSha, loadScripts } from './scripts'
 import * as constants from '../../constants'
