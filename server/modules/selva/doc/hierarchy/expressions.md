@@ -1,8 +1,17 @@
-RPN Boolean Expression Language
-===============================
+RPN Filter Expressions
+======================
 
-The following query finds all descendants of a node called `head` that are of
-type `2X`.
+RPN filter expressions allows creating simple expressions for filtering lookups
+in Hierarchy. The expressions are pure functions that can have no side effects
+of any kind. An expression can only return boolean true or false, or its
+execution can fail with an error. The name RPN comes from Reverse Polish
+notation, which is the notation used in the expression language. Briefly the
+benefit of using this notation is that the expressions don't need parenthesis
+and it's very fast to parse because there are no precedence rules.
+
+The following query selects all descendants of a node called `head` that are of
+type `2X`. It's also possible to write the same expression using a single function
+but it wouldn't be as interesting example as the following filter is.
 
 ```
 SELVA.HIERARCHY.find test descendants "head\x00\x00\x00\x00\x00\x00" '#0 #1 @ b "2X d'
