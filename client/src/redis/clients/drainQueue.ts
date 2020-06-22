@@ -108,6 +108,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         }
 
         if (modify) {
+          const orig = modify
           modify.resolve = results => {
             for (let i = 0; i < modifyResolvers.length; i++) {
               if (modifyResolvers[i]) {
@@ -119,8 +120,8 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           modify.reject = err => {
             if (err.stack.includes('NOSCRIPT')) {
               loadScripts(client, () => {
-                modify.args[0] = `${constants.SCRIPT}:modify`
-                addCommandToQueue(client, modify)
+                orig.args[0] = `${constants.SCRIPT}:modify`
+                addCommandToQueue(client, orig)
               })
               return
             }
