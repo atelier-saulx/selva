@@ -61,7 +61,7 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
 
       if (!rdbLastModified || new Date(latest.Key) > rdbLastModified) {
         const body: Buffer = <Buffer>await s3.getObject(bucketName, latest.Key)
-        fs.writeFile(rdbFilePath, body)
+        await fs.writeFile(rdbFilePath, body)
       }
     }
   }
