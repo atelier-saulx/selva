@@ -18,6 +18,15 @@ export default (server: SelvaServer, opts: ServerOptions) => {
 
   const args = ['--port', String(port), '--protected-mode', 'no', '--dir', dir]
 
+  if (opts.save) {
+    if (opts.save === true) {
+      args.push('--save', '900', '1')
+      args.push('--save', '300', '10')
+    } else {
+      args.push('--save', String(opts.save.seconds), String(opts.save.changes))
+    }
+  }
+
   modules.forEach(m => {
     const platform = process.platform + '_' + process.arch
     const p =
