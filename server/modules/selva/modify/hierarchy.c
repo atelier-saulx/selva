@@ -9,6 +9,7 @@
 #include "tree.h"
 #include "svector.h"
 #include "trx.h"
+#include "rpn.h"
 #include "hierarchy.h"
 
 #define HIERARCHY_ENCODING_VERSION 0
@@ -520,7 +521,7 @@ static void HierarchyNode_ChildCallback_Dummy(SelvaModify_HierarchyNode *parent,
 }
 
 /**
- * DFS from a given head towards children or parents.
+ * DFS from a given head node towards its descendants or ancestors.
  */
 static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head, enum SelvaModify_HierarchyNode_Relationship dir, const TraversalCallback * restrict cb) {
     size_t offset;
@@ -558,7 +559,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
                 goto out;
             }
 
-            /* Add parents/children to the stack of unvisited nodes */
+            /* Add parents/children of this node to the stack of unvisited nodes */
             SelvaModify_HierarchyNode **itt;
             const SVector *vec = (SVector *)((char *)node + offset);
             SVECTOR_FOREACH(itt, vec) {
@@ -901,10 +902,35 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
     RedisModuleCtx *ctx = (RedisModuleCtx *)args[0];
     SelvaModify_HierarchyNode *head = (SelvaModify_HierarchyNode *)args[1];
     ssize_t * restrict nr_nodes = (ssize_t *)args[2];
+    struct rpn_ctx *rpn_ctx = (struct rpn_ctx *)args[3];
+    const char *filter = (const char *)args[4];
+    size_t filter_len = (size_t)args[5];
 
     if (likely(node != head)) {
-        RedisModule_ReplyWithStringBuffer(ctx, node->id, SELVA_NODE_ID_SIZE);
-        *nr_nodes = *nr_nodes + 1;
+        int take = 0;
+
+        if (rpn_ctx) {
+            char str[SELVA_NODE_ID_SIZE + 1];
+
+            /* Set node_id to the register */
+            memcpy(str, node->id, SELVA_NODE_ID_SIZE);
+            str[SELVA_NODE_ID_SIZE] = '\0';
+            rpn_set_reg(rpn_ctx, 0, str);
+
+            /*
+             * Resolve the expression and get the result.
+             */
+            if (rpn_bool(rpn_ctx, filter, filter_len, &take)) {
+                /* TODO Error */
+                fprintf(stderr, "Invalid expression: \"%.*s\"\n", (int)filter_len, filter);
+                return 1;
+            }
+        }
+
+        if (take) {
+            RedisModule_ReplyWithStringBuffer(ctx, node->id, SELVA_NODE_ID_SIZE);
+            *nr_nodes = *nr_nodes + 1;
+        }
     }
 
     return 0;
@@ -915,7 +941,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModule_AutoMemory(ctx);
     int err;
 
-    if (argc != 4) {
+    if (argc != 4 && argc != 5) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -944,6 +970,10 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
     }
 
+
+    /*
+     * Find the node.
+     */
     Selva_NodeId nodeId;
     strncpy(nodeId, RedisModule_StringPtrLen(argv[3], NULL), SELVA_NODE_ID_SIZE);
     SelvaModify_HierarchyNode *head = findNode(hierarchy, nodeId);
@@ -951,8 +981,37 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
     }
 
+    /*
+     * Parse the query.
+     */
+    struct rpn_ctx *rpn_ctx = NULL;
+    char * filter_expression = NULL;
+    size_t filter_len;
+    const char *reg[] = {
+        "0",
+        "1",
+        "hello",
+        nodeId,
+    };
+    if (argc == 5) {
+
+        rpn_ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
+        rpn_init(rpn_ctx, reg, sizeof(reg));
+        filter_expression = (char *)RedisModule_StringPtrLen(argv[4], &filter_len);
+    }
+
+    /*
+     * Run DFS.
+     */
     ssize_t nr_nodes = 0;
-    void *args[] = { ctx, head, &nr_nodes };
+    void *args[] = {
+        ctx,
+        head,
+        &nr_nodes,
+        rpn_ctx,
+        filter_expression,
+        (void *)filter_len
+    };
     const TraversalCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
@@ -964,6 +1023,9 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     err = dfs(hierarchy, head, dir, &cb);
+    if (rpn_ctx) {
+        RedisModule_Free(rpn_ctx);
+    }
     if (err != 0) {
         /* FIXME This will make redis crash */
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
