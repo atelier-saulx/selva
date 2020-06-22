@@ -75,6 +75,7 @@ given as arguments to the expression parser.
 | `b`      | `id`               | Returns the type of a node id.    | `xy123 b => xy`           |
 | `c`      | `!strcmp(s1, s2)`  | Compare strings.                  | `0 @ hello c => 1`        |
 | `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `0 @ 1 @ d => 1`          | 
+| `e`      | `!cmp(curT, id)`   | Compare the type of the current node. | `"AB e`               |
 
 1) `@` function takes a `type` argument that selects whether the register is
    read as a string or integer. 0 is integer; 1 is string.

@@ -1,20 +1,39 @@
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "cdefs.h"
+#include "redismodule.h"
 #include "hierarchy.h"
 #include "rpn.h"
 
 /* TODO Handle NULL */
-#define OPERAND(ctx, x) struct rpn_operand * x __attribute__((cleanup(wrap_free))) = pop(ctx)
+#define OPERAND(ctx, x) struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx)
+
 
 struct rpn_operand {
+    unsigned pooled : 1;
+    struct rpn_operand *next_free; /* Next free in pool */
     long long i;
     size_t s_size;
-    char s[1];
+    char s[SELVA_NODE_ID_SIZE + 1];
 };
 
+static struct rpn_operand *small_operand_pool_next;
+static struct rpn_operand small_operand_pool[SMALL_OPERAND_POOL_SIZE];
+
+static void init_pool(void) __attribute__((constructor));
+static void init_pool(void) {
+    struct rpn_operand *prev = NULL;
+
+    small_operand_pool_next = &small_operand_pool[0];
+
+    for (int i = SMALL_OPERAND_POOL_SIZE - 1; i >= 0; i--) {
+        small_operand_pool[i].next_free = prev;
+        prev = &small_operand_pool[i];
+    }
+}
 
 void rpn_init(struct rpn_ctx *ctx, const char **reg, size_t reg_size) {
     ctx->depth = 0;
@@ -32,10 +51,39 @@ int rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s) {
     return 0;
 }
 
-static void wrap_free(void *p) {
-    void **pp = (void **)p;
+static struct rpn_operand *alloc_rpn_operand(size_t s_len) {
+    struct rpn_operand *v;
 
-    free(*pp);
+    if (s_len < SELVA_NODE_ID_SIZE && small_operand_pool_next) {
+        v = small_operand_pool_next;
+        small_operand_pool_next = v->next_free;
+
+        memset(v, 0, sizeof(struct rpn_operand));
+        v->pooled = 1;
+    } else {
+        v = RedisModule_Calloc(1, sizeof(struct rpn_operand) + SELVA_NODE_ID_SIZE - s_len);
+
+        return v;
+    }
+
+    return v;
+}
+
+static void free_rpn_operand(void *p) {
+    struct rpn_operand **pp = (struct rpn_operand **)p;
+    struct rpn_operand *v = *pp;
+
+    if (v->pooled) {
+        struct rpn_operand *prev = small_operand_pool_next;
+
+        /*
+         * Put a pooled operand back to the pool.
+         */
+        small_operand_pool_next = v;
+        small_operand_pool_next->next_free = prev;
+    } else {
+        RedisModule_Free(v);
+    }
 }
 
 static void push(struct rpn_ctx *ctx, struct rpn_operand *v) {
@@ -49,7 +97,7 @@ static void push(struct rpn_ctx *ctx, struct rpn_operand *v) {
 
 /* TODO Handle errors */
 static void push_int_result(struct rpn_ctx *ctx, long long x) {
-    struct rpn_operand *v = calloc(1, sizeof(struct rpn_operand));
+    struct rpn_operand *v = alloc_rpn_operand(0);
 
     v->i = x;
     push(ctx, v);
@@ -57,7 +105,7 @@ static void push_int_result(struct rpn_ctx *ctx, long long x) {
 
 /* TODO Handle errors */
 static void push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) {
-    struct rpn_operand *v = calloc(1, sizeof(struct rpn_operand) + slen + 1);
+    struct rpn_operand *v = alloc_rpn_operand(slen);
 
     v->s_size = slen + 1;
     strncpy(v->s, s, slen);
@@ -77,7 +125,7 @@ static void clear_stack(struct rpn_ctx *ctx) {
     struct rpn_operand *v;
 
     while ((v = pop(ctx))) {
-        free(v);
+        free_rpn_operand(&v);
     }
 }
 
@@ -270,16 +318,19 @@ static int rpn_op_in(struct rpn_ctx *ctx) {
 
 static int rpn_op_typeof(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
-    char id[2];
+    char t[SELVA_NODE_TYPE_SIZE];
 
     if (!a->s || a->s_size < SELVA_NODE_ID_SIZE) {
         return -1;
     }
 
-    id[0] = a->s[0];
-    id[1] = a->s[1];
+#if SELVA_NODE_TYPE_SIZE != 2
+#error Expected SELVA_NODE_TYPE_SIZE to be 2
+#endif
+    t[0] = a->s[0];
+    t[1] = a->s[1];
 
-    push_string_result(ctx, id, sizeof(id));
+    push_string_result(ctx, t, sizeof(t));
 
     return 0;
 }
@@ -298,6 +349,23 @@ static int rpn_op_idcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, b);
 
     push_int_result(ctx, !memcmp(a->s, b->s, SELVA_NODE_ID_SIZE));
+
+    return 0;
+}
+
+static int rpn_op_cidcmp(struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+
+    assert(ctx->reg[0]);
+
+    const char *cid = ctx->reg[0];
+    const char t[SELVA_NODE_TYPE_SIZE] = { cid[0], cid[1] };
+
+#if SELVA_NODE_TYPE_SIZE != 2
+#error Expected SELVA_NODE_TYPE_SIZE to be 2
+#endif
+
+    push_int_result(ctx, !memcmp(a->s, t, SELVA_NODE_TYPE_SIZE));
 
     return 0;
 }
@@ -347,6 +415,7 @@ static rpn_fp funcs[] = {
     rpn_op_typeof,  /* b */
     rpn_op_strcmp,  /* c */
     rpn_op_idcmp,   /* d */
+    rpn_op_cidcmp,  /* d */
 };
 
 static int rpn(struct rpn_ctx *ctx, char *s) {
@@ -369,7 +438,7 @@ static int rpn(struct rpn_ctx *ctx, char *s) {
             if (s[0] == '#') {
                 char *e;
 
-                v = malloc(sizeof(struct rpn_operand));
+                v = alloc_rpn_operand(0);
                 v->i = strtoull(s + 1, &e, 10);
                 v->s_size = 0;
                 v->s[0] = '\0';
@@ -377,7 +446,7 @@ static int rpn(struct rpn_ctx *ctx, char *s) {
                 const char *str = s + 1;
                 size_t size = strlen(str) + 1;
 
-                v = malloc(sizeof(struct rpn_operand) + size);
+                v = alloc_rpn_operand(size);
                 v->s_size = size;
                 strcpy(v->s, str);
                 v->s[size - 1] = '\0';
@@ -416,7 +485,7 @@ int rpn_bool(struct rpn_ctx *ctx, const char *s, size_t s_len, int *out) {
     }
 
     *out = to_bool(res);
-    free(res);
+    free_rpn_operand(&res);
 
     return 0;
 }
@@ -438,7 +507,7 @@ int rpn_integer(struct rpn_ctx *ctx, const char *s, size_t s_len, long long *out
     }
 
     *out = res->i;
-    free(res);
+    free_rpn_operand(&res);
 
     return 0;
 }

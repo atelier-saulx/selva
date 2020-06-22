@@ -2,6 +2,7 @@
 #ifndef _MODIFY_RPN_H_
 #define _MODIFY_RPN_H_
 
+#define SMALL_OPERAND_POOL_SIZE 10
 #define RPN_MAX_D 256
 
 struct rpn_operand;
