@@ -71,8 +71,8 @@ export default class ProcessManager extends EventEmitter {
     })
 
     const exitHandler = (code: number) => {
-      console.log(
-        `Child process for ${this.command} exited with code ${code}. Restarting...`
+      console.error(
+        `🔥  Child process for ${this.command} exited with code ${code}. Restarting...`
       )
 
       this.childProcess.removeAllListeners()
