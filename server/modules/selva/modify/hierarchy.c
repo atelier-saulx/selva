@@ -1002,7 +1002,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     if (argc == 5) {
 
         rpn_ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
-        rpn_init(rpn_ctx, reg, sizeof(reg));
+        rpn_init(rpn_ctx, ctx, reg, sizeof(reg));
         filter_expression = (char *)RedisModule_StringPtrLen(argv[4], &filter_len);
     }
 

@@ -8,9 +8,12 @@
 #include "hierarchy.h"
 #include "rpn.h"
 
-/* TODO Handle NULL */
-#define OPERAND(ctx, x) struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx)
+#define OPERAND(ctx, x) \
+    struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx); \
+    if (!x) return -1
 
+
+#define RPN_ASSERTS 0
 
 struct rpn_operand {
     unsigned pooled : 1;
@@ -35,8 +38,9 @@ static void init_pool(void) {
     }
 }
 
-void rpn_init(struct rpn_ctx *ctx, const char **reg, size_t reg_size) {
+void rpn_init(struct rpn_ctx *ctx, RedisModuleCtx *redis_ctx, const char **reg, size_t reg_size) {
     ctx->depth = 0;
+    ctx->redis_ctx = redis_ctx;
     ctx->reg = reg;
     ctx->reg_size = reg_size;
 }
@@ -71,7 +75,16 @@ static struct rpn_operand *alloc_rpn_operand(size_t s_len) {
 
 static void free_rpn_operand(void *p) {
     struct rpn_operand **pp = (struct rpn_operand **)p;
-    struct rpn_operand *v = *pp;
+    struct rpn_operand *v;
+
+    if (unlikely(!pp)) {
+        return;
+    }
+
+    v = *pp;
+    if (!v) {
+        return;
+    }
 
     if (v->pooled) {
         struct rpn_operand *prev = small_operand_pool_next;
@@ -356,7 +369,9 @@ static int rpn_op_idcmp(struct rpn_ctx *ctx) {
 static int rpn_op_cidcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
+#if RPN_ASSERTS
     assert(ctx->reg[0]);
+#endif
 
     const char *cid = ctx->reg[0];
     const char t[SELVA_NODE_TYPE_SIZE] = { cid[0], cid[1] };
@@ -367,6 +382,42 @@ static int rpn_op_cidcmp(struct rpn_ctx *ctx) {
 
     push_int_result(ctx, !memcmp(a->s, t, SELVA_NODE_TYPE_SIZE));
 
+    return 0;
+}
+
+static int rpn_op_getfld(struct rpn_ctx *ctx) {
+    OPERAND(ctx, field);
+    RedisModuleString *cid;
+    RedisModuleKey *id_key;
+    RedisModuleString *value;
+
+#if RPN_ASSERTS
+    assert(ctx->reg[0]);
+#endif
+
+    cid = RedisModule_CreateString(NULL, ctx->reg[0], SELVA_NODE_ID_SIZE);
+    id_key = RedisModule_OpenKey(ctx->redis_ctx, cid, REDISMODULE_READ);
+    if (!id_key) {
+        push_string_result(ctx, "", 0);
+        goto out;
+    }
+
+    RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, field->s, &value, NULL);
+    if (value) {
+        size_t value_len;
+        const char *value_str;
+
+        value_str = RedisModule_StringPtrLen(value, &value_len);
+        push_string_result(ctx, value_str, value_len);
+
+        RedisModule_FreeString(ctx->redis_ctx, value);
+    } else {
+        push_string_result(ctx, "", 0);
+    }
+
+out:
+    RedisModule_CloseKey(id_key);
+    RedisModule_FreeString(ctx->redis_ctx, cid);
     return 0;
 }
 
@@ -415,7 +466,8 @@ static rpn_fp funcs[] = {
     rpn_op_typeof,  /* b */
     rpn_op_strcmp,  /* c */
     rpn_op_idcmp,   /* d */
-    rpn_op_cidcmp,  /* d */
+    rpn_op_cidcmp,  /* e */
+    rpn_op_getfld,  /* f */
 };
 
 static int rpn(struct rpn_ctx *ctx, char *s) {
