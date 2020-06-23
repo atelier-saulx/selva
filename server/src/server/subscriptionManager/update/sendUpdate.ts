@@ -14,9 +14,7 @@ const sendUpdate = async (
   const { client, selector } = subscriptionManager
   const redis = client.redis
 
-  if (
-    subscriptionManager.subscriptions[subscription.channel] !== subscription
-  ) {
+  if (subscriptionManager.subscriptions[channel] !== subscription) {
     return
   }
 
@@ -39,6 +37,7 @@ const sendUpdate = async (
       version
     )
     await redis.publish(selector, channel, version)
+    subscription.beingProcessed = false
     return
   }
 

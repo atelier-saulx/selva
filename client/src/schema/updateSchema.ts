@@ -263,7 +263,7 @@ export async function updateSchema(
       }
       // await this.getSchema()
       await wait(retry * 200)
-      await this.updateSchema(props, retry + 1)
+      await updateSchema(client, props, selector, retry + 1)
     } else {
       if (e.code === 'NR_CLOSED') {
         // canhappen with load and eval script
