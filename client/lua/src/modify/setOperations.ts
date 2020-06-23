@@ -34,7 +34,7 @@ export function resetSet(
 
   if (hierarchy) {
     if (field === 'parents') {
-      resetParents(id, setKey, value, modify, noRoot, source)
+      value = resetParents(id, setKey, value, modify, noRoot, source)
     } else if (field === 'children') {
       value = resetChildren(id, setKey, value, modify, noRoot, source)
     } else if (field === 'aliases') {
@@ -73,7 +73,7 @@ export function addToSet(
 
   if (hierarchy) {
     if (field === 'parents') {
-      addToParents(id, value, modify, noRoot, source)
+      value = addToParents(id, value, modify, noRoot, source)
     } else if (field === 'children') {
       value = addToChildren(id, value, modify, noRoot, source)
     } else if (field === 'aliases') {
@@ -125,7 +125,8 @@ export function resetParents(
   modify: FnModify,
   noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
-): void {
+): Id[] {
+  const newIds: string[] = []
   // TODO: can be passed from "above"
   const parents = redis.smembers(id + '.parents')
 
@@ -140,21 +141,59 @@ export function resetParents(
 
   // add new parents
   for (const parent of value) {
-    // recurse if necessary
-    if (!redis.exists(parent)) {
-      if (noRoot) {
-        modify({ $id: parent, parents: [] })
-      } else {
-        modify({ $id: parent })
+    if (type(parent) === 'table') {
+      const tbl = <any>parent
+      if (tbl.$alias && type(tbl.$alias) === 'string') {
+        let resolved = redis.hget('___selva_aliases', tbl.$alias)
+        if (resolved) {
+          redis.sadd(resolved + '.children', id)
+          newIds[newIds.length] = resolved
+        } else {
+          if (resolved) {
+            redis.sadd(resolved + '.children', id)
+            newIds[newIds.length] = resolved
+          } else {
+            if (noRoot) {
+              resolved = <string>modify({
+                type: tbl.type,
+                aliases: { $add: [tbl.$alias] },
+                parents: []
+              })
+            } else {
+              resolved = <string>modify({
+                type: tbl.type,
+                aliases: { $add: [tbl.$alias] }
+              })
+            }
+
+            redis.sadd(resolved + '.children', id)
+            newIds[newIds.length] = resolved
+          }
+        }
+      } else if (tbl.$id) {
+        redis.sadd(tbl.$id + '.children', id)
+        newIds[newIds.length] = tbl.$id
       }
+    } else {
+      // recurse if necessary
+      if (!redis.exists(parent)) {
+        if (noRoot) {
+          modify({ $id: parent, parents: [] })
+        } else {
+          modify({ $id: parent })
+        }
+      }
+
+      redis.sadd(parent + '.children', id)
+      newIds[newIds.length] = parent
     }
 
-    redis.sadd(parent + '.children', id)
     markUpdated(id)
     sendEvent(parent, 'children', 'update')
   }
 
   markForAncestorRecalculation(id)
+  return newIds
 }
 
 export function addToParents(
@@ -163,32 +202,69 @@ export function addToParents(
   modify: FnModify,
   noRoot: boolean = false,
   source?: string | { $overwrite?: boolean | string[]; $name: string }
-): void {
+): Id[] {
   let numAdded = 0
+  const newIds: string[] = []
   for (const parent of value) {
     const childrenKey = parent + '.children'
 
     if (checkSource(parent, 'children', source)) {
-      const added = redis.sadd(childrenKey, id)
-      numAdded += added
-      if (added === 1) {
-        if (!redis.exists(parent)) {
-          if (noRoot) {
-            modify({ $id: parent, parents: [] })
+      if (type(parent) === 'table') {
+        const tbl = <any>parent
+        if (tbl.$alias && type(tbl.$alias) === 'string') {
+          let resolved = redis.hget('___selva_aliases', tbl.$alias)
+          if (resolved) {
+            const added = redis.sadd(resolved + '.children', id)
+            numAdded += added
+            newIds[newIds.length] = resolved
           } else {
-            modify({ $id: parent })
+            if (noRoot) {
+              resolved = <string>modify({
+                type: tbl.type,
+                aliases: { $add: [tbl.$alias] },
+                parents: []
+              })
+            } else {
+              resolved = <string>modify({
+                type: tbl.type,
+                aliases: { $add: [tbl.$alias] }
+              })
+            }
+
+            const added = redis.sadd(resolved + '.children', id)
+            numAdded += added
+            newIds[newIds.length] = resolved
+          }
+        } else if (tbl.$id) {
+          const added = redis.sadd(tbl.$id + '.children', id)
+          numAdded += added
+          newIds[newIds.length] = tbl.$id
+        }
+      } else {
+        newIds[newIds.length] = parent
+        const added = redis.sadd(childrenKey, id)
+        numAdded += added
+        if (added === 1) {
+          if (!redis.exists(parent)) {
+            if (noRoot) {
+              modify({ $id: parent, parents: [] })
+            } else {
+              modify({ $id: parent })
+            }
           }
         }
-
-        markUpdated(id)
-        sendEvent(parent, 'children', 'update')
       }
+
+      markUpdated(id)
+      sendEvent(parent, 'children', 'update')
     }
   }
 
   if (numAdded > 0) {
     markForAncestorRecalculation(id)
   }
+
+  return newIds
 }
 
 export function removeFromParents(
