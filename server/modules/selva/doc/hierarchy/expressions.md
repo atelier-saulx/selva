@@ -9,12 +9,12 @@ notation, which is the notation used in the expression language. Briefly the
 benefit of using this notation is that the expressions don't need parenthesis
 and it's very fast to parse because there are no precedence rules.
 
-The following query selects all descendants of a node called `head` that are of
+The following query selects all descendants of a node called `grphnode_1` that are of
 type `2X`. It's also possible to write the same expression using a single function
 but it wouldn't be as interesting example as the following filter is.
 
 ```
-SELVA.HIERARCHY.find test descendants "head\x00\x00\x00\x00\x00\x00" '#0 #1 @ b "2X d'
+SELVA.HIERARCHY.find test descendants "grphnode_1" '#0 #1 @ b "2X d'
 ```
 
 Breaking down the filter:
@@ -32,7 +32,6 @@ d       [function]  Compares operand 0 with the result of the previous function.
 Syntax
 ------
 
-
 **Number**
 
 Numbers are prefixed with `#`.
@@ -44,6 +43,17 @@ A string starts with a `"` character.
 Strings cannot be quoted and it's advisable to place strings in the registers
 given as arguments to the expression parser.
 
+For example, instead of writing
+
+```
+SELVA.HIERARCHY.find test descendants "grphnode_1" '"field f "test c'
+```
+
+you should consider writing
+
+```
+SELVA.HIERARCHY.find test descendants "grphnode_1" '"field f #1 #1 @ c' "test"
+```
 
 **Arithmetic operators**
 
@@ -85,6 +95,7 @@ given as arguments to the expression parser.
 | `c`      | `!strcmp(s1, s2)`  | Compare strings.                  | `0 @ hello c => 1`        |
 | `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `0 @ 1 @ d => 1`          | 
 | `e`      | `!cmp(curT, id)`   | Compare the type of the current node. | `"AB e`               |
+| `f`      | `node[a]`          | Get the value of a node field.    | `"field f`                |
 
 1) `@` function takes a `type` argument that selects whether the register is
    read as a string or integer. 0 is integer; 1 is string.
