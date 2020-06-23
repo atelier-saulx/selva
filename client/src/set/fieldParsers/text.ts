@@ -71,5 +71,8 @@ export default (
 
   refs(field, payload, lang)
   verify(payload, false, lang)
-  result[field] = payload
+  const keys = Object.keys(payload)
+  if (keys.length) {
+    result[field] = payload
+  }
 }
