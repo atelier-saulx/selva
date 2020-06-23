@@ -28,6 +28,13 @@ function guestimate(medianWidth: number, widthVar: number, maxDepth: number, cut
     return n;
 }
 
+export const fieldValues = [
+    'test',
+    'long field value',
+    'lalalaalalalalalalalalal',
+    'abcdef',
+];
+
 /**
  * Generate a randomized single-parent tree.
  * @param medianWidth avg number of children per node
@@ -39,6 +46,7 @@ function guestimate(medianWidth: number, widthVar: number, maxDepth: number, cut
 export async function generateTree(redis: any, key: string, medianWidth: number, widthVar: number, maxDepth: number, nrRandomParentsMax: number, cutProb: number) {
     const rnd = newRnd(MAIN_SEED);
     const rndParents = newRnd('parents');
+    const rndFieldValue = newRnd('fields');
     const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
     if (nrRandomParentsMax - widthVar < 0) {
@@ -47,6 +55,7 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
 
     const getId = promisify(redis['SELVA.id']).bind(redis);
     const add = promisify(redis['SELVA.HIERARCHY.add']).bind(redis, key);
+    const hset = promisify(redis.hset).bind(redis);
     let nodePool = [];
 
     function pickRandomParents(curParents: string[]) {
@@ -86,6 +95,7 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
             const parents = pickRandomParents([parentNodeId]);
             nodePool.push(nodeId);
             await add(nodeId, ...parents);
+            await hset(nodeId, 'field', fieldValues[getRandomInt(rndFieldValue, 0, fieldValues.length)]);
             bar.increment();
 
             await gen(nodeId, nextDepth);

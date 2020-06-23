@@ -1,6 +1,6 @@
 import { performance } from 'perf_hooks';
 import {promisify} from 'util';
-import { generateTree } from './util/gen-tree';
+import { generateTree, fieldValues } from './util/gen-tree';
 import gc from './util/gc';
 import newRnd, {getRandomInt} from './util/rnd';
 import redis from './util/redis';
@@ -81,6 +81,24 @@ export default async function hierarchy() {
                 const t = id.substring(0, 2);
 
                 const ancestors = await find('descendants', id, `"${t} e`);
+                nrAncestors.push(ancestors.length);
+            }
+            const end = performance.now();
+            const tTotal = end - start;
+
+            calcResults(results, getFuncName(), nrAncestors, tTotal);
+        },
+        async function test_descendantsWType() {
+            const rnd = newRnd('totally random');
+            const n = 800;
+            let nrAncestors = [];
+
+            const start = performance.now();
+            for (let i = 0; i < n; i++) {
+                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
+                const v = fieldValues[getRandomInt(rnd, 0, fieldValues.length)];
+
+                const ancestors = await find('descendants', id, `"field f #1 #1 @ c`, v);
                 nrAncestors.push(ancestors.length);
             }
             const end = performance.now();

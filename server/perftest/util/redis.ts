@@ -1,5 +1,4 @@
 const redis = require('redis');
-import {promisify} from 'util';
 
 redis.add_command('SELVA.id')
 redis.add_command('SELVA.HIERARCHY.add')

@@ -10,8 +10,7 @@
 
 #define OPERAND(ctx, x) \
     struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx); \
-    if (!x) return -1
-
+    if (!x) return RPN_ERR_BADSTK
 
 #define RPN_ASSERTS 0
 
@@ -26,6 +25,19 @@ struct rpn_operand {
 static struct rpn_operand *small_operand_pool_next;
 static struct rpn_operand small_operand_pool[SMALL_OPERAND_POOL_SIZE];
 
+char *rpn_str_error[] = {
+    "No error",
+    "Operation not supported",
+    "Illegal operator",
+    "Illegal operand",
+    "Stack error",
+    "Type error",
+    "Register index out of bounds",
+    "Null pointer exception",
+    "Not a number",
+    "Divide by zero",
+};
+
 static void init_pool(void) __attribute__((constructor));
 static void init_pool(void) {
     struct rpn_operand *prev = NULL;
@@ -38,21 +50,21 @@ static void init_pool(void) {
     }
 }
 
-void rpn_init(struct rpn_ctx *ctx, RedisModuleCtx *redis_ctx, const char **reg, size_t reg_size) {
+void rpn_init(struct rpn_ctx *ctx, RedisModuleCtx *redis_ctx, const char **reg, int nr_reg) {
     ctx->depth = 0;
     ctx->redis_ctx = redis_ctx;
     ctx->reg = reg;
-    ctx->reg_size = reg_size;
+    ctx->nr_reg = nr_reg;
 }
 
-int rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s) {
-    if (i >= ctx->reg_size) {
-        return -1;
+enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s) {
+    if (i >= (size_t)ctx->nr_reg) {
+        return RPN_ERR_BNDS;
     }
 
     ctx->reg[i] = s;
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
 static struct rpn_operand *alloc_rpn_operand(size_t s_len) {
@@ -146,195 +158,203 @@ static int to_bool(struct rpn_operand *v) {
     return (v->s_size > 0 && v->s[0] != '\0') || !!v->i;
 }
 
-static int rpn_op_get_reg(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_get_reg(struct rpn_ctx *ctx) {
     OPERAND(ctx, vType);
     OPERAND(ctx, a);
     const int type = vType->i;
     const size_t i = a->i;
 
-    if (i >= ctx->reg_size) {
-        return -1;
+    if (i >= (size_t)ctx->nr_reg) {
+        fprintf(stderr, "RPN: Register index out of bounds: %zu\n", i);
+        return RPN_ERR_BNDS;
     }
 
     const char *s = ctx->reg[i];
+
+    if (!s) {
+        fprintf(stderr, "RPN: Register value is a NULL pointer: %zu\n", i);
+        return RPN_ERR_NPE;
+    }
 
     if (type == 0) {
         char *e;
         long long v = strtoull(s, &e, 10);
 
         if (e == s) {
-            return -1;
+            fprintf(stderr, "RPN: Register value is not a number: %zu\n", i);
+            return RPN_ERR_NAN;
         }
 
         push_int_result(ctx, v);
     } else if (type == 1) {
         push_string_result(ctx, s, strlen(s));
     } else {
-        return -1;
+        fprintf(stderr, "RPN: Unknown read type: %d\n", type);
+        return RPN_ERR_TYPE;
     }
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_add(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_add(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i + b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_sub(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_sub(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i - b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_div(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_div(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     long long d = b->i;
 
     if (d == 0) {
-        return -1;
+        return RPN_ERR_DIV;
     }
 
     push_int_result(ctx, a->i / d);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_mul(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_mul(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i * b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_rem(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_rem(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     long long d = b ->i;
 
     if (d == 0) {
-        return -1;
+        return RPN_ERR_DIV;
     }
 
     push_int_result(ctx, a->i % d);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_eq(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_eq(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i == b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_ne(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_ne(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i != b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_lt(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_lt(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i < b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_gt(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_gt(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i > b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_le(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_le(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i <= b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_ge(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_ge(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, a->i >= b->i);
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_not(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_not(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
     push_int_result(ctx, !to_bool(a));
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_and(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_and(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, to_bool(a) && to_bool(b));
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_or(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_or(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, to_bool(a) || to_bool(b));
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_xor(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_xor(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, to_bool(a) ^ to_bool(b));
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_in(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     /* TODO */
 
-    return -1;
+    return RPN_ERR_NOTSUP;
 }
 
-static int rpn_op_typeof(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_typeof(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     char t[SELVA_NODE_TYPE_SIZE];
 
     if (!a->s || a->s_size < SELVA_NODE_ID_SIZE) {
-        return -1;
+        return RPN_ERR_TYPE;
     }
 
 #if SELVA_NODE_TYPE_SIZE != 2
@@ -345,28 +365,28 @@ static int rpn_op_typeof(struct rpn_ctx *ctx) {
 
     push_string_result(ctx, t, sizeof(t));
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_strcmp(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, !strcmp(a->s, b->s));
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_idcmp(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_idcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     push_int_result(ctx, !memcmp(a->s, b->s, SELVA_NODE_ID_SIZE));
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_cidcmp(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
 #if RPN_ASSERTS
@@ -382,10 +402,10 @@ static int rpn_op_cidcmp(struct rpn_ctx *ctx) {
 
     push_int_result(ctx, !memcmp(a->s, t, SELVA_NODE_TYPE_SIZE));
 
-    return 0;
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_getfld(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
     RedisModuleString *cid;
     RedisModuleKey *id_key;
@@ -418,15 +438,15 @@ static int rpn_op_getfld(struct rpn_ctx *ctx) {
 out:
     RedisModule_CloseKey(id_key);
     RedisModule_FreeString(ctx->redis_ctx, cid);
-    return 0;
+
+    return RPN_ERR_OK;
 }
 
-static int rpn_op_abo(struct rpn_ctx *ctx __unused) {
-    /* TODO Proper return code */
-    return -1;
+static enum rpn_error rpn_op_abo(struct rpn_ctx *ctx __unused) {
+    return RPN_ERR_ILLOPC;
 }
 
-typedef int (*rpn_fp)(struct rpn_ctx *ctx);
+typedef enum rpn_error (*rpn_fp)(struct rpn_ctx *ctx);
 
 static rpn_fp funcs[] = {
     rpn_op_get_reg, /* @ */
@@ -470,14 +490,14 @@ static rpn_fp funcs[] = {
     rpn_op_getfld,  /* f */
 };
 
-static int rpn(struct rpn_ctx *ctx, char *s) {
+static enum rpn_error rpn(struct rpn_ctx *ctx, char *s) {
     const char *w = " \t\n\r\f";
 
 	for (s = strtok(s, w); s; s = strtok(0, w)) {
         size_t op = *s - '@';
 
         if (op < sizeof(funcs) / sizeof(void *)) {
-            int err;
+            enum rpn_error err;
             err = funcs[op](ctx);
             if (err) {
                 clear_stack(ctx);
@@ -504,7 +524,7 @@ static int rpn(struct rpn_ctx *ctx, char *s) {
                 v->s[size - 1] = '\0';
             } else {
                 clear_stack(ctx);
-                return -1;
+                return RPN_ERR_ILLOPN;
             }
 
             /* TODO Handle NULL */
@@ -514,26 +534,28 @@ static int rpn(struct rpn_ctx *ctx, char *s) {
 
 	if (ctx->depth != 1) {
         clear_stack(ctx);
-        return -1;
+        return RPN_ERR_BADSTK;
     }
 
     return 0;
 }
 
-int rpn_bool(struct rpn_ctx *ctx, const char *s, size_t s_len, int *out) {
+enum rpn_error rpn_bool(struct rpn_ctx *ctx, const char *s, size_t s_len, int *out) {
     char expr[s_len + 1];
     struct rpn_operand *res;
+    enum rpn_error err;
 
     memcpy(expr, s, s_len);
     expr[s_len] = '\0';
 
-    if (rpn(ctx, expr) != 0) {
-        return -1;
+    err = rpn(ctx, expr);
+    if (err) {
+        return err;
     }
 
     res = pop(ctx);
     if (!res) {
-        return -1;
+        return RPN_ERR_BADSTK;
     }
 
     *out = to_bool(res);
@@ -542,20 +564,22 @@ int rpn_bool(struct rpn_ctx *ctx, const char *s, size_t s_len, int *out) {
     return 0;
 }
 
-int rpn_integer(struct rpn_ctx *ctx, const char *s, size_t s_len, long long *out) {
+enum rpn_error rpn_integer(struct rpn_ctx *ctx, const char *s, size_t s_len, long long *out) {
     char expr[s_len + 1];
     struct rpn_operand *res;
+    enum rpn_error err;
 
     memcpy(expr, s, s_len);
     expr[s_len] = '\0';
 
-    if (rpn(ctx, expr) != 0) {
-        return -1;
+    err = rpn(ctx, expr);
+    if (err) {
+        return err;
     }
 
     res = pop(ctx);
     if (!res) {
-        return -1;
+        return RPN_ERR_BADSTK;
     }
 
     *out = res->i;
@@ -563,47 +587,3 @@ int rpn_integer(struct rpn_ctx *ctx, const char *s, size_t s_len, long long *out
 
     return 0;
 }
-
-#if 0
-int main(int argc, char *argv[])
-{
-    struct rpn_ctx ctx;
-    char *reg[] = {
-        "0",
-        "1",
-        "hello",
-    };
-
-    if (argc != 3) {
-        fprintf(stderr, "NARG\n");
-        return 1;
-    }
-
-    memset(&ctx, 0, sizeof(ctx));
-    ctx.reg = reg;
-    ctx.reg_size = sizeof(reg) / sizeof(void *);
-
-    int err;
-    if (argv[1][0] == 'b') {
-        int res;
-
-	    err = rpn_bool(&ctx, argv[2], &res);
-
-        printf("bool: %d\n", res);
-    } else if (argv[1][0] == 'i') {
-        long long res;
-
-        err = rpn_integer(&ctx, argv[2], &res);
-
-        printf("integer: %lld\n", res);
-    } else {
-        err = -1;
-    }
-    if (err != 0) {
-        fprintf(stderr, "Error in rpn\n");
-        return 1;
-    }
-
-	return 0;
-}
-#endif
