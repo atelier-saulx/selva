@@ -2,7 +2,8 @@
 #ifndef _MODIFY_RPN_H_
 #define _MODIFY_RPN_H_
 
-#define SMALL_OPERAND_POOL_SIZE 10
+#define SMALL_OPERAND_SIZE 40
+#define SMALL_OPERAND_POOL_SIZE 20
 #define RPN_MAX_D 256
 
 enum rpn_error {
@@ -26,15 +27,16 @@ struct rpn_ctx {
     int depth;
     int nr_reg;
     struct RedisModuleCtx *redis_ctx;
-    const char **reg;
+    struct rpn_operand **reg;
     struct rpn_operand *stack[RPN_MAX_D];
 };
 
 extern const char *rpn_str_error[11];
 
-void rpn_init(struct rpn_ctx *ctx, struct RedisModuleCtx *redis_ctx, const char **reg, int nr_reg);
-enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s);
-enum rpn_error rpn_bool(struct rpn_ctx *ctx, const char *s, size_t s_len, int *out);
-enum rpn_error rpn_integer(struct rpn_ctx *ctx, const char *s, size_t s_len, long long *out);
+struct rpn_ctx *rpn_init(struct RedisModuleCtx *redis_ctx, int nr_reg);
+void rpn_destroy(struct rpn_ctx *ctx);
+enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen);
+enum rpn_error rpn_bool(struct rpn_ctx *ctx, const char *s, size_t slen, int *out);
+enum rpn_error rpn_integer(struct rpn_ctx *ctx, const char *s, size_t slen, long long *out);
 
 #endif /* _MODIFY_RPN_H_ */

@@ -914,13 +914,10 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
         int take = 1;
 
         if (rpn_ctx) {
-            char str[SELVA_NODE_ID_SIZE + 1];
             int err;
 
             /* Set node_id to the register */
-            memcpy(str, node->id, SELVA_NODE_ID_SIZE);
-            str[SELVA_NODE_ID_SIZE] = '\0';
-            rpn_set_reg(rpn_ctx, 0, str);
+            rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE);
 
             /*
              * Resolve the expression and get the result.
@@ -1006,37 +1003,26 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     struct rpn_ctx *rpn_ctx = NULL;
     char * filter_expression = NULL;
     size_t filter_len = 0;
-    const char **reg = NULL;
     if (argc >= (int)ARGV_FILTER_EXPR + 1) {
-        /*
-         * Allocate a register array.
-         * The allocation needs to be larger than a single pointer due to an
-         * unknown issue probably in Redis or the allocator.
-         */
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
-        reg = RedisModule_Calloc(nr_reg, sizeof(char *));
-        if (!reg) {
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
-        }
 
-        /*
-         * Get the filter expression arguments.
-         */
-        for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
-            /* reg[0] is reserved for the current nodeId */
-            const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
-
-            assert(reg_i < (size_t)nr_reg);
-
-            reg[reg_i] = (char *)RedisModule_StringPtrLen(argv[i], NULL);
-        }
-
-        rpn_ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
+        rpn_ctx = rpn_init(ctx, nr_reg);
         if (!rpn_ctx) {
             return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
         }
 
-        rpn_init(rpn_ctx, ctx, reg, nr_reg);
+        /*
+         * Get the filter expression arguments and set them to the registers.
+         */
+        for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
+            /* reg[0] is reserved for the current nodeId */
+            const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
+            size_t str_len;
+            const char *str = RedisModule_StringPtrLen(argv[i], &str_len);
+
+            rpn_set_reg(rpn_ctx, reg_i, str, str_len);
+        }
+
         filter_expression = (char *)RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &filter_len);
     }
 
@@ -1064,8 +1050,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     err = dfs(hierarchy, head, dir, &cb);
     if (rpn_ctx) {
-        RedisModule_Free(rpn_ctx);
-        RedisModule_Free(reg);
+        rpn_destroy(rpn_ctx);
     }
     if (err != 0) {
         /* FIXME This will make redis crash */

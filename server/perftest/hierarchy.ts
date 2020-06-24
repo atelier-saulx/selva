@@ -1,4 +1,4 @@
-import { performance } from 'perf_hooks';
+/mport { performance } from 'perf_hooks';
 import {promisify} from 'util';
 import { generateTree, fieldValues } from './util/gen-tree';
 import gc from './util/gc';
