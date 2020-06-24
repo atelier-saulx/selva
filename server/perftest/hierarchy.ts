@@ -28,6 +28,7 @@ export default async function hierarchy() {
     // Delete an existing hierarchy and create a fresh one
     await promisify(redis.del).bind(redis)(TEST_KEY);
     await generateTree(redis, TEST_KEY, 3, 1, 15, 9, 0.2);
+    await promisify(redis.save).bind(redis)();
 
     process.stderr.write('Taking a dump...');
     const fullDump = (await promisify(redis['SELVA.HIERARCHY.dump']).bind(redis)(TEST_KEY))
@@ -98,7 +99,7 @@ export default async function hierarchy() {
                 const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
                 const v = fieldValues[getRandomInt(rnd, 0, fieldValues.length)];
 
-                const ancestors = await find('descendants', id, `"field f #1 #1 @ c`, v);
+                const ancestors = await find('descendants', id, `"field f $1 c`, v);
                 nrAncestors.push(ancestors.length);
             }
             const end = performance.now();

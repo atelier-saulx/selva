@@ -14,15 +14,13 @@ type `2X`. It's also possible to write the same expression using a single functi
 but it wouldn't be as interesting example as the following filter is.
 
 ```
-SELVA.HIERARCHY.find test descendants "grphnode_1" '#0 #1 @ b "2X d'
+SELVA.HIERARCHY.find test descendants "grphnode_1" '$0 b "2X d'
 ```
 
 Breaking down the filter:
 
 ```
-#0      [operand 1] is a register index. The current nodeId is stored in the register 0.
-#1      [operand 0] is a type specifier (string).
-@       [function]  Reads the register taking two previous operands.
+$1      [reg ref]   Reads a string value from the register 1.
 b       [function]  Extracts the type string from the previous result.
 "2X     [operand 0] Is a string representing a node type.
 d       [function]  Compares operand 0 with the result of the previous function.
@@ -32,13 +30,13 @@ d       [function]  Compares operand 0 with the result of the previous function.
 Syntax
 ------
 
-**Number**
+**Numeric literals**
 
-Numbers are prefixed with `#`.
+Numeric literals are prefixed with `#`.
 
-**Strings**
+**String literals**
 
-A string starts with a `"` character.
+A string literal starts with a `"` character.
 
 Strings cannot be quoted and it's advisable to place strings in the registers
 given as arguments to the expression parser.
@@ -52,8 +50,16 @@ SELVA.HIERARCHY.find test descendants "grphnode_1" '"field f "test c'
 you should consider writing
 
 ```
-SELVA.HIERARCHY.find test descendants "grphnode_1" '"field f #1 #1 @ c' "test"
+SELVA.HIERARCHY.find test descendants "grphnode_1" '"field f $1 c' "test"
 ```
+
+**Register integers**
+
+Integers stored in the register can be referenced with an `@` prefix.
+
+**Register string**
+
+Strings stored in the register can be referenced with a `$` prefix.
 
 **Arithmetic operators**
 
@@ -89,13 +95,9 @@ SELVA.HIERARCHY.find test descendants "grphnode_1" '"field f #1 #1 @ c' "test"
 
 | Operator | Arguments          | Description                       | Example (expr => result)  |
 |----------|--------------------|-----------------------------------|---------------------------|
-| `@`      | `(type)reg[a]`     | Read the value of register `a`. 1)| `[index] [type] @`        |
-| `a`      | `a in b`           | `in` function.                    | `0 @ 1 @ a => 0`          |
+| `a`      | `a in b`           | `in` function.                    | `$0 $1 a => 0`            |
 | `b`      | `id`               | Returns the type of a node id.    | `xy123 b => xy`           |
-| `c`      | `!strcmp(s1, s2)`  | Compare strings.                  | `0 @ hello c => 1`        |
-| `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `0 @ 1 @ d => 1`          | 
+| `c`      | `!strcmp(s1, s2)`  | Compare strings.                  | `$0 "hello c => 1`        |
+| `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `$0 $1 d => 1`            | 
 | `e`      | `!cmp(curT, id)`   | Compare the type of the current node. | `"AB e`               |
 | `f`      | `node[a]`          | Get the value of a node field.    | `"field f`                |
-
-1) `@` function takes a `type` argument that selects whether the register is
-   read as a string or integer. 0 is integer; 1 is string.

@@ -927,7 +927,7 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
              */
             err = rpn_bool(rpn_ctx, args->filter, args->filter_len, &take);
             if (err) {
-                /* TODO Propagatee error? */
+                /* TODO Propagate error? */
                 fprintf(stderr, "Expression \"%.*s\" failed with error: \"%s\"\n",
                         (int)args->filter_len, args->filter, rpn_str_error[err]);
                 return 1;
@@ -1026,7 +1026,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             /* reg[0] is reserved for the current nodeId */
             const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
 
-            assert(reg_i < nr_reg);
+            assert(reg_i < (size_t)nr_reg);
 
             reg[reg_i] = (char *)RedisModule_StringPtrLen(argv[i], NULL);
         }
