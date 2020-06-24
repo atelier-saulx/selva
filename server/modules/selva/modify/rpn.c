@@ -115,6 +115,7 @@ static void free_rpn_operand(void *p) {
 static void push(struct rpn_ctx *ctx, struct rpn_operand *v) {
 	if (ctx->depth >= RPN_MAX_D) {
         /* TODO return stack overflow error */
+        fprintf(stderr, "RPN: Stack overflow\n");
         return;
     }
 
