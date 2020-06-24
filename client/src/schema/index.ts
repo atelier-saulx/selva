@@ -22,7 +22,7 @@ export const defaultFields: Record<string, FieldSchema> = {
     type: 'type'
   },
   name: {
-    search: { index: 'default', type: ['TEXT'] },
+    search: { index: 'default', type: ['TAG'] },
     type: 'string'
   },
   children: {

@@ -117,8 +117,10 @@ const parseQuery = (
       }
 
       const args = createSearchArgs(getOptions, query, resultFork)
+
       // printAst(resultFork, args)
       const queryResult: string[] = redis.call('ft.search', 'default', ...args)
+
       if (queryResult) {
         if (queries.length === 1) {
           table.remove(queryResult, 1)
@@ -279,7 +281,7 @@ const parseQuery = (
 
           if (meta.traverse === 'descendants') {
             if (subMeta.member.length > 1) {
-              logger.info('HOW CAN THIS BE MULTIPLE MEMBERS')
+              logger.info('HOW CAN THIS BE MULTIPLE MEMBERS IN FIND QUERY')
             }
 
             let members = subMeta.member[0]

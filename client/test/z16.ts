@@ -92,8 +92,9 @@ test.serial('real world highlights', async t => {
       }
     ]
   })
+  //t.deepEqualIgnoreOrder(
 
-  t.deepEqualIgnoreOrder(
+  console.log(
     await client.get({
       $id: 'sp1',
       $language: 'en',
@@ -107,16 +108,16 @@ test.serial('real world highlights', async t => {
         $list: {
           $find: {
             $traverse: 'children',
-            $find: {
-              $traverse: 'children',
-              $filter: [
-                {
-                  $field: 'published',
-                  $operator: '=',
-                  $value: true
-                }
-              ]
-            },
+            // $find: {
+            //   $traverse: 'children',
+            //   $filter: [
+            //     {
+            //       $field: 'published',
+            //       $operator: '=',
+            //       $value: true
+            //     }
+            //   ]
+            // },
             $filter: [
               {
                 $value: 'category',

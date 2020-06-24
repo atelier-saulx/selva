@@ -143,7 +143,6 @@ const addField = (
           'MAX',
           '150'
         )
-        logger.info('sugget', suggestion)
 
         for (let j = 0; j < suggestion.length; j++) {
           suggestions[suggestions.length] = suggestion[j]

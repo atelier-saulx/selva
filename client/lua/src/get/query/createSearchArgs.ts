@@ -2,6 +2,7 @@ import { GetOptions } from '~selva/get/types'
 import { isArray } from '../../util'
 import { Fork } from './types'
 import { isFork } from './util'
+import * as logger from '../../logger'
 
 function createSearchArgs(
   getOptions: GetOptions,
