@@ -28,7 +28,7 @@ struct rpn_ctx {
     struct rpn_operand *stack[RPN_MAX_D];
 };
 
-extern char *rpn_str_error[10];
+extern const char *rpn_str_error[10];
 
 void rpn_init(struct rpn_ctx *ctx, RedisModuleCtx *redis_ctx, const char **reg, int nr_reg);
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s);

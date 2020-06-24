@@ -25,7 +25,7 @@ struct rpn_operand {
 static struct rpn_operand *small_operand_pool_next;
 static struct rpn_operand small_operand_pool[SMALL_OPERAND_POOL_SIZE];
 
-char *rpn_str_error[] = {
+const char *rpn_str_error[] = {
     "No error",
     "Operation not supported",
     "Illegal operator",
