@@ -1,6 +1,6 @@
 import { Fork, FilterAST, Value } from './types'
-import { isArray, indexOf, now } from '../../util'
-import { isFork } from './util'
+import { isArray, indexOf, now, stringStartsWith } from '../../util'
+import { isFork, convertNow } from './util'
 import * as logger from '../../logger'
 
 const valueIsEqual = (a: Value, b: Value, strict: boolean): boolean => {
@@ -99,10 +99,18 @@ const isRangeAndLargerOrSmaller = (
     other = a
   }
 
-  const otherVal = other.$value === 'now' ? now() : other.$value
+  const otherVal =
+    type(other.$value) === 'string' &&
+    stringStartsWith(<string>other.$value, 'now')
+      ? convertNow(<string>other.$value)
+      : other.$value
 
   if (other.$operator === '>') {
-    const rangeVal = range.$value[1] === 'now' ? now() : range.$value[1]
+    const rangeVal =
+      type(range.$value[1]) === 'string' &&
+      stringStartsWith(<string>range.$value[1], 'now')
+        ? convertNow(<string>range.$value[1])
+        : range.$value[1]
 
     if (otherVal > rangeVal) {
       return [
@@ -112,7 +120,11 @@ const isRangeAndLargerOrSmaller = (
     }
   }
   if (other.$operator === '<') {
-    const rangeVal = range.$value[0] === 'now' ? now() : range.$value[0]
+    const rangeVal =
+      type(range.$value[0]) === 'string' &&
+      stringStartsWith(<string>range.$value[0], 'now')
+        ? convertNow(<string>range.$value[0])
+        : range.$value[0]
 
     if (otherVal > rangeVal) {
       return [
@@ -154,7 +166,11 @@ const isLargerThenAndLargerThen = (
   a: FilterAST,
   b: FilterAST
 ): [boolean, null | string] => {
-  if (a.$value === 'now' || b.$value === 'now') {
+  if (
+    (type(a.$value) === 'string' &&
+      stringStartsWith(<string>a.$value, 'now')) ||
+    (type(b.$value) && stringStartsWith(<string>b.$value, 'now'))
+  ) {
     return [false, null]
   }
 
@@ -168,7 +184,11 @@ const isSmallerThenAndSmallerThen = (
   a: FilterAST,
   b: FilterAST
 ): [boolean, null | string] => {
-  if (a.$value === 'now' || b.$value === 'now') {
+  if (
+    (type(a.$value) === 'string' &&
+      stringStartsWith(<string>a.$value, 'now')) ||
+    (type(b.$value) && stringStartsWith(<string>b.$value, 'now'))
+  ) {
     return [false, null]
   }
 
