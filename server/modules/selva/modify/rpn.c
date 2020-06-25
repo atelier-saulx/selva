@@ -11,6 +11,7 @@
 #include "rpn.h"
 
 #define RPN_ASSERTS 0
+#define RPN_SINGLETON 1
 
 struct redisObjectAccessor {
     uint32_t _meta;
@@ -69,9 +70,17 @@ static void init_pool(void) {
 }
 
 struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
-    struct rpn_ctx *ctx;
+#if RPN_SINGLETON
+    static struct rpn_ctx * ctx;
+
+    if (unlikely(!ctx)) {
+        ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
+    }
+#else
+    struct rpn_ctx * ctx;
 
     ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
+#endif
     if (!ctx) {
         return NULL;
     }
@@ -105,7 +114,11 @@ void rpn_destroy(struct rpn_ctx *ctx) {
         }
 
         RedisModule_Free(ctx->reg);
+#if RPN_SINGLETON
+        memset(ctx, 0, sizeof(struct rpn_ctx));
+#else
         RedisModule_Free(ctx);
+#endif
     }
 }
 
