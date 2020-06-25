@@ -445,7 +445,9 @@ static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    push_int_result(ctx, !strcmp(a->s, b->s));
+    const ssize_t sizeDiff = b->s_size - a->s_size;
+
+    push_int_result(ctx, !sizeDiff && !strcmp(a->s, b->s));
 
     return RPN_ERR_OK;
 }
