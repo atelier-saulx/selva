@@ -253,7 +253,7 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     if (type == 0) {
         const char *str = OPERAND_GET_S(r);
 
-        e = str;
+        e = (char *)str;
         if (r->s_size > 0) {
             /*
              * Instead of allocating a  new operand we can just write the i of the
