@@ -1,14 +1,22 @@
 #include <assert.h>
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "cdefs.h"
+#include "../rmutil/sds.h"
 #include "redismodule.h"
 #include "hierarchy.h"
 #include "rpn.h"
 
 #define RPN_ASSERTS 0
+
+struct redisObjectAccessor {
+    uint32_t _meta;
+    int refcount;
+    void *ptr;
+};
 
 #define OPERAND(ctx, x) \
     struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx); \
@@ -30,6 +38,11 @@ struct rpn_operand {
 
 static struct rpn_operand *small_operand_pool_next;
 static struct rpn_operand small_operand_pool[SMALL_OPERAND_POOL_SIZE];
+
+/*
+ * Used for Redis calls where a RedisModuleString is needed.
+ */
+static struct RedisModuleString *tmp_node_id;
 
 const char *rpn_str_error[] = {
     "No error",
@@ -57,10 +70,16 @@ static void init_pool(void) {
         small_operand_pool[i].next_free = prev;
         prev = &small_operand_pool[i];
     }
+
 }
 
 struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
     struct rpn_ctx *ctx;
+
+    if (!tmp_node_id) {
+        static const char empty_id[SELVA_NODE_ID_SIZE];
+        tmp_node_id = RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
+    }
 
     ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
     if (!ctx) {
@@ -495,7 +514,7 @@ static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
-    RedisModuleString *cid;
+    struct redisObjectAccessor *cid = (struct redisObjectAccessor *)tmp_node_id;
     RedisModuleKey *id_key;
     RedisModuleString *value = NULL;
     int err;
@@ -505,12 +524,8 @@ static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
     assert(ctx->redis_ctx);
 #endif
 
-    cid = RedisModule_CreateString(NULL, OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
-    if (!cid) {
-        return RPN_ERR_ENOMEM;
-    }
-
-    id_key = RedisModule_OpenKey(ctx->redis_ctx, cid, REDISMODULE_READ);
+    cid->ptr = sdscpylen(cid->ptr, (void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
+    id_key = RedisModule_OpenKey(ctx->redis_ctx, (RedisModuleString *)(cid), REDISMODULE_READ);
     if (!id_key) {
         push_string_result(ctx, "", 0);
         goto out;
@@ -531,7 +546,6 @@ static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
 
 out:
     RedisModule_CloseKey(id_key);
-    RedisModule_FreeString(NULL, cid);
 
     return RPN_ERR_OK;
 }

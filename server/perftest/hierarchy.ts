@@ -1,4 +1,4 @@
-/mport { performance } from 'perf_hooks';
+import { performance } from 'perf_hooks';
 import {promisify} from 'util';
 import { generateTree, fieldValues } from './util/gen-tree';
 import gc from './util/gc';
@@ -28,7 +28,7 @@ export default async function hierarchy() {
     // Delete an existing hierarchy and create a fresh one
     await promisify(redis.del).bind(redis)(TEST_KEY);
     await generateTree(redis, TEST_KEY, 3, 1, 15, 9, 0.2);
-    await promisify(redis.save).bind(redis)();
+    //await promisify(redis.save).bind(redis)();
 
     process.stderr.write('Taking a dump...');
     const fullDump = (await promisify(redis['SELVA.HIERARCHY.dump']).bind(redis)(TEST_KEY))
@@ -38,6 +38,7 @@ export default async function hierarchy() {
 	const results = [];
     const cases =  [
         async function test_ancestors() {
+return;
             const rnd = newRnd('totally random');
             const n = 800;
             let nrAncestors = [];
@@ -55,6 +56,7 @@ export default async function hierarchy() {
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
         async function test_descendants() {
+return;
             const rnd = newRnd('totally random');
             const n = 800;
             let nrAncestors = [];
@@ -89,7 +91,7 @@ export default async function hierarchy() {
 
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
-        async function test_descendantsWType() {
+        async function test_descendantsFieldExactStringMatch() {
             const rnd = newRnd('totally random');
             const n = 800;
             let nrAncestors = [];
