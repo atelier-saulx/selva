@@ -39,11 +39,6 @@ struct rpn_operand {
 static struct rpn_operand *small_operand_pool_next;
 static struct rpn_operand small_operand_pool[SMALL_OPERAND_POOL_SIZE];
 
-/*
- * Used for Redis calls where a RedisModuleString is needed.
- */
-static struct RedisModuleString *tmp_node_id;
-
 const char *rpn_str_error[] = {
     "No error",
     "Out of memory",
@@ -75,11 +70,6 @@ static void init_pool(void) {
 
 struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
     struct rpn_ctx *ctx;
-
-    if (!tmp_node_id) {
-        static const char empty_id[SELVA_NODE_ID_SIZE];
-        tmp_node_id = RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
-    }
 
     ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
     if (!ctx) {
@@ -197,6 +187,25 @@ static void push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) 
     push(ctx, v);
 }
 
+/* TODO Handle errors */
+/**
+ * Push a RedisModuleString to the stack.
+ * Note that the string must not be freed while it's still in use by rpn.
+ */
+static void push_rm_string_result(struct rpn_ctx *ctx, const RedisModuleString *rms) {
+    size_t slen;
+    const char *str;
+    struct rpn_operand *v;
+
+    str = RedisModule_StringPtrLen(rms, &slen);
+
+    v = alloc_rpn_operand(0);
+    v->sp = str;
+    v->s_size = slen + 1;
+
+    push(ctx, v);
+}
+
 static struct rpn_operand *pop(struct rpn_ctx *ctx) {
 	if (!ctx->depth) {
         return NULL;
@@ -228,7 +237,6 @@ static int to_bool(struct rpn_operand *v) {
 
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen) {
     struct rpn_operand *old;
-    struct rpn_operand *r;
 
     if (i >= (size_t)ctx->nr_reg) {
         return RPN_ERR_BNDS;
@@ -242,13 +250,19 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         free_rpn_operand(&old);
     }
 
-    r = alloc_rpn_operand(0);
+    if (s) {
+        struct rpn_operand *r;
 
-    r->regist = 1; /* Can't be freed when this flag is set. */
-    r->s_size = slen;
-    r->sp = s;
+        r = alloc_rpn_operand(0);
 
-    ctx->reg[i] = r;
+        r->regist = 1; /* Can't be freed when this flag is set. */
+        r->s_size = slen;
+        r->sp = s;
+
+        ctx->reg[i] = r;
+    } else {
+        ctx->reg[i] = NULL;
+    }
 
     return RPN_ERR_OK;
 }
@@ -514,10 +528,15 @@ static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
-    struct redisObjectAccessor *cid = (struct redisObjectAccessor *)tmp_node_id;
+    static struct redisObjectAccessor *cid;
     RedisModuleKey *id_key;
     RedisModuleString *value = NULL;
     int err;
+
+    if (unlikely(!cid)) {
+        static const char empty_id[SELVA_NODE_ID_SIZE];
+        cid = (struct redisObjectAccessor *)RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
+    }
 
 #if RPN_ASSERTS
     assert(ctx->reg[0]);
@@ -535,13 +554,11 @@ static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
     if (err == REDISMODULE_ERR || !value) {
         push_string_result(ctx, "", 0);
     } else {
-        size_t value_len;
-        const char *value_str;
-
-        value_str = RedisModule_StringPtrLen(value, &value_len);
-        push_string_result(ctx, value_str, value_len);
-
-        RedisModule_FreeString(ctx->redis_ctx, value);
+        /*
+         * Supposedly there is no need to free `value`
+         * because we are using automatic memory management.
+         */
+        push_rm_string_result(ctx, value);
     }
 
 out:
