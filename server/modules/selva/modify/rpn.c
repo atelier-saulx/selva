@@ -8,11 +8,14 @@
 #include "hierarchy.h"
 #include "rpn.h"
 
+#define RPN_ASSERTS 0
+
 #define OPERAND(ctx, x) \
     struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx); \
     if (!x) return RPN_ERR_BADSTK
 
-#define RPN_ASSERTS 0
+#define OPERAND_GET_S(x) \
+     ((const char *)(((x)->sp) ? (x)->sp : (x)->s))
 
 struct rpn_operand {
     unsigned in_use : 1; /* In use/in stack, do not free. */
@@ -21,6 +24,7 @@ struct rpn_operand {
     long long i;
     size_t s_size;
     struct rpn_operand *next_free; /* Next free in pool */
+    const char *sp;
     char s[SMALL_OPERAND_SIZE];
 };
 
@@ -200,13 +204,12 @@ static void clear_stack(struct rpn_ctx *ctx) {
 }
 
 static int to_bool(struct rpn_operand *v) {
-    return (v->s_size > 0 && v->s[0] != '\0') || !!v->i;
+    return (v->s_size > 0 && OPERAND_GET_S(v)[0] != '\0') || !!v->i;
 }
 
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen) {
     struct rpn_operand *old;
     struct rpn_operand *r;
-    size_t size = slen + 1;
 
     if (i >= (size_t)ctx->nr_reg) {
         return RPN_ERR_BNDS;
@@ -220,12 +223,11 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         free_rpn_operand(&old);
     }
 
-    r = alloc_rpn_operand(size);
+    r = alloc_rpn_operand(0);
 
     r->regist = 1; /* Can't be freed when this flag is set. */
-    r->s_size = size;
-    memcpy(r->s, s, slen);
-    r->s[slen] = '\0';
+    r->s_size = slen;
+    r->sp = s;
 
     ctx->reg[i] = r;
 
@@ -249,16 +251,23 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     }
 
     if (type == 0) {
-        r->i = strtoull(r->s, &e, 10);
+        const char *str = OPERAND_GET_S(r);
 
-        if (e == r->s) {
+        e = str;
+        if (r->s_size > 0) {
+            /*
+             * Instead of allocating a  new operand we can just write the i of the
+             * current register operand and push it into the stack.
+             */
+            r->i = strtoull(str, &e, 10);
+        }
+
+        if (e == str) {
             fprintf(stderr, "RPN: Register value is not a number: %zu\n", i);
             return RPN_ERR_NAN;
         }
 
         push(ctx, r);
-
-        //push_int_result(ctx, v);
     } else if (type == 1) {
         push(ctx, r);
     } else {
@@ -425,29 +434,38 @@ static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_typeof(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     char t[SELVA_NODE_TYPE_SIZE];
+    const char *s = OPERAND_GET_S(a);
 
-    if (!a->s || a->s_size < SELVA_NODE_ID_SIZE) {
+    if (a->s_size < SELVA_NODE_ID_SIZE) {
         return RPN_ERR_TYPE;
     }
 
 #if SELVA_NODE_TYPE_SIZE != 2
 #error Expected SELVA_NODE_TYPE_SIZE to be 2
 #endif
-    t[0] = a->s[0];
-    t[1] = a->s[1];
+    t[0] = s[0];
+    t[1] = s[1];
 
     push_string_result(ctx, t, sizeof(t));
 
     return RPN_ERR_OK;
 }
 
+static inline size_t size_min(size_t a, size_t b) {
+    return (a < b ? a : b);
+}
+
 static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    const size_t a_size = a->s_size;
+    const size_t b_size = b->s_size;
+    const ssize_t sizeDiff = b_size - a_size;
 
-    const ssize_t sizeDiff = b->s_size - a->s_size;
-
-    push_int_result(ctx, !sizeDiff && !strcmp(a->s, b->s));
+    push_int_result(ctx,
+            !sizeDiff &&
+            !strncmp(OPERAND_GET_S(a), OPERAND_GET_S(b),
+                     size_min(a_size, b_size)));
 
     return RPN_ERR_OK;
 }
@@ -455,8 +473,9 @@ static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_idcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    const int size_ok = a->s_size >= SELVA_NODE_ID_SIZE && b->s_size >= SELVA_NODE_ID_SIZE;
 
-    push_int_result(ctx, !memcmp(a->s, b->s, SELVA_NODE_ID_SIZE));
+    push_int_result(ctx, size_ok && !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(b), SELVA_NODE_ID_SIZE));
 
     return RPN_ERR_OK;
 }
@@ -466,9 +485,10 @@ static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
 
 #if RPN_ASSERTS
     assert(ctx->reg[0]);
+    assert(ctx->reg[0]->s_size == SELVA_NODE_ID_SIZE);
 #endif
 
-    push_int_result(ctx, !memcmp(a->s, ctx->reg[0]->s, SELVA_NODE_TYPE_SIZE));
+    push_int_result(ctx, !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_TYPE_SIZE));
 
     return RPN_ERR_OK;
 }
@@ -485,7 +505,7 @@ static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
     assert(ctx->redis_ctx);
 #endif
 
-    cid = RedisModule_CreateString(NULL, ctx->reg[0]->s, SELVA_NODE_ID_SIZE);
+    cid = RedisModule_CreateString(NULL, OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
     if (!cid) {
         return RPN_ERR_ENOMEM;
     }
@@ -496,7 +516,7 @@ static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
         goto out;
     }
 
-    err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, field->s, &value, NULL);
+    err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, OPERAND_GET_S(field), &value, NULL);
     if (err == REDISMODULE_ERR || !value) {
         push_string_result(ctx, "", 0);
     } else {
