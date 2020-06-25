@@ -344,7 +344,7 @@ test.serial('find - already started subscription', async t => {
   await client.delete('root')
 })
 
-test.serial.only('find - starting soon', async t => {
+test.serial('find - starting soon', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
@@ -414,7 +414,7 @@ test.serial.only('find - starting soon', async t => {
   //   nextRefresh
   // )
 
-  console.log(
+  t.deepEqualIgnoreOrder(
     (
       await client.get({
         $includeMeta: true,
@@ -430,22 +430,50 @@ test.serial.only('find - starting soon', async t => {
                 {
                   $field: 'startTime',
                   $operator: '>',
-                  $value: 'now'
+                  $value: 'now+1h'
                 },
                 {
                   $field: 'startTime',
                   $operator: '<',
-                  $value: 'now+7200s'
+                  $value: 'now+3h'
                 }
               ]
             }
           }
         }
       })
-    ).items.map(i => i.name)
+    ).items.map(i => i.name),
+    ['starts in 2h']
   )
 
-  console.log(
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $includeMeta: true,
+        $id: 'root',
+        items: {
+          name: true,
+          value: true,
+          $list: {
+            $sort: { $field: 'startTime', $order: 'asc' },
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'startTime',
+                  $operator: '..',
+                  $value: ['now+1h', 'now+3h']
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(i => i.name),
+    ['starts in 2h']
+  )
+
+  t.deepEqualIgnoreOrder(
     (
       await client.get({
         $includeMeta: true,
@@ -473,7 +501,8 @@ test.serial.only('find - starting soon', async t => {
           }
         }
       })
-    ).items.map(i => i.name)
+    ).items.map(i => i.name),
+    ['started 5m ago', 'started 2m ago']
   )
 
   t.pass()
