@@ -26,7 +26,7 @@ export default async function hierarchy() {
     const find = promisify(redis['SELVA.HIERARCHY.find']).bind(redis, TEST_KEY);
 
     // Delete an existing hierarchy and create a fresh one
-    await promisify(redis.del).bind(redis)(TEST_KEY);
+    await promisify(redis.flushall).bind(redis)();
     await generateTree(redis, TEST_KEY, 3, 1, 15, 9, 0.2);
     //await promisify(redis.save).bind(redis)();
 
@@ -38,7 +38,6 @@ export default async function hierarchy() {
 	const results = [];
     const cases =  [
         async function test_ancestors() {
-return;
             const rnd = newRnd('totally random');
             const n = 800;
             let nrAncestors = [];
@@ -56,7 +55,6 @@ return;
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
         async function test_descendants() {
-return;
             const rnd = newRnd('totally random');
             const n = 800;
             let nrAncestors = [];
@@ -102,6 +100,64 @@ return;
                 const v = fieldValues[getRandomInt(rnd, 0, fieldValues.length)];
 
                 const ancestors = await find('descendants', id, `"field f $1 c`, v);
+                nrAncestors.push(ancestors.length);
+            }
+            const end = performance.now();
+            const tTotal = end - start;
+
+            calcResults(results, getFuncName(), nrAncestors, tTotal);
+        },
+        async function test_descendantsTypeAndBoolField() {
+            const rnd = newRnd('totally random');
+            const n = 800;
+            let nrAncestors = [];
+
+            const start = performance.now();
+            for (let i = 0; i < n; i++) {
+                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
+                const t = id.substring(0, 2);
+                const pub = rnd() < 0.5 ? 'true' : 'false';
+
+                // Select by type and published = true/false
+                const ancestors = await find('descendants', id, `$1 e "published f $2 c M`, t, pub);
+                nrAncestors.push(ancestors.length);
+            }
+            const end = performance.now();
+            const tTotal = end - start;
+
+            calcResults(results, getFuncName(), nrAncestors, tTotal);
+        },
+        async function test_descendantsTsFieldLessThan() {
+            const rnd = newRnd('totally random');
+            const n = 800;
+            let nrAncestors = [];
+
+            const start = performance.now();
+            for (let i = 0; i < n; i++) {
+                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
+                const ts = getRandomInt(rnd, 1561634316, 1719314360);
+
+                // Select by type and published = true/false
+                const ancestors = await find('descendants', id, `"tsCreated g @1 H`, ts);
+                nrAncestors.push(ancestors.length);
+            }
+            const end = performance.now();
+            const tTotal = end - start;
+
+            calcResults(results, getFuncName(), nrAncestors, tTotal);
+        },
+        async function test_descendantsBoolFieldAndTsFieldLessThan() {
+            const rnd = newRnd('totally random');
+            const n = 800;
+            let nrAncestors = [];
+
+            const start = performance.now();
+            for (let i = 0; i < n; i++) {
+                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
+                const ts = getRandomInt(rnd, 1561634316, 1719314360);
+
+                // Select by type and published = true/false
+                const ancestors = await find('descendants', id, `"published f "true c "tsCreated g @1 H M`, ts);
                 nrAncestors.push(ancestors.length);
             }
             const end = performance.now();

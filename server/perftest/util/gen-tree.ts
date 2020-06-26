@@ -29,10 +29,27 @@ function guestimate(medianWidth: number, widthVar: number, maxDepth: number, cut
 }
 
 export const fieldValues = [
-    'test',
-    'long field value',
-    'lalalaalalalalalalalalal',
-    'abcdef',
+    'Abbacchio alla cacciatora',
+    'Bruschetta',
+    'Bucatini all’Amatriciana',
+    'Cacio e Pepe',
+    'Carciofi alla Giudìa',
+    'Carciofi alla Romana',
+    'Coda alla Vaccinara',
+    'Crostata di ricotta',
+    'Fiori di Zucca',
+    'Maritozzi',
+    'Pasta alla gricia',
+    'Pizza al taglio',
+    'Porchetta',
+    'Rigatoni Carbonara',
+    'Rigatoni con la Pajata',
+    'Saltimbocca alla Romana',
+    'Scaloppine alla romana',
+    'Spaghetti alla Carbonara',
+    'Supplì',
+    'Tonnarelli Cacio e Pepe',
+    'Trippa alla romana',
 ];
 
 /**
@@ -96,6 +113,8 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
             nodePool.push(nodeId);
             await add(nodeId, ...parents);
             await hset(nodeId, 'field', fieldValues[getRandomInt(rndFieldValue, 0, fieldValues.length)]);
+            await hset(nodeId, 'published', rndFieldValue() < 0.5 ? 'true' : 'false');
+            await hset(nodeId, 'tsCreated', getRandomInt(rndFieldValue, 1561634316, 1719314360));
             bar.increment();
 
             await gen(nodeId, nextDepth);
@@ -107,7 +126,7 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
     const nrNodes = guestimate(medianWidth, widthVar, maxDepth, cutProb);
     process.stderr.write('done\nCreating nodes...\n');
     bar.start(nrNodes, 1);
-    await add('head');
-    await gen('head', maxDepth);
+    await add('grph_head1');
+    await gen('grph_head1', maxDepth);
     bar.stop();
 }
