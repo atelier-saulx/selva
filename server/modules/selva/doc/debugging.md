@@ -104,10 +104,30 @@ Then run something using the db, e.g. `ts-node index.ts` in `../../perftest/` di
 Once you are done, kill the redis server (e.g. `CTRL-C`).
 This will produce files named `callgrind.out.NUMBER`
 
-Callgrind fiels can be parsed using `callgrind_annotate`:
+Callgrind files can be parsed using `callgrind_annotate`:
 
 ```
 callgrind_annotate --auto=yes callgrind.out.1953257
 ```
 
 There are also a number of GUI tools for parsing callgrind files.
+
+
+Intel VTune
+-----------
+
+[Download](https://software.intel.com/content/www/us/en/develop/tools/vtune-profiler.html)
+Intel VTune from here. The software requires a per user license that can be registered for free.
+Install VTune according to its pre platform instructions.
+
+### Separate Collection and Analysis
+
+Run redis-server with `vtune`:
+
+```
+vtune -collect hotspots -call-stack-mode all --result-dir redis-$(date +"%Y%m%dT%H%M") redis-server --loadmodule ./module.so
+```
+
+Stop the server with CTRL-C when ready.
+
+Open the `something.vtune` filee created in `redis-TIME` directory with the VTune GUI.
