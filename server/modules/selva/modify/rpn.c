@@ -201,6 +201,19 @@ static void push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) 
 }
 
 /* TODO Handle errors */
+static void push_empty_value(struct rpn_ctx *ctx) {
+    const size_t size = 2;
+    struct rpn_operand *v = alloc_rpn_operand(size);
+
+    v->i = 0;
+    v->s_size = size;
+    v->s[0] = '\0';
+    v->s[1] = '\0';
+    push(ctx, v);
+}
+
+
+/* TODO Handle errors */
 /**
  * Push a RedisModuleString to the stack.
  * Note that the string must not be freed while it's still in use by rpn.
@@ -320,6 +333,66 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
         fprintf(stderr, "RPN: Unknown read type: %d\n", type);
         return RPN_ERR_TYPE;
     }
+
+    return RPN_ERR_OK;
+}
+
+static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field, int type) {
+    static struct redisObjectAccessor *cid;
+    RedisModuleKey *id_key;
+    RedisModuleString *value = NULL;
+    int err;
+
+    if (unlikely(!cid)) {
+        static const char empty_id[SELVA_NODE_ID_SIZE];
+        cid = (struct redisObjectAccessor *)RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
+    }
+
+#if RPN_ASSERTS
+    assert(ctx->reg[0]);
+    assert(ctx->redis_ctx);
+#endif
+
+    cid->ptr = sdscpylen(cid->ptr, (void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
+    id_key = RedisModule_OpenKey(ctx->redis_ctx, (RedisModuleString *)(cid), REDISMODULE_READ);
+    if (!id_key) {
+        push_empty_value(ctx);
+        goto out;
+    }
+
+    err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, OPERAND_GET_S(field), &value, NULL);
+    if (err == REDISMODULE_ERR || !value) {
+        push_empty_value(ctx);
+    } else {
+        if (type == 0) {
+            const char *str;
+            char *e;
+            long long ivalue;
+
+            str = RedisModule_StringPtrLen(value, NULL);
+            ivalue = strtoull(str, &e, 10);
+
+            if (e == str) {
+                fprintf(stderr, "RPN: Field value is not a number: %.*s\n",
+                        (int)field->s_size, OPERAND_GET_S(field));
+
+                return RPN_ERR_NAN;
+            }
+
+            RedisModule_FreeString(ctx->redis_ctx, value);
+            push_int_result(ctx, ivalue);
+        } else {
+            /*
+             * Supposedly there is no need to free `value`
+             * because we are using automatic memory management.
+             */
+            push_rm_string_result(ctx, value);
+        }
+    }
+
+    goto out;
+out:
+    RedisModule_CloseKey(id_key);
 
     return RPN_ERR_OK;
 }
@@ -539,45 +612,16 @@ static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn_op_getfld(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_getsfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
-    static struct redisObjectAccessor *cid;
-    RedisModuleKey *id_key;
-    RedisModuleString *value = NULL;
-    int err;
 
-    if (unlikely(!cid)) {
-        static const char empty_id[SELVA_NODE_ID_SIZE];
-        cid = (struct redisObjectAccessor *)RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
-    }
+    return rpn_getfld(ctx, field, 1);
+}
 
-#if RPN_ASSERTS
-    assert(ctx->reg[0]);
-    assert(ctx->redis_ctx);
-#endif
+static enum rpn_error rpn_op_getifld(struct rpn_ctx *ctx) {
+    OPERAND(ctx, field);
 
-    cid->ptr = sdscpylen(cid->ptr, (void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
-    id_key = RedisModule_OpenKey(ctx->redis_ctx, (RedisModuleString *)(cid), REDISMODULE_READ);
-    if (!id_key) {
-        push_string_result(ctx, "", 0);
-        goto out;
-    }
-
-    err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, OPERAND_GET_S(field), &value, NULL);
-    if (err == REDISMODULE_ERR || !value) {
-        push_string_result(ctx, "", 0);
-    } else {
-        /*
-         * Supposedly there is no need to free `value`
-         * because we are using automatic memory management.
-         */
-        push_rm_string_result(ctx, value);
-    }
-
-out:
-    RedisModule_CloseKey(id_key);
-
-    return RPN_ERR_OK;
+    return rpn_getfld(ctx, field, 0);
 }
 
 static enum rpn_error rpn_op_abo(struct rpn_ctx *ctx __unused) {
@@ -624,7 +668,8 @@ static rpn_fp funcs[] = {
     rpn_op_strcmp,  /* c */
     rpn_op_idcmp,   /* d */
     rpn_op_cidcmp,  /* e */
-    rpn_op_getfld,  /* f */
+    rpn_op_getsfld, /* f */
+    rpn_op_getifld, /* g */
 };
 
 static enum rpn_error rpn(struct rpn_ctx *ctx, char *s) {

@@ -100,4 +100,5 @@ Strings stored in the register can be referenced with a `$` prefix.
 | `c`      | `!strcmp(s1, s2)`  | Compare strings.                  | `$0 "hello c => 1`        |
 | `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `$0 $1 d => 1`            | 
 | `e`      | `!cmp(curT, id)`   | Compare the type of the current node. | `"AB e`               |
-| `f`      | `node[a]`          | Get the value of a node field.    | `"field f`                |
+| `f`      | `node[a]`          | Get the string value of a node field. | `"field f`            |
+| `g`      | `node[a]`          | Get the integer value of a node field. | `"field g`           |
