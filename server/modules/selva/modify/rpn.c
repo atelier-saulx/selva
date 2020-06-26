@@ -371,14 +371,12 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         push_empty_value(ctx);
     } else {
         if (type == 0) {
-            const char *str;
-            char *e;
             long long ivalue;
+            int err;
 
-            str = RedisModule_StringPtrLen(value, NULL);
-            ivalue = strtoll(str, &e, 10);
+            err = RedisModule_StringToLongLong(value, &ivalue);
 
-            if (e == str) {
+            if (unlikely(err != REDISMODULE_OK)) {
                 fprintf(stderr, "RPN: Field value is not a number: %.*s\n",
                         (int)field->s_size, OPERAND_GET_S(field));
 
