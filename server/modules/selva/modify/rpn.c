@@ -28,10 +28,11 @@ struct redisObjectAccessor {
 
 struct rpn_operand {
     struct {
-        unsigned in_use : 1; /* In use/in stack, do not free. */
-        unsigned pooled : 1; /* Pooled operand, do not free. */
-        unsigned regist : 1; /* Register value, do not free. */
-        unsigned nan    : 1; /* The register value is not a number. */
+        unsigned in_use :  1; /* In use/in stack, do not free. */
+        unsigned pooled :  1; /* Pooled operand, do not free. */
+        unsigned regist :  1; /* Register value, do not free. */
+        unsigned nan    :  1; /* The register value is not a number. */
+        unsigned spare  : 60;
     } flags;
     long long i;
     size_t s_size;
