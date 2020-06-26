@@ -27,9 +27,12 @@ struct redisObjectAccessor {
      ((const char *)(((x)->sp) ? (x)->sp : (x)->s))
 
 struct rpn_operand {
-    unsigned in_use : 1; /* In use/in stack, do not free. */
-    unsigned pooled : 1; /* Pooled operand, do not free. */
-    unsigned regist : 1; /* Register value, do not free. */
+    struct {
+        unsigned in_use : 1; /* In use/in stack, do not free. */
+        unsigned pooled : 1; /* Pooled operand, do not free. */
+        unsigned regist : 1; /* Register value, do not free. */
+        unsigned nan    : 1; /* The register value is not a number. */
+    } flags;
     long long i;
     size_t s_size;
     struct rpn_operand *next_free; /* Next free in pool */
@@ -107,8 +110,8 @@ void rpn_destroy(struct rpn_ctx *ctx) {
                 continue;
             }
 
-            v->in_use = 0;
-            v->regist = 0;
+            v->flags.in_use = 0;
+            v->flags.regist = 0;
 
             free_rpn_operand(&v);
         }
@@ -130,7 +133,7 @@ static struct rpn_operand *alloc_rpn_operand(size_t slen) {
         small_operand_pool_next = v->next_free;
 
         memset(v, 0, sizeof(struct rpn_operand));
-        v->pooled = 1;
+        v->flags.pooled = 1;
     } else {
         const size_t size = sizeof(struct rpn_operand) + (slen - SELVA_NODE_ID_SIZE);
 
@@ -152,11 +155,11 @@ static void free_rpn_operand(void *p) {
     }
 
     v = *pp;
-    if (!v || v->in_use || v->regist) {
+    if (!v || v->flags.in_use || v->flags.regist) {
         return;
     }
 
-    if (v->pooled) {
+    if (v->flags.pooled) {
         struct rpn_operand *prev = small_operand_pool_next;
 
         /*
@@ -175,7 +178,7 @@ static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
         return RPN_ERR_BADSTK;
     }
 
-    v->in_use = 1;
+    v->flags.in_use = 1;
 	ctx->stack[ctx->depth++] = v;
 
     return RPN_ERR_OK;
@@ -197,6 +200,7 @@ static void push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) 
     v->s_size = size;
     strncpy(v->s, s, slen); /* TODO or memcpy? */
     v->s[slen] = '\0';
+    v->flags.nan = 1;
     push(ctx, v);
 }
 
@@ -243,7 +247,7 @@ static struct rpn_operand *pop(struct rpn_ctx *ctx) {
     assert(v);
 #endif
 
-    v->in_use = 0;
+    v->flags.in_use = 0;
 
 	return v;
 }
@@ -252,7 +256,7 @@ static void clear_stack(struct rpn_ctx *ctx) {
     struct rpn_operand *v;
 
     while ((v = pop(ctx))) {
-        v->in_use = 0;
+        v->flags.in_use = 0;
         free_rpn_operand(&v);
     }
 }
@@ -271,7 +275,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
     old = ctx->reg[i];
     if (old) {
         /* Can be freed again unless some other flag inhibits it. */
-        old->regist = 0;
+        old->flags.regist = 0;
 
         free_rpn_operand(&old);
     }
@@ -281,12 +285,24 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
 
         r = alloc_rpn_operand(0);
 
-        r->regist = 1; /* Can't be freed when this flag is set. */
+        /*
+         * Set the string value.
+         */
+        r->flags.regist = 1; /* Can't be freed when this flag is set. */
         r->s_size = slen;
         r->sp = s;
 
+        /*
+         * Set the integer value.
+         */
+        char *e = (char *)s;
+        if (slen > 0) {
+            r->i = strtoll(s, &e, 10);
+        }
+        r->flags.nan = e == s;
+
         ctx->reg[i] = r;
-    } else {
+    } else { /* Otherwise just clear the register. */
         ctx->reg[i] = NULL;
     }
 
@@ -294,10 +310,9 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
 }
 
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
-    char *e;
-    const size_t i = strtoull(str_index, &e, 10);
+    const size_t i = str_index[0] - '0';
 
-    if (e == str_index || i >= (size_t)ctx->nr_reg) {
+    if (i >= (size_t)ctx->nr_reg) {
         fprintf(stderr, "RPN: Register index out of bounds: %zu\n", i);
         return RPN_ERR_BNDS;
     }
@@ -310,18 +325,7 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     }
 
     if (type == 0) {
-        const char *str = OPERAND_GET_S(r);
-
-        e = (char *)str;
-        if (r->s_size > 0) {
-            /*
-             * Instead of allocating a  new operand we can just write the i of the
-             * current register operand and push it into the stack.
-             */
-            r->i = strtoull(str, &e, 10);
-        }
-
-        if (e == str) {
+        if (r->flags.nan) {
             fprintf(stderr, "RPN: Register value is not a number: %zu\n", i);
             return RPN_ERR_NAN;
         }
@@ -370,7 +374,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
             long long ivalue;
 
             str = RedisModule_StringPtrLen(value, NULL);
-            ivalue = strtoull(str, &e, 10);
+            ivalue = strtoll(str, &e, 10);
 
             if (e == str) {
                 fprintf(stderr, "RPN: Field value is not a number: %.*s\n",
@@ -717,13 +721,19 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, char *s) {
             case '#':
                 {
                     struct rpn_operand *v;
+                    const char *str = s + 1;
                     char *e;
                     enum rpn_error err;
 
                     v = alloc_rpn_operand(0);
-                    v->i = strtoull(s + 1, &e, 10);
+                    v->i = strtoll(str, &e, 10);
                     v->s_size = 0;
                     v->s[0] = '\0';
+
+                    if (unlikely(e == str)) {
+                        fprintf(stderr, "RPN: Operand is not a number: %s\n", s);
+                        return RPN_ERR_NAN;
+                    }
 
                     /* TODO Handle NULL */
                     err = push(ctx, v);
@@ -749,6 +759,7 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, char *s) {
                     v->s_size = size;
                     strcpy(v->s, str);
                     v->s[size - 1] = '\0';
+                    v->flags.nan = 1;
 
                     err = push(ctx, v);
                     if (err) {
