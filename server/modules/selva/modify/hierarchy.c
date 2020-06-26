@@ -13,7 +13,6 @@
 #include "hierarchy.h"
 
 #define HIERARCHY_ENCODING_VERSION 0
-#define INITIAL_VECTOR_LEN 2
 
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
 
@@ -147,8 +146,8 @@ static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
 
     memset(node, 0, sizeof(SelvaModify_HierarchyNode));
 
-    if (unlikely(!SVector_Init(&node->parents, INITIAL_VECTOR_LEN, SVector_BS_Compare) ||
-        !SVector_Init(&node->children, INITIAL_VECTOR_LEN, SVector_BS_Compare))) {
+    if (unlikely(!SVector_Init(&node->parents, HIERARCHY_INITIAL_VECTOR_LEN, SVector_BS_Compare) ||
+        !SVector_Init(&node->children, HIERARCHY_INITIAL_VECTOR_LEN, SVector_BS_Compare))) {
         SelvaModify_DestroyNode(node);
         return NULL;
     }
@@ -543,7 +542,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
     Trx_Begin(&hierarchy->current_trx);
 
     SVector stack;
-    SVector_Init(&stack, 100, NULL);
+    SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL);
     SVector_Insert(&stack, head);
 
     head_cb(head, cb->head_arg);
@@ -589,7 +588,7 @@ static void full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback *
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
 
-    SVector_Init(&stack, 100, NULL);
+    SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL);
     Trx_Begin(&hierarchy->current_trx);
 
     SVECTOR_FOREACH(head, &hierarchy->heads) {

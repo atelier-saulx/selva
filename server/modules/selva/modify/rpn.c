@@ -34,11 +34,11 @@ struct rpn_operand {
     size_t s_size;
     struct rpn_operand *next_free; /* Next free in pool */
     const char *sp;
-    char s[SMALL_OPERAND_SIZE];
+    char s[RPN_SMALL_OPERAND_SIZE];
 };
 
 static struct rpn_operand *small_operand_pool_next;
-static struct rpn_operand small_operand_pool[SMALL_OPERAND_POOL_SIZE];
+static struct rpn_operand small_operand_pool[RPN_SMALL_OPERAND_POOL_SIZE];
 
 const char *rpn_str_error[] = {
     "No error",
@@ -62,7 +62,7 @@ static void init_pool(void) {
 
     small_operand_pool_next = &small_operand_pool[0];
 
-    for (int i = SMALL_OPERAND_POOL_SIZE - 1; i >= 0; i--) {
+    for (int i = RPN_SMALL_OPERAND_POOL_SIZE - 1; i >= 0; i--) {
         small_operand_pool[i].next_free = prev;
         prev = &small_operand_pool[i];
     }
@@ -125,7 +125,7 @@ void rpn_destroy(struct rpn_ctx *ctx) {
 static struct rpn_operand *alloc_rpn_operand(size_t slen) {
     struct rpn_operand *v;
 
-    if (slen <= SMALL_OPERAND_SIZE && small_operand_pool_next) {
+    if (slen <= RPN_SMALL_OPERAND_SIZE && small_operand_pool_next) {
         v = small_operand_pool_next;
         small_operand_pool_next = v->next_free;
 

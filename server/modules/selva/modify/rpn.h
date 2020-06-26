@@ -2,10 +2,6 @@
 #ifndef _MODIFY_RPN_H_
 #define _MODIFY_RPN_H_
 
-#define SMALL_OPERAND_SIZE 11
-#define SMALL_OPERAND_POOL_SIZE 20
-#define RPN_MAX_D 256
-
 enum rpn_error {
     RPN_ERR_OK = 0,     /*!< No error. */
     RPN_ERR_ENOMEM,     /*!< Out of memory. */
