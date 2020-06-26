@@ -26,8 +26,8 @@ export default async function hierarchy() {
     const find = promisify(redis['SELVA.HIERARCHY.find']).bind(redis, TEST_KEY);
 
     // Delete an existing hierarchy and create a fresh one
-    await promisify(redis.flushall).bind(redis)();
-    await generateTree(redis, TEST_KEY, 3, 1, 15, 9, 0.2);
+    //await promisify(redis.flushall).bind(redis)();
+    //await generateTree(redis, TEST_KEY, 3, 1, 15, 9, 0.2);
     //await promisify(redis.save).bind(redis)();
 
     process.stderr.write('Taking a dump...');
@@ -35,16 +35,16 @@ export default async function hierarchy() {
         .map((x: string[]) => x[0]);
     process.stderr.write('done\n');
 
+    const N = 800;
 	const results = [];
     const cases =  [
         async function test_ancestors() {
-            const rnd = newRnd('totally random');
-            const n = 800;
+            const idRnd = newRnd('totally random');
             let nrAncestors = [];
 
             const start = performance.now();
-            for (let i = 0; i < n; i++) {
-                let id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
+            for (let i = 0; i < N; i++) {
+                let id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
 
                 const ancestors = await find('ancestors', id);
                 nrAncestors.push(ancestors.length);
@@ -55,13 +55,12 @@ export default async function hierarchy() {
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
         async function test_descendants() {
-            const rnd = newRnd('totally random');
-            const n = 800;
+            const idRnd = newRnd('totally random');
             let nrAncestors = [];
 
             const start = performance.now();
-            for (let i = 0; i < n; i++) {
-                let id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
+            for (let i = 0; i < N; i++) {
+                let id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
 
                 const ancestors = await find('descendants', id);
                 nrAncestors.push(ancestors.length);
@@ -71,14 +70,30 @@ export default async function hierarchy() {
 
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
-        async function test_descendantsWType() {
-            const rnd = newRnd('totally random');
-            const n = 800;
+        async function test_descendantsTrueFilter() {
+            const idRnd = newRnd('totally random');
             let nrAncestors = [];
 
             const start = performance.now();
-            for (let i = 0; i < n; i++) {
-                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
+            for (let i = 0; i < N; i++) {
+                const id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
+                const t = id.substring(0, 2);
+
+                const ancestors = await find('descendants', id, `#1`);
+                nrAncestors.push(ancestors.length);
+            }
+            const end = performance.now();
+            const tTotal = end - start;
+
+            calcResults(results, getFuncName(), nrAncestors, tTotal);
+        },
+        async function test_descendantsWType() {
+            const idRnd = newRnd('totally random');
+            let nrAncestors = [];
+
+            const start = performance.now();
+            for (let i = 0; i < N; i++) {
+                const id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
                 const t = id.substring(0, 2);
 
                 const ancestors = await find('descendants', id, `"${t} e`);
@@ -90,14 +105,14 @@ export default async function hierarchy() {
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
         async function test_descendantsFieldExactStringMatch() {
-            const rnd = newRnd('totally random');
-            const n = 800;
+            const idRnd = newRnd('totally random');
+            const fieldRnd = newRnd('amazing');
             let nrAncestors = [];
 
             const start = performance.now();
-            for (let i = 0; i < n; i++) {
-                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
-                const v = fieldValues[getRandomInt(rnd, 0, fieldValues.length)];
+            for (let i = 0; i < N; i++) {
+                const id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
+                const v = fieldValues[getRandomInt(fieldRnd, 0, fieldValues.length)];
 
                 const ancestors = await find('descendants', id, `"field f $1 c`, v);
                 nrAncestors.push(ancestors.length);
@@ -108,15 +123,15 @@ export default async function hierarchy() {
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
         async function test_descendantsTypeAndBoolField() {
-            const rnd = newRnd('totally random');
-            const n = 800;
+            const idRnd = newRnd('totally random');
+            const fieldRnd = newRnd('amazing');
             let nrAncestors = [];
 
             const start = performance.now();
-            for (let i = 0; i < n; i++) {
-                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
+            for (let i = 0; i < N; i++) {
+                const id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
                 const t = id.substring(0, 2);
-                const pub = rnd() < 0.5 ? 'true' : 'false';
+                const pub = fieldRnd() < 0.5 ? 'true' : 'false';
 
                 // Select by type and published = true/false
                 const ancestors = await find('descendants', id, `$1 e "published f $2 c M`, t, pub);
@@ -128,17 +143,17 @@ export default async function hierarchy() {
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
         async function test_descendantsTsFieldLessThan() {
-            const rnd = newRnd('totally random');
-            const n = 800;
+            const idRnd = newRnd('totally random');
+            const fieldRnd = newRnd('amazing');
             let nrAncestors = [];
 
             const start = performance.now();
-            for (let i = 0; i < n; i++) {
-                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
-                const ts = getRandomInt(rnd, 1561634316, 1719314360);
+            for (let i = 0; i < N; i++) {
+                const id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
+                const ts = getRandomInt(fieldRnd, 1561634316, 1719314360);
 
                 // Select by type and published = true/false
-                const ancestors = await find('descendants', id, `"tsCreated g @1 H`, ts);
+                const ancestors = await find('descendants', id, `"createdAt g @1 H`, ts);
                 nrAncestors.push(ancestors.length);
             }
             const end = performance.now();
@@ -147,17 +162,17 @@ export default async function hierarchy() {
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
         async function test_descendantsBoolFieldAndTsFieldLessThan() {
-            const rnd = newRnd('totally random');
-            const n = 800;
+            const idRnd = newRnd('totally random');
+            const fieldRnd = newRnd('amazing');
             let nrAncestors = [];
 
             const start = performance.now();
-            for (let i = 0; i < n; i++) {
-                const id = fullDump[getRandomInt(rnd, 0, fullDump.length)];
-                const ts = getRandomInt(rnd, 1561634316, 1719314360);
+            for (let i = 0; i < N; i++) {
+                const id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
+                const ts = getRandomInt(fieldRnd, 1561634316, 1719314360);
 
                 // Select by type and published = true/false
-                const ancestors = await find('descendants', id, `"published f "true c "tsCreated g @1 H M`, ts);
+                const ancestors = await find('descendants', id, `"published f "true c "createdAt g @1 H M`, ts);
                 nrAncestors.push(ancestors.length);
             }
             const end = performance.now();

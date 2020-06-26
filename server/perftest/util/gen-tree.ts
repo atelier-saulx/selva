@@ -114,7 +114,7 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
             await add(nodeId, ...parents);
             await hset(nodeId, 'field', fieldValues[getRandomInt(rndFieldValue, 0, fieldValues.length)]);
             await hset(nodeId, 'published', rndFieldValue() < 0.5 ? 'true' : 'false');
-            await hset(nodeId, 'tsCreated', getRandomInt(rndFieldValue, 1561634316, 1719314360));
+            await hset(nodeId, 'createdAt', getRandomInt(rndFieldValue, 1561634316, 1719314360));
             bar.increment();
 
             await gen(nodeId, nextDepth);
