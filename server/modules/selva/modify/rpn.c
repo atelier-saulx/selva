@@ -92,6 +92,7 @@ struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
 
     ctx->depth = 0;
     ctx->redis_ctx = redis_ctx;
+    ctx->redis_hkey = NULL;
     ctx->nr_reg = nr_reg;
 
     ctx->reg = RedisModule_Calloc(nr_reg, sizeof(struct rpn_operand *));
@@ -349,21 +350,27 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
     RedisModuleString *value = NULL;
     int err;
 
-    if (unlikely(!cid)) {
-        static const char empty_id[SELVA_NODE_ID_SIZE];
-        cid = (struct redisObjectAccessor *)RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
-    }
+    if (ctx->redis_hkey) {
+        id_key = ctx->redis_hkey;
+    } else {
+        if (unlikely(!cid)) {
+            static const char empty_id[SELVA_NODE_ID_SIZE];
+            cid = (struct redisObjectAccessor *)RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
+        }
 
 #if RPN_ASSERTS
-    assert(ctx->reg[0]);
-    assert(ctx->redis_ctx);
+        assert(ctx->reg[0]);
+        assert(ctx->redis_ctx);
 #endif
 
-    cid->ptr = sdscpylen(cid->ptr, (void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
-    id_key = RedisModule_OpenKey(ctx->redis_ctx, (RedisModuleString *)(cid), REDISMODULE_READ);
-    if (!id_key) {
-        push_empty_value(ctx);
-        goto out;
+        cid->ptr = sdscpylen(cid->ptr, (void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
+        id_key = RedisModule_OpenKey(ctx->redis_ctx, (RedisModuleString *)(cid), REDISMODULE_READ);
+        if (!id_key) {
+            push_empty_value(ctx);
+            goto out;
+        }
+
+        ctx->redis_hkey = id_key;
     }
 
     err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, OPERAND_GET_S(field), &value, NULL);
@@ -394,10 +401,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         }
     }
 
-    goto out;
 out:
-    RedisModule_CloseKey(id_key);
-
     return RPN_ERR_OK;
 }
 
@@ -819,11 +823,19 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
     return RPN_ERR_OK;
 }
 
+static void closeHkey(struct rpn_ctx *ctx) {
+    if (ctx->redis_hkey) {
+        RedisModule_CloseKey(ctx->redis_hkey);
+    }
+    ctx->redis_hkey = NULL;
+}
+
 enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out) {
     struct rpn_operand *res;
     enum rpn_error err;
 
     err = rpn(ctx, expr);
+    closeHkey(ctx);
     if (err) {
         return err;
     }
@@ -844,6 +856,7 @@ enum rpn_error rpn_integer(struct rpn_ctx *ctx, const rpn_token *expr, long long
     enum rpn_error err;
 
     err = rpn(ctx, expr);
+    closeHkey(ctx);
     if (err) {
         return err;
     }
