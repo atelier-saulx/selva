@@ -26,9 +26,9 @@ export default async function hierarchy() {
     const find = promisify(redis['SELVA.HIERARCHY.find']).bind(redis, TEST_KEY);
 
     // Delete an existing hierarchy and create a fresh one
-    //await promisify(redis.flushall).bind(redis)();
-    //await generateTree(redis, TEST_KEY, 3, 1, 15, 9, 0.2);
-    //await promisify(redis.save).bind(redis)();
+    await promisify(redis.flushall).bind(redis)();
+    await generateTree(redis, TEST_KEY, 3, 1, 15, 9, 0.2);
+    await promisify(redis.save).bind(redis)();
 
     process.stderr.write('Taking a dump...');
     const fullDump = (await promisify(redis['SELVA.HIERARCHY.dump']).bind(redis)(TEST_KEY))
@@ -150,7 +150,7 @@ export default async function hierarchy() {
             const start = performance.now();
             for (let i = 0; i < N; i++) {
                 const id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
-                const ts = getRandomInt(fieldRnd, 1561634316, 1719314360);
+                const ts = getRandomInt(fieldRnd, 1561634316 + (1719314360 - 1561634316) / 2, 1719314360);
 
                 // Select by type and published = true/false
                 const ancestors = await find('descendants', id, `"createdAt g @1 H`, ts);
