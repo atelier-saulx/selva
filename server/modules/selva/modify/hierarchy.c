@@ -901,8 +901,7 @@ struct FindCommand_Args {
     SelvaModify_HierarchyNode *head;
     ssize_t *nr_nodes;
     struct rpn_ctx *rpn_ctx;
-    const char *filter;
-    size_t filter_len;
+    const rpn_token *filter;
 };
 
 static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
@@ -921,11 +920,13 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
             /*
              * Resolve the expression and get the result.
              */
-            err = rpn_bool(rpn_ctx, args->filter, args->filter_len, &take);
+            err = rpn_bool(rpn_ctx, args->filter, &take);
             if (err) {
+                fprintf(stderr, "Expression failed: \"%s\"\n",
+                        rpn_str_error[err]);
                 /* TODO Propagate error? */
-                fprintf(stderr, "Expression \"%.*s\" failed with error: \"%s\"\n",
-                        (int)args->filter_len, args->filter, rpn_str_error[err]);
+                //fprintf(stderr, "Expression \"%.*s\" failed with error: \"%s\"\n",
+                //        (int)args->filter_len, args->filter, rpn_str_error[err]);
                 return 1;
             }
         }
@@ -1000,10 +1001,11 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Prepare the filter expression if given.
      */
     struct rpn_ctx *rpn_ctx = NULL;
-    char * filter_expression = NULL;
-    size_t filter_len = 0;
+    rpn_token *filter_expression = NULL;
     if (argc >= (int)ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
+        const char *input;
+        size_t input_len;
 
         rpn_ctx = rpn_init(ctx, nr_reg);
         if (!rpn_ctx) {
@@ -1022,7 +1024,8 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             rpn_set_reg(rpn_ctx, reg_i, str, str_len + 1);
         }
 
-        filter_expression = (char *)RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &filter_len);
+        input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
+        filter_expression = rpn_compile(input, input_len);
     }
 
     /*
@@ -1035,7 +1038,6 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         .nr_nodes = &nr_nodes,
         .rpn_ctx = rpn_ctx,
         .filter = filter_expression,
-        .filter_len = filter_len
     };
     const TraversalCallback cb = {
         .head_cb = NULL,
@@ -1049,6 +1051,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     err = dfs(hierarchy, head, dir, &cb);
     if (rpn_ctx) {
+        RedisModule_Free(filter_expression);
         rpn_destroy(rpn_ctx);
     }
     if (err != 0) {

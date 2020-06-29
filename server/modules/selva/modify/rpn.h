@@ -27,12 +27,15 @@ struct rpn_ctx {
     struct rpn_operand *stack[RPN_MAX_D];
 };
 
+typedef char rpn_token[RPN_MAX_TOKEN_SIZE];
+
 extern const char *rpn_str_error[11];
 
 struct rpn_ctx *rpn_init(struct RedisModuleCtx *redis_ctx, int nr_reg);
 void rpn_destroy(struct rpn_ctx *ctx);
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen);
-enum rpn_error rpn_bool(struct rpn_ctx *ctx, const char *s, size_t slen, int *out);
-enum rpn_error rpn_integer(struct rpn_ctx *ctx, const char *s, size_t slen, long long *out);
+rpn_token *rpn_compile(const char *input, size_t len);
+enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out);
+enum rpn_error rpn_integer(struct rpn_ctx *ctx, const rpn_token *expr, long long *out);
 
 #endif /* _MODIFY_RPN_H_ */

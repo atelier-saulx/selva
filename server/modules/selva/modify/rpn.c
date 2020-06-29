@@ -676,10 +676,46 @@ static rpn_fp funcs[] = {
     rpn_op_getifld, /* g */
 };
 
-static enum rpn_error rpn(struct rpn_ctx *ctx, char *s) {
+rpn_token *rpn_compile(const char *input, size_t len) {
     const char *w = " \t\n\r\f";
+    rpn_token *expr;
+    char sa[len + 1];
 
-	for (s = strtok(s, w); s; s = strtok(0, w)) {
+
+    memcpy(sa, input, len);
+    sa[len] = '\0';
+
+    size_t i = 0;
+    size_t size = 2 * sizeof(rpn_token);
+
+    expr = RedisModule_Alloc(size);
+    if (!expr) {
+        return NULL;
+    }
+
+    char *s = sa;
+    for (s = strtok(s, w); s; s = strtok(0, w)) {
+        rpn_token *new = RedisModule_Realloc(expr, size);
+        if (new) {
+            expr = new;
+        } else {
+            RedisModule_Free(expr);
+            return NULL;
+        }
+
+        strncpy(expr[i++], s, 14);
+        size += sizeof(rpn_token);
+    }
+    memset(expr[i], 0, sizeof(rpn_token));
+
+    return expr;
+}
+
+static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
+    const rpn_token *it = expr;
+    const char *s;
+
+    while (*(s = *it++)) {
         size_t op = *s - 'A';
 
         if (op < sizeof(funcs) / sizeof(void *)) { /* Operator */
@@ -783,13 +819,9 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, char *s) {
     return RPN_ERR_OK;
 }
 
-enum rpn_error rpn_bool(struct rpn_ctx *ctx, const char *s, size_t slen, int *out) {
-    char expr[slen + 1];
+enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out) {
     struct rpn_operand *res;
     enum rpn_error err;
-
-    memcpy(expr, s, slen);
-    expr[slen] = '\0';
 
     err = rpn(ctx, expr);
     if (err) {
@@ -807,13 +839,9 @@ enum rpn_error rpn_bool(struct rpn_ctx *ctx, const char *s, size_t slen, int *ou
     return 0;
 }
 
-enum rpn_error rpn_integer(struct rpn_ctx *ctx, const char *s, size_t slen, long long *out) {
-    char expr[slen + 1];
+enum rpn_error rpn_integer(struct rpn_ctx *ctx, const rpn_token *expr, long long *out) {
     struct rpn_operand *res;
     enum rpn_error err;
-
-    memcpy(expr, s, slen);
-    expr[slen] = '\0';
 
     err = rpn(ctx, expr);
     if (err) {

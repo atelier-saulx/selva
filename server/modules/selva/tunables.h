@@ -20,6 +20,7 @@
  * RPN Tunables.
  */
 
+#define RPN_MAX_TOKEN_SIZE              15
 #define RPN_SMALL_OPERAND_SIZE          11
 #define RPN_SMALL_OPERAND_POOL_SIZE     20
 #define RPN_MAX_D                       256
