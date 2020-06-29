@@ -96,7 +96,7 @@ Valgrind
 First start the server with Valgrind:
 
 ```
-valgrind --tool=callgrind --simulate-cache=yes -s redis -server --loadmodule ./module.so
+valgrind --tool=callgrind --simulate-cache=yes --suppressions=./valgrind.sup -s redis-server --loadmodule ./module.so
 ```
 
 Then run something using the db, e.g. `ts-node index.ts` in `../../perftest/` dir.
