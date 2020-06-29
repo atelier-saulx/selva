@@ -17,7 +17,11 @@ else
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
 	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
 endif
-CFLAGS := $(IDIR) -include tunables.h -Wall -Wextra -Wno-unused-value -ggdb -O2 -fPIC -lc -lm -std=gnu99
+CFLAGS := $(IDIR) -include tunables.h \
+	-std=gnu99 -Wall -Wextra -Wno-unused-value \
+	-ggdb -O2 \
+	-fPIC -lc -lm \
+	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
 CC := gcc
 
 
