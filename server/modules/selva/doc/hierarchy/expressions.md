@@ -65,31 +65,32 @@ Strings stored in the register can be referenced with a `$` prefix.
 
 | Operator | Operands           | Description                       | Syntax                    |
 |----------|--------------------|-----------------------------------|---------------------------|
-| `A`      | `a + b`            | Addition operator.                | `1 2 A => 3`              |
-| `B`      | `a - b`            | Subtraction operator.             | `1 2 B => 1`              |
-| `C`      | `a / b`            | Division operator.                | `2 4 C => 2`              |
-| `D`      | `a * b`            | Multiplication operator.          | `2 2 D => 4`              |
-| `E`      | `a % b`            | Remainder operator.               | `4 9 E => 1`              |
+| `A`      | `a + b`            | Addition operator.                | `#1 #2 A => 3`            |
+| `B`      | `a - b`            | Subtraction operator.             | `#1 #2 B => 1`            |
+| `C`      | `a / b`            | Division operator.                | `#2 #4 C => 2`            |
+| `D`      | `a * b`            | Multiplication operator.          | `#2 #2 D => 4`            |
+| `E`      | `a % b`            | Remainder operator.               | `#4 #9 E => 1`            |
 
 **Relational operators**
 
 | Operator | Operands           | Description                       | Example (expr => result)  |
 |----------|--------------------|-----------------------------------|---------------------------|
-| `F`      | `a == b`           | Equality operator.                | `1 1 F => 1`              |
-| `G`      | `a != b`           | Not equal operator.               | `1 2 G => 1`              |
-| `H`      | `a < b`            | Less than operator.               | `2 1 H => 1`              |
-| `I`      | `a > b`            | Greater than operator.            | `2 1 I => 0`              |
-| `J`      | `a <= b`           | Less than or equal operator.      | `2 1 J => 1`              |
-| `K`      | `a >= b`           | Greater than or equal operator.   | `2 1 K => 0`              |
+| `F`      | `a == b`           | Equality operator.                | `#1 1 F => 1`             |
+| `G`      | `a != b`           | Not equal operator.               | `#1 2 G => 1`             |
+| `H`      | `a < b`            | Less than operator.               | `#2 1 H => 1`             |
+| `I`      | `a > b`            | Greater than operator.            | `#2 1 I => 0`             |
+| `J`      | `a <= b`           | Less than or equal operator.      | `#2 1 J => 1`             |
+| `K`      | `a >= b`           | Greater than or equal operator.   | `#2 1 K => 0`             |
 
 **Logical operators**
 
 | Operator | Operands           | Description                       | Example (expr => result)  |
 |----------|--------------------|-----------------------------------|---------------------------|
-| `L`      | `!a`               | Logical NOT operator. (unary)     | `1 L => 0`                |
-| `M`      | `a AND b`          | Logical AND operator.             | `1 1 M => 1`              |
-| `N`      | `a OR b`           | Logical OR operator.              | `0 1 N => 1`              |
-| `O`      | `!!a XOR !!b`      | Logical XOR operator.             | `1 1 O => 0`              |
+| `L`      | `!a`               | Logical NOT operator. (unary)     | `#1 L => 0`               |
+| `M`      | `a AND b`          | Logical AND operator.             | `#1 #1 M => 1`            |
+| `N`      | `a OR b`           | Logical OR operator.              | `#0 #1 N => 1`            |
+| `O`      | `!!a XOR !!b`      | Logical XOR operator.             | `#1 #1 O => 0`            |
+| `P`      | `□a`               | Necessity (It's necessary that a) | `#0 P #1 N => 0`          |
 
 **Functions**
 

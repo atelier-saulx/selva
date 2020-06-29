@@ -345,7 +345,6 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
 }
 
 static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field, int type) {
-    static struct redisObjectAccessor *cid;
     RedisModuleKey *id_key;
     RedisModuleString *value = NULL;
     int err;
@@ -353,6 +352,8 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
     if (ctx->redis_hkey) {
         id_key = ctx->redis_hkey;
     } else {
+        static struct redisObjectAccessor *cid;
+
         if (unlikely(!cid)) {
             static const char empty_id[SELVA_NODE_ID_SIZE];
             cid = (struct redisObjectAccessor *)RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
@@ -549,6 +550,18 @@ static enum rpn_error rpn_op_xor(struct rpn_ctx *ctx) {
     return RPN_ERR_OK;
 }
 
+static enum rpn_error rpn_op_necess(struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+
+    if (!to_bool(a)) {
+        return RPN_ERR_NECESS;
+    }
+
+    push_int_result(ctx, 1);
+
+    return RPN_ERR_OK;
+}
+
 static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -654,7 +667,7 @@ static rpn_fp funcs[] = {
     rpn_op_and,     /* M */
     rpn_op_or,      /* N */
     rpn_op_xor,     /* O */
-    rpn_op_abo,     /* P spare */
+    rpn_op_necess,  /* P */
     rpn_op_abo,     /* Q spare */
     rpn_op_abo,     /* R spare */
     rpn_op_abo,     /* S spare */
@@ -727,6 +740,16 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
             err = funcs[op](ctx);
             if (err) {
                 clear_stack(ctx);
+
+                if (err == RPN_ERR_NECESS) {
+                    /*
+                     * A necessarily truthy condition failed. This can be
+                     * interpreted as a short-circuited false result for the
+                     * expression.
+                     */
+                    push_int_result(ctx, 0);
+                    break;
+                }
 
                 return err;
             }
