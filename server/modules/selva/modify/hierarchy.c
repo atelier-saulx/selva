@@ -1000,7 +1000,7 @@ int SelvaModify_Hierarchy_ChildrenCommand(RedisModuleCtx *ctx, RedisModuleString
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
     }
 
-    RedisModule_ReplyWithArray(ctx, SVector_Size(&node->parents));
+    RedisModule_ReplyWithArray(ctx, SVector_Size(&node->children));
 
     SelvaModify_HierarchyNode **itt;
     SVECTOR_FOREACH(itt, &node->children) {
@@ -1055,9 +1055,12 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
             if (err) {
                 fprintf(stderr, "Expression failed: \"%s\"\n",
                         rpn_str_error[err]);
-                /* TODO Propagate error? */
-                //fprintf(stderr, "Expression \"%.*s\" failed with error: \"%s\"\n",
-                //        (int)args->filter_len, args->filter, rpn_str_error[err]);
+                /*
+                 * TODO Propagate error?
+                 * It would be a good idea to propagate the error but Redis
+                 * doesn't actually support sending an error in the middle
+                 * of an array response.
+                 */
                 return 1;
             }
         }
