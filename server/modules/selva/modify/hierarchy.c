@@ -881,6 +881,96 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     return REDISMODULE_OK;
 }
 
+int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    /*
+     * Open the Redis key.
+     */
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    int type = RedisModule_KeyType(key);
+    if (type != REDISMODULE_KEYTYPE_EMPTY &&
+        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
+        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+
+    /* Create an empty value object if the key is currently empty. */
+    SelvaModify_Hierarchy *hierarchy = RedisModule_ModuleTypeGetValue(key);
+    if (!hierarchy) {
+        return RedisModule_ReplyWithArray(ctx, 0);
+    }
+
+    /*
+     * Find the node.
+     */
+    Selva_NodeId nodeId;
+    strncpy(nodeId, RedisModule_StringPtrLen(argv[2], NULL), SELVA_NODE_ID_SIZE);
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
+    if (!node) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
+    }
+
+    RedisModule_ReplyWithArray(ctx, SVector_Size(&node->parents));
+
+    SelvaModify_HierarchyNode **itt;
+    SVECTOR_FOREACH(itt, &node->parents) {
+        SelvaModify_HierarchyNode *it = *itt;
+
+        RedisModule_ReplyWithStringBuffer(ctx, it->id, SELVA_NODE_ID_SIZE);
+    }
+
+    return REDISMODULE_OK;
+}
+
+int SelvaModify_Hierarchy_ChildrenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    /*
+     * Open the Redis key.
+     */
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    int type = RedisModule_KeyType(key);
+    if (type != REDISMODULE_KEYTYPE_EMPTY &&
+        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
+        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+
+    /* Create an empty value object if the key is currently empty. */
+    SelvaModify_Hierarchy *hierarchy = RedisModule_ModuleTypeGetValue(key);
+    if (!hierarchy) {
+        return RedisModule_ReplyWithArray(ctx, 0);
+    }
+
+    /*
+     * Find the node.
+     */
+    Selva_NodeId nodeId;
+    strncpy(nodeId, RedisModule_StringPtrLen(argv[2], NULL), SELVA_NODE_ID_SIZE);
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
+    if (!node) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
+    }
+
+    RedisModule_ReplyWithArray(ctx, SVector_Size(&node->parents));
+
+    SelvaModify_HierarchyNode **itt;
+    SVECTOR_FOREACH(itt, &node->children) {
+        SelvaModify_HierarchyNode *it = *itt;
+
+        RedisModule_ReplyWithStringBuffer(ctx, it->id, SELVA_NODE_ID_SIZE);
+    }
+
+    return REDISMODULE_OK;
+}
+
 static int parse_dfs_dir(enum SelvaModify_HierarchyNode_Relationship *dir, RedisModuleString *arg) {
     size_t len;
     const char *str = RedisModule_StringPtrLen(arg, &len);
@@ -985,7 +1075,6 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     if (err) {
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
     }
-
 
     /*
      * Find the node.
@@ -1219,15 +1308,14 @@ int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.add", SelvaModify_Hierarchy_AddNodeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.dump", SelvaModify_Hierarchy_DumpCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+    /*
+     * Register commands.
+     */
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.add", SelvaModify_Hierarchy_AddNodeCommand,     "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.parents", SelvaModify_Hierarchy_ParentsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaModify_Hierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.dump", SelvaModify_Hierarchy_DumpCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
