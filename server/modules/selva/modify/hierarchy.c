@@ -759,7 +759,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
                 err = SelvaModify_AddHierarchy(hierarchy, child_id, 0, NULL, 0, NULL);
                 if (err) {
-                    fprintf(stderr, "Unable to rebuild a hierarchy");
+                    RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
                     return NULL;
                 }
 
@@ -770,7 +770,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
         /* Create the node itself */
         err = SelvaModify_AddHierarchy(hierarchy, node_id, 0, NULL, nr_children, children);
         if (err) {
-            fprintf(stderr, "Unable to rebuild a hierarchy");
+            RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
             return NULL;
         }
     }
