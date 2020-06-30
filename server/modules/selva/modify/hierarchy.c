@@ -368,16 +368,23 @@ int SelvaModify_SetHierarchy(
         mkHead(hierarchy, node);
     }
 
-    /* Set relationship relative to other nodes */
-    /* TODO if isNewNode == 0 then errors are not handled */
+    /*
+     * Set relationship relative to other nodes
+     * TODO if isNewNode == 0 then errors are not handled properly as
+     * we don't know how to rollback.
+     */
     err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
-    if (err && isNewNode) {
-        del_node(hierarchy, node);
+    if (err) {
+        if (isNewNode) {
+            del_node(hierarchy, node);
+        }
         return err;
     }
     err = crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
-    if (err && isNewNode) {
-        del_node(hierarchy, node);
+    if (err) {
+        if (isNewNode) {
+            del_node(hierarchy, node);
+        }
         return err;
     }
 
@@ -416,8 +423,11 @@ int SelvaModify_AddHierarchy(
         }
     }
 
-    /* Update relationship relative to other nodes */
-    /* TODO if isNewNode == 0 then errors are not handled */
+    /*
+     * Update relationship relative to other nodes
+     * TODO if isNewNode == 0 then errors are not handled properly as
+     * we don't know how to rollback.
+     */
     err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     if (err && isNewNode) {
         del_node(hierarchy, node);
@@ -735,7 +745,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
                 err = SelvaModify_AddHierarchy(hierarchy, child_id, 0, NULL, 0, NULL);
                 if (err) {
-                    /* TODO log error */
+                    fprintf(stderr, "Unable to rebuild a hierarchy");
                     return NULL;
                 }
 
@@ -746,7 +756,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
         /* Create the node itself */
         err = SelvaModify_AddHierarchy(hierarchy, node_id, 0, NULL, nr_children, children);
         if (err) {
-            /* TODO log error */
+            fprintf(stderr, "Unable to rebuild a hierarchy");
             return NULL;
         }
     }
