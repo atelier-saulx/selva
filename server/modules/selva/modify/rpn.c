@@ -235,7 +235,6 @@ static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
 }
 
 
-/* TODO Handle errors */
 /**
  * Push a RedisModuleString to the stack.
  * Note that the string must not be freed while it's still in use by rpn.
