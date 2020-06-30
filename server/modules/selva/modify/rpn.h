@@ -19,12 +19,13 @@ enum rpn_error {
 
 struct rpn_operand;
 struct RedisModuleCtx;
+struct RedisModuleKey;
 
 struct rpn_ctx {
     int depth;
     int nr_reg;
     struct RedisModuleCtx *redis_ctx;
-    RedisModuleKey *redis_hkey; /*!< Redis hash key of the current node. */
+    struct RedisModuleKey *redis_hkey; /*!< Redis hash key of the current node. */
     struct rpn_operand **reg;
     struct rpn_operand *stack[RPN_MAX_D];
 };

@@ -5,38 +5,42 @@
 #include "rpn.h"
 #include "cdefs.h"
 
-static struct rpn_ctx ctx;
+static struct rpn_ctx *ctx;
 static char **reg;
-const size_t nr_reg = 10;
+const int nr_reg = 10;
 
 static void setup(void)
 {
     reg = RedisModule_Calloc(nr_reg, sizeof(char *));
-    rpn_init(&ctx, NULL, reg, nr_reg);
+    ctx = rpn_init(NULL, nr_reg);
 }
 
 static void teardown(void)
 {
     RedisModule_Free(reg);
-    memset(&ctx, 0, sizeof(ctx));
+    rpn_destroy(ctx);
 }
 
 static char * test_init_works(void)
 {
-    pu_assert_equal("nr_reg is set", ctx.nr_reg, nr_reg);
+    pu_assert_equal("nr_reg is set", ctx->nr_reg, nr_reg);
 
     return NULL;
 }
 
 static char * test_add(void)
 {
-    int err;
+    enum rpn_error err;
     long long res;
-    const char expr[] = "#1 #1 A";
+    const char expr_str[] = "#1 #1 A";
+    struct rpn_token *expr;
 
-    res = rpn_integer(&ctx, expr, sizeof(expr), &res);
+    expr = rpn_compile(expr_str, sizeof(expr_str));
+    pu_assert("expr is created", expr);
 
-    pu_assert_equal("No error", err, 0);
+    err = rpn_integer(ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 + 1", res, 2);
 
     return NULL;
