@@ -87,6 +87,23 @@ export default async function hierarchy() {
 
             calcResults(results, getFuncName(), nrAncestors, tTotal);
         },
+        async function test_descendantsTrueFilterComplex() {
+            const idRnd = newRnd('totally random');
+            let nrAncestors = [];
+
+            const start = performance.now();
+            for (let i = 0; i < N; i++) {
+                const id = fullDump[getRandomInt(idRnd, 0, fullDump.length)];
+                const t = id.substring(0, 2);
+
+                const ancestors = await find('descendants', id, `#1 $1 M $1 N`, '1');
+                nrAncestors.push(ancestors.length);
+            }
+            const end = performance.now();
+            const tTotal = end - start;
+
+            calcResults(results, getFuncName(), nrAncestors, tTotal);
+        },
         async function test_descendantsWType() {
             const idRnd = newRnd('totally random');
             let nrAncestors = [];
@@ -134,7 +151,7 @@ export default async function hierarchy() {
                 const pub = fieldRnd() < 0.5 ? 'true' : 'false';
 
                 // Select by type and published = true/false
-                const ancestors = await find('descendants', id, `$1 e "published f $2 c M`, t, pub);
+                const ancestors = await find('descendants', id, `$1 e P "published f $2 c M`, t, pub);
                 nrAncestors.push(ancestors.length);
             }
             const end = performance.now();
@@ -172,7 +189,7 @@ export default async function hierarchy() {
                 const ts = getRandomInt(fieldRnd, 1561634316, 1719314360);
 
                 // Select by type and published = true/false
-                const ancestors = await find('descendants', id, `"published f "true c "createdAt g @1 H M`, ts);
+                const ancestors = await find('descendants', id, `"published f "true c P "createdAt g @1 H M`, ts);
                 nrAncestors.push(ancestors.length);
             }
             const end = performance.now();
