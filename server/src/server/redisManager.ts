@@ -55,7 +55,7 @@ export default class RedisManager extends ProcessManager {
 
       clearTimeout(timeout)
 
-      if (info) {
+      if (typeof info === 'string') {
         const infoLines = info.split('\r\n')
         const redisInfo = infoLines.reduce((acc, line) => {
           if (line.startsWith('#')) {
