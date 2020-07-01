@@ -9,14 +9,23 @@ import RedisManager from './redisManager'
 // this is only for the 'raw' redis
 // no handling of registry, no different types, no subscriptions stuff
 // has to be replaced with a nice wrapper that makes it a little bit more reliable
-export default async (server: SelvaServer, opts: ServerOptions) => {
-  const { port, dir, modules } = opts
+export default (server: SelvaServer, opts: ServerOptions) => {
+  const { port, dir, modules, host } = opts
 
   if (opts.attachToExisting) {
     return
   }
 
   const args = ['--port', String(port), '--protected-mode', 'no', '--dir', dir]
+
+  if (opts.save) {
+    if (opts.save === true) {
+      args.push('--save', '900', '1')
+      args.push('--save', '300', '10')
+    } else {
+      args.push('--save', String(opts.save.seconds), String(opts.save.changes))
+    }
+  }
 
   modules.forEach(m => {
     const platform = process.platform + '_' + process.arch
@@ -40,11 +49,8 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
   })
 
   if (server.type === 'replica') {
-    const origin = await server.registry.getServerDescriptor({
-      name: opts.name,
-      type: 'origin'
-    })
-    args.push('--replicaof', origin.host, String(origin.port))
+    console.log(server.origin)
+    args.push('--replicaof', server.origin.host, String(server.origin.port))
   }
 
   const tmpPath = path.join(process.cwd(), './tmp')
@@ -57,7 +63,13 @@ export default async (server: SelvaServer, opts: ServerOptions) => {
     execSync(`redis-cli -p ${port} shutdown`)
   } catch (_err) {}
 
-  server.pm = new RedisManager(args)
+  server.pm = new RedisManager(args, {
+    port,
+    host,
+    name: server.name,
+    type: server.type,
+    selvaClient: server.selvaClient
+  })
   server.pm.start()
   server.pm.on('stdout', s => server.emit('stdout', s))
   server.pm.on('stderr', s => server.emit('stderr', s))

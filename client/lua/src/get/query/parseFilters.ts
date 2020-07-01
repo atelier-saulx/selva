@@ -2,7 +2,7 @@ import { FilterAST, Fork, Value } from './types'
 import addSearch from './addSearch'
 import { Filter, GeoFilter } from '~selva/get/types'
 import { isFork } from './util'
-import { isArray } from '../../util'
+import { isArray, stringStartsWith } from '../../util'
 import reduceAnd from './reduceAnd'
 import * as logger from '../../logger'
 
@@ -63,13 +63,16 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   let hasNow = false
   if (isArray(filter.$value)) {
     for (const val of filter.$value) {
-      if (val === 'now') {
+      if (type(val) === 'string' && stringStartsWith(<string>val, 'now')) {
         hasNow = true
         break
       }
     }
   } else {
-    if (filter.$value === 'now') {
+    if (
+      type(filter.$value) === 'string' &&
+      stringStartsWith(<string>filter.$value, 'now')
+    ) {
       hasNow = true
     }
   }

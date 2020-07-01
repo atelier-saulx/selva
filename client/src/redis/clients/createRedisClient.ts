@@ -1,5 +1,6 @@
 import { RedisClient } from 'redis'
 import { Client } from './'
+import { SERVER_HEARTBEAT } from '../../constants'
 
 const createRedisClient = (
   client: Client,
@@ -10,14 +11,31 @@ const createRedisClient = (
   let tries = 0
   let retryTimer = 0
   let isConnected: boolean = false
+  let isHarddc: boolean = false
+
+  if (label === 'publisher') {
+    client.startClientTimer = setTimeout(() => {
+      if (!isHarddc) {
+        clearTimeout(client.serverHeartbeat)
+        console.log('cannot get it ready!', host, port, label)
+        isHarddc = true
+        client.emit('hard-disconnect')
+      }
+    }, 60e3)
+  }
 
   const retryStrategy = () => {
-    if (tries > 60) {
-      client.emit('hard-disconnect')
+    if (tries > 20) {
+      clearTimeout(client.serverHeartbeat)
+      clearTimeout(client.startClientTimer)
+      if (label === 'publisher' && !isHarddc) {
+        console.log('HARD DC')
+        isHarddc = true
+        client.emit('hard-disconnect')
+      }
     } else {
       if (tries === 0 && isConnected === true) {
         isConnected = false
-        // only send this once not twice (for each client type)
         if (label === 'publisher') {
           client.emit('disconnect', label)
         }
@@ -27,6 +45,7 @@ const createRedisClient = (
     if (retryTimer < 1e3) {
       retryTimer += 100
     }
+    // redisClient.emit('error', error)
     return retryTimer
   }
 
@@ -36,9 +55,27 @@ const createRedisClient = (
     retry_strategy: retryStrategy
   })
 
+  if (label === 'subscriber') {
+    redisClient.on('message', channel => {
+      if (channel === SERVER_HEARTBEAT && !isHarddc) {
+        clearTimeout(client.serverHeartbeat)
+        client.serverHeartbeat = setTimeout(() => {
+          console.error('🔥 heartbeat expired disconnect it!')
+          isHarddc = true
+          client.emit('hard-disconnect')
+        }, 5 * 60e3) //  5 * 60e3
+      }
+    })
+  }
+
   redisClient.setMaxListeners(1e4)
 
   redisClient.on('ready', () => {
+    isHarddc = false
+    if (label === 'publisher') {
+      console.log('is ready clear start timer')
+      clearTimeout(client.startClientTimer)
+    }
     tries = 0
     retryTimer = 0
     isConnected = true
@@ -50,7 +87,7 @@ const createRedisClient = (
   redisClient.on('error', err => {
     if (err.code === 'ECONNREFUSED') {
       isConnected = false
-      if (label === 'publisher') {
+      if (label === 'publisher' && isConnected) {
         client.emit('disconnect', label)
       }
     } else {

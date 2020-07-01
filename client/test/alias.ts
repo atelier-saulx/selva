@@ -402,3 +402,65 @@ test.serial('set and get by $alias as id', async t => {
   await client.delete('root')
   client.destroy()
 })
+
+test.serial('set parent by alias', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    type: 'match',
+    title: { en: 'yesh' },
+    aliases: {
+      $add: 'match-1'
+    }
+  })
+
+  const matchX = await client.set({
+    type: 'match',
+    title: { en: 'yeshX' }
+  })
+
+  const match2 = await client.set({
+    type: 'match',
+    title: { en: 'yesh-yesh' },
+    parents: {
+      $noRoot: true,
+      $add: [
+        {
+          $alias: 'match-1',
+          type: 'match'
+        },
+        {
+          $id: matchX
+        },
+        {
+          $alias: 'non-existent',
+          type: 'match'
+        }
+      ]
+    }
+  })
+
+  const stub = await client.get({
+    $alias: 'non-existent',
+    id: true,
+    parents: true
+  })
+
+  t.deepEqualIgnoreOrder(stub.parents, [])
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: match2,
+      title: true,
+      parents: true
+    }),
+    {
+      title: 'yesh-yesh',
+      parents: [match1, matchX, stub.id]
+    }
+  )
+
+  await client.delete('root')
+  client.destroy()
+})

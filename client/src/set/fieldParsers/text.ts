@@ -40,6 +40,8 @@ const verify = (payload: SetOptions, nested?: boolean, lang?: string[]) => {
       }
     } else if (key === '$ref') {
       // $refs are allowed
+    } else if (key === '$delete') {
+      // $delete is allowed
     } else if (lang && lang.indexOf(key) !== -1) {
       if (typeof payload[key] === 'object') {
         verify(payload[key], true)
@@ -69,5 +71,8 @@ export default (
 
   refs(field, payload, lang)
   verify(payload, false, lang)
-  result[field] = payload
+  const keys = Object.keys(payload)
+  if (keys.length) {
+    result[field] = payload
+  }
 }

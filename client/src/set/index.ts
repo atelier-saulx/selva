@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid'
 import { SCRIPT } from '../constants'
 import { setInBatches, MAX_BATCH_SIZE } from './batching'
 import parseSetObject from './validate'
+import { getSchema } from 'lua/src/schema'
 
 export async function _set(
   client: SelvaClient,
@@ -55,6 +56,14 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
         payload.$id = id
         break
       }
+    }
+
+    if (!payload.$id) {
+      throw new Error(
+        `.set() without the type property requires an existing record or $id to be set with the wanted type prefix. No existing id found for alias ${JSON.stringify(
+          payload.$alias
+        )}`
+      )
     }
   }
 

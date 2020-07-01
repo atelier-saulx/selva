@@ -68,7 +68,10 @@ export function sendObserver(
     command: 'publish',
     args: [NEW_SUBSCRIPTION, JSON.stringify({ client: client.uuid, channel })]
   })
-  client.subscriber.subscribe(channel)
+  addCommandToQueue(client, {
+    command: 'subscribe',
+    args: [channel]
+  })
 }
 
 export function startObserver(
@@ -102,9 +105,10 @@ export function stopObserver(
           REMOVE_SUBSCRIPTION,
           JSON.stringify({ client: this.uuid, channel })
         ]
-        // resolve: () => this.removeSubscriptionsSet.delete(channel)
       })
-      client.subscriber.unsubscribe(channel)
+
+      addCommandToQueue(client, { command: 'unsubscribe', args: [channel] })
+
       delete client.observers[channel]
     }
   }

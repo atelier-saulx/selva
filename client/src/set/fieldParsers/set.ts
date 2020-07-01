@@ -65,7 +65,12 @@ export default (
           result[field].$add = verifySimple(payload[k], verify)
         }
       } else if (k === '$delete') {
-        result[field].$delete = verifySimple(payload[k], verify)
+        if (payload.$delete === true) {
+          // unsets are allowed
+          result[field].$delete = true
+        } else {
+          result[field].$delete = verifySimple(payload[k], verify)
+        }
       } else {
         throw new Error(`Wrong key for set ${k}`)
       }

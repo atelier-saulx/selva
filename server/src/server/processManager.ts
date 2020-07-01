@@ -2,8 +2,8 @@ import { spawn, ChildProcess } from 'child_process'
 import pidusage, { Status } from 'pidusage'
 import { EventEmitter } from 'events'
 
-const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
-// const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every second
+// const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
+const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every 10 seconds
 
 export default class ProcessManager extends EventEmitter {
   private command: string
@@ -23,22 +23,29 @@ export default class ProcessManager extends EventEmitter {
     }
   }
 
-  private startLoadMeasurements() {
-    this.loadMeasurementsTimeout = setTimeout(() => {
-      this.collect()
-        .then(data => {
-          this.emit('stats', data)
-        })
-        .catch(e => {
-          console.error(
-            `Error collecting load measurements from ${this.command}`,
-            e
-          )
-        })
-        .finally(() => {
-          this.startLoadMeasurements()
-        })
-    }, LOAD_MEASUREMENTS_INTERVAL)
+  private startLoadMeasurements(isNotFirst: boolean = false) {
+    this.loadMeasurementsTimeout = setTimeout(
+      () => {
+        this.collect()
+          .then(data => {
+            if (data.isBusy) {
+              this.emit('busy', data)
+            } else {
+              this.emit('stats', data)
+            }
+          })
+          .catch(e => {
+            console.error(
+              `Error collecting load measurements from ${this.command}`,
+              e
+            )
+          })
+          .finally(() => {
+            this.startLoadMeasurements(true)
+          })
+      },
+      isNotFirst ? LOAD_MEASUREMENTS_INTERVAL : 0
+    )
   }
 
   private stopLoadMeasurements() {
@@ -64,8 +71,8 @@ export default class ProcessManager extends EventEmitter {
     })
 
     const exitHandler = (code: number) => {
-      console.log(
-        `Child process for ${this.command} exited with code ${code}. Restarting...`
+      console.error(
+        `🔥  Child process for ${this.command} exited with code ${code}. Restarting...`
       )
 
       this.childProcess.removeAllListeners()

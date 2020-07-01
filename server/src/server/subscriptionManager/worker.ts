@@ -1,13 +1,9 @@
 import { ServerOptions } from '../../types'
 import { SubscriptionManager } from './types'
-import { SelvaClient, constants } from '@saulx/selva'
+import { SelvaClient } from '@saulx/selva'
 import { parentPort } from 'worker_threads'
 import addListeners from './addListeners'
 import updateSubscriptionData from './updateSubscriptionData'
-
-process.env.SELVA_SERVER_TYPE = 'subscriptionManager'
-
-const { SERVER_HEARTBEAT } = constants
 
 const clear = (subsManager: SubscriptionManager) => {
   subsManager.clients = {}
@@ -18,27 +14,14 @@ const clear = (subsManager: SubscriptionManager) => {
   subsManager.stagedForUpdates = new Set()
   clearTimeout(subsManager.stagedTimeout)
   clearTimeout(subsManager.revalidateSubscriptionsTimeout)
-  clearTimeout(subsManager.serverHeartbeatTimeout)
   clearTimeout(subsManager.refreshNowQueriesTimeout)
-}
-
-const startServerHeartbeat = (subsManager: SubscriptionManager) => {
-  const setHeartbeat = () => {
-    subsManager.client.redis.publish(
-      subsManager.selector,
-      SERVER_HEARTBEAT,
-      String(Date.now())
-    )
-    subsManager.serverHeartbeatTimeout = setTimeout(setHeartbeat, 2e3)
-  }
-  setHeartbeat()
 }
 
 const revalidateSubscriptions = (subsManager: SubscriptionManager) => {
   updateSubscriptionData(subsManager)
   subsManager.revalidateSubscriptionsTimeout = setTimeout(() => {
     revalidateSubscriptions(subsManager)
-  }, 1 * 30e3)
+  }, 1 * 5e3)
 }
 
 const createSubscriptionManager = (
@@ -55,6 +38,7 @@ const createSubscriptionManager = (
     memberMemCache: {},
     clients: {},
     subscriptions: {},
+    inProgressCount: 0,
     tree: {},
     selector: {
       port: opts.port,
@@ -63,9 +47,8 @@ const createSubscriptionManager = (
     originListeners: {}
   }
 
-  client.redis.registry.on('connect', () => {
+  client.on('connect', () => {
     addListeners(subsManager)
-    startServerHeartbeat(subsManager)
     updateSubscriptionData(subsManager)
     revalidateSubscriptions(subsManager)
 
@@ -76,7 +59,7 @@ const createSubscriptionManager = (
     )
   })
 
-  client.redis.registry.on('disconnect', () => {
+  client.on('disconnect', () => {
     clear(subsManager)
   })
 

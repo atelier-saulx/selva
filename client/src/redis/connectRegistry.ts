@@ -1,5 +1,5 @@
 import { ConnectOptions, ServerDescriptor } from '../types'
-import { getClient } from './clients'
+import { getClient, destroyClient } from './clients'
 import RedisSelvaClient from './'
 import {
   REGISTRY_UPDATE,
@@ -28,29 +28,34 @@ const sortSubsManagers = (a, b) => {
 
 const getServers = async (client: RedisSelvaClient, id?: string) => {
   delete client.servers
-  const serverList =
+  const serverList = (
     (await client.smembers({ type: 'registry' }, 'servers')) || []
+  ).filter(v => !!v)
   const servers: Servers = {}
   const serversById: ServersById = {}
   const subManagerObj: Record<string, true> = {}
   const subsManagers = []
+
   const result: ServerDescriptor[] = await Promise.all(
     serverList.map(
       async (id: string): Promise<ServerDescriptor> => {
-        const [host, port, name, type, def] = await client.hmget(
+        const [host, port, name, type, def, stats] = await client.hmget(
           { type: 'registry' },
           id,
           'host',
           'port',
           'name',
           'type',
-          'default'
+          'default',
+          'stats'
         )
+
         const descriptor: ServerDescriptor = {
           host,
           port: Number(port),
           name,
           type,
+          stats: stats ? JSON.parse(stats) : {},
           default: def ? true : false
         }
 
@@ -80,10 +85,12 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
     servers[server.name][server.type].push(server)
   }
 
+  // need to check for diff
+
   subsManagers.sort(sortSubsManagers)
 
   if (client.subsManagers && client.subsManagers.length) {
-    for (let i = 0; i > client.subsManagers.length; i++) {
+    for (let i = 0; i < client.subsManagers.length; i++) {
       const id = `${client.subsManagers[i].host}:${client.subsManagers[i].port}`
       if (!subManagerObj[id]) {
         subsmanagerRemoved(client, id)
@@ -95,6 +102,7 @@ const getServers = async (client: RedisSelvaClient, id?: string) => {
   client.serversById = serversById
   client.servers = servers
   client.registry.emit('servers_updated', servers)
+  client.selvaClient.emit('servers_updated', servers)
 }
 
 type SubscriptionUpdates = {
@@ -116,8 +124,12 @@ const updateSubscriptions = (
   if (server) {
     for (let channel in subscriptions) {
       if (subscriptions[channel] === 'created') {
+        if (!server.subscriptions) {
+          server.subscriptions = new Set()
+        }
+
         server.subscriptions.add(channel)
-      } else if (subscriptions[channel] === 'removed') {
+      } else if (subscriptions[channel] === 'removed' && server.subscriptions) {
         server.subscriptions.delete(channel)
       }
     }
@@ -132,12 +144,16 @@ const createRegistryClient = (
   port: number,
   host: string
 ) => {
-  client.registry = getClient(client, {
+  clearTimeout(client.timeoutServers)
+
+  const descriptor: ServerDescriptor = {
     port,
     host,
     name: 'registry',
     type: 'registry'
-  })
+  }
+
+  client.registry = getClient(client, descriptor)
 
   client.registry.on('connect', () => {
     client.selvaClient.emit('connect')
@@ -147,11 +163,29 @@ const createRegistryClient = (
     client.selvaClient.emit('disconnect')
   })
 
-  client.subscribe({ type: 'registry' }, REGISTRY_UPDATE)
-  client.subscribe({ type: 'registry' }, REGISTRY_UPDATE_SUBSCRIPTION)
+  client.subscribe(descriptor, REGISTRY_UPDATE)
+  client.subscribe(descriptor, REGISTRY_UPDATE_SUBSCRIPTION)
+
+  if (client.selvaClient.serverType === 'registry') {
+    client.subscribe(descriptor, REGISTRY_UPDATE_STATS)
+  }
+
+  const setTimeoutServer = () => {
+    clearTimeout(client.timeoutServers)
+    client.timeoutServers = setTimeout(() => {
+      getServers(client)
+    }, 30e3)
+  }
+
+  setTimeoutServer()
 
   client.on({ type: 'registry' }, 'message', (channel, payload) => {
-    if (channel === REGISTRY_UPDATE) {
+    if (
+      channel === REGISTRY_UPDATE ||
+      (client.selvaClient.serverType === 'registry' &&
+        channel === REGISTRY_UPDATE_STATS)
+    ) {
+      setTimeoutServer()
       // can be handled more effiecently
       getServers(client, <string>payload)
     } else if (channel === REGISTRY_UPDATE_SUBSCRIPTION) {
@@ -181,6 +215,7 @@ const connectRegistry = (
           newConnectionOptions.host !== prevConnectOptions.host ||
           newConnectionOptions.port !== prevConnectOptions.port
         ) {
+          destroyClient(client.registry)
           client.registry.removeListener('disconnect', dcHandler)
           client.registry = undefined
           connectRegistry(client, connectOptions)

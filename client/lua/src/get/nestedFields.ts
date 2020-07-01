@@ -50,6 +50,7 @@ export function getNestedSchema(id: string, field: string): FieldSchema | null {
   }
 
   const fields = splitString(field, '.')
+
   const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
   if (!typeSchema || !typeSchema.fields) {
     return null
@@ -64,14 +65,23 @@ export function getNestedSchema(id: string, field: string): FieldSchema | null {
   for (let i = 1; i < fields.length; i++) {
     const segment = fields[i]
 
-    if (!prop || !prop.properties) {
+    if (!prop) {
       return null
     }
 
-    prop = prop.properties[segment]
+    if (prop.values) {
+      // record types skip the next key
+      prop = prop.values
+    } else {
+      if (!prop.properties) {
+        return null
+      }
 
-    str += '.' + segment
-    typeCache[str] = prop
+      prop = prop.properties[segment]
+
+      str += '.' + segment
+      typeCache[str] = prop
+    }
   }
 
   return prop
@@ -82,6 +92,18 @@ export const setNestedResult = (
   field: string,
   value: any
 ) => {
+  if (!field) {
+    return
+  }
+
+  if (field === '') {
+    for (const k in value) {
+      result[k] = value[k]
+    }
+
+    return
+  }
+
   const fields = splitString(field, '.')
   const len = fields.length
   if (len > 1) {

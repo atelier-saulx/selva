@@ -1,61 +1,90 @@
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import ProcessManager from './processManager'
+import { SelvaClient, ServerType } from '@saulx/selva'
 
 export default class RedisManager extends ProcessManager {
   private redisPort: number
+  private redisHost: string
+  private selvaClient: SelvaClient
+  private type: ServerType
+  private name: string
 
-  constructor(args: string[]) {
+  constructor(
+    args: string[],
+    {
+      host,
+      port,
+      selvaClient,
+      type,
+      name
+    }: {
+      host: string
+      port: number
+      selvaClient: SelvaClient
+      name: string
+      type: ServerType
+    }
+  ) {
     super('redis-server', args)
-    this.redisPort = Number(args[args.indexOf('--port') + 1])
+
+    this.redisHost = host
+    this.redisPort = port
+    this.selvaClient = selvaClient
+    this.type = type
+    this.name = name
   }
 
   protected async collect(): Promise<any> {
     const runtimeInfo = await super.collect()
 
     try {
-      const info = await promisify(exec)(`redis-cli -p ${this.redisPort} INFO`)
-      const infoLines = info.stdout.split('\r\n')
-      const redisInfo = infoLines.reduce((acc, line) => {
-        if (line.startsWith('#')) {
-          return acc
-        }
+      let timeout
+      const wait = () =>
+        new Promise((_resolve, reject) => {
+          timeout = setTimeout(() => reject(new Error('timedout info')), 2e3)
+        })
 
-        const [key, val] = line.split(':')
-        if (key === '') {
-          return acc
-        }
+      const info = await Promise.race([
+        this.selvaClient.redis.info({
+          port: this.redisPort,
+          host: this.redisHost,
+          type: this.type,
+          name: this.name
+        }),
+        wait()
+      ])
 
-        return {
-          ...acc,
-          [key]: val
-        }
-      }, {})
-      return { redisInfo, runtimeInfo }
+      clearTimeout(timeout)
+
+      if (info) {
+        const infoLines = info.split('\r\n')
+        const redisInfo = infoLines.reduce((acc, line) => {
+          if (line.startsWith('#')) {
+            return acc
+          }
+
+          const [key, val] = line.split(':')
+          if (key === '') {
+            return acc
+          }
+
+          return {
+            ...acc,
+            [key]: val
+          }
+        }, {})
+
+        return { redisInfo, runtimeInfo }
+      } else {
+        return { isBusy: true, runtimeInfo }
+      }
     } catch (err) {
-      return { redisInfo: {}, runtimeInfo, shutdown: true }
+      console.error('Cannot get info', err.message)
+      return {
+        redisInfo: {},
+        runtimeInfo,
+        err: err.message,
+        isBusy: true
+      }
     }
   }
-}
-
-if (module === require.main) {
-  // TODO: remove test stuff
-  const pm = new RedisManager([
-    '--loadmodule',
-    './modules/binaries/darwin_x64/redisearch.so',
-    '--loadmodule',
-    './modules/binaries/darwin_x64/selva.so'
-  ])
-
-  pm.on('stdout', console.log)
-  pm.on('stats', console.log)
-  pm.on('stderr', console.error)
-
-  pm.start()
-
-  setTimeout(() => {
-    console.log('Closing...')
-    pm.destroy()
-    process.exit(0)
-  }, 5e3)
 }

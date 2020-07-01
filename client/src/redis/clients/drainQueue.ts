@@ -1,9 +1,17 @@
 import { RedisCommand } from '../types'
-import './redisSearch'
 import execBatch from './execBatch'
-import { getScriptSha } from './scripts'
+import { getScriptSha, loadScripts } from './scripts'
 import * as constants from '../../constants'
-import { Client } from './'
+import { Client, addCommandToQueue } from './'
+
+const errListener = (client: Client, redisCommand: RedisCommand, err: any) => {
+  if (err) {
+    console.log('---------------->', err)
+    process.nextTick(() => {
+      addCommandToQueue(client, redisCommand)
+    })
+  }
+}
 
 const drainQueue = (client: Client, q?: RedisCommand[]) => {
   if (!client.queueInProgress) {
@@ -22,40 +30,65 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         const parsedQ = []
         for (let i = 0; i < q.length; i++) {
           const redisCommand = q[i]
-          const { command, resolve, args } = redisCommand
-
-          // need to make nice
-          // if (command === 'selva.modify') {
-          // } else
-
-          if (command === 'subscribe') {
-            client.subscriber.subscribe(...(<string[]>args))
-            resolve(true)
+          const { command, resolve, args, reject } = redisCommand
+          if (command === 'info') {
+            client.publisher.info((err, data) => {
+              if (err || !data) {
+                if (reject) {
+                  reject(err || new Error('no data'))
+                } else if (resolve) {
+                  resolve('')
+                }
+              } else {
+                if (resolve) {
+                  resolve(data)
+                }
+              }
+            })
+          } else if (command === 'punsubscribe') {
+            delete client.redisSubscriptions.psubscribe[args[0]]
+            client.subscriber.punsubscribe(...(<string[]>args), err =>
+              errListener(client, redisCommand, err)
+            )
+            if (resolve) resolve(true)
+          } else if (command === 'unsubscribe') {
+            delete client.redisSubscriptions.subscribe[args[0]]
+            client.subscriber.unsubscribe(...(<string[]>args), err =>
+              errListener(client, redisCommand, err)
+            )
+            if (resolve) resolve(true)
+          } else if (command === 'subscribe') {
+            client.redisSubscriptions.subscribe[args[0]] = true
+            client.subscriber.subscribe(...(<string[]>args), err =>
+              errListener(client, redisCommand, err)
+            )
+            if (resolve) resolve(true)
           } else if (command === 'psubscribe') {
-            client.subscriber.psubscribe(...(<string[]>args))
-            resolve(true)
+            client.redisSubscriptions.psubscribe[args[0]] = true
+            client.subscriber.psubscribe(...(<string[]>args), err =>
+              errListener(client, redisCommand, err)
+            )
+            if (resolve) resolve(true)
           } else {
-            if (redisCommand.command.toLowerCase() === 'evalsha') {
-              const script = redisCommand.args[0]
+            if (command.toLowerCase() === 'evalsha') {
+              const script = args[0]
               if (
                 typeof script === 'string' &&
                 script.startsWith(constants.SCRIPT)
-              ) {
+               {
                 const sha = getScriptSha(
-                  (<string>redisCommand.args[0]).slice(
-                    constants.SCRIPT.length + 1
-                  )
+                  (<string>args[0]).slice(constants.SCRIPT.length + 1)
                 )
                 if (!sha) {
                   client.queue.push(redisCommand)
                   continue
                 } else {
-                  redisCommand.args[0] = sha
+                  args[0] = sha
                   if (script === `${constants.SCRIPT}:modify`) {
                     if (!modify) {
                       modify = redisCommand
                     } else {
-                      modify.args.push(...redisCommand.args.slice(2))
+                      modify.args.push(...args.slice(2))
                     }
 
                     modifyResolvers.push(redisCommand.resolve)
@@ -75,16 +108,28 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
         }
 
         if (modify) {
-          // console.log('COMBINED', modify)
+          const orig = modify
           modify.resolve = results => {
             for (let i = 0; i < modifyResolvers.length; i++) {
-              modifyResolvers[i](results[i])
+              if (modifyResolvers[i]) {
+                modifyResolvers[i](results[i])
+              }
             }
           }
 
           modify.reject = err => {
+            if (err.stack.includes('NOSCRIPT')) {
+              loadScripts(client, () => {
+                orig.args[0] = getScriptSha('modify')
+                addCommandToQueue(client, orig)
+              })
+              return
+            }
+
             modifyRejects.forEach(reject => {
-              reject(err)
+              if (reject) {
+                reject(err)
+              }
             })
           }
 
@@ -92,26 +137,33 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
           modify = undefined
         }
 
-        const d = Date.now()
-        execBatch(client, parsedQ)
-          .then(() => {
-            client.queueBeingDrained = []
-            if (nextQ) {
-              client.queueInProgress = false
-              drainQueue(client, nextQ)
-            } else if (client.queue.length) {
-              client.queueInProgress = false
-              drainQueue(client)
-            } else {
-              client.queueInProgress = false
-            }
-          })
-          .catch(err => {
-            console.log('Error executing batch', err)
-            client.queue.concat(client.queueBeingDrained)
-            client.queueBeingDrained = []
+        const queueDone = () => {
+          client.queueBeingDrained = []
+          if (nextQ) {
             client.queueInProgress = false
-          })
+            drainQueue(client, nextQ)
+          } else if (client.queue.length) {
+            client.queueInProgress = false
+            drainQueue(client)
+          } else {
+            client.queueInProgress = false
+          }
+        }
+
+        if (parsedQ.length === 0) {
+          queueDone()
+        } else {
+          execBatch(client, parsedQ)
+            .then(() => {
+              queueDone()
+            })
+            .catch(err => {
+              console.log('Error executing batch', err)
+              client.queue.concat(client.queueBeingDrained)
+              client.queueBeingDrained = []
+              client.queueInProgress = false
+            })
+        }
       } else {
         client.queueInProgress = false
       }

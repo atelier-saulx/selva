@@ -1,9 +1,13 @@
-import { setNestedResult, getNestedSchema } from './nestedFields'
+import {
+  setNestedResult,
+  getNestedSchema,
+  getNestedField
+} from './nestedFields'
 import { GetFieldFn } from './types'
 import * as r from '../redis'
 import { GetOptions, GetResult } from '~selva/get/types'
 import { getSchema } from '../schema/index'
-import { ensureArray, stringStartsWith } from '../util'
+import { ensureArray, stringStartsWith, splitString } from '../util'
 import * as logger from '../logger'
 
 export default function getSingularReference(
@@ -117,6 +121,36 @@ export default function getSingularReference(
     ignore,
     metaKeys
   )
+
+  if (props.$flatten) {
+    const parts = splitString(<string>resultField, '.')
+
+    let newField
+    if (parts.length === 1) {
+      newField = null
+    } else {
+      newField = parts[0]
+      for (let i = 1; i < parts.length - 1; i++) {
+        newField += '.' + parts[i]
+      }
+    }
+
+    let current: GetResult = !!newField
+      ? getNestedField(result, newField)
+      : result
+    if (!current) {
+      setNestedResult(result, newField, intermediateResult)
+    } else {
+      for (const k in intermediateResult) {
+        setNestedResult(
+          result,
+          newField ? newField + '.' + k : k,
+          intermediateResult[k]
+        )
+      }
+    }
+    return true
+  }
 
   setNestedResult(result, <string>resultField, intermediateResult)
 

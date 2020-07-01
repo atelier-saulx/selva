@@ -1,20 +1,26 @@
 import { RedisClient } from 'redis'
-import './redisSearch'
-import { RedisCommand } from '../types'
+import { RedisCommand, Callback } from '../types'
 import RedisSelvaClient from '../'
+import './redisClientExtensions'
 import { ServerType, ServerDescriptor, LogEntry } from '../../types'
 import { EventEmitter } from 'events'
 import createRedisClient from './createRedisClient'
 import { loadScripts } from './scripts'
 import drainQueue from './drainQueue'
 import { v4 as uuidv4 } from 'uuid'
-import startHeartbeat from './startHeartbeat'
+import startSubscriptionHeartbeat from './startSubscriptionHeartbeat'
 import { ObserverEmitter } from '../observers'
 import { getObserverValue, sendObserver } from './observers'
-import getServerDescriptor from '../getServerDescriptor'
 import * as constants from '../../constants'
+import { SERVER_HEARTBEAT } from '../../constants'
+import reconnectClient from './reconnectClient'
 
-type ClientOpts = {
+export type RedisSubscriptions = {
+  psubscribe: Record<string, true>
+  subscribe: Record<string, true>
+}
+
+export type ClientOpts = {
   name: string
   type: ServerType
   host: string
@@ -24,9 +30,7 @@ type ClientOpts = {
 
 const addListeners = (client: Client) => {
   const type = client.type
-  const isSubscriptionManager =
-    type === 'subscriptionManager' &&
-    process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
+  const isSubscriptionManager = type === 'subscriptionManager'
 
   if (isSubscriptionManager) {
     client.subscriber.on('message', (channel, msg) => {
@@ -51,6 +55,17 @@ const addListeners = (client: Client) => {
 export class Client extends EventEmitter {
   public subscriber: RedisClient
   public publisher: RedisClient
+  public redisSubscriptions: RedisSubscriptions = {
+    psubscribe: {},
+    subscribe: {}
+  }
+
+  public isRemoved: boolean
+  public startClientTimer: NodeJS.Timeout
+  public serverHeartbeat: NodeJS.Timeout
+
+  // event, listeners
+  public redisListeners: Record<string, Callback[]> = {}
   public queue: RedisCommand[]
   public queueInProgress: boolean
   public name: string // for logging
@@ -83,26 +98,58 @@ export class Client extends EventEmitter {
     this.queueBeingDrained = []
     this.connected = false
 
-    const isSubscriptionManager =
-      type === 'subscriptionManager' &&
-      process.env.SELVA_SERVER_TYPE !== 'subscriptionManager'
+    const isSubscriptionManager = type === 'subscriptionManager'
 
     this.on('hard-disconnect', () => {
       // find different server for it
+      this.emit('disconnect')
+      console.log(
+        'hard dc - prob need to reconnect to somethign new',
+        port,
+        host,
+        type,
+        name
+      )
 
-      console.log('hard dc - prob need to reconnect to somethign new')
+      this.subscriber.removeAllListeners()
+      this.publisher.removeAllListeners()
+      this.subscriber.quit()
+      this.publisher.quit()
 
-      this.subscriber = createRedisClient(this, host, port, 'subscriber')
-      this.publisher = createRedisClient(this, host, port, 'publisher')
-      addListeners(this)
+      if (type === 'registry') {
+        this.subscriber = createRedisClient(this, host, port, 'subscriber')
+        this.publisher = createRedisClient(this, host, port, 'publisher')
+        addListeners(this)
+      } else {
+        if (type === 'subscriptionManager') {
+          console.log('ok subs manager we can throw this away')
+          destroyClient(this)
+        } else {
+          reconnectClient(this)
+        }
+      }
     })
 
     this.on('connect', () => {
       if (!this.connected) {
         this.connected = true
         drainQueue(this)
+
+        for (const key in this.redisSubscriptions.subscribe) {
+          addCommandToQueue(this, { command: 'subscribe', args: [key] })
+        }
+
+        for (const key in this.redisSubscriptions.psubscribe) {
+          addCommandToQueue(this, { command: 'psubscribe', args: [key] })
+        }
+
+        addCommandToQueue(this, {
+          command: 'subscribe',
+          args: [SERVER_HEARTBEAT]
+        })
+
         if (isSubscriptionManager) {
-          startHeartbeat(this)
+          startSubscriptionHeartbeat(this)
           for (const channel in this.observers) {
             let sendSubs = false
             this.observers[channel].forEach(obs => {
@@ -120,6 +167,7 @@ export class Client extends EventEmitter {
         }
       }
     })
+
     this.on('disconnect', () => {
       // on dc we actualy want to re-select if it had a selector!
       this.queue.concat(this.queueBeingDrained)
@@ -128,6 +176,7 @@ export class Client extends EventEmitter {
       this.queueInProgress = false
       clearTimeout(this.heartbeatTimout)
     })
+
     this.subscriber = createRedisClient(this, host, port, 'subscriber')
     this.publisher = createRedisClient(this, host, port, 'publisher')
 
@@ -155,9 +204,16 @@ const createClient = (descriptor: ServerDescriptor): Client => {
   return client
 }
 
-const destroyClient = (client: Client) => {
-  // remove hearthbeat
-  // for each client tell that this client is destroyed
+export const destroyClient = (client: Client) => {
+  client.queue = []
+  client.clients = new Set()
+  clients.delete(client.id)
+  client.observers = {}
+  client.isRemoved = true
+  client.queueBeingDrained = []
+  client.removeAllListeners()
+  client.redisListeners = {}
+  client.redisSubscriptions = { subscribe: {}, psubscribe: {} }
 }
 
 // export function removeRedisSelvaClient(
@@ -190,9 +246,11 @@ export function getClient(
   }
 
   if (!client.clients.has(selvaRedisClient)) {
-    client.subscriber.subscribe(
-      `${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`
-    )
+    addCommandToQueue(client, {
+      command: 'subscribe',
+      args: [`${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`]
+    })
+
     client.clients.add(selvaRedisClient)
   }
 

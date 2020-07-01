@@ -377,8 +377,6 @@ async function makeSchema(client) {
     }
   }
 
-  console.log(schema)
-
   await client.updateSchema(schema)
 }
 

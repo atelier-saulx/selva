@@ -84,7 +84,7 @@ test.serial('simple', async t => {
 })
 
 test.serial('simple with circular', async t => {
-  const client = connect({ port: port })
+  const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
     $id: 'geScifi',
@@ -499,4 +499,93 @@ test.serial('$field +  multiple options + inherit from root', async t => {
   t.is(y.layout.components.c1.component.$value, 'hello')
 
   t.true(true)
+})
+
+test.serial.skip('$field + inherit from root + query root', async t => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+  const types = ['match', 'region', 'root', 'default']
+
+  const layout = {
+    type: 'object',
+    meta: { type: 'layout', useTabs: true },
+    properties: types.reduce((properties, type) => {
+      properties[type] = {
+        type: 'object',
+        properties: {
+          components: {
+            meta: { expand: true },
+            type: 'array',
+            items: {
+              meta: { type: 'query' },
+              type: 'json'
+            }
+          },
+          userComponents: {
+            meta: { expand: true },
+            type: 'array',
+            items: {
+              meta: { type: 'query' },
+              type: 'json'
+            }
+          }
+        }
+      }
+      return properties
+    }, {})
+  }
+
+  try {
+    await client.updateSchema({
+      rootType: {
+        fields: {
+          //@ts-ignore
+          layout
+        }
+      },
+      types: {
+        match: {
+          prefix: 'ma',
+          fields: {
+            //@ts-ignore
+            layout
+          }
+        },
+        region: {
+          prefix: 're',
+          fields: {
+            //@ts-ignore
+            layout
+          }
+        }
+      }
+    })
+  } catch (err) {
+    t.fail('should be able to update layout fields root')
+    console.log(err)
+  }
+
+  await client.set({
+    $id: 'root',
+    layout: {
+      default: {
+        components: [
+          {
+            component: { $value: 'bye' }
+          }
+        ],
+        userComponents: []
+      }
+    }
+  })
+
+  const x = await client.get({
+    $id: 'root',
+    id: true,
+    layout: {
+      $inherit: true,
+      $field: ['layout.${type}', 'layout.default']
+    }
+  })
+
+  t.is(x.layout.components[0].component.$value, 'bye')
 })

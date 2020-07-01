@@ -107,7 +107,7 @@ function ancestryFromHierarchy(id: Id, parent: Id): string[] {
   }
 
   if (type(foundRule) === 'boolean' && foundRule === false) {
-    return []
+    return ['root', '0']
   }
 
   let finalAncestors: string[] = []
@@ -143,6 +143,10 @@ function ancestryFromHierarchy(id: Id, parent: Id): string[] {
   const depth = getDepth(parent)
   finalAncestors[finalAncestors.length] = parent
   finalAncestors[finalAncestors.length] = tostring(depth)
+
+  // ensure root
+  finalAncestors[finalAncestors.length] = 'root'
+  finalAncestors[finalAncestors.length] = '0'
 
   return finalAncestors
 }
@@ -296,27 +300,28 @@ export function reCalculateAncestors(): void {
     newIds[newIds.length] = id
   }
 
-  if (globals.$_batchOpts) {
-    const { batchId } = globals.$_batchOpts
+  // if (globals.$_batchOpts) {
+  //   const { batchId } = globals.$_batchOpts
 
-    if (!globals.$_batchOpts.last) {
-      if (newIds.length > 0) {
-        redis.sadd(`___selva_ancestors_batch:${batchId}`, ...newIds)
-        redis.expire(`___selva_ancestors_batch:${batchId}`, 60 * 1) // expires in 15 minutes 5
-      }
+  //   if (!globals.$_batchOpts.last) {
+  //     if (newIds.length > 0) {
+  //       redis.sadd(`___selva_ancestors_batch:${batchId}`, ...newIds)
+  //       redis.expire(`___selva_ancestors_batch:${batchId}`, 60 * 1) // expires in 15 minutes 5
+  //     }
 
-      return
-    }
+  //     return
+  //   }
 
-    ids = redis.smembers(`___selva_ancestors_batch:${batchId}`) || []
-    for (const id of newIds) {
-      ids[ids.length] = id
-    }
+  //   ids = redis.smembers(`___selva_ancestors_batch:${batchId}`) || []
+  //   for (const id of newIds) {
+  //     ids[ids.length] = id
+  //   }
 
-    redis.del(`___selva_ancestors_batch:${batchId}`)
-  } else {
-    ids = newIds
-  }
+  //   redis.del(`___selva_ancestors_batch:${batchId}`)
+  // } else {
+  //   ids = newIds
+  // }
+  ids = newIds
 
   reCalculateAncestorsFor(ids)
 }

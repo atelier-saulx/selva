@@ -13,6 +13,7 @@ export type FilterAST = {
 export type Fork = {
   $and?: (Fork | FilterAST)[]
   $or?: (Fork | FilterAST)[]
+  ids?: string[]
   isFork: true
 }
 

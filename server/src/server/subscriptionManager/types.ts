@@ -1,4 +1,4 @@
-import { GetOptions, SelvaClient } from '@saulx/selva'
+import { GetOptions, SelvaClient, ServerDescriptor } from '@saulx/selva'
 import { Worker } from 'worker_threads'
 
 export type Tree = Record<string, any>
@@ -20,10 +20,13 @@ export type Subscription = {
   channel: string
   refreshAt?: number
   origins: string[]
+  processNext?: boolean
+  beingProcessed?: boolean
 }
 
 export type SubscriptionManager = {
   client: SelvaClient
+  inProgressCount: number
   incomingCount: number
   stagedForUpdates: Set<Subscription>
   stagedInProgess: boolean
@@ -32,7 +35,6 @@ export type SubscriptionManager = {
   // cache by database name and by field
   memberMemCache: Record<string, Record<string, Record<string, true>>>
   // to check if the server is still ok
-  serverHeartbeatTimeout?: NodeJS.Timeout
   refreshNowQueriesTimeout?: NodeJS.Timeout
   // revalidates subs ones in a while
   revalidateSubscriptionsTimeout?: NodeJS.Timeout
@@ -43,7 +45,11 @@ export type SubscriptionManager = {
   selector: { port: number; host: string }
   originListeners: Record<
     string,
-    { subscriptions: Set<Subscription>; listener: (...args: any[]) => void }
+    {
+      subscriptions: Set<Subscription>
+      listener: (...args: any[]) => void
+      reconnectListener: (descriptor: ServerDescriptor) => void
+    }
   >
 }
 

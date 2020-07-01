@@ -1,6 +1,6 @@
 const fs = require('fs').promises
 const path = require('path')
-const start = require('../../dist/index').start
+const srv = require('../../dist/index')
 const redis = require('redis')
 
 const ENDPOINT = process.env.ENDPOINT
@@ -18,9 +18,15 @@ const backups = require('../../dist/backups')
     await fs.unlink(path.join(process.cwd(), 'dump.rdb'))
   } catch (e) {}
 
-  const server = start({
+  const registry = srv.startRegistry({
+    port: 6060
+  })
+
+  const server = srv.startOrigin({
+    default: true,
     port: 6061,
     dir: '/Users/tonykova/git/saulx/selva/server/examples/',
+    registry: { port: 6060 },
     backups: {
       loadBackup: true,
       scheduled: { intervalInMinutes: 0.5 },

@@ -1,6 +1,13 @@
-import { isArray, joinAny, splitString, escapeSpecial, now } from '../../util'
+import {
+  isArray,
+  joinAny,
+  splitString,
+  escapeSpecial,
+  now,
+  stringStartsWith
+} from '../../util'
 import { FilterAST, Fork, Value } from './types'
-import { isFork } from './util'
+import { isFork, convertNow } from './util'
 import * as logger from '../../logger'
 
 const RESERVED_QUERY_PARSER_LEXONS = {
@@ -47,8 +54,8 @@ function escapeNonASCII(str: string): string {
 }
 
 function toNumberValue(value: Value): string {
-  if (value === 'now') {
-    return tostring(now())
+  if (type(value) === 'string' && stringStartsWith(<string>value, 'now')) {
+    return tostring(convertNow(<string>value))
   } else {
     return tostring(value)
   }
@@ -141,9 +148,8 @@ const addField = (
           `sug`,
           words[i],
           'MAX',
-          '20'
+          '150'
         )
-        logger.info('sugget', suggestion)
 
         for (let j = 0; j < suggestion.length; j++) {
           suggestions[suggestions.length] = suggestion[j]

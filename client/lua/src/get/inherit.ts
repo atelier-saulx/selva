@@ -65,6 +65,7 @@ function setFromAncestors(
   if (!ancestorsWithScores) {
     ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
   }
+  const ancestorCount = ancestorsWithScores.length / 2
 
   const ancestorDepthMap: Record<Id, number> = {}
 
@@ -73,86 +74,101 @@ function setFromAncestors(
       tonumber(ancestorsWithScores[i + 1]) || 0
   }
 
-  let validParents: Id[] = []
-  for (let i = 0; i < parents.length; i++) {
-    if (ancestorDepthMap[parents[i]]) {
-      validParents[validParents.length] = parents[i]
+  let nextParents: Id[] = []
+  if (ancestorCount === 1) {
+    nextParents = [ancestorsWithScores[0]]
+  } else {
+    for (let i = 0; i < parents.length; i++) {
+      nextParents[nextParents.length] = parents[i]
     }
+
+    // we want to check parents from deepest to lowest depth
+    table.sort(nextParents, (a, b) => {
+      const aDepth = ancestorDepthMap[a] || 0
+      const bDepth = ancestorDepthMap[b] || 0
+
+      return aDepth > bDepth
+    })
   }
 
-  // we want to check parents from deepest to lowest depth
-  table.sort(validParents, (a, b) => {
-    return ancestorDepthMap[a] > ancestorDepthMap[b]
-  })
-
   const visited: Record<string, true> = {}
+  let visitedCount = 0
 
-  while (validParents.length > 0) {
+  while (nextParents.length > 0 && visitedCount < ancestorCount) {
     const next: Id[] = []
-    for (const parent of validParents) {
+    for (const parent of nextParents) {
       if (!visited[parent]) {
         visited[parent] = true
+        if (ancestorDepthMap[parent]) {
+          visitedCount++
 
-        if (
-          !tryAncestorCondition ||
-          (tryAncestorCondition && tryAncestorCondition(parent))
-        ) {
-          if (fieldFrom && fieldFrom.length > 0) {
-            if (
-              getWithField(
-                result,
-                schema,
-                parent,
-                field,
-                fieldFrom,
-                language,
-                version
-              )
-            ) {
-              return true
-            }
-          } else if (field === '') {
-            const intermediateResult = !acceptAncestorCondition ? result : {}
-            getField(
-              props || {},
-              schema,
-              intermediateResult,
-              parent,
-              '',
-              language,
-              version,
-              '$inherit'
-            )
-
-            if (!acceptAncestorCondition) {
-              return true
-            }
-
-            if (acceptAncestorCondition(intermediateResult)) {
-              for (const k in intermediateResult) {
-                result[k] = intermediateResult[k]
+          if (
+            !tryAncestorCondition ||
+            (tryAncestorCondition && tryAncestorCondition(parent))
+          ) {
+            if (fieldFrom && fieldFrom.length > 0) {
+              if (
+                getWithField(
+                  result,
+                  schema,
+                  parent,
+                  field,
+                  fieldFrom,
+                  language,
+                  version
+                )
+              ) {
+                return true
               }
-              return true
-            }
-          } else {
-            if (
-              getByType(result, schema, parent, field, language, version, merge)
-            ) {
-              return true
+            } else if (field === '') {
+              const intermediateResult = !acceptAncestorCondition ? result : {}
+              getField(
+                props || {},
+                schema,
+                intermediateResult,
+                parent,
+                '',
+                language,
+                version,
+                '$inherit'
+              )
+
+              if (!acceptAncestorCondition) {
+                return true
+              }
+
+              if (acceptAncestorCondition(intermediateResult)) {
+                for (const k in intermediateResult) {
+                  result[k] = intermediateResult[k]
+                }
+                return true
+              }
+            } else {
+              if (
+                getByType(
+                  result,
+                  schema,
+                  parent,
+                  field,
+                  language,
+                  version,
+                  merge
+                )
+              ) {
+                return true
+              }
             }
           }
         }
 
         const parentsOfParents = redis.smembers(parent + '.parents')
         for (const parentOfParents of parentsOfParents) {
-          if (ancestorDepthMap[parentOfParents]) {
-            next[next.length] = parentOfParents
-          }
+          next[next.length] = parentOfParents
         }
       }
-
-      validParents = next
     }
+
+    nextParents = next
   }
 
   return false

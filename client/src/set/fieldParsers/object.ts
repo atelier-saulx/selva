@@ -18,7 +18,6 @@ export default (
 
   let hasKeys = false
   for (let key in payload) {
-    hasKeys = true
     if (key[0] === '$') {
       if (key === '$merge') {
         if (!(payload[key] === true || payload[key] === false)) {
@@ -31,8 +30,11 @@ export default (
       } else if (key === '$ref') {
         r.$ref = payload[key]
         return
+      } else if (key === '$delete') {
+        r.$delete = true
+        return
       } else if (key === '$_itemCount') {
-        r.$ref = payload[key]
+        r.$_itemCount = payload[key]
         return
       } else {
         throw new Error(`Wrong option on object ${key}`)
@@ -40,10 +42,16 @@ export default (
     } else if (!fields.properties[key]) {
       throw new Error(`Cannot find field ${key} in ${type} for object`)
     } else {
+      hasKeys = true
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
 
       fn(schema, key, payload[key], r, fields.properties[key], type, $lang)
+
+      // check if nested things have been removed because there are empty objects or the like
+      if (Object.keys(result[field]).length === 0) {
+        hasKeys = false
+      }
     }
   }
 

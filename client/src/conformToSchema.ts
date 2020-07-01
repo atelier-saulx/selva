@@ -19,7 +19,10 @@ export default async function conformToSchema(
     return null
   }
 
-  const schema = (await client.getSchema(dbName)).schema
+  const schema = client.schemas[dbName]
+  if (!schema) {
+    throw new Error(`No schema for db ${dbName}`)
+  }
 
   if (props.$id !== 'root') {
     if (!props.type) {

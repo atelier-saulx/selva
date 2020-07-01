@@ -16,50 +16,47 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
   }
 
   server.on('stats', rawStats => {
-    if (!rawStats.shutdown) {
-      const stats: Stats = {
-        memory: rawStats.runtimeInfo.memory,
-        redisMemory: Number(rawStats.redisInfo.used_memory),
-        cpu: rawStats.runtimeInfo.cpu,
-        luaMemory: Number(rawStats.redisInfo.used_memory_lua),
-        totalMemoryAvailable: Number(rawStats.redisInfo.total_system_memory),
-        memoryFragmentationRatio: Number(
-          rawStats.redisInfo.mem_fragmentation_ratio
-        ),
-        lastSaveTime: Number(rawStats.redisInfo.rdb_last_save_time),
-        uptime: rawStats.runtimeInfo.elapsed,
-        lastSaveError:
-          rawStats.redisInfo.last_bgsave_status === 'ok' ? false : true,
-        totalNetInputBytes: Number(rawStats.redisInfo.total_net_input_bytes),
-        totalNetOutputBytes: Number(rawStats.redisInfo.total_net_output_bytes),
-        activeChannels: Number(rawStats.redisInfo.pubsub_channels),
-        opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
-        timestamp: rawStats.runtimeInfo.timestamp
-      }
-
-      updateRegistry(
-        server.registry,
-        Object.assign(
-          {
-            stats
-          },
-          info
-        )
-      )
+    const stats: Stats = {
+      memory: rawStats.runtimeInfo.memory,
+      redisMemory: Number(rawStats.redisInfo.used_memory),
+      cpu: rawStats.runtimeInfo.cpu,
+      luaMemory: Number(rawStats.redisInfo.used_memory_lua),
+      totalMemoryAvailable: Number(rawStats.redisInfo.total_system_memory),
+      memoryFragmentationRatio: Number(
+        rawStats.redisInfo.mem_fragmentation_ratio
+      ),
+      lastSaveTime: Number(rawStats.redisInfo.rdb_last_save_time),
+      uptime: rawStats.runtimeInfo.elapsed,
+      lastSaveError:
+        rawStats.redisInfo.last_bgsave_status === 'ok' ? false : true,
+      totalNetInputBytes: Number(rawStats.redisInfo.total_net_input_bytes),
+      totalNetOutputBytes: Number(rawStats.redisInfo.total_net_output_bytes),
+      activeChannels: Number(rawStats.redisInfo.pubsub_channels),
+      opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
+      timestamp: rawStats.runtimeInfo.timestamp
     }
+    updateRegistry(
+      server.selvaClient,
+      Object.assign(
+        {
+          stats
+        },
+        info
+      )
+    )
   })
 
-  server.on('busy', () => {})
+  server.on('busy', () => {
+    console.log('SERVER IS BUSY')
+  })
 
-  server.on('subscription', () => {})
-
-  server.registry.on('connect', () => {
+  server.selvaClient.on('connect', () => {
     console.log('Registering server', info)
-    updateRegistry(server.registry, info)
+    updateRegistry(server.selvaClient, info)
   })
 
   console.log('Registering server', info)
-  updateRegistry(server.registry, info)
+  updateRegistry(server.selvaClient, info)
 }
 
 export default attachStatusListeners

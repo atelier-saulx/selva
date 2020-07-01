@@ -1,12 +1,17 @@
 import { SelvaClient } from '..'
 import { GetResult, GetOptions } from './types'
 import { SCRIPT } from '../constants'
-import validate, { ExtraQueries, ExtraQuery } from './validate'
+import validate, {
+  ExtraQueries,
+  ExtraQuery,
+  PostGetExtraQuery
+} from './validate'
 import { deepMerge } from './deepMerge'
 
 async function combineResults(
   client: SelvaClient,
   extraQueries: ExtraQueries,
+  $language: string | undefined,
   getResult: GetResult,
   meta?: any
 ) {
@@ -17,7 +22,7 @@ async function combineResults(
   if (Object.keys(getResult).length === 1 && getResult.listResult) {
     await Promise.all(
       getResult.listResult.map(res => {
-        return combineResults(client, extraQueries, res, meta)
+        return combineResults(client, extraQueries, $language, res, meta)
       })
     )
     return
@@ -27,6 +32,14 @@ async function combineResults(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
         query.map(async q => {
+          if (q.type === 'traverse') {
+            // these are processed before the main query
+            if (meta) {
+              deepMerge(meta, q.meta)
+            }
+            return
+          }
+
           const parts = q.path.substr(1).split('.')
 
           if (parts[0] === 'listResult') {
@@ -36,6 +49,27 @@ async function combineResults(
           let g = getResult
           for (let i = 0; i <= parts.length - 2; i++) {
             const part = parts[i]
+
+            if (Array.isArray(g[part]) && isNaN(<any>parts[i + 1])) {
+              const newQuery: ExtraQuery = {
+                type: q.type,
+                getOpts: q.getOpts,
+                path: '.' + parts.slice(i + 1).join('.'),
+                placeholder: q.placeholder
+              }
+
+              return Promise.all(
+                g[part].map(r => {
+                  return combineResults(
+                    client,
+                    { [db]: [newQuery] },
+                    $language,
+                    r,
+                    meta
+                  )
+                })
+              )
+            }
 
             if (!g[part]) {
               g[part] = {}
@@ -48,6 +82,7 @@ async function combineResults(
             const r = await get(
               client,
               {
+                $language,
                 $id: g[parts[parts.length - 1]],
                 $db: db,
                 $includeMeta: !!meta,
@@ -56,6 +91,7 @@ async function combineResults(
               meta,
               true
             )
+
             g[parts[parts.length - 1]] = r
           } else if (q.type === 'references') {
             if (q.getOpts.$list) {
@@ -63,6 +99,7 @@ async function combineResults(
               const r = await get(
                 client,
                 {
+                  $language,
                   $includeMeta: !!meta,
                   $db: db,
                   listResult: {
@@ -99,6 +136,7 @@ async function combineResults(
                 const nestedResult = await get(
                   client,
                   {
+                    $language,
                     $includeMeta: !!meta,
                     $db: db,
                     listResult: {
@@ -124,6 +162,7 @@ async function combineResults(
               const r = await get(
                 client,
                 {
+                  $language,
                   $db: db,
                   $includeMeta: !!meta,
                   listResult: {
@@ -143,6 +182,7 @@ async function combineResults(
             const r = await get(
               client,
               {
+                $language,
                 $includeMeta: !!meta,
                 $db: db,
                 ...q.getOpts
@@ -184,11 +224,24 @@ function makeNewGetOptions(
   for (const key in getOpts) {
     const newPath = path + '.' + key
     if (extraQueries[newPath]) {
-      newOpts[key] = extraQueries[newPath].placeholder
+      const extraQuery: ExtraQuery = extraQueries[newPath]
+      if (extraQuery.type === 'traverse') {
+        newOpts[key] = extraQuery.value || []
+      } else {
+        newOpts[key] = extraQuery.placeholder
+      }
     } else if (!key.startsWith('$') && Array.isArray(getOpts[key])) {
-      newOpts[key] = getOpts[key].map((g, i) =>
-        makeNewGetOptions(extraQueries, g, newPath + '.' + i)
-      )
+      newOpts[key] = getOpts[key].map((g, i) => {
+        const extraQuery: PostGetExtraQuery = <PostGetExtraQuery>(
+          extraQueries[newPath + '.' + i]
+        )
+
+        if (extraQuery) {
+          return extraQuery.placeholder
+        }
+
+        return makeNewGetOptions(extraQueries, g, newPath + '.' + i)
+      })
     } else if (Array.isArray(getOpts[key])) {
       newOpts[key] = getOpts[key]
     } else if (typeof getOpts[key] === 'object') {
@@ -208,7 +261,7 @@ async function get(
   nested: boolean = false
 ): Promise<GetResult> {
   const extraQueries: ExtraQueries = {}
-  validate(extraQueries, client, props)
+  await validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
     getExtraQueriesByField(extraQueries),
     props
@@ -249,7 +302,7 @@ async function get(
     }
   }
 
-  await combineResults(client, extraQueries, getResult, meta)
+  await combineResults(client, extraQueries, props.$language, getResult, meta)
 
   if (props.$includeMeta && !nested) {
     getResult.$meta = meta

@@ -2,7 +2,7 @@ import { constants } from '@saulx/selva'
 import { addSubscriptionToTree, removeSubscriptionFromTree } from '../tree'
 import { hash } from '../util'
 import { Subscription, SubscriptionManager } from '../types'
-import { clear } from 'pidusage'
+import { wait } from '../../../util'
 
 const { CACHE } = constants
 
@@ -14,10 +14,15 @@ const sendUpdate = async (
   const { client, selector } = subscriptionManager
   const redis = client.redis
 
+  if (subscriptionManager.subscriptions[channel] !== subscription) {
+    return
+  }
+
+  subscriptionManager.inProgressCount++
+  subscription.beingProcessed = true
   const getOptions = subscription.get
   getOptions.$includeMeta = true
 
-  // SCHEMA UPDATES
   if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
     const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
     const schemaResp = await client.getSchema(dbName)
@@ -32,8 +37,14 @@ const sendUpdate = async (
       version
     )
     await redis.publish(selector, channel, version)
+    subscription.beingProcessed = false
     return
   }
+
+  let time = setTimeout(() => {
+    // log these somewhere!
+    console.log('TIMEOUT OUT', channel, subscription.origins)
+  }, 15e3)
 
   const payload = await client.get(getOptions)
 
@@ -54,6 +65,9 @@ const sendUpdate = async (
   if (
     subscriptionManager.subscriptions[subscription.channel] !== subscription
   ) {
+    clearTimeout(time)
+    subscriptionManager.inProgressCount--
+    subscription.beingProcessed = false
     return
   }
 
@@ -74,6 +88,15 @@ const sendUpdate = async (
   }
 
   if (currentVersion === newVersion) {
+    clearTimeout(time)
+    subscriptionManager.inProgressCount--
+    if (subscription.processNext) {
+      await wait(100)
+      subscription.processNext = false
+      await sendUpdate(subscriptionManager, subscription)
+    } else {
+      subscription.beingProcessed = false
+    }
     return
   }
 
@@ -93,6 +116,17 @@ const sendUpdate = async (
   await Promise.all(q)
 
   await redis.publish(selector, channel, newVersion)
+
+  clearTimeout(time)
+
+  subscriptionManager.inProgressCount--
+  if (subscription.processNext) {
+    await wait(100)
+    subscription.processNext = false
+    await sendUpdate(subscriptionManager, subscription)
+  } else {
+    subscription.beingProcessed = false
+  }
 }
 
 export default sendUpdate

@@ -17,7 +17,7 @@ test.before(async t => {
 
   const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
-    languages: ['en', 'de', 'nl'],
+    languages: ['en', 'de', 'nl', 'it'],
     types: {
       league: {
         prefix: 'le',
@@ -434,12 +434,13 @@ test.serial(
 test.serial('find - find with another language', async t => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
-  await client.set({
+  const l1 = await client.set({
     type: 'league',
     name: 'league 1',
     title: {
-      en: 'yes nice league',
-      nl: 'yesh mooie competitie'
+      // en: 'yes nice league',
+      nl: 'yesh mooie competitie',
+      it: 'pallacanestro'
     }
   })
 
@@ -448,6 +449,15 @@ test.serial('find - find with another language', async t => {
     name: 'league 2',
     title: {
       de: 'yesh german league'
+    }
+  })
+
+  await client.set({
+    $id: l1,
+    type: 'league',
+    name: 'league 1',
+    title: {
+      en: 'yes nice league'
     }
   })
 

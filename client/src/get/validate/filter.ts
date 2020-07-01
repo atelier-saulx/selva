@@ -18,7 +18,7 @@ export default function validateFilter(
         {
           $operator: '=' | '!=' | '>' | '<' | '..'
           $field: string
-          $value: string | number | (string | number)[]
+          $value: string | number | boolean | (string | number | boolean)[]
 
           $and: Filter (chain more filters with and clause) (optional)
           $or: Filter (chain more filters with or clause) (optional)
@@ -127,7 +127,8 @@ export default function validateFilter(
     }
   } else if (filter.$operator === '=' || filter.$operator === '!=') {
     if (
-      !filter.$value ||
+      filter.$value === null ||
+      filter.$value === undefined ||
       (typeof filter.$value !== 'string' &&
         typeof filter.$value !== 'number' &&
         typeof filter.$value !== 'boolean' &&

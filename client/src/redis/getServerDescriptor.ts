@@ -7,23 +7,32 @@ const getServerDescriptor = async (
 ): Promise<ServerDescriptor> => {
   const retry = (): Promise<ServerDescriptor> =>
     new Promise(resolve => {
+      console.log('awaiting reconnect', selector)
       selvaRedisClient.registry.once('servers_updated', () => {
+        console.log('servers updated....')
         resolve(getServerDescriptor(selvaRedisClient, selector))
       })
     })
 
+  if (selector.type && selector.host && selector.port && selector.name) {
+    return <ServerDescriptor>selector
+  }
+
   if (!selvaRedisClient.servers) {
     return retry()
   }
+
   if (selector.host && selector.port) {
     const server =
       selvaRedisClient.serversById[`${selector.host}:${selector.port}`]
+
     if (!server) {
       return retry()
     }
 
     return server
   }
+
   if (!selector.name) {
     if (
       selector.type === 'registry' ||

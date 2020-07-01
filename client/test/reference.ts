@@ -25,6 +25,12 @@ test.before(async t => {
         prefix: 'cl',
         fields: {
           specialMatch: { type: 'reference' },
+          nested: {
+            type: 'object',
+            properties: {
+              specialMatch: { type: 'reference' }
+            }
+          },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
@@ -119,6 +125,91 @@ test.serial('simple singular reference', async t => {
     {
       title: 'yesh club',
       specialMatch: {
+        title: 'yesh match',
+        description: 'no description'
+      }
+    }
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('simple singular reference with $flatten', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const club1 = await client.set({
+    $id: 'clA',
+    title: {
+      en: 'yesh club'
+    },
+    specialMatch: {
+      $id: 'maA',
+      title: {
+        en: 'yesh match'
+      }
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      specialMatch: {
+        $flatten: true,
+        title: true,
+        description: { $default: 'no description' }
+      }
+    }),
+    {
+      id: 'clA',
+      title: 'yesh match',
+      description: 'no description'
+    }
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('nested singular reference with $flatten', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const club1 = await client.set({
+    $id: 'clA',
+    title: {
+      en: 'yesh club'
+    },
+    nested: {
+      specialMatch: {
+        $id: 'maA',
+        title: {
+          en: 'yesh match'
+        }
+      }
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      nested: {
+        specialMatch: {
+          $flatten: true,
+          title: true,
+          description: { $default: 'no description' }
+        }
+      }
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      nested: {
         title: 'yesh match',
         description: 'no description'
       }

@@ -9,7 +9,7 @@ export type RedisSetParams =
   | {
       $value?: string[] | Id
       $add?: Id[] | Id | SetItem[]
-      $delete?: Id[] | Id
+      $delete?: Id[] | Id | true
       $noRoot?: boolean
     }
 
@@ -67,7 +67,7 @@ export type SetOptions = SetItem & {
   $merge?: boolean
   $version?: string
   children?: HierarchySet | SetItem[]
-  parents?: HierarchySet
+  parents?: HierarchySet | SetItem[]
   externalId?:
     | ExternalId[]
     | {

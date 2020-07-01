@@ -2,12 +2,19 @@ import { SubscriptionManager } from './types'
 import { constants, GetOptions } from '@saulx/selva'
 import { addSubscription } from './addSubscription'
 import { removeSubscription } from './removeSubscription'
+import updateRegistry from './updateRegistrySubscriptions'
 
 const { SUBSCRIPTIONS, CLIENTS } = constants
 
 const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
   const { selector, client } = subsManager
   const { redis } = client
+
+  //  [channel]: 'created'
+  const info = {
+    ...subsManager.selector,
+    subscriptions: {}
+  }
 
   let [subscriptions, clients] = await Promise.all([
     redis.hgetall(selector, SUBSCRIPTIONS),
@@ -27,7 +34,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
 
   for (const client in clients) {
     const ts = Number(clients[client])
-    if (now - ts < 60e3) {
+    if (now - ts < 10e3) {
       // client is not timed out
       if (client in subsManager.clients) {
         subsManager.clients[client].lastTs = ts
@@ -56,7 +63,9 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
           const client = subscriptionClients[i]
           if (!subsManager.clients[client]) {
             subscriptionClients.splice(i, 1)
+            subsManager.subscriptions[channel].clients.delete(client)
             cleanUpQ.push(redis.srem(selector, channel, client))
+          } else {
           }
         }
 
@@ -81,6 +90,9 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
             clientsSet,
             <GetOptions>JSON.parse(subscriptions[channel])
           )
+        } else {
+          info.subscriptions[channel] = 'removed'
+          cleanUpQ.push(redis.hdel(selector, SUBSCRIPTIONS, channel))
         }
       }
     })
@@ -89,6 +101,10 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
   if (cleanUpQ.length) {
     await Promise.all(cleanUpQ)
     console.log('Cleaned up clients / subscriptions', cleanUpQ.length)
+  }
+
+  if (Object.keys(info.subscriptions).length) {
+    updateRegistry(client, info)
   }
 }
 

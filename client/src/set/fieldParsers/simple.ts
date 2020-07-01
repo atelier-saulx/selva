@@ -34,7 +34,10 @@ export const verifiers = {
     return typeof payload === 'string' && payload.length < 30
   },
   timestamp: (payload: 'now' | number) => {
-    return payload === 'now' || (typeof payload === 'number' && payload > 0)
+    return (
+      payload === 'now' ||
+      (typeof payload === 'number' && Number.isInteger(payload) && payload > 0)
+    )
   },
   url: (payload: string) => {
     return typeof payload === 'string' && validURL(payload)
@@ -116,6 +119,8 @@ for (const key in verifiers) {
           // TODO: verify it references the same type
           result[field] = `___selva_$ref:${payload[k]}`
           return
+        } else if (k === '$delete') {
+          result[field] = { $delete: true }
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }

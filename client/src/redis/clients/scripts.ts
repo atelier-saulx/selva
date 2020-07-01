@@ -27,7 +27,7 @@ try {
   process.exit(1)
 }
 
-export function loadScripts(client: Client): void {
+export function loadScripts(client: Client, cb?: () => void): void {
   for (const scriptName in SCRIPTS) {
     addCommandToQueue(client, {
       command: 'SCRIPT',
@@ -35,6 +35,9 @@ export function loadScripts(client: Client): void {
       resolve: sha => {
         // console.log('LOADED SCRIPT', scriptName, 'WITH', sha)
         SCRIPTS[scriptName].sha = sha
+        if (cb) {
+          cb()
+        }
       }
     })
   }

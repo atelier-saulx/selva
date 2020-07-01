@@ -34,6 +34,26 @@ test.before(async t => {
       lekkerType: {
         prefix: 'vi',
         fields: {
+          strRec: {
+            type: 'record',
+            values: {
+              type: 'string'
+            }
+          },
+          objRec: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                hello: {
+                  type: 'string'
+                },
+                value: {
+                  type: 'number'
+                }
+              }
+            }
+          },
           thing: { type: 'set', items: { type: 'string' } },
           ding: {
             type: 'object',
@@ -985,6 +1005,7 @@ test.serial('get - $inherit', async t => {
     }
   )
 
+  // console.log('ANCESTORS', await client.redis.zrange('cuC.ancestors', 0, -1))
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'cuC',
@@ -1394,6 +1415,215 @@ test.serial('get - basic with many ids', async t => {
       $isNull: true,
       id: 'viZ',
       title: ''
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - basic with non-priority language', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      de: 'nice de!'
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin'
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice de!',
+      value: 25
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $language: 'nl',
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice de!',
+      value: 25
+    }
+  )
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      nl: 'nice nl!'
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice de!',
+      value: 25
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $language: 'nl',
+      $id: ['viZ', 'viA'],
+      id: true,
+      title: true,
+      value: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice nl!',
+      value: 25
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - record', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!'
+    },
+    strRec: {
+      hello: 'hallo',
+      world: 'hmm'
+    },
+    objRec: {
+      myObj1: {
+        hello: 'pff',
+        value: 12
+      },
+      obj2: {
+        hello: 'ffp',
+        value: 12
+      }
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      strRec: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      strRec: {
+        hello: 'hallo',
+        world: 'hmm'
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      strRec: {
+        world: true
+      }
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      strRec: {
+        world: 'hmm'
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      objRec: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      objRec: {
+        myObj1: {
+          hello: 'pff',
+          value: 12
+        },
+        obj2: {
+          hello: 'ffp',
+          value: 12
+        }
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      objRec: {
+        myObj1: {
+          value: true
+        },
+        obj2: {
+          hello: true
+        }
+      }
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      objRec: {
+        myObj1: {
+          value: 12
+        },
+        obj2: {
+          hello: 'ffp'
+        }
+      }
     }
   )
 

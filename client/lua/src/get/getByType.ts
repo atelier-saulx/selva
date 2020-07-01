@@ -1,7 +1,6 @@
-import { Id, FieldSchema } from '~selva/schema/index'
+import { Id } from '~selva/schema/index'
 
 import * as redis from '../redis'
-import { getTypeFromId } from '../typeIdMapping'
 import { GetResult } from '~selva/get/types'
 import {
   setNestedResult,
@@ -13,13 +12,12 @@ import { Schema } from '../../../src/schema/index'
 import { tryResolveSimpleRef, resolveObjectRef } from './ref'
 import {
   splitString,
-  stringStartsWith,
   stringEndsWith,
-  joinString,
   ensureArray,
   emptyArray,
   markEmptyArraysInJSON
 } from '../util'
+
 import * as logger from '../logger'
 
 const getDotIndex = (str: string): number => {
@@ -265,10 +263,19 @@ const array = (
   const value = redis.hget(id, field)
   let decoded: never[] | null =
     type(value) === 'string' ? cjson.decode(value) : null
-  if (decoded === null || decoded.length === 0 || !decoded.length) {
+  if (decoded === null) {
     decoded = emptyArray()
     setNestedResult(result, field, decoded)
     return false
+  } else if (decoded.length === 0) {
+    decoded = emptyArray()
+    setNestedResult(result, field, decoded)
+    return true
+  } else if (next(decoded) === null) {
+    // if it's somehow interpreted as empty object
+    decoded = emptyArray()
+    setNestedResult(result, field, decoded)
+    return true
   }
 
   setNestedResult(result, field, decoded)
@@ -355,6 +362,70 @@ const object = (
   return noKeys ? false : isComplete
 }
 
+const record = (
+  result: GetResult,
+  schema: Schema,
+  id: Id,
+  field: string,
+  language?: string,
+  version?: string,
+  merge?: boolean,
+  mergeProps?: any
+): boolean => {
+  const keys = redis.hkeys(id)
+  let isComplete = true
+  let noKeys = true
+
+  let usedResult = merge ? {} : result
+  for (const key of keys) {
+    if (key.indexOf(field) === 0) {
+      noKeys = false
+
+      if (stringEndsWith(key, '$ref')) {
+        return resolveObjectRef(
+          usedResult,
+          schema,
+          id,
+          field,
+          getByType,
+          language,
+          version
+        )
+      }
+
+      if (!getByType(usedResult, schema, id, key, language, version)) {
+        isComplete = false
+      }
+    }
+  }
+
+  if (merge) {
+    for (const key of keys) {
+      if (key.indexOf(field) === 0) {
+        const keyPartsAfterField = splitString(
+          key.substring(field.length + 1),
+          '.'
+        )[0]
+        const topLevelPropertyField = field + '.' + keyPartsAfterField
+
+        const intermediate = getNestedField(usedResult, topLevelPropertyField)
+        const nested = getNestedField(result, topLevelPropertyField)
+        if (
+          !nested ||
+          nested === '' ||
+          (type(nested) === 'table' && next(nested) === null)
+        ) {
+          setNestedResult(result, topLevelPropertyField, intermediate)
+        }
+      }
+    }
+
+    return false
+  }
+
+  return noKeys ? false : isComplete
+}
+
 const text = (
   result: GetResult,
   schema: Schema,
@@ -384,21 +455,21 @@ const text = (
     }
   } else {
     const value = redis.hget(id, field + '.' + language)
-    if (value) {
+    if (value && value !== '') {
       setNestedResult(result, field, value)
       return true
-    } else {
-      const keys = redis.hkeys(id)
-      for (let i = 0; i < keys.length; i++) {
-        if (stringStartsWith(keys[i], field + '.')) {
-          const value = redis.hget(id, keys[i])
-          if (value) {
-            setNestedResult(result, field, value)
-            return true
-          }
+    } else if (schema.languages) {
+      for (const lang of schema.languages) {
+        const value = redis.hget(id, field + '.' + lang)
+        if (value && value !== '') {
+          setNestedResult(result, field, value)
+          return true
         }
       }
 
+      setNestedResult(result, field, '')
+      return false
+    } else {
       setNestedResult(result, field, '')
       return false
     }
@@ -482,6 +553,7 @@ const types = {
   int,
   boolean,
   object,
+  record,
   set: arrayLike,
   reference: string,
   references: arrayLike,
@@ -517,7 +589,6 @@ function getByType(
     const beforeDot = field.substr(0, lastDotIdx)
     const maybeTextProp = getNestedSchema(id, beforeDot)
     if (maybeTextProp && maybeTextProp.type === 'text') {
-      logger.info('IS IT A TEXT PROP?', field)
       if (language) {
         prop = maybeTextProp
         field = beforeDot

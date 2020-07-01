@@ -3,6 +3,7 @@ import { ConnectOptions, ServerType } from '@saulx/selva'
 import { BackupFns } from './backups'
 
 export type ServerOptions = {
+  save?: boolean | { seconds: number; changes: number }
   backups?: {
     loadBackup?: boolean
     scheduled?: { intervalInMinutes: number }
@@ -43,6 +44,7 @@ export type RegistryInfo = {
   name?: string
   type?: ServerType
   stats?: Stats
+  default?: boolean
   host: string
   port: number
 }

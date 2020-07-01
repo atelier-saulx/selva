@@ -10,7 +10,8 @@ import {
   joinString,
   ensureArray,
   stringStartsWith,
-  stringEndsWith
+  stringEndsWith,
+  joinAny
 } from '../util'
 import { resetSet, addToSet, removeFromSet } from './setOperations'
 import { ModifyOptions, ModifyResult } from '~selva/modifyTypes'
@@ -18,12 +19,13 @@ import { DeleteOptions } from '~selva/delete/types'
 import { deleteItem } from './delete'
 import { reCalculateAncestors } from './ancestors'
 import * as logger from '../logger'
-import { addFieldToSearch } from './search'
+import { addFieldToSearch, hasSearch } from './search'
 import sendEvent from './events'
 import { setUpdatedAt, setCreatedAt, markUpdated } from './timestamps'
 import { cleanUpSuggestions } from './delete'
 import globals from '../globals'
 import checkSource from './source'
+import { setNestedResult } from '../get/nestedFields'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {
@@ -88,6 +90,22 @@ function removeFields(
   }
 }
 
+function tryIndexSet(id: string, field: string, value?: any) {
+  if (hasSearch(id, field)) {
+    if (!value) {
+      value = redis.smembers(id + '.' + field)
+    }
+
+    if (!value) {
+      return
+    }
+
+    const asStr = joinAny(value, ',')
+    redis.hset(id, field, asStr)
+    addFieldToSearch(id, field, asStr)
+  }
+}
+
 function setInternalArrayStructure(
   id: string,
   field: string,
@@ -98,25 +116,30 @@ function setInternalArrayStructure(
 
   if (isArray(value)) {
     resetSet(id, field, value, update, hierarchy, false, source)
+    tryIndexSet(id, field, value)
   } else if (type(value) === 'string') {
     resetSet(id, field, ensureArray(value), update, hierarchy, false, source)
+    tryIndexSet(id, field, value)
   } else if (value.$value) {
     const noRoot = value.$noRoot || false
     resetSet(id, field, value.$value, update, hierarchy, noRoot, source)
+    tryIndexSet(id, field, value)
   } else {
     if (value.$add) {
       const noRoot = value.$noRoot || false
       addToSet(id, field, value.$add, update, hierarchy, noRoot, source)
+      tryIndexSet(id, field)
     }
     if (value.$delete) {
       removeFromSet(id, field, value.$delete, hierarchy, source)
+      tryIndexSet(id, field)
     }
   }
 
   // if it's an object field, also set a set marker
-  if (field.indexOf('.') !== -1) {
-    redis.hset(id, field, '___selva_$set')
-  }
+  // if (field.indexOf('.') !== -1) {
+  redis.hsetnx(id, field, '___selva_$set')
+  // }
 }
 
 function setObject(
@@ -176,6 +199,13 @@ function setField(
 
   if (isSetPayload(value) && field) {
     if (!checkSource(id, field, source)) {
+      return
+    }
+
+    if (type(value) === 'table' && value.$delete === true) {
+      const params = {}
+      setNestedResult(params, <string>field, true)
+      removeSpecified(id, '', params)
       return
     }
 
@@ -260,6 +290,7 @@ function removeSpecified(
 ): void {
   let falses: string[] = []
   let onlyFalse = true
+  let allKeys: string[] = []
   for (const key in payload) {
     if (key[0] !== '$') {
       const keyPath = path === '' ? key : path + '.' + key
@@ -278,9 +309,22 @@ function removeSpecified(
           cleanUpSuggestions(id, keyPath)
         }
 
-        redis.hdel(id, keyPath)
+        const deletedCount = redis.hdel(id, keyPath)
         redis.hdel(id, '$source_' + keyPath)
         markUpdated(id)
+
+        if (deletedCount === 0) {
+          // try to delete as object
+          if (allKeys.length === 0) {
+            allKeys = redis.hkeys(id)
+          }
+
+          for (const okey of allKeys) {
+            if (stringStartsWith(okey, keyPath)) {
+              redis.hdel(id, okey)
+            }
+          }
+        }
         sendEvent(id, keyPath, 'update')
       } else if (payload[key] === false) {
         falses[falses.length] = keyPath
@@ -325,9 +369,9 @@ function removeSpecified(
 function update(payload: SetOptions): Id | null {
   const { $operation = 'upsert' } = payload
 
-  if (payload.$_batchOpts) {
-    globals.$_batchOpts = payload.$_batchOpts
-  }
+  // if (payload.$_batchOpts) {
+  //   globals.$_batchOpts = payload.$_batchOpts
+  // }
 
   if (!payload.$id) {
     if (payload.$alias) {

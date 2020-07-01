@@ -33,6 +33,42 @@ test.before(async t => {
           title: {
             type: 'text'
           },
+          obj: {
+            type: 'object',
+            properties: {
+              hello: { type: 'string' },
+              hallo: { type: 'string' }
+            }
+          },
+          nestedObj: {
+            type: 'object',
+            properties: {
+              a: {
+                type: 'object',
+                properties: {
+                  value: { type: 'string' }
+                }
+              },
+              b: {
+                type: 'object',
+                properties: {
+                  value: { type: 'string' }
+                }
+              }
+            }
+          },
+          settySet: {
+            type: 'set',
+            items: {
+              type: 'string'
+            }
+          },
+          reffyRefs: {
+            type: 'references'
+          },
+          reffyRef: {
+            type: 'reference'
+          },
           createdAt: { type: 'timestamp' }
         }
       },
@@ -118,6 +154,42 @@ test.serial('root', async t => {
 
   t.deepEqual(root, 'root')
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.delete('root')
+  t.deepEqual(await dumpDb(client), [])
+
+  await client.destroy()
+})
+
+test.serial('root.children $delete: []', async t => {
+  console.log('CONNECTING')
+  const client = connect(
+    {
+      port
+    },
+    { loglevel: 'info' }
+  )
+
+  console.log('CONNECTED')
+
+  const match = await client.set({
+    type: 'match'
+  })
+
+  const root = await client.set({
+    $id: 'root',
+    children: [match]
+  })
+
+  t.deepEqual(root, 'root')
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.set({
+    $id: 'root',
+    children: { $delete: [] }
+  })
+
   t.deepEqual(await client.redis.smembers('root.children'), [match])
 
   await client.delete('root')
@@ -965,22 +1037,86 @@ test.serial('createdAt not set if provided in modify props', async t => {
   await client.destroy()
 })
 
-// test.serial('Reference field', async t => {
-//   const client = connect({
-//     port
-//   })
+test.serial('Set empty object', async t => {
+  const client = connect({
+    port
+  })
 
-//   client.set({
-//     $id: 'cuA',
-//     layout: {
-//       match: { components: [{ type: 'List', props: { x: true } }] },
-//       custom: { $field: 'layout.match' },
-//       video: { $field: 'layout.$type' }
-//     }
-//   })
+  const id = await client.set({
+    $id: 'maEmpty',
+    nestedObj: {
+      a: {},
+      b: {}
+    }
+  })
+  try {
+    const result = await client.get({
+      $id: id,
+      $all: true
+    })
 
-//   await client.delete('root')
-// })
+    t.pass()
+  } catch (e) {
+    t.fail()
+  }
+
+  await client.delete('root')
+})
+
+test.serial('no root in parents when adding nested', async t => {
+  const client = connect({
+    port
+  })
+
+  await client.set({
+    $id: 'ma1',
+    $language: 'en',
+    children: {
+      $add: [
+        {
+          $alias: 'hello',
+          type: 'match',
+          title: 'hello1'
+        },
+        {
+          $alias: 'hello2',
+          type: 'match',
+          title: 'hello2',
+          parents: ['root', 'ma1']
+        }
+      ]
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'hello',
+      parents: true,
+      title: true
+    }),
+    {
+      parents: ['ma1'],
+      title: 'hello1'
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: 'hello2',
+      parents: true,
+      title: true
+    }),
+    {
+      parents: ['root', 'ma1'],
+      title: 'hello2'
+    }
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})
 
 test.serial('can disable autoadding of root', async t => {
   const client = connect({
@@ -1077,5 +1213,266 @@ test.serial('createdAt not set if nothing changed', async t => {
   t.deepEqual(createdAt, updatedAt)
 
   await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('$delete: true', async t => {
+  console.log('CONNECTING')
+  const client = connect(
+    {
+      port
+    },
+    { loglevel: 'info' }
+  )
+
+  console.log('CONNECTED')
+
+  const match = await client.set({
+    type: 'match'
+  })
+
+  const root = await client.set({
+    $id: 'root',
+    value: 9001
+  })
+
+  t.deepEqual(root, 'root')
+  t.deepEqual(await client.redis.hget('root', 'value'), '9001')
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.set({
+    $id: 'root',
+    value: { $delete: true }
+  })
+
+  t.deepEqual(await client.redis.hexists('root', 'value'), 0)
+  t.deepEqual(await client.redis.smembers('root.children'), [match])
+
+  await client.set({
+    $id: 'maA',
+    type: 'match',
+    title: { en: 'yesh extra nice', de: 'ja extra nice' },
+    obj: {
+      hello: 'yes hello'
+    },
+    reffyRef: 'root',
+    reffyRefs: ['root'],
+    settySet: { $add: 'hmmmm' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yesh extra nice',
+        de: 'ja extra nice'
+      },
+      obj: {
+        hello: 'yes hello'
+      },
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    title: { de: { $delete: true } }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yesh extra nice'
+      },
+      obj: {
+        hello: 'yes hello'
+      },
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    obj: { hello: { $delete: true }, hallo: 'mmmmh' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yesh extra nice'
+      },
+      obj: {
+        hallo: 'mmmmh'
+      },
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    obj: { $delete: true }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yesh extra nice'
+      },
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    title: { $delete: true }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      reffyRef: 'root',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    reffyRef: { $delete: true },
+    title: { en: 'yes title is back!!!' }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yes title is back!!!'
+      },
+      reffyRef: '',
+      reffyRefs: ['root'],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    reffyRefs: { $delete: true }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yes title is back!!!'
+      },
+      reffyRef: '',
+      reffyRefs: [],
+      settySet: ['hmmmm']
+    }
+  )
+
+  await client.set({
+    $id: 'maA',
+    settySet: { $delete: true }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      id: true,
+      title: true,
+      obj: true,
+      reffyRef: true,
+      reffyRefs: true,
+      settySet: true
+    }),
+    {
+      id: 'maA',
+      title: {
+        en: 'yes title is back!!!'
+      },
+      reffyRef: '',
+      reffyRefs: [],
+      settySet: []
+    }
+  )
+
+  await client.delete('root')
+  // t.deepEqual(await dumpDb(client), [])
+
   await client.destroy()
 })

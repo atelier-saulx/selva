@@ -4,12 +4,16 @@ import { SelvaClient } from '../..'
 import checkAllowed from './checkAllowed'
 import validateFilter from './filter'
 
-export default function validateFind(
+import { get } from '..'
+import { addExtraQuery, ExtraQueries } from '.'
+
+export default async function validateFind(
+  extraQueries: ExtraQueries,
   parentProp: GetOptions,
   client: SelvaClient,
   find: Find,
   path: string
-): void {
+): Promise<void> {
   const err = (mainMsg?: string): never => {
     if (!mainMsg) {
       mainMsg = 'Unsupported type in operator $find'
@@ -44,14 +48,42 @@ export default function validateFind(
   }
 
   if (find.$traverse) {
-    if (typeof find.$traverse !== 'string' && !Array.isArray(find.$traverse)) {
+    const traverse = find.$traverse
+    if (typeof traverse === 'object' && !Array.isArray(traverse)) {
+      const result = await get(client, {
+        $includeMeta: true,
+        $db: traverse.$db,
+        $id: traverse.$id,
+        traverse: {
+          $field: traverse.$field
+        }
+      })
+      const meta = result.$meta
+      delete result.$meta
+
+      addExtraQuery(extraQueries, {
+        $db: traverse.$db,
+        type: 'traverse',
+        meta: meta,
+        value: result.traverse,
+        path: path + '.$find.$traverse'
+      })
+    } else if (
+      typeof find.$traverse !== 'string' &&
+      !Array.isArray(find.$traverse)
+    ) {
       err(`Unupported type for $traverse ${find.$traverse}`)
     }
   }
 
   if (find.$find) {
-    console.log('find.$find', find)
-    validateFind(parentProp, client, find.$find, path + '.$find')
+    await validateFind(
+      extraQueries,
+      parentProp,
+      client,
+      find.$find,
+      path + '.$find'
+    )
 
     if (find.$find.$db) {
       parentProp.__$find = {

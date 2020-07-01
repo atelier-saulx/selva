@@ -8,27 +8,37 @@ import validateInherit from './inherit'
 import validateList from './list'
 import validateFind from './find'
 
-export type ExtraQuery = {
+export type TraverseExtraQuery = {
+  type: 'traverse'
+  meta: any
+  $db: string
+  path: string
+  value: string[]
+}
+export type PostGetExtraQuery = {
   getOpts: GetOptions
   path: string
   placeholder: GetOptions | true
   type: 'reference' | 'references' | 'nested_query'
 }
+
+export type ExtraQuery = TraverseExtraQuery | PostGetExtraQuery
+
 export type ExtraQueries = Record<string, ExtraQuery[]>
 
 export function addExtraQuery(extraQueries: ExtraQueries, query: ExtraQuery) {
-  const db = query.getOpts.$db
+  const db = query.type === 'traverse' ? query.$db : query.getOpts.$db
   const current = extraQueries[db] || []
   current.push(query)
   extraQueries[db] = current
 }
 
-function transformDb(
+async function transformDb(
   extraQueries: ExtraQueries,
-  _client: SelvaClient,
+  client: SelvaClient,
   props: GetOptions,
   path: string
-): void {
+): Promise<void> {
   if (props.$id || props.$alias) {
     addExtraQuery(extraQueries, {
       getOpts: props,
@@ -46,14 +56,22 @@ function transformDb(
       typeof props.$list === 'object' &&
       props.$list.$find
     ) {
-      console.log('TRANSFORMING LIST FIND', props)
       if (props.$list.$find.$traverse) {
-        val = { $field: props.$list.$find.$traverse }
+        const traverse = props.$list.$find.$traverse
+        if (typeof traverse === 'object' && !Array.isArray(traverse)) {
+          throw new Error('HMM SHOULD NOT BE POSSIBLE')
+        } else {
+          val = { $field: traverse }
+        }
       }
     } else if (props.$find) {
-      console.log('TRANSFORMING FIND', props)
       if (props.$find.$traverse) {
-        val = { $field: props.$find.$traverse }
+        const traverse = props.$find.$traverse
+        if (typeof traverse === 'object' && !Array.isArray(traverse)) {
+          throw new Error('HMM SHOULD NOT BE POSSIBLE')
+        } else {
+          val = { $field: traverse }
+        }
       }
     }
 
@@ -66,30 +84,42 @@ function transformDb(
   }
 }
 
-function validateNested(
+async function validateNested(
   extraQueries: ExtraQueries,
   client: SelvaClient,
   props: GetOptions | true,
   path: string
-): void {
+): Promise<void> {
   if (props === true) {
     return
   }
 
   if (props.$db) {
-    return transformDb(extraQueries, client, props, path)
+    return await transformDb(extraQueries, client, props, path)
   }
 
   if (props.$id || props.$alias) {
-    return validateTopLevel(extraQueries, client, props, path)
+    return await validateTopLevel(extraQueries, client, props, path)
   }
 
   if (Array.isArray(props)) {
     for (let i = 0; i < props.length; i++) {
-      validateNested(extraQueries, client, props[i], path + '.' + String(i))
+      await validateNested(
+        extraQueries,
+        client,
+        props[i],
+        path + '.' + String(i)
+      )
     }
 
     return
+  }
+
+  const typeOf = typeof props
+  if (typeOf !== 'object' && typeOf !== 'boolean') {
+    throw new Error(
+      `Field ${path} should be a boolean or an object, got ${props}`
+    )
   }
 
   for (const field in props) {
@@ -99,10 +129,12 @@ function validateNested(
       } else if (field === '$inherit') {
         validateInherit(client, props.$inherit, path)
       } else if (field === '$list') {
-        validateList(props, client, props.$list, path)
+        await validateList(extraQueries, props, client, props.$list, path)
       } else if (field === '$find') {
-        validateFind(props, client, props.$find, path)
+        await validateFind(extraQueries, props, client, props.$find, path)
       } else if (field === '$default') {
+        continue
+      } else if (field === '$flatten') {
         continue
       } else if (field === '$all') {
         if (typeof props.$all !== 'boolean') {
@@ -129,17 +161,22 @@ function validateNested(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      validateNested(extraQueries, client, props[field], path + '.' + field)
+      await validateNested(
+        extraQueries,
+        client,
+        props[field],
+        path + '.' + field
+      )
     }
   }
 }
 
-export default function validateTopLevel(
+export default async function validateTopLevel(
   extraQueries: ExtraQueries,
   client: SelvaClient,
   props: GetOptions,
   path: string = ''
-): void {
+): Promise<void> {
   for (const field in props) {
     if (field.startsWith('$')) {
       if (field === '$db') {
@@ -183,6 +220,11 @@ export default function validateTopLevel(
           throw new Error(`$version should be a string`)
         }
       } else if (field === '$language') {
+        if (props.$language === undefined) {
+          delete props.$language
+          continue
+        }
+
         if (typeof props.$language !== 'string') {
           throw new Error(
             `$language ${props.$language} is unsupported, should be a string`
@@ -214,11 +256,17 @@ export default function validateTopLevel(
             `Operator $all for ${path}.$all must be a boolean, got ${props.$all}`
           )
         }
+      } else if (field === '$list') {
+        await validateList(extraQueries, props, client, props.$list, path)
+      } else if (field === '$find') {
+        await validateFind(extraQueries, props, client, props.$find, path)
       } else {
         throw new Error(`
           Top level query operator ${field} is not supported. Did you mean one of the following supported top level query options?
             - $db
             - $id
+            - $find
+            - $list
             - $alias
             - $all
             - $version
@@ -230,7 +278,12 @@ export default function validateTopLevel(
 
   for (const field in props) {
     if (!field.startsWith('$')) {
-      validateNested(extraQueries, client, props[field], path + '.' + field)
+      await validateNested(
+        extraQueries,
+        client,
+        props[field],
+        path + '.' + field
+      )
     }
   }
 }

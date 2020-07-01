@@ -10,7 +10,7 @@ const prefixLength = EVENTS.length
 const deleteLength = 'delete:'.length
 
 // pass subscription
-const addOriginListeners = (
+const addOriginListeners = async (
   name: string,
   subsManager: SubscriptionManager,
   subscription: Subscription
@@ -20,7 +20,13 @@ const addOriginListeners = (
   if (!subsManager.originListeners[name]) {
     const selector: ServerSelector = { name, type: 'replica' }
 
+    console.log('ADD ORIGIN LISTENERS', name)
+
+    const descriptor = await subsManager.client.getServerDescriptor(selector)
+
     const listener = (_pattern, channel, message) => {
+      // console.info('----->>>>>>', name, channel, message)
+
       subsManager.incomingCount++
       collect++
       // use this for batching here
@@ -52,24 +58,29 @@ const addOriginListeners = (
 
     subsManager.originListeners[name] = {
       subscriptions: new Set(),
-      listener
+      listener,
+      reconnectListener: ({ name: dbName }) => {
+        if (name === dbName) {
+          console.log('RE-RUN ALL SUBSCRIPTIONS')
+          const origin = subsManager.originListeners[name]
+          if (origin && origin.subscriptions) {
+            origin.subscriptions.forEach(subscription => {
+              console.log('  ---> re fire sub', subscription.channel)
+              addUpdate(subsManager, subscription)
+            })
+          }
+        }
+      }
     }
 
     const { client } = subsManager
     const redis = client.redis
     let collect = 0
 
-    // store more of these things as metrics
-    // setInterval(() => {
-    //   console.log('handled ', collect, 'in last 5 sec')
-    //   collect = 0
-    // }, 5e3)
+    client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
-    // check every origin - you have to connect to them :D
-    redis.on(selector, 'pmessage', listener)
-
-    // same EVERY SINGLE ONE - means you need a listener here on the registry
-    redis.psubscribe(selector, EVENTS + '*')
+    redis.on(descriptor, 'pmessage', listener)
+    redis.psubscribe(descriptor, EVENTS + '*')
   }
 
   subsManager.originListeners[name].subscriptions.add(subscription)
@@ -86,10 +97,13 @@ const removeOriginListeners = (
     const redis = client.redis
     origin.subscriptions.delete(subscription)
     if (origin.subscriptions.size === 0) {
+      console.log('REMOVE ORIGIN LISTENERS', name)
+
       if (name in subsManager.memberMemCache) {
         delete subsManager.memberMemCache[name]
       }
       redis.punsubscribe({ name }, EVENTS + '*')
+      client.removeListener('reconnect', origin.reconnectListener)
       redis.removeListener({ name }, 'pmessage', origin.listener)
       delete subsManager.originListeners[name]
     }

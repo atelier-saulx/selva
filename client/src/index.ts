@@ -10,21 +10,25 @@ import {
 } from './types'
 import digest from './digest'
 import Redis from './redis'
-import { GetSchemaResult, SchemaOptions, Id, Schema } from './schema'
+import { GetSchemaResult, SchemaOptions, Id, Schema, FieldSchema } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
+import initializeSchema from './schema/initializeSchema'
 import { GetOptions, GetResult, get } from './get'
 import { SetOptions, set } from './set'
 import { IdOptions } from 'lua/src/id'
 import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
+import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
 import { v4 as uuidv4 } from 'uuid'
 import { observe, observeSchema } from './observe'
 import conformToSchema from './conformToSchema'
 import getServerDescriptor from './redis/getServerDescriptor'
 import Observable from './observe/observable'
+import { getClient } from './redis/clients'
+
 
 export * as constants from './constants'
 
@@ -35,6 +39,25 @@ export class SelvaClient extends EventEmitter {
   public loglevel: string
   public schemaObservables: Record<string, Observable<Schema>> = {}
   public schemas: Record<string, Schema> = {}
+  public serverType: string
+ 
+  public admin: {
+    deleteType(name: string, dbName?: string): Promise<void>,
+    deleteField(type: string, name: string, dbName?: string): Promise<void>,
+    castField(type: string, name: string, newType: FieldSchema, dbName?: string): Promise<void>
+  } = {
+    deleteType: (name: string, dbName: string = 'default') => {
+      return deleteType(this, name, { name: dbName })
+    },
+
+    deleteField: (type: string, name: string, dbName: string = 'default') => {
+      return deleteField(this, type, name, { name: dbName })
+    },
+
+    castField: (type: string, name: string, newType: FieldSchema, dbName: string = 'default') => {
+      return castField(this, type, name, newType, { name: dbName })
+    }
+  }
 
   constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
     super()
@@ -55,22 +78,17 @@ export class SelvaClient extends EventEmitter {
       this.logFn(log, dbName)
     })
 
+    this.serverType = clientOpts.serverType
+
     this.redis = new Redis(this, opts)
   }
 
-  private async initializeSchema(opts: any) {
-    const dbName = (typeof opts === 'object' && opts.$db) || 'default'
-
-    if (!this.schemas[dbName]) {
-      await this.getSchema(dbName)
-    }
-
-    if (!this.schemaObservables[dbName]) {
-      this.subscribeSchema()
-    }
+   async initializeSchema(opts: any) {
+    return initializeSchema(this, opts)
   }
 
   async id(props: IdOptions): Promise<string> {
+    // make this with $
     await this.initializeSchema({ $db: props.db || 'default' })
     return id(this, props)
   }
@@ -97,6 +115,10 @@ export class SelvaClient extends EventEmitter {
     return digest(payload)
   }
 
+  getClient(descriptor: ServerDescriptor) {
+   return getClient(this.redis, descriptor)
+  }
+
   getSchema(name: string = 'default'): Promise<GetSchemaResult> {
     return getSchema(this, { name: name })
   }
@@ -113,7 +135,8 @@ export class SelvaClient extends EventEmitter {
     return observeSchema(this, name)
   }
 
-  conformToSchema(props: SetOptions, dbName: string = 'default') {
+  async conformToSchema(props: SetOptions, dbName: string = 'default') {
+    await this.initializeSchema({ $db: dbName })
     return conformToSchema(this, props, dbName)
   }
 
