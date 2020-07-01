@@ -75,7 +75,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
               if (
                 typeof script === 'string' &&
                 script.startsWith(constants.SCRIPT)
-               {
+              ) {
                 const sha = getScriptSha(
                   (<string>args[0]).slice(constants.SCRIPT.length + 1)
                 )
