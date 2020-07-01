@@ -396,7 +396,6 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
 
     if (type == 0) {
         long long ivalue;
-        int err;
 
         err = RedisModule_StringToLongLong(value, &ivalue);
 
@@ -792,7 +791,7 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
 
                     v = alloc_rpn_operand(size);
                     v->s_size = size;
-                    strcpy(v->s, str);
+                    strncpy(v->s, str, size);
                     v->s[size - 1] = '\0';
                     v->flags.nan = 1;
 
