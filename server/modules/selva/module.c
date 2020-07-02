@@ -9,6 +9,7 @@
 #include "id/id.h"
 #include "modify/modify.h"
 #include "modify/async_task.h"
+#include "modify/hierarchy.h"
 
 #define TO_STR_1(_var) \
   size_t _var##_len; \
@@ -40,16 +41,15 @@
 int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   // init auto memory for created strings
   RedisModule_AutoMemory(ctx);
+  Selva_NodeId hash_str;
 
   if (argc > 2) {
     return RedisModule_WrongArity(ctx);
   }
 
-  char hash_str[37];
   SelvaId_GenId("", hash_str);
 
-  RedisModuleString *reply =
-      RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
+  RedisModuleString *reply = RedisModule_CreateString(ctx, hash_str, sizeof(hash_str));
   RedisModule_ReplyWithString(ctx, reply);
   return REDISMODULE_OK;
 }
@@ -62,8 +62,8 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   RedisModule_AutoMemory(ctx);
 
   RedisModuleString *keyStr =
-      RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants") * sizeof(char));
-  RedisModuleString *val = RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
+      RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants"));
+  RedisModuleString *val = RedisModule_CreateString(ctx, "hallo", strlen("hallo"));
   RedisModuleKey *key = RedisModule_OpenKey(ctx, keyStr, REDISMODULE_WRITE);
   for (int i = 0; i < 10000; i++) {
     RedisModule_StringSet(key, val);
@@ -71,7 +71,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   }
 
   RedisModule_CloseKey(key);
-  RedisModuleString *reply = RedisModule_CreateString(ctx, "hallo", strlen("hallo") * sizeof(char));
+  RedisModuleString *reply = RedisModule_CreateString(ctx, "hallo", strlen("hallo"));
   RedisModule_ReplyWithString(ctx, reply);
   return REDISMODULE_OK;
 }
@@ -86,10 +86,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   const char *id_str = RedisModule_StringPtrLen(id, &id_len);
 
   if (id_len == 2) {
-    char hash_str[37];
+    Selva_NodeId hash_str;
+
     SelvaId_GenId(id_str, hash_str);
     id_str = hash_str;
-    id = RedisModule_CreateString(ctx, hash_str, strlen(hash_str) * sizeof(char));
+    id = RedisModule_CreateString(ctx, hash_str, sizeof(hash_str));
   }
 
   RedisModuleKey *id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
@@ -111,7 +112,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     if (*type_str != SELVA_MODIFY_ARG_OP_INCREMENT && *type_str != SELVA_MODIFY_ARG_OP_SET &&
-        current_value_len == value_len && memcmp(current_value, value, current_value_len) == 0) {
+        current_value_len == value_len && !memcmp(current_value, value, current_value_len)) {
       // printf("Current value is equal to the specified value for key %s and value %s\n", field_str,
       //        value_str);
       continue;
