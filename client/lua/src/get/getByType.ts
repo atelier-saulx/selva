@@ -616,6 +616,14 @@ function getByType(
     }
   }
 
+  // TODO: remove: hackedy hack
+  if (prop.type === 'record' || prop.type === 'object') {
+    const val = redis.hget(id, field)
+    if (val === '___selva_$set') {
+      return false
+    }
+  }
+
   const fn = types[prop.type] || string
   return fn(result, schema, id, field, language, version, merge, prop)
 }
