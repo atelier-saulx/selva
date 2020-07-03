@@ -81,6 +81,10 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx);
 
+    if (argc < 2 || (argc - 2) % 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
   RedisModuleString *id = argv[1];
   size_t id_len;
   const char *id_str = RedisModule_StringPtrLen(id, &id_len);
