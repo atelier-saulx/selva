@@ -32,6 +32,13 @@ redis.RedisClient.prototype.on_info_cmd = function(err, res) {
     if (err.message.includes('BUSY')) {
       this.on_ready()
       return
+    } else if (err.message.includes('allowed in this context')) {
+      this.on_ready()
+      return
+    } else if (err.message.includes('The connection is already closed')) {
+      err.message = 'Ready check failed: ' + err.message
+      this.emit('error', err)
+      return
     }
 
     if (err.message === "ERR unknown command 'info'") {
