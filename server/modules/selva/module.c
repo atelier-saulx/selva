@@ -115,36 +115,40 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
     }
 
-    if (*type_str != SELVA_MODIFY_ARG_OP_INCREMENT && *type_str != SELVA_MODIFY_ARG_OP_SET &&
+    char type_code = type_str[0];
+
+    if (type_code != SELVA_MODIFY_ARG_OP_INCREMENT && type_code != SELVA_MODIFY_ARG_OP_SET &&
         current_value_len == value_len && !memcmp(current_value, value, current_value_len)) {
       // printf("Current value is equal to the specified value for key %s and value %s\n", field_str,
       //        value_str);
       continue;
     }
 
-    if (*type_str == SELVA_MODIFY_ARG_OP_INCREMENT) {
+    if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
       struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
       SelvaModify_ModifyIncrement(ctx, id_key, id_str, id_len, field, field_str, field_len,
           current_value, current_value_str, current_value_len, incrementOpts);
-    } else if (*type_str == SELVA_MODIFY_ARG_OP_SET) {
+    } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
       struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
       SelvaModify_OpSet_align(setOpts);
       SelvaModify_ModifySet(ctx, id_key, id_str, id_len, field, field_str, field_len, setOpts);
       // TODO: hierarchy
     } else {
-      if (*type_str == SELVA_MODIFY_ARG_INDEXED_VALUE ||
-          *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
+      if (type_code == SELVA_MODIFY_ARG_INDEXED_VALUE ||
+          type_code == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
         SelvaModify_Index(id_str, id_len, field_str, field_len, value_str, value_len);
       }
 
-      if (*type_str == SELVA_MODIFY_ARG_DEFAULT || *type_str == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
+      if (type_code == SELVA_MODIFY_ARG_DEFAULT || type_code == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
         if (current_value != NULL) {
           publish = false;
         } else {
           RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
         }
-      } else {
+      } else if (type_code == SELVA_MODIFY_ARG_VALUE) {
         RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
+      } else {
+          fprintf(stderr, "Invalid type: \"%c\"", type_code);
       }
     }
 
