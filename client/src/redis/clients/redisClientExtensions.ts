@@ -94,4 +94,4 @@ redisSearchCommands.forEach(cmd => {
 redis.add_command('selva.id')
 
 // @ts-ignore
-redis.add_command('selva.hierarchy')
+redis.add_command('selva.modify')
