@@ -115,8 +115,9 @@ test.serial('correct hierachy rules', async t => {
     video: {
       default: {
         // hls: 'https://google.com',
-        // mp4: 'https://google.com'
-      }
+        mp4: 'https://google.com'
+      },
+      pano: {}
     }
   })
 
