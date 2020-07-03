@@ -37,11 +37,12 @@ export default RedisMethods
 const methods = []
 
 // redis.add_command(`FT.${cmd}`)
+redis.add_command('selva.modify')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
   if (/[A-Z]/.test(key[0]) && typeof proto[key] === 'function') {
     const command = key.toLowerCase()
-    if (command === 'command' || !/^([a-z])+$/.test(command)) {
+    if (command === 'command' || !/^([a-z_])+$/.test(command)) {
       continue
     }
 
