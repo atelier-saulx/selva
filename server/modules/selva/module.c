@@ -89,14 +89,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
   size_t id_len;
   const char *id_str = RedisModule_StringPtrLen(id, &id_len);
 
-  if (id_len == 2) {
-    Selva_NodeId hash_str;
-
-    SelvaId_GenId(id_str, hash_str);
-    id_str = hash_str;
-    id = RedisModule_CreateString(ctx, hash_str, sizeof(hash_str));
-  }
-
   RedisModuleKey *id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
   for (int i = 2; i < argc; i += 3) {
     bool publish = true;
