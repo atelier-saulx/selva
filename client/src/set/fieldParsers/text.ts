@@ -69,10 +69,15 @@ export default (
     payload = { [$lang]: payload }
   }
 
+  if (!result.$args) result.$args = []
+
   refs(field, payload, lang)
   verify(payload, false, lang)
   const keys = Object.keys(payload)
   if (keys.length) {
-    result[field] = payload
+    result[field] = payload // FIXME Remove
+    for (const k of Object.keys(payload)) {
+      result.$args.push('0', `${field}.${k}`, payload[k])
+    }
   }
 }

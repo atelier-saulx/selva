@@ -94,6 +94,7 @@ for (const key in verifiers) {
     _fields: FieldSchemaOther,
     _type: string
   ) => {
+    if (!result.$args) result.$args = []
     if (!noOptions && typeof payload === 'object') {
       let hasKeys = false
       for (let k in payload) {
@@ -107,20 +108,24 @@ for (const key in verifiers) {
             if (typeof payload[k].$ref !== 'string') {
               throw new Error(`Non-string $ref provided for ${key}.${k}`)
             }
-            payload[k] = `___selva_$ref:${payload[k].$ref}`
+            result[k] = `___selva_$ref:${payload[k].$ref}`
+            result.$args.push('0', k, `___selva_$ref:${payload[k].$ref}`)
           } else {
             if (!verify(payload[k])) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (converter) {
-              payload[k] = converter(payload[k])
+              result[k] = converter(payload[k])
+              result.$args.push('0', k, converter(payload[k]))
             }
           }
         } else if (k === '$ref') {
           // TODO: verify it references the same type
           result[field] = `___selva_$ref:${payload[k]}`
+          result.$args.push('0', field, `___selva_$ref:${payload[k]}`)
           return
         } else if (k === '$delete') {
           result[field] = { $delete: true }
+          // FIXME
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }
@@ -130,10 +135,15 @@ for (const key in verifiers) {
         throw new Error(`Incorrect payload empty object for field ${field}`)
       }
       result[field] = payload
+      // @ts-ignore FIXME
+      result.$args.push('0', field, payload)
     } else if (verify(payload)) {
       result[field] = payload
+      // @ts-ignore FIXME
+      result.$args.push('0', field, payload)
       if (converter) {
         result[field] = converter(payload)
+        result.$args.push('0', field, converter(payload))
       }
     } else {
       throw new Error(

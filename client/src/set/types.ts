@@ -62,6 +62,7 @@ export type BatchOpts = {
 export type SetOptions = SetItem & {
   $id?: Id
   $operation?: 'upsert' | 'insert' | 'update' // defaults to 'upsert'
+  $args?: string[]
   $_batchOpts?: BatchOpts
   $language?: string
   $merge?: boolean

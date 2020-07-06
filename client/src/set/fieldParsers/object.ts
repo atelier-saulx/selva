@@ -16,6 +16,8 @@ export default (
   }
   const r: SetOptions = (result[field] = {})
 
+  if (!result.$args) result.$args = []
+
   let hasKeys = false
   for (let key in payload) {
     if (key[0] === '$') {
@@ -46,7 +48,9 @@ export default (
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
 
-      fn(schema, key, payload[key], r, fields.properties[key], type, $lang)
+      // TODO we could pass result directly
+      fn(schema, `${field}.${key}`, payload[key], r, fields.properties[key], type, $lang)
+      result.$args.push(...r.$args)
 
       // check if nested things have been removed because there are empty objects or the like
       if (Object.keys(result[field]).length === 0) {

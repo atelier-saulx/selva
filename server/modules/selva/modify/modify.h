@@ -21,7 +21,7 @@ struct SelvaModify_OpIncrement {
 };
 
 struct SelvaModify_OpSet {
-  int is_reference;
+  int8_t is_reference;
 
   // filled with multiple ids of length 10
   char *$add;

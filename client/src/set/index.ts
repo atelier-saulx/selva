@@ -12,17 +12,34 @@ export async function _set(
   schemaSha: string,
   db?: string
 ): Promise<string> {
-  return await client.redis.evalsha(
-    { name: db || 'default' },
-    `${SCRIPT}:modify`,
-    0,
-    `${client.loglevel}:${client.uuid}`,
-    schemaSha,
-    JSON.stringify({
-      kind: 'update',
-      payload
-    })
-  )
+  if (!payload.$id) {
+      payload.$id = await client.id({ db, type: payload.type })
+  }
+
+  if (payload.$args.length > 0) {
+    try {
+    return await client.redis.selva_modify(
+      { name: db || 'default' },
+      payload.$id,
+      ...payload.$args
+    )
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+  } else {
+    return await client.redis.evalsha(
+      { name: db || 'default' },
+      `${SCRIPT}:modify`,
+      0,
+      `${client.loglevel}:${client.uuid}`,
+      schemaSha,
+      JSON.stringify({
+        kind: 'update',
+        payload
+      })
+    )
+  }
 }
 
 // make this the internal set

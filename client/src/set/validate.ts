@@ -37,7 +37,7 @@ export default function parseSetObject(
   schemas: Schema,
   $lang?: string
 ): SetOptions {
-  const result: SetOptions = {}
+  const result: SetOptions = { $args: [] }
 
   if (!payload.type && schemas.prefixToTypeMapping && payload.$id) {
     payload.type = schemas.prefixToTypeMapping[payload.$id.substring(0, 2)]
