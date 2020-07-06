@@ -110,7 +110,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     char type_code = type_str[0];
 
     if (type_code != SELVA_MODIFY_ARG_OP_INCREMENT && type_code != SELVA_MODIFY_ARG_OP_SET &&
-        current_value_len == value_len && !memcmp(current_value, value, current_value_len)) {
+        current_value && current_value_len == value_len &&
+        !memcmp(current_value, value, min(current_value_len, value_len))) {
       // printf("Current value is equal to the specified value for key %s and value %s\n", field_str,
       //        value_str);
       continue;
@@ -140,7 +141,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       } else if (type_code == SELVA_MODIFY_ARG_VALUE) {
         RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
       } else {
-          fprintf(stderr, "Invalid type: \"%c\"", type_code);
+        fprintf(stderr, "Invalid type: \"%c\"", type_code);
       }
     }
 
