@@ -103,10 +103,10 @@ const sendUpdate = async (
   }
 
   subscription.version = newVersion
-  console.log('XXhelloX???')
 
   const prev = await redis.hget(selector, CACHE, channel)
-  diff(prev, channel)
+
+  diff(prev, resultStr)
 
   q.push(
     redis.hmset(
