@@ -37,6 +37,5 @@ export default (
     })
   }
   // nested json special!
-  result[field] = JSON.stringify(arrayResult) // FIXME remove
   result.$args.push('0', field, JSON.stringify(arrayResult))
 }
