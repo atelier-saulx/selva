@@ -17,7 +17,6 @@ export default (
     result[field] = { $delete: true } // FIXME Remove
   } else if (payload.$ref) {
     // TODO: verify that it references a json field
-    result[field] = `___selva_$ref:${payload.$ref}` // FIXME Remove
     result.$args.push('0', `${field}`, `___selva_$ref:${payload.$ref}`)
     return
   }
@@ -36,11 +35,9 @@ export default (
       type,
       $lang
     )
-    result[field] = JSON.stringify(obj) // FIXME Remoce
     result.$args.push('0', field, JSON.stringify(obj))
   } else {
-    result[field] = JSON.stringify(payload) // FIXME remove
     result.$args.push('0', field, JSON.stringify(payload))
   }
-  // needs nested json without casting to for exampe, json again
+  // needs nested json without casting to for example, json again
 }
