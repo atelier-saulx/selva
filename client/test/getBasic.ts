@@ -155,6 +155,9 @@ test.beforeEach(async t => {
     }
   })
 
+  // A small delay is needed after setting the schema
+  await new Promise(r => setTimeout(r, 100))
+
   await client.destroy()
 })
 
