@@ -15,7 +15,9 @@ test.before(async t => {
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
+})
 
+test.beforeEach(async t => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -159,6 +161,12 @@ test.after(async _t => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+})
+
+test.afterEach(async _t => {
+    const client = connect({ port })
+    client.redis.flushall()
+    await client.destroy()
 })
 
 test.serial('get $value', async t => {
