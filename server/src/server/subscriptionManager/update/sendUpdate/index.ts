@@ -1,8 +1,8 @@
 import { constants } from '@saulx/selva'
-import { addSubscriptionToTree, removeSubscriptionFromTree } from '../tree'
-import { hash } from '../util'
-import { Subscription, SubscriptionManager } from '../types'
-import { wait } from '../../../util'
+import { addSubscriptionToTree, removeSubscriptionFromTree } from '../../tree'
+import { hash } from '../../util'
+import { Subscription, SubscriptionManager } from '../../types'
+import { wait } from '../../../../util'
 
 const { CACHE } = constants
 
