@@ -63,6 +63,7 @@
     "get-port": "^5.1.1",
     "node-fetch": "^2.6.0",
     "pidusage": "^2.0.18",
+    "recursive-diff": "^1.0.7",
     "redis": "^2.8.0"
   }
 }
