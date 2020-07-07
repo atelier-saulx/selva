@@ -1,8 +1,8 @@
 {
-  "name": "@saulx/selva-client",
+  "name": "@saulx/selva-react",
   "version": "1.0.0",
   "main": "./dist/index.js",
-  "description": "API server and API utilities for selva",
+  "description": "React selva client",
   "scripts": {
     "build": "yarn buildTs",
     "start": "tsc && node dist/index.js",
