@@ -16,6 +16,8 @@ export default (
   }
   const r: SetOptions = (result[field] = {})
 
+  if (!result.$args) result.$args = []
+
   const fn = fieldParsers[fields.values.type]
 
   let hasKeys = false
@@ -43,7 +45,8 @@ export default (
         throw new Error(`Wrong option on object ${key}`)
       }
     } else {
-      fn(schema, key, payload[key], r, fields.values, type, $lang)
+      fn(schema, `${field}.${key}`, payload[key], r, fields.values, type, $lang)
+      result.$args.push(...r.$args)
     }
   }
 
