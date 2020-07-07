@@ -123,7 +123,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('string field ref', async t => {
+test.skip('string field ref', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -155,7 +155,7 @@ test.serial('string field ref', async t => {
   client.destroy()
 })
 
-test.serial('json field ref', async t => {
+test.skip('json field ref', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -193,7 +193,7 @@ test.serial('json field ref', async t => {
   client.destroy()
 })
 
-test.serial('whole object ref', async t => {
+test.skip('whole object ref', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -223,7 +223,7 @@ test.serial('whole object ref', async t => {
   client.destroy()
 })
 
-test.serial('simple object field ref', async t => {
+test.skip('simple object field ref', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -251,7 +251,7 @@ test.serial('simple object field ref', async t => {
   client.destroy()
 })
 
-test.serial('nested object in object field ref', async t => {
+test.skip('nested object in object field ref', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -283,7 +283,7 @@ test.serial('nested object in object field ref', async t => {
   client.destroy()
 })
 
-test.serial('text field ref', async t => {
+test.skip('text field ref', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -316,7 +316,7 @@ test.serial('text field ref', async t => {
   client.destroy()
 })
 
-test.serial('text object ref', async t => {
+test.skip('text object ref', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -356,7 +356,7 @@ test.serial('text object ref', async t => {
   client.destroy()
 })
 
-test.serial('string field ref with $default', async t => {
+test.skip('string field ref with $default', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -414,7 +414,7 @@ test.serial('string field ref with $default', async t => {
   client.destroy()
 })
 
-test.serial('number field ref with $default', async t => {
+test.skip('number field ref with $default', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -462,7 +462,7 @@ test.serial('number field ref with $default', async t => {
   client.destroy()
 })
 
-test.serial('object nested field ref with $default', async t => {
+test.skip('object nested field ref with $default', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -515,7 +515,7 @@ test.serial('object nested field ref with $default', async t => {
   client.destroy()
 })
 
-test.serial('text field ref with $default', async t => {
+test.skip('text field ref with $default', async t => {
   const client = connect({ port })
 
   await client.set({
