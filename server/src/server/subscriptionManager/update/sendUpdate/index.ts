@@ -3,6 +3,7 @@ import { addSubscriptionToTree, removeSubscriptionFromTree } from '../../tree'
 import { hash } from '../../util'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
+import diff from './diff'
 
 const { CACHE } = constants
 
@@ -56,6 +57,7 @@ const sendUpdate = async (
   // make this without payload
   const resultStr = JSON.stringify({ type: 'update', payload })
   const currentVersion = subscription.version
+  // can get the value from the client cache later
   const newVersion = hash(resultStr)
 
   const treeVersion = subscription.treeVersion
@@ -101,6 +103,10 @@ const sendUpdate = async (
   }
 
   subscription.version = newVersion
+  console.log('XXhelloX???')
+
+  const prev = await redis.hget(selector, CACHE, channel)
+  diff(prev, channel)
 
   q.push(
     redis.hmset(
