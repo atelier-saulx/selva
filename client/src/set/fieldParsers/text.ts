@@ -73,11 +73,16 @@ export default (
 
   refs(field, payload, lang)
   verify(payload, false, lang)
-  const keys = Object.keys(payload)
-  if (keys.length) {
-    result[field] = payload // FIXME Remove
-    for (const k of Object.keys(payload)) {
-      result.$args.push('0', `${field}.${k}`, payload[k])
+
+  const push = (o, hname: string) => {
+    for (const k of Object.keys(o)) {
+      if (typeof o[k] === 'string') {
+        result.$args.push('0', `${hname}.${k}`, o[k])
+      } else {
+        push(o[k], `${hname}.${k}`)
+      }
     }
   }
+
+  push(payload, field);
 }
