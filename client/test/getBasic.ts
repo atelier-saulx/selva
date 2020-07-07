@@ -165,7 +165,7 @@ test.after(async _t => {
 
 test.afterEach(async _t => {
     const client = connect({ port })
-    client.redis.flushall()
+    await client.redis.flushall()
     await client.destroy()
 })
 
