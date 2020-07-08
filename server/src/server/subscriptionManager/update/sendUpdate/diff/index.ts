@@ -2,6 +2,12 @@ import * as jsonpatch from 'fast-json-patch'
 import { performance } from 'perf_hooks'
 import { Worker } from 'worker_threads'
 import { join } from 'path'
+
+import os from 'os-utils'
+
+os.cpuUsage(function(v) {
+  console.log('CPU Usage (%): ' + v)
+})
 // const testAddon = require('../../../../../../../build/Release/testaddon.node')
 
 // const workerPath = join(__dirname, 'worker.js')
@@ -22,9 +28,7 @@ export default (prev, newval) => {
   if (prev !== null && newval !== null) {
     var d = performance.now()
     // const y = testAddon.hello(prev, newval)
-    const y = JSON.stringify(
-      jsonpatch.compare(JSON.parse(prev), JSON.parse(newval))
-    )
+    const y = jsonpatch.compare(JSON.parse(prev), JSON.parse(newval))
 
     const x = performance.now() - d
     console.log('diff speed', x, prev.length, newval.length)

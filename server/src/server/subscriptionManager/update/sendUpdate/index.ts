@@ -104,10 +104,13 @@ const sendUpdate = async (
 
   subscription.version = newVersion
 
+  // not the best will use te cache for this!
   const prev = await redis.hget(selector, CACHE, channel)
 
-  await diff(prev, resultStr)
+  // need to add prev checksum to path
+  const patch = diff(prev, resultStr)
 
+  // maybe even send patch over the wire? and nothing else
   q.push(
     redis.hmset(
       selector,
@@ -121,7 +124,12 @@ const sendUpdate = async (
 
   await Promise.all(q)
 
-  await redis.publish(selector, channel, newVersion)
+  await redis.publish(
+    selector,
+    channel,
+    // now this an just be used if the prev version corresponds else just get from server cache
+    JSON.stringify({ version: newVersion, fromversion: currentVersion, patch })
+  )
 
   clearTimeout(time)
 
