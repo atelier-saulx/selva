@@ -81,9 +81,9 @@ typedef struct TraversalCallback {
 } TraversalCallback;
 
 static const Selva_NodeId HIERARCHY_RDB_EOF __attribute__((nonstring));
-static RedisModuleType *HierarchyType;
+RedisModuleType *HierarchyType;
 
-static const char * const hierarchyStrError[] = {
+const char * const hierarchyStrError[] = {
     (const char *)"ERR No Error",
     (const char *)"ERR EGENERAL Unknown error",
     (const char *)"ERR ENOTSUP Operation not supported",
@@ -870,7 +870,7 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     int type = RedisModule_KeyType(key);
     if (type != REDISMODULE_KEYTYPE_EMPTY &&
         RedisModule_ModuleTypeGetType(key) != HierarchyType) {
-        return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
+        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
     }
 
     /* Create an empty value object if the key is currently empty. */
@@ -1074,7 +1074,6 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
     }
 
     return 0;
-
 }
 
 /**
