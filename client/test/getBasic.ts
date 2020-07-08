@@ -842,6 +842,26 @@ test.serial('get - field with empty array', async t => {
   client.destroy()
 })
 
+test.serial('get - set with some items', async t => {
+  const client = connect({ port })
+
+  const id = await client.set({
+    type: 'lekkerType',
+    thing: [ 'a', 'b' ],
+  })
+
+  const result = await client.get({
+    $id: id,
+    thing: true,
+  })
+
+  t.deepEqual(result, {
+    thing: [ 'a', 'b' ],
+  })
+
+  client.destroy()
+})
+
 test.serial('get - hierarchy', async t => {
   const client = connect({ port })
 
