@@ -187,7 +187,7 @@ const createRegistryClient = (
     ) {
       setTimeoutServer()
 
-      console.log('GOT UPDATES')
+      console.log('GOT UPDATES', payload)
       // can be handled more effiecently
       getServers(client, <string>payload)
     } else if (channel === REGISTRY_UPDATE_SUBSCRIPTION) {

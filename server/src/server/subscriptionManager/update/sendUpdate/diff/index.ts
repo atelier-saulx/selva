@@ -2,7 +2,7 @@ import * as jsonpatch from 'fast-json-patch'
 import { performance } from 'perf_hooks'
 import { Worker } from 'worker_threads'
 import { join } from 'path'
-const testAddon = require('../../../../../../../build/Release/testaddon.node')
+// const testAddon = require('../../../../../../../build/Release/testaddon.node')
 
 // const workerPath = join(__dirname, 'worker.js')
 
@@ -10,7 +10,6 @@ const testAddon = require('../../../../../../../build/Release/testaddon.node')
 
 // async is not the best here either...
 
-console.log('SNURFELSTEIN')
 // var workerAmount = 2
 // const workers = []
 // let workerIndex = 0
@@ -22,9 +21,13 @@ console.log('SNURFELSTEIN')
 export default (prev, newval) => {
   if (prev !== null && newval !== null) {
     var d = performance.now()
-    const y = testAddon.hello(prev, newval)
+    // const y = testAddon.hello(prev, newval)
+    const y = JSON.stringify(
+      jsonpatch.compare(JSON.parse(prev), JSON.parse(newval))
+    )
+
     const x = performance.now() - d
-    console.log('dif speed', x)
+    console.log('diff speed', x, prev.length, newval.length)
     return y
   }
 }
