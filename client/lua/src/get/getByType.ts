@@ -197,7 +197,8 @@ const arrayLike = (
     return descendants(result, id, field, language, version)
   }
 
-  let value = ensureArray(redis.smembers(id + '.' + field))
+  // let value = ensureArray(redis.smembers(id + '.' + field))
+  let value = ensureArray(redis.zrange(id + '.' + field, 0, -1))
   if (value.length === 0 || !value.length) {
     value = emptyArray()
     setNestedResult(result, field, value)
