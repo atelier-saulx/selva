@@ -1,14 +1,52 @@
 #include "functionexample.h"
-#include "json.hpp"
-#include <sstream>
+// #include "json.hpp"
+// #include <string>
+
+// using json = nlohmann::json;
+// json patch = json::diff(json::parse(a), json::parse(b));
+// return patch.dump();
+#include <typeinfo> // operator typeid
+
+#include "dmp_diff.hpp"
 #include <string>
 
-using json = nlohmann::json;
+using namespace std;
+using MyersStringDiff = MyersDiff<string>;
 
+// need to return some kind of struct prob
 std::string functionexample::hello(std::string a, std::string b)
 {
-    json patch = json::diff(json::parse(a), json::parse(b));
-    return patch.dump();
+    MyersStringDiff diff{a, b};
+    bool isStart = true;
+    std::string greeting = "[";
+    for (const auto &i : diff)
+    {
+        if (!isStart)
+        {
+            greeting.append(",");
+        }
+        if (i.operation == 0)
+        {
+            greeting.append("[\"");
+            greeting.append(to_string(i.text.size()));
+            greeting.append("\"");
+            greeting.append(",");
+            greeting.push_back(op2chr(i.operation));
+            greeting.append("]");
+        }
+        else
+        {
+            greeting.append("[\"");
+            greeting.append(i.str());
+            greeting.append("\"");
+            greeting.append(",");
+            greeting.push_back(op2chr(i.operation));
+            greeting.append("]");
+        }
+        isStart = false;
+    }
+    greeting.append("]");
+    return greeting;
 }
 
 int functionexample::add(int a, int b)
@@ -16,6 +54,7 @@ int functionexample::add(int a, int b)
     return a + b;
 }
 
+// napi type
 Napi::String functionexample::HelloWrapped(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();

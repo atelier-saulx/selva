@@ -8,8 +8,7 @@
             "node-bindings/Samples/functionexample.cpp",
             "node-bindings/Samples/actualclass.cpp",
             "node-bindings/Samples/classexample.cpp",
-            "node-bindings/json.hpp"
-
+            "node-bindings/Samples/diff/dmp_diff.hpp"
         ],
         'include_dirs': [
             "<!@(node -p \"require('node-addon-api').include\")"

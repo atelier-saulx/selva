@@ -31,6 +31,8 @@
   },
   "devDependencies": {
     "node-gyp": "^7.0.0",
+    "diff": "^4.0.2",
+    "diff-match-patch": "^1.0.5",
     "node-addon-api": "^3.0.0",
     "eslint": "^6.5.1",
     "prettier": "^1.18.2",

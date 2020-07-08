@@ -107,7 +107,6 @@ const sendUpdate = async (
   // not the best will use te cache for this!
   const prev = await redis.hget(selector, CACHE, channel)
 
-  // need to add prev checksum to path
   const patch = diff(prev, resultStr)
 
   // maybe even send patch over the wire? and nothing else
@@ -128,6 +127,7 @@ const sendUpdate = async (
     selector,
     channel,
     // now this an just be used if the prev version corresponds else just get from server cache
+    // important to not have too large patches
     JSON.stringify({ version: newVersion, fromversion: currentVersion, patch })
   )
 
