@@ -25,7 +25,7 @@ const createRedisClient = (
   }
 
   const retryStrategy = () => {
-    if (tries > 20) {
+    if (tries > 10) {
       clearTimeout(client.serverHeartbeat)
       clearTimeout(client.startClientTimer)
       if (label === 'publisher' && !isHarddc) {

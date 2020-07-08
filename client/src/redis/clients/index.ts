@@ -124,6 +124,7 @@ export class Client extends EventEmitter {
         if (type === 'subscriptionManager') {
           console.log('ok subs manager we can throw this away')
           destroyClient(this)
+          // remove sub manager! send it allrdy
         } else {
           reconnectClient(this)
         }
