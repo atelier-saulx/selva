@@ -7,38 +7,8 @@ using json = nlohmann::json;
 
 std::string functionexample::hello(std::string a, std::string b)
 {
-    json document = R"(
-         {
-           "Color": "White",
-           "hello": "world",
-           "Animal" : "Dog"
-         }
-     )"_json;
-
-    // The patch
-    json patch = R"(
-         [
-           { "op": "replace", "path": "/Color", "value": "Black" },
-           { "op": "add", "path": "/Cpp", "value": "Secrets" },
-           { "op": "remove", "path": "/hello"},
-           { "op": "replace", "path": "/Animal","value": "Cat"}
-           
-         ]
-     )"_json;
-
-    // applying the patch
-    // json patched_doc = document.patch(patch);
-
-    std::stringstream stream;
-    // std::ostringstream stream;
-
-    stream << patch;
-
-    std::string result = stream.str();
-
-    // std::cout << patch << " is a " << patch.type_name() << '\n';
-
-    return result;
+    json patch = json::diff(json::parse(a), json::parse(b));
+    return patch.dump();
 }
 
 int functionexample::add(int a, int b)
