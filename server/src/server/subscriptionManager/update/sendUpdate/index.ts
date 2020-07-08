@@ -106,7 +106,7 @@ const sendUpdate = async (
 
   const prev = await redis.hget(selector, CACHE, channel)
 
-  diff(prev, resultStr)
+  await diff(prev, resultStr)
 
   q.push(
     redis.hmset(

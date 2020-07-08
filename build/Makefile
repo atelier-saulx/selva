@@ -318,3 +318,30 @@ $(obj).$(TOOLSET)/%.o: $(obj)/%.S FORCE_DO_CMD
 $(obj).$(TOOLSET)/%.o: $(obj)/%.s FORCE_DO_CMD
 	@$(call do_cmd,cc,1)
 
+
+ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
+    $(findstring $(join ^,$(prefix)),\
+                 $(join ^,node_modules/node-addon-api/nothing.target.mk)))),)
+  include node_modules/node-addon-api/nothing.target.mk
+endif
+ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
+    $(findstring $(join ^,$(prefix)),\
+                 $(join ^,testaddon.target.mk)))),)
+  include testaddon.target.mk
+endif
+
+quiet_cmd_regen_makefile = ACTION Regenerating $@
+cmd_regen_makefile = cd $(srcdir); /Users/jimdebeer/.nvm/versions/node/v12.14.1/lib/node_modules/npm/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/Users/jimdebeer/saulx/selva/build/config.gypi -I/Users/jimdebeer/.nvm/versions/node/v12.14.1/lib/node_modules/npm/node_modules/node-gyp/addon.gypi -I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/include/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/Users/jimdebeer/Library/Caches/node-gyp/12.14.1" "-Dnode_gyp_dir=/Users/jimdebeer/.nvm/versions/node/v12.14.1/lib/node_modules/npm/node_modules/node-gyp" "-Dnode_lib_file=/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/<(target_arch)/node.lib" "-Dmodule_root_dir=/Users/jimdebeer/saulx/selva" "-Dnode_engine=v8" binding.gyp
+Makefile: $(srcdir)/binding.gyp $(srcdir)/../../.nvm/versions/node/v12.14.1/lib/node_modules/npm/node_modules/node-gyp/addon.gypi $(srcdir)/node_modules/node-addon-api/node_api.gyp $(srcdir)/../../Library/Caches/node-gyp/12.14.1/include/node/common.gypi $(srcdir)/build/config.gypi
+	$(call do_cmd,regen_makefile)
+
+# "all" is a concatenation of the "all" targets from all the included
+# sub-makefiles. This is just here to clarify.
+all:
+
+# Add in dependency-tracking rules.  $(all_deps) is the list of every single
+# target in our tree. Only consider the ones with .d (dependency) info:
+d_files := $(wildcard $(foreach f,$(all_deps),$(depsdir)/$(f).d))
+ifneq ($(d_files),)
+  include $(d_files)
+endif
