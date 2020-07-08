@@ -25,6 +25,11 @@ const parseObjectArray = (payload: any, schema: Schema) => {
   }
 }
 
+const toCArr = (arr: string[] | undefined | null, isId?: boolean) =>
+    arr
+      ? arr.map(s => isId ? s.padEnd(10, '\0') : `${s}\0`).join('')
+      : ''
+
 // function isArrayLike(x: any): x is FieldSchemaArrayLike {
 //   return x && !!x.items
 // }
@@ -60,41 +65,45 @@ export default (
   }
 
   if (typeof payload === 'object' && !Array.isArray(payload)) {
-    result[field] = {}
+    let r: SetOptions = {};
+
     for (let k in payload) {
       if (k === '$add') {
         const parsed = parseObjectArray(payload[k], schema)
         if (parsed) {
-          result[field].$add = parsed
+          r.$add = parsed
         } else if (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
-          result[field].$add = [parseSetObject(payload[k], schema)]
+          r.$add = [parseSetObject(payload[k], schema)]
         } else {
-          result[field].$add = verifySimple(payload[k], verify)
+          r.$add = verifySimple(payload[k], verify)
         }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
           // unsets are allowed
-          result[field].$delete = true
+          r.$delete = true // FIXME
         } else {
-          result[field].$delete = verifySimple(payload[k], verify)
+          r.$delete = verifySimple(payload[k], verify)
         }
       } else {
         throw new Error(`Wrong key for set ${k}`)
       }
     }
-  } else {
-    const toIdArr = (arr?: string[]) => arr ? arr.map(s => s.padEnd(10, '\0')).join('') : '';
 
-    result[field] =
-      parseObjectArray(payload, schema) || verifySimple(payload, verify)
     result.$args.push('5', field, createRecord(setRecordDef, {
         is_reference: 0,
-        $add: toIdArr(result[field].$add),
-        $delete: toIdArr(result[field].$delete),
-        $value: toIdArr(result[field]),
+        $add: toCArr(r.$add, false),
+        $delete: toCArr(r.$delete, false),
+        $value: '',
+    }).toString());
+  } else {
+    result.$args.push('5', field, createRecord(setRecordDef, {
+        is_reference: 0,
+        $add: '',
+        $delete: '',
+        $value: toCArr(parseObjectArray(payload, schema) || verifySimple(payload, verify), false)
     }).toString());
   }
 }

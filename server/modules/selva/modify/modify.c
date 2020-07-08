@@ -4,9 +4,10 @@
 #include <string.h>
 #include "redismodule.h"
 
+#include "hierarchy.h"
 #include "modify.h"
 
-void SelvaModify_ModifySet(
+int SelvaModify_ModifySet(
   RedisModuleCtx *ctx,
   RedisModuleKey *id_key,
   const char *id_str,
@@ -16,25 +17,23 @@ void SelvaModify_ModifySet(
   size_t field_len,
   struct SelvaModify_OpSet *setOpts
 ) {
-  size_t id_field_len = id_len + 1 + field_len;
-  char id_field_str[id_field_len];
-  memcpy(id_field_str, id_str, id_len);
-  memcpy(id_field_str + id_len, ".", 1);
-  memcpy(id_field_str + id_len + 1, field_str, field_len);
-
   // add in the hash that it's a set/references field
   RedisModuleString *set_field_identifier = RedisModule_CreateString(ctx, "___selva_$set", 13);
   RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, set_field_identifier, NULL);
 
-  RedisModuleString *_set_key = RedisModule_CreateString(ctx, id_field_str, id_field_len);
-  RedisModuleKey *set_key = RedisModule_OpenKey(ctx, _set_key, REDISMODULE_WRITE);
+  RedisModuleString *set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s%c%.*s", id_len, id_str, '.', field_len, field_str);
+  RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
+
+  if (!set_key) {
+    return REDISMODULE_ERR;
+  }
 
   if (setOpts->$value_len) {
-    RedisModule_DeleteKey(set_key);
+    RedisModule_UnlinkKey(set_key);
 
     if (setOpts->is_reference) {
-      for (unsigned int i = 0; i < setOpts->$value_len; i += 10) {
-        RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$value + i, 10);
+      for (unsigned int i = 0; i < setOpts->$value_len; i += SELVA_NODE_ID_SIZE) {
+        RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$value + i, SELVA_NODE_ID_SIZE);
         RedisModule_ZsetAdd(set_key, 0, ref, NULL);
       }
     } else {
@@ -53,8 +52,8 @@ void SelvaModify_ModifySet(
   } else {
     if (setOpts->$add_len) {
       if (setOpts->is_reference) {
-        for (unsigned int i = 0; i < setOpts->$add_len; i += 10) {
-          RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$add + i, 10);
+        for (unsigned int i = 0; i < setOpts->$add_len; i += SELVA_NODE_ID_SIZE) {
+          RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$add + i, SELVA_NODE_ID_SIZE);
           // TODO: check if anything was actually added or not for hierarchy
           RedisModule_ZsetAdd(set_key, 0, ref, NULL);
         }
@@ -75,8 +74,8 @@ void SelvaModify_ModifySet(
 
     if (setOpts->$delete_len) {
       if (setOpts->is_reference) {
-        for (unsigned int i = 0; i < setOpts->$delete_len; i += 10) {
-          RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$delete + i, 10);
+        for (unsigned int i = 0; i < setOpts->$delete_len; i += SELVA_NODE_ID_SIZE) {
+          RedisModuleString *ref = RedisModule_CreateString(ctx, setOpts->$delete + i, SELVA_NODE_ID_SIZE);
           // TODO: check if anything was actually removed or not for hierarchy
           RedisModule_ZsetRem(set_key, ref, NULL);
         }
@@ -97,6 +96,7 @@ void SelvaModify_ModifySet(
   }
 
   RedisModule_CloseKey(set_key);
+  return REDISMODULE_OK;
 }
 
 void SelvaModify_ModifyIncrement(
@@ -114,7 +114,7 @@ void SelvaModify_ModifyIncrement(
 ) {
   int num = current_value == NULL
     ? incrementOpts->$default
-    : strtol(current_value_str, NULL, 10);
+    : strtol(current_value_str, NULL, SELVA_NODE_ID_SIZE);
   num += incrementOpts->$increment;
 
   int num_str_size = (int)ceil(log10(num));

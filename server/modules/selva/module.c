@@ -80,10 +80,11 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 // id, type, key, value [, ... type, key, value]]
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx);
+  int err = REDISMODULE_OK;
 
-    if (argc < 2 || (argc - 2) % 3) {
-        return RedisModule_WrongArity(ctx);
-    }
+  if (argc < 2 || (argc - 2) % 3) {
+    return RedisModule_WrongArity(ctx);
+  }
 
   RedisModuleString *id = argv[1];
   size_t id_len;
@@ -124,7 +125,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
       struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
       SelvaModify_OpSet_align(setOpts);
-      SelvaModify_ModifySet(ctx, id_key, id_str, id_len, field, field_str, field_len, setOpts);
+
+      err = SelvaModify_ModifySet(ctx, id_key, id_str, id_len, field, field_str, field_len, setOpts);
+      if (err) {
+          RedisModule_ReplyWithError(ctx, "Failed to modify");
+          goto err;
+      }
+
       // TODO: hierarchy
     } else {
       if (type_code == SELVA_MODIFY_ARG_INDEXED_VALUE ||
@@ -150,11 +157,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
   }
 
+  RedisModule_ReplyWithString(ctx, id);
+err:
   RedisModule_CloseKey(id_key);
 
-  RedisModule_ReplyWithString(ctx, id);
-
-  return REDISMODULE_OK;
+  return err;
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
