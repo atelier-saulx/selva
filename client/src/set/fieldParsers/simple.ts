@@ -138,12 +138,13 @@ for (const key in verifiers) {
       // @ts-ignore FIXME
       result.$args.push('0', field, payload)
     } else if (verify(payload)) {
-      result[field] = payload
-      // @ts-ignore FIXME
-      result.$args.push('0', field, payload)
       if (converter) {
         result[field] = converter(payload)
         result.$args.push('0', field, converter(payload))
+      } else {
+        result[field] = payload
+        // @ts-ignore FIXME
+        result.$args.push('0', field, payload)
       }
     } else {
       throw new Error(
