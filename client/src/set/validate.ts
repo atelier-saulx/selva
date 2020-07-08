@@ -72,7 +72,7 @@ export default function parseSetObject(
         }
         result[key] = payload[key]
       } else if (key === '$id') {
-        if (!verifiers.id(payload[key])) {
+        if (!verifiers.id(payload[key], schemas)) {
           throw new Error('Wrong type for $id ' + payload[key])
         }
         result[key] = payload[key]
