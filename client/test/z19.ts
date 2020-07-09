@@ -23,9 +23,9 @@ test.before(async t => {
             type: 'text',
             search: { type: ['TEXT-LANGUAGE-SUG'] }
           },
-          published: { type: 'boolean', search: { type: ['TAG']}},
-          awayTeam: { type: 'reference'},
-          homeTeam: { type: 'reference'}
+          published: { type: 'boolean', search: { type: ['TAG'] } },
+          awayTeam: { type: 'reference' },
+          homeTeam: { type: 'reference' }
         }
       },
       team: {
@@ -52,7 +52,6 @@ test.after(async _t => {
 
 test.serial('$field in $id should work', async t => {
   const client = connect({ port }, { loglevel: 'info' })
-
 
   await client.set({
     $language: 'en',
@@ -88,85 +87,81 @@ test.serial('$field in $id should work', async t => {
       {
         $id: 'team2',
         title: 'team two'
-      },
+      }
     ]
   })
 
-  const result = 
-    await client.get({
-      $language: 'en',
-      children: {
-          homeTeam: true,
-          awayTeam: true,
-          teams: [
-              {
-                  id: true,
-                  $id: {
-                      $field: 'homeTeam'
-                  }
-              },
-              {
-                  id: true,
-                  $id: {
-                      $field: 'awayTeam'
-                  }
-              }
-          ],
-          id: true,
-          $list: {
-              $limit: 20,
-              $find: {
-                  $traverse: 'descendants',
-                  $filter: [
-                      {
-                          $field: 'type',
-                          $operator: '=',
-                          $value: 'match'
-                      },
-                      {
-                          $field: 'published',
-                          $operator: '=',
-                          $value: true
-                      }
-                  ]
-              }
-          }
-      }
-    })
-  
-  t.deepEqualIgnoreOrder(
-    result,
-    {
-      children: [
+  const result = await client.get({
+    $language: 'en',
+    children: {
+      homeTeam: true,
+      awayTeam: true,
+      teams: [
         {
-          id: 'match2',
-          awayTeam: 'team1',
-          teams: [
-            {
-              id: 'team2'
-            },
-            {
-              id: 'team1'
-            }
-          ],
-          homeTeam: 'team2'
+          id: true,
+          $id: {
+            $field: 'homeTeam'
+          }
         },
         {
-          id: 'match1',
-          awayTeam: 'team3',
-          teams: [
+          id: true,
+          $id: {
+            $field: 'awayTeam'
+          }
+        }
+      ],
+      id: true,
+      $list: {
+        $limit: 20,
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
             {
-              id: 'team3'
+              $field: 'type',
+              $operator: '=',
+              $value: 'match'
             },
             {
-              id: 'team4'
+              $field: 'published',
+              $operator: '=',
+              $value: true
             }
-          ],
-          homeTeam: 'team4'
+          ]
         }
-      ]
+      }
     }
-  )
+  })
+
+  t.deepEqualIgnoreOrder(result, {
+    children: [
+      {
+        id: 'match2',
+        awayTeam: 'team1',
+        teams: [
+          {
+            id: 'team2'
+          },
+          {
+            id: 'team1'
+          }
+        ],
+        homeTeam: 'team2'
+      },
+      {
+        id: 'match1',
+        awayTeam: 'team3',
+        teams: [
+          {
+            id: 'team3'
+          },
+          {
+            id: 'team4'
+          }
+        ],
+        homeTeam: 'team4'
+      }
+    ]
+  })
 
   await client.delete('root')
   await client.destroy()
