@@ -866,15 +866,21 @@ test.serial('get - hierarchy', async t => {
   const client = connect({ port })
 
   await Promise.all([
-    client.set({
-      $id: 'viflapx',
-      children: ['vifla', 'viflo']
+    await client.set({
+      $id: 'viflo'
     }),
-    client.set({
-      $id: 'vifla',
-      children: ['viflo', 'maflux']
+    await client.set({
+      $id: 'maflux'
     })
   ])
+  await client.set({
+    $id: 'vifla',
+    children: ['viflo', 'maflux']
+  })
+  await client.set({
+    $id: 'viflapx',
+    children: ['vifla', 'viflo']
+  })
 
   t.deepEqualIgnoreOrder(
     await client.get({
