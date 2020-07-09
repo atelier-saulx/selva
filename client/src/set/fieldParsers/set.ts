@@ -4,7 +4,7 @@ import { Schema, FieldSchemaArrayLike } from '../../schema'
 import parseSetObject from '../validate'
 import parsers from './simple'
 
-const setRecordDef = compile([
+export const setRecordDef = compile([
   { name: 'is_reference', type: 'int8' },
   { name: '$add', type: 'cstring_p' },
   { name: '$delete', type: 'cstring_p' },
@@ -25,14 +25,12 @@ const parseObjectArray = (payload: any, schema: Schema) => {
   }
 }
 
-const toCArr = (arr: string[] | undefined | null, isId?: boolean) =>
-    arr
-      ? arr.map(s => isId ? s.padEnd(10, '\0') : `${s}\0`).join('')
-      : ''
-
 // function isArrayLike(x: any): x is FieldSchemaArrayLike {
 //   return x && !!x.items
 // }
+
+const toCArr = (arr: string[] | undefined | null) =>
+  arr ? arr.map(s => `${s}\0`).join('') : ''
 
 export default (
   schema: Schema,
@@ -93,17 +91,17 @@ export default (
     }
 
     result.$args.push('5', field, createRecord(setRecordDef, {
-        is_reference: 0,
-        $add: toCArr(r.$add, false),
-        $delete: toCArr(r.$delete, false),
-        $value: '',
-    }).toString());
+      is_reference: 0,
+      $add: toCArr(r.$add),
+      $delete: toCArr(r.$delete),
+      $value: '',
+    }).toString())
   } else {
     result.$args.push('5', field, createRecord(setRecordDef, {
-        is_reference: 0,
-        $add: '',
-        $delete: '',
-        $value: toCArr(parseObjectArray(payload, schema) || verifySimple(payload, verify), false)
-    }).toString());
+      is_reference: 0,
+      $add: '',
+      $delete: '',
+      $value: toCArr(parseObjectArray(payload, schema) || verifySimple(payload, verify)),
+    }).toString())
   }
 }

@@ -81,15 +81,15 @@ typedef struct TraversalCallback {
 } TraversalCallback;
 
 static const Selva_NodeId HIERARCHY_RDB_EOF __attribute__((nonstring));
-RedisModuleType *HierarchyType;
+static RedisModuleType *HierarchyType;
 
 const char * const hierarchyStrError[] = {
-    (const char *)"ERR No Error",
-    (const char *)"ERR EGENERAL Unknown error",
-    (const char *)"ERR ENOTSUP Operation not supported",
-    (const char *)"ERR ENOMEM Out of memory",
-    (const char *)"ERR ENOENT Not found",
-    (const char *)"ERR EEXIST Exist",
+    (const char *)"HIERARCHY_ERR No Error",
+    (const char *)"HIERARCHY_ERR EGENERAL Unknown error",
+    (const char *)"HIERARCHY_ERR ENOTSUP Operation not supported",
+    (const char *)"HIERARCHY_ERR ENOMEM Out of memory",
+    (const char *)"HIERARCHY_ERR ENOENT Not found",
+    (const char *)"HIERARCHY_ERR EEXIST Exist",
 };
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
@@ -159,6 +159,39 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
 
     SVector_Destroy(&hierarchy->heads);
     RedisModule_Free(hierarchy);
+}
+
+SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisModuleString *key_name) {
+    SelvaModify_Hierarchy *hierarchy;
+    RedisModuleKey *key;
+    int type;
+
+    key = RedisModule_OpenKey(ctx, key_name, REDISMODULE_READ | REDISMODULE_WRITE);
+    type = RedisModule_KeyType(key);
+
+    if (type != REDISMODULE_KEYTYPE_EMPTY &&
+        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
+        RedisModule_CloseKey(key);
+        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+
+        return NULL;
+    }
+
+    /* Create an empty value object if the key is currently empty. */
+    if (type == REDISMODULE_KEYTYPE_EMPTY) {
+        hierarchy = SelvaModify_NewHierarchy();
+        if (!hierarchy) {
+            RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
+
+            return NULL;
+        }
+
+        RedisModule_ModuleTypeSetValue(key, HierarchyType, hierarchy);
+    } else {
+        hierarchy = RedisModule_ModuleTypeGetValue(key);
+    }
+
+    return hierarchy;
 }
 
 static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
@@ -861,25 +894,15 @@ void HierarchyTypeFree(void *value) {
 
 int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    SelvaModify_Hierarchy *hierarchy;
 
     if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    int type = RedisModule_KeyType(key);
-    if (type != REDISMODULE_KEYTYPE_EMPTY &&
-        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
-        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-    }
-
-    /* Create an empty value object if the key is currently empty. */
-    SelvaModify_Hierarchy *hierarchy;
-    if (type == REDISMODULE_KEYTYPE_EMPTY) {
-        hierarchy = SelvaModify_NewHierarchy();
-        RedisModule_ModuleTypeSetValue(key, HierarchyType, hierarchy);
-    } else {
-        hierarchy = RedisModule_ModuleTypeGetValue(key);
+    hierarchy = SelvaModify_OpenHierarchyKey(ctx, argv[1]);
+    if (!hierarchy) {
+        return REDISMODULE_ERR;
     }
 
     /*

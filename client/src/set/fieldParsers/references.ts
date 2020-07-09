@@ -1,7 +1,9 @@
+import { createRecord } from 'data-record'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
 import parseSetObject from '../validate'
 import { verifiers } from './simple'
+import { setRecordDef } from './set'
 
 const id = verifiers.id
 
@@ -24,6 +26,9 @@ const parseObjectArray = (payload: any, schema: Schema, $lang?: string) => {
   }
 }
 
+const toCArr = (setObj: { [index: string]: string } | undefined | null) =>
+  setObj ? Object.keys(setObj).filter(k => !k.startsWith('$')).map(k => setObj[k].padEnd(10, '\0')).join('') : ''
+
 export default (
   schema: Schema,
   field: string,
@@ -33,6 +38,8 @@ export default (
   _type: string,
   $lang?: string
 ): void => {
+  const isReference = ['children', 'parents'].includes(field)
+
   if (
     typeof payload === 'object' &&
     !Array.isArray(payload) &&
@@ -91,7 +98,14 @@ export default (
       }
     }
 
-    if (!hasKeys) {
+    if (hasKeys) {
+      result.$args.push('5', field, createRecord(setRecordDef, {
+          is_reference: isReference,
+          $add: toCArr(result[field].$add),
+          $delete: toCArr(result[field].$delete),
+          $value: '',
+      }).toString())
+    } else {
       delete result[field]
     }
   } else {
@@ -106,5 +120,12 @@ export default (
       result.$_itemCount = (result.$_itemCount || 1) + referenceCount
       result[field].$_itemCount = referenceCount
     }
+
+    result.$args.push('5', field, createRecord(setRecordDef, {
+      is_reference: isReference,
+      $add: '',
+      $delete: '',
+      $value: toCArr(result[field]),
+    }).toString())
   }
 }

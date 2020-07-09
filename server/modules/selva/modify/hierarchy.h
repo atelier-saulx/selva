@@ -2,7 +2,7 @@
 #ifndef SELVA_MODIFY_HIERARCHY
 #define SELVA_MODIFY_HIERARCHY
 
-#define SELVA_NODE_ID_SIZE  10
+#define SELVA_NODE_ID_SIZE  10ul
 #define SELVA_NODE_TYPE_SIZE 2
 
 /*
@@ -30,9 +30,15 @@
  */
 #define SELVA_MODIFY_HIERARCHY_EEXIST   (-5)
 
+
+#define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
+
 typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
+
+struct RedisModuleCtx;
+struct RedisModuleString;
 
 /**
  * Create a new hierarchy.
@@ -43,6 +49,11 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void);
  * Free a hierarchy.
  */
 void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy);
+
+/**
+ * Open a hierarchy key.
+ */
+SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name);
 
 /**
  * Set node relationships relative to other existing nodes.
@@ -112,5 +123,7 @@ ssize_t SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_
  * Get an unsorted list of descendants of a given node.
  */
 ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
+
+extern const char * const hierarchyStrError[6];
 
 #endif /* SELVA_MODIFY_HIERARCHY */

@@ -85,7 +85,4 @@ void SelvaModify_ModifyIncrement(
     struct SelvaModify_OpIncrement *incrementOpts
 );
 
-extern RedisModuleType *HierarchyType;
-extern const char * const hierarchyStrError[6];
-
 #endif /* SELVA_MODIFY */

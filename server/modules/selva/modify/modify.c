@@ -4,36 +4,22 @@
 #include <string.h>
 #include "redismodule.h"
 
+#include "cdefs.h"
 #include "hierarchy.h"
 #include "modify.h"
 
-const char HIERARCHY_KEY_NAME[] = "___selva_hierarchy";
-
 static int update_hierarchy(
     RedisModuleCtx *ctx,
-    RedisModuleKey *id_key,
-    const char *id_str,
-    size_t id_len,
-    RedisModuleString *field,
+    Selva_NodeId node_id,
     const char *field_str,
-    size_t field_len,
     struct SelvaModify_OpSet *setOpts
 ) {
-    RedisModuleString *key_name = RedisModule_CreateString(ctx, HIERARCHY_KEY_NAME, sizeof(HIERARCHY_KEY_NAME) - 1);
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, key_name, REDISMODULE_READ | REDISMODULE_WRITE);
-    int type = RedisModule_KeyType(key);
-    if (type != REDISMODULE_KEYTYPE_EMPTY &&
-        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
-        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-    }
-
-    /* Create an empty value object if the key is currently empty. */
     SelvaModify_Hierarchy *hierarchy;
-    if (type == REDISMODULE_KEYTYPE_EMPTY) {
-        hierarchy = SelvaModify_NewHierarchy();
-        RedisModule_ModuleTypeSetValue(key, HierarchyType, hierarchy);
-    } else {
-        hierarchy = RedisModule_ModuleTypeGetValue(key);
+
+    RedisModuleString *key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
+    hierarchy = SelvaModify_OpenHierarchyKey(ctx, key_name);
+    if (!hierarchy) {
+        return REDISMODULE_ERR;
     }
 
     /*
@@ -47,11 +33,11 @@ static int update_hierarchy(
         size_t nr_nodes = setOpts->$value_len / SELVA_NODE_ID_SIZE;
 
         if (isFieldParents) { /* parents */
-          err = SelvaModify_SetHierarchy(hierarchy, id_str,
+          err = SelvaModify_SetHierarchy(hierarchy, node_id,
                   nr_nodes, (const Selva_NodeId *)setOpts->$value,
                   0, NULL);
         } else { /* children */
-          err = SelvaModify_SetHierarchy(hierarchy, id_str,
+          err = SelvaModify_SetHierarchy(hierarchy, node_id,
                   0, NULL,
                   nr_nodes, (const Selva_NodeId *)setOpts->$value);
         }
@@ -60,11 +46,11 @@ static int update_hierarchy(
             size_t nr_nodes = setOpts->$add_len / SELVA_NODE_ID_SIZE;
 
             if (isFieldParents) { /* parents */
-              err = SelvaModify_AddHierarchy(hierarchy, id_str,
+              err = SelvaModify_AddHierarchy(hierarchy, node_id,
                       nr_nodes, (const Selva_NodeId *)setOpts->$add,
                       0, NULL);
             } else { /* children */
-              err = SelvaModify_AddHierarchy(hierarchy, id_str,
+              err = SelvaModify_AddHierarchy(hierarchy, node_id,
                       0, NULL,
                       nr_nodes, (const Selva_NodeId *)setOpts->$add);
             }
@@ -73,19 +59,17 @@ static int update_hierarchy(
             size_t nr_nodes = setOpts->$add_len / SELVA_NODE_ID_SIZE;
 
             if (isFieldParents) { /* parents */
-                err = SelvaModify_DelHierarchy(hierarchy, id_str,
+                err = SelvaModify_DelHierarchy(hierarchy, node_id,
                         nr_nodes, (const Selva_NodeId *)setOpts->$delete,
                         0, NULL);
             } else { /* children */
-                err = SelvaModify_DelHierarchy(hierarchy, id_str,
+                err = SelvaModify_DelHierarchy(hierarchy, node_id,
                         0, NULL,
                         nr_nodes, (const Selva_NodeId *)setOpts->$delete);
             }
         }
 
     }
-
-    RedisModule_CloseKey(key);
 
     if (err) {
         RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
@@ -113,6 +97,7 @@ static int update_zset(
     RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
 
     if (!set_key) {
+        RedisModule_ReplyWithError(ctx, "Unable to open the key");
         return REDISMODULE_ERR;
     }
     if (setOpts->$value_len > 0) {
@@ -174,11 +159,16 @@ int SelvaModify_ModifySet(
     struct SelvaModify_OpSet *setOpts
 ) {
     if (setOpts->is_reference) {
+        Selva_NodeId node_id;
+
+        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
+        memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
+
         /*
          * Currently only parents and children fields support references (using
          * hierarchy) and we assume the field is either of those.
          */
-        return update_hierarchy(ctx, id_key, id_str, id_len, field, field_str, field_len, setOpts);
+        return update_hierarchy(ctx, node_id, field_str, setOpts);
     } else {
         return update_zset(ctx, id_key, id_str, id_len, field, field_str, field_len, setOpts);
     }
