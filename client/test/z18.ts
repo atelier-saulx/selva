@@ -40,6 +40,29 @@ test.before(async t => {
             // this messes it up!
             excludeAncestryWith: ['competition']
           }
+        },
+        fields: {
+          video: {
+            type: 'record',
+            meta: { type: 'video' },
+            values: {
+              type: 'object',
+              properties: {
+                mp4: {
+                  type: 'url'
+                },
+                streamId: {
+                  type: 'string'
+                },
+                hls: {
+                  type: 'url',
+                  meta: {
+                    upload: 'video'
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -88,12 +111,52 @@ test.serial('correct hierachy rules', async t => {
 
   const match = await client.set({
     type: 'match',
-    parents: [ajax1, ajax2, eredivisie2020]
+    parents: [ajax1, ajax2, eredivisie2020],
+    video: {
+      default: {
+        // hls: 'https://google.com',
+        mp4: 'https://google.com'
+      },
+      pano: {}
+    }
   })
 
   t.deepEqualIgnoreOrder(await client.get({ $id: match, ancestors: true }), {
     ancestors: ['root', football, eredivisie2020, ajax1, ajax2, ajax]
   })
+
+  try {
+    console.log(
+      '----->',
+      await client.get({
+        children: {
+          $list: {
+            $limit: 10,
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $value: 'match',
+                  $field: 'type',
+                  $operator: '='
+                }
+              ]
+            }
+          },
+          // title: true,
+          // image: true,
+          // id: true,
+          // type: true,
+          // date: true,
+          video: true
+        }
+      })
+    )
+    t.pass()
+  } catch (e) {
+    console.log('???????', e)
+    t.fail()
+  }
 
   await client.delete('root')
   await client.destroy()

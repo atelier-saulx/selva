@@ -113,7 +113,8 @@ function ancestryFromHierarchy(id: Id, parent: Id): string[] {
   let finalAncestors: string[] = []
   const parentsOfParent = redis.smembers(parent + '.parents')
   for (const parentOfParent of parentsOfParent) {
-    let ancestors = redis.zrangeWithScores(parentOfParent + '.ancestors')
+    // let ancestors = redis.zrangeWithScores(parentOfParent + '.ancestors')
+    let ancestors = ancestryFromHierarchy(parent, parentOfParent)
 
     // set parent of parent itself into the ancestry
     const depth = getDepth(parentOfParent)

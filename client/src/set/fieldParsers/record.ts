@@ -20,7 +20,6 @@ export default (
 
   let hasKeys = false
   for (let key in payload) {
-    hasKeys = true
     if (key[0] === '$') {
       if (key === '$merge') {
         if (!(payload[key] === true || payload[key] === false)) {
@@ -43,8 +42,13 @@ export default (
         throw new Error(`Wrong option on object ${key}`)
       }
     } else {
+      hasKeys = true
       fn(schema, key, payload[key], r, fields.values, type, $lang)
     }
+  }
+
+  if (Object.keys(result[field]).length === 0) {
+    hasKeys = false
   }
 
   if (!hasKeys) {
