@@ -8,7 +8,7 @@ const SOURCE_DUMP =
   process.env.SOURCE_DUMP ||
   path.join(process.cwd(), 'services', 'db', 'tmp', 'dump.rdb')
 
-const TARGET_DIR = proces.env.TARGET_DIR || process.cwd()
+const TARGET_DIR = process.env.TARGET_DIR || process.cwd()
 
 async function loadDump() {
   const { stdout, stderr } = await execa('rdb', ['-c', 'json', SOURCE_DUMP])
@@ -70,6 +70,17 @@ function makeSetPayload(db, typeSchema, entry) {
           item: val
         }
       )
+
+      val = newVal
+    } else if (typeSchema.fields[key].type === 'record') {
+      const fakeSchema = {}
+      for (const k in val) {
+        fakeSchema[key] = typeSchema.fields[key].values
+      }
+
+      const newVal = makeSetPayload(db, fakeSchema, {
+        item: val
+      })
 
       val = newVal
     }
