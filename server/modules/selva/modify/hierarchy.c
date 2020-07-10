@@ -128,6 +128,20 @@ static void RMString2NodeId(Selva_NodeId nodeId, RedisModuleString *rmStr) {
         memcpy(nodeId, str, min(slen, SELVA_NODE_ID_SIZE));
 }
 
+/*
+ * Technically a nodeId is always 10 bytes but sometimes a printable
+ * representation without padding zeroes is needed.
+ */
+static size_t SelvaModify_NodeIdLen(Selva_NodeId nodeId) {
+    size_t len = SELVA_NODE_ID_SIZE;
+
+    while (len >= 1 && nodeId[len - 1] == '\0') {
+        len--;
+    }
+
+    return len;
+}
+
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void) {
     SelvaModify_Hierarchy *hierarchy = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode));
     if (unlikely(!hierarchy)) {
@@ -973,7 +987,7 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
     SVECTOR_FOREACH(itt, &node->parents) {
         SelvaModify_HierarchyNode *it = *itt;
 
-        RedisModule_ReplyWithStringBuffer(ctx, it->id, SELVA_NODE_ID_SIZE);
+        RedisModule_ReplyWithStringBuffer(ctx, it->id, SelvaModify_NodeIdLen(it->id));
     }
 
     return REDISMODULE_OK;
@@ -1019,7 +1033,7 @@ int SelvaModify_Hierarchy_ChildrenCommand(RedisModuleCtx *ctx, RedisModuleString
     SVECTOR_FOREACH(itt, &node->children) {
         SelvaModify_HierarchyNode *it = *itt;
 
-        RedisModule_ReplyWithStringBuffer(ctx, it->id, SELVA_NODE_ID_SIZE);
+        RedisModule_ReplyWithStringBuffer(ctx, it->id, SelvaModify_NodeIdLen(it->id));
     }
 
     return REDISMODULE_OK;
@@ -1081,7 +1095,7 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
         if (take) {
             ssize_t *nr_nodes = args->nr_nodes;
 
-            RedisModule_ReplyWithStringBuffer(args->ctx, node->id, SELVA_NODE_ID_SIZE);
+            RedisModule_ReplyWithStringBuffer(args->ctx, node->id, SelvaModify_NodeIdLen(node->id));
             *nr_nodes = *nr_nodes + 1;
         }
     }
@@ -1236,7 +1250,7 @@ static int DumpCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
         return 1;
     }
 
-    RedisModule_ReplyWithStringBuffer(ctx, node->id, SELVA_NODE_ID_SIZE);
+    RedisModule_ReplyWithStringBuffer(ctx, node->id, SelvaModify_NodeIdLen(node->id));
     *nr_nodes = *nr_nodes + 1;
 
     return 0;
@@ -1248,7 +1262,7 @@ static void DumpCommand_PrintChild(SelvaModify_HierarchyNode *parent, SelvaModif
     RedisModuleCtx *ctx = (RedisModuleCtx *)args[0];
     ssize_t *cur_nr_children = (ssize_t *)args[2];
 
-    RedisModule_ReplyWithStringBuffer(ctx, child->id, SELVA_NODE_ID_SIZE);
+    RedisModule_ReplyWithStringBuffer(ctx, child->id, SelvaModify_NodeIdLen(child->id));
     *cur_nr_children = *cur_nr_children + 1;
 }
 
