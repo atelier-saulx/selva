@@ -19,7 +19,20 @@ if (!fst || !snd) {
 const f1 = fs.readFileSync(fst, 'utf8')
 const f2 = fs.readFileSync(snd, 'utf8')
 
-const o1 = JSON.parse(f1)
-const o2 = JSON.parse(f2)
+const o1 = JSON.parse(f1)[0]
+const o2 = JSON.parse(f2)[0]
 
 console.log(deepEqual(o1, o2))
+
+// keydiff
+for (const k in o1) {
+  if (!o2[k]) {
+    console.log('o1 has', k)
+  }
+}
+
+for (const k in o2) {
+  if (!o1[k]) {
+    console.log('o2 has', k)
+  }
+}

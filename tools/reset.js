@@ -25,8 +25,9 @@ function collectEntry(db, schema, key) {
   const ancestors = db[key + '.ancestors']
   const parents = db[key + '.parents']
   const children = db[key + '.children']
+  const aliases = db[key + '.aliases']
 
-  return { id, item, ancestors, parents, children }
+  return { id, item, ancestors, parents, children, aliases }
 }
 
 function makeObj(item) {
@@ -51,7 +52,7 @@ function makeObj(item) {
 }
 
 function makeSetPayload(db, typeSchema, entry) {
-  let { id, item, ancestors, parents, children } = entry
+  let { id, item, ancestors, parents, children, aliases } = entry
   const payload = {}
 
   if (id) {
@@ -126,6 +127,10 @@ function makeSetPayload(db, typeSchema, entry) {
 
   if (parents) {
     payload.parents = parents
+  }
+
+  if (aliases) {
+    payload.aliases
   }
 
   return payload
