@@ -193,7 +193,9 @@ export async function start(opts: Options) {
   const origin = await startOrigin({
     name: 'default',
     default: true,
-    registry
+    registry,
+    // @ts-ignore
+    dir: opts.dir
   })
 
   const subs = await startSubscriptionManager({
