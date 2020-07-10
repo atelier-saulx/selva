@@ -1,10 +1,10 @@
 const testAddon = require('./build/Release/testaddon.node')
 const perfhooks = require('perf_hooks')
-const fastjson = require('fast-json-patch')
-const diffmpatch = require('diff-match-patch')
-// const diff = require('diff)
+// const fastjson = require('fast-json-patch')
+// const diffmpatch = require('diff-match-patch')
+// const diff = require('./diff/meyers')
 
-const dmp = new diffmpatch()
+// const dmp = new diffmpatch()
 // const diff =
 
 const mybigobect = { flurp: [] }
@@ -15,7 +15,7 @@ for (let i = 0; i < 500; i++) {
 
 const things = []
 
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 1; i++) {
   const x = []
   x[0] = JSON.stringify(mybigobect)
   mybigobect.flurp[~~(Math.random() * 500)] = (~~(
@@ -63,7 +63,7 @@ for (let i = 0; i < things.length; i++) {
   //   const x = dmp.diff_main(things[i][0], things[i][1])
   const p = testAddon.hello(things[i][0], things[i][1])
   //   console.log(x)
-  //   applyPatch(things[i][0], p, things[i][1])
+  applyPatch(things[i][0], p, things[i][1])
 }
 console.log(perfhooks.performance.now() - d3)
 
