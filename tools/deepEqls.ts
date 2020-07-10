@@ -9,7 +9,7 @@ function deepEqual(a, b) {
 const fs = require('fs')
 
 const fst = process.argv[2]
-const snd = process.argv[2]
+const snd = process.argv[3]
 
 if (!fst || !snd) {
   console.error('Must provide 2 file paths')

@@ -53,7 +53,9 @@ function makeSetPayload(db, typeSchema, entry) {
     }
 
     if (val === '___selva_$set') {
-      val = db[id + '.' + key]
+      if (db[id + '.' + key]) {
+        val = db[id + '.' + key]
+      }
     } else if (
       ['int', 'float', 'number', 'timestamp'].includes(
         typeSchema.fields[key].type
@@ -92,6 +94,14 @@ function makeSetPayload(db, typeSchema, entry) {
     payload[key] = val
   }
 
+  if (children) {
+    payload.children = children
+  }
+
+  if (parents) {
+    payload.parents = parents
+  }
+
   return payload
 }
 
@@ -123,12 +133,19 @@ async function main() {
       continue
     }
 
+    console.log('PROCESSING', key)
     const entry = collectEntry(db, schema, key)
-    const typeSchema =
-      key === 'root' ? schema.rootType : schema.types[entry.item.type]
+    const type =
+      entry.item.type || schema.prefixToTypeMapping[entry.id.substr(0, 2)]
+    const typeSchema = key === 'root' ? schema.rootType : schema.types[type]
     const setPayload = makeSetPayload(db, typeSchema, entry)
+    console.log(setPayload)
     await selva.client.set(setPayload)
   }
+
+  await new Promise((resolve, _reject) => {
+    setTimeout(resolve, 10e3)
+  })
 
   await selva.client.redis.save()
 
