@@ -54,10 +54,7 @@ function makeSetPayload(db, typeSchema, entry) {
 
     if (val === '___selva_$set') {
       val = db[id + '.' + key]
-    }
-
-    // TODO: add more
-    if (
+    } else if (
       ['int', 'float', 'number', 'timestamp'].includes(
         typeSchema.fields[key].type
       )
