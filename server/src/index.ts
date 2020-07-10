@@ -203,6 +203,15 @@ export async function start(opts: Options) {
     }
   })
 
+
+  origin.pm.on('stdout', (d) => console.log(d.toString()))
+  subs.pm.on('stdout', (d) => console.log(d.toString()))
+  registry.pm.on('stdout', (d) => console.log(d.toString()))
+
+  origin.pm.on('stderr', (d) => console.error(d.toString()))
+  subs.pm.on('stderr', (d) => console.error(d.toString()))
+  registry.pm.on('stderr', (d) => console.error(d.toString()))
+
   registry.on('close', () => {
     origin.destroy()
     subs.destroy()
