@@ -475,7 +475,7 @@ int SelvaModify_SetHierarchyParents(
     }
 
     /* Clear the existing node relationships */
-    removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+    removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
 
     if (nr_parents == 0) {
         /* This node is orphan */
@@ -505,7 +505,8 @@ int SelvaModify_SetHierarchyChildren(
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
-    removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+    /* Clear the existing node relationships */
+    removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
 
     /*
      * Set relationship relative to other nodes
