@@ -23,50 +23,45 @@ const validURL = (str: string): boolean => {
 */
 
 export const verifiers = {
-  digest: (payload: string, _schemas: Schema) => {
+  digest: (payload: string) => {
     return typeof payload === 'string'
   },
-  string: (payload: string, _schemas: Schema) => {
+  string: (payload: string) => {
     return typeof payload === 'string'
   },
-  phone: (payload: string, _schemas: Schema) => {
+  phone: (payload: string) => {
     // phone is wrong
     return typeof payload === 'string' && payload.length < 30
   },
-  timestamp: (payload: string, _schemas: Schema) => {
+  timestamp: (payload: 'now' | number) => {
     return (
       payload === 'now' ||
       (typeof payload === 'number' && Number.isInteger(payload) && payload > 0)
     )
   },
-  url: (payload: string, _schemas: Schema) => {
+  url: (payload: string) => {
     return typeof payload === 'string' && validURL(payload)
   },
-  email: (payload: string, _schemas: Schema) => {
+  email: (payload: string) => {
     const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
     return re.test(payload.toLowerCase())
   },
-  number: (payload: string, _schemas: Schema) => {
+  number: (payload: number) => {
     return typeof payload === 'number'
   },
-  boolean: (payload: string, _schemas: Schema) => {
+  boolean: (payload: boolean) => {
     return typeof payload === 'boolean'
   },
-  float: (payload: string, _schemas: Schema) => {
+  float: (payload: number) => {
     return typeof payload === 'number'
   },
-  int: (payload: string, _schemas: Schema) => {
+  int: (payload: number) => {
     return typeof payload === 'number'
   },
-  type: (payload: string, _schemas: Schema) => {
+  type: (payload: string) => {
     return typeof payload === 'string' && payload.length < 20
   },
-  id: (payload: string, schemas: Schema) => {
-    const prefix = payload.substr(0, 2)
-    if (!schemas.prefixToTypeMapping[prefix] && prefix !== 'ro') {
-      return false
-    }
-
+  id: (payload: string) => {
     return typeof payload === 'string' && payload.length < 20
   }
 }
@@ -92,7 +87,7 @@ for (const key in verifiers) {
   const converter = converters[key]
 
   parsers[key] = (
-    schemas: Schema,
+    _schemas: Schema,
     field: string,
     payload: SetOptions,
     result: SetOptions,
@@ -114,7 +109,7 @@ for (const key in verifiers) {
             }
             payload[k] = `___selva_$ref:${payload[k].$ref}`
           } else {
-            if (!verify(payload[k], schemas)) {
+            if (!verify(payload[k])) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (converter) {
               payload[k] = converter(payload[k])

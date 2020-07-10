@@ -198,40 +198,6 @@ test.serial('root.children $delete: []', async t => {
   await client.destroy()
 })
 
-test.serial('non-existent id prefix', async t => {
-  console.log('CONNECTING')
-  const client = connect(
-    {
-      port
-    },
-    { loglevel: 'info' }
-  )
-
-  console.log('CONNECTED')
-
-  await t.throwsAsync(
-    client.set({
-      $language: 'en',
-      $id: 'blNonExist',
-      title: 'yesh'
-    })
-  )
-
-  await t.throwsAsync(
-    client.set({
-      $language: 'en',
-      $id: 'maYesTest',
-      title: 'yesh',
-      children: ['blNonExist']
-    })
-  )
-
-  await client.delete('root')
-  t.deepEqual(await dumpDb(client), [])
-
-  await client.destroy()
-})
-
 test.serial('basic', async t => {
   const client = connect({
     port

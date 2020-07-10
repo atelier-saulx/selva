@@ -5,8 +5,8 @@ import { verifiers } from './simple'
 
 const id = verifiers.id
 
-const verifySimple = (payload: any, schemas: Schema) => {
-  if (id(payload, schemas)) {
+const verifySimple = (payload: any) => {
+  if (id(payload)) {
     return payload
   } else {
     throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
@@ -46,6 +46,6 @@ export default (
       )
     }
 
-    result[field] = verifySimple(payload, schema)
+    result[field] = verifySimple(payload)
   }
 }

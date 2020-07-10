@@ -5,13 +5,13 @@ import { verifiers } from './simple'
 
 const id = verifiers.id
 
-const verifySimple = (payload, schema) => {
+const verifySimple = payload => {
   if (Array.isArray(payload)) {
-    if (payload.find(v => !id(v, schema))) {
+    if (payload.find(v => !id(v))) {
       throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
     }
     return payload
-  } else if (id(payload, schema)) {
+  } else if (id(payload)) {
     return [payload]
   } else {
     throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
@@ -54,7 +54,7 @@ export default (
           hasKeys = true
         } else {
           if (payload[k].length) {
-            result[field].$add = verifySimple(payload[k], schema)
+            result[field].$add = verifySimple(payload[k])
             hasKeys = true
           }
         }
@@ -62,12 +62,12 @@ export default (
         if (payload.$delete === true) {
           result[field].$delete = true
         } else {
-          result[field].$delete = verifySimple(payload[k], schema)
+          result[field].$delete = verifySimple(payload[k])
         }
 
         hasKeys = true
       } else if (k === '$value') {
-        result[field].$delete = verifySimple(payload[k], schema)
+        result[field].$delete = verifySimple(payload[k])
         hasKeys = true
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
@@ -96,7 +96,7 @@ export default (
     }
   } else {
     result[field] =
-      parseObjectArray(payload, schema, $lang) || verifySimple(payload, schema)
+      parseObjectArray(payload, schema, $lang) || verifySimple(payload)
 
     if (Array.isArray(result[field])) {
       const referenceCount = result[field].reduce((acc, x) => {
