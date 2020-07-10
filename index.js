@@ -15,7 +15,7 @@ for (let i = 0; i < 500; i++) {
 
 const things = []
 
-for (let i = 0; i < 1; i++) {
+for (let i = 0; i < 100000; i++) {
   const x = []
   x[0] = JSON.stringify(mybigobect)
   mybigobect.flurp[~~(Math.random() * 500)] = (~~(
@@ -26,6 +26,7 @@ for (let i = 0; i < 1; i++) {
 }
 
 const applyPatch = (prevValue, patch, shouldbe) => {
+  // inlcuding the parse its still a 100 times faster
   const arr = JSON.parse(patch)
   const len = arr.length
   let newStr = ''
@@ -42,33 +43,24 @@ const applyPatch = (prevValue, patch, shouldbe) => {
       cursor += p[0]
     }
   }
-
-  //   console.log('')
-  //   console.log(prevValue)
-  //   console.log('')
-  //   console.log(shouldbe)
-  //   console.log('')
-  //   console.log(newStr)
-  //   console.log('')
-
   if (newStr !== shouldbe) {
     console.error('NOOOO')
   }
-
   return newStr
 }
 
 const d3 = perfhooks.performance.now()
+let x
 for (let i = 0; i < things.length; i++) {
-  //   const x = dmp.diff_main(things[i][0], things[i][1])
   const p = testAddon.hello(things[i][0], things[i][1])
-  //   console.log(x)
   applyPatch(things[i][0], p, things[i][1])
+  x = p
 }
 console.log(perfhooks.performance.now() - d3)
 
-const a = 'abcde {10} fg'
-const b = 'a FLAPdefg'
+// console.log(x)
+// const a = 'abcde {10} fg'
+// const b = 'a FLAPdefg'
 
 // applyPatch(a, testAddon.hello(a, b), b)
 
