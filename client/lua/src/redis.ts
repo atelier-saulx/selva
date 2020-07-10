@@ -1,4 +1,5 @@
 import { LogLevel } from './logger'
+import { emptyArray } from './util'
 
 export function Error(errorMsg: string): Error {
   return redis.error_reply(errorMsg)
@@ -21,11 +22,13 @@ export function id(externalIdStr?: string): string {
 }
 
 export function children(id: string) {
-    return redis.call('SELVA.HIERARCHY.CHILDREN', '___selva_hierarchy', id)
+    const o = redis.call('SELVA.HIERARCHY.CHILDREN', '___selva_hierarchy', id)
+    return o.length ? o : emptyArray()
 }
 
 export function parents(id: string) {
-    return redis.call('SELVA.HIERARCHY.PARENTS', '___selva_hierarchy', id)
+    const o = redis.call('SELVA.HIERARCHY.PARENTS', '___selva_hierarchy', id)
+    return o.length ? o : emptyArray()
 }
 
 export function hexists(key: string, field: string): boolean {
