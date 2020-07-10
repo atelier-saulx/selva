@@ -29,11 +29,33 @@ function collectEntry(db, schema, key) {
   return { id, item, ancestors, parents, children }
 }
 
+function makeObj(item) {
+  const obj = {}
+  for (const k in item) {
+    const split = k.split('.')
+    let it = obj
+    for (let i = 0; i < split.length - 1; i++) {
+      const part = split[i]
+      if (!it[part]) {
+        it[part] = {}
+      }
+
+      it = it[part]
+    }
+
+    const last = split[split.length - 1]
+    it[last] = item[k]
+  }
+
+  return obj
+}
+
 function makeSetPayload(db, typeSchema, entry) {
-  const { id, item, ancestors, parents, children } = entry
+  let { id, item, ancestors, parents, children } = entry
   const payload = {}
 
   if (id) {
+    item = makeObj(item)
     payload.$id = id
   }
 
@@ -55,6 +77,8 @@ function makeSetPayload(db, typeSchema, entry) {
     if (val === '___selva_$set') {
       if (db[id + '.' + key]) {
         val = db[id + '.' + key]
+      } else {
+        val = undefined
       }
     } else if (
       ['int', 'float', 'number', 'timestamp'].includes(
@@ -79,9 +103,9 @@ function makeSetPayload(db, typeSchema, entry) {
 
       val = newVal
     } else if (typeSchema.fields[key].type === 'record') {
-      const fakeSchema = {}
+      const fakeSchema = { fields: {} }
       for (const k in val) {
-        fakeSchema[key] = typeSchema.fields[key].values
+        fakeSchema.fields[k] = typeSchema.fields[key].values
       }
 
       const newVal = makeSetPayload(db, fakeSchema, {
@@ -91,7 +115,9 @@ function makeSetPayload(db, typeSchema, entry) {
       val = newVal
     }
 
-    payload[key] = val
+    if (typeof val !== 'undefined') {
+      payload[key] = val
+    }
   }
 
   if (children) {
@@ -129,7 +155,7 @@ async function main() {
       continue
     }
 
-    if (key === 'dictionary' || key === 'sug' || key === 'sug_counts') {
+    if (key === 'sug' || key === 'sug_counts') {
       continue
     }
 
@@ -139,7 +165,6 @@ async function main() {
       entry.item.type || schema.prefixToTypeMapping[entry.id.substr(0, 2)]
     const typeSchema = key === 'root' ? schema.rootType : schema.types[type]
     const setPayload = makeSetPayload(db, typeSchema, entry)
-    console.log(setPayload)
     await selva.client.set(setPayload)
   }
 
