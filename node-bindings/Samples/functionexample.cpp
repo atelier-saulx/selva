@@ -19,6 +19,7 @@ std::string functionexample::hello(std::string a, std::string b)
     MyersStringDiff diff{a, b};
     bool isStart = true;
     std::string greeting = "[";
+    // can pass stats as well!
     for (const auto &i : diff)
     {
         if (!isStart)
@@ -27,20 +28,33 @@ std::string functionexample::hello(std::string a, std::string b)
         }
         if (i.operation == 0)
         {
-            greeting.append("[\"");
+            // dont add if last
+            greeting.append("[");
+            // greeting.append("\"");
+            // greeting.append(i.str());
+            // greeting.append("\"");
+            // greeting.append(",");
             greeting.append(to_string(i.text.size()));
-            greeting.append("\"");
+            greeting.append("]");
+        }
+        else if (i.operation == 2)
+        {
+            greeting.append("[");
+            greeting.append(to_string(i.text.size()));
             greeting.append(",");
-            greeting.push_back(op2chr(i.operation));
+            greeting.append(to_string(i.operation));
+            // for logging! greeting.push_back(op2chr(i.operation));
             greeting.append("]");
         }
         else
         {
             greeting.append("[\"");
+            // needs to be escaped!
             greeting.append(i.str());
             greeting.append("\"");
             greeting.append(",");
-            greeting.push_back(op2chr(i.operation));
+            greeting.append(to_string(i.operation));
+            // for logging! greeting.push_back(op2chr(i.operation));
             greeting.append("]");
         }
         isStart = false;

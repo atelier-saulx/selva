@@ -3,12 +3,7 @@ import { performance } from 'perf_hooks'
 import { Worker } from 'worker_threads'
 import { join } from 'path'
 
-import os from 'os-utils'
-
-os.cpuUsage(function(v) {
-  console.log('CPU Usage (%): ' + v)
-})
-// const testAddon = require('../../../../../../../build/Release/testaddon.node')
+const testAddon = require('../../../../../../../build/Release/testaddon.node')
 
 // const workerPath = join(__dirname, 'worker.js')
 
@@ -27,11 +22,18 @@ os.cpuUsage(function(v) {
 export default (prev, newval) => {
   if (prev !== null && newval !== null) {
     var d = performance.now()
-    // const y = testAddon.hello(prev, newval)
-    const y = jsonpatch.compare(JSON.parse(prev), JSON.parse(newval))
 
-    const x = performance.now() - d
-    console.log('diff speed', x, prev.length, newval.length)
+    // pas in checksum?
+    var y = testAddon.hello(prev, newval)
+
+    var x = performance.now() - d
+    console.log('diff speed TEXT', x, y, y.length, prev.length, newval.length)
+
+    d = performance.now()
+    y = JSON.stringify(jsonpatch.compare(JSON.parse(prev), JSON.parse(newval)))
+    x = performance.now() - d
+
+    console.log('diff speed JS', x, y.length, prev.length, newval.length)
     return y
   }
 }

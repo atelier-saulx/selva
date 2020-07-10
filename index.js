@@ -9,7 +9,7 @@ const dmp = new diffmpatch()
 
 const mybigobect = { flurp: [] }
 
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 500; i++) {
   mybigobect.flurp.push({ i, flurp: 'HELLO BLAW' })
 }
 
@@ -18,34 +18,66 @@ const things = []
 for (let i = 0; i < 1000; i++) {
   const x = []
   x[0] = JSON.stringify(mybigobect)
-  mybigobect.flurp[~~(Math.random() * 99)] = (~~(
+  mybigobect.flurp[~~(Math.random() * 500)] = (~~(
     Math.random() * 100000
   )).toString(16)
   x[1] = JSON.stringify(mybigobect)
   things.push(x)
 }
 
-const d = perfhooks.performance.now()
-for (let i = 0; i < things.length; i++) {
-  dmp.diff_main(things[i][0], things[i][1])
-  //   testAddon.hello(things[i][0], things[i][1])
-}
-console.log(perfhooks.performance.now() - d)
+const applyPatch = (prevValue, patch, shouldbe) => {
+  const arr = JSON.parse(patch)
+  const len = arr.length
+  let newStr = ''
+  let cursor = 0
+  for (let i = 0; i < len; i++) {
+    const p = arr[i]
+    const o = p[1]
+    if (!o) {
+      newStr += prevValue.slice(cursor, p[0] + cursor)
+      cursor += p[0]
+    } else if (o === 1) {
+      newStr += p[0]
+    } else if (o === 2) {
+      cursor += p[0]
+    }
+  }
 
-let a
+  //   console.log('')
+  //   console.log(prevValue)
+  //   console.log('')
+  //   console.log(shouldbe)
+  //   console.log('')
+  //   console.log(newStr)
+  //   console.log('')
+
+  if (newStr !== shouldbe) {
+    console.error('NOOOO')
+  }
+
+  return newStr
+}
+
 const d3 = perfhooks.performance.now()
 for (let i = 0; i < things.length; i++) {
-  //   dmp.diff_main(things[i][0], things[i][1])
-  a = testAddon.hello(things[i][0], things[i][1])
+  //   const x = dmp.diff_main(things[i][0], things[i][1])
+  const p = testAddon.hello(things[i][0], things[i][1])
+  //   console.log(x)
+  //   applyPatch(things[i][0], p, things[i][1])
 }
 console.log(perfhooks.performance.now() - d3)
 
-console.log(a)
+const a = 'abcde {10} fg'
+const b = 'a FLAPdefg'
 
-const d2 = perfhooks.performance.now()
-for (let i = 0; i < things.length; i++) {
-  fastjson.compare(JSON.parse(things[i][0]), JSON.parse(things[i][1]))
-}
-console.log(perfhooks.performance.now() - d2)
+// applyPatch(a, testAddon.hello(a, b), b)
+
+// first js then the rest
+
+// const d2 = perfhooks.performance.now()
+// for (let i = 0; i < things.length; i++) {
+//   fastjson.compare(JSON.parse(things[i][0]), JSON.parse(things[i][1]))
+// }
+// console.log(perfhooks.performance.now() - d2)
 
 module.exports = testAddon
