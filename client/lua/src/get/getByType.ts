@@ -195,6 +195,12 @@ const arrayLike = (
     return ancestors(result, schema, id, field, language, version)
   } else if (field === 'descendants') {
     return descendants(result, id, field, language, version)
+  } else if (field === 'children') {
+    result.children = redis.children(id)
+    return true
+  } else if (field === 'parents') {
+    result.parents = redis.parents(id)
+    return true
   }
 
   // let value = ensureArray(redis.smembers(id + '.' + field))

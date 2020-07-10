@@ -20,6 +20,14 @@ export function id(externalIdStr?: string): string {
   return redis.call('selva.id')
 }
 
+export function children(id: string) {
+    return redis.call('SELVA.HIERARCHY.CHILDREN', '___selva_hierarchy', id)
+}
+
+export function parents(id: string) {
+    return redis.call('SELVA.HIERARCHY.PARENTS', '___selva_hierarchy', id)
+}
+
 export function hexists(key: string, field: string): boolean {
   const result = redis.call('hexists', key, field)
   return result === 1
