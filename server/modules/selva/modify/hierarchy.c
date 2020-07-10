@@ -957,24 +957,18 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
     Selva_NodeId nodeId;
 
     RMString2NodeId(nodeId, argv[2]);
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
+    if (!node) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
+    }
 
-    if (!strncmp(nodeId, "root", SELVA_NODE_ID_SIZE)) {
-        RedisModule_ReplyWithArray(ctx, 1);
-        RedisModule_ReplyWithStringBuffer(ctx, "root", 4);
-    } else {
-        SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
-        if (!node) {
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
-        }
+    RedisModule_ReplyWithArray(ctx, SVector_Size(&node->parents));
 
-        RedisModule_ReplyWithArray(ctx, SVector_Size(&node->parents));
+    SelvaModify_HierarchyNode **itt;
+    SVECTOR_FOREACH(itt, &node->parents) {
+        SelvaModify_HierarchyNode *it = *itt;
 
-        SelvaModify_HierarchyNode **itt;
-        SVECTOR_FOREACH(itt, &node->parents) {
-            SelvaModify_HierarchyNode *it = *itt;
-
-            RedisModule_ReplyWithStringBuffer(ctx, it->id, SELVA_NODE_ID_SIZE);
-        }
+        RedisModule_ReplyWithStringBuffer(ctx, it->id, SELVA_NODE_ID_SIZE);
     }
 
     return REDISMODULE_OK;
@@ -1009,34 +1003,18 @@ int SelvaModify_Hierarchy_ChildrenCommand(RedisModuleCtx *ctx, RedisModuleString
     Selva_NodeId nodeId;
 
     RMString2NodeId(nodeId, argv[2]);
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
+    if (!node) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
+    }
 
-    if (!strncmp(nodeId, "root", SELVA_NODE_ID_SIZE)) {
-        Selva_NodeId *nodes;
-        ssize_t nr_nodes;
+    RedisModule_ReplyWithArray(ctx, SVector_Size(&node->children));
 
-        nr_nodes = SelvaModify_GetHierarchyHeads(hierarchy, &nodes);
-        if (nr_nodes < 0) {
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-nr_nodes]);
-        }
+    SelvaModify_HierarchyNode **itt;
+    SVECTOR_FOREACH(itt, &node->children) {
+        SelvaModify_HierarchyNode *it = *itt;
 
-        RedisModule_ReplyWithArray(ctx, nr_nodes);
-        for (ssize_t i = 0; i < nr_nodes; i++) {
-            RedisModule_ReplyWithStringBuffer(ctx, nodes[i], SELVA_NODE_ID_SIZE);
-        }
-    } else {
-        SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
-        if (!node) {
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
-        }
-
-        RedisModule_ReplyWithArray(ctx, SVector_Size(&node->children));
-
-        SelvaModify_HierarchyNode **itt;
-        SVECTOR_FOREACH(itt, &node->children) {
-            SelvaModify_HierarchyNode *it = *itt;
-
-            RedisModule_ReplyWithStringBuffer(ctx, it->id, SELVA_NODE_ID_SIZE);
-        }
+        RedisModule_ReplyWithStringBuffer(ctx, it->id, SELVA_NODE_ID_SIZE);
     }
 
     return REDISMODULE_OK;
