@@ -22,33 +22,13 @@ export function id(externalIdStr?: string): string {
 }
 
 export function children(id: string) {
-    const o = redis.call('SELVA.HIERARCHY.CHILDREN', '___selva_hierarchy', id)
-
-    let r: string[] = []
-    for (let key in o) {
-      r[key] = o[key]
-    }
-
-    if (r.length === 0 || !r.length) {
-      r = emptyArray()
-    }
-
-    return r
+    const o: string[] = redis.call('SELVA.HIERARCHY.CHILDREN', '___selva_hierarchy', id)
+    return o.length > 0 ? o : emptyArray()
 }
 
 export function parents(id: string) {
-    const o = redis.call('SELVA.HIERARCHY.PARENTS', '___selva_hierarchy', id)
-
-    let r: string[] = []
-    for (let key in o) {
-      r[key] = o[key]
-    }
-
-    if (r.length === 0 || !r.length) {
-      r = emptyArray()
-    }
-
-    return r
+    const o: string[] = redis.call('SELVA.HIERARCHY.PARENTS', '___selva_hierarchy', id)
+    return o.length > 0 ? o : emptyArray()
 }
 
 export function hexists(key: string, field: string): boolean {
