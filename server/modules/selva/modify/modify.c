@@ -68,7 +68,6 @@ static int update_hierarchy(
                         nr_nodes, (const Selva_NodeId *)setOpts->$delete);
             }
         }
-
     }
 
     if (err) {

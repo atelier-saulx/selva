@@ -94,9 +94,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     /*
      * If this is a new node we need to create a hierarchy node for it.
+     * root node is not created as it always exist.
      * TODO It should be possible to skip this
      */
-    if (RedisModule_KeyType(id_key) == REDISMODULE_KEYTYPE_EMPTY) {
+    if (RedisModule_KeyType(id_key) == REDISMODULE_KEYTYPE_EMPTY && strcmp(id_str, "root")) {
         RedisModuleString *key_name;
         SelvaModify_Hierarchy *hierarchy;
         Selva_NodeId nodeId;
@@ -112,7 +113,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         memset(nodeId, '\0', SELVA_NODE_ID_SIZE);
         memcpy(nodeId, id_str, min(id_len, SELVA_NODE_ID_SIZE));
 
-        int err = SelvaModify_SetHierarchy(hierarchy, nodeId, 0, NULL, 0, NULL);
+        int err = SelvaModify_SetHierarchy(hierarchy, nodeId, 1, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
         if (err) {
             RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
             err = REDISMODULE_ERR;

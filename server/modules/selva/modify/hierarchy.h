@@ -2,8 +2,9 @@
 #ifndef SELVA_MODIFY_HIERARCHY
 #define SELVA_MODIFY_HIERARCHY
 
-#define SELVA_NODE_ID_SIZE  10ul
-#define SELVA_NODE_TYPE_SIZE 2
+#define SELVA_NODE_ID_SIZE      10ul
+#define SELVA_NODE_TYPE_SIZE    2
+#define ROOT_NODE_ID            "root\0\0\0\0\0\0"
 
 /*
  * Error codes.

@@ -12,7 +12,7 @@
 #include "rpn.h"
 #include "hierarchy.h"
 
-#define HIERARCHY_ENCODING_VERSION 0
+#define HIERARCHY_ENCODING_VERSION  0
 
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
 
@@ -137,6 +137,11 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void) {
     RB_INIT(&hierarchy->index_head);
     if (unlikely(!SVector_Init(&hierarchy->heads, 1, SVector_BS_Compare))) {
         RedisModule_Free(hierarchy);
+        return NULL;
+    }
+
+    if(unlikely(SelvaModify_SetHierarchy(hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL))) {
+        SelvaModify_DestroyHierarchy(hierarchy);
         return NULL;
     }
 
