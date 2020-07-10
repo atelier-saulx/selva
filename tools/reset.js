@@ -8,6 +8,8 @@ const SOURCE_DUMP =
   process.env.SOURCE_DUMP ||
   path.join(process.cwd(), 'services', 'db', 'tmp', 'dump.rdb')
 
+const TARGET_DIR = proces.env.TARGET_DIR || process.cwd()
+
 async function loadDump() {
   const { stdout, stderr } = await execa('rdb', ['-c', 'json', SOURCE_DUMP])
   const dump = JSON.parse(stdout)
@@ -82,7 +84,7 @@ function makeSetPayload(db, typeSchema, entry) {
 }
 
 async function startSelva(schema) {
-  const server = await start({ port: 9019, dir: process.cwd() })
+  const server = await start({ port: 9019, dir: TARGET_DIR })
   const client = connect({ port: 9019 })
 
   await client.updateSchema(schema)
