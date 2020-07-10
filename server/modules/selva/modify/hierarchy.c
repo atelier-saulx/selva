@@ -462,6 +462,62 @@ int SelvaModify_SetHierarchy(
     return 0;
 }
 
+int SelvaModify_SetHierarchyParents(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        size_t nr_parents,
+        const Selva_NodeId *parents) {
+    int err;
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
+
+    if (!node) {
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
+    }
+
+    /* Clear the existing node relationships */
+    removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+
+    if (nr_parents == 0) {
+        /* This node is orphan */
+        mkHead(hierarchy, node);
+    }
+
+    /*
+     * Set relationship relative to other nodes
+     */
+    err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    if (err) {
+        return err;
+    }
+
+    return 0;
+}
+
+int SelvaModify_SetHierarchyChildren(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        size_t nr_children,
+        const Selva_NodeId *children) {
+    int err;
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
+
+    if (!node) {
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
+    }
+
+    removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+
+    /*
+     * Set relationship relative to other nodes
+     */
+    err = crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    if (err) {
+        return err;
+    }
+
+    return 0;
+}
+
 int SelvaModify_AddHierarchy(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,

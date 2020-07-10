@@ -72,6 +72,26 @@ int SelvaModify_SetHierarchy(
         const Selva_NodeId *children);
 
 /**
+ * Set parents of an existing node.
+ * @param parents   Sets these nodes and only these nodes as parents of this node.
+ */
+int SelvaModify_SetHierarchyParents(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        size_t nr_parents,
+        const Selva_NodeId *parents);
+
+/**
+ * Set children of an existing node.
+ * @param children  Sets these nodes and only these nodes as children of this node.
+ */
+int SelvaModify_SetHierarchyChildren(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        size_t nr_children,
+        const Selva_NodeId *children);
+
+/**
  * Add new relationships relative to other existing nodes.
  * Previously existing connections to and from other nodes are be preserved.
  * If a node with id doesn't exist it will be created.

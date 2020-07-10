@@ -33,13 +33,11 @@ static int update_hierarchy(
         size_t nr_nodes = setOpts->$value_len / SELVA_NODE_ID_SIZE;
 
         if (isFieldParents) { /* parents */
-          err = SelvaModify_SetHierarchy(hierarchy, node_id,
-                  nr_nodes, (const Selva_NodeId *)setOpts->$value,
-                  0, NULL);
+            err = SelvaModify_SetHierarchyParents(hierarchy, node_id,
+                    nr_nodes, (const Selva_NodeId *)setOpts->$value);
         } else { /* children */
-          err = SelvaModify_SetHierarchy(hierarchy, node_id,
-                  0, NULL,
-                  nr_nodes, (const Selva_NodeId *)setOpts->$value);
+            err = SelvaModify_SetHierarchyChildren(hierarchy, node_id,
+                    nr_nodes, (const Selva_NodeId *)setOpts->$value);
         }
     } else {
         if (setOpts->$add_len > 0) {
