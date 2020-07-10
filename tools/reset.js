@@ -60,6 +60,10 @@ function makeSetPayload(db, typeSchema, entry) {
       )
     ) {
       val = Number(val)
+    } else if (typeSchema.fields[key].type === 'json') {
+      val = JSON.parse(val)
+    } else if (typeSchema.fields[key].type === 'array') {
+      val = JSON.parse(val)
     } else if (typeSchema.fields[key].type === 'boolean') {
       val = Boolean(val)
     } else if (typeSchema.fields[key].type === 'object') {
