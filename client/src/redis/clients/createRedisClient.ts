@@ -55,6 +55,13 @@ const createRedisClient = (
     retry_strategy: retryStrategy
   })
 
+  // hard disconnects emitted from hacky monkey patching on ready check
+  redisClient.on('hard-disconnect', () => {
+    isConnected = false
+    isHarddc = true
+    client.emit('hard-disconnect')
+  })
+
   if (label === 'subscriber') {
     redisClient.on('message', channel => {
       if (channel === SERVER_HEARTBEAT && !isHarddc) {

@@ -193,7 +193,9 @@ export async function start(opts: Options) {
   const origin = await startOrigin({
     name: 'default',
     default: true,
-    registry
+    registry,
+    // @ts-ignore
+    dir: opts.dir
   })
 
   const subs = await startSubscriptionManager({
@@ -202,6 +204,15 @@ export async function start(opts: Options) {
       host: parsedOpts.host
     }
   })
+
+
+  origin.pm.on('stdout', (d) => console.log(d.toString()))
+  subs.pm.on('stdout', (d) => console.log(d.toString()))
+  registry.pm.on('stdout', (d) => console.log(d.toString()))
+
+  origin.pm.on('stderr', (d) => console.error(d.toString()))
+  subs.pm.on('stderr', (d) => console.error(d.toString()))
+  registry.pm.on('stderr', (d) => console.error(d.toString()))
 
   registry.on('close', () => {
     origin.destroy()
