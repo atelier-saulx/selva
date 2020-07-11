@@ -146,13 +146,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
-            SelvaModify_ModifyIncrement(ctx, id_key, id_str, id_len, field, field_str, field_len,
+            SelvaModify_ModifyIncrement(ctx, id_key, id, field, field_str, field_len,
                     current_value, current_value_str, current_value_len, incrementOpts);
         } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
             struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
             SelvaModify_OpSet_align(setOpts);
 
-            err = SelvaModify_ModifySet(ctx, hierarchy, id_key, id_str, id_len, field, field_str, field_len, setOpts);
+            err = SelvaModify_ModifySet(ctx, hierarchy, id_key, id, field, field_str, field_len, setOpts);
             if (err) {
                 goto out;
             }
