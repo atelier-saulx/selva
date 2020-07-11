@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include "./async_task.h"
 
+struct SelvaModify_Hierarchy;
+
 enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_VALUE = '0',
     SELVA_MODIFY_ARG_INDEXED_VALUE = '1',
@@ -62,6 +64,7 @@ static inline void SelvaModify_Publish(const char *id_str, size_t id_len, const 
 
 int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
+    struct SelvaModify_Hierarchy *hierarchy,
     RedisModuleKey *id_key,
     const char *id_str,
     size_t id_len,

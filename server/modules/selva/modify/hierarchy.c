@@ -142,7 +142,7 @@ static size_t SelvaModify_NodeIdLen(Selva_NodeId nodeId) {
     return len;
 }
 
-SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void) {
+SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     SelvaModify_Hierarchy *hierarchy = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode));
     if (unlikely(!hierarchy)) {
         return NULL;
@@ -154,7 +154,7 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void) {
         return NULL;
     }
 
-    if(unlikely(SelvaModify_SetHierarchy(hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL))) {
+    if(unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL))) {
         SelvaModify_DestroyHierarchy(hierarchy);
         return NULL;
     }
@@ -194,7 +194,7 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisMo
 
     /* Create an empty value object if the key is currently empty. */
     if (type == REDISMODULE_KEYTYPE_EMPTY) {
-        hierarchy = SelvaModify_NewHierarchy();
+        hierarchy = SelvaModify_NewHierarchy(ctx);
         if (!hierarchy) {
             RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
 
@@ -209,7 +209,34 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisMo
     return hierarchy;
 }
 
-static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
+/* TODO Error handling */
+static void createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
+    RedisModuleString *set_key_name;
+    RedisModuleString *field_name;
+    RedisModuleKey *set_key = NULL;
+
+    set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
+    field_name = RedisModule_CreateStringPrintf(ctx, "%s", "$id");
+
+    if (unlikely(!set_key_name || !field_name)) {
+        return;
+    }
+
+    set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
+    if (!set_key) {
+        return;
+    }
+
+    RedisModule_HashSet(set_key, REDISMODULE_HASH_NX, field_name, set_key_name, NULL);
+
+    RedisModule_CloseKey(set_key);
+#if 0
+    RedisModule_Free(field);
+    RedisModule_Free(set_key_name);
+#endif
+}
+
+static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode));
     if (unlikely(!node)) {
         return NULL;
@@ -224,6 +251,11 @@ static SelvaModify_HierarchyNode *newNode(const Selva_NodeId id) {
     }
 
     memcpy(node->id, id, SELVA_NODE_ID_SIZE);
+
+    if (likely(ctx)) {
+        /* TODO Error handling */
+        createNodeHash(ctx, id);
+    }
 
     return node;
 }
@@ -248,6 +280,10 @@ static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, con
         return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaModify_HierarchyNode *)(&filter));
 }
 
+int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
+    return findNode(hierarchy, id) != NULL;
+}
+
 static void mkHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
     SVector_Insert(&hierarchy->heads, node);
 }
@@ -256,7 +292,13 @@ static void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *
     SVector_Remove(&hierarchy->heads, node);
 }
 
-static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
+static int crossInsert(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        SelvaModify_HierarchyNode *node,
+        enum SelvaModify_HierarchyNode_Relationship rel,
+        size_t n,
+        const Selva_NodeId *nodes) {
     const size_t initialNodeParentsSize = SVector_Size(&node->parents);
     int err = 0;
 
@@ -270,8 +312,11 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                err = SELVA_MODIFY_HIERARCHY_ENOENT;
-                continue;
+                err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i], 0, NULL, 0, NULL);
+                if (err) {
+                    continue;
+                }
+                adjacent = findNode(hierarchy, nodes[i]);
             }
 
             /* Do inserts only if the relationship doesn't exist already */
@@ -285,8 +330,13 @@ static int crossInsert(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                err = SELVA_MODIFY_HIERARCHY_ENOENT;
-                continue;
+                err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i],
+                        1, ((Selva_NodeId []){ ROOT_NODE_ID }),
+                        0, NULL);
+                if (err) {
+                    continue;
+                }
+                adjacent = findNode(hierarchy, nodes[i]);
             }
 
             const size_t adjNodeParentsSize = SVector_Size(&adjacent->parents);
@@ -404,6 +454,7 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
 }
 
 int SelvaModify_SetHierarchy(
+        RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -415,9 +466,9 @@ int SelvaModify_SetHierarchy(
     int isNewNode = 0;
 
     if (!node) {
-        node = newNode(id);
+        node = newNode(ctx, id);
         if (unlikely(!node)) {
-            return SELVA_MODIFY_HIERARCHY_ENOENT;
+            return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
         isNewNode = 1;
     }
@@ -444,14 +495,14 @@ int SelvaModify_SetHierarchy(
      * TODO if isNewNode == 0 then errors are not handled properly as
      * we don't know how to rollback.
      */
-    err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     if (err) {
         if (isNewNode) {
             del_node(hierarchy, node);
         }
         return err;
     }
-    err = crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
     if (err) {
         if (isNewNode) {
             del_node(hierarchy, node);
@@ -463,6 +514,7 @@ int SelvaModify_SetHierarchy(
 }
 
 int SelvaModify_SetHierarchyParents(
+        RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -485,7 +537,7 @@ int SelvaModify_SetHierarchyParents(
     /*
      * Set relationship relative to other nodes
      */
-    err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     if (err) {
         return err;
     }
@@ -494,6 +546,7 @@ int SelvaModify_SetHierarchyParents(
 }
 
 int SelvaModify_SetHierarchyChildren(
+        RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_children,
@@ -511,7 +564,7 @@ int SelvaModify_SetHierarchyChildren(
     /*
      * Set relationship relative to other nodes
      */
-    err = crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
     if (err) {
         return err;
     }
@@ -520,6 +573,7 @@ int SelvaModify_SetHierarchyChildren(
 }
 
 int SelvaModify_AddHierarchy(
+        RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -531,7 +585,7 @@ int SelvaModify_AddHierarchy(
     int isNewNode = 0;
 
     if (!node) {
-        node = newNode(id);
+        node = newNode(ctx, id);
         if (unlikely(!node)) {
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
@@ -556,12 +610,12 @@ int SelvaModify_AddHierarchy(
      * TODO if isNewNode == 0 then errors are not handled properly as
      * we don't know how to rollback.
      */
-    err = crossInsert(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     if (err && isNewNode) {
         del_node(hierarchy, node);
         return err;
     }
-    err = crossInsert(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
     if (err && isNewNode) {
         del_node(hierarchy, node);
         return err;
@@ -594,8 +648,9 @@ int SelvaModify_DelHierarchy(
 }
 
 int SelvaModify_DelHierarchyNode(
-    SelvaModify_Hierarchy *hierarchy,
-    const Selva_NodeId id) {
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
 
     if (!node) {
@@ -603,6 +658,8 @@ int SelvaModify_DelHierarchyNode(
     }
 
     del_node(hierarchy, node);
+
+    /* TODO Remove hash */
 
     return 0;
 }
@@ -830,7 +887,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
          */
         return NULL;
     }
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy();
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy(NULL);
 
     while (1) {
         int err;
@@ -862,7 +919,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
                     goto error;
                 }
 
-                err = SelvaModify_AddHierarchy(hierarchy, child_id, 0, NULL, 0, NULL);
+                err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
                 if (err) {
                     RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
                     return NULL;
@@ -873,7 +930,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
         }
 
         /* Create the node itself */
-        err = SelvaModify_AddHierarchy(hierarchy, node_id, 0, NULL, nr_children, children);
+        err = SelvaModify_AddHierarchy(NULL, hierarchy, node_id, 0, NULL, nr_children, children);
         if (err) {
             RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
             return NULL;
@@ -994,7 +1051,7 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
         RMString2NodeId(parents[i], argv[3 + i]);
     }
 
-    int err = SelvaModify_AddHierarchy(hierarchy, nodeId, nr_parents, parents, 0, NULL);
+    int err = SelvaModify_AddHierarchy(ctx, hierarchy, nodeId, nr_parents, parents, 0, NULL);
     if (err) {
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
     }

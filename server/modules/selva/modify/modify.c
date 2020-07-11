@@ -10,12 +10,11 @@
 
 static int update_hierarchy(
     RedisModuleCtx *ctx,
+    SelvaModify_Hierarchy *hierarchy,
     Selva_NodeId node_id,
     const char *field_str,
     struct SelvaModify_OpSet *setOpts
 ) {
-    SelvaModify_Hierarchy *hierarchy;
-
     RedisModuleString *key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
     hierarchy = SelvaModify_OpenHierarchyKey(ctx, key_name);
     if (!hierarchy) {
@@ -33,10 +32,10 @@ static int update_hierarchy(
         size_t nr_nodes = setOpts->$value_len / SELVA_NODE_ID_SIZE;
 
         if (isFieldParents) { /* parents */
-            err = SelvaModify_SetHierarchyParents(hierarchy, node_id,
+            err = SelvaModify_SetHierarchyParents(ctx, hierarchy, node_id,
                     nr_nodes, (const Selva_NodeId *)setOpts->$value);
         } else { /* children */
-            err = SelvaModify_SetHierarchyChildren(hierarchy, node_id,
+            err = SelvaModify_SetHierarchyChildren(ctx, hierarchy, node_id,
                     nr_nodes, (const Selva_NodeId *)setOpts->$value);
         }
     } else {
@@ -44,11 +43,11 @@ static int update_hierarchy(
             size_t nr_nodes = setOpts->$add_len / SELVA_NODE_ID_SIZE;
 
             if (isFieldParents) { /* parents */
-              err = SelvaModify_AddHierarchy(hierarchy, node_id,
+              err = SelvaModify_AddHierarchy(ctx, hierarchy, node_id,
                       nr_nodes, (const Selva_NodeId *)setOpts->$add,
                       0, NULL);
             } else { /* children */
-              err = SelvaModify_AddHierarchy(hierarchy, node_id,
+              err = SelvaModify_AddHierarchy(ctx, hierarchy, node_id,
                       0, NULL,
                       nr_nodes, (const Selva_NodeId *)setOpts->$add);
             }
@@ -147,6 +146,7 @@ static int update_zset(
 
 int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
+    SelvaModify_Hierarchy *hierarchy,
     RedisModuleKey *id_key,
     const char *id_str,
     size_t id_len,
@@ -165,7 +165,7 @@ int SelvaModify_ModifySet(
          * Currently only parents and children fields support references (using
          * hierarchy) and we assume the field is either of those.
          */
-        return update_hierarchy(ctx, node_id, field_str, setOpts);
+        return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
     } else {
         return update_zset(ctx, id_key, id_str, id_len, field, field_str, field_len, setOpts);
     }

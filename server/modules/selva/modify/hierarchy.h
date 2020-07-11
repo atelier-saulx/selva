@@ -44,7 +44,7 @@ struct RedisModuleString;
 /**
  * Create a new hierarchy.
  */
-SelvaModify_Hierarchy *SelvaModify_NewHierarchy(void);
+SelvaModify_Hierarchy *SelvaModify_NewHierarchy(struct RedisModuleCtx *ctx);
 
 /**
  * Free a hierarchy.
@@ -56,6 +56,8 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy);
  */
 SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name);
 
+int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
+
 /**
  * Set node relationships relative to other existing nodes.
  * Previously existing connections to and from other nodes are be removed.
@@ -64,6 +66,7 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(struct RedisModuleCtx *ctx, 
  * @param children  Sets these nodes and only these nodes as children of this node.
  */
 int SelvaModify_SetHierarchy(
+        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -76,6 +79,7 @@ int SelvaModify_SetHierarchy(
  * @param parents   Sets these nodes and only these nodes as parents of this node.
  */
 int SelvaModify_SetHierarchyParents(
+        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -86,6 +90,7 @@ int SelvaModify_SetHierarchyParents(
  * @param children  Sets these nodes and only these nodes as children of this node.
  */
 int SelvaModify_SetHierarchyChildren(
+        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_children,
@@ -101,6 +106,7 @@ int SelvaModify_SetHierarchyChildren(
  *                  while keeping the existing children.
  */
 int SelvaModify_AddHierarchy(
+        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -127,6 +133,7 @@ int SelvaModify_DelHierarchy(
  * Delete a node from the hierarchy.
  */
 int SelvaModify_DelHierarchyNode(
+        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id);
 

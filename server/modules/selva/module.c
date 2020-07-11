@@ -80,46 +80,42 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 // id, type, key, value [, ... type, key, value]]
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    SelvaModify_Hierarchy *hierarchy;
+    RedisModuleKey *id_key = NULL;
     int err = REDISMODULE_OK;
 
     if (argc < 2 || (argc - 2) % 3) {
         return RedisModule_WrongArity(ctx);
     }
 
+    RedisModuleString *hkey_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
+    hierarchy = SelvaModify_OpenHierarchyKey(ctx, hkey_name);
+    if (!hierarchy) {
+        /* TODO Send error */
+        return REDISMODULE_ERR;
+    }
+
     RedisModuleString *id = argv[1];
     size_t id_len;
     const char *id_str = RedisModule_StringPtrLen(id, &id_len);
+    Selva_NodeId nodeId;
 
-    RedisModuleKey *id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
+    memset(nodeId, '\0', SELVA_NODE_ID_SIZE);
+    memcpy(nodeId, id_str, min(id_len, SELVA_NODE_ID_SIZE));
 
     /*
      * If this is a new node we need to create a hierarchy node for it.
-     * root node is not created as it always exist.
-     * TODO It should be possible to skip this
      */
-    if (RedisModule_KeyType(id_key) == REDISMODULE_KEYTYPE_EMPTY && strcmp(id_str, "root")) {
-        RedisModuleString *key_name;
-        SelvaModify_Hierarchy *hierarchy;
-        Selva_NodeId nodeId;
-
-        key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-        hierarchy = SelvaModify_OpenHierarchyKey(ctx, key_name);
-        if (!hierarchy) {
-            err = REDISMODULE_ERR;
-            goto out;
-        }
-
-
-        memset(nodeId, '\0', SELVA_NODE_ID_SIZE);
-        memcpy(nodeId, id_str, min(id_len, SELVA_NODE_ID_SIZE));
-
-        int err = SelvaModify_SetHierarchy(hierarchy, nodeId, 1, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
+    if (!SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
+        err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, 1, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
         if (err) {
             RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
             err = REDISMODULE_ERR;
             goto out;
         }
     }
+    id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
+    /* TODO what if id_key is null */
 
     for (int i = 2; i < argc; i += 3) {
         bool publish = true;
@@ -156,7 +152,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
             SelvaModify_OpSet_align(setOpts);
 
-            err = SelvaModify_ModifySet(ctx, id_key, id_str, id_len, field, field_str, field_len, setOpts);
+            err = SelvaModify_ModifySet(ctx, hierarchy, id_key, id_str, id_len, field, field_str, field_len, setOpts);
             if (err) {
                 goto out;
             }
