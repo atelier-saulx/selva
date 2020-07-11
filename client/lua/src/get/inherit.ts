@@ -11,18 +11,18 @@ import { GetFieldFn } from './types'
 
 function getAncestorsByType(
   types: string[],
-  ancestorsWithScores: string[]
+  ancestors: string[]
 ): Record<string, Id[]> {
   let results: Record<string, Id[]> = {}
   for (const itemType of types) {
     results[itemType] = []
   }
 
-  for (let i = ancestorsWithScores.length - 2; i >= 0; i -= 2) {
-    const ancestorType = getTypeFromId(ancestorsWithScores[i])
+  for (let i = ancestors.length - 1; i >= 0; i--) {
+    const ancestorType = getTypeFromId(ancestors[i])
     if (results[ancestorType]) {
       const matches = results[ancestorType]
-      matches[matches.length] = ancestorsWithScores[i]
+      matches[matches.length] = ancestors[i]
     }
   }
 
@@ -57,38 +57,29 @@ function setFromAncestors(
   merge?: boolean,
   tryAncestorCondition?: (ancestor: Id) => boolean,
   acceptAncestorCondition?: (result: any) => boolean,
-  ancestorsWithScores?: Id[],
+  ancestors?: Id[],
   props?: GetItem
 ): boolean {
-  const parents = redis.smembers(id + '.parents')
+  const parents = redis.parents(id)
 
-  if (!ancestorsWithScores) {
-    ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
+  if (!ancestors) {
+    ancestors = redis.ancestors(id)
   }
-  const ancestorCount = ancestorsWithScores.length / 2
 
-  const ancestorDepthMap: Record<Id, number> = {}
+  const ancestorCount = ancestors.length
+  const ancestorMap: Record<Id, true> = {}
 
-  for (let i = 0; i < ancestorsWithScores.length; i += 2) {
-    ancestorDepthMap[ancestorsWithScores[i]] =
-      tonumber(ancestorsWithScores[i + 1]) || 0
+  for (let i = 0; i < ancestors.length; i++) {
+    ancestorMap[ancestors[i]] = true
   }
 
   let nextParents: Id[] = []
   if (ancestorCount === 1) {
-    nextParents = [ancestorsWithScores[0]]
+    nextParents = [ancestors[0]]
   } else {
     for (let i = 0; i < parents.length; i++) {
       nextParents[nextParents.length] = parents[i]
     }
-
-    // we want to check parents from deepest to lowest depth
-    table.sort(nextParents, (a, b) => {
-      const aDepth = ancestorDepthMap[a] || 0
-      const bDepth = ancestorDepthMap[b] || 0
-
-      return aDepth > bDepth
-    })
   }
 
   const visited: Record<string, true> = {}
@@ -99,7 +90,7 @@ function setFromAncestors(
     for (const parent of nextParents) {
       if (!visited[parent]) {
         visited[parent] = true
-        if (ancestorDepthMap[parent]) {
+        if (ancestorMap[parent]) {
           visitedCount++
 
           if (
@@ -161,7 +152,7 @@ function setFromAncestors(
           }
         }
 
-        const parentsOfParents = redis.smembers(parent + '.parents')
+        const parentsOfParents = redis.parents(parent)
         for (const parentOfParents of parentsOfParents) {
           next[next.length] = parentOfParents
         }
@@ -192,14 +183,14 @@ function inheritItem(
 ) {
   const requiredFields: string[][] = prepareRequiredFieldSegments(required)
 
-  const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
-  const len = ancestorsWithScores.length
+  const ancestors = redis.ancestors(id)
+  const len = ancestors.length
   if (len === 0) {
     setNestedResult(result, field, {})
     return
   }
 
-  const ancestorsByType = getAncestorsByType(item, ancestorsWithScores)
+  const ancestorsByType = getAncestorsByType(item, ancestors)
 
   const intermediateResult = {}
   for (const itemType of item) {
@@ -255,7 +246,7 @@ function inheritItem(
 
           return true
         },
-        ancestorsWithScores,
+        ancestors,
         props || {}
       )
 
@@ -305,14 +296,14 @@ export default function inherit(
 
       const types: string[] = ensureArray(inherit.$type)
 
-      const ancestorsWithScores = redis.zrangeWithScores(id + '.ancestors')
-      const len = ancestorsWithScores.length
+      const ancestors = redis.ancestors(id)
+      const len = ancestors.length
       if (len === 0) {
         setNestedResult(result, field, {})
         return
       }
 
-      const ancestorsByType = getAncestorsByType(types, ancestorsWithScores)
+      const ancestorsByType = getAncestorsByType(types, ancestors)
       for (const itemType of types) {
         const matches = ancestorsByType[itemType]
         if (matches.length === 1) {
@@ -370,7 +361,7 @@ export default function inherit(
               return false
             },
             undefined,
-            ancestorsWithScores
+            ancestors
           )
 
           if (completed) {
