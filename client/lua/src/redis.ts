@@ -1,6 +1,8 @@
 import { LogLevel } from './logger'
 import { emptyArray } from './util'
 
+const DEFAULT_HIERARCHY = '___selva_hierarchy'
+
 export function Error(errorMsg: string): Error {
   return redis.error_reply(errorMsg)
 }
@@ -22,12 +24,22 @@ export function id(externalIdStr?: string): string {
 }
 
 export function children(id: string) {
-    const o: string[] = redis.call('SELVA.HIERARCHY.CHILDREN', '___selva_hierarchy', id)
+    const o: string[] = redis.call('SELVA.HIERARCHY.CHILDREN', DEFAULT_HIERARCHY, id)
     return o.length > 0 ? o : emptyArray()
 }
 
 export function parents(id: string) {
-    const o: string[] = redis.call('SELVA.HIERARCHY.PARENTS', '___selva_hierarchy', id)
+    const o: string[] = redis.call('SELVA.HIERARCHY.PARENTS', DEFAULT_HIERARCHY, id)
+    return o.length > 0 ? o : emptyArray()
+}
+
+export function ancestors(id: string) {
+    const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'ancestors', id)
+    return o.length > 0 ? o : emptyArray()
+}
+
+export function descendants(id: string) {
+    const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'descendants', id)
     return o.length > 0 ? o : emptyArray()
 }
 

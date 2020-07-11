@@ -491,26 +491,8 @@ const ancestors = (
   _language?: string,
   _version?: string
 ): true => {
-  result.ancestors = redis.zrange(id + '.ancestors', 0, -1) || []
+  result.ancestors = redis.ancestors(id)
   return true
-}
-
-const getDescendants = (
-  id: Id,
-  results: Record<Id, true>,
-  passedId: Record<Id, true>
-): Record<Id, true> => {
-  if (!passedId[id]) {
-    const children = redis.smembers(id + '.children')
-    for (const id of children) {
-      results[id] = true
-    }
-    passedId[id] = true
-    for (const c of children) {
-      getDescendants(c, results, passedId)
-    }
-  }
-  return results
 }
 
 const descendants = (
@@ -520,19 +502,7 @@ const descendants = (
   _language?: string,
   _version?: string
 ): true => {
-  const s = getDescendants(id, {}, {})
-  let r: string[] = []
-  let idx = 0
-  for (let key in s) {
-    r[idx] = key
-    idx++
-  }
-
-  if (r.length === 0 || !r.length) {
-    r = emptyArray()
-  }
-
-  result.descendants = r
+  result.descendants = redis.descendants(id)
   return true
 }
 
