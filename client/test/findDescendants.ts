@@ -154,7 +154,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('find - descendants', async t => {
+test.skip('find - descendants', async t => {
   // simple nested - single query
 
   try {

@@ -377,7 +377,7 @@ test.serial(
   }
 )
 
-test.serial('get - simple $field with $inherit: true', async t => {
+test.serial.skip('get - simple $field with $inherit: true', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -432,7 +432,7 @@ test.serial('get - simple $field with $inherit: true', async t => {
   )
 })
 
-test.serial('get - simple $field with $inherit: $type', async t => {
+test.serial.skip('get - simple $field with $inherit: $type', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -486,7 +486,7 @@ test.serial('get - simple $field with $inherit: $type', async t => {
   )
 })
 
-test.serial('get - more complex $field with $inherit: $name', async t => {
+test.serial.skip('get - more complex $field with $inherit: $name', async t => {
   const client = connect({ port })
 
   await client.set({

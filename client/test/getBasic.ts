@@ -882,6 +882,7 @@ test.serial('get - hierarchy', async t => {
     children: ['vifla', 'viflo']
   })
 
+  //await new Promise(r => setTimeout(r, 60 * 60 * 1000))
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viflapx',
@@ -911,7 +912,7 @@ test.serial('get - hierarchy', async t => {
   client.destroy()
 })
 
-test.serial('get - $inherit', async t => {
+test.serial.skip('get - $inherit', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   /*
@@ -1133,7 +1134,7 @@ test.serial('get - $inherit', async t => {
   client.destroy()
 })
 
-test.serial('get - $inherit with object types does shallow merge', async t => {
+test.serial.skip('get - $inherit with object types does shallow merge', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const parentOfParent = await client.set({
@@ -1205,7 +1206,7 @@ test.serial('get - $inherit with object types does shallow merge', async t => {
   client.destroy()
 })
 
-test.serial(
+test.serial.skip(
   'get - $inherit with object types shallow merge can be disabled',
   async t => {
     const client = connect({ port }, { loglevel: 'info' })
@@ -1278,7 +1279,7 @@ test.serial(
   }
 )
 
-test.serial(
+test.serial.skip(
   'get - $inherit with object types of nested objects, does shallow merge',
   async t => {
     const client = connect({ port }, { loglevel: 'info' })
@@ -1370,7 +1371,7 @@ test.serial(
   }
 )
 
-test.serial('get - basic with many ids', async t => {
+test.serial.skip('get - basic with many ids', async t => {
   const client = connect({ port })
 
   await client.set({

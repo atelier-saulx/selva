@@ -74,7 +74,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('find - ancestors', async t => {
+test.serial.skip('find - ancestors', async t => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
 
@@ -235,7 +235,7 @@ test.serial('find - ancestors', async t => {
   )
 })
 
-test.serial('find - ancestors - regions', async t => {
+test.serial.skip('find - ancestors - regions', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   const teams = []
 
@@ -299,7 +299,7 @@ test.serial('find - ancestors - regions', async t => {
   )
 })
 
-test.serial('find - ancestors - regions - no wrapping', async t => {
+test.serial.skip('find - ancestors - regions - no wrapping', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   const teams = []
 
