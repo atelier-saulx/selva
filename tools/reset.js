@@ -126,12 +126,15 @@ function makeSetPayload(db, typeSchema, entry) {
   }
 
   if (parents) {
-    payload.parents = parents
+    payload.parents = { $add: parents }
   }
 
   if (aliases) {
     payload.aliases
   }
+
+  // TODO:
+  delete payload.children
 
   return payload
 }
@@ -170,7 +173,18 @@ async function main() {
       entry.item.type || schema.prefixToTypeMapping[entry.id.substr(0, 2)]
     const typeSchema = key === 'root' ? schema.rootType : schema.types[type]
     const setPayload = makeSetPayload(db, typeSchema, entry)
+    if (setPayload.$id === 'cl69b6a187') {
+      console.log('WUUUT', setPayload)
+    }
+
     await selva.client.set(setPayload)
+
+    if (setPayload.$id === 'cl69b6a187') {
+      console.log(
+        'EHHH',
+        await selva.client.get({ $id: 'cl69b6a187', $all: true })
+      )
+    }
   }
 
   await new Promise((resolve, _reject) => {
