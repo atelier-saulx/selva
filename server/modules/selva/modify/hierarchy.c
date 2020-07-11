@@ -312,7 +312,9 @@ static int crossInsert(
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i], 0, NULL, 0, NULL);
+                err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i],
+                        1, ((Selva_NodeId []){ ROOT_NODE_ID }),
+                        0, NULL);
                 if (err) {
                     continue;
                 }
@@ -331,7 +333,7 @@ static int crossInsert(
 
             if (!adjacent) {
                 err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i],
-                        1, ((Selva_NodeId []){ ROOT_NODE_ID }),
+                        0, NULL,
                         0, NULL);
                 if (err) {
                     continue;
