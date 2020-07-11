@@ -60,8 +60,6 @@ function setFromAncestors(
   ancestors?: Id[],
   props?: GetItem
 ): boolean {
-  const parents = redis.parents(id)
-
   if (!ancestors) {
     ancestors = redis.ancestors(id)
   }
@@ -77,6 +75,8 @@ function setFromAncestors(
   if (ancestorCount === 1) {
     nextParents = [ancestors[0]]
   } else {
+    const parents = redis.parents(id)
+
     for (let i = 0; i < parents.length; i++) {
       nextParents[nextParents.length] = parents[i]
     }
