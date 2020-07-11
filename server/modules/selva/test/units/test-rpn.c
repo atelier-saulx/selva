@@ -33,7 +33,7 @@ static char * test_add(void)
     enum rpn_error err;
     long long res;
     const char expr_str[] = "#1 #1 A";
-    struct rpn_token *expr;
+    rpn_token *expr;
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
