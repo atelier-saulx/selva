@@ -49,7 +49,7 @@ static char * test_set_nonexisting_parent(void)
     err = SelvaModify_SetHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
     pu_assert_equal("a node was inserted", err, 0);
 
-    err = SelvaModify_SetHierarchy(hierarchy, ids[2], 1, ids[1], 0, NULL);
+    err = SelvaModify_SetHierarchy(hierarchy, ids[2], 1, &ids[1], 0, NULL);
     pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
 
     return NULL;
@@ -63,7 +63,7 @@ static char * test_set_nonexisting_child(void)
     err = SelvaModify_SetHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
     pu_assert_equal("a node was inserted", err, 0);
 
-    err = SelvaModify_SetHierarchy(hierarchy, ids[1], 0, NULL, 1, ids[2]);
+    err = SelvaModify_SetHierarchy(hierarchy, ids[1], 0, NULL, 1, &ids[2]);
     pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
 
     return NULL;
@@ -94,7 +94,7 @@ static char * test_add_nonexisting_parent_1(void)
     err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
     pu_assert_equal("a node was inserted", err, 0);
 
-    err = SelvaModify_AddHierarchy(hierarchy, ids[2], 1, ids[1], 0, NULL);
+    err = SelvaModify_AddHierarchy(hierarchy, ids[2], 1, &ids[1], 0, NULL);
     pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
 
     return NULL;
@@ -108,7 +108,7 @@ static char * test_add_nonexisting_parent_2(void)
     err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
     pu_assert_equal("a node was inserted", err, 0);
 
-    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 1, ids[1], 0, NULL);
+    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 1, &ids[1], 0, NULL);
     pu_assert_equal("no error even if the parent didn't exist", err, 0);
 
     return NULL;
@@ -122,7 +122,7 @@ static char * test_add_nonexisting_child_1(void)
     err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
     pu_assert_equal("a node was inserted", err, 0);
 
-    err = SelvaModify_AddHierarchy(hierarchy, ids[1], 0, NULL, 1, ids[2]);
+    err = SelvaModify_AddHierarchy(hierarchy, ids[1], 0, NULL, 1, &ids[2]);
     pu_assert_equal("a node was not inserted", err, SELVA_MODIFY_HIERARCHY_ENOENT);
 
     return NULL;
@@ -136,7 +136,7 @@ static char * test_add_nonexisting_child_2(void)
     err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 0, NULL);
     pu_assert_equal("a node was inserted", err, 0);
 
-    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 1, ids[2]);
+    err = SelvaModify_AddHierarchy(hierarchy, ids[0], 0, NULL, 1, &ids[2]);
     pu_assert_equal("no error even if the child didn't exist", err, 0);
 
     return NULL;
@@ -285,10 +285,11 @@ static char * test_get_heads(void)
     SelvaModify_SetHierarchy(hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
 
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
-    pu_assert_equal("returned the right number of heads", n, 2);
+    pu_assert_equal("returned the right number of heads", n, 3);
     pu_assert("results pointer was set", findRes != NULL);
     pu_assert_str_equal("b is a head", SelvaNodeId_GetRes(0), "grphnode_b");
     pu_assert_str_equal("e is a head", SelvaNodeId_GetRes(1), "grphnode_e");
+    pu_assert_str_equal("root is a head", SelvaNodeId_GetRes(2), "root");
     free(findRes);
     findRes = NULL;
 
@@ -319,9 +320,10 @@ static char * test_get_heads_alter_set(void)
     SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }));
 
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
-    pu_assert_equal("returned the right number of heads", n, 1);
+    pu_assert_equal("returned the right number of heads", n, 2);
     pu_assert("results pointer was set", findRes != NULL);
     pu_assert_str_equal("e is a head", SelvaNodeId_GetRes(0), "grphnode_e");
+    pu_assert_str_equal("root is a head", SelvaNodeId_GetRes(1), "root");
     free(findRes);
     findRes = NULL;
 
@@ -352,9 +354,10 @@ static char * test_get_heads_alter_add(void)
     SelvaModify_AddHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 0, NULL);
 
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
-    pu_assert_equal("returned the right number of heads", n, 1);
+    pu_assert_equal("returned the right number of heads", n, 2);
     pu_assert("results pointer was set", findRes != NULL);
     pu_assert_str_equal("e is a head", SelvaNodeId_GetRes(0), "grphnode_e");
+    pu_assert_str_equal("root is a head", SelvaNodeId_GetRes(1), "root");
     free(findRes);
     findRes = NULL;
 
@@ -654,12 +657,13 @@ static char * test_insert_acyclic_modify(void)
 
     /* heads */
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
-    pu_assert_equal("returned the right number of heads", n, 3);
+    pu_assert_equal("returned the right number of heads", n, 4);
     pu_assert("results pointer was set", findRes != NULL);
     SelvaNodeId_SortRes(n);
     pu_assert_str_equal("b is a head", SelvaNodeId_GetRes(0), "grphnode_b");
     pu_assert_str_equal("d is a head", SelvaNodeId_GetRes(1), "grphnode_d");
     pu_assert_str_equal("e is a head", SelvaNodeId_GetRes(2), "grphnode_e");
+    pu_assert_str_equal("root is a head", SelvaNodeId_GetRes(3), "root");
     free(findRes);
     findRes = NULL;
 

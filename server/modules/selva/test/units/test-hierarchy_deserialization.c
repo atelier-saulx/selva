@@ -48,9 +48,10 @@ static char * test_deserialize_one_node(void)
     pu_assert("a hierarchy was returned", hierarchy);
 
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
-    pu_assert_equal("returned the right number of heads", n, 1);
+    pu_assert_equal("returned the right number of heads", n, 2);
     pu_assert("results pointer was set", findRes != NULL);
     pu_assert_str_equal("a is a head", SelvaNodeId_GetRes(0), "grphnode_a");
+    pu_assert_str_equal("root is a head", SelvaNodeId_GetRes(1), "root");
 
     return NULL;
 }
@@ -80,9 +81,10 @@ static char * test_deserialize_two_nodes(void)
 
     /* Assert heads */
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
-    pu_assert_equal("returned the right number of heads", n, 1);
+    pu_assert_equal("returned the right number of heads", n, 2);
     pu_assert("results pointer was set", findRes != NULL);
     pu_assert_str_equal("a is a head", SelvaNodeId_GetRes(0), "grphnode_a");
+    pu_assert_str_equal("root is a head", SelvaNodeId_GetRes(1), "root");
     free(findRes);
     findRes = NULL;
 
@@ -148,10 +150,11 @@ static char * test_deserialize_cyclic_hierarchy(void)
 
     /* Assert heads */
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
-    pu_assert_equal("returned the right number of heads", n, 1);
+    pu_assert_equal("returned the right number of heads", n, 2);
     pu_assert("results pointer was set", findRes != NULL);
     SelvaNodeId_SortRes(n);
     pu_assert_str_equal("e is a head", SelvaNodeId_GetRes(0), "grphnode_e");
+    pu_assert_str_equal("root is a head", SelvaNodeId_GetRes(1), "root");
     free(findRes);
     findRes = NULL;
 
@@ -214,11 +217,12 @@ static char * test_deserialize_multi_head(void)
 
     /* Assert heads */
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
-    pu_assert_equal("returned the right number of heads", n, 2);
+    pu_assert_equal("returned the right number of heads", n, 3);
     pu_assert("results pointer was set", findRes != NULL);
     SelvaNodeId_SortRes(n);
     pu_assert_str_equal("a is a head", SelvaNodeId_GetRes(0), "grphnode_a");
     pu_assert_str_equal("b is a head", SelvaNodeId_GetRes(1), "grphnode_b");
+    pu_assert_str_equal("root is a head", SelvaNodeId_GetRes(2), "root");
     free(findRes);
     findRes = NULL;
 
