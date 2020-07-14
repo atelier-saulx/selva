@@ -72,7 +72,7 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
 
     const getId = promisify(redis['SELVA.id']).bind(redis);
     const add = promisify(redis['SELVA.HIERARCHY.add']).bind(redis, key);
-    const hset = promisify(redis.hset).bind(redis);
+    const hmset = promisify(redis.hmset).bind(redis);
     let nodePool = [];
 
     function pickRandomParents(curParents: string[]) {
@@ -111,10 +111,16 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
     
             const parents = pickRandomParents([parentNodeId]);
             nodePool.push(nodeId);
+
+            const fieldValue = fieldValues[getRandomInt(rndFieldValue, 0, fieldValues.length)];
+            const publishedValue = rndFieldValue() < 0.5 ? 'true' : 'false';
+            const createdAtValue = getRandomInt(rndFieldValue, 1561634316, 1719314360);
+
             await add(nodeId, ...parents);
-            await hset(nodeId, 'field', fieldValues[getRandomInt(rndFieldValue, 0, fieldValues.length)]);
-            await hset(nodeId, 'published', rndFieldValue() < 0.5 ? 'true' : 'false');
-            await hset(nodeId, 'createdAt', getRandomInt(rndFieldValue, 1561634316, 1719314360));
+            await hmset(nodeId,
+                'field', fieldValue,
+                'published', publishedValue,
+                'createdAt', createdAtValue);
             bar.increment();
 
             await gen(nodeId, nextDepth);

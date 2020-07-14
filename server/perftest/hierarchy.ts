@@ -23,7 +23,7 @@ function calcResults(results: any[], name: string,nrAncestors: number[], tTotal:
 }
 
 export default async function hierarchy() {
-    const find = promisify(redis['SELVA.HIERARCHY.find']).bind(redis, TEST_KEY);
+    const find = promisify(redis['SELVA.HIERARCHY.find']).bind(redis, TEST_KEY, 'dfs');
 
     // Delete an existing hierarchy and create a fresh one
     await promisify(redis.flushall).bind(redis)();

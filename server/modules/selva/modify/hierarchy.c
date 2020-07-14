@@ -19,6 +19,7 @@
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
     struct timespec visit_stamp;
+    ssize_t depth;
     SVector parents;
     SVector children;
     RB_ENTRY(SelvaModify_HierarchyNode) _index_entry;
@@ -31,6 +32,11 @@ typedef struct SelvaModify_HierarchySearchFilter {
 enum SelvaModify_HierarchyNode_Relationship {
     RELATIONSHIP_PARENT,
     RELATIONSHIP_CHILD,
+};
+
+enum SelvaModify_Hierarchy_Algo {
+    HIERARCHY_BFS,
+    HIERARCHY_DFS,
 };
 
 RB_HEAD(hierarchy_index_tree, SelvaModify_HierarchyNode);
@@ -82,6 +88,12 @@ typedef struct TraversalCallback {
 
 static const Selva_NodeId HIERARCHY_RDB_EOF __attribute__((nonstring));
 static RedisModuleType *HierarchyType;
+
+/*!<
+ * DB is loading.
+ * If set then some expensive operations can be skipped and/or deferred.
+ */
+static int rdbLoading;
 
 const char * const hierarchyStrError[] = {
     (const char *)"HIERARCHY_ERR No Error",
@@ -292,6 +304,62 @@ static void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *
     SVector_Remove(&hierarchy->heads, node);
 }
 
+static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head) {
+    SVector q;
+
+    if (unlikely(rdbLoading)) {
+        /*
+         * Skip updates for now as it would require a full BFS pass for every new node.
+         */
+        return;
+    }
+
+    SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL);
+
+    Trx_Begin(&hierarchy->current_trx);
+    Trx_Stamp(&hierarchy->current_trx, &head->visit_stamp);
+    SVector_Insert(&q, head);
+
+    while (SVector_Size(&q) > 0) {
+        SelvaModify_HierarchyNode *node = SVector_Shift(&q);
+        SelvaModify_HierarchyNode **child_pp;
+
+        /*
+         * Update the depth.
+         */
+        ssize_t new_depth = 0;
+        SelvaModify_HierarchyNode **parent_pp;
+        SVECTOR_FOREACH(parent_pp, &node->parents) {
+            SelvaModify_HierarchyNode *parent = *parent_pp;
+
+            new_depth = max(new_depth, parent->depth + 1);
+        }
+        node->depth = new_depth;
+
+        SVECTOR_FOREACH(child_pp, &node->children) {
+            SelvaModify_HierarchyNode *child = *child_pp;
+
+            if (!Trx_IsStamped(&hierarchy->current_trx, &child->visit_stamp)) {
+                Trx_Stamp(&hierarchy->current_trx, &child->visit_stamp);
+                SVector_Insert(&q, child);
+            }
+        }
+    }
+
+    SVector_Destroy(&q);
+}
+
+ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
+    const SelvaModify_HierarchyNode *node;
+
+    node = findNode(hierarchy, id);
+    if (!node) {
+        return -1;
+    }
+
+    return node->depth;
+}
+
 static int crossInsert(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -357,6 +425,8 @@ static int crossInsert(
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
+    updateDepth(hierarchy, node);
+
     return err;
 }
 
@@ -377,6 +447,8 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
 
             SVector_Remove(&adjacent->children, node);
             SVector_Remove(&node->parents, adjacent);
+
+            updateDepth(hierarchy, adjacent);
         }
 
         if (initialNodeParentsSize > 0 && SVector_Size(&node->parents) == 0) {
@@ -402,10 +474,14 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
                 /* adjacent is an orphan now */
                 mkHead(hierarchy, adjacent);
             }
+
+            updateDepth(hierarchy, adjacent);
         }
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
+
+    updateDepth(hierarchy, node);
 
     return 0;
 }
@@ -446,6 +522,8 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
             /* This node is now orphan */
             mkHead(hierarchy, it);
         }
+
+        updateDepth(hierarchy, it);
     }
     SVector_Clear(vec_a);
 
@@ -717,13 +795,14 @@ static void HierarchyNode_ChildCallback_Dummy(SelvaModify_HierarchyNode *parent,
 }
 
 /**
- * DFS from a given head node towards its descendants or ancestors.
+ * BFS from a given head node towards its descendants or ancestors.
  */
-static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head, enum SelvaModify_HierarchyNode_Relationship dir, const TraversalCallback * restrict cb) {
+static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head, enum SelvaModify_HierarchyNode_Relationship dir, const TraversalCallback * restrict cb) {
     size_t offset;
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
+    SVector q;
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
@@ -736,10 +815,65 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
-    Trx_Begin(&hierarchy->current_trx);
+    SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL);
 
+    Trx_Begin(&hierarchy->current_trx);
+    Trx_Stamp(&hierarchy->current_trx, &head->visit_stamp);
+    SVector_Insert(&q, head);
+
+    head_cb(head, cb->head_arg);
+
+    while (SVector_Size(&q) > 0) {
+        SelvaModify_HierarchyNode *node = SVector_Shift(&q);
+
+        if (node_cb(node, cb->node_arg)) {
+            goto out;
+        }
+
+        SelvaModify_HierarchyNode **itt;
+        const SVector *vec = (SVector *)((char *)node + offset);
+        SVECTOR_FOREACH(itt, vec) {
+            SelvaModify_HierarchyNode *it = *itt;
+
+            if (!Trx_IsStamped(&hierarchy->current_trx, &it->visit_stamp)) {
+                Trx_Stamp(&hierarchy->current_trx, &it->visit_stamp);
+
+                child_cb(node, it, cb->child_arg);
+
+                SVector_Insert(&q, it);
+            }
+        }
+    }
+
+out:
+    SVector_Destroy(&q);
+    return 0;
+}
+
+/**
+ * DFS from a given head node towards its descendants or ancestors.
+ */
+static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head, enum SelvaModify_HierarchyNode_Relationship dir, const TraversalCallback * restrict cb) {
+    size_t offset;
+    HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
+    HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
+    HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
     SVector stack;
+
+    switch (dir) {
+    case RELATIONSHIP_PARENT:
+        offset = offsetof(SelvaModify_HierarchyNode, parents);
+        break;
+    case RELATIONSHIP_CHILD:
+        offset = offsetof(SelvaModify_HierarchyNode, children);
+        break;
+    default:
+        return SELVA_MODIFY_HIERARCHY_ENOTSUP;
+    }
+
     SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL);
+
+    Trx_Begin(&hierarchy->current_trx);
     SVector_Insert(&stack, head);
 
     head_cb(head, cb->head_arg);
@@ -889,6 +1023,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
          */
         return NULL;
     }
+    rdbLoading = 1;
     SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy(NULL);
 
     while (1) {
@@ -937,6 +1072,16 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
             RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
             return NULL;
         }
+    }
+
+    rdbLoading = 0;
+
+    /*
+     * Update depths on a single pass to save time.
+     */
+    SelvaModify_HierarchyNode **it;
+    SVECTOR_FOREACH(it, &hierarchy->heads) {
+        updateDepth(hierarchy, *it);
     }
 
     return hierarchy;
@@ -1155,7 +1300,7 @@ int SelvaModify_Hierarchy_ChildrenCommand(RedisModuleCtx *ctx, RedisModuleString
     return REDISMODULE_OK;
 }
 
-static int parse_dfs_dir(enum SelvaModify_HierarchyNode_Relationship *dir, RedisModuleString *arg) {
+static int parse_dir(enum SelvaModify_HierarchyNode_Relationship *dir, RedisModuleString *arg) {
     size_t len;
     const char *str = RedisModule_StringPtrLen(arg, &len);
 
@@ -1163,6 +1308,21 @@ static int parse_dfs_dir(enum SelvaModify_HierarchyNode_Relationship *dir, Redis
         *dir = RELATIONSHIP_PARENT;
     } else if (!strncmp("descendants", str, len)) {
         *dir = RELATIONSHIP_CHILD;
+    } else {
+        return SELVA_MODIFY_HIERARCHY_ENOTSUP;
+    }
+
+    return 0;
+}
+
+static int parse_algo(enum SelvaModify_Hierarchy_Algo *algo, RedisModuleString *arg) {
+    size_t len;
+    const char *str = RedisModule_StringPtrLen(arg, &len);
+
+    if (!strncmp("bfs", str, len)) {
+        *algo = HIERARCHY_BFS;
+    } else if (!strncmp("dfs", str, len)) {
+        *algo = HIERARCHY_DFS;
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
@@ -1221,19 +1381,20 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
 
 /**
  * Find node ancestors/descendants.
- * SELVA.HIERARCHY.find REDIS_KEY DESCENDANTS|ANCESTORS NODE_ID [filter expression] [args...]
+ * SELVA.HIERARCHY.find REDIS_KEY ALGO DESCENDANTS|ANCESTORS NODE_ID [filter expression] [args...]
  */
 int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
     const size_t ARGV_REDIS_KEY    = 1;
-    const size_t ARGV_DIRECTION    = 2;
-    const size_t ARGV_NODE_ID      = 3;
-    const size_t ARGV_FILTER_EXPR  = 4;
-    const size_t ARGV_FILTER_ARGS  = 5;
+    const size_t ARGV_ALGO         = 2;
+    const size_t ARGV_DIRECTION    = 3;
+    const size_t ARGV_NODE_ID      = 4;
+    const size_t ARGV_FILTER_EXPR  = 5;
+    const size_t ARGV_FILTER_ARGS  = 6;
 
-    if (argc < 4) {
+    if (argc < 5) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -1254,10 +1415,19 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     }
 
     /*
+     * Select traversal method.
+     */
+    enum SelvaModify_Hierarchy_Algo algo;
+    err = parse_algo(&algo, argv[ARGV_ALGO]);
+    if (err) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+    }
+
+    /*
      * Get the direction parameter.
      */
     enum SelvaModify_HierarchyNode_Relationship dir;
-    err = parse_dfs_dir(&dir, argv[ARGV_DIRECTION]);
+    err = parse_dir(&dir, argv[ARGV_DIRECTION]);
     if (err) {
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
     }
@@ -1305,7 +1475,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     }
 
     /*
-     * Run DFS.
+     * Run BFS/DFS.
      */
     ssize_t nr_nodes = 0;
     struct FindCommand_Args args = {
@@ -1325,7 +1495,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     };
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    err = dfs(hierarchy, head, dir, &cb);
+    err = (algo == HIERARCHY_BFS ? bfs : dfs)(hierarchy, head, dir, &cb);
     if (rpn_ctx) {
         RedisModule_Free(filter_expression);
         rpn_destroy(rpn_ctx);
@@ -1419,7 +1589,7 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
         op = argv[2];
         keyName = argv[1];
 
-        err = parse_dfs_dir(&dir, op);
+        err = parse_dir(&dir, op);
         if (err) {
             return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
         }

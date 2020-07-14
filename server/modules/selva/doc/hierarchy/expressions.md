@@ -14,7 +14,7 @@ type `2X`. It's also possible to write the same expression using a single functi
 but it wouldn't be as interesting example as the following filter is.
 
 ```
-SELVA.HIERARCHY.find test descendants "grphnode_1" '$0 b "2X d'
+SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '$0 b "2X d'
 ```
 
 Breaking down the filter:
@@ -44,13 +44,13 @@ given as arguments to the expression parser.
 For example, instead of writing
 
 ```
-SELVA.HIERARCHY.find test descendants "grphnode_1" '"field f "test c'
+SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field f "test c'
 ```
 
 you should consider writing
 
 ```
-SELVA.HIERARCHY.find test descendants "grphnode_1" '"field f $1 c' "test"
+SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field f $1 c' "test"
 ```
 
 **Register integers**
