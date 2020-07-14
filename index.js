@@ -15,7 +15,7 @@ for (let i = 0; i < 500; i++) {
 
 const things = []
 
-for (let i = 0; i < 100000; i++) {
+for (let i = 0; i < 10000; i++) {
   const x = []
   x[0] = JSON.stringify(mybigobect)
   mybigobect.flurp[~~(Math.random() * 500)] = (~~(
@@ -56,9 +56,10 @@ for (let i = 0; i < things.length; i++) {
   applyPatch(things[i][0], p, things[i][1])
   x = p
 }
+
 console.log(perfhooks.performance.now() - d3)
 
-// console.log(x)
+console.log(x)
 // const a = 'abcde {10} fg'
 // const b = 'a FLAPdefg'
 
