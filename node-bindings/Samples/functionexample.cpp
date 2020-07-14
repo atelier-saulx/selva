@@ -20,7 +20,6 @@ std::string functionexample::hello(std::string a, std::string b)
     bool isStart = true;
     std::string greeting = "[";
     // can pass stats as well!
-
     // str.reserve(filesize);
 
     for (const auto &i : diff)
