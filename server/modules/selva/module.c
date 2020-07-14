@@ -42,14 +42,19 @@ int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     // init auto memory for created strings
     RedisModule_AutoMemory(ctx);
     Selva_NodeId hash_str;
+    char *prefix = "";
+    size_t len = sizeof(hash_str) - 2;
 
-    if (argc > 2) {
+    if (argc == 2) {
+        prefix = RedisModule_StringPtrLen(argv[1], NULL);
+        len += 2;
+    } else if (argc > 2) {
         return RedisModule_WrongArity(ctx);
     }
 
-    SelvaId_GenId("", hash_str);
+    SelvaId_GenId(prefix, hash_str);
 
-    RedisModuleString *reply = RedisModule_CreateString(ctx, hash_str, sizeof(hash_str));
+    RedisModuleString *reply = RedisModule_CreateString(ctx, hash_str, len);
     RedisModule_ReplyWithString(ctx, reply);
     return REDISMODULE_OK;
 }
