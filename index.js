@@ -1,11 +1,13 @@
 const testAddon = require('./build/Release/testaddon.node')
 const perfhooks = require('perf_hooks')
-// const fastjson = require('fast-json-patch')
+const fastjson = require('fast-json-patch')
 // const diffmpatch = require('diff-match-patch')
 // const diff = require('./diff/meyers')
 
 // const dmp = new diffmpatch()
 // const diff =
+
+fastjson
 
 const mybigobect = { flurp: [] }
 
@@ -60,6 +62,39 @@ for (let i = 0; i < things.length; i++) {
 console.log(perfhooks.performance.now() - d3)
 
 console.log(x)
+
+let docs = []
+for (let i = 0; i < 1000; i++) {
+  const doc1 = {
+    arr: [],
+    title: ~~(Math.random() * 100) + 'aaaa'
+  }
+  const doc2 = {
+    arr: [],
+    title: ~~(Math.random() * 100) + 'aaaa'
+  }
+
+  for (let i = 0; i < ~~(Math.random() * 1000); i++) {
+    doc1.arr.push({ flap: i, x: true })
+  }
+
+  for (let i = 0; i < ~~(Math.random() * 1000); i++) {
+    doc2.arr.push(i)
+  }
+
+  docs.push([doc1, doc2])
+}
+
+let dx = perfhooks.performance.now()
+
+for (let i = 0; i < 1000; i++) {
+  const [a, b] = docs[i]
+  const diff = fastjson.compare(a, b, true)
+  x = JSON.stringify(diff)
+}
+
+console.log(perfhooks.performance.now() - dx, x.length)
+// console.log(x)
 // const a = 'abcde {10} fg'
 // const b = 'a FLAPdefg'
 
