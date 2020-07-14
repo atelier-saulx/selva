@@ -75,7 +75,7 @@ static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nr
 
 static void setup(void)
 {
-    hierarchy = SelvaModify_NewHierarchy();
+    hierarchy = SelvaModify_NewHierarchy(NULL);
     io = RedisRdb_NewIo();
 }
 
@@ -95,7 +95,7 @@ static char * test_serialize_one_node(void)
 {
     char *res;
     const Selva_NodeId id = "grphnode_a";
-    SelvaModify_SetHierarchy(hierarchy, id, 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, id, 0, NULL, 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
 
@@ -117,8 +117,8 @@ static char * test_serialize_one_node(void)
 static char * test_serialize_two_nodes(void)
 {
     char *res;
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
 
@@ -150,10 +150,10 @@ static char * test_serialize_acyclic_1(void)
      */
     char *res;
 
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_AddHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_AddHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
 
@@ -191,10 +191,10 @@ static char * test_serialize_acyclic_2(void)
      */
     char *res;
 
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_b", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_c" }));
-    SelvaModify_SetHierarchy(hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_c" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
 
