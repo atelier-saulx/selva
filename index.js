@@ -1,13 +1,12 @@
 const testAddon = require('./build/Release/testaddon.node')
 const perfhooks = require('perf_hooks')
 const fastjson = require('fast-json-patch')
+const { compare } = require('./diff/objectDiff')
 // const diffmpatch = require('diff-match-patch')
 // const diff = require('./diff/meyers')
 
 // const dmp = new diffmpatch()
 // const diff =
-
-fastjson
 
 const mybigobect = { flurp: [] }
 
@@ -53,11 +52,11 @@ const applyPatch = (prevValue, patch, shouldbe) => {
 
 const d3 = perfhooks.performance.now()
 let x
-for (let i = 0; i < things.length; i++) {
-  const p = testAddon.hello(things[i][0], things[i][1])
-  applyPatch(things[i][0], p, things[i][1])
-  x = p
-}
+// for (let i = 0; i < things.length; i++) {
+//   const p = testAddon.hello(things[i][0], things[i][1])
+//   applyPatch(things[i][0], p, things[i][1])
+//   x = p
+// }
 
 console.log(perfhooks.performance.now() - d3)
 
@@ -87,13 +86,13 @@ for (let i = 0; i < 1000; i++) {
 
 let dx = perfhooks.performance.now()
 
-for (let i = 0; i < 1000; i++) {
-  const [a, b] = docs[i]
-  const diff = fastjson.compare(a, b, true)
-  x = JSON.stringify(diff)
-}
+// for (let i = 0; i < docs.length; i++) {
+//   const [a, b] = docs[i]
+//   const diff = fastjson.compare(a, b, true)
+//   x = JSON.stringify(diff)
+// }
 
-console.log(perfhooks.performance.now() - dx, x.length)
+// console.log(perfhooks.performance.now() - dx, x.length)
 // console.log(x)
 // const a = 'abcde {10} fg'
 // const b = 'a FLAPdefg'
@@ -107,5 +106,9 @@ console.log(perfhooks.performance.now() - dx, x.length)
 //   fastjson.compare(JSON.parse(things[i][0]), JSON.parse(things[i][1]))
 // }
 // console.log(perfhooks.performance.now() - d2)
+
+const a = compare(docs[0], docs[1])
+
+console.log('---->', a)
 
 module.exports = testAddon
