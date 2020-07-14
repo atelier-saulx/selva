@@ -42,15 +42,9 @@ void SVector_Insert(SVector *vec, void *el) {
 
         void **new_data = RedisModule_Realloc(vec_data, new_size);
         if (!new_data) {
-            new_data = RedisModule_Alloc(new_size);
-            if (!new_data) {
-                assert(0);
-                /* TODO Panic: OOM */
-                return;
-            }
-
-            memcpy(new_data, vec_data, VEC_SIZE(vec->vec_len));
-            RedisModule_Free(vec_data);
+            assert(0);
+            /* TODO Panic: OOM */
+            return;
         }
 
         vec->vec_data = new_data;
@@ -98,13 +92,27 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
 }
 
 void *SVector_Pop(SVector * restrict vec) {
-    if (vec->vec_last > 0) {
-        return vec->vec_data[--vec->vec_last];
+    if (vec->vec_last == 0) {
+        return NULL;
     }
 
     assert(vec->vec_last <= vec->vec_len);
+    return vec->vec_data[--vec->vec_last];
+}
 
-    return NULL;
+void *SVector_Shift(SVector * restrict vec) {
+    void *first;
+
+    if (vec->vec_last == 0) {
+        return NULL;
+    }
+    assert(vec->vec_last <= vec->vec_len);
+
+    first = vec->vec_data[0];
+    vec->vec_last--;
+    memmove(vec->vec_data, vec->vec_data + 1, VEC_SIZE(vec->vec_last));
+
+    return first;
 }
 
 void SVector_Clear(SVector * restrict vec) {

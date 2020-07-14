@@ -111,6 +111,23 @@ static char * test_insert_many(void)
     return NULL;
 }
 
+static char * test_insert_no_compar(void)
+{
+    struct data el[] = { { 1 }, { 2 }, { 3 } };
+
+    SVector_Init(&vec, 3, NULL);
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    pu_assert_equal("last is incremented", vec.vec_last, 3);
+    pu_assert_ptr_equal("el[0] was inserted correctly", vec.vec_data[0], &el[0]);
+    pu_assert_ptr_equal("el[1] was inserted correctly", vec.vec_data[1], &el[1]);
+    pu_assert_ptr_equal("el[2] was inserted correctly", vec.vec_data[2], &el[2]);
+
+    return NULL;
+}
+
 static char * test_search(void)
 {
     struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
@@ -237,6 +254,24 @@ static char * test_pop(void)
     return NULL;
 }
 
+static char * test_shift(void)
+{
+    struct data el[] = { { 1 }, { 2 }, { 3 } };
+
+    SVector_Init(&vec, 3, NULL);
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    pu_assert_ptr_equal("Shifts el[0]", SVector_Shift(&vec), &el[0]);
+    pu_assert_ptr_equal("Shifts el[1]", SVector_Shift(&vec), &el[1]);
+    pu_assert_ptr_equal("Shifts el[2]", SVector_Shift(&vec), &el[2]);
+    pu_assert_equal("Vector size is zeroed", SVector_Size(&vec), 0);
+    pu_assert_ptr_equal("Shifts NULL", SVector_Shift(&vec), NULL);
+
+    return NULL;
+}
+
 static char * test_foreach(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
@@ -263,6 +298,7 @@ void all_tests(void)
     pu_def_test(test_insert_one, PU_RUN);
     pu_def_test(test_insert_two_desc, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
+    pu_def_test(test_insert_no_compar, PU_RUN);
     pu_def_test(test_search, PU_RUN);
     pu_def_test(test_remove_one, PU_RUN);
     pu_def_test(test_remove_one_compound_literal, PU_RUN);
@@ -270,5 +306,6 @@ void all_tests(void)
     pu_def_test(test_remove_first, PU_RUN);
     pu_def_test(test_remove_middle, PU_RUN);
     pu_def_test(test_pop, PU_RUN);
+    pu_def_test(test_shift, PU_RUN);
     pu_def_test(test_foreach, PU_RUN);
 }
