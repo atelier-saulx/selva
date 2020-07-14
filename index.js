@@ -63,7 +63,7 @@ console.log(perfhooks.performance.now() - d3)
 console.log(x)
 
 let docs = []
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 10000; i++) {
   const doc1 = {
     arr: [],
     title: ~~(Math.random() * 100) + 'aaaa'
@@ -73,12 +73,12 @@ for (let i = 0; i < 1000; i++) {
     title: ~~(Math.random() * 100) + 'aaaa'
   }
 
-  for (let i = 0; i < ~~(Math.random() * 1000); i++) {
+  for (let i = 0; i < ~~(Math.random() * 10000); i++) {
     doc1.arr.push({ flap: i, x: true })
   }
 
-  for (let i = 0; i < ~~(Math.random() * 1000); i++) {
-    doc2.arr.push(i)
+  for (let i = 0; i < ~~(Math.random() * 10000); i++) {
+    doc2.arr.push({ flap: i, x: true })
   }
 
   docs.push([doc1, doc2])
@@ -86,29 +86,18 @@ for (let i = 0; i < 1000; i++) {
 
 let dx = perfhooks.performance.now()
 
-// for (let i = 0; i < docs.length; i++) {
-//   const [a, b] = docs[i]
-//   const diff = fastjson.compare(a, b, true)
-//   x = JSON.stringify(diff)
-// }
+let y
+for (let i = 0; i < docs.length; i++) {
+  const [a, b] = docs[i]
+  // y = fastjson.compare(a, b, true)
+  y = compare(a, b)
+}
 
-// console.log(perfhooks.performance.now() - dx, x.length)
-// console.log(x)
-// const a = 'abcde {10} fg'
-// const b = 'a FLAPdefg'
+x = JSON.stringify(y)
 
-// applyPatch(a, testAddon.hello(a, b), b)
+console.log(perfhooks.performance.now() - dx, x.length)
 
-// first js then the rest
-
-// const d2 = perfhooks.performance.now()
-// for (let i = 0; i < things.length; i++) {
-//   fastjson.compare(JSON.parse(things[i][0]), JSON.parse(things[i][1]))
-// }
-// console.log(perfhooks.performance.now() - d2)
-
-const a = compare(docs[0], docs[1])
-
-console.log('---->', a)
+// const a = compare(docs[0][0], docs[0][1])
+console.log('---->', y)
 
 module.exports = testAddon

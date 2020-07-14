@@ -1,86 +1,58 @@
 const compareString = () => {}
 
-// TYPE 0 === set, TYPE 1 === string, type 2 === remove, type 3 === insert (array)
-// [path, TYPE, VALUE]
-
-// tree better?
-// probably - less reuse
-
-// something like this
-const PATCH = '_$P'
-
-/*
-
-// if array can have "0" etc in object
-
-
-___$patch___ = []
-{
-  bla: 'yesh,
-  blurf: {
-      blap: 'surl',
-      x: [] // array means this is a patch can be a set with a value
-  }
-
-
-}
-
-// if (testArray.constructor === Array) result = true; (fastest)
-*/
-
-const compare = (a, b, result, key) => {
+const compareNode = (a, b, result, key) => {
   const type = typeof b
-
   // eslint-disable-next-line
   if (type !== typeof a) {
     // different type good start
     // strong
-    console.info('type is different', a, b)
-    if (!key) {
-      return b
-    } else {
-      result[key] = b
-    }
+    // console.info('type is different', a, b)
+    result[key] = b
   } else if (type === 'object') {
     if (b === null) {
-      // add changez
-      //   result
-      //   result.push([path, 0, b])
-      if (!key) {
-        return b
-      } else {
-        result[key] = b
-      }
+      result[key] = b
     } else {
+      const r = {}
       if (b.constructor === Array) {
         if (a.constructor === Array) {
-          // check the differences!
-        } else {
-          // convert to array make different
-          if (!key) {
-            return [0, b]
+          const bLen = b.length
+          const aLen = a.length
+          if (aLen > bLen) {
+            for (let i = 0; i < bLen; i++) {
+              compareNode(a[i], b[i], r, i)
+            }
+            r[bLen] = [2, aLen - bLen]
+          } else if (aLen < bLen) {
+            for (let i = 0; i < aLen; i++) {
+              compareNode(a[i], b[i], r, i)
+            }
+            r[bLen] = [3, b.slice(aLen)]
           } else {
-            result[key] = [0, b]
+            for (let i = 0; i < bLen; i++) {
+              compareNode(a[i], b[i], r, i)
+            }
           }
+        } else {
+          result[key] = [0, b]
         }
       } else {
-        // yesh its an object now find the rest
-
-        // double go time
         for (const key in b) {
           if (!(key in a)) {
-            result[key] = [0, b[key]]
+            r[key] = [0, b[key]]
           } else {
-            // same for a need to remove keys if b does not have them
-            compare(a[key], b[key], result, key)
+            compareNode(a[key], b[key], r, key)
           }
         }
-
         for (const key in a) {
           if (!(key in b)) {
             result[key] = [2]
           }
         }
+      }
+
+      for (let x in r) {
+        result[key] = r
+        break
       }
     }
   } else {
@@ -91,18 +63,57 @@ const compare = (a, b, result, key) => {
       } else {
         // add change
       }
+      result[key] = b
+      // for now
     }
   }
-  // either array or object
-  // if string special handle
-
-  console.log('compare', a, b)
-  return result
 }
 
-// const compareTop = (a, b ) => {
-
-// }
+const compare = (a, b) => {
+  const type = typeof b
+  // eslint-disable-next-line
+  if (type !== typeof a) {
+    return b
+  } else if (type === 'object') {
+    if (b === null) {
+      return b
+    } else {
+      if (b.constructor === Array) {
+        if (a.constructor === Array) {
+          // check the differences!
+        } else {
+          return [0, b]
+        }
+      } else {
+        const result = {}
+        for (const key in b) {
+          if (!(key in a)) {
+            result[key] = [0, b[key]]
+          } else {
+            // same for a need to remove keys if b does not have them
+            compareNode(a[key], b[key], result, key)
+          }
+        }
+        for (const key in a) {
+          if (!(key in b)) {
+            result[key] = [2]
+          }
+        }
+        return result
+      }
+    }
+  } else {
+    if (a === b) {
+      // no change do nothing
+    } else {
+      if (type === 'string') {
+      } else {
+        // add change
+      }
+      return b
+    }
+  }
+}
 
 const applyStringPatch = () => {}
 
