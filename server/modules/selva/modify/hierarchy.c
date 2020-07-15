@@ -808,7 +808,6 @@ static void HierarchyNode_ChildCallback_Dummy(SelvaModify_HierarchyNode *parent,
  * BFS from a given head node towards its descendants or ancestors.
  */
 static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head, enum SelvaModify_HierarchyNode_Relationship dir, const TraversalCallback * restrict cb) {
-    int err = 0;
     size_t offset;
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
@@ -857,7 +856,7 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         }
     }
 
-    return err;
+    return 0;
 }
 
 /**
@@ -990,6 +989,7 @@ static ssize_t SelvaModify_FindDir(SelvaModify_Hierarchy *hierarchy, const Selva
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
+    int err;
     ssize_t nr_nodes = 0;
     Selva_NodeId *list = NodeList_New(1);
     void *args[] = { head, &nr_nodes, &list };
@@ -1002,8 +1002,7 @@ static ssize_t SelvaModify_FindDir(SelvaModify_Hierarchy *hierarchy, const Selva
         .child_arg = NULL,
     };
 
-    int err = dfs(hierarchy, head, dir, &cb);
-
+    err = dfs(hierarchy, head, dir, &cb);
     if (err != 0) {
         *res = NULL;
         RedisModule_Free(list);
