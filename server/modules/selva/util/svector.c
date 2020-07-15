@@ -31,6 +31,21 @@ void SVector_Destroy(SVector *vec) {
     vec->vec_data = NULL;
 }
 
+SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const void **a, const void **b)) {
+    void **it;
+
+    if (!SVector_Init(dest, SVector_Size(src), compar)) {
+        return NULL;
+    }
+
+    SVECTOR_FOREACH(it, src) {
+        SVector_Insert(dest, *it);
+    }
+
+    return dest;
+}
+
+
 void SVector_Insert(SVector *vec, void *el) {
     size_t i = vec->vec_last++;
     size_t vec_len = vec->vec_len;

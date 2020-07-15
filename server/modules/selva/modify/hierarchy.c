@@ -13,6 +13,7 @@
 #include "hierarchy.h"
 
 #define HIERARCHY_ENCODING_VERSION  0
+#define BFS_SORT_BY_DEPTH           0
 
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
 
@@ -108,11 +109,18 @@ static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
 static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel);
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
 
-static int SVector_BS_Compare(const void ** restrict a_raw, const void ** restrict b_raw) {
+static int SVector_HierarchyNode_id_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
     const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
 
     return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
+}
+
+static int SVector_HierarchyNode_depth_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
+    const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
+    const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
+
+    return b->depth - a->depth;
 }
 
 static int SelvaModify_HierarchyNode_Compare(const SelvaModify_HierarchyNode *a, const SelvaModify_HierarchyNode *b) {
@@ -161,7 +169,7 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     }
 
     RB_INIT(&hierarchy->index_head);
-    if (unlikely(!SVector_Init(&hierarchy->heads, 1, SVector_BS_Compare))) {
+    if (unlikely(!SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare))) {
         RedisModule_Free(hierarchy);
         return NULL;
     }
@@ -256,8 +264,8 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
 
     memset(node, 0, sizeof(SelvaModify_HierarchyNode));
 
-    if (unlikely(!SVector_Init(&node->parents, HIERARCHY_INITIAL_VECTOR_LEN, SVector_BS_Compare) ||
-        !SVector_Init(&node->children, HIERARCHY_INITIAL_VECTOR_LEN, SVector_BS_Compare))) {
+    if (unlikely(!SVector_Init(&node->parents, HIERARCHY_INITIAL_VECTOR_LEN, SVector_HierarchyNode_id_compare) ||
+        !SVector_Init(&node->children, HIERARCHY_INITIAL_VECTOR_LEN, SVector_HierarchyNode_id_compare))) {
         SelvaModify_DestroyNode(node);
         return NULL;
     }
@@ -794,27 +802,6 @@ static void HierarchyNode_ChildCallback_Dummy(SelvaModify_HierarchyNode *parent,
     REDISMODULE_NOT_USED(arg);
 }
 
-static int bfs_compar(const void ** restrict a_raw, const void ** restrict b_raw) {
-    const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
-    const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
-
-    return b->depth - a->depth;
-}
-
-static int bfs_clone_vector(SVector *dest, const SVector *src) {
-    SelvaModify_HierarchyNode **it;
-
-    if (!SVector_Init(dest, SVector_Size(src), bfs_compar)) {
-        return SELVA_MODIFY_HIERARCHY_ENOMEM;
-    }
-
-    SVECTOR_FOREACH(it, src) {
-        SVector_Insert(dest, *it);
-    }
-
-    return 0;
-}
-
 /**
  * BFS from a given head node towards its descendants or ancestors.
  */
@@ -848,21 +835,24 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
     head_cb(head, cb->head_arg);
 
     while (SVector_Size(&q) > 0) {
-        int err;
         SelvaModify_HierarchyNode *node = SVector_Shift(&q);
 
         if (node_cb(node, cb->node_arg)) {
             return 0;
         }
 
+        SelvaModify_HierarchyNode **itt;
+        const SVector *adj_vec = (const SVector *)((char *)node + offset);
+#if BFS_SORT_BY_DEPTH == 1
         svector_autofree SVector vec;
-        err = bfs_clone_vector(&vec, (const SVector *)((char *)node + offset));
-        if (err) {
-            return err;
+        if(!SVector_Clone(&vec, adj_vec, SVector_HierarchyNode_depth_compare)) {
+            return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
 
-        SelvaModify_HierarchyNode **itt;
         SVECTOR_FOREACH(itt, &vec) {
+#else
+        SVECTOR_FOREACH(itt, adj_vec) {
+#endif
             SelvaModify_HierarchyNode *it = *itt;
 
             if (!Trx_IsStamped(&hierarchy->current_trx, &it->visit_stamp)) {
@@ -1272,10 +1262,16 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
     }
 
-    RedisModule_ReplyWithArray(ctx, SVector_Size(&node->parents));
+    svector_autofree SVector parents;
+
+    if (!SVector_Clone(&parents, &node->parents, SVector_HierarchyNode_depth_compare)) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
+    }
+
+    RedisModule_ReplyWithArray(ctx, SVector_Size(&parents));
 
     SelvaModify_HierarchyNode **itt;
-    SVECTOR_FOREACH(itt, &node->parents) {
+    SVECTOR_FOREACH(itt, &parents) {
         SelvaModify_HierarchyNode *it = *itt;
 
         RedisModule_ReplyWithStringBuffer(ctx, it->id, SelvaModify_NodeIdLen(it->id));

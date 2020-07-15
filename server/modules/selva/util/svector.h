@@ -13,6 +13,7 @@ typedef struct SVector {
 
 SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b));
 void SVector_Destroy(SVector *vec);
+SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const void **a, const void **b));
 void SVector_Insert(SVector *vec, void *el);
 void *SVector_Search(const SVector * restrict vec, void *key);
 void *SVector_Remove(SVector * restrict vec, void *key);
