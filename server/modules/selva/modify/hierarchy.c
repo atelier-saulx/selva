@@ -749,7 +749,32 @@ int SelvaModify_DelHierarchyNode(
 
     del_node(hierarchy, node);
 
-    /* TODO Remove hash */
+    /*
+     * Remove other related keys and data from Redis.
+     */
+    if (likely(ctx)) {
+        RedisModuleString *hkey_name;
+        RedisModuleString *akey_name;
+        RedisModuleKey *key;
+
+        hkey_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
+        akey_name = RedisModule_CreateStringPrintf(ctx, "%.*s.aliases", SELVA_NODE_ID_SIZE, id);
+        if (unlikely(!(hkey_name && akey_name))) {
+            return SELVA_MODIFY_HIERARCHY_ENOMEM;
+        }
+
+        key = RedisModule_OpenKey(ctx, hkey_name, REDISMODULE_WRITE);
+        if (key) {
+            RedisModule_DeleteKey(key);
+            RedisModule_CloseKey(key);
+        }
+
+        key = RedisModule_OpenKey(ctx, akey_name, REDISMODULE_WRITE);
+        if (key) {
+            RedisModule_DeleteKey(key);
+            RedisModule_CloseKey(key);
+        }
+    }
 
     return 0;
 }
