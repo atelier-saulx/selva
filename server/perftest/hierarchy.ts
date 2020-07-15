@@ -7,23 +7,21 @@ import redis from './util/redis';
 
 const TEST_KEY = 'test';
 
-function getFuncName() {
-    return (new Error()).stack.match(/at (\S+)/g)[1].slice(3);
-}
-
 function calcResults(results: any[], name: string,nrAncestors: number[], tTotal: number) {
     const n = nrAncestors.length;
     const mean = nrAncestors.reduce((acc, cur) => acc + cur / n, 0);
     const stdDev = Math.sqrt(nrAncestors.map((x) => (x - mean) ** 2).reduce((acc, cur) => acc + cur / (n - 1), 0));
 
-    results.push([`${name} mean(n_ancestors)`, Math.round(mean)]);
-    results.push([`${name} σ(n_ancestors)`, Math.round(stdDev)]);
+    results.push([`${name} mean(n)`, Math.round(mean)]);
+    results.push([`${name} σ(n)`, Math.round(stdDev)]);
     results.push([`${name} t_find`, (tTotal / n).toFixed(2), 'ms/find']);
     results.push([`${name} t_total`, tTotal.toFixed(2), 'ms']);
 }
 
-export default async function hierarchy() {
-    const find = promisify(redis['SELVA.HIERARCHY.find']).bind(redis, TEST_KEY, 'dfs');
+export default async function hierarchy(algo: 'bfs' | 'dfs') {
+    const find = promisify(redis['SELVA.HIERARCHY.find']).bind(redis, TEST_KEY, algo);
+    const getFuncName = () => `${(new Error()).stack.match(/at (\S+)/g)[1].slice(3)}_${algo}`;
+
 
     // Delete an existing hierarchy and create a fresh one
     await promisify(redis.flushall).bind(redis)();

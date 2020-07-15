@@ -2,7 +2,10 @@ import printResult from './util/print-result';
 import testHierarchy from './hierarchy';
 import sleep from './util/sleep';
 
-const allTests = [testHierarchy];
+const allTests = [
+    testHierarchy.bind(null, 'bfs'),
+    testHierarchy.bind(null, 'dfs'),
+];
 
 function selectTests() {
 	if (process.argv.length > 2) {
