@@ -912,7 +912,7 @@ test.serial('get - hierarchy', async t => {
   client.destroy()
 })
 
-test.serial.skip('get - $inherit', async t => {
+test.serial('get - $inherit', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   /*

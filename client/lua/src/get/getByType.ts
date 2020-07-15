@@ -203,7 +203,6 @@ const arrayLike = (
     return true
   }
 
-  // let value = ensureArray(redis.smembers(id + '.' + field))
   let value = ensureArray(redis.zrange(id + '.' + field, 0, -1))
   if (value.length === 0 || !value.length) {
     value = emptyArray()

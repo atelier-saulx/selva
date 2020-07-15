@@ -34,12 +34,12 @@ export function parents(id: string) {
 }
 
 export function ancestors(id: string) {
-    const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'ancestors', id)
+    const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'bfs', 'ancestors', id)
     return o.length > 0 ? o : emptyArray()
 }
 
 export function descendants(id: string) {
-    const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'descendants', id)
+    const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'bfs', 'descendants', id)
     return o.length > 0 ? o : emptyArray()
 }
 
