@@ -380,7 +380,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         assert(ctx->redis_ctx);
 #endif
 
-        cid->ptr = sdscpylen(cid->ptr, (void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
+        cid->ptr = sdscpylen(cid->ptr, (const void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
         id_key = RedisModule_OpenKey(ctx->redis_ctx, (RedisModuleString *)(cid), REDISMODULE_READ);
         if (!id_key) {
             return push_empty_value(ctx);

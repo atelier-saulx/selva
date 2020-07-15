@@ -42,7 +42,7 @@ int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     // init auto memory for created strings
     RedisModule_AutoMemory(ctx);
     Selva_NodeId hash_str;
-    char *prefix = "";
+    const char *prefix = "";
     size_t len = sizeof(hash_str) - 2;
 
     if (argc == 2) {
