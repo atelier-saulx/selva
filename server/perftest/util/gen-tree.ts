@@ -132,7 +132,6 @@ export async function generateTree(redis: any, key: string, medianWidth: number,
     const nrNodes = guestimate(medianWidth, widthVar, maxDepth, cutProb);
     process.stderr.write('done\nCreating nodes...\n');
     bar.start(nrNodes, 1);
-    await add('grph_head1');
-    await gen('grph_head1', maxDepth);
+    await gen('root', maxDepth);
     bar.stop();
 }
