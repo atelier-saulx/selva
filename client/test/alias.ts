@@ -16,8 +16,12 @@ test.before(async t => {
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
+})
 
+test.beforeEach(async t => {
   const client = connect({ port }, { loglevel: 'info' })
+
+  await client.redis.flushall()
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -112,6 +116,9 @@ test.before(async t => {
       }
     }
   })
+
+  // A small delay is needed after setting the schema
+  await new Promise(r => setTimeout(r, 100))
 
   await client.destroy()
 })
