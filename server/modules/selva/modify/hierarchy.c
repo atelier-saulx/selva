@@ -794,15 +794,36 @@ static void HierarchyNode_ChildCallback_Dummy(SelvaModify_HierarchyNode *parent,
     REDISMODULE_NOT_USED(arg);
 }
 
+static int bfs_compar(const void ** restrict a_raw, const void ** restrict b_raw) {
+    const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
+    const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
+
+    return b->depth - a->depth;
+}
+
+static int bfs_clone_vector(SVector *dest, const SVector *src) {
+    SelvaModify_HierarchyNode **it;
+
+    if (!SVector_Init(dest, SVector_Size(src), bfs_compar)) {
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
+    }
+
+    SVECTOR_FOREACH(it, src) {
+        SVector_Insert(dest, *it);
+    }
+
+    return 0;
+}
+
 /**
  * BFS from a given head node towards its descendants or ancestors.
  */
 static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head, enum SelvaModify_HierarchyNode_Relationship dir, const TraversalCallback * restrict cb) {
+    int err = 0;
     size_t offset;
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
-    SVector q;
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
@@ -815,7 +836,10 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
-    SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL);
+    svector_autofree SVector q;
+    if (!SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL)) {
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
+    }
 
     Trx_Begin(&hierarchy->current_trx);
     Trx_Stamp(&hierarchy->current_trx, &head->visit_stamp);
@@ -824,15 +848,21 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
     head_cb(head, cb->head_arg);
 
     while (SVector_Size(&q) > 0) {
+        int err;
         SelvaModify_HierarchyNode *node = SVector_Shift(&q);
 
         if (node_cb(node, cb->node_arg)) {
-            goto out;
+            return 0;
+        }
+
+        svector_autofree SVector vec;
+        err = bfs_clone_vector(&vec, (const SVector *)((char *)node + offset));
+        if (err) {
+            return err;
         }
 
         SelvaModify_HierarchyNode **itt;
-        const SVector *vec = (SVector *)((char *)node + offset);
-        SVECTOR_FOREACH(itt, vec) {
+        SVECTOR_FOREACH(itt, &vec) {
             SelvaModify_HierarchyNode *it = *itt;
 
             if (!Trx_IsStamped(&hierarchy->current_trx, &it->visit_stamp)) {
@@ -845,9 +875,7 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         }
     }
 
-out:
-    SVector_Destroy(&q);
-    return 0;
+    return err;
 }
 
 /**
@@ -858,7 +886,6 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
-    SVector stack;
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
@@ -871,7 +898,10 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
-    SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL);
+    svector_autofree SVector stack;
+    if (!SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL)) {
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
+    }
 
     Trx_Begin(&hierarchy->current_trx);
     SVector_Insert(&stack, head);
@@ -886,7 +916,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
             Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
 
             if (node_cb(node, cb->node_arg)) {
-                goto out;
+                return 0;
             }
 
             /* Add parents/children of this node to the stack of unvisited nodes */
@@ -903,23 +933,24 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         }
     }
 
-out:
-    SVector_Destroy(&stack);
     return 0;
 }
 
 /**
  * Traverse through all nodes of the hierarchy from heads to leaves.
  */
-static void full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * restrict cb) {
+static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * restrict cb) {
     SelvaModify_HierarchyNode **head;
-    SVector stack;
+    svector_autofree SVector stack;
 
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
 
-    SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL);
+    if (!SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL)) {
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
+    }
+
     Trx_Begin(&hierarchy->current_trx);
 
     SVECTOR_FOREACH(head, &hierarchy->heads) {
@@ -935,7 +966,7 @@ static void full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback *
                 Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
 
                 if (node_cb(node, cb->node_arg)) {
-                    goto out;
+                    return 0;
                 }
 
                 SelvaModify_HierarchyNode **itt;
@@ -951,8 +982,7 @@ static void full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback *
         }
     }
 
-out:
-    SVector_Destroy(&stack);
+    return 0;
 }
 
 static int dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
@@ -1124,7 +1154,7 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
      * NODE_ID2 | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
-    full_dfs(hierarchy, &cb);
+    (void)full_dfs(hierarchy, &cb);
 
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
@@ -1159,7 +1189,7 @@ void HierarchyTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void *v
         .child_arg = args,
     };
 
-    full_dfs(hierarchy, &cb);
+    (void)full_dfs(hierarchy, &cb);
 }
 
 void HierarchyTypeFree(void *value) {
@@ -1565,6 +1595,7 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
     ssize_t stop = -1;
     Selva_NodeId nodeId;
     enum SelvaModify_HierarchyNode_Relationship dir;
+    int err;
 
     if (argc == 3 || argc == 5) {
         const long long si = --argc;
@@ -1582,7 +1613,6 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
     if (argc == 2) {
         keyName = argv[1];
     } else if (argc == 4) {
-        int err;
         size_t len;
         const char *str;
 
@@ -1627,19 +1657,17 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
     };
 
     if (op) {
-        int err;
-
         SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
         if (!node) {
             return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
         }
 
         err = dfs(hierarchy, node, dir, &cb);
-        if (err < 0) {
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
-        }
     } else {
-        full_dfs(hierarchy, &cb);
+        err = full_dfs(hierarchy, &cb);
+    }
+    if (err < 0) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
     }
 
     if (nr_nodes > 0) {

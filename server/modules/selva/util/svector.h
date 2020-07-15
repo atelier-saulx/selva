@@ -20,7 +20,7 @@ void *SVector_Pop(SVector * restrict vec);
 void *SVector_Shift(SVector * restrict vec);
 void SVector_Clear(SVector * restrict vec);
 
-static inline size_t SVector_Size(SVector * restrict vec) {
+static inline size_t SVector_Size(const SVector * restrict vec) {
     return vec->vec_last;
 }
 
@@ -28,5 +28,7 @@ static inline size_t SVector_Size(SVector * restrict vec) {
     for (typeof(var) var ## _end = (typeof(var))(vec)->vec_data + (vec)->vec_last, var = (typeof(var))(vec)->vec_data ;  \
          (void **)var < (void **)var ## _end;                                                               \
          var++)
+
+#define svector_autofree __attribute__((cleanup(SVector_Destroy)))
 
 #endif /* _UTIL_SVECTOR_H_ */
