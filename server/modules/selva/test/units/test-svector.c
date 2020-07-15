@@ -272,6 +272,28 @@ static char * test_shift(void)
     return NULL;
 }
 
+static char * test_shift_reset(void)
+{
+    struct data el[] = { { 1 }, { 2 }, { 3 }, { 4 } };
+
+    SVector_Init(&vec, num_elem(el), NULL);
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    pu_assert_ptr_equal("Shifts el[0]", SVector_Shift(&vec), &el[0]);
+    pu_assert_ptr_equal("Shifts el[1]", SVector_Shift(&vec), &el[1]);
+    pu_assert_ptr_equal("Shifts el[2]", SVector_Shift(&vec), &el[2]);
+    pu_assert_equal("shift index is changed", vec.vec_shift_index, 3);
+    pu_assert_ptr_equal("Shifts el[3]", SVector_Shift(&vec), &el[3]);
+    pu_assert_equal("shift index is reset", vec.vec_shift_index, 1);
+
+    SVector_ShiftReset(&vec);
+    pu_assert_equal("shift index is reset", vec.vec_shift_index, 0);
+
+    return NULL;
+}
+
 static char * test_foreach(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
@@ -307,5 +329,6 @@ void all_tests(void)
     pu_def_test(test_remove_middle, PU_RUN);
     pu_def_test(test_pop, PU_RUN);
     pu_def_test(test_shift, PU_RUN);
+    pu_def_test(test_shift_reset, PU_RUN);
     pu_def_test(test_foreach, PU_RUN);
 }

@@ -12,6 +12,7 @@ SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void
     *vec = (SVector){
         .vec_compar = compar,
         .vec_len = initial_len < 2 ? 2 : initial_len,
+        .vec_shift_index = 0,
         .vec_last = 0,
         .vec_data = RedisModule_Alloc(VEC_SIZE(initial_len)),
     };
@@ -45,7 +46,6 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
     return dest;
 }
 
-
 void SVector_Insert(SVector *vec, void *el) {
     size_t i = vec->vec_last++;
     size_t vec_len = vec->vec_len;
@@ -70,7 +70,8 @@ void SVector_Insert(SVector *vec, void *el) {
     vec_data[i] = el;
 
     if (vec->vec_compar) {
-        qsort(vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+        qsort(vec_data + vec->vec_shift_index, vec->vec_last,
+              sizeof(void *), VEC_COMPAR(vec->vec_compar));
     }
 
     assert(vec->vec_last <= vec->vec_len);
@@ -80,7 +81,8 @@ void *SVector_Search(const SVector * restrict vec, void *key) {
     /* TODO what if vec_compar is not set? */
     assert(("vec_compar must be set", vec->vec_compar));
 
-    void **pp = bsearch(&key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+    void **pp = bsearch(&key, vec->vec_data + vec->vec_shift_index,
+                        vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
 
     return !pp ? NULL : *pp;
 }
@@ -89,7 +91,8 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
     /* TODO what if vec_compar is not set? */
     assert(("vec_compar must be set", vec->vec_compar));
 
-    void **pp = bsearch(&key, vec->vec_data, vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+    void **pp = bsearch(&key, vec->vec_data + vec->vec_shift_index,
+                        vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
     if (!pp) {
         return NULL;
     }
@@ -107,7 +110,7 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
 }
 
 void *SVector_Pop(SVector * restrict vec) {
-    if (vec->vec_last == 0) {
+    if (vec->vec_last == vec->vec_shift_index) {
         return NULL;
     }
 
@@ -118,18 +121,28 @@ void *SVector_Pop(SVector * restrict vec) {
 void *SVector_Shift(SVector * restrict vec) {
     void *first;
 
-    if (vec->vec_last == 0) {
+    if (vec->vec_last == vec->vec_shift_index) {
         return NULL;
     }
     assert(vec->vec_last <= vec->vec_len);
+    assert(vec->vec_shift_index <= vec->vec_last);
 
-    first = vec->vec_data[0];
-    vec->vec_last--;
-    memmove(vec->vec_data, vec->vec_data + 1, VEC_SIZE(vec->vec_last));
+    if (vec->vec_shift_index > vec->vec_last / 2) {
+        SVector_ShiftReset(vec);
+    }
+
+    first = vec->vec_data[vec->vec_shift_index++];
 
     return first;
 }
 
+void SVector_ShiftReset(SVector * restrict vec) {
+    memmove(vec->vec_data, vec->vec_data + vec->vec_shift_index, VEC_SIZE(vec->vec_last));
+    vec->vec_last -= vec->vec_shift_index;
+    vec->vec_shift_index = 0;
+}
+
 void SVector_Clear(SVector * restrict vec) {
+    vec->vec_shift_index = 0;
     vec->vec_last = 0;
 }
