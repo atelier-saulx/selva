@@ -68,13 +68,7 @@ static char *sztok(char *s, size_t size, size_t * restrict i) {
 
     if (*i < size - 1) {
         r = s + *i;
-
-        do {
-            *i = *i + 1;
-        } while (*i < size && s[*i] != '\0');
-        do {
-            *i = *i + 1;
-        } while (*i < size && s[*i] == '0');
+        *i = *i + strnlen(r, size) + 1;
     }
 
     return r;
