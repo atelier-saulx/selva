@@ -33,6 +33,14 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
       registry: registryAdress,
       default: true
     }),
+    startReplica({
+      registry: registryAdress,
+      default: true
+    }),
+    startReplica({
+      registry: registryAdress,
+      default: true
+    }),
     startSubscriptionManager({
       registry: registryAdress
     }),
