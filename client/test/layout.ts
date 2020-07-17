@@ -167,9 +167,6 @@ test.serial('layout query', async t => {
     ]
   })
 
-  console.log(Date.now())
-  console.dir(result, { depth: 100 })
-
   t.deepEqualIgnoreOrder(result, {
     id: 'league1',
     components: [

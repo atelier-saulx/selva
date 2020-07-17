@@ -66,14 +66,10 @@ test.before(async t => {
 
 test.after(async _t => {
   let client = connect({ port: port1 })
-  let d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await srv1.destroy()
 
-  d = Date.now()
   await client.delete({ $id: 'root', $db: 'matchdb' })
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv2.destroy()
 })
@@ -180,7 +176,6 @@ test.serial('admin deletes', async t => {
   for (let i = 0; i < firstKeys.length; i++) {
     if (firstKeys[i].startsWith('wa') && firstKeys[i].indexOf('.') === -1) {
       const hkeys = await client.redis.hkeys({ name: 'users' }, firstKeys[i])
-      console.log('hkeys', hkeys)
       if (hkeys.includes('time')) {
         t.fail()
       }

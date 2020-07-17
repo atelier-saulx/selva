@@ -141,7 +141,6 @@ test.serial('$all', async t => {
     }
   })
 
-  console.log(result.fields)
   t.deepEqual(result.fields, { name: 'hello', something: '' }, 'inherit')
 })
 
@@ -177,8 +176,6 @@ test.serial('$field + object', async t => {
       $inherit: true
     }
   })
-
-  console.log('res', result)
 
   t.deepEqual(result, { flaprdol: { name: 'hello' } }, 'inherit')
 })
@@ -217,8 +214,6 @@ test.serial('$field + object + all', async t => {
       $inherit: true
     }
   })
-
-  console.log('res', result)
 
   t.deepEqual(result, { flaprdol: { name: 'hello' } }, 'inherit')
 })
@@ -271,8 +266,6 @@ test.serial('$field + object + all + nested', async t => {
       $all: true
     }
   })
-
-  console.log('res', result)
 
   t.deepEqual(
     result1,
@@ -429,8 +422,7 @@ test.serial('$field +  multiple options + inherit from root', async t => {
       }
     })
   } catch (err) {
-    t.fail('should be able to update layout fields root')
-    console.log(err)
+    t.fail('should be able to update layout fields root ' + err.message)
   }
 
   await client.set({
@@ -560,8 +552,7 @@ test.serial.skip('$field + inherit from root + query root', async t => {
       }
     })
   } catch (err) {
-    t.fail('should be able to update layout fields root')
-    console.log(err)
+    t.fail('should be able to update layout fields root ' + err.message)
   }
 
   await client.set({

@@ -4,12 +4,12 @@ import { start, SelvaServer } from '@saulx/selva-server'
 import '../../assertions'
 import { wait } from '../../assertions'
 // @ts-ignore suppressing module can only be default-imported using the 'esModuleInterop' flag
-import getPort from 'get-port' 
+import getPort from 'get-port'
 
 import { schema } from '../_schema'
 import { setDataSet } from '../_dataSet'
 
-let srv:SelvaServer
+let srv: SelvaServer
 let port
 
 test.before(async t => {
@@ -83,7 +83,6 @@ test.serial.skip('$range', async t => {
       }
     }
   })
-  console.log(result)
 
   t.deepEqual(result.children.length, 2)
 })

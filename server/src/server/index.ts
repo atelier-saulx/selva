@@ -46,11 +46,11 @@ export class SelvaServer extends EventEmitter {
   }
 
   async start(opts: ServerOptions) {
-    console.info(
-      `Start SelvaServer ${chalk.white(opts.name)} of type ${chalk.blue(
-        this.type
-      )} on port ${chalk.blue(String(opts.port))}`
-    )
+    // console.info(
+    //   `Start SelvaServer ${chalk.white(opts.name)} of type ${chalk.blue(
+    //     this.type
+    //   )} on port ${chalk.blue(String(opts.port))}`
+    // )
 
     this.port = opts.port
     this.host = opts.host
@@ -76,9 +76,7 @@ export class SelvaServer extends EventEmitter {
     }
 
     if (opts.backups && opts.backups.loadBackup) {
-      console.log('Loading backup')
       await loadBackup(this.backupDir, this.backupFns)
-      console.log('Backup loaded')
     }
 
     if (this.type === 'replica') {

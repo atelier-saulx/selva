@@ -50,78 +50,9 @@ test.before(async t => {
 
 test.after(async _t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
-})
-
-test.serial.skip('find - live', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
-
-  const match1 = await client.set({
-    type: 'match',
-    name: 'match 1',
-    startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
-  })
-
-  await client.set({
-    type: 'match',
-    name: 'match 2',
-    startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
-  })
-
-  await client.set({
-    type: 'match',
-    name: 'match 2',
-    startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 horus ago
-    endTime: Date.now() - 60 * 60 * 1000 // ended 1 hour ago
-  })
-
-  console.log(await client.redis.hgetall(match1))
-
-  console.log(
-    await client.get({
-      $id: 'root',
-      children: {
-        name: true,
-        startTime: true,
-        endTime: true,
-        $list: {}
-      }
-    })
-  )
-
-  console.log(
-    (
-      await client.get({
-        $includeMeta: true,
-        $id: 'root',
-        items: {
-          name: true,
-          value: true,
-          $list: {
-            $sort: { $field: 'startTime', $order: 'desc' },
-            $find: {
-              $traverse: 'children',
-              $filter: [
-                {
-                  $field: 'endTime',
-                  $operator: '>',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
-      })
-    ).$meta.query
-  )
-
-  await client.delete('root')
 })
 
 test.serial('find - already started', async t => {
@@ -165,8 +96,6 @@ test.serial('find - already started', async t => {
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
   })
 
-  console.log(await client.redis.hgetall(match1))
-
   t.deepEqualIgnoreOrder(
     (
       await client.get({
@@ -194,33 +123,7 @@ test.serial('find - already started', async t => {
     nextRefresh
   )
 
-  console.log(
-    (
-      await client.get({
-        $includeMeta: true,
-        $id: 'root',
-        items: {
-          name: true,
-          value: true,
-          $list: {
-            $sort: { $field: 'startTime', $order: 'asc' },
-            $find: {
-              $traverse: 'children',
-              $filter: [
-                {
-                  $field: 'startTime',
-                  $operator: '<',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
-      })
-    ).items.map(i => i.name)
-  )
-
-  // FIXME: wft ASC sort broken?
+  // FIXME: wtf ASC sort broken?
   // t.deepEqual(
   //   (
   //     await client.get({
@@ -255,7 +158,7 @@ test.serial('find - already started', async t => {
 test.serial('find - already started subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
-  const match1 = await client.set({
+  await client.set({
     type: 'match',
     name: 'started 5m ago',
     startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -320,7 +223,6 @@ test.serial('find - already started subscription', async t => {
 
   let o1counter = 0
   const sub = observable.subscribe(d => {
-    console.log('odata', d)
     if (o1counter === 0) {
       // gets start event
       t.true(d.items.length === 3)
@@ -384,8 +286,6 @@ test.serial('find - starting soon', async t => {
     startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 2 hour
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 3 hours
   })
-
-  console.log(await client.redis.hgetall(match1))
 
   // t.deepEqualIgnoreOrder(
   //   (

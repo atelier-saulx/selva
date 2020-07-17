@@ -57,14 +57,9 @@ test.before(async t => {
 
 test.after(async _t => {
   let client = connect({ port: port1 })
-  let d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await srv1.destroy()
-
-  d = Date.now()
   await client.delete({ $id: 'root', $db: 'matchdb' })
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv2.destroy()
 })

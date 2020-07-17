@@ -44,7 +44,6 @@ test.after(async _t => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
 })
@@ -102,7 +101,6 @@ test.serial('subscription list', async t => {
 
   t.plan(1)
   obs.subscribe(res => {
-    console.log('res', JSON.stringify(res, null, 2))
     t.pass('should still fire even though sport does not have teams')
   })
 

@@ -126,36 +126,28 @@ test.serial('correct hierachy rules', async t => {
   })
 
   try {
-    console.log(
-      '----->',
-      await client.get({
-        children: {
-          $list: {
-            $limit: 10,
-            $find: {
-              $traverse: 'descendants',
-              $filter: [
-                {
-                  $value: 'match',
-                  $field: 'type',
-                  $operator: '='
-                }
-              ]
-            }
-          },
-          // title: true,
-          // image: true,
-          // id: true,
-          // type: true,
-          // date: true,
-          video: true
-        }
-      })
-    )
+    await client.get({
+      children: {
+        $list: {
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $value: 'match',
+                $field: 'type',
+                $operator: '='
+              }
+            ]
+          }
+        },
+        video: true
+      }
+    })
+
     t.pass()
   } catch (e) {
-    console.log('???????', e)
-    t.fail()
+    t.fail('Error getting descendants ' + e.message)
   }
 
   await client.delete('root')

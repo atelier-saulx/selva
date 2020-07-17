@@ -120,8 +120,6 @@ test.before(async t => {
     }
   })
 
-  console.log('SCHEMA SET')
-
   await client.destroy()
 })
 
@@ -133,15 +131,12 @@ test.after(async _t => {
 })
 
 test.serial('root', async t => {
-  console.log('CONNECTING')
   const client = connect(
     {
       port
     },
     { loglevel: 'info' }
   )
-
-  console.log('CONNECTED')
 
   const match = await client.set({
     type: 'match'
@@ -163,15 +158,12 @@ test.serial('root', async t => {
 })
 
 test.serial('root.children $delete: []', async t => {
-  console.log('CONNECTING')
   const client = connect(
     {
       port
     },
     { loglevel: 'info' }
   )
-
-  console.log('CONNECTED')
 
   const match = await client.set({
     type: 'match'
@@ -566,7 +558,6 @@ test.serial('deep hierarchy manipulation', async t => {
     'root'
   ])
 
-  console.log('!!!', await client.redis.zrange('cuE.ancestors', 0, -1))
   t.deepEqualIgnoreOrder(await client.redis.zrange('cuE.ancestors', 0, -1), [
     'root',
     'cuD'
@@ -1217,15 +1208,12 @@ test.serial('createdAt not set if nothing changed', async t => {
 })
 
 test.serial('$delete: true', async t => {
-  console.log('CONNECTING')
   const client = connect(
     {
       port
     },
     { loglevel: 'info' }
   )
-
-  console.log('CONNECTED')
 
   const match = await client.set({
     type: 'match'

@@ -25,9 +25,7 @@ test.before(async t => {
 
 test.after(async _t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
 })
@@ -53,7 +51,6 @@ test.serial('multiple subscribes on same thing', async t => {
 
     let i = n
     obs.subscribe(data => {
-      console.log('data', i, data)
       t.pass('subscribe fires')
     })
 

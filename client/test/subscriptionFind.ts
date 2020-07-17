@@ -46,9 +46,7 @@ test.before(async t => {
 
 test.after(async _t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
 })
@@ -118,7 +116,6 @@ test.serial('subscription find', async t => {
   let cnt = 0
   const sub = obs.subscribe(d => {
     cnt++
-    console.log('furpy!', cnt, d)
   })
 
   await wait(1000)
@@ -231,7 +228,6 @@ test.serial('subscription find', async t => {
 
   let cnt3 = 0
   obs3.subscribe(d => {
-    console.log('incoming cnt 3', d)
     cnt3++
   })
 
@@ -242,8 +238,6 @@ test.serial('subscription find', async t => {
 
   // for now 1k
   const amount = 10 // 10k wrong 5k fine
-
-  console.log('snurkels')
 
   const x = []
   for (let i = 0; i < amount; i++) {
@@ -256,20 +250,16 @@ test.serial('subscription find', async t => {
     )
   }
 
-  var d = Date.now()
   const ids = await Promise.all(x)
-  console.log('SET ', amount, Date.now() - d, 'ms')
 
   await wait(2000)
 
-  console.log('set single')
   client.set({
     $id: ids[6],
     name: 'FLURRRRP'
   })
   await wait(1000)
 
-  console.log('check for cnt')
-  t.is(cnt3, 3)
+  t.is(cnt3, 3, 'check for count')
   await wait(2000)
 })

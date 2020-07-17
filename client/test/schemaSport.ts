@@ -388,8 +388,6 @@ test.serial.only('schemas - sport', async t => {
 
   const { schema: schemaResult, searchIndexes } = await client.getSchema()
 
-  console.log(schema)
-
   server.destroy()
 
   t.true(true)

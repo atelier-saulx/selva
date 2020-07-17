@@ -11,7 +11,6 @@ test.before(async () => {
   srv = await start({
     port
   })
-  console.log('ok server started!')
 })
 
 test.after(async () => {
@@ -59,11 +58,8 @@ test.serial('basic id based subscriptions', async t => {
   })
 
   let o2counter = 0
-  console.log('\n\nsecond sub!')
   const other = client.observe({ $id: thing, $all: true, aliases: false })
   const sub2 = other.subscribe(d => {
-    console.log('incoming 2', d)
-
     if (o2counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
@@ -83,9 +79,6 @@ test.serial('basic id based subscriptions', async t => {
 
   await wait(500 * 2)
 
-  console.log('----------------------------------')
-  console.log('set some things')
-
   await client.set({
     $id: 'root',
     no: 'no event pls'
@@ -101,9 +94,6 @@ test.serial('basic id based subscriptions', async t => {
   })
 
   await wait(500 * 2)
-
-  console.log('----------------------------------')
-  console.log('unsubscribe')
 
   sub.unsubscribe()
   sub2.unsubscribe()
@@ -316,7 +306,6 @@ test.serial(
     const observable = client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
     const sub = observable.subscribe(d => {
-      console.log(d)
       if (o1counter === 0) {
         // gets start event
         t.deepEqualIgnoreOrder(d, { yesh: '', $isNull: true })
@@ -339,7 +328,6 @@ test.serial(
     // client.redis.redis.reconnect()
     // await wait(1000 * 5)
 
-    console.log('set so nice')
     await client.set({
       $id: 'root',
       yesh: 'so nice'
@@ -347,7 +335,6 @@ test.serial(
 
     await wait(1000 * 1)
 
-    console.log('set so nice!!!')
     await client.set({
       $id: 'root',
       yesh: 'so nice!!!'
@@ -391,7 +378,6 @@ test.serial(
     const observable = client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
     const sub = observable.subscribe(d => {
-      console.log(d)
       if (o1counter === 0) {
         // gets start event
         t.deepEqualIgnoreOrder(d, { yesh: '', $isNull: true })
@@ -408,16 +394,11 @@ test.serial(
     })
 
     await wait(1000)
-    console.log('----------------------------------')
-    console.log('dc and rc')
 
     // should get no event after reconnection
     // client.redis.redis.disconnect()
     // await wait(1000 * 5)
     // client.redis.redis.reconnect()
-    console.log('----------------------------------')
-
-    console.log('set')
 
     await client.set({
       $id: 'root',
@@ -425,14 +406,8 @@ test.serial(
     })
 
     await wait(1000 * 5)
-    console.log('----------------------------------')
-
-    console.log('reconnect')
 
     // client.redis.redis.reconnect()
-    console.log('----------------------------------')
-
-    console.log('set again')
 
     await client.set({
       $id: 'root',
@@ -440,9 +415,6 @@ test.serial(
     })
 
     await wait(1000 * 5)
-    console.log('----------------------------------')
-
-    console.log('unsubscribe')
 
     sub.unsubscribe()
 
@@ -497,13 +469,10 @@ test.serial.skip(
     })
 
     await wait(1000 * 5)
-    console.log('close subs')
     // should get no event after reconnection
     // TODO
     // server.closeSubscriptions()
     await wait(1000 * 5)
-
-    console.log('set')
 
     await client.set({
       $id: 'root',
@@ -512,21 +481,17 @@ test.serial.skip(
 
     await wait(1000 * 1)
 
-    console.log('set 2')
-
     await client.set({
       $id: 'root',
       yesh: 'so nice!!!'
     })
 
     await wait(1000 * 1)
-    console.log('open subs')
 
     // TODO
     // server.openSubscriptions()
     await wait(1000 * 5)
 
-    console.log('done shludl have done all!')
     sub.unsubscribe()
 
     await client.delete('root')

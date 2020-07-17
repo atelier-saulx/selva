@@ -11,7 +11,6 @@ test.before(async () => {
   srv = await start({
     port
   })
-  console.log('ok server started!')
 })
 
 test.after(async () => {
@@ -70,7 +69,6 @@ test.serial('inherit object nested field from root youzi', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    console.log('-----------', p)
     results.push(p)
   })
 
@@ -87,7 +85,6 @@ test.serial('inherit object nested field from root youzi', async t => {
 
   subs.unsubscribe()
 
-  console.log('myesh', results)
   t.deepEqual(results, [
     { flapper: { snurk: 'hello' } },
     { flapper: { snurk: 'snurkels' } }
@@ -216,7 +213,6 @@ test.serial('basic inherit subscription', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    console.log(p)
     results.push(p)
   })
 

@@ -6,7 +6,7 @@ import { Client, addCommandToQueue } from './'
 
 const errListener = (client: Client, redisCommand: RedisCommand, err: any) => {
   if (err) {
-    console.log('---------------->', err)
+    console.error('Error', err)
     process.nextTick(() => {
       addCommandToQueue(client, redisCommand)
     })
