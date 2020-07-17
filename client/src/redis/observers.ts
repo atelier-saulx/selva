@@ -103,13 +103,9 @@ export const subsmanagerRemoved = (
   redisSelvaClient: RedisSelvaClient,
   id: string
 ) => {
-  console.log('subs manager removed')
   for (const channel in redisSelvaClient.observerEmitters) {
     const observerEmitter = redisSelvaClient.observerEmitters[channel]
     if (observerEmitter.client.id === id) {
-      console.log(
-        'Need to re-apply this observer, subs manager is unregistered'
-      )
       stopObserver(observerEmitter.client, channel, observerEmitter)
       attachClient(redisSelvaClient, observerEmitter, channel)
     }

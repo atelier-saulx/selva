@@ -149,11 +149,6 @@ export default function updateSearchIndexes(
   schema: Schema
 ): void {
   const languages = schema.languages || ['en']
-  logger.info(
-    `Updating search indexes ${cjson.encode(
-      changedSearchIndexes
-    )} ${cjson.encode(languages)}`
-  )
   for (const index in changedSearchIndexes) {
     updateIndex(index, indexes[index], languages)
   }

@@ -27,19 +27,18 @@ const reconnectClient = (client, retry: number = 0) => {
   const q = [...client.queue, ...client.queueBeingDrained]
 
   if (!aSelvaClient) {
-    console.log(
-      'ok dont have a selva client here thats a problemo!',
+    console.error(
+      'Ok dont have a selva client in reconnectClient thats a problem!',
       client.clients
     )
     return
   }
 
-  console.log('reconnecting', type, name)
+  // need a Selva client here to get a registry
   getServerDescriptor(aSelvaClient, {
     type,
     name
   }).then(descriptor => {
-    console.log('reconnect it!', type, name)
     if (descriptor.host + ':' + descriptor.port === client.id && retry < 5) {
       setTimeout(() => {
         reconnectClient(client, retry + 1)
@@ -56,11 +55,6 @@ const reconnectClient = (client, retry: number = 0) => {
     })
 
     for (let event in client.redisListeners) {
-      console.log(
-        're-applying listeners for',
-        event,
-        client.redisListeners[event].length
-      )
       client.redisListeners[event].forEach(callback => {
         handleListenerClient(newClient, 'on', event, callback)
       })

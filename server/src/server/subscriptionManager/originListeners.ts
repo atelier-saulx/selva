@@ -20,17 +20,11 @@ const addOriginListeners = async (
   if (!subsManager.originListeners[name]) {
     const selector: ServerSelector = { name, type: 'replica' }
 
-    console.log('ADD ORIGIN LISTENERS', name)
-
     const descriptor = await subsManager.client.getServerDescriptor(selector)
 
     const listener = (_pattern, channel, message) => {
-      // console.info('----->>>>>>', name, channel, message)
-
       subsManager.incomingCount++
       collect++
-      // use this for batching here
-      // merge tree for checks?
       if (message === 'schema_update') {
         const subscription =
           subsManager.subscriptions[`${constants.SCHEMA_SUBSCRIPTION}:${name}`]
@@ -61,11 +55,9 @@ const addOriginListeners = async (
       listener,
       reconnectListener: ({ name: dbName }) => {
         if (name === dbName) {
-          console.log('RE-RUN ALL SUBSCRIPTIONS')
           const origin = subsManager.originListeners[name]
           if (origin && origin.subscriptions) {
             origin.subscriptions.forEach(subscription => {
-              console.log('  ---> re fire sub', subscription.channel)
               addUpdate(subsManager, subscription)
             })
           }
@@ -97,8 +89,6 @@ const removeOriginListeners = (
     const redis = client.redis
     origin.subscriptions.delete(subscription)
     if (origin.subscriptions.size === 0) {
-      console.log('REMOVE ORIGIN LISTENERS', name)
-
       if (name in subsManager.memberMemCache) {
         delete subsManager.memberMemCache[name]
       }

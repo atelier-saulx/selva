@@ -103,13 +103,13 @@ export class Client extends EventEmitter {
     this.on('hard-disconnect', () => {
       // find different server for it
       this.emit('disconnect')
-      console.log(
-        'hard dc - prob need to reconnect to somethign new',
-        port,
-        host,
-        type,
-        name
-      )
+      // console.log(
+      //   'hard dc - prob need to reconnect to somethign new',
+      //   port,
+      //   host,
+      //   type,
+      //   name
+      // )
 
       this.subscriber.removeAllListeners()
       this.publisher.removeAllListeners()
@@ -122,7 +122,8 @@ export class Client extends EventEmitter {
         addListeners(this)
       } else {
         if (type === 'subscriptionManager') {
-          console.log('ok subs manager we can throw this away')
+          // why make 2 systems - queue is allrdy in progress here...
+          // console.log('ok subs manager we can throw this away')
           destroyClient(this)
           // remove sub manager! send it allrdy
         } else {
@@ -191,7 +192,6 @@ export class Client extends EventEmitter {
 
 const clients: Map<string, Client> = new Map()
 
-// sharing on or just putting a seperate on per subscription and handling it from somewhere else?
 const createClient = (descriptor: ServerDescriptor): Client => {
   const { type, name, port, host } = descriptor
   const id = `${host}:${port}`
@@ -205,7 +205,7 @@ const createClient = (descriptor: ServerDescriptor): Client => {
   return client
 }
 
-export const destroyClient = (client: Client) => {
+export function destroyClient(client: Client) {
   client.queue = []
   client.clients = new Set()
   clients.delete(client.id)
@@ -223,6 +223,11 @@ export function getClient(
 ) {
   const { type, port, host } = descriptor
   const id = host + ':' + port
+
+  // keep the registry as a special field
+  // .registry or something
+  // or just keep 1 selva client attached
+
   let client = clients.get(id)
   if (!client) {
     client = createClient(descriptor)
@@ -237,19 +242,10 @@ export function getClient(
       command: 'subscribe',
       args: [`${constants.LOG}:${selvaRedisClient.selvaClient.uuid}`]
     })
-
     client.clients.add(selvaRedisClient)
   }
 
-  // addRedisSelvaClient(client, selvaRedisClient)
   return client
-}
-
-export function removeSelvaRedisClient(
-  client: Client,
-  selvaRedisClient: RedisSelvaClient
-) {
-  console.log('remove it')
 }
 
 export function addCommandToQueue(client: Client, redisCommand: RedisCommand) {

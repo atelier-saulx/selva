@@ -7,7 +7,6 @@ import getPort from 'get-port'
 test('Connect and re-connect', async t => {
   let current = await getPort()
   const client = connect(async () => {
-    console.log('connect CLIENT FN')
     await wait(100)
     return { port: current }
   })

@@ -201,10 +201,6 @@ test.serial('admin deletes', async t => {
     { type: 'number' },
     'users'
   )
-  console.log(
-    'HMM YES',
-    JSON.stringify(await client.getSchema('users'), null, 2)
-  )
 
   await client.delete('root')
   await client.destroy()

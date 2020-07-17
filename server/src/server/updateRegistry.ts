@@ -36,7 +36,6 @@ export default async function updateRegistry(
     )
 
     if (isNew) {
-      console.log('ISNEW')
       client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
     }
   } else {

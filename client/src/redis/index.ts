@@ -10,6 +10,8 @@ import Observable from '../observe/observable'
 import { GetOptions, GetResult } from '../get/types'
 import { createObservable, ObserverEmitter } from './observers'
 
+// need to have a destroy here as well
+
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
   public queue: { command: RedisCommand; selector: ServerSelector }[] = []

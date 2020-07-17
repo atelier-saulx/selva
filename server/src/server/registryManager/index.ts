@@ -5,9 +5,6 @@ export const registryManager = (server: SelvaServer): Promise<void> => {
   return new Promise(resolve => {
     // listener on registry update info
     // if info < 30 seconds unregister server
-
-    console.log('start registry manager!')
-
     const cleanIdle = async () => {
       for (let key in server.selvaClient.redis.serversById) {
         const obj = server.selvaClient.redis.serversById[key]
@@ -27,7 +24,6 @@ export const registryManager = (server: SelvaServer): Promise<void> => {
               constants.REGISTRY_UPDATE,
               id
             )
-            console.log('SHOULD REMOVE SERVER!', obj.name, obj.type, key)
           }
         } else {
           // fill it if it does timeout remove

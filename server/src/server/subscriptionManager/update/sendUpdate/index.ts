@@ -105,9 +105,8 @@ const sendUpdate = async (
   subscription.version = newVersion
 
   // not the best will use te cache for this!
-  const prev = await redis.hget(selector, CACHE, channel)
-
-  const patch = diff(prev, resultStr)
+  // const prev = await redis.hget(selector, CACHE, channel)
+  // const patch = diff(prev, resultStr)
 
   // maybe even send patch over the wire? and nothing else
   q.push(
