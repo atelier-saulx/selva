@@ -1,12 +1,16 @@
 import RedisSelvaClient from './'
 import { ServerSelector, ServerDescriptor } from '../types'
 
+// reuse getting server descriptors
+
 const getServerDescriptor = async (
   selvaRedisClient: RedisSelvaClient,
   selector: ServerSelector
 ): Promise<ServerDescriptor> => {
   const retry = (): Promise<ServerDescriptor> =>
     new Promise(resolve => {
+      // can reuse!
+      // console.log('ok')
       selvaRedisClient.registry.once('servers_updated', () => {
         resolve(getServerDescriptor(selvaRedisClient, selector))
       })

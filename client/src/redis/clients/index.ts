@@ -84,7 +84,7 @@ export class Client extends EventEmitter {
   public heartbeatTimout?: NodeJS.Timeout
   constructor({ name, type, host, port, id }: ClientOpts) {
     super()
-    this.setMaxListeners(10000)
+    this.setMaxListeners(100000)
     this.uuid = uuidv4()
     this.name = name
     this.type = type

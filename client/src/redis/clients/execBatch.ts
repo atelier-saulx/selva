@@ -6,6 +6,7 @@ export default function execBatch(
   queue: RedisCommand[]
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    // console.log('GO EXEC', queue.length)
     // return resolve()
     if (client.serverIsBusy) {
       console.log('Server is busy - retrying in 5 seconds')
@@ -25,6 +26,7 @@ export default function execBatch(
       }, 5e3)
     } else {
       const batch = client.publisher.batch()
+
       queue.forEach(({ command, args }) => {
         if (!batch[command]) {
           throw new Error(`Command "${command}" is not a valid redis command!`)
@@ -34,7 +36,6 @@ export default function execBatch(
       })
       batch.exec((err: Error, reply: any[]) => {
         if (err) {
-          console.log('BATCH ERR', err)
           reject(err)
         } else {
           let hasBusy = false
@@ -55,6 +56,7 @@ export default function execBatch(
           })
           if (hasBusy) {
             client.serverIsBusy = true
+            console.log('exec it again from busy')
             execBatch(client, busySlice)
               .then(() => {
                 resolve()

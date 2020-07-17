@@ -85,14 +85,24 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
                 } else {
                   args[0] = sha
                   if (script === `${constants.SCRIPT}:modify`) {
+                    let no = false
                     if (!modify) {
                       modify = redisCommand
                     } else {
-                      modify.args.push(...args.slice(2))
+                      if (modify.args.length > 2e3) {
+                        if (!nextQ) {
+                          nextQ = []
+                        }
+                        nextQ.push(redisCommand)
+                        no = true
+                      } else {
+                        modify.args.push(...args.slice(2))
+                      }
                     }
-
-                    modifyResolvers.push(redisCommand.resolve)
-                    modifyRejects.push(redisCommand.reject)
+                    if (!no) {
+                      modifyResolvers.push(redisCommand.resolve)
+                      modifyRejects.push(redisCommand.reject)
+                    }
                     continue
                   }
                 }
@@ -109,6 +119,7 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
 
         if (modify) {
           const orig = modify
+
           modify.resolve = results => {
             for (let i = 0; i < modifyResolvers.length; i++) {
               if (modifyResolvers[i]) {
@@ -158,7 +169,11 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
               queueDone()
             })
             .catch(err => {
-              console.log('Error executing batch', err)
+              console.log(
+                'Error executing batch',
+                err,
+                client.queueBeingDrained.length
+              )
               client.queue.concat(client.queueBeingDrained)
               client.queueBeingDrained = []
               client.queueInProgress = false
