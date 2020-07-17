@@ -36,7 +36,6 @@ test.serial('correct validation #1', async t => {
       pollId: 'RandomPollName'
     })
   } catch (e) {
-    console.error(e)
     t.assert(
       e.stack,
       `Field .pollId should be a boolean or an object, got RandomPollName`
