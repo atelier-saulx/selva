@@ -205,11 +205,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         char type_code = type_str[0];
 
         size_t current_value_len = 0;
-        RedisModuleString *current_value;
-        RedisModule_HashGet(id_key, REDISMODULE_HASH_NONE, field, &current_value, NULL);
+        RedisModuleString *current_value = NULL;
         const char *current_value_str = NULL;
 
-        if (current_value != NULL) {
+        if (!RedisModule_HashGet(id_key, REDISMODULE_HASH_NONE, field, &current_value, NULL)) {
             current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
         }
 
