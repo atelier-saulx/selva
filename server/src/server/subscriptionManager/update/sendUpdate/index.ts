@@ -108,7 +108,6 @@ const sendUpdate = async (
   // const prev = await redis.hget(selector, CACHE, channel)
   // const patch = diff(prev, resultStr)
 
-  // maybe even send patch over the wire? and nothing else
   q.push(
     redis.hmset(
       selector,
@@ -127,8 +126,9 @@ const sendUpdate = async (
     channel,
     // now this an just be used if the prev version corresponds else just get from server cache
     // important to not have too large patches
-    JSON.stringify({ version: newVersion, fromversion: currentVersion, patch })
+    JSON.stringify({ version: newVersion, fromversion: currentVersion })
   )
+  // will send patch as well
 
   clearTimeout(time)
 

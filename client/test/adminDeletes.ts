@@ -177,7 +177,6 @@ test.serial('admin deletes', async t => {
     (await client.getSchema('users')).schema.types
   )
 
-  console.log('first keys', firstKeys)
   for (let i = 0; i < firstKeys.length; i++) {
     if (firstKeys[i].startsWith('wa') && firstKeys[i].indexOf('.') === -1) {
       const hkeys = await client.redis.hkeys({ name: 'users' }, firstKeys[i])
