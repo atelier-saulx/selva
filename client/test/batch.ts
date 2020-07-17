@@ -47,7 +47,7 @@ test.serial('exec big batch', async t => {
     await Promise.all(promises)
     t.pass()
   } catch (e) {
-    console.error('---', e)
+    console.error(e)
     t.fail()
   }
 })

@@ -101,6 +101,5 @@ x = JSON.stringify(y)
 console.log(perfhooks.performance.now() - dx, x.length)
 
 // const a = compare(docs[0][0], docs[0][1])
-// console.log('---->', y)
 
 module.exports = testAddon

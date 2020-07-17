@@ -427,7 +427,6 @@ test.serial('list inherit subscription', async t => {
 
   await wait(1000)
 
-  console.dir(results, { depth: 10 })
   t.deepEqualIgnoreOrder(results, [
     {
       flapdrol: [
@@ -568,7 +567,6 @@ test.serial('list inherit + field subscription', async t => {
 
   await wait(1000)
 
-  console.dir(results, { depth: 10 })
   t.deepEqualIgnoreOrder(results, [
     {
       flapdrol: [

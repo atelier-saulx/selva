@@ -127,10 +127,6 @@ test.serial('get nested results', async t => {
   t.is(result.items.length, 10, 'items length')
   t.is(result.items[0].teams.length, 2, 'has teams')
 
-  // console.dir(result, { depth: 100 })
-  // t.is(result.items.length, )
-  // fix tetest
-
   await wait(1e3)
   t.true(true)
 })

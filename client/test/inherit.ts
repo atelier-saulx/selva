@@ -473,8 +473,6 @@ test.serial('$field +  multiple options + inherit from root', async t => {
 
   const x = await client.get(query)
 
-  console.dir(x, { depth: 10 })
-
   t.is(x.layout.components.c1.component.$value, 'bye')
 
   const y = await client.get({
@@ -485,8 +483,6 @@ test.serial('$field +  multiple options + inherit from root', async t => {
       $field: ['layout.${type}', 'layout.default']
     }
   })
-
-  console.dir(y, { depth: 10 })
 
   t.is(y.layout.components.c1.component.$value, 'hello')
 
