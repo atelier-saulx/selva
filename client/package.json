@@ -5,7 +5,7 @@
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
     "start": "tsc && node dist/index.js",
-    "test": "ava --verbose",
+    "test": "ava  --concurrency 2 --verbose",
     "watch": "ava --color --watch --verbose",
     "scratchpad": "yarn buildLua && redis-cli --ldb --eval dist/lua/scratchpad.lua",
     "testLua": "yarn buildLua && ./lua/testy.lua dist/lua/tests.lua",

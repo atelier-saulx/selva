@@ -164,4 +164,6 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
   servers.forEach(s => {
     s.destroy()
   })
+
+  await wait(5000)
 })
