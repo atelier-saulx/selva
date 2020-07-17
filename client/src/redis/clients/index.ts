@@ -217,20 +217,6 @@ export const destroyClient = (client: Client) => {
   client.redisSubscriptions = { subscribe: {}, psubscribe: {} }
 }
 
-// export function removeRedisSelvaClient(
-//   client: Client,
-//   selvaRedisClient: RedisSelvaClient
-// ) {
-//   // if zero remove the client
-// }
-
-// export function addRedisSelvaClient(
-//   client: Client,
-//   selvaRedisClient: RedisSelvaClient
-// ) {
-//   // add to a client
-// }
-
 export function getClient(
   selvaRedisClient: RedisSelvaClient,
   descriptor: ServerDescriptor
@@ -255,13 +241,9 @@ export function getClient(
     client.clients.add(selvaRedisClient)
   }
 
-  // think a bit more about this
   // addRedisSelvaClient(client, selvaRedisClient)
   return client
 }
-
-// RESEND SUBS ON RECONNECT
-// REMOVE SUBS SET
 
 export function addCommandToQueue(client: Client, redisCommand: RedisCommand) {
   client.queue.push(redisCommand)
