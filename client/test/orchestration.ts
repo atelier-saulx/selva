@@ -13,7 +13,7 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
   let current = await getPort()
 
   const registryAdress = async () => {
-    await wait(100)
+    await wait(10)
     return { port: current }
   }
 
@@ -25,26 +25,23 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
     })
     .subscribe(x => {})
 
-  const registry = await startRegistry({ port: current })
-
-  const origin = await startOrigin({ registry: registryAdress, default: true })
-
-  const replica = await startReplica({
-    registry: registryAdress,
-    default: true
-  })
-
-  // const subsManager = await startSubscriptionManager({
-  //   registry: registryAdress
-  // })
-
-  // const subsManager2 = await startSubscriptionManager({
-  //   registry: registryAdress
-  // })
-
-  // const subsManager3 = await startSubscriptionManager({
-  //   registry: registryAdress
-  // })
+  const servers = Promise.all([
+    startRegistry({ port: current }),
+    startOrigin({ registry: registryAdress, default: true }),
+    startReplica({
+      registry: registryAdress,
+      default: true
+    }),
+    startSubscriptionManager({
+      registry: registryAdress
+    }),
+    startSubscriptionManager({
+      registry: registryAdress
+    }),
+    startSubscriptionManager({
+      registry: registryAdress
+    })
+  ])
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -85,4 +82,6 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
     }),
     { title: { en: 'lurkert' } }
   )
+
+  await servers
 })
