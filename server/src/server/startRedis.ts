@@ -49,7 +49,6 @@ export default (server: SelvaServer, opts: ServerOptions) => {
   })
 
   if (server.type === 'replica') {
-    console.log(server.origin)
     args.push('--replicaof', server.origin.host, String(server.origin.port))
   }
 
