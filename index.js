@@ -2,10 +2,12 @@ const testAddon = require('./build/Release/testaddon.node')
 const perfhooks = require('perf_hooks')
 const fastjson = require('fast-json-patch')
 const { compare } = require('./diff/objectDiff')
-// const diffmpatch = require('diff-match-patch')
+const diffmpatch = require('diff-match-patch')
 // const diff = require('./diff/meyers')
 
-// const dmp = new diffmpatch()
+const dmp = new diffmpatch()
+
+// console.log(dmp)
 // const diff =
 
 const mybigobect = { flurp: [] }
@@ -52,11 +54,12 @@ const applyPatch = (prevValue, patch, shouldbe) => {
 
 const d3 = perfhooks.performance.now()
 let x
-// for (let i = 0; i < things.length; i++) {
-//   const p = testAddon.hello(things[i][0], things[i][1])
-//   applyPatch(things[i][0], p, things[i][1])
-//   x = p
-// }
+for (let i = 0; i < things.length; i++) {
+  // const p = testAddon.hello(things[i][0], things[i][1])
+  // applyPatch(things[i][0], p, things[i][1])
+  const p = dmp.diff_main(things[i][0], things[i][1])
+  x = p
+}
 
 console.log(perfhooks.performance.now() - d3)
 
@@ -74,11 +77,11 @@ for (let i = 0; i < 10000; i++) {
   }
 
   for (let i = 0; i < ~~(Math.random() * 10000); i++) {
-    doc1.arr.push({ flap: i, x: true })
+    doc1.arr.push({ flap: ~~(Math.random() * 10), x: true })
   }
 
   for (let i = 0; i < ~~(Math.random() * 10000); i++) {
-    doc2.arr.push({ flap: i, x: true })
+    doc2.arr.push({ flap: ~~(Math.random() * 10), x: true })
   }
 
   docs.push([doc1, doc2])
@@ -98,6 +101,6 @@ x = JSON.stringify(y)
 console.log(perfhooks.performance.now() - dx, x.length)
 
 // const a = compare(docs[0][0], docs[0][1])
-console.log('---->', y)
+// console.log('---->', y)
 
 module.exports = testAddon
