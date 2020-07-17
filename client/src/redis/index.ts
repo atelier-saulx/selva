@@ -10,7 +10,6 @@ import Observable from '../observe/observable'
 import { GetOptions, GetResult } from '../get/types'
 import { createObservable, ObserverEmitter } from './observers'
 
-// add schema handling subscriptions / unsubscribe destorying making clients
 class RedisSelvaClient extends RedisMethods {
   public selvaClient: SelvaClient
   public queue: { command: RedisCommand; selector: ServerSelector }[] = []

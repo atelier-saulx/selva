@@ -245,6 +245,13 @@ export function getClient(
   return client
 }
 
+export function removeSelvaRedisClient(
+  client: Client,
+  selvaRedisClient: RedisSelvaClient
+) {
+  console.log('remove it')
+}
+
 export function addCommandToQueue(client: Client, redisCommand: RedisCommand) {
   client.queue.push(redisCommand)
   if (!client.queueInProgress) {
