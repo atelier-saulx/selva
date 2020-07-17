@@ -12,6 +12,7 @@ import getPort from 'get-port'
 test('Create a full cluster (replica, origin, subs manager, registry)', async t => {
   let current = await getPort()
 
+  // need a way to change this!
   const registryAdress = async () => {
     await wait(10)
     return { port: current }
@@ -25,7 +26,7 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
     })
     .subscribe(x => {})
 
-  const servers = Promise.all([
+  const startingServers = Promise.all([
     startRegistry({ port: current }),
     startOrigin({ registry: registryAdress, default: true }),
     startReplica({
@@ -68,6 +69,17 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
     }
   })
 
+  let subsResults = []
+
+  client
+    .observe({
+      $id: 'cuflap',
+      title: true
+    })
+    .subscribe(x => {
+      subsResults.push(x)
+    })
+
   await client.set({
     $id: 'cuflap',
     title: {
@@ -83,5 +95,61 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
     { title: { en: 'lurkert' } }
   )
 
-  await servers
+  await wait(1000)
+
+  t.deepEqual(
+    subsResults,
+    [{ title: { en: 'lurkert' } }],
+    'correct subs results'
+  )
+  subsResults = []
+
+  // awaiting here because we want to see if they are done
+  const servers = await startingServers
+
+  // now lets change the registry url
+  await servers[0].destroy()
+  await wait(1000)
+
+  let x = current
+  current = await getPort()
+
+  servers[0] = await startRegistry({ port: current })
+
+  await wait(1000)
+
+  await client.set({
+    $id: 'cuflap',
+    title: {
+      en: 'snurkels'
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'cuflap',
+      title: true
+    }),
+    { title: { en: 'snurkels' } }
+  )
+
+  // speed this up!
+  await wait(15000)
+
+  t.deepEqual(
+    subsResults,
+    [{ title: { en: 'snurkels' } }],
+    'correct subs results after restarting of the registry'
+  )
+
+  servers.forEach((s, index) => {
+    const [_, port] = s.selvaClient.redis.registry.id.split(':')
+    t.is(Number(port), current, 'correct changed port of registry on ' + index)
+  })
+
+  await wait(1000)
+
+  servers.forEach(s => {
+    s.destroy()
+  })
 })
