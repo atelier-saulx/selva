@@ -124,8 +124,6 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
 
   servers[0] = await startRegistry({ port: current })
 
-  await wait(1000)
-
   await client.set({
     $id: 'cuflap',
     title: {
@@ -156,6 +154,12 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
   })
 
   await wait(1000)
+
+  // change origin
+
+  // balance replica based on cpu
+
+  // subs manager start / restart
 
   servers.forEach(s => {
     s.destroy()
