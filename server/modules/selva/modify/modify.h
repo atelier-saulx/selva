@@ -13,7 +13,8 @@ enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_DEFAULT = '2',
     SELVA_MODIFY_ARG_DEFAULT_INDEXED = '3',
     SELVA_MODIFY_ARG_OP_INCREMENT = '4',
-    SELVA_MODIFY_ARG_OP_SET = '5'
+    SELVA_MODIFY_ARG_OP_SET = '5',
+    SELVA_MODIFY_ARG_STRING_ARRAY = '6',
 };
 
 struct SelvaModify_OpIncrement {
@@ -40,10 +41,12 @@ struct SelvaModify_OpSet {
 };
 
 static inline void SelvaModify_OpSet_align(struct SelvaModify_OpSet *op) {
-    op->$add = (char *)((char *)op + sizeof(struct SelvaModify_OpSet));
-    op->$delete = (char *)((char *)op + sizeof(struct SelvaModify_OpSet) + op->$add_len);
-    op->$value = (char *)((char *)op + sizeof(struct SelvaModify_OpSet) + op->$add_len + op->$delete_len);
+    op->$add = (char *)((char *)op + sizeof(*op));
+    op->$delete = (char *)((char *)op + sizeof(*op) + op->$add_len);
+    op->$value = (char *)((char *)op + sizeof(*op) + op->$add_len + op->$delete_len);
 }
+
+RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx);
 
 static inline void SelvaModify_Index(const char *id_str, size_t id_len, const char *field_str, size_t field_len, const char *value_str, size_t value_len) {
     int indexing_str_len =
@@ -68,8 +71,6 @@ int SelvaModify_ModifySet(
     RedisModuleKey *id_key,
     RedisModuleString *id,
     RedisModuleString *field,
-    const char *field_str,
-    size_t field_len,
     struct SelvaModify_OpSet *setOpts
 );
 

@@ -3,5 +3,6 @@ cert-API01-C
 cert-EXP05-C:rmutil/sds.h
 cert-EXP05-C:include/redismodule.h
 unusedStructMember:modify/rpn.c
-internalAstError:util/svector.c
 internalAstError:modify/hierarchy.c
+internalAstError:module.c
+internalAstError:util/svector.c

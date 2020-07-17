@@ -61,4 +61,32 @@
       __typeof__ (b) _b = (b); \
       _a > _b ? _a : _b; })
 
+
+#define TO_STR_1(_var) \
+    size_t _var##_len; \
+    const char * _var##_str = RedisModule_StringPtrLen(_var, & _var##_len);
+
+#define TO_STR_2(_var, ...) \
+    TO_STR_1(_var) \
+    TO_STR_1(__VA_ARGS__)
+
+#define TO_STR_3(_var, ...) \
+    TO_STR_1(_var) \
+    TO_STR_2(__VA_ARGS__)
+
+#define TO_STR_4(_var, ...) \
+    TO_STR_1(_var) \
+    TO_STR_3(__VA_ARGS__)
+
+#define TO_STR_5(_var, ...) \
+    TO_STR_1(_var) \
+    TO_STR_5(__VA_ARGS__)
+
+#define TO_STR_6(_var, ...) \
+    TO_STR_1(_var) \
+    TO_STR_6(__VA_ARGS__)
+
+#define TO_STR(...) \
+        CONCATENATE(TO_STR_, UTIL_NARG(__VA_ARGS__))(__VA_ARGS__)
+
 #endif /* _UTIL_CDEFS_H_ */

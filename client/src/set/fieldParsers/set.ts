@@ -1,15 +1,9 @@
-import { compile, createRecord } from 'data-record'
+import { createRecord } from 'data-record'
+import { setRecordDef } from '../modifyDataRecords'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
 import parseSetObject from '../validate'
 import parsers from './simple'
-
-export const setRecordDef = compile([
-  { name: 'is_reference', type: 'int8' },
-  { name: '$add', type: 'cstring_p' },
-  { name: '$delete', type: 'cstring_p' },
-  { name: '$value', type: 'cstring_p' },
-], { align: true })
 
 const verifySimple = (payload, verify) => {
   if (Array.isArray(payload)) {

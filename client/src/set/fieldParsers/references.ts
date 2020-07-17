@@ -3,7 +3,7 @@ import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
 import parseSetObject from '../validate'
 import { verifiers } from './simple'
-import { setRecordDef } from './set'
+import { setRecordDef } from '../modifyDataRecords'
 
 const id = verifiers.id
 

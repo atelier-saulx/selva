@@ -98,11 +98,17 @@ export default function parseSetObject(
 
         result[key] = payload[key]
       } else if (key === '$alias') {
-        if (typeof payload[key] !== 'string' && !Array.isArray(payload[key])) {
+        const aliasIsArray = Array.isArray(payload[key])
+
+        if (typeof payload[key] !== 'string' && !aliasIsArray) {
           throw new Error('Wrong type for $alias, string or array required')
         }
 
-        result[key] = payload[key]
+        const arr = aliasIsArray ? payload[key] : [ payload[key] ]
+        const toCArr = (a: string[]) => a.map(s => `${s}\0`).join('')
+
+        if (!result.$args) result.$args = []
+        result.$args.push('6', key, toCArr(arr))
       } else if (key === '$_batchOpts') {
         // internally used
         result[key] = payload[key]
