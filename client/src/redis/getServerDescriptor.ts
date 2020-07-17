@@ -9,11 +9,16 @@ const getServerDescriptor = async (
 ): Promise<ServerDescriptor> => {
   const retry = (): Promise<ServerDescriptor> =>
     new Promise(resolve => {
-      // can reuse!
-      // console.log('ok')
-      selvaRedisClient.registry.once('servers_updated', () => {
-        resolve(getServerDescriptor(selvaRedisClient, selector))
-      })
+      if (!selvaRedisClient.registry) {
+        // tmp for now
+        setTimeout(() => {
+          resolve(getServerDescriptor(selvaRedisClient, selector))
+        }, 100)
+      } else {
+        selvaRedisClient.registry.once('servers_updated', () => {
+          resolve(getServerDescriptor(selvaRedisClient, selector))
+        })
+      }
     })
 
   if (selector.type && selector.host && selector.port && selector.name) {

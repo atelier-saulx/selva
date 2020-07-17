@@ -7,7 +7,6 @@ import {
 import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
-import chalk from 'chalk'
 import ProcessManager from './processManager'
 import attachStatusListeners from './attachStatusListeners'
 import {
@@ -15,7 +14,6 @@ import {
   stopSubscriptionManager,
   SubscriptionManagerState
 } from './subscriptionManager'
-import { startAsyncTaskWorker, stopAsyncTaskWorker } from './asyncTask'
 import {
   BackupFns,
   saveAndBackUp,
@@ -46,12 +44,6 @@ export class SelvaServer extends EventEmitter {
   }
 
   async start(opts: ServerOptions) {
-    // console.info(
-    //   `Start SelvaServer ${chalk.white(opts.name)} of type ${chalk.blue(
-    //     this.type
-    //   )} on port ${chalk.blue(String(opts.port))}`
-    // )
-
     this.port = opts.port
     this.host = opts.host
     this.name = opts.name
@@ -68,7 +60,6 @@ export class SelvaServer extends EventEmitter {
     if (opts.registry) {
       this.selvaClient = connect(opts.registry)
 
-      //
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
@@ -110,6 +101,8 @@ export class SelvaServer extends EventEmitter {
           }, 500)
         }
       })
+
+      console.log('--- try this')
       this.origin = await this.selvaClient.getServerDescriptor({
         name: opts.name,
         type: 'origin'
