@@ -24,6 +24,7 @@ void *SVector_Pop(SVector * restrict vec);
  * Remove the first element from the vector.
  */
 void *SVector_Shift(SVector * restrict vec);
+void *SVector_Peek(SVector * restrict vec);
 
 /**
  * Reset the SVector shifting to reduce space required by the vector.

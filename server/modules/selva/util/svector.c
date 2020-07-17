@@ -136,6 +136,20 @@ void *SVector_Shift(SVector * restrict vec) {
     return first;
 }
 
+void *SVector_Peek(SVector * restrict vec) {
+    void *first;
+
+    if (vec->vec_last == vec->vec_shift_index) {
+        return NULL;
+    }
+    assert(vec->vec_last <= vec->vec_len);
+    assert(vec->vec_shift_index <= vec->vec_last);
+
+    first = vec->vec_data[vec->vec_shift_index];
+
+    return first;
+}
+
 void SVector_ShiftReset(SVector * restrict vec) {
     memmove(vec->vec_data, vec->vec_data + vec->vec_shift_index, VEC_SIZE(vec->vec_last));
     vec->vec_last -= vec->vec_shift_index;
