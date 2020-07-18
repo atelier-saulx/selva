@@ -19,8 +19,10 @@ export default function getArray(
   const resultAry: GetResult[] = []
   for (let i = 0; i < props.length; i++) {
     const intermediateResult = {}
+    const newProps: GetItem = cjson.decode(cjson.encode(props[i]))
+
     getField(
-      props[i],
+      newProps,
       schema,
       intermediateResult,
       id,
