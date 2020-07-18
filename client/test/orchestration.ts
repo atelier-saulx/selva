@@ -9,7 +9,7 @@ import {
 import { wait } from './assertions'
 import getPort from 'get-port'
 
-test('Create a full cluster (replica, origin, subs manager, registry)', async t => {
+test.skip('Create a full cluster (replica, origin, subs manager, registry)', async t => {
   let current = await getPort()
 
   // need a way to change this!
