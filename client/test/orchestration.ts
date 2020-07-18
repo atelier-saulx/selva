@@ -9,6 +9,7 @@ import {
 import { wait } from './assertions'
 import getPort from 'get-port'
 
+// need to clean dumps if testing replicas
 test.skip('Create a full cluster (replica, origin, subs manager, registry)', async t => {
   let current = await getPort()
 
