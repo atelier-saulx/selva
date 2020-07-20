@@ -1,8 +1,10 @@
+import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { Schema, TypeSchema, FieldSchemaRecord } from '../../schema'
 import fieldParsers from '.'
 
 export default (
+  client: SelvaClient,
   schema: Schema,
   field: string,
   payload: SetOptions,
@@ -45,7 +47,7 @@ export default (
       }
     } else {
       hasKeys = true
-      fn(schema, `${field}.${key}`, payload[key], r, fields.values, type, $lang)
+      fn(client, schema, `${field}.${key}`, payload[key], r, fields.values, type, $lang)
       result.$args.push(...r.$args)
     }
   }

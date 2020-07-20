@@ -1,3 +1,4 @@
+import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaOther } from '../../schema'
 
@@ -31,6 +32,7 @@ function verify(payload: any) {
 }
 
 export default (
+  _client: SelvaClient,
   _schema: Schema,
   field: string,
   payload: SetOptions,

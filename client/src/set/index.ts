@@ -4,7 +4,6 @@ import { v4 as uuid } from 'uuid'
 import { SCRIPT } from '../constants'
 import { setInBatches, MAX_BATCH_SIZE } from './batching'
 import parseSetObject from './validate'
-import { getSchema } from 'lua/src/schema'
 
 export async function _set(
   client: SelvaClient,
@@ -88,7 +87,7 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
 
   // refactor this whole thign
 
-  const parsed = parseSetObject(payload, schema)
+  const parsed = parseSetObject(client, payload, schema)
 
   if (parsed.$_itemCount > MAX_BATCH_SIZE) {
     const [id] = await setInBatches(schema, client, parsed, 0, {

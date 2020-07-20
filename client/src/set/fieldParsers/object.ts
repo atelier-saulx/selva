@@ -1,8 +1,10 @@
+import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { Schema, TypeSchema, FieldSchemaObject } from '../../schema'
 import fieldParsers from '.'
 
 export default (
+  client: SelvaClient,
   schema: Schema,
   field: string,
   payload: SetOptions,
@@ -49,7 +51,7 @@ export default (
       const fn = fieldParsers[item.type]
 
       // TODO we could pass result directly
-      fn(schema, `${field}.${key}`, payload[key], r, fields.properties[key], type, $lang)
+      fn(client, schema, `${field}.${key}`, payload[key], r, fields.properties[key], type, $lang)
       result.$args.push(...r.$args)
 
       // check if nested things have been removed because there are empty objects or the like

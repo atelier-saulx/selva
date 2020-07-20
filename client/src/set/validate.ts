@@ -1,5 +1,6 @@
 import { SetOptions } from './types'
 import { Schema, TypeSchema } from '../schema'
+import { SelvaClient } from '..'
 import fieldParsers from './fieldParsers'
 import { verifiers } from './fieldParsers/simple'
 
@@ -33,6 +34,7 @@ function allowedFieldsDoc(schemas: Schema, type?: string): string {
 }
 
 export default function parseSetObject(
+  client: SelvaClient,
   payload: SetOptions,
   schemas: Schema,
   $lang?: string
@@ -155,7 +157,7 @@ ${allowedFieldsDoc(schemas, type)}
         `)
     } else {
       const fn = fieldParsers[fields[key].type]
-      fn(schemas, key, payload[key], result, fields[key], type, $lang)
+      fn(client, schemas, key, payload[key], result, fields[key], type, $lang)
     }
   }
   return result

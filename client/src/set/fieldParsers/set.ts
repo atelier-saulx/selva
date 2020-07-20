@@ -1,4 +1,5 @@
 import { createRecord } from 'data-record'
+import { SelvaClient } from '../..'
 import { setRecordDef } from '../modifyDataRecords'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
@@ -13,9 +14,9 @@ const verifySimple = (payload, verify) => {
   }
 }
 
-const parseObjectArray = (payload: any, schema: Schema) => {
+const parseObjectArray = (client: SelvaClient, payload: any, schema: Schema) => {
   if (Array.isArray(payload) && typeof payload[0] === 'object') {
-    return payload.map(ref => parseSetObject(ref, schema))
+    return payload.map(ref => parseSetObject(client, ref, schema))
   }
 }
 
@@ -27,6 +28,7 @@ const toCArr = (arr: string[] | undefined | null) =>
   arr ? arr.map(s => `${s}\0`).join('') : ''
 
 export default (
+  client: SelvaClient,
   schema: Schema,
   field: string,
   payload: SetOptions,
@@ -52,7 +54,7 @@ export default (
 
   const verify = v => {
     const r: { value: any } = { value: undefined }
-    parser(schema, 'value', v, r, fields, type)
+    parser(client, schema, 'value', v, r, fields, type)
     return r.value
   }
 
@@ -61,14 +63,14 @@ export default (
 
     for (let k in payload) {
       if (k === '$add') {
-        const parsed = parseObjectArray(payload[k], schema)
+        const parsed = parseObjectArray(client, payload[k], schema)
         if (parsed) {
           r.$add = parsed
         } else if (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
-          r.$add = [parseSetObject(payload[k], schema)]
+          r.$add = [parseSetObject(client, payload[k], schema)]
         } else {
           r.$add = verifySimple(payload[k], verify)
         }
@@ -95,7 +97,7 @@ export default (
       is_reference: 0,
       $add: '',
       $delete: '',
-      $value: toCArr(parseObjectArray(payload, schema) || verifySimple(payload, verify)),
+      $value: toCArr(parseObjectArray(client, payload, schema) || verifySimple(payload, verify)),
     }).toString())
   }
 }

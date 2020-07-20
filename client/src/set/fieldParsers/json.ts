@@ -1,8 +1,10 @@
+import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaJson } from '../../schema'
 import fieldParsers from '.'
 
 export default (
+  client: SelvaClient,
   schema: Schema,
   field: string,
   payload: SetOptions,
@@ -24,6 +26,7 @@ export default (
   if (fields.properties) {
     const obj = {}
     fieldParsers.object(
+      client,
       schema,
       field,
       payload,

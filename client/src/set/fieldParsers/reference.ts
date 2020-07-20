@@ -1,3 +1,4 @@
+import { SelvaClient } from '../..'
 import parseSetObject from '../validate'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
@@ -14,6 +15,7 @@ const verifySimple = (payload: any) => {
 }
 
 export default (
+  client: SelvaClient,
   schema: Schema,
   field: string,
   payload: SetOptions,
@@ -36,7 +38,7 @@ export default (
       return
     }
 
-    result[field] = parseSetObject(payload, schema, $lang)
+    result[field] = parseSetObject(client, payload, schema, $lang)
   } else {
     if (typeof payload !== 'string') {
       throw new Error(

@@ -1,3 +1,4 @@
+import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { TypeSchema, Schema, FieldSchemaOther } from '../../schema'
 import digest from '../../digest'
@@ -87,6 +88,7 @@ for (const key in verifiers) {
   const converter = converters[key]
 
   parsers[key] = (
+    _client: SelvaClient,
     _schemas: Schema,
     field: string,
     payload: SetOptions,

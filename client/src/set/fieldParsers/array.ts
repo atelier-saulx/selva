@@ -1,8 +1,10 @@
+import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { Schema, TypeSchema, FieldSchemaArrayLike } from '../../schema'
 import fieldParsers from '.'
 
 export default (
+  client: SelvaClient,
   schema: Schema,
   field: string,
   payload: SetOptions,
@@ -33,7 +35,7 @@ export default (
     const parser = fieldParsers[itemsFields.type]
     arr.forEach((payload, index) => {
       // need to remove all options from nested fields!
-      parser(schema, index, payload, arrayResult, itemsFields, type, $lang)
+      parser(client, schema, `${index}`, payload, arrayResult, itemsFields, type, $lang)
     })
   }
   // nested json special!
