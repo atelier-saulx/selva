@@ -1153,8 +1153,7 @@ test.serial('can disable autoadding of root', async t => {
     children: { $value: 'maMatch3', $noRoot: true }
   })
 
-  // TODO non-existing node will return an error
-  //t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, 'maMatch3'), [])
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, 'maMatch3'), [m3])
 
   await client.delete('root')
   await client.destroy()

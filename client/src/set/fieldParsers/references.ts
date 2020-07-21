@@ -130,7 +130,7 @@ export default async (
 
         hasKeys = true
       } else if (k === '$value') {
-        result[field].$delete = verifySimple(payload[k])
+        result[field].$value = verifySimple(payload[k])
         hasKeys = true
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
@@ -146,8 +146,10 @@ export default async (
         }
 
         result[field].$noRoot = payload[k]
-        noRoot = payload[k];
         hasKeys = true
+        if (field === 'parents') {
+          noRoot = payload[k];
+        }
       } else if (k === '$_itemCount') {
         // ignore this internal field if setting with a split payload
       } else {
@@ -160,7 +162,7 @@ export default async (
           is_reference: isReference,
           $add: await toCArr(client, result[field].$add, noRoot),
           $delete: await toCArr(client, result[field].$delete, noRoot),
-          $value: '',
+          $value: await toCArr(client, result[field].$value, noRoot),
       }).toString())
     } else {
       delete result[field]
