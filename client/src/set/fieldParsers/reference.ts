@@ -14,7 +14,7 @@ const verifySimple = (payload: any) => {
   }
 }
 
-export default (
+export default async (
   client: SelvaClient,
   schema: Schema,
   field: string,
@@ -23,7 +23,7 @@ export default (
   _fields: FieldSchemaArrayLike,
   _type: string,
   $lang?: string
-): void => {
+): Promise<void> => {
   if (typeof payload === 'object') {
     if (Array.isArray(payload)) {
       throw new Error(

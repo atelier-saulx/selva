@@ -31,7 +31,7 @@ function verify(payload: any) {
   }
 }
 
-export default (
+export default async (
   _client: SelvaClient,
   _schema: Schema,
   field: string,
@@ -39,7 +39,7 @@ export default (
   result: SetOptions,
   _fields: FieldSchemaOther,
   _type: string
-): void => {
+): Promise<void> => {
   if (payload.$delete) {
     result[field] = { $delete: true }
     return

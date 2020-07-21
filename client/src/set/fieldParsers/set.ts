@@ -14,9 +14,9 @@ const verifySimple = (payload, verify) => {
   }
 }
 
-const parseObjectArray = (client: SelvaClient, payload: any, schema: Schema) => {
+const parseObjectArray = async (client: SelvaClient, payload: any, schema: Schema) => {
   if (Array.isArray(payload) && typeof payload[0] === 'object') {
-    return payload.map(ref => parseSetObject(client, ref, schema))
+    return Promise.all(payload.map(ref => parseSetObject(client, ref, schema)))
   }
 }
 
@@ -27,7 +27,7 @@ const parseObjectArray = (client: SelvaClient, payload: any, schema: Schema) => 
 const toCArr = (arr: string[] | undefined | null) =>
   arr ? arr.map(s => `${s}\0`).join('') : ''
 
-export default (
+export default async (
   client: SelvaClient,
   schema: Schema,
   field: string,
@@ -35,7 +35,7 @@ export default (
   result: SetOptions,
   fields: FieldSchemaArrayLike,
   type: string
-): void => {
+): Promise<void> => {
   if (!result.$args) result.$args = []
 
   const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
@@ -63,7 +63,7 @@ export default (
 
     for (let k in payload) {
       if (k === '$add') {
-        const parsed = parseObjectArray(client, payload[k], schema)
+        const parsed = await parseObjectArray(client, payload[k], schema)
         if (parsed) {
           r.$add = parsed
         } else if (
@@ -97,7 +97,7 @@ export default (
       is_reference: 0,
       $add: '',
       $delete: '',
-      $value: toCArr(parseObjectArray(client, payload, schema) || verifySimple(payload, verify)),
+      $value: toCArr(await parseObjectArray(client, payload, schema) || verifySimple(payload, verify)),
     }).toString())
   }
 }

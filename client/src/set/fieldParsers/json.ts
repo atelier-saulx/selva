@@ -3,7 +3,7 @@ import { SetOptions } from '../types'
 import { Schema, FieldSchemaJson } from '../../schema'
 import fieldParsers from '.'
 
-export default (
+export default async (
   client: SelvaClient,
   schema: Schema,
   field: string,
@@ -12,7 +12,7 @@ export default (
   fields: FieldSchemaJson,
   type: string,
   $lang?: string
-): void => {
+): Promise<void> => {
   if (!result.$args) result.$args = []
 
   if (payload.$delete) {

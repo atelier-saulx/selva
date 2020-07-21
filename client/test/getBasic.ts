@@ -882,7 +882,6 @@ test.serial('get - hierarchy', async t => {
     children: ['vifla', 'viflo']
   })
 
-  //await new Promise(r => setTimeout(r, 60 * 60 * 1000))
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viflapx',

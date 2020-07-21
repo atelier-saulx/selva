@@ -21,13 +21,20 @@ const verifySimple = payload => {
   }
 }
 
-const parseObjectArray = (client: SelvaClient, payload: any, schema: Schema, $lang?: string) => {
+const parseObjectArray = async (client: SelvaClient, payload: any, schema: Schema, $lang?: string) => {
   if (Array.isArray(payload) && typeof payload[0] === 'object') {
-    return payload.map(ref => parseSetObject(client, ref, schema, $lang))
+    return Promise.all(payload.map(ref => parseSetObject(client, ref, schema, $lang)))
   }
 }
 
-const toCArr = (setObj: { [index: string]: string } | { [index: string]: string }[] | string[] | undefined | null) => {
+const toCArr = async (
+  client: SelvaClient,
+  setObj:
+    { [index: string]: string } |
+    { [index: string]: string }[] |
+    string[] |
+    undefined |
+    null) => {
   let o: any[];
 
   if (!setObj) {
@@ -42,26 +49,31 @@ const toCArr = (setObj: { [index: string]: string } | { [index: string]: string 
     return ''
   }
 
-  return o.map(e => {
-        console.log('lolll', e)
+  const ids = await Promise.all(o.map(async e => {
     if (typeof e === 'string') {
-        return e
+      return e
     }
     if (e.$id) {
       return e.$id
     }
     if (e.$args) {
-        if (e.$args[1] !== '$alias') {
-            throw new Error('Invalid format for a reference')
-        }
-        const alias = e.$args[2]
-        throw new Error(`Can't resolve alias "${alias}"`)
+      if (e.$args[1] !== '$alias') {
+        throw new Error('Invalid format for a reference')
+      }
+      const $alias = e.$args[2]
+      const type = e.type
+
+      const { id } = await client.get({ $alias: $alias.substring(0, $alias.length - 1), id: true })
+
+      return id;
     }
     return null;
-  }).filter((s: string | null) => s && !s.startsWith('$')).map((s: string) => s.padEnd(10, '\0')).join('')
+  }))
+
+  return ids.filter((s: string | null) => s && !s.startsWith('$')).map((s: string) => s.padEnd(10, '\0')).join('')
 }
 
-export default (
+export default async (
   client: SelvaClient,
   schema: Schema,
   field: string,
@@ -70,7 +82,7 @@ export default (
   _fields: FieldSchemaArrayLike,
   _type: string,
   $lang?: string
-): void => {
+): Promise<void> => {
   const isReference = ['children', 'parents'].includes(field)
 
   if (
@@ -82,7 +94,7 @@ export default (
     result[field] = {}
     for (let k in payload) {
       if (k === '$add') {
-        const parsed = parseObjectArray(client, payload[k], schema, $lang)
+        const parsed = await parseObjectArray(client, payload[k], schema, $lang)
         if (parsed) {
           result[field].$add = parsed
           hasKeys = true
@@ -90,7 +102,7 @@ export default (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
-          result[field].$add = [parseSetObject(client, payload[k], schema, $lang)]
+          result[field].$add = [await parseSetObject(client, payload[k], schema, $lang)]
           hasKeys = true
         } else {
           if (payload[k].length) {
@@ -134,8 +146,8 @@ export default (
     if (hasKeys) {
       result.$args.push('5', field, createRecord(setRecordDef, {
           is_reference: isReference,
-          $add: toCArr(result[field].$add),
-          $delete: toCArr(result[field].$delete),
+          $add: await toCArr(client, result[field].$add),
+          $delete: await toCArr(client, result[field].$delete),
           $value: '',
       }).toString())
     } else {
@@ -143,10 +155,10 @@ export default (
     }
   } else {
     result[field] =
-      parseObjectArray(client, payload, schema, $lang) || verifySimple(payload)
+      await parseObjectArray(client, payload, schema, $lang) || verifySimple(payload)
 
     if (Array.isArray(result[field])) {
-      const referenceCount = result[field].reduce((acc, x) => {
+      const referenceCount = result[field].reduce((acc: number, x) => {
         return acc + (x.$_itemCount || 1)
       }, 0)
 
@@ -158,7 +170,7 @@ export default (
       is_reference: isReference,
       $add: '',
       $delete: '',
-      $value: toCArr(result[field]),
+      $value: await toCArr(client, result[field]),
     }).toString())
   }
 }

@@ -55,7 +55,7 @@ const verify = (payload: SetOptions, nested?: boolean, lang?: string[]) => {
   }
 }
 
-export default (
+export default async (
   _client: SelvaClient,
   schema: Schema,
   field: string,
@@ -64,7 +64,7 @@ export default (
   _fields: FieldSchemaOther,
   _type: string,
   $lang?: string
-): void => {
+): Promise<void> => {
   const lang: string[] = schema.languages
 
   if ($lang) {

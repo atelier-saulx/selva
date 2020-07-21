@@ -87,7 +87,7 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
 
   // refactor this whole thign
 
-  const parsed = parseSetObject(client, payload, schema)
+  const parsed = await parseSetObject(client, payload, schema)
 
   if (parsed.$_itemCount > MAX_BATCH_SIZE) {
     const [id] = await setInBatches(schema, client, parsed, 0, {

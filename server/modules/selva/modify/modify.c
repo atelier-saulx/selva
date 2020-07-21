@@ -8,11 +8,24 @@
 #include "hierarchy.h"
 #include "modify.h"
 
-static void update_alias(RedisModuleKey *alias_key, RedisModuleKey *zset_key, RedisModuleString *id, RedisModuleString *ref) {
+static void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleString *id, RedisModuleString *ref) {
     RedisModuleString *orig;
 
+    /*
+     * Remove the alias from the previous "ID.aliases" zset.
+     */
     if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_NONE, ref, &orig, NULL)) {
-        RedisModule_ZsetRem(zset_key, ref, NULL);
+        TO_STR(orig);
+        RedisModuleString *key_name;
+        RedisModuleKey *key;
+
+        key_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", orig_len, orig_str, ".aliases");
+        key = RedisModule_OpenKey(ctx, key_name, REDISMODULE_READ | REDISMODULE_WRITE);
+        if (key) {
+            RedisModule_ZsetRem(key, ref, NULL);
+        }
+
+         RedisModule_CloseKey(key);
     }
 
     RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, id, NULL);
@@ -95,8 +108,7 @@ static int update_zset(
     size_t field_len,
     struct SelvaModify_OpSet *setOpts
 ) {
-    size_t id_len;
-    const char *id_str = RedisModule_StringPtrLen(id, &id_len);
+    TO_STR(id);
     RedisModuleKey *alias_key = NULL;
 
     // add in the hash that it's a set/references field
@@ -117,13 +129,16 @@ static int update_zset(
     }
 
     if (setOpts->$value_len > 0) {
-        if (alias_key) {
-            do {
+        if (alias_key &&
+            RedisModule_ZsetFirstInScoreRange(set_key, REDISMODULE_NEGATIVE_INFINITE, REDISMODULE_POSITIVE_INFINITE, 0, 0) == REDISMODULE_OK) {
+            while (!RedisModule_ZsetRangeEndReached(set_key)) {
                 RedisModuleString *alias;
 
                 alias = RedisModule_ZsetRangeCurrentElement(set_key, NULL);
                 RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, alias, REDISMODULE_HASH_DELETE, NULL);
-            } while (RedisModule_ZsetRangeNext(set_key));
+                RedisModule_ZsetRangeNext(set_key);
+            }
+            RedisModule_ZsetRangeStop(set_key);
         }
         RedisModule_UnlinkKey(set_key);
 
@@ -133,7 +148,7 @@ static int update_zset(
             RedisModuleString *ref = RedisModule_CreateString(ctx, ptr, part_len);
 
             if (alias_key) {
-                update_alias(alias_key, set_key, id, ref);
+                update_alias(ctx, alias_key, id, ref);
             }
             RedisModule_ZsetAdd(set_key, 0, ref, NULL);
 
@@ -149,7 +164,7 @@ static int update_zset(
                 RedisModuleString *ref = RedisModule_CreateString(ctx, ptr, part_len);
 
                 if (alias_key) {
-                    update_alias(alias_key, set_key, id, ref);
+                    update_alias(ctx, alias_key, id, ref);
                 }
                 RedisModule_ZsetAdd(set_key, 0, ref, NULL);
 

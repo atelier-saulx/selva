@@ -21,7 +21,7 @@ const fieldParsers: { [index: string]: (
   fields: FieldSchema,
   type: string,
   $lang?: string
-) => any } = {
+) => Promise<void> } = {
   ...simple,
   text,
   geo,

@@ -3,7 +3,7 @@ import { SetOptions } from '../types'
 import { Schema, TypeSchema, FieldSchemaArrayLike } from '../../schema'
 import fieldParsers from '.'
 
-export default (
+export default async (
   client: SelvaClient,
   schema: Schema,
   field: string,
@@ -12,7 +12,7 @@ export default (
   fields: FieldSchemaArrayLike,
   type: string,
   $lang?: string
-): void => {
+): Promise<void> => {
   if (!result.$args) result.$args = []
 
   const arr = payload

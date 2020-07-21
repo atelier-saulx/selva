@@ -3,7 +3,7 @@ import { SetOptions } from '../types'
 import { Schema, TypeSchema, FieldSchemaRecord } from '../../schema'
 import fieldParsers from '.'
 
-export default (
+export default async (
   client: SelvaClient,
   schema: Schema,
   field: string,
@@ -12,7 +12,7 @@ export default (
   fields: FieldSchemaRecord,
   type: string,
   $lang?: string
-): void => {
+): Promise<void> => {
   if (typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }

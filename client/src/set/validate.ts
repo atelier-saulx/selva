@@ -33,12 +33,12 @@ function allowedFieldsDoc(schemas: Schema, type?: string): string {
   return ''
 }
 
-export default function parseSetObject(
+export default async function parseSetObject(
   client: SelvaClient,
   payload: SetOptions,
   schemas: Schema,
   $lang?: string
-): SetOptions {
+): Promise<SetOptions> {
   const result: SetOptions = { $args: [] }
 
   if (!payload.type && schemas.prefixToTypeMapping && payload.$id) {
@@ -157,7 +157,7 @@ ${allowedFieldsDoc(schemas, type)}
         `)
     } else {
       const fn = fieldParsers[fields[key].type]
-      fn(client, schemas, key, payload[key], result, fields[key], type, $lang)
+      await fn(client, schemas, key, payload[key], result, fields[key], type, $lang)
     }
   }
   return result
