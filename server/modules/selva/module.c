@@ -74,13 +74,19 @@ static char *sztok(char *s, size_t size, size_t * restrict i) {
     return r;
 }
 
+static int parse_no_root(RedisModuleString *arg) {
+    TO_STR(arg);
+
+    return arg_str[0] != 'R';
+}
+
 /**
  * Parse $alias query from the command args if one exists.
  * @param out a vector for the query.
  *            The SVector must be initialized before calling this function.
  */
 static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) {
-    for (int i = 2; i < argc; i += 3) {
+    for (int i = 0; i < argc; i += 3) {
         RedisModuleString *type = argv[i];
         RedisModuleString *field = argv[i + 1];
         RedisModuleString *value = argv[i + 2];
@@ -98,7 +104,7 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
     }
 }
 
-static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, RedisModuleString *id) {
+static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, RedisModuleString *id, int no_root) {
     Selva_NodeId nodeId;
 
     RedisModuleString2Selva_NodeId(nodeId, id);
@@ -107,7 +113,10 @@ static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hie
      * If this is a new node we need to create a hierarchy node for it.
      */
     if (!SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
-        int err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, 1, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
+        size_t nr_parents = unlikely(no_root) ? 0 : 1;
+
+        //int err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, parents, 0, NULL);
+        int err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
         if (err) {
             RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
             return NULL;
@@ -118,7 +127,7 @@ static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hie
 }
 
 // TODO: clean this up
-// id, type, key, value [, ... type, key, value]]
+// id, R|N type, key, value [, ... type, key, value]]
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     SelvaModify_Hierarchy *hierarchy;
@@ -129,7 +138,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     SVector_Init(&alias_query, 5, NULL);
 
-    if (argc < 2 || (argc - 2) % 3) {
+    if (argc < 3 || (argc - 3) % 3) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -146,10 +155,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     id = argv[1];
 
+    const int no_root = parse_no_root(argv[2]);
+
     /*
      * Look for $alias that would replace id.
      */
-    parse_alias_query(argv, argc, &alias_query);
+    parse_alias_query(argv + 3, argc - 3, &alias_query);
     if (SVector_Size(&alias_query) > 0) {
         RedisModuleKey *alias_key = open_aliases_key(ctx);
 
@@ -183,13 +194,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModule_CloseKey(alias_key);
     }
 
-    id_key = open_node(ctx, hierarchy, id);
+    id_key = open_node(ctx, hierarchy, id, no_root);
     /* TODO Handle NULL */
 
     /*
      * Parse the rest of the arguments.
      */
-    for (int i = 2; i < argc; i += 3) {
+    for (int i = 3; i < argc; i += 3) {
         bool publish = true;
         RedisModuleString *type = argv[i];
         RedisModuleString *field = argv[i + 1];

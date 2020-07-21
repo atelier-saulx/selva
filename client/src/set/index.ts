@@ -17,11 +17,13 @@ export async function _set(
 
   if (payload.$args.length > 0) {
     try {
-    return await client.redis.selva_modify(
-      { name: db || 'default' },
-      payload.$id,
-      ...payload.$args
-    )
+      return await client.redis.selva_modify(
+        { name: db || 'default' },
+        payload.$id,
+        // @ts-ignore FIXME The typing is broken or too complex for TS
+        payload?.parents?.$noRoot ? 'N' : 'R',
+        ...payload.$args
+      )
     } catch (err) {
         console.error(err);
         throw err;

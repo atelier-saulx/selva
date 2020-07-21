@@ -34,7 +34,8 @@ const toCArr = async (
     { [index: string]: string }[] |
     string[] |
     undefined |
-    null) => {
+    null,
+  noRoot: boolean) => {
   let o: any[];
 
   if (!setObj) {
@@ -49,7 +50,7 @@ const toCArr = async (
     return ''
   }
 
-  const ids = await Promise.all(o.map(async e => {
+  const ids = (await Promise.all(o.map(async e => {
     if (typeof e === 'string') {
       return e
     }
@@ -60,15 +61,24 @@ const toCArr = async (
       if (e.$args[1] !== '$alias') {
         throw new Error('Invalid format for a reference')
       }
-      const $alias = e.$args[2]
+      const alias = e.$args[2]
       const type = e.type
 
-      const { id } = await client.get({ $alias: $alias.substring(0, $alias.length - 1), id: true })
+      let { id } = await client.get({ $alias: alias.substring(0, alias.length - 1), id: true })
+      if (!id && type) {
+        id = await client.set({
+          type,
+          aliases: [ alias ],
+          parents: {
+            $noRoot: !!noRoot
+          }
+        });
+      }
 
       return id;
     }
     return null;
-  }))
+  }))).filter((s: string | null) => s && !s.startsWith('$'))
 
   return ids.filter((s: string | null) => s && !s.startsWith('$')).map((s: string) => s.padEnd(10, '\0')).join('')
 }
@@ -84,6 +94,7 @@ export default async (
   $lang?: string
 ): Promise<void> => {
   const isReference = ['children', 'parents'].includes(field)
+  let noRoot = false;
 
   if (
     typeof payload === 'object' &&
@@ -135,6 +146,7 @@ export default async (
         }
 
         result[field].$noRoot = payload[k]
+        noRoot = payload[k];
         hasKeys = true
       } else if (k === '$_itemCount') {
         // ignore this internal field if setting with a split payload
@@ -146,8 +158,8 @@ export default async (
     if (hasKeys) {
       result.$args.push('5', field, createRecord(setRecordDef, {
           is_reference: isReference,
-          $add: await toCArr(client, result[field].$add),
-          $delete: await toCArr(client, result[field].$delete),
+          $add: await toCArr(client, result[field].$add, noRoot),
+          $delete: await toCArr(client, result[field].$delete, noRoot),
           $value: '',
       }).toString())
     } else {
@@ -170,7 +182,7 @@ export default async (
       is_reference: isReference,
       $add: '',
       $delete: '',
-      $value: await toCArr(client, result[field]),
+      $value: await toCArr(client, result[field], noRoot),
     }).toString())
   }
 }
