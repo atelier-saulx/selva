@@ -38,6 +38,8 @@ const methods = []
 
 // redis.add_command(`FT.${cmd}`)
 redis.add_command('selva.modify')
+redis.add_command('selva.hierarchy.parents')
+redis.add_command('selva.hierarchy.children')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
   if (/[A-Z]/.test(key[0]) && typeof proto[key] === 'function') {
