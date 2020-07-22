@@ -50,6 +50,7 @@
     "ava": "2.4.0",
     "husky": "^3.0.8",
     "lint-staged": "^9.4.2",
+    "rimraf": "^3.0.2",
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3",
     "typescript-to-lua": "^0.30.1"
