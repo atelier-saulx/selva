@@ -18,6 +18,8 @@ const addOriginListeners = async (
   // we need to use name and unsubscribe as well
 
   if (!subsManager.originListeners[name]) {
+    console.log('add origin listeners', name)
+
     const selector: ServerSelector = { name, type: 'replica' }
 
     const descriptor = await subsManager.client.getServerDescriptor(selector)
@@ -53,11 +55,18 @@ const addOriginListeners = async (
     subsManager.originListeners[name] = {
       subscriptions: new Set(),
       listener,
-      reconnectListener: ({ name: dbName }) => {
+      reconnectListener: descriptor => {
+        const { name: dbName } = descriptor
+        console.log('reconn in subs manager', name)
         if (name === dbName) {
+          // need to resend subs if it dc'ed
           const origin = subsManager.originListeners[name]
+          console.log('---> reconnect', descriptor.port, name, !!origin)
+
           if (origin && origin.subscriptions) {
+            console.log('go resend those subs')
             origin.subscriptions.forEach(subscription => {
+              console.log('go do it', subscription.get)
               addUpdate(subsManager, subscription)
             })
           }
@@ -84,6 +93,9 @@ const removeOriginListeners = (
   subscription: Subscription
 ) => {
   const origin = subsManager.originListeners[name]
+
+  console.log('remove origin', name)
+
   if (origin) {
     const { client } = subsManager
     const redis = client.redis

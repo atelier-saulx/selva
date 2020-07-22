@@ -85,21 +85,9 @@ export class SelvaServer extends EventEmitter {
           origin.port !== this.origin.port ||
           origin.host !== this.origin.host
         ) {
-          // very important
-          // also need to be able to reconnect to a registry client with a server!
-          console.log(
-            'ORIGIN CHANGED FOR REPLICA from',
-            this.origin.port,
-            'to',
-            origin.port
-          )
-
           this.pm.destroy()
           this.origin = origin
-
-          console.log('starts it on ', opts.port)
           setTimeout(() => {
-            // need to update the retruned handle
             startRedis(this, opts)
           }, 500)
         }

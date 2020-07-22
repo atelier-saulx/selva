@@ -28,6 +28,8 @@ const removeDump = async () => {
 test.before(removeDump)
 test.after(removeDump)
 
+// first test destroying servers
+
 // need to clean dumps if testing replicas
 test('Create a full cluster (replica, origin, subs manager, registry)', async t => {
   let current = await getPort()
@@ -44,7 +46,7 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
     .observe({
       name: true
     })
-    .subscribe(x => {})
+    .subscribe(_x => {})
 
   const startingServers = Promise.all([
     startRegistry({ port: current }),
@@ -171,6 +173,8 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
   )
 
   // speed this up!
+
+  // if we dont wait it compeltey crashes - thats wrong
   await wait(15000)
 
   // makes it easier to test things
@@ -208,6 +212,8 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
 
   t.true(!!schema)
 
+  subsResults = []
+
   await client.set({
     $id: 'cuflap',
     title: {
@@ -226,11 +232,11 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
 
   await wait(15000)
 
-  console.log(subsResults)
-
-  // now thu sneeds a new title
-
-  // now lets subscribe and balance those subscriptions AND test!
+  t.deepEqual(
+    subsResults,
+    [{ title: { en: 'yuzi' } }],
+    'correct subs results after restarting of the origin'
+  )
 
   servers.forEach(s => {
     s.destroy()
