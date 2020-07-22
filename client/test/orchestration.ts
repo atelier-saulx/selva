@@ -12,7 +12,7 @@ import fs from 'fs'
 import { join } from 'path'
 import rimraf from 'rimraf'
 
-const dir = join(process.cwd(), 'tmp', 'orchestration')
+const dir = join(process.cwd(), 'tmp', 'orchestrationtest')
 
 const removeDump = async () => {
   if (fs.existsSync(dir)) {
@@ -54,17 +54,17 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
       default: true
     }),
     startReplica({
-      dir,
+      dir: join(dir, 'replica1'),
       registry: registryAdress,
       default: true
     }),
     startReplica({
-      dir,
+      dir: join(dir, 'replica2'),
       registry: registryAdress,
       default: true
     }),
     startReplica({
-      dir,
+      dir: join(dir, 'replica3'),
       registry: registryAdress,
       default: true
     }),
@@ -79,30 +79,34 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
     })
   ])
 
-  await client.updateSchema({
-    languages: ['en', 'de', 'nl'],
-    types: {
-      custom: {
-        prefix: 'cu',
-        fields: {
-          value: { type: 'number' },
-          age: { type: 'number' },
-          auth: {
-            type: 'json'
-          },
-          title: { type: 'text' },
-          description: { type: 'text' },
-          image: {
-            type: 'object',
-            properties: {
-              thumb: { type: 'string' },
-              poster: { type: 'string' }
+  const setSchema = async () => {
+    return client.updateSchema({
+      languages: ['en', 'de', 'nl'],
+      types: {
+        custom: {
+          prefix: 'cu',
+          fields: {
+            value: { type: 'number' },
+            age: { type: 'number' },
+            auth: {
+              type: 'json'
+            },
+            title: { type: 'text' },
+            description: { type: 'text' },
+            image: {
+              type: 'object',
+              properties: {
+                thumb: { type: 'string' },
+                poster: { type: 'string' }
+              }
             }
           }
         }
       }
-    }
-  })
+    })
+  }
+
+  await setSchema()
 
   let subsResults = []
 
@@ -182,6 +186,8 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
 
   await wait(1000)
 
+  // reset an origin
+
   // change origin
 
   // balance replica based on cpu
@@ -194,7 +200,5 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
 
   await wait(5000)
 
-  console.log('test complete!')
-
-  t.pass('orchestration complete!')
+  t.pass('Did not crash')
 })
