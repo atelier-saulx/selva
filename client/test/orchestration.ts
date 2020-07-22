@@ -12,8 +12,21 @@ import fs from 'fs'
 import { join } from 'path'
 import rimraf from 'rimraf'
 
+const dir = join(process.cwd(), 'tmp', 'orchestration')
+
+const removeDump = () => {
+  if (fs.existsSync(dir)) {
+    rimraf(dir, () => {
+      console.log('removed!')
+    })
+  }
+}
+
+test.before(removeDump)
+test.after(removeDump)
+
 // need to clean dumps if testing replicas
-test.skip('Create a full cluster (replica, origin, subs manager, registry)', async t => {
+test('Create a full cluster (replica, origin, subs manager, registry)', async t => {
   let current = await getPort()
 
   // need a way to change this!
@@ -29,13 +42,6 @@ test.skip('Create a full cluster (replica, origin, subs manager, registry)', asy
       name: true
     })
     .subscribe(x => {})
-
-  const dir = join(process.cwd(), 'tmp', 'orchestration')
-
-  // do after
-  if (fs.existsSync(dir)) {
-    rimraf(dir)
-  }
 
   const startingServers = Promise.all([
     startRegistry({ port: current }),
