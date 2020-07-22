@@ -32,8 +32,9 @@ test.skip('Create a full cluster (replica, origin, subs manager, registry)', asy
 
   const dir = join(process.cwd(), 'tmp', 'orchestration')
 
-  if (fs.existsSync()) {
-    rimraf
+  // do after
+  if (fs.existsSync(dir)) {
+    rimraf(dir)
   }
 
   const startingServers = Promise.all([
