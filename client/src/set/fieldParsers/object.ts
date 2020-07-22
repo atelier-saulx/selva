@@ -51,7 +51,7 @@ export default async (
       const fn = fieldParsers[item.type]
 
       // TODO we could pass result directly
-      fn(client, schema, `${field}.${key}`, payload[key], r, fields.properties[key], type, $lang)
+      await fn(client, schema, `${field}.${key}`, payload[key], r, fields.properties[key], type, $lang)
       result.$args.push(...r.$args)
 
       // check if nested things have been removed because there are empty objects or the like

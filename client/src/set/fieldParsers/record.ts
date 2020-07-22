@@ -47,7 +47,7 @@ export default async (
       }
     } else {
       hasKeys = true
-      fn(client, schema, `${field}.${key}`, payload[key], r, fields.values, type, $lang)
+      await fn(client, schema, `${field}.${key}`, payload[key], r, fields.values, type, $lang)
       result.$args.push(...r.$args)
     }
   }

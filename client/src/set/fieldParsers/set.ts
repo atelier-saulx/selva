@@ -6,11 +6,11 @@ import { Schema, FieldSchemaArrayLike } from '../../schema'
 import parseSetObject from '../validate'
 import parsers from './simple'
 
-const verifySimple = (payload, verify) => {
+const verifySimple = async (payload: SetOptions, verify: (p: SetOptions) => Promise<any>) => {
   if (Array.isArray(payload)) {
-    return payload.map(v => verify(v))
+    return Promise.all(payload.map(v => verify(v)))
   } else {
-    return [verify(payload)]
+    return [await verify(payload)]
   }
 }
 
@@ -19,10 +19,6 @@ const parseObjectArray = async (client: SelvaClient, payload: any, schema: Schem
     return Promise.all(payload.map(ref => parseSetObject(client, ref, schema)))
   }
 }
-
-// function isArrayLike(x: any): x is FieldSchemaArrayLike {
-//   return x && !!x.items
-// }
 
 const toCArr = (arr: string[] | undefined | null) =>
   arr ? arr.map(s => `${s}\0`).join('') : ''
@@ -52,9 +48,9 @@ export default async (
     throw new Error(`Cannot find parser for ${fieldType}`)
   }
 
-  const verify = v => {
+  const verify = async (v: SetOptions) => {
     const r: { value: any } = { value: undefined }
-    parser(client, schema, 'value', v, r, fields, type)
+    await parser(client, schema, 'value', v, r, fields, type)
     return r.value
   }
 
@@ -70,16 +66,16 @@ export default async (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
-          r.$add = [parseSetObject(client, payload[k], schema)]
+          r.$add = [await parseSetObject(client, payload[k], schema)]
         } else {
-          r.$add = verifySimple(payload[k], verify)
+          r.$add = await verifySimple(payload[k], verify)
         }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
           // unsets are allowed
           r.$delete = true // FIXME
         } else {
-          r.$delete = verifySimple(payload[k], verify)
+          r.$delete = await verifySimple(payload[k], verify)
         }
       } else {
         throw new Error(`Wrong key for set ${k}`)
@@ -97,7 +93,7 @@ export default async (
       is_reference: 0,
       $add: '',
       $delete: '',
-      $value: toCArr(await parseObjectArray(client, payload, schema) || verifySimple(payload, verify)),
+      $value: toCArr(await parseObjectArray(client, payload, schema) || await verifySimple(payload, verify)),
     }).toString())
   }
 }
