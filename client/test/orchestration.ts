@@ -173,6 +173,8 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
   // speed this up!
   await wait(15000)
 
+  // makes it easier to test things
+
   t.deepEqual(
     subsResults,
     [{ title: { en: 'snurkels' } }],
@@ -186,13 +188,49 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
 
   await wait(1000)
 
-  // reset an origin
-
   // change origin
 
-  // balance replica based on cpu
+  // now lets change the origin url
+  await servers[1].destroy()
+  await wait(1000)
 
-  // subs manager start / restart
+  servers[1] = await startOrigin({
+    default: true,
+    registry: registryAdress,
+    dir: join(dir, 'neworigin')
+  })
+
+  await wait(5000)
+
+  await setSchema()
+
+  const schema = await client.getSchema()
+
+  t.true(!!schema)
+
+  await client.set({
+    $id: 'cuflap',
+    title: {
+      en: 'yuzi'
+    }
+  })
+
+  const yuzi = await client.redis.hgetall(
+    {
+      type: 'replica'
+    },
+    'cuflap'
+  )
+
+  t.is(yuzi['title.en'], 'yuzi', 'gets yuzi from a replica after reset')
+
+  await wait(15000)
+
+  console.log(subsResults)
+
+  // now thu sneeds a new title
+
+  // now lets subscribe and balance those subscriptions AND test!
 
   servers.forEach(s => {
     s.destroy()
