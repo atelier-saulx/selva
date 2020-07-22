@@ -30,24 +30,32 @@ test.skip('Create a full cluster (replica, origin, subs manager, registry)', asy
     })
     .subscribe(x => {})
 
-  const dumpLocation = join(process.cwd(), 'tmp', 'orchestration')
+  const dir = join(process.cwd(), 'tmp', 'orchestration')
 
-  if (fs.existsSync(dumpLocation)) {
-    r
+  if (fs.existsSync()) {
+    rimraf
   }
 
   const startingServers = Promise.all([
     startRegistry({ port: current }),
-    startOrigin({ registry: registryAdress, default: true }),
-    startReplica({
+    startOrigin({
+      dir,
       registry: registryAdress,
       default: true
     }),
     startReplica({
+      dir,
       registry: registryAdress,
       default: true
     }),
     startReplica({
+      dir,
+
+      registry: registryAdress,
+      default: true
+    }),
+    startReplica({
+      dir,
       registry: registryAdress,
       default: true
     }),
