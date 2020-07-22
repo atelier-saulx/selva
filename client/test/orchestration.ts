@@ -14,12 +14,15 @@ import rimraf from 'rimraf'
 
 const dir = join(process.cwd(), 'tmp', 'orchestration')
 
-const removeDump = () => {
+const removeDump = async () => {
   if (fs.existsSync(dir)) {
-    rimraf(dir, () => {
-      console.log('removed!')
+    rimraf(dir, err => {
+      if (err) {
+        console.log('cannot remove dump')
+      }
     })
   }
+  await wait(1e3)
 }
 
 test.before(removeDump)
@@ -57,7 +60,6 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
     }),
     startReplica({
       dir,
-
       registry: registryAdress,
       default: true
     }),
@@ -191,4 +193,8 @@ test('Create a full cluster (replica, origin, subs manager, registry)', async t 
   })
 
   await wait(5000)
+
+  console.log('test complete!')
+
+  t.pass('orchestration complete!')
 })
