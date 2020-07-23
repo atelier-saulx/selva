@@ -2,7 +2,6 @@ import { SetOptions } from './types'
 import { SelvaClient } from '..'
 import { v4 as uuid } from 'uuid'
 import { SCRIPT } from '../constants'
-import { setInBatches, MAX_BATCH_SIZE } from './batching'
 import parseSetObject from './validate'
 
 export async function _set(
@@ -15,31 +14,17 @@ export async function _set(
       payload.$id = await client.id({ db, type: payload.type })
   }
 
-  if (payload.$args.length > 0) {
-    try {
-      return await client.redis.selva_modify(
-        { name: db || 'default' },
-        payload.$id,
-        // @ts-ignore FIXME The typing is broken or too complex for TS
-        payload?.parents?.$noRoot ? 'N' : 'R',
-        ...payload.$args
-      )
-    } catch (err) {
-        console.error(err);
-        throw err;
-    }
-  } else {
-    return await client.redis.evalsha(
+  try {
+    return await client.redis.selva_modify(
       { name: db || 'default' },
-      `${SCRIPT}:modify`,
-      0,
-      `${client.loglevel}:${client.uuid}`,
-      schemaSha,
-      JSON.stringify({
-        kind: 'update',
-        payload
-      })
+      payload.$id,
+      // @ts-ignore FIXME The typing is broken or too complex for TS
+      payload?.parents?.$noRoot ? 'N' : 'R',
+      ...payload.$args
     )
+  } catch (err) {
+      console.error(err);
+      throw err;
   }
 }
 
@@ -90,14 +75,6 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   // refactor this whole thign
 
   const parsed = await parseSetObject(client, payload, schema)
-
-  if (parsed.$_itemCount > MAX_BATCH_SIZE) {
-    const [id] = await setInBatches(schema, client, parsed, 0, {
-      $_batchOpts: { batchId: uuid() },
-      db: payload.$db
-    })
-    return id
-  }
 
   return _set(client, parsed, schema.sha, payload.$db)
 }
