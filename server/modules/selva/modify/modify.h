@@ -40,10 +40,24 @@ struct SelvaModify_OpSet {
     size_t $value_len;
 };
 
-static inline void SelvaModify_OpSet_align(struct SelvaModify_OpSet *op) {
+static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleString *data) {
+    TO_STR(data);
+    struct SelvaModify_OpSet *op;
+
+    if (data_len < sizeof(struct SelvaModify_OpSet)) {
+        return NULL;
+    }
+
+    op = (struct SelvaModify_OpSet *)data_str;
+    if (data_len < sizeof(struct SelvaModify_OpSet) + op->$add_len + op->$delete_len + op->$value_len) {
+        return NULL;
+    }
+
     op->$add = (char *)((char *)op + sizeof(*op));
     op->$delete = (char *)((char *)op + sizeof(*op) + op->$add_len);
     op->$value = (char *)((char *)op + sizeof(*op) + op->$add_len + op->$delete_len);
+
+    return op;
 }
 
 RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx);

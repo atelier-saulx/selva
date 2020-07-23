@@ -389,6 +389,7 @@ static int crossInsert(
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
+                /* TODO no_root is not propagated */
                 err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i],
                         1, ((Selva_NodeId []){ ROOT_NODE_ID }),
                         0, NULL);

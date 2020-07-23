@@ -230,9 +230,14 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             SelvaModify_ModifyIncrement(ctx, id_key, id, field, field_str, field_len,
                     current_value, current_value_str, current_value_len, incrementOpts);
         } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
-            struct SelvaModify_OpSet *setOpts = (struct SelvaModify_OpSet *)value_str;
+            struct SelvaModify_OpSet *setOpts;
 
-            SelvaModify_OpSet_align(setOpts);
+            setOpts = SelvaModify_OpSet_align(value);
+            if (!setOpts) {
+                RedisModule_ReplyWithError(ctx, "Invalid op");
+                goto out;
+            }
+
             err = SelvaModify_ModifySet(ctx, hierarchy, id_key, id, field, setOpts);
             if (err) {
                 goto out;
