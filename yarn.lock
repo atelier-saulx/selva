@@ -1313,10 +1313,10 @@ damerau-levenshtein@^1.0.4:
   resolved "https://registry.yarnpkg.com/damerau-levenshtein/-/damerau-levenshtein-1.0.6.tgz#143c1641cb3d85c60c32329e26899adea8701791"
   integrity sha512-JVrozIeElnj3QzfUIt8tB8YMluBJom4Vw9qTPpjGYQ9fYlB3D/rb6OordUxf3xeFB35LKWs0xqcO5U6ySvBtug==
 
-data-record@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/data-record/-/data-record-0.2.0.tgz#3ef8df5e2dfbba3b0ad3c43da50b47f3964139d2"
-  integrity sha512-/PmOgnJUJa1kvBs7hyCp0USyrFosUBM7TKD63x+0y+WWQDa18a71y6X8+MN/F3y9pDyNfTWiN8vkexvMw9JpuA==
+data-record@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/data-record/-/data-record-0.4.0.tgz#378f6a01ab19688df8eb87486997c64a0b1c3757"
+  integrity sha512-iuAgsyWl0JAEe372nRX3pN4F2S3A7Cx41ElDqhU9fBY0GnMCiE1M7liLcas9YNYZhXIVcsNEpq/H3GnDR9tMSQ==
 
 date-fns@^1.27.2:
   version "1.30.1"
