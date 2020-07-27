@@ -63,8 +63,8 @@ static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, RedisModuleStrin
     memcpy(nodeId, id_str, min(id_len, SELVA_NODE_ID_SIZE));
 }
 
-static char *sztok(char *s, size_t size, size_t * restrict i) {
-    char *r = NULL;
+static const char *sztok(const char *s, size_t size, size_t * restrict i) {
+    const char *r = NULL;
 
     if (*i < size - 1) {
         r = s + *i;
@@ -98,7 +98,7 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
             const char *s;
             size_t j = 0;
             while ((s = sztok(value_str, value_len, &j))) {
-                SVector_Insert(out, s);
+                SVector_Insert(out, (void *)s);
             }
         }
     }
