@@ -237,7 +237,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             setOpts = SelvaModify_OpSet_align(value);
             if (!setOpts) {
-                RedisModule_ReplyWithError(ctx, "Invalid operation");
+                char err_msg[80];
+
+                snprintf(err_msg, sizeof(err_msg), "ERR Invalid argument at: %d", i);
+                RedisModule_ReplyWithError(ctx, err_msg);
                 goto out;
             }
 

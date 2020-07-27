@@ -53,9 +53,9 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleStrin
         return NULL;
     }
 
-    op->$add = (char *)((char *)op + sizeof(*op));
-    op->$delete = (char *)((char *)op + sizeof(*op) + op->$add_len);
-    op->$value = (char *)((char *)op + sizeof(*op) + op->$add_len + op->$delete_len);
+    op->$add = op->$add ? (char *)((char *)op + sizeof(*op)) : NULL;
+    op->$delete = op->$delete ? (char *)((char *)op + sizeof(*op) + op->$add_len) : NULL;
+    op->$value = op->$value ? (char *)((char *)op + sizeof(*op) + op->$add_len + op->$delete_len) : NULL;
 
     return op;
 }
