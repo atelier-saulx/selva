@@ -228,7 +228,6 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisMo
     return hierarchy;
 }
 
-/* TODO Error handling */
 static void createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *set_key_name;
     RedisModuleString *field_name;
@@ -238,21 +237,17 @@ static void createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     field_name = RedisModule_CreateStringPrintf(ctx, "%s", "$id");
 
     if (unlikely(!set_key_name || !field_name)) {
-        return;
+        abort(); /* Core dump. */
     }
 
     set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
     if (!set_key) {
-        return;
+        abort(); /* Core dump. */
     }
 
     RedisModule_HashSet(set_key, REDISMODULE_HASH_NX, field_name, set_key_name, NULL);
 
     RedisModule_CloseKey(set_key);
-#if 0
-    RedisModule_Free(field);
-    RedisModule_Free(set_key_name);
-#endif
 }
 
 static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
