@@ -195,7 +195,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     id_key = open_node(ctx, hierarchy, id, no_root);
-    /* TODO Handle NULL */
+    if (!id_key) {
+        RedisModule_ReplyWithError(ctx, "Failed to open the key");
+        return REDISMODULE_ERR;
+    }
 
     /*
      * Parse the rest of the arguments.
@@ -234,7 +237,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             setOpts = SelvaModify_OpSet_align(value);
             if (!setOpts) {
-                RedisModule_ReplyWithError(ctx, "Invalid op");
+                RedisModule_ReplyWithError(ctx, "Invalid operation");
                 goto out;
             }
 
