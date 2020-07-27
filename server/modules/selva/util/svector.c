@@ -57,9 +57,7 @@ void SVector_Insert(SVector *vec, void *el) {
 
         void **new_data = RedisModule_Realloc(vec_data, new_size);
         if (!new_data) {
-            assert(0);
-            /* TODO Panic: OOM */
-            return;
+            abort(); /* This will cause a core dump. */
         }
 
         vec->vec_data = new_data;
@@ -78,7 +76,6 @@ void SVector_Insert(SVector *vec, void *el) {
 }
 
 void *SVector_Search(const SVector * restrict vec, void *key) {
-    /* TODO what if vec_compar is not set? */
     assert(("vec_compar must be set", vec->vec_compar));
 
     void **pp = bsearch(&key, vec->vec_data + vec->vec_shift_index,
@@ -88,7 +85,6 @@ void *SVector_Search(const SVector * restrict vec, void *key) {
 }
 
 void *SVector_Remove(SVector * restrict vec, void *key) {
-    /* TODO what if vec_compar is not set? */
     assert(("vec_compar must be set", vec->vec_compar));
 
     void **pp = bsearch(&key, vec->vec_data + vec->vec_shift_index,
