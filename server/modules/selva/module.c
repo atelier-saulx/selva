@@ -12,6 +12,10 @@
 #include "modify/async_task.h"
 #include "modify/hierarchy.h"
 
+#define FLAG_NO_ROOT    0x1
+
+#define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
+
 int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // init auto memory for created strings
     RedisModule_AutoMemory(ctx);
@@ -74,10 +78,15 @@ static const char *sztok(const char *s, size_t size, size_t * restrict i) {
     return r;
 }
 
-static int parse_no_root(RedisModuleString *arg) {
+static int parse_flags(RedisModuleString *arg) {
     TO_STR(arg);
+    int flags = 0;
 
-    return arg_str[0] != 'R';
+    for (size_t i = 0; i < arg_len; i++) {
+        flags |= arg_str[i] == 'N' ? FLAG_NO_ROOT : 0;
+    }
+
+    return flags;
 }
 
 /**
@@ -155,7 +164,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     id = argv[1];
 
-    const int no_root = parse_no_root(argv[2]);
+    const int no_root = FISSET_NO_ROOT(parse_flags(argv[2]));
 
     /*
      * Look for $alias that would replace id.
