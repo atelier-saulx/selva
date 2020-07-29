@@ -7,14 +7,20 @@ import getPort from 'get-port'
 
 let srv
 let port: number
+
 test.before(async t => {
   port = await getPort()
   srv = await start({
     port
   })
-  await wait(500)
 
+  await wait(500)
+})
+
+test.beforeEach(async t => {
   const client = connect({ port })
+
+  await client.redis.flushall()
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -61,6 +67,9 @@ test.before(async t => {
       }
     }
   })
+
+  // A small delay is needed after setting the schema
+  await new Promise(r => setTimeout(r, 100))
 
   await client.destroy()
 })
