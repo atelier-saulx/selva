@@ -11,7 +11,7 @@ export async function _set(
   db?: string
 ): Promise<string> {
   if (!payload.$id) {
-      payload.$id = await client.id({ db, type: payload.type })
+    payload.$id = await client.id({ db, type: payload.type })
   }
 
   try {
@@ -23,8 +23,8 @@ export async function _set(
       ...payload.$args
     )
   } catch (err) {
-      console.error(err);
-      throw err;
+    console.error(err)
+    throw err
   }
 }
 
