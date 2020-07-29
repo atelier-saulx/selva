@@ -6,7 +6,10 @@ import { Schema, FieldSchemaArrayLike } from '../../schema'
 import parseSetObject from '../validate'
 import parsers from './simple'
 
-const verifySimple = async (payload: SetOptions, verify: (p: SetOptions) => Promise<any>) => {
+const verifySimple = async (
+  payload: SetOptions,
+  verify: (p: SetOptions) => Promise<any>
+) => {
   if (Array.isArray(payload)) {
     return Promise.all(payload.map(v => verify(v)))
   } else {
@@ -14,7 +17,11 @@ const verifySimple = async (payload: SetOptions, verify: (p: SetOptions) => Prom
   }
 }
 
-const parseObjectArray = async (client: SelvaClient, payload: any, schema: Schema) => {
+const parseObjectArray = async (
+  client: SelvaClient,
+  payload: any,
+  schema: Schema
+) => {
   if (Array.isArray(payload) && typeof payload[0] === 'object') {
     return Promise.all(payload.map(ref => parseSetObject(client, ref, schema)))
   }
@@ -55,7 +62,7 @@ export default async (
   }
 
   if (typeof payload === 'object' && !Array.isArray(payload)) {
-    let r: SetOptions = {};
+    let r: SetOptions = {}
 
     for (let k in payload) {
       if (k === '$add') {
@@ -82,18 +89,29 @@ export default async (
       }
     }
 
-    result.$args.push('5', field, createRecord(setRecordDef, {
-      is_reference: 0,
-      $add: toCArr(r.$add),
-      $delete: toCArr(r.$delete),
-      $value: '',
-    }).toString())
+    result.$args.push(
+      '5',
+      field,
+      createRecord(setRecordDef, {
+        is_reference: 0,
+        $add: toCArr(r.$add),
+        $delete: toCArr(r.$delete),
+        $value: ''
+      }).toString()
+    )
   } else {
-    result.$args.push('5', field, createRecord(setRecordDef, {
-      is_reference: 0,
-      $add: '',
-      $delete: '',
-      $value: toCArr(await parseObjectArray(client, payload, schema) || await verifySimple(payload, verify)),
-    }).toString())
+    result.$args.push(
+      '5',
+      field,
+      createRecord(setRecordDef, {
+        is_reference: 0,
+        $add: '',
+        $delete: '',
+        $value: toCArr(
+          (await parseObjectArray(client, payload, schema)) ||
+            (await verifySimple(payload, verify))
+        )
+      }).toString()
+    )
   }
 }

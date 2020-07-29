@@ -92,14 +92,18 @@ for (const key in verifiers) {
     _schemas: Schema,
     field: string,
     payload: SetOptions,
-    result: SetOptions,
+    result: string[],
     _fields: FieldSchemaOther,
     _type: string
   ) => {
-    if (!result.$args) result.$args = []
+    let keyname: string = field
+    let valueType: string = '0'
+    let value: string | null = null
+
     if (!noOptions && typeof payload === 'object') {
       let hasKeys = false
       for (let k in payload) {
+        value = payload[k]
         hasKeys = true
         if (
           k === '$default' ||
@@ -110,24 +114,21 @@ for (const key in verifiers) {
             if (typeof payload[k].$ref !== 'string') {
               throw new Error(`Non-string $ref provided for ${key}.${k}`)
             }
-            result[k] = `___selva_$ref:${payload[k].$ref}`
-            result.$args.push('0', k, `___selva_$ref:${payload[k].$ref}`)
+
+            value = `___selva_$ref:${payload[k].$ref}`
           } else {
             if (!verify(payload[k])) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (converter) {
-              result[k] = converter(payload[k])
-              result.$args.push('0', k, converter(payload[k]))
+              value = converter(payload[k])
             }
           }
         } else if (k === '$ref') {
-          // TODO: verify it references the same type
-          result[field] = `___selva_$ref:${payload[k]}`
-          result.$args.push('0', field, `___selva_$ref:${payload[k]}`)
+          value = `___selva_$ref:${payload[k]}`
           return
         } else if (k === '$delete') {
-          result[field] = { $delete: true }
-          // FIXME
+          // result[field] = { $delete: true }
+          // FIXME: add a value type in c for this
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }
@@ -136,17 +137,11 @@ for (const key in verifiers) {
       if (!hasKeys) {
         throw new Error(`Incorrect payload empty object for field ${field}`)
       }
-      result[field] = payload
-      // @ts-ignore FIXME
-      result.$args.push('0', field, payload)
     } else if (verify(payload)) {
       if (converter) {
-        result[field] = converter(payload)
-        result.$args.push('0', field, converter(payload))
+        value = converter(payload)
       } else {
-        result[field] = payload
-        // @ts-ignore FIXME
-        result.$args.push('0', field, payload)
+        value = String(payload)
       }
     } else {
       throw new Error(
@@ -154,6 +149,10 @@ for (const key in verifiers) {
           payload
         )}`
       )
+    }
+
+    if (value) {
+      result.push(valueType, keyname, value)
     }
   }
 }

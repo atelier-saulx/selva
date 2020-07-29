@@ -22,7 +22,11 @@ function refs(field: string, payload: SetOptions, langs?: string[]): void {
   }
 }
 
-const verify = (payload: SetOptions, nested?: boolean, lang?: string[]) => {
+const verify = (
+  payload: SetOptions,
+  nested?: boolean,
+  lang?: string[]
+): void => {
   for (let key in payload) {
     if (key === '$merge') {
       if (nested) {
@@ -41,8 +45,10 @@ const verify = (payload: SetOptions, nested?: boolean, lang?: string[]) => {
       }
     } else if (key === '$ref') {
       // $refs are allowed
+      // TODO: handle this
     } else if (key === '$delete') {
       // $delete is allowed
+      // TODO: use different type
     } else if (lang && lang.indexOf(key) !== -1) {
       if (typeof payload[key] === 'object') {
         verify(payload[key], true)
@@ -71,20 +77,18 @@ export default async (
     payload = { [$lang]: payload }
   }
 
-  if (!result.$args) result.$args = []
-
-  refs(field, payload, lang)
+  // refs(field, payload, lang)
   verify(payload, false, lang)
 
   const push = (o, hname: string) => {
-    for (const k of Object.keys(o)) {
+    for (const k in o) {
       if (typeof o[k] === 'string') {
-        result.$args.push('0', `${hname}.${k}`, o[k])
+        result.push('0', `${hname}.${k}`, o[k])
       } else {
         push(o[k], `${hname}.${k}`)
       }
     }
   }
 
-  push(payload, field);
+  push(payload, field)
 }

@@ -40,7 +40,7 @@ async function transform(
   $lang?: string
 ): Promise<string[]> {
   // id, R|N, field enum, fieldName, value
-  const result: string[] = ['', 'R']
+  const result: string[] = ['', '']
 
   if (!payload.type && schemas.prefixToTypeMapping && payload.$id) {
     payload.type = schemas.prefixToTypeMapping[payload.$id.substring(0, 2)]
@@ -73,24 +73,26 @@ async function transform(
         if (!(payload[key] === true || payload[key] === false)) {
           throw new Error(`$merge needs to be a a boolean `)
         }
-        // TODO: is merge supported?
+        result[1] += 'M' + String(Number(payload.$merge))
       } else if (key === '$id') {
         if (!verifiers.id(payload[key])) {
           throw new Error('Wrong type for $id ' + payload[key])
         }
-        // TODO: set id parameter
+
+        result[0] = payload.$id
       } else if (key === '$db') {
         if (typeof payload[key] !== 'string') {
           throw new Error('Wrong type for $db string expected: ' + payload[key])
         }
-        // TODO: how do we set $db?
+
+        ;(<any>result).$db = payload.$db
       } else if (key === '$operation') {
         const val = payload[key]
         if (val !== 'update' && val !== 'insert' && val !== 'upsert') {
           throw new Error('Wrong type for $operation ' + payload[key])
         }
 
-        // TODO: $operation
+        result[1] += 'O' + (val === 'upsert' ? 0 : val === 'insert' ? 1 : 2)
       } else if (key === '$source') {
         if (
           typeof payload[key] !== 'string' &&
@@ -99,7 +101,8 @@ async function transform(
           throw new Error('Wrong type for $source, string or object required')
         }
 
-        // TODO: $source
+        // TODO: $source, pass this as struct field
+        // result.push('5', '$source', payload.$source)
       } else if (key === '$alias') {
         const aliasIsArray = Array.isArray(payload[key])
 
@@ -112,18 +115,7 @@ async function transform(
 
         // TODO
         // if (!result.$args) result.$args = []
-        // result.$args.push('6', key, toCArr(arr))
-      } else if (key === '$_batchOpts') {
-        // TODO: this will be nuked
-        // internally used
-        // result[key] = payload[key]
-      } else if (key === '$version') {
-        // TODO: just nuke this we don't even actually support it
-        // if (typeof payload[key] !== 'string') {
-        //   throw new Error('Wrong type for $version, string required')
-        // }
-        // console.warn('$version is not implemented yet!')
-        // result[key] = payload[key]
+        result.push('6', key, toCArr(arr))
       } else if (key === '$language') {
         if (
           typeof payload[key] !== 'string' ||
@@ -147,10 +139,9 @@ async function transform(
             )}`
           )
         }
-      } else if (key === '$_itemCount') {
-        // TODO: nuke
-        // ignore
-        // result[key] = payload[key]
+
+        // support languages
+        ;(<any>result).$language = payload.$language
       } else {
         throw new Error(`Unsupported operator on set ${key}. Did you mean one following set operators?
           ${ALLOWED_OPTIONS_DOCS}`)
