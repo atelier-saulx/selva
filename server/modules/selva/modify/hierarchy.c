@@ -548,6 +548,8 @@ int SelvaModify_DelHierarchyChildren(
     }
 
     removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+
+    return 0;
 }
 
 int SelvaModify_DelHierarchyParents(
@@ -560,6 +562,8 @@ int SelvaModify_DelHierarchyParents(
     }
 
     removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+
+    return 0;
 }
 
 int SelvaModify_SetHierarchy(
