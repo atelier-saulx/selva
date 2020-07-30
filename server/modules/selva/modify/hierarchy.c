@@ -41,7 +41,7 @@ enum SelvaModify_Hierarchy_Algo {
 
 RB_HEAD(hierarchy_index_tree, SelvaModify_HierarchyNode);
 
-typedef struct SelvaModify_Hierarchy {
+struct SelvaModify_Hierarchy {
     /**
      * Current transaction timestamp.
      * Set before traversal begins and is used for marking visited nodes. Due to the
@@ -54,7 +54,7 @@ typedef struct SelvaModify_Hierarchy {
      * Orphan nodes aka heads of the hierarchy.
      */
     SVector heads;
-} SelvaModify_Hierarchy;
+};
 
 typedef void (*HierarchyNode_HeadCallback)(SelvaModify_HierarchyNode *node, void *arg);
 
