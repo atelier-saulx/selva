@@ -119,7 +119,7 @@ static int update_zset(
     RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
 
     if (!set_key) {
-        RedisModule_ReplyWithError(ctx, "Unable to open a set key");
+        RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
         return REDISMODULE_ERR;
     }
 
@@ -253,4 +253,11 @@ void SelvaModify_ModifyIncrement(
     if (incrementOpts->index) {
         SelvaModify_Index(id_str, id_len, field_str, field_len, increment_str, num_str_size);
     }
+}
+
+int SelvaModify_ModifyDel(
+    RedisModuleKey *id_key,
+    RedisModuleString *field
+) {
+    return RedisModule_ZsetRem(id_key, field, NULL);
 }

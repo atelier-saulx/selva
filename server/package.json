@@ -60,7 +60,7 @@
     "@saulx/selva": "1.9.0",
     "aws-sdk": "^2.616.0",
     "chalk": "^4.0.0",
-    "data-record": "^0.2.0",
+    "data-record": "^0.4.0",
     "dropbox": "^4.0.30",
     "get-port": "^5.1.1",
     "node-fetch": "^2.6.0",

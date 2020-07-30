@@ -15,6 +15,7 @@ enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_OP_INCREMENT = '4',
     SELVA_MODIFY_ARG_OP_SET = '5',
     SELVA_MODIFY_ARG_STRING_ARRAY = '6',
+    SELVA_MODIFY_ARG_OP_DEL = '7',
 };
 
 struct SelvaModify_OpIncrement {
@@ -53,9 +54,9 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleStrin
         return NULL;
     }
 
-    op->$add = (char *)((char *)op + sizeof(*op));
-    op->$delete = (char *)((char *)op + sizeof(*op) + op->$add_len);
-    op->$value = (char *)((char *)op + sizeof(*op) + op->$add_len + op->$delete_len);
+    op->$add = op->$add ? (char *)((char *)op + sizeof(*op)) : NULL;
+    op->$delete = op->$delete ? (char *)((char *)op + sizeof(*op) + op->$add_len) : NULL;
+    op->$value = op->$value ? (char *)((char *)op + sizeof(*op) + op->$add_len + op->$delete_len) : NULL;
 
     return op;
 }
@@ -99,6 +100,11 @@ void SelvaModify_ModifyIncrement(
     const char *current_value_str,
     size_t current_value_len,
     struct SelvaModify_OpIncrement *incrementOpts
+);
+
+int SelvaModify_ModifyDel(
+    RedisModuleKey *id_key,
+    RedisModuleString *field
 );
 
 #endif /* SELVA_MODIFY */
