@@ -34,7 +34,8 @@ export default async (
     }
 
     if (payload.$delete === true) {
-      result[field] = { $delete: true }
+      // TODO
+      // result[field] = { $delete: true }
       return
     }
 
@@ -48,6 +49,6 @@ export default async (
       )
     }
 
-    result[field] = verifySimple(payload)
+    result.push('0', field, verifySimple(payload))
   }
 }

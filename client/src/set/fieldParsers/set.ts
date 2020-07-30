@@ -35,12 +35,10 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: SetOptions,
+  result: string[],
   fields: FieldSchemaArrayLike,
   type: string
 ): Promise<void> => {
-  if (!result.$args) result.$args = []
-
   const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
   if (!typeSchema) {
     throw new Error('Cannot find type schema ' + type)
@@ -73,14 +71,15 @@ export default async (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
-          r.$add = [await parseSetObject(client, payload[k], schema)]
+          // TODO: do these modify commands recursively and then populate the ids here
+          // r.$add = [await parseSetObject(client, payload[k], schema)]
         } else {
           r.$add = await verifySimple(payload[k], verify)
         }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
           // unsets are allowed
-          r.$delete = true // FIXME
+          r.$delete_all = 1
         } else {
           r.$delete = await verifySimple(payload[k], verify)
         }
@@ -89,7 +88,7 @@ export default async (
       }
     }
 
-    result.$args.push(
+    result.push(
       '5',
       field,
       createRecord(setRecordDef, {
@@ -100,7 +99,7 @@ export default async (
       }).toString()
     )
   } else {
-    result.$args.push(
+    result.push(
       '5',
       field,
       createRecord(setRecordDef, {

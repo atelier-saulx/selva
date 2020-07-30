@@ -47,5 +47,6 @@ export default async (
 
   refs(field, payload)
   verify(payload)
-  result[field] = `${payload.lon},${payload.lat}`
+  // result[field] = `${payload.lon},${payload.lat}`
+  result.push('0', field, `${payload.lon},${payload.lat}`)
 }
