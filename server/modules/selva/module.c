@@ -267,7 +267,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * $alias is one of these.
              */
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
-            err = SelvaModify_ModifyDel(id_key, field);
+            err = SelvaModify_ModifyDel(hierarchy, id_key, id, field);
             if (err) {
                 TO_STR(field);
                 char err_msg[80];

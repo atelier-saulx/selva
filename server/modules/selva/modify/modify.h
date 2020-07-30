@@ -26,6 +26,7 @@ struct SelvaModify_OpIncrement {
 
 struct SelvaModify_OpSet {
     int8_t is_reference;
+    int8_t delete_all;
 
     // filled with multiple ids of length 10
     char *$add;
@@ -102,7 +103,7 @@ void SelvaModify_ModifyIncrement(
 );
 
 int SelvaModify_ModifyDel(
-    SelvaModify_Hierarchy *hierarchy,
+    struct SelvaModify_Hierarchy *hierarchy,
     RedisModuleKey *id_key,
     RedisModuleString *id,
     RedisModuleString *field

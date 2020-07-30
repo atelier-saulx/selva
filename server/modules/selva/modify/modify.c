@@ -207,11 +207,24 @@ int SelvaModify_ModifySet(
 ) {
     TO_STR(id, field);
 
+
     if (setOpts->is_reference) {
         Selva_NodeId node_id;
 
         memset(node_id, '\0', SELVA_NODE_ID_SIZE);
         memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
+
+        if (setOpts->delete_all) {
+            if (!strcmp(field_str, "children") &&
+                !SelvaModify_DelHierarchyChildren(hierarchy, node_id)) {
+                RedisModule_ReplyWithError(ctx, "ERR Unable to remove children");
+                return REDISMODULE_ERR;
+            } else if (!strcmp(field_str, "parents") &&
+                       !SelvaModify_DelHierarchyParents(hierarchy, node_id)) {
+                RedisModule_ReplyWithError(ctx, "ERR Unable to remove parents");
+                return REDISMODULE_ERR;
+            }
+        }
 
         /*
          * Currently only parents and children fields support references (using
@@ -219,6 +232,19 @@ int SelvaModify_ModifySet(
          */
         return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
     } else {
+        if (setOpts->delete_all) {
+            RedisModuleString *set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s.%.*s", id_len, id_str, field_len, field_str);
+            RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
+
+            if (!set_key) {
+                RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
+                return REDISMODULE_ERR;
+            }
+
+            RedisModule_DeleteKey(set_key);
+            RedisModule_CloseKey(set_key);
+        }
+
         return update_zset(ctx, id_key, id, field, field_str, field_len, setOpts);
     }
 }
@@ -262,7 +288,7 @@ int SelvaModify_ModifyDel(
     RedisModuleString *field
 ) {
     TO_STR(id, field);
-    int err;
+    int err = 0;
 
     if (!strcmp(field_str, "children")) {
         Selva_NodeId node_id;
