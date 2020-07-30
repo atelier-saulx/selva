@@ -54,9 +54,9 @@ export default async (
   }
 
   const verify = async (v: SetOptions) => {
-    const r: { value: any } = { value: undefined }
+    const r: string[] = []
     await parser(client, schema, 'value', v, r, fields, type)
-    return r.value
+    return r[2]
   }
 
   if (typeof payload === 'object' && !Array.isArray(payload)) {

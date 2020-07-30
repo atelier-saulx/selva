@@ -151,7 +151,7 @@ for (const key in verifiers) {
       )
     }
 
-    if (value) {
+    if (value !== null && value !== undefined) {
       result.push(valueType, keyname, value)
     }
   }

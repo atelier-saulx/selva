@@ -54,13 +54,4 @@ export default async (
       result.push(...r)
     }
   }
-
-  if (Object.keys(result[field]).length === 0) {
-    hasKeys = false
-  }
-
-  if (!hasKeys) {
-    // omit completely empty objects, so they are not mistaken for arrays
-    delete result[field]
-  }
 }

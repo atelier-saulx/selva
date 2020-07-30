@@ -57,16 +57,6 @@ export default async (
         $lang
       )
       result.push(...r)
-
-      // check if nested things have been removed because there are empty objects or the like
-      if (Object.keys(result[field]).length === 0) {
-        hasKeys = false
-      }
     }
-  }
-
-  if (!hasKeys) {
-    // omit completely empty objects, so they are not mistaken for arrays
-    delete result[field]
   }
 }
