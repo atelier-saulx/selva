@@ -16,9 +16,7 @@ export default async (
   if (typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
-  const r: SetOptions = (result[field] = {})
-
-  if (!result.$args) result.$args = []
+  const r: string[] = []
 
   const fn = fieldParsers[fields.values.type]
 
@@ -26,38 +24,34 @@ export default async (
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
-        if (!(payload[key] === true || payload[key] === false)) {
-          throw new Error(`$merge needs to be a a boolean `)
-        }
-        r[key] = payload[key]
-      } else if (key === '$field') {
-        r.$field = payload[key]
-        return
+        // TODO
+        // if (!(payload[key] === true || payload[key] === false)) {
+        //   throw new Error(`$merge needs to be a a boolean `)
+        // }
+        // r[key] = payload[key]
       } else if (key === '$ref') {
-        r.$ref = payload[key]
+        r.push('0', field + '.' + key, payload[key])
         return
       } else if (key === '$delete') {
-        r.$delete = true
-        return
-      } else if (key === '$_itemCount') {
-        r.$ref = payload[key]
-        return
+        // TODO
+        // r.$delete = true
+        // return
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }
     } else {
       hasKeys = true
-      await fn(client, schema, `${field}.${key}`, payload[key], r, fields.values, type, $lang)
-      result.$args.push(...r.$args)
+      await fn(
+        client,
+        schema,
+        `${field}.${key}`,
+        payload[key],
+        r,
+        fields.values,
+        type,
+        $lang
+      )
+      result.push(...r)
     }
-  }
-
-  if (Object.keys(result[field]).length === 0) {
-    hasKeys = false
-  }
-
-  if (!hasKeys) {
-    // omit completely empty objects, so they are not mistaken for arrays
-    delete result[field]
   }
 }

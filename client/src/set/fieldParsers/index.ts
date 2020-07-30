@@ -12,16 +12,18 @@ import object from './object'
 import record from './record'
 import array from './array'
 
-const fieldParsers: { [index: string]: (
-  client: SelvaClient,
-  schema: Schema,
-  field: string,
-  payload: SetOptions,
-  result: SetOptions,
-  fields: FieldSchema,
-  type: string,
-  $lang?: string
-) => Promise<void> } = {
+const fieldParsers: {
+  [index: string]: (
+    client: SelvaClient,
+    schema: Schema,
+    field: string,
+    payload: SetOptions,
+    result: string[],
+    fields: FieldSchema,
+    type: string,
+    $lang?: string
+  ) => Promise<void>
+} = {
   ...simple,
   text,
   geo,
