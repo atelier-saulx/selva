@@ -258,9 +258,20 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 goto out;
             }
         } else if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY) {
-            /* NOP */
+            /*
+             * NOP
+             * $alias is one of these.
+             */
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
-            err = SelvaModify_ModifyDel(ctx, hierarchy, id_key, id, field);
+            err = SelvaModify_ModifyDel(id_key, field);
+            if (err) {
+                TO_STR(field);
+                char err_msg[80];
+
+                snprintf(err_msg, sizeof(err_msg), "Failed to delete the field: \"%s\"", field_str);
+                RedisModule_ReplyWithError(ctx, err_msg);
+                goto out;
+            }
         } else {
             if (type_code == SELVA_MODIFY_ARG_INDEXED_VALUE ||
                 type_code == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
@@ -278,8 +289,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             } else if (type_code == SELVA_MODIFY_ARG_VALUE) {
                 RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
             } else {
-                fprintf(stderr, "Invalid type: \"%c\"", type_code);
-                RedisModule_ReplyWithError(ctx, "Invalid type");
+                char err_msg[80];
+
+                snprintf(err_msg, sizeof(err_msg), "Invalid type: \"%c\"", type_code);
+                RedisModule_ReplyWithError(ctx, err_msg);
                 goto out;
             }
         }
