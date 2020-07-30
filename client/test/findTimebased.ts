@@ -252,10 +252,10 @@ test.serial('find - already started', async t => {
   await client.destroy()
 })
 
-test.serial('find - already started subscription', async t => {
+test.serial.only('find - already started subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
-  const match1 = await client.set({
+  await client.set({
     type: 'match',
     name: 'started 5m ago',
     startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -279,6 +279,32 @@ test.serial('find - already started subscription', async t => {
   const nextRefresh = Date.now() + 5 * 1000
   const nextNextRefresh = Date.now() + 7 * 1000
 
+  // add another <============== THIS BREAKS IT
+  client
+    .observe({
+      $id: 'rando',
+      items: {
+        name: true,
+        value: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'endTime',
+                $operator: '<',
+                $value: 'now'
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(() => {
+      console.log('do nothing')
+    })
+  // =======================
+
   await client.set({
     $id: 'maFuture',
     type: 'match',
@@ -296,6 +322,7 @@ test.serial('find - already started subscription', async t => {
   })
 
   t.plan(5)
+
   const observable = client.observe({
     $includeMeta: true,
     $id: 'root',
