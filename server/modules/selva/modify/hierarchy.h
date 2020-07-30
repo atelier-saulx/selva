@@ -60,6 +60,14 @@ int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selv
 
 ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
 
+int SelvaModify_DelHierarchyChildren(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id);
+
+int SelvaModify_DelHierarchyParents(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id);
+
 /**
  * Set node relationships relative to other existing nodes.
  * Previously existing connections to and from other nodes are be removed.

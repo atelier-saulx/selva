@@ -35,7 +35,6 @@ struct SelvaModify_OpSet {
     char *$delete;
     size_t $delete_len;
 
-
     // filled with multiple ids of length 10
     char *$value;
     size_t $value_len;
@@ -103,7 +102,9 @@ void SelvaModify_ModifyIncrement(
 );
 
 int SelvaModify_ModifyDel(
+    SelvaModify_Hierarchy *hierarchy,
     RedisModuleKey *id_key,
+    RedisModuleString *id,
     RedisModuleString *field
 );
 

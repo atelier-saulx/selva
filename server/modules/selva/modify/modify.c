@@ -256,8 +256,35 @@ void SelvaModify_ModifyIncrement(
 }
 
 int SelvaModify_ModifyDel(
+    SelvaModify_Hierarchy *hierarchy,
     RedisModuleKey *id_key,
+    RedisModuleString *id,
     RedisModuleString *field
 ) {
-    return RedisModule_ZsetRem(id_key, field, NULL);
+    TO_STR(id, field);
+    int err;
+
+    if (!strcmp(field_str, "children")) {
+        Selva_NodeId node_id;
+
+        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
+        memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
+
+        if (!SelvaModify_DelHierarchyChildren(hierarchy, node_id)) {
+            err = REDISMODULE_ERR;
+        }
+    } else if (!strcmp(field_str, "parents")) {
+        Selva_NodeId node_id;
+
+        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
+        memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
+
+        if (!SelvaModify_DelHierarchyParents(hierarchy, node_id)) {
+            err = REDISMODULE_ERR;
+        }
+    } else {
+        err = RedisModule_ZsetRem(id_key, field, NULL);
+    }
+
+    return err;
 }
