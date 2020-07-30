@@ -119,7 +119,7 @@ static int update_zset(
     RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
 
     if (!set_key) {
-        RedisModule_ReplyWithError(ctx, "Unable to open a set key");
+        RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
         return REDISMODULE_ERR;
     }
 

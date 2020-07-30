@@ -205,7 +205,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     id_key = open_node(ctx, hierarchy, id, no_root);
     if (!id_key) {
-        RedisModule_ReplyWithError(ctx, "Failed to open the key");
+        TO_STR(id);
+        char err_msg[80];
+
+        snprintf(err_msg, sizeof(err_msg), "ERR Failed to open the key for id: \"%s\"", id_str);
+        RedisModule_ReplyWithError(ctx, err_msg);
         return REDISMODULE_ERR;
     }
 
@@ -268,7 +272,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 TO_STR(field);
                 char err_msg[80];
 
-                snprintf(err_msg, sizeof(err_msg), "Failed to delete the field: \"%s\"", field_str);
+                snprintf(err_msg, sizeof(err_msg), "ERR Failed to delete the field: \"%s\"", field_str);
                 RedisModule_ReplyWithError(ctx, err_msg);
                 goto out;
             }
@@ -291,7 +295,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             } else {
                 char err_msg[80];
 
-                snprintf(err_msg, sizeof(err_msg), "Invalid type: \"%c\"", type_code);
+                snprintf(err_msg, sizeof(err_msg), "ERR Invalid type: \"%c\"", type_code);
                 RedisModule_ReplyWithError(ctx, err_msg);
                 goto out;
             }

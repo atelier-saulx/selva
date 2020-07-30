@@ -96,12 +96,12 @@ static RedisModuleType *HierarchyType;
 static int rdbLoading;
 
 const char * const hierarchyStrError[] = {
-    (const char *)"HIERARCHY_ERR No Error",
-    (const char *)"HIERARCHY_ERR EGENERAL Unknown error",
-    (const char *)"HIERARCHY_ERR ENOTSUP Operation not supported",
-    (const char *)"HIERARCHY_ERR ENOMEM Out of memory",
-    (const char *)"HIERARCHY_ERR ENOENT Not found",
-    (const char *)"HIERARCHY_ERR EEXIST Exist",
+    (const char *)"ERR_HIERARCHY No Error",
+    (const char *)"ERR_HIERARCHY EGENERAL Unknown error",
+    (const char *)"ERR_HIERARCHY ENOTSUP Operation not supported",
+    (const char *)"ERR_HIERARCHY ENOMEM Out of memory",
+    (const char *)"ERR_HIERARCHY ENOENT Not found",
+    (const char *)"ERR_HIERARCHY EEXIST Exist",
 };
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
