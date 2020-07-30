@@ -107,7 +107,7 @@ export function addSubscription(
         break
       }
     }
-    idx++
+    // idx++
 
     subsManager.refreshSubscriptions.subscriptions.splice(idx, 0, subscription)
   }
