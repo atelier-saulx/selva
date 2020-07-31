@@ -1,7 +1,9 @@
+import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { TypeSchema, Schema, FieldSchemaOther } from '../../schema'
 import digest from '../../digest'
+import { incrementDef } from '../modifyDataRecords'
 
 const isUrlRe = new RegExp(
   '^(?!mailto:)(?:(?:http|https|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$',
@@ -121,6 +123,16 @@ for (const key in verifiers) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (converter) {
               value = converter(payload[k])
+            }
+
+            if (k !== '$value') {
+              console.log(payload)
+              result.push('4', field, createRecord(incrementDef, {
+                index: 0,
+                $default: isNaN(payload.$default) ? 0 : Number(payload.$default),
+                $increment: isNaN(payload.$increment) ? 0 : Number(payload.$increment)
+              }).toString());
+              return
             }
           }
         } else if (k === '$ref') {

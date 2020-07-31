@@ -3,6 +3,7 @@
 #define SELVA_MODIFY
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "./async_task.h"
 
 struct SelvaModify_Hierarchy;
@@ -19,9 +20,9 @@ enum SelvaModify_ArgType {
 };
 
 struct SelvaModify_OpIncrement {
-    int index;
-    int $default;
-    int $increment;
+    int32_t index;
+    int32_t $default;
+    int32_t $increment;
 };
 
 struct SelvaModify_OpSet {

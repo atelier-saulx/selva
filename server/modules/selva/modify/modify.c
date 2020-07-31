@@ -299,12 +299,12 @@ void SelvaModify_ModifyIncrement(
 ) {
     size_t id_len;
     const char *id_str = RedisModule_StringPtrLen(id, &id_len);
-    int num = current_value == NULL
+    int32_t num = current_value == NULL
         ? incrementOpts->$default
-        : strtol(current_value_str, NULL, SELVA_NODE_ID_SIZE);
-    num += incrementOpts->$increment;
+        : strtol(current_value_str, NULL, 10) + incrementOpts->$increment;
 
-    int num_str_size = (int)ceil(log10(num));
+
+    size_t num_str_size = (int)(log10(num)) + 1;
     char increment_str[num_str_size];
     sprintf(increment_str, "%d", num);
 

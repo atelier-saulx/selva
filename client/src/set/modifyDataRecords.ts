@@ -7,3 +7,9 @@ export const setRecordDef = compile([
   { name: '$delete', type: 'cstring_p' },
   { name: '$value', type: 'cstring_p' },
 ])
+
+export const incrementDef = compile([
+  { name: 'index', type: 'int32' },
+  { name: '$default', type: 'int32' },
+  { name: '$increment', type: 'int32' }
+])
