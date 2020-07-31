@@ -41,7 +41,7 @@ export default async (
   _type: string
 ): Promise<void> => {
   if (payload.$delete) {
-    result[field] = { $delete: true }
+    result.push('7', field, '')
     return
   }
 

@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -7,6 +8,50 @@
 #include "cdefs.h"
 #include "hierarchy.h"
 #include "modify.h"
+
+static size_t ref2rms(RedisModuleCtx *ctx, struct SelvaModify_OpSet * restrict setOpts, const char *s, RedisModuleString **out) {
+    unsigned long len = setOpts->is_reference ? strnlen(s, SELVA_NODE_ID_SIZE) : strlen(s);
+    *out = RedisModule_CreateString(ctx, s, len);
+    /* TODO Null check */
+
+    return len;
+}
+
+static RedisModuleKey *openSet(RedisModuleCtx *ctx, RedisModuleString *id, RedisModuleString *field) {
+    TO_STR(id, field);
+    RedisModuleString *set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s.%.*s", id_len, id_str, field_len, field_str);
+    RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
+
+    return set_key;
+}
+
+static int removeSet(
+    RedisModuleKey *set_key,
+    RedisModuleKey *alias_key) {
+
+    if (!set_key) {
+        return REDISMODULE_ERR;
+    }
+
+    /*
+     * In case of aliases we need to clear the aliases hash too.
+     */
+    if (alias_key &&
+        RedisModule_ZsetFirstInScoreRange(set_key, REDISMODULE_NEGATIVE_INFINITE, REDISMODULE_POSITIVE_INFINITE, 0, 0) == REDISMODULE_OK) {
+        while (!RedisModule_ZsetRangeEndReached(set_key)) {
+            RedisModuleString *alias;
+
+            alias = RedisModule_ZsetRangeCurrentElement(set_key, NULL);
+            RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, alias, REDISMODULE_HASH_DELETE, NULL);
+            RedisModule_ZsetRangeNext(set_key);
+        }
+        RedisModule_ZsetRangeStop(set_key);
+    }
+
+    RedisModule_UnlinkKey(set_key);
+
+    return 0;
+}
 
 static void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleString *id, RedisModuleString *ref) {
     RedisModuleString *orig;
@@ -108,16 +153,13 @@ static int update_zset(
     size_t field_len,
     struct SelvaModify_OpSet *setOpts
 ) {
-    TO_STR(id);
     RedisModuleKey *alias_key = NULL;
 
     // add in the hash that it's a set/references field
     RedisModuleString *set_field_identifier = RedisModule_CreateString(ctx, "___selva_$set", 13);
     RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, set_field_identifier, NULL);
 
-    RedisModuleString *set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s%c%.*s", id_len, id_str, '.', field_len, field_str);
-    RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
-
+    RedisModuleKey *set_key = openSet(ctx, id, field);
     if (!set_key) {
         RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
         return REDISMODULE_ERR;
@@ -129,23 +171,19 @@ static int update_zset(
     }
 
     if (setOpts->$value_len > 0) {
-        if (alias_key &&
-            RedisModule_ZsetFirstInScoreRange(set_key, REDISMODULE_NEGATIVE_INFINITE, REDISMODULE_POSITIVE_INFINITE, 0, 0) == REDISMODULE_OK) {
-            while (!RedisModule_ZsetRangeEndReached(set_key)) {
-                RedisModuleString *alias;
-
-                alias = RedisModule_ZsetRangeCurrentElement(set_key, NULL);
-                RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, alias, REDISMODULE_HASH_DELETE, NULL);
-                RedisModule_ZsetRangeNext(set_key);
-            }
-            RedisModule_ZsetRangeStop(set_key);
+        int err = removeSet(set_key, alias_key);
+        if (err) {
+            /* TODO Send error string */
+            return REDISMODULE_ERR;
         }
-        RedisModule_UnlinkKey(set_key);
 
+        /*
+         * Set new values.
+         */
         char *ptr = setOpts->$value;
         for (size_t i = 0; i < setOpts->$value_len; ) {
-            unsigned long part_len = strlen(ptr);
-            RedisModuleString *ref = RedisModule_CreateString(ctx, ptr, part_len);
+            RedisModuleString *ref;
+            size_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
 
             if (alias_key) {
                 update_alias(ctx, alias_key, id, ref);
@@ -153,15 +191,16 @@ static int update_zset(
             RedisModule_ZsetAdd(set_key, 0, ref, NULL);
 
             // +1 to skip the nullbyte
-            ptr += part_len + 1;
-            i += part_len + 1;
+            const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : part_len + 1;
+            ptr += skip_off;
+            i += skip_off;
         }
     } else {
         if (setOpts->$add_len > 0) {
             char *ptr = setOpts->$add;
             for (size_t i = 0; i < setOpts->$add_len; ) {
-                unsigned long part_len = strlen(ptr);
-                RedisModuleString *ref = RedisModule_CreateString(ctx, ptr, part_len);
+                RedisModuleString *ref;
+                size_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
 
                 if (alias_key) {
                     update_alias(ctx, alias_key, id, ref);
@@ -169,22 +208,24 @@ static int update_zset(
                 RedisModule_ZsetAdd(set_key, 0, ref, NULL);
 
                 // +1 to skip the nullbyte
-                ptr += part_len + 1;
-                i += part_len + 1;
+                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : part_len + 1;
+                ptr += skip_off;
+                i += skip_off;
             }
         }
 
         if (setOpts->$delete_len > 0) {
             char *ptr = setOpts->$delete;
             for (size_t i = 0; i < setOpts->$delete_len; ) {
-                unsigned long part_len = strlen(ptr);
+                RedisModuleString *ref;
+                size_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
 
-                RedisModuleString *ref = RedisModule_CreateString(ctx, ptr, part_len);
                 RedisModule_ZsetRem(set_key, ref, NULL);
 
                 // +1 to skip the nullbyte
-                ptr += part_len + 1;
-                i += part_len + 1;
+                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : part_len + 1;
+                ptr += skip_off;
+                i += skip_off;
 
                 if (alias_key) {
                     RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, REDISMODULE_HASH_DELETE, NULL);
@@ -206,45 +247,40 @@ int SelvaModify_ModifySet(
     struct SelvaModify_OpSet *setOpts
 ) {
     TO_STR(id, field);
-
+    Selva_NodeId node_id;
 
     if (setOpts->is_reference) {
-        Selva_NodeId node_id;
-
         memset(node_id, '\0', SELVA_NODE_ID_SIZE);
         memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
+    }
 
-        if (setOpts->delete_all) {
-            if (!strcmp(field_str, "children") &&
-                !SelvaModify_DelHierarchyChildren(hierarchy, node_id)) {
-                RedisModule_ReplyWithError(ctx, "ERR Unable to remove children");
-                return REDISMODULE_ERR;
-            } else if (!strcmp(field_str, "parents") &&
-                       !SelvaModify_DelHierarchyParents(hierarchy, node_id)) {
-                RedisModule_ReplyWithError(ctx, "ERR Unable to remove parents");
-                return REDISMODULE_ERR;
-            }
-        }
+    if (setOpts->delete_all) {
+        int err;
 
-        /*
-         * Currently only parents and children fields support references (using
-         * hierarchy) and we assume the field is either of those.
-         */
-        return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
-    } else {
-        if (setOpts->delete_all) {
-            RedisModuleString *set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s.%.*s", id_len, id_str, field_len, field_str);
-            RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
-
-            if (!set_key) {
+        if (!strcmp(field_str, "children")) {
+            err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
+        } else if (!strcmp(field_str, "parents")) {
+            err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
+        } else {
+            RedisModuleKey *set_key = openSet(ctx, id, field);
+            err = removeSet(set_key, NULL);
+            if (err) {
                 RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
                 return REDISMODULE_ERR;
             }
-
-            RedisModule_DeleteKey(set_key);
-            RedisModule_CloseKey(set_key);
         }
 
+        if (err) {
+            char err_msg[80];
+
+            snprintf(err_msg, sizeof(err_msg), "ERR Failed to delete the set: \"%s\"", field_str);
+            return REDISMODULE_ERR;
+        }
+    }
+
+    if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
+        return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
+    } else {
         return update_zset(ctx, id_key, id, field, field_str, field_len, setOpts);
     }
 }
@@ -282,10 +318,12 @@ void SelvaModify_ModifyIncrement(
 }
 
 int SelvaModify_ModifyDel(
+    RedisModuleCtx *ctx,
     SelvaModify_Hierarchy *hierarchy,
     RedisModuleKey *id_key,
     RedisModuleString *id,
-    RedisModuleString *field
+    RedisModuleString *field,
+    const char *value_str
 ) {
     TO_STR(id, field);
     int err = 0;
@@ -309,7 +347,62 @@ int SelvaModify_ModifyDel(
             err = REDISMODULE_ERR;
         }
     } else {
-        err = RedisModule_ZsetRem(id_key, field, NULL);
+        if (value_str[0] == 'O') {
+            RedisModuleCallReply * reply;
+
+            reply = RedisModule_Call(ctx, "HKEYS", "s", id);
+            if (reply == NULL) {
+                // FIXME errno handling
+                switch (errno) {
+                case EINVAL:
+                case EPERM:
+                default:
+                    err = REDISMODULE_ERR;
+                }
+                goto hkeys_err;
+            }
+
+            int replyType = RedisModule_CallReplyType(reply);
+            if (replyType != REDISMODULE_REPLY_ARRAY) {
+                err = REDISMODULE_ERR;
+                goto hkeys_err;
+            }
+
+            size_t replyLen = RedisModule_CallReplyLength(reply);
+            for (size_t idx = 0; idx < replyLen; idx++) {
+                RedisModuleCallReply *elem;
+                const char * hkey;
+
+                elem = RedisModule_CallReplyArrayElement(reply, idx);
+                if (!elem) {
+                    continue;
+                }
+
+                int elemType = RedisModule_CallReplyType(elem);
+                if (elemType != REDISMODULE_REPLY_STRING) {
+                    continue;
+                }
+
+                size_t hkey_len;
+                hkey = RedisModule_CallReplyStringPtr(elem, &hkey_len);
+                if (!hkey) {
+                    continue;
+                }
+
+                if (!strncmp(hkey, field_str, min(hkey_len, field_len)) && hkey[field_len] == '.') {
+                    RedisModuleString *rm_hkey = RedisModule_CreateString(ctx, hkey, hkey_len);
+
+                    RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, rm_hkey, REDISMODULE_HASH_DELETE, NULL);
+                }
+            }
+
+hkeys_err:
+            if (reply) {
+                RedisModule_FreeCallReply(reply);
+            }
+        } else {
+            RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, REDISMODULE_HASH_DELETE, NULL);
+        }
     }
 
     return err;

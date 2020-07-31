@@ -29,12 +29,11 @@ export default async (
         // }
         // r[key] = payload[key]
       } else if (key === '$ref') {
-        r.push('0', field + '.' + key, payload[key])
+        result.push('0', field, payload[key])
         return
       } else if (key === '$delete') {
-        // TODO
-        // r.$delete = true
-        // return
+        result.push('7', field, 'O')
+        return
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }

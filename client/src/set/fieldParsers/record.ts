@@ -33,9 +33,8 @@ export default async (
         r.push('0', field + '.' + key, payload[key])
         return
       } else if (key === '$delete') {
-        // TODO
-        // r.$delete = true
-        // return
+        r.push('7', field + '.' + key, '')
+        return
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }

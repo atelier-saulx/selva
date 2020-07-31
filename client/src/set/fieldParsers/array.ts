@@ -18,6 +18,8 @@ export default async (
     if (payload.$delete === true) {
       // TODO
       // result[field] = { $delete: true }
+      result.push('7', field, '')
+      return
     } else if (payload.$field) {
       // TODO: verify that it references an array field
       // TODO

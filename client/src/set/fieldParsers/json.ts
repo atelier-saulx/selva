@@ -14,7 +14,7 @@ export default async (
   $lang?: string
 ): Promise<void> => {
   if (payload.$delete) {
-    result[field] = { $delete: true } // FIXME Remove
+    result.push('7', field, '')
   } else if (payload.$ref) {
     // TODO: verify that it references a json field
     result.push('0', `${field}`, `___selva_$ref:${payload.$ref}`)

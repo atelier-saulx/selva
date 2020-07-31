@@ -127,8 +127,8 @@ for (const key in verifiers) {
           value = `___selva_$ref:${payload[k]}`
           return
         } else if (k === '$delete') {
-          // result[field] = { $delete: true }
-          // FIXME: add a value type in c for this
+          result.push('7', field, '')
+          return
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }

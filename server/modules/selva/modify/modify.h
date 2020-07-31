@@ -103,10 +103,12 @@ void SelvaModify_ModifyIncrement(
 );
 
 int SelvaModify_ModifyDel(
+    RedisModuleCtx *ctx,
     struct SelvaModify_Hierarchy *hierarchy,
     RedisModuleKey *id_key,
     RedisModuleString *id,
-    RedisModuleString *field
+    RedisModuleString *field,
+    const char *value_str
 );
 
 #endif /* SELVA_MODIFY */

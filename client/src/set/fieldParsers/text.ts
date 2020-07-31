@@ -45,10 +45,8 @@ const verify = (
       }
     } else if (key === '$ref') {
       // $refs are allowed
-      // TODO: handle this
     } else if (key === '$delete') {
       // $delete is allowed
-      // TODO: use different type
     } else if (lang && lang.indexOf(key) !== -1) {
       if (typeof payload[key] === 'object') {
         verify(payload[key], true)
@@ -81,9 +79,15 @@ export default async (
   verify(payload, false, lang)
 
   const push = (o, hname: string) => {
+    if (o.$delete) {
+        result.push('7', hname, 'O')
+        return
+    }
     for (const k in o) {
       if (typeof o[k] === 'string') {
         result.push('0', `${hname}.${k}`, o[k])
+      } else if (o[k].$delete === true) {
+        result.push('7', `${hname}.${k}`, '')
       } else {
         push(o[k], `${hname}.${k}`)
       }

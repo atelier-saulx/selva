@@ -34,8 +34,7 @@ export default async (
     }
 
     if (payload.$delete === true) {
-      // TODO
-      // result[field] = { $delete: true }
+      result.push('7', field, '')
       return
     }
 

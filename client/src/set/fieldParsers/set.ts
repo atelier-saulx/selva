@@ -79,7 +79,7 @@ export default async (
       } else if (k === '$delete') {
         if (payload.$delete === true) {
           // unsets are allowed
-          r.$delete_all = 1
+          r.delete_all = 1
         } else {
           r.$delete = await verifySimple(payload[k], verify)
         }
@@ -93,6 +93,7 @@ export default async (
       field,
       createRecord(setRecordDef, {
         is_reference: 0,
+        delete_all: r.delete_all,
         $add: toCArr(r.$add),
         $delete: toCArr(r.$delete),
         $value: ''

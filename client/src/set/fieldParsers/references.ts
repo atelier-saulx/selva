@@ -111,8 +111,8 @@ export default async (
   _type: string,
   $lang?: string
 ): Promise<void> => {
-  const isReference = ['children', 'parents'].includes(field)
   let noRoot = false
+  const r: SetOptions = {}
 
   if (
     typeof payload === 'object' &&
@@ -125,32 +125,32 @@ export default async (
       if (k === '$add') {
         const parsed = await parseObjectArray(client, payload[k], schema, $lang)
         if (parsed) {
-          result[field].$add = parsed
+          r.$add = parsed
           hasKeys = true
         } else if (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
-          result[field].$add = [
+          r.$add = [
             await parseSetObject(client, payload[k], schema, $lang)
           ]
           hasKeys = true
         } else {
           if (payload[k].length) {
-            result[field].$add = verifySimple(payload[k])
+            r.$add = verifySimple(payload[k])
             hasKeys = true
           }
         }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
-          result[field].$delete = true
+          r.delete_all = 1
         } else {
-          result[field].$delete = verifySimple(payload[k])
+          r.$delete = verifySimple(payload[k])
         }
 
         hasKeys = true
       } else if (k === '$value') {
-        result[field].$value = verifySimple(payload[k])
+        r.$value = verifySimple(payload[k])
         hasKeys = true
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
@@ -158,14 +158,14 @@ export default async (
             `Wrong payload for references ${JSON.stringify(payload)}`
           )
         }
-        result[field].$hierarchy = payload[k]
+        r.$hierarchy = payload[k]
         hasKeys = true
       } else if (k === '$noRoot') {
         if (typeof payload[k] !== 'boolean') {
           throw new Error(`Wrong payload type for $noRoot in references ${k}`)
         }
 
-        result[field].$noRoot = payload[k]
+        r.$noRoot = payload[k]
         hasKeys = true
         if (field === 'parents') {
           noRoot = payload[k]
@@ -182,28 +182,25 @@ export default async (
         '5',
         field,
         createRecord(setRecordDef, {
-          is_reference: isReference,
-          $add: await toCArr(client, result[field].$add, noRoot),
-          $delete: await toCArr(client, result[field].$delete, noRoot),
-          $value: await toCArr(client, result[field].$value, noRoot)
+          is_reference: 1,
+          delete_all: r.delete_all,
+          $add: await toCArr(client, r.$add, noRoot),
+          $delete: await toCArr(client, r.$delete, noRoot),
+          $value: await toCArr(client, r.$value, noRoot)
         }).toString()
       )
-    } else {
-      delete result[field]
     }
   } else {
-    result[field] =
-      (await parseObjectArray(client, payload, schema, $lang)) ||
-      verifySimple(payload)
+    const r = (await parseObjectArray(client, payload, schema, $lang)) || verifySimple(payload)
 
     result.push(
       '5',
       field,
       createRecord(setRecordDef, {
-        is_reference: isReference,
+        is_reference: 1,
         $add: '',
         $delete: '',
-        $value: await toCArr(client, result[field], noRoot)
+        $value: await toCArr(client, r, noRoot)
       }).toString()
     )
   }
