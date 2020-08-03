@@ -774,7 +774,7 @@ test.serial('$increment, $default', async t => {
   client.destroy()
 })
 
-test.serial('$merge = false', async t => {
+test.serial.skip('$merge = false', async t => {
   const client = connect({
     port
   })

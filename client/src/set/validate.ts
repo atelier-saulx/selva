@@ -77,7 +77,9 @@ export default async function parseSetObject(
         if (!(payload[key] === true || payload[key] === false)) {
           throw new Error(`$merge needs to be a a boolean `)
         }
-        result[1] += 'M' + String(Number(payload.$merge))
+        if (payload[key] === false) {
+          result[0] += 'M'
+        }
       } else if (key === '$id') {
         if (!verifiers.id(payload[key])) {
           throw new Error('Wrong type for $id ' + payload[key])

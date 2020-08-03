@@ -13,8 +13,10 @@
 #include "modify/hierarchy.h"
 
 #define FLAG_NO_ROOT    0x1
+#define FLAG_NO_MERGE   0x2
 
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
+#define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
 
 int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // init auto memory for created strings
@@ -84,6 +86,7 @@ static int parse_flags(RedisModuleString *arg) {
 
     for (size_t i = 0; i < arg_len; i++) {
         flags |= arg_str[i] == 'N' ? FLAG_NO_ROOT : 0;
+        flags |= arg_str[i] == 'M' ? FLAG_NO_MERGE : 0;
     }
 
     return flags;
@@ -201,7 +204,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModule_CloseKey(alias_key);
     }
 
-    const int no_root = FISSET_NO_ROOT(parse_flags(argv[2]));
+    const unsigned flags = parse_flags(argv[2]);
+    const int no_root = FISSET_NO_ROOT(flags);
 
     id_key = open_node(ctx, hierarchy, id, no_root);
     if (!id_key) {
@@ -263,8 +267,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
         } else if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY) {
             /*
-             * NOP
-             * $alias is one of these.
+             * $merge:
+             */
+            if (FISSET_NO_MERGE(flags) && !strcmp(field_str, "$merge")) {
+                /* TODO Implement $merge */
+            }
+            /*
+             * $alias: NOP
              */
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
             err = SelvaModify_ModifyDel(ctx, hierarchy, id_key, id, field, value_str);
