@@ -76,6 +76,7 @@ export default async (
 ): Promise<void> => {
   let noRoot = false
   const r: SetOptions = {}
+  const isEmpty = (v: any) => !v || !v.length
 
   if (
     typeof payload === 'object' &&
@@ -146,7 +147,7 @@ export default async (
         field,
         createRecord(setRecordDef, {
           is_reference: 1,
-          delete_all: r.delete_all,
+          delete_all: r.delete_all || (isEmpty(r.$add) && isEmpty(r.$delete) && isEmpty(r.$value)),
           $add: await toCArr(client, schema, result, r.$add, noRoot),
           $delete: await toCArr(client, schema, result, r.$delete, noRoot),
           $value: await toCArr(client, schema, result, r.$value, noRoot)
@@ -155,15 +156,17 @@ export default async (
     }
   } else {
     const r = (await parseObjectArray(client, payload, schema, $lang)) || verifySimple(payload)
+    const $value = await toCArr(client, schema, result, r, noRoot)
 
     result.push(
       '5',
       field,
       createRecord(setRecordDef, {
         is_reference: 1,
+        delete_all: isEmpty($value),
         $add: '',
         $delete: '',
-        $value: await toCArr(client, schema, result, r, noRoot)
+        $value,
       }).toString()
     )
   }

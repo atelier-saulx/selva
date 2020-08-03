@@ -22,7 +22,6 @@ import * as logger from '../logger'
 import { addFieldToSearch, hasSearch } from './search'
 import sendEvent from './events'
 import { setUpdatedAt, setCreatedAt, markUpdated } from './timestamps'
-import { cleanUpSuggestions } from './delete'
 import globals from '../globals'
 import checkSource from './source'
 import { setNestedResult } from '../get/nestedFields'
@@ -305,8 +304,6 @@ function removeSpecified(
           key === 'children'
         ) {
           redis.del(id + '.' + keyPath)
-        } else {
-          cleanUpSuggestions(id, keyPath)
         }
 
         const deletedCount = redis.hdel(id, keyPath)

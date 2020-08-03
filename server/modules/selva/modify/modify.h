@@ -1,10 +1,11 @@
 #pragma once
-#ifndef SELVA_MODIFY
-#define SELVA_MODIFY
+#ifndef SELVA_MODIFY_H
+#define SELVA_MODIFY_H
 
 #include <stdbool.h>
 #include <stdint.h>
 #include "./async_task.h"
+#include "alias.h"
 
 struct SelvaModify_Hierarchy;
 
@@ -62,8 +63,6 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleStrin
     return op;
 }
 
-RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx);
-
 static inline void SelvaModify_Index(const char *id_str, size_t id_len, const char *field_str, size_t field_len, const char *value_str, size_t value_len) {
     int indexing_str_len =
         sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
@@ -112,4 +111,4 @@ int SelvaModify_ModifyDel(
     const char *value_str
 );
 
-#endif /* SELVA_MODIFY */
+#endif /* SELVA_MODIFY_H */

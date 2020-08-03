@@ -23,24 +23,28 @@ export function id(externalIdStr?: string): string {
   return redis.call('selva.id')
 }
 
+export function delnode(id: string) {
+  return redis.call('SELVA.HIERARCHY.DEL', DEFAULT_HIERARCHY, id)
+}
+
 export function children(id: string) {
-    const o: string[] = redis.call('SELVA.HIERARCHY.CHILDREN', DEFAULT_HIERARCHY, id)
-    return o.length > 0 ? o : emptyArray()
+  const o: string[] = redis.call('SELVA.HIERARCHY.CHILDREN', DEFAULT_HIERARCHY, id)
+  return o.length > 0 ? o : emptyArray()
 }
 
 export function parents(id: string) {
-    const o: string[] = redis.call('SELVA.HIERARCHY.PARENTS', DEFAULT_HIERARCHY, id)
-    return o.length > 0 ? o : emptyArray()
+  const o: string[] = redis.call('SELVA.HIERARCHY.PARENTS', DEFAULT_HIERARCHY, id)
+  return o.length > 0 ? o : emptyArray()
 }
 
 export function ancestors(id: string) {
-    const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'bfs', 'ancestors', id)
-    return o.length > 0 ? o : emptyArray()
+  const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'bfs', 'ancestors', id)
+  return o.length > 0 ? o : emptyArray()
 }
 
 export function descendants(id: string) {
-    const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'bfs', 'descendants', id)
-    return o.length > 0 ? o : emptyArray()
+  const o: string[] = redis.call('SELVA.HIERARCHY.FIND', DEFAULT_HIERARCHY, 'bfs', 'descendants', id)
+  return o.length > 0 ? o : emptyArray()
 }
 
 export function hexists(key: string, field: string): boolean {

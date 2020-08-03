@@ -213,6 +213,8 @@ test.serial('root.children $delete: []', async t => {
 test.serial('basic', async t => {
   const client = connect({
     port
+  }, {
+      loglevel: 'info'
   })
 
   const match = await client.set({
@@ -254,12 +256,12 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(match + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', match),
     ['root']
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(league + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', league),
     ['root']
   )
 
@@ -282,7 +284,7 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(person + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
     ['root', league]
   )
 
@@ -307,7 +309,7 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(person + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
     ['root', league, match]
   )
 
@@ -332,7 +334,7 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(person + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
     ['root', match]
   )
 
@@ -365,7 +367,7 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(person + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
     ['root', match, league]
   )
 
@@ -414,7 +416,7 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(person + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
     ['root', league]
   )
 
@@ -437,7 +439,7 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(person + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
     ['root', league, match]
   )
 
@@ -460,12 +462,12 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(person + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
     ['root', league, match]
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(match + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', match),
     ['root', league]
   )
 
@@ -482,7 +484,7 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(person + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
     ['root', league, match]
   )
 
@@ -493,7 +495,7 @@ test.serial('basic', async t => {
   )
 
   t.deepEqual(
-    await client.redis.zrange(match + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', match),
     ['root'],
     'match has correct ancestors after removing match from league'
   )
@@ -514,6 +516,7 @@ test.serial('basic', async t => {
 
   // delete root
   await client.delete('root')
+  console.log(await dumpDb(client))
   t.deepEqual(await dumpDb(client), [])
 
   await client.destroy()

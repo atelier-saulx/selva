@@ -36,16 +36,8 @@ static int removeSet(
     /*
      * In case of aliases we need to clear the aliases hash too.
      */
-    if (alias_key &&
-        RedisModule_ZsetFirstInScoreRange(set_key, REDISMODULE_NEGATIVE_INFINITE, REDISMODULE_POSITIVE_INFINITE, 0, 0) == REDISMODULE_OK) {
-        while (!RedisModule_ZsetRangeEndReached(set_key)) {
-            RedisModuleString *alias;
-
-            alias = RedisModule_ZsetRangeCurrentElement(set_key, NULL);
-            RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, alias, REDISMODULE_HASH_DELETE, NULL);
-            RedisModule_ZsetRangeNext(set_key);
-        }
-        RedisModule_ZsetRangeStop(set_key);
+    if (alias_key) {
+        delete_aliases(alias_key, set_key);
     }
 
     RedisModule_UnlinkKey(set_key);
