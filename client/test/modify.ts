@@ -544,42 +544,44 @@ test.serial('deep hierarchy manipulation', async t => {
     parents: { $add: 'root' }
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange('cuB.ancestors', 0, -1), [
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuB'), [
     'root',
     'cuX',
     'cuA'
   ])
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange('cuC.ancestors', 0, -1), [
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuC'), [
     'root',
     'cuX',
     'cuA'
   ])
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange('cuD.ancestors', 0, -1), [
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuD'), [
     'root',
     'cuX',
     'cuA'
   ])
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange('cuE.ancestors', 0, -1), [
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuE'), [
     'root',
     'cuX',
     'cuA',
     'cuD'
   ])
 
+  console.log('###', await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuD'))
   await client.set({
     $id: 'cuD',
     parents: { $delete: 'cuA' }
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange('cuD.ancestors', 0, -1), [
+  console.log('???', await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuD'))
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuD'), [
     'root'
   ])
 
-  console.log('!!!', await client.redis.zrange('cuE.ancestors', 0, -1))
-  t.deepEqualIgnoreOrder(await client.redis.zrange('cuE.ancestors', 0, -1), [
+  console.log('!!!', await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuE'))
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuE'), [
     'root',
     'cuD'
   ])

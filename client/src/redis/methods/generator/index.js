@@ -40,6 +40,7 @@ const methods = []
 redis.add_command('selva.modify')
 redis.add_command('selva.hierarchy.parents')
 redis.add_command('selva.hierarchy.children')
+redis.add_command('selva.hierarchy.find')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
   if (/[A-Z]/.test(key[0]) && typeof proto[key] === 'function') {

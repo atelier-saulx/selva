@@ -122,7 +122,7 @@ static int update_hierarchy(
             }
         }
         if (setOpts->$delete_len > 0) {
-            size_t nr_nodes = setOpts->$add_len / SELVA_NODE_ID_SIZE;
+            size_t nr_nodes = setOpts->$delete_len / SELVA_NODE_ID_SIZE;
 
             if (isFieldParents) { /* parents */
                 err = SelvaModify_DelHierarchy(hierarchy, node_id,

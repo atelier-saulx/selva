@@ -109,3 +109,6 @@ redis.add_command('selva.hierarchy.parents')
 
 // @ts-ignore
 redis.add_command('selva.hierarchy.children')
+
+// @ts-ignore
+redis.add_command('selva.hierarchy.find')
