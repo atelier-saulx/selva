@@ -1159,7 +1159,7 @@ test.serial('can disable autoadding of root', async t => {
   await client.destroy()
 })
 
-test.serial('createdAt not set if nothing changed', async t => {
+test.serial.skip('createdAt not set if nothing changed', async t => {
   const client = connect({
     port
   })

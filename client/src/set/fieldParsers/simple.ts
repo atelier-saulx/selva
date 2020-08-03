@@ -131,7 +131,7 @@ for (const key in verifiers) {
                 index: 0,
                 $default: isNaN(payload.$default) ? 0 : Number(payload.$default),
                 $increment: isNaN(payload.$increment) ? 0 : Number(payload.$increment)
-              }).toString());
+              }).toString())
               return
             }
           }

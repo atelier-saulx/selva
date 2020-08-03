@@ -86,6 +86,8 @@ export default async (
     for (const k in o) {
       if (typeof o[k] === 'string') {
         result.push('0', `${hname}.${k}`, o[k])
+      } else if (o[k].$default) {
+        result.push('2', `${hname}.${k}`, o[k].$default)
       } else if (o[k].$delete === true) {
         result.push('7', `${hname}.${k}`, '')
       } else {
