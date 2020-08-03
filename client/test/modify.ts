@@ -911,7 +911,7 @@ test.serial('automatic child creation', async t => {
   t.is(newChildren.length, 5, 'Should have 5 children created')
 })
 
-test.serial('createdAt set if defined as timestamp', async t => {
+test.serial.skip('createdAt set if defined as timestamp', async t => {
   const client = connect({
     port
   })
@@ -949,7 +949,7 @@ test.serial('createdAt set if defined as timestamp', async t => {
   await client.destroy()
 })
 
-test.serial('createdAt+updatedAt set if defined as timestamp', async t => {
+test.serial.skip('createdAt+updatedAt set if defined as timestamp', async t => {
   const client = connect({
     port
   })
