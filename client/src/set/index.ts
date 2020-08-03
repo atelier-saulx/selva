@@ -75,7 +75,6 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   // refactor this whole thign
 
   const parsed = await parseSetObject(client, payload, schema)
-  ;(<any>parsed).$type = payload.type
 
   return _set(client, parsed, schema.sha, payload.$db)
 }

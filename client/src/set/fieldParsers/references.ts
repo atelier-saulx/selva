@@ -1,5 +1,6 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
+import { _set } from '../index'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
 import parseSetObject from '../validate'
@@ -36,67 +37,29 @@ const parseObjectArray = async (
 
 const toCArr = async (
   client: SelvaClient,
+  schema: Schema,
+  result: any,
   setObj:
-    | { [index: string]: string }
-    | { [index: string]: string }[]
-    | string[]
+    | ({ [index: string]: string } | string)[]
     | undefined
     | null,
   noRoot: boolean
 ) => {
-  let o: any[]
-
+    setObj
   if (!setObj) {
-    return ''
-  } else if (typeof setObj === 'string') {
-    o = [setObj]
-  } else if (Array.isArray(setObj)) {
-    o = setObj
-  } else if (typeof setObj === 'object') {
-    o = [setObj]
-  } else {
-    return ''
+    return null
   }
 
-  const ids = (
-    await Promise.all(
-      o.map(async e => {
-        if (typeof e === 'string') {
-          return e
-        }
-        if (e.$id) {
-          return e.$id
-        }
-        if (e) {
-          if (e[1] !== '$alias') {
-            throw new Error('Invalid format for a reference')
-          }
-          const alias = e[2]
-          const type = (<any>e).$type
+  const ids = setObj.length && typeof setObj[0] === 'object'
+    ? await Promise.all(setObj.map((node: any) => {
+        node[0] = `N${node[0].substring(1)}`
 
-          let { id } = await client.get({
-            $alias: alias.substring(0, alias.length - 1),
-            id: true
-          })
-          if (!id && type) {
-            id = await client.set({
-              type,
-              aliases: [alias],
-              parents: {
-                $noRoot: !!noRoot
-              }
-            })
-          }
-
-          return id
-        }
-        return null
-      })
-    )
-  ).filter((s: string | null) => s && !s.startsWith('$'))
+        return _set(client, node, schema.sha, result.$db)
+    }))
+    : setObj
 
   return ids
-    .filter((s: string | null) => s && !s.startsWith('$'))
+    .filter((s: string | null) => !!s)
     .map((s: string) => s.padEnd(10, '\0'))
     .join('')
 }
@@ -184,9 +147,9 @@ export default async (
         createRecord(setRecordDef, {
           is_reference: 1,
           delete_all: r.delete_all,
-          $add: await toCArr(client, r.$add, noRoot),
-          $delete: await toCArr(client, r.$delete, noRoot),
-          $value: await toCArr(client, r.$value, noRoot)
+          $add: await toCArr(client, schema, result, r.$add, noRoot),
+          $delete: await toCArr(client, schema, result, r.$delete, noRoot),
+          $value: await toCArr(client, schema, result, r.$value, noRoot)
         }).toString()
       )
     }
@@ -200,7 +163,7 @@ export default async (
         is_reference: 1,
         $add: '',
         $delete: '',
-        $value: await toCArr(client, r, noRoot)
+        $value: await toCArr(client, schema, result, r, noRoot)
       }).toString()
     )
   }

@@ -41,6 +41,9 @@ export default async function parseSetObject(
 ): Promise<string[]> {
   // id, R|N, field enum, fieldName, value
   const result: string[] = ['R']
+  if (payload.parents && (<any>payload.parents).$noRoot) {
+    result[0] = 'N'
+  }
 
   if (!payload.type && schemas.prefixToTypeMapping && payload.$id) {
     payload.type = schemas.prefixToTypeMapping[payload.$id.substring(0, 2)]
@@ -49,6 +52,7 @@ export default async function parseSetObject(
   if (!payload.type && payload.$id === 'root') {
     payload.type = 'root'
   }
+  ;(<any>result).$type = payload.type
 
   if (payload.$language) {
     $lang = payload.$language
