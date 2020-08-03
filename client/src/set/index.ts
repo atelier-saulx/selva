@@ -20,8 +20,6 @@ export async function _set(
     return await client.redis.selva_modify(
       { name: db || 'default' },
       asAny.$id,
-      // @ts-ignore FIXME The typing is broken or too complex for TS
-      payload?.parents?.$noRoot ? 'N' : 'R',
       ...payload
     )
   } catch (err) {
