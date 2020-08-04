@@ -6,6 +6,8 @@ import { dumpDb } from './assertions'
 import getPort from 'get-port'
 import { wait } from '../src/util'
 
+const DEFAULT_HIERARCHY = '___selva_hierarchy';
+
 let srv
 let port: number
 test.before(async t => {
@@ -13,7 +15,11 @@ test.before(async t => {
   srv = await start({
     port
   })
-
+  await new Promise((resolve, _reject) => {
+    setTimeout(resolve, 100)
+  })
+})
+test.beforeEach(async t => {
   const client = connect(
     {
       port
@@ -21,6 +27,7 @@ test.before(async t => {
     { loglevel: 'info' }
   )
 
+  await client.redis.flushall()
   await client.updateSchema({
     languages: ['en', 'nl', 'de'],
     rootType: {
@@ -85,6 +92,9 @@ test.before(async t => {
     }
   })
 
+  // A small delay is needed after setting the schema
+  await new Promise(r => setTimeout(r, 100))
+
   await client.destroy()
 })
 
@@ -114,7 +124,7 @@ test.serial('can delete root', async t => {
 
   t.deepEqual(root, 'root')
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
-  t.deepEqual(await client.redis.smembers('root.children'), [match])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
 
   await client.delete('root')
   t.deepEqual(await dumpDb(client), [])
@@ -141,7 +151,7 @@ test.serial('can delete a field', async t => {
   })
 
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
-  t.deepEqual(await client.redis.smembers('root.children'), [match])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
   t.deepEqual(await client.redis.hget(match, 'value'), '9002')
 
   await client.delete({
@@ -150,7 +160,7 @@ test.serial('can delete a field', async t => {
   })
 
   t.deepEqual(await client.redis.hexists('root', 'value'), 0)
-  t.deepEqual(await client.redis.smembers('root.children'), [match])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
   t.deepEqual(await client.redis.hget(match, 'value'), '9002')
 
   await client.delete({
@@ -159,7 +169,7 @@ test.serial('can delete a field', async t => {
   })
 
   t.deepEqual(await client.redis.hexists('root', 'value'), 0)
-  t.deepEqual(await client.redis.smembers('root.children'), [match])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
   t.deepEqual(await client.redis.hexists(match, 'value'), 0)
 
   await client.delete({
@@ -168,7 +178,7 @@ test.serial('can delete a field', async t => {
   })
 
   t.deepEqual(await client.redis.hexists('root', 'value'), 0)
-  t.deepEqual(await client.redis.smembers('root.children'), [])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [])
   t.deepEqual(await client.redis.hexists(match, 'value'), 0)
 
   await client.delete('root')
@@ -199,7 +209,7 @@ test.serial('can delete all but some fields', async t => {
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
   t.deepEqual(await client.redis.hget('root', 'title.en'), 'no noes')
   t.deepEqual(await client.redis.hget('root', 'title.de'), 'nein nein')
-  t.deepEqual(await client.redis.smembers('root.children'), [match])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
   t.deepEqual(await client.redis.hget(match, 'value'), '9002')
   t.deepEqual(await client.redis.hget(match, 'title.en'), 'yes yeesh')
   t.deepEqual(await client.redis.hget(match, 'title.de'), 'ja ja')
@@ -212,7 +222,7 @@ test.serial('can delete all but some fields', async t => {
   })
 
   t.deepEqual(await client.redis.hexists('root', 'value'), 1)
-  t.deepEqual(await client.redis.smembers('root.children'), [match])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
   t.deepEqual(await client.redis.hget('root', 'title.en'), 'no noes')
   t.deepEqual(await client.redis.hexists('root', 'title.de'), 0)
 
@@ -236,7 +246,7 @@ test.serial('can delete all but some fields', async t => {
   })
 
   t.deepEqual(await client.redis.hexists('root', 'title.en'), 0)
-  t.deepEqual(await client.redis.smembers('root.children'), [])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [])
 
   await client.delete('root')
   await client.delete(match)
@@ -265,7 +275,7 @@ test.serial('can delete a field when only nested specified', async t => {
   })
 
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
-  t.deepEqual(await client.redis.smembers('root.children'), [match])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
   t.deepEqual(await client.redis.hget(match, 'title.de'), 'ja text')
   t.deepEqual(await client.redis.hget(match, 'title.en'), 'yes text')
 
@@ -278,7 +288,7 @@ test.serial('can delete a field when only nested specified', async t => {
 
   t.deepEqual(await client.redis.hexists(match, 'title.en'), 0)
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
-  t.deepEqual(await client.redis.smembers('root.children'), [match])
+  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
   t.deepEqual(await client.redis.hget(match, 'title.de'), 'ja text')
   await client.delete('root')
   await client.delete(match)

@@ -1300,6 +1300,10 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     return REDISMODULE_OK;
 }
 
+/*
+ * SELVA.HIERARCHY.DEL HIERARCHY_KEY [NODE_ID1[, NODE_ID2, ...]]
+ * If no NODE_IDs are given then nothing will be deleted.
+ */
 int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -1335,6 +1339,74 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     }
 
     RedisModule_ReplyWithLongLong(ctx, nr_deleted);
+    RedisModule_ReplicateVerbatim(ctx);
+    return REDISMODULE_OK;
+}
+
+/*
+ * SELVA.HIERARCHY.DELREF HIERARCHY_KEY NODE_ID PARENTS|CHILDREN
+ */
+int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc == 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    /*
+     * Open the Redis key.
+     */
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    int type = RedisModule_KeyType(key);
+    if (type != REDISMODULE_KEYTYPE_EMPTY &&
+        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
+        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+
+    SelvaModify_Hierarchy *hierarchy = RedisModule_ModuleTypeGetValue(key);
+    if (!hierarchy) {
+        RedisModule_ReplyWithLongLong(ctx, 0);
+        return REDISMODULE_OK;
+    }
+
+    Selva_NodeId nodeId;
+
+    RMString2NodeId(nodeId, argv[2]);
+
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
+    if (!node) {
+        RedisModule_ReplyWithLongLong(ctx, 0);
+    }
+
+    const char *op = RedisModule_StringPtrLen(argv[3], NULL);
+    if (!strcmp(op, "parents")) {
+        removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+
+        /*
+         * Reparent to root if the node is now orphan.
+         */
+        if (SVector_Size(&node->parents) == 0) {
+            (void)SelvaModify_SetHierarchy(ctx, hierarchy, node->id,
+                1, ((Selva_NodeId []){ ROOT_NODE_ID }),
+                0, NULL);
+        }
+    } else if (!strcmp(op, "children")) {
+        SelvaModify_HierarchyNode **it;
+
+        removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+
+        SVECTOR_FOREACH(it, &node->children) {
+            SelvaModify_HierarchyNode *child = *it;
+
+            if (SVector_Size(&child->parents) == 0) {
+                SelvaModify_DelHierarchyNode(ctx, hierarchy, child->id);
+            }
+        }
+    } else {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOTSUP]);
+    }
+
+    RedisModule_ReplyWithLongLong(ctx, 1);
     RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
@@ -1805,6 +1877,7 @@ int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
      */
     if (RedisModule_CreateCommand(ctx, "selva.hierarchy.add", SelvaModify_Hierarchy_AddNodeCommand,     "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.del", SelvaModify_Hierarchy_DelNodeCommand,     "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.delref", SelvaModify_Hierarchy_DelRefCommand,   "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.parents", SelvaModify_Hierarchy_ParentsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaModify_Hierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR ||

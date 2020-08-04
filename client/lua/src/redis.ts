@@ -27,6 +27,10 @@ export function delnode(id: string) {
   return redis.call('SELVA.HIERARCHY.DEL', DEFAULT_HIERARCHY, id)
 }
 
+export function delnoderef(id: string, key: 'parents' | 'children') {
+  return redis.call('SELVA.HIERARCHY.DELREF', DEFAULT_HIERARCHY, id, key)
+}
+
 export function children(id: string) {
   const o: string[] = redis.call('SELVA.HIERARCHY.CHILDREN', DEFAULT_HIERARCHY, id)
   return o.length > 0 ? o : emptyArray()

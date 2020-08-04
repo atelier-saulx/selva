@@ -298,11 +298,9 @@ function removeSpecified(
         onlyFalse = false
         const val = redis.hget(id, keyPath)
 
-        if (
-          val === '___selva_$set' ||
-          key === 'parents' ||
-          key === 'children'
-        ) {
+        if (key === 'parents' || key === 'children') {
+          redis.delnoderef(id, key)
+        } else if (val === '___selva_$set') {
           redis.del(id + '.' + keyPath)
         }
 
