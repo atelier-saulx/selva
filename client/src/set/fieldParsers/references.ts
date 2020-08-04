@@ -147,7 +147,7 @@ export default async (
         field,
         createRecord(setRecordDef, {
           is_reference: 1,
-          delete_all: r.delete_all || (isEmpty(r.$add) && isEmpty(r.$delete) && isEmpty(r.$value)),
+          delete_all: r.delete_all || (!r.$add && !r.$delete && isEmpty(r.$value)),
           $add: await toCArr(client, schema, result, r.$add, noRoot),
           $delete: await toCArr(client, schema, result, r.$delete, noRoot),
           $value: await toCArr(client, schema, result, r.$value, noRoot)
