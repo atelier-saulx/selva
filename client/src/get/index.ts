@@ -230,7 +230,11 @@ function makeNewGetOptions(
       } else {
         newOpts[key] = extraQuery.placeholder
       }
-    } else if (!key.startsWith('$') && Array.isArray(getOpts[key])) {
+    } else if (
+      !key.startsWith('$') &&
+      key !== 'path' &&
+      Array.isArray(getOpts[key])
+    ) {
       newOpts[key] = getOpts[key].map((g, i) => {
         const extraQuery: PostGetExtraQuery = <PostGetExtraQuery>(
           extraQueries[newPath + '.' + i]
