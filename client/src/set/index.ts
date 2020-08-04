@@ -47,7 +47,7 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
   const schema = client.schemas[payload.$db || 'default']
 
   // need to add queue and process.next here to merge modify
-  if (!payload.$type && !payload.$id && payload.$alias) {
+  if (!payload.type && !payload.$id && payload.$alias) {
     let aliases = payload.$alias
     if (!Array.isArray(payload.$alias)) {
       aliases = [aliases]
