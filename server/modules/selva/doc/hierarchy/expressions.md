@@ -103,3 +103,5 @@ Strings stored in the register can be referenced with a `$` prefix.
 | `e`      | `!cmp(curT, id)`   | Compare the type of the current node. | `"AB e`               |
 | `f`      | `node[a]`          | Get the string value of a node field. | `"field f`            |
 | `g`      | `node[a]`          | Get the integer value of a node field. | `"field g`           |
+| `h`      | `!!node[a]`        | Field exists.                     | `"title.en h => 1`        |
+| `i`      | `a <= b <= c`      | (interval) `b` is within `a` and `c`. | `"#2 #1 #0 => 1`      |

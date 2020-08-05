@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <ctype.h>
+#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,11 +32,10 @@ struct rpn_operand {
         unsigned in_use :  1; /* In use/in stack, do not free. */
         unsigned pooled :  1; /* Pooled operand, do not free. */
         unsigned regist :  1; /* Register value, do not free. */
-        unsigned nan    :  1; /* The register value is not a number. */
         unsigned spare1 : 30;
         unsigned spare2 : 30;
     } flags;
-    long long i;
+    double d;
     size_t s_size;
     struct rpn_operand *next_free; /* Next free in pool */
     const char *sp;
@@ -175,6 +175,22 @@ static void free_rpn_operand(void *p) {
     }
 }
 
+static double nan_undefined() {
+    return nan("1");
+}
+
+static int isnan_undefined(double x) {
+    long long i;
+
+    if (!isnan(x)) {
+      return 0;
+    }
+
+    memcpy(&i, &x, sizeof(i));
+
+    return i & 1;
+}
+
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
 	if (ctx->depth >= RPN_MAX_D) {
         fprintf(stderr, "RPN: Stack overflow\n");
@@ -187,17 +203,21 @@ static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
     return RPN_ERR_OK;
 }
 
-static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long x) {
+static enum rpn_error push_double_result(struct rpn_ctx *ctx, double x) {
     struct rpn_operand *v = alloc_rpn_operand(0);
 
     if (!v) {
         return RPN_ERR_ENOMEM;
     }
 
-    v->i = x;
+    v->d = x;
     push(ctx, v);
 
     return RPN_ERR_OK;
+}
+
+static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long v) {
+    return push_double_result(ctx, (double)v);
 }
 
 static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) {
@@ -211,7 +231,7 @@ static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, siz
     v->s_size = size;
     strncpy(v->s, s, slen);
     v->s[slen] = '\0';
-    v->flags.nan = 1;
+    v->d = nan_undefined();
     push(ctx, v);
 
     return RPN_ERR_OK;
@@ -225,7 +245,7 @@ static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
         return RPN_ERR_ENOMEM;
     }
 
-    v->i = 0;
+    v->d = 0.0;
     v->s_size = size;
     v->s[0] = '\0';
     v->s[1] = '\0';
@@ -281,7 +301,13 @@ static void clear_stack(struct rpn_ctx *ctx) {
 }
 
 static int to_bool(struct rpn_operand *v) {
-    return (v->s_size > 0 && OPERAND_GET_S(v)[0] != '\0') || !!v->i;
+    const double d = v->d;
+
+    if (isnan(d)) {
+        return v->s_size > 0 && OPERAND_GET_S(v)[0] != '\0';
+    }
+
+    return !!((long long)d);
 }
 
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen) {
@@ -316,9 +342,11 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
          */
         char *e = (char *)s;
         if (slen > 0) {
-            r->i = strtoll(s, &e, 10);
+            r->d = strtod(s, &e);
         }
-        r->flags.nan = e == s;
+        if (e == s) {
+            r->d = nan("");
+        }
 
         ctx->reg[i] = r;
     } else { /* Otherwise just clear the register. */
@@ -344,7 +372,7 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     }
 
     if (type == 0) {
-        if (r->flags.nan) {
+        if (isnan(r->d)) {
             fprintf(stderr, "RPN: Register value is not a number: %zu\n", i);
             return RPN_ERR_NAN;
         }
@@ -360,10 +388,8 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field, int type) {
+static RedisModuleKey *open_hkey(struct rpn_ctx *ctx) {
     RedisModuleKey *id_key;
-    RedisModuleString *value = NULL;
-    int err;
 
     if (ctx->redis_hkey) {
         id_key = ctx->redis_hkey;
@@ -380,13 +406,27 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         assert(ctx->redis_ctx);
 #endif
 
+        /* Current node_id is stored in reg[0] */
         cid->ptr = sdscpylen(cid->ptr, (const void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
         id_key = RedisModule_OpenKey(ctx->redis_ctx, (RedisModuleString *)(cid), REDISMODULE_READ);
         if (!id_key) {
-            return push_empty_value(ctx);
+            return NULL;
         }
 
         ctx->redis_hkey = id_key;
+    }
+
+    return id_key;
+}
+
+static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field, int type) {
+    RedisModuleKey *id_key;
+    RedisModuleString *value = NULL;
+    int err;
+
+    id_key = open_hkey(ctx);
+    if (!id_key) {
+        return push_empty_value(ctx);
     }
 
     err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, OPERAND_GET_S(field), &value, NULL);
@@ -395,9 +435,9 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
     }
 
     if (type == 0) {
-        long long ivalue;
+        double dvalue;
 
-        err = RedisModule_StringToLongLong(value, &ivalue);
+        err = RedisModule_StringToDouble(value, &dvalue);
 
         if (unlikely(err != REDISMODULE_OK)) {
             fprintf(stderr, "RPN: Field value is not a number: %.*s\n",
@@ -408,7 +448,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
 
         RedisModule_FreeString(ctx->redis_ctx, value);
 
-        return push_int_result(ctx, ivalue);
+        return push_double_result(ctx, dvalue);
     } else {
         /*
          * Supposedly there is no need to free `value`
@@ -422,87 +462,83 @@ static enum rpn_error rpn_op_add(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i + b->i);
+    return push_double_result(ctx, a->d + b->d);
 }
 
 static enum rpn_error rpn_op_sub(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i - b->i);
+    return push_double_result(ctx, a->d - b->d);
 }
 
 static enum rpn_error rpn_op_div(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
-    long long d = b->i;
+    double d = b->d;
 
-    if (d == 0) {
-        return RPN_ERR_DIV;
-    }
-
-    return push_int_result(ctx, a->i / d);
+    return push_double_result(ctx, a->d / d);
 }
 
 static enum rpn_error rpn_op_mul(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i * b->i);
+    return push_double_result(ctx, a->d * b->d);
 }
 
 static enum rpn_error rpn_op_rem(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
-    long long d = b ->i;
+    long long d = (long long)b->d;
 
     if (d == 0) {
         return RPN_ERR_DIV;
     }
 
-    return push_int_result(ctx, a->i % d);
+    return push_int_result(ctx, (long long)a->d % d);
 }
 
 static enum rpn_error rpn_op_eq(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i == b->i);
+    return push_double_result(ctx, a->d == b->d);
 }
 
 static enum rpn_error rpn_op_ne(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i != b->i);
+    return push_double_result(ctx, a->d != b->d);
 }
 
 static enum rpn_error rpn_op_lt(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i < b->i);
+    return push_double_result(ctx, a->d < b->d);
 }
 
 static enum rpn_error rpn_op_gt(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i > b->i);
+    return push_double_result(ctx, a->d > b->d);
 }
 
 static enum rpn_error rpn_op_le(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i <= b->i);
+    return push_double_result(ctx, a->d <= b->d);
 }
 
 static enum rpn_error rpn_op_ge(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
-    return push_int_result(ctx, a->i >= b->i);
+    return push_double_result(ctx, a->d >= b->d);
 }
 
 static enum rpn_error rpn_op_not(struct rpn_ctx *ctx) {
@@ -539,7 +575,30 @@ static enum rpn_error rpn_op_necess(struct rpn_ctx *ctx) {
         return RPN_ERR_NECESS;
     }
 
-    return push_int_result(ctx, 1);
+    return push_double_result(ctx, 1.0);
+}
+
+static enum rpn_error rpn_op_exists(struct rpn_ctx *ctx) {
+    int err, exists;
+    RedisModuleKey *id_key;
+    OPERAND(ctx, field);
+
+    id_key = open_hkey(ctx);
+    if (!id_key) {
+        return push_double_result(ctx, 0.0);
+    }
+
+    err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS | REDISMODULE_HASH_EXISTS, OPERAND_GET_S(field), &exists, NULL);
+
+    return push_int_result(ctx, err == REDISMODULE_OK && exists);
+}
+
+static enum rpn_error rpn_op_range(struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+    OPERAND(ctx, c);
+
+    return push_int_result(ctx, a->d <= b->d && b->d <= c->d);
 }
 
 static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
@@ -581,7 +640,9 @@ static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
     const ssize_t sizeDiff = b_size - a_size;
 
     return push_int_result(ctx, !sizeDiff &&
-                           !strncmp(OPERAND_GET_S(a), OPERAND_GET_S(b), size_min(a_size, b_size)));
+                           !strncmp(OPERAND_GET_S(a),
+                                    OPERAND_GET_S(b),
+                                    size_min(a_size, b_size)));
 
     return RPN_ERR_OK;
 }
@@ -591,7 +652,8 @@ static enum rpn_error rpn_op_idcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, b);
     const int size_ok = a->s_size >= SELVA_NODE_ID_SIZE && b->s_size >= SELVA_NODE_ID_SIZE;
 
-    return push_int_result(ctx, size_ok && !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(b), SELVA_NODE_ID_SIZE));
+    return push_int_result(ctx, size_ok &&
+                           !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(b), SELVA_NODE_ID_SIZE));
 }
 
 static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
@@ -601,6 +663,10 @@ static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
     assert(ctx->reg[0]);
     assert(ctx->reg[0]->s_size == SELVA_NODE_ID_SIZE);
 #endif
+
+    /*
+     * Note the the allocated string is always large so that the comparison is safe.
+     */
 
     return push_int_result(ctx, !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_TYPE_SIZE));
 }
@@ -663,6 +729,25 @@ static rpn_fp funcs[] = {
     rpn_op_cidcmp,  /* e */
     rpn_op_getsfld, /* f */
     rpn_op_getifld, /* g */
+    rpn_op_exists,  /* h */
+    rpn_op_range,   /* i */
+    rpn_op_abo,     /* j spare */
+    rpn_op_abo,     /* k spare */
+    rpn_op_abo,     /* l spare */
+    rpn_op_abo,     /* m spare */
+    rpn_op_abo,     /* n spare */
+    rpn_op_abo,     /* o spare */
+    rpn_op_abo,     /* p spare */
+    rpn_op_abo,     /* q spare */
+    rpn_op_abo,     /* r spare */
+    rpn_op_abo,     /* s spare */
+    rpn_op_abo,     /* t spare */
+    rpn_op_abo,     /* u spare */
+    rpn_op_abo,     /* v spare */
+    rpn_op_abo,     /* w spare */
+    rpn_op_abo,     /* x spare */
+    rpn_op_abo,     /* y spare */
+    rpn_op_abo,     /* z spare */
 };
 
 rpn_token *rpn_compile(const char *input, size_t len) {
@@ -719,7 +804,7 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
                      * interpreted as a short-circuited false result for the
                      * expression.
                      */
-                    (void)push_int_result(ctx, 0);
+                    (void)push_double_result(ctx, 0.0);
                     break;
                 }
 
@@ -761,7 +846,7 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
                     enum rpn_error err;
 
                     v = alloc_rpn_operand(0);
-                    v->i = strtoll(str, &e, 10);
+                    v->d = strtod(str, &e);
                     v->s_size = 0;
                     v->s[0] = '\0';
 
@@ -793,7 +878,7 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
                     v->s_size = size;
                     strncpy(v->s, str, size);
                     v->s[size - 1] = '\0';
-                    v->flags.nan = 1;
+                    v->d = nan("");
 
                     err = push(ctx, v);
                     if (err) {
@@ -845,6 +930,27 @@ enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out) {
     return 0;
 }
 
+enum rpn_error rpn_double(struct rpn_ctx *ctx, const rpn_token *expr, double *out) {
+    struct rpn_operand *res;
+    enum rpn_error err;
+
+    err = rpn(ctx, expr);
+    closeHkey(ctx);
+    if (err) {
+        return err;
+    }
+
+    res = pop(ctx);
+    if (!res) {
+        return RPN_ERR_BADSTK;
+    }
+
+    *out = res->d;
+    free_rpn_operand(&res);
+
+    return 0;
+}
+
 enum rpn_error rpn_integer(struct rpn_ctx *ctx, const rpn_token *expr, long long *out) {
     struct rpn_operand *res;
     enum rpn_error err;
@@ -860,7 +966,7 @@ enum rpn_error rpn_integer(struct rpn_ctx *ctx, const rpn_token *expr, long long
         return RPN_ERR_BADSTK;
     }
 
-    *out = res->i;
+    *out = (long long)round(res->d);
     free_rpn_operand(&res);
 
     return 0;

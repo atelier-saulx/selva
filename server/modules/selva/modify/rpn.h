@@ -39,6 +39,7 @@ void rpn_destroy(struct rpn_ctx *ctx);
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen);
 rpn_token *rpn_compile(const char *input, size_t len);
 enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out);
+enum rpn_error rpn_double(struct rpn_ctx *ctx, const rpn_token *expr, double *out);
 enum rpn_error rpn_integer(struct rpn_ctx *ctx, const rpn_token *expr, long long *out);
 
 #endif /* _MODIFY_RPN_H_ */
