@@ -126,4 +126,4 @@ run: $(TEST_EXECUTABLES)
 .PHONY: clean
 
 clean:
-	$(RM) ./$(ODIR)/* ./$(BDIR)/*
+	$(RM) ./$(ODIR)/* ./$(BDIR)/* || true
