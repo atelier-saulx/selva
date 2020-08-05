@@ -61,8 +61,7 @@ const char *rpn_str_error[] = {
 
 static void free_rpn_operand(void *p);
 
-static void init_pool(void) __attribute__((constructor));
-static void init_pool(void) {
+__constructor static void init_pool(void) {
     struct rpn_operand *prev = NULL;
 
     small_operand_pool_next = &small_operand_pool[0];

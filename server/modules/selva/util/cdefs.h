@@ -2,6 +2,12 @@
 #ifndef _UTIL_CDEFS_H_
 #define _UTIL_CDEFS_H_
 
+#if defined(__GNUC__) && !defined(__clang__)
+#define __nonstring __attribute__((nonstring))
+#else
+#define __nonstring
+#endif
+
 #define CONCATENATE(arg1, arg2)   CONCATENATE1(arg1, arg2)
 #define CONCATENATE1(arg1, arg2)  CONCATENATE2(arg1, arg2)
 #define CONCATENATE2(arg1, arg2)  arg1##arg2

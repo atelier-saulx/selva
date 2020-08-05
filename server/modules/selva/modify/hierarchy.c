@@ -15,7 +15,9 @@
 
 #define HIERARCHY_ENCODING_VERSION  0
 
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
 
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
@@ -87,7 +89,7 @@ typedef struct TraversalCallback {
     void * child_arg;
 } TraversalCallback;
 
-static const Selva_NodeId HIERARCHY_RDB_EOF __attribute__((nonstring));
+__nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
 static RedisModuleType *HierarchyType;
 
 /*!<

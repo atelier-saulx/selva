@@ -8,6 +8,7 @@
 
 #include <hiredis/hiredis.h>
 
+#include "cdefs.h"
 #include "async_task.h"
 #include "hierarchy.h"
 #include "queue_r.h"
@@ -19,14 +20,6 @@
 
 #define HIREDIS_WORKER_COUNT 4
 
-static inline int min(int a, int b) {
-  if (a > b) {
-    return b;
-  }
-
-  return a;
-}
-
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
@@ -34,8 +27,7 @@ static pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { };
 
 char queue_mem[HIREDIS_WORKER_COUNT][RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
 queue_cb_t queues[HIREDIS_WORKER_COUNT];
-__attribute__((constructor))
-static void initialize_queues() {
+__constructor static void initialize_queues() {
   for (uint8_t i = 0; i < HIREDIS_WORKER_COUNT; i++) {
     queues[i] = QUEUE_INITIALIZER(queue_mem[i], RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem[i]));
   }

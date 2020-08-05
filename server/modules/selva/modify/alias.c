@@ -23,4 +23,6 @@ int delete_aliases(RedisModuleKey *aliases_key, RedisModuleKey *set_key) {
     }
 
     RedisModule_ZsetRangeStop(set_key);
+
+    return 0;
 }
