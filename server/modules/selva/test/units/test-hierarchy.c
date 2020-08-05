@@ -842,6 +842,7 @@ static char * test_del_node(void)
      */
 
     int nr_ancestors;
+    int nr_descendants;
 
     SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
     SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
@@ -861,19 +862,16 @@ static char * test_del_node(void)
 
     SelvaModify_DelHierarchyNode(NULL, hierarchy, ((Selva_NodeId){ "grphnode_e" }));
 
-    /* ancestors of c */
-    nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
-    pu_assert_equal("returned the right number of ancestors", nr_ancestors, 2);
-    pu_assert("results pointer was set", findRes != NULL);
-    SelvaNodeId_SortRes(nr_ancestors);
-    pu_assert_str_equal("c has a as a ancestor", SelvaNodeId_GetRes(0), "grphnode_a");
-    pu_assert_str_equal("c has b as a ancestor", SelvaNodeId_GetRes(1), "grphnode_b");
+    /* ancestors of root */
+    nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "root" }), &findRes);
+    pu_assert_equal("returned the right number of ancestors", nr_ancestors, 0);
+    pu_assert("results pointer was not set", findRes == NULL);
     free(findRes);
     findRes = NULL;
 
     /* e doesn't exist */
-    const int err = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_e" }), &findRes);
-    pu_assert_equal("node e doesn't exist anymore", err, SELVA_MODIFY_HIERARCHY_ENOENT);
+    nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_e" }), &findRes);
+    pu_assert_equal("nothing found", nr_descendants, 0);
     free(findRes);
     findRes = NULL;
 
@@ -882,9 +880,9 @@ static char * test_del_node(void)
      */
     pu_assert_equal("depth of a is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_a"), 0);
     pu_assert_equal("depth of b is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_b"), 0);
-    pu_assert_equal("depth of c is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_c"), 1);
-    pu_assert_equal("depth of d is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_d"), 1);
-    pu_assert_equal("depth of e is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_e"), -1);
+    pu_assert_equal("depth of c is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_c"), 0);
+    pu_assert_equal("depth of d is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_d"), 0);
+    pu_assert_equal("depth of e is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_e"), 0);
 
     return NULL;
 }
