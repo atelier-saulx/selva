@@ -35,7 +35,7 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: string[],
+  result: (string | Buffer)[],
   fields: FieldSchemaArrayLike,
   type: string
 ): Promise<void> => {
@@ -97,7 +97,7 @@ export default async (
         $add: toCArr(r.$add),
         $delete: toCArr(r.$delete),
         $value: ''
-      }).toString()
+      })
     )
   } else {
     result.push(

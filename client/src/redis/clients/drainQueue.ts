@@ -46,38 +46,38 @@ const drainQueue = (client: Client, q?: RedisCommand[]) => {
               }
             })
           } else if (command === 'punsubscribe') {
-            delete client.redisSubscriptions.psubscribe[args[0]]
+            delete client.redisSubscriptions.psubscribe[<string><string>args[0]]
             client.subscriber.punsubscribe(...(<string[]>args), err =>
               errListener(client, redisCommand, err)
             )
             if (resolve) resolve(true)
           } else if (command === 'unsubscribe') {
-            delete client.redisSubscriptions.subscribe[args[0]]
+            delete client.redisSubscriptions.subscribe[<string>args[0]]
             client.subscriber.unsubscribe(...(<string[]>args), err =>
               errListener(client, redisCommand, err)
             )
             if (resolve) resolve(true)
           } else if (command === 'subscribe') {
-            client.redisSubscriptions.subscribe[args[0]] = true
+            client.redisSubscriptions.subscribe[<string>args[0]] = true
             client.subscriber.subscribe(...(<string[]>args), err =>
               errListener(client, redisCommand, err)
             )
             if (resolve) resolve(true)
           } else if (command === 'psubscribe') {
-            client.redisSubscriptions.psubscribe[args[0]] = true
+            client.redisSubscriptions.psubscribe[<string>args[0]] = true
             client.subscriber.psubscribe(...(<string[]>args), err =>
               errListener(client, redisCommand, err)
             )
             if (resolve) resolve(true)
           } else {
             if (command.toLowerCase() === 'evalsha') {
-              const script = args[0]
+              const script = <string>args[0]
               if (
                 typeof script === 'string' &&
                 script.startsWith(constants.SCRIPT)
               ) {
                 const sha = getScriptSha(
-                  (<string>args[0]).slice(constants.SCRIPT.length + 1)
+                  (<string><string>args[0]).slice(constants.SCRIPT.length + 1)
                 )
                 if (!sha) {
                   client.queue.push(redisCommand)

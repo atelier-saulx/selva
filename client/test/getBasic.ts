@@ -922,8 +922,8 @@ test.serial('get - $inherit', async t => {
           |_cuC
           |_cuB
               |_cuD <---
-                |_cuC  
-                
+                |_cuC
+
       |_cuFlap
         |_cuFlurp
           |_cuD <---
@@ -936,14 +936,14 @@ test.serial('get - $inherit', async t => {
       |_cuMrsnurfels
         |_cuD
 
-  
+
       root
       |_ leA
           |_seasonA
              |_matchA
              |_teamA //ignoe ancestor from cut of point outside of my hierarchy
                 |_matchA
-          
+
       |_ leB
           |_seasonB
              |_teamA

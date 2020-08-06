@@ -5,7 +5,7 @@ const path = require('path')
 // TODO: use replica fro all read operations if type !== subs manager && type !== '
 
 let template = `
-type args = (string | number)[]
+type args = (string | number | Buffer)[]
 import { RedisCommand } from '../types'
 import { ServerSelector } from '../../types'
 

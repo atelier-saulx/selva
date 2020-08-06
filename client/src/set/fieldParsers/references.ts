@@ -69,7 +69,7 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: string[],
+  result: (string|Buffer)[],
   _fields: FieldSchemaArrayLike,
   _type: string,
   $lang?: string
@@ -151,7 +151,7 @@ export default async (
           $add: await toCArr(client, schema, result, r.$add, noRoot),
           $delete: await toCArr(client, schema, result, r.$delete, noRoot),
           $value: await toCArr(client, schema, result, r.$value, noRoot)
-        }).toString()
+        })
       )
     }
   } else {
@@ -167,7 +167,7 @@ export default async (
         $add: '',
         $delete: '',
         $value,
-      }).toString()
+      })
     )
   }
 }

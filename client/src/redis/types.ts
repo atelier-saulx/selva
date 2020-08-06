@@ -8,7 +8,7 @@ type Resolvable = {
 export type RedisCommand = Resolvable & {
   command: string
   type?: string
-  args: (string | number)[]
+  args: (string | number | Buffer)[]
   hash?: number
 }
 

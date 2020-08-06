@@ -6,15 +6,15 @@ import parseSetObject from './validate'
 
 export async function _set(
   client: SelvaClient,
-  payload: string[],
+  payload: (string|Buffer)[],
   schemaSha: string,
   db?: string
 ): Promise<string> {
-  console.log('PAYLOAD', JSON.stringify(payload))
   const asAny = <any>payload
   if (!asAny.$id) {
     asAny.$id = await client.id({ db, type: asAny.$type })
   }
+  console.log('ID', asAny.$id, 'PAYLOAD', JSON.stringify(payload))
 
   try {
     return await client.redis.selva_modify(

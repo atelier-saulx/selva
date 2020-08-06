@@ -1,14 +1,12 @@
 import * as logger from '../../logger'
-import { GetOptions, GetResult, Sort, Inherit } from '~selva/get/types'
-import createSearchString from './createSearchString'
+import { GetOptions, GetResult, Inherit } from '~selva/get/types'
 import parseFind from './parseFind/index'
-import createSearchArgs from './createSearchArgs'
 import { Fork, Meta, QuerySubscription } from './types'
-import printAst from './printAst'
 import { isFork, getFind } from './util'
-import { emptyArray, ensureArray, isArray, splitString } from '../../util'
+import { emptyArray, ensureArray } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
+import ast2rpn from './ast2rpn'
 import { Schema } from '../../../../src/schema/index'
 import parseSubscriptions from './parseSubscriptions'
 import { setNestedResult, setMeta } from '../nestedFields'
@@ -109,46 +107,17 @@ const parseQuery = (
 
   if (resultFork) {
     const idMap: Record<string, true> = {}
-    const [queries, err] = createSearchString(resultFork, language)
-    if (queries.length === 1) {
-      const query: string = queries[0]
-      if (err) {
-        return [{ results }, err]
-      }
+    const queryResult: string[] = redis.call(
+      'selva.hierarchy.find',
+      '___selva_hierarchy',
+      'bfs',
+      <string>traverse,
+      ...ast2rpn(resultFork)
+    )
 
-      const args = createSearchArgs(getOptions, query, resultFork)
-
-      // printAst(resultFork, args)
-      const queryResult: string[] = redis.call('ft.search', 'default', ...args)
-
-      if (queryResult) {
-        if (queries.length === 1) {
-          table.remove(queryResult, 1)
-          resultIds = queryResult
-        }
-      }
-    } else {
-      for (const q of queries) {
-        if (err) {
-          return [{ results }, err]
-        }
-        const args = createSearchArgs(
-          getOptions,
-          string.sub(q, 2, q.length - 1),
-          resultFork
-        )
-        // printAst(resultFork, args)
-        const queryResult: string[] = redis.call(
-          'ft.search',
-          'default',
-          ...args
-        )
-
-        if (queryResult) {
-          for (let i = 1; i < queryResult.length; i++) {
-            idMap[queryResult[i]] = true
-          }
-        }
+    if (queryResult) {
+      for (let i = 1; i < queryResult.length; i++) {
+        idMap[queryResult[i]] = true
       }
     }
 
