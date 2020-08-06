@@ -11,9 +11,20 @@
 #include "hierarchy.h"
 #include "rpn.h"
 
-#define RPN_ASSERTS 0
-#define RPN_SINGLETON 1
+#define RPN_ASSERTS         0
+#define RPN_SINGLETON       1
 
+/*
+ * Codes for primitive types.
+ */
+#define RPN_LVTYPE_NUMBER   0 /*<! Lvalue type code for double. */
+#define RPN_LVTYPE_STRING   1 /*<! Lvalue type code for string. */
+
+/*
+ * This type should match the alignment of `typedef struct redisObject` in Redis
+ * so we can extract `ptr` properly. The struct is likely located in
+ * `/src/server.h` in the Redis source tree.
+ */
 struct redisObjectAccessor {
     uint32_t _meta;
     int refcount;
@@ -32,8 +43,6 @@ struct rpn_operand {
         unsigned in_use :  1; /* In use/in stack, do not free. */
         unsigned pooled :  1; /* Pooled operand, do not free. */
         unsigned regist :  1; /* Register value, do not free. */
-        unsigned spare1 : 30;
-        unsigned spare2 : 30;
     } flags;
     double d;
     size_t s_size;
@@ -85,7 +94,7 @@ struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
 
     ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
 #endif
-    if (!ctx) {
+    if (unlikely(!ctx)) {
         return NULL;
     }
 
@@ -95,7 +104,7 @@ struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
     ctx->nr_reg = nr_reg;
 
     ctx->reg = RedisModule_Calloc(nr_reg, sizeof(struct rpn_operand *));
-    if (!ctx->reg) {
+    if (unlikely(!ctx->reg)) {
         RedisModule_Free(ctx);
         return NULL;
     }
@@ -191,7 +200,7 @@ static int isnan_undefined(double x) {
 }
 
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
-	if (ctx->depth >= RPN_MAX_D) {
+	if (unlikely(ctx->depth >= RPN_MAX_D)) {
         fprintf(stderr, "RPN: Stack overflow\n");
         return RPN_ERR_BADSTK;
     }
@@ -205,7 +214,7 @@ static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
 static enum rpn_error push_double_result(struct rpn_ctx *ctx, double x) {
     struct rpn_operand *v = alloc_rpn_operand(0);
 
-    if (!v) {
+    if (unlikely(!v)) {
         return RPN_ERR_ENOMEM;
     }
 
@@ -223,7 +232,7 @@ static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, siz
     const size_t size = slen + 1;
     struct rpn_operand *v = alloc_rpn_operand(size);
 
-    if (!v) {
+    if (unlikely(!v)) {
         return RPN_ERR_ENOMEM;
     }
 
@@ -240,7 +249,7 @@ static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
     const size_t size = 2;
     struct rpn_operand *v = alloc_rpn_operand(size);
 
-    if (!v) {
+    if (unlikely(!v)) {
         return RPN_ERR_ENOMEM;
     }
 
@@ -262,7 +271,7 @@ static enum rpn_error push_rm_string_result(struct rpn_ctx *ctx, const RedisModu
     size_t slen;
     struct rpn_operand *v = alloc_rpn_operand(0);
 
-    if (!v) {
+    if (unlikely(!v)) {
         return RPN_ERR_ENOMEM;
     }
 
@@ -370,17 +379,17 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
         return RPN_ERR_NPE;
     }
 
-    if (type == 0) {
+    if (type == RPN_LVTYPE_NUMBER) {
         if (isnan(r->d)) {
             fprintf(stderr, "RPN: Register value is not a number: %zu\n", i);
             return RPN_ERR_NAN;
         }
 
         push(ctx, r);
-    } else if (type == 1) {
+    } else if (type == RPN_LVTYPE_STRING) {
         push(ctx, r);
     } else {
-        fprintf(stderr, "RPN: Unknown read type: %d\n", type);
+        fprintf(stderr, "RPN: Unknown type code: %d\n", type);
         return RPN_ERR_TYPE;
     }
 
@@ -433,7 +442,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         return push_empty_value(ctx);
     }
 
-    if (type == 0) {
+    if (type == RPN_LVTYPE_NUMBER) {
         double dvalue;
 
         err = RedisModule_StringToDouble(value, &dvalue);
@@ -673,13 +682,13 @@ static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_getsfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
 
-    return rpn_getfld(ctx, field, 1);
+    return rpn_getfld(ctx, field, RPN_LVTYPE_STRING);
 }
 
-static enum rpn_error rpn_op_getifld(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_getdfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
 
-    return rpn_getfld(ctx, field, 0);
+    return rpn_getfld(ctx, field, RPN_LVTYPE_NUMBER);
 }
 
 static enum rpn_error rpn_op_abo(struct rpn_ctx *ctx __unused) {
@@ -727,7 +736,7 @@ static rpn_fp funcs[] = {
     rpn_op_idcmp,   /* d */
     rpn_op_cidcmp,  /* e */
     rpn_op_getsfld, /* f */
-    rpn_op_getifld, /* g */
+    rpn_op_getdfld, /* g */
     rpn_op_exists,  /* h */
     rpn_op_range,   /* i */
     rpn_op_abo,     /* j spare */
@@ -816,7 +825,7 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
                     const char *str = s + 1;
                     enum rpn_error err;
 
-                    err = rpn_get_reg(ctx, str, 0);
+                    err = rpn_get_reg(ctx, str, RPN_LVTYPE_NUMBER);
                     if (err) {
                         clear_stack(ctx);
 
@@ -829,7 +838,7 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
                     const char *str = s + 1;
                     enum rpn_error err;
 
-                    err = rpn_get_reg(ctx, str, 1);
+                    err = rpn_get_reg(ctx, str, RPN_LVTYPE_STRING);
                     if (err) {
                         clear_stack(ctx);
 

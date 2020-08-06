@@ -18,9 +18,9 @@ else
 	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
 endif
 CFLAGS := $(IDIR) -include tunables.h \
-	-std=gnu99 -Wall -Wextra -Wno-unused-value \
+	-std=gnu99 -fPIC \
+	-Wall -Wextra -Wno-unused-value \
 	-ggdb -O2 \
-	-fPIC -lc -lm \
 	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
 CC := gcc
 

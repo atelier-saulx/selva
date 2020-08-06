@@ -103,6 +103,6 @@ User registers start from index 1, and register number 0 is reserved for the cur
 | `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `$1 $0 d => 1`            | 
 | `e`      | `!cmp(curT, id)`   | Compare the type of the current node. | `"AB e`               |
 | `f`      | `node[a]`          | Get the string value of a node field. | `"field f`            |
-| `g`      | `node[a]`          | Get the integer value of a node field. | `"field g`           |
+| `g`      | `node[a]`          | Get the number value of a node field. | `"field g`            |
 | `h`      | `!!node[a]`        | Field exists.                     | `"title.en h => 1`        |
 | `i`      | `a <= b <= c`      | (interval) `b` is within `a` and `c`. | `"#2 #1 #0 => 1`      |
