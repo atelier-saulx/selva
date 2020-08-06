@@ -30,16 +30,16 @@ d       [function]  Compares operand 0 with the result of the previous function.
 Syntax
 ------
 
-**Numeric literals**
+**Literals**
 
-Numeric literals are prefixed with `#`.
+| Prefix                        | Description                       | Example                   |
+|-------------------------------|-----------------------------------|---------------------------|
+| `#`                           | Numeric literal (int or float).   | `#5.5 => 5.5`             |
+| `"`                           | String literal.                   | `"title.en => "title.en"` |
 
-**String literals**
-
-A string literal starts with a `"` character.
-
-Strings cannot be quoted and it's advisable to place strings in the registers
-given as arguments to the expression parser.
+A string literal starts with a `"` character. A string literal cannot be quoted
+and it's advisable to pass strings in the registers given as arguments to the
+expression parser.
 
 For example, instead of writing
 
@@ -53,20 +53,21 @@ you should consider writing
 SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field f $1 c' "test"
 ```
 
-**Register integers**
+**Register references**
 
-Integers stored in the register can be referenced with an `@` prefix.
+| Prefix                        | Description                       | Example                   |
+|-------------------------------|-----------------------------------|---------------------------|
+| `@`                           | Read an integer from a register.  | `@1 => reg[1]`            |
+| `$`                           | Read a string from a register.    | `$1 => reg[1]`            |
 
-**Register string**
-
-Strings stored in the register can be referenced with a `$` prefix.
+User registers start from index 1, and register number 0 is reserved for the current node ID.
 
 **Arithmetic operators**
 
-| Operator | Operands           | Description                       | Syntax                    |
+| Operator | Operands           | Description                       | Example (expr => result)  |
 |----------|--------------------|-----------------------------------|---------------------------|
-| `A`      | `a + b`            | Addition operator.                | `#1 #2 A => 3`            |
-| `B`      | `a - b`            | Subtraction operator.             | `#1 #2 B => 1`            |
+| `A`      | `a + b`            | Addition operator.                | `#2 #1 A => 3`            |
+| `B`      | `a - b`            | Subtraction operator.             | `#2 #1 B => 1`            |
 | `C`      | `a / b`            | Division operator.                | `#2 #4 C => 2`            |
 | `D`      | `a * b`            | Multiplication operator.          | `#2 #2 D => 4`            |
 | `E`      | `a % b`            | Remainder operator.               | `#4 #9 E => 1`            |
@@ -75,12 +76,12 @@ Strings stored in the register can be referenced with a `$` prefix.
 
 | Operator | Operands           | Description                       | Example (expr => result)  |
 |----------|--------------------|-----------------------------------|---------------------------|
-| `F`      | `a == b`           | Equality operator.                | `#1 1 F => 1`             |
-| `G`      | `a != b`           | Not equal operator.               | `#1 2 G => 1`             |
-| `H`      | `a < b`            | Less than operator.               | `#2 1 H => 1`             |
-| `I`      | `a > b`            | Greater than operator.            | `#2 1 I => 0`             |
-| `J`      | `a <= b`           | Less than or equal operator.      | `#2 1 J => 1`             |
-| `K`      | `a >= b`           | Greater than or equal operator.   | `#2 1 K => 0`             |
+| `F`      | `a == b`           | Equality operator.                | `#1 #1 F => 1`            |
+| `G`      | `a != b`           | Not equal operator.               | `#1 #2 G => 1`            |
+| `H`      | `a < b`            | Less than operator.               | `#2 #1 H => 1`            |
+| `I`      | `a > b`            | Greater than operator.            | `#2 #1 I => 0`            |
+| `J`      | `a <= b`           | Less than or equal operator.      | `#2 #1 J => 1`            |
+| `K`      | `a >= b`           | Greater than or equal operator.   | `#2 #1 K => 0`            |
 
 **Logical operators**
 
@@ -96,10 +97,10 @@ Strings stored in the register can be referenced with a `$` prefix.
 
 | Operator | Arguments          | Description                       | Example (expr => result)  |
 |----------|--------------------|-----------------------------------|---------------------------|
-| `a`      | `a in b`           | `in` function.                    | `$0 $1 a => 0`            |
+| `a`      | `a in b`           | `in` function.                    | `$1 $0 a => 0`            |
 | `b`      | `id`               | Returns the type of a node id.    | `xy123 b => xy`           |
 | `c`      | `!strcmp(s1, s2)`  | Compare strings.                  | `$0 "hello c => 1`        |
-| `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `$0 $1 d => 1`            | 
+| `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `$1 $0 d => 1`            | 
 | `e`      | `!cmp(curT, id)`   | Compare the type of the current node. | `"AB e`               |
 | `f`      | `node[a]`          | Get the string value of a node field. | `"field f`            |
 | `g`      | `node[a]`          | Get the integer value of a node field. | `"field g`           |
