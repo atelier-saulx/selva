@@ -22,6 +22,6 @@ function getIdPrefix(client: SelvaClient, { db, type }: IdOptions): string {
 
 export default function genId(client: SelvaClient, idOpts: IdOptions): string {
   const prefix = getIdPrefix(client, idOpts)
-  return prefix + hash(uuid()).toString(16)
+  return prefix + hash(uuid()).toString(16).padStart(8, '0')
 }
 

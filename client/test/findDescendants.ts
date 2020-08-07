@@ -7,6 +7,7 @@ import getPort from 'get-port'
 
 let srv
 let port: number
+
 test.before(async t => {
   port = await getPort()
   srv = await start({
@@ -14,8 +15,12 @@ test.before(async t => {
   })
 
   await wait(500)
-  // { loglevel: 'info' }
+})
+
+test.beforeEach(async t => {
   const client = connect({ port })
+
+  await client.redis.flushall()
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -154,7 +159,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.skip('find - descendants', async t => {
+test.serial('find - descendants', async t => {
   // simple nested - single query
 
   try {

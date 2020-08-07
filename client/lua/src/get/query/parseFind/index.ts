@@ -92,11 +92,11 @@ function parseFind(
   if ($traverse) {
     if ($traverse === 'descendants') {
       if (filters) {
-        filters[filters.length] = {
-          $field: 'ancestors',
-          $value: ids, // means an or
-          $operator: '='
-        }
+        // filters[filters.length] = {
+        //   $field: 'ancestors',
+        //   $value: ids, // means an or
+        //   $operator: '='
+        // }
         return parseFilters(filters)
       } else {
         // if (ids.length > 1) {
@@ -108,8 +108,9 @@ function parseFind(
       }
     } else if ($traverse === 'ancestors') {
       // for loop here
-      const ancestors = getIds(getField, $traverse, ids)
-      return parseFindIds(filters, ancestors, meta)
+      //const ancestors = getIds(getField, $traverse, ids)
+      //return parseFindIds(filters, ancestors, meta)
+      return parseFilters(filters)
     } else if (isArray($traverse)) {
       // short hand to do iteration over multiple ids
       return parseFindIds(filters, $traverse, meta)

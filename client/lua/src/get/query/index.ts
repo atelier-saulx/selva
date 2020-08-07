@@ -107,16 +107,21 @@ const parseQuery = (
 
   if (resultFork) {
     const idMap: Record<string, true> = {}
+    // @ts-ignore
+    const $traverse: string = getOptions.$list && getOptions.$list.$find && <string>getOptions.$list.$find.$traverse || <string>traverse
+    logger.info('search', `"${$traverse}"`, ids[0], ast2rpn(resultFork))
     const queryResult: string[] = redis.call(
       'selva.hierarchy.find',
       '___selva_hierarchy',
       'bfs',
-      <string>traverse,
+      $traverse,
+      ids[0],
       ...ast2rpn(resultFork)
     )
+    logger.info('search res:', queryResult);
 
     if (queryResult) {
-      for (let i = 1; i < queryResult.length; i++) {
+      for (let i = 0; i < queryResult.length; i++) {
         idMap[queryResult[i]] = true
       }
     }

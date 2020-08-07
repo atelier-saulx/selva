@@ -365,7 +365,13 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
 }
 
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
-    const size_t i = str_index[0] - '0';
+    char *end = NULL;
+    const size_t i = strtoll(str_index, &end, 10);
+
+    if (str_index == end) {
+        fprintf(stderr, "RPN: Register index is not a number: \"%s\"", str_index);
+        return RPN_ERR_NAN;
+    }
 
     if (i >= (size_t)ctx->nr_reg) {
         fprintf(stderr, "RPN: Register index out of bounds: %zu\n", i);
@@ -446,6 +452,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         double dvalue;
 
         err = RedisModule_StringToDouble(value, &dvalue);
+        RedisModule_FreeString(ctx->redis_ctx, value);
 
         if (unlikely(err != REDISMODULE_OK)) {
             fprintf(stderr, "RPN: Field value is not a number: %.*s\n",
@@ -453,8 +460,6 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
 
             return RPN_ERR_NAN;
         }
-
-        RedisModule_FreeString(ctx->redis_ctx, value);
 
         return push_double_result(ctx, dvalue);
     } else {
@@ -896,6 +901,7 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
                 }
                 break;
             default:
+                fprintf(stderr, "RPN: Illegal operand: \"%s\"\n", s);
                 clear_stack(ctx);
                 return RPN_ERR_ILLOPN;
             }
