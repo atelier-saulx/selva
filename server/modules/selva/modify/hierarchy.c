@@ -398,6 +398,8 @@ static int crossInsert(
                         1, ((Selva_NodeId []){ ROOT_NODE_ID }),
                         0, NULL);
                 if (err) {
+                    /* TODO Better error messages */
+                    fprintf(stderr, "Failed to create a parent\n");
                     continue;
                 }
                 adjacent = findNode(hierarchy, nodes[i]);
@@ -418,6 +420,8 @@ static int crossInsert(
                         0, NULL,
                         0, NULL);
                 if (err) {
+                    /* TODO Better error messages */
+                    fprintf(stderr, "Failed to create a child\n");
                     continue;
                 }
                 adjacent = findNode(hierarchy, nodes[i]);

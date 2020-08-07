@@ -83,7 +83,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.only('find - ancestors', async t => {
+test.serial('find - ancestors', async t => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
 

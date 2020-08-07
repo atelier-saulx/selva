@@ -303,10 +303,6 @@ void SelvaModify_ModifyIncrement(
     RedisModuleString *increment =
         RedisModule_CreateString(ctx, increment_str, num_str_size);
     RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, increment, NULL);
-
-    if (incrementOpts->index) {
-        SelvaModify_Index(id_str, id_len, field_str, field_len, increment_str, num_str_size);
-    }
 }
 
 int SelvaModify_ModifyDel(

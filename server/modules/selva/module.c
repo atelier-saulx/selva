@@ -286,14 +286,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 goto out;
             }
         } else {
-            if (type_code == SELVA_MODIFY_ARG_INDEXED_VALUE ||
-                type_code == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
-                TO_STR(id);
-
-                SelvaModify_Index(id_str, id_len, field_str, field_len, value_str, value_len);
-            }
-
-            if (type_code == SELVA_MODIFY_ARG_DEFAULT || type_code == SELVA_MODIFY_ARG_DEFAULT_INDEXED) {
+            if (type_code == SELVA_MODIFY_ARG_DEFAULT) {
                 if (current_value != NULL) {
                     publish = false;
                 } else {

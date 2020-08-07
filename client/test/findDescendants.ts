@@ -65,7 +65,8 @@ test.beforeEach(async t => {
   })
 
   const team1 = await client.id({ type: 'team' })
-  const amount = 50000
+  // TODO Should be 50000
+  const amount = 5000
   const vids = 100
   const genMatches = (s = 0) => {
     const ch = []
@@ -95,7 +96,7 @@ test.beforeEach(async t => {
       ch.push({
         type: 'video',
         name: 'video',
-        title: { en: 'flap video ' + i },
+        title: { en: 'flap' },
         date: Date.now() + i + (i > 5 ? 1000000 : -100000),
         value: i
       })
@@ -112,7 +113,9 @@ test.beforeEach(async t => {
         {
           $id: team1,
           name: 'team 1',
-          children: genVideos()
+          children: {
+              $add: genVideos()
+          }
         }
       ]
     }),
@@ -357,7 +360,7 @@ test.serial('find - descendants', async t => {
           $find: {
             $traverse: 'descendants',
             $filter: {
-              $field: 'title',
+              $field: 'title.en',
               $operator: '=',
               $value: 'flap'
             }

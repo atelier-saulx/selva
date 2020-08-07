@@ -11,9 +11,7 @@ struct SelvaModify_Hierarchy;
 
 enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_VALUE = '0',
-    SELVA_MODIFY_ARG_INDEXED_VALUE = '1',
     SELVA_MODIFY_ARG_DEFAULT = '2',
-    SELVA_MODIFY_ARG_DEFAULT_INDEXED = '3',
     SELVA_MODIFY_ARG_OP_INCREMENT = '4',
     SELVA_MODIFY_ARG_OP_SET = '5',
     SELVA_MODIFY_ARG_STRING_ARRAY = '6',
@@ -63,21 +61,14 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleStrin
     return op;
 }
 
-static inline void SelvaModify_Index(const char *id_str, size_t id_len, const char *field_str, size_t field_len, const char *value_str, size_t value_len) {
-    int indexing_str_len =
-        sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len + value_len;
-    char indexing_str[indexing_str_len];
-    SelvaModify_PrepareValueIndexPayload(indexing_str, id_str, id_len, field_str, field_len,
-            value_str, value_len);
-    SelvaModify_SendAsyncTask(indexing_str_len, indexing_str);
-}
-
 static inline void SelvaModify_Publish(const char *id_str, size_t id_len, const char *field_str, size_t field_len) {
+#if 0
     int payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + field_len;
     char payload_str[payload_len];
 
     SelvaModify_PreparePublishPayload(payload_str, id_str, id_len, field_str, field_len);
     SelvaModify_SendAsyncTask(payload_len, payload_str);
+#endif
 }
 
 int SelvaModify_ModifySet(
