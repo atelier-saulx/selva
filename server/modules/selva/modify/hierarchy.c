@@ -1686,6 +1686,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         }
 
         input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
+        /* TODO Can it fail? */
         filter_expression = rpn_compile(input, input_len);
     }
 
@@ -1721,6 +1722,110 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     }
 
     RedisModule_ReplySetArrayLength(ctx, nr_nodes);
+
+    return REDISMODULE_OK;
+}
+
+/**
+ * Find node in set.
+ * SELVA.HIERARCHY.findIn REDIS_KEY NODE_IDS [filter expression] [args...]
+ */
+int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    int err;
+
+    const size_t ARGV_REDIS_KEY    = 1;
+    const size_t ARGV_NODE_IDS     = 2;
+    const size_t ARGV_FILTER_EXPR  = 3;
+    const size_t ARGV_FILTER_ARGS  = 4;
+
+    if (argc < 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    /*
+     * Open the Redis key.
+     */
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    int type = RedisModule_KeyType(key);
+    if (type != REDISMODULE_KEYTYPE_EMPTY &&
+        RedisModule_ModuleTypeGetType(key) != HierarchyType) {
+        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+
+    /* Create an empty value object if the key is currently empty. */
+    SelvaModify_Hierarchy *hierarchy = RedisModule_ModuleTypeGetValue(key);
+    if (!hierarchy) {
+        return RedisModule_ReplyWithArray(ctx, 0);
+    }
+
+    size_t nr_reg = argc - ARGV_FILTER_ARGS + 1;
+    struct rpn_ctx *rpn_ctx = rpn_init(ctx, nr_reg);
+    if (!rpn_ctx) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
+    }
+
+    RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    RedisModuleString *filter = argv[ARGV_FILTER_EXPR];
+    TO_STR(ids, filter);
+
+    /*
+     * Compile the expression.
+     */
+    /* TODO Can it fail? */
+    rpn_token *filter_expression = rpn_compile(filter_str, filter_len);
+
+    /*
+     * Get the filter expression arguments and set them to the registers.
+     */
+    for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
+        /* reg[0] is reserved for the current nodeId */
+        const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
+        size_t str_len;
+        const char *str = RedisModule_StringPtrLen(argv[i], &str_len);
+
+        rpn_set_reg(rpn_ctx, reg_i, str, str_len + 1);
+    }
+
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    size_t array_len = 0;
+
+    /*
+     * Run the filter.
+     */
+    for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
+        int take = 0;
+        Selva_NodeId nodeId;
+
+        memset(nodeId, '\0', SELVA_NODE_ID_SIZE);
+        memcpy(nodeId, ids_str + i, SELVA_NODE_ID_SIZE);
+
+        /* Set node_id to the register reg[0] */
+        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE);
+
+        /*
+         * Resolve the expression and get the result.
+         */
+        err = rpn_bool(rpn_ctx, filter_expression, &take);
+        if (err) {
+            fprintf(stderr, "Expression failed (node: \"%.*s\"): \"%s\"\n",
+                    (int)SELVA_NODE_ID_SIZE, nodeId,
+                    rpn_str_error[err]);
+            /*
+             * It would be a good idea to send an error here but Redis
+             * doesn't actually support sending an error in the middle
+             * of an array response.
+             */
+        } else if (take) {
+            RedisModule_ReplyWithStringBuffer(ctx, nodeId, SelvaModify_NodeIdLen(nodeId));
+            array_len++;
+        }
+    }
+
+    RedisModule_ReplySetArrayLength(ctx, array_len);
+
+    RedisModule_Free(filter_expression);
+    rpn_destroy(rpn_ctx);
 
     return REDISMODULE_OK;
 }
@@ -1887,6 +1992,7 @@ int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         RedisModule_CreateCommand(ctx, "selva.hierarchy.parents", SelvaModify_Hierarchy_ParentsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaModify_Hierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaModify_Hierarchy_FindInCommand,   "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.dump", SelvaModify_Hierarchy_DumpCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
