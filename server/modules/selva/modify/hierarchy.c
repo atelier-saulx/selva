@@ -1596,7 +1596,7 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
 
 /**
  * Find node ancestors/descendants.
- * SELVA.HIERARCHY.find REDIS_KEY ALGO DESCENDANTS|ANCESTORS NODE_ID [filter expression] [args...]
+ * SELVA.HIERARCHY.find REDIS_KEY ALGO DESCENDANTS|ANCESTORS NODE_IDS [filter expression] [args...]
  */
 int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -1605,7 +1605,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     const size_t ARGV_REDIS_KEY    = 1;
     const size_t ARGV_ALGO         = 2;
     const size_t ARGV_DIRECTION    = 3;
-    const size_t ARGV_NODE_ID      = 4;
+    const size_t ARGV_NODE_IDS     = 4;
     const size_t ARGV_FILTER_EXPR  = 5;
     const size_t ARGV_FILTER_ARGS  = 6;
 
@@ -1648,17 +1648,6 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     }
 
     /*
-     * Find the node.
-     */
-    Selva_NodeId nodeId;
-
-    RMString2NodeId(nodeId, argv[ARGV_NODE_ID]);
-    SelvaModify_HierarchyNode *head = findNode(hierarchy, nodeId);
-    if (!head) {
-        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
-    }
-
-    /*
      * Prepare the filter expression if given.
      */
     struct rpn_ctx *rpn_ctx = NULL;
@@ -1691,36 +1680,61 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     }
 
     /*
-     * Run BFS/DFS.
+     * Run for each NODE_ID.
      */
     ssize_t nr_nodes = 0;
-    struct FindCommand_Args args = {
-        .ctx = ctx,
-        .head = head,
-        .nr_nodes = &nr_nodes,
-        .rpn_ctx = rpn_ctx,
-        .filter = filter_expression,
-    };
-    const TraversalCallback cb = {
-        .head_cb = NULL,
-        .head_arg = NULL,
-        .node_cb = FindCommand_PrintNode,
-        .node_arg = &args,
-        .child_cb = NULL,
-        .child_arg = NULL,
-    };
-
+    RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    TO_STR(ids);
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    err = (algo == HIERARCHY_BFS ? bfs : dfs)(hierarchy, head, dir, &cb);
-    if (rpn_ctx) {
-        RedisModule_Free(filter_expression);
-        rpn_destroy(rpn_ctx);
-    }
-    if (err != 0) {
-        /* FIXME This will make redis crash */
-        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
-    }
+    for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
+        Selva_NodeId nodeId;
 
+        strncpy(nodeId, ids_str + i, SELVA_NODE_ID_SIZE);
+
+        /*
+         * Find the node.
+         */
+        SelvaModify_HierarchyNode *head = findNode(hierarchy, nodeId);
+        if (!head) {
+            fprintf(stderr, "Node not found: \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodeId);
+            continue;
+        }
+        /* TODO Error handling? */
+#if 0
+        if (!head) {
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
+        }
+#endif
+
+        /*
+         * Run BFS/DFS.
+         */
+        struct FindCommand_Args args = {
+            .ctx = ctx,
+            .head = head,
+            .nr_nodes = &nr_nodes,
+            .rpn_ctx = rpn_ctx,
+            .filter = filter_expression,
+        };
+        const TraversalCallback cb = {
+            .head_cb = NULL,
+            .head_arg = NULL,
+            .node_cb = FindCommand_PrintNode,
+            .node_arg = &args,
+            .child_cb = NULL,
+            .child_arg = NULL,
+        };
+
+        err = (algo == HIERARCHY_BFS ? bfs : dfs)(hierarchy, head, dir, &cb);
+        if (rpn_ctx) {
+            RedisModule_Free(filter_expression);
+            rpn_destroy(rpn_ctx);
+        }
+        if (err != 0) {
+            /* FIXME This will make redis crash */
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+        }
+    }
     RedisModule_ReplySetArrayLength(ctx, nr_nodes);
 
     return REDISMODULE_OK;
@@ -1797,8 +1811,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
         int take = 0;
         Selva_NodeId nodeId;
 
-        memset(nodeId, '\0', SELVA_NODE_ID_SIZE);
-        memcpy(nodeId, ids_str + i, SELVA_NODE_ID_SIZE);
+        strncpy(nodeId, ids_str + i, SELVA_NODE_ID_SIZE);
 
         /* Set node_id to the register reg[0] */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE);
