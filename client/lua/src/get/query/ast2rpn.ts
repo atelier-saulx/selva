@@ -123,7 +123,7 @@ export default function ast2rpn(f: Fork): [string[] | undefined, string[]] {
       ast2rpnFork(fork)
     } else {
       // TODO error
-      logger.error('Type error')
+      logger.error('Type error', vType, f)
     }
   }
 

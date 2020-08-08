@@ -7,6 +7,7 @@ import getPort from 'get-port'
 
 let srv
 let port
+
 test.before(async t => {
   port = await getPort()
   srv = await start({
@@ -14,8 +15,12 @@ test.before(async t => {
   })
 
   await wait(500)
+})
 
+test.beforeEach(async t => {
   const client = connect({ port: port }, { loglevel: 'info' })
+
+  await client.redis.flushall()
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -40,7 +45,9 @@ test.before(async t => {
     }
   })
 
-  await client.delete('root')
+  // A small delay is needed after setting the schema
+  await new Promise(r => setTimeout(r, 100))
+
   await client.destroy()
 })
 
