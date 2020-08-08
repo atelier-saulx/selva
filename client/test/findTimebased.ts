@@ -194,7 +194,7 @@ test.serial('find - already started', async t => {
     nextRefresh
   )
 
-  console.log(
+  t.deepEqual(
     (
       await client.get({
         $includeMeta: true,
@@ -217,36 +217,9 @@ test.serial('find - already started', async t => {
           }
         }
       })
-    ).items.map(i => i.name)
+    ).items.map(i => i.name),
+    ['started 2h ago', 'started 5m ago', 'started 2m ago']
   )
-
-  // FIXME: wft ASC sort broken?
-  // t.deepEqual(
-  //   (
-  //     await client.get({
-  //       $includeMeta: true,
-  //       $id: 'root',
-  //       items: {
-  //         name: true,
-  //         value: true,
-  //         $list: {
-  //           $sort: { $field: 'startTime', $order: 'asc' },
-  //           $find: {
-  //             $traverse: 'children',
-  //             $filter: [
-  //               {
-  //                 $field: 'startTime',
-  //                 $operator: '<',
-  //                 $value: 'now'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     })
-  //   ).items.map(i => i.name),
-  //   ['started 2m ago', 'started 5m ago', 'started 2h ago']
-  // )
 
   await client.delete('root')
   await client.destroy()
