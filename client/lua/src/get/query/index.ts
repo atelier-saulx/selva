@@ -118,7 +118,7 @@ const parseQuery = (
     logger.info(
       'search',
       `"${$traverse}"`,
-      ids[0],
+      ids,
       resultFork,
       ast2rpn(resultFork)
     )
@@ -133,13 +133,19 @@ const parseQuery = (
         joinPaddedIds(findIn),
         ...searchArgs
       )
+
+      if (queryResult) {
+        for (let i = 0; i < queryResult.length; i++) {
+          idMap[queryResult[i]] = true
+        }
+      }
     } else {
       queryResult = redis.call(
         'selva.hierarchy.find',
         '___selva_hierarchy',
         'bfs',
         $traverse,
-        ids[0],
+        joinPaddedIds(ids),
         ...searchArgs
       )
     }

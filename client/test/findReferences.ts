@@ -49,9 +49,9 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('find - references', async t => {
+test.serial.only('find - references', async t => {
   // simple nested - single query
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
   const globMatches = []
   const leaguesSet = []
   for (let i = 0; i < 10; i++) {
