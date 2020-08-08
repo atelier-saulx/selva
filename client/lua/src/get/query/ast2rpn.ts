@@ -1,6 +1,7 @@
 import * as logger from '../../logger'
 import { Fork, FilterAST as Filter } from './types'
-import { now } from '../../util'
+import { now, stringStartsWith } from '../../util'
+import { convertNow } from './util'
 
 function isFork(x: any): x is Fork {
   return x.isFork
@@ -63,8 +64,12 @@ export default function ast2rpn(f: Fork): [string[] | undefined, string[]] {
       reg[regIndex++] = f.$field
       const valueId = regIndex
 
-      if (f.$value === 'now' && (f.$operator === '<' || f.$operator === '>')) {
-        reg[regIndex++] = `${now()}`
+      if (
+        type(f.$value) === 'string' &&
+        stringStartsWith(<string>f.$value, 'now') &&
+        (f.$operator === '<' || f.$operator === '>')
+      ) {
+        reg[regIndex++] = `${convertNow(<string>f.$value)}`
       } else {
         reg[regIndex++] = `${f.$value}`
       }
@@ -85,9 +90,25 @@ export default function ast2rpn(f: Fork): [string[] | undefined, string[]] {
       const fieldId = regIndex
       reg[regIndex++] = f.$field
       const valueId1 = regIndex
-      reg[regIndex++] = `${f.$value[0]}`
+
+      if (
+        type(f.$value[0]) === 'string' &&
+        stringStartsWith(f.$value[0], 'now')
+      ) {
+        reg[regIndex++] = `${convertNow(<string>f.$value[0])}`
+      } else {
+        reg[regIndex++] = `${f.$value[0]}`
+      }
+
       const valueId2 = regIndex
-      reg[regIndex++] = `${f.$value[1]}`
+      if (
+        type(f.$value[1]) === 'string' &&
+        stringStartsWith(f.$value[1], 'now')
+      ) {
+        reg[regIndex++] = `${convertNow(<string>f.$value[1])}`
+      } else {
+        reg[regIndex++] = `${f.$value[1]}`
+      }
 
       out += ` @${valueId2} $${fieldId} g @${valueId1} i`
     } else if (vType === 'table') {

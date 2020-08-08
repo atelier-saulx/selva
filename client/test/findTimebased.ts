@@ -124,7 +124,7 @@ test.serial.skip('find - live', async t => {
   await client.delete('root')
 })
 
-test.serial.only('find - already started', async t => {
+test.serial('find - already started', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
