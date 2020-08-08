@@ -15,7 +15,7 @@ test.before(async t => {
 
   await wait(500)
 
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -49,7 +49,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.only('find - references', async t => {
+test.serial('find - references', async t => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
   const globMatches = []

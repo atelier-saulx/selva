@@ -1726,16 +1726,20 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         };
 
         err = (algo == HIERARCHY_BFS ? bfs : dfs)(hierarchy, head, dir, &cb);
-        if (rpn_ctx) {
-            RedisModule_Free(filter_expression);
-            rpn_destroy(rpn_ctx);
-        }
         if (err != 0) {
             /* FIXME This will make redis crash */
+#if 0
             return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+#endif
+            fprintf(stderr, "Find failed for node: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     }
     RedisModule_ReplySetArrayLength(ctx, nr_nodes);
+
+    if (rpn_ctx) {
+        RedisModule_Free(filter_expression);
+        rpn_destroy(rpn_ctx);
+    }
 
     return REDISMODULE_OK;
 }
