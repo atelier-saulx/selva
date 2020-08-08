@@ -16,6 +16,11 @@
  */
 #define HIERARCHY_EXPECTED_RESP_LEN     5000
 
+/**
+ * Sort hierarchy find results by depth.
+ */
+#define HIERARCHY_SORT_BY_DEPTH         1
+
 /*
  * RPN Tunables.
  */

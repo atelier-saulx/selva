@@ -22,7 +22,9 @@
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
     struct timespec visit_stamp;
+#if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
+#endif
     SVector parents;
     SVector children;
     RB_ENTRY(SelvaModify_HierarchyNode) _index_entry;
@@ -118,12 +120,14 @@ static int SVector_HierarchyNode_id_compare(const void ** restrict a_raw, const 
     return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
 }
 
+#if HIERARCHY_SORT_BY_DEPTH
 static int SVector_HierarchyNode_depth_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
     const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
 
     return b->depth - a->depth;
 }
+#endif
 
 static int SelvaModify_HierarchyNode_Compare(const SelvaModify_HierarchyNode *a, const SelvaModify_HierarchyNode *b) {
     return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
@@ -315,6 +319,7 @@ static inline void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hierarch
     SVector_Remove(&hierarchy->heads, node);
 }
 
+#if HIERARCHY_SORT_BY_DEPTH
 static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head) {
     SVector q;
 
@@ -361,7 +366,9 @@ static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyN
 
     SVector_Destroy(&q);
 }
+#endif
 
+#if HIERARCHY_SORT_BY_DEPTH
 ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
     const SelvaModify_HierarchyNode *node;
 
@@ -372,6 +379,7 @@ ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Se
 
     return node->depth;
 }
+#endif
 
 static int crossInsert(
         RedisModuleCtx *ctx,
@@ -443,7 +451,9 @@ static int crossInsert(
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
+#if HIERARCHY_SORT_BY_DEPTH
     updateDepth(hierarchy, node);
+#endif
 
     return err;
 }
@@ -466,7 +476,9 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
             SVector_Remove(&adjacent->children, node);
             SVector_Remove(&node->parents, adjacent);
 
+#if HIERARCHY_SORT_BY_DEPTH
             updateDepth(hierarchy, adjacent);
+#endif
         }
 
         if (initialNodeParentsSize > 0 && SVector_Size(&node->parents) == 0) {
@@ -493,13 +505,17 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
                 mkHead(hierarchy, adjacent);
             }
 
+#if HIERARCHY_SORT_BY_DEPTH
             updateDepth(hierarchy, adjacent);
+#endif
         }
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
+#if HIERARCHY_SORT_BY_DEPTH
     updateDepth(hierarchy, node);
+#endif
 
     return 0;
 }
@@ -541,7 +557,9 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
             mkHead(hierarchy, it);
         }
 
+#if HIERARCHY_SORT_BY_DEPTH
         updateDepth(hierarchy, it);
+#endif
     }
     SVector_Clear(vec_a);
 
@@ -1174,6 +1192,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
     rdbLoading = 0;
 
+#if HIERARCHY_SORT_BY_DEPTH
     /*
      * Update depths on a single pass to save time.
      */
@@ -1181,6 +1200,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
     SVECTOR_FOREACH(it, &hierarchy->heads) {
         updateDepth(hierarchy, *it);
     }
+#endif
 
     return hierarchy;
 error:
@@ -1453,6 +1473,8 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
 
     svector_autofree SVector parents;
 
+
+#if HIERARCHY_SORT_BY_DEPTH
     if (unlikely(!SVector_Clone(&parents, &node->parents, SVector_HierarchyNode_depth_compare))) {
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
     }
@@ -1465,6 +1487,16 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
 
         RedisModule_ReplyWithStringBuffer(ctx, it->id, SelvaModify_NodeIdLen(it->id));
     }
+#else
+    RedisModule_ReplyWithArray(ctx, SVector_Size(&node->parents));
+
+    SelvaModify_HierarchyNode **itt;
+    SVECTOR_FOREACH(itt, &node->parents) {
+        SelvaModify_HierarchyNode *it = *itt;
+
+        RedisModule_ReplyWithStringBuffer(ctx, it->id, SelvaModify_NodeIdLen(it->id));
+    }
+#endif
 
     return REDISMODULE_OK;
 }
