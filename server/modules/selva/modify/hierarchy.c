@@ -399,7 +399,7 @@ static int crossInsert(
                         0, NULL);
                 if (err) {
                     /* TODO Better error messages */
-                    fprintf(stderr, "Failed to create a parent\n");
+                    fprintf(stderr, "Failed to create a parent: %s\n", hierarchyStrError[-err]);
                     continue;
                 }
                 adjacent = findNode(hierarchy, nodes[i]);
@@ -421,7 +421,7 @@ static int crossInsert(
                         0, NULL);
                 if (err) {
                     /* TODO Better error messages */
-                    fprintf(stderr, "Failed to create a child\n");
+                    fprintf(stderr, "Failed to create a child: %s\n", hierarchyStrError[-err]);
                     continue;
                 }
                 adjacent = findNode(hierarchy, nodes[i]);
