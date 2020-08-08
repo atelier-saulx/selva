@@ -75,7 +75,6 @@ function parseIds(
     if (filters.length === 0) {
       return [ids, null]
     } else {
-      // hello
       filters[filters.length] = {
         $field: 'id',
         $value: ids,
@@ -85,7 +84,6 @@ function parseIds(
       return r
     }
   } else {
-    // empty first arg to get unified response with redisSearc
     return [ids, null]
   }
 }

@@ -3,7 +3,7 @@ import { GetOptions, GetResult, Inherit } from '~selva/get/types'
 import parseFind from './parseFind/index'
 import { Fork, Meta, QuerySubscription } from './types'
 import { isFork, getFind } from './util'
-import { emptyArray, ensureArray } from '../../util'
+import { emptyArray, ensureArray, joinString, joinPaddedIds } from '../../util'
 import { GetFieldFn } from '../types'
 import parseList from './parseList'
 import ast2rpn from './ast2rpn'
@@ -108,17 +108,43 @@ const parseQuery = (
   if (resultFork) {
     const idMap: Record<string, true> = {}
     // @ts-ignore
-    const $traverse: string = getOptions.$list && getOptions.$list.$find && <string>getOptions.$list.$find.$traverse || <string>traverse
-    logger.info('search', `"${$traverse}"`, ids[0], ast2rpn(resultFork))
-    const queryResult: string[] = redis.call(
-      'selva.hierarchy.find',
-      '___selva_hierarchy',
-      'bfs',
-      $traverse,
+    const $traverse: string =
+      (getOptions.$list &&
+        // @ts-ignore
+        getOptions.$list.$find &&
+        // @ts-ignore
+        <string>getOptions.$list.$find.$traverse) ||
+      <string>traverse
+    logger.info(
+      'search',
+      `"${$traverse}"`,
       ids[0],
-      ...ast2rpn(resultFork)
+      resultFork,
+      ast2rpn(resultFork)
     )
-    logger.info('search res:', queryResult);
+
+    const [findIn, searchArgs] = ast2rpn(resultFork)
+    let queryResult: string[]
+    if (findIn) {
+      logger.info('finding matches in ids', findIn)
+      queryResult = redis.call(
+        'selva.hierarchy.findIn',
+        '___selva_hierarchy',
+        joinPaddedIds(findIn),
+        ...searchArgs
+      )
+    } else {
+      queryResult = redis.call(
+        'selva.hierarchy.find',
+        '___selva_hierarchy',
+        'bfs',
+        $traverse,
+        ids[0],
+        ...searchArgs
+      )
+    }
+
+    logger.info('search res:', queryResult)
 
     if (queryResult) {
       for (let i = 0; i < queryResult.length; i++) {

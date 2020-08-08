@@ -60,13 +60,36 @@ const getIds = (
         return nestedResult
       }
 
-      return redis.smembers(ids[0] + '.' + traverse)
-    } else {
-      const fields: string[] = []
-      for (let i = 0; i < ids.length; i++) {
-        fields[fields.length] = ids[i] + '.' + traverse
+      if (traverse === 'children') {
+        return redis.children(ids[0])
+      } else if (traverse === 'parents') {
+        return redis.parents(ids[0])
+      } else {
+        return redis.zrange(ids[0] + '.' + traverse)
       }
-      return redis.sunion(fields)
+    } else {
+      const idMap: Record<string, true> = {}
+      for (let i = 0; i < ids.length; i++) {
+        let res: string[]
+        if (traverse === 'children') {
+          res = redis.children(ids[i])
+        } else if (traverse === 'parents') {
+          res = redis.parents(ids[i])
+        } else {
+          res = redis.zrange(ids[i] + '.' + traverse)
+        }
+
+        for (let j = 0; j < res.length; j++) {
+          idMap[res[j]] = true
+        }
+      }
+
+      const res: string[] = []
+      for (const id in idMap) {
+        res[res.length] = id
+      }
+
+      return res
     }
   }
 }
