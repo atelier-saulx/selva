@@ -124,7 +124,7 @@ test.serial.skip('find - live', async t => {
   await client.delete('root')
 })
 
-test.serial('find - already started', async t => {
+test.serial.only('find - already started', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
@@ -158,7 +158,7 @@ test.serial('find - already started', async t => {
   })
 
   await client.set({
-    $id: 'maLaterFuture',
+    $id: 'maLaterFut',
     type: 'match',
     name: 'starts in 2h',
     startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 1 hour
@@ -252,7 +252,7 @@ test.serial('find - already started', async t => {
   await client.destroy()
 })
 
-test.serial('find - already started subscription', async t => {
+test.serial.skip('find - already started subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
@@ -288,7 +288,7 @@ test.serial('find - already started subscription', async t => {
   })
 
   await client.set({
-    $id: 'maLaterFuture',
+    $id: 'maLaterFut',
     type: 'match',
     name: 'starts in 7s',
     startTime: nextNextRefresh,
@@ -378,7 +378,7 @@ test.serial('find - starting soon', async t => {
   })
 
   await client.set({
-    $id: 'maLaterFuture',
+    $id: 'maLaterFut',
     type: 'match',
     name: 'starts in 2h',
     startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 2 hour

@@ -15,7 +15,6 @@ import {
   stopSubscriptionManager,
   SubscriptionManagerState
 } from './subscriptionManager'
-import { startAsyncTaskWorker, stopAsyncTaskWorker } from './asyncTask'
 import {
   BackupFns,
   saveAndBackUp,
@@ -73,10 +72,6 @@ export class SelvaServer extends EventEmitter {
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
       this.selvaClient = connect({ port: opts.port }, { serverType: this.type })
-    }
-
-    if (this.type === 'origin') {
-      startAsyncTaskWorker()
     }
 
     if (opts.backups && opts.backups.loadBackup) {
@@ -153,10 +148,6 @@ export class SelvaServer extends EventEmitter {
     }
     if (this.type === 'subscriptionManager') {
       await stopSubscriptionManager(this.subscriptionManager)
-    }
-
-    if (this.type === 'origin') {
-      stopAsyncTaskWorker()
     }
 
     // need to call destroy if it crashes

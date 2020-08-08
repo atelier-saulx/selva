@@ -126,7 +126,7 @@ const parseQuery = (
     const [findIn, searchArgs] = ast2rpn(resultFork)
     let queryResult: string[]
     if (findIn) {
-      logger.info('finding matches in ids', findIn)
+      logger.info('finding matches in ids', findIn, joinPaddedIds(findIn))
       queryResult = redis.call(
         'selva.hierarchy.findIn',
         '___selva_hierarchy',

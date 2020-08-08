@@ -95,7 +95,7 @@ export function joinPaddedIds(ids: string[]): string {
   let str = ''
   for (let i = 0; i < ids.length - 1; i++) {
     if (ids[i].length < 10) {
-      for (let j = ids[i].length; j <= 10; j++) {
+      for (let j = ids[i].length; j < 10; j++) {
         ids[i] += '\0'
       }
     }
