@@ -328,7 +328,7 @@ const layoutWithRefsTest = async t => {
   }
 }
 
-test.serial('layout with refs', layoutWithRefsTest)
+test.serial.skip('layout with refs', layoutWithRefsTest)
 test.serial('layout without inheritance or refs', t => layoutSubsTest(t, true))
 test.serial('layout using $inherit: true - own layout, no refs', t =>
   layoutSubsTest(t, { $inherit: true })
