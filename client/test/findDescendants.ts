@@ -114,7 +114,7 @@ test.beforeEach(async t => {
           $id: team1,
           name: 'team 1',
           children: {
-              $add: genVideos()
+            $add: genVideos()
           }
         }
       ]
@@ -352,6 +352,7 @@ test.serial('find - descendants', async t => {
     await wait(1000)
 
     const { items: videosText } = await client.get({
+      $language: 'en',
       items: {
         value: true,
         $list: {
@@ -360,7 +361,7 @@ test.serial('find - descendants', async t => {
           $find: {
             $traverse: 'descendants',
             $filter: {
-              $field: 'title.en', // FIXME
+              $field: 'title',
               $operator: '=',
               $value: 'flap'
             }

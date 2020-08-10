@@ -31,7 +31,10 @@ const opMapNumber = {
   notExists: 'h'
 }
 
-export default function ast2rpn(f: Fork): [string[] | undefined, string[]] {
+export default function ast2rpn(
+  f: Fork,
+  language?: string
+): [string[] | undefined, string[]] {
   let findIn: string[] | undefined = undefined
   let out = ''
   let reg: string[] = []
@@ -61,7 +64,15 @@ export default function ast2rpn(f: Fork): [string[] | undefined, string[]] {
     const vType = getValueType(f)
     if (vType == 'string' || vType == 'number') {
       const fieldId = regIndex
-      reg[regIndex++] = f.$field
+      if (
+        (language && f.$search[0] === 'TEXT-LANGUAGE') ||
+        f.$search[0] === 'TEXT-LANGUAGE-SUG'
+      ) {
+        reg[regIndex++] = f.$field + '.' + language
+      } else {
+        reg[regIndex++] = f.$field
+      }
+
       const valueId = regIndex
 
       if (

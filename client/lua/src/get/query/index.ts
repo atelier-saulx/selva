@@ -120,10 +120,10 @@ const parseQuery = (
       `"${$traverse}"`,
       ids,
       resultFork,
-      ast2rpn(resultFork)
+      ast2rpn(resultFork, language)
     )
 
-    const [findIn, searchArgs] = ast2rpn(resultFork)
+    const [findIn, searchArgs] = ast2rpn(resultFork, language)
     let queryResult: string[]
     if (findIn) {
       logger.info('finding matches in ids', findIn, joinPaddedIds(findIn))

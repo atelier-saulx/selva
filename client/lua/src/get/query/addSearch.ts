@@ -8,6 +8,7 @@ function addSearch(filter: Filter): [string[], null | string] {
     return [['TAG'], null]
   }
 
+  // TODO: this needs to check schema, not searchIndexes as we will no longer use them
   const searchIndexes = getSearchIndexes()
   const search = searchIndexes.default && searchIndexes.default[filter.$field]
   if (search) {
@@ -22,9 +23,7 @@ function addSearch(filter: Filter): [string[], null | string] {
       ]
     }
   } else {
-    // this will be ignored after
-    // return [[], null]
-    return [[], `Cannot search fields that are not indexed ${filter.$field}`]
+    return [[], null]
   }
 
   return [search, null]

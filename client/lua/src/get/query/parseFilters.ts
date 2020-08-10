@@ -30,10 +30,10 @@ function convertGeoFilterValue(geoFilter: GeoFilter): (string | number)[] {
 }
 
 const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
-  // const [search, err] = addSearch(filterOpt)
-  // if (err) {
-  //   return [{ isFork: true }, err]
-  // }
+  const [$search, err] = addSearch(filterOpt)
+  if (err) {
+    return [{ isFork: true }, err]
+  }
 
   const o = filterOpt.$operator
   if (
@@ -57,7 +57,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
       : <Value>filterOpt.$value,
     $operator: o,
     $field: filterOpt.$field,
-    $search: []
+    $search
   }
 
   let hasNow = false

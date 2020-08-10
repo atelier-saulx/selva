@@ -85,7 +85,7 @@ export default async function parseSetObject(
           throw new Error('Wrong type for $id ' + payload[key])
         }
 
-        (<any>result).$id = payload.$id
+        ;(<any>result).$id = payload.$id
       } else if (key === '$db') {
         if (typeof payload[key] !== 'string') {
           throw new Error('Wrong type for $db string expected: ' + payload[key])
