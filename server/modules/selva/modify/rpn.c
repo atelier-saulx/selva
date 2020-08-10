@@ -462,9 +462,11 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
 
     err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, OPERAND_GET_S(field), &value, NULL);
     if (err == REDISMODULE_ERR || !value) {
+#if 0
         fprintf(stderr, "RPN: Field \"%s\" not found for node: \"%.*s\"\n",
                 OPERAND_GET_S(field),
                 (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]));
+#endif
         return push_empty_value(ctx);
     }
 
