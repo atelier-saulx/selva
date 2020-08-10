@@ -196,10 +196,20 @@ const arrayLike = (
   } else if (field === 'descendants') {
     return descendants(result, id, field, language, version)
   } else if (field === 'children') {
-    result.children = redis.children(id)
+    const children = redis.children(id)
+    if (children.length === 0) {
+      result.children = emptyArray()
+    } else {
+      result.children = children
+    }
     return true
   } else if (field === 'parents') {
-    result.parents = redis.parents(id)
+    const parents = redis.parents(id)
+    if (parents.length === 0) {
+      result.parents = emptyArray()
+    } else {
+      result.parents = parents
+    }
     return true
   }
 
@@ -490,7 +500,12 @@ const ancestors = (
   _language?: string,
   _version?: string
 ): true => {
-  result.ancestors = redis.ancestors(id)
+  const anc = redis.ancestors(id)
+  if (anc.length === 0) {
+    result.ancestors = emptyArray()
+  } else {
+    result.ancestors = anc
+  }
   return true
 }
 
@@ -501,7 +516,13 @@ const descendants = (
   _language?: string,
   _version?: string
 ): true => {
-  result.descendants = redis.descendants(id)
+  const desc = redis.descendants(id)
+  if (desc.length === 0) {
+    result.descendants = emptyArray()
+  } else {
+    result.descendants = desc
+  }
+
   return true
 }
 
