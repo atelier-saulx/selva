@@ -19,7 +19,7 @@
 /**
  * Sort hierarchy find results by depth.
  */
-#define HIERARCHY_SORT_BY_DEPTH         1
+#define HIERARCHY_SORT_BY_DEPTH         0
 
 /*
  * RPN Tunables.
