@@ -477,7 +477,8 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         RedisModule_FreeString(ctx->redis_ctx, value);
 
         if (unlikely(err != REDISMODULE_OK)) {
-            fprintf(stderr, "RPN: Field value is not a number: %.*s\n",
+            fprintf(stderr, "RPN: Field value [%.*s].%.*s is not a number\n",
+                    (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]),
                     (int)field->s_size, OPERAND_GET_S(field));
 
             return RPN_ERR_NAN;

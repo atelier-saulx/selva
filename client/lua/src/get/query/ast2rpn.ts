@@ -88,7 +88,7 @@ export default function ast2rpn(
       const op =
         vType == 'string' ? opMapString[f.$operator] : opMapNumber[f.$operator]
       if (!op) {
-        logger.error('Invalid op', f)
+        logger.error(`Invalid op for ${vType} field`, f)
         // TODO error
       }
 
@@ -97,6 +97,19 @@ export default function ast2rpn(
       } else {
         out += ` $${valueId} $${fieldId} f ${op}`
       }
+    } else if (vType == 'boolean') {
+      const fieldId = regIndex
+      reg[regIndex++] = f.$field
+      const valueId = regIndex
+      reg[regIndex++] = f.$value ? '1' : '0'
+
+      const op = opMapNumber[f.$operator]
+      if (!op) {
+        logger.error('Invalid op for boolean field', f)
+        // TODO error
+      }
+
+      out += ` @${valueId} $${fieldId} g ${op}`
     } else if (f.$operator == '..') {
       const fieldId = regIndex
       reg[regIndex++] = f.$field

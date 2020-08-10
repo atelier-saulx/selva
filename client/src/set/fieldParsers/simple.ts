@@ -78,7 +78,8 @@ const converters = {
     } else {
       return payload
     }
-  }
+  },
+  boolean: (v: boolean) => v ? '1' : '0'
 }
 
 const parsers = {}
