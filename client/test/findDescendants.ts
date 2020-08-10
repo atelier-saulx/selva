@@ -360,7 +360,7 @@ test.serial('find - descendants', async t => {
           $find: {
             $traverse: 'descendants',
             $filter: {
-              $field: 'title.en',
+              $field: 'title.en', // FIXME
               $operator: '=',
               $value: 'flap'
             }
