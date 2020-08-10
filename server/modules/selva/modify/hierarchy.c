@@ -235,7 +235,7 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisMo
     return hierarchy;
 }
 
-static void createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
+static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *set_key_name;
     RedisModuleString *field_name;
     RedisModuleKey *set_key = NULL;
@@ -244,17 +244,19 @@ static void createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     field_name = RedisModule_CreateStringPrintf(ctx, "%s", "$id");
 
     if (unlikely(!set_key_name || !field_name)) {
-        abort(); /* Core dump. */
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
     set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
     if (!set_key) {
-        abort(); /* Core dump. */
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
     RedisModule_HashSet(set_key, REDISMODULE_HASH_NX, field_name, set_key_name, NULL);
 
     RedisModule_CloseKey(set_key);
+
+    return 0;
 }
 
 static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
@@ -274,8 +276,18 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
     memcpy(node->id, id, SELVA_NODE_ID_SIZE);
 
     if (likely(ctx)) {
-        /* TODO Error handling */
-        createNodeHash(ctx, id);
+        int err;
+
+        err = createNodeHash(ctx, id);
+        if (err) {
+            fprintf(stderr, "Hierarchy: Failed to create a hash for \"%.*s\": %s\n",
+                    (int)SELVA_NODE_ID_SIZE, id,
+                    hierarchyStrError[-err]);
+            /*
+             * RFE:
+             * This might just work even without the node so we don't fail hard.
+             */
+        }
     }
 
     return node;
@@ -406,8 +418,10 @@ static int crossInsert(
                         1, ((Selva_NodeId []){ ROOT_NODE_ID }),
                         0, NULL);
                 if (err) {
-                    /* TODO Better error messages */
-                    fprintf(stderr, "Failed to create a parent: %s\n", hierarchyStrError[-err]);
+                    fprintf(stderr, "Hierarchy: Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
+                            (int)SELVA_NODE_ID_SIZE, nodes[i],
+                            (int)SELVA_NODE_ID_SIZE, node->id,
+                            hierarchyStrError[-err]);
                     continue;
                 }
                 adjacent = findNode(hierarchy, nodes[i]);
@@ -428,8 +442,10 @@ static int crossInsert(
                         0, NULL,
                         0, NULL);
                 if (err) {
-                    /* TODO Better error messages */
-                    fprintf(stderr, "Failed to create a child: %s\n", hierarchyStrError[-err]);
+                    fprintf(stderr, "Hierarchy: Failed to create a child \"%.*s\" for \"%.*s\": %s\n",
+                            (int)SELVA_NODE_ID_SIZE, nodes[i],
+                            (int)SELVA_NODE_ID_SIZE, node->id,
+                            hierarchyStrError[-err]);
                     continue;
                 }
                 adjacent = findNode(hierarchy, nodes[i]);
@@ -792,16 +808,10 @@ int SelvaModify_DelHierarchy(
     return 0;
 }
 
-int SelvaModify_DelHierarchyNode(
+static int SelvaModify_DelHierarchyNodeP(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
-        const Selva_NodeId id) {
-    SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
-
-    if (!node) {
-        return SELVA_MODIFY_HIERARCHY_ENOENT;
-    }
-
+        SelvaModify_HierarchyNode *node) {
     /*
      * Delete orphan children recursively.
      */
@@ -810,7 +820,7 @@ int SelvaModify_DelHierarchyNode(
         SelvaModify_HierarchyNode *child = *child_pp;
         crossRemove(hierarchy, node, RELATIONSHIP_PARENT, 1, (Selva_NodeId *)child->id);
         if (SVector_Size(&child->parents) == 0) {
-            SelvaModify_DelHierarchyNode(ctx, hierarchy, child->id); /* TODO Find is not necessary in recursion. */
+            SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
         }
     }
 
@@ -824,8 +834,8 @@ int SelvaModify_DelHierarchyNode(
         RedisModuleString *akey_name;
         RedisModuleKey *key;
 
-        hkey_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
-        akey_name = RedisModule_CreateStringPrintf(ctx, "%.*s.aliases", SELVA_NODE_ID_SIZE, id);
+        hkey_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, node->id);
+        akey_name = RedisModule_CreateStringPrintf(ctx, "%.*s.aliases", SELVA_NODE_ID_SIZE, node->id);
         if (unlikely(!(hkey_name && akey_name))) {
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
@@ -857,6 +867,19 @@ int SelvaModify_DelHierarchyNode(
     }
 
     return 0;
+}
+
+int SelvaModify_DelHierarchyNode(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id) {
+    SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
+
+    if (!node) {
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
+    }
+
+    return SelvaModify_DelHierarchyNodeP(ctx, hierarchy, node);
 }
 
 static Selva_NodeId *NodeList_New(int nr_nodes) {
@@ -1425,7 +1448,7 @@ int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString *
             SelvaModify_HierarchyNode *child = *it;
 
             if (SVector_Size(&child->parents) == 0) {
-                SelvaModify_DelHierarchyNode(ctx, hierarchy, child->id);
+                SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
             }
         }
     } else {
@@ -1602,7 +1625,8 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
              */
             err = rpn_bool(rpn_ctx, args->filter, &take);
             if (err) {
-                fprintf(stderr, "Expression failed: \"%s\"\n",
+                fprintf(stderr, "Hierarchy: Expression failed (node: \"%.*s\"): \"%s\"\n",
+                        (int)SELVA_NODE_ID_SIZE, nodeId,
                         rpn_str_error[err]);
                 /*
                  * TODO Propagate error?
@@ -1727,7 +1751,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
          */
         SelvaModify_HierarchyNode *head = findNode(hierarchy, nodeId);
         if (!head) {
-            fprintf(stderr, "Node not found: \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodeId);
+            fprintf(stderr, "Hierarchy: Node not found: \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodeId);
             continue;
         }
         /* TODO Error handling? */
@@ -1762,7 +1786,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 #if 0
             return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
 #endif
-            fprintf(stderr, "Find failed for node: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, nodeId);
+            fprintf(stderr, "Hierarchy: Find failed for node: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     }
     RedisModule_ReplySetArrayLength(ctx, nr_nodes);
@@ -1856,7 +1880,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
          */
         err = rpn_bool(rpn_ctx, filter_expression, &take);
         if (err) {
-            fprintf(stderr, "Expression failed (node: \"%.*s\"): \"%s\"\n",
+            fprintf(stderr, "Hierarchy: Expression failed (node: \"%.*s\"): \"%s\"\n",
                     (int)SELVA_NODE_ID_SIZE, nodeId,
                     rpn_str_error[err]);
             /*
