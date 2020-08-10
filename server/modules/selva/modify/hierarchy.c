@@ -1471,10 +1471,9 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
     }
 
+#if HIERARCHY_SORT_BY_DEPTH
     svector_autofree SVector parents;
 
-
-#if HIERARCHY_SORT_BY_DEPTH
     if (unlikely(!SVector_Clone(&parents, &node->parents, SVector_HierarchyNode_depth_compare))) {
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
     }
