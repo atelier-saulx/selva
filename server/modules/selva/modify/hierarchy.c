@@ -1626,7 +1626,7 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
             err = rpn_bool(rpn_ctx, args->filter, &take);
             if (err) {
                 fprintf(stderr, "Hierarchy: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                        (int)SELVA_NODE_ID_SIZE, nodeId,
+                        (int)SELVA_NODE_ID_SIZE, node->id,
                         rpn_str_error[err]);
                 /*
                  * TODO Propagate error?
