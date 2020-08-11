@@ -145,7 +145,7 @@ const boolean = (
   ) {
     return true
   }
-  const value = v === 'true' ? true : false
+  const value = v === '1' ? true : false
   setNestedResult(result, field, value)
   return true
 }
