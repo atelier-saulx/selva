@@ -425,10 +425,11 @@ static int crossInsert(
                     continue;
                 }
                 adjacent = findNode(hierarchy, nodes[i]);
+                /* TODO Null check? */
             }
 
             /* Do inserts only if the relationship doesn't exist already */
-            if (initialNodeParentsSize == 0 || !SVector_Search(&node->parents, adjacent)) {
+            if (!SVector_Search(&node->parents, adjacent)) {
                 SVector_Insert(&node->parents, adjacent);
                 SVector_Insert(&adjacent->children, node);
             }
@@ -449,16 +450,15 @@ static int crossInsert(
                     continue;
                 }
                 adjacent = findNode(hierarchy, nodes[i]);
+                /* TODO Null check? */
             }
 
-            const size_t adjNodeParentsSize = SVector_Size(&adjacent->parents);
-
             /* The adjacent node is no longer an orphan */
-            if (adjNodeParentsSize == 0) {
+            if (SVector_Size(&adjacent->parents) == 0) {
                 rmHead(hierarchy, adjacent);
             }
 
-            if (adjNodeParentsSize == 0 || !SVector_Search(&adjacent->parents, node)) {
+            if (!SVector_Search(&adjacent->parents, node)) {
                 SVector_Insert(&node->children, adjacent);
                 SVector_Insert(&adjacent->parents, node);
             }
