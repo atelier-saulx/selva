@@ -127,7 +127,7 @@ for (const key in verifiers) {
             }
 
             if (k !== '$value') {
-              console.log(payload)
+              //console.log(payload)
               result.push('4', field, createRecord(incrementDef, {
                 index: 0,
                 $default: isNaN(payload.$default) ? 0 : Number(payload.$default),
