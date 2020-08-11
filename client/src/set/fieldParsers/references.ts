@@ -58,7 +58,6 @@ const toCArr = async (
   noRoot: boolean,
   lang?: string
 ) => {
-  console.log('toCArr', setObj)
   if (!setObj) {
     return ''
   }
@@ -186,7 +185,6 @@ export default async (
     }
 
     if (hasKeys) {
-      console.log('R', r)
       result.push(
         '5',
         field,

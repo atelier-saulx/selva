@@ -16,7 +16,7 @@ export async function _set(
     asAny.$id = await client.id({ db, type: asAny.$type })
   }
 
-  console.log('ID', asAny.$id, 'PAYLOAD', JSON.stringify(payload))
+  // console.log('ID', asAny.$id, 'PAYLOAD', JSON.stringify(payload))
 
   try {
     const all = await Promise.all([
