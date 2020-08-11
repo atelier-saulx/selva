@@ -89,7 +89,6 @@ const toCArr = async (
       addParent(obj, result.$id)
 
       const id = await client.set(obj)
-      console.log('ADDING', obj, id)
       ids.push(id)
     } else if (obj.type) {
       const id = await client.id({ type: obj.type })
