@@ -22,16 +22,31 @@ const verifySimple = payload => {
   }
 }
 
-const parseObjectArray = async (
-  client: SelvaClient,
-  payload: any,
-  schema: Schema,
-  $lang?: string
-) => {
-  if (Array.isArray(payload) && typeof payload[0] === 'object') {
-    return Promise.all(
-      payload.map(ref => parseSetObject(client, ref, schema, $lang))
-    )
+const addParent = (obj: Record<string, any>, id: string) => {
+  if (!obj.parents) {
+    obj.parents = [id]
+  } else {
+    if (typeof obj.parents === 'string') {
+      obj.parents = [obj.parents, id]
+    } else if (Array.isArray(obj.parents)) {
+      obj.parents.push(id)
+    } else {
+      if (obj.parents.$add) {
+        if (typeof obj.parents.$add === 'string') {
+          obj.parents.$add = [obj.parents.$add, id]
+        } else {
+          obj.parents.$add.push(id)
+        }
+      } else if (obj.parents.$delete) {
+        obj.parents.$add.push(id)
+      } else if (obj.parents.$value) {
+        if (typeof obj.parents.$value === 'string') {
+          obj.parents.$value = [obj.parents.$value, id]
+        } else {
+          obj.parents.$value.push(id)
+        }
+      }
+    }
   }
 }
 
@@ -39,24 +54,60 @@ const toCArr = async (
   client: SelvaClient,
   schema: Schema,
   result: any,
-  setObj:
-    | ({ [index: string]: string } | string)[]
-    | undefined
-    | null,
-  noRoot: boolean
+  setObj: ({ [index: string]: any } | string)[] | string | undefined | null,
+  noRoot: boolean,
+  lang?: string
 ) => {
-    setObj
+  console.log('toCArr', setObj)
   if (!setObj) {
-    return null
+    return ''
   }
 
-  const ids = setObj.length && typeof setObj[0] === 'object'
-    ? await Promise.all(setObj.map((node: any) => {
-        node[0] = `N${node[0].substring(1)}`
+  if (typeof setObj === 'string') {
+    return setObj.padEnd(10, '\0')
+  }
 
-        return _set(client, node, schema.sha, result.$db)
-    }))
-    : setObj
+  const ids: string[] = []
+  for (const obj of setObj) {
+    if (typeof obj === 'string') {
+      ids.push(obj)
+    } else if (obj.$id) {
+      ids.push(obj.$id)
+
+      addParent(obj, result.$id)
+
+      if (lang) {
+        obj.$language = lang
+      }
+
+      ;(<any>result).$extraQueries.push(client.set(obj))
+    } else if (obj.$alias) {
+      if (lang) {
+        obj.$language = lang
+      }
+
+      addParent(obj, result.$id)
+
+      const id = await client.set(obj)
+      console.log('ADDING', obj, id)
+      ids.push(id)
+    } else if (obj.type) {
+      const id = await client.id({ type: obj.type })
+      obj.$id = id
+      ids.push(id)
+
+      addParent(obj, result.$id)
+
+      // non-blocking set
+      if (lang) {
+        obj.$language = lang
+      }
+
+      ;(<any>result).$extraQueries.push(client.set(obj))
+    } else {
+      throw new Error('Missing $id/$alias/type in nested payload')
+    }
+  }
 
   return ids
     .filter((s: string | null) => !!s)
@@ -69,7 +120,7 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: (string|Buffer)[],
+  result: (string | Buffer)[],
   _fields: FieldSchemaArrayLike,
   _type: string,
   $lang?: string
@@ -87,23 +138,12 @@ export default async (
     result[field] = {}
     for (let k in payload) {
       if (k === '$add') {
-        const parsed = await parseObjectArray(client, payload[k], schema, $lang)
-        if (parsed) {
-          r.$add = parsed
-          hasKeys = true
-        } else if (
-          typeof payload[k] === 'object' &&
-          !Array.isArray(payload[k])
-        ) {
-          r.$add = [
-            await parseSetObject(client, payload[k], schema, $lang)
-          ]
+        if (typeof payload[k] === 'object' && !Array.isArray(payload[k])) {
+          r.$add = [payload[k]]
           hasKeys = true
         } else {
-          if (payload[k].length) {
-            r.$add = verifySimple(payload[k])
-            hasKeys = true
-          }
+          r.$add = payload[k]
+          hasKeys = true
         }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
@@ -114,8 +154,13 @@ export default async (
 
         hasKeys = true
       } else if (k === '$value') {
-        r.$value = verifySimple(payload[k])
-        hasKeys = true
+        if (typeof payload[k] === 'object' && !Array.isArray(payload[k])) {
+          r.$value = [payload[k]]
+          hasKeys = true
+        } else {
+          r.$value = payload[k]
+          hasKeys = true
+        }
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
           throw new Error(
@@ -142,21 +187,35 @@ export default async (
     }
 
     if (hasKeys) {
+      console.log('R', r)
       result.push(
         '5',
         field,
         createRecord(setRecordDef, {
           is_reference: 1,
-          delete_all: r.delete_all || (!r.$add && !r.$delete && isEmpty(r.$value)),
-          $add: await toCArr(client, schema, result, r.$add, noRoot),
-          $delete: await toCArr(client, schema, result, r.$delete, noRoot),
-          $value: await toCArr(client, schema, result, r.$value, noRoot)
+          delete_all:
+            r.delete_all || (!r.$add && !r.$delete && isEmpty(r.$value)),
+          $add: await toCArr(client, schema, result, r.$add, noRoot, $lang),
+          $delete: await toCArr(
+            client,
+            schema,
+            result,
+            r.$delete,
+            noRoot,
+            $lang
+          ),
+          $value: await toCArr(client, schema, result, r.$value, noRoot, $lang)
         })
       )
     }
   } else {
-    const r = (await parseObjectArray(client, payload, schema, $lang)) || verifySimple(payload)
-    const $value = await toCArr(client, schema, result, r, noRoot)
+    let r: any
+    if (typeof payload === 'object' && !Array.isArray(payload)) {
+      r = [payload]
+    } else {
+      r = payload
+    }
+    const $value = await toCArr(client, schema, result, r, noRoot, $lang)
 
     result.push(
       '5',
@@ -166,7 +225,7 @@ export default async (
         delete_all: isEmpty($value),
         $add: '',
         $delete: '',
-        $value,
+        $value
       })
     )
   }

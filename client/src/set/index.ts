@@ -11,17 +11,24 @@ export async function _set(
   db?: string
 ): Promise<string> {
   const asAny = <any>payload
+
   if (!asAny.$id) {
     asAny.$id = await client.id({ db, type: asAny.$type })
   }
-  // console.log('ID', asAny.$id, 'PAYLOAD', JSON.stringify(payload))
+
+  console.log('ID', asAny.$id, 'PAYLOAD', JSON.stringify(payload))
 
   try {
-    return await client.redis.selva_modify(
-      { name: db || 'default' },
-      asAny.$id,
-      ...payload
-    )
+    const all = await Promise.all([
+      client.redis.selva_modify(
+        { name: db || 'default' },
+        asAny.$id,
+        ...payload
+      ),
+      ...asAny.$extraQueries
+    ])
+
+    return all[0]
   } catch (err) {
     console.error(err)
     throw err

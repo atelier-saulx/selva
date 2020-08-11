@@ -6,7 +6,7 @@ import { dumpDb, idExists } from './assertions'
 import getPort from 'get-port'
 import { wait } from '../src/util'
 
-const DEFAULT_HIERARCHY = '___selva_hierarchy';
+const DEFAULT_HIERARCHY = '___selva_hierarchy'
 
 let srv
 let port: number
@@ -166,7 +166,10 @@ test.serial('root', async t => {
 
   t.deepEqual(root, 'root')
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
-  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
+  t.deepEqual(
+    await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
+    [match]
+  )
 
   await client.delete('root')
   t.deepEqual(await dumpDb(client), [])
@@ -195,14 +198,20 @@ test.serial('root.children $delete: []', async t => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
+  t.deepEqual(
+    await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
+    [match]
+  )
 
   await client.set({
     $id: 'root',
     children: { $delete: [] }
   })
 
-  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
+  t.deepEqual(
+    await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
+    [match]
+  )
 
   await client.delete('root')
   t.deepEqual(await dumpDb(client), [])
@@ -211,11 +220,14 @@ test.serial('root.children $delete: []', async t => {
 })
 
 test.serial('basic', async t => {
-  const client = connect({
-    port
-  }, {
+  const client = connect(
+    {
+      port
+    },
+    {
       loglevel: 'info'
-  })
+    }
+  )
 
   const match = await client.set({
     type: 'match'
@@ -238,7 +250,9 @@ test.serial('basic', async t => {
   )
 
   t.deepEqual(
-    (await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root')).sort(),
+    (
+      await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root')
+    ).sort(),
     [league, match].sort(),
     'root has correct children'
   )
@@ -256,12 +270,22 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', match),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      match
+    ),
     ['root']
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', league),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      league
+    ),
     ['root']
   )
 
@@ -284,7 +308,12 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      person
+    ),
     ['root', league]
   )
 
@@ -303,13 +332,20 @@ test.serial('basic', async t => {
   )
 
   t.deepEqual(
-    (await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person)).sort(),
+    (
+      await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person)
+    ).sort(),
     [league, match].sort(),
     'person has correct parents after $add'
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      person
+    ),
     ['root', league, match]
   )
 
@@ -334,7 +370,12 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      person
+    ),
     ['root', match]
   )
 
@@ -361,13 +402,20 @@ test.serial('basic', async t => {
   )
 
   t.deepEqual(
-    (await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person)).sort(),
+    (
+      await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person)
+    ).sort(),
     [league, match].sort(),
     'person has correct parents after 2nd $add'
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      person
+    ),
     ['root', match, league]
   )
 
@@ -416,7 +464,12 @@ test.serial('basic', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      person
+    ),
     ['root', league]
   )
 
@@ -433,13 +486,20 @@ test.serial('basic', async t => {
   )
 
   t.deepEqual(
-    (await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person)).sort(),
+    (
+      await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person)
+    ).sort(),
     [league, match].sort(),
     'person has correct parents after adding person to match using children'
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      person
+    ),
     ['root', league, match]
   )
 
@@ -450,24 +510,38 @@ test.serial('basic', async t => {
   })
 
   t.deepEqual(
-    (await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, match)).sort(),
+    (
+      await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, match)
+    ).sort(),
     ['root', league].sort(),
     'match has correct parents after adding match as a child to league'
   )
 
   t.deepEqual(
-    (await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, league)).sort(),
+    (
+      await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, league)
+    ).sort(),
     [match, person].sort(),
     'league has correct children after setting ancestors'
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      person
+    ),
     ['root', league, match]
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', match),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      match
+    ),
     ['root', league]
   )
 
@@ -478,13 +552,20 @@ test.serial('basic', async t => {
   })
 
   t.deepEqual(
-    (await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person)).sort(),
+    (
+      await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person)
+    ).sort(),
     [league, match].sort(),
     'person has correct parents after removing match from league'
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', person),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      person
+    ),
     ['root', league, match]
   )
 
@@ -495,7 +576,12 @@ test.serial('basic', async t => {
   )
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', match),
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      match
+    ),
     ['root'],
     'match has correct ancestors after removing match from league'
   )
@@ -547,47 +633,97 @@ test.serial('deep hierarchy manipulation', async t => {
     parents: { $add: 'root' }
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuB'), [
-    'root',
-    'cuX',
-    'cuA'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuB'
+    ),
+    ['root', 'cuX', 'cuA']
+  )
 
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuC'), [
-    'root',
-    'cuX',
-    'cuA'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuC'
+    ),
+    ['root', 'cuX', 'cuA']
+  )
 
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuD'), [
-    'root',
-    'cuX',
-    'cuA'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuD'
+    ),
+    ['root', 'cuX', 'cuA']
+  )
 
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuE'), [
-    'root',
-    'cuX',
-    'cuA',
-    'cuD'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuE'
+    ),
+    ['root', 'cuX', 'cuA', 'cuD']
+  )
 
-  console.log('###', await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuD'))
+  console.log(
+    '###',
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuD'
+    )
+  )
   await client.set({
     $id: 'cuD',
     parents: { $delete: 'cuA' }
   })
 
-  console.log('???', await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuD'))
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuD'), [
-    'root'
-  ])
+  console.log(
+    '???',
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuD'
+    )
+  )
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuD'
+    ),
+    ['root']
+  )
 
-  console.log('!!!', await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuE'))
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', 'cuE'), [
-    'root',
-    'cuD'
-  ])
+  console.log(
+    '!!!',
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuE'
+    )
+  )
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_find(
+      '___selva_hierarchy',
+      'bfs',
+      'ancestors',
+      'cuE'
+    ),
+    ['root', 'cuD']
+  )
 })
 
 test.serial('array, json and set', async t => {
@@ -868,7 +1004,10 @@ test.serial('automatic child creation', async t => {
     ]
   })
 
-  const children = await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, parent)
+  const children = await client.redis.selva_hierarchy_children(
+    DEFAULT_HIERARCHY,
+    parent
+  )
   t.is(children.length, 3, 'Should have 3 children created')
 
   const titles = (
@@ -912,7 +1051,10 @@ test.serial('automatic child creation', async t => {
     }
   })
 
-  const newChildren = await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, parent)
+  const newChildren = await client.redis.selva_hierarchy_children(
+    DEFAULT_HIERARCHY,
+    parent
+  )
   t.is(newChildren.length, 5, 'Should have 5 children created')
 })
 
@@ -1080,7 +1222,7 @@ test.serial('Set empty object', async t => {
   await client.delete('root')
 })
 
-test.serial('no root in parents when adding nested', async t => {
+test.serial.only('no root in parents when adding nested', async t => {
   const client = connect({
     port
   })
@@ -1105,6 +1247,7 @@ test.serial('no root in parents when adding nested', async t => {
     }
   })
 
+  // await new Promise(res => setTimeout(res, 1e8))
   t.deepEqualIgnoreOrder(
     await client.get({
       $language: 'en',
@@ -1144,21 +1287,30 @@ test.serial('can disable autoadding of root', async t => {
     type: 'match'
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, m1), ['root'])
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, m1),
+    ['root']
+  )
 
   const m2 = await client.set({
     type: 'match',
     parents: { $noRoot: true }
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, m2), [])
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, m2),
+    []
+  )
 
   const m3 = await client.set({
     type: 'match',
     children: { $value: 'maMatch3', $noRoot: true }
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, 'maMatch3'), [m3])
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, 'maMatch3'),
+    [m3]
+  )
 
   await client.delete('root')
   await client.destroy()
@@ -1255,7 +1407,10 @@ test.serial('$delete: true', async t => {
 
   t.deepEqual(root, 'root')
   t.deepEqual(await client.redis.hget('root', 'value'), '9001')
-  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
+  t.deepEqual(
+    await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
+    [match]
+  )
 
   await client.set({
     $id: 'root',
@@ -1263,7 +1418,10 @@ test.serial('$delete: true', async t => {
   })
 
   t.deepEqual(await client.redis.hexists('root', 'value'), 0)
-  t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
+  t.deepEqual(
+    await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
+    [match]
+  )
 
   await client.set({
     $id: 'maA',

@@ -41,6 +41,21 @@ export default async function parseSetObject(
 ): Promise<string[]> {
   // id, R|N, field enum, fieldName, value
   const result: string[] = ['R']
+
+  if (!payload.$id && !payload.$alias) {
+    payload.$id = await client.id({
+      db: payload.$db || 'default',
+      type: payload.type
+    })
+  }
+
+  if (payload.$id) {
+    ;(<any>result).$id = payload.$id
+  }
+
+  // for batched sets
+  ;(<any>result).$extraQueries = []
+
   if (payload.parents && (<any>payload.parents).$noRoot) {
     result[0] = 'N'
   }
@@ -84,8 +99,6 @@ export default async function parseSetObject(
         if (!verifiers.id(payload[key])) {
           throw new Error('Wrong type for $id ' + payload[key])
         }
-
-        ;(<any>result).$id = payload.$id
       } else if (key === '$db') {
         if (typeof payload[key] !== 'string') {
           throw new Error('Wrong type for $db string expected: ' + payload[key])
