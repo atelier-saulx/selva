@@ -18,6 +18,21 @@ export async function _set(
 
   // console.log('ID', asAny.$id, 'PAYLOAD', JSON.stringify(payload))
 
+  console.log('amount of extra queries', asAny.$extraQueries.length)
+
+  // TODO: remove this, we already batch in drainQueue
+  if (asAny.$extraQueries.length > 5000) {
+    console.log('batching')
+    while (asAny.$extraQueries.length >= 5000) {
+      console.log('batching, still left:', asAny.$extraQueries.length)
+      const batch = asAny.$extraQueries.splice(0, 5000)
+      await Promise.all(batch)
+    }
+  }
+
+  console.log('main set, still left:', asAny.$extraQueries.length)
+  // TODO: end remove
+  //
   try {
     const all = await Promise.all([
       client.redis.selva_modify(

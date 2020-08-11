@@ -66,7 +66,7 @@ test.beforeEach(async t => {
 
   const team1 = await client.id({ type: 'team' })
   // TODO Should be 50000
-  const amount = 5000
+  const amount = 10000
   const vids = 100
   const genMatches = (s = 0) => {
     const ch = []
