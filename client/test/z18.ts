@@ -78,7 +78,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('correct hierachy rules', async t => {
+test.serial.skip('correct hierachy rules', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const football = await client.set({
