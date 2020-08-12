@@ -42,7 +42,6 @@ export default async (
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
 
-      // TODO we could pass result directly
       await fn(
         client,
         schema,
