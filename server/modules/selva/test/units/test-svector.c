@@ -111,6 +111,50 @@ static char * test_insert_many(void)
     return NULL;
 }
 
+static char * test_insertFast_many(void)
+{
+    struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
+
+    SVector_Init(&vec, 5, compar);
+
+    for (size_t i = 0; i < num_elem(el); i++) {
+        const void * r = SVector_InsertFast(&vec, &el[i]);
+        pu_assert_ptr_equal("No return value", r, NULL);
+    }
+
+    pu_assert_equal("last is incremented", vec.vec_last, 8);
+
+    struct data **data = ((struct data **)vec.vec_data);
+    pu_assert_ptr_equal("el[0] was inserted correctly", data[0]->id, 1);
+    pu_assert_ptr_equal("el[1] was inserted correctly", data[1]->id, 3);
+    pu_assert_ptr_equal("el[2] was inserted correctly", data[2]->id, 5);
+    pu_assert_ptr_equal("el[3] was inserted correctly", data[3]->id, 10);
+    pu_assert_ptr_equal("el[4] was inserted correctly", data[4]->id, 15);
+    pu_assert_ptr_equal("el[5] was inserted correctly", data[5]->id, 20);
+    pu_assert_ptr_equal("el[6] was inserted correctly", data[6]->id, 300);
+    pu_assert_ptr_equal("el[7] was inserted correctly", data[7]->id, 800);
+
+    return NULL;
+}
+
+static char * test_insertFast_dedup(void)
+{
+    struct data el1 = {
+        .id = 10,
+    };
+
+    SVector_Init(&vec, 5, compar);
+    const void *r1 = SVector_InsertFast(&vec, &el1);
+    const void *r2 = SVector_InsertFast(&vec, &el1);
+
+    pu_assert_equal("last is incremented", vec.vec_last, 1);
+    pu_assert_ptr_equal("el1 was inserted", vec.vec_data[0], &el1);
+    pu_assert_ptr_equal("r1 = NULL", r1, NULL);
+    pu_assert_ptr_equal("r2 = el1", r2, &el1);
+
+    return NULL;
+}
+
 static char * test_insert_no_compar(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
@@ -320,6 +364,8 @@ void all_tests(void)
     pu_def_test(test_insert_one, PU_RUN);
     pu_def_test(test_insert_two_desc, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
+    pu_def_test(test_insertFast_many, PU_RUN);
+    pu_def_test(test_insertFast_dedup, PU_RUN);
     pu_def_test(test_insert_no_compar, PU_RUN);
     pu_def_test(test_search, PU_RUN);
     pu_def_test(test_remove_one, PU_RUN);

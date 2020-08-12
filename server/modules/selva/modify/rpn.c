@@ -456,7 +456,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
     id_key = open_hkey(ctx);
     if (!id_key) {
         fprintf(stderr, "RPN: Node hash not found for: \"%.*s\"\n",
-                (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]));
+                (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]));
         return push_empty_value(ctx);
     }
 
@@ -478,7 +478,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
 
         if (unlikely(err != REDISMODULE_OK)) {
             fprintf(stderr, "RPN: Field value [%.*s].%.*s is not a number\n",
-                    (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]),
+                    (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]),
                     (int)field->s_size, OPERAND_GET_S(field));
 
             return RPN_ERR_NAN;

@@ -324,7 +324,7 @@ int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selv
 }
 
 static inline void mkHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
-    SVector_Insert(&hierarchy->heads, node);
+    SVector_InsertFast(&hierarchy->heads, node);
 }
 
 static inline void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
@@ -348,7 +348,7 @@ static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyN
 
     Trx_Begin(&hierarchy->current_trx);
     Trx_Stamp(&hierarchy->current_trx, &head->visit_stamp);
-    SVector_Insert(&q, head);
+    SVector_InsertFast(&q, head);
 
     while (SVector_Size(&q) > 0) {
         SelvaModify_HierarchyNode *node = SVector_Shift(&q);
@@ -430,8 +430,8 @@ static int crossInsert(
 
             /* Do inserts only if the relationship doesn't exist already */
             if (!SVector_Search(&node->parents, adjacent)) {
-                SVector_Insert(&node->parents, adjacent);
-                SVector_Insert(&adjacent->children, node);
+                SVector_InsertFast(&node->parents, adjacent);
+                SVector_InsertFast(&adjacent->children, node);
             }
         }
     } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
@@ -459,8 +459,8 @@ static int crossInsert(
             }
 
             if (!SVector_Search(&adjacent->parents, node)) {
-                SVector_Insert(&node->children, adjacent);
-                SVector_Insert(&adjacent->parents, node);
+                SVector_InsertFast(&node->children, adjacent);
+                SVector_InsertFast(&adjacent->parents, node);
             }
         }
     } else {

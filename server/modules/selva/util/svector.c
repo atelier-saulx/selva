@@ -51,6 +51,8 @@ void SVector_Insert(SVector *vec, void *el) {
     size_t vec_len = vec->vec_len;
     void **vec_data = vec->vec_data;
 
+    assert(el);
+
     if (i >= vec_len - 1) {
         const size_t new_len = vec_len * 2;
         const size_t new_size = VEC_SIZE(new_len);
@@ -73,6 +75,53 @@ void SVector_Insert(SVector *vec, void *el) {
     }
 
     assert(vec->vec_last <= vec->vec_len);
+}
+
+void *SVector_InsertFast(SVector *vec, void *el) {
+    ssize_t l = 0;
+    ssize_t r = (ssize_t)vec->vec_last - 1;
+    void **vec_data = vec->vec_data;
+
+    assert(el);
+    assert(vec->vec_compar);
+
+    while (l <= r) {
+        ssize_t m = (l + r) / 2;
+
+        const int rc = vec->vec_compar((const void **)&el, (const void **)vec_data + m);
+        if (rc > 0) {
+            l = m + 1;
+        } else if (rc < 0) {
+            r = m - 1;
+        } else {
+            /* Already inserted. */
+            return vec_data[m];
+        }
+    }
+
+    if (vec->vec_last >= vec->vec_len - 1) {
+        const size_t new_len = vec->vec_len * 2;
+        const size_t new_size = VEC_SIZE(new_len);
+
+        void **new_data = RedisModule_Realloc(vec_data, new_size);
+        if (!new_data) {
+            abort(); /* This will cause a core dump. */
+        }
+
+        vec->vec_data = new_data;
+        vec->vec_len = new_len;
+        vec_data = new_data;
+    }
+
+    if (l <= (ssize_t)vec->vec_last - 1) {
+        memmove(vec_data + l + 1, vec_data + l, (vec->vec_last - l) * sizeof(void *));
+    }
+    vec_data[l] = el;
+    vec->vec_last++;
+
+    assert(vec->vec_last <= vec->vec_len);
+
+    return NULL;
 }
 
 void *SVector_Search(const SVector * restrict vec, void *key) {

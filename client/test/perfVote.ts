@@ -45,7 +45,7 @@ test.beforeEach(async t => {
 test.after(async _t => {
   const client = connect({ port })
   const d = Date.now()
-  await client.delete('root')
+  //await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
