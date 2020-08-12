@@ -4,6 +4,8 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
 
+import { wait } from './assertions/util'
+
 let srv
 let port: number
 test.before(async t => {
@@ -57,6 +59,8 @@ test.before(async t => {
       }
     }
   })
+
+  await wait(500)
 
   await client.destroy()
 })

@@ -79,7 +79,7 @@ const converters = {
       return payload
     }
   },
-  boolean: (v: boolean) => v ? '1' : '0'
+  boolean: (v: boolean) => (v ? '1' : '0')
 }
 
 const parsers = {}
@@ -128,11 +128,19 @@ for (const key in verifiers) {
 
             if (k !== '$value') {
               //console.log(payload)
-              result.push('4', field, createRecord(incrementDef, {
-                index: 0,
-                $default: isNaN(payload.$default) ? 0 : Number(payload.$default),
-                $increment: isNaN(payload.$increment) ? 0 : Number(payload.$increment)
-              }))
+              result.push(
+                '4',
+                field,
+                createRecord(incrementDef, {
+                  index: 0,
+                  $default: isNaN(payload.$default)
+                    ? 0
+                    : Number(payload.$default),
+                  $increment: isNaN(payload.$increment)
+                    ? 0
+                    : Number(payload.$increment)
+                })
+              )
               return
             }
           }

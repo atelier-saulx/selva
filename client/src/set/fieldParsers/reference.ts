@@ -19,7 +19,7 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: SetOptions,
+  result: (string | Buffer)[],
   _fields: FieldSchemaArrayLike,
   _type: string,
   $lang?: string
@@ -38,7 +38,38 @@ export default async (
       return
     }
 
-    result[field] = parseSetObject(client, payload, schema, $lang)
+    if ($lang) {
+      payload.$language = $lang
+    }
+
+    if ((<any>result).$db) {
+      payload.$db = (<any>result).$db
+    }
+
+    if (!payload.$id && payload.$alias) {
+      const id = await client.set(payload)
+      result.push('0', field, id)
+    } else if (!payload.$id && payload.type) {
+      const id = await client.id({
+        db: (<any>result).$db || 'default',
+        type: payload.type
+      })
+
+      const obj = { ...payload, $id: id }
+      ;(<any>result).$extraQueries.push(client.set(obj))
+      result.push('0', field, id)
+    } else if (payload.$id) {
+      ;(<any>result).$extraQueries.push(client.set(payload))
+      result.push('0', field, payload.$id)
+    } else {
+      throw new Error(
+        `Type or $id or $alias required for nested single reference in ${field}, got: ${JSON.stringify(
+          payload,
+          null,
+          2
+        )}`
+      )
+    }
   } else {
     if (typeof payload !== 'string') {
       throw new Error(

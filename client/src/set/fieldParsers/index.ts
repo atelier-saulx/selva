@@ -18,7 +18,7 @@ const fieldParsers: {
     schema: Schema,
     field: string,
     payload: SetOptions,
-    result: string[],
+    result: (string | Buffer)[],
     fields: FieldSchema,
     type: string,
     $lang?: string

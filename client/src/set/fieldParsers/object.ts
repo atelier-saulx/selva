@@ -8,7 +8,7 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: SetOptions,
+  result: (string | Buffer)[],
   fields: FieldSchemaObject,
   type: string,
   $lang?: string
@@ -50,7 +50,7 @@ export default async (
         schema,
         `${field}.${key}`,
         payload[key],
-        r,
+        result,
         fields.properties[key],
         type,
         $lang
