@@ -53,21 +53,21 @@ test.serial('root is searchable', async t => {
   await client.set({
     $language: 'en',
     $id: 'root',
-    title: 'yesh root'
+    title: 'yesh'
   })
 
   await client.set({
     $language: 'en',
     type: 'sport',
     $id: 'sp1',
-    title: 'yesh sport'
+    title: 'yesh'
   })
 
   await client.set({
     $language: 'en',
     type: 'sport',
     $id: 'sp2',
-    title: 'yesh leaf',
+    title: 'yesh',
     parents: ['sp1']
   })
 
@@ -94,8 +94,8 @@ test.serial('root is searchable', async t => {
     }),
     {
       results: [
-        { id: 'sp1', title: 'yesh sport' },
-        { id: 'root', title: 'yesh root' }
+        { id: 'sp1', title: 'yesh' },
+        { id: 'root', title: 'yesh' }
       ]
     }
   )
