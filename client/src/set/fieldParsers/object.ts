@@ -17,8 +17,6 @@ export default async (
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
 
-  const r: string[] = []
-
   let hasKeys = false
   for (let key in payload) {
     if (key[0] === '$') {
@@ -55,7 +53,6 @@ export default async (
         type,
         $lang
       )
-      result.push(...r)
     }
   }
 }
