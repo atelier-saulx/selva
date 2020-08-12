@@ -1,11 +1,11 @@
-import { performance } from 'perf_hooks';
+import { performance } from 'perf_hooks'
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
-import {SetOptions} from '../src/set'
+import { SetOptions } from '../src/set'
 const { RateLimit } = require('async-sema')
 
 let srv
@@ -59,33 +59,35 @@ test.serial('voting w/parsers', async t => {
       $language: 'en',
       type: 'show',
       title: 'LOL',
-      votes: 0,
+      votes: 0
     }),
     client.set({
       $language: 'en',
       type: 'show',
       title: 'ROFL',
-      votes: 0,
+      votes: 0
     })
   ])
 
-  const nrVotes = 30000
-  const votesPerSecond = 6200
+  const nrVotes = 100000
+  const votesPerSecond = 10000
   const votes: SetOptions[] = Array.from(Array(nrVotes).keys()).map(v => ({
-      $id: sh[v & 1],
-      votes: { $increment: 1 },
-      children: {
-        $add: [ { type: 'vote', uid: `user${v}` } ]
-      }
+    $id: sh[v & 1],
+    votes: { $increment: 1 },
+    children: {
+      $add: [{ type: 'vote', uid: `user${v}` }]
+    }
   }))
 
-  const lim = RateLimit(votesPerSecond, { timeUnit: 1000 });
+  const lim = RateLimit(votesPerSecond, { timeUnit: 1000 })
 
   const start = performance.now()
-  await Promise.all(votes.map(async (vote) => {
-    await lim()
-    await client.set(vote)
-  }))
+  await Promise.all(
+    votes.map(async vote => {
+      await lim()
+      await client.set(vote)
+    })
+  )
   const end = performance.now()
   const tTotal = end - start
 

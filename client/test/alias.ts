@@ -178,9 +178,10 @@ test.serial('set alias and get by $alias', async t => {
     nice_match: match1
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange(match1 + '.aliases', 0, -1), [
-    'nice_match'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match1 + '.aliases', 0, -1),
+    ['nice_match']
+  )
 
   const match2 = await client.set({
     aliases: ['nice_match', 'very_nice_match'],
@@ -221,12 +222,15 @@ test.serial('set alias and get by $alias', async t => {
     very_nice_match: match2
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange(match2 + '.aliases', 0, -1), [
-    'nice_match',
-    'very_nice_match'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match2 + '.aliases', 0, -1),
+    ['nice_match', 'very_nice_match']
+  )
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange(match1 + '.aliases', 0, -1), [])
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match1 + '.aliases', 0, -1),
+    []
+  )
 
   await client.set({
     $id: match1,
@@ -273,13 +277,15 @@ test.serial('set alias and get by $alias', async t => {
     nice_match: match2
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange(match2 + '.aliases', 0, -1), [
-    'nice_match'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match2 + '.aliases', 0, -1),
+    ['nice_match']
+  )
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange(match1 + '.aliases', 0, -1), [
-    'ok_match'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match1 + '.aliases', 0, -1),
+    ['ok_match']
+  )
 
   await client.delete('root')
   client.destroy()
@@ -313,9 +319,10 @@ test.serial('set new entry with alias', async t => {
     nice_match: match1
   })
 
-  t.deepEqualIgnoreOrder(await client.redis.zrange(match1 + '.aliases', 0, -1), [
-    'nice_match'
-  ])
+  t.deepEqualIgnoreOrder(
+    await client.redis.zrange(match1 + '.aliases', 0, -1),
+    ['nice_match']
+  )
 
   await client.delete('root')
   client.destroy()

@@ -22,7 +22,35 @@ const verifySimple = payload => {
   }
 }
 
-const addParent = (obj: Record<string, any>, id: string) => {
+const addParent = (
+  field: string,
+  anyResult: any,
+  obj: Record<string, any>,
+  id: string
+) => {
+  if (field === 'parents') {
+    const noRoot: boolean = anyResult[0][0] === 'N'
+    if (!obj.parents) {
+      obj.parents = {
+        $value: [],
+        $noRoot: true
+      }
+    } else if (noRoot) {
+      if (typeof obj.parents === 'string') {
+        obj.parents = { $value: [obj.parents], $noRoot: true }
+      } else if (Array.isArray(obj.parents)) {
+        obj.parents = { $value: obj.parents, $noRoot: true }
+      } else {
+        obj.parents.$noRoot = true
+      }
+    }
+    return
+  }
+
+  if (field !== 'children') {
+    return
+  }
+
   if (!obj.parents) {
     obj.parents = [id]
   } else {
@@ -52,6 +80,7 @@ const addParent = (obj: Record<string, any>, id: string) => {
 
 const toCArr = async (
   client: SelvaClient,
+  field: string,
   schema: Schema,
   result: any,
   setObj: ({ [index: string]: any } | string)[] | string | undefined | null,
@@ -73,7 +102,7 @@ const toCArr = async (
     } else if (obj.$id) {
       ids.push(obj.$id)
 
-      addParent(obj, result.$id)
+      addParent(field, result, obj, result.$id)
 
       if (lang) {
         obj.$language = lang
@@ -93,7 +122,7 @@ const toCArr = async (
         obj.$db = result.$db
       }
 
-      addParent(obj, result.$id)
+      addParent(field, result, obj, result.$id)
 
       const id = await client.set(obj)
       ids.push(id)
@@ -106,7 +135,7 @@ const toCArr = async (
         obj.$db = result.$db
       }
 
-      addParent(obj, result.$id)
+      addParent(field, result, obj, result.$id)
 
       // non-blocking set
       if (lang) {
@@ -204,16 +233,33 @@ export default async (
           is_reference: 1,
           delete_all:
             r.delete_all || (!r.$add && !r.$delete && isEmpty(r.$value)),
-          $add: await toCArr(client, schema, result, r.$add, noRoot, $lang),
+          $add: await toCArr(
+            client,
+            field,
+            schema,
+            result,
+            r.$add,
+            noRoot,
+            $lang
+          ),
           $delete: await toCArr(
             client,
+            field,
             schema,
             result,
             r.$delete,
             noRoot,
             $lang
           ),
-          $value: await toCArr(client, schema, result, r.$value, noRoot, $lang)
+          $value: await toCArr(
+            client,
+            field,
+            schema,
+            result,
+            r.$value,
+            noRoot,
+            $lang
+          )
         })
       )
     }
@@ -224,7 +270,7 @@ export default async (
     } else {
       r = payload
     }
-    const $value = await toCArr(client, schema, result, r, noRoot, $lang)
+    const $value = await toCArr(client, field, schema, result, r, noRoot, $lang)
 
     result.push(
       '5',
