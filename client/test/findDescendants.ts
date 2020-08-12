@@ -55,7 +55,7 @@ test.beforeEach(async t => {
       video: {
         prefix: 'vi',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          title: { type: 'text' },
           date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           // making it different here should tell you something or at least take it over
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }

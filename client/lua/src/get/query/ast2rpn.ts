@@ -40,7 +40,7 @@ export default function ast2rpn(
   let reg: string[] = []
   let regIndex = 1
 
-  function ast2rpnFilter(f: Filter) {
+  function ast2rpnFilter(f: Filter, ignoreLang: boolean = false) {
     if (f.$field === 'id') {
       out += ' #1'
       findIn = <string[]>f.$value
@@ -62,16 +62,31 @@ export default function ast2rpn(
     }
 
     const vType = getValueType(f)
-    if (vType == 'string' || vType == 'number') {
+    if (!ignoreLang && vType === 'string' && language) {
+      ast2rpnFork(
+        {
+          isFork: true,
+          $or: [
+            {
+              $operator: f.$operator,
+              $field: f.$field,
+              $value: f.$value,
+              $search: f.$search
+            },
+            {
+              $operator: f.$operator,
+              $field: f.$field + '.' + language,
+              $value: f.$value,
+              $search: f.$search
+            }
+          ]
+        },
+        true
+      )
+      return
+    } else if (vType == 'string' || vType == 'number') {
       const fieldId = regIndex
-      if (
-        (language && f.$search[0] === 'TEXT-LANGUAGE') ||
-        f.$search[0] === 'TEXT-LANGUAGE-SUG'
-      ) {
-        reg[regIndex++] = f.$field + '.' + language
-      } else {
-        reg[regIndex++] = f.$field
-      }
+      reg[regIndex++] = f.$field
 
       const valueId = regIndex
 
@@ -172,7 +187,7 @@ export default function ast2rpn(
     }
   }
 
-  function ast2rpnFork(expr: Fork) {
+  function ast2rpnFork(expr: Fork, ignoreLang: boolean = false) {
     const lop: ' M' | ' N' = expr.$and ? ' M' : ' N'
     const arr = expr.$and || expr.$or || []
 
@@ -182,7 +197,7 @@ export default function ast2rpn(
       if (isFork(el)) {
         ast2rpnFork(el)
       } else {
-        ast2rpnFilter(el)
+        ast2rpnFilter(el, ignoreLang)
       }
 
       if (i > 0) {
