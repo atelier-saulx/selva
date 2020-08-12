@@ -39,7 +39,6 @@ export default async function parseSetObject(
   schemas: Schema,
   $lang?: string
 ): Promise<string[]> {
-  console.log('brrr', schemas, payload)
   // id, R|N, field enum, fieldName, value
   const result: string[] = ['R']
 
