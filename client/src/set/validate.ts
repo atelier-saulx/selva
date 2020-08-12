@@ -39,6 +39,7 @@ export default async function parseSetObject(
   schemas: Schema,
   $lang?: string
 ): Promise<string[]> {
+  console.log('brrr', schemas, payload)
   // id, R|N, field enum, fieldName, value
   const result: string[] = ['R']
 
@@ -51,6 +52,10 @@ export default async function parseSetObject(
 
   if (payload.$id) {
     ;(<any>result).$id = payload.$id
+  }
+
+  if (payload.$db) {
+    ;(<any>result).$db = payload.$db
   }
 
   // for batched sets
@@ -103,8 +108,6 @@ export default async function parseSetObject(
         if (typeof payload[key] !== 'string') {
           throw new Error('Wrong type for $db string expected: ' + payload[key])
         }
-
-        ;(<any>result).$db = payload.$db
       } else if (key === '$operation') {
         const val = payload[key]
         if (val !== 'update' && val !== 'insert' && val !== 'upsert') {

@@ -79,10 +79,18 @@ const toCArr = async (
         obj.$language = lang
       }
 
+      if (result.$db) {
+        obj.$db = result.$db
+      }
+
       ;(<any>result).$extraQueries.push(client.set(obj))
     } else if (obj.$alias) {
       if (lang) {
         obj.$language = lang
+      }
+
+      if (result.$db) {
+        obj.$db = result.$db
       }
 
       addParent(obj, result.$id)
@@ -93,6 +101,10 @@ const toCArr = async (
       const id = await client.id({ type: obj.type })
       obj.$id = id
       ids.push(id)
+
+      if (result.$db) {
+        obj.$db = result.$db
+      }
 
       addParent(obj, result.$id)
 
