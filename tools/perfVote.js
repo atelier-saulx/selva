@@ -2,6 +2,7 @@ const { performance } = require('perf_hooks')
 const { connect } = require('@saulx/selva')
 const { start } = require('@saulx/selva-server')
 const getPort = require('get-port')
+const { RateLimit } = require('async-sema')
 
 const { Worker, isMainThread, workerData } = require('worker_threads')
 
@@ -63,8 +64,9 @@ async function after() {
   await srv.destroy()
 }
 
-const nrVotes = 10000
-const nrWorkers = 10
+const nrVotes = 333333
+const votesPerSecond = 10000
+const nrWorkers = 3
 
 let sh = ['sh1', 'sh2']
 
@@ -79,8 +81,10 @@ async function runWorker() {
     }
   }))
 
+  const lim = RateLimit(votesPerSecond, { timeUnit: 1000 })
   await Promise.all(
     votes.map(async vote => {
+      await lim();
       return client.set(vote)
     })
   )
