@@ -18,7 +18,7 @@ export async function _set(
 
   // console.log('ID', asAny.$id, 'PAYLOAD', JSON.stringify(payload))
 
-  console.log('amount of extra queries', asAny.$extraQueries.length)
+  // console.log('amount of extra queries', asAny.$extraQueries.length)
 
   // TODO: remove this, we already batch in drainQueue
   // if (asAny.$extraQueries.length > 5000) {
