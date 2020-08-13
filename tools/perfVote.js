@@ -3,7 +3,7 @@ const { connect } = require('@saulx/selva')
 const { start } = require('@saulx/selva-server')
 const getPort = require('get-port')
 
-const { Worker, isMainThread } = require('worker_threads')
+const { Worker, isMainThread, workerData } = require('worker_threads')
 
 let srv
 let port
@@ -35,6 +35,23 @@ async function before() {
       }
     }
   })
+
+  await Promise.all([
+    client.set({
+      $id: 'sh1',
+      $language: 'en',
+      type: 'show',
+      title: 'LOL',
+      votes: 0
+    }),
+    client.set({
+      $id: 'sh2',
+      $language: 'en',
+      type: 'show',
+      title: 'ROFL',
+      votes: 0
+    })
+  ])
 }
 
 async function after() {
@@ -47,44 +64,31 @@ async function after() {
 }
 
 const nrVotes = 10000
-const nrWorkers = 5
+const nrWorkers = 10
+
+let sh = ['sh1', 'sh2']
 
 async function runWorker() {
-  const client = connect({ port }, { loglevel: 'info' })
-
-  const sh = await Promise.all([
-    client.set({
-      $language: 'en',
-      type: 'show',
-      title: 'LOL'
-    }),
-    client.set({
-      $language: 'en',
-      type: 'show',
-      title: 'ROFL'
-    })
-  ])
+  const client = connect({ port: workerData.port }, { loglevel: 'info' })
 
   const votes = Array.from(Array(nrVotes).keys()).map(v => ({
     $id: sh[v & 1],
-    votes: { $increment: 1, $default: 0 },
+    votes: { $increment: 1 },
     children: {
       $add: [{ type: 'vote', uid: `user${v}` }]
     }
   }))
 
-  const ids = await Promise.all(
+  await Promise.all(
     votes.map(async vote => {
-      await client.set(vote)
+      return client.set(vote)
     })
   )
-  console.log('votes', ids)
 }
 
 async function run() {
-  await before()
-
   if (isMainThread) {
+    await before()
     // TODO: await after() in the right place
 
     const start = performance.now()
@@ -92,7 +96,9 @@ async function run() {
     for (let i = 0; i < nrWorkers; i++) {
       workers.push(
         new Promise((resolve, reject) => {
-          const worker = new Worker(__filename, {})
+          const worker = new Worker(__filename, {
+            workerData: { port }
+          })
           worker.on('message', resolve)
           worker.on('error', reject)
           worker.on('exit', code => {
