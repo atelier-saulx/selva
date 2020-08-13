@@ -8,13 +8,18 @@ const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every 10 seconds
 export default class ProcessManager extends EventEmitter {
   private command: string
   private args: string[]
+  private env: Record<string, string>
   private childProcess: ChildProcess
   private loadMeasurementsTimeout: NodeJS.Timeout
 
-  constructor(command: string, args: string[]) {
+  constructor(
+    command: string,
+    opts: { args: string[]; env?: Record<string, string> }
+  ) {
     super()
     this.command = command
-    this.args = args
+    this.args = opts.args
+    this.env = opts.env || {}
   }
 
   protected async collect(): Promise<any> {
@@ -60,7 +65,9 @@ export default class ProcessManager extends EventEmitter {
       return
     }
 
-    this.childProcess = spawn(this.command, this.args)
+    this.childProcess = spawn(this.command, this.args, {
+      env: { ...process.env, ...this.env }
+    })
 
     this.childProcess.stdout.on('data', d => {
       this.emit('stdout', d.toString())
@@ -110,12 +117,14 @@ export default class ProcessManager extends EventEmitter {
 
 if (module === require.main) {
   // TODO: remove test stuff
-  const pm = new ProcessManager('redis-server', [
-    '--loadmodule',
-    './modules/binaries/darwin_x64/redisearch.so',
-    '--loadmodule',
-    './modules/binaries/darwin_x64/selva.so'
-  ])
+  const pm = new ProcessManager('redis-server', {
+    args: [
+      '--loadmodule',
+      './modules/binaries/darwin_x64/redisearch.so',
+      '--loadmodule',
+      './modules/binaries/darwin_x64/selva.so'
+    ]
+  })
 
   pm.on('stdout', console.log)
   pm.on('stats', console.log)

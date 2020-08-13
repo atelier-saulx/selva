@@ -24,7 +24,7 @@ export default class RedisManager extends ProcessManager {
       type: ServerType
     }
   ) {
-    super('redis-server', args)
+    super('redis-server', { args, env: { REDIS_PORT: port.toString() } })
 
     this.redisHost = host
     this.redisPort = port
