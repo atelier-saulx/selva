@@ -130,4 +130,5 @@ vtune -collect hotspots -call-stack-mode all --result-dir redis-$(date +"%Y%m%dT
 
 Stop the server with CTRL-C when ready.
 
-Open the `something.vtune` filee created in `redis-TIME` directory with the VTune GUI.
+Open the `something.vtune` file that was created to the `redis-TIME` directory
+with the VTune GUI.
