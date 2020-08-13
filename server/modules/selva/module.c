@@ -311,6 +311,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     RedisModule_ReplyWithString(ctx, id);
+    RedisModule_ReplicateVerbatim(ctx);
 out:
     RedisModule_CloseKey(id_key);
 
