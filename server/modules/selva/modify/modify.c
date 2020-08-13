@@ -289,8 +289,6 @@ void SelvaModify_ModifyIncrement(
     size_t current_value_len,
     struct SelvaModify_OpIncrement *incrementOpts
 ) {
-    size_t id_len;
-    const char *id_str = RedisModule_StringPtrLen(id, &id_len);
     int32_t num = current_value == NULL
         ? incrementOpts->$default
         : strtol(current_value_str, NULL, 10) + incrementOpts->$increment;
