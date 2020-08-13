@@ -18,27 +18,6 @@
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
 
-int SelvaCommand_GenId(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    // init auto memory for created strings
-    RedisModule_AutoMemory(ctx);
-    Selva_NodeId hash_str;
-    const char *prefix = "";
-    size_t len = sizeof(hash_str) - 2;
-
-    if (argc == 2) {
-        prefix = RedisModule_StringPtrLen(argv[1], NULL);
-        len += 2;
-    } else if (argc > 2) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    SelvaId_GenId(prefix, hash_str);
-
-    RedisModuleString *reply = RedisModule_CreateString(ctx, hash_str, len);
-    RedisModule_ReplyWithString(ctx, reply);
-    return REDISMODULE_OK;
-}
-
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     REDISMODULE_NOT_USED(argv);
     REDISMODULE_NOT_USED(argc);
@@ -127,7 +106,6 @@ static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hie
     if (!SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
         size_t nr_parents = unlikely(no_root) ? 0 : 1;
 
-        //int err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, parents, 0, NULL);
         int err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
         if (err) {
             RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
@@ -345,11 +323,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
 
     // Register the module itself
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    if (RedisModule_CreateCommand(ctx, "selva.id", SelvaCommand_GenId, "readonly", 1, 1, 1) ==
-            REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

@@ -11,7 +11,7 @@ IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
 ifeq ($(uname_S),Linux)
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
-	SHOBJ_LDLIBS := -lrmutil -lutil -lc -luuid -lhiredis -lcrypto -lssl
+	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
 else
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
