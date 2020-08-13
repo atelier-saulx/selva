@@ -23,144 +23,18 @@ test.after(async _t => {
 test.serial('Perf - Simple increment', async t => {
   const result = await run(
     async (client, index) => {
-      const x = []
       const p = []
 
-      for (let i = 0; i < 1e4; i++) {
-        x.push(0, 'flap', i)
-        // x.push(0, 'flap', i + '.' + index)
-      }
-      //@ts-ignore
-      if (!global.isEVALSHA) {
+      for (let i = 0; i < 1000; i++) {
         p.push(
-          client.redis.command(
-            'script',
-            'load',
-            `local i = 0
-          local j = 0
-
-          local result = {}
-          while i < #ARGV do
-            cjson.decode(ARGV[i + 1])
-            redis.call("hset", "x", "y", 1)
-            redis.call("publish", "x", "y")
-
-            result[j + 1] = "yabbadabba"
-
-            do
-              i = i + 1
-              j = j + 1
-            end
-          end
-          return cjson.encode(result)`
-          )
+          client.set({
+            $id: 'root',
+            value: i
+          })
         )
-
-        // simple string
-        // client.set({
-        //   flap: 'xxxx'
-        // })
-
-        // // number
-        // client.set({
-        //   flap: 1
-        // })
-
-        // // children
-        // client.set({
-        //   children: [
-        //     {
-        //       flap: 2
-        //     }
-        //   ]
-        // })
-
-        // children - brokçen type
-        // client.set({
-        //   children: {
-        //     $add: {
-        //       flap: 3
-        //     }
-        //   }
-        // })
-
-        // children
-        // client.set({
-        //   children: {
-        //     $add: [
-        //       {
-        //         flap: 3
-        //       }
-        //     ]
-        //   }
-        // })
-
-        const y = await Promise.all(p)
-        console.log(y)
-        //@ts-ignore
-        global.isEVALSHA = y[0]
-      } else {
-        // json parse?
-        // stringify it
-
-        // for (let i = 0; i < 1000; i++) {
-        //   // p.push(
-        //   //   client.set({
-        //   //     $id: 'root',
-        //   //     value: i
-        //   //   })
-        //   // )
-        //   // p.push(client.redis.set('flurp', i))
-        //   p.push(client.redis.eval('return redis.call("hset", "x", "y", 1)', 0))
-        // }
-
-        // cjson add arround 10ms
-        //@ts-ignore
-
-        // for (let i = 0; i < 1e3; i++) {
-        // p.push(
-        //   client.redis.eval(
-        //     `local i = 0
-        // local j = 0
-
-        // local result = {}
-        // local x = cjson.decode('${JSON.stringify(x)}')
-        // while i < #x do
-        //   redis.call("hset", "x", "y", 1)
-        //   redis.call("publish", "x", "y")
-        //   result[j + 1] = "yabbadabba"
-        //   do
-        //     i = i + 1
-        //     j = j + 1
-        //   end
-        // end
-        // return cjson.encode(result)`,
-        //     0
-        //   )
-        // )
-        // }
-
-        // for (let i = 0; i < 1e4; i++) {
-
-        // make nice!
-        // 1800 -> 200 -- 9x
-
-        p.push(client.redis.command('selva.modify', 'root', ...x))
-
-        // for (let i = 0; i < 1e4; i++) {
-        //   p.push(
-        //     client.redis.command('selva.modify', 'root', 0, 'flap', i + '')
-        //   )
-        // }
-        // }
-
-        // for (let i = 0; i < 1e3; i++) {
-        //   //@ts-ignore
-        // p.push(client.redis.evalsha(global.isEVALSHA, 0, ...x))
-        // }
-
-        await Promise.all(p)
       }
+
+      await Promise.all(p)
     },
     {
       label: 'Simple increment',
