@@ -810,15 +810,33 @@ static int SelvaModify_DelHierarchyNodeP(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *node) {
+    svector_autofree SVector children; /* Copy of children */
+
+    assert(ctx);
+    assert(hierarchy);
+    assert(node);
+
+    /*
+     * We clone the children vector so that we can iterate it while removing
+     * nodes.
+     */
+    if (unlikely(!SVector_Clone(&children, &node->children, NULL))) {
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
+    }
+
     /*
      * Delete orphan children recursively.
      */
     SelvaModify_HierarchyNode **child_pp;
-    SVECTOR_FOREACH(child_pp, &node->children) {
+    SVECTOR_FOREACH(child_pp, &children) {
         SelvaModify_HierarchyNode *child = *child_pp;
+
+        assert(child);
+
         crossRemove(hierarchy, node, RELATIONSHIP_PARENT, 1, (Selva_NodeId *)child->id);
         if (SVector_Size(&child->parents) == 0) {
-            SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
+            /* TODO Just ignoring any errors for now. */
+            (void)SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
         }
     }
 
@@ -1438,15 +1456,27 @@ int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString *
                 0, NULL);
         }
     } else if (!strcmp(op, "children")) {
+        svector_autofree SVector children; /* Copy of children */
         SelvaModify_HierarchyNode **it;
 
         removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
 
-        SVECTOR_FOREACH(it, &node->children) {
+        /*
+         * We clone the children vector so that we can iterate it safely while
+         * removing nodes.
+         */
+        if (unlikely(!SVector_Clone(&children, &node->children, NULL))) {
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
+        }
+
+        SVECTOR_FOREACH(it, &children) {
             SelvaModify_HierarchyNode *child = *it;
 
+            assert(child);
+
             if (SVector_Size(&child->parents) == 0) {
-                SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
+                /* TODO Ignoring errors for now. */
+                (void)SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
             }
         }
     } else {
