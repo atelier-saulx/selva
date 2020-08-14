@@ -102,12 +102,19 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         task->field_name = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask));
         task->value = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask) + task->field_name_len);
         if (task->type == SELVA_MODIFY_ASYNC_TASK_PUBLISH) {
-            char channel[SELVA_NODE_ID_SIZE + 1 + task->field_name_len];
-            memcpy(channel, task->id, SELVA_NODE_ID_SIZE);
-            memcpy(channel + SELVA_NODE_ID_SIZE, ".", 1);
-            memcpy(channel + SELVA_NODE_ID_SIZE + 1, task->field_name, task->field_name_len);
+            const char prefix[] = "___selva_events:";
+            char channel[sizeof(prefix) + SELVA_NODE_ID_SIZE + 1 + task->field_name_len];
+            const char msg[] = "update";
 
-            reply = redisCommand(ctx, "PUBLISH %b %b", channel, (size_t) (SELVA_NODE_ID_SIZE + 1 + task->field_name_len), "update", 6);
+            snprintf(channel, sizeof(channel), "%s%.*s.%.*s",
+                     prefix,
+                     (int)SELVA_NODE_ID_SIZE, task->id,
+                     (int)task->field_name_len, task->field_name);
+
+#if 0
+            fprintf(stderr, "Redis publish: \"%s\"\n", channel);
+#endif
+            reply = redisCommand(ctx, "PUBLISH %s %b", channel, msg, sizeof(msg) - 1);
             if (reply == NULL) {
                 printf("Error occurred in publish %s\n", ctx->errstr);
             }
