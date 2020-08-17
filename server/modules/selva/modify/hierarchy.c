@@ -424,8 +424,13 @@ static int crossInsert(
                             hierarchyStrError[-err]);
                     continue;
                 }
+
                 adjacent = findNode(hierarchy, nodes[i]);
-                /* TODO Null check? */
+                if (!adjacent) {
+                    fprintf(stderr, "Hierarchy: Node state error, node: \"%.*s\"\n",
+                            (int)SELVA_NODE_ID_SIZE, nodes[i]);
+                    return SELVA_MODIFY_HIERARCHY_EGENERAL;
+                }
             }
 
             /* Do inserts only if the relationship doesn't exist already */
@@ -448,8 +453,13 @@ static int crossInsert(
                             hierarchyStrError[-err]);
                     continue;
                 }
+
                 adjacent = findNode(hierarchy, nodes[i]);
-                /* TODO Null check? */
+                if (!adjacent) {
+                    fprintf(stderr, "Hierarchy: Node state error, node: \"%.*s\"\n",
+                            (int)SELVA_NODE_ID_SIZE, nodes[i]);
+                    return SELVA_MODIFY_HIERARCHY_EGENERAL;
+                }
             }
 
             /* The adjacent node is no longer an orphan */
@@ -1757,9 +1767,16 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             rpn_set_reg(rpn_ctx, reg_i, str, str_len + 1);
         }
 
+        /*
+         * Compile the filter expression.
+         */
         input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
-        /* TODO Can it fail? */
         filter_expression = rpn_compile(input, input_len);
+        if (!filter_expression) {
+            fprintf(stderr, "Hierarchy: Failed to compile a filter expression: %.*s\n",
+                    (int)input_len, input);
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_EGENERAL]);
+        }
     }
 
     /*
@@ -1782,12 +1799,6 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             fprintf(stderr, "Hierarchy: Node not found: \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodeId);
             continue;
         }
-        /* TODO Error handling? */
-#if 0
-        if (!head) {
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
-        }
-#endif
 
         /*
          * Run BFS/DFS.
@@ -1871,10 +1882,14 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     TO_STR(ids, filter);
 
     /*
-     * Compile the expression.
+     * Compile the filter expression.
      */
-    /* TODO Can it fail? */
     rpn_token *filter_expression = rpn_compile(filter_str, filter_len);
+    if (!filter_expression) {
+        fprintf(stderr, "Hierarchy: Failed to compile a filter expression: %.*s\n",
+                (int)filter_len, filter_str);
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_EGENERAL]);
+    }
 
     /*
      * Get the filter expression arguments and set them to the registers.
