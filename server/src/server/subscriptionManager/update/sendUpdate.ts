@@ -50,6 +50,7 @@ const sendUpdate = async (
 
   // call $meta tree
   const newTree = payload.$meta
+  console.log('NEW TREE', JSON.stringify(newTree, null, 2))
 
   delete payload.$meta
 

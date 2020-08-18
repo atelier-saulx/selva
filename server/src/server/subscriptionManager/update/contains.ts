@@ -69,6 +69,7 @@ const addAncestorsToBatch = (
     drainQueue(subsManager)
   }
   if (!fieldsProgress[field]) {
+    console.log('HMM', field)
     queue.push({
       command: {
         command: 'zrange',
@@ -94,6 +95,7 @@ const addMembersToBatch = (
     drainQueue(subsManager)
   }
   if (!fieldsProgress[field]) {
+    console.log('mmmmmm', field)
     queue.push({
       command: {
         command: 'smembers',
@@ -163,6 +165,7 @@ const contains = (
     const memberCheck =
       subManager.tree[context.db].___contains &&
       subManager.tree[context.db].___contains[contains]
+    console.log('MEMBER CHECK', memberCheck)
     if (memberCheck) {
       if (membersContainsId(subManager, context, <Contains>memberCheck, subs)) {
         subs.forEach(s => {

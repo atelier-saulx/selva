@@ -41,6 +41,11 @@ export default function ast2rpn(
   let regIndex = 1
 
   function ast2rpnFilter(f: Filter, ignoreLang: boolean = false) {
+    if (f.$field === 'ancestors') {
+      out += ' #1'
+      return
+    }
+
     if (f.$field === 'id') {
       out += ' #1'
       findIn = <string[]>f.$value
