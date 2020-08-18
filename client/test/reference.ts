@@ -13,8 +13,12 @@ test.before(async t => {
   srv = await start({
     port
   })
+})
 
-  const client = connect({ port })
+test.beforeEach(async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.redis.flushall()
   await client.updateSchema({
     languages: ['en', 'en_us', 'en_uk', 'de', 'nl'],
     rootType: {
@@ -61,6 +65,7 @@ test.before(async t => {
   })
 
   await wait(500)
+  //await new Promise(r => setTimeout(r, 30 * 1000))
 
   await client.destroy()
 })
