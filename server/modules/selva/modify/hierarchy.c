@@ -300,13 +300,17 @@ static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
 }
 
 static void del_node(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
+    const int is_root = !memcmp(node, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
+
     removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
-    removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+    if (!is_root) {
+        removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+    }
 
     /*
      * Never delete the root node.
      */
-    if (!memcmp(node, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+    if (!is_root) {
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(node);
     }
@@ -343,6 +347,7 @@ static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyN
     }
 
     if (unlikely(!SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL))) {
+        fprintf(stderr, "Hierarchy: Depth update error\n");
         abort();
     }
 
@@ -816,32 +821,76 @@ int SelvaModify_DelHierarchy(
     return 0;
 }
 
+static Selva_NodeId *NodeList_New(int nr_nodes) {
+    return RedisModule_Alloc(nr_nodes * sizeof(Selva_NodeId));
+}
+
+static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, size_t nr_nodes) {
+    Selva_NodeId *newList = RedisModule_Realloc(list, nr_nodes * sizeof(Selva_NodeId));
+    if (unlikely(!newList)) {
+        RedisModule_Free(list);
+        return NULL;
+    }
+
+    memcpy(newList + nr_nodes - 1, id, sizeof(Selva_NodeId));
+
+    return newList;
+}
+
+static Selva_NodeId *getNodeIds(SVector *adjacent_nodes, size_t * nr_ids) {
+    size_t i = 0;
+    Selva_NodeId *ids;
+    SelvaModify_HierarchyNode **adj_pp;
+
+    ids = NodeList_New(SVector_Size(adjacent_nodes));
+    if (!ids) {
+        return NULL;
+    }
+
+    SVECTOR_FOREACH(adj_pp, adjacent_nodes) {
+        SelvaModify_HierarchyNode *adj = *adj_pp;
+
+        ids = NodeList_Insert(ids, adj->id, ++i);
+    }
+
+    *nr_ids = i;
+    return ids;
+}
+
 static int SelvaModify_DelHierarchyNodeP(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *node) {
-    svector_autofree SVector children; /* Copy of children */
+    Selva_NodeId *ids;
+    size_t ids_len;
 
-    assert(ctx);
-    assert(hierarchy);
-    assert(node);
+    assert(("ctx must be set", ctx));
+    assert(("hierarchy must be set", hierarchy));
+    assert(("node must be set", node));
 
-    /*
-     * We clone the children vector so that we can iterate it while removing
-     * nodes.
-     */
-    if (unlikely(!SVector_Clone(&children, &node->children, NULL))) {
+    ids = getNodeIds(&node->children, &ids_len);
+    if (unlikely(!ids)) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
     /*
      * Delete orphan children recursively.
      */
-    SelvaModify_HierarchyNode **child_pp;
-    SVECTOR_FOREACH(child_pp, &children) {
-        SelvaModify_HierarchyNode *child = *child_pp;
+    for (size_t i = 0; i < ids_len; i++) {
+        Selva_NodeId nodeId;
 
-        assert(child);
+        memcpy(nodeId, ids + i, SELVA_NODE_ID_SIZE);
+
+        /*
+         * Find the node.
+         */
+        SelvaModify_HierarchyNode *child = findNode(hierarchy, nodeId);
+        if (!child) {
+            /* Node not found;
+             * This is probably fine, as there might have been a circular link.
+             */
+            continue;
+        }
 
         crossRemove(hierarchy, node, RELATIONSHIP_PARENT, 1, (Selva_NodeId *)child->id);
         if (SVector_Size(&child->parents) == 0) {
@@ -849,6 +898,8 @@ static int SelvaModify_DelHierarchyNodeP(
             (void)SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
         }
     }
+
+    RedisModule_Free(ids);
 
     del_node(hierarchy, node);
 
@@ -906,22 +957,6 @@ int SelvaModify_DelHierarchyNode(
     }
 
     return SelvaModify_DelHierarchyNodeP(ctx, hierarchy, node);
-}
-
-static Selva_NodeId *NodeList_New(int nr_nodes) {
-    return RedisModule_Alloc(nr_nodes * sizeof(Selva_NodeId));
-}
-
-static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, size_t nr_nodes) {
-    Selva_NodeId *newList = RedisModule_Realloc(list, nr_nodes * sizeof(Selva_NodeId));
-    if (unlikely(!newList)) {
-        RedisModule_Free(list);
-        return NULL;
-    }
-
-    memcpy(newList + nr_nodes - 1, id, sizeof(Selva_NodeId));
-
-    return newList;
 }
 
 ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res) {
@@ -1466,23 +1501,32 @@ int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString *
                 0, NULL);
         }
     } else if (!strcmp(op, "children")) {
-        svector_autofree SVector children; /* Copy of children */
-        SelvaModify_HierarchyNode **it;
+        Selva_NodeId *ids;
+        size_t ids_len;
 
+        /* RFE Shouldn't this come later? */
         removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
 
-        /*
-         * We clone the children vector so that we can iterate it safely while
-         * removing nodes.
-         */
-        if (unlikely(!SVector_Clone(&children, &node->children, NULL))) {
+        ids = getNodeIds(&node->children, &ids_len);
+        if (unlikely(!ids)) {
             return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
         }
 
-        SVECTOR_FOREACH(it, &children) {
-            SelvaModify_HierarchyNode *child = *it;
+        for (size_t i = 0; i < ids_len; i++) {
+            Selva_NodeId nodeId;
 
-            assert(child);
+            memcpy(nodeId, ids + i, SELVA_NODE_ID_SIZE);
+
+            /*
+             * Find the node.
+             */
+            SelvaModify_HierarchyNode *child = findNode(hierarchy, nodeId);
+            if (!child) {
+                /* Node not found;
+                 * This is probably fine, as there might have been a circular link.
+                 */
+                continue;
+            }
 
             if (SVector_Size(&child->parents) == 0) {
                 /* TODO Ignoring errors for now. */

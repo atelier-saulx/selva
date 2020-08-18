@@ -77,10 +77,16 @@ export default class ProcessManager extends EventEmitter {
       this.emit('stderr', d.toString())
     })
 
-    const exitHandler = (code: number) => {
-      console.error(
-        `🔥  Child process for ${this.command} exited with code ${code}. Restarting...`
-      )
+    const exitHandler = (code: number, signal: string) => {
+      if (typeof code === 'number') {
+        console.error(
+          `🔥  Child process (${this.childProcess.pid}) for ${this.command} exited with code ${code}. Restarting...`
+        )
+      } else {
+        console.error(
+          `🔥  Child process (${this.childProcess.pid}) for ${this.command} terminated with signal ${signal}. Restarting...`
+        )
+      }
 
       this.childProcess.removeAllListeners()
       this.childProcess = undefined

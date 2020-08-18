@@ -59,6 +59,7 @@ void SVector_Insert(SVector *vec, void *el) {
 
         void **new_data = RedisModule_Realloc(vec_data, new_size);
         if (!new_data) {
+            fprintf(stderr, "SVector realloc failed\n");
             abort(); /* This will cause a core dump. */
         }
 
@@ -105,6 +106,7 @@ void *SVector_InsertFast(SVector *vec, void *el) {
 
         void **new_data = RedisModule_Realloc(vec_data, new_size);
         if (!new_data) {
+            fprintf(stderr, "SVector realloc failed\n");
             abort(); /* This will cause a core dump. */
         }
 
