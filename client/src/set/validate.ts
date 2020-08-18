@@ -80,11 +80,12 @@ export default async function parseSetObject(
 
   const schema = type === 'root' ? schemas.rootType : schemas.types[type]
   if (!schema) {
+  console.log('fef', type, schemas);
     throw new Error(
       `Cannot find type ${type ||
-        ` from prefix ${payload.$id.substring(
-          0,
-          2
+        `from prefix ${payload.$id.substring(
+         0,
+         2
         )}`} from set-object ${JSON.stringify(payload, null, 2)}`
     )
   }
