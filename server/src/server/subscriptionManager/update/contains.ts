@@ -72,8 +72,8 @@ const addAncestorsToBatch = (
     console.log('HMM', field)
     queue.push({
       command: {
-        command: 'zrange',
-        args: [field, 0, -1]
+        command: 'selva.hierarchy.find',
+        args: ['___selva_hierarchy', 'dfs', 'ancestors', context.id]
       },
       context
     })
@@ -98,8 +98,8 @@ const addMembersToBatch = (
     console.log('mmmmmm', field)
     queue.push({
       command: {
-        command: 'smembers',
-        args: [field]
+        command: 'selva.hierarchy.parents',
+        args: ['___selva_hierarchy', context.id]
       },
       context
     })
