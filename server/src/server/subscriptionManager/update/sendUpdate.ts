@@ -23,34 +23,34 @@ const sendUpdate = async (
   const getOptions = subscription.get
   getOptions.$includeMeta = true
 
-  if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
-    const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
-    const schemaResp = await client.getSchema(dbName)
-    const version = schemaResp.schema.sha
-    const value = JSON.stringify({
-      type: 'update',
-      payload: schemaResp.schema
-    })
-    await redis.hmset(
-      selector,
-      CACHE,
-      channel,
-      value,
-      channel + '_version',
-      version
-    )
-    await redis.publish(selector, channel, version)
-    subscriptionManager.inProgressCount--
-    subscription.beingProcessed = false
-    return
-  }
-
-  var time = setTimeout(() => {
-    // log these somewhere!
-    console.log('TIMEOUT OUT', channel, subscription.origins)
-  }, 15e3)
-
   try {
+    if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
+      const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
+      const schemaResp = await client.getSchema(dbName)
+      const version = schemaResp.schema.sha
+      const value = JSON.stringify({
+        type: 'update',
+        payload: schemaResp.schema
+      })
+      await redis.hmset(
+        selector,
+        CACHE,
+        channel,
+        value,
+        channel + '_version',
+        version
+      )
+      await redis.publish(selector, channel, version)
+      subscriptionManager.inProgressCount--
+      subscription.beingProcessed = false
+      return
+    }
+
+    var time = setTimeout(() => {
+      // log these somewhere!
+      console.log('TIMEOUT OUT', channel, subscription.origins)
+    }, 15e3)
+
     const payload = await client.get(getOptions)
 
     // call $meta tree
@@ -64,7 +64,6 @@ const sendUpdate = async (
     const newVersion = hash(resultStr)
 
     const treeVersion = subscription.treeVersion
-
     const q = []
 
     // if sub is removed
@@ -122,20 +121,19 @@ const sendUpdate = async (
     await Promise.all(q)
 
     await redis.publish(selector, channel, newVersion)
-
-    clearTimeout(time)
   } catch (e) {
-    console.error('Error running get in sendUpdate', e)
-    clearTimeout(time)
-  } finally {
-    subscriptionManager.inProgressCount--
-    if (subscription.processNext) {
-      await wait(100)
-      subscription.processNext = false
-      await sendUpdate(subscriptionManager, subscription)
-    } else {
-      subscription.beingProcessed = false
-    }
+    console.error('Error in sendUpdate', e)
+  }
+
+  clearTimeout(time)
+
+  subscriptionManager.inProgressCount--
+  if (subscription.processNext) {
+    await wait(100)
+    subscription.processNext = false
+    await sendUpdate(subscriptionManager, subscription)
+  } else {
+    subscription.beingProcessed = false
   }
 }
 
