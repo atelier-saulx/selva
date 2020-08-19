@@ -21,6 +21,11 @@
  */
 #define HIERARCHY_SORT_BY_DEPTH         0
 
+/**
+ * Send events to descendants when a new parent is addded.
+ */
+#define HIERARCHY_EN_EVENTS             1
+
 /*
  * RPN Tunables.
  */

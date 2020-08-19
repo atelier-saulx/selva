@@ -438,10 +438,12 @@ static int crossInsert(
             }
         }
 
+#if HIERARCHY_EN_EVENTS
         /*
          * Publish the change to the descendants of node.
          */
         (void)SelvaModify_PublishDescendants(hierarchy, node->id);
+#endif
     } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
         for (size_t i = 0; i < n; i++) {
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
@@ -475,10 +477,12 @@ static int crossInsert(
                 (void)SVector_InsertFast(&adjacent->parents, node);
             }
 
+#if HIERARCHY_EN_EVENTS
             /*
              * Publish the change to the descendants of nodes[i].
              */
             (void)SelvaModify_PublishDescendants(hierarchy, nodes[i]);
+#endif
         }
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
