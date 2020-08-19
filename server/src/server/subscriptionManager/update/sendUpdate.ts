@@ -41,9 +41,8 @@ const sendUpdate = async (
     return
   }
 
-  let time = setTimeout(() => {
-    // log these somewhere!
-    console.log('TIMEOUT OUT', channel, subscription.origins)
+  const time = setTimeout(() => {
+    throw new Error('Time out ' + channel)
   }, 15e3)
 
   const payload = await client.get(getOptions)
