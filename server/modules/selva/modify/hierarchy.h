@@ -189,4 +189,10 @@ int SelvaModify_TraverseHierarchy(
         enum SelvaModify_HierarchyTraversal dir,
         struct SelvaModify_HierarchyCallback *cb);
 
+/*
+ * hierarchy_events.c
+ */
+
+void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, const char *id_str);
+
 #endif /* SELVA_MODIFY_HIERARCHY */

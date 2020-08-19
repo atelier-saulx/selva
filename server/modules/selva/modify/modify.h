@@ -68,7 +68,6 @@ static inline void SelvaModify_Publish(const char *id_str, const char *field_str
     SelvaModify_PreparePublishPayload(payload_str, id_str, field_str, field_len);
     SelvaModify_SendAsyncTask(payload_len, payload_str);
 }
-void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, const char *id_str);
 
 int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
