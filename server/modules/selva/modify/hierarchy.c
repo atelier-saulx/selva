@@ -144,14 +144,8 @@ static void wrapFree(void *p) {
     RedisModule_Free(*pp);
 }
 
-static void RMString2NodeId(Selva_NodeId nodeId, RedisModuleString *rmStr) {
-        const char *str;
-        size_t slen;
-
-        str = RedisModule_StringPtrLen(rmStr, &slen);
-
-        memset(nodeId, '\0', SELVA_NODE_ID_SIZE);
-        memcpy(nodeId, str, min(slen, SELVA_NODE_ID_SIZE));
+static inline void RMString2NodeId(Selva_NodeId nodeId, RedisModuleString *rmStr) {
+        strncpy(nodeId, RedisModule_StringPtrLen(rmStr, NULL), SELVA_NODE_ID_SIZE);
 }
 
 /*
