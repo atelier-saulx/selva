@@ -13,30 +13,24 @@
 #include "hierarchy.h"
 #include "queue_r.h"
 
-#define RING_BUFFER_BLOCK_SIZE 128
-#define RING_BUFFER_LENGTH 100000
-
-#define PEEK_INTERVAL_US 100
-
-#define HIREDIS_WORKER_COUNT 4
 
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
-static pthread_t thread_ids[HIREDIS_WORKER_COUNT] = { };
+static pthread_t thread_ids[ASYNC_TASK_HIREDIS_WORKER_COUNT] = { };
 
-static char queue_mem[HIREDIS_WORKER_COUNT][RING_BUFFER_BLOCK_SIZE * RING_BUFFER_LENGTH];
-static queue_cb_t queues[HIREDIS_WORKER_COUNT];
+static char queue_mem[ASYNC_TASK_HIREDIS_WORKER_COUNT][ASYNC_TASK_RING_BUF_BLOCK_SIZE * ASYNC_TASK_RING_BUF_LENGTH];
+static queue_cb_t queues[ASYNC_TASK_HIREDIS_WORKER_COUNT];
 __constructor static void initialize_queues() {
-    for (uint8_t i = 0; i < HIREDIS_WORKER_COUNT; i++) {
-        queues[i] = QUEUE_INITIALIZER(queue_mem[i], RING_BUFFER_BLOCK_SIZE, sizeof(queue_mem[i]));
+    for (uint8_t i = 0; i < ASYNC_TASK_HIREDIS_WORKER_COUNT; i++) {
+        queues[i] = QUEUE_INITIALIZER(queue_mem[i], ASYNC_TASK_RING_BUF_BLOCK_SIZE, sizeof(queue_mem[i]));
     }
 }
 
 static uint8_t queue_idx = 0;
 static inline uint8_t next_queue_idx() {
     uint8_t idx = queue_idx;
-    queue_idx = (queue_idx + 1) % HIREDIS_WORKER_COUNT;
+    queue_idx = (queue_idx + 1) % ASYNC_TASK_HIREDIS_WORKER_COUNT;
     return idx;
 }
 
@@ -76,7 +70,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     for (;;) {
         char *next;
         if (!queue_peek(queue, (void **)&next)) {
-            usleep(PEEK_INTERVAL_US);
+            usleep(ASYNC_TASK_PEEK_INTERVAL_US);
             continue;
         }
 
@@ -85,17 +79,17 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         char read_buffer[size];
         char *read_ptr = read_buffer;
         int32_t remaining = size;
-        int32_t block_remaining = RING_BUFFER_BLOCK_SIZE - sizeof(int32_t);
+        int32_t block_remaining = ASYNC_TASK_RING_BUF_BLOCK_SIZE - sizeof(int32_t);
         while (remaining > 0) {
             if (!queue_peek(queue, (void **)&next)) {
-                usleep(PEEK_INTERVAL_US);
+                usleep(ASYNC_TASK_PEEK_INTERVAL_US);
                 continue;
             }
 
-            memcpy(read_ptr, next + (RING_BUFFER_BLOCK_SIZE - block_remaining), min(block_remaining, remaining));
+            memcpy(read_ptr, next + (ASYNC_TASK_RING_BUF_BLOCK_SIZE - block_remaining), min(block_remaining, remaining));
             queue_skip(queue, 1);
             remaining -= block_remaining;
-            block_remaining = RING_BUFFER_BLOCK_SIZE;
+            block_remaining = ASYNC_TASK_RING_BUF_BLOCK_SIZE;
         }
 
         struct SelvaModify_AsyncTask *task = (struct SelvaModify_AsyncTask *) read_buffer;
@@ -140,7 +134,7 @@ error:
 }
 
 int SelvaModify_SendAsyncTask(int payload_len, const char *payload) {
-    for (size_t i = 0; i < HIREDIS_WORKER_COUNT; i++) {
+    for (size_t i = 0; i < ASYNC_TASK_HIREDIS_WORKER_COUNT; i++) {
         if (thread_ids[i] == 0) {
             pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);
         }
@@ -161,7 +155,7 @@ int SelvaModify_SendAsyncTask(int payload_len, const char *payload) {
     }
 
 
-    for (int i = 0; i < payload_len; i += RING_BUFFER_BLOCK_SIZE) {
+    for (int i = 0; i < payload_len; i += ASYNC_TASK_RING_BUF_BLOCK_SIZE) {
         char *ptr;
 
         ptr = queue_alloc_get(&queues[worker_idx]);

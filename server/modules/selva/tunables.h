@@ -30,4 +30,13 @@
 #define RPN_SMALL_OPERAND_POOL_SIZE     20
 #define RPN_MAX_D                       256
 
+/*
+ * Async_task Tunables.
+ */
+
+#define ASYNC_TASK_RING_BUF_BLOCK_SIZE  128
+#define ASYNC_TASK_RING_BUF_LENGTH      500000
+#define ASYNC_TASK_PEEK_INTERVAL_US     100
+#define ASYNC_TASK_HIREDIS_WORKER_COUNT 4
+
 #endif /* SELVA_MODIFY_TUNABLES */
