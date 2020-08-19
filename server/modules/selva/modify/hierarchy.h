@@ -38,8 +38,29 @@ typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
 
+enum SelvaModify_HierarchyTraversal {
+    SELVA_MODIFY_HIERARCHY_BFS_ANCESTORS,
+    SELVA_MODIFY_HIERARCHY_BFS_DESCENDANTS,
+    SELVA_MODIFY_HIERARCHY_DFS_ANCESTORS,
+    SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS,
+    SELVA_MODIFY_HIERARCHY_DFS_FULL,
+};
+
+/**
+ * Called for each node found during a traversal.
+ * @returns 0 to continue the traversal; 1 to interrupt the traversal.
+ */
+typedef int (*SelvaModify_HierarchyCallback)(Selva_NodeId id, void *arg);
+
+struct SelvaModify_HierarchyCallback {
+    SelvaModify_HierarchyCallback node_cb;
+    void * node_arg;
+};
+
 struct RedisModuleCtx;
 struct RedisModuleString;
+
+extern const char * const hierarchyStrError[6];
 
 /**
  * Create a new hierarchy.
@@ -162,6 +183,10 @@ ssize_t SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_
  */
 ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
 
-extern const char * const hierarchyStrError[6];
+int SelvaModify_TraverseHierarchy(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        enum SelvaModify_HierarchyTraversal dir,
+        struct SelvaModify_HierarchyCallback *cb);
 
 #endif /* SELVA_MODIFY_HIERARCHY */

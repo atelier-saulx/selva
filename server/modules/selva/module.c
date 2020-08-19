@@ -284,7 +284,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             size_t id_len;
             const char *id_str = RedisModule_StringPtrLen(id, &id_len);
 
-            SelvaModify_Publish(id_str, id_len, field_str, field_len);
+            SelvaModify_Publish(id_str, field_str, field_len);
         }
     }
 

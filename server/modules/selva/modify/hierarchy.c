@@ -1155,6 +1155,64 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
     return 0;
 }
 
+/*
+ * A little trampoline to hide the scary internals of the hierarchy
+ * implementation from the innocent users just wanting to traverse the
+ * hierarchy.
+ */
+static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
+    struct SelvaModify_HierarchyCallback *cb = (struct SelvaModify_HierarchyCallback *)arg;
+
+    return cb->node_cb(node->id, cb->node_arg);
+}
+
+int SelvaModify_TraverseHierarchy(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        enum SelvaModify_HierarchyTraversal dir,
+        struct SelvaModify_HierarchyCallback *cb) {
+    const TraversalCallback tcb = {
+        .head_cb = NULL,
+        .head_arg = NULL,
+        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
+        .node_arg = cb,
+        .child_cb = NULL,
+        .child_arg = NULL,
+    };
+    SelvaModify_HierarchyNode *head;
+    int err;
+
+    if (dir != SELVA_MODIFY_HIERARCHY_DFS_FULL) {
+        head = findNode(hierarchy, id);
+        if (!head) {
+            return SELVA_MODIFY_HIERARCHY_ENOENT;
+        }
+    }
+
+    switch (dir) {
+    case SELVA_MODIFY_HIERARCHY_BFS_ANCESTORS:
+        err = bfs(hierarchy, head, RELATIONSHIP_PARENT, &tcb);
+        break;
+    case SELVA_MODIFY_HIERARCHY_BFS_DESCENDANTS:
+        err = bfs(hierarchy, head, RELATIONSHIP_CHILD, &tcb);
+        break;
+    case SELVA_MODIFY_HIERARCHY_DFS_ANCESTORS:
+        err = dfs(hierarchy, head, RELATIONSHIP_PARENT, &tcb);
+        break;
+     case SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS:
+        err = dfs(hierarchy, head, RELATIONSHIP_CHILD, &tcb);
+        break;
+     case SELVA_MODIFY_HIERARCHY_DFS_FULL:
+        err = full_dfs(hierarchy, &tcb);
+        break;
+     default:
+        fprintf(stderr, "Hierarchy: Invalid traversal\n");
+        err = SELVA_MODIFY_HIERARCHY_ENOTSUP;
+    }
+
+    return err;
+}
+
 static int dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
     void **args = (void **)arg;
     SelvaModify_HierarchyNode *head = (SelvaModify_HierarchyNode *)args[0];

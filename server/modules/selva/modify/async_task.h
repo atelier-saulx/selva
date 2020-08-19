@@ -19,8 +19,8 @@ struct SelvaModify_AsyncTask {
     size_t value_len;
 };
 
-int SelvaModify_SendAsyncTask(int payload_len, char *payload);
-void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, size_t id_len, const char *field_str, size_t field_len);
-void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, size_t id_len, const char *field_str, size_t field_len, const char *value_str, size_t value_len);
+int SelvaModify_SendAsyncTask(int payload_len, const char *payload);
+void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, const char *field_str, size_t field_len);
+void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, const char *field_str, size_t field_len, const char *value_str, size_t value_len);
 
 #endif /* SELVA_MODIFY_ASYNC_TASK */

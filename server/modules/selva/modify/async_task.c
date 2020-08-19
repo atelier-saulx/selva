@@ -139,7 +139,7 @@ error:
     return NULL;
 }
 
-int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
+int SelvaModify_SendAsyncTask(int payload_len, const char *payload) {
     for (size_t i = 0; i < HIREDIS_WORKER_COUNT; i++) {
         if (thread_ids[i] == 0) {
             pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);
@@ -176,7 +176,8 @@ int SelvaModify_SendAsyncTask(int payload_len, char *payload) {
     return 0;
 }
 
-void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, size_t id_len, const char *field_str, size_t field_len) {
+void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, const char *field_str, size_t field_len) {
+    /* TODO Optimize by writing directly to payload_str */
     const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
     struct SelvaModify_AsyncTask publish_task = {
         .type = SELVA_MODIFY_ASYNC_TASK_PUBLISH,
@@ -185,7 +186,7 @@ void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, si
         .value = NULL,
         .value_len = 0,
     };
-    memcpy(publish_task.id, id_str, SELVA_NODE_ID_SIZE);
+    strncpy(publish_task.id, id_str, SELVA_NODE_ID_SIZE);
 
     char *ptr = payload_str;
 
@@ -199,7 +200,7 @@ void SelvaModify_PreparePublishPayload(char *payload_str, const char *id_str, si
     memcpy(ptr, field_str, field_len);
 }
 
-void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, size_t id_len, const char *field_str, size_t field_len, const char *value_str, size_t value_len) {
+void SelvaModify_PrepareValueIndexPayload(char *payload_str, const char *id_str, const char *field_str, size_t field_len, const char *value_str, size_t value_len) {
     const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
     struct SelvaModify_AsyncTask publish_task = {
         .type = SELVA_MODIFY_ASYNC_TASK_INDEX,
