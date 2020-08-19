@@ -19,16 +19,14 @@ static int sendAncestorEvent(Selva_NodeId id, void *arg) {
     return 0;
 }
 
-void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, const char *id_str) {
+void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
     size_t payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask) + ANCESTORS_FIELD_LEN;
     char payload_str[payload_len];
     struct SelvaModify_HierarchyCallback cb = {
         .node_cb = sendAncestorEvent,
         .node_arg = payload_str,
     };
-    Selva_NodeId id;
 
-    strncpy(id, id_str, SELVA_NODE_ID_SIZE);
-    SelvaModify_PreparePublishPayload(payload_str, id_str, ancestors_field_str, ANCESTORS_FIELD_LEN);
+    SelvaModify_PreparePublishPayload(payload_str, id, ancestors_field_str, ANCESTORS_FIELD_LEN);
     (void)SelvaModify_TraverseHierarchy(hierarchy, id, SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS, &cb);
 }
