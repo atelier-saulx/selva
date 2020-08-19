@@ -386,6 +386,31 @@
   version "1.0.0"
   resolved "https://github.com/atelier-saulx/prettier-config#bfbde3d591b3d9c26f68ffa063e7cb2a4bc5f6de"
 
+"@saulx/selva-server@1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@saulx/selva-server/-/selva-server-1.9.0.tgz#00a8b43702c345371d3316e88177424619549913"
+  integrity sha512-KGZLpH2kiVpBqA4TViv8KPTVfLxo4eZoNRuPn5/zMbTlebGMNgmIqhdTzZ4bkKc1phQtB6+Z2VefVHsBmqumTg==
+  dependencies:
+    "@saulx/selva" "1.9.0"
+    aws-sdk "^2.616.0"
+    chalk "^4.0.0"
+    data-record "^0.1.3"
+    dropbox "^4.0.30"
+    get-port "^5.1.1"
+    node-fetch "^2.6.0"
+    pidusage "^2.0.18"
+    redis "^2.8.0"
+
+"@saulx/selva@1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@saulx/selva/-/selva-1.9.0.tgz#f910800290cdf9ccf643e8fa3ba92402bf87b557"
+  integrity sha512-ATCrnbnGQdvojL1H/tHIp3m3A6Xe85o2qb1EJIEwJ3NX0C1btwwOmH5m9DYp3sfQIQm9Yymw6cQMEAcgjRoAOw==
+  dependencies:
+    "@types/uuid" "^3.4.6"
+    chalk "^4.0.0"
+    redis "^2.8.0"
+    uuid "^3.3.3"
+
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-0.14.0.tgz#9fb3a3cf3132328151f353de4632e01e52102bea"
