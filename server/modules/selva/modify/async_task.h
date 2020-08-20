@@ -15,14 +15,11 @@ struct SelvaModify_AsyncTask {
 
     const char *field_name;
     size_t field_name_len;
-
-    const char *value;
-    size_t value_len;
 };
 
 int SelvaModify_SendAsyncTask(const char *payload, int payload_len);
 void SelvaModify_PublishCreated(const char *id_str);
-void SelvaModify_PublishDeleted(const char *id_str);
+void SelvaModify_PublishDeleted(const char *id_str, const char *fields);
 void SelvaModify_PublishUpdate(const char *id_str, const char *field_str, size_t field_len);
 
 #endif /* SELVA_MODIFY_ASYNC_TASK */
