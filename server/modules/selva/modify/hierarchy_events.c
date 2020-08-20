@@ -27,6 +27,6 @@ void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, con
         .node_arg = payload_str,
     };
 
-    SelvaModify_PreparePublishPayload(payload_str, id, ancestors_field_str, ANCESTORS_FIELD_LEN);
+    SelvaModify_PreparePublishPayload_Update(payload_str, id, ancestors_field_str, ANCESTORS_FIELD_LEN);
     (void)SelvaModify_TraverseHierarchy(hierarchy, id, SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS, &cb);
 }

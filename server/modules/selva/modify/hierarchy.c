@@ -6,12 +6,13 @@
 #include <time.h>
 #include "alias.h"
 #include "cdefs.h"
-#include "hierarchy.h"
-#include "redismodule.h"
-#include "rpn.h"
-#include "svector.h"
 #include "tree.h"
 #include "trx.h"
+#include "hierarchy.h"
+#include "redismodule.h"
+#include "async_task.h"
+#include "rpn.h"
+#include "svector.h"
 
 #define HIERARCHY_ENCODING_VERSION  0
 
@@ -229,15 +230,21 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisMo
     return hierarchy;
 }
 
+static void publishCreatedEvent(const Selva_NodeId id) {
+    size_t payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask);
+    char payload_str[payload_len];
+
+    SelvaModify_PreparePublishPayload_Created(payload_str, id);
+    SelvaModify_SendAsyncTask(payload_len, payload_str);
+}
+
 static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *set_key_name;
-    RedisModuleString *field_name;
     RedisModuleKey *set_key = NULL;
 
     set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
-    field_name = RedisModule_CreateStringPrintf(ctx, "%s", "$id");
 
-    if (unlikely(!set_key_name || !field_name)) {
+    if (unlikely(!set_key_name)) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
@@ -246,9 +253,9 @@ static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    RedisModule_HashSet(set_key, REDISMODULE_HASH_NX, field_name, set_key_name, NULL);
-
+    RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "$id", set_key_name, NULL);
     RedisModule_CloseKey(set_key);
+    publishCreatedEvent(id);
 
     return 0;
 }
@@ -436,14 +443,17 @@ static int crossInsert(
             if (SVector_InsertFast(&node->parents, adjacent) == NULL) {
                 (void)SVector_InsertFast(&adjacent->children, node);
             }
+
+            fprintf(stderr, "adj \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodes[i]);
         }
 
-#if HIERARCHY_EN_EVENTS
+#if HIERARCHY_EN_ANCESTORS_EVENTS
         /*
          * Publish the change to the descendants of node.
          */
+        fprintf(stderr, "Send event to the descendants of \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, node->id);
         (void)SelvaModify_PublishDescendants(hierarchy, node->id);
-#endif
+#endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
     } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
         for (size_t i = 0; i < n; i++) {
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
@@ -477,12 +487,13 @@ static int crossInsert(
                 (void)SVector_InsertFast(&adjacent->parents, node);
             }
 
-#if HIERARCHY_EN_EVENTS
+#if HIERARCHY_EN_ANCESTORS_EVENTS
             /*
              * Publish the change to the descendants of nodes[i].
              */
+            fprintf(stderr, "Send event to descendant \"%*.s\" of \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodes[i], (int)SELVA_NODE_ID_SIZE, node->id);
             (void)SelvaModify_PublishDescendants(hierarchy, nodes[i]);
-#endif
+#endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
         }
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
