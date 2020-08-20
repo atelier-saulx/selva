@@ -279,8 +279,6 @@ export default function inherit(
   version?: string,
   fieldFrom?: string | string[]
 ) {
-  logger.info(`INHERIT DAT FIELD ${field}`, result)
-
   // add from where it inherited and make a descendants there
   // how to check if descandents in it checl if in acnestors
 

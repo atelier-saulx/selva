@@ -145,6 +145,8 @@ function parseSubscriptions(
     const timestampFilters: FilterAST[] = []
     parseFork(meta.ast, sub, newAst, timestampFilters)
 
+    const arr: Record<string, string>[] = []
+
     if (timestampFilters.length >= 1) {
       let earliestTime: number | undefined = undefined
       for (let i = 0; i < timestampFilters.length; i++) {
@@ -163,7 +165,7 @@ function parseSubscriptions(
           isFork: true,
           $and: [tsFork, newAst]
         }
-
+        logger.info('--withTime', withTime)
         let [qs] = createSearchString(withTime)
         const q = qs[0]
 
@@ -186,8 +188,14 @@ function parseSubscriptions(
           'default',
           ...newArgs
         )
+        logger.info('--newSearchResults', newSearchResults)
 
         const earliestId = newSearchResults[1]
+
+        // logger.info('withTime', withTime)
+        // logger.info('earliestId', earliestId)
+        // logger.info('newArgs', newArgs)
+
         if (earliestId) {
           const timeResp = redis.call(
             'hget',
@@ -195,8 +203,15 @@ function parseSubscriptions(
             timestampFilters[i].$field
           )
 
+          arr[i] = {
+            timeResp: timeResp,
+            earliestId: earliestId,
+            field: timestampFilters[i].$field
+          }
+
           if (timeResp) {
             const time = tonumber(timeResp)
+            // logger.info('timeResp', timeResp, redis.call('hgetall', earliestId))
             if (!earliestTime || earliestTime > time) {
               earliestTime = time
             }
@@ -204,6 +219,8 @@ function parseSubscriptions(
         }
       }
 
+      logger.info(arr)
+      logger.info('---earliestTime:', earliestTime)
       if (earliestTime) {
         sub.time = {
           nextRefresh: earliestTime
