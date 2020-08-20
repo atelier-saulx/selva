@@ -230,14 +230,6 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisMo
     return hierarchy;
 }
 
-static void publishCreatedEvent(const Selva_NodeId id) {
-    size_t payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask);
-    char payload_str[payload_len];
-
-    SelvaModify_PreparePublishPayload_Created(payload_str, id);
-    SelvaModify_SendAsyncTask(payload_len, payload_str);
-}
-
 static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *set_key_name;
     RedisModuleKey *set_key = NULL;
@@ -255,7 +247,7 @@ static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
 
     RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "$id", set_key_name, NULL);
     RedisModule_CloseKey(set_key);
-    publishCreatedEvent(id);
+    SelvaModify_PublishCreated(id);
 
     return 0;
 }
@@ -312,8 +304,14 @@ static void del_node(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode
      * Never delete the root node.
      */
     if (!is_root) {
+        Selva_NodeId id;
+
+        memcpy(id, node->id, SELVA_NODE_ID_SIZE);
+
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(node);
+
+        SelvaModify_PublishDeleted(id);
     }
 }
 
