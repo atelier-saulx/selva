@@ -114,7 +114,8 @@ export function removeFromSet(
     }
   }
 
-  markUpdated(id)
+  // TODO: make it better
+  // markUpdated(id)
   sendEvent(id, field, 'update')
 }
 
@@ -188,7 +189,7 @@ export function resetParents(
       newIds[newIds.length] = parent
     }
 
-    markUpdated(id)
+    // markUpdated(id)
     sendEvent(parent, 'children', 'update')
   }
 
@@ -255,7 +256,7 @@ export function addToParents(
         }
       }
 
-      markUpdated(id)
+      // markUpdated(id)
       sendEvent(parent, 'children', 'update')
     }
   }
@@ -325,7 +326,7 @@ export function addToChildren(
         const added = redis.sadd(child + '.parents', id)
         if (added === 1) {
           markForAncestorRecalculation(child)
-          markUpdated(id)
+          // markUpdated(id)
           sendEvent(child, 'parents', 'update')
         }
       }
