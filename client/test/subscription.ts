@@ -169,7 +169,7 @@ test.serial('using $field works', async t => {
   await client.delete('root')
 })
 
-test.serial('refs resolve and get tracked correctly', async t => {
+test.serial.skip('refs resolve and get tracked correctly', async t => {
   const client = connect({ port })
 
   await client.updateSchema({
