@@ -282,7 +282,7 @@ function reCalculateAncestorsFor(ids: Id[]): void {
 
         // send event
         sendEvent(id, 'ancestors', 'update')
-        // markUpdated(id)
+        markUpdated(id)
 
         // recurse down the tree if ancestors updated
         const children = redis.smembers(id + '.children')
