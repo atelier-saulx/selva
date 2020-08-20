@@ -57,7 +57,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.only('subs upcoming, live and past', async t => {
+test.serial('subs upcoming, live and past', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   const now = Date.now()
   let result

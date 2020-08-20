@@ -31,12 +31,13 @@ function parseFork(
     newAst.$or = newAstList
   }
 
+  let idx = 0
   if (list) {
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
       if (isFork(item)) {
         const newNode: Fork = { isFork: true }
-        newAstList[i] = newNode
+        newAstList[idx++] = newNode
         parseFork(item, sub, newNode, timestampFilters)
       } else {
         let newNode: FilterAST | null = item
@@ -89,7 +90,7 @@ function parseFork(
         }
 
         if (newNode) {
-          newAstList[i] = newNode
+          newAstList[idx++] = newNode
         }
       }
     }
@@ -145,27 +146,27 @@ function parseSubscriptions(
     parseFork(meta.ast, sub, newAst, timestampFilters)
 
     if (timestampFilters.length >= 1) {
-      const tsFork: WithRequired<Fork, '$or'> = { isFork: true, $or: [] }
-      for (let i = 0; i < timestampFilters.length; i++) {
-        const filter = timestampFilters[i]
-        tsFork.$or[i] = {
-          $field: filter.$field,
-          $search: filter.$search,
-          $value: filter.$value,
-          $operator: '>'
-        }
-      }
-
-      const withTime: WithRequired<Fork, '$and'> = {
-        isFork: true,
-        $and: [tsFork, newAst]
-      }
-
-      let [qs] = createSearchString(withTime)
-      const q = qs[0]
-
       let earliestTime: number | undefined = undefined
       for (let i = 0; i < timestampFilters.length; i++) {
+        const tsFork: WithRequired<Fork, '$or'> = { isFork: true, $or: [] }
+        for (let i = 0; i < timestampFilters.length; i++) {
+          const filter = timestampFilters[i]
+          tsFork.$or[0] = {
+            $field: filter.$field,
+            $search: filter.$search,
+            $value: filter.$value,
+            $operator: '>'
+          }
+        }
+
+        const withTime: WithRequired<Fork, '$and'> = {
+          isFork: true,
+          $and: [tsFork, newAst]
+        }
+
+        let [qs] = createSearchString(withTime)
+        const q = qs[0]
+
         const newArgs = createSearchArgs(
           {
             $list: {
