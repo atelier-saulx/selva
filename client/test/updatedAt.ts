@@ -50,6 +50,9 @@ test.before(async t => {
                 }
               }
             }
+          },
+          updatedAt: {
+            type: 'timestamp'
           }
         }
       },
@@ -76,24 +79,29 @@ test.serial('updatedAt only changes when actually changed', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const team1 = await client.set({
+    type: 'team',
     $alias: 'myteam1',
     name: 'team1'
   })
 
   const team2 = await client.set({
+    type: 'team',
     $alias: 'myteam2',
     name: 'team2'
   })
 
   const competition = await client.set({
+    type: 'competition',
     $alias: 'mycompetition',
     name: 'competition'
   })
 
   let n = 2
   let lastUpdatedAt
+
   while (n--) {
     await client.set({
+      type: 'match',
       $alias: 'snurkle',
       $language: 'en',
       published: true,
@@ -118,9 +126,11 @@ test.serial('updatedAt only changes when actually changed', async t => {
       $alias: 'snurkle',
       updatedAt: true
     })
+
     if (lastUpdatedAt) {
       t.is(lastUpdatedAt, updatedAt)
     }
+
     lastUpdatedAt = updatedAt
   }
 
