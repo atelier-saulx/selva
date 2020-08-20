@@ -151,14 +151,12 @@ function parseSubscriptions(
       let earliestTime: number | undefined = undefined
       for (let i = 0; i < timestampFilters.length; i++) {
         const tsFork: WithRequired<Fork, '$or'> = { isFork: true, $or: [] }
-        for (let i = 0; i < timestampFilters.length; i++) {
-          const filter = timestampFilters[i]
-          tsFork.$or[0] = {
-            $field: filter.$field,
-            $search: filter.$search,
-            $value: filter.$value,
-            $operator: '>'
-          }
+        const filter = timestampFilters[i]
+        tsFork.$or[0] = {
+          $field: filter.$field,
+          $search: filter.$search,
+          $value: filter.$value,
+          $operator: '>'
         }
 
         const withTime: WithRequired<Fork, '$and'> = {
