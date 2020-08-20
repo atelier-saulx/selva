@@ -27,7 +27,7 @@ const revalidateSubscriptions = (subsManager: SubscriptionManager) => {
 const createSubscriptionManager = (
   opts: ServerOptions
 ): SubscriptionManager => {
-  const client = new SelvaClient(opts.registry, { loglevel: 'info' })
+  const client = new SelvaClient(opts.registry)
 
   const subsManager: SubscriptionManager = {
     client,

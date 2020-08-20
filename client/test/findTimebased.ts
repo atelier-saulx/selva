@@ -57,154 +57,6 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.skip('subs upcoming, live and past - no overlap', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
-  const now = Date.now()
-  let result
-
-  await client.set({
-    type: 'match',
-    $id: 'ma1',
-    name: 'upcoming match',
-    startTime: now + 2000, // 2 sec from now
-    endTime: now + 5000 // 5 sec from now
-  })
-
-  let n = 1000
-  while (n--) {
-    await client.set({
-      type: 'match',
-      $id: 'ma3' + n,
-      name: 'upcoming match',
-      startTime: now + 20000, // 20 sec from now
-      endTime: now + 50000 // 50 sec from now
-    })
-  }
-
-  let m = 1000
-  while (m--) {
-    await client.set({
-      type: 'match',
-      $id: 'ma4' + m,
-      name: 'upcoming match',
-      startTime: now - 50000, // 50 sec ago
-      endTime: now - 20000 // 20 sec ago
-    })
-  }
-
-  client
-    .observe({
-      past: {
-        id: true,
-        $list: {
-          $limit: 10,
-          $sort: {
-            $order: 'desc',
-            $field: 'startTime'
-          },
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $value: 'now',
-                $field: 'endTime',
-                $operator: '<'
-              }
-            ]
-          }
-        }
-      },
-      live: {
-        id: true,
-        $list: {
-          $limit: 10,
-          $sort: {
-            $order: 'desc',
-            $field: 'startTime'
-          },
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $value: 'now',
-                $field: 'startTime',
-                $operator: '<'
-              },
-              {
-                $value: 'now',
-                $field: 'endTime',
-                $operator: '>'
-              }
-            ]
-          }
-        }
-      },
-      upcoming: {
-        id: true,
-        $list: {
-          $sort: {
-            $order: 'asc',
-            $field: 'startTime'
-          },
-          $limit: 10,
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $value: 'now',
-                $field: 'startTime',
-                $operator: '>'
-              }
-            ]
-          }
-        }
-      }
-    })
-    .subscribe(r => {
-      result = r
-      console.log('-->', result)
-    })
-
-  await wait(500)
-  console.log('should be upcoming')
-  // t.deepEqualIgnoreOrder(result, {
-  //   upcoming: [{ id: 'ma3' }, { id: 'ma1' }],
-  //   past: [{ id: 'ma4' }],
-  //   live: []
-  // })
-  await wait(3000)
-  console.log('should be live')
-  // t.deepEqualIgnoreOrder(result, {
-  //   upcoming: [{ id: 'ma3' }],
-  //   past: [{ id: 'ma4' }],
-  //   live: [{ id: 'ma1' }]
-  // })
-  await wait(3000)
-  console.log('should be past')
-  // t.deepEqualIgnoreOrder(result, {
-  //   upcoming: [{ id: 'ma3' }],
-  //   past: [{ id: 'ma1' }, { id: 'ma4' }],
-  //   live: []
-  // })
-
-  await client.delete('root')
-})
-
 test.serial('subs upcoming, live and past', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   const now = Date.now()
@@ -218,30 +70,6 @@ test.serial('subs upcoming, live and past', async t => {
     endTime: now + 5000 // 5 sec from now
   })
 
-  await client.set({
-    type: 'match',
-    $id: 'ma2',
-    name: 'upcoming match',
-    startTime: now + 1000, // 1 sec from now
-    endTime: now + 6000 // 6 sec from now
-  })
-
-  await client.set({
-    type: 'match',
-    $id: 'ma3',
-    name: 'upcoming match',
-    startTime: now + 20000, // 20 sec from now
-    endTime: now + 50000 // 50 sec from now
-  })
-
-  await client.set({
-    type: 'match',
-    $id: 'ma4',
-    name: 'upcoming match',
-    startTime: now - 50000, // 50 sec ago
-    endTime: now - 20000 // 20 sec ago
-  })
-
   client
     .observe({
       past: {
@@ -321,16 +149,16 @@ test.serial('subs upcoming, live and past', async t => {
   await wait(500)
   console.log('should be upcoming')
   t.deepEqualIgnoreOrder(result, {
-    upcoming: [{ id: 'ma3' }, { id: 'ma2' }, { id: 'ma1' }],
-    past: [{ id: 'ma4' }],
+    upcoming: [{ id: 'ma1' }],
+    past: [],
     live: []
   })
   await wait(3000)
   console.log('should be live')
   t.deepEqualIgnoreOrder(result, {
-    upcoming: [{ id: 'ma3' }],
-    past: [{ id: 'ma4' }],
-    live: [{ id: 'ma2' }, { id: 'ma1' }]
+    upcoming: [],
+    past: [],
+    live: [{ id: 'ma1' }]
   })
   await wait(3000)
   console.log('should be past')
