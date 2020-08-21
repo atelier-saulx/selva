@@ -521,7 +521,11 @@ static int crossInsert(
     const size_t initialNodeParentsSize = SVector_Size(&node->parents);
     int err = 0;
 
-    if (rel == RELATIONSHIP_CHILD && n > 0 && initialNodeParentsSize == 0) {
+    if (n == 0) {
+        return 0; /* No changes. */
+    }
+
+    if (rel == RELATIONSHIP_CHILD && initialNodeParentsSize == 0) {
         /* The node is no longer an orphan */
         rmHead(hierarchy, node);
     }
@@ -955,10 +959,6 @@ int SelvaModify_DelHierarchy(
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
-    /*
-     * The most Redis thing to do is probably to ignore any
-     * missing nodes.
-     */
     (void)crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     (void)crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
 
@@ -1008,7 +1008,6 @@ static int SelvaModify_DelHierarchyNodeP(
     Selva_NodeId *ids;
     size_t ids_len;
 
-    assert(("ctx must be set", ctx));
     assert(("hierarchy must be set", hierarchy));
     assert(("node must be set", node));
 

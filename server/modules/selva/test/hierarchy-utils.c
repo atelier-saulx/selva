@@ -32,3 +32,15 @@ void SelvaNodeId_copy2buf(char buf[SELVA_NODE_ID_SIZE + 1], const Selva_NodeId i
     memcpy(buf, id, SELVA_NODE_ID_SIZE);
     buf[SELVA_NODE_ID_SIZE] = '\0';
 }
+
+void SelvaModify_PublishCreated(const char *id_str) {
+}
+
+void SelvaModify_PublishDeleted(const char *id_str, const char *fields) {
+}
+
+void SelvaModify_PublishUpdate(const char *id_str, const char *field_str, size_t field_len) {
+}
+
+void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
+}

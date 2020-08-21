@@ -238,6 +238,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 goto out;
             }
 
+            /*
+             * Hierarchy will handle events for parents and children.
+             */
             if (!strcmp(field_str, "parents") || !strcmp(field_str, "children")) {
                 publish = false;
             }
