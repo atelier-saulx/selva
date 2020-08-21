@@ -17,13 +17,12 @@ const getIds = (
 ): string[] => {
   if (traverse === 'ancestors') {
     if (ids.length === 1) {
-      const ancestors = redis.zrange(ids[0] + '.ancestors')
-      return ancestors
+      return redis.ancestors(ids[0])
     } else {
       const rMap: Record<string, true> = {}
       const ancestors: string[] = []
       for (let i = 0; i < ids.length; i++) {
-        const a: string[] = redis.zrange(ids[i] + '.ancestors')
+        const a: string[] = redis.ancestors(ids[i])
         for (let j = 0; j < a.length; j++) {
           if (!rMap[a[j]]) {
             ancestors[ancestors.length] = a[j]
