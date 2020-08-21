@@ -561,7 +561,6 @@ static int crossInsert(
         /*
          * Publish the change to the descendants of node.
          */
-        fprintf(stderr, "Send event to the descendants of \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, node->id);
         (void)SelvaModify_PublishDescendants(hierarchy, node->id);
 #endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
     } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
@@ -601,7 +600,6 @@ static int crossInsert(
             /*
              * Publish the change to the descendants of nodes[i].
              */
-            fprintf(stderr, "Send event to descendant \"%*.s\" of \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodes[i], (int)SELVA_NODE_ID_SIZE, node->id);
             (void)SelvaModify_PublishDescendants(hierarchy, nodes[i]);
 #endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
         }
