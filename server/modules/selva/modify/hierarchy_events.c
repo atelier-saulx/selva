@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "async_task.h"
+#include "cdefs.h"
 #include "hierarchy.h"
 
 static const char ancestors_field_str[] = "ancestors";
