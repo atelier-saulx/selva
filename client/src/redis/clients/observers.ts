@@ -8,6 +8,22 @@ import {
   CACHE
 } from '../../constants'
 
+const parseError = obj => {
+  const err = obj.payload && obj.payload.___$error___
+  if (typeof err === 'string') {
+    return new Error(err)
+  } else if (err.message) {
+    return new Error(err.message)
+  } else if (err.command) {
+    const { command, args, code } = err
+    if (command === 'EVALSHA') {
+      return new Error(`Get error ${args.slice(3).join(', ')}`)
+    }
+    return new Error(`${command} ${args.join(', ')} ${code}`)
+  }
+  return new Error('Unkown error')
+}
+
 export const getObserverValuePromised = (client, channel) =>
   new Promise((resolve, reject) => {
     addCommandToQueue(client, {
@@ -17,7 +33,11 @@ export const getObserverValuePromised = (client, channel) =>
         if (data) {
           const obj = JSON.parse(data)
           obj.version = version
-          resolve(obj)
+          if (obj.payload && obj.payload.___$error___) {
+            reject(parseError(obj))
+          } else {
+            resolve(obj)
+          }
         } else {
           resolve()
         }
@@ -40,15 +60,23 @@ export const getObserverValue = (
       if (data) {
         const obj = JSON.parse(data)
         obj.version = version
+
         if (observerEmitter) {
           observerEmitter.isSend = true
-          observerEmitter.emit('update', obj)
+          if (obj.payload && obj.payload.___$error___) {
+            observerEmitter.emit('error', parseError(obj))
+          } else {
+            observerEmitter.emit('update', obj)
+          }
         } else {
-          // extra else , cb
           if (client.observers[channel]) {
             client.observers[channel].forEach(observerEmitter => {
               observerEmitter.isSend = true
-              observerEmitter.emit('update', obj)
+              if (obj.payload && obj.payload.___$error___) {
+                observerEmitter.emit('error', parseError(obj))
+              } else {
+                observerEmitter.emit('update', obj)
+              }
             })
           }
         }

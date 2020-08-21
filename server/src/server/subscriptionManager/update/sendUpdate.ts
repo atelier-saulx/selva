@@ -45,9 +45,15 @@ const sendUpdate = async (
     throw new Error('Time out ' + channel)
   }, 15e3)
 
-  const payload = await client.get(getOptions)
+  let payload
+  try {
+    payload = await client.get(getOptions)
+  } catch (err) {
+    payload = {
+      ___$error___: err
+    }
+  }
 
-  // call $meta tree
   const newTree = payload.$meta
 
   delete payload.$meta

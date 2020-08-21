@@ -167,7 +167,7 @@ test.only('subscription error on subs manager', async t => {
 
   client
     .observe({
-      $id: 'max',
+      $id: 'adx',
       $language: 'en',
       yizi: {
         title: true,
@@ -180,7 +180,8 @@ test.only('subscription error on subs manager', async t => {
       v => {
         console.log('x', v)
       },
-      () => {
+      err => {
+        console.log(err)
         errorCnt++
       }
     )
