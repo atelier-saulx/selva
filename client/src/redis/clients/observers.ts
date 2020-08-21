@@ -8,12 +8,31 @@ import {
   CACHE
 } from '../../constants'
 
+export const getObserverValuePromised = (client, channel) =>
+  new Promise((resolve, reject) => {
+    addCommandToQueue(client, {
+      command: 'hmget',
+      args: [CACHE, channel, channel + '_version'],
+      resolve: ([data, version]) => {
+        if (data) {
+          const obj = JSON.parse(data)
+          obj.version = version
+          resolve(obj)
+        } else {
+          resolve()
+        }
+      },
+      reject
+    })
+  })
+
 // get them for all
 export const getObserverValue = (
   client: Client,
   channel: string,
   observerEmitter?: ObserverEmitter
 ) => {
+  // this can better be handled on the observer function
   addCommandToQueue(client, {
     command: 'hmget',
     args: [CACHE, channel, channel + '_version'],
@@ -25,6 +44,7 @@ export const getObserverValue = (
           observerEmitter.isSend = true
           observerEmitter.emit('update', obj)
         } else {
+          // extra else , cb
           if (client.observers[channel]) {
             client.observers[channel].forEach(observerEmitter => {
               observerEmitter.isSend = true
@@ -44,6 +64,8 @@ export const getObserverValue = (
     },
     reject: err => {
       // @ts-ignore
+
+      // handle certain errors to the subscription
       if (err.code !== 'UNCERTAIN_STATE') {
         console.error(err.message)
       }

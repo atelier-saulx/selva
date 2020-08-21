@@ -3,7 +3,7 @@ import { EventEmitter } from 'events'
 import {
   startObserver,
   stopObserver,
-  getObserverValue
+  getObserverValuePromised
 } from './clients/observers'
 import { getClient, Client } from './clients'
 import getServerDescriptor from './getServerDescriptor'
@@ -55,24 +55,10 @@ const createObservable = (
   opts: GetOptions
 ): Observable<GetResult> => {
   if (redisSelvaClient.observables[channel]) {
-    const emitter = redisSelvaClient.observerEmitters[channel]
-
-    // just return the observable
-    if (emitter.validationError) {
-      console.error('Invalid query', opts, emitter.validationError.message)
-    } else if (emitter.client) {
-      console.log('yesh get obs val')
-      // then we dont have to do version checks anywhere
-      getObserverValue(emitter.client, channel, emitter)
-    }
     return redisSelvaClient.observables[channel]
   }
 
-  // does this need to be an event emitter or can we just send the command?
-  // with one listener
   const observerEmitter = new ObserverEmitter(opts, channel)
-
-  // stub to make it not crash...
   observerEmitter.on('error', () => {})
 
   const extraQueries: ExtraQueries = {}
@@ -93,19 +79,23 @@ const createObservable = (
       errorListener = observer.error
       observerEmitter.on('error', errorListener)
       if (observerEmitter.validationError) {
-        console.log('ish now not nice')
+        console.error(
+          'Invalid query',
+          opts,
+          observerEmitter.validationError.message
+        )
+
         observer.error(observerEmitter.validationError)
       }
     }
 
     if (observerEmitter.client) {
-      // get dat value
-      console.log('get value')
+      getObserverValuePromised(observerEmitter.client, channel).then(obj => {
+        if (obj) {
+          updateListener(obj)
+        }
+      })
     }
-
-    // handle initial here!
-
-    // where is it handled that it allways fires? updateListener
 
     observerEmitter.count++
     return () => {
