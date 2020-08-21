@@ -82,12 +82,10 @@ test.only('subscription initialization with multiple subscribers', async t => {
   const client = connect({ port })
   var errorCnt = 0
   var cnt = 0
-
   const id = await client.set({
     type: 'match',
     title: { en: 'snurfels' }
   })
-
   client
     .observe({
       $id: id,
@@ -101,9 +99,7 @@ test.only('subscription initialization with multiple subscribers', async t => {
         errorCnt++
       }
     )
-
   await wait(1000)
-
   client
     .observe({
       $id: id,
@@ -117,17 +113,56 @@ test.only('subscription initialization with multiple subscribers', async t => {
         errorCnt++
       }
     )
-
   await wait(1000)
-
   t.is(cnt, 2)
-
   await client.set({
     $id: id,
     title: { en: 'snurfels22' }
   })
+  await wait(1000)
+  t.is(cnt, 4)
+})
 
+test.only('subscription error on subs manager', async t => {
+  const client = connect({ port })
+  var errorCnt = 0
+  const id = await client.set({
+    type: 'match',
+    title: { en: 'snurfels' }
+  })
+  client
+    .observe({
+      $id: id,
+      title: true
+    })
+    .subscribe(
+      v => {
+        cnt++
+      },
+      () => {
+        errorCnt++
+      }
+    )
+  await wait(1000)
+  client
+    .observe({
+      $id: id,
+      title: true
+    })
+    .subscribe(
+      v => {
+        cnt++
+      },
+      () => {
+        errorCnt++
+      }
+    )
+  await wait(1000)
+  await client.set({
+    $id: id,
+    title: { en: 'snurfels22' }
+  })
   await wait(1000)
 
-  t.is(cnt, 4)
+  t.true(true)
 })
