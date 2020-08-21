@@ -78,50 +78,53 @@ test.serial('subscription validation error', async t => {
   t.is(errorCnt, 2)
 })
 
-test.only('subscription initialization with multiple subscribers', async t => {
-  const client = connect({ port })
-  var errorCnt = 0
-  var cnt = 0
-  const id = await client.set({
-    type: 'match',
-    title: { en: 'snurfels' }
-  })
-  client
-    .observe({
-      $id: id,
-      title: true
+test.serial(
+  'subscription initialization with multiple subscribers',
+  async t => {
+    const client = connect({ port })
+    var errorCnt = 0
+    var cnt = 0
+    const id = await client.set({
+      type: 'match',
+      title: { en: 'snurfels' }
     })
-    .subscribe(
-      v => {
-        cnt++
-      },
-      () => {
-        errorCnt++
-      }
-    )
-  await wait(1000)
-  client
-    .observe({
+    client
+      .observe({
+        $id: id,
+        title: true
+      })
+      .subscribe(
+        v => {
+          cnt++
+        },
+        () => {
+          errorCnt++
+        }
+      )
+    await wait(1000)
+    client
+      .observe({
+        $id: id,
+        title: true
+      })
+      .subscribe(
+        v => {
+          cnt++
+        },
+        () => {
+          errorCnt++
+        }
+      )
+    await wait(1000)
+    t.is(cnt, 2)
+    await client.set({
       $id: id,
-      title: true
+      title: { en: 'snurfels22' }
     })
-    .subscribe(
-      v => {
-        cnt++
-      },
-      () => {
-        errorCnt++
-      }
-    )
-  await wait(1000)
-  t.is(cnt, 2)
-  await client.set({
-    $id: id,
-    title: { en: 'snurfels22' }
-  })
-  await wait(1000)
-  t.is(cnt, 4)
-})
+    await wait(1000)
+    t.is(cnt, 4)
+  }
+)
 
 test.only('subscription error on subs manager', async t => {
   const client = connect({ port })
@@ -130,39 +133,46 @@ test.only('subscription error on subs manager', async t => {
     type: 'match',
     title: { en: 'snurfels' }
   })
+  const results = []
   client
     .observe({
-      $id: id,
+      $id: 'mayuzi',
+      yizi: {
+        flapdrol: true,
+        $inherit: {
+          $item: 'club'
+        }
+      },
       title: true
     })
     .subscribe(
       v => {
-        cnt++
+        results.push(v)
       },
-      () => {
+      err => {
+        console.error(err)
         errorCnt++
       }
     )
   await wait(1000)
-  client
-    .observe({
-      $id: id,
-      title: true
-    })
-    .subscribe(
-      v => {
-        cnt++
-      },
-      () => {
-        errorCnt++
-      }
-    )
-  await wait(1000)
-  await client.set({
-    $id: id,
-    title: { en: 'snurfels22' }
-  })
-  await wait(1000)
+  t.deepEqual(
+    results,
+    [{ $isNull: true, yizi: {} }],
+    'correct isNull on unexisting item'
+  )
+
+  // client
+  //   .observe({
+  //     $id: id,
+  //     title: true
+  //   })
+  //   .subscribe(
+  //     v => {},
+  //     () => {
+  //       errorCnt++
+  //     }
+  //   )
+  // await wait(1000)
 
   t.true(true)
 })
