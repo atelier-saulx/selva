@@ -126,7 +126,7 @@ test.serial(
   }
 )
 
-test.only('subscription error on subs manager', async t => {
+test.serial('subscription error on subs manager', async t => {
   const client = connect({ port })
   var errorCnt = 0
   const results = []
@@ -177,14 +177,12 @@ test.only('subscription error on subs manager', async t => {
       }
     })
     .subscribe(
-      v => {
-        console.log('x', v)
-      },
+      v => {},
       err => {
-        console.log(err)
+        console.log(err.message)
         errorCnt++
       }
     )
   await wait(1000)
-  t.true(true)
+  t.is(errorCnt, 1)
 })
