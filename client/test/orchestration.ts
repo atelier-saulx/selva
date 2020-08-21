@@ -28,8 +28,7 @@ const removeDump = async () => {
 test.before(removeDump)
 test.after(removeDump)
 
-// first test destroying servers
-
+// first test destroying serversx
 // finish this test
 
 // need to clean dumps if testing replicas
