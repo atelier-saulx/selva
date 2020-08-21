@@ -42,32 +42,46 @@ test.after(async _t => {
 test.serial('subscription validation error', async t => {
   const client = connect({ port })
 
+  var errorCnt = 0
+
   // make this nice
   client
     .observe({
       $db: {}
     })
     .subscribe(
-      v => {
-        console.log('its fine', v)
+      () => {},
+      () => {
+        console.log('yesh')
+        errorCnt++
       }
-      // err => console.log('Error', err)
     )
 
-  client.observe({
-    $db: {}
-  })
+  // client.observe({
+  //   $db: {}
+  // })
 
-  client.observe({
-    $db: {}
-  })
+  // client.observe({
+  //   $db: {}
+  // })
   // make validation error
 
   await wait(2e3)
 
-  client.observe({
-    $db: {}
-  })
+  t.is(errorCnt, 1)
+
+  // client.observe({
+  //   $db: {}
+  // })
+
+  // client
+  //   .observe({
+  //     $db: {}
+  //   })
+  //   .subscribe(
+  //     () => {},
+  //     () => console.log('!! spesh error')
+  //   )
 
   await wait(2e3)
 

@@ -17,12 +17,10 @@ class ObserverEmitter extends EventEmitter {
   public getOptions: GetOptions
   public channel: string
   public client: Client
-  public valid?: Boolean
   public validationError?: Error
   public isRemoved: boolean = false
   constructor(getOptions: GetOptions, channel: string) {
     super()
-    this.valid = false
     this.channel = channel
     this.getOptions = getOptions
     this.setMaxListeners(1e4)
@@ -58,9 +56,9 @@ const createObservable = (
 ): Observable<GetResult> => {
   if (redisSelvaClient.observables[channel]) {
     const emitter = redisSelvaClient.observerEmitters[channel]
-    if (emitter.valid === false && emitter.validationError) {
+    if (emitter.validationError) {
       console.error('Invalid query', opts, emitter.validationError.message)
-    } else if (emitter.client && emitter.valid === true) {
+    } else if (emitter.client) {
       getObserverValue(emitter.client, channel, emitter)
     }
     return redisSelvaClient.observables[channel]
@@ -76,6 +74,7 @@ const createObservable = (
   const extraQueries: ExtraQueries = {}
 
   const obs = new Observable(observer => {
+    console.log('add listener')
     const updateListener = obj => {
       if (obj.type === 'update') {
         if (obj.version !== observer.version) {
@@ -84,17 +83,14 @@ const createObservable = (
         }
       }
     }
+    observerEmitter.on('update', updateListener)
 
     let errorListener
-
-    observerEmitter.on('update', updateListener)
     if (observer.error) {
       errorListener = observer.error
       observerEmitter.on('error', errorListener)
-    }
-
-    if (observerEmitter.valid === false) {
-      if (observer.error) {
+      if (observerEmitter.validationError) {
+        console.log('ish now not nice')
         observer.error(observerEmitter.validationError)
       }
     }
@@ -122,12 +118,11 @@ const createObservable = (
 
   validate(extraQueries, redisSelvaClient.selvaClient, opts)
     .then(() => {
-      observerEmitter.valid = true
       attachClient(redisSelvaClient, observerEmitter, channel)
     })
     .catch(err => {
-      observerEmitter.valid = false
       observerEmitter.validationError = err
+      console.log('is validated!')
       observerEmitter.emit('error', err)
       console.error('Invalid query', opts, err.message)
     })
