@@ -238,6 +238,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 goto out;
             }
 
+            if (!strcmp(field_str, "parents") || !strcmp(field_str, "children")) {
+                publish = false;
+            }
+
             err = SelvaModify_ModifySet(ctx, hierarchy, id_key, id, field, setOpts);
             if (err) {
                 goto out;

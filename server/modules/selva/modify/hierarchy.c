@@ -554,9 +554,17 @@ static int crossInsert(
             /* Do inserts only if the relationship doesn't exist already */
             if (SVector_InsertFast(&node->parents, adjacent) == NULL) {
                 (void)SVector_InsertFast(&adjacent->children, node);
+                /*
+                 * Publish that the children field was changed.
+                 */
+                SelvaModify_PublishUpdate(adjacent->id, "children", 8);
             }
         }
 
+        /*
+         * Publish that the parents field was changed.
+         */
+        SelvaModify_PublishUpdate(node->id, "parents", 7);
 #if HIERARCHY_EN_ANCESTORS_EVENTS
         /*
          * Publish the change to the descendants of node.
@@ -594,6 +602,10 @@ static int crossInsert(
 
             if (SVector_InsertFast(&node->children, adjacent) == NULL) {
                 (void)SVector_InsertFast(&adjacent->parents, node);
+                /*
+                 * Publish that the parents field was changed.
+                 */
+                SelvaModify_PublishUpdate(node->id, "parents", 7);
             }
 
 #if HIERARCHY_EN_ANCESTORS_EVENTS
@@ -603,6 +615,11 @@ static int crossInsert(
             (void)SelvaModify_PublishDescendants(hierarchy, nodes[i]);
 #endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
         }
+
+        /*
+         * Publish that the children field was changed.
+         */
+        SelvaModify_PublishUpdate(node->id, "children", 8);
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
