@@ -41,10 +41,7 @@ test.after(async _t => {
 
 test.serial('subscription validation error', async t => {
   const client = connect({ port })
-
   var errorCnt = 0
-
-  // make this nice
   client
     .observe({
       $db: {}
@@ -56,23 +53,17 @@ test.serial('subscription validation error', async t => {
         errorCnt++
       }
     )
-
   client.observe({
     $db: {}
   })
-
   client.observe({
     $db: {}
   })
-
   await wait(2e3)
-
   t.is(errorCnt, 1)
-
   client.observe({
     $db: {}
   })
-
   client
     .observe({
       $db: {}
@@ -83,8 +74,52 @@ test.serial('subscription validation error', async t => {
         errorCnt++
       }
     )
-
   await wait(2e3)
-
   t.is(errorCnt, 2)
+})
+
+test.only('subscription initial handling', async t => {
+  const client = connect({ port })
+  var errorCnt = 0
+
+  const id = await client.set({
+    type: 'match',
+    title: { en: 'snurfels' }
+  })
+
+  console.log(id)
+
+  client
+    .observe({
+      $id: id,
+      title: true
+    })
+    .subscribe(
+      v => {
+        console.log('ok', v)
+      },
+      () => {
+        errorCnt++
+      }
+    )
+
+  await wait(1000)
+
+  client
+    .observe({
+      $id: id,
+      title: true
+    })
+    .subscribe(
+      v => {
+        console.log('ok2', v)
+      },
+      () => {
+        errorCnt++
+      }
+    )
+
+  await wait(1000)
+
+  t.true(true)
 })

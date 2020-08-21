@@ -61,6 +61,8 @@ const createObservable = (
     if (emitter.validationError) {
       console.error('Invalid query', opts, emitter.validationError.message)
     } else if (emitter.client) {
+      console.log('yesh get obs val')
+      // then we dont have to do version checks anywhere
       getObserverValue(emitter.client, channel, emitter)
     }
     return redisSelvaClient.observables[channel]
@@ -76,7 +78,6 @@ const createObservable = (
   const extraQueries: ExtraQueries = {}
 
   const obs = new Observable(observer => {
-    console.log('add listener')
     const updateListener = obj => {
       if (obj.type === 'update') {
         if (obj.version !== observer.version) {
@@ -95,6 +96,11 @@ const createObservable = (
         console.log('ish now not nice')
         observer.error(observerEmitter.validationError)
       }
+    }
+
+    if (observerEmitter.client) {
+      // get dat value
+      console.log('get value')
     }
 
     // handle initial here!
