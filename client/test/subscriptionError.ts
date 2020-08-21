@@ -129,16 +129,13 @@ test.serial(
 test.only('subscription error on subs manager', async t => {
   const client = connect({ port })
   var errorCnt = 0
-  const id = await client.set({
-    type: 'match',
-    title: { en: 'snurfels' }
-  })
   const results = []
   client
     .observe({
+      $language: 'en',
       $id: 'mayuzi',
       yizi: {
-        flapdrol: true,
+        title: true,
         $inherit: {
           $item: 'club'
         }
@@ -157,22 +154,36 @@ test.only('subscription error on subs manager', async t => {
   await wait(1000)
   t.deepEqual(
     results,
-    [{ $isNull: true, yizi: {} }],
+    [{ $isNull: true, yizi: {}, title: '' }],
     'correct isNull on unexisting item'
   )
 
-  // client
-  //   .observe({
-  //     $id: id,
-  //     title: true
-  //   })
-  //   .subscribe(
-  //     v => {},
-  //     () => {
-  //       errorCnt++
-  //     }
-  //   )
-  // await wait(1000)
+  // send from subs manager
+  // receive
+  // emit on error in observable emitter if payload { isError: true }
+  // or something like this
+  // lets make it
+  // ad9d2d7e0
 
+  client
+    .observe({
+      $id: 'max',
+      $language: 'en',
+      yizi: {
+        title: true,
+        $inherit: {
+          $item: 'club'
+        }
+      }
+    })
+    .subscribe(
+      v => {
+        console.log('x', v)
+      },
+      () => {
+        errorCnt++
+      }
+    )
+  await wait(1000)
   t.true(true)
 })
