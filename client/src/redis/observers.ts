@@ -90,6 +90,7 @@ const createObservable = (
     }
 
     if (observerEmitter.client) {
+      // this will be much nicer with a cache
       getObserverValuePromised(observerEmitter.client, channel).then(obj => {
         if (obj) {
           updateListener(obj)

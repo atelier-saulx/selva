@@ -78,17 +78,16 @@ test.serial('subscription validation error', async t => {
   t.is(errorCnt, 2)
 })
 
-test.only('subscription initial handling', async t => {
+test.only('subscription initialization with multiple subscribers', async t => {
   const client = connect({ port })
   var errorCnt = 0
+  var cnt = 0
 
   const id = await client.set({
     type: 'match',
     title: { en: 'snurfels' }
   })
 
-  console.log(id)
-
   client
     .observe({
       $id: id,
@@ -96,7 +95,7 @@ test.only('subscription initial handling', async t => {
     })
     .subscribe(
       v => {
-        console.log('ok', v)
+        cnt++
       },
       () => {
         errorCnt++
@@ -112,7 +111,7 @@ test.only('subscription initial handling', async t => {
     })
     .subscribe(
       v => {
-        console.log('ok2', v)
+        cnt++
       },
       () => {
         errorCnt++
@@ -121,5 +120,14 @@ test.only('subscription initial handling', async t => {
 
   await wait(1000)
 
-  t.true(true)
+  t.is(cnt, 2)
+
+  await client.set({
+    $id: id,
+    title: { en: 'snurfels22' }
+  })
+
+  await wait(1000)
+
+  t.is(cnt, 4)
 })
