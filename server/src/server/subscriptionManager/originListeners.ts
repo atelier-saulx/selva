@@ -18,8 +18,6 @@ const addOriginListeners = async (
   // we need to use name and unsubscribe as well
 
   if (!subsManager.originListeners[name]) {
-    console.log('add origin listeners', name)
-
     const selector: ServerSelector = { name, type: 'replica' }
 
     const descriptor = await subsManager.client.getServerDescriptor(selector)
@@ -61,12 +59,8 @@ const addOriginListeners = async (
         if (name === dbName) {
           // need to resend subs if it dc'ed
           const origin = subsManager.originListeners[name]
-          console.log('---> reconnect', descriptor.port, name, !!origin)
-
           if (origin && origin.subscriptions) {
-            console.log('go resend those subs')
             origin.subscriptions.forEach(subscription => {
-              console.log('go do it', subscription.get)
               addUpdate(subsManager, subscription)
             })
           }
