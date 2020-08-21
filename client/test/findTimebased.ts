@@ -55,6 +55,123 @@ test.after(async _t => {
   await srv.destroy()
 })
 
+<<<<<<< HEAD
+=======
+test.serial('subs upcoming, live and past', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+  const now = Date.now()
+  let result
+
+  await client.set({
+    type: 'match',
+    $id: 'ma1',
+    name: 'upcoming match',
+    startTime: now + 2000, // 2 sec from now
+    endTime: now + 5000 // 5 sec from now
+  })
+
+  client
+    .observe({
+      past: {
+        id: true,
+        $list: {
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $value: 'now',
+                $field: 'endTime',
+                $operator: '<'
+              }
+            ]
+          }
+        }
+      },
+      live: {
+        id: true,
+        $list: {
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $value: 'now',
+                $field: 'startTime',
+                $operator: '<'
+              },
+              {
+                $value: 'now',
+                $field: 'endTime',
+                $operator: '>'
+              }
+            ]
+          }
+        }
+      },
+      upcoming: {
+        id: true,
+        $list: {
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $value: 'now',
+                $field: 'startTime',
+                $operator: '>'
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(r => {
+      result = r
+      console.log('-->', result)
+    })
+
+  await wait(500)
+  console.log('should be upcoming')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [{ id: 'ma1' }],
+    past: [],
+    live: []
+  })
+  await wait(3000)
+  console.log('should be live')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [],
+    past: [],
+    live: [{ id: 'ma1' }]
+  })
+  await wait(3000)
+  console.log('should be past')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [],
+    past: [{ id: 'ma1' }],
+    live: []
+  })
+
+  await client.delete('root')
+})
+
+>>>>>>> master
 test.serial('find - already started', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
@@ -182,6 +299,32 @@ test.serial('find - already started subscription', async t => {
   const nextRefresh = Date.now() + 5 * 1000
   const nextNextRefresh = Date.now() + 7 * 1000
 
+  // add another <============== THIS BREAKS IT
+  client
+    .observe({
+      $id: 'rando',
+      items: {
+        name: true,
+        value: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'endTime',
+                $operator: '<',
+                $value: 'now'
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(() => {
+      console.log('do nothing')
+    })
+  // =======================
+
   await client.set({
     $id: 'maFuture',
     type: 'match',
@@ -199,6 +342,7 @@ test.serial('find - already started subscription', async t => {
   })
 
   t.plan(5)
+
   const observable = client.observe({
     $includeMeta: true,
     $id: 'root',
@@ -287,6 +431,7 @@ test.serial('find - starting soon', async t => {
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 3 hours
   })
 
+<<<<<<< HEAD
   // t.deepEqualIgnoreOrder(
   //   (
   //     await client.get({
@@ -313,6 +458,9 @@ test.serial('find - starting soon', async t => {
   //   ).$meta.___refreshAt,
   //   nextRefresh
   // )
+=======
+  console.log(await client.redis.hgetall(match1))
+>>>>>>> master
 
   t.deepEqualIgnoreOrder(
     (
@@ -406,34 +554,6 @@ test.serial('find - starting soon', async t => {
   )
 
   t.pass()
-
-  // FIXME: wft ASC sort broken?
-  // t.deepEqual(
-  //   (
-  //     await client.get({
-  //       $includeMeta: true,
-  //       $id: 'root',
-  //       items: {
-  //         name: true,
-  //         value: true,
-  //         $list: {
-  //           $sort: { $field: 'startTime', $order: 'asc' },
-  //           $find: {
-  //             $traverse: 'children',
-  //             $filter: [
-  //               {
-  //                 $field: 'startTime',
-  //                 $operator: '<',
-  //                 $value: 'now'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     })
-  //   ).items.map(i => i.name),
-  //   ['started 2m ago', 'started 5m ago', 'started 2h ago']
-  // )
 
   await client.delete('root')
   await client.destroy()

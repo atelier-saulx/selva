@@ -21,6 +21,16 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
         })
         .catch(err => {
           console.log('WRONG ERROR IN SENDUPDATE', err)
+          console.log(
+            'ok still beign processed?',
+            subscription.beingProcessed,
+            subscription.processNext
+          )
+          subscriptionManager.inProgressCount--
+          subscription.beingProcessed = false
+          if (subscription.processNext) {
+            subscription.processNext = false
+          }
         })
     }
   })

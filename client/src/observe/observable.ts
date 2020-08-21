@@ -126,8 +126,6 @@ export default class Observable<T> {
     this.observe = observe
   }
 
-  // [Symbol.observable](): Observable
-
   subscribe(
     onNext: ((x: T) => void) | Observer<T>,
     onError?: (e: Error) => void,
