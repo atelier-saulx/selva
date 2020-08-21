@@ -17,7 +17,7 @@ const parseError = obj => {
   } else if (err.command) {
     const { command, args, code } = err
     if (command === 'EVALSHA') {
-      return new Error(`Get error ${args.slice(3).join(', ')}`)
+      return new Error(`Lua error ${args.slice(3).join(', ')}`)
     }
     return new Error(`${command} ${args.join(', ')} ${code}`)
   }

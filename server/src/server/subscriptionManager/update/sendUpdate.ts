@@ -50,7 +50,7 @@ const sendUpdate = async (
     payload = await client.get(getOptions)
   } catch (err) {
     payload = {
-      ___$error___: err
+      ___$error___: err.message
     }
   }
 
