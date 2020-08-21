@@ -56,6 +56,8 @@ const createObservable = (
 ): Observable<GetResult> => {
   if (redisSelvaClient.observables[channel]) {
     const emitter = redisSelvaClient.observerEmitters[channel]
+
+    // just return the observable
     if (emitter.validationError) {
       console.error('Invalid query', opts, emitter.validationError.message)
     } else if (emitter.client) {
@@ -94,6 +96,10 @@ const createObservable = (
         observer.error(observerEmitter.validationError)
       }
     }
+
+    // handle initial here!
+
+    // where is it handled that it allways fires? updateListener
 
     observerEmitter.count++
     return () => {

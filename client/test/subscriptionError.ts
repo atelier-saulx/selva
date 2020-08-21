@@ -57,33 +57,34 @@ test.serial('subscription validation error', async t => {
       }
     )
 
-  // client.observe({
-  //   $db: {}
-  // })
+  client.observe({
+    $db: {}
+  })
 
-  // client.observe({
-  //   $db: {}
-  // })
-  // make validation error
+  client.observe({
+    $db: {}
+  })
 
   await wait(2e3)
 
   t.is(errorCnt, 1)
 
-  // client.observe({
-  //   $db: {}
-  // })
+  client.observe({
+    $db: {}
+  })
 
-  // client
-  //   .observe({
-  //     $db: {}
-  //   })
-  //   .subscribe(
-  //     () => {},
-  //     () => console.log('!! spesh error')
-  //   )
+  client
+    .observe({
+      $db: {}
+    })
+    .subscribe(
+      () => {},
+      () => {
+        errorCnt++
+      }
+    )
 
   await wait(2e3)
 
-  t.true(true)
+  t.is(errorCnt, 2)
 })
