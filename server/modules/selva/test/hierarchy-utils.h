@@ -3,11 +3,11 @@
 #define HIERARCHY_UTILS_H
 
 #include <stddef.h>
+#include "cdefs.h"
 #include "redis-rdb.h"
 #include "hierarchy.h"
 
-
-extern Selva_NodeId HIERARCHY_RDB_EOF __attribute__((nonstring));
+extern Selva_NodeId HIERARCHY_RDB_EOF __nonstring;
 extern SelvaModify_Hierarchy *hierarchy;
 extern Selva_NodeId *findRes;
 extern RedisModuleIO *io;

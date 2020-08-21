@@ -511,6 +511,14 @@ ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Se
 }
 #endif
 
+static inline void publishChildrenUpdate(const Selva_NodeId id) {
+    SelvaModify_PublishUpdate(id, "children", 8);
+}
+
+static inline void publishParentsUpdate(const Selva_NodeId id) {
+    SelvaModify_PublishUpdate(id, "parents", 7);
+}
+
 static int crossInsert(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -561,14 +569,14 @@ static int crossInsert(
                 /*
                  * Publish that the children field was changed.
                  */
-                SelvaModify_PublishUpdate(adjacent->id, "children", 8);
+                publishChildrenUpdate(adjacent->id);
             }
         }
 
         /*
          * Publish that the parents field was changed.
          */
-        SelvaModify_PublishUpdate(node->id, "parents", 7);
+        publishParentsUpdate(node->id);
 #if HIERARCHY_EN_ANCESTORS_EVENTS
         /*
          * Publish the change to the descendants of node.
@@ -609,7 +617,7 @@ static int crossInsert(
                 /*
                  * Publish that the parents field was changed.
                  */
-                SelvaModify_PublishUpdate(node->id, "parents", 7);
+                publishParentsUpdate(node->id);
             }
 
 #if HIERARCHY_EN_ANCESTORS_EVENTS
@@ -623,7 +631,7 @@ static int crossInsert(
         /*
          * Publish that the children field was changed.
          */
-        SelvaModify_PublishUpdate(node->id, "children", 8);
+        publishChildrenUpdate(node->id);
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
@@ -638,6 +646,7 @@ static int crossInsert(
 static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
         const size_t initialNodeParentsSize = SVector_Size(&node->parents);
+        int pubParents = 0;
 
         for (size_t i = 0; i < n; i++) {
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
@@ -656,13 +665,21 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
 #if HIERARCHY_SORT_BY_DEPTH
             updateDepth(hierarchy, adjacent);
 #endif
+            publishChildrenUpdate(adjacent->id);
+            pubParents = 1;
         }
 
         if (initialNodeParentsSize > 0 && SVector_Size(&node->parents) == 0) {
             /* node is an orphan now */
             mkHead(hierarchy, node);
         }
+
+        if (pubParents) {
+            publishParentsUpdate(node->id);
+        }
     } else if (rel == RELATIONSHIP_PARENT) { /* no longer a parent of adjacent */
+        int pubChildren = 0;
+
         for (size_t i = 0; i < n; i++) {
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
@@ -685,6 +702,12 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
 #if HIERARCHY_SORT_BY_DEPTH
             updateDepth(hierarchy, adjacent);
 #endif
+            publishParentsUpdate(adjacent->id);
+            pubChildren = 1;
+        }
+
+        if (pubChildren) {
+            publishChildrenUpdate(node->id);
         }
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;

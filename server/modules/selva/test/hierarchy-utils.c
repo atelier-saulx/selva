@@ -1,13 +1,14 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include "cdefs.h"
 #include "hierarchy-utils.h"
 
 SelvaModify_Hierarchy *hierarchy;
 Selva_NodeId *findRes;
 RedisModuleIO *io;
 
-Selva_NodeId HIERARCHY_RDB_EOF __attribute__((nonstring));
+Selva_NodeId HIERARCHY_RDB_EOF __nonstring;
 
 int SelvaNodeId_Compare(const void *a, const void *b) {
 
