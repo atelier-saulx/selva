@@ -70,20 +70,41 @@ const createObservable = (
   // with one listener
   const observerEmitter = new ObserverEmitter(opts, channel)
 
+  // stub to make it not crash...
+  observerEmitter.on('error', () => {})
+
   const extraQueries: ExtraQueries = {}
 
   const obs = new Observable(observer => {
-    observerEmitter.on('update', obj => {
+    const updateListener = obj => {
       if (obj.type === 'update') {
         if (obj.version !== observer.version) {
           observer.version = obj.version
           observer.next(obj.payload)
         }
       }
-    })
+    }
+
+    let errorListener
+
+    observerEmitter.on('update', updateListener)
+    if (observer.error) {
+      errorListener = observer.error
+      observerEmitter.on('error', errorListener)
+    }
+
+    if (observerEmitter.valid === false) {
+      if (observer.error) {
+        observer.error(observerEmitter.validationError)
+      }
+    }
 
     observerEmitter.count++
     return () => {
+      if (errorListener) {
+        observerEmitter.removeListener('error', errorListener)
+      }
+      observerEmitter.removeListener('update', updateListener)
       observerEmitter.count--
       if (observerEmitter.count === 0) {
         observerEmitter.isRemoved = true
@@ -107,6 +128,7 @@ const createObservable = (
     .catch(err => {
       observerEmitter.valid = false
       observerEmitter.validationError = err
+      observerEmitter.emit('error', err)
       console.error('Invalid query', opts, err.message)
     })
 

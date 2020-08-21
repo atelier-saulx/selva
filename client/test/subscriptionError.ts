@@ -50,8 +50,8 @@ test.serial('subscription validation error', async t => {
     .subscribe(
       v => {
         console.log('its fine', v)
-      },
-      err => console.log('Error', err)
+      }
+      // err => console.log('Error', err)
     )
 
   client.observe({
