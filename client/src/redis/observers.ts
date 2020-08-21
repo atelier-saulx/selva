@@ -125,7 +125,6 @@ const createObservable = (
     })
     .catch(err => {
       observerEmitter.validationError = err
-      console.log('is validated!')
       observerEmitter.emit('error', err)
       console.error('Invalid query', opts, err.message)
     })

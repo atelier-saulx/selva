@@ -158,13 +158,6 @@ test.serial('subscription error on subs manager', async t => {
     'correct isNull on unexisting item'
   )
 
-  // send from subs manager
-  // receive
-  // emit on error in observable emitter if payload { isError: true }
-  // or something like this
-  // lets make it
-  // ad9d2d7e0
-
   client
     .observe({
       $id: 'adx',
