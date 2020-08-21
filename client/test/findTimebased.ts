@@ -514,8 +514,5 @@ test.serial('find - starting soon', async t => {
     ['started 5m ago', 'started 2m ago']
   )
 
-  t.pass()
-
-  await client.delete('root')
   await client.destroy()
 })
