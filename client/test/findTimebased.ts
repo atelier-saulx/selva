@@ -52,7 +52,6 @@ test.after(async _t => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
 })
@@ -143,25 +142,21 @@ test.serial('subs upcoming, live and past', async t => {
     })
     .subscribe(r => {
       result = r
-      console.log('-->', result)
     })
 
   await wait(500)
-  console.log('should be upcoming')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'ma1' }],
     past: [],
     live: []
   })
   await wait(3000)
-  console.log('should be live')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [],
     live: [{ id: 'ma1' }]
   })
   await wait(3000)
-  console.log('should be past')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [{ id: 'ma1' }],
@@ -212,8 +207,6 @@ test.serial('find - already started', async t => {
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
   })
 
-  console.log(await client.redis.hgetall(match1))
-
   t.deepEqualIgnoreOrder(
     (
       await client.get({
@@ -239,32 +232,6 @@ test.serial('find - already started', async t => {
       })
     ).$meta.___refreshAt,
     nextRefresh
-  )
-
-  console.log(
-    (
-      await client.get({
-        $includeMeta: true,
-        $id: 'root',
-        items: {
-          name: true,
-          value: true,
-          $list: {
-            $sort: { $field: 'startTime', $order: 'asc' },
-            $find: {
-              $traverse: 'children',
-              $filter: [
-                {
-                  $field: 'startTime',
-                  $operator: '<',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
-      })
-    ).items.map(i => i.name)
   )
 
   // FIXME: wft ASC sort broken?
@@ -347,9 +314,7 @@ test.serial('find - already started subscription', async t => {
         }
       }
     })
-    .subscribe(() => {
-      console.log('do nothing')
-    })
+    .subscribe(() => {})
   // =======================
 
   await client.set({
@@ -394,7 +359,6 @@ test.serial('find - already started subscription', async t => {
 
   let o1counter = 0
   const sub = observable.subscribe(d => {
-    console.log('odata', d)
     if (o1counter === 0) {
       // gets start event
       t.true(d.items.length === 3)
@@ -458,8 +422,6 @@ test.serial('find - starting soon', async t => {
     startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 2 hour
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 3 hours
   })
-
-  console.log(await client.redis.hgetall(match1))
 
   t.deepEqualIgnoreOrder(
     (
