@@ -57,69 +57,116 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.skip('find - live', async t => {
+test.serial('subs upcoming, live and past', async t => {
   const client = connect({ port }, { loglevel: 'info' })
-
-  const match1 = await client.set({
-    type: 'match',
-    name: 'match 1',
-    startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
-  })
+  const now = Date.now()
+  let result
 
   await client.set({
     type: 'match',
-    name: 'match 2',
-    startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+    $id: 'ma1',
+    name: 'upcoming match',
+    startTime: now + 2000, // 2 sec from now
+    endTime: now + 5000 // 5 sec from now
   })
 
-  await client.set({
-    type: 'match',
-    name: 'match 2',
-    startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 horus ago
-    endTime: Date.now() - 60 * 60 * 1000 // ended 1 hour ago
-  })
-
-  console.log(await client.redis.hgetall(match1))
-
-  console.log(
-    await client.get({
-      $id: 'root',
-      children: {
-        name: true,
-        startTime: true,
-        endTime: true,
-        $list: {}
-      }
-    })
-  )
-
-  console.log(
-    (
-      await client.get({
-        $includeMeta: true,
-        $id: 'root',
-        items: {
-          name: true,
-          value: true,
-          $list: {
-            $sort: { $field: 'startTime', $order: 'desc' },
-            $find: {
-              $traverse: 'children',
-              $filter: [
-                {
-                  $field: 'endTime',
-                  $operator: '>',
-                  $value: 'now'
-                }
-              ]
-            }
+  client
+    .observe({
+      past: {
+        id: true,
+        $list: {
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $value: 'now',
+                $field: 'endTime',
+                $operator: '<'
+              }
+            ]
           }
         }
-      })
-    ).$meta.query
-  )
+      },
+      live: {
+        id: true,
+        $list: {
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $value: 'now',
+                $field: 'startTime',
+                $operator: '<'
+              },
+              {
+                $value: 'now',
+                $field: 'endTime',
+                $operator: '>'
+              }
+            ]
+          }
+        }
+      },
+      upcoming: {
+        id: true,
+        $list: {
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $value: 'now',
+                $field: 'startTime',
+                $operator: '>'
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(r => {
+      result = r
+      console.log('-->', result)
+    })
+
+  await wait(500)
+  console.log('should be upcoming')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [{ id: 'ma1' }],
+    past: [],
+    live: []
+  })
+  await wait(3000)
+  console.log('should be live')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [],
+    past: [],
+    live: [{ id: 'ma1' }]
+  })
+  await wait(3000)
+  console.log('should be past')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [],
+    past: [{ id: 'ma1' }],
+    live: []
+  })
 
   await client.delete('root')
 })
@@ -252,7 +299,7 @@ test.serial('find - already started', async t => {
   await client.destroy()
 })
 
-test.serial.only('find - already started subscription', async t => {
+test.serial('find - already started subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -414,33 +461,6 @@ test.serial('find - starting soon', async t => {
 
   console.log(await client.redis.hgetall(match1))
 
-  // t.deepEqualIgnoreOrder(
-  //   (
-  //     await client.get({
-  //       $includeMeta: true,
-  //       $id: 'root',
-  //       items: {
-  //         name: true,
-  //         value: true,
-  //         $list: {
-  //           $sort: { $field: 'startTime', $order: 'desc' },
-  //           $find: {
-  //             $traverse: 'children',
-  //             $filter: [
-  //               {
-  //                 $field: 'startTime',
-  //                 $operator: '<',
-  //                 $value: 'now+1h'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     })
-  //   ).$meta.___refreshAt,
-  //   nextRefresh
-  // )
-
   t.deepEqualIgnoreOrder(
     (
       await client.get({
@@ -533,34 +553,6 @@ test.serial('find - starting soon', async t => {
   )
 
   t.pass()
-
-  // FIXME: wft ASC sort broken?
-  // t.deepEqual(
-  //   (
-  //     await client.get({
-  //       $includeMeta: true,
-  //       $id: 'root',
-  //       items: {
-  //         name: true,
-  //         value: true,
-  //         $list: {
-  //           $sort: { $field: 'startTime', $order: 'asc' },
-  //           $find: {
-  //             $traverse: 'children',
-  //             $filter: [
-  //               {
-  //                 $field: 'startTime',
-  //                 $operator: '<',
-  //                 $value: 'now'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     })
-  //   ).items.map(i => i.name),
-  //   ['started 2m ago', 'started 5m ago', 'started 2h ago']
-  // )
 
   await client.delete('root')
   await client.destroy()
