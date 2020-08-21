@@ -9,6 +9,7 @@ import { getClient, Client } from './clients'
 import getServerDescriptor from './getServerDescriptor'
 import RedisSelvaClient from './'
 import Observable from '../observe/observable'
+import validate, { ExtraQueries } from '../get/validate'
 
 class ObserverEmitter extends EventEmitter {
   public count: number = 0
@@ -16,9 +17,12 @@ class ObserverEmitter extends EventEmitter {
   public getOptions: GetOptions
   public channel: string
   public client: Client
+  public valid?: Boolean
+  public validationError?: Error
   public isRemoved: boolean = false
   constructor(getOptions: GetOptions, channel: string) {
     super()
+    this.valid = false
     this.channel = channel
     this.getOptions = getOptions
     this.setMaxListeners(1e4)
@@ -53,12 +57,11 @@ const createObservable = (
   opts: GetOptions
 ): Observable<GetResult> => {
   if (redisSelvaClient.observables[channel]) {
-    if (redisSelvaClient.observerEmitters[channel].client) {
-      getObserverValue(
-        redisSelvaClient.observerEmitters[channel].client,
-        channel,
-        redisSelvaClient.observerEmitters[channel]
-      )
+    const emitter = redisSelvaClient.observerEmitters[channel]
+    if (emitter.valid === false && emitter.validationError) {
+      console.error('Invalid query', opts, emitter.validationError.message)
+    } else if (emitter.client && emitter.valid === true) {
+      getObserverValue(emitter.client, channel, emitter)
     }
     return redisSelvaClient.observables[channel]
   }
@@ -66,6 +69,8 @@ const createObservable = (
   // does this need to be an event emitter or can we just send the command?
   // with one listener
   const observerEmitter = new ObserverEmitter(opts, channel)
+
+  const extraQueries: ExtraQueries = {}
 
   const obs = new Observable(observer => {
     observerEmitter.on('update', obj => {
@@ -94,7 +99,16 @@ const createObservable = (
   redisSelvaClient.observables[channel] = obs
   redisSelvaClient.observerEmitters[channel] = observerEmitter
 
-  attachClient(redisSelvaClient, observerEmitter, channel)
+  validate(extraQueries, redisSelvaClient.selvaClient, opts)
+    .then(() => {
+      observerEmitter.valid = true
+      attachClient(redisSelvaClient, observerEmitter, channel)
+    })
+    .catch(err => {
+      observerEmitter.valid = false
+      observerEmitter.validationError = err
+      console.error('Invalid query', opts, err.message)
+    })
 
   return obs
 }

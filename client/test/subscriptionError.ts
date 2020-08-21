@@ -43,10 +43,31 @@ test.serial('subscription validation error', async t => {
   const client = connect({ port })
 
   // make this nice
+  client
+    .observe({
+      $db: {}
+    })
+    .subscribe(
+      v => {
+        console.log('its fine', v)
+      },
+      err => console.log('Error', err)
+    )
+
+  client.observe({
+    $db: {}
+  })
+
   client.observe({
     $db: {}
   })
   // make validation error
+
+  await wait(2e3)
+
+  client.observe({
+    $db: {}
+  })
 
   await wait(2e3)
 
