@@ -1,6 +1,8 @@
 #include <assert.h>
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -230,14 +232,6 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisMo
     return hierarchy;
 }
 
-static void publishCreatedEvent(const Selva_NodeId id) {
-    size_t payload_len = sizeof(int32_t) + sizeof(struct SelvaModify_AsyncTask);
-    char payload_str[payload_len];
-
-    SelvaModify_PreparePublishPayload_Created(payload_str, id);
-    SelvaModify_SendAsyncTask(payload_len, payload_str);
-}
-
 static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *set_key_name;
     RedisModuleKey *set_key = NULL;
@@ -255,7 +249,7 @@ static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
 
     RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "$id", set_key_name, NULL);
     RedisModule_CloseKey(set_key);
-    publishCreatedEvent(id);
+    SelvaModify_PublishCreated(id);
 
     return 0;
 }
@@ -300,20 +294,138 @@ static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
     RedisModule_Free(node);
 }
 
-static void del_node(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
+static char *get_node_field_names(RedisModuleCtx *ctx, Selva_NodeId id) {
+    RedisModuleCallReply * reply;
+    char *res = NULL;
+    size_t res_len = 0;
+
+    reply = RedisModule_Call(ctx, "HKEYS", "b", id, SELVA_NODE_ID_SIZE);
+    if (reply == NULL) {
+        // FIXME errno handling
+#if 0
+        switch (errno) {
+        case EINVAL:
+        case EPERM:
+        default:
+        }
+#endif
+        goto hkeys_err;
+    }
+
+    int replyType = RedisModule_CallReplyType(reply);
+    if (replyType != REDISMODULE_REPLY_ARRAY) {
+        goto hkeys_err;
+    }
+
+    size_t replyLen = RedisModule_CallReplyLength(reply);
+    for (size_t idx = 0; idx < replyLen; idx++) {
+        RedisModuleCallReply *elem;
+        const char * field_str;
+        size_t field_len;
+
+        elem = RedisModule_CallReplyArrayElement(reply, idx);
+        if (!elem) {
+            continue;
+        }
+
+        int elemType = RedisModule_CallReplyType(elem);
+        if (elemType != REDISMODULE_REPLY_STRING) {
+            continue;
+        }
+
+        field_str = RedisModule_CallReplyStringPtr(elem, &field_len);
+        if (!field_str) {
+            continue;
+        }
+
+        /*
+         * Append the res string.
+         */
+        res_len += field_len + 1;
+        res = RedisModule_Realloc(res, res_len);
+        memcpy(res + res_len - field_len - 1, field_str, field_len);
+        res[res_len - 1] = ',';
+    }
+
+hkeys_err:
+    if (reply) {
+        RedisModule_FreeCallReply(reply);
+    }
+    if (res) {
+        res[res_len - 1] = '\0';
+    }
+
+    return res;
+}
+
+static void remove_node_fields(RedisModuleCtx *ctx, Selva_NodeId id) {
+    RedisModuleString *hkey_name;
+    RedisModuleString *akey_name;
+    RedisModuleKey *key;
+
+    hkey_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
+    akey_name = RedisModule_CreateStringPrintf(ctx, "%.*s.aliases", SELVA_NODE_ID_SIZE, id);
+    if (unlikely(!(hkey_name && akey_name))) {
+        fprintf(stderr, "OOM; Unable to remove fields of the node: \"%.*s\"",
+                (int)SELVA_NODE_ID_SIZE, id);
+    }
+
+    /*
+     * Delete fields.
+     */
+    key = RedisModule_OpenKey(ctx, hkey_name, REDISMODULE_WRITE);
+    if (key) {
+        RedisModule_DeleteKey(key);
+        RedisModule_CloseKey(key);
+    }
+
+    /*
+     * Delete aliases.
+     */
+    key = RedisModule_OpenKey(ctx, akey_name, REDISMODULE_WRITE);
+    if (key) {
+        RedisModuleKey *aliases_key = open_aliases_key(ctx);
+
+        delete_aliases(aliases_key, key);
+        RedisModule_CloseKey(aliases_key);
+
+        RedisModule_DeleteKey(key);
+        RedisModule_CloseKey(key);
+    }
+}
+
+static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
     const int is_root = !memcmp(node, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
+    char *fields = NULL;
 
     removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
     if (!is_root) {
         removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
     }
 
+    if (likely(ctx)) {
+        fields = get_node_field_names(ctx, node->id);
+        remove_node_fields(ctx, node->id);
+    }
+
     /*
      * Never delete the root node.
      */
     if (!is_root) {
+        Selva_NodeId id;
+
+        memcpy(id, node->id, SELVA_NODE_ID_SIZE);
+
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(node);
+
+        if (ctx) {
+            SelvaModify_PublishDeleted(id, fields);
+        }
+    }
+
+    if (fields) {
+        RedisModule_Free(fields);
     }
 }
 
@@ -443,15 +555,12 @@ static int crossInsert(
             if (SVector_InsertFast(&node->parents, adjacent) == NULL) {
                 (void)SVector_InsertFast(&adjacent->children, node);
             }
-
-            fprintf(stderr, "adj \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodes[i]);
         }
 
 #if HIERARCHY_EN_ANCESTORS_EVENTS
         /*
          * Publish the change to the descendants of node.
          */
-        fprintf(stderr, "Send event to the descendants of \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, node->id);
         (void)SelvaModify_PublishDescendants(hierarchy, node->id);
 #endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
     } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
@@ -491,7 +600,6 @@ static int crossInsert(
             /*
              * Publish the change to the descendants of nodes[i].
              */
-            fprintf(stderr, "Send event to descendant \"%*.s\" of \"%.*s\"\n", (int)SELVA_NODE_ID_SIZE, nodes[i], (int)SELVA_NODE_ID_SIZE, node->id);
             (void)SelvaModify_PublishDescendants(hierarchy, nodes[i]);
 #endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
         }
@@ -690,14 +798,14 @@ int SelvaModify_SetHierarchy(
     err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     if (err) {
         if (isNewNode) {
-            del_node(hierarchy, node);
+            del_node(ctx, hierarchy, node);
         }
         return err;
     }
     err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
     if (err) {
         if (isNewNode) {
-            del_node(hierarchy, node);
+            del_node(ctx, hierarchy, node);
         }
         return err;
     }
@@ -805,12 +913,12 @@ int SelvaModify_AddHierarchy(
      */
     err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
     if (err && isNewNode) {
-        del_node(hierarchy, node);
+        del_node(ctx, hierarchy, node);
         return err;
     }
     err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
     if (err && isNewNode) {
-        del_node(hierarchy, node);
+        del_node(ctx, hierarchy, node);
         return err;
     }
 
@@ -920,47 +1028,7 @@ static int SelvaModify_DelHierarchyNodeP(
 
     RedisModule_Free(ids);
 
-    del_node(hierarchy, node);
-
-    /*
-     * Remove other related keys and data from Redis.
-     */
-    if (likely(ctx)) {
-        RedisModuleString *hkey_name;
-        RedisModuleString *akey_name;
-        RedisModuleKey *key;
-
-        hkey_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, node->id);
-        akey_name = RedisModule_CreateStringPrintf(ctx, "%.*s.aliases", SELVA_NODE_ID_SIZE, node->id);
-        if (unlikely(!(hkey_name && akey_name))) {
-            return SELVA_MODIFY_HIERARCHY_ENOMEM;
-        }
-
-        /*
-         * Delete fields.
-         */
-        key = RedisModule_OpenKey(ctx, hkey_name, REDISMODULE_WRITE);
-        if (key) {
-            RedisModule_DeleteKey(key);
-            RedisModule_CloseKey(key);
-        }
-
-        /* TODO Send event */
-
-        /*
-         * Delete aliases.
-         */
-        key = RedisModule_OpenKey(ctx, akey_name, REDISMODULE_WRITE);
-        if (key) {
-            RedisModuleKey *aliases_key = open_aliases_key(ctx);
-
-            delete_aliases(aliases_key, key);
-            RedisModule_CloseKey(aliases_key);
-
-            RedisModule_DeleteKey(key);
-            RedisModule_CloseKey(key);
-        }
-    }
+    del_node(ctx, hierarchy, node);
 
     return 0;
 }
