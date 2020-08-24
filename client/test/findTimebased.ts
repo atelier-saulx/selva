@@ -28,11 +28,16 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          published: { type: 'boolean', search: { type: ['TAG'] } },
           startTime: {
             type: 'timestamp',
             search: { type: ['NUMERIC', 'SORTABLE'] }
           },
           endTime: {
+            type: 'timestamp',
+            search: { type: ['NUMERIC', 'SORTABLE'] }
+          },
+          date: {
             type: 'timestamp',
             search: { type: ['NUMERIC', 'SORTABLE'] }
           },
@@ -55,6 +60,223 @@ test.after(async _t => {
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+})
+
+test.serial.only('subs layout', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+  const now = Date.now()
+  let result
+
+  await Promise.all([
+    client.set({
+      type: 'match',
+      $id: 'mau1',
+      published: true,
+      name: 'upcoming match',
+      date: now + 2000,
+      startTime: now + 2000, // 2 sec from now
+      endTime: now + 5000 // 5 sec from now
+    }),
+    client.set({
+      type: 'match',
+      $id: 'mau2',
+      published: true,
+      name: 'upcoming match',
+      date: now + 5000,
+      startTime: now + 5000, // 5 sec from now
+      endTime: now + 7000 // 7 sec from now
+    })
+  ])
+
+  const past = []
+  let pastPublishedIds = []
+  for (let i = 0; i < 1000; i++) {
+    let published = true
+    if (i % 3 == 0) {
+      published = false
+    }
+
+    past.push(
+      client.set({
+        type: 'match',
+        $id: 'map' + i,
+        published,
+        name: 'past match',
+        date: now - 1000 * 60 - i - 1,
+        startTime: now - 1000 * 60 - i - 1,
+        endTime: now - (1000 * 60 - i - 1)
+      })
+    )
+
+    if (published) {
+      pastPublishedIds.push({ id: 'map' + i })
+    }
+  }
+
+  await Promise.all(past)
+
+  const upcoming = []
+  const upcomingPublishedIds = []
+  for (let i = 0; i < 1000; i++) {
+    let published = true
+    if (i % 3 == 0) {
+      published = false
+    }
+
+    upcoming.push(
+      client.set({
+        type: 'match',
+        $id: 'maug' + i,
+        published,
+        name: 'past match',
+        date: now + 1000 * 60 + i,
+        startTime: now + 1000 * 60 + i,
+        endTime: now + (1000 * 60 + i + 1)
+      })
+    )
+
+    if (published) {
+      upcomingPublishedIds.push({ id: 'maug' + i })
+    }
+  }
+
+  await Promise.all(upcomingPublishedIds)
+
+  client
+    .observe({
+      past: {
+        id: true,
+        $list: {
+          $sort: {
+            $field: 'date',
+            $order: 'desc'
+          },
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $operator: '=',
+                $value: true,
+                $field: 'published'
+              },
+              {
+                $value: 'now',
+                $field: 'endTime',
+                $operator: '<'
+              }
+            ]
+          }
+        }
+      },
+      live: {
+        id: true,
+        $list: {
+          $sort: {
+            $field: 'date',
+            $order: 'asc'
+          },
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $operator: '=',
+                $value: true,
+                $field: 'published'
+              },
+              {
+                $value: 'now',
+                $field: 'startTime',
+                $operator: '<'
+              },
+              {
+                $value: 'now',
+                $field: 'endTime',
+                $operator: '>'
+              }
+            ]
+          }
+        }
+      },
+      upcoming: {
+        id: true,
+        $list: {
+          $sort: {
+            $field: 'date',
+            $order: 'asc'
+          },
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: true,
+                $field: 'published'
+              },
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $value: 'now',
+                $field: 'startTime',
+                $operator: '>'
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(r => {
+      result = r
+      console.log('-->', result)
+    })
+
+  await wait(500)
+  console.log('should be upcoming')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
+      upcomingPublishedIds.slice(0, 8)
+    ),
+    past: pastPublishedIds.slice(0, 10),
+    live: []
+  })
+  await wait(3000)
+  console.log('should be live')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [{ id: 'mau2' }].concat(upcomingPublishedIds.slice(0, 9)),
+    past: pastPublishedIds.slice(0, 10),
+    live: [{ id: 'mau1' }]
+  })
+  await wait(3000)
+  console.log('should be past')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: upcomingPublishedIds.slice(0, 10),
+    past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
+    live: [{ id: 'mau2' }]
+  })
+
+  await wait(2000)
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: upcomingPublishedIds.slice(0, 10),
+    past: [{ id: 'mau1' }, { id: 'mau2' }].concat(pastPublishedIds.slice(0, 8)),
+    live: []
+  })
+
+  await client.delete('root')
 })
 
 test.serial('subs upcoming, live and past', async t => {
