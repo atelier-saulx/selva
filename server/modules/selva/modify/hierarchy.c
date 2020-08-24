@@ -107,7 +107,7 @@ const char * const hierarchyStrError[] = {
     (const char *)"ERR_HIERARCHY No Error",
     (const char *)"ERR_HIERARCHY EGENERAL Unknown error",
     (const char *)"ERR_HIERARCHY ENOTSUP Operation not supported",
-    (const char *)"ERR_HIERARCHY ENOTSUP Invalid argument or input value",
+    (const char *)"ERR_HIERARCHY EINVAL Invalid argument or input value",
     (const char *)"ERR_HIERARCHY ENOMEM Out of memory",
     (const char *)"ERR_HIERARCHY ENOENT Not found",
     (const char *)"ERR_HIERARCHY EEXIST Exist",
@@ -1401,6 +1401,9 @@ ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selv
 }
 
 static int replyWithHierarchyError(RedisModuleCtx *ctx, int err) {
+    if (err >= 0 || -err >= (int)num_elem(hierarchyStrError)) {
+        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_EGENERAL]);
+    }
     return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
 }
 
