@@ -19,7 +19,6 @@ const createRedisClient = (
     client.startClientTimer = setTimeout(() => {
       if (!isHarddc) {
         clearTimeout(client.serverHeartbeat)
-        // console.log('cannot get it ready!', host, port, label)
         isHarddc = true
         client.emit('hard-disconnect')
       }
@@ -31,7 +30,6 @@ const createRedisClient = (
       clearTimeout(client.serverHeartbeat)
       clearTimeout(client.startClientTimer)
       if (label === 'publisher' && !isHarddc) {
-        // console.log('HARD DC')
         isHarddc = true
         client.emit('hard-disconnect')
       }
