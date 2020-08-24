@@ -17,7 +17,7 @@ test.before(async t => {
 
   const client = connect({ port })
   await client.updateSchema({
-    languages: ['en'],
+    languages: ['en', 'de', 'fr', 'it', 'nl'],
     types: {
       league: {
         prefix: 'le',
@@ -28,6 +28,7 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
           published: { type: 'boolean', search: { type: ['TAG'] } },
           startTime: {
             type: 'timestamp',
@@ -64,29 +65,61 @@ test.after(async _t => {
 
 test.serial.only('subs layout', async t => {
   const client = connect({ port }, { loglevel: 'info' })
-  const now = Date.now()
+  let now = Date.now()
   let result
 
-  await Promise.all([
-    client.set({
-      type: 'match',
-      $id: 'mau1',
-      published: true,
-      name: 'upcoming match',
-      date: now + 2000,
-      startTime: now + 2000, // 2 sec from now
-      endTime: now + 5000 // 5 sec from now
-    }),
-    client.set({
-      type: 'match',
-      $id: 'mau2',
-      published: true,
-      name: 'upcoming match',
-      date: now + 5000,
-      startTime: now + 5000, // 5 sec from now
-      endTime: now + 7000 // 7 sec from now
+  client
+    .observe({
+      $language: 'en',
+      matches: {
+        id: true,
+        title: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'published',
+                $operator: '=',
+                $value: true
+              }
+            ]
+          }
+        }
+      }
     })
-  ])
+    .subscribe(r => console.log(r))
+  client
+    .observe({
+      $language: 'de',
+      matches: {
+        id: true,
+        title: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'published',
+                $operator: '=',
+                $value: true
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(r => console.log(r))
 
   const past = []
   let pastPublishedIds = []
@@ -101,6 +134,11 @@ test.serial.only('subs layout', async t => {
         type: 'match',
         $id: 'map' + i,
         published,
+        title: {
+          en: 'past match ' + i,
+          de: 'vorbei match ' + i,
+          nl: 'verleden match ' + 1
+        },
         name: 'past match',
         date: now - 1000 * 60 - i - 1,
         startTime: now - 1000 * 60 - i - 1,
@@ -129,6 +167,11 @@ test.serial.only('subs layout', async t => {
         $id: 'maug' + i,
         published,
         name: 'past match',
+        title: {
+          en: 'gen upcoming match ' + i,
+          de: 'gen kommend match ' + i,
+          nl: 'gen aanstaande match ' + i
+        },
         date: now + 1000 * 60 + i,
         startTime: now + 1000 * 60 + i,
         endTime: now + (1000 * 60 + i + 1)
@@ -141,6 +184,40 @@ test.serial.only('subs layout', async t => {
   }
 
   await Promise.all(upcomingPublishedIds)
+
+  await wait(4000)
+  now = Date.now()
+
+  await Promise.all([
+    client.set({
+      type: 'match',
+      $id: 'mau1',
+      published: true,
+      title: {
+        en: 'upcoming match 1',
+        de: 'kommend match 1',
+        nl: 'aanstaande match 1'
+      },
+      name: 'upcoming match',
+      date: now + 2000,
+      startTime: now + 2000, // 2 sec from now
+      endTime: now + 5000 // 5 sec from now
+    }),
+    client.set({
+      type: 'match',
+      $id: 'mau2',
+      title: {
+        en: 'upcoming match 2',
+        de: 'kommend match 2',
+        nl: 'aanstaande match 2'
+      },
+      published: true,
+      name: 'upcoming match',
+      date: now + 5000,
+      startTime: now + 5000, // 5 sec from now
+      endTime: now + 7000 // 7 sec from now
+    })
+  ])
 
   client
     .observe({
