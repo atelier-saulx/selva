@@ -86,7 +86,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.only('subs layout', async t => {
+test.serial('subs layout', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
   let viIdx = 0
