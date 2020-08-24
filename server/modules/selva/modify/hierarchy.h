@@ -19,17 +19,22 @@
  */
 #define SELVA_MODIFY_HIERARCHY_ENOTSUP  (-2)
 /**
+ * Invalid argument/input value.
+ */
+#define SELVA_MODIFY_HIERARCHY_EINVAL   (-3)
+/**
  * Out of memory.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-3)
+#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-4)
 /**
  * Node or entity not found.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOENT   (-4)
+#define SELVA_MODIFY_HIERARCHY_ENOENT   (-5)
 /**
  * Node or entity already exist.
  */
-#define SELVA_MODIFY_HIERARCHY_EEXIST   (-5)
+#define SELVA_MODIFY_HIERARCHY_EEXIST   (-6)
+/* This must be the last error */
 
 
 #define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
@@ -60,7 +65,7 @@ struct SelvaModify_HierarchyCallback {
 struct RedisModuleCtx;
 struct RedisModuleString;
 
-extern const char * const hierarchyStrError[6];
+extern const char * const hierarchyStrError[-SELVA_MODIFY_HIERARCHY_EEXIST + 1];
 
 /**
  * Create a new hierarchy.

@@ -107,6 +107,7 @@ const char * const hierarchyStrError[] = {
     (const char *)"ERR_HIERARCHY No Error",
     (const char *)"ERR_HIERARCHY EGENERAL Unknown error",
     (const char *)"ERR_HIERARCHY ENOTSUP Operation not supported",
+    (const char *)"ERR_HIERARCHY ENOTSUP Invalid argument or input value",
     (const char *)"ERR_HIERARCHY ENOMEM Out of memory",
     (const char *)"ERR_HIERARCHY ENOENT Not found",
     (const char *)"ERR_HIERARCHY EEXIST Exist",
@@ -1850,6 +1851,24 @@ static int parse_dir(enum SelvaModify_HierarchyNode_Relationship *dir, RedisModu
     return 0;
 }
 
+static int parse_limit(ssize_t *limit, RedisModuleString *arg1, RedisModuleString *arg2) {
+    size_t len;
+    const char *txt = RedisModule_StringPtrLen(arg1, &len);
+    const char *num = RedisModule_StringPtrLen(arg2, &len);
+    char *end = NULL;
+
+    if (strncmp("limit", txt, len)) {
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
+    }
+
+    *limit = strtoull(num, &end, 10);
+    if (num == end) {
+        return SELVA_MODIFY_HIERARCHY_EINVAL;
+    }
+
+    return 0;
+}
+
 static int parse_algo(enum SelvaModify_Hierarchy_Algo *algo, RedisModuleString *arg) {
     size_t len;
     const char *str = RedisModule_StringPtrLen(arg, &len);
@@ -1869,6 +1888,7 @@ struct FindCommand_Args {
     RedisModuleCtx *ctx;
     SelvaModify_HierarchyNode *head;
     ssize_t *nr_nodes;
+    ssize_t *limit;
     struct rpn_ctx *rpn_ctx;
     const rpn_token *filter;
 };
@@ -1906,9 +1926,15 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
 
         if (take) {
             ssize_t *nr_nodes = args->nr_nodes;
+            ssize_t * restrict limit = args->limit;
 
             RedisModule_ReplyWithStringBuffer(args->ctx, node->id, SelvaModify_NodeIdLen(node->id));
             *nr_nodes = *nr_nodes + 1;
+
+            *limit = *limit - 1;
+            if (*limit == 0) {
+                return 1;
+            }
         }
     }
 
@@ -1917,18 +1943,31 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
 
 /**
  * Find node ancestors/descendants.
- * SELVA.HIERARCHY.find REDIS_KEY ALGO DESCENDANTS|ANCESTORS NODE_IDS [filter expression] [args...]
+ * SELVA.HIERARCHY.find redis_key dfs|bfs descendants|ancestors [limit 1234] NODE_IDS [filter expression] [args...]
+ *                                |       |                     |            |        |                   |
+ * Traversal method/algo --------/        |                     |            |        |                   |
+ * Traversal direction ------------------/                      |            |        |                   |
+ * Limit the number of results (Optional) ---------------------/             |        |                   |
+ * One or more node IDs concatenated (10 chars per ID) ---------------------/         |                   |
+ * RPN Filter -----------------------------------------------------------------------/                    |
+ * Register arguments for the RPN filter ----------------------------------------------------------------/
  */
 int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY    = 1;
-    const size_t ARGV_ALGO         = 2;
-    const size_t ARGV_DIRECTION    = 3;
-    const size_t ARGV_NODE_IDS     = 4;
-    const size_t ARGV_FILTER_EXPR  = 5;
-    const size_t ARGV_FILTER_ARGS  = 6;
+    const size_t ARGV_REDIS_KEY = 1;
+    const size_t ARGV_ALGO      = 2;
+    const size_t ARGV_DIRECTION = 3;
+    const size_t ARGV_LIMIT_TXT = 4;
+    const size_t ARGV_LIMIT_NUM = 5;
+    size_t ARGV_NODE_IDS        = 4;
+    size_t ARGV_FILTER_EXPR     = 5;
+    size_t ARGV_FILTER_ARGS     = 6;
+#define SHIFT_ARGS(i) \
+    ARGV_NODE_IDS += i; \
+    ARGV_FILTER_EXPR += i; \
+    ARGV_FILTER_ARGS += i
 
     if (argc < 5) {
         return RedisModule_WrongArity(ctx);
@@ -1966,6 +2005,19 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     err = parse_dir(&dir, argv[ARGV_DIRECTION]);
     if (err) {
         return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+    }
+
+    /*
+     * Parse the limit. -1 = inf
+     */
+    ssize_t limit = -1;
+    if (argc > (int)ARGV_LIMIT_NUM) {
+        err = parse_limit(&limit, argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+        }
     }
 
     /*
@@ -2035,6 +2087,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .ctx = ctx,
             .head = head,
             .nr_nodes = &nr_nodes,
+            .limit = &limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
         };
@@ -2046,6 +2099,10 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .child_cb = NULL,
             .child_arg = NULL,
         };
+
+        if (limit == 0) {
+            break;
+        }
 
         err = (algo == HIERARCHY_BFS ? bfs : dfs)(hierarchy, head, dir, &cb);
         if (err != 0) {
