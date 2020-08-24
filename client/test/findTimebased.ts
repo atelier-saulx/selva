@@ -25,6 +25,12 @@ test.before(async t => {
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       },
+      team: {
+        prefix: 'te',
+        fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } }
+        }
+      },
       match: {
         prefix: 'ma',
         fields: {
@@ -67,6 +73,22 @@ test.serial.only('subs layout', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
   let result
+
+  await client.set({
+    $id: 'te1',
+    title: {
+      en: 'team one',
+      de: 'team ein'
+    }
+  })
+
+  await client.set({
+    $id: 'te2',
+    title: {
+      en: 'team two',
+      de: 'team zwei'
+    }
+  })
 
   client
     .observe({
@@ -124,6 +146,7 @@ test.serial.only('subs layout', async t => {
   const past = []
   let pastPublishedIds = []
   for (let i = 0; i < 1000; i++) {
+    const team = i % 2 === 0 ? 'te2' : 'te1'
     let published = true
     if (i % 3 == 0) {
       published = false
@@ -142,7 +165,8 @@ test.serial.only('subs layout', async t => {
         name: 'past match',
         date: now - 1000 * 60 - i - 1,
         startTime: now - 1000 * 60 - i - 1,
-        endTime: now - (1000 * 60 - i - 1)
+        endTime: now - (1000 * 60 - i - 1),
+        parents: [team]
       })
     )
 
@@ -156,6 +180,7 @@ test.serial.only('subs layout', async t => {
   const upcoming = []
   const upcomingPublishedIds = []
   for (let i = 0; i < 1000; i++) {
+    const team = i % 2 === 0 ? 'te2' : 'te1'
     let published = true
     if (i % 3 == 0) {
       published = false
@@ -174,7 +199,8 @@ test.serial.only('subs layout', async t => {
         },
         date: now + 1000 * 60 + i,
         startTime: now + 1000 * 60 + i,
-        endTime: now + (1000 * 60 + i + 1)
+        endTime: now + (1000 * 60 + i + 1),
+        parents: [team]
       })
     )
 
@@ -200,6 +226,7 @@ test.serial.only('subs layout', async t => {
       },
       name: 'upcoming match',
       date: now + 2000,
+      parents: ['te1'],
       startTime: now + 2000, // 2 sec from now
       endTime: now + 5000 // 5 sec from now
     }),
@@ -212,6 +239,7 @@ test.serial.only('subs layout', async t => {
         nl: 'aanstaande match 2'
       },
       published: true,
+      parents: ['te2'],
       name: 'upcoming match',
       date: now + 5000,
       startTime: now + 5000, // 5 sec from now
