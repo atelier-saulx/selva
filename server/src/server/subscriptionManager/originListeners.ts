@@ -72,6 +72,8 @@ const addOriginListeners = async (
     const redis = client.redis
     let collect = 0
 
+    // make this better
+    // use this with the global connectorClients
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
     redis.on(descriptor, 'pmessage', listener)

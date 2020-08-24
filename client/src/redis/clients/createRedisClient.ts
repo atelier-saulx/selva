@@ -2,6 +2,8 @@ import { RedisClient } from 'redis'
 import { Client } from './'
 import { SERVER_HEARTBEAT } from '../../constants'
 
+// unify publisher / subsciber
+
 const createRedisClient = (
   client: Client,
   host: string,
@@ -77,6 +79,7 @@ const createRedisClient = (
 
   redisClient.setMaxListeners(1e4)
 
+  // lets make this for 2
   redisClient.on('ready', () => {
     isHarddc = false
     if (label === 'publisher') {
