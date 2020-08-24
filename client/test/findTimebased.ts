@@ -28,7 +28,15 @@ test.before(async t => {
       team: {
         prefix: 'te',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } }
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          published: { type: 'boolean', search: { type: ['TAG'] } }
+        }
+      },
+      sport: {
+        prefix: 'sp',
+        fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          published: { type: 'boolean', search: { type: ['TAG'] } }
         }
       },
       match: {
@@ -36,6 +44,8 @@ test.before(async t => {
         fields: {
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
           published: { type: 'boolean', search: { type: ['TAG'] } },
+          homeTeam: { type: 'reference' },
+          awayTeam: { type: 'reference' },
           startTime: {
             type: 'timestamp',
             search: { type: ['NUMERIC', 'SORTABLE'] }
@@ -72,10 +82,10 @@ test.after(async _t => {
 test.serial.only('subs layout', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
-  let result
 
   await client.set({
     $id: 'te1',
+    published: true,
     title: {
       en: 'team one',
       de: 'team ein'
@@ -84,10 +94,18 @@ test.serial.only('subs layout', async t => {
 
   await client.set({
     $id: 'te2',
+    published: true,
     title: {
       en: 'team two',
       de: 'team zwei'
     }
+  })
+
+  await client.set({
+    $id: 'sp1',
+    title: { en: 'sport one', de: 'sport ein' },
+    published: true,
+    children: ['te1', 'te2']
   })
 
   client
@@ -157,6 +175,8 @@ test.serial.only('subs layout', async t => {
         type: 'match',
         $id: 'map' + i,
         published,
+        homeTeam: 'te1',
+        awayTeam: 'te2',
         title: {
           en: 'past match ' + i,
           de: 'vorbei match ' + i,
@@ -192,6 +212,8 @@ test.serial.only('subs layout', async t => {
         $id: 'maug' + i,
         published,
         name: 'past match',
+        homeTeam: 'te1',
+        awayTeam: 'te2',
         title: {
           en: 'gen upcoming match ' + i,
           de: 'gen kommend match ' + i,
@@ -219,6 +241,8 @@ test.serial.only('subs layout', async t => {
       type: 'match',
       $id: 'mau1',
       published: true,
+      homeTeam: 'te1',
+      awayTeam: 'te2',
       title: {
         en: 'upcoming match 1',
         de: 'kommend match 1',
@@ -233,6 +257,8 @@ test.serial.only('subs layout', async t => {
     client.set({
       type: 'match',
       $id: 'mau2',
+      homeTeam: 'te1',
+      awayTeam: 'te2',
       title: {
         en: 'upcoming match 2',
         de: 'kommend match 2',
@@ -247,6 +273,7 @@ test.serial.only('subs layout', async t => {
     })
   ])
 
+  let result
   client
     .observe({
       past: {
@@ -350,6 +377,91 @@ test.serial.only('subs layout', async t => {
       console.log('-->', result)
     })
 
+  let otherResult1
+  client
+    .observe({
+      $id: 'mau1',
+      $language: 'en',
+      component: {
+        $value: 'Table'
+      },
+      title: {
+        $value: 'Live'
+      },
+      children: {
+        teams: [
+          {
+            id: true,
+            $id: {
+              $field: 'homeTeam'
+            },
+            title: true
+          },
+          {
+            id: true,
+            $id: {
+              $field: 'awayTeam'
+            },
+            title: true
+          }
+        ],
+        type: true,
+        title: true,
+        id: true,
+        $list: {
+          $limit: 30,
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'sport'
+              },
+              {
+                $field: 'published',
+                $operator: '=',
+                $value: true
+              }
+            ],
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'match'
+                },
+                {
+                  $field: 'published',
+                  $operator: '=',
+                  $value: true
+                },
+                {
+                  $operator: '<',
+                  $value: 'now',
+                  $field: 'startTime'
+                },
+                {
+                  $operator: '>',
+                  $value: 'now',
+                  $field: 'endTime'
+                }
+              ]
+            },
+            $traverse: 'ancestors'
+          },
+          $sort: {
+            $order: 'desc',
+            $field: 'date'
+          }
+        }
+      }
+    })
+    .subscribe(r => {
+      otherResult1 = r
+      console.log('match layout 1', r)
+    })
+
   await wait(500)
   console.log('should be upcoming')
   t.deepEqualIgnoreOrder(result, {
@@ -359,27 +471,56 @@ test.serial.only('subs layout', async t => {
     past: pastPublishedIds.slice(0, 10),
     live: []
   })
+  t.deepEqualIgnoreOrder(otherResult1.children, [])
+
   await wait(3000)
+
   console.log('should be live')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'mau2' }].concat(upcomingPublishedIds.slice(0, 9)),
     past: pastPublishedIds.slice(0, 10),
     live: [{ id: 'mau1' }]
   })
+  t.deepEqualIgnoreOrder(otherResult1.children, [
+    {
+      id: 'mau1',
+      type: 'match',
+      teams: [
+        { id: 'te1', title: 'team one' },
+        { id: 'te2', title: 'team two' }
+      ],
+      title: 'upcoming match 1'
+    }
+  ])
+
   await wait(3000)
+
   console.log('should be past')
   t.deepEqualIgnoreOrder(result, {
     upcoming: upcomingPublishedIds.slice(0, 10),
     past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
     live: [{ id: 'mau2' }]
   })
+  t.deepEqualIgnoreOrder(otherResult1.children, [
+    {
+      id: 'mau2',
+      type: 'match',
+      teams: [
+        { id: 'te1', title: 'team one' },
+        { id: 'te2', title: 'team two' }
+      ],
+      title: 'upcoming match 2'
+    }
+  ])
 
   await wait(2000)
+
   t.deepEqualIgnoreOrder(result, {
     upcoming: upcomingPublishedIds.slice(0, 10),
     past: [{ id: 'mau1' }, { id: 'mau2' }].concat(pastPublishedIds.slice(0, 8)),
     live: []
   })
+  t.deepEqualIgnoreOrder(otherResult1.children, [])
 
   await client.delete('root')
 })
