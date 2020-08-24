@@ -32,6 +32,13 @@ test.before(async t => {
           published: { type: 'boolean', search: { type: ['TAG'] } }
         }
       },
+      video: {
+        prefix: 'vi',
+        fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          published: { type: 'boolean', search: { type: ['TAG'] } }
+        }
+      },
       sport: {
         prefix: 'sp',
         fields: {
@@ -82,6 +89,7 @@ test.after(async _t => {
 test.serial.only('subs layout', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
+  let viIdx = 0
 
   await client.set({
     $id: 'te1',
@@ -186,7 +194,8 @@ test.serial.only('subs layout', async t => {
         date: now - 1000 * 60 - i - 1,
         startTime: now - 1000 * 60 - i - 1,
         endTime: now - (1000 * 60 - i - 1),
-        parents: [team]
+        parents: [team],
+        children: [{ $id: 'vi' + viIdx++, published: true }]
       })
     )
 
@@ -222,7 +231,8 @@ test.serial.only('subs layout', async t => {
         date: now + 1000 * 60 + i,
         startTime: now + 1000 * 60 + i,
         endTime: now + (1000 * 60 + i + 1),
-        parents: [team]
+        parents: [team],
+        children: [{ $id: 'vi' + viIdx++, published: true }]
       })
     )
 
@@ -252,7 +262,11 @@ test.serial.only('subs layout', async t => {
       date: now + 2000,
       parents: ['te1'],
       startTime: now + 2000, // 2 sec from now
-      endTime: now + 5000 // 5 sec from now
+      endTime: now + 5000, // 5 sec from now
+      children: [
+        { $id: 'vi' + viIdx++, published: true },
+        { $id: 'vi' + viIdx++, published: true }
+      ]
     }),
     client.set({
       type: 'match',
@@ -269,7 +283,11 @@ test.serial.only('subs layout', async t => {
       name: 'upcoming match',
       date: now + 5000,
       startTime: now + 5000, // 5 sec from now
-      endTime: now + 7000 // 7 sec from now
+      endTime: now + 7000, // 7 sec from now
+      children: [
+        { $id: 'vi' + viIdx++, published: true },
+        { $id: 'vi' + viIdx++, published: true }
+      ]
     })
   ])
 
@@ -382,80 +400,134 @@ test.serial.only('subs layout', async t => {
     .observe({
       $id: 'mau1',
       $language: 'en',
-      component: {
-        $value: 'Table'
-      },
-      title: {
-        $value: 'Live'
-      },
-      children: {
-        teams: [
-          {
-            id: true,
-            $id: {
-              $field: 'homeTeam'
-            },
-            title: true
+      components: [
+        {
+          component: {
+            $value: 'Table'
           },
-          {
-            id: true,
-            $id: {
-              $field: 'awayTeam'
-            },
-            title: true
-          }
-        ],
-        type: true,
-        title: true,
-        id: true,
-        $list: {
-          $limit: 30,
-          $find: {
-            $filter: [
+          title: {
+            $value: 'Live'
+          },
+          children: {
+            teams: [
               {
-                $field: 'type',
-                $operator: '=',
-                $value: 'sport'
+                id: true,
+                $id: {
+                  $field: 'homeTeam'
+                },
+                title: true
               },
               {
-                $field: 'published',
-                $operator: '=',
-                $value: true
+                id: true,
+                $id: {
+                  $field: 'awayTeam'
+                },
+                title: true
               }
             ],
-            $find: {
-              $traverse: 'descendants',
-              $filter: [
-                {
-                  $field: 'type',
-                  $operator: '=',
-                  $value: 'match'
+            type: true,
+            title: true,
+            id: true,
+            $list: {
+              $limit: 30,
+              $find: {
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'sport'
+                  },
+                  {
+                    $field: 'published',
+                    $operator: '=',
+                    $value: true
+                  }
+                ],
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: [
+                    {
+                      $field: 'type',
+                      $operator: '=',
+                      $value: 'match'
+                    },
+                    {
+                      $field: 'published',
+                      $operator: '=',
+                      $value: true
+                    },
+                    {
+                      $operator: '<',
+                      $value: 'now',
+                      $field: 'startTime'
+                    },
+                    {
+                      $operator: '>',
+                      $value: 'now',
+                      $field: 'endTime'
+                    }
+                  ]
                 },
-                {
-                  $field: 'published',
-                  $operator: '=',
-                  $value: true
-                },
-                {
-                  $operator: '<',
-                  $value: 'now',
-                  $field: 'startTime'
-                },
-                {
-                  $operator: '>',
-                  $value: 'now',
-                  $field: 'endTime'
-                }
-              ]
-            },
-            $traverse: 'ancestors'
+                $traverse: 'ancestors'
+              },
+              $sort: {
+                $order: 'desc',
+                $field: 'date'
+              }
+            }
+          }
+        },
+        {
+          component: {
+            $value: 'GridLarge'
           },
-          $sort: {
-            $order: 'desc',
-            $field: 'date'
+          title: {
+            $value: 'Team Videos'
+          },
+          children: {
+            type: true,
+            title: true,
+            $list: {
+              $limit: 10,
+              $find: {
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'team'
+                  },
+                  {
+                    $field: 'published',
+                    $operator: '=',
+                    $value: true
+                  }
+                ],
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: [
+                    {
+                      $field: 'type',
+                      $operator: '=',
+                      $value: 'video'
+                    },
+                    {
+                      $field: 'published',
+                      $operator: '=',
+                      $value: true
+                    }
+                  ]
+                },
+                $traverse: 'ancestors'
+              },
+              $sort: {
+                $order: 'desc',
+                $field: 'date'
+              }
+            },
+            id: true
           }
         }
-      }
+      ]
     })
     .subscribe(r => {
       otherResult1 = r
@@ -471,7 +543,8 @@ test.serial.only('subs layout', async t => {
     past: pastPublishedIds.slice(0, 10),
     live: []
   })
-  t.deepEqualIgnoreOrder(otherResult1.children, [])
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
+  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
 
   await wait(3000)
 
@@ -481,7 +554,7 @@ test.serial.only('subs layout', async t => {
     past: pastPublishedIds.slice(0, 10),
     live: [{ id: 'mau1' }]
   })
-  t.deepEqualIgnoreOrder(otherResult1.children, [
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
     {
       id: 'mau1',
       type: 'match',
@@ -492,6 +565,7 @@ test.serial.only('subs layout', async t => {
       title: 'upcoming match 1'
     }
   ])
+  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
 
   await wait(3000)
 
@@ -501,7 +575,7 @@ test.serial.only('subs layout', async t => {
     past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
     live: [{ id: 'mau2' }]
   })
-  t.deepEqualIgnoreOrder(otherResult1.children, [
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
     {
       id: 'mau2',
       type: 'match',
@@ -512,6 +586,7 @@ test.serial.only('subs layout', async t => {
       title: 'upcoming match 2'
     }
   ])
+  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
 
   await wait(2000)
 
@@ -520,7 +595,8 @@ test.serial.only('subs layout', async t => {
     past: [{ id: 'mau1' }, { id: 'mau2' }].concat(pastPublishedIds.slice(0, 8)),
     live: []
   })
-  t.deepEqualIgnoreOrder(otherResult1.children, [])
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
+  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
 
   await client.delete('root')
 })
