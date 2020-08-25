@@ -137,14 +137,17 @@ export class Client extends EventEmitter {
         this.connected = true
         drainQueue(this)
 
+        // resend subs on connect allways
         for (const key in this.redisSubscriptions.subscribe) {
           addCommandToQueue(this, { command: 'subscribe', args: [key] })
         }
 
+        // resend subs on connect allways
         for (const key in this.redisSubscriptions.psubscribe) {
           addCommandToQueue(this, { command: 'psubscribe', args: [key] })
         }
 
+        // double check server heatbeat
         addCommandToQueue(this, {
           command: 'subscribe',
           args: [SERVER_HEARTBEAT]
@@ -190,6 +193,7 @@ export class Client extends EventEmitter {
   }
 }
 
+// expose this trough selva makes it easier to check things
 const clients: Map<string, Client> = new Map()
 
 const createClient = (descriptor: ServerDescriptor): Client => {

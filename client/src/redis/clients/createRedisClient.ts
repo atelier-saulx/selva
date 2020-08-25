@@ -2,6 +2,8 @@ import { RedisClient } from 'redis'
 import { Client } from './'
 import { SERVER_HEARTBEAT } from '../../constants'
 
+// unify publisher / subsciber
+
 const createRedisClient = (
   client: Client,
   host: string,
@@ -17,7 +19,6 @@ const createRedisClient = (
     client.startClientTimer = setTimeout(() => {
       if (!isHarddc) {
         clearTimeout(client.serverHeartbeat)
-        // console.log('cannot get it ready!', host, port, label)
         isHarddc = true
         client.emit('hard-disconnect')
       }
@@ -29,7 +30,6 @@ const createRedisClient = (
       clearTimeout(client.serverHeartbeat)
       clearTimeout(client.startClientTimer)
       if (label === 'publisher' && !isHarddc) {
-        // console.log('HARD DC')
         isHarddc = true
         client.emit('hard-disconnect')
       }
@@ -77,6 +77,7 @@ const createRedisClient = (
 
   redisClient.setMaxListeners(1e4)
 
+  // lets make this for 2
   redisClient.on('ready', () => {
     isHarddc = false
     if (label === 'publisher') {
