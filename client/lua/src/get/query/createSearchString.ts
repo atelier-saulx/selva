@@ -161,9 +161,12 @@ const addField = (
         for (let i = 0; i < suggestions.length; i++) {
           const suggestion = suggestions[i]
 
-          searchStrs[
-            i
-          ] = `(@___escaped\\:${filter.$field}\\.${language}:(${suggestion}))`
+          // FIXME:                  |
+          // FIXME: remove debug log v
+          console.log('SEARCHING WITH SUGGESTION', suggestion)
+          searchStrs[i] = `(@___escaped\\:${
+            filter.$field
+          }\\.${language}:(${escapeNonASCII(suggestion)}))`
         }
 
         return searchStrs
