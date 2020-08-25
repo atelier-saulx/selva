@@ -704,7 +704,7 @@ test.serial('find - find with suggestion starting with whitespace', async t => {
     type: 'league',
     name: 'league 2',
     title: {
-      en: '  greatest league'
+      en: '  greatest   league'
     }
   })
 
@@ -759,7 +759,7 @@ test.serial('find - find with suggestion starting with whitespace', async t => {
                 {
                   $field: 'title',
                   $operator: '=',
-                  $value: '   nic'
+                  $value: '   nic     '
                 }
               ]
             }

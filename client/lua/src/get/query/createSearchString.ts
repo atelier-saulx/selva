@@ -40,6 +40,7 @@ const RESERVED_QUERY_PARSER_LEXONS = {
 }
 
 // NOTE: also trims beginning for trailing whitespace
+// NOTE: trims multiple occurrences of repeated whitespace to one whitespace
 function escapeNonASCII(str: string): string {
   let startWhitespace = true
   let result: string = ''
@@ -57,7 +58,8 @@ function escapeNonASCII(str: string): string {
     }
   }
 
-  return result
+  const [wsTrimmed] = string.gsub(result, '[ ]+', ' ')
+  return wsTrimmed
 }
 
 function toNumberValue(value: Value): string {
