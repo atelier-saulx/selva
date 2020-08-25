@@ -688,3 +688,119 @@ test.serial('find - find with another language', async t => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('find - find with suggestion starting with whitespace', async t => {
+  // simple nested - single query
+  const client = connect({ port }, { loglevel: 'info' })
+  await client.set({
+    type: 'league',
+    name: 'league 1',
+    title: {
+      en: ' a nice league'
+    }
+  })
+
+  await client.set({
+    type: 'league',
+    name: 'league 2',
+    title: {
+      en: '  greatest league'
+    }
+  })
+
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        $language: 'en',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                },
+                {
+                  $field: 'title',
+                  $operator: '=',
+                  $value: ' great'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(x => x.name),
+    ['league 2']
+  )
+
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        $language: 'en',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                },
+                {
+                  $field: 'title',
+                  $operator: '=',
+                  $value: '   nic'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(x => x.name),
+    ['league 1']
+  )
+
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        $language: 'en',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league'
+                },
+                {
+                  $field: 'title',
+                  $operator: '=',
+                  $value: '   league'
+                }
+              ]
+            }
+          }
+        }
+      })
+    ).items.map(x => x.name),
+    ['league 1', 'league 2']
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})

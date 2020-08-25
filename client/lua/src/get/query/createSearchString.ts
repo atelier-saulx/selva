@@ -39,14 +39,21 @@ const RESERVED_QUERY_PARSER_LEXONS = {
   '~': true
 }
 
+// NOTE: also trims beginning for trailing whitespace
 function escapeNonASCII(str: string): string {
+  let startWhitespace = true
   let result: string = ''
   for (let i = 0; i < str.length; i++) {
-    const c: string = str[i]
-    if (RESERVED_QUERY_PARSER_LEXONS[c]) {
-      result += '\\' + c
+    if (startWhitespace && str[i] === ' ') {
+      // do nothing
     } else {
-      result += c
+      startWhitespace = false
+      const c: string = str[i]
+      if (RESERVED_QUERY_PARSER_LEXONS[c]) {
+        result += '\\' + c
+      } else {
+        result += c
+      }
     }
   }
 
@@ -163,7 +170,6 @@ const addField = (
 
           // FIXME:                  |
           // FIXME: remove debug log v
-          console.log('SEARCHING WITH SUGGESTION', suggestion)
           searchStrs[i] = `(@___escaped\\:${
             filter.$field
           }\\.${language}:(${escapeNonASCII(suggestion)}))`
