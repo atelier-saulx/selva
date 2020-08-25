@@ -801,6 +801,63 @@ test.serial('find - find with suggestion starting with whitespace', async t => {
     ['league 1', 'league 2']
   )
 
+  try {
+    await client.get({
+      $id: 'root',
+      $language: 'en',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              },
+              {
+                $field: 'title',
+                $operator: '=',
+                $value: '*  '
+              }
+            ]
+          }
+        }
+      }
+    })
+
+    await client.get({
+      $id: 'root',
+      $language: 'en',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league'
+              },
+              {
+                $field: 'title',
+                $operator: '=',
+                $value: ''
+              }
+            ]
+          }
+        }
+      }
+    })
+  } catch (e) {
+    console.error(e)
+    t.fail()
+  }
+
   await client.delete('root')
   await client.destroy()
 })

@@ -139,7 +139,9 @@ const addField = (
       return `(@___escaped\\:${filter.$field}\\.${language}:(${filter.$value}))`
     }
   } else if (type === 'TEXT-LANGUAGE-SUG') {
-    if (filter.$operator === '=') {
+    if (filter.$value === '') {
+      // do nothing
+    } else if (filter.$operator === '=') {
       let words: string[] = []
       if (!isArray(filter.$value)) {
         // filter.$value = `${joinAny(filter.$value, ' ')}`
@@ -168,13 +170,15 @@ const addField = (
       if (suggestions.length > 0) {
         let searchStrs: string[] = []
         for (let i = 0; i < suggestions.length; i++) {
-          const suggestion = suggestions[i]
+          const suggestion = escapeNonASCII(suggestions[i])
 
-          // FIXME:                  |
-          // FIXME: remove debug log v
-          searchStrs[i] = `(@___escaped\\:${
-            filter.$field
-          }\\.${language}:(${escapeNonASCII(suggestion)}))`
+          if (suggestion !== '' && suggestion !== ' ') {
+            // FIXME:                  |
+            // FIXME: remove debug log v
+            searchStrs[
+              searchStrs.length
+            ] = `(@___escaped\\:${filter.$field}\\.${language}:(${suggestion}))`
+          }
         }
 
         return searchStrs
