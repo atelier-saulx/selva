@@ -162,6 +162,26 @@ const parseQuery = (
 
     // TODO: attach limit/offset/sort options below
 
+    let order: string[] = []
+
+    if (getOptions.$list &&
+        getOptions.$list !== true &&
+        getOptions.$list.$sort) {
+      // @ts-ignore
+      if (getOptions.$list.$sort.$field) {
+        order = [
+            'order',
+            // @ts-ignore
+            getOptions.$list.$sort.$field,
+            // @ts-ignore
+            getOptions.$list.$sort.$order || 'asc'
+        ];
+      } else {
+        // TODO Support this sort case
+        logger.info('Not supported yet')
+      }
+    }
+
     const [findIn, searchArgs] = ast2rpn(resultFork, language)
     let queryResult: string[]
     if (findIn) {
@@ -184,6 +204,7 @@ const parseQuery = (
         '___selva_hierarchy',
         'bfs',
         $traverse,
+        ...order,
         joinPaddedIds(ids),
         ...searchArgs
       )

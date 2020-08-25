@@ -1915,23 +1915,88 @@ static int parse_algo(enum SelvaModify_Hierarchy_Algo *algo, RedisModuleString *
     return 0;
 }
 
+struct FindCommand_OrderedItem {
+    Selva_NodeId id;
+    size_t data_len;
+    char data[];
+};
+
+static int FindCommand_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
+    const struct FindCommand_OrderedItem *a = *(const struct FindCommand_OrderedItem **)a_raw;
+    const struct FindCommand_OrderedItem *b = *(const struct FindCommand_OrderedItem **)b_raw;
+
+    /* TODO different langs may have differing order. */
+    const int res1 = strncmp(a->data, b->data, min(a->data_len, b->data_len));
+    if (res1 != 0) {
+        return res1;
+    }
+
+    const int res2 = a->data_len - b->data_len;
+    if (res2 != 0) {
+        return res2;
+    }
+
+    return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
+}
+
+static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCtx *ctx, Selva_NodeId nodeId, const char *order_field) {
+    RedisModuleString *id;
+    RedisModuleKey *key;
+    struct FindCommand_OrderedItem *item;
+    const char *data = NULL;
+    size_t data_len = 0;
+
+    id = RedisModule_CreateString(ctx, nodeId, SelvaModify_NodeIdLen(nodeId));
+    if (!id) {
+        return NULL;
+    }
+
+    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
+    if (key) {
+        RedisModuleString *value = NULL;
+        int err;
+
+        err = RedisModule_HashGet(key, REDISMODULE_HASH_CFIELDS, order_field, &value, NULL);
+        if (err != REDISMODULE_ERR && value) {
+            data = RedisModule_StringPtrLen(value, &data_len);
+        }
+
+        RedisModule_CloseKey(key);
+    }
+
+    item = RedisModule_Alloc(sizeof(struct FindCommand_OrderedItem) + data_len);
+    memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
+    item->data_len = data_len;
+    if (data_len) {
+        memcpy(item->data, data, data_len);
+    }
+
+    return item;
+}
+
 struct FindCommand_Args {
     RedisModuleCtx *ctx;
     SelvaModify_HierarchyNode *head;
-    ssize_t *nr_nodes;
-    ssize_t offset;
-    ssize_t *limit;
+
+    ssize_t *nr_nodes; /*!< Number of nodes in the result. */
+    ssize_t offset; /*!< Start from nth node. */
+    ssize_t *limit; /*!< Limit the number of result. */
+
     struct rpn_ctx *rpn_ctx;
     const rpn_token *filter;
+
+    const char *order_field; /*!< Order by field name; Otherwise NULL. */
+    SVector *order_result; /*!< Result of the find. Only used if sorting is requested. */
 };
 
 static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     ssize_t *nr_nodes = args->nr_nodes;
+    const int sort = !!args->order_field;
 
     if (likely(node != args->head)) {
-        int take = (args->offset > 0) ? !args->offset-- : 1;
+        int take = (!sort && args->offset > 0) ? !args->offset-- : 1;
 
         if (take && rpn_ctx) {
             int err;
@@ -1958,14 +2023,25 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
         }
 
         if (take) {
-            ssize_t * restrict limit = args->limit;
+            if (!sort) {
+                ssize_t * restrict limit = args->limit;
 
-            RedisModule_ReplyWithStringBuffer(args->ctx, node->id, SelvaModify_NodeIdLen(node->id));
-            *nr_nodes = *nr_nodes + 1;
+                RedisModule_ReplyWithStringBuffer(args->ctx, node->id, SelvaModify_NodeIdLen(node->id));
+                *nr_nodes = *nr_nodes + 1;
 
-            *limit = *limit - 1;
-            if (*limit == 0) {
-                return 1;
+                *limit = *limit - 1;
+                if (*limit == 0) {
+                    return 1;
+                }
+            } else {
+                struct FindCommand_OrderedItem *item;
+
+                item = createFindCommand_OrderItem(args->ctx, node->id, args->order_field);
+                if (item) {
+                    SVector_InsertFast(args->order_result, item);
+                } else {
+                    fprintf(stderr, "Hierarchy: Out of memory while creating an ordered result item\n");
+                }
             }
         }
     }
@@ -2134,6 +2210,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Run for each NODE_ID.
      */
     ssize_t nr_nodes = 0;
+    svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
     RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
@@ -2163,7 +2240,12 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
+            .order_field = order_by_field,
+            .order_result = &order_result,
         };
+        if (order != HIERARCHY_RESULT_ORDER_NONE) {
+            SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compare);
+        }
         const TraversalCallback cb = {
             .head_cb = NULL,
             .head_arg = NULL,
@@ -2186,6 +2268,41 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             fprintf(stderr, "Hierarchy: Find failed for node: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     }
+
+    /*
+     * If an ordered request was requested then nothing was send to the client yet
+     * and we need to do it now.
+     */
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        struct FindCommand_OrderedItem **item_pp;
+        ssize_t i;
+
+        /*
+         * First handle the offsetting.
+         */
+        for (i = 0; i < offset; i++) {
+            SVector_Shift(&order_result);
+        }
+
+        /*
+         * Then send out node IDs upto the limit.
+         */
+        nr_nodes = 0;
+        i = limit;
+        SVECTOR_FOREACH(item_pp, &order_result) {
+            struct FindCommand_OrderedItem *item = *item_pp;
+
+            if (i-- == 0) {
+                break;
+            }
+
+            RedisModule_ReplyWithStringBuffer(ctx, item->id, SelvaModify_NodeIdLen(item->id));
+            nr_nodes++;
+
+            RedisModule_Free(item);
+        }
+    }
+
     RedisModule_ReplySetArrayLength(ctx, nr_nodes);
 
     if (rpn_ctx) {
