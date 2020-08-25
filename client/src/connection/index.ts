@@ -11,6 +11,13 @@ const serverId = (serverDescriptor: ServerDescriptor) => {
   return serverDescriptor.host + ':' + serverDescriptor.port
 }
 
+type ConnectionState = {
+  queue: RedisCommand[]
+  pSubscribes: string[]
+  subscribes: string[]
+  listeners: [string, (x: any) => {}][]
+}
+
 class Connection extends EventEmitter {
   public subscriber: RedisClient
 
@@ -20,11 +27,25 @@ class Connection extends EventEmitter {
 
   public serverDescriptor: ServerDescriptor
 
-  public selvaSubscribe() {}
+  public selvaSubscribe() {
+    // add hearthbeat if you dont have it
+  }
 
-  public selvaUnsubscribe() {}
+  public selvaUnsubscribe() {
+    // if empty (no selva subscriptions stop hearthbeat)
+    // and handle activity counter ofc
+  }
 
-  // better maybe to remove this from the queue? OR everything in the queue
+  public queue: RedisCommand[]
+
+  public queueBeingDrained: RedisCommand[]
+
+  public connected: boolean = false
+
+  public serverIsBusy: boolean = false
+
+  public queueInProgress: boolean = false
+
   public subscribe() {}
 
   public unsubscribe() {}
@@ -37,16 +58,23 @@ class Connection extends EventEmitter {
     // also handes subsriptions etc
   }
 
-  public applyConnectionState() {}
+  public applyConnectionState(state: ConnectionState) {}
 
-  public getConnectionState(id: string) {
-    // if !id just get all
-    // return something that you can pass into mergeConnection
-    // queue from in progress and current queue
-    // subscriptions
-    // listeners
-    // selvaSubscriptions
-    // psubscribe
+  public getConnectionState(id?: string): ConnectionState {
+    const state = {
+      queue: [],
+      pSubscribes: [],
+      subscribes: [],
+      listeners: []
+    }
+
+    if (id) {
+      // take the quue
+    } else {
+      // copy it nice
+    }
+
+    return state
   }
 
   public removeRemoteListener() {}
@@ -80,7 +108,7 @@ class Connection extends EventEmitter {
 
     connections.delete(serverId(this.serverDescriptor))
 
-    // destory if counter is zero
+    // destroy if counter is zero
   }
 
   constructor(serverDescriptor: ServerDescriptor) {
@@ -91,12 +119,17 @@ class Connection extends EventEmitter {
     this.uuid = uuidv4()
 
     this.serverDescriptor = serverDescriptor
+
+    this.queue = []
+    this.queueBeingDrained = []
+
     // here we add the retry strategies
 
     // we add
     // - start timeout
     // - max retries
     // - server timeout subscription
+    // - hard-disconnect (from info)
 
     this.subscriber = new RedisClient({
       host: serverDescriptor.host,

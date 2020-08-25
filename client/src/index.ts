@@ -40,7 +40,7 @@ let clientId = 0
 export class SelvaClient extends EventEmitter {
   public redis: Redis
 
-  public selvaId: number
+  public selvaId: string
 
   // add these on the registry scince that is the thing that gets reused
   public schemaObservables: Record<string, Observable<Schema>> = {}
@@ -71,7 +71,7 @@ export class SelvaClient extends EventEmitter {
     super()
     updateConnectOptions(this, opts)
     this.redis = new Redis(this)
-    this.selvaId = ++clientId
+    this.selvaId = ++clientId + ''
   }
 
   logLevel () {

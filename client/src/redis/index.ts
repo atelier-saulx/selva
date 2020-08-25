@@ -2,9 +2,9 @@ import { ServerSelector } from '../types'
 import { RedisCommand, Callback } from './types'
 import RedisMethods from './methods'
 import { SelvaClient } from '..'
-
-import updateRemoteListeners from './updateRemoteListeners'
-import addRemoteCommand from './addRemoteCommand'
+import './redisClientExtensions'
+import updateRemoteListeners from '../updateRemoteListeners'
+import addRemoteCommand from '../addRemoteCommand'
 
 class RedisSelvaClient extends RedisMethods {
   selvaClient: SelvaClient
