@@ -2,11 +2,8 @@ import { EventEmitter } from 'events'
 import {
   ConnectOptions,
   ServerDescriptor,
-  ClientOpts,
   ServerType,
-  ServerSelector,
-  LogFn,
-  LogEntry
+  ServerSelector
 } from './types'
 import digest from './digest'
 import Redis from './redis'
@@ -22,24 +19,35 @@ import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
 import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
-import { v4 as uuidv4 } from 'uuid'
-import { observe, observeSchema } from './observe'
 import conformToSchema from './conformToSchema'
-import getServerDescriptor from './redis/getServerDescriptor'
-import Observable from './observe/observable'
-import { getClient } from './redis/clients'
 
+import { connections, Connection } from './connection'
+
+import updateConnectOptions from './updateConnectOptions'
+
+import destroy from './destroy'
+
+import { observe, observeSchema} from './observe'
+
+import getServer from './getServer'
+
+import Observable from './observe/observable'
 
 export * as constants from './constants'
 
+let clientId = 0
+
 export class SelvaClient extends EventEmitter {
   public redis: Redis
-  public uuid: string
-  public logFn: LogFn
-  public loglevel: string
+
+  public selvaId: number
+
+  // add these on the registry scince that is the thing that gets reused
   public schemaObservables: Record<string, Observable<Schema>> = {}
   public schemas: Record<string, Schema> = {}
   public serverType: string
+
+  public registryConnection?: Connection
  
   public admin: {
     deleteType(name: string, dbName?: string): Promise<void>,
@@ -59,28 +67,16 @@ export class SelvaClient extends EventEmitter {
     }
   }
 
-  constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
+  constructor(opts: ConnectOptions) {
     super()
-    // uuid is used for logs
-    this.uuid = uuidv4()
-    this.setMaxListeners(10000)
-    if (!clientOpts) {
-      clientOpts = {}
-    }
+    updateConnectOptions(this, opts)
+    this.redis = new Redis(this)
+    this.selvaId = ++clientId
+  }
 
-    this.loglevel = clientOpts.loglevel || 'warning'
-    this.logFn =
-      clientOpts.log ||
-      ((l: LogEntry, dbName: string) =>
-        console.log(`LUA: [{${dbName}} ${l.level}] ${l.msg}`))
-
-    this.on('log', ({ dbName, log }) => {
-      this.logFn(log, dbName)
-    })
-
-    this.serverType = clientOpts.serverType
-
-    this.redis = new Redis(this, opts)
+  logLevel () {
+    // for logs its connection uuid + client id
+    // can enable / disable logleves
   }
 
    async initializeSchema(opts: any) {
@@ -97,9 +93,6 @@ export class SelvaClient extends EventEmitter {
     return get(this, getOpts)
   }
 
-  observe(props: GetOptions) {
-    return observe(this, props)
-  }
 
   async set(setOpts: SetOptions): Promise<Id | undefined> {
     await this.initializeSchema(setOpts)
@@ -115,10 +108,6 @@ export class SelvaClient extends EventEmitter {
     return digest(payload)
   }
 
-  getClient(descriptor: ServerDescriptor) {
-   return getClient(this.redis, descriptor)
-  }
-
   getSchema(name: string = 'default'): Promise<GetSchemaResult> {
     return getSchema(this, { name: name })
   }
@@ -132,7 +121,17 @@ export class SelvaClient extends EventEmitter {
   }
 
   subscribeSchema(name: string = 'default'): Observable<Schema> {
+    //  call this observeSchema....
+    console.warn('subscribeSchema changed to observeSchema will be removed in future versions')
     return observeSchema(this, name)
+  }
+
+  observeSchema(name: string = 'default'): Observable<Schema> {
+    return observeSchema(this, name)
+  }
+
+  observe(props: GetOptions) {
+    return observe(this, props)
   }
 
   async conformToSchema(props: SetOptions, dbName: string = 'default') {
@@ -140,28 +139,31 @@ export class SelvaClient extends EventEmitter {
     return conformToSchema(this, props, dbName)
   }
 
-  getServerDescriptor(opts: ServerSelector): Promise<ServerDescriptor> {
-    return getServerDescriptor(this.redis, opts)
+  getServer(opts: ServerSelector): Promise<ServerDescriptor> {
+    return getServer(this, opts)
   }
 
-  destroy() {
-    // console.log('destroy client - not implemented yet!')
+  async destroy() {
+    console.log('destroy client - not implemented yet!')
+    return destroy(this)
   }
 }
 
 export function connect(
-  opts: ConnectOptions,
-  selvaOpts?: ClientOpts
+  opts: ConnectOptions
 ): SelvaClient {
-  const client = new SelvaClient(opts, selvaOpts)
+  const client = new SelvaClient(opts)
   return client
 }
 
+// maybe make connection a bit nicer to interact with?
 export {
+  connections,
   ConnectOptions,
   ServerType,
   ServerDescriptor,
   GetOptions,
   FieldSchemaObject,
-  RedisCommand
+  RedisCommand,
+  Connection
 }

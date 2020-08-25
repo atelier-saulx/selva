@@ -25,6 +25,7 @@ export type ConnectOptions =
   | (() => Promise<Connect>)
   | Promise<Connect>
 
+// maybe add registry here?
 export type ServerSelector = {
   name?: string
   type?: ServerType
@@ -32,6 +33,8 @@ export type ServerSelector = {
   port?: number
   subscription?: string
 }
+
+// complete server selector + registry client
 
 // TODO: make non optional
 export type ServerDescriptor = {
@@ -43,3 +46,7 @@ export type ServerDescriptor = {
   stats?: any
   subscriptions?: Set<string>
 }
+
+export type Servers = Record<string, Record<string, ServerDescriptor[]>>
+
+export type ServersById = Record<string, ServerDescriptor>

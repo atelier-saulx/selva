@@ -1,6 +1,6 @@
-import { ServerDescriptor } from '../types'
+export type Callback = (...args: any[]) => void
 
-type Resolvable = {
+export type Resolvable = {
   resolve?: (x: any) => void
   reject?: (x: Error) => void
 }
@@ -10,10 +10,5 @@ export type RedisCommand = Resolvable & {
   type?: string
   args: (string | number)[]
   hash?: number
+  id?: string // id can be used to filter actions on (e.g. selvaClient id)
 }
-
-export type Servers = Record<string, Record<string, ServerDescriptor[]>>
-
-export type ServersById = Record<string, ServerDescriptor>
-
-export type Callback = (...args: any[]) => void
