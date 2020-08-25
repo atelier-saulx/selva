@@ -4,12 +4,16 @@ import { SERVER_HEARTBEAT } from '../constants'
 import { RedisClient } from 'redis'
 import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
+import drainQueue from './drainQueue'
+import { loadScripts } from './scripts'
 
 const connections: Map<string, Connection> = new Map()
 
 const serverId = (serverDescriptor: ServerDescriptor) => {
   return serverDescriptor.host + ':' + serverDescriptor.port
 }
+
+// logs are easier to handle just add the id in the command to the other id
 
 type ConnectionState = {
   queue: RedisCommand[]
@@ -28,12 +32,25 @@ class Connection extends EventEmitter {
   public serverDescriptor: ServerDescriptor
 
   public selvaSubscribe() {
+    if (!this.selvaSubscriptionsActive) {
+      console.log('need to add hearthbeat')
+      console.log('need to add message listener')
+
+      // this does not have to go to the state (scince we have the selva subscription itself!)
+      this.selvaSubscriptionsActive = true
+    }
+
+    // need to add a counter to the subscription
+
     // add hearthbeat if you dont have it
+    // initializeSubscriptions
   }
 
   public selvaUnsubscribe() {
     // if empty (no selva subscriptions stop hearthbeat)
     // and handle activity counter ofc
+    // if counter === 0 remove subs and remove
+    // if all counters are zero remove all ( also on destory )
   }
 
   public queue: RedisCommand[]
@@ -46,6 +63,8 @@ class Connection extends EventEmitter {
 
   public queueInProgress: boolean = false
 
+  public selvaSubscriptionsActive: boolean = false
+
   public subscribe() {}
 
   public unsubscribe() {}
@@ -55,6 +74,10 @@ class Connection extends EventEmitter {
   public punsubscribe() {}
 
   public addCommand(command: RedisCommand) {
+    this.queue.push(command)
+    if (!this.queueInProgress) {
+      drainQueue(this)
+    }
     // also handes subsriptions etc
   }
 
@@ -109,6 +132,11 @@ class Connection extends EventEmitter {
     connections.delete(serverId(this.serverDescriptor))
 
     // destroy if counter is zero
+    if (this.selvaSubscriptionsActive) {
+      console.log(
+        'need to remove subs listeners for hearthebeat, and need to remove message listener'
+      )
+    }
   }
 
   constructor(serverDescriptor: ServerDescriptor) {
@@ -148,6 +176,13 @@ class Connection extends EventEmitter {
     }
 
     connections.set(stringId, this)
+
+    if (
+      serverDescriptor.type === 'origin' ||
+      serverDescriptor.type === 'replica'
+    ) {
+      loadScripts(this)
+    }
   }
 }
 
