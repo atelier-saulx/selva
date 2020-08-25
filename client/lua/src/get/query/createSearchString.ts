@@ -139,9 +139,7 @@ const addField = (
       return `(@___escaped\\:${filter.$field}\\.${language}:(${filter.$value}))`
     }
   } else if (type === 'TEXT-LANGUAGE-SUG') {
-    if (filter.$value === '') {
-      // do nothing
-    } else if (filter.$operator === '=') {
+    if (filter.$operator === '=') {
       let words: string[] = []
       if (!isArray(filter.$value)) {
         // filter.$value = `${joinAny(filter.$value, ' ')}`
@@ -154,16 +152,18 @@ const addField = (
 
       let suggestions: string[] = []
       for (let i = 0; i < words.length; i++) {
-        const suggestion: string[] = redis.pcall(
-          'ft.sugget',
-          `sug`,
-          words[i],
-          'MAX',
-          '150'
-        )
+        if (words[i] && words[i] !== '' && words[i] !== ' ') {
+          const suggestion: string[] = redis.pcall(
+            'ft.sugget',
+            `sug`,
+            words[i],
+            'MAX',
+            '150'
+          )
 
-        for (let j = 0; j < suggestion.length; j++) {
-          suggestions[suggestions.length] = suggestion[j]
+          for (let j = 0; j < suggestion.length; j++) {
+            suggestions[suggestions.length] = suggestion[j]
+          }
         }
       }
 
@@ -184,7 +184,7 @@ const addField = (
         return searchStrs
       }
 
-      return `(@${filter.$field}\\.${language}:(${filter.$value}))`
+      return ''
     }
   } else if (type === 'GEO') {
     if (filter.$operator === 'distance' && isArray(filter.$value)) {
