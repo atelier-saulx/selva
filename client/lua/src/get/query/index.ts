@@ -13,6 +13,12 @@ import { setNestedResult, setMeta } from '../nestedFields'
 
 import globals from '../../globals'
 
+function appendSearchArgs(searchArgs: string[], newArgs: string[]): void {
+  for (const arg of newArgs) {
+    searchArgs[searchArgs.length] = arg
+  }
+}
+
 const parseNested = (
   getField: GetFieldFn,
   opts: GetOptions,
@@ -163,33 +169,42 @@ const parseQuery = (
     const [findIn, searchArgs] = ast2rpn(resultFork, language)
     let queryResult: string[]
     if (findIn) {
-      // TODO: attach limit/offset/sort options below
       logger.info('finding matches in ids', findIn, joinPaddedIds(findIn))
-      queryResult = redis.call(
+
+      const allArgs: string[] = []
+      appendSearchArgs(allArgs, [
         'selva.hierarchy.findIn',
         '___selva_hierarchy',
-        // ...order,
-        // ...offset,
-        // ...limit,
-        joinPaddedIds(findIn),
-        ...searchArgs
-      )
+        joinPaddedIds(findIn)
+      ])
+
+      appendSearchArgs(allArgs, order)
+      appendSearchArgs(allArgs, offset)
+      appendSearchArgs(allArgs, limit)
+      appendSearchArgs(allArgs, searchArgs)
+
+      queryResult = redis.call(...allArgs)
 
       if (queryResult) {
         resultIds = queryResult
       }
     } else {
-      queryResult = redis.call(
+      const allArgs: string[] = []
+      appendSearchArgs(allArgs, [
         'selva.hierarchy.find',
         '___selva_hierarchy',
         'bfs',
-        $traverse,
-        // ...order,
-        // ...offset,
-        // ...limit,
-        joinPaddedIds(ids),
-        ...searchArgs
-      )
+        $traverse
+      ])
+
+      appendSearchArgs(allArgs, order)
+      appendSearchArgs(allArgs, offset)
+      appendSearchArgs(allArgs, limit)
+      appendSearchArgs(allArgs, [joinPaddedIds(ids)])
+      appendSearchArgs(allArgs, searchArgs)
+
+      logger.info('all args', allArgs)
+      queryResult = redis.call(...allArgs)
     }
 
     logger.info('search res:', queryResult)
