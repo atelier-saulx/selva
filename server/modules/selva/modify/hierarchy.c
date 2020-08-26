@@ -1869,9 +1869,8 @@ static int parse_order(
         RedisModuleString *txt,
         RedisModuleString *fld,
         RedisModuleString *ord) {
-    TO_STR(txt, ord);
+    TO_STR(txt, fld, ord);
     enum hierarchy_result_order tmpOrder;
-    const char *field;
 
     if (strncmp("order", txt_str, txt_len)) {
         return SELVA_MODIFY_HIERARCHY_ENOENT;
@@ -1885,12 +1884,11 @@ static int parse_order(
         return SELVA_MODIFY_HIERARCHY_EINVAL;
     }
 
-    field = RedisModule_StringPtrLen(fld, NULL);
-    if (!strcmp(field, "")) {
+    if (!strcmp(fld_str, "")) {
         tmpOrder = HIERARCHY_RESULT_ORDER_NONE;
         *order_by_field = NULL;
     } else {
-        *order_by_field = field;
+        *order_by_field = fld_str;
     }
 
     *order = tmpOrder;
@@ -2119,9 +2117,9 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     const size_t ARGV_REDIS_KEY = 1;
     const size_t ARGV_ALGO      = 2;
     const size_t ARGV_DIRECTION = 3;
-    size_t ARGV_ORDER_TXT       = 4;
-    size_t ARGV_ORDER_FLD       = 5;
-    size_t ARGV_ORDER_ORD       = 6;
+    const size_t ARGV_ORDER_TXT = 4;
+    const size_t ARGV_ORDER_FLD = 5;
+    const size_t ARGV_ORDER_ORD = 6;
     size_t ARGV_OFFSET_TXT      = 4;
     size_t ARGV_OFFSET_NUM      = 5;
     size_t ARGV_LIMIT_TXT       = 4;
@@ -2348,9 +2346,9 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     int err;
 
     const size_t ARGV_REDIS_KEY = 1;
-    size_t ARGV_ORDER_TXT       = 2;
-    size_t ARGV_ORDER_FLD       = 3;
-    size_t ARGV_ORDER_ORD       = 4;
+    const size_t ARGV_ORDER_TXT = 2;
+    const size_t ARGV_ORDER_FLD = 3;
+    const size_t ARGV_ORDER_ORD = 4;
     size_t ARGV_OFFSET_TXT      = 2;
     size_t ARGV_OFFSET_NUM      = 3;
     size_t ARGV_LIMIT_TXT       = 2;
