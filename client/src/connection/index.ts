@@ -7,6 +7,7 @@ import drainQueue from './drainQueue'
 import { loadScripts } from './scripts'
 import SubscriptionEmitter from '../observe/emitter'
 import startRedisClient from './startRedisClient'
+import { RedisClient } from 'redis'
 
 const connections: Map<string, Connection> = new Map()
 
@@ -113,6 +114,11 @@ class Connection extends EventEmitter {
   public addRemoteListener() {}
 
   // mostly used internaly
+
+  public startClientTimer: NodeJS.Timeout = null
+
+  public serverHeartbeatTimer: NodeJS.Timeout = null
+
   public activeCounter = 0
   destroyTimer: NodeJS.Timeout = null
   public addActive() {
@@ -143,6 +149,16 @@ class Connection extends EventEmitter {
       clearTimeout(this.destroyTimer)
     }
     this.destroyTimer = null
+
+    if (this.serverHeartbeatTimer) {
+      clearTimeout(this.serverHeartbeatTimer)
+    }
+    this.serverHeartbeatTimer = null
+
+    if (this.startClientTimer) {
+      clearTimeout(this.startClientTimer)
+    }
+    this.startClientTimer = null
 
     connections.delete(serverId(this.serverDescriptor))
 

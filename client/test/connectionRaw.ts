@@ -12,6 +12,10 @@ test.serial('make a connection instance', async t => {
 
   console.log('go time')
 
+  client.registryConnection.on('connect', () => {
+    console.log('ok connect')
+  })
+
   await wait(1e3)
 
   // const nConnection = new Connection()
