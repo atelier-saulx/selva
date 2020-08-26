@@ -1,12 +1,12 @@
 import { EventEmitter } from 'events'
 import { RedisCommand } from '..'
 import { SERVER_HEARTBEAT } from '../constants'
-import { RedisClient } from 'redis'
 import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import drainQueue from './drainQueue'
 import { loadScripts } from './scripts'
 import SubscriptionEmitter from '../observe/emitter'
+import startRedisClient from './startRedisClient'
 
 const connections: Map<string, Connection> = new Map()
 
@@ -60,6 +60,13 @@ class Connection extends EventEmitter {
   public queueBeingDrained: RedisCommand[]
 
   public connected: boolean = false
+
+  public clientsConnected: { subscriber: boolean; publisher: boolean } = {
+    subscriber: false,
+    publisher: false
+  }
+
+  public isDestroyed: boolean = false
 
   public serverIsBusy: boolean = false
 
@@ -126,6 +133,12 @@ class Connection extends EventEmitter {
 
   public destroy() {
     console.log('destroy connection')
+
+    this.isDestroyed = true
+
+    this.subscriber.quit()
+    this.publisher.quit()
+
     if (this.destroyTimer) {
       clearTimeout(this.destroyTimer)
     }
@@ -139,6 +152,11 @@ class Connection extends EventEmitter {
         'need to remove subs listeners for hearthebeat, and need to remove message listener'
       )
     }
+
+    this.emit('destroyed')
+
+    // remove all listeners -- pretty dangerous
+    this.removeAllListeners()
   }
 
   constructor(serverDescriptor: ServerDescriptor) {
@@ -163,19 +181,7 @@ class Connection extends EventEmitter {
 
     // make this in a function (for retries etc)
 
-    // start withe events
-
-    this.subscriber = new RedisClient({
-      host: serverDescriptor.host,
-      port: serverDescriptor.port,
-      retry_strategy: () => 1e3
-    })
-
-    this.publisher = new RedisClient({
-      host: serverDescriptor.host,
-      port: serverDescriptor.port,
-      retry_strategy: () => 1e3
-    })
+    startRedisClient(this)
 
     const stringId = serverId(serverDescriptor)
 
