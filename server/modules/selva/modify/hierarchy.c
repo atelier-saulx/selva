@@ -1989,59 +1989,55 @@ struct FindCommand_Args {
     SVector *order_result; /*!< Result of the find. Only used if sorting is requested. */
 };
 
-static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
-    struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
+static int FindCommand_PrintNode(Selva_NodeId nodeId, struct FindCommand_Args *args) {
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     ssize_t *nr_nodes = args->nr_nodes;
     const int sort = !!args->order_field;
+    int take = (!sort && args->offset > 0) ? !args->offset-- : 1;
 
-    if (likely(node != args->head)) {
-        int take = (!sort && args->offset > 0) ? !args->offset-- : 1;
+    if (take && rpn_ctx) {
+        int err;
 
-        if (take && rpn_ctx) {
-            int err;
+        /* Set node_id to the register */
+        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE);
 
-            /* Set node_id to the register */
-            rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE);
-
+        /*
+         * Resolve the expression and get the result.
+         */
+        err = rpn_bool(rpn_ctx, args->filter, &take);
+        if (err) {
+            fprintf(stderr, "Hierarchy: Expression failed (node: \"%.*s\"): \"%s\"\n",
+                    (int)SELVA_NODE_ID_SIZE, nodeId,
+                    rpn_str_error[err]);
             /*
-             * Resolve the expression and get the result.
+             * TODO Propagate error?
+             * It would be a good idea to propagate the error but Redis
+             * doesn't actually support sending an error in the middle
+             * of an array response.
              */
-            err = rpn_bool(rpn_ctx, args->filter, &take);
-            if (err) {
-                fprintf(stderr, "Hierarchy: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                        (int)SELVA_NODE_ID_SIZE, node->id,
-                        rpn_str_error[err]);
-                /*
-                 * TODO Propagate error?
-                 * It would be a good idea to propagate the error but Redis
-                 * doesn't actually support sending an error in the middle
-                 * of an array response.
-                 */
+            return 1;
+        }
+    }
+
+    if (take) {
+        if (!sort) {
+            ssize_t * restrict limit = args->limit;
+
+            RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, SelvaModify_NodeIdLen(nodeId));
+            *nr_nodes = *nr_nodes + 1;
+
+            *limit = *limit - 1;
+            if (*limit == 0) {
                 return 1;
             }
-        }
+        } else {
+            struct FindCommand_OrderedItem *item;
 
-        if (take) {
-            if (!sort) {
-                ssize_t * restrict limit = args->limit;
-
-                RedisModule_ReplyWithStringBuffer(args->ctx, node->id, SelvaModify_NodeIdLen(node->id));
-                *nr_nodes = *nr_nodes + 1;
-
-                *limit = *limit - 1;
-                if (*limit == 0) {
-                    return 1;
-                }
+            item = createFindCommand_OrderItem(args->ctx, nodeId, args->order_field);
+            if (item) {
+                SVector_InsertFast(args->order_result, item);
             } else {
-                struct FindCommand_OrderedItem *item;
-
-                item = createFindCommand_OrderItem(args->ctx, node->id, args->order_field);
-                if (item) {
-                    SVector_InsertFast(args->order_result, item);
-                } else {
-                    fprintf(stderr, "Hierarchy: Out of memory while creating an ordered result item\n");
-                }
+                fprintf(stderr, "Hierarchy: Out of memory while creating an ordered result item\n");
             }
         }
     }
@@ -2049,9 +2045,49 @@ static int FindCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
     return 0;
 }
 
+static int FindCommand_PrintNodeCb(SelvaModify_HierarchyNode *node, void *arg) {
+    struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
+    if (likely(node != args->head)) {
+        return FindCommand_PrintNode(node->id, args);
+    }
+
+    return 0;
+}
+
+static size_t FindCommand_PrintOrderedResult(RedisModuleCtx *ctx, ssize_t offset, ssize_t limit, SVector *order_result) {
+    struct FindCommand_OrderedItem **item_pp;
+
+    /*
+     * First handle the offsetting.
+     */
+    for (ssize_t i = 0; i < offset; i++) {
+        SVector_Shift(order_result);
+    }
+    SVector_ShiftReset(order_result);
+
+    /*
+     * Then send out node IDs upto the limit.
+     */
+    size_t len = 0;
+    SVECTOR_FOREACH(item_pp, order_result) {
+        struct FindCommand_OrderedItem *item = *item_pp;
+
+        if (limit-- == 0) {
+            break;
+        }
+
+        RedisModule_ReplyWithStringBuffer(ctx, item->id, SelvaModify_NodeIdLen(item->id));
+        len++;
+
+        RedisModule_Free(item);
+    }
+
+    return len;
+}
+
 /**
  * Find node ancestors/descendants.
- * SELVA.HIERARCHY.find redis_key dfs|bfs descendants|ancestors [order field asc|desc] [offset 1234] [limit 1234] NODE_IDS [filter expression] [args...]
+ * SELVA.HIERARCHY.find REDIS_KEY dfs|bfs descendants|ancestors [order field asc|desc] [offset 1234] [limit 1234] NODE_IDS [filter expression] [args...]
  *                                |       |                     |                      |             |            |        |                   |
  * Traversal method/algo --------/        |                     |                      |             |            |        |                   |
  * Traversal direction ------------------/                      |                      |             |            |        |                   |
@@ -2249,7 +2285,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         const TraversalCallback cb = {
             .head_cb = NULL,
             .head_arg = NULL,
-            .node_cb = FindCommand_PrintNode,
+            .node_cb = FindCommand_PrintNodeCb,
             .node_arg = &args,
             .child_cb = NULL,
             .child_arg = NULL,
@@ -2274,33 +2310,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        struct FindCommand_OrderedItem **item_pp;
-        ssize_t i;
-
-        /*
-         * First handle the offsetting.
-         */
-        for (i = 0; i < offset; i++) {
-            SVector_Shift(&order_result);
-        }
-
-        /*
-         * Then send out node IDs upto the limit.
-         */
-        nr_nodes = 0;
-        i = limit;
-        SVECTOR_FOREACH(item_pp, &order_result) {
-            struct FindCommand_OrderedItem *item = *item_pp;
-
-            if (i-- == 0) {
-                break;
-            }
-
-            RedisModule_ReplyWithStringBuffer(ctx, item->id, SelvaModify_NodeIdLen(item->id));
-            nr_nodes++;
-
-            RedisModule_Free(item);
-        }
+        nr_nodes = FindCommand_PrintOrderedResult(ctx, offset, limit, &order_result);
     }
 
     RedisModule_ReplySetArrayLength(ctx, nr_nodes);
@@ -2315,16 +2325,31 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
 /**
  * Find node in set.
- * SELVA.HIERARCHY.findIn REDIS_KEY NODE_IDS [filter expression] [args...]
+ * SELVA.HIERARCHY.findIn REDIS_KEY [order field asc|desc] [offset 1234] [limit 1234] NODE_IDS [filter expression] [args...]
  */
 int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY    = 1;
-    const size_t ARGV_NODE_IDS     = 2;
-    const size_t ARGV_FILTER_EXPR  = 3;
-    const size_t ARGV_FILTER_ARGS  = 4;
+    const size_t ARGV_REDIS_KEY = 1;
+    size_t ARGV_ORDER_TXT       = 2;
+    size_t ARGV_ORDER_FLD       = 3;
+    size_t ARGV_ORDER_ORD       = 4;
+    size_t ARGV_OFFSET_TXT      = 2;
+    size_t ARGV_OFFSET_NUM      = 3;
+    size_t ARGV_LIMIT_TXT       = 2;
+    size_t ARGV_LIMIT_NUM       = 3;
+    size_t ARGV_NODE_IDS        = 2;
+    size_t ARGV_FILTER_EXPR     = 3;
+    size_t ARGV_FILTER_ARGS     = 4;
+#define SHIFT_ARGS(i) \
+    ARGV_OFFSET_TXT += i; \
+    ARGV_OFFSET_NUM += i; \
+    ARGV_LIMIT_TXT += i; \
+    ARGV_LIMIT_NUM += i; \
+    ARGV_NODE_IDS += i; \
+    ARGV_FILTER_EXPR += i; \
+    ARGV_FILTER_ARGS += i
 
     if (argc < 4) {
         return RedisModule_WrongArity(ctx);
@@ -2344,6 +2369,47 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     SelvaModify_Hierarchy *hierarchy = RedisModule_ModuleTypeGetValue(key);
     if (!hierarchy) {
         return RedisModule_ReplyWithArray(ctx, 0);
+    }
+
+    /*
+     * Parse the order arg.
+     */
+    enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
+    const char *order_by_field = NULL;
+    if (argc > (int)ARGV_ORDER_ORD) {
+        err = parse_order(&order, argv[ARGV_ORDER_TXT], argv[ARGV_ORDER_ORD]);
+        if (err == 0) {
+            order_by_field = RedisModule_StringPtrLen(argv[ARGV_ORDER_FLD], NULL);
+            SHIFT_ARGS(3);
+        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+            return replyWithHierarchyError(ctx, err);
+        }
+    }
+
+    /*
+     * Parse the offset arg.
+     */
+    ssize_t offset = 0;
+    if (argc > (int)ARGV_OFFSET_NUM) {
+        err = parse_opt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+            return replyWithHierarchyError(ctx, err);
+        }
+    }
+
+    /*
+     * Parse the limit arg. -1 = inf
+     */
+    ssize_t limit = -1;
+    if (argc > (int)ARGV_LIMIT_NUM) {
+        err = parse_opt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+            return replyWithHierarchyError(ctx, err);
+        }
     }
 
     size_t nr_reg = argc - ARGV_FILTER_ARGS + 1;
@@ -2379,37 +2445,41 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     }
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    size_t array_len = 0;
+    svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
+    ssize_t array_len = 0;
 
     /*
      * Run the filter.
      */
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        int take = 0;
         Selva_NodeId nodeId;
+        ssize_t tmp_limit = -1;
+        struct FindCommand_Args args = {
+            .ctx = ctx,
+            .head = NULL,
+            .nr_nodes = &array_len,
+            .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset : 0,
+            .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
+            .rpn_ctx = rpn_ctx,
+            .filter = filter_expression,
+            .order_field = order_by_field,
+            .order_result = &order_result,
+        };
 
+        if (order != HIERARCHY_RESULT_ORDER_NONE) {
+            SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compare);
+        }
         strncpy(nodeId, ids_str + i, SELVA_NODE_ID_SIZE);
 
-        /* Set node_id to the register reg[0] */
-        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE);
+        FindCommand_PrintNode(nodeId, &args);
+    }
 
-        /*
-         * Resolve the expression and get the result.
-         */
-        err = rpn_bool(rpn_ctx, filter_expression, &take);
-        if (err) {
-            fprintf(stderr, "Hierarchy: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    rpn_str_error[err]);
-            /*
-             * It would be a good idea to send an error here but Redis
-             * doesn't actually support sending an error in the middle
-             * of an array response.
-             */
-        } else if (take) {
-            RedisModule_ReplyWithStringBuffer(ctx, nodeId, SelvaModify_NodeIdLen(nodeId));
-            array_len++;
-        }
+    /*
+     * If an ordered request was requested then nothing was send to the client yet
+     * and we need to do it now.
+     */
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        array_len = FindCommand_PrintOrderedResult(ctx, offset, limit, &order_result);
     }
 
     RedisModule_ReplySetArrayLength(ctx, array_len);
