@@ -220,7 +220,7 @@ const parseQuery = (
         getOptions.$list.$offset ||
         getOptions.$list.$sort)
     ) {
-      resultIds = parseList(resultIds, getOptions.$list)
+      // resultIds = parseList(resultIds, getOptions.$list)
     }
   } else if (getOptions.$list) {
     resultIds = parseList(resultIds, getOptions.$list)
