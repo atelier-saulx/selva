@@ -106,7 +106,6 @@ const parseQuery = (
   }
 
   if (resultFork) {
-    const idMap: Record<string, true> = {}
     // @ts-ignore
     const $traverse: string =
       (getOptions.$list &&
@@ -158,11 +157,7 @@ const parseQuery = (
       if (sort.$order) {
         sortOrder = sort.$order
       }
-      order = [
-          'order',
-          sortBy,
-          sortOrder
-      ];
+      order = ['order', sortBy, sortOrder]
     }
 
     const [findIn, searchArgs] = ast2rpn(resultFork, language)
@@ -173,14 +168,15 @@ const parseQuery = (
       queryResult = redis.call(
         'selva.hierarchy.findIn',
         '___selva_hierarchy',
+        // ...order,
+        // ...offset,
+        // ...limit,
         joinPaddedIds(findIn),
         ...searchArgs
       )
 
       if (queryResult) {
-        for (let i = 0; i < queryResult.length; i++) {
-          idMap[queryResult[i]] = true
-        }
+        resultIds = queryResult
       }
     } else {
       queryResult = redis.call(
@@ -188,7 +184,9 @@ const parseQuery = (
         '___selva_hierarchy',
         'bfs',
         $traverse,
-        ...order,
+        // ...order,
+        // ...offset,
+        // ...limit,
         joinPaddedIds(ids),
         ...searchArgs
       )
@@ -197,9 +195,7 @@ const parseQuery = (
     logger.info('search res:', queryResult)
 
     if (queryResult) {
-      for (let i = 0; i < queryResult.length; i++) {
-        idMap[queryResult[i]] = true
-      }
+      resultIds = queryResult
     }
 
     if (
@@ -209,14 +205,7 @@ const parseQuery = (
         getOptions.$list.$offset ||
         getOptions.$list.$sort)
     ) {
-      for (const id in idMap) {
-        resultIds[resultIds.length] = id
-      }
       resultIds = parseList(resultIds, getOptions.$list)
-    } else {
-      for (const id in idMap) {
-        resultIds[resultIds.length] = id
-      }
     }
   } else if (getOptions.$list) {
     resultIds = parseList(resultIds, getOptions.$list)
