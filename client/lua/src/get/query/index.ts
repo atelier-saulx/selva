@@ -174,13 +174,13 @@ const parseQuery = (
       const allArgs: string[] = []
       appendSearchArgs(allArgs, [
         'selva.hierarchy.findIn',
-        '___selva_hierarchy',
-        joinPaddedIds(findIn)
+        '___selva_hierarchy'
       ])
 
       appendSearchArgs(allArgs, order)
       appendSearchArgs(allArgs, offset)
       appendSearchArgs(allArgs, limit)
+      appendSearchArgs(allArgs, [joinPaddedIds(findIn)])
       appendSearchArgs(allArgs, searchArgs)
 
       queryResult = redis.call(...allArgs)
