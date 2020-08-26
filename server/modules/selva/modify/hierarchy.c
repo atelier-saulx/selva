@@ -1864,22 +1864,36 @@ static int parse_dir(enum SelvaModify_HierarchyNode_Relationship *dir, RedisModu
 }
 
 static int parse_order(
+        const char **order_by_field,
         enum hierarchy_result_order *order,
         RedisModuleString *txt,
+        RedisModuleString *fld,
         RedisModuleString *ord) {
     TO_STR(txt, ord);
+    enum hierarchy_result_order tmpOrder;
+    const char *field;
 
     if (strncmp("order", txt_str, txt_len)) {
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
     if (!strncmp("asc", ord_str, ord_len)) {
-        *order = HIERARCHY_RESULT_ORDER_ASC;
+        tmpOrder = HIERARCHY_RESULT_ORDER_ASC;
     } else if (!strncmp("desc", ord_str, ord_len)) {
-        *order = HIERARCHY_RESULT_ORDER_DESC;
+        tmpOrder = HIERARCHY_RESULT_ORDER_DESC;
     } else {
         return SELVA_MODIFY_HIERARCHY_EINVAL;
     }
+
+    field = RedisModule_StringPtrLen(fld, NULL);
+    if (!strcmp(field, "")) {
+        tmpOrder = HIERARCHY_RESULT_ORDER_NONE;
+        *order_by_field = NULL;
+    } else {
+        *order_by_field = field;
+    }
+
+    *order = tmpOrder;
 
     return 0;
 }
@@ -2168,9 +2182,11 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
     const char *order_by_field = NULL;
     if (argc > (int)ARGV_ORDER_ORD) {
-        err = parse_order(&order, argv[ARGV_ORDER_TXT], argv[ARGV_ORDER_ORD]);
+        err = parse_order(&order_by_field, &order,
+                          argv[ARGV_ORDER_TXT],
+                          argv[ARGV_ORDER_FLD],
+                          argv[ARGV_ORDER_ORD]);
         if (err == 0) {
-            order_by_field = RedisModule_StringPtrLen(argv[ARGV_ORDER_FLD], NULL);
             SHIFT_ARGS(3);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
             return replyWithHierarchyError(ctx, err);
@@ -2377,9 +2393,11 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
     const char *order_by_field = NULL;
     if (argc > (int)ARGV_ORDER_ORD) {
-        err = parse_order(&order, argv[ARGV_ORDER_TXT], argv[ARGV_ORDER_ORD]);
+        err = parse_order(&order_by_field, &order,
+                          argv[ARGV_ORDER_TXT],
+                          argv[ARGV_ORDER_FLD],
+                          argv[ARGV_ORDER_ORD]);
         if (err == 0) {
-            order_by_field = RedisModule_StringPtrLen(argv[ARGV_ORDER_FLD], NULL);
             SHIFT_ARGS(3);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
             return replyWithHierarchyError(ctx, err);
