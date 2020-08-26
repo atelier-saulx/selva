@@ -2,6 +2,17 @@ import { Connection, connections } from '.'
 import { RedisClient } from 'redis'
 import { SERVER_HEARTBEAT } from '../constants'
 
+/*
+    hard-disconnect
+    Event to indicate that a redis client got corupted / cannot connect
+
+    disconnect
+    Before max retries on disconnection
+
+    connect
+    When both subscriber and publisher are connected
+*/
+
 const startClient = (
   connection: Connection,
   type: 'subscriber' | 'publisher'
@@ -87,7 +98,6 @@ export default (connection: Connection) => {
   connection.publisher = startClient(connection, 'publisher')
 
   const serverHeartbeat = () => {
-    console.log('start server hb')
     clearTimeout(connection.serverHeartbeatTimer)
     connection.serverHeartbeatTimer = setTimeout(() => {
       if (!connection.isDestroyed) {
