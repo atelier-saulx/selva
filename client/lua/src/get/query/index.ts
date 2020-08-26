@@ -83,6 +83,7 @@ const parseQuery = (
   },
   string | null
 ] => {
+  let $traverse: string
   const resultGet = {}
   const results: GetResult[] = []
   if (getOptions.$list && getOptions.$find) {
@@ -113,7 +114,7 @@ const parseQuery = (
 
   if (resultFork) {
     // @ts-ignore
-    const $traverse: string =
+    $traverse =
       (getOptions.$list &&
         // @ts-ignore
         getOptions.$list.$find &&

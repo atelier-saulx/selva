@@ -2,9 +2,9 @@ import { FilterAST, Meta, QuerySubscription, Fork } from './types'
 import * as logger from '../../logger'
 import { isFork } from './util'
 import { getPrefixFromType } from '../../typeIdMapping'
-import { indexOf, isArray, joinString } from '../../util'
+import { indexOf, isArray, joinString, joinPaddedIds } from '../../util'
 import { GetOptions, GetResult } from '~selva/get/types'
-import createSearchString from './createSearchString'
+import ast2rpn from './ast2rpn'
 import createSearchArgs from './createSearchArgs'
 import { Schema } from '../../../../src/schema/index'
 
@@ -148,11 +148,20 @@ function parseSubscriptions(
       const tsFork: WithRequired<Fork, '$or'> = { isFork: true, $or: [] }
       for (let i = 0; i < timestampFilters.length; i++) {
         const filter = timestampFilters[i]
-        tsFork.$or[i] = {
-          $field: filter.$field,
-          $search: filter.$search,
-          $value: filter.$value,
-          $operator: '>'
+        if (filter.$operator === '..') {
+          tsFork.$or[i] = {
+            $field: filter.$field,
+            $search: filter.$search,
+            $value: 'now',
+            $operator: '>'
+          }
+        } else {
+          tsFork.$or[i] = {
+            $field: filter.$field,
+            $search: filter.$search,
+            $value: filter.$value,
+            $operator: '>'
+          }
         }
       }
 
@@ -161,32 +170,30 @@ function parseSubscriptions(
         $and: [tsFork, newAst]
       }
 
-      let [qs] = createSearchString(withTime)
-      const q = qs[0]
+      let [findIn, q] = ast2rpn(withTime, language)
 
       let earliestTime: number | undefined = undefined
       for (let i = 0; i < timestampFilters.length; i++) {
-        const newArgs = createSearchArgs(
-          {
-            $list: {
-              $sort: {
-                $field: timestampFilters[i].$field, // it's actually not so easy to decide which timestamp field should be the basis of sorting
-                $order: 'asc'
-              },
-              $limit: 1
-            }
-          },
-          string.sub(q, 2, q.length - 1),
-          withTime
-        )
+        const searchArgs: string[] = [
+          'selva.hierarchy.findIn',
+          '___selva_hierarchy',
+          'order',
+          timestampFilters[i].$field,
+          'asc',
+          'limit',
+          '1',
+          findIn && findIn.length > 0
+            ? joinPaddedIds(findIn)
+            : joinPaddedIds(ids)
+        ]
 
-        const newSearchResults: string[] = redis.pcall(
-          'ft.search',
-          'default',
-          ...newArgs
-        )
+        for (const qArg of q) {
+          searchArgs[searchArgs.length] = qArg
+        }
 
-        const earliestId = newSearchResults[1]
+        const newSearchResults: string[] = redis.pcall(...searchArgs)
+
+        const earliestId = newSearchResults[0]
         if (earliestId) {
           const timeResp = redis.call(
             'hget',
