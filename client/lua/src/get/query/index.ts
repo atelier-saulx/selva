@@ -123,17 +123,33 @@ const parseQuery = (
       ast2rpn(resultFork, language)
     )
 
-    let offset = 0
-    let limit = -1
-    let sortBy = ''
-    let sortOrder = 'asc'
+    let offset: string[] = []
+    let limit: string[] = []
+    let order: string[] = []
+
+    if (
+      getOptions.$list &&
+      getOptions.$list !== true &&
+      getOptions.$list.$offset
+    ) {
+      offset = ['offset', `${getOptions.$list.$offset}`]
+    }
+
+    if (
+      getOptions.$list &&
+      getOptions.$list !== true &&
+      getOptions.$list.$limit
+    ) {
+      limit = ['limit', `${getOptions.$list.$limit}`]
+    }
 
     if (
       getOptions.$list &&
       getOptions.$list !== true &&
       getOptions.$list.$sort
     ) {
-      // C module only handles primary sort, further sorts for now need to be done on lua side
+      let sortBy = ''
+      let sortOrder = 'asc'
       // @ts-ignore
       const sort: Sort = getOptions.$list.$sort.length
         ? (<Sort[]>getOptions.$list.$sort)[0]
@@ -142,49 +158,17 @@ const parseQuery = (
       if (sort.$order) {
         sortOrder = sort.$order
       }
-    }
-
-    if (
-      getOptions.$list &&
-      getOptions.$list !== true &&
-      getOptions.$list.$offset
-    ) {
-      offset = getOptions.$list.$offset
-    }
-
-    if (
-      getOptions.$list &&
-      getOptions.$list !== true &&
-      getOptions.$list.$limit
-    ) {
-      limit = getOptions.$list.$limit
-    }
-
-    // TODO: attach limit/offset/sort options below
-
-    let order: string[] = []
-
-    if (getOptions.$list &&
-        getOptions.$list !== true &&
-        getOptions.$list.$sort) {
-      // @ts-ignore
-      if (getOptions.$list.$sort.$field) {
-        order = [
-            'order',
-            // @ts-ignore
-            getOptions.$list.$sort.$field,
-            // @ts-ignore
-            getOptions.$list.$sort.$order || 'asc'
-        ];
-      } else {
-        // TODO Support this sort case
-        logger.info('Not supported yet')
-      }
+      order = [
+          'order',
+          sortBy,
+          sortOrder
+      ];
     }
 
     const [findIn, searchArgs] = ast2rpn(resultFork, language)
     let queryResult: string[]
     if (findIn) {
+      // TODO: attach limit/offset/sort options below
       logger.info('finding matches in ids', findIn, joinPaddedIds(findIn))
       queryResult = redis.call(
         'selva.hierarchy.findIn',
