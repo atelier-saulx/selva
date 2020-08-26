@@ -162,6 +162,9 @@ class Connection extends EventEmitter {
     // - hard-disconnect (from info)
 
     // make this in a function (for retries etc)
+
+    // start withe events
+
     this.subscriber = new RedisClient({
       host: serverDescriptor.host,
       port: serverDescriptor.port,

@@ -18,10 +18,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
         host
       })
 
-      console.log(
-        'ok made start of registry connection',
-        selvaClient.registryConnection
-      )
+      console.log('ok made start of registry connection')
     }
   }
 }
