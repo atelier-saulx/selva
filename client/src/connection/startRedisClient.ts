@@ -20,7 +20,9 @@ const startClient = (
         connection.destroy()
       }
     }
-    if (connection.clientsConnected[type] === true) {
+    if (connection.clientsConnected[type] === true && connection.connected) {
+      clearTimeout(connection.serverHeartbeatTimer)
+      connection.serverHeartbeatTimer = null
       connection.clientsConnected[type] = false
       connection.connected = false
       connection.emit('disconnect', type)
@@ -84,18 +86,27 @@ export default (connection: Connection) => {
   connection.subscriber = startClient(connection, 'subscriber')
   connection.publisher = startClient(connection, 'publisher')
 
+  const serverHeartbeat = () => {
+    console.log('start server hb')
+    clearTimeout(connection.serverHeartbeatTimer)
+    connection.serverHeartbeatTimer = setTimeout(() => {
+      if (!connection.isDestroyed) {
+        console.error(
+          '🧟‍♀️ Server heartbeat expired (longer then 1 min) destroy connection'
+        )
+        connection.emit('hard-disconnect')
+        connection.destroy()
+      }
+    }, 60e3)
+  }
+
+  connection.on('connect', () => {
+    serverHeartbeat()
+  })
+
   connection.subscriber.on('message', channel => {
     if (channel === SERVER_HEARTBEAT) {
-      clearTimeout(connection.serverHeartbeatTimer)
-      connection.serverHeartbeatTimer = setTimeout(() => {
-        if (!connection.isDestroyed) {
-          console.error(
-            '🧟‍♀️ Server heartbeat expired (longer then 2 min) destroy connection'
-          )
-          connection.emit('hard-disconnect')
-          connection.destroy()
-        }
-      }, 2 * 60e3)
+      serverHeartbeat()
     }
   })
 }
