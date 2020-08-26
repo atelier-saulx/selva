@@ -75,20 +75,27 @@ class Connection extends EventEmitter {
 
   public selvaSubscriptionsActive: boolean = false
 
-  public subscribe() {}
+  public subscribe(channel: string, id?: string) {
+    console.log(channel)
+  }
 
-  public unsubscribe() {}
+  public unsubscribe(channel: string, id?: string) {
+    console.log(channel)
+  }
 
-  public psubscribe() {}
+  public psubscribe(channel: string, id?: string) {
+    console.log(channel)
+  }
 
-  public punsubscribe() {}
+  public punsubscribe(channel: string, id?: string) {
+    console.log(channel)
+  }
 
   public command(command: RedisCommand) {
     this.queue.push(command)
-    if (!this.queueInProgress) {
+    if (!this.queueInProgress && this.connected) {
       drainQueue(this)
     }
-    // also handes subsriptions etc
   }
 
   public applyConnectionState(state: ConnectionState) {}
@@ -213,6 +220,12 @@ class Connection extends EventEmitter {
     ) {
       loadScripts(this)
     }
+
+    this.on('connect', () => {
+      if (this.queue.length) {
+        drainQueue(this)
+      }
+    })
   }
 }
 

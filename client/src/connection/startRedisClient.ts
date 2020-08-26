@@ -22,21 +22,23 @@ const startClient = (
 
   const retryStrategy = () => {
     tries++
-    if (tries > 20) {
+    if (tries > 30) {
       if (!connection.isDestroyed) {
         console.error(
-          '🧟‍♀️ More then 20 retries connection to server destroy connection'
+          '🧟‍♀️ More then 30 retries connection to server destroy connection'
         )
         connection.emit('hard-disconnect')
         connection.destroy()
       }
     }
-    if (connection.clientsConnected[type] === true && connection.connected) {
-      clearTimeout(connection.serverHeartbeatTimer)
+    if (connection.clientsConnected[type] === true) {
       connection.serverHeartbeatTimer = null
       connection.clientsConnected[type] = false
-      connection.connected = false
-      connection.emit('disconnect', type)
+      if (connection.connected) {
+        clearTimeout(connection.serverHeartbeatTimer)
+        connection.connected = false
+        connection.emit('disconnect', type)
+      }
     }
     tries++
     if (retryTimer < 1e3) {
@@ -52,6 +54,7 @@ const startClient = (
   })
 
   client.on('ready', () => {
+    tries = 0
     connection.clientsConnected[type] = true
     for (const t in connection.clientsConnected) {
       if (connection.clientsConnected[t] === false) {

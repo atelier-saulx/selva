@@ -15,6 +15,8 @@ export default async function updateRegistry(
     }
   }
 
+  console.log('yo update dat registry', info)
+
   const id = info.host + ':' + info.port
 
   const isNew = !(await client.redis.sismember(

@@ -40,7 +40,10 @@ export default class RedisManager extends ProcessManager {
       let timeout
       const wait = () =>
         new Promise((_resolve, reject) => {
-          timeout = setTimeout(() => reject(new Error('timedout info')), 2e3)
+          timeout = setTimeout(
+            () => reject(new Error('info-timeout took longer then 2 seconds')),
+            2e3
+          )
         })
 
       const info = await Promise.race([
@@ -78,7 +81,7 @@ export default class RedisManager extends ProcessManager {
         return { isBusy: true, runtimeInfo }
       }
     } catch (err) {
-      console.error('Cannot get info', err.message)
+      console.error('Cannot get info ', err.message)
       return {
         redisInfo: {},
         runtimeInfo,

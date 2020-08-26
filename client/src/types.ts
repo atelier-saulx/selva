@@ -38,8 +38,8 @@ export type ServerSelector = {
 
 // TODO: make non optional
 export type ServerDescriptor = {
-  name: string
-  type: ServerType
+  name?: string // tmp to test things
+  type?: ServerType // tmp to test things
   host: string
   port: number
   default?: boolean

@@ -3,8 +3,39 @@ import { ServerSelector, ServerDescriptor } from './types'
 
 export default async (
   selvaClient: SelvaClient,
-  selector: ServerSelector
+  selector: ServerSelector,
+  selectionOptions?: { subscription?: string } // channel
 ): Promise<ServerDescriptor> => {
-  // word iets simpler
-  return { type: 'registry', name: 'snurf', host: '12.23.1', port: 1 }
+  // IF NOT LOADED FROM REGISTRY
+
+  // if (!servers)
+
+  // if (!registry connector)
+
+  // then we want to listen
+
+  if (selector.host || selector.port) {
+    if (!selector.host) {
+      selector.host = '0.0.0.0'
+    }
+    if (!selector.port) {
+      selector.port = 6379
+    }
+    return { ...selector, host: selector.host, port: selector.port }
+  } else if (selector.type === 'registry') {
+    if (!selvaClient.registryConnection) {
+      console.log(
+        'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
+      )
+    } else {
+      return selvaClient.registryConnection.serverDescriptor
+    }
+  }
+
+  if (selectionOptions) {
+    console.log('if selection options')
+  }
+
+  // this is tmp
+  return selvaClient.registryConnection.serverDescriptor
 }
