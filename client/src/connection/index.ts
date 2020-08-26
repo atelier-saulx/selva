@@ -6,6 +6,7 @@ import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import drainQueue from './drainQueue'
 import { loadScripts } from './scripts'
+import SubscriptionEmitter from '../observe/emitter'
 
 const connections: Map<string, Connection> = new Map()
 
@@ -31,19 +32,20 @@ class Connection extends EventEmitter {
 
   public serverDescriptor: ServerDescriptor
 
+  public selvaSubscriptionEmitters: Set<SubscriptionEmitter>
+
   public selvaSubscribe() {
     if (!this.selvaSubscriptionsActive) {
       console.log('need to add hearthbeat')
       console.log('need to add message listener')
-
       // this does not have to go to the state (scince we have the selva subscription itself!)
       this.selvaSubscriptionsActive = true
     }
-
+    console.log('selva subscribe')
     // need to add a counter to the subscription
-
     // add hearthbeat if you dont have it
     // initializeSubscriptions
+    // returns value as well
   }
 
   public selvaUnsubscribe() {
@@ -73,7 +75,7 @@ class Connection extends EventEmitter {
 
   public punsubscribe() {}
 
-  public addCommand(command: RedisCommand) {
+  public command(command: RedisCommand) {
     this.queue.push(command)
     if (!this.queueInProgress) {
       drainQueue(this)
@@ -159,14 +161,17 @@ class Connection extends EventEmitter {
     // - server timeout subscription
     // - hard-disconnect (from info)
 
+    // make this in a function (for retries etc)
     this.subscriber = new RedisClient({
       host: serverDescriptor.host,
-      port: serverDescriptor.port
+      port: serverDescriptor.port,
+      retry_strategy: () => 1e3
     })
 
     this.publisher = new RedisClient({
       host: serverDescriptor.host,
-      port: serverDescriptor.port
+      port: serverDescriptor.port,
+      retry_strategy: () => 1e3
     })
 
     const stringId = serverId(serverDescriptor)

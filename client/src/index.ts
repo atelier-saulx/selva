@@ -3,7 +3,8 @@ import {
   ConnectOptions,
   ServerDescriptor,
   ServerType,
-  ServerSelector
+  ServerSelector,
+  LogFn
 } from './types'
 import digest from './digest'
 import Redis from './redis'
@@ -11,7 +12,7 @@ import { GetSchemaResult, SchemaOptions, Id, Schema, FieldSchema } from './schem
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
-import initializeSchema from './schema/initializeSchema'
+// import initializeSchema from './schema/initializeSchema'
 import { GetOptions, GetResult, get } from './get'
 import { SetOptions, set } from './set'
 import { IdOptions } from 'lua/src/id'
@@ -21,17 +22,20 @@ import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
 import conformToSchema from './conformToSchema'
 
-import { connections, Connection } from './connection'
+import { connections, Connection, createConnection } from './connection'
 
 import updateConnectOptions from './updateConnectOptions'
 
 import destroy from './destroy'
 
-import { observe, observeSchema} from './observe'
+import { v4 as uuidv4 } from 'uuid'
+
+// import { observe, observeSchema} from './observe'
 
 import getServer from './getServer'
 
-import Observable from './observe/observable'
+// import Observable from './observe/observable'
+
 
 export * as constants from './constants'
 
@@ -42,13 +46,19 @@ export class SelvaClient extends EventEmitter {
 
   public selvaId: string
 
+  public uuid: string
+
   // add these on the registry scince that is the thing that gets reused
-  public schemaObservables: Record<string, Observable<Schema>> = {}
+  // public schemaObservables: Record<string, Observable<Schema>> = {}
   public schemas: Record<string, Schema> = {}
   public serverType: string
 
   public registryConnection?: Connection
  
+
+  public logFn: LogFn
+  public loglevel: string
+
   public admin: {
     deleteType(name: string, dbName?: string): Promise<void>,
     deleteField(type: string, name: string, dbName?: string): Promise<void>,
@@ -71,7 +81,15 @@ export class SelvaClient extends EventEmitter {
     super()
     updateConnectOptions(this, opts)
     this.redis = new Redis(this)
+
+    // tmp for logs
+    this.uuid = uuidv4()
     this.selvaId = ++clientId + ''
+  }
+
+  updateUrl() {
+    console.log('maybe bit different name?')
+    // diffrent name
   }
 
   logLevel () {
@@ -80,7 +98,7 @@ export class SelvaClient extends EventEmitter {
   }
 
    async initializeSchema(opts: any) {
-    return initializeSchema(this, opts)
+    // return initializeSchema(this, opts)
   }
 
   async id(props: IdOptions): Promise<string> {
@@ -120,19 +138,19 @@ export class SelvaClient extends EventEmitter {
     return updateSchema(this, opts, { name })
   }
 
-  subscribeSchema(name: string = 'default'): Observable<Schema> {
-    //  call this observeSchema....
-    console.warn('subscribeSchema changed to observeSchema will be removed in future versions')
-    return observeSchema(this, name)
-  }
+  // subscribeSchema(name: string = 'default'): Observable<Schema> {
+  //   //  call this observeSchema....
+  //   console.warn('subscribeSchema changed to observeSchema will be removed in future versions')
+  //   return observeSchema(this, name)
+  // }
 
-  observeSchema(name: string = 'default'): Observable<Schema> {
-    return observeSchema(this, name)
-  }
+  // observeSchema(name: string = 'default'): Observable<Schema> {
+  //   return observeSchema(this, name)
+  // }
 
-  observe(props: GetOptions) {
-    return observe(this, props)
-  }
+  // observe(props: GetOptions) {
+  //   return observe(this, props)
+  // }
 
   async conformToSchema(props: SetOptions, dbName: string = 'default') {
     await this.initializeSchema({ $db: dbName })
@@ -156,9 +174,9 @@ export function connect(
   return client
 }
 
-// maybe make connection a bit nicer to interact with?
 export {
   connections,
+  createConnection,
   ConnectOptions,
   ServerType,
   ServerDescriptor,

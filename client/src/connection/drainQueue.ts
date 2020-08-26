@@ -97,7 +97,7 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
             if (err.stack.includes('NOSCRIPT')) {
               loadScripts(connection, () => {
                 orig.args[0] = getScriptSha('modify')
-                connection.addCommand(orig)
+                connection.command(orig)
               })
               return
             }

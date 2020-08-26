@@ -7,7 +7,7 @@ let SCRIPTS: Record<string, { content: string; sha: string }>
 try {
   SCRIPTS = ['modify', 'fetch', 'id', 'update-schema'].reduce(
     (obj, scriptName) => {
-      let distPath = pathJoin(__dirname, '..', '..', '..')
+      let distPath = pathJoin(__dirname, '..', '..')
       if (!distPath.endsWith('dist')) {
         distPath = pathJoin(distPath, 'dist')
       }
@@ -22,15 +22,15 @@ try {
     },
     {}
   )
-} catch (e) {
-  console.error(`Failed to read modify.lua ${e.stack}`)
+} catch (err) {
+  console.error(`Failed to read lua scripts ${err.path}`)
   process.exit(1)
 }
 
 export function loadScripts(connection: Connection, cb?: () => void): void {
   for (const scriptName in SCRIPTS) {
     // which id here :/ ?
-    connection.addCommand({
+    connection.command({
       command: 'SCRIPT',
       args: ['LOAD', SCRIPTS[scriptName].content],
       resolve: sha => {

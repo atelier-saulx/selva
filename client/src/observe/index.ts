@@ -25,15 +25,14 @@ export function observe(
   // props
   const subscriptionId = makeSubscriptionId(props)
   const channel = `___selva_subscription:${subscriptionId}`
-  const observable = client.redis.observe(channel, props)
-  return observable
+  // const observable = client.redis.observe(channel, props)
+  // return observable
 }
 
 export function observeSchema(client: SelvaClient, dbName: string) {
-  const obs = client.redis.observe(
-    `___selva_subscription:schema_update:${dbName}`,
-    {}
-  )
-
-  return obs
+  // const obs = client.redis.observe(
+  //   `___selva_subscription:schema_update:${dbName}`,
+  //   {}
+  // )
+  // return obs
 }
