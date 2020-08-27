@@ -173,7 +173,6 @@ function parseSubscriptions(
 
         let [findIn, q] = ast2rpn(withTime, language)
 
-        let earliestTime: number | undefined = undefined
         const searchArgs: string[] = [
           'selva.hierarchy.findIn',
           '___selva_hierarchy',

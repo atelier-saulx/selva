@@ -93,17 +93,15 @@ export function joinString(strs: string[], delim: string): string {
 
 export function joinPaddedIds(ids: string[]): string {
   let str = ''
-  for (let i = 0; i < ids.length - 1; i++) {
+  for (let i = 0; i < ids.length; i++) {
+    str += ids[i]
     if (ids[i].length < 10) {
       for (let j = ids[i].length; j < 10; j++) {
-        ids[i] += '\0'
+        str += '\0'
       }
     }
-
-    str += ids[i]
   }
 
-  str += ids[ids.length - 1] || ''
   return str
 }
 
