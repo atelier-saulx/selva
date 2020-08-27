@@ -185,9 +185,13 @@ class Connection extends EventEmitter {
     this.subscriber.on(event, cb)
   }
 
-  public applyConnectionState(state: ConnectionState) {}
+  public applyConnectionState(state: ConnectionState) {
+    // now go and do this
+  }
 
   public getConnectionState(id?: string): ConnectionState {
+    // no id needs to mean all :/
+    // different behaviour then empty string
     const state = {
       queue: [],
       pSubscribes: [],
@@ -195,7 +199,9 @@ class Connection extends EventEmitter {
       listeners: []
     }
 
-    if (id) {
+    // and do this also
+    if (id === undefined) {
+      // empty string is also a target
       // take the quue
     } else {
       // copy it nice

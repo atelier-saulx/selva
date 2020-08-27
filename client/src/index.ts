@@ -24,7 +24,7 @@ import conformToSchema from './conformToSchema'
 
 import { connections, Connection, createConnection } from './connection'
 
-import updateConnectOptions from './updateConnectOptions'
+import connectRegistry from './connectRegistry'
 
 import destroy from './destroy'
 
@@ -79,7 +79,7 @@ export class SelvaClient extends EventEmitter {
 
   constructor(opts: ConnectOptions) {
     super()
-    updateConnectOptions(this, opts)
+    connectRegistry(this, opts)
     this.redis = new Redis(this)
 
     // tmp for logs
@@ -87,8 +87,9 @@ export class SelvaClient extends EventEmitter {
     this.selvaId = ++clientId + ''
   }
 
-  updateUrl() {
-    console.log('maybe bit different name?')
+  connect(opts: ConnectOptions) {
+    console.log('maybe bit different name? connect :/')
+    connectRegistry(this, opts)
     // diffrent name
   }
 

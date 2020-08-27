@@ -12,6 +12,8 @@ import { createConnection } from '../connection'
     sends updates of all info objects (make this specific as well)
 */
 
+import { REGISTRY_UPDATE } from '../constants'
+
 export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
   console.log('_ _ _ _ connect make options do it')
   if (connectOptions instanceof Promise) {
@@ -32,17 +34,24 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
       selvaClient.registryConnection = registryConnection
 
       console.log('SUBSCRIBE')
-      registryConnection.subscribe('registry-update', selvaClient.selvaId)
+      registryConnection.subscribe(REGISTRY_UPDATE, selvaClient.selvaId)
 
-      registryConnection.on('message', channel => {
-        console.log(channel)
-        // if (cahh)
-        if (channel === 'new-server') {
-        } else if (channel === 'remove-server') {
-        } else if (channel === 'move-subscription') {
-        } else if ('index-changed') {
-          console.log('move dat bitch')
-          // can be either a subs manager update of index or replica
+      registryConnection.addRemoteListener('message', (channel, msg) => {
+        console.log('yesh', channel)
+        if (channel === REGISTRY_UPDATE) {
+          const payload = JSON.parse(msg)
+          const { event } = payload
+          // if (cahh)
+          if (event === 'new') {
+            console.log('GOT A NEW SERVER', payload)
+          } else if (channel === 'remove') {
+            console.log('REMOVE SERVER')
+          } else if (channel === 'move-sub') {
+            console.log('MOVE SUBSCRIPTION')
+          } else if ('update-index') {
+            console.log('update index')
+            // can be either a subs manager update of index or replica
+          }
         }
       })
 

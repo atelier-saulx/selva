@@ -1,6 +1,6 @@
 import test from 'ava'
 import { Connection, connections, connect } from '../src/index'
-import { startRegistry } from '../../server'
+import { startRegistry, startOrigin } from '../../server'
 import './assertions'
 import { wait } from './assertions'
 
@@ -41,6 +41,12 @@ test.serial('make a connection instance', async t => {
 
   // console.log('yesh it is good', xy)
   await wait(3e3)
+
+  console.log('make new')
+  startOrigin({
+    default: true,
+    registry: { port: 9999 }
+  })
 
   const x = await client.redis.keys(
     {
