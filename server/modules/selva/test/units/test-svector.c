@@ -278,6 +278,30 @@ static char * test_remove_middle(void)
     return NULL;
 }
 
+static char * test_remove_all(void)
+{
+    struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
+
+    SVector_Init(&vec, 9, compar);
+
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    SVector_Remove(&vec, &(struct data){ 1 });
+    SVector_Remove(&vec, &(struct data){ 5 });
+    SVector_Remove(&vec, &(struct data){ 15 });
+    SVector_Remove(&vec, &(struct data){ 800 });
+    SVector_Remove(&vec, &(struct data){ 3 });
+    SVector_Remove(&vec, &(struct data){ 300 });
+    SVector_Remove(&vec, &(struct data){ 10 });
+    SVector_Remove(&vec, &(struct data){ 20 });
+
+    pu_assert_equal("the vector is empty", SVector_Size(&vec), 0);
+
+    return NULL;
+}
+
 static char * test_pop(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
@@ -373,6 +397,7 @@ void all_tests(void)
     pu_def_test(test_remove_last, PU_RUN);
     pu_def_test(test_remove_first, PU_RUN);
     pu_def_test(test_remove_middle, PU_RUN);
+    pu_def_test(test_remove_all, PU_RUN);
     pu_def_test(test_pop, PU_RUN);
     pu_def_test(test_shift, PU_RUN);
     pu_def_test(test_shift_reset, PU_RUN);
