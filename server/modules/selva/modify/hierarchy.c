@@ -427,41 +427,36 @@ static inline void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hierarch
 }
 
 static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
-    const int is_root = !memcmp(node, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
-    char *fields = NULL;
+    Selva_NodeId id;
+    int is_root;
+
+    memcpy(id, node->id, SELVA_NODE_ID_SIZE);
+    is_root = !memcmp(id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
 
     removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
-    if (!is_root) {
-        removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
-        /*
-         * The node was now marked as a head but we are going to get rid of it
-         * soon, so there is no reason to make it a tree head.
-         */
-        rmHead(hierarchy, node);
-    }
-
-    if (likely(ctx)) {
-        fields = get_node_field_names(ctx, node->id);
-        remove_node_fields(ctx, node->id);
-    }
 
     /*
      * Never delete the root node.
      */
     if (!is_root) {
-        Selva_NodeId id;
+        removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
 
-        memcpy(id, node->id, SELVA_NODE_ID_SIZE);
+        /*
+         * The node was now marked as a head but we are going to get rid of it
+         * soon, so there is no reason to make it a tree head.
+         */
+        rmHead(hierarchy, node);
 
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(node);
-
-        if (ctx) {
-            SelvaModify_PublishDeleted(id, fields);
-        }
     }
 
-    if (fields) {
+    if (likely(ctx)) {
+        char *fields = NULL;
+
+        fields = get_node_field_names(ctx, id);
+        remove_node_fields(ctx, id);
+        SelvaModify_PublishDeleted(id, fields);
         RedisModule_Free(fields);
     }
 }
