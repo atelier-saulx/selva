@@ -452,7 +452,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     }
 
     if (likely(ctx)) {
-        char *fields = NULL;
+        char *fields;
 
         fields = get_node_field_names(ctx, id);
         remove_node_fields(ctx, id);
