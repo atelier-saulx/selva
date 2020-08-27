@@ -8,6 +8,7 @@ import { loadScripts } from './scripts'
 import SubscriptionEmitter from '../observe/emitter'
 import startRedisClient from './startRedisClient'
 import { RedisClient } from 'redis'
+import { Callback } from '../redis/types'
 
 const connections: Map<string, Connection> = new Map()
 
@@ -37,7 +38,11 @@ class Connection extends EventEmitter {
 
   public subscriptions: { [key: string]: { [key: string]: number } }
 
+  // channel / id
   public psubscriptions: { [key: string]: { [key: string]: number } }
+
+  // listener / id
+  public redisListeners: { [key: string]: { [key: string]: Set<Callback> } }
 
   public selvaSubscribe() {
     if (!this.selvaSubscriptionsActive) {
@@ -113,6 +118,7 @@ class Connection extends EventEmitter {
       if (Object.keys(this[type][channel]).length === 0) {
         delete this[type][channel]
         console.log(method, channel)
+
         this.subscriber[method]()
       }
     }
@@ -141,6 +147,44 @@ class Connection extends EventEmitter {
     }
   }
 
+  public removeRemoteListener(event: string, cb?: Callback, id: string = '') {
+    const listeners = this.redisListeners
+    if (listeners && listeners[event] && listeners[event][id]) {
+      if (cb) {
+        listeners[event][id].delete(cb)
+        if (!listeners[event][id].size) {
+          this.subscriber.removeListener(event, cb)
+          delete listeners[event][id]
+          if (Object.keys(listeners[event]).length === 0) {
+            delete listeners[event]
+          }
+        }
+      } else {
+        listeners[event][id].forEach(cb => {
+          this.subscriber.removeListener(event, cb)
+        })
+        delete listeners[event][id]
+        if (Object.keys(listeners[event]).length === 0) {
+          delete listeners[event]
+        }
+      }
+    }
+  }
+  public addRemoteListener(event: string, cb?: Callback, id: string = '') {
+    let listeners = this.redisListeners
+    if (!listeners) {
+      listeners = this.redisListeners = {}
+    }
+    if (!listeners[event]) {
+      listeners[event] = {}
+    }
+    if (!listeners[event][id]) {
+      listeners[event][id] = new Set()
+    }
+    listeners[event][id].add(cb)
+    this.subscriber.on(event, cb)
+  }
+
   public applyConnectionState(state: ConnectionState) {}
 
   public getConnectionState(id?: string): ConnectionState {
@@ -159,11 +203,6 @@ class Connection extends EventEmitter {
 
     return state
   }
-
-  public removeRemoteListener() {}
-  public addRemoteListener() {}
-
-  // mostly used internaly
 
   public startClientTimer: NodeJS.Timeout = null
 

@@ -1,6 +1,10 @@
 import { SelvaClient, constants } from '@saulx/selva'
 import { RegistryInfo } from '../types'
 
+export async function updateSubscription() {
+  console.log('yo do it update subs')
+}
+
 export default async function updateRegistry(
   client: SelvaClient,
   info: RegistryInfo
@@ -23,6 +27,7 @@ export default async function updateRegistry(
     id
   ))
 
+  // hget only fields you need
   await Promise.all([
     client.redis.sadd({ type: 'registry' }, 'servers', id),
     client.redis.hmset({ type: 'registry' }, id, ...args)
@@ -36,9 +41,24 @@ export default async function updateRegistry(
     )
 
     if (isNew) {
-      client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
+      // better codes
+      client.redis.publish(
+        { type: 'registry' },
+        constants.REGISTRY_UPDATE,
+        // maybe not nessecary to send all (?)
+        JSON.stringify({
+          event: 'new',
+          id,
+          port: info.port,
+          name: info.name,
+          host: info.host,
+          type: info.type
+        })
+      )
     }
   } else {
-    client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
+    // only if changed
+    // maybe dont need to publish
+    // client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
   }
 }
