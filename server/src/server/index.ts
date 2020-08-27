@@ -63,7 +63,14 @@ export class SelvaServer extends EventEmitter {
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
-      this.selvaClient = connect({ port: opts.port }, { serverType: this.type })
+      this.selvaClient = connect({ port: opts.port })
+    }
+
+    this.selvaClient.server = {
+      name: opts.name,
+      port: opts.port,
+      host: opts.host,
+      type: this.type
     }
 
     if (opts.backups && opts.backups.loadBackup) {

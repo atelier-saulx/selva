@@ -13,6 +13,10 @@ export default function updateRegistry(
   client: SelvaClient,
   info: Subscriptions
 ) {
+  console.log('ok this is now a different thingy')
+  // need to find if created etc - have to send the 'removed'
+  // make a constant registry_subscription_index
+
   for (let key in info.subscriptions) {
     subscriptions[key] = info.subscriptions[key]
   }

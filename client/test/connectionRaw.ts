@@ -56,7 +56,25 @@ test.serial('make a connection instance', async t => {
     '*'
   )
 
-  console.log('x', x)
+  const xx = await client.redis.smembers(
+    {
+      port: 9999,
+      host: '0.0.0.0'
+    },
+    'servers'
+  )
+
+  console.log('x', x, xx)
+  await wait(3e3)
+
+  const xxx = await client.redis.smembers(
+    {
+      port: 9999,
+      host: '0.0.0.0'
+    },
+    'servers'
+  )
+  console.log(xxx)
 
   // selva client emit reconnect event (with descriptor)
   await wait(1000e3)

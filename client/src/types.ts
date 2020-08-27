@@ -43,6 +43,7 @@ export type ServerDescriptor = {
   host: string
   port: number
   default?: boolean
+  index?: number
   stats?: any
   subscriptions?: Set<string>
 }
