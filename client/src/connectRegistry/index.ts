@@ -34,7 +34,6 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
 
       selvaClient.registryConnection = registryConnection
 
-      console.log('SUBSCRIBE')
       registryConnection.subscribe(REGISTRY_UPDATE, selvaClient.selvaId)
 
       registryConnection.addRemoteListener('message', (channel, msg) => {
@@ -42,7 +41,6 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
         if (channel === REGISTRY_UPDATE) {
           const payload = JSON.parse(msg)
           const { event } = payload
-          // if (cahh)
           if (event === 'new') {
             console.log('GOT A NEW SERVER', payload)
           } else if (channel === 'remove') {
@@ -50,14 +48,13 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           } else if (channel === 'move-sub') {
             console.log('MOVE SUBSCRIPTION')
           } else if ('update-index') {
-            console.log('update index')
             // can be either a subs manager update of index or replica
+            console.log('update index')
           }
         }
       })
 
       // add listeners
-
       console.log('ok made start of registry connection')
     }
   }

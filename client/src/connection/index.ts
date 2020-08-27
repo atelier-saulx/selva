@@ -117,9 +117,7 @@ class Connection extends EventEmitter {
       }
       if (Object.keys(this[type][channel]).length === 0) {
         delete this[type][channel]
-        console.log(method, channel)
-
-        this.subscriber[method]()
+        this.subscriber[method](channel)
       }
     }
   }
@@ -260,7 +258,7 @@ class Connection extends EventEmitter {
     // destroy if counter is zero
     if (this.selvaSubscriptionsActive) {
       console.log(
-        'need to remove subs listeners for hearthebeat, and need to remove message listener'
+        'need to remove subs listeners for hearthbeat, and need to remove message listener'
       )
     }
 
@@ -283,15 +281,12 @@ class Connection extends EventEmitter {
     this.queueBeingDrained = []
 
     // here we add the retry strategies
-
-    // we add
     // - start timeout
     // - max retries
     // - server timeout subscription
     // - hard-disconnect (from info)
 
     // make this in a function (for retries etc)
-
     startRedisClient(this)
 
     const stringId = serverId(serverDescriptor)
