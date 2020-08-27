@@ -3,6 +3,7 @@ import { createConnection } from '../connection'
 import { REGISTRY_UPDATE } from '../constants'
 import getInitialRegistryServers from './getInitialRegistryServers'
 import addServer from './addServer'
+import removeServer from './addServer'
 
 /*
  registry-update
@@ -36,8 +37,20 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
 
       registryConnection.subscribe(REGISTRY_UPDATE, selvaClient.selvaId)
 
-      getInitialRegistryServers(selvaClient).then(v => {
-        console.log('yesh')
+      selvaClient.registryConnection.on('connect', () => {
+        getInitialRegistryServers(selvaClient).then(() => {
+          selvaClient.emit('servers_updated', { event: '*' })
+        })
+      })
+
+      selvaClient.registryConnection.on('destroy', () => {
+        selvaClient.servers = {
+          ids: new Set(),
+          origins: {},
+          subsManagers: [],
+          replicas: []
+        }
+        selvaClient.emit('servers_updated', { event: '*' })
       })
 
       registryConnection.addRemoteListener('message', (channel, msg) => {
@@ -46,10 +59,15 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           const { event } = payload
           if (event === 'new') {
             const { server } = payload
-            addServer(selvaClient, <ServerDescriptor>server)
-          } else if (channel === 'remove') {
-            console.log('REMOVE SERVER')
-          } else if (channel === 'move-sub') {
+            if (addServer(selvaClient, <ServerDescriptor>server)) {
+              selvaClient.emit('servers_updated', payload)
+            }
+          } else if (event === 'remove') {
+            const { server } = payload
+            if (removeServer(selvaClient, <ServerDescriptor>server)) {
+              selvaClient.emit('servers_updated', payload)
+            }
+          } else if (event === 'move-sub') {
             console.log('MOVE SUBSCRIPTION')
           } else if ('update-index') {
             // can be either a subs manager update of index or replica

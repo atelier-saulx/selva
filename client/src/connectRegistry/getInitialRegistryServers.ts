@@ -29,8 +29,6 @@ const getInitialRegistryServers = async (selvaClient: SelvaClient) => {
       }
     )
   )
-
-  selvaClient.emit('servers_updated', { event: '*' })
 }
 
 export default getInitialRegistryServers
