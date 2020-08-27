@@ -188,7 +188,7 @@ export function resetParents(
       newIds[newIds.length] = parent
     }
 
-    markUpdated(id)
+    // markUpdated(id)
     sendEvent(parent, 'children', 'update')
   }
 
@@ -255,7 +255,7 @@ export function addToParents(
         }
       }
 
-      markUpdated(id)
+      // markUpdated(id)
       sendEvent(parent, 'children', 'update')
     }
   }

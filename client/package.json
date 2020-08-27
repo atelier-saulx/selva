@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
@@ -52,7 +52,7 @@
     ]
   },
   "devDependencies": {
-    "@saulx/selva-server": "1.9.0",
+    "@saulx/selva-server": "1.10.0",
     "@types/redis": "^2.8.14",
     "async-sema": "^3.1.0",
     "ava": "2.4.0",

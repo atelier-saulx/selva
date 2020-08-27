@@ -500,12 +500,8 @@ const ancestors = (
   _language?: string,
   _version?: string
 ): true => {
-  const anc = redis.ancestors(id)
-  if (anc.length === 0) {
-    result.ancestors = emptyArray()
-  } else {
-    result.ancestors = anc
-  }
+  const ancestors = redis.ancestors(id) || []
+  result.ancestors = ancestors.length > 0 ? ancestors : emptyArray()
   return true
 }
 

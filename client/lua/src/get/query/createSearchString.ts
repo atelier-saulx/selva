@@ -39,18 +39,27 @@ const RESERVED_QUERY_PARSER_LEXONS = {
   '~': true
 }
 
+// NOTE: also trims beginning for trailing whitespace
+// NOTE: trims multiple occurrences of repeated whitespace to one whitespace
 function escapeNonASCII(str: string): string {
+  let startWhitespace = true
   let result: string = ''
   for (let i = 0; i < str.length; i++) {
-    const c: string = str[i]
-    if (RESERVED_QUERY_PARSER_LEXONS[c]) {
-      result += '\\' + c
+    if (startWhitespace && str[i] === ' ') {
+      // do nothing
     } else {
-      result += c
+      startWhitespace = false
+      const c: string = str[i]
+      if (RESERVED_QUERY_PARSER_LEXONS[c]) {
+        result += '\\' + c
+      } else {
+        result += c
+      }
     }
   }
 
-  return result
+  const [wsTrimmed] = string.gsub(result, '[ ]+', ' ')
+  return wsTrimmed
 }
 
 function toNumberValue(value: Value): string {
@@ -143,33 +152,39 @@ const addField = (
 
       let suggestions: string[] = []
       for (let i = 0; i < words.length; i++) {
-        const suggestion: string[] = redis.pcall(
-          'ft.sugget',
-          `sug`,
-          words[i],
-          'MAX',
-          '150'
-        )
+        if (words[i] && words[i] !== '' && words[i] !== ' ') {
+          const suggestion: string[] = redis.pcall(
+            'ft.sugget',
+            `sug`,
+            words[i],
+            'MAX',
+            '150'
+          )
 
-        for (let j = 0; j < suggestion.length; j++) {
-          suggestions[suggestions.length] = suggestion[j]
+          for (let j = 0; j < suggestion.length; j++) {
+            suggestions[suggestions.length] = suggestion[j]
+          }
         }
       }
 
       if (suggestions.length > 0) {
         let searchStrs: string[] = []
         for (let i = 0; i < suggestions.length; i++) {
-          const suggestion = suggestions[i]
+          const suggestion = escapeNonASCII(suggestions[i])
 
-          searchStrs[
-            i
-          ] = `(@___escaped\\:${filter.$field}\\.${language}:(${suggestion}))`
+          if (suggestion !== '' && suggestion !== ' ') {
+            // FIXME:                  |
+            // FIXME: remove debug log v
+            searchStrs[
+              searchStrs.length
+            ] = `(@___escaped\\:${filter.$field}\\.${language}:(${suggestion}))`
+          }
         }
 
         return searchStrs
       }
 
-      return `(@${filter.$field}\\.${language}:(${filter.$value}))`
+      return ''
     }
   } else if (type === 'GEO') {
     if (filter.$operator === 'distance' && isArray(filter.$value)) {

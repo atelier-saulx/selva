@@ -41,14 +41,19 @@ const sendUpdate = async (
     return
   }
 
-  let time = setTimeout(() => {
-    // log these somewhere!
-    console.log('TIMEOUT OUT', channel, subscription.origins)
+  const time = setTimeout(() => {
+    throw new Error('Time out ' + channel)
   }, 15e3)
 
-  const payload = await client.get(getOptions)
+  let payload
+  try {
+    payload = await client.get(getOptions)
+  } catch (err) {
+    payload = {
+      ___$error___: err.message
+    }
+  }
 
-  // call $meta tree
   const newTree = payload.$meta
   console.log('NEW TREE', JSON.stringify(newTree, null, 2))
 

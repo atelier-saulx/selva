@@ -2,7 +2,6 @@ import { SelvaClient } from '..'
 import { GetOptions, GetResult } from '../get/types'
 import Observable from './observable'
 import { createHash } from 'crypto'
-import { Schema } from '~selva/schema'
 
 function makeSubscriptionId(opts: GetOptions) {
   const hash = createHash('sha256')
@@ -14,6 +13,8 @@ export function observe(
   client: SelvaClient,
   props: GetOptions
 ): Observable<GetResult> {
+  // do validation here
+  // props
   const subscriptionId = makeSubscriptionId(props)
   const channel = `___selva_subscription:${subscriptionId}`
   const observable = client.redis.observe(channel, props)
