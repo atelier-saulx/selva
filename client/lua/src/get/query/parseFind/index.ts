@@ -60,17 +60,13 @@ const getIds = (
         return nestedResult
       }
 
-      const lst = redis.smembers(ids[0] + '.' + traverse)
-      table.sort(lst)
-      return lst
+      return redis.smembers(ids[0] + '.' + traverse)
     } else {
       const fields: string[] = []
       for (let i = 0; i < ids.length; i++) {
         fields[fields.length] = ids[i] + '.' + traverse
       }
-      const lst = redis.sunion(fields)
-      table.sort(lst)
-      return lst
+      return redis.sunion(fields)
     }
   }
 }
