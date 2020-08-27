@@ -90,6 +90,8 @@ void *SVector_InsertFast(SVector *vec, void *el) {
     while (l <= r) {
         ssize_t m = (l + r) / 2;
 
+        assert(m < vec->vec_last);
+
         const int rc = vec->vec_compar((const void **)&el, (const void **)vec_data + m);
         if (rc > 0) {
             l = m + 1;
