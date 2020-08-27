@@ -35,6 +35,10 @@ class Connection extends EventEmitter {
 
   public selvaSubscriptionEmitters: Set<SubscriptionEmitter>
 
+  public subscriptions: { [key: string]: { [key: string]: number } }
+
+  public psubscriptions: { [key: string]: { [key: string]: number } }
+
   public selvaSubscribe() {
     if (!this.selvaSubscriptionsActive) {
       console.log('need to add hearthbeat')
@@ -75,20 +79,59 @@ class Connection extends EventEmitter {
 
   public selvaSubscriptionsActive: boolean = false
 
-  public subscribe(channel: string, id?: string) {
-    console.log(channel)
+  public genericSubscribe(
+    type: 'subscriptions' | 'psubscriptions',
+    method: 'subscribe' | 'psubscribe',
+    channel: string,
+    id: string = ''
+  ) {
+    if (!this[type]) {
+      this[type] = {}
+    }
+    if (!this[type][channel]) {
+      this[type][channel] = {}
+      console.log(method, channel)
+      this.subscriber[method](channel)
+    }
+    if (this[type][channel][id] === undefined) {
+      this[type][channel][id] = 0
+    }
+    this[type][channel][id]++
+  }
+
+  public genericUnsubscribe(
+    type: 'subscriptions' | 'psubscriptions',
+    method: 'punsubscribe' | 'unsubscribe',
+    channel: string,
+    id: string = ''
+  ) {
+    if (this[type] && this[type][channel] && this[type][channel][id]) {
+      this[type][channel][id]--
+      if (this[type][channel][id] === 0) {
+        delete this[type][channel][id]
+      }
+      if (Object.keys(this[type][channel]).length === 0) {
+        delete this[type][channel]
+        console.log(method, channel)
+        this.subscriber[method]()
+      }
+    }
+  }
+
+  public subscribe(channel: string, id: string = '') {
+    this.genericSubscribe('subscriptions', 'subscribe', channel, id)
   }
 
   public unsubscribe(channel: string, id?: string) {
-    console.log(channel)
+    this.genericUnsubscribe('subscriptions', 'unsubscribe', channel, id)
   }
 
   public psubscribe(channel: string, id?: string) {
-    console.log(channel)
+    this.genericSubscribe('psubscriptions', 'psubscribe', channel, id)
   }
 
   public punsubscribe(channel: string, id?: string) {
-    console.log(channel)
+    this.genericUnsubscribe('psubscriptions', 'punsubscribe', channel, id)
   }
 
   public command(command: RedisCommand) {

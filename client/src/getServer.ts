@@ -6,14 +6,6 @@ export default async (
   selector: ServerSelector,
   selectionOptions?: { subscription?: string } // channel
 ): Promise<ServerDescriptor> => {
-  // IF NOT LOADED FROM REGISTRY
-
-  // if (!servers)
-
-  // if (!registry connector)
-
-  // then we want to listen
-
   if (selector.host || selector.port) {
     if (!selector.host) {
       selector.host = '0.0.0.0'
