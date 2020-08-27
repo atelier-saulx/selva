@@ -71,7 +71,8 @@ void SVector_Insert(SVector *vec, void *el) {
     vec_data[i] = el;
 
     if (vec->vec_compar) {
-        qsort(vec_data + vec->vec_shift_index, vec->vec_last,
+        qsort(vec_data + vec->vec_shift_index,
+              vec->vec_last - vec->vec_shift_index,
               sizeof(void *), VEC_COMPAR(vec->vec_compar));
     }
 
@@ -130,7 +131,8 @@ void *SVector_Search(const SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
 
     void **pp = bsearch(&key, vec->vec_data + vec->vec_shift_index,
-                        vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+                        vec->vec_last - vec->vec_shift_index,
+                        sizeof(void *), VEC_COMPAR(vec->vec_compar));
 
     return !pp ? NULL : *pp;
 }
@@ -139,7 +141,8 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
 
     void **pp = bsearch(&key, vec->vec_data + vec->vec_shift_index,
-                        vec->vec_last, sizeof(void *), VEC_COMPAR(vec->vec_compar));
+                        vec->vec_last - vec->vec_shift_index,
+                        sizeof(void *), VEC_COMPAR(vec->vec_compar));
     if (!pp) {
         return NULL;
     }

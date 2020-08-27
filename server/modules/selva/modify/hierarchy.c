@@ -127,6 +127,9 @@ static int SVector_HierarchyNode_id_compare(const void ** restrict a_raw, const 
     const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
     const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
 
+    assert(a);
+    assert(b);
+
     return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
 }
 
@@ -134,6 +137,9 @@ static int SVector_HierarchyNode_id_compare(const void ** restrict a_raw, const 
 static int SVector_HierarchyNode_depth_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const SelvaModify_HierarchyNode *a = *(const SelvaModify_HierarchyNode **)a_raw;
     const SelvaModify_HierarchyNode *b = *(const SelvaModify_HierarchyNode **)b_raw;
+
+    assert(a);
+    assert(b);
 
     return b->depth - a->depth;
 }
@@ -1936,6 +1942,9 @@ struct FindCommand_OrderedItem {
 static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** restrict b_raw) {
     const struct FindCommand_OrderedItem *a = *(const struct FindCommand_OrderedItem **)a_raw;
     const struct FindCommand_OrderedItem *b = *(const struct FindCommand_OrderedItem **)b_raw;
+
+    assert(a);
+    assert(b);
 
     /* TODO different langs may have differing order. */
     const int res1 = strncmp(a->data, b->data, min(a->data_len, b->data_len));
