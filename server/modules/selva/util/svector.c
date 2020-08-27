@@ -116,7 +116,7 @@ void *SVector_InsertFast(SVector *vec, void *el) {
     }
 
     if (l <= (ssize_t)vec->vec_last - 1) {
-        memmove(vec_data + l + 1, vec_data + l, (vec->vec_last - l) * sizeof(void *));
+        memmove(vec_data + l + 1, vec_data + l, VEC_SIZE(vec->vec_last - l));
     }
     vec_data[l] = el;
     vec->vec_last++;
@@ -198,8 +198,8 @@ void *SVector_Peek(SVector * restrict vec) {
 }
 
 void SVector_ShiftReset(SVector * restrict vec) {
-    memmove(vec->vec_data, vec->vec_data + vec->vec_shift_index, VEC_SIZE(vec->vec_last));
     vec->vec_last -= vec->vec_shift_index;
+    memmove(vec->vec_data, vec->vec_data + vec->vec_shift_index, VEC_SIZE(vec->vec_last));
     vec->vec_shift_index = 0;
 }
 
