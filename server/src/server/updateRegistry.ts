@@ -1,6 +1,13 @@
 import { SelvaClient, constants } from '@saulx/selva'
 import { RegistryInfo } from '../types'
 
+export async function addSubscriptionToRegistry() {}
+
+export async function updateServerDescriptor() {}
+
+export async function updateServerMetricsInfo() {}
+
+/*
 export default async function updateRegistry(
   client: SelvaClient,
   info: RegistryInfo
@@ -15,7 +22,7 @@ export default async function updateRegistry(
     }
   }
 
-  console.log('yo update dat registry', info)
+  console.log('Yo update dat registry', info)
 
   const id = info.host + ':' + info.port
 
@@ -24,6 +31,9 @@ export default async function updateRegistry(
     'servers',
     id
   ))
+
+
+  // if new server
 
   await Promise.all([
     client.redis.sadd({ type: 'registry' }, 'servers', id),
@@ -44,3 +54,4 @@ export default async function updateRegistry(
     client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
   }
 }
+*/
