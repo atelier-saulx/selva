@@ -88,6 +88,10 @@ export default class ProcessManager extends EventEmitter {
     beforeExit.do(signal => {
       this.destroy()
     })
+    process.on('uncaughtException', err => {
+      this.destroy()
+      throw err
+    })
 
 
     this.startLoadMeasurements()

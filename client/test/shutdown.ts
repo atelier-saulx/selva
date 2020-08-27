@@ -25,7 +25,7 @@ test.serial('Should close redis after destroy', async t => {
   t.throws(() => execSync(`lsof -n -i :${port} | grep LISTEN`))
 })
 
-test.serial.only('Should hangle SIGTERM', async t => {
+test.serial('Should shutdown redist on SIGINT', async t => {
   t.plan(1)
   const info:any = await new Promise((resolve, reject) => {
     const spawned = spawn('node', ['test/assertions/selvaProcessRunner.js'], { detached: true })
@@ -33,7 +33,7 @@ test.serial.only('Should hangle SIGTERM', async t => {
       resolve(JSON.parse(data.toString()))
     })
   })
-  console.log(info)
+  // console.log(info)
 
   await new Promise(resolve => setTimeout(resolve, 1000))
 
@@ -44,3 +44,36 @@ test.serial.only('Should hangle SIGTERM', async t => {
   t.throws(() => (execSync(`lsof -n -i :${info.port} | grep LISTEN`).toString()))
 })
 
+test.serial('Should shutdown redis on SIGTERM', async t => {
+  t.plan(1)
+  const info:any = await new Promise((resolve, reject) => {
+    const spawned = spawn('node', ['test/assertions/selvaProcessRunner.js'], { detached: true })
+    spawned.stdout.on('data', (data) => {
+      resolve(JSON.parse(data.toString()))
+    })
+  })
+  // console.log(info)
+
+  await new Promise(resolve => setTimeout(resolve, 1000))
+
+  execSync(`kill -15 ${ info.pid }`)
+
+  await new Promise(resolve => setTimeout(resolve, 6000))
+
+  t.throws(() => (execSync(`lsof -n -i :${info.port} | grep LISTEN`).toString()))
+})
+
+test.serial('Should shutdown redis when unhadled exception happens', async t => {
+  t.plan(1)
+  const info:any = await new Promise((resolve, reject) => {
+    const spawned = spawn('node', ['test/assertions/selvaThrowingProcessRunner.js'], { detached: true })
+    spawned.stdout.on('data', (data) => {
+      resolve(JSON.parse(data.toString()))
+    })
+  })
+  // console.log(info)
+
+  await new Promise(resolve => setTimeout(resolve, 7000))
+
+  t.throws(() => (execSync(`lsof -n -i :${info.port} | grep LISTEN`).toString()))
+})
