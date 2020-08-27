@@ -37,11 +37,11 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
       registryConnection.subscribe(REGISTRY_UPDATE, selvaClient.selvaId)
 
       registryConnection.addRemoteListener('message', (channel, msg) => {
-        console.log('yesh', channel)
         if (channel === REGISTRY_UPDATE) {
           const payload = JSON.parse(msg)
           const { event } = payload
           if (event === 'new') {
+            /// way to know if im in a server ?
             console.log('GOT A NEW SERVER', payload)
           } else if (channel === 'remove') {
             console.log('REMOVE SERVER')

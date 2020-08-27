@@ -235,6 +235,9 @@ class Connection extends EventEmitter {
 
     this.isDestroyed = true
 
+    this.subscriber.removeAllListeners()
+    this.publisher.removeAllListeners()
+
     this.subscriber.quit()
     this.publisher.quit()
 
