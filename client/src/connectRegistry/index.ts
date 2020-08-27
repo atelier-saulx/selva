@@ -15,9 +15,10 @@ import { createConnection } from '../connection'
 import { REGISTRY_UPDATE } from '../constants'
 
 export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
-  console.log('_ _ _ _ connect make options do it')
   if (connectOptions instanceof Promise) {
+    // do shit
   } else if (typeof connectOptions === 'function') {
+    // do shit also
   } else {
     const { port = 6379, host = '0.0.0.0' } = connectOptions
 
