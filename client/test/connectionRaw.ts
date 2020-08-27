@@ -42,7 +42,7 @@ test.serial('make a connection instance', async t => {
   // console.log('yesh it is good', xy)
   await wait(3e3)
 
-  console.log('make new')
+  console.log('make new in it server time')
   startOrigin({
     default: true,
     registry: { port: 9999 }
