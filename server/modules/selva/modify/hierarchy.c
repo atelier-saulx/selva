@@ -407,6 +407,25 @@ static void remove_node_fields(RedisModuleCtx *ctx, Selva_NodeId id) {
     }
 }
 
+static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
+        SelvaModify_HierarchySearchFilter filter;
+
+        memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
+        return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaModify_HierarchyNode *)(&filter));
+}
+
+int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
+    return findNode(hierarchy, id) != NULL;
+}
+
+static inline void mkHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
+    (void)SVector_InsertFast(&hierarchy->heads, node);
+}
+
+static inline void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
+    SVector_Remove(&hierarchy->heads, node);
+}
+
 static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
     const int is_root = !memcmp(node, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
     char *fields = NULL;
@@ -414,6 +433,11 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
     if (!is_root) {
         removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+        /*
+         * The node was now marked as a head but we are going to get rid of it
+         * soon, so there is no reason to make it a tree head.
+         */
+        rmHead(hierarchy, node);
     }
 
     if (likely(ctx)) {
@@ -440,25 +464,6 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     if (fields) {
         RedisModule_Free(fields);
     }
-}
-
-static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
-        SelvaModify_HierarchySearchFilter filter;
-
-        memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
-        return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaModify_HierarchyNode *)(&filter));
-}
-
-int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
-    return findNode(hierarchy, id) != NULL;
-}
-
-static inline void mkHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
-    (void)SVector_InsertFast(&hierarchy->heads, node);
-}
-
-static inline void rmHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
-    SVector_Remove(&hierarchy->heads, node);
 }
 
 #if HIERARCHY_SORT_BY_DEPTH
