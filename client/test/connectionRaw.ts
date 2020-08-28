@@ -40,7 +40,7 @@ test.serial('make a connection instance', async t => {
     registry: { port: 9999 }
   })
 
-  startOrigin({
+  const snurfServer = await startOrigin({
     name: 'snurf',
     registry: { port: 9999 }
   })
@@ -109,6 +109,10 @@ test.serial('make a connection instance', async t => {
   )
 
   console.log(yyyy)
+
+  console.log('remove this biaaatch')
+  await snurfServer.destroy()
+  console.log('drestucto')
 
   console.log('start go')
   startReplica({

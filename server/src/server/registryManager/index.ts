@@ -15,12 +15,13 @@ export const registryManager = (server: SelvaServer) => {
     }
   })
 
-  const cleanIdle = async () => {
-    const q = []
-    for (const id of server.selvaClient.servers.ids) {
-      q.push(async () => {
-        const { stats, ...descriptor } = JSON.parse(
-          await server.selvaClient.redis.hget(
+  const updateFromStats = async () => {
+    console.log('cleaning time')
+    await Promise.all(
+      [...server.selvaClient.servers.ids].map(async id => {
+        const redis = server.selvaClient.redis
+        try {
+          const result = await redis.hmget(
             { type: 'registry' },
             id,
             'stats',
@@ -29,34 +30,44 @@ export const registryManager = (server: SelvaServer) => {
             'port',
             'type'
           )
-        )
 
-        // also going to do ordering of replicas here
+          if (result) {
+            const [rawStats, name, host, port, type] = result
+            const stats = rawStats && JSON.parse(rawStats)
+            if (!stats) {
+              return
+            }
+            const ts = stats.timestamp
 
-        const ts = stats.timestamp
-        if (Date.now() - ts > 5e3) {
-          const redis = server.selvaClient.redis
-          await Promise.all([
-            redis.srem({ type: 'registry' }, 'servers', id),
-            redis.del({ type: 'registry' }, id)
-          ])
-          await redis.publish(
-            { type: 'registry' },
-            REGISTRY_UPDATE,
-            JSON.stringify({
-              event: 'remove',
-              server: descriptor
-            })
-          )
+            console.log('???', id, type, ts, Date.now() - ts > 5e3)
+
+            if (Date.now() - ts > 5e3) {
+              await Promise.all([
+                redis.srem({ type: 'registry' }, 'servers', id),
+                redis.del({ type: 'registry' }, id)
+              ])
+              await redis.publish(
+                { type: 'registry' },
+                REGISTRY_UPDATE,
+                JSON.stringify({
+                  event: 'remove',
+                  server: {
+                    name,
+                    host,
+                    port,
+                    type
+                  }
+                })
+              )
+            }
+          }
+        } catch (err) {
+          console.error('Error getting from servers in registry', err, id)
         }
       })
-    }
-    await Promise.all(q)
-    setTimeout(cleanIdle, 1e3)
+    )
+
+    setTimeout(updateFromStats, 1e3)
   }
-  cleanIdle()
+  updateFromStats()
 }
-
-// then fix the client destroy methods
-
-// add marker from schema subs

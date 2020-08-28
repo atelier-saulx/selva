@@ -3,7 +3,7 @@ import { createConnection } from '../connection'
 import { REGISTRY_UPDATE } from '../constants'
 import getInitialRegistryServers from './getInitialRegistryServers'
 import addServer from './addServer'
-import removeServer from './addServer'
+import removeServer from './removeServer'
 
 /*
  registry-update
@@ -58,11 +58,16 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           const payload = JSON.parse(msg)
           const { event } = payload
           if (event === 'new') {
+            // on destroy destroy client as well
+
+            console.log('NEW', payload)
+
             const { server } = payload
             if (addServer(selvaClient, <ServerDescriptor>server)) {
               selvaClient.emit('added-servers', payload)
             }
           } else if (event === 'remove') {
+            console.log('mofos remove', payload)
             const { server } = payload
             if (removeServer(selvaClient, <ServerDescriptor>server)) {
               selvaClient.emit('removed-servers', payload)
