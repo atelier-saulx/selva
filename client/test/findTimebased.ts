@@ -1224,7 +1224,7 @@ test.serial('find - already started', async t => {
   await client.destroy()
 })
 
-test.serial.skip('find - already started subscription', async t => {
+test.serial('find - already started subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
