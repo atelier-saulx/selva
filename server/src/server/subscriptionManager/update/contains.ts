@@ -165,7 +165,6 @@ const contains = (
     const memberCheck =
       subManager.tree[context.db].___contains &&
       subManager.tree[context.db].___contains[contains]
-    console.log('MEMBER CHECK', memberCheck)
     if (memberCheck) {
       if (membersContainsId(subManager, context, <Contains>memberCheck, subs)) {
         subs.forEach(s => {
