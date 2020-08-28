@@ -127,9 +127,11 @@ const parseGet = (
 function parseSubscriptions(
   meta: Meta,
   ids: string[],
+  getIds: string[],
   getOptions: GetOptions,
   language?: string,
-  traverse?: string | string[]
+  traverse?: string | string[],
+  $traverse?: string
 ): QuerySubscription {
   const queryId = redis.sha1hex(cjson.encode(getOptions))
 
@@ -173,24 +175,56 @@ function parseSubscriptions(
 
         let [findIn, q] = ast2rpn(withTime, language)
 
-        const searchArgs: string[] = [
-          'selva.hierarchy.findIn',
-          '___selva_hierarchy',
-          'order',
-          timestampFilters[i].$field,
-          'asc',
-          'limit',
-          '1',
-          findIn && findIn.length > 0
-            ? joinPaddedIds(findIn)
-            : joinPaddedIds(ids)
-        ]
+        logger.info('IDS???', findIn, ids)
 
-        for (const qArg of q) {
-          searchArgs[searchArgs.length] = qArg
+        let newSearchResults: string[]
+        if (findIn && findIn.length > 0) {
+          const searchArgs: string[] = [
+            'selva.hierarchy.findIn',
+            '___selva_hierarchy',
+            'order',
+            timestampFilters[i].$field,
+            'asc',
+            'limit',
+            '1',
+            joinPaddedIds(findIn)
+          ]
+
+          for (const qArg of q) {
+            searchArgs[searchArgs.length] = qArg
+          }
+
+          logger.info('SEARCH ARGS', searchArgs)
+
+          newSearchResults = redis.pcall(...searchArgs)
+        } else if ($traverse) {
+          const searchArgs: string[] = [
+            'selva.hierarchy.find',
+            '___selva_hierarchy',
+            'bfs',
+            $traverse,
+            'order',
+            timestampFilters[i].$field,
+            'asc',
+            'limit',
+            '1',
+            joinPaddedIds(getIds)
+          ]
+
+          for (const qArg of q) {
+            searchArgs[searchArgs.length] = qArg
+          }
+
+          logger.info('SEARCH ARGS', searchArgs)
+
+          newSearchResults = redis.pcall(...searchArgs)
+        } else {
+          console.error(
+            'WTF there should at least be $traverse or resultIds or findIn id list'
+          )
+
+          newSearchResults = []
         }
-
-        const newSearchResults: string[] = redis.pcall(...searchArgs)
 
         const earliestId = newSearchResults[0]
         if (earliestId) {
@@ -199,6 +233,7 @@ function parseSubscriptions(
             earliestId,
             timestampFilters[i].$field
           )
+          logger.info('FOUND', earliestId, timeResp)
 
           if (timeResp) {
             const time = tonumber(timeResp)
@@ -209,6 +244,7 @@ function parseSubscriptions(
         }
       }
 
+      logger.info('RESULT EARLIEST TIME', earliestTime)
       if (earliestTime) {
         sub.time = {
           nextRefresh: earliestTime

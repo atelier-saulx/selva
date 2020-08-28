@@ -83,7 +83,7 @@ const parseQuery = (
   },
   string | null
 ] => {
-  let $traverse: string
+  let $traverse: string | undefined = undefined
   const resultGet = {}
   const results: GetResult[] = []
   if (getOptions.$list && getOptions.$find) {
@@ -321,9 +321,11 @@ const parseQuery = (
           const subMeta = parseSubscriptions(
             meta,
             resultIds,
+            ids,
             getOptions,
             language,
-            traverse
+            traverse,
+            $traverse
           )
 
           if (subMeta.time && subMeta.time.nextRefresh) {
