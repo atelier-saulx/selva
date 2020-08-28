@@ -64,7 +64,9 @@ const getIds = (
       } else if (traverse === 'parents') {
         return redis.parents(ids[0])
       } else {
-        return redis.zrange(ids[0] + '.' + traverse)
+        const tbl = redis.zrange(ids[0] + '.' + traverse)
+        table.sort(tbl)
+        return tbl
       }
     } else {
       const idMap: Record<string, true> = {}
@@ -88,6 +90,7 @@ const getIds = (
         res[res.length] = id
       }
 
+      table.sort(res)
       return res
     }
   }

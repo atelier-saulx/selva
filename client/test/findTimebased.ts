@@ -18,7 +18,18 @@ test.before(async t => {
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'fr', 'it', 'nl'],
+    rootType: {
+      fields: {
+        title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } }
+      }
+    },
     types: {
+      folder: {
+        prefix: 'fo',
+        fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } }
+        }
+      },
       league: {
         prefix: 'le',
         fields: {
@@ -92,6 +103,13 @@ test.serial('subs layout', async t => {
   let viIdx = 0
 
   await client.set({
+    $id: 'root',
+    title: {
+      en: 'root'
+    }
+  })
+
+  await client.set({
     $id: 'te1',
     published: true,
     title: {
@@ -114,6 +132,14 @@ test.serial('subs layout', async t => {
     title: { en: 'sport one', de: 'sport ein' },
     published: true,
     children: ['te1', 'te2']
+  })
+
+  const highlights = await client.set({
+    $id: 'fo1',
+    title: {
+      en: 'Highlights'
+    },
+    parents: ['sp1']
   })
 
   client
@@ -194,7 +220,7 @@ test.serial('subs layout', async t => {
         date: now - 1000 * 60 - i - 1,
         startTime: now - 1000 * 60 - i - 1,
         endTime: now - (1000 * 60 - i - 1),
-        parents: [team],
+        parents: [team, highlights],
         children: [{ $id: 'vi' + viIdx++, published: true }]
       })
     )
@@ -231,7 +257,7 @@ test.serial('subs layout', async t => {
         date: now + 1000 * 60 + i,
         startTime: now + 1000 * 60 + i,
         endTime: now + (1000 * 60 + i + 1),
-        parents: [team],
+        parents: [team, highlights],
         children: [{ $id: 'vi' + viIdx++, published: true }]
       })
     )
@@ -260,7 +286,7 @@ test.serial('subs layout', async t => {
       },
       name: 'upcoming match',
       date: now + 2000,
-      parents: ['te1'],
+      parents: ['te1', highlights],
       startTime: now + 2000, // 2 sec from now
       endTime: now + 5000, // 5 sec from now
       children: [
@@ -673,6 +699,158 @@ test.serial('subs layout', async t => {
       console.log('match layout 2', r)
     })
 
+  let otherResult3
+  client
+    .observe({
+      $id: 'sp1',
+      id: true,
+      $language: 'nl',
+      type: true,
+      ancestors: true,
+      general: {
+        $id: 'root',
+        title: {
+          $field: 'title'
+        }
+      },
+      meta: {
+        title: {
+          $field: 'title'
+        }
+      },
+      components: [
+        {
+          component: {
+            $value: 'Highlights'
+          },
+          title: {
+            $value: 'Highlights'
+          },
+          children: {
+            title: true,
+            $list: {
+              $limit: 100,
+              $find: {
+                $filter: [
+                  {
+                    $operator: '=',
+                    $value: 'folder',
+                    $field: 'type'
+                  },
+                  {
+                    $operator: '=',
+                    $value: 'Highlights',
+                    $field: 'title'
+                  }
+                ],
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: [
+                    {
+                      $operator: '=',
+                      $value: true,
+                      $field: 'published'
+                    }
+                  ]
+                },
+                $traverse: 'descendants'
+              },
+              $sort: {
+                $order: 'desc',
+                $field: 'date'
+              }
+            },
+            teams: [
+              {
+                id: true,
+                $id: {
+                  $field: 'homeTeam'
+                },
+                title: true
+              },
+              {
+                id: true,
+                $id: {
+                  $field: 'awayTeam'
+                },
+                title: true
+              }
+            ],
+            date: true,
+            type: true,
+            id: true
+          }
+        },
+        {
+          component: {
+            $value: 'Table'
+          },
+          title: {
+            $value: 'Live Now'
+          },
+          children: {
+            teams: [
+              {
+                id: true,
+                $id: {
+                  $field: 'homeTeam'
+                },
+                title: true
+              },
+              {
+                id: true,
+                $id: {
+                  $field: 'awayTeam'
+                },
+                title: true
+              }
+            ],
+            type: true,
+            title: true,
+            date: true,
+            startTime: true,
+            id: true,
+            $list: {
+              $limit: 15,
+              $find: {
+                $traverse: 'descendants',
+                $filter: [
+                  {
+                    $value: 'match',
+                    $field: 'type',
+                    $operator: '='
+                  },
+                  {
+                    $value: true,
+                    $field: 'published',
+                    $operator: '='
+                  },
+                  {
+                    $field: 'startTime',
+                    $operator: '<',
+                    $value: 'now'
+                  },
+                  {
+                    $field: 'endTime',
+                    $operator: '>',
+                    $value: 'now'
+                  }
+                ]
+              },
+              $sort: {
+                $order: 'desc',
+                $field: 'date'
+              }
+            }
+          }
+        }
+      ]
+    })
+    .subscribe(r => {
+      otherResult3 = r
+      console.log('sport layout', r)
+    })
+
   await wait(500)
   console.log('should be upcoming')
   t.deepEqualIgnoreOrder(result, {
@@ -686,6 +864,26 @@ test.serial('subs layout', async t => {
   t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
   t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
   t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+  const pick = ({ id, type, ancestors, general, meta }) => ({
+    id,
+    type,
+    ancestors,
+    general,
+    meta
+  })
+  t.deepEqualIgnoreOrder(pick(otherResult3), {
+    id: 'sp1',
+    type: 'sport',
+    ancestors: ['root'],
+    general: {
+      title: 'root'
+    },
+    meta: {
+      title: 'sport one'
+    }
+  })
+  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
+  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
 
   await wait(3000)
 
@@ -719,6 +917,20 @@ test.serial('subs layout', async t => {
     }
   ])
   t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(pick(otherResult3), {
+    id: 'sp1',
+    type: 'sport',
+    ancestors: ['root'],
+    general: {
+      title: 'root'
+    },
+    meta: {
+      title: 'sport one'
+    }
+  })
+  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
+  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 1)
+  t.deepEqualIgnoreOrder(otherResult3.components[1].children[0].id, 'mau1')
 
   await wait(3000)
 
@@ -752,6 +964,20 @@ test.serial('subs layout', async t => {
     }
   ])
   t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(pick(otherResult3), {
+    id: 'sp1',
+    type: 'sport',
+    ancestors: ['root'],
+    general: {
+      title: 'root'
+    },
+    meta: {
+      title: 'sport one'
+    }
+  })
+  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
+  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 1)
+  t.deepEqualIgnoreOrder(otherResult3.components[1].children[0].id, 'mau2')
 
   await wait(2000)
 
@@ -764,6 +990,19 @@ test.serial('subs layout', async t => {
   t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
   t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
   t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(pick(otherResult3), {
+    id: 'sp1',
+    type: 'sport',
+    ancestors: ['root'],
+    general: {
+      title: 'root'
+    },
+    meta: {
+      title: 'sport one'
+    }
+  })
+  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
+  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
 
   await client.delete('root')
 })
