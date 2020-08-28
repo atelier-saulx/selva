@@ -100,10 +100,10 @@ export class SelvaServer extends EventEmitter {
         }
       })
 
-      this.origin = await this.selvaClient.getServerDescriptor({
-        name: opts.name,
-        type: 'origin'
-      })
+      // this.origin = await this.selvaClient.getServerDescriptor({
+      //   name: opts.name,
+      //   type: 'origin'
+      // })
       startRedis(this, opts)
     } else {
       startRedis(this, opts)

@@ -29,6 +29,7 @@ const getServer = async (
       name = 'default'
     }
     server = selvaClient.servers.origins[name]
+    console.log(selector, server)
   }
 
   // for now only subscription

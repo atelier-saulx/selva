@@ -42,7 +42,6 @@ export type ServerDescriptor = {
   type?: ServerType // tmp to test things
   host: string
   port: number
-  default?: boolean
   index?: number
   stats?: any
   subscriptions?: Set<string>

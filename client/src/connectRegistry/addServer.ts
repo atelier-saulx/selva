@@ -6,7 +6,7 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
     const { type } = server
     selvaClient.servers.ids.add(id)
     if (type === 'origin') {
-      selvaClient.servers.origins[id] = server
+      selvaClient.servers.origins[server.name] = server
     } else if (type === 'replica') {
     } else if (type === 'subscriptionManager') {
     }

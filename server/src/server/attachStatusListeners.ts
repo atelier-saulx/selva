@@ -11,10 +11,6 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     host: opts.host
   }
 
-  if (opts.default) {
-    info.default = true
-  }
-
   server.on('stats', rawStats => {
     const stats: Stats = {
       memory: rawStats.runtimeInfo.memory,
