@@ -332,7 +332,7 @@ endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
 cmd_regen_makefile = cd $(srcdir); /Users/jimdebeer/saulx/selva/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/Users/jimdebeer/Library/Caches/node-gyp/12.14.1" "-Dnode_gyp_dir=/Users/jimdebeer/saulx/selva/node_modules/node-gyp" "-Dnode_lib_file=/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/<(target_arch)/node.lib" "-Dmodule_root_dir=/Users/jimdebeer/saulx/selva" "-Dnode_engine=v8" "--depth=." "-Goutput_dir=." "--generator-output=build" -I/Users/jimdebeer/saulx/selva/build/config.gypi -I/Users/jimdebeer/saulx/selva/node_modules/node-gyp/addon.gypi -I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/include/node/common.gypi "--toplevel-dir=." binding.gyp
-Makefile: $(srcdir)/build/config.gypi $(srcdir)/node_modules/node-gyp/addon.gypi $(srcdir)/../../Library/Caches/node-gyp/12.14.1/include/node/common.gypi $(srcdir)/node_modules/node-addon-api/node_api.gyp $(srcdir)/binding.gyp
+Makefile: $(srcdir)/../../Library/Caches/node-gyp/12.14.1/include/node/common.gypi $(srcdir)/node_modules/node-gyp/addon.gypi $(srcdir)/binding.gyp $(srcdir)/build/config.gypi $(srcdir)/node_modules/node-addon-api/node_api.gyp
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included

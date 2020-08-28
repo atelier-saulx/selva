@@ -18,6 +18,7 @@ const getInitialRegistryServers = async (selvaClient: SelvaClient) => {
           'type',
           'default'
         )
+        // don't get the stats!
         const server: ServerDescriptor = {
           host,
           port: Number(port),

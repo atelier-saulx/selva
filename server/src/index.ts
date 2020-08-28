@@ -5,6 +5,7 @@ import chalk from 'chalk'
 import os from 'os'
 import { join } from 'path'
 import fs from 'fs'
+import mkdirp from 'mkdirp-promise'
 
 export * as s3Backups from './backup-plugins/s3'
 
@@ -38,8 +39,9 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
     parsedOpts.dir = join(process.cwd(), 'tmp')
   }
 
+  // has to be mkdirp
   if (!fs.existsSync(parsedOpts.dir)) {
-    fs.mkdirSync(parsedOpts.dir)
+    await mkdirp(parsedOpts.dir)
   }
 
   if (parsedOpts.modules) {
@@ -138,7 +140,6 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
 export async function startReplica(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
 
-  // default name is 'main'
   const err = validate(parsedOpts, ['registry', 'name'], ['backups'])
   if (err) {
     console.error(`Error starting replica selva server ${chalk.red(err)}`)

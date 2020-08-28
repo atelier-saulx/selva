@@ -47,6 +47,7 @@ export class SelvaServer extends EventEmitter {
     this.port = opts.port
     this.host = opts.host
     this.name = opts.name
+
     if (opts.backups && opts.backups.backupFns) {
       if (!opts.save && opts.save !== false) {
         opts.save = true

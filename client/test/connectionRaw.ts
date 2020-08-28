@@ -112,7 +112,8 @@ test.serial('make a connection instance', async t => {
 
   console.log('start go')
   startReplica({
-    port: 9999,
+    registry: { port: 9999 },
+    default: true,
     dir: join(dir, 'replica1')
   })
 
