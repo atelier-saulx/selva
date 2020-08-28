@@ -13,8 +13,16 @@ export const registryManager = (server: SelvaServer): Promise<void> => {
 
     // add server
 
-    server.selvaClient.on('new-servers', ({ event }) => {
+    server.selvaClient.on('added-servers', ({ event, server }) => {
       console.log('got new server')
+      // this means we are going to re-index
+
+      if (event === '*') {
+        // got all of them
+        console.log('initial servers')
+      } else {
+        console.log('individual is added!', server)
+      }
     })
 
     // less important only relevant potentialy for an emit before shutdown...

@@ -74,19 +74,4 @@ export default (server: SelvaServer, opts: ServerOptions) => {
   server.pm.on('stderr', s => server.emit('stderr', s))
 
   server.pm.on('stats', o => server.emit('stats', o))
-  // const redisDb = spawn('redis-server', args)
-
-  // // not so nice
-  // const emit = (...args) => {
-  //   server.emit('data', ...args)
-  // }
-  // redisDb.stderr.on('data', emit)
-  // redisDb.stdout.on('data', emit)
-
-  // redisDb.stdout.on('close', () => {
-  //   console.log(chalk.blue(`Redis server on ${port} closed`))
-  //   server.emit('close', ...args)
-  // })
-
-  // want to make nice nice
 }

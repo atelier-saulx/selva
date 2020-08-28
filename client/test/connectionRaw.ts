@@ -45,12 +45,6 @@ test.serial('make a connection instance', async t => {
     registry: { port: 9999 }
   })
 
-  startReplica({
-    port: 9999,
-
-    dir: join(dir, 'replica1')
-  })
-
   const x = await client.redis.keys(
     {
       port: 9999,
@@ -115,6 +109,12 @@ test.serial('make a connection instance', async t => {
   )
 
   console.log(yyyy)
+
+  console.log('start go')
+  startReplica({
+    port: 9999,
+    dir: join(dir, 'replica1')
+  })
 
   console.log('trying replica for you')
   const replica = await client.redis.keys(

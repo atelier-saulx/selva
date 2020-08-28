@@ -78,17 +78,15 @@ export class SelvaServer extends EventEmitter {
     }
 
     if (this.type === 'replica') {
-      this.selvaClient.on('servers_updated', async servers => {
-        if (!this.origin) {
-          return
-        }
-
-        const origin = await this.selvaClient.getServerDescriptor({
+      const initReplica = async () => {
+        const origin = await this.selvaClient.getServer({
           name: opts.name,
           type: 'origin'
         })
-
-        if (
+        if (!this.origin) {
+          this.origin = origin
+          startRedis(this, opts)
+        } else if (
           origin.port !== this.origin.port ||
           origin.host !== this.origin.host
         ) {
@@ -98,13 +96,10 @@ export class SelvaServer extends EventEmitter {
             startRedis(this, opts)
           }, 500)
         }
-      })
-
-      // this.origin = await this.selvaClient.getServerDescriptor({
-      //   name: opts.name,
-      //   type: 'origin'
-      // })
-      startRedis(this, opts)
+      }
+      this.selvaClient.on('added-servers', initReplica)
+      this.selvaClient.on('removed-servers', initReplica)
+      initReplica()
     } else {
       startRedis(this, opts)
     }
