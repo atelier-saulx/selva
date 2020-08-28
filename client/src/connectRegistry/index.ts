@@ -59,15 +59,13 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           const { event } = payload
           if (event === 'new') {
             // on destroy destroy client as well
-
-            console.log('NEW', payload)
-
+            // console.log('NEW', payload)
             const { server } = payload
             if (addServer(selvaClient, <ServerDescriptor>server)) {
               selvaClient.emit('added-servers', payload)
             }
           } else if (event === 'remove') {
-            console.log('mofos remove', payload)
+            // console.log('mofos remove', payload)
             const { server } = payload
             if (removeServer(selvaClient, <ServerDescriptor>server)) {
               selvaClient.emit('removed-servers', payload)
