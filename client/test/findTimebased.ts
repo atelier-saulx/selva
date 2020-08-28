@@ -27,6 +27,7 @@ test.before(async t => {
       folder: {
         prefix: 'fo',
         fields: {
+          name: { type: 'string' },
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } }
         }
       },
@@ -139,6 +140,7 @@ test.serial('subs layout', async t => {
     title: {
       en: 'Highlights'
     },
+    name: 'Highlights',
     parents: ['sp1']
   })
 
@@ -740,7 +742,7 @@ test.serial('subs layout', async t => {
                   {
                     $operator: '=',
                     $value: 'Highlights',
-                    $field: 'title'
+                    $field: 'name'
                   }
                 ],
                 $find: {
