@@ -248,9 +248,9 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(RedisModuleCtx *ctx, RedisMo
 static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *set_key_name;
     RedisModuleKey *set_key = NULL;
+    const int is_root = !memcmp(id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
 
     set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
-
     if (unlikely(!set_key_name)) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
@@ -261,6 +261,17 @@ static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     }
 
     RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "$id", set_key_name, NULL);
+    if (is_root) {
+        RedisModuleString *type;
+
+        type = RedisModule_CreateStringPrintf(ctx, "root");
+        if (unlikely(!type)) {
+            return SELVA_MODIFY_HIERARCHY_ENOMEM;
+        }
+
+        RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "type", type, NULL);
+    }
+
     RedisModule_CloseKey(set_key);
     SelvaModify_PublishCreated(id);
 
@@ -458,6 +469,10 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
         remove_node_fields(ctx, id);
         SelvaModify_PublishDeleted(id, fields);
         RedisModule_Free(fields);
+
+        if (is_root) {
+            createNodeHash(ctx, id);
+        }
     }
 }
 

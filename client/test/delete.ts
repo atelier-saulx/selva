@@ -127,7 +127,7 @@ test.serial('can delete root', async t => {
   t.deepEqual(await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'), [match])
 
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [])
+  t.deepEqual(await dumpDb(client), [ [ 'root', { '$id': 'root', type: 'root' } ] ])
 
   await client.destroy()
 })
