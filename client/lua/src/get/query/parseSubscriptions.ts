@@ -175,8 +175,6 @@ function parseSubscriptions(
 
         let [findIn, q] = ast2rpn(withTime, language)
 
-        logger.info('IDS???', findIn, ids)
-
         let newSearchResults: string[]
         if (findIn && findIn.length > 0) {
           const searchArgs: string[] = [
@@ -193,8 +191,6 @@ function parseSubscriptions(
           for (const qArg of q) {
             searchArgs[searchArgs.length] = qArg
           }
-
-          logger.info('SEARCH ARGS', searchArgs)
 
           newSearchResults = redis.pcall(...searchArgs)
         } else if ($traverse) {
@@ -215,8 +211,6 @@ function parseSubscriptions(
             searchArgs[searchArgs.length] = qArg
           }
 
-          logger.info('SEARCH ARGS', searchArgs)
-
           newSearchResults = redis.pcall(...searchArgs)
         } else {
           console.error(
@@ -233,7 +227,6 @@ function parseSubscriptions(
             earliestId,
             timestampFilters[i].$field
           )
-          logger.info('FOUND', earliestId, timeResp)
 
           if (timeResp) {
             const time = tonumber(timeResp)
@@ -244,7 +237,6 @@ function parseSubscriptions(
         }
       }
 
-      logger.info('RESULT EARLIEST TIME', earliestTime)
       if (earliestTime) {
         sub.time = {
           nextRefresh: earliestTime
