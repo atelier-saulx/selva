@@ -39,7 +39,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
 
       selvaClient.registryConnection.on('connect', () => {
         getInitialRegistryServers(selvaClient).then(() => {
-          selvaClient.emit('servers_updated', { event: '*' })
+          selvaClient.emit('added-servers', { event: '*' })
         })
       })
 
@@ -50,7 +50,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           subsManagers: [],
           replicas: []
         }
-        selvaClient.emit('servers_updated', { event: '*' })
+        selvaClient.emit('removed-servers', { event: '*' })
       })
 
       registryConnection.addRemoteListener('message', (channel, msg) => {
@@ -60,12 +60,12 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           if (event === 'new') {
             const { server } = payload
             if (addServer(selvaClient, <ServerDescriptor>server)) {
-              selvaClient.emit('servers_updated', payload)
+              selvaClient.emit('added-servers', payload)
             }
           } else if (event === 'remove') {
             const { server } = payload
             if (removeServer(selvaClient, <ServerDescriptor>server)) {
-              selvaClient.emit('servers_updated', payload)
+              selvaClient.emit('removed-servers', payload)
             }
           } else if (event === 'move-sub') {
             console.log('MOVE SUBSCRIPTION')
@@ -77,6 +77,8 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
       })
 
       // add listeners
+      selvaClient.emit('registry-started')
+
       console.log('ok made start of registry connection')
     }
   }
