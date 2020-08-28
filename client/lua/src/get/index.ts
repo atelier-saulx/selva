@@ -459,7 +459,7 @@ function get(opts: GetOptions): GetResult {
     result.rawAncestors = arr
   }
 
-  if (!r.exists(id)) {
+  if (id !== 'root' && !r.exists(id)) {
     result.$isNull = true
   }
 
