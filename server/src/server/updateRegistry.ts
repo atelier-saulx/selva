@@ -1,18 +1,19 @@
 import { SelvaClient, constants } from '@saulx/selva'
 import { RegistryInfo } from '../types'
 
-export async function addSubscriptionToRegistry() {}
+export async function addSubscriptionToRegistry() {
+  // needs to write the new subscription in a special field (maybe not)
+  // and needs to check the reverse map and send an update for that
+  // when all this is done remove status from cms hub for now....
+}
 
-export async function updateServerDescriptor() {}
-
-export async function updateServerMetricsInfo() {}
-
-/*
 export default async function updateRegistry(
   client: SelvaClient,
   info: RegistryInfo
 ) {
   const args = []
+
+  // just remove subscriptions from this
 
   for (let key in info) {
     if (key === 'stats') {
@@ -32,11 +33,12 @@ export default async function updateRegistry(
     id
   ))
 
-
   // if new server
 
   await Promise.all([
     client.redis.sadd({ type: 'registry' }, 'servers', id),
+
+    // remove subs here
     client.redis.hmset({ type: 'registry' }, id, ...args)
   ])
 
@@ -54,4 +56,3 @@ export default async function updateRegistry(
     client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
   }
 }
-*/
