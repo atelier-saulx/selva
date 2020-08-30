@@ -47,6 +47,7 @@ export class SelvaServer extends EventEmitter {
     this.port = opts.port
     this.host = opts.host
     this.name = opts.name
+
     if (opts.backups && opts.backups.backupFns) {
       if (!opts.save && opts.save !== false) {
         opts.save = true
@@ -63,7 +64,14 @@ export class SelvaServer extends EventEmitter {
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
-      this.selvaClient = connect({ port: opts.port }, { serverType: this.type })
+      this.selvaClient = connect({ port: opts.port })
+    }
+
+    this.selvaClient.server = {
+      name: opts.name,
+      port: opts.port,
+      host: opts.host,
+      type: this.type
     }
 
     if (opts.backups && opts.backups.loadBackup) {
@@ -71,17 +79,15 @@ export class SelvaServer extends EventEmitter {
     }
 
     if (this.type === 'replica') {
-      this.selvaClient.on('servers_updated', async servers => {
-        if (!this.origin) {
-          return
-        }
-
-        const origin = await this.selvaClient.getServerDescriptor({
+      const initReplica = async () => {
+        const origin = await this.selvaClient.getServer({
           name: opts.name,
           type: 'origin'
         })
-
-        if (
+        if (!this.origin) {
+          this.origin = origin
+          startRedis(this, opts)
+        } else if (
           origin.port !== this.origin.port ||
           origin.host !== this.origin.host
         ) {
@@ -91,13 +97,10 @@ export class SelvaServer extends EventEmitter {
             startRedis(this, opts)
           }, 500)
         }
-      })
-
-      this.origin = await this.selvaClient.getServerDescriptor({
-        name: opts.name,
-        type: 'origin'
-      })
-      startRedis(this, opts)
+      }
+      this.selvaClient.on('added-servers', initReplica)
+      this.selvaClient.on('removed-servers', initReplica)
+      initReplica()
     } else {
       startRedis(this, opts)
     }

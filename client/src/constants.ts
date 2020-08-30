@@ -13,4 +13,5 @@ export const REGISTRY_UPDATE = '__selva_registry_update'
 export const REGISTRY_UPDATE_STATS = '__selva_registry_update_stats'
 export const REGISTRY_UPDATE_SUBSCRIPTION =
   '__selva_registry_update_subscriptions'
+export const REGISTRY_SUBSCRIPTION_INDEX = '__selva_registry_s_index'
 export const SCHEMA = '___selva_schema'

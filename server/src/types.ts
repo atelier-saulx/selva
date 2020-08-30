@@ -44,7 +44,6 @@ export type RegistryInfo = {
   name?: string
   type?: ServerType
   stats?: Stats
-  default?: boolean
   host: string
   port: number
 }

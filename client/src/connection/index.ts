@@ -8,6 +8,7 @@ import { loadScripts } from './scripts'
 import SubscriptionEmitter from '../observe/emitter'
 import startRedisClient from './startRedisClient'
 import { RedisClient } from 'redis'
+import { Callback } from '../redis/types'
 
 const connections: Map<string, Connection> = new Map()
 
@@ -34,6 +35,14 @@ class Connection extends EventEmitter {
   public serverDescriptor: ServerDescriptor
 
   public selvaSubscriptionEmitters: Set<SubscriptionEmitter>
+
+  public subscriptions: { [key: string]: { [key: string]: number } }
+
+  // channel / id
+  public psubscriptions: { [key: string]: { [key: string]: number } }
+
+  // listener / id
+  public redisListeners: { [key: string]: { [key: string]: Set<Callback> } }
 
   public selvaSubscribe() {
     if (!this.selvaSubscriptionsActive) {
@@ -75,20 +84,58 @@ class Connection extends EventEmitter {
 
   public selvaSubscriptionsActive: boolean = false
 
-  public subscribe(channel: string, id?: string) {
-    console.log(channel)
+  public genericSubscribe(
+    type: 'subscriptions' | 'psubscriptions',
+    method: 'subscribe' | 'psubscribe',
+    channel: string,
+    id: string = ''
+  ) {
+    if (!this[type]) {
+      this[type] = {}
+    }
+    if (!this[type][channel]) {
+      this[type][channel] = {}
+      console.log(method, channel)
+      this.subscriber[method](channel)
+    }
+    if (this[type][channel][id] === undefined) {
+      this[type][channel][id] = 0
+    }
+    this[type][channel][id]++
+  }
+
+  public genericUnsubscribe(
+    type: 'subscriptions' | 'psubscriptions',
+    method: 'punsubscribe' | 'unsubscribe',
+    channel: string,
+    id: string = ''
+  ) {
+    if (this[type] && this[type][channel] && this[type][channel][id]) {
+      this[type][channel][id]--
+      if (this[type][channel][id] === 0) {
+        delete this[type][channel][id]
+      }
+      if (Object.keys(this[type][channel]).length === 0) {
+        delete this[type][channel]
+        this.subscriber[method](channel)
+      }
+    }
+  }
+
+  public subscribe(channel: string, id: string = '') {
+    this.genericSubscribe('subscriptions', 'subscribe', channel, id)
   }
 
   public unsubscribe(channel: string, id?: string) {
-    console.log(channel)
+    this.genericUnsubscribe('subscriptions', 'unsubscribe', channel, id)
   }
 
   public psubscribe(channel: string, id?: string) {
-    console.log(channel)
+    this.genericSubscribe('psubscriptions', 'psubscribe', channel, id)
   }
 
   public punsubscribe(channel: string, id?: string) {
-    console.log(channel)
+    this.genericUnsubscribe('psubscriptions', 'punsubscribe', channel, id)
   }
 
   public command(command: RedisCommand) {
@@ -98,9 +145,51 @@ class Connection extends EventEmitter {
     }
   }
 
-  public applyConnectionState(state: ConnectionState) {}
+  public removeRemoteListener(event: string, cb?: Callback, id: string = '') {
+    const listeners = this.redisListeners
+    if (listeners && listeners[event] && listeners[event][id]) {
+      if (cb) {
+        listeners[event][id].delete(cb)
+        if (!listeners[event][id].size) {
+          this.subscriber.removeListener(event, cb)
+          delete listeners[event][id]
+          if (Object.keys(listeners[event]).length === 0) {
+            delete listeners[event]
+          }
+        }
+      } else {
+        listeners[event][id].forEach(cb => {
+          this.subscriber.removeListener(event, cb)
+        })
+        delete listeners[event][id]
+        if (Object.keys(listeners[event]).length === 0) {
+          delete listeners[event]
+        }
+      }
+    }
+  }
+  public addRemoteListener(event: string, cb?: Callback, id: string = '') {
+    let listeners = this.redisListeners
+    if (!listeners) {
+      listeners = this.redisListeners = {}
+    }
+    if (!listeners[event]) {
+      listeners[event] = {}
+    }
+    if (!listeners[event][id]) {
+      listeners[event][id] = new Set()
+    }
+    listeners[event][id].add(cb)
+    this.subscriber.on(event, cb)
+  }
+
+  public applyConnectionState(state: ConnectionState) {
+    // now go and do this
+  }
 
   public getConnectionState(id?: string): ConnectionState {
+    // no id needs to mean all :/
+    // different behaviour then empty string
     const state = {
       queue: [],
       pSubscribes: [],
@@ -108,7 +197,9 @@ class Connection extends EventEmitter {
       listeners: []
     }
 
-    if (id) {
+    // and do this also
+    if (id === undefined) {
+      // empty string is also a target
       // take the quue
     } else {
       // copy it nice
@@ -116,11 +207,6 @@ class Connection extends EventEmitter {
 
     return state
   }
-
-  public removeRemoteListener() {}
-  public addRemoteListener() {}
-
-  // mostly used internaly
 
   public startClientTimer: NodeJS.Timeout = null
 
@@ -149,6 +235,9 @@ class Connection extends EventEmitter {
 
     this.isDestroyed = true
 
+    this.subscriber.removeAllListeners()
+    this.publisher.removeAllListeners()
+
     this.subscriber.quit()
     this.publisher.quit()
 
@@ -172,7 +261,7 @@ class Connection extends EventEmitter {
     // destroy if counter is zero
     if (this.selvaSubscriptionsActive) {
       console.log(
-        'need to remove subs listeners for hearthebeat, and need to remove message listener'
+        'need to remove subs listeners for hearthbeat, and need to remove message listener'
       )
     }
 
@@ -195,15 +284,12 @@ class Connection extends EventEmitter {
     this.queueBeingDrained = []
 
     // here we add the retry strategies
-
-    // we add
     // - start timeout
     // - max retries
     // - server timeout subscription
     // - hard-disconnect (from info)
 
     // make this in a function (for retries etc)
-
     startRedisClient(this)
 
     const stringId = serverId(serverDescriptor)

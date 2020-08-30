@@ -24,7 +24,7 @@ import conformToSchema from './conformToSchema'
 
 import { connections, Connection, createConnection } from './connection'
 
-import updateConnectOptions from './updateConnectOptions'
+import connectRegistry from './connectRegistry'
 
 import destroy from './destroy'
 
@@ -35,7 +35,6 @@ import { v4 as uuidv4 } from 'uuid'
 import getServer from './getServer'
 
 // import Observable from './observe/observable'
-
 
 export * as constants from './constants'
 
@@ -51,12 +50,26 @@ export class SelvaClient extends EventEmitter {
   // add these on the registry scince that is the thing that gets reused
   // public schemaObservables: Record<string, Observable<Schema>> = {}
   public schemas: Record<string, Schema> = {}
-  public serverType: string
+
+  public server: ServerDescriptor
+
+  public servers: {
+    ids: Set<string>
+    subsManagers: ServerDescriptor[]
+    replicas: ServerDescriptor[]
+    // origins by name
+    origins: { [key: string] : ServerDescriptor}
+  } = {
+    ids: new Set(),
+    origins: {},
+    subsManagers: [],
+    replicas: []
+  }
 
   public registryConnection?: Connection
- 
 
   public logFn: LogFn
+
   public loglevel: string
 
   public admin: {
@@ -64,40 +77,39 @@ export class SelvaClient extends EventEmitter {
     deleteField(type: string, name: string, dbName?: string): Promise<void>,
     castField(type: string, name: string, newType: FieldSchema, dbName?: string): Promise<void>
   } = {
-    deleteType: (name: string, dbName: string = 'default') => {
-      return deleteType(this, name, { name: dbName })
-    },
-
-    deleteField: (type: string, name: string, dbName: string = 'default') => {
-      return deleteField(this, type, name, { name: dbName })
-    },
-
-    castField: (type: string, name: string, newType: FieldSchema, dbName: string = 'default') => {
-      return castField(this, type, name, newType, { name: dbName })
+      deleteType: (name: string, dbName: string = 'default') => {
+        return deleteType(this, name, { name: dbName })
+      },
+      deleteField: (type: string, name: string, dbName: string = 'default') => {
+        return deleteField(this, type, name, { name: dbName })
+      },
+      castField: (type: string, name: string, newType: FieldSchema, dbName: string = 'default') => {
+        return castField(this, type, name, newType, { name: dbName })
+      }
     }
-  }
 
   constructor(opts: ConnectOptions) {
     super()
-    updateConnectOptions(this, opts)
     this.redis = new Redis(this)
+    connectRegistry(this, opts)
 
     // tmp for logs
     this.uuid = uuidv4()
     this.selvaId = ++clientId + ''
   }
 
-  updateUrl() {
-    console.log('maybe bit different name?')
+  connect(opts: ConnectOptions) {
+    console.log('maybe bit different name? connect :/')
+    connectRegistry(this, opts)
     // diffrent name
   }
 
-  logLevel () {
+  logLevel() {
     // for logs its connection uuid + client id
     // can enable / disable logleves
   }
 
-   async initializeSchema(opts: any) {
+  async initializeSchema(opts: any) {
     // return initializeSchema(this, opts)
   }
 

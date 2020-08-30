@@ -23,9 +23,9 @@ export default async function updateRegistry(
     }
   }
 
-  console.log('Yo update dat registry', info)
-
   const id = info.host + ':' + info.port
+
+  // console.log('yesh want to make update times', info)
 
   const isNew = !(await client.redis.sismember(
     { type: 'registry' },
@@ -33,8 +33,7 @@ export default async function updateRegistry(
     id
   ))
 
-  // if new server
-
+  // hget only fields you need
   await Promise.all([
     client.redis.sadd({ type: 'registry' }, 'servers', id),
 
@@ -48,11 +47,23 @@ export default async function updateRegistry(
       constants.REGISTRY_UPDATE_STATS,
       id
     )
+  }
 
-    if (isNew) {
-      client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
-    }
-  } else {
-    client.redis.publish({ type: 'registry' }, constants.REGISTRY_UPDATE, id)
+  if (isNew) {
+    // better codes
+    client.redis.publish(
+      { type: 'registry' },
+      constants.REGISTRY_UPDATE,
+      // maybe not nessecary to send all (?)
+      JSON.stringify({
+        event: 'new',
+        server: {
+          port: info.port,
+          name: info.name,
+          host: info.host,
+          type: info.type
+        }
+      })
+    )
   }
 }

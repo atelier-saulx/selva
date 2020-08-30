@@ -3,7 +3,10 @@ import { RedisCommand, Callback } from './types'
 import RedisMethods from './methods'
 import { SelvaClient } from '..'
 import './redisClientExtensions'
-import updateRemoteListeners from '../updateRemoteListeners'
+import {
+  addRemoteListener,
+  removeRemoteListener
+} from '../updateRemoteListeners'
 import addRemoteCommand from '../addRemoteCommand'
 
 class RedisSelvaClient extends RedisMethods {
@@ -17,23 +20,17 @@ class RedisSelvaClient extends RedisMethods {
   on(selector: ServerSelector, event: string, callback: Callback): void
   on(event: string, callback: Callback): void
   on(selector: any, event: any, callback?: any): void {
-    updateRemoteListeners(this.selvaClient, 'on', selector, event, callback)
+    addRemoteListener(this.selvaClient, selector, event, callback)
   }
 
   removeListener(
     selector: ServerSelector,
     event: string,
-    callback: Callback
+    callback?: Callback
   ): void
   removeListener(event: string, callback: Callback): void
   removeListener(selector: any, event: any, callback?: any): void {
-    updateRemoteListeners(
-      this.selvaClient,
-      'removeListener',
-      selector,
-      event,
-      callback
-    )
+    removeRemoteListener(this.selvaClient, selector, event, callback)
   }
 
   addCommandToQueue(

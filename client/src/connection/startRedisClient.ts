@@ -74,7 +74,8 @@ const startClient = (
   client.on('hard-disconnect', () => {
     if (!connection.isDestroyed) {
       console.error(
-        '🧟‍♀️ Strange info error node redis client is corrupt destroy connection'
+        '🧟‍♀️ Strange info error node redis client is corrupt destroy connection',
+        connection.serverDescriptor
       )
       connection.emit('hard-disconnect')
       connection.destroy()
@@ -90,7 +91,8 @@ export default (connection: Connection) => {
   connection.startClientTimer = setTimeout(() => {
     if (!connection.isDestroyed) {
       console.error(
-        '🧟‍♀️ Took longer then 1 minute to connect to server destroy connection'
+        '🧟‍♀️ Took longer then 1 minute to connect to server destroy connection',
+        connection.serverDescriptor
       )
       connection.emit('hard-disconnect')
       connection.destroy()
@@ -105,7 +107,8 @@ export default (connection: Connection) => {
     connection.serverHeartbeatTimer = setTimeout(() => {
       if (!connection.isDestroyed) {
         console.error(
-          '🧟‍♀️ Server heartbeat expired (longer then 1 min) destroy connection'
+          '🧟‍♀️ Server heartbeat expired (longer then 1 min) destroy connection',
+          connection.serverDescriptor
         )
         connection.emit('hard-disconnect')
         connection.destroy()
@@ -116,6 +119,8 @@ export default (connection: Connection) => {
   connection.on('connect', () => {
     serverHeartbeat()
   })
+
+  connection.subscriber.subscribe(SERVER_HEARTBEAT)
 
   connection.subscriber.on('message', channel => {
     if (channel === SERVER_HEARTBEAT) {

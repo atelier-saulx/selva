@@ -1,43 +1,37 @@
-// import { getClient } from './connection'
-// import getServerDescriptor from './getServerDescriptor'
 import { Callback } from './redis/types'
-// import handleListenerClient from '../connection/handleListenerClient'
+import { SelvaClient, RedisCommand } from '.'
+import { ServerSelector } from './types'
+import getServer from './getServer'
+import { createConnection } from './connection'
 
-import { SelvaClient } from './'
-
-const handleListener = (
+export const addRemoteListener = (
   selvaClient: SelvaClient,
-  method: string,
-  selector: any,
-  event: any,
-  callback?: Callback
+  selector: ServerSelector,
+  event: string,
+  cb: Callback,
+  id?: string
 ) => {
-  // do it nice
-  // if (!redisSelvaClient.registry.connection) {
-  //   redisSelvaClient.listenerQueue.push({ selector, event, callback })
-  // } else {
-  //   if (typeof selector === 'string') {
-  //     callback = event
-  //     event = selector
-  //     // if replica is available
-  //     selector = { name: 'default', type: 'replica' }
-  //   }
-  //   if (selector.type === 'registry') {
-  //     // what if it does not exist?
-  //     redisSelvaClient.registry.connection.subscriber[method](event, callback)
-  //     handleListenerClient(redisSelvaClient.registry, method, event, callback)
-  //   } else {
-  //     if (!selector.type && !selector.host) {
-  //       selector.type = 'replica'
-  //     }
-  //     getServerDescriptor(redisSelvaClient.registry, selector).then(
-  //       descriptor => {
-  //         const client = getClient(redisSelvaClient, descriptor)
-  //         handleListenerClient(client, method, event, callback)
-  //       }
-  //     )
-  //   }
-  // }
+  getServer(selvaClient, selector).then(server => {
+    createConnection(server).addRemoteListener(
+      event,
+      cb,
+      id === undefined ? selvaClient.selvaId : id
+    )
+  })
 }
 
-export default handleListener
+export const removeRemoteListener = (
+  selvaClient: SelvaClient,
+  selector: ServerSelector,
+  event: string,
+  cb?: Callback,
+  id?: string
+) => {
+  getServer(selvaClient, selector).then(server => {
+    createConnection(server).removeRemoteListener(
+      event,
+      cb,
+      id === undefined ? selvaClient.selvaId : id
+    )
+  })
+}
