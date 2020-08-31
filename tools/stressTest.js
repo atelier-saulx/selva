@@ -112,10 +112,8 @@ async function runWorker() {
     if (c % 100 === 0 || c % 201 === 0) {
       const $id = sh[c & 1]
       console.log(`deleting children of ${$id}`)
-      await client.delete({
-        $id,
-        children: true
-      })
+      const { children: ids } = await client.get({ $id, children: true });
+      await Promise.all(ids.map((id) => client.delete(id)))
       await client.set({
         $id,
         votes: 0
