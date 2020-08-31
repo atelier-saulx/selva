@@ -113,6 +113,10 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         task->field_name = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask));
         const char prefix[] = "___selva_events:";
 
+#if 0
+        fprintf(stderr, "New task received. type: %d size: %d bytes\n", (int)task->type, (int)size);
+#endif
+
         if (task->type == SELVA_MODIFY_ASYNC_TASK_UPDATE) {
             char channel[sizeof(prefix) + SELVA_NODE_ID_SIZE + 1 + task->field_name_len];
             redisReply *reply = NULL;

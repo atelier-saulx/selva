@@ -68,12 +68,12 @@
  * as the buffers can't be split.
  * It might be a good idea to set this to a multiple of the cache line size.
  */
-#define ASYNC_TASK_RING_BUF_BLOCK_SIZE  128
+#define ASYNC_TASK_RING_BUF_BLOCK_SIZE  64
 
 /**
  * Number of task buffer blocks per worker.
  */
-#define ASYNC_TASK_RING_BUF_LENGTH      500000
+#define ASYNC_TASK_RING_BUF_LENGTH      1000000
 
 /**
  * Async task peek interval.

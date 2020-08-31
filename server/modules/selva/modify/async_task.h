@@ -2,6 +2,8 @@
 #ifndef SELVA_MODIFY_ASYNC_TASK
 #define SELVA_MODIFY_ASYNC_TASK
 
+#include "hierarchy.h"
+
 enum SelvaModify_AsyncEventType {
     SELVA_MODIFY_ASYNC_TASK_CREATED,
     SELVA_MODIFY_ASYNC_TASK_DELETED,
@@ -11,7 +13,7 @@ enum SelvaModify_AsyncEventType {
 struct SelvaModify_AsyncTask {
     enum SelvaModify_AsyncEventType type;
 
-    char id[10];
+    char id[SELVA_NODE_ID_SIZE];
 
     const char *field_name;
     size_t field_name_len;
