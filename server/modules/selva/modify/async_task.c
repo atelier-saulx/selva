@@ -210,7 +210,7 @@ int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
 
         ptr = queue_alloc_get(&queues[worker_idx]);
         if (ptr) {
-            const size_t to_write = min(bcount, ASYNC_TASK_RING_BUF_BLOCK_SIZE);
+            const size_t to_write = min(bcount, (size_t)ASYNC_TASK_RING_BUF_BLOCK_SIZE);
 
             memcpy(ptr, payload + offset, to_write);
             queue_alloc_commit(&queues[worker_idx]);
