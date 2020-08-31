@@ -813,7 +813,7 @@ rpn_token *rpn_compile(const char *input, size_t len) {
             return NULL;
         }
 
-        strncpy(expr[i++], s, 14);
+        strncpy(expr[i++], s, RPN_MAX_TOKEN_SIZE - 1);
         size += sizeof(rpn_token);
     }
     memset(expr[i], 0, sizeof(rpn_token));
