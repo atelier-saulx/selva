@@ -86,7 +86,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
         char read_buffer[size];
         char *read_ptr = read_buffer;
-        size_t remaining = size; // - sizeof(int32_t);
+        size_t remaining = size;
         size_t block_remaining = ASYNC_TASK_RING_BUF_BLOCK_SIZE - sizeof(int32_t);
 
         next += sizeof(int32_t);
