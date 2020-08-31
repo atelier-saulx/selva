@@ -71,30 +71,45 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
     for (;;) {
         char *next;
+
         if (!queue_peek(queue, (void **)&next)) {
             usleep(ASYNC_TASK_PEEK_INTERVAL_US);
             continue;
         }
 
-        int32_t size = *((int32_t *)next);
-        next += sizeof(int32_t);
-        char read_buffer[size];
-        char *read_ptr = read_buffer;
-        int32_t remaining = size;
-        int32_t block_remaining = ASYNC_TASK_RING_BUF_BLOCK_SIZE - sizeof(int32_t);
-        while (remaining > 0) {
-            if (!queue_peek(queue, (void **)&next)) {
-                usleep(ASYNC_TASK_PEEK_INTERVAL_US);
-                continue;
-            }
+        const int32_t size = *((int32_t *)next);
 
-            memcpy(read_ptr, next + (ASYNC_TASK_RING_BUF_BLOCK_SIZE - block_remaining), min(block_remaining, remaining));
+        if (size <= 0) {
             queue_skip(queue, 1);
-            remaining -= block_remaining;
-            block_remaining = ASYNC_TASK_RING_BUF_BLOCK_SIZE;
+            continue;
         }
 
-        struct SelvaModify_AsyncTask *task = (struct SelvaModify_AsyncTask *) read_buffer;
+        char read_buffer[size];
+        char *read_ptr = read_buffer;
+        size_t remaining = size; // - sizeof(int32_t);
+        size_t block_remaining = ASYNC_TASK_RING_BUF_BLOCK_SIZE - sizeof(int32_t);
+
+        next += sizeof(int32_t);
+        do {
+            const size_t to_read = min(block_remaining, remaining);
+
+            memcpy(read_ptr, next, to_read);
+            queue_skip(queue, 1);
+
+            block_remaining = ASYNC_TASK_RING_BUF_BLOCK_SIZE;
+            remaining -= to_read;
+            next += to_read;
+            read_ptr += to_read;
+
+            if (remaining > 0) {
+                if (!queue_peek(queue, (void **)&next)) {
+                    usleep(ASYNC_TASK_PEEK_INTERVAL_US);
+                    continue;
+                }
+            }
+        } while (remaining > 0);
+
+        struct SelvaModify_AsyncTask *task = (struct SelvaModify_AsyncTask *)read_buffer;
         task->field_name = (const char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask));
         const char prefix[] = "___selva_events:";
 
@@ -167,7 +182,7 @@ error:
     return NULL;
 }
 
-int SelvaModify_SendAsyncTask(const char *payload, int payload_len) {
+int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
     for (size_t i = 0; i < ASYNC_TASK_HIREDIS_WORKER_COUNT; i++) {
         if (thread_ids[i] == 0) {
             pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);
@@ -188,16 +203,21 @@ int SelvaModify_SendAsyncTask(const char *payload, int payload_len) {
         }
     }
 
-
-    for (int i = 0; i < payload_len; i += ASYNC_TASK_RING_BUF_BLOCK_SIZE) {
+    size_t offset = 0;
+    size_t bcount = payload_len;
+    do {
         char *ptr;
 
         ptr = queue_alloc_get(&queues[worker_idx]);
-        if (ptr != NULL) {
-            memcpy(ptr, payload, payload_len);
+        if (ptr) {
+            const size_t to_write = min(bcount, ASYNC_TASK_RING_BUF_BLOCK_SIZE);
+
+            memcpy(ptr, payload + offset, to_write);
             queue_alloc_commit(&queues[worker_idx]);
+            offset += to_write;
+            bcount -= to_write;
         }
-    }
+    } while (bcount > 0);
 
     total_publishes++;
 

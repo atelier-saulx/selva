@@ -17,7 +17,7 @@ struct SelvaModify_AsyncTask {
     size_t field_name_len;
 };
 
-int SelvaModify_SendAsyncTask(const char *payload, int payload_len);
+int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len);
 void SelvaModify_PublishCreated(const char *id_str);
 void SelvaModify_PublishDeleted(const char *id_str, const char *fields);
 void SelvaModify_PublishUpdate(const char *id_str, const char *field_str, size_t field_len);
