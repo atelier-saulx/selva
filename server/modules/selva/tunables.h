@@ -60,9 +60,29 @@
  * Async_task Tunables.
  */
 
+/**
+ * Task buffer block size.
+ * Tasks are sent over fixed size buffers but a single task can occupy multiple
+ * buffers. This value should be big enough to fit majority of tasks sent in
+ * normal operation but also small enough so no space is wasted for padding,
+ * as the buffers can't be split.
+ * It might be a good idea to set this to a multiple of the cache line size.
+ */
 #define ASYNC_TASK_RING_BUF_BLOCK_SIZE  128
+
+/**
+ * Number of task buffer blocks per worker.
+ */
 #define ASYNC_TASK_RING_BUF_LENGTH      500000
+
+/**
+ * Async task peek interval.
+ */
 #define ASYNC_TASK_PEEK_INTERVAL_US     100
+
+/**
+ * Number of async task workers.
+ */
 #define ASYNC_TASK_HIREDIS_WORKER_COUNT 4
 
 #endif /* SELVA_MODIFY_TUNABLES */
