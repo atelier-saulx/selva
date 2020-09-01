@@ -121,8 +121,6 @@ test.serial('make a connection instance', async t => {
 
   console.log('start go')
 
-  await wait(3e3)
-
   startReplica({
     registry: { port: 9999 },
     default: true,
