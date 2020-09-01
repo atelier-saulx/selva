@@ -130,6 +130,18 @@ test.serial('make a connection instance', async t => {
     dir: join(dir, 'replica2')
   })
 
+  startReplica({
+    registry: { port: 9999 },
+    default: true,
+    dir: join(dir, 'replica3')
+  })
+
+  startReplica({
+    registry: { port: 9999 },
+    default: true,
+    dir: join(dir, 'replica4')
+  })
+
   console.log('get data from replicas')
   const replica = await client.redis.keys(
     {
@@ -137,6 +149,14 @@ test.serial('make a connection instance', async t => {
     },
     '*'
   )
+
+  const oneReplica = await client.getServer(
+    { type: 'replica' },
+    { strict: true }
+  )
+
+  // do we want 'force replica' as option
+  console.log('🚷', { oneReplica })
 
   console.log('replica result', replica)
   // selva client emit reconnect event (with descriptor)

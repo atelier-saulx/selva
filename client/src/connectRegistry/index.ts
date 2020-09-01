@@ -43,6 +43,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
         })
       })
 
+      // if a registry client is being re-used
       if (selvaClient.registryConnection.connected) {
         getInitialRegistryServers(selvaClient).then(() => {
           selvaClient.emit('added-servers', { event: '*' })
@@ -54,7 +55,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           ids: new Set(),
           origins: {},
           subsManagers: [],
-          replicas: []
+          replicas: {}
         }
         selvaClient.emit('removed-servers', { event: '*' })
       })
@@ -80,7 +81,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
             console.log('MOVE SUBSCRIPTION')
           } else if ('update-index') {
             // can be either a subs manager update of index or replica
-            console.log('update index')
+            // console.log('update index event', payload)
           }
         }
       })

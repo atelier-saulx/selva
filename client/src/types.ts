@@ -34,6 +34,8 @@ export type ServerSelector = {
   subscription?: string
 }
 
+export type ServerSelectOptions = { subscription?: string; strict?: true }
+
 // complete server selector + registry client
 
 // TODO: make non optional

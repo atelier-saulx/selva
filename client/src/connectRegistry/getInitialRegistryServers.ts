@@ -9,21 +9,22 @@ const getInitialRegistryServers = async (selvaClient: SelvaClient) => {
   await Promise.all(
     serverList.map(
       async (id: string): Promise<void> => {
-        const [host, port, name, type, def] = await selvaClient.redis.hmget(
+        const [host, port, name, type, index] = await selvaClient.redis.hmget(
           { type: 'registry' },
           id,
           'host',
           'port',
           'name',
           'type',
-          'default'
+          'index'
         )
         // don't get the stats!
         const server: ServerDescriptor = {
           host,
           port: Number(port),
           name,
-          type
+          type,
+          index: Number(index)
         }
         addServer(selvaClient, <ServerDescriptor>server)
       }

@@ -1,11 +1,11 @@
 import { SelvaClient } from '.'
-import { ServerSelector, ServerDescriptor } from './types'
+import { ServerSelector, ServerDescriptor, ServerSelectOptions } from './types'
 import { waitUntilEvent } from './util'
 
 const getServer = async (
   selvaClient: SelvaClient,
   selector: ServerSelector,
-  selectionOptions?: { subscription?: string } // channel
+  selectionOptions?: ServerSelectOptions // channel
 ): Promise<ServerDescriptor> => {
   if (selector.host && selector.port) {
     return { ...selector, host: selector.host, port: selector.port }
@@ -29,6 +29,15 @@ const getServer = async (
       name = 'default'
     }
     server = selvaClient.servers.origins[name]
+  } else if (type === 'replica') {
+    if (!name) {
+      name = 'default'
+    }
+    const replicas = selvaClient.servers.replicas[name]
+    server = replicas && replicas[0]
+    if (!server && (!selectionOptions || !selectionOptions.strict)) {
+      server = selvaClient.servers.origins[name]
+    }
   }
 
   // for now only subscription

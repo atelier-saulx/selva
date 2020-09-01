@@ -1,24 +1,56 @@
 import { SelvaServer } from '../'
-import { constants } from '@saulx/selva'
+import { constants, SelvaClient } from '@saulx/selva'
+import { integer } from 'aws-sdk/clients/cloudfront'
+import { Interval } from 'aws-sdk/clients/dlm'
 
 const { REGISTRY_UPDATE } = constants
 
-export const registryManager = (server: SelvaServer) => {
-  server.selvaClient.on('added-servers', ({ event, server }) => {
-    console.log('got new server', server)
-    // this means we are going to re-index
-    if (event === '*') {
-      // got all of them
-      console.log('initial servers')
+type ServerIndex = {
+  index: integer
+  weight: number
+  id: string
+}
+
+const insert = (array: ServerIndex[], target: ServerIndex): void => {
+  var l: number = 0
+  var h: number = array.length - 1
+  var m: number
+  while (l <= h) {
+    m = (l + h) >>> 1
+    const a = array[m].weight
+    const b = target.weight
+    if (a < b) {
+      l = m + 1
+    } else if (a > b) {
+      h = m - 1
     } else {
-      console.log('individual is added!', server)
+      l = m
+      break
     }
-  })
+  }
+  array.splice(l, 0, target)
+}
+
+export const registryManager = (server: SelvaServer) => {
+  // use this for extra speed
+  // server.selvaClient.on('added-servers', ({ event, server }) => {
+  //   console.log('got new server', server)
+  //   // this means we are going to re-index
+  //   if (event === '*') {
+  //     // got all of them
+  //     console.log('initial servers')
+  //   } else {
+  //     console.log('individual is added!', server)
+  //   }
+  // })
 
   const updateFromStats = async () => {
+    const replicas: ServerIndex[] = []
+    const subsManagers: ServerIndex[] = []
+    const redis = server.selvaClient.redis
+
     await Promise.all(
       [...server.selvaClient.servers.ids].map(async id => {
-        const redis = server.selvaClient.redis
         try {
           const result = await redis.hmget(
             { type: 'registry' },
@@ -27,16 +59,23 @@ export const registryManager = (server: SelvaServer) => {
             'name',
             'host',
             'port',
-            'type'
+            'type',
+            'index'
           )
 
           if (result) {
-            const [rawStats, name, host, port, type] = result
+            const [rawStats, name, host, port, type, index] = result
             const stats = rawStats && JSON.parse(rawStats)
             // console.log(type, id, stats)
 
             if (!stats) {
-              console.log(type, name, id, 'does not have stats')
+              console.warn(
+                '⚠️ ',
+                type,
+                name,
+                id,
+                'does not have stats (from registry server)'
+              )
               return
             }
 
@@ -61,7 +100,24 @@ export const registryManager = (server: SelvaServer) => {
                 })
               )
             } else if (type === 'replica') {
-              console.log('replica', id, stats)
+              // opsPerSecond (int)
+              // activeChannels (int)
+              // cpu (0-1)
+
+              // use these 3 to sort
+
+              // const weight =
+              // stats.cpu + Math.min(stats.activeChannels / 1e3, 0.5)
+
+              // round cpu to closest 0.1
+              const weight = Math.round(10 * stats.cpu)
+
+              const target: ServerIndex = {
+                weight,
+                id,
+                index: index === null ? -1 : Number(index) // original index
+              }
+              insert(replicas, target)
             }
             // else subs manager (also just order them)
           }
@@ -70,6 +126,53 @@ export const registryManager = (server: SelvaServer) => {
         }
       })
     )
+
+    let move
+    let q
+    for (let i = 0; i < replicas.length; i++) {
+      const replica = replicas[i]
+      // add something extra - check if the weight is the same everywhere
+      if (i !== replica.index) {
+        if (
+          replica.index !== -1 &&
+          replica.weight !== replicas[replica.index].weight
+        ) {
+          console.log('update index!', replica.index, '->', i)
+          if (!q) {
+            q = []
+            move = {}
+          }
+          q.push(redis.hset({ type: 'registry' }, replica.id, 'index', i))
+          move[replica.id] = [replica.index, i]
+        }
+      }
+    }
+    // no check most efficient way to publish
+
+    // this is what we will publish
+
+    if (move) {
+      console.log({ replicas })
+      console.log({ move })
+
+      q.push(
+        redis.publish(
+          {
+            type: 'registry'
+          },
+          REGISTRY_UPDATE,
+          JSON.stringify({
+            event: 'update-index',
+            type: 'replica',
+            move
+          })
+        )
+      )
+    }
+
+    if (q) {
+      await Promise.all(q)
+    }
 
     setTimeout(updateFromStats, 1e3)
   }

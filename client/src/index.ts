@@ -4,6 +4,7 @@ import {
   ServerDescriptor,
   ServerType,
   ServerSelector,
+  ServerSelectOptions,
   LogFn
 } from './types'
 import digest from './digest'
@@ -56,14 +57,15 @@ export class SelvaClient extends EventEmitter {
   public servers: {
     ids: Set<string>
     subsManagers: ServerDescriptor[]
-    replicas: ServerDescriptor[]
+        // replicas by name
+    replicas:  { [key: string] : ServerDescriptor[] } 
     // origins by name
     origins: { [key: string] : ServerDescriptor}
   } = {
     ids: new Set(),
     origins: {},
     subsManagers: [],
-    replicas: []
+    replicas: {}
   }
 
   public registryConnection?: Connection
@@ -169,8 +171,8 @@ export class SelvaClient extends EventEmitter {
     return conformToSchema(this, props, dbName)
   }
 
-  getServer(opts: ServerSelector): Promise<ServerDescriptor> {
-    return getServer(this, opts)
+  getServer(opts: ServerSelector, selectOptions?:ServerSelectOptions): Promise<ServerDescriptor> {
+    return getServer(this, opts, selectOptions)
   }
 
   async destroy() {

@@ -8,6 +8,14 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
     if (type === 'origin') {
       selvaClient.servers.origins[server.name] = server
     } else if (type === 'replica') {
+      if (!selvaClient.servers.replicas[server.name]) {
+        selvaClient.servers.replicas[server.name] = []
+      }
+      selvaClient.servers.replicas[server.name].splice(
+        server.index === -1 ? 0 : server.index || 0,
+        0,
+        server
+      )
     } else if (type === 'subscriptionManager') {
     }
     return true
