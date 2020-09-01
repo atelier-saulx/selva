@@ -32,8 +32,8 @@ const insert = (array: ServerIndex[], target: ServerIndex): void => {
 }
 
 export const registryManager = (server: SelvaServer) => {
+  // not reallty nessecary but nice to see for now
   server.selvaClient.on('added-servers', ({ event, server }) => {
-    console.log('got new server', server)
     // this means we are going to re-index
     if (event === '*') {
       // got all of them

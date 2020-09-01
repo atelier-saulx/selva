@@ -25,8 +25,10 @@ export async function removeFromRegistry(client: SelvaClient) {
   )
 }
 
-const block = (server: SelvaServer) => {
-  return !server.pm || server.pm.isDestroyed
+const block = (server: SelvaServer): boolean => {
+  const isBlocked = !server.pm || server.pm.isDestroyed || server.isDestroyed
+  if (isBlocked) console.log('IS BLOCKED', server.type)
+  return isBlocked
 }
 
 export default async function updateRegistry(

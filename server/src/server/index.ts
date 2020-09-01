@@ -30,6 +30,7 @@ export class SelvaServer extends EventEmitter {
   public type: ServerType
   public port: number
   public host: string
+  public isDestroyed: boolean
   public name: string
   public selvaClient: SelvaClient
   public serverHeartbeatTimeout?: NodeJS.Timeout
@@ -130,6 +131,7 @@ export class SelvaServer extends EventEmitter {
   }
 
   async destroy() {
+    this.isDestroyed = true
     await removeFromRegistry(this.selvaClient)
 
     if (this.pm) {
