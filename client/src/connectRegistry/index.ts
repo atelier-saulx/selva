@@ -1,9 +1,10 @@
 import { SelvaClient, ConnectOptions, ServerDescriptor } from '..'
-import { createConnection } from '../connection'
+import { createConnection, connections } from '../connection'
 import { REGISTRY_UPDATE } from '../constants'
 import getInitialRegistryServers from './getInitialRegistryServers'
 import addServer from './addServer'
 import removeServer from './removeServer'
+import { serverId } from '../util'
 
 /*
  registry-update
@@ -75,12 +76,25 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
               selvaClient.emit('added-servers', payload)
             }
           } else if (event === 'remove') {
-            // console.log('mofos remove', payload)
             const { server } = payload
             if (removeServer(selvaClient, <ServerDescriptor>server)) {
-              // also break connection if this happens!
+              const id = serverId(server)
 
-              // hard dc connection!
+              const connection = connections.get(id)
+
+              // if its from this we know to increase a counter for soft ramp up
+              if (connection) {
+                console.log('found connection')
+
+                connection.emit('hard-disconnect')
+                connection.destroy()
+              } else {
+                // console.warn(
+                //   'Removed a server - connection cannot be removed!',
+                //   server
+                // )
+              }
+
               selvaClient.emit('removed-servers', payload)
             }
           } else if (event === 'move-sub') {

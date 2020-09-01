@@ -1,3 +1,5 @@
+import { ServerDescriptor } from './types'
+
 import { SelvaClient } from '.'
 
 export const wait = (t: number = 0): Promise<void> =>
@@ -9,4 +11,8 @@ export const waitUntilEvent = (selvaClient: SelvaClient, event: string) => {
       resolve()
     })
   })
+}
+
+export const serverId = (serverDescriptor: ServerDescriptor) => {
+  return serverDescriptor.host + ':' + serverDescriptor.port
 }

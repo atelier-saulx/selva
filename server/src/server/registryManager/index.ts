@@ -83,7 +83,7 @@ export const registryManager = (server: SelvaServer) => {
 
             const ts = stats.timestamp
 
-            // very sensitve...
+            // very sensitive...
             if (Date.now() - ts > 3e3) {
               await Promise.all([
                 redis.srem({ type: 'registry' }, 'servers', id),
@@ -118,7 +118,7 @@ export const registryManager = (server: SelvaServer) => {
               // round cpu to closest 0.1
               let weight = Math.round(stats.cpu / 5)
 
-              console.log(id, weight, stats.cpu)
+              // console.log(id, weight, stats.cpu)
 
               // slow connection so something must be up
               if (Date.now() - ts > 2e3) {
@@ -179,7 +179,6 @@ export const registryManager = (server: SelvaServer) => {
     if (move) {
       console.log({ replicas })
       console.log({ move })
-
       q.push(
         redis.publish(
           {

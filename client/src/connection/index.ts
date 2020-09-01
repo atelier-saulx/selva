@@ -9,12 +9,9 @@ import SubscriptionEmitter from '../observe/emitter'
 import startRedisClient from './startRedisClient'
 import { RedisClient } from 'redis'
 import { Callback } from '../redis/types'
+import { serverId } from '../util'
 
 const connections: Map<string, Connection> = new Map()
-
-const serverId = (serverDescriptor: ServerDescriptor) => {
-  return serverDescriptor.host + ':' + serverDescriptor.port
-}
 
 // logs are easier to handle just add the id in the command to the other id
 
@@ -231,7 +228,12 @@ class Connection extends EventEmitter {
   }
 
   public destroy() {
-    console.log('destroy connection')
+    console.log('Destroy connection', this.serverDescriptor)
+
+    if (this.isDestroyed) {
+      console.warn('Allready destroyed connection', this.serverDescriptor)
+      return
+    }
 
     this.isDestroyed = true
 
@@ -295,7 +297,7 @@ class Connection extends EventEmitter {
     const stringId = serverId(serverDescriptor)
 
     if (connections.get(stringId)) {
-      console.warn('connection allready exists! ', stringId)
+      console.warn('⚠️  Connection allready exists! ', stringId)
     }
 
     connections.set(stringId, this)
