@@ -1,5 +1,5 @@
 import test from 'ava'
-import { Connection, connections, connect } from '../src/index'
+import { Connection, connections, connect } from '@saulx/selva'
 import { startRegistry, startOrigin, startReplica } from '../../server'
 import './assertions'
 import { wait } from './assertions'
@@ -114,6 +114,8 @@ test.serial('make a connection instance', async t => {
   console.log('keys from snurf', yyyy)
 
   console.log('remove snurf server')
+
+  // has to rly destroy the server!
   await snurfServer.destroy()
   console.log('snurf server destroyed')
 

@@ -81,7 +81,7 @@ export default class RedisManager extends ProcessManager {
         return { isBusy: true, runtimeInfo }
       }
     } catch (err) {
-      console.error('Cannot get info ', err.message)
+      console.error('Cannot get info ', this.selvaClient.server, err.message)
       return {
         redisInfo: {},
         runtimeInfo,

@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from 'child_process'
 import pidusage, { Status } from 'pidusage'
 import { EventEmitter } from 'events'
+import { bool } from 'aws-sdk/clients/signer'
 
 // const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
 const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every 10 seconds
@@ -10,6 +11,7 @@ export default class ProcessManager extends EventEmitter {
   private args: string[]
   private childProcess: ChildProcess
   private loadMeasurementsTimeout: NodeJS.Timeout
+  private isMeasuring: boolean
 
   constructor(command: string, args: string[]) {
     super()
@@ -24,6 +26,8 @@ export default class ProcessManager extends EventEmitter {
   }
 
   private startLoadMeasurements(isNotFirst: boolean = false) {
+    this.isMeasuring = true
+
     this.loadMeasurementsTimeout = setTimeout(
       () => {
         this.collect()
@@ -41,7 +45,9 @@ export default class ProcessManager extends EventEmitter {
             )
           })
           .finally(() => {
-            this.startLoadMeasurements(true)
+            if (this.isMeasuring) {
+              this.startLoadMeasurements(true)
+            }
           })
       },
       isNotFirst ? LOAD_MEASUREMENTS_INTERVAL : 0
@@ -49,6 +55,7 @@ export default class ProcessManager extends EventEmitter {
   }
 
   private stopLoadMeasurements() {
+    this.isMeasuring = false
     if (this.loadMeasurementsTimeout) {
       clearTimeout(this.loadMeasurementsTimeout)
       this.loadMeasurementsTimeout = undefined

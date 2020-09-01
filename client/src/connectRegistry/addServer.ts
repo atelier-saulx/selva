@@ -20,7 +20,7 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
     }
     return true
   } else {
-    console.warn('💁🏻 Add server id allready exist', server)
+    // console.warn('💁🏻 Add server id allready exist', server)
   }
 }
 

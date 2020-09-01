@@ -128,6 +128,7 @@ export class SelvaServer extends EventEmitter {
 
   async destroy() {
     if (this.pm) {
+      console.log('DESTROY SERVER')
       this.pm.destroy()
       this.pm = undefined
     }

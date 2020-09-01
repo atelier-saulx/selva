@@ -25,7 +25,7 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
     }
     return true
   } else {
-    console.warn('💁🏻 Remove server id does not exist', server)
+    // console.warn('💁🏻 Remove server id does not exist', server)
   }
 }
 

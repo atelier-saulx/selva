@@ -1,5 +1,10 @@
 import { SelvaClient, ConnectOptions, ServerDescriptor } from '..'
-import { createConnection, connections } from '../connection'
+
+import {
+  createConnection,
+  connections,
+  uuid as connectionUuid
+} from '../connection'
 import { REGISTRY_UPDATE } from '../constants'
 import getInitialRegistryServers from './getInitialRegistryServers'
 import addServer from './addServer'
@@ -79,15 +84,21 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
             const { server } = payload
             if (removeServer(selvaClient, <ServerDescriptor>server)) {
               const id = serverId(server)
-
               const connection = connections.get(id)
 
               // if its from this we know to increase a counter for soft ramp up
               if (connection) {
-                console.log('found connection')
-
-                connection.emit('hard-disconnect')
-                connection.destroy()
+                if (!connection.isDestroyed) {
+                  console.log(
+                    'found connection',
+                    connectionUuid,
+                    selvaClient.server
+                  )
+                  connection.emit('hard-disconnect')
+                  connection.destroy()
+                } else {
+                  console.log('allready destroyed!', id)
+                }
               } else {
                 // console.warn(
                 //   'Removed a server - connection cannot be removed!',
