@@ -22,7 +22,7 @@ static uint64_t missed_publishes;
 
 static pthread_t thread_ids[ASYNC_TASK_HIREDIS_WORKER_COUNT] = { };
 
-static char queue_mem[ASYNC_TASK_HIREDIS_WORKER_COUNT][ASYNC_TASK_RING_BUF_BLOCK_SIZE * ASYNC_TASK_RING_BUF_LENGTH];
+_Alignas(ASYNC_TASK_RING_BUF_BLOCK_SIZE) static char queue_mem[ASYNC_TASK_HIREDIS_WORKER_COUNT][ASYNC_TASK_RING_BUF_BLOCK_SIZE * ASYNC_TASK_RING_BUF_LENGTH];
 static queue_cb_t queues[ASYNC_TASK_HIREDIS_WORKER_COUNT];
 __constructor static void initialize_queues() {
     for (uint8_t i = 0; i < ASYNC_TASK_HIREDIS_WORKER_COUNT; i++) {
@@ -84,7 +84,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
             continue;
         }
 
-        char read_buffer[size];
+        _Alignas(struct SelvaModify_AsyncTask) char read_buffer[size];
         char *read_ptr = read_buffer;
         size_t remaining = size;
         size_t block_remaining = ASYNC_TASK_RING_BUF_BLOCK_SIZE - sizeof(int32_t);
@@ -229,7 +229,6 @@ int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
 }
 
 void SelvaModify_PublishCreated(const char *id_str) {
-    /* TODO Optimize by writing directly to payload_str */
     const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
     const size_t payload_len = sizeof(int32_t) + struct_len;
     char payload_str[payload_len];
@@ -252,7 +251,6 @@ void SelvaModify_PublishCreated(const char *id_str) {
 }
 
 void SelvaModify_PublishDeleted(const char *id_str, const char *fields) {
-    /* TODO Optimize by writing directly to payload_str */
     const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
     const size_t fields_len = fields == NULL ? 0 : strlen(fields);
     const size_t payload_len = sizeof(int32_t) + struct_len + fields_len;
@@ -279,7 +277,6 @@ void SelvaModify_PublishDeleted(const char *id_str, const char *fields) {
 }
 
 void SelvaModify_PublishUpdate(const char *id_str, const char *field_str, size_t field_len) {
-    /* TODO Optimize by writing directly to payload_str */
     const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
     const size_t payload_len = sizeof(int32_t) + struct_len + field_len;
     char payload_str[payload_len];
