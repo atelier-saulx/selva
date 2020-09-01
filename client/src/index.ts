@@ -92,6 +92,7 @@ export class SelvaClient extends EventEmitter {
 
   constructor(opts: ConnectOptions) {
     super()
+    this.setMaxListeners(1e5)
     this.redis = new Redis(this)
     connectRegistry(this, opts)
 

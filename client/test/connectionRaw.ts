@@ -158,7 +158,34 @@ test.serial('make a connection instance', async t => {
   // do we want 'force replica' as option
   console.log('🚷', { oneReplica })
 
-  console.log('replica result', replica)
+  const nukeReplica = async (r, cnt = 0) => {
+    // console.log('gimme', await client.redis.hgetall(oneReplica, 'flappie'))
+    let q = []
+    for (let i = 0; i < 10000; i++) {
+      q.push(client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16)))
+    }
+
+    await Promise.all(q)
+    // console.log('done 10k keys')
+
+    if (cnt < 1000) {
+      nukeReplica(r, ++cnt)
+    } else {
+      console.log('done nuking (1000 x 10k)', r)
+    }
+  }
+
+  console.log('go nuke onReplica')
+  nukeReplica(oneReplica)
+
+  // now getting a replica needs to get anothert one
+  const secondReplica = await client.getServer(
+    { type: 'replica' },
+    { strict: true }
+  )
+
+  console.log('🚷', { secondReplica })
+
   // selva client emit reconnect event (with descriptor)
   await wait(1000e3)
 

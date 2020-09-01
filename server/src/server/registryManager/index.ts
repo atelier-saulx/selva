@@ -44,6 +44,8 @@ export const registryManager = (server: SelvaServer) => {
   //   }
   // })
 
+  // also send shutdown event if its correct
+
   const updateFromStats = async () => {
     const replicas: ServerIndex[] = []
     const subsManagers: ServerIndex[] = []
@@ -81,11 +83,15 @@ export const registryManager = (server: SelvaServer) => {
 
             const ts = stats.timestamp
 
-            if (Date.now() - ts > 5e3) {
+            // very sensitve...
+            if (Date.now() - ts > 3e3) {
               await Promise.all([
                 redis.srem({ type: 'registry' }, 'servers', id),
                 redis.del({ type: 'registry' }, id)
               ])
+
+              console.log('TIMEOUT', id, type, name)
+
               await redis.publish(
                 { type: 'registry' },
                 REGISTRY_UPDATE,
@@ -110,7 +116,18 @@ export const registryManager = (server: SelvaServer) => {
               // stats.cpu + Math.min(stats.activeChannels / 1e3, 0.5)
 
               // round cpu to closest 0.1
-              const weight = Math.round(10 * stats.cpu)
+              let weight = Math.round(stats.cpu / 5)
+
+              console.log(id, weight, stats.cpu)
+
+              // slow connection so something must be up
+              if (Date.now() - ts > 2e3) {
+                console.log('connection is slow somwething must be weird')
+                weight = 100
+              }
+              // opsPerSecond is also veryt good
+
+              // console.log(id, stats)
 
               const target: ServerIndex = {
                 weight,
@@ -134,10 +151,18 @@ export const registryManager = (server: SelvaServer) => {
       // add something extra - check if the weight is the same everywhere
       if (i !== replica.index) {
         if (
-          replica.index !== -1 &&
+          !replicas[replica.index] ||
           replica.weight !== replicas[replica.index].weight
         ) {
-          console.log('update index!', replica.index, '->', i)
+          console.log(
+            'update index!',
+            replica.index,
+            '->',
+            i,
+            replica.weight,
+
+            replicas[replica.index] && replicas[replica.index].weight
+          )
           if (!q) {
             q = []
             move = {}

@@ -50,7 +50,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
         })
       }
 
-      selvaClient.registryConnection.on('destroy', () => {
+      const clear = () => {
         selvaClient.servers = {
           ids: new Set(),
           origins: {},
@@ -58,7 +58,10 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           replicas: {}
         }
         selvaClient.emit('removed-servers', { event: '*' })
-      })
+      }
+
+      selvaClient.registryConnection.on('destroy', clear)
+      selvaClient.registryConnection.on('disconnect', clear)
 
       registryConnection.addRemoteListener('message', (channel, msg) => {
         if (channel === REGISTRY_UPDATE) {
@@ -75,13 +78,19 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
             // console.log('mofos remove', payload)
             const { server } = payload
             if (removeServer(selvaClient, <ServerDescriptor>server)) {
+              // also break connection if this happens!
+
+              // hard dc connection!
               selvaClient.emit('removed-servers', payload)
             }
           } else if (event === 'move-sub') {
             console.log('MOVE SUBSCRIPTION')
           } else if ('update-index') {
+            // now we are going to move them!
             // can be either a subs manager update of index or replica
-            // console.log('update index event', payload)
+            if (!selvaClient.server) {
+              console.log('update index event', payload)
+            }
           }
         }
       })
