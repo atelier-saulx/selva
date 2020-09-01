@@ -32,7 +32,7 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
       timestamp: rawStats.runtimeInfo.timestamp
     }
     updateRegistry(
-      server.selvaClient,
+      server,
       Object.assign(
         {
           stats
@@ -47,10 +47,10 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
   })
 
   server.selvaClient.on('connect', () => {
-    updateRegistry(server.selvaClient, info)
+    updateRegistry(server, info)
   })
 
-  updateRegistry(server.selvaClient, info)
+  updateRegistry(server, info)
 }
 
 export default attachStatusListeners

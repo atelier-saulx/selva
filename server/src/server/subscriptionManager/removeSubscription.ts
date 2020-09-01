@@ -41,6 +41,7 @@ const removeSubscription = async (
   const { selector, client, subscriptions } = subsManager
   const { redis } = client
 
+  // TODO: Remove this!
   updateRegistry(subsManager.client, {
     ...subsManager.selector,
     subscriptions: { [channel]: 'removed' }

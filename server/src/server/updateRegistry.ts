@@ -1,16 +1,44 @@
 import { SelvaClient, constants } from '@saulx/selva'
 import { RegistryInfo } from '../types'
+import { SelvaServer } from './'
 
-export async function addSubscriptionToRegistry() {
-  // needs to write the new subscription in a special field (maybe not)
-  // and needs to check the reverse map and send an update for that
-  // when all this is done remove status from cms hub for now....
+export async function removeFromRegistry(client: SelvaClient) {
+  console.log(client.server)
+
+  const redis = client.redis
+  const id = `${client.server.host}:${client.server.port}`
+
+  console.log('REMOVE')
+
+  await Promise.all([
+    redis.srem({ type: 'registry' }, 'servers', id),
+    redis.del({ type: 'registry' }, id)
+  ])
+
+  await redis.publish(
+    { type: 'registry' },
+    constants.REGISTRY_UPDATE,
+    JSON.stringify({
+      event: 'remove',
+      server: client.server
+    })
+  )
+}
+
+const block = (server: SelvaServer) => {
+  return !server.pm || server.pm.isDestroyed
 }
 
 export default async function updateRegistry(
-  client: SelvaClient,
+  server: SelvaServer,
   info: RegistryInfo
 ) {
+  if (block(server)) {
+    return
+  }
+
+  const client = server.selvaClient
+
   const args = []
 
   // just remove subscriptions from this
@@ -33,6 +61,10 @@ export default async function updateRegistry(
     id
   ))
 
+  if (block(server)) {
+    return
+  }
+
   // hget only fields you need
   await Promise.all([
     client.redis.sadd({ type: 'registry' }, 'servers', id),
@@ -40,6 +72,10 @@ export default async function updateRegistry(
     // remove subs here
     client.redis.hmset({ type: 'registry' }, id, ...args)
   ])
+
+  if (block(server)) {
+    return
+  }
 
   if (info.stats) {
     client.redis.publish(

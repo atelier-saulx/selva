@@ -112,6 +112,8 @@ const addSubscription = (
   for (const origin of subscription.origins) {
     addOriginListeners(origin, subsManager, subscription)
   }
+
+  // TODO: refactor this!
   updateRegistry(subsManager.client, {
     ...subsManager.selector,
     subscriptions: { [channel]: 'created' }

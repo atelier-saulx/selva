@@ -13,6 +13,8 @@ export default class ProcessManager extends EventEmitter {
   private loadMeasurementsTimeout: NodeJS.Timeout
   private isMeasuring: boolean
 
+  public isDestroyed: boolean
+
   constructor(command: string, args: string[]) {
     super()
     this.command = command
@@ -95,6 +97,7 @@ export default class ProcessManager extends EventEmitter {
   }
 
   destroy() {
+    this.isDestroyed = true
     this.stopLoadMeasurements()
 
     if (this.childProcess) {

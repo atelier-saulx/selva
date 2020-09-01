@@ -32,24 +32,40 @@ const insert = (array: ServerIndex[], target: ServerIndex): void => {
 }
 
 export const registryManager = (server: SelvaServer) => {
-  // use this for extra speed
-  // server.selvaClient.on('added-servers', ({ event, server }) => {
-  //   console.log('got new server', server)
-  //   // this means we are going to re-index
-  //   if (event === '*') {
-  //     // got all of them
-  //     console.log('initial servers')
-  //   } else {
-  //     console.log('individual is added!', server)
-  //   }
-  // })
+  server.selvaClient.on('added-servers', ({ event, server }) => {
+    console.log('got new server', server)
+    // this means we are going to re-index
+    if (event === '*') {
+      // got all of them
+      // console.log('initial servers')
+    } else {
+      console.log(
+        'individual server is added to registry',
+        server.name,
+        server.type
+      )
+    }
+  })
 
-  // also send shutdown event if its correct
+  server.selvaClient.on('removed-servers', ({ event, server }) => {
+    if (event === '*') {
+      // got all of them
+      // console.log('remove all servers')
+    } else {
+      console.log(
+        'individual server is removed from registry',
+        server.name,
+        server.type
+      )
+    }
+  })
 
   const updateFromStats = async () => {
     const replicas: ServerIndex[] = []
     const subsManagers: ServerIndex[] = []
     const redis = server.selvaClient.redis
+
+    // get the ids from the redis db to be sure
 
     await Promise.all(
       [...server.selvaClient.servers.ids].map(async id => {
