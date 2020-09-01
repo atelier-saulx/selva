@@ -80,12 +80,18 @@ export class SelvaServer extends EventEmitter {
 
     if (this.type === 'replica') {
       const initReplica = async () => {
+        console.log('🤩 get redis replica origin ', opts.name)
+
         const origin = await this.selvaClient.getServer({
           name: opts.name,
           type: 'origin'
         })
+
+        console.log('🤩 got origin....')
+
         if (!this.origin) {
           this.origin = origin
+          console.log('🤩 start redis replica')
           startRedis(this, opts)
         } else if (
           origin.port !== this.origin.port ||
@@ -94,6 +100,7 @@ export class SelvaServer extends EventEmitter {
           this.pm.destroy()
           this.origin = origin
           setTimeout(() => {
+            console.log('😘 start redis replica')
             startRedis(this, opts)
           }, 500)
         }

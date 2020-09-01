@@ -43,6 +43,12 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
         })
       })
 
+      if (selvaClient.registryConnection.connected) {
+        getInitialRegistryServers(selvaClient).then(() => {
+          selvaClient.emit('added-servers', { event: '*' })
+        })
+      }
+
       selvaClient.registryConnection.on('destroy', () => {
         selvaClient.servers = {
           ids: new Set(),

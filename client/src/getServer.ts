@@ -37,7 +37,18 @@ const getServer = async (
   }
 
   if (!server) {
+    if (selvaClient.server && selvaClient.server.type === 'replica') {
+      console.log('ok cant find for replica', selector)
+    }
+
     await waitUntilEvent(selvaClient, 'added-servers')
+
+    if (selvaClient.server && selvaClient.server.type === 'replica') {
+      console.log('ok got dat event for replica server (after)')
+
+      console.log('hello servers', selvaClient.servers)
+    }
+
     return getServer(selvaClient, selector, selectionOptions)
   }
 

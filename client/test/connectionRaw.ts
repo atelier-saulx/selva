@@ -10,31 +10,29 @@ const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 test.serial('make a connection instance', async t => {
   startRegistry({ port: 9999 })
 
-  console.log('go time')
+  console.log('create client')
 
   const client = connect({
     port: 9999
   })
 
   client.registryConnection.on('connect', () => {
-    console.log('ok connect')
+    console.log('ok connect registry client')
   })
 
   client.registryConnection.on('hard-disconnect', () => {
-    console.log('ok destruction going on')
+    console.log('hard dc on registry')
   })
 
   client.registryConnection.on('disconnect', () => {
-    console.log('ok dc')
+    console.log('ok dc registry client')
   })
 
   client.registryConnection.on('destroy', () => {
-    console.log('destroy it')
+    console.log('destroy registry connection')
   })
 
-  await wait(3e3)
-
-  console.log('make new in it server time')
+  console.log('start origins')
   startOrigin({
     default: true,
     registry: { port: 9999 }
@@ -42,10 +40,11 @@ test.serial('make a connection instance', async t => {
 
   const snurfServer = await startOrigin({
     name: 'snurf',
-    registry: { port: 9999 }
+    registry: { port: 9999 },
+    dir: join(dir, 'origin')
   })
 
-  const x = await client.redis.keys(
+  await client.redis.keys(
     {
       port: 9999,
       host: '0.0.0.0'
@@ -53,7 +52,7 @@ test.serial('make a connection instance', async t => {
     '*'
   )
 
-  const xx = await client.redis.smembers(
+  const servers1 = await client.redis.smembers(
     {
       port: 9999,
       host: '0.0.0.0'
@@ -61,19 +60,19 @@ test.serial('make a connection instance', async t => {
     'servers'
   )
 
-  console.log('x', x, xx)
-  await wait(3e3)
+  console.log({ servers1 })
+  await wait(1e3)
 
-  const xxx = await client.redis.smembers(
+  const servers2 = await client.redis.smembers(
     {
       port: 9999,
       host: '0.0.0.0'
     },
     'servers'
   )
-  console.log(xxx)
+  console.log({ servers2 })
 
-  const xxxxx = await client.redis.hset(
+  await client.redis.hset(
     {
       type: 'origin'
     },
@@ -82,14 +81,16 @@ test.serial('make a connection instance', async t => {
     'snarx'
   )
 
-  const xxxx = await client.redis.keys(
+  const originKeys = await client.redis.keys(
     {
       type: 'origin'
     },
     '*'
   )
 
-  console.log('get dat origin', xxxx)
+  console.log({ originKeys })
+
+  console.log('set snurf origin', originKeys)
   await client.redis.hset(
     {
       type: 'origin',
@@ -100,6 +101,8 @@ test.serial('make a connection instance', async t => {
     'snarx'
   )
 
+  console.log('getting keys from snurf')
+
   const yyyy = await client.redis.keys(
     {
       type: 'origin',
@@ -108,11 +111,11 @@ test.serial('make a connection instance', async t => {
     '*'
   )
 
-  console.log(yyyy)
+  console.log('keys from snurf', yyyy)
 
-  console.log('remove this biaaatch')
+  console.log('remove snurf server')
   await snurfServer.destroy()
-  console.log('drestucto')
+  console.log('snurf server destroyed')
 
   console.log('start go')
   startReplica({
@@ -121,7 +124,13 @@ test.serial('make a connection instance', async t => {
     dir: join(dir, 'replica1')
   })
 
-  console.log('trying replica for you')
+  startReplica({
+    registry: { port: 9999 },
+    default: true,
+    dir: join(dir, 'replica2')
+  })
+
+  console.log('get data from replicas')
   const replica = await client.redis.keys(
     {
       type: 'replica'

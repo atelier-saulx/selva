@@ -5,7 +5,7 @@ const { REGISTRY_UPDATE } = constants
 
 export const registryManager = (server: SelvaServer) => {
   server.selvaClient.on('added-servers', ({ event, server }) => {
-    console.log('got new server')
+    console.log('got new server', server)
     // this means we are going to re-index
     if (event === '*') {
       // got all of them
@@ -16,7 +16,6 @@ export const registryManager = (server: SelvaServer) => {
   })
 
   const updateFromStats = async () => {
-    console.log('cleaning time')
     await Promise.all(
       [...server.selvaClient.servers.ids].map(async id => {
         const redis = server.selvaClient.redis
@@ -34,12 +33,14 @@ export const registryManager = (server: SelvaServer) => {
           if (result) {
             const [rawStats, name, host, port, type] = result
             const stats = rawStats && JSON.parse(rawStats)
+            // console.log(type, id, stats)
+
             if (!stats) {
+              console.log(type, name, id, 'does not have stats')
               return
             }
-            const ts = stats.timestamp
 
-            console.log('???', id, type, ts, Date.now() - ts > 5e3)
+            const ts = stats.timestamp
 
             if (Date.now() - ts > 5e3) {
               await Promise.all([
@@ -59,7 +60,10 @@ export const registryManager = (server: SelvaServer) => {
                   }
                 })
               )
+            } else if (type === 'replica') {
+              console.log('replica', id, stats)
             }
+            // else subs manager (also just order them)
           }
         } catch (err) {
           console.error('Error getting from servers in registry', err, id)
