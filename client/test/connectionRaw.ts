@@ -10,12 +10,11 @@ const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 test.serial('make a connection instance', async t => {
   startRegistry({ port: 9999 })
 
-  console.log('create client')
-
   const client = connect({
     port: 9999
   })
 
+  // add these events
   client.registryConnection.on('connect', () => {
     console.log('ok connect registry client')
   })
@@ -32,7 +31,6 @@ test.serial('make a connection instance', async t => {
     console.log('destroy registry connection')
   })
 
-  console.log('start origins')
   startOrigin({
     default: true,
     registry: { port: 9999 }
@@ -52,7 +50,7 @@ test.serial('make a connection instance', async t => {
     '*'
   )
 
-  const servers1 = await client.redis.smembers(
+  await client.redis.smembers(
     {
       port: 9999,
       host: '0.0.0.0'
@@ -60,17 +58,15 @@ test.serial('make a connection instance', async t => {
     'servers'
   )
 
-  console.log({ servers1 })
   await wait(1e3)
 
-  const servers2 = await client.redis.smembers(
+  await client.redis.smembers(
     {
       port: 9999,
       host: '0.0.0.0'
     },
     'servers'
   )
-  console.log({ servers2 })
 
   await client.redis.hset(
     {
@@ -81,16 +77,13 @@ test.serial('make a connection instance', async t => {
     'snarx'
   )
 
-  const originKeys = await client.redis.keys(
+  await client.redis.keys(
     {
       type: 'origin'
     },
     '*'
   )
 
-  console.log({ originKeys })
-
-  console.log('set snurf origin', originKeys)
   await client.redis.hset(
     {
       type: 'origin',
@@ -101,9 +94,7 @@ test.serial('make a connection instance', async t => {
     'snarx'
   )
 
-  console.log('getting keys from snurf')
-
-  const yyyy = await client.redis.keys(
+  await client.redis.keys(
     {
       type: 'origin',
       name: 'snurf'
@@ -111,15 +102,7 @@ test.serial('make a connection instance', async t => {
     '*'
   )
 
-  console.log('keys from snurf', yyyy)
-
-  console.log('remove snurf server')
-
-  // has to rly destroy the server!
   await snurfServer.destroy()
-  console.log('snurf server destroyed')
-
-  console.log('start go')
 
   startReplica({
     registry: { port: 9999 },
@@ -145,8 +128,7 @@ test.serial('make a connection instance', async t => {
     dir: join(dir, 'replica4')
   })
 
-  console.log('get data from replicas')
-  const replica = await client.redis.keys(
+  await client.redis.keys(
     {
       type: 'replica'
     },
@@ -158,30 +140,27 @@ test.serial('make a connection instance', async t => {
     { strict: true }
   )
 
-  // do we want 'force replica' as option
   console.log('🚷', { oneReplica })
 
   const nukeReplica = async (r, cnt = 0) => {
-    // console.log('gimme', await client.redis.hgetall(oneReplica, 'flappie'))
     let q = []
     for (let i = 0; i < 10000; i++) {
       q.push(client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16)))
     }
-
     await Promise.all(q)
-    // console.log('done 10k keys')
-
-    if (cnt < 1000) {
+    if (cnt < 50) {
       nukeReplica(r, ++cnt)
     } else {
-      console.log('done nuking (1000 x 10k)', r)
+      console.log('done nuking (100 x 10k)', r)
     }
   }
 
   console.log('go nuke onReplica')
   nukeReplica(oneReplica)
 
-  // now getting a replica needs to get anothert one
+  await wait(1e3)
+
+  // now getting a replica needs to get another one
   const secondReplica = await client.getServer(
     { type: 'replica' },
     { strict: true }
@@ -189,8 +168,10 @@ test.serial('make a connection instance', async t => {
 
   console.log('🚷', { secondReplica })
 
-  // selva client emit reconnect event (with descriptor)
-  await wait(1000e3)
+  t.true(
+    secondReplica.port !== oneReplica.port,
+    'When the first replica is under load, other replica becomes prefered'
+  )
 
-  t.pass()
+  // selva client emit reconnect event (with descriptor)
 })
