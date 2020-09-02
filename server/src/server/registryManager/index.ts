@@ -66,8 +66,6 @@ export const registryManager = (server: SelvaServer) => {
     const subsManagers: ServerIndex[] = []
     const redis = server.selvaClient.redis
 
-    // get the ids from the redis db to be sure
-
     await Promise.all(
       [...server.selvaClient.servers.ids].map(async id => {
         try {
@@ -85,9 +83,9 @@ export const registryManager = (server: SelvaServer) => {
           if (result) {
             const [rawStats, name, host, port, type, index] = result
             const stats = rawStats && JSON.parse(rawStats)
-            // console.log(type, id, stats)
 
             if (!stats) {
+              // not very strange this can happen on register before info update
               console.warn(
                 '⚠️ ',
                 type,
@@ -102,15 +100,13 @@ export const registryManager = (server: SelvaServer) => {
 
             // very sensitive...
             if (Date.now() - ts > 3e3) {
-              // store it when this happens and use it as a 'ramp up' metric
-
-              // do the same with the busy indicator
-
               await Promise.all([
                 redis.srem({ type: 'registry' }, 'servers', id),
                 redis.del({ type: 'registry' }, id)
               ])
 
+              // store it when this happens and use it as a 'ramp up' metric
+              // have to store this - metric will go combined with busy status
               console.log('TIMEOUT', id, type, name)
 
               await redis.publish(
@@ -160,21 +156,11 @@ export const registryManager = (server: SelvaServer) => {
     let q
     for (let i = 0; i < replicas.length; i++) {
       const replica = replicas[i]
-      // add something extra - check if the weight is the same everywhere
       if (i !== replica.index) {
         if (
           !replicas[replica.index] ||
           replica.weight !== replicas[replica.index].weight
         ) {
-          console.log(
-            'update index!',
-            replica.index,
-            '->',
-            i,
-            replica.weight,
-
-            replicas[replica.index] && replicas[replica.index].weight
-          )
           if (!q) {
             q = []
             move = {}
@@ -188,11 +174,7 @@ export const registryManager = (server: SelvaServer) => {
       }
     }
 
-    // console.log(replicas)
-
     if (move) {
-      console.log({ replicas })
-      console.log({ move })
       q.push(
         redis.publish(
           {
