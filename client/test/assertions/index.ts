@@ -1,6 +1,10 @@
 import t from 'ava'
 import { Assertions } from 'ava/lib/assert.js'
 import { logDb, dumpDb, idExists, wait } from './util'
+import hash from '@sindresorhus/fnv1a'
+import { join } from 'path'
+import fs from 'fs'
+import { Worker } from 'worker_threads'
 
 declare module 'ava' {
   export interface Assertions {
@@ -49,4 +53,46 @@ Object.assign(Assertions.prototype, {
   }
 })
 
-export { logDb, dumpDb, idExists, wait }
+const tmp = join(__dirname, '../../tmp')
+
+const worker = (fn: Function): Promise<[any, Worker]> =>
+  new Promise((resolve, reject) => {
+    if (!fs.existsSync(tmp)) {
+      fs.mkdirSync(tmp)
+    }
+
+    // fn has to be a async function
+    const body = fn.toString()
+
+    const script = `
+      const fn = ${body};
+      const selvaServer = require('@saulx/selva-server')
+      const selva = require('@saulx/selva')
+      const workers = require('worker_threads')
+      fn(selva, selvaServer).then((v) => {
+        workers.parentPort.postMessage(v);
+      }).catch(err => {
+        throw err
+      })
+    `
+
+    const id = 'worker-' + hash(script) + '.js'
+
+    const file = join(tmp, id)
+
+    if (!fs.existsSync(join(tmp, id))) {
+      fs.writeFileSync(join(tmp, id), script)
+    }
+
+    const worker = new Worker(file)
+
+    worker.on('message', msg => {
+      resolve([msg, worker])
+    })
+
+    worker.on('error', err => {
+      reject(err)
+    })
+  })
+
+export { logDb, dumpDb, idExists, wait, worker }

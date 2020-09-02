@@ -189,6 +189,8 @@ export function connect(
   return client
 }
 
+const moduleId = ~~(Math.random() * 100000)
+
 export {
   connections,
   createConnection,
@@ -198,5 +200,6 @@ export {
   GetOptions,
   FieldSchemaObject,
   RedisCommand,
-  Connection
+  Connection,
+  moduleId
 }

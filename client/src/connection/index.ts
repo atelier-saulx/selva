@@ -328,4 +328,3 @@ const createConnection = (serverDescriptor: ServerDescriptor) => {
 export { createConnection, connections, Connection }
 
 // for logging
-export const uuid = uuidv4()
