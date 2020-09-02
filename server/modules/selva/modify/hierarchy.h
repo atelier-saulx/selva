@@ -2,6 +2,9 @@
 #ifndef SELVA_MODIFY_HIERARCHY
 #define SELVA_MODIFY_HIERARCHY
 
+#include "linker_set.h"
+#include "svector.h"
+
 #define SELVA_NODE_ID_SIZE      10ul
 #define SELVA_NODE_TYPE_SIZE    2
 #define ROOT_NODE_ID            "root\0\0\0\0\0\0"
@@ -37,12 +40,44 @@
 /* This must be the last error */
 
 
+/**
+ * Default Redis key name for Selva hierarchy.
+ */
 #define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
 
+/**
+ * Type for Selva NodeId.
+ */
 typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
+
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
 
+/* Forward declarations for metadata */
+/* ... */
+/* End of forward declarations for metadata */
+
+/**
+ * Hierarchy node metadata.
+ * This structure should contain primitive data types or pointers to forward
+ * declared structures.
+ */
+struct SelvaModify_HierarchyMetaData {
+    struct SVector subs;
+};
+
+typedef void SelvaModify_HierarchyMetadataHook(Selva_NodeId id, struct SelvaModify_HierarchyMetaData *metadata);
+
+#define SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(fun) \
+        DATA_SET(selva_HMCtor, fun)
+
+#define SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(fun) \
+        DATA_SET(selva_HMDtor, fun)
+
+/**
+ * Hierarchy traversal order.
+ * Used by SelvaModify_TraverseHierarchy().
+ */
 enum SelvaModify_HierarchyTraversal {
     SELVA_MODIFY_HIERARCHY_BFS_ANCESTORS,
     SELVA_MODIFY_HIERARCHY_BFS_DESCENDANTS,
@@ -55,7 +90,7 @@ enum SelvaModify_HierarchyTraversal {
  * Called for each node found during a traversal.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
-typedef int (*SelvaModify_HierarchyCallback)(Selva_NodeId id, void *arg);
+typedef int (*SelvaModify_HierarchyCallback)(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetaData *metadata);
 
 struct SelvaModify_HierarchyCallback {
     SelvaModify_HierarchyCallback node_cb;

@@ -28,6 +28,7 @@ typedef struct SelvaModify_HierarchyNode {
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
 #endif
+    struct SelvaModify_HierarchyMetaData metadata;
     SVector parents;
     SVector children;
     RB_ENTRY(SelvaModify_HierarchyNode) _index_entry;
@@ -99,6 +100,9 @@ enum hierarchy_result_order {
     HIERARCHY_RESULT_ORDER_ASC,
     HIERARCHY_RESULT_ORDER_DESC,
 };
+
+SET_DECLARE(selva_HMCtor, SelvaModify_HierarchyMetadataHook);
+SET_DECLARE(selva_HMDtor, SelvaModify_HierarchyMetadataHook);
 
 __nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
 static RedisModuleType *HierarchyType;
@@ -309,10 +313,24 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
         }
     }
 
+    SelvaModify_HierarchyMetadataHook ** metadata_ctor_p;
+
+    SET_FOREACH(metadata_ctor_p, selva_HMCtor) {
+        SelvaModify_HierarchyMetadataHook * ctor = *metadata_ctor_p;
+        ctor(node->id, &node->metadata);
+    }
+
     return node;
 }
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
+    SelvaModify_HierarchyMetadataHook ** dtor_p;
+
+    SET_FOREACH(dtor_p, selva_HMDtor) {
+        SelvaModify_HierarchyMetadataHook * dtor = *dtor_p;
+        dtor(node->id, &node->metadata);
+    }
+
     SVector_Destroy(&node->parents);
     SVector_Destroy(&node->children);
     RedisModule_Free(node);
@@ -1317,7 +1335,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
 static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
     struct SelvaModify_HierarchyCallback *cb = (struct SelvaModify_HierarchyCallback *)arg;
 
-    return cb->node_cb(node->id, cb->node_arg);
+    return cb->node_cb(node->id, cb->node_arg, &node->metadata);
 }
 
 int SelvaModify_TraverseHierarchy(
