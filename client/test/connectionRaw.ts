@@ -7,7 +7,7 @@ import { join } from 'path'
 
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
-test.serial('make a connection instance', async t => {
+test.serial('connection / server orchestration', async t => {
   startRegistry({ port: 9999 })
 
   const client = connect({
