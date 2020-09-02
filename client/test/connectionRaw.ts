@@ -140,23 +140,20 @@ test.serial('connection / server orchestration', async t => {
     { strict: true }
   )
 
-  console.log('🚷', { oneReplica })
-
-  const nukeReplica = async (r, cnt = 0) => {
+  const putUnderLoad = async (r, cnt = 0) => {
     let q = []
     for (let i = 0; i < 10000; i++) {
       q.push(client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16)))
     }
     await Promise.all(q)
     if (cnt < 50) {
-      nukeReplica(r, ++cnt)
+      putUnderLoad(r, ++cnt)
     } else {
-      console.log('done nuking (100 x 10k)', r)
+      console.log('done with load (100 x 10k)', r)
     }
   }
 
-  console.log('go nuke onReplica')
-  nukeReplica(oneReplica)
+  putUnderLoad(oneReplica)
 
   await wait(1e3)
 
@@ -165,8 +162,6 @@ test.serial('connection / server orchestration', async t => {
     { type: 'replica' },
     { strict: true }
   )
-
-  console.log('🚷', { secondReplica })
 
   t.true(
     secondReplica.port !== oneReplica.port,
