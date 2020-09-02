@@ -29,6 +29,4 @@ export default (selvaClient: SelvaClient, move: Move) => {
   sortNames.forEach(name =>
     selvaClient.servers.replicas[name].sort((a, b) => a.index - b.index)
   )
-
-  console.log('SERVER SERVER', selvaClient.servers.replicas)
 }
