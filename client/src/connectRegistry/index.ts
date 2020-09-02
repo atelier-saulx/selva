@@ -1,5 +1,4 @@
 import { SelvaClient, ConnectOptions, ServerDescriptor } from '..'
-
 import {
   createConnection,
   connections,
@@ -10,6 +9,7 @@ import getInitialRegistryServers from './getInitialRegistryServers'
 import addServer from './addServer'
 import removeServer from './removeServer'
 import { serverId } from '../util'
+import moveReplicas from './moveReplicas'
 
 /*
  registry-update
@@ -113,8 +113,9 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           } else if ('update-index') {
             // now we are going to move them!
             // can be either a subs manager update of index or replica
-            if (!selvaClient.server) {
-              console.log('update index event', payload)
+            const { type, move } = payload
+            if (type === 'replica') {
+              moveReplicas(selvaClient, move)
             }
           }
         }

@@ -42,6 +42,11 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     )
   })
 
+  // need to send this to registry!
+  // very important infor
+  // maybe busy and a timer or something
+
+  // TODO: no busy indicator atm
   server.on('busy', () => {
     console.log('SERVER IS BUSY')
   })

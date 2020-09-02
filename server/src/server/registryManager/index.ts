@@ -9,6 +9,7 @@ type ServerIndex = {
   index: integer
   weight: number
   id: string
+  name: string
 }
 
 const insert = (array: ServerIndex[], target: ServerIndex): void => {
@@ -101,6 +102,10 @@ export const registryManager = (server: SelvaServer) => {
 
             // very sensitive...
             if (Date.now() - ts > 3e3) {
+              // store it when this happens and use it as a 'ramp up' metric
+
+              // do the same with the busy indicator
+
               await Promise.all([
                 redis.srem({ type: 'registry' }, 'servers', id),
                 redis.del({ type: 'registry' }, id)
@@ -122,32 +127,23 @@ export const registryManager = (server: SelvaServer) => {
                 })
               )
             } else if (type === 'replica') {
-              // opsPerSecond (int)
-              // activeChannels (int)
-              // cpu (0-1)
-
-              // use these 3 to sort
-
-              // const weight =
-              // stats.cpu + Math.min(stats.activeChannels / 1e3, 0.5)
-
-              // round cpu to closest 0.1
               let weight = Math.round(stats.cpu / 5)
-
-              // console.log(id, weight, stats.cpu)
 
               // slow connection so something must be up
               if (Date.now() - ts > 2e3) {
-                console.log('connection is slow somwething must be weird')
+                console.warn(
+                  'Connection is slow somwething must be weird',
+                  type,
+                  id
+                )
                 weight = 100
               }
-              // opsPerSecond is also veryt good
-
-              // console.log(id, stats)
+              // opsPerSecond is also very good as a measure
 
               const target: ServerIndex = {
                 weight,
                 id,
+                name,
                 index: index === null ? -1 : Number(index) // original index
               }
               insert(replicas, target)
@@ -184,13 +180,15 @@ export const registryManager = (server: SelvaServer) => {
             move = {}
           }
           q.push(redis.hset({ type: 'registry' }, replica.id, 'index', i))
-          move[replica.id] = [replica.index, i]
+          move[replica.id] = [i]
+          if (replica.name !== 'default') {
+            move[replica.id].push(replica.name)
+          }
         }
       }
     }
-    // no check most efficient way to publish
 
-    // this is what we will publish
+    // console.log(replicas)
 
     if (move) {
       console.log({ replicas })
