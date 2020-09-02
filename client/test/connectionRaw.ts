@@ -186,10 +186,13 @@ test.serial(
 )
 
 test.only('server in a worker', async t => {
-  const [bla, w] = await worker(async (selva, server) => {
-    console.log('ok exec on worker!', selva, server)
-    return { x: true }
-  })
+  const [bla, w] = await worker(
+    async (selva, context) => {
+      console.log('ok exec on worker!', selva, context)
+      return { x: true }
+    },
+    { port: 2 }
+  )
 
   console.log(bla)
   w.terminate()

@@ -55,7 +55,7 @@ Object.assign(Assertions.prototype, {
 
 const tmp = join(__dirname, '../../tmp')
 
-const worker = (fn: Function): Promise<[any, Worker]> =>
+const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
   new Promise((resolve, reject) => {
     if (!fs.existsSync(tmp)) {
       fs.mkdirSync(tmp)
@@ -64,12 +64,48 @@ const worker = (fn: Function): Promise<[any, Worker]> =>
     // fn has to be a async function
     const body = fn.toString()
 
-    const script = `
+    const script = context
+      ? `
+    const fn = ${body};
+    const selvaServer = require('@saulx/selva-server')
+    const selva = require('@saulx/selva')
+
+    const p = {}
+
+    for (let key in selva) {
+      p[key] = selva[key]
+    }
+
+    for (let key in selvaServer) {
+      p[key] = selvaServer[key]
+    }
+
+    const workers = require('worker_threads')
+    workers.parentPort.on('message', (context) => {
+      fn(p, context).then((v) => {
+        workers.parentPort.postMessage(v);
+      }).catch(err => {
+        throw err
+      })
+    })
+   
+  `
+      : `
       const fn = ${body};
       const selvaServer = require('@saulx/selva-server')
       const selva = require('@saulx/selva')
+      const p = {}
+
+      for (let key in selva) {
+        p[key] = selva[key]
+      }
+  
+      for (let key in selvaServer) {
+        p[key] = selvaServer[key]
+      }
+
       const workers = require('worker_threads')
-      fn(selva, selvaServer).then((v) => {
+      fn(p).then((v) => {
         workers.parentPort.postMessage(v);
       }).catch(err => {
         throw err
@@ -85,6 +121,10 @@ const worker = (fn: Function): Promise<[any, Worker]> =>
     }
 
     const worker = new Worker(file)
+
+    if (context) {
+      worker.postMessage(context)
+    }
 
     worker.on('message', msg => {
       resolve([msg, worker])
