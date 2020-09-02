@@ -263,7 +263,7 @@ test.serial('get - simple $list with $field of two field entries', async t => {
     })
   ])
 
-  const c = await client.get({
+  let c = await client.get({
     $id: 'cuA',
     otherName: {
       name: true,
@@ -441,7 +441,7 @@ test.serial('get - simple $list nested query structure', async t => {
     })
   ])
 
-  const c = await client.get({
+  let c = await client.get({
     $id: 'cuA',
     hello: {
       yesyes: {
@@ -474,6 +474,47 @@ test.serial('get - simple $list nested query structure', async t => {
             { value: 7, name: 'flurp7' },
             { value: 8, name: 'flurp8' },
             { value: 9, name: 'flurp9' }
+          ]
+        }
+      }
+    },
+    'non redis search sort'
+  )
+
+  c = await client.get({
+    $id: 'cuA',
+    hello: {
+      yesyes: {
+        children: {
+          $field: 'children',
+          name: true,
+          value: true,
+          $list: {
+            $sort: { $field: 'value', $order: 'asc' },
+            $limit: 10,
+            $offset: 10
+          }
+        }
+      }
+    }
+  })
+
+  t.deepEqual(
+    c,
+    {
+      hello: {
+        yesyes: {
+          children: [
+            { value: 10, name: 'flurp10' },
+            { value: 11, name: 'flurp11' },
+            { value: 12, name: 'flurp12' },
+            { value: 13, name: 'flurp13' },
+            { value: 14, name: 'flurp14' },
+            { value: 15, name: 'flurp15' },
+            { value: 16, name: 'flurp16' },
+            { value: 17, name: 'flurp17' },
+            { value: 18, name: 'flurp18' },
+            { value: 19, name: 'flurp19' }
           ]
         }
       }
@@ -560,7 +601,7 @@ test.serial('get - default sorting in $list with references', async t => {
     })
   ])
 
-  const c = await client.get({
+  let c = await client.get({
     $id: 'cuA',
     children: {
       name: true,
@@ -585,6 +626,39 @@ test.serial('get - default sorting in $list with references', async t => {
         { value: 7, name: 'flurp7' },
         { value: 8, name: 'flurp8' },
         { value: 9, name: 'flurp9' }
+      ]
+    },
+    'non redis search sort'
+  )
+
+  c = await client.get({
+    $id: 'cuA',
+    otherName: {
+      name: true,
+      value: true,
+      $field: ['related', 'children'],
+      $list: {
+        $offset: 10,
+        $sort: { $field: 'value', $order: 'asc' },
+        $limit: 10
+      }
+    }
+  })
+
+  t.deepEqual(
+    c,
+    {
+      otherName: [
+        { value: 10, name: 'flurp10' },
+        { value: 11, name: 'flurp11' },
+        { value: 12, name: 'flurp12' },
+        { value: 13, name: 'flurp13' },
+        { value: 14, name: 'flurp14' },
+        { value: 15, name: 'flurp15' },
+        { value: 16, name: 'flurp16' },
+        { value: 17, name: 'flurp17' },
+        { value: 18, name: 'flurp18' },
+        { value: 19, name: 'flurp19' }
       ]
     },
     'non redis search sort'
