@@ -21,9 +21,9 @@ static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
 static pthread_t thread_ids[ASYNC_TASK_HIREDIS_WORKER_COUNT] = { };
-
 _Alignas(ASYNC_TASK_RING_BUF_BLOCK_SIZE) static char queue_mem[ASYNC_TASK_HIREDIS_WORKER_COUNT][ASYNC_TASK_RING_BUF_BLOCK_SIZE * ASYNC_TASK_RING_BUF_LENGTH];
 static queue_cb_t queues[ASYNC_TASK_HIREDIS_WORKER_COUNT];
+
 __constructor static void initialize_queues() {
     for (uint8_t i = 0; i < ASYNC_TASK_HIREDIS_WORKER_COUNT; i++) {
         queues[i] = QUEUE_INITIALIZER(queue_mem[i], ASYNC_TASK_RING_BUF_BLOCK_SIZE, sizeof(queue_mem[i]));
