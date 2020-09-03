@@ -69,10 +69,10 @@ struct SelvaModify_HierarchyMetaData {
 typedef void SelvaModify_HierarchyMetadataHook(Selva_NodeId id, struct SelvaModify_HierarchyMetaData *metadata);
 
 #define SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(fun) \
-        DATA_SET(selva_HMCtor, fun)
+    DATA_SET(selva_HMCtor, fun)
 
 #define SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(fun) \
-        DATA_SET(selva_HMDtor, fun)
+    DATA_SET(selva_HMDtor, fun)
 
 /**
  * Hierarchy traversal order.
@@ -230,9 +230,17 @@ int SelvaModify_TraverseHierarchy(
         struct SelvaModify_HierarchyCallback *cb);
 
 /*
+ * hierarchy_subscriptions.c
+ */
+typedef unsigned char Selva_SubscriptionId[32];
+
+int SelvaModify_CreateSubscription(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+void SelvaModify_DeleteSubscription(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+void SelvaModify_ClearAllSubscriptionMarkers(Selva_NodeId id, struct SelvaModify_HierarchyMetaData *metadata);
+
+/*
  * hierarchy_events.c
  */
-
 void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, const char *id_str);
 
 #endif /* SELVA_MODIFY_HIERARCHY */

@@ -101,7 +101,9 @@ enum hierarchy_result_order {
     HIERARCHY_RESULT_ORDER_DESC,
 };
 
+/* Node metadata constructors. */
 SET_DECLARE(selva_HMCtor, SelvaModify_HierarchyMetadataHook);
+/* Node metadata destructors. */
 SET_DECLARE(selva_HMDtor, SelvaModify_HierarchyMetadataHook);
 
 __nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
@@ -313,10 +315,10 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
         }
     }
 
-    SelvaModify_HierarchyMetadataHook ** metadata_ctor_p;
+    SelvaModify_HierarchyMetadataHook **metadata_ctor_p;
 
     SET_FOREACH(metadata_ctor_p, selva_HMCtor) {
-        SelvaModify_HierarchyMetadataHook * ctor = *metadata_ctor_p;
+        SelvaModify_HierarchyMetadataHook *ctor = *metadata_ctor_p;
         ctor(node->id, &node->metadata);
     }
 
@@ -324,10 +326,10 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
 }
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
-    SelvaModify_HierarchyMetadataHook ** dtor_p;
+    SelvaModify_HierarchyMetadataHook **dtor_p;
 
     SET_FOREACH(dtor_p, selva_HMDtor) {
-        SelvaModify_HierarchyMetadataHook * dtor = *dtor_p;
+        SelvaModify_HierarchyMetadataHook *dtor = *dtor_p;
         dtor(node->id, &node->metadata);
     }
 
@@ -485,6 +487,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
 
         fields = get_node_field_names(ctx, id);
         remove_node_fields(ctx, id);
+        SelvaModify_ClearAllSubscriptionMarkers(id, &node->metadata);
         SelvaModify_PublishDeleted(id, fields);
         RedisModule_Free(fields);
 
