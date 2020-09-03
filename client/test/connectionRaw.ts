@@ -111,36 +111,38 @@ test.serial(
 
     await snurfServer.destroy()
 
-    startReplica({
-      registry: { port: 9999 },
-      default: true,
-      dir: join(dir, 'replica1')
-    })
+    const replicas = [
+      startReplica({
+        registry: { port: 9999 },
+        default: true,
+        dir: join(dir, 'replica1')
+      }),
 
-    startReplica({
-      registry: { port: 9999 },
-      default: true,
-      dir: join(dir, 'replica2')
-    })
+      startReplica({
+        registry: { port: 9999 },
+        default: true,
+        dir: join(dir, 'replica2')
+      }),
 
-    startReplica({
-      registry: { port: 9999 },
-      default: true,
-      dir: join(dir, 'replica3')
-    })
+      startReplica({
+        registry: { port: 9999 },
+        default: true,
+        dir: join(dir, 'replica3')
+      }),
 
-    startReplica({
-      registry: { port: 9999 },
-      default: true,
-      dir: join(dir, 'replica4')
-    })
+      startReplica({
+        registry: { port: 9999 },
+        default: true,
+        dir: join(dir, 'replica4')
+      }),
 
-    await client.redis.keys(
-      {
-        type: 'replica'
-      },
-      '*'
-    )
+      await client.redis.keys(
+        {
+          type: 'replica'
+        },
+        '*'
+      )
+    ]
 
     const oneReplica = await client.getServer(
       { type: 'replica' },
@@ -175,11 +177,20 @@ test.serial(
       'When the first replica is under load, other replica becomes prefered'
     )
 
-    await worker(async ({ connect }) => {
-      const client = connect({ port: 9999 })
-      const r = await client.redis.hgetall('flappie')
-      console.log(r)
-    })
+    putUnderLoad(secondReplica)
+
+    await wait(1e3)
+
+    await worker(
+      async ({ connect }, { oneReplica, secondReplica }) => {
+        const client = connect({ port: 9999 })
+        const replica = await client.getServer({ type: 'replica' })
+        const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
+
+        console.log('result from worker!', replica, oneReplica, secondReplica)
+      },
+      { oneReplica, secondReplica }
+    )
 
     // next test add hard dc on connection
 
