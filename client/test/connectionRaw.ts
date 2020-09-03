@@ -155,6 +155,7 @@ test.serial(
           const client = connect({ port: 9999 })
           const fn = async (r, cnt = 0) => {
             let q = []
+            // has to depend a bit on the computer
             for (let i = 0; i < 100000; i++) {
               q.push(
                 client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16))
