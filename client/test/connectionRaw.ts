@@ -162,10 +162,10 @@ test.serial(
               )
             }
             await Promise.all(q)
-            if (cnt < 150) {
+            if (cnt < 50) {
               fn(r, ++cnt)
             } else {
-              console.log('done with load (100 x 10k)', r)
+              console.log('done with load (50 x 100k)', r)
             }
           }
           fn(r)
@@ -192,6 +192,7 @@ test.serial(
 
     const [{ replica, moduleId }] = await worker(
       async ({ connect, wait, moduleId }) => {
+        global.flap = true
         console.log('connect')
         const client = connect({ port: 9999 })
         const replica = await client.getServer({ type: 'replica' })
@@ -199,6 +200,12 @@ test.serial(
         const id = `${replica.host}:${replica.port}`
 
         console.log(id, replica, r)
+
+        // add counter
+
+        // remove counter
+
+        // destroy!!!
 
         // now we want to destroy the replica
 

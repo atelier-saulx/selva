@@ -211,6 +211,9 @@ class Connection extends EventEmitter {
 
   public activeCounter = 0
   destroyTimer: NodeJS.Timeout = null
+
+  // add destroy timer on create?
+
   public addActive() {
     this.activeCounter++
     if (this.destroyTimer) {

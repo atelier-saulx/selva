@@ -128,7 +128,7 @@ export const registryManager = (server: SelvaServer) => {
               // slow connection so something must be up
               if (Date.now() - ts > 2e3) {
                 console.warn(
-                  'Connection is slow somwething must be weird',
+                  'Connection is slow something must be weird (emulate a weight of 100)',
                   type,
                   id
                 )
