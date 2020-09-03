@@ -175,6 +175,12 @@ test.serial(
       'When the first replica is under load, other replica becomes prefered'
     )
 
+    await worker(async ({ connect }) => {
+      const client = connect({ port: 9999 })
+      const r = await client.redis.hgetall('flappie')
+      console.log(r)
+    })
+
     // next test add hard dc on connection
 
     // check it it destroys itself
@@ -184,20 +190,3 @@ test.serial(
     // selva client emit reconnect event (with descriptor)
   }
 )
-
-test.only('server in a worker', async t => {
-  const [bla, w] = await worker(
-    async (selva, context) => {
-      console.log('ok exec on worker!', selva, context)
-      return { x: true }
-    },
-    { port: 2 }
-  )
-
-  console.log(bla)
-  w.terminate()
-
-  await wait(10e3)
-
-  t.pass()
-})
