@@ -155,7 +155,7 @@ test.serial(
           const client = connect({ port: 9999 })
           const fn = async (r, cnt = 0) => {
             let q = []
-            for (let i = 0; i < 10000; i++) {
+            for (let i = 0; i < 100000; i++) {
               q.push(
                 client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16))
               )
@@ -171,7 +171,7 @@ test.serial(
         },
         { r }
       )
-      await wait(2e3)
+      await wait(500)
     }
 
     await putUnderLoad(oneReplica)
@@ -193,7 +193,6 @@ test.serial(
       async ({ connect, wait, moduleId }) => {
         console.log('connect')
         const client = connect({ port: 9999 })
-        await wait(1e3)
         const replica = await client.getServer({ type: 'replica' })
         const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
 
