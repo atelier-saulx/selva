@@ -196,14 +196,14 @@ test.serial(
 
         console.log(connections.keys())
 
-        await wait(3500)
+        await wait(3100)
 
         // should destroy
         console.log(connections.keys())
 
         await client.redis.hset({ type: 'origin' }, 'hurk', 'snef', 'schlurhp')
 
-        await wait(3500)
+        await wait(3100)
 
         return { replica, moduleId, size: connections.size }
       }
@@ -214,7 +214,7 @@ test.serial(
     // just to make sure
     t.true(moduleId !== parentModuleId, 'worker runs in different context')
 
-    t.is(size, 1, 'removed the replica connections')
+    t.is(size, 1, 'removed the replica and origin connections')
 
     t.true(
       secondReplica.port !== replica.port,

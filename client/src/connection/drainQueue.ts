@@ -135,6 +135,8 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
               queueDone()
             })
             .catch(err => {
+              // do clear it else the connection never gets removed!
+              connection.removeActive()
               console.log(
                 'Error executing batch',
                 err,
