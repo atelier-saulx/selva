@@ -231,7 +231,7 @@ class Connection extends EventEmitter {
     // dont know if connectd is rly nessecary for thi
     if (this.activeCounter === 0 && !this.destroyTimer && this.connected) {
       this.destroyTimer = setTimeout(() => {
-        console.log('destroy from is idle')
+        console.log('🐰 Destroy connection from idle')
         this.destroy()
       }, 3000)
     }
