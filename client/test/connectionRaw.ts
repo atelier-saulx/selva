@@ -201,14 +201,6 @@ test.serial(
 
         console.log(id, replica, r)
 
-        // add counter
-
-        // remove counter
-
-        // destroy!!!
-
-        // now we want to destroy the replica
-
         return { replica, moduleId }
       }
     )
