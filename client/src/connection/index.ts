@@ -92,8 +92,8 @@ class Connection extends EventEmitter {
     }
     if (!this[type][channel]) {
       this[type][channel] = {}
-      console.log(method, channel)
       this.subscriber[method](channel)
+      this.addActive()
     }
     if (this[type][channel][id] === undefined) {
       this[type][channel][id] = 0
@@ -115,6 +115,7 @@ class Connection extends EventEmitter {
       if (Object.keys(this[type][channel]).length === 0) {
         delete this[type][channel]
         this.subscriber[method](channel)
+        this.removeActive()
       }
     }
   }
@@ -139,7 +140,11 @@ class Connection extends EventEmitter {
     this.queue.push(command)
     if (!this.queueInProgress && this.connected) {
       drainQueue(this)
+    } else {
+      // how to do...
+      // new queue increase counter
     }
+    // before connectect this is a bit hard
   }
 
   public removeRemoteListener(event: string, cb?: Callback, id: string = '') {
@@ -221,13 +226,20 @@ class Connection extends EventEmitter {
     }
     this.destroyTimer = null
   }
+
+  public destroyIfIdle() {
+    // dont know if connectd is rly nessecary for thi
+    if (this.activeCounter === 0 && !this.destroyTimer && this.connected) {
+      this.destroyTimer = setTimeout(() => {
+        console.log('destroy from is idle')
+        this.destroy()
+      }, 3000)
+    }
+  }
+
   public removeActive() {
     this.activeCounter--
-    if (this.activeCounter === 0 && !this.destroyTimer) {
-      this.destroyTimer = setTimeout(() => {
-        this.destroy()
-      }, 1000)
-    }
+    this.destroyIfIdle()
   }
 
   public destroy() {
@@ -313,10 +325,14 @@ class Connection extends EventEmitter {
     }
 
     this.on('connect', () => {
+      // this is prob good
+      this.destroyIfIdle()
       if (this.queue.length) {
         drainQueue(this)
       }
     })
+
+    // strang but good
   }
 }
 

@@ -185,18 +185,23 @@ test.serial(
 
     await putUnderLoad(secondReplica)
 
-    const [{ replica, moduleId }] = await worker(
-      async ({ connect, wait, moduleId }) => {
-        // global.flap = true
+    const [{ replica, moduleId, size }] = await worker(
+      async ({ connect, wait, moduleId, connections }) => {
+        // @ts-ignore
+        global.flap = true
         console.log('connect')
         const client = connect({ port: 9999 })
         const replica = await client.getServer({ type: 'replica' })
-        const r = await client.redis.hgetall(replica, 'flappie')
-        const id = `${replica.host}:${replica.port}`
+        await client.redis.hgetall(replica, 'flappie')
 
-        console.log(id, replica, r)
+        console.log(connections.keys())
 
-        return { replica, moduleId }
+        await wait(3500)
+
+        // should destroy
+        console.log(connections.keys())
+
+        return { replica, moduleId, size: connections.size }
       }
     )
 
@@ -204,6 +209,8 @@ test.serial(
     // emulting busy errors
     // just to make sure
     t.true(moduleId !== parentModuleId, 'worker runs in different context')
+
+    t.is(size, 1, 'removed the replica connections')
 
     t.true(
       secondReplica.port !== replica.port,

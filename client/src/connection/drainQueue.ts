@@ -6,6 +6,7 @@ import { Connection } from './'
 
 const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
   if (!connection.queueInProgress) {
+    connection.addActive()
     connection.queueInProgress = true
     process.nextTick(() => {
       let modify: RedisCommand
@@ -112,6 +113,8 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
         }
 
         const queueDone = () => {
+          connection.removeActive()
+
           connection.queueBeingDrained = []
           if (nextQ) {
             connection.queueInProgress = false

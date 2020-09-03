@@ -102,6 +102,7 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
 
       const p = { wait }
     
+
       for (let key in selva) {
         p[key] = selva[key]
       }
