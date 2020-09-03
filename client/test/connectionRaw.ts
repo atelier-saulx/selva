@@ -1,5 +1,5 @@
 import test from 'ava'
-import { Connection, connections, connect } from '@saulx/selva'
+import { moduleId as parentModuleId, connect } from '@saulx/selva'
 import {
   startRegistry,
   startOrigin,
@@ -155,7 +155,7 @@ test.serial(
         q.push(client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16)))
       }
       await Promise.all(q)
-      if (cnt < 50) {
+      if (cnt < 150) {
         putUnderLoad(r, ++cnt)
       } else {
         console.log('done with load (100 x 10k)', r)
@@ -179,18 +179,24 @@ test.serial(
 
     putUnderLoad(secondReplica)
 
-    await wait(2e3)
+    await wait(3e3)
 
-    const [{ replica }] = await worker(async ({ connect, wait }) => {
-      const client = connect({ port: 9999 })
-      const replica = await client.getServer({ type: 'replica' })
-      const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
+    const [{ replica, moduleId }] = await worker(
+      async ({ connect, wait, moduleId }) => {
+        const client = connect({ port: 9999 })
+        const replica = await client.getServer({ type: 'replica' })
+        const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
 
-      console.log(replica)
-      return { replica }
-    })
+        console.log(moduleId, replica, r)
 
-    console.log(replica.port, secondReplica.port)
+        // ok we are going to do some stuff
+
+        return { replica, moduleId }
+      }
+    )
+
+    // just to make sure
+    t.true(moduleId !== parentModuleId, 'worker runs in different context')
 
     t.true(
       secondReplica.port !== replica.port,
