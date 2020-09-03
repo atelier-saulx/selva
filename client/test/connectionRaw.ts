@@ -149,22 +149,32 @@ test.serial(
       { strict: true }
     )
 
-    const putUnderLoad = async (r, cnt = 0) => {
-      let q = []
-      for (let i = 0; i < 10000; i++) {
-        q.push(client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16)))
-      }
-      await Promise.all(q)
-      if (cnt < 150) {
-        putUnderLoad(r, ++cnt)
-      } else {
-        console.log('done with load (100 x 10k)', r)
-      }
+    const putUnderLoad = async r => {
+      worker(
+        async ({ connect }, { r }) => {
+          const client = connect({ port: 9999 })
+          const fn = async (r, cnt = 0) => {
+            let q = []
+            for (let i = 0; i < 10000; i++) {
+              q.push(
+                client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16))
+              )
+            }
+            await Promise.all(q)
+            if (cnt < 150) {
+              fn(r, ++cnt)
+            } else {
+              console.log('done with load (100 x 10k)', r)
+            }
+          }
+          fn(r)
+        },
+        { r }
+      )
+      await wait(2e3)
     }
 
-    putUnderLoad(oneReplica)
-
-    await wait(1e3)
+    await putUnderLoad(oneReplica)
 
     // now getting a replica needs to get another one
     const secondReplica = await client.getServer(
@@ -177,12 +187,11 @@ test.serial(
       'When the first replica is under load, other replica becomes prefered'
     )
 
-    putUnderLoad(secondReplica)
-
-    await wait(3e3)
+    await putUnderLoad(secondReplica)
 
     const [{ replica, moduleId }] = await worker(
       async ({ connect, wait, moduleId }) => {
+        console.log('connect')
         const client = connect({ port: 9999 })
         const replica = await client.getServer({ type: 'replica' })
         const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
@@ -194,6 +203,8 @@ test.serial(
         return { replica, moduleId }
       }
     )
+
+    console.log(secondReplica.port, replica.port)
 
     // just to make sure
     t.true(moduleId !== parentModuleId, 'worker runs in different context')

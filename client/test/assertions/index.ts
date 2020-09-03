@@ -71,6 +71,7 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
     const selva = require('@saulx/selva')
     const wait = (t = 100) => (new Promise(r => setTimeout(r, t)))
 
+    global.isWorker = true
     const p = { wait }
 
     for (let key in selva) {
@@ -93,6 +94,8 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
   `
       : `
       const fn = ${body};
+      global.isWorker = true
+
       const selvaServer = require('@saulx/selva-server')
       const selva = require('@saulx/selva')
       const wait = (t = 100) => (new Promise(r => setTimeout(r, t)))

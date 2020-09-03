@@ -11,6 +11,7 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       if (!selvaClient.servers.replicas[server.name]) {
         selvaClient.servers.replicas[server.name] = []
       }
+
       // double check if this is correct
       selvaClient.servers.replicas[server.name].splice(
         server.index === -1 ? 0 : server.index || 0,
