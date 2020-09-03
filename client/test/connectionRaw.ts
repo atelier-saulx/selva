@@ -1,11 +1,6 @@
 import test from 'ava'
 import { moduleId as parentModuleId, connect } from '@saulx/selva'
-import {
-  startRegistry,
-  startOrigin,
-  startReplica,
-  SelvaServer
-} from '../../server'
+import { startRegistry, startOrigin, startReplica } from '../../server'
 import './assertions'
 import { wait, worker } from './assertions'
 import { join } from 'path'
@@ -207,7 +202,6 @@ test.serial(
 
     // put under load test combined with disconnect
     // emulting busy errors
-
     // just to make sure
     t.true(moduleId !== parentModuleId, 'worker runs in different context')
 
@@ -217,13 +211,5 @@ test.serial(
     )
 
     await wait(2e3)
-
-    // next test add hard dc on connection
-
-    // check it it destroys itself
-
-    // what makes this hard to test is that we need to add this in a vm (against sharing)
-
-    // selva client emit reconnect event (with descriptor)
   }
 )
