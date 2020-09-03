@@ -325,14 +325,12 @@ class Connection extends EventEmitter {
     }
 
     this.on('connect', () => {
-      // this is prob good
+      // this is prob a good place...
       this.destroyIfIdle()
       if (this.queue.length) {
         drainQueue(this)
       }
     })
-
-    // strang but good
   }
 }
 

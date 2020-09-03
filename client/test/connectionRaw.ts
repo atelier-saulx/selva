@@ -201,6 +201,10 @@ test.serial(
         // should destroy
         console.log(connections.keys())
 
+        await client.redis.hset({ type: 'origin' }, 'hurk', 'snef', 'schlurhp')
+
+        await wait(3500)
+
         return { replica, moduleId, size: connections.size }
       }
     )
