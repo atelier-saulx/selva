@@ -171,7 +171,7 @@ test.serial(
         },
         { r }
       )
-      await wait(3e3)
+      await wait(2e3)
     }
 
     await putUnderLoad(oneReplica)
@@ -193,6 +193,7 @@ test.serial(
       async ({ connect, wait, moduleId }) => {
         console.log('connect')
         const client = connect({ port: 9999 })
+        await wait(1e3)
         const replica = await client.getServer({ type: 'replica' })
         const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
 
@@ -216,6 +217,8 @@ test.serial(
       secondReplica.port !== replica.port,
       'When the second replica is under load, other replica becomes prefered'
     )
+
+    await wait(2e3)
 
     // next test add hard dc on connection
 
