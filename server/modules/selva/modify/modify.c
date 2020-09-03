@@ -76,10 +76,9 @@ static int update_hierarchy(
     struct SelvaModify_OpSet *setOpts
 ) {
     RedisModuleString *key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-    hierarchy = SelvaModify_OpenHierarchyKey(ctx, key_name);
+    hierarchy = SelvaModify_OpenHierarchy(ctx, key_name, REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
-        return REDISMODULE_ERR;
+        return REDISMODULE_OK;
     }
 
     /*

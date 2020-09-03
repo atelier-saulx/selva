@@ -115,7 +115,9 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy);
 /**
  * Open a hierarchy key.
  */
-SelvaModify_Hierarchy *SelvaModify_OpenHierarchyKey(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name);
+SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name, int mode);
+
+int replyWithHierarchyError(struct RedisModuleCtx *ctx, int err);
 
 int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
 
@@ -233,8 +235,16 @@ int SelvaModify_TraverseHierarchy(
  * hierarchy_subscriptions.c
  */
 typedef unsigned char Selva_SubscriptionId[32];
+enum Selva_SubscriptionType {
+    SELVA_SUBSCRIPTION_TYPE_ANCESTORS,
+    SELVA_SUBSCRIPTION_TYPE_DESCENDANTS,
+};
 
-int SelvaModify_CreateSubscription(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+int SelvaModify_CreateSubscription(
+        struct SelvaModify_Hierarchy *hierarchy,
+        Selva_SubscriptionId sub_id,
+        enum Selva_SubscriptionType type,
+        Selva_NodeId node_id);
 void SelvaModify_DeleteSubscription(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
 void SelvaModify_ClearAllSubscriptionMarkers(Selva_NodeId id, struct SelvaModify_HierarchyMetaData *metadata);
 

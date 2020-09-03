@@ -5,7 +5,7 @@
 #include "rmutil/util.h"
 #include "rmutil/strings.h"
 #include "rmutil/test_util.h"
-
+#include "selva_onload.h"
 #include "svector.h"
 #include "modify/modify.h"
 #include "modify/async_task.h"
@@ -16,6 +16,8 @@
 
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
+
+SET_DECLARE(selva_Onload, SelvaModify_Onload);
 
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     REDISMODULE_NOT_USED(argv);
@@ -132,10 +134,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     RedisModuleString *hkey_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-    hierarchy = SelvaModify_OpenHierarchyKey(ctx, hkey_name);
+    hierarchy = SelvaModify_OpenHierarchy(ctx, hkey_name, REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOENT]);
-        return REDISMODULE_ERR;
+        return REDISMODULE_OK;
     }
 
     /*
@@ -326,8 +327,6 @@ out:
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
-    int Hierarchy_OnLoad(RedisModuleCtx *ctx);
-
     // Register the module itself
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
@@ -343,5 +342,17 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
-    return Hierarchy_OnLoad(ctx);
+    SelvaModify_Onload **onload_p;
+
+    SET_FOREACH(onload_p, selva_Onload) {
+        SelvaModify_Onload *onload = *onload_p;
+        int err;
+
+        err = onload(ctx);
+        if (err) {
+            return err;
+        }
+    }
+
+    return REDISMODULE_OK;
 }
