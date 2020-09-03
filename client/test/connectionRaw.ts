@@ -195,11 +195,12 @@ test.serial(
         console.log('connect')
         const client = connect({ port: 9999 })
         const replica = await client.getServer({ type: 'replica' })
-        const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
+        const r = await client.redis.hgetall(replica, 'flappie')
+        const id = `${replica.host}:${replica.port}`
 
-        console.log(moduleId, replica, r)
+        console.log(id, replica, r)
 
-        // ok we are going to do some stuff
+        // now we want to destroy the replica
 
         return { replica, moduleId }
       }
@@ -207,8 +208,6 @@ test.serial(
 
     // put under load test combined with disconnect
     // emulting busy errors
-
-    console.log(secondReplica.port, replica.port)
 
     // just to make sure
     t.true(moduleId !== parentModuleId, 'worker runs in different context')
