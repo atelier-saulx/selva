@@ -69,8 +69,9 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
     const fn = ${body};
     const selvaServer = require('@saulx/selva-server')
     const selva = require('@saulx/selva')
+    const wait = (t = 100) => (new Promise(r => setTimeout(r, t)))
 
-    const p = {}
+    const p = { wait }
 
     for (let key in selva) {
       p[key] = selva[key]
@@ -94,8 +95,10 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
       const fn = ${body};
       const selvaServer = require('@saulx/selva-server')
       const selva = require('@saulx/selva')
-      const p = {}
+      const wait = (t = 100) => (new Promise(r => setTimeout(r, t)))
 
+      const p = { wait }
+    
       for (let key in selva) {
         p[key] = selva[key]
       }

@@ -179,17 +179,22 @@ test.serial(
 
     putUnderLoad(secondReplica)
 
-    await wait(1e3)
+    await wait(2e3)
 
-    await worker(
-      async ({ connect }, { oneReplica, secondReplica }) => {
-        const client = connect({ port: 9999 })
-        const replica = await client.getServer({ type: 'replica' })
-        const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
+    const [{ replica }] = await worker(async ({ connect, wait }) => {
+      const client = connect({ port: 9999 })
+      const replica = await client.getServer({ type: 'replica' })
+      const r = await client.redis.hgetall({ type: 'replica' }, 'flappie')
 
-        console.log('result from worker!', replica, oneReplica, secondReplica)
-      },
-      { oneReplica, secondReplica }
+      console.log(replica)
+      return { replica }
+    })
+
+    console.log(replica.port, secondReplica.port)
+
+    t.true(
+      secondReplica.port !== replica.port,
+      'When the second replica is under load, other replica becomes prefered'
     )
 
     // next test add hard dc on connection
