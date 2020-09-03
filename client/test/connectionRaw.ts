@@ -171,7 +171,7 @@ test.serial(
         },
         { r }
       )
-      await wait(2e3)
+      await wait(3e3)
     }
 
     await putUnderLoad(oneReplica)
@@ -203,6 +203,9 @@ test.serial(
         return { replica, moduleId }
       }
     )
+
+    // put under load test combined with disconnect
+    // emulting busy errors
 
     console.log(secondReplica.port, replica.port)
 
