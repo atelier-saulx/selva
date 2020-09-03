@@ -192,7 +192,7 @@ test.serial(
 
     const [{ replica, moduleId }] = await worker(
       async ({ connect, wait, moduleId }) => {
-        global.flap = true
+        // global.flap = true
         console.log('connect')
         const client = connect({ port: 9999 })
         const replica = await client.getServer({ type: 'replica' })
