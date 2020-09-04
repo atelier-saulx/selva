@@ -211,7 +211,7 @@ test.serial(
 
     await wait(10e3)
 
-    await wait(500)
+    await putUnderLoad(oneReplica)
 
     setTimeout(async () => {
       const oneReplicaServer = (await Promise.all(replicasPromises)).find(
@@ -220,10 +220,11 @@ test.serial(
 
       console.log('destroy server')
       oneReplicaServer.destroy()
-    }, 150)
+    }, 500)
 
     client.redis.on(oneReplica, 'message', (channel, msg) => {
       if (channel === 'snux') {
+        // we are going to count these
         console.log('On the original something from oneReplica', msg)
       }
     })
@@ -237,6 +238,7 @@ test.serial(
 
         client.redis.on(oneReplica, 'message', (channel, msg) => {
           if (channel === 'snux') {
+            // and count these!
             console.log('something from oneReplica', msg)
           }
         })
@@ -264,6 +266,8 @@ test.serial(
       },
       { oneReplica }
     )
+
+    // server exemption
 
     // maybe put this in a worker - better for testing if it actualy arrives
     await wait(5000)
