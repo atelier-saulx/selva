@@ -2,7 +2,7 @@ import { RedisCommand } from '../redis/types'
 import execBatch from './execBatch'
 import { getScriptSha, loadScripts } from './scripts'
 import * as constants from '../constants'
-import { Connection } from './'
+import { Connection, connections } from './'
 
 const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
   if (!connection.queueInProgress) {
@@ -130,22 +130,26 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
         if (parsedQ.length === 0) {
           queueDone()
         } else {
-          execBatch(connection, parsedQ)
-            .then(() => {
-              queueDone()
-            })
-            .catch(err => {
-              // do clear it else the connection never gets removed!
-              connection.removeActive()
-              console.log(
-                'Error executing batch',
-                err,
-                connection.queueBeingDrained.length
-              )
-              connection.queue.concat(connection.queueBeingDrained)
-              connection.queueBeingDrained = []
-              connection.queueInProgress = false
-            })
+          if (connection.isDestroyed) {
+            console.log('sad panda')
+          } else {
+            execBatch(connection, parsedQ)
+              .then(() => {
+                queueDone()
+              })
+              .catch(err => {
+                // do clear it else the connection never gets removed!
+                connection.removeActive()
+                console.log(
+                  'Error executing batch',
+                  err,
+                  connection.queueBeingDrained.length
+                )
+                connection.queue.concat(connection.queueBeingDrained)
+                connection.queueBeingDrained = []
+                connection.queueInProgress = false
+              })
+          }
         }
       } else {
         connection.queueInProgress = false

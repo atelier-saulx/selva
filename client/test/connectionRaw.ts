@@ -1,9 +1,15 @@
 import test from 'ava'
 import { moduleId as parentModuleId, connect } from '@saulx/selva'
-import { startRegistry, startOrigin, startReplica } from '../../server'
+import {
+  startRegistry,
+  startOrigin,
+  startReplica,
+  SelvaServer
+} from '../../server'
 import './assertions'
 import { wait, worker } from './assertions'
 import { join } from 'path'
+import { serverId } from '../src/util'
 
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
@@ -210,66 +216,89 @@ test.serial(
     )
 
     await wait(10e3)
+    const r = await Promise.all(replicasPromises)
 
-    await putUnderLoad(oneReplica)
-
-    setTimeout(async () => {
-      const oneReplicaServer = (await Promise.all(replicasPromises)).find(
-        server => server.port === oneReplica.port
-      )
-
-      console.log('destroy server')
-      oneReplicaServer.destroy()
-    }, 500)
-
-    client.redis.on(oneReplica, 'message', (channel, msg) => {
-      if (channel === 'snux') {
-        // we are going to count these
-        console.log('On the original something from oneReplica', msg)
+    r.forEach((server: SelvaServer) => {
+      if (server.destroy) {
+        server.destroy()
       }
     })
 
-    client.redis.subscribe(oneReplica, 'snux')
+    for (let i = 0; i < 50e3; i++) {
+      client.redis.publish(
+        { type: 'replica', strict: true },
+        'snux',
+        'flurpy pants -- looper - ' + i
+      )
+    }
 
-    const [] = await worker(
-      async ({ connect, wait }, { oneReplica }) => {
-        console.log('connect')
-        const client = connect({ port: 9999 })
+    await wait(1e3)
 
-        client.redis.on(oneReplica, 'message', (channel, msg) => {
+    const snuxResults = []
+
+    client.redis.on(
+      { type: 'replica', strict: true },
+      'message',
+      (channel, msg) => {
+        if (channel === 'snux') {
+          // we are going to count these
+          console.log('On the original something from oneReplica', msg)
+          snuxResults.push(msg)
+        }
+      }
+    )
+
+    client.redis.subscribe({ type: 'replica' }, 'snux')
+
+    const [] = await worker(async ({ connect, wait }) => {
+      console.log('connect')
+      const client = connect({ port: 9999 })
+
+      client.redis.on(
+        { type: 'replica', strict: true },
+        'message',
+        (channel, msg) => {
           if (channel === 'snux') {
             // and count these!
             console.log('something from oneReplica', msg)
           }
-        })
-
-        client.redis.subscribe(oneReplica, 'snux')
-        client.redis.publish(oneReplica, 'snux', 'flurpy pants swaffi')
-        client.redis.publish(oneReplica, 'snux', 'flurpy pants 1')
-
-        await wait(30)
-
-        // no we want to get hard dc and have this in the queue in progress
-        console.log('------- PUT SNUX IN Q', oneReplica.port)
-
-        for (let i = 0; i < 5; i++) {
-          client.redis.publish(
-            oneReplica,
-            'snux',
-            'flurpy pants -- looper - ' + i
-          )
         }
+      )
 
-        console.log('xxx --- flurpy what')
+      client.redis.subscribe({ type: 'replica', strict: true }, 'snux')
+      client.redis.publish(
+        { type: 'replica', strict: true },
+        'snux',
+        'flurpy pants swaffi'
+      )
+      client.redis.publish(
+        { type: 'replica', strict: true },
+        'snux',
+        'flurpy pants 1'
+      )
 
-        return
-      },
-      { oneReplica }
-    )
+      await wait(30)
+
+      // no we want to get hard dc and have this in the queue in progress
+
+      for (let i = 0; i < 5; i++) {
+        client.redis.publish(
+          { type: 'replica', strict: true },
+          'snux',
+          'flurpy pants -- looper - ' + i
+        )
+      }
+
+      console.log('xxx --- flurpy what')
+
+      return
+    })
 
     // server exemption
 
     // maybe put this in a worker - better for testing if it actualy arrives
     await wait(5000)
+
+    console.log({ snuxResults })
   }
 )

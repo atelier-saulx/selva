@@ -30,6 +30,7 @@ export type ServerSelector = {
   name?: string
   type?: ServerType
   host?: string
+  strict?: boolean
   port?: number
   subscription?: string
 }

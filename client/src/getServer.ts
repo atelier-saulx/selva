@@ -35,7 +35,11 @@ const getServer = async (
     }
     const replicas = selvaClient.servers.replicas[name]
     server = replicas && replicas[0]
-    if (!server && (!selectionOptions || !selectionOptions.strict)) {
+    if (
+      !selector.strict &&
+      !server &&
+      (!selectionOptions || !selectionOptions.strict)
+    ) {
       server = selvaClient.servers.origins[name]
     }
   }
