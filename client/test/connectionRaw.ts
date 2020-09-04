@@ -157,7 +157,7 @@ test.serial(
               )
             }
             await Promise.all(q)
-            if (cnt < 50) {
+            if (cnt < 30) {
               fn(r, ++cnt)
             } else {
               console.log('done with load (50 x 100k)', r)
@@ -248,6 +248,7 @@ test.serial(
     await wait(1)
 
     // no we want to get hard dc and have this in the queue in progress
+    console.log('------- PUT SNUX IN Q')
     client.redis.publish(oneReplica, 'snux', 'flurpy pants 2')
 
     await wait(3000)
