@@ -6,11 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#define _SELVA_MODIFY_HIERARCHY_INTERNAL_
 #include "selva_onload.h"
 #include "alias.h"
 #include "cdefs.h"
-#include "tree.h"
-#include "trx.h"
 #include "hierarchy.h"
 #include "redismodule.h"
 #include "async_task.h"
@@ -47,23 +46,6 @@ enum SelvaModify_HierarchyNode_Relationship {
 enum SelvaModify_Hierarchy_Algo {
     HIERARCHY_BFS,
     HIERARCHY_DFS,
-};
-
-RB_HEAD(hierarchy_index_tree, SelvaModify_HierarchyNode);
-
-struct SelvaModify_Hierarchy {
-    /**
-     * Current transaction timestamp.
-     * Set before traversal begins and is used for marking visited nodes. Due to the
-     * marking being a timestamp it's not necessary to clear it afterwards, which
-     * could be a costly operation itself.
-     */
-    Trx current_trx;
-    struct hierarchy_index_tree index_head;
-    /**
-     * Orphan nodes aka heads of the hierarchy.
-     */
-    SVector heads;
 };
 
 typedef void (*HierarchyNode_HeadCallback)(SelvaModify_HierarchyNode *node, void *arg);

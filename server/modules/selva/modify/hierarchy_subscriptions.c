@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#define _SELVA_MODIFY_HIERARCHY_INTERNAL_
 #include "selva_onload.h"
 #include "async_task.h"
 #include "cdefs.h"
@@ -17,20 +18,25 @@ struct SelvaModify_HierarchySubscription {
     uint16_t _spare;
     enum Selva_SubscriptionType sub_type;
     rpn_token *sub_filter;
-    struct SelvaModify_HierarchySubscription *next_sub;
+    RB_ENTRY(SelvaModify_HierarchySubscription) _sub_index_entry;
 };
 
-static struct SelvaModify_HierarchySubscription *subs_head;
-
-static int subscription_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
+static int subscription_svector_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const struct SelvaModify_HierarchySubscription *a = *(const struct SelvaModify_HierarchySubscription **)a_raw;
     const struct SelvaModify_HierarchySubscription *b = *(const struct SelvaModify_HierarchySubscription **)b_raw;
 
     return memcmp(a->sub_id, b->sub_id, sizeof(Selva_SubscriptionId));
 }
 
+static int subscription_rb_compare(const struct SelvaModify_HierarchySubscription *a, const struct SelvaModify_HierarchySubscription *b) {
+    return memcmp(a->sub_id, b->sub_id, sizeof(Selva_SubscriptionId));
+}
+
+RB_PROTOTYPE_STATIC(hierarchy_subscriptions_tree, SelvaModify_HierarchySubscription, _sub_index_entry, subscription_rb_compare)
+RB_GENERATE_STATIC(hierarchy_subscriptions_tree, SelvaModify_HierarchySubscription, _sub_index_entry, subscription_rb_compare)
+
 static char *subId2str(Selva_SubscriptionId sub_id) {
-    static char str[2 * sizeof(Selva_SubscriptionId)];
+    static char str[2 * sizeof(Selva_SubscriptionId) + 1];
 
     for (size_t i = 0; i < sizeof(Selva_SubscriptionId); i++) {
         sprintf(str + 2 * i, "%02x", sub_id[i]);
@@ -43,7 +49,7 @@ static char *subId2str(Selva_SubscriptionId sub_id) {
 static void init_subs(
         Selva_NodeId id __unused,
         struct SelvaModify_HierarchyMetaData *metadata) {
-    SVector_Init(&metadata->subs, 1, subscription_compare);
+    SVector_Init(&metadata->subs, 1, subscription_svector_compare);
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_subs);
 
@@ -102,10 +108,12 @@ int SelvaModify_CreateSubscription(
     sub->sub_filter = NULL;
 
     /*
-     * Add to the linked list of subscriptions.
+     * Add to the list of subscriptions.
      */
-    sub->next_sub = subs_head;
-    subs_head = sub;
+    if (unlikely(RB_INSERT(hierarchy_subscriptions_tree, &hierarchy->subs_head, sub) != NULL)) {
+        RedisModule_Free(sub);
+        return SELVA_MODIFY_HIERARCHY_EEXIST;
+    }
 
     /*
      * Add subscription markers.
@@ -121,45 +129,42 @@ int SelvaModify_CreateSubscription(
 }
 
 void SelvaModify_DeleteSubscription(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id) {
-    struct SelvaModify_HierarchySubscription *sub = subs_head;
-    struct SelvaModify_HierarchySubscription *prev_sub;
+    struct SelvaModify_HierarchySubscription *sub;
+    struct SelvaModify_HierarchySubscription filter;
 
-    while (sub) {
-        if (!memcmp(sub->sub_id, sub_id, sizeof(Selva_SubscriptionId))) {
-            break;
-        }
-        prev_sub = sub;
-        sub = sub->next_sub;
+    memcpy(&filter.sub_id, sub_id, sizeof(Selva_SubscriptionId));
+    sub = RB_FIND(hierarchy_subscriptions_tree, &hierarchy->subs_head, &filter);
+    if (!sub) {
+        return;
     }
-    if (sub) {
-        enum SelvaModify_HierarchyTraversal dir;
 
-        switch (sub->sub_type) {
-        case SELVA_SUBSCRIPTION_TYPE_ANCESTORS:
-            dir = SELVA_MODIFY_HIERARCHY_DFS_ANCESTORS;
-            break;
-        case SELVA_SUBSCRIPTION_TYPE_DESCENDANTS:
-            dir = SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS;
-            break;
-        default:
-            fprintf(stderr, "Hierarchy: Subscription deletion failed: Invalid subscription %s", subId2str(sub_id));
-            return;
-        }
+    enum SelvaModify_HierarchyTraversal dir;
 
-        /* Remove from the list. */
-        prev_sub->next_sub = sub->next_sub;
-
-        /*
-         * Remove subscription markers.
-         */
-        struct SelvaModify_HierarchyCallback cb = {
-            .node_cb = clearSubscriptionMarker,
-            .node_arg = sub,
-        };
-        (void)SelvaModify_TraverseHierarchy(hierarchy, sub->sub_node_id, dir, &cb);
-
-        RedisModule_Free(sub);
+    switch (sub->sub_type) {
+    case SELVA_SUBSCRIPTION_TYPE_ANCESTORS:
+        dir = SELVA_MODIFY_HIERARCHY_DFS_ANCESTORS;
+        break;
+    case SELVA_SUBSCRIPTION_TYPE_DESCENDANTS:
+        dir = SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS;
+        break;
+    default:
+        fprintf(stderr, "Hierarchy: Subscription deletion failed: Invalid subscription %s", subId2str(sub_id));
+        return;
     }
+
+    /* Remove from the list. */
+    RB_REMOVE(hierarchy_subscriptions_tree, &hierarchy->subs_head, sub);
+
+    /*
+     * Remove subscription markers.
+     */
+    struct SelvaModify_HierarchyCallback cb = {
+        .node_cb = clearSubscriptionMarker,
+        .node_arg = sub,
+    };
+    (void)SelvaModify_TraverseHierarchy(hierarchy, sub->sub_node_id, dir, &cb);
+
+    RedisModule_Free(sub);
 }
 
 void SelvaModify_ClearAllSubscriptionMarkers(Selva_NodeId id __unused, struct SelvaModify_HierarchyMetaData *metadata) {
@@ -178,8 +183,8 @@ static int parse_subscription_id(Selva_SubscriptionId id, RedisModuleString *arg
     for (size_t i = 0; i < sizeof(Selva_SubscriptionId); i++) {
         unsigned long v;
 
-        byte[0] = arg_str[i];
-        byte[1] = arg_str[i + 1];
+        byte[0] = arg_str[2 * i];
+        byte[1] = arg_str[2 * i + 1];
         v = strtoul(byte, NULL, 16);
 
         if (unlikely(v > 0xff)) {
@@ -265,9 +270,31 @@ int SelvaModify_Hierarchy_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleStrin
  * KEY [NODE_ID]
  */
 int SelvaModify_Hierarchy_SubscriptionsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc < 3) {
+    if (argc < 2) {
         return RedisModule_WrongArity(ctx);
     }
+
+    const size_t ARGV_REDIS_KEY = 1;
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    struct SelvaModify_HierarchySubscription *sub;
+    size_t array_len = 0;
+
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+
+    RB_FOREACH(sub, hierarchy_subscriptions_tree, &hierarchy->subs_head) {
+        RedisModule_ReplyWithStringBuffer(ctx, subId2str(sub->sub_id), 2 * sizeof(Selva_SubscriptionId));
+        array_len++;
+    }
+
+    RedisModule_ReplySetArrayLength(ctx, array_len);
 
     return REDISMODULE_OK;
 }

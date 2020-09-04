@@ -74,6 +74,38 @@ typedef void SelvaModify_HierarchyMetadataHook(Selva_NodeId id, struct SelvaModi
 #define SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(fun) \
     DATA_SET(selva_HMDtor, fun)
 
+#ifdef _SELVA_MODIFY_HIERARCHY_INTERNAL_
+#include "tree.h"
+#include "trx.h"
+
+struct SelvaModify_HierarchySubscription;
+
+RB_HEAD(hierarchy_index_tree, SelvaModify_HierarchyNode);
+RB_HEAD(hierarchy_subscriptions_tree, SelvaModify_HierarchySubscription);
+
+struct SelvaModify_Hierarchy {
+    /**
+     * Current transaction timestamp.
+     * Set before traversal begins and is used for marking visited nodes. Due to the
+     * marking being a timestamp it's not necessary to clear it afterwards, which
+     * could be a costly operation itself.
+     */
+    Trx current_trx;
+
+    struct hierarchy_index_tree index_head;
+
+    /**
+     * Orphan nodes aka heads of the hierarchy.
+     */
+    SVector heads;
+
+    /**
+     * A tree of all subscriptions applying to this tree.
+     */
+    struct hierarchy_subscriptions_tree subs_head;
+};
+#endif /* _SELVA_MODIFY_HIERARCHY_INTERNAL_ */
+
 /**
  * Hierarchy traversal order.
  * Used by SelvaModify_TraverseHierarchy().
