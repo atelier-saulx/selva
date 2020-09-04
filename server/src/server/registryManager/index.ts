@@ -136,7 +136,7 @@ export const registryManager = (server: SelvaServer) => {
               }
               // opsPerSecond is also very good as a measure
 
-              console.log(type, id, weight, 'cpu', stats.cpu, '%')
+              // console.log(type, id, weight, 'cpu', stats.cpu, '%')
 
               const target: ServerIndex = {
                 weight,
