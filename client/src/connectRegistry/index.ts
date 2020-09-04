@@ -39,6 +39,9 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
         host
       })
 
+      // maybe for registry we want to handle it a bit different....
+      registryConnection.attachSelvaClient(selvaClient)
+
       selvaClient.registryConnection = registryConnection
 
       registryConnection.subscribe(REGISTRY_UPDATE, selvaClient.selvaId)
@@ -94,8 +97,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
                     connectionUuid,
                     selvaClient.server
                   )
-                  connection.emit('hard-disconnect')
-                  connection.destroy()
+                  connection.hardDisconnect()
                 } else {
                   console.log('allready destroyed!', id)
                 }

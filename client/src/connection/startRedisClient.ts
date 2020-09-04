@@ -28,8 +28,7 @@ const startClient = (
           '🧟‍♀️ More then 30 retries connection to server destroy connection',
           connection.serverDescriptor
         )
-        connection.emit('hard-disconnect')
-        connection.destroy()
+        connection.hardDisconnect()
       }
     }
     if (connection.clientsConnected[type] === true) {
@@ -78,13 +77,10 @@ const startClient = (
         '🧟‍♀️ Strange info error node redis client is corrupt destroy connection',
         connection.serverDescriptor
       )
-      connection.emit('hard-disconnect')
-      connection.destroy()
+      connection.hardDisconnect()
     }
   })
-
   client.setMaxListeners(1e4)
-
   return client
 }
 
@@ -95,8 +91,7 @@ export default (connection: Connection) => {
         '🧟‍♀️ Took longer then 1 minute to connect to server destroy connection',
         connection.serverDescriptor
       )
-      connection.emit('hard-disconnect')
-      connection.destroy()
+      connection.hardDisconnect()
     }
   }, 60e3)
 
@@ -111,8 +106,7 @@ export default (connection: Connection) => {
           '🧟‍♀️ Server heartbeat expired (longer then 1 min) destroy connection',
           connection.serverDescriptor
         )
-        connection.emit('hard-disconnect')
-        connection.destroy()
+        connection.hardDisconnect()
       }
     }, 60e3)
   }

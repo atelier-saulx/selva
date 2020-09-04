@@ -177,7 +177,12 @@ export class SelvaClient extends EventEmitter {
   }
 
   async destroy() {
-    console.log('destroy client - not implemented yet!')
+    console.log('Destroy selva client')
+    connections.forEach(connection => {
+      if (connection.removeSelvaClient(this)) {
+        connection.removeConnectionState(connection.getConnectionState(this.selvaId))
+      }
+    })
     return destroy(this)
   }
 }

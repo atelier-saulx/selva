@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events'
-import { RedisCommand } from '..'
-import { SERVER_HEARTBEAT } from '../constants'
+import { RedisCommand, SelvaClient } from '..'
 import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import drainQueue from './drainQueue'
@@ -16,6 +15,7 @@ const connections: Map<string, Connection> = new Map()
 // logs are easier to handle just add the id in the command to the other id
 
 type ConnectionState = {
+  id?: string
   queue: RedisCommand[]
   pSubscribes: string[]
   subscribes: string[]
@@ -33,6 +33,8 @@ class Connection extends EventEmitter {
 
   public selvaSubscriptionEmitters: Set<SubscriptionEmitter>
 
+  public selvaClients: Set<SelvaClient> = new Set()
+
   public subscriptions: { [key: string]: { [key: string]: number } }
 
   // channel / id
@@ -40,6 +42,31 @@ class Connection extends EventEmitter {
 
   // listener / id
   public redisListeners: { [key: string]: { [key: string]: Set<Callback> } }
+
+  public hardDisconnect() {
+    this.emit('hard-disconnect')
+
+    this.selvaClients.forEach(s => {
+      console.log(
+        'yesh its hard dc do something with youre selva client!',
+        s.id
+      )
+    })
+
+    this.destroy()
+  }
+
+  public attachSelvaClient(selvaClient: SelvaClient) {
+    this.selvaClients.add(selvaClient)
+  }
+
+  public removeSelvaClient(selvaClient: SelvaClient): boolean {
+    const hasClient = this.selvaClients.has(selvaClient)
+    if (hasClient) {
+      this.selvaClients.delete(selvaClient)
+    }
+    return hasClient
+  }
 
   public selvaSubscribe() {
     if (!this.selvaSubscriptionsActive) {
@@ -189,10 +216,17 @@ class Connection extends EventEmitter {
     // now go and do this
   }
 
+  public removeConnectionState(state: ConnectionState) {
+    // remove this!
+  }
+
   public getConnectionState(id?: string): ConnectionState {
     // no id needs to mean all :/
     // different behaviour then empty string
+
+    // nice to know the id
     const state = {
+      id,
       queue: [],
       pSubscribes: [],
       subscribes: [],
@@ -249,6 +283,8 @@ class Connection extends EventEmitter {
       console.warn('Allready destroyed connection', this.serverDescriptor)
       return
     }
+
+    this.selvaClients = new Set()
 
     this.isDestroyed = true
 
