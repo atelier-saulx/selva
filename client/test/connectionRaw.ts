@@ -249,8 +249,10 @@ test.serial(
 
     // no we want to get hard dc and have this in the queue in progress
     console.log('------- PUT SNUX IN Q')
-    client.redis.publish(oneReplica, 'snux', 'flurpy pants 2')
 
+    for (let i = 0; i < 5; i++) {
+      client.redis.publish(oneReplica, 'snux', 'flurpy pants -- looper - ' + i)
+    }
     await wait(3000)
   }
 )
