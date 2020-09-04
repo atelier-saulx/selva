@@ -45,14 +45,9 @@ class Connection extends EventEmitter {
 
   public hardDisconnect() {
     this.emit('hard-disconnect')
-
     this.selvaClients.forEach(s => {
-      console.log(
-        'yesh its hard dc do something with youre selva client!',
-        s.id
-      )
+      s.hardDisconnect(this)
     })
-
     this.destroy()
   }
 
