@@ -104,6 +104,8 @@ struct SelvaModify_Hierarchy {
      */
     struct hierarchy_subscriptions_tree subs_head;
 };
+
+void SelvaModify_DestroySubscriptions(struct hierarchy_subscriptions_tree *subs_head);
 #endif /* _SELVA_MODIFY_HIERARCHY_INTERNAL_ */
 
 /**
@@ -278,7 +280,10 @@ int SelvaModify_CreateSubscription(
         enum Selva_SubscriptionType type,
         Selva_NodeId node_id);
 void SelvaModify_DeleteSubscription(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
-void SelvaModify_ClearAllSubscriptionMarkers(Selva_NodeId id, struct SelvaModify_HierarchyMetaData *metadata);
+void SelvaModify_ClearAllSubscriptionMarkers(
+        struct SelvaModify_Hierarchy *hierarchy,
+        Selva_NodeId node_id,
+        struct SelvaModify_HierarchyMetaData *metadata);
 
 /*
  * hierarchy_events.c

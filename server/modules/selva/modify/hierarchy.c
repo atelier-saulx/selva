@@ -184,6 +184,8 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
         return NULL;
     }
 
+    RB_INIT(&hierarchy->subs_head);
+
     return hierarchy;
 }
 
@@ -196,6 +198,8 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
 		RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(node);
     }
+
+    SelvaModify_DestroySubscriptions(&hierarchy->subs_head);
 
     SVector_Destroy(&hierarchy->heads);
     RedisModule_Free(hierarchy);
@@ -475,6 +479,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
 
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(node);
+        node = NULL;
     }
 
     if (likely(ctx)) {
@@ -482,7 +487,6 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
 
         fields = get_node_field_names(ctx, id);
         remove_node_fields(ctx, id);
-        SelvaModify_ClearAllSubscriptionMarkers(id, &node->metadata);
         SelvaModify_PublishDeleted(id, fields);
         RedisModule_Free(fields);
 
@@ -688,6 +692,9 @@ static int crossInsert(
 }
 
 static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
+    SelvaModify_ClearAllSubscriptionMarkers(hierarchy, node->id, &node->metadata);
+    /* TODO retrigger subscriptions after this */
+
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
         const size_t initialNodeParentsSize = SVector_Size(&node->parents);
         int pubParents = 0;
@@ -786,6 +793,8 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
         assert(("rel is invalid", 0));
         return;
     }
+    SelvaModify_ClearAllSubscriptionMarkers(hierarchy, node->id, &node->metadata);
+    /* TODO retrigger subs after */
 
     SelvaModify_HierarchyNode **itt;
     SVector *vec_a = (SVector *)((char *)node + offset_a);
