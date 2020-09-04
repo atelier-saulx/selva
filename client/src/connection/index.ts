@@ -260,6 +260,11 @@ class Connection extends EventEmitter {
         }
       }
 
+
+      console.log('🥕',this.queue)
+      console.log('🥕',this.queueBeingDrained)
+      console.log('🥕',this.queueInProgress)
+
       if (this.queueBeingDrained) {
         const q = this.queueBeingDrained.filter(command => command.id === id)1
         if (q.length) {

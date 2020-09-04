@@ -221,7 +221,7 @@ test.serial(
       'When the second replica is under load, other replica becomes prefered'
     )
 
-    await wait(2e3)
+    await wait(5e3)
 
     client.redis.on(oneReplica, 'message', (channel, msg) => {
       if (channel === 'snux') {
@@ -230,6 +230,7 @@ test.serial(
     })
 
     client.redis.subscribe(oneReplica, 'snux')
+    client.redis.publish(oneReplica, 'snux', 'flurpy pants swaffi')
 
     await wait(500)
 
@@ -239,10 +240,12 @@ test.serial(
       server => server.port === oneReplica.port
     )
 
+    client.redis.publish(oneReplica, 'snux', 'flurpy pants 1')
+
     console.log('destroy server')
     oneReplicaServer.destroy()
 
-    await wait(10)
+    await wait(1)
 
     // no we want to get hard dc and have this in the queue in progress
     client.redis.publish(oneReplica, 'snux', 'flurpy pants 2')
