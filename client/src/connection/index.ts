@@ -419,8 +419,6 @@ class Connection extends EventEmitter {
 const createConnection = (serverDescriptor: ServerDescriptor) => {
   let connection = connections.get(serverId(serverDescriptor))
   if (!connection) {
-    console.log('new crea conn', serverDescriptor.port)
-
     connection = new Connection(serverDescriptor)
   }
   return connection
