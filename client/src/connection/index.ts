@@ -16,6 +16,7 @@ const connections: Map<string, Connection> = new Map()
 
 type ConnectionState = {
   id?: string
+  isEmpty?: boolean
   queue: RedisCommand[]
   pSubscribes: string[]
   subscribes: string[]
@@ -221,6 +222,7 @@ class Connection extends EventEmitter {
 
     // nice to know the id
     const state = {
+      isEmpty: true,
       id,
       queue: [],
       pSubscribes: [],
@@ -232,8 +234,47 @@ class Connection extends EventEmitter {
     if (id === undefined) {
       // empty string is also a target
       // take the quue
+
+      // do this later
+
     } else {
-      // copy it nice
+      for (const channel in this.psubscriptions) {
+        if (id in this.psubscriptions[channel]) {
+          state.isEmpty = false
+          state.pSubscribes.push(channel)
+        }
+      }
+      for (const channel in this.subscriptions) {
+        if (id in this.subscriptions[channel]) {
+          state.isEmpty = false
+          state.subscribes.push(channel)
+        }
+      }
+
+      for (const event in this.redisListeners) {
+        if (id in this.redisListeners[event]) {
+          this.redisListeners[event][id].forEach(cb => {
+            state.isEmpty = false
+            state.listeners.push([event, cb])
+          })
+        }
+      }
+
+      if (this.queueBeingDrained) {
+        const q = this.queueBeingDrained.filter(command => command.id === id)1
+        if (q.length) {
+          state.isEmpty = false
+          state.queue = q
+        }
+      }
+
+      if (this.queue) {
+        const q = this.queue.filter(command => command.id === id)
+        if (q.length) {
+          state.isEmpty = false
+          state.queue = [...state.queue, ...q]
+        }
+      }
     }
 
     return state

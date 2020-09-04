@@ -6,8 +6,6 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
     const { type } = server
     selvaClient.servers.ids.delete(id)
 
-    console.log('DELETE', id, server.type, server.name, selvaClient.server)
-
     if (type === 'origin') {
       delete selvaClient.servers.origins[server.name]
     } else if (type === 'replica') {

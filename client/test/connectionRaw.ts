@@ -106,7 +106,7 @@ test.serial(
 
     await snurfServer.destroy()
 
-    const replicas = [
+    const replicasPromises = [
       startReplica({
         registry: { port: 9999 },
         default: true,
@@ -222,5 +222,31 @@ test.serial(
     )
 
     await wait(2e3)
+
+    client.redis.on(oneReplica, 'message', (channel, msg) => {
+      if (channel === 'snux') {
+        console.log('something from oneReplica', msg)
+      }
+    })
+
+    client.redis.subscribe(oneReplica, 'snux')
+
+    await wait(500)
+
+    // replica[0].
+
+    const oneReplicaServer = (await Promise.all(replicasPromises)).find(
+      server => server.port === oneReplica.port
+    )
+
+    console.log('destroy server')
+    oneReplicaServer.destroy()
+
+    await wait(10)
+
+    // no we want to get hard dc and have this in the queue in progress
+    client.redis.publish(oneReplica, 'snux', 'flurpy pants 2')
+
+    await wait(3000)
   }
 )
