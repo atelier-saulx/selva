@@ -187,24 +187,12 @@ test.serial(
 
     const [{ replica, moduleId, size }] = await worker(
       async ({ connect, wait, moduleId, connections }) => {
-        // @ts-ignore
-        global.flap = true
-        console.log('connect')
         const client = connect({ port: 9999 })
         const replica = await client.getServer({ type: 'replica' })
         await client.redis.hgetall(replica, 'flappie')
-
-        console.log(connections.keys())
-
         await wait(3100)
-
-        // should destroy
-        console.log(connections.keys())
-
         await client.redis.hset({ type: 'origin' }, 'hurk', 'snef', 'schlurhp')
-
         await wait(3100)
-
         return { replica, moduleId, size: connections.size }
       }
     )
@@ -223,37 +211,61 @@ test.serial(
 
     await wait(10e3)
 
+    await wait(500)
+
+    setTimeout(async () => {
+      const oneReplicaServer = (await Promise.all(replicasPromises)).find(
+        server => server.port === oneReplica.port
+      )
+
+      console.log('destroy server')
+      oneReplicaServer.destroy()
+    }, 150)
+
     client.redis.on(oneReplica, 'message', (channel, msg) => {
       if (channel === 'snux') {
-        console.log('something from oneReplica', msg)
+        console.log('On the original something from oneReplica', msg)
       }
     })
 
     client.redis.subscribe(oneReplica, 'snux')
-    client.redis.publish(oneReplica, 'snux', 'flurpy pants swaffi')
 
-    await wait(500)
+    const [] = await worker(
+      async ({ connect, wait }, { oneReplica }) => {
+        console.log('connect')
+        const client = connect({ port: 9999 })
 
-    // replica[0].
+        client.redis.on(oneReplica, 'message', (channel, msg) => {
+          if (channel === 'snux') {
+            console.log('something from oneReplica', msg)
+          }
+        })
 
-    // maybe put this in a worker - better for testing if it actualy arrives
-    const oneReplicaServer = (await Promise.all(replicasPromises)).find(
-      server => server.port === oneReplica.port
+        client.redis.subscribe(oneReplica, 'snux')
+        client.redis.publish(oneReplica, 'snux', 'flurpy pants swaffi')
+        client.redis.publish(oneReplica, 'snux', 'flurpy pants 1')
+
+        await wait(30)
+
+        // no we want to get hard dc and have this in the queue in progress
+        console.log('------- PUT SNUX IN Q', oneReplica.port)
+
+        for (let i = 0; i < 5; i++) {
+          client.redis.publish(
+            oneReplica,
+            'snux',
+            'flurpy pants -- looper - ' + i
+          )
+        }
+
+        console.log('xxx --- flurpy what')
+
+        return
+      },
+      { oneReplica }
     )
 
-    client.redis.publish(oneReplica, 'snux', 'flurpy pants 1')
-
-    console.log('destroy server')
-    oneReplicaServer.destroy()
-
-    await wait(0)
-
-    // no we want to get hard dc and have this in the queue in progress
-    console.log('------- PUT SNUX IN Q', oneReplica.port)
-
-    for (let i = 0; i < 5; i++) {
-      client.redis.publish(oneReplica, 'snux', 'flurpy pants -- looper - ' + i)
-    }
+    // maybe put this in a worker - better for testing if it actualy arrives
     await wait(5000)
   }
 )
