@@ -23,6 +23,8 @@ import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
 import conformToSchema from './conformToSchema'
 
+import hardDisconnect from './hardDisconnect'
+
 import { connections, Connection, createConnection } from './connection'
 
 import connectRegistry from './connectRegistry'
@@ -73,6 +75,10 @@ export class SelvaClient extends EventEmitter {
   public logFn: LogFn
 
   public loglevel: string
+
+  public hardDisconnect (connection: Connection) {
+    hardDisconnect(this, connection)
+  }
 
   public admin: {
     deleteType(name: string, dbName?: string): Promise<void>,
