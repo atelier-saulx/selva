@@ -160,6 +160,11 @@ class Connection extends EventEmitter {
   }
 
   public command(command: RedisCommand) {
+
+    if (command.command === 'publish' && String(command.args[0]).indexOf('__selva') === -1) {
+      console.log('push command in q', command, this.isDestroyed, this.serverDescriptor)
+    }
+
     this.queue.push(command)
     if (!this.queueInProgress && this.connected) {
       drainQueue(this)
@@ -261,8 +266,8 @@ class Connection extends EventEmitter {
       }
 
 
-      console.log('🥕',this.queue)
-      console.log('🥕',this.queueBeingDrained)
+      console.log('🥕',this.queue.length)
+      console.log('🥕',this.queueBeingDrained && this.queueBeingDrained.length)
       console.log('🥕',this.queueInProgress)
 
       if (this.queueBeingDrained) {
@@ -414,6 +419,8 @@ class Connection extends EventEmitter {
 const createConnection = (serverDescriptor: ServerDescriptor) => {
   let connection = connections.get(serverId(serverDescriptor))
   if (!connection) {
+    console.log('new crea conn', serverDescriptor.port)
+
     connection = new Connection(serverDescriptor)
   }
   return connection

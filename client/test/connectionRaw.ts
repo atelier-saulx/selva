@@ -221,7 +221,7 @@ test.serial(
       'When the second replica is under load, other replica becomes prefered'
     )
 
-    await wait(5e3)
+    await wait(10e3)
 
     client.redis.on(oneReplica, 'message', (channel, msg) => {
       if (channel === 'snux') {
@@ -236,6 +236,7 @@ test.serial(
 
     // replica[0].
 
+    // maybe put this in a worker - better for testing if it actualy arrives
     const oneReplicaServer = (await Promise.all(replicasPromises)).find(
       server => server.port === oneReplica.port
     )
@@ -245,14 +246,14 @@ test.serial(
     console.log('destroy server')
     oneReplicaServer.destroy()
 
-    await wait(1)
+    await wait(0)
 
     // no we want to get hard dc and have this in the queue in progress
-    console.log('------- PUT SNUX IN Q')
+    console.log('------- PUT SNUX IN Q', oneReplica.port)
 
     for (let i = 0; i < 5; i++) {
       client.redis.publish(oneReplica, 'snux', 'flurpy pants -- looper - ' + i)
     }
-    await wait(3000)
+    await wait(5000)
   }
 )
