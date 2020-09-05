@@ -278,7 +278,6 @@ test.serial('connection / server orchestration', async t => {
     await wait(30)
 
     // no we want to get hard dc and have this in the queue in progress
-
     for (let i = 0; i < 5; i++) {
       client.redis.publish(
         { type: 'replica', strict: true },
@@ -295,7 +294,11 @@ test.serial('connection / server orchestration', async t => {
   // maybe put this in a worker - better for testing if it actualy arrives
   await wait(5000)
 
+  // need to add ramp up!!!
   console.log(snuxResults.length)
+  t.is(snuxResults.length, 20e3, 'Resend all events on hard disconnect')
+
+  // emulate hdc with
 })
 
 // extra test
