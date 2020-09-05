@@ -146,6 +146,7 @@ export class SelvaServer extends EventEmitter {
       this.backupCleanup()
       this.backupCleanup = undefined
     }
+    this.selvaClient.destroy()
     this.emit('close')
   }
 

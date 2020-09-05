@@ -76,8 +76,8 @@ export class SelvaClient extends EventEmitter {
 
   public loglevel: string
 
-  public hardDisconnect (connection: Connection) {
-    hardDisconnect(this, connection)
+  public async hardDisconnect (connection: Connection) {
+   return hardDisconnect(this, connection)
   }
 
   public admin: {
@@ -183,12 +183,6 @@ export class SelvaClient extends EventEmitter {
   }
 
   async destroy() {
-    console.log('Destroy selva client')
-    connections.forEach(connection => {
-      if (connection.removeSelvaClient(this)) {
-        connection.removeConnectionState(connection.getConnectionState(this.selvaId))
-      }
-    })
     return destroy(this)
   }
 }

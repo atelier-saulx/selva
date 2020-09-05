@@ -42,7 +42,9 @@ export const registryManager = (server: SelvaServer) => {
       console.log(
         chalk.green('Server is added to registry'),
         server.name,
-        server.type
+        server.type,
+        server.host,
+        server.port
       )
     }
   })
@@ -55,7 +57,9 @@ export const registryManager = (server: SelvaServer) => {
       console.log(
         chalk.red('Server is removed from registry'),
         server.name,
-        server.type
+        server.type,
+        server.host,
+        server.port
       )
     }
   })

@@ -164,7 +164,7 @@ test.serial('connection / server orchestration', async t => {
           if (cnt < 30) {
             fn(r, ++cnt)
           } else {
-            console.log('done with load (50 x 100k)', r)
+            console.log('Done with load (50 x 100k)')
           }
         }
         fn(r)
