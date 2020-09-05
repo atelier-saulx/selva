@@ -24,7 +24,7 @@ export default async (selvaClient: SelvaClient, connection: Connection) => {
     serverDescriptor.type === 'replica' &&
       !selvaClient.servers.replicas[serverDescriptor.name]
       ? 1000
-      : 10
+      : 0
   )
 
   if (
@@ -32,25 +32,18 @@ export default async (selvaClient: SelvaClient, connection: Connection) => {
     selvaClient.server.port === serverDescriptor.port &&
     selvaClient.server.host === serverDescriptor.host
   ) {
-    // double check if isDestroyed
     console.log('new conn on server!', selvaClient.server)
-
-    // if server is destroyed dont reconnect....
     const newConnection = createConnection(serverDescriptor)
     newConnection.attachSelvaClient(selvaClient)
-
-    // apply state here!!!!!!!!!!
-
-    // yesh
+    newConnection.applyConnectionState(state)
   } else {
     const newDescriptor = await selvaClient.getServer({
       type: serverDescriptor.type,
       name: serverDescriptor.name
     })
-
-    console.log('RES try...', selvaClient.servers)
     console.log('go new descriptor!!!!!!', newDescriptor, serverDescriptor)
-
-    // remove port and and host to re-apply
+    const newConnection = createConnection(newDescriptor)
+    newConnection.attachSelvaClient(selvaClient)
+    newConnection.applyConnectionState(state)
   }
 }

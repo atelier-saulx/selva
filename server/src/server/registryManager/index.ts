@@ -106,14 +106,18 @@ export const registryManager = (server: SelvaServer) => {
                 redis.del({ type: 'registry' }, id)
               ])
 
-              // store it when this happens and use it as a 'ramp up' metric
-              // have to store this - metric will go combined with busy status
               console.warn(
                 chalk.red(
-                  `Server timed out last heathbeat ${Date.now() -
+                  `Server timed out last heartbeat ${Date.now() -
                     ts}ms ago ${id}, ${type}, ${name}`
                 )
               )
+
+              // ok you want to store last timeoud event maybe an array (max 10)
+              // this is the metric we are going to use to
+              // ramp up
+              // scale
+              // also emit an event on the server 'server-timedout'
 
               await redis.publish(
                 { type: 'registry' },
