@@ -4,10 +4,7 @@ import { SelvaClient } from '.'
 export default (selvaClient: SelvaClient, connection: Connection) => {
   const serverDescriptor = connection.serverDescriptor
 
-  console.log(
-    '🥞 Go somethign is hard dc arrived at selva client!',
-    connection.serverDescriptor
-  )
+  console.log('🥞 Go somethign is hard dc arrived at selva client!')
 
   if (
     selvaClient.server &&
@@ -22,7 +19,7 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
   const state = connection.getConnectionState(selvaClient.selvaId)
 
   console.log(
-    'my state',
+    'my hdc state',
     state.queue.length,
     state.isEmpty,
     state.subscribes,

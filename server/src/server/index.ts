@@ -133,24 +133,19 @@ export class SelvaServer extends EventEmitter {
   async destroy() {
     this.isDestroyed = true
     await removeFromRegistry(this.selvaClient)
-
     if (this.pm) {
-      console.log('DESTROY SERVER')
       this.pm.destroy()
       this.pm = undefined
     }
     if (this.type === 'subscriptionManager') {
       await stopSubscriptionManager(this.subscriptionManager)
     }
-
     // need to call destroy if it crashes
     clearTimeout(this.serverHeartbeatTimeout)
-
     if (this.backupCleanup) {
       this.backupCleanup()
       this.backupCleanup = undefined
     }
-
     this.emit('close')
   }
 

@@ -3,12 +3,8 @@ import { RegistryInfo } from '../types'
 import { SelvaServer } from './'
 
 export async function removeFromRegistry(client: SelvaClient) {
-  console.log(client.server)
-
   const redis = client.redis
   const id = `${client.server.host}:${client.server.port}`
-
-  console.log('REMOVE')
 
   await Promise.all([
     redis.srem({ type: 'registry' }, 'servers', id),
@@ -27,7 +23,6 @@ export async function removeFromRegistry(client: SelvaClient) {
 
 const block = (server: SelvaServer): boolean => {
   const isBlocked = !server.pm || server.pm.isDestroyed || server.isDestroyed
-  if (isBlocked) console.log('IS BLOCKED', server.type)
   return isBlocked
 }
 

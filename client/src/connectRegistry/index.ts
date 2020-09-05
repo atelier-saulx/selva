@@ -26,7 +26,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
     const { port = 6379, host = '0.0.0.0' } = connectOptions
 
     if (selvaClient.registryConnection) {
-      console.log('update existing connection to registry')
+      console.info('Update existing connection to registry')
     } else {
       const registryConnection = createConnection({
         type: 'registry',
@@ -65,7 +65,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
         selvaClient.emit('removed-servers', { event: '*' })
       }
 
-      selvaClient.registryConnection.on('destroy', clear)
+      selvaClient.registryConnection.on('close', clear)
       selvaClient.registryConnection.on('disconnect', clear)
 
       registryConnection.addRemoteListener('message', (channel, msg) => {
@@ -73,8 +73,6 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
           const payload = JSON.parse(msg)
           const { event } = payload
           if (event === 'new') {
-            // on destroy destroy client as well
-            // console.log('NEW', payload)
             const { server } = payload
             if (addServer(selvaClient, <ServerDescriptor>server)) {
               selvaClient.emit('added-servers', payload)
@@ -84,22 +82,16 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
             if (removeServer(selvaClient, <ServerDescriptor>server)) {
               const id = serverId(server)
               const connection = connections.get(id)
-
               // if its from this we know to increase a counter for soft ramp up
               if (connection) {
                 if (!connection.isDestroyed) {
-                  console.log('found connection', selvaClient.server)
+                  console.log(
+                    'Incoming remove event from registry - hard dc',
+                    id
+                  )
                   connection.hardDisconnect()
-                } else {
-                  console.log('allready destroyed!', id)
                 }
-              } else {
-                // console.warn(
-                //   'Removed a server - connection cannot be removed!',
-                //   server
-                // )
               }
-
               selvaClient.emit('removed-servers', payload)
             }
           } else if (event === 'move-sub') {
@@ -117,8 +109,6 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
 
       // add listeners
       selvaClient.emit('registry-started')
-
-      console.log('ok made start of registry connection')
     }
   }
 }

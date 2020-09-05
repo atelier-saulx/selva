@@ -310,7 +310,8 @@ class Connection extends EventEmitter {
   }
 
   public destroy() {
-    console.log('Destroy connection', this.serverDescriptor)
+    // remove this log later...
+    console.log('Destroy connection', serverId(this.serverDescriptor))
 
     if (this.isDestroyed) {
       console.warn('Allready destroyed connection', this.serverDescriptor)
@@ -354,7 +355,7 @@ class Connection extends EventEmitter {
       )
     }
 
-    this.emit('destroyed')
+    this.emit('close')
 
     // remove all listeners -- pretty dangerous
     this.removeAllListeners()

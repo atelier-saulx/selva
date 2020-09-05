@@ -1,12 +1,11 @@
 import { SelvaServer } from '../'
-import { constants, SelvaClient } from '@saulx/selva'
-import { integer } from 'aws-sdk/clients/cloudfront'
-import { Interval } from 'aws-sdk/clients/dlm'
+import { constants } from '@saulx/selva'
+import chalk, { keyword } from 'chalk'
 
 const { REGISTRY_UPDATE } = constants
 
 type ServerIndex = {
-  index: integer
+  index: number
   weight: number
   id: string
   name: string
@@ -41,7 +40,7 @@ export const registryManager = (server: SelvaServer) => {
       // console.log('initial servers')
     } else {
       console.log(
-        'individual server is added to registry',
+        chalk.green('Server is added to registry'),
         server.name,
         server.type
       )
@@ -54,7 +53,7 @@ export const registryManager = (server: SelvaServer) => {
       // console.log('remove all servers')
     } else {
       console.log(
-        'individual server is removed from registry',
+        chalk.red('Server is removed from registry'),
         server.name,
         server.type
       )
@@ -87,11 +86,9 @@ export const registryManager = (server: SelvaServer) => {
             if (!stats) {
               // not very strange this can happen on register before info update
               console.warn(
-                '⚠️ ',
-                type,
-                name,
-                id,
-                'does not have stats (from registry server)'
+                chalk.yellow(
+                  `⚠️  ${type}, ${name}, ${id} Does not have stats (from registry server)'`
+                )
               )
               return
             }
@@ -107,7 +104,12 @@ export const registryManager = (server: SelvaServer) => {
 
               // store it when this happens and use it as a 'ramp up' metric
               // have to store this - metric will go combined with busy status
-              console.log('TIMEOUT', id, type, name)
+              console.warn(
+                chalk.red(
+                  `Server timed out last heathbeat ${Date.now() -
+                    ts}ms ago ${id}, ${type}, ${name}`
+                )
+              )
 
               await redis.publish(
                 { type: 'registry' },
@@ -128,9 +130,9 @@ export const registryManager = (server: SelvaServer) => {
               // slow connection so something must be up
               if (Date.now() - ts > 2e3) {
                 console.warn(
-                  'Connection is slow something must be weird (emulate a weight of 100)',
-                  type,
-                  id
+                  chalk.yellow(
+                    `Connection to replica is slow something must be weird (emulate a weight of 100) ${type} ${id}`
+                  )
                 )
                 weight = 100
               }

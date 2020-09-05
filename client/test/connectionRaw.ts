@@ -33,7 +33,7 @@ test.serial('connection / server orchestration', async t => {
     console.log('ok dc registry client')
   })
 
-  client.registryConnection.on('destroy', () => {
+  client.registryConnection.on('close', () => {
     console.log('destroy registry connection')
   })
 
