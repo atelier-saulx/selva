@@ -18,8 +18,14 @@ export default async (selvaClient: SelvaClient, connection: Connection) => {
     state.listeners
   )
 
-  // eases timing between remove and
-  await wait(10)
+  // Eases timing between remove and re-trying to connect
+  // especialy important if something was a replica and there are no other replicas (else it falls back to origin)
+  await wait(
+    serverDescriptor.type === 'replica' &&
+      !selvaClient.servers.replicas[serverDescriptor.name]
+      ? 1000
+      : 10
+  )
 
   if (
     selvaClient.server &&
