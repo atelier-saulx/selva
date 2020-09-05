@@ -6,16 +6,6 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
 
   console.log('🥞 Go somethign is hard dc arrived at selva client!')
 
-  if (
-    selvaClient.server &&
-    selvaClient.server.port === serverDescriptor.port &&
-    selvaClient.server.host === serverDescriptor.host
-  ) {
-    console.log(
-      'OK THIS IS A HARD DC ON A CLIENT THAT CONNECTED TO A SERVER - THIS SHOULD NOT CALL GET SERVER WITHOUT A PORT AND HOST AGAIN'
-    )
-  }
-
   const state = connection.getConnectionState(selvaClient.selvaId)
 
   console.log(
@@ -26,4 +16,17 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
     state.pSubscribes,
     state.listeners
   )
+
+  if (
+    selvaClient.server &&
+    selvaClient.server.port === serverDescriptor.port &&
+    selvaClient.server.host === serverDescriptor.host
+  ) {
+    console.log(
+      'OK THIS IS A HARD DC ON A CLIENT THAT CONNECTED TO A SERVER - THIS SHOULD NOT CALL GET SERVER WITHOUT A PORT AND HOST AGAIN',
+      selvaClient.server
+    )
+  } else {
+    // remove port and and host to re-apply
+  }
 }
