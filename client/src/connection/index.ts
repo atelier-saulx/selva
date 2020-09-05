@@ -160,19 +160,11 @@ class Connection extends EventEmitter {
   }
 
   public command(command: RedisCommand) {
-
-    if (command.command === 'publish' && String(command.args[0]).indexOf('__selva') === -1) {
-      console.log('push command in q', command, this.isDestroyed, this.serverDescriptor)
-    }
-
     this.queue.push(command)
     if (!this.queueInProgress && this.connected) {
       drainQueue(this)
-    } else {
-      // how to do...
-      // new queue increase counter
     }
-    // before connectect this is a bit hard
+    // only starts destroying on connect
   }
 
   public removeRemoteListener(event: string, cb?: Callback, id: string = '') {
@@ -264,11 +256,6 @@ class Connection extends EventEmitter {
           })
         }
       }
-
-
-      console.log('🥕',this.queue.length)
-      console.log('🥕',this.queueBeingDrained && this.queueBeingDrained.length)
-      console.log('🥕',this.queueInProgress)
 
       if (this.queueBeingDrained) {
         const q = this.queueBeingDrained.filter(command => command.id === id)1

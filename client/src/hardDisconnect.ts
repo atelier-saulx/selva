@@ -21,5 +21,12 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
 
   const state = connection.getConnectionState(selvaClient.selvaId)
 
-  console.log('my state', state)
+  console.log(
+    'my state',
+    state.queue.length,
+    state.isEmpty,
+    state.subscribes,
+    state.pSubscribes,
+    state.listeners
+  )
 }

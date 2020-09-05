@@ -131,7 +131,7 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
           queueDone()
         } else {
           if (connection.isDestroyed) {
-            console.log('sad panda')
+            console.log('Connection destroyed while trying to execute queue')
           } else {
             execBatch(connection, parsedQ)
               .then(() => {
@@ -152,6 +152,7 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
           }
         }
       } else {
+        console.log('Connection disconnected while draining queue')
         connection.queueInProgress = false
       }
     })
