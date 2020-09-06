@@ -238,8 +238,6 @@ test.serial('connection / server orchestration', async t => {
 
   client.redis.on({ type: 'replica' }, 'message', (channel, msg) => {
     if (channel === 'snux') {
-      // we are going to count these
-      // console.log('On the original something from oneReplica', msg)
       snuxResults.push(msg)
     }
   })
