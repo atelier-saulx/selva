@@ -1,5 +1,5 @@
 import test from 'ava'
-import { moduleId as parentModuleId, connect } from '@saulx/selva'
+import { moduleId as parentModuleId, connect, connections } from '@saulx/selva'
 import {
   startRegistry,
   startOrigin,
@@ -220,9 +220,12 @@ test.serial('connection / server orchestration', async t => {
   await wait(50)
 
   console.log('DESTROY 2nd client!')
+  const cId = client2.selvaId
   client2.destroy()
 
-  // r[0].addRem('flurpypants')
+  connections.forEach(c => {
+    t.true(c.getConnectionState(cId).isEmpty, 'connection is empty')
+  })
 
   await wait(5e3)
   const r = await Promise.all(replicasPromises)
