@@ -231,6 +231,14 @@ test.serial('connection / server orchestration', async t => {
 
   client.redis.subscribe({ type: 'replica' }, 'snux')
 
+  const p = []
+  for (let i = 0; i < 20e3; i++) {
+    p.push(client.redis.hgetall(
+      { type: 'replica' },
+      'flappie'
+    ))
+  }
+
   await wait(1e3)
 
   const snuxResults = []
@@ -291,11 +299,15 @@ test.serial('connection / server orchestration', async t => {
   await wait(1500)
 
   // need to add ramp up!!!
-  console.log(snuxResults.length)
   t.is(snuxResults.length, 20e3 + 4, 'Resend all events on hard disconnect')
 
-  console.log('--------------------------', 'snurkels')
-  // emulate hdc with
-})
 
-// extra test
+  const stateReconnectedSets = await Promise.all(p)
+
+  const x = []
+  for (let i = 0; i < 20e3; i++) {
+    x.push({ snurf: 'snarx' })
+  }
+
+  t.deepEqualIgnoreOrder(stateReconnectedSets, x, 'handled all gets from a reconnection state (20k)')
+})
