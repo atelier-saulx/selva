@@ -231,7 +231,7 @@ test.serial('connection / server orchestration', async t => {
   client.redis.subscribe({ type: 'replica' }, 'snux')
 
   const p = []
-  for (let i = 0; i < 100e3; i++) {
+  for (let i = 0; i < 10e3; i++) {
     p.push(client.redis.hgetall(
       { type: 'replica' },
       'flappie'
@@ -309,7 +309,7 @@ test.serial('connection / server orchestration', async t => {
   const stateReconnectedSets = await Promise.all(p)
 
   const x = []
-  for (let i = 0; i < 100e3; i++) {
+  for (let i = 0; i < 10e3; i++) {
     x.push({ snurf: 'snarx' })
   }
 
@@ -324,14 +324,25 @@ test.serial('connection / server orchestration', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-// test.serial('time out / failure reconnects and ramp up', async t => {
-//   const registry = startRegistry({ port: 9999 })
+test.only('time out / failure reconnects and ramp up', async t => {
+  const registry = await startRegistry({ port: 9999 })
+  const origin = await startOrigin({ registry: { port: 9999 }, default: true })
 
 
-//   const [, w2] = await worker(async ({ connect, wait }) => {
+  for (let i = 0; i < 10; i++) {
+    const [, w] = await worker(async ({ connect, wait }) => {
+      const client = connect({ port: 9999 })
+      for (let i = 0; i < 100e3; i++) {
+        client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'cnt', i)
+      }
+    })
+  }
 
-//   })
+
+  await wait(10e3)
+
+  console.log('snurky')
 
 
-//   t.pass()
-// })
+  t.pass()
+})
