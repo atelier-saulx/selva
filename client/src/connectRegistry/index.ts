@@ -105,7 +105,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
             }
           }
         }
-      })
+      }, selvaClient.selvaId)
 
       // add listeners
       selvaClient.emit('registry-started')

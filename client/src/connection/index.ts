@@ -238,16 +238,13 @@ class Connection extends EventEmitter {
 
   public removeConnectionState(state: ConnectionState) {
     if (!state.isEmpty) {
-      console.log('☠️ REMOVE REMOVE REMOVE', state)
       const id = state.id
-
       if (state.listeners.length) {
         for (let i = 0; i < state.listeners.length; i++) {
           const [event, callback] = state.listeners[i]
           this.removeRemoteListener(event, callback, id)
         }
       }
-
       if (state.queue.length) {
         for (let i = 0; i < state.queue.length; i++) {
           const q = state.queue[i]
@@ -270,13 +267,11 @@ class Connection extends EventEmitter {
           }
         }
       }
-
       if (state.subscribes.length) {
         for (let i = 0; i < state.subscribes.length; i++) {
           this.unsubscribe(state.subscribes[i], id)
         }
       }
-
       if (state.pSubscribes.length) {
         for (let i = 0; i < state.pSubscribes.length; i++) {
           this.punsubscribe(state.subscribes[i], id)

@@ -19,23 +19,6 @@ test.serial('connection / server orchestration', async t => {
     port: 9999
   })
 
-  // add these events
-  client.registryConnection.on('connect', () => {
-    console.log('ok connect registry client')
-  })
-
-  client.registryConnection.on('hard-disconnect', () => {
-    console.log('hard dc on registry')
-  })
-
-  client.registryConnection.on('disconnect', () => {
-    console.log('ok dc registry client')
-  })
-
-  client.registryConnection.on('close', () => {
-    console.log('destroy registry connection')
-  })
-
   const origin = await startOrigin({
     default: true,
     registry: { port: 9999 }
@@ -132,15 +115,15 @@ test.serial('connection / server orchestration', async t => {
       registry: { port: 9999 },
       default: true,
       dir: join(dir, 'replica4')
-    }),
-
-    await client.redis.keys(
-      {
-        type: 'replica'
-      },
-      '*'
-    )
+    })
   ]
+
+  await client.redis.keys(
+    {
+      type: 'replica'
+    },
+    '*'
+  )
 
   const oneReplica = await client.getServer(
     { type: 'replica' },
@@ -163,6 +146,7 @@ test.serial('connection / server orchestration', async t => {
           if (cnt < 30) {
             fn(r, ++cnt)
           } else {
+            await client.destroy()
             console.log('Done with load (50 x 100k)')
           }
         }
@@ -223,7 +207,7 @@ test.serial('connection / server orchestration', async t => {
 
   console.log('DESTROY 2nd client!')
   const cId = client2.selvaId
-  client2.destroy()
+  await client2.destroy()
 
   connections.forEach(c => {
     t.true(c.getConnectionState(cId).isEmpty, 'connection is empty')
@@ -331,24 +315,29 @@ test.serial('connection / server orchestration', async t => {
 
   t.deepEqualIgnoreOrder(stateReconnectedSets, x, 'handled all gets from a reconnection state (20k)')
 
-
-
   await registry.destroy()
   await origin.destroy()
   await client.destroy()
 
-  console.log(connections)
+  await wait(6000)
 
-})
-
-test.serial('time out / failure reconnects and ramp up', async t => {
-  const registry = startRegistry({ port: 9999 })
-
-
-  const [, w2] = await worker(async ({ connect, wait }) => {
-
+  connections.forEach(c => {
+    console.log(c.redisListeners, c.subscriptions, c.activeCounter)
   })
 
 
-  t.pass()
+  await wait(1e3)
+
 })
+
+// test.serial('time out / failure reconnects and ramp up', async t => {
+//   const registry = startRegistry({ port: 9999 })
+
+
+//   const [, w2] = await worker(async ({ connect, wait }) => {
+
+//   })
+
+
+//   t.pass()
+// })
