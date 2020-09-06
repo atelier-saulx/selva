@@ -190,6 +190,7 @@ class Connection extends EventEmitter {
       }
     }
   }
+
   public addRemoteListener(event: string, cb?: Callback, id: string = '') {
     let listeners = this.redisListeners
     if (!listeners) {
@@ -206,7 +207,34 @@ class Connection extends EventEmitter {
   }
 
   public applyConnectionState(state: ConnectionState) {
-    // now go and do this
+    if (!state.isEmpty) {
+      if (state.pSubscribes.length) {
+        for (let i = 0; i < state.pSubscribes.length; i++) {
+          const sub = state.pSubscribes[i]
+          this.psubscribe(sub, state.id)
+        }
+      }
+      if (state.subscribes.length) {
+        for (let i = 0; i < state.subscribes.length; i++) {
+          const sub = state.subscribes[i]
+          this.subscribe(sub, state.id)
+        }
+      }
+      if (state.listeners.length) {
+        for (let i = 0; i < state.listeners.length; i++) {
+          const [event, cb] = state.listeners[i]
+
+          console.log(event, cb)
+          this.addRemoteListener(event, cb, state.id)
+        }
+      }
+      if (state.queue.length) {
+        console.log('send', state.queue.length)
+        for (let i = 0; i < state.queue.length; i++) {
+          this.command(state.queue[i])
+        }
+      }
+    }
   }
 
   public removeConnectionState(state: ConnectionState) {
@@ -325,8 +353,8 @@ class Connection extends EventEmitter {
     this.subscriber.removeAllListeners()
     this.publisher.removeAllListeners()
 
-    this.subscriber.on('error', () => {})
-    this.publisher.on('error', () => {})
+    this.subscriber.on('error', () => { })
+    this.publisher.on('error', () => { })
 
     this.subscriber.quit()
     this.publisher.quit()

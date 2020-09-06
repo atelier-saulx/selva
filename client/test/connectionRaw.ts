@@ -9,7 +9,6 @@ import {
 import './assertions'
 import { wait, worker } from './assertions'
 import { join } from 'path'
-import { serverId } from '../src/util'
 
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
@@ -222,31 +221,19 @@ test.serial('connection / server orchestration', async t => {
     }
   })
 
-  for (let i = 0; i < 20e3; i++) {
-    client.redis.publish(
-      { type: 'replica', strict: true },
-      'snux',
-      'flurpy pants -- looper - ' + i
-    )
-  }
+  client.redis.on({ type: 'replica' }, 'message', (channel, msg) => {
+    if (channel === 'snux') {
+      // we are going to count these
+      // console.log('On the original something from oneReplica', msg)
+      snuxResults.push(msg)
+    }
+  })
+
+  client.redis.subscribe({ type: 'replica' }, 'snux')
 
   await wait(1e3)
 
   const snuxResults = []
-
-  client.redis.on(
-    { type: 'replica', strict: true },
-    'message',
-    (channel, msg) => {
-      if (channel === 'snux') {
-        // we are going to count these
-        // console.log('On the original something from oneReplica', msg)
-        snuxResults.push(msg)
-      }
-    }
-  )
-
-  client.redis.subscribe({ type: 'replica' }, 'snux')
 
   const [] = await worker(async ({ connect, wait }) => {
     console.log('connect')
@@ -288,16 +275,26 @@ test.serial('connection / server orchestration', async t => {
 
     return
   })
+  for (let i = 0; i < 20e3; i++) {
+    client.redis.publish(
+      { type: 'replica' },
+      'snux',
+      'flurpy pants -- looper - ' + i
+    )
+  }
+
+  await wait(5000)
 
   // server exemption
 
   // maybe put this in a worker - better for testing if it actualy arrives
-  await wait(5000)
+  await wait(1500)
 
   // need to add ramp up!!!
   console.log(snuxResults.length)
-  t.is(snuxResults.length, 20e3, 'Resend all events on hard disconnect')
+  t.is(snuxResults.length, 20e3 + 4, 'Resend all events on hard disconnect')
 
+  console.log('--------------------------', 'snurkels')
   // emulate hdc with
 })
 

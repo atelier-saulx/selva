@@ -10,7 +10,8 @@ export default async (selvaClient: SelvaClient, connection: Connection) => {
   const state = connection.getConnectionState(selvaClient.selvaId)
 
   console.log(
-    'my hdc state',
+    '  my hdc state',
+    state.id,
     state.queue.length,
     state.isEmpty,
     state.subscribes,
