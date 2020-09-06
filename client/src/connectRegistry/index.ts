@@ -40,8 +40,6 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
 
       selvaClient.registryConnection = registryConnection
 
-      console.log('SelvaId', selvaClient.selvaId)
-
       registryConnection.subscribe(REGISTRY_UPDATE, selvaClient.selvaId)
 
       selvaClient.registryConnection.on('connect', () => {
