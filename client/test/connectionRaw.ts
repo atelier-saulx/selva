@@ -13,7 +13,7 @@ import { join } from 'path'
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
 test.serial('connection / server orchestration', async t => {
-  startRegistry({ port: 9999 })
+  const registry = await startRegistry({ port: 9999 })
 
   const client = connect({
     port: 9999
@@ -36,7 +36,7 @@ test.serial('connection / server orchestration', async t => {
     console.log('destroy registry connection')
   })
 
-  startOrigin({
+  const origin = await startOrigin({
     default: true,
     registry: { port: 9999 }
   })
@@ -188,7 +188,7 @@ test.serial('connection / server orchestration', async t => {
 
   await putUnderLoad(secondReplica)
 
-  const [{ replica, moduleId, size }] = await worker(
+  const [{ replica, moduleId, size }, w1] = await worker(
     async ({ connect, wait, moduleId, connections }) => {
       const client = connect({ port: 9999 })
       const replica = await client.getServer({ type: 'replica' })
@@ -199,6 +199,8 @@ test.serial('connection / server orchestration', async t => {
       return { replica, moduleId, size: connections.size }
     }
   )
+
+  w1.terminate()
 
   // put under load test combined with disconnect
   // emulting busy errors
@@ -256,7 +258,7 @@ test.serial('connection / server orchestration', async t => {
 
   const snuxResults = []
 
-  const [] = await worker(async ({ connect, wait }) => {
+  const [, w2] = await worker(async ({ connect, wait }) => {
     console.log('connect')
     const client = connect({ port: 9999 })
 
@@ -294,8 +296,13 @@ test.serial('connection / server orchestration', async t => {
       )
     }
 
+    await (1e3)
+
     return
   })
+
+  w2.terminate()
+
   for (let i = 0; i < 20e3; i++) {
     client.redis.publish(
       { type: 'replica' },
@@ -323,4 +330,25 @@ test.serial('connection / server orchestration', async t => {
   }
 
   t.deepEqualIgnoreOrder(stateReconnectedSets, x, 'handled all gets from a reconnection state (20k)')
+
+
+
+  await registry.destroy()
+  await origin.destroy()
+  await client.destroy()
+
+  console.log(connections)
+
+})
+
+test.serial('time out / failure reconnects and ramp up', async t => {
+  const registry = startRegistry({ port: 9999 })
+
+
+  const [, w2] = await worker(async ({ connect, wait }) => {
+
+  })
+
+
+  t.pass()
 })
