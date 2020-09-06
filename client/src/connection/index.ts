@@ -229,7 +229,6 @@ class Connection extends EventEmitter {
         }
       }
       if (state.queue.length) {
-        console.log('send', state.queue.length)
         for (let i = 0; i < state.queue.length; i++) {
           this.command(state.queue[i])
         }
@@ -238,6 +237,8 @@ class Connection extends EventEmitter {
   }
 
   public removeConnectionState(state: ConnectionState) {
+
+    console.log('☠️ REMOVE REMOVE REMOVE')
     // remove this!
   }
 
