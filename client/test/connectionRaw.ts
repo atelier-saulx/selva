@@ -245,7 +245,7 @@ test.serial('connection / server orchestration', async t => {
   client.redis.subscribe({ type: 'replica' }, 'snux')
 
   const p = []
-  for (let i = 0; i < 20e3; i++) {
+  for (let i = 0; i < 100e3; i++) {
     p.push(client.redis.hgetall(
       { type: 'replica' },
       'flappie'
@@ -318,7 +318,7 @@ test.serial('connection / server orchestration', async t => {
   const stateReconnectedSets = await Promise.all(p)
 
   const x = []
-  for (let i = 0; i < 20e3; i++) {
+  for (let i = 0; i < 100e3; i++) {
     x.push({ snurf: 'snarx' })
   }
 
