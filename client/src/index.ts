@@ -59,16 +59,16 @@ export class SelvaClient extends EventEmitter {
   public servers: {
     ids: Set<string>
     subsManagers: ServerDescriptor[]
-        // replicas by name
-    replicas:  { [key: string] : ServerDescriptor[] } 
+    // replicas by name
+    replicas: { [key: string]: ServerDescriptor[] }
     // origins by name
-    origins: { [key: string] : ServerDescriptor}
+    origins: { [key: string]: ServerDescriptor }
   } = {
-    ids: new Set(),
-    origins: {},
-    subsManagers: [],
-    replicas: {}
-  }
+      ids: new Set(),
+      origins: {},
+      subsManagers: [],
+      replicas: {}
+    }
 
   public registryConnection?: Connection
 
@@ -76,8 +76,8 @@ export class SelvaClient extends EventEmitter {
 
   public loglevel: string
 
-  public async hardDisconnect (connection: Connection) {
-   return hardDisconnect(this, connection)
+  public async hardDisconnect(connection: Connection) {
+    return hardDisconnect(this, connection)
   }
 
   public admin: {
@@ -99,12 +99,13 @@ export class SelvaClient extends EventEmitter {
   constructor(opts: ConnectOptions) {
     super()
     this.setMaxListeners(1e5)
-    this.redis = new Redis(this)
-    connectRegistry(this, opts)
-
     // tmp for logs
     this.uuid = uuidv4()
     this.selvaId = ++clientId + ''
+    this.redis = new Redis(this)
+    connectRegistry(this, opts)
+
+
   }
 
   connect(opts: ConnectOptions) {
@@ -178,7 +179,7 @@ export class SelvaClient extends EventEmitter {
     return conformToSchema(this, props, dbName)
   }
 
-  getServer(opts: ServerSelector, selectOptions?:ServerSelectOptions): Promise<ServerDescriptor> {
+  getServer(opts: ServerSelector, selectOptions?: ServerSelectOptions): Promise<ServerDescriptor> {
     return getServer(this, opts, selectOptions)
   }
 

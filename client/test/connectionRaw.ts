@@ -319,15 +319,9 @@ test.serial('connection / server orchestration', async t => {
   await origin.destroy()
   await client.destroy()
 
-  await wait(6000)
+  await wait(4000)
 
-  connections.forEach(c => {
-    console.log(c.redisListeners, c.subscriptions, c.activeCounter)
-  })
-
-
-  await wait(1e3)
-
+  t.is(connections.size, 0, 'all connections removed')
 })
 
 // test.serial('time out / failure reconnects and ramp up', async t => {
