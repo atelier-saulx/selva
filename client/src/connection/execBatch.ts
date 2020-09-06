@@ -34,6 +34,9 @@ export default function execBatch(
       })
       batch.exec((err: Error, reply: any[]) => {
         if (err) {
+
+          console.log('ERROR FROM BATCH', err)
+
           reject(err)
         } else {
           let hasBusy = false

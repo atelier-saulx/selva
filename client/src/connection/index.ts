@@ -400,6 +400,8 @@ class Connection extends EventEmitter {
     this.subscriber.on('error', () => { })
     this.publisher.on('error', () => { })
 
+    console.log('quit')
+
     this.subscriber.quit()
     this.publisher.quit()
 
