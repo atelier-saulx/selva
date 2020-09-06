@@ -237,9 +237,9 @@ class Connection extends EventEmitter {
   }
 
   public removeConnectionState(state: ConnectionState) {
-
-    console.log('☠️ REMOVE REMOVE REMOVE')
-    // remove this!
+    if (!state.isEmpty) {
+      console.log('☠️ REMOVE REMOVE REMOVE', state)
+    }
   }
 
   public getConnectionState(id?: string): ConnectionState {

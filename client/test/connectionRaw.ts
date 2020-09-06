@@ -212,7 +212,19 @@ test.serial('connection / server orchestration', async t => {
     'When the second replica is under load, other replica becomes prefered'
   )
 
-  await wait(10e3)
+
+  const client2 = connect({ port: 9999 })
+
+  client2.redis.on({ type: 'replica' }, 'message', () => { })
+  client2.redis.subscribe({ type: 'replica' }, 'snurf')
+
+  await wait(500)
+
+  client2.destroy()
+
+  // r[0].addRem('flurpypants')
+
+  await wait(5e3)
   const r = await Promise.all(replicasPromises)
 
   r.forEach((server: SelvaServer) => {
