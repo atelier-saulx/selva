@@ -341,14 +341,16 @@ test.only('time out / failure reconnects and ramp up', async t => {
   console.log(Date.now() - d, 'ms')
 
   const p = []
+  const amount = 10e3
+
   for (let i = 0; i < 20; i++) {
-    p.push(worker(async ({ connect, wait }, { index }) => {
+    p.push(worker(async ({ connect, amount }, { index }) => {
       console.log('start worker', index)
       const client = connect({ port: 9999 })
       const makeitrain = async (index) => {
         let p = []
         for (let i = 0; i < 50e3; i++) {
-          p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'cnt', i + (index * 50e3)))
+          p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'money', i + (index * 50e3)))
         }
         await Promise.all(p)
       }
@@ -356,10 +358,10 @@ test.only('time out / failure reconnects and ramp up', async t => {
         await makeitrain(i)
       }
       console.log('worker', index, 'ready')
-    }, { index: i }))
+    }, { index: i, amount }))
   }
 
-  await Promise.all(p)
+  ; (await Promise.all(p)).map(([, w]) => w.terminate())
 
   console.log('workers done...')
 
