@@ -324,7 +324,7 @@ test.serial('connection / server orchestration', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.only('time out / failure reconnects and ramp up', async t => {
+test.only('get server raw - heavy load', async t => {
   const registry = await startRegistry({ port: 9999 })
   const origin = await startOrigin({ registry: { port: 9999 }, default: true })
   const client = connect({ port: 9999 })
@@ -337,7 +337,6 @@ test.only('time out / failure reconnects and ramp up', async t => {
       money: String(amount * 3 - 1)
     })
     p.push(worker(async ({ connect }, { index, amount }) => {
-      console.log('start worker', index)
       const client = connect({ port: 9999 })
       const makeitrain = async (index) => {
         let p = []
@@ -349,7 +348,6 @@ test.only('time out / failure reconnects and ramp up', async t => {
       for (let i = 0; i < 3; i++) {
         await makeitrain(i)
       }
-      console.log('worker', index, 'ready')
     }, { index: i, amount }))
   }
 
@@ -360,13 +358,11 @@ test.only('time out / failure reconnects and ramp up', async t => {
 
   const total = amount * 3 * 20
 
-
   console.log('Executed', total / 1e3, 'k hsets', 'in', Date.now() - d, 'ms')
 
   t.deepEqualIgnoreOrder(results, compare, `used workers to set all fields correctly (${total} sets)`)
 
   // set 10mil mil counts
-
   await registry.destroy()
   await origin.destroy()
 })
