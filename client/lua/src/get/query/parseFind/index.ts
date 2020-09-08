@@ -60,10 +60,13 @@ const getIds = (
       }
 
       if (traverse === 'children') {
+        // TODO: add marker??
         return redis.children(ids[0])
       } else if (traverse === 'parents') {
+        // TODO: add marker??
         return redis.parents(ids[0])
       } else {
+        // TODO: add marker??
         const tbl = redis.zrange(ids[0] + '.' + traverse)
         table.sort(tbl)
         return tbl
@@ -73,10 +76,13 @@ const getIds = (
       for (let i = 0; i < ids.length; i++) {
         let res: string[]
         if (traverse === 'children') {
+          // TODO: add marker??
           res = redis.children(ids[i])
         } else if (traverse === 'parents') {
+          // TODO: add marker??
           res = redis.parents(ids[i])
         } else {
+          // TODO: add marker??
           res = redis.zrange(ids[i] + '.' + traverse)
         }
 

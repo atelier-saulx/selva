@@ -617,6 +617,7 @@ function getByType(
     }
   }
 
+  // TODO: add marker??
   const fn = types[prop.type] || string
   return fn(result, schema, id, field, language, version, merge, prop)
 }
