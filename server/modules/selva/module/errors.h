@@ -55,12 +55,12 @@
  */
 #define SELVA_SUBSCRIPTIONS_EEXIST      (-12)
 /* This must be the last error */
-#define SELVA_MODIFY_INVALID_ERROR      (-13)
+#define SELVA_INVALID_ERROR             (-13)
 
 struct RedisModuleCtx;
 
 int replyWithSelvaError(struct RedisModuleCtx *ctx, int err);
 
-extern const char * const hierarchyStrError[-SELVA_MODIFY_INVALID_ERROR + 1];
+extern const char * const hierarchyStrError[-SELVA_INVALID_ERROR + 1];
 
 #endif /* SELVA_MODIFY_ERRORS */
