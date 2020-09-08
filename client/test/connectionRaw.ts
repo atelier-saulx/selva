@@ -332,16 +332,20 @@ test.only('time out / failure reconnects and ramp up', async t => {
   for (let i = 0; i < 10; i++) {
     const [, w] = await worker(async ({ connect, wait }) => {
       const client = connect({ port: 9999 })
+      let p = []
       for (let i = 0; i < 100e3; i++) {
-        client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'cnt', i)
+        p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'cnt', ~~(Math.random() * 1000000)))
       }
+      await Promise.all(p)
     })
   }
 
 
-  await wait(10e3)
+  await wait(100)
+  const client = connect({ port: 9999 })
+  const keys = await client.redis.keys({ type: 'origin' }, '*')
 
-  console.log('snurky')
+  console.log('snurky', keys)
 
 
   t.pass()
