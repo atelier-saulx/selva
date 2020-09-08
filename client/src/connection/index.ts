@@ -228,8 +228,6 @@ class Connection extends EventEmitter {
       if (state.listeners.length) {
         for (let i = 0; i < state.listeners.length; i++) {
           const [event, cb] = state.listeners[i]
-
-          console.log(event, cb)
           this.addRemoteListener(event, cb, state.id)
         }
       }

@@ -12,6 +12,8 @@ import attachStatusListeners from './attachStatusListeners'
 
 import { removeFromRegistry } from './updateRegistry'
 
+import beforeExit from 'before-exit'
+
 import {
   startSubscriptionManager,
   stopSubscriptionManager,
@@ -45,6 +47,11 @@ export class SelvaServer extends EventEmitter {
     super()
     this.setMaxListeners(10000)
     this.type = type
+
+    beforeExit.do(() => {
+      return this.destroy()
+    })
+
   }
 
   async start(opts: ServerOptions) {

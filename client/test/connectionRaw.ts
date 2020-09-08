@@ -363,7 +363,7 @@ test.serial('Get server raw - heavy load', async t => {
   await registry.destroy()
   await origin.destroy()
   await client.destroy()
-  await wait(4000)
+  await wait(5000)
   t.is(connections.size, 0, 'all connections removed')
 })
 

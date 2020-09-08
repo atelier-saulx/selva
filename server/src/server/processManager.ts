@@ -1,7 +1,6 @@
 import { spawn, ChildProcess } from 'child_process'
-import pidusage, { Status } from 'pidusage'
+import pidusage from 'pidusage'
 import { EventEmitter } from 'events'
-import beforeExit from 'before-exit'
 
 // const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
 const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every 10 seconds
@@ -92,11 +91,6 @@ export default class ProcessManager extends EventEmitter {
 
     this.childProcess.on('exit', exitHandler)
     this.childProcess.on('close', exitHandler)
-
-    beforeExit.do(signal => {
-      this.destroy()
-    })
-
 
     this.startLoadMeasurements()
   }
