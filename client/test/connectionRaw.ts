@@ -352,7 +352,7 @@ test.only('time out / failure reconnects and ramp up', async t => {
         }
         await Promise.all(p)
       }
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 3; i++) {
         await makeitrain(i)
       }
       console.log('worker', index, 'ready')
