@@ -367,7 +367,7 @@ test.only('time out / failure reconnects and ramp up', async t => {
   const results = await Promise.all(keys.map(k => client.redis.hgetall({ type: 'origin' }, k)))
   console.log('snurky', keys, results)
 
-  // set 20mil mil counts
+  // set 10mil mil counts
 
   t.pass()
 })
