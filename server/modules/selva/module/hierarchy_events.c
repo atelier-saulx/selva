@@ -21,5 +21,5 @@ void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, con
         .node_arg = NULL,
     };
 
-    (void)SelvaModify_TraverseHierarchy(hierarchy, id, SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS, &cb);
+    (void)SelvaModify_TraverseHierarchy(hierarchy, id, SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS, &cb);
 }

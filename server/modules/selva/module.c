@@ -7,9 +7,10 @@
 #include "rmutil/test_util.h"
 #include "selva_onload.h"
 #include "svector.h"
-#include "modify/modify.h"
-#include "modify/async_task.h"
-#include "modify/hierarchy.h"
+#include "module/errors.h"
+#include "module/modify.h"
+#include "module/async_task.h"
+#include "module/hierarchy.h"
 
 #define FLAG_NO_ROOT    0x1
 #define FLAG_NO_MERGE   0x2
@@ -109,7 +110,7 @@ static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hie
 
         int err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
         if (err) {
-            RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+            replyWithSelvaError(ctx, err);
             return NULL;
         }
     }

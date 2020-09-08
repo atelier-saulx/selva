@@ -3,52 +3,15 @@
 #define SELVA_MODIFY_HIERARCHY
 
 #include "linker_set.h"
+#include "selva.h"
 #include "svector.h"
-
-#define SELVA_NODE_ID_SIZE      10ul
-#define SELVA_NODE_TYPE_SIZE    2
-#define ROOT_NODE_ID            "root\0\0\0\0\0\0"
-
-/*
- * Error codes.
- */
-
-/**
- * General error.
- */
-#define SELVA_MODIFY_HIERARCHY_EGENERAL (-1)
-/**
- * Operation not supported.
- */
-#define SELVA_MODIFY_HIERARCHY_ENOTSUP  (-2)
-/**
- * Invalid argument/input value.
- */
-#define SELVA_MODIFY_HIERARCHY_EINVAL   (-3)
-/**
- * Out of memory.
- */
-#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-4)
-/**
- * Node or entity not found.
- */
-#define SELVA_MODIFY_HIERARCHY_ENOENT   (-5)
-/**
- * Node or entity already exist.
- */
-#define SELVA_MODIFY_HIERARCHY_EEXIST   (-6)
-/* This must be the last error */
-
+#include "tree.h"
+#include "trx.h"
 
 /**
  * Default Redis key name for Selva hierarchy.
  */
 #define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
-
-/**
- * Type for Selva NodeId.
- */
-typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
 
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
@@ -63,7 +26,8 @@ typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
  * declared structures.
  */
 struct SelvaModify_HierarchyMetaData {
-    struct SVector subs;
+    unsigned sub_flags_filter; /* All flags OR'd together. */
+    struct SVector sub_markers;
 };
 
 typedef void SelvaModify_HierarchyMetadataHook(Selva_NodeId id, struct SelvaModify_HierarchyMetaData *metadata);
@@ -74,14 +38,10 @@ typedef void SelvaModify_HierarchyMetadataHook(Selva_NodeId id, struct SelvaModi
 #define SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(fun) \
     DATA_SET(selva_HMDtor, fun)
 
-#ifdef _SELVA_MODIFY_HIERARCHY_INTERNAL_
-#include "tree.h"
-#include "trx.h"
-
-struct SelvaModify_HierarchySubscription;
+struct Selva_Subscription;
 
 RB_HEAD(hierarchy_index_tree, SelvaModify_HierarchyNode);
-RB_HEAD(hierarchy_subscriptions_tree, SelvaModify_HierarchySubscription);
+RB_HEAD(hierarchy_subscriptions_tree, Selva_Subscription);
 
 struct SelvaModify_Hierarchy {
     /**
@@ -105,19 +65,17 @@ struct SelvaModify_Hierarchy {
     struct hierarchy_subscriptions_tree subs_head;
 };
 
-void SelvaModify_DestroySubscriptions(struct hierarchy_subscriptions_tree *subs_head);
-#endif /* _SELVA_MODIFY_HIERARCHY_INTERNAL_ */
-
 /**
  * Hierarchy traversal order.
  * Used by SelvaModify_TraverseHierarchy().
  */
 enum SelvaModify_HierarchyTraversal {
-    SELVA_MODIFY_HIERARCHY_BFS_ANCESTORS,
-    SELVA_MODIFY_HIERARCHY_BFS_DESCENDANTS,
-    SELVA_MODIFY_HIERARCHY_DFS_ANCESTORS,
-    SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS,
-    SELVA_MODIFY_HIERARCHY_DFS_FULL,
+    SELVA_HIERARCHY_TRAVERSAL_NODE,
+    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS,
+    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS,
+    SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS,
+    SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS,
+    SELVA_HIERARCHY_TRAVERSAL_DFS_FULL,
 };
 
 /**
@@ -134,8 +92,6 @@ struct SelvaModify_HierarchyCallback {
 struct RedisModuleCtx;
 struct RedisModuleString;
 
-extern const char * const hierarchyStrError[-SELVA_MODIFY_HIERARCHY_EEXIST + 1];
-
 /**
  * Create a new hierarchy.
  */
@@ -151,9 +107,11 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy);
  */
 SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name, int mode);
 
-int replyWithHierarchyError(struct RedisModuleCtx *ctx, int err);
-
 int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
+
+struct SelvaModify_HierarchyMetaData *SelvaModify_HierarchyGetNodeMetadata(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id);
 
 ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
 
@@ -264,26 +222,6 @@ int SelvaModify_TraverseHierarchy(
         const Selva_NodeId id,
         enum SelvaModify_HierarchyTraversal dir,
         struct SelvaModify_HierarchyCallback *cb);
-
-/*
- * hierarchy_subscriptions.c
- */
-typedef unsigned char Selva_SubscriptionId[32];
-enum Selva_SubscriptionType {
-    SELVA_SUBSCRIPTION_TYPE_ANCESTORS,
-    SELVA_SUBSCRIPTION_TYPE_DESCENDANTS,
-};
-
-int SelvaModify_CreateSubscription(
-        struct SelvaModify_Hierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
-        enum Selva_SubscriptionType type,
-        Selva_NodeId node_id);
-void SelvaModify_DeleteSubscription(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
-void SelvaModify_ClearAllSubscriptionMarkers(
-        struct SelvaModify_Hierarchy *hierarchy,
-        Selva_NodeId node_id,
-        struct SelvaModify_HierarchyMetaData *metadata);
 
 /*
  * hierarchy_events.c

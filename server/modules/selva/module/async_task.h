@@ -2,7 +2,7 @@
 #ifndef SELVA_MODIFY_ASYNC_TASK
 #define SELVA_MODIFY_ASYNC_TASK
 
-#include "hierarchy.h"
+#include "selva.h"
 
 enum SelvaModify_AsyncEventType {
     SELVA_MODIFY_ASYNC_TASK_CREATED,

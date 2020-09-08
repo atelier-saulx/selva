@@ -7,7 +7,9 @@
 #include <string.h>
 #include <time.h>
 #define _SELVA_MODIFY_HIERARCHY_INTERNAL_
+#include "errors.h"
 #include "selva_onload.h"
+#include "subscriptions.h"
 #include "alias.h"
 #include "cdefs.h"
 #include "hierarchy.h"
@@ -97,16 +99,6 @@ static RedisModuleType *HierarchyType;
  * If set then some expensive operations can be skipped and/or deferred.
  */
 static int rdbLoading;
-
-const char * const hierarchyStrError[] = {
-    (const char *)"ERR_HIERARCHY No Error",
-    (const char *)"ERR_HIERARCHY EGENERAL Unknown error",
-    (const char *)"ERR_HIERARCHY ENOTSUP Operation not supported",
-    (const char *)"ERR_HIERARCHY EINVAL Invalid argument or input value",
-    (const char *)"ERR_HIERARCHY ENOMEM Out of memory",
-    (const char *)"ERR_HIERARCHY ENOENT Not found",
-    (const char *)"ERR_HIERARCHY EEXIST Exist",
-};
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
 static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel);
@@ -199,17 +191,10 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
         SelvaModify_DestroyNode(node);
     }
 
-    SelvaModify_DestroySubscriptions(&hierarchy->subs_head);
+    Selva_DestroySubscriptions(hierarchy);
 
     SVector_Destroy(&hierarchy->heads);
     RedisModule_Free(hierarchy);
-}
-
-int replyWithHierarchyError(RedisModuleCtx *ctx, int err) {
-    if (err >= 0 || -err >= (int)num_elem(hierarchyStrError)) {
-        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_EGENERAL]);
-    }
-    return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
 }
 
 SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModuleString *key_name, int mode) {
@@ -233,17 +218,17 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModul
         if ((mode & REDISMODULE_WRITE) == REDISMODULE_WRITE) {
             hierarchy = SelvaModify_NewHierarchy(ctx);
             if (!hierarchy) {
-                replyWithHierarchyError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
+                replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
             }
 
             RedisModule_ModuleTypeSetValue(key, HierarchyType, hierarchy);
         } else {
-            replyWithHierarchyError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
+            replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
         }
     } else {
         hierarchy = RedisModule_ModuleTypeGetValue(key);
         if (!hierarchy) {
-            replyWithHierarchyError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
+            replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
         }
     }
 
@@ -446,6 +431,19 @@ static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, con
 
 int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
     return findNode(hierarchy, id) != NULL;
+}
+
+struct SelvaModify_HierarchyMetaData *SelvaModify_HierarchyGetNodeMetadata(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id) {
+    SelvaModify_HierarchyNode *node;
+
+    node = findNode(hierarchy, id);
+    if (!node) {
+        return NULL;
+    }
+
+    return &node->metadata;
 }
 
 static inline void mkHead(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
@@ -692,7 +690,7 @@ static int crossInsert(
 }
 
 static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
-    SelvaModify_ClearAllSubscriptionMarkers(hierarchy, node->id, &node->metadata);
+    Selva_ClearAllSubscriptionMarkers(hierarchy, node->id, &node->metadata);
     /* TODO retrigger subscriptions after this */
 
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
@@ -793,7 +791,7 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
         assert(("rel is invalid", 0));
         return;
     }
-    SelvaModify_ClearAllSubscriptionMarkers(hierarchy, node->id, &node->metadata);
+    Selva_ClearAllSubscriptionMarkers(hierarchy, node->id, &node->metadata);
     /* TODO retrigger subs after */
 
     SelvaModify_HierarchyNode **itt;
@@ -1361,7 +1359,7 @@ int SelvaModify_TraverseHierarchy(
     SelvaModify_HierarchyNode *head;
     int err;
 
-    if (dir != SELVA_MODIFY_HIERARCHY_DFS_FULL) {
+    if (dir != SELVA_HIERARCHY_TRAVERSAL_DFS_FULL) {
         head = findNode(hierarchy, id);
         if (!head) {
             return SELVA_MODIFY_HIERARCHY_ENOENT;
@@ -1369,23 +1367,27 @@ int SelvaModify_TraverseHierarchy(
     }
 
     switch (dir) {
-    case SELVA_MODIFY_HIERARCHY_BFS_ANCESTORS:
+    case SELVA_HIERARCHY_TRAVERSAL_NODE:
+        cb->node_cb(head->id, cb->node_arg, &head->metadata);
+        err = 0;
+        break;
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
         err = bfs(hierarchy, head, RELATIONSHIP_PARENT, &tcb);
         break;
-    case SELVA_MODIFY_HIERARCHY_BFS_DESCENDANTS:
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
         err = bfs(hierarchy, head, RELATIONSHIP_CHILD, &tcb);
         break;
-    case SELVA_MODIFY_HIERARCHY_DFS_ANCESTORS:
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
         err = dfs(hierarchy, head, RELATIONSHIP_PARENT, &tcb);
         break;
-     case SELVA_MODIFY_HIERARCHY_DFS_DESCENDANTS:
+     case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
         err = dfs(hierarchy, head, RELATIONSHIP_CHILD, &tcb);
         break;
-     case SELVA_MODIFY_HIERARCHY_DFS_FULL:
+     case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
         err = full_dfs(hierarchy, &tcb);
         break;
      default:
-        fprintf(stderr, "Hierarchy: Invalid traversal\n");
+        fprintf(stderr, "Hierarchy: Invalid traversal requested\n");
         err = SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
@@ -1639,7 +1641,7 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
 
     int err = SelvaModify_AddHierarchy(ctx, hierarchy, nodeId, nr_parents, parents, 0, NULL);
     if (err) {
-        return replyWithHierarchyError(ctx, err);
+        return replyWithSelvaError(ctx, err);
     }
 
     RedisModule_ReplyWithLongLong(ctx, 1);
@@ -2168,7 +2170,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     enum SelvaModify_Hierarchy_Algo algo;
     err = parse_algo(&algo, argv[ARGV_ALGO]);
     if (err) {
-        return replyWithHierarchyError(ctx, err);
+        return replyWithSelvaError(ctx, err);
     }
 
     /*
@@ -2177,7 +2179,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     enum SelvaModify_HierarchyNode_Relationship dir;
     err = parse_dir(&dir, argv[ARGV_DIRECTION]);
     if (err) {
-        return replyWithHierarchyError(ctx, err);
+        return replyWithSelvaError(ctx, err);
     }
 
     /*
@@ -2193,7 +2195,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         if (err == 0) {
             SHIFT_ARGS(3);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithHierarchyError(ctx, err);
+            return replyWithSelvaError(ctx, err);
         }
     }
 
@@ -2206,7 +2208,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithHierarchyError(ctx, err);
+            return replyWithSelvaError(ctx, err);
         }
     }
 
@@ -2219,7 +2221,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithHierarchyError(ctx, err);
+            return replyWithSelvaError(ctx, err);
         }
     }
 
@@ -2324,7 +2326,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         if (err != 0) {
             /* FIXME This will make redis crash */
 #if 0
-            return replyWithHierarchyError(ctx, err);
+            return replyWithSelvaError(ctx, err);
 #endif
             fprintf(stderr, "Hierarchy: Find failed for node: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, nodeId);
         }
@@ -2401,7 +2403,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
         if (err == 0) {
             SHIFT_ARGS(3);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithHierarchyError(ctx, err);
+            return replyWithSelvaError(ctx, err);
         }
     }
 
@@ -2414,7 +2416,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithHierarchyError(ctx, err);
+            return replyWithSelvaError(ctx, err);
         }
     }
 
@@ -2427,7 +2429,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithHierarchyError(ctx, err);
+            return replyWithSelvaError(ctx, err);
         }
     }
 
@@ -2592,7 +2594,7 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         err = parse_dir(&dir, op);
         if (err) {
-            return replyWithHierarchyError(ctx, err);
+            return replyWithSelvaError(ctx, err);
         }
 
         str = RedisModule_StringPtrLen(argv[3], &len);
@@ -2630,7 +2632,7 @@ int SelvaModify_Hierarchy_DumpCommand(RedisModuleCtx *ctx, RedisModuleString **a
         err = full_dfs(hierarchy, &cb);
     }
     if (err < 0) {
-        return replyWithHierarchyError(ctx, err);
+        return replyWithSelvaError(ctx, err);
     }
 
     if (nr_nodes > 0) {

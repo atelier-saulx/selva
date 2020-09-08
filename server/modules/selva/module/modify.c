@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "redismodule.h"
-
 #include "cdefs.h"
+#include "errors.h"
 #include "hierarchy.h"
 #include "modify.h"
 
@@ -128,7 +128,7 @@ static int update_hierarchy(
     }
 
     if (err) {
-        RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+        replyWithSelvaError(ctx, err);
         return REDISMODULE_ERR;
     }
 
