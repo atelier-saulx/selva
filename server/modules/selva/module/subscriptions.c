@@ -71,23 +71,28 @@ static char *subId2str(Selva_SubscriptionId sub_id) {
     return str;
 }
 
+static void destroy_marker(struct subscriptionMarker *marker) {
+    /* TODO free all data in the marker */
+    RedisModule_Free(marker);
+}
+
 static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
     struct subscriptionMarker **it;
 
     if (SVector_Size(&sub->markers) > 0) {
-        svector_autofree SVector subs = {0};
+        svector_autofree SVector markers = {0};
 
-        if (!SVector_Clone(&subs, &sub->markers, NULL)) {
+        if (!SVector_Clone(&markers, &sub->markers, NULL)) {
             fprintf(stderr, "Hierarchy: Subs ENOMEM, can't destroy a subscription\n");
             return;
         }
 
         /* TODO implement safe foreach instead of using cloning */
-        SVECTOR_FOREACH(it, &subs) {
+        SVECTOR_FOREACH(it, &markers) {
             struct subscriptionMarker *marker = *it;
 
             clear_sub(hierarchy, marker, marker->node_id);
-            /* TODO free all data in the marker */
+            destroy_marker(marker);
         }
     }
 
@@ -212,14 +217,14 @@ static int Selva_AddSubscriptionMarker(
     }
 
     marker->marker_flags = flags;
+    marker->sub = sub;
 
-    err = 0;
     va_start(args, fmt);
-    while (!err && *fmt != '\0') {
+    while (*fmt != '\0') {
         char c = *fmt;
         switch (c) {
         case 'n': /* node_id */
-            memcpy(marker->node_id, va_arg(args, Selva_NodeId), SELVA_NODE_ID_SIZE);
+            memcpy(marker->node_id, va_arg(args, char *), SELVA_NODE_ID_SIZE);
             break;
         case 'd': /* Hierarchy traversal direction */
             marker->dir = va_arg(args, enum SelvaModify_HierarchyTraversal);
@@ -232,22 +237,29 @@ static int Selva_AddSubscriptionMarker(
         default:
             fprintf(stderr, "Subscriptions: Invalid marker specifier '%c' for subscription %s\n",
                     c, subId2str(sub_id));
+            return SELVA_SUBSCRIPTIONS_EINVAL;
         }
         fmt++;
     }
     va_end(args);
 
-    SVector_Insert(&sub->markers, marker);
-
     /*
-     * Add subscription markers.
+     * Set subscription markers.
+     * Currently we expect that node_id and dir are always given but that may
+     * change in the future.
      */
     struct SelvaModify_HierarchyCallback cb = {
         .node_cb = set_marker,
         .node_arg = marker,
     };
 
-    (void)SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+    err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+    if (err) {
+        /* We assume that the marker was not inserted anywhere. */
+        destroy_marker(marker);
+        return err;
+    }
+    SVector_Insert(&sub->markers, marker);
 
     return 0;
 }
@@ -403,12 +415,13 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_flags, "nd",
                                       node_id, sub_dir);
     if (err) {
-        fprintf(stderr, "failed to create a sub\n");
         return replyWithSelvaError(ctx, err);
     }
 
     RedisModule_ReplyWithLongLong(ctx, 1);
+#if 0
     RedisModule_ReplicateVerbatim(ctx);
+#endif
     return REDISMODULE_OK;
 }
 

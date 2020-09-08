@@ -61,6 +61,7 @@ void SVector_Insert(SVector *vec, void *el) {
         if (!new_data) {
             fprintf(stderr, "SVector realloc failed\n");
             abort(); /* This will cause a core dump. */
+            /* TODO We probably shoudln't abort */
         }
 
         vec->vec_data = new_data;
