@@ -367,39 +367,17 @@ test.serial('Get server raw - heavy load', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-// test.only('', async t => {
-//   const registry = await startRegistry({ port: 9999 })
-//   const origin = await startOrigin({ registry: { port: 9999 }, default: true })
-//   const client = connect({ port: 9999 })
-//   const p = []
-//   const d = Date.now()
-//   const amount = 50e3
-//   const compare = []
-//   for (let i = 0; i < 20; i++) {
-//     compare.push({
-//       money: String(amount * 3 - 1)
-//     })
-//     p.push(worker(async ({ connect }, { index, amount }) => {
-//       const client = connect({ port: 9999 })
-//       const makeitrain = async (index) => {
-//         let p = []
-//         for (let i = 0; i < amount; i++) {
-//           p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'money', i + (index * amount)))
-//         }
-//         await Promise.all(p)
-//       }
-//       for (let i = 0; i < 3; i++) {
-//         await makeitrain(i)
-//       }
-//     }, { index: i, amount }))
-//   }
-//   ; (await Promise.all(p)).map(([, w]) => w.terminate())
-//   const keys = await client.redis.keys({ type: 'origin' }, '*')
-//   const results = await Promise.all(keys.map(k => client.redis.hgetall({ type: 'origin' }, k)))
-//   const total = amount * 3 * 20
-//   console.log('Executed', total / 1e3, 'k hsets', 'in', Date.now() - d, 'ms')
-//   t.deepEqualIgnoreOrder(results, compare, `used workers to set all fields correctly (${total} sets)`)
-//   await registry.destroy()
-//   await origin.destroy()
-//   await client.destroy()
-// })
+test.only('registry hard disconnect', async t => {
+  let registry = await startRegistry({ port: 9999 })
+  const origin = await startOrigin({ registry: { port: 9999 }, default: true })
+  const client = connect({ port: 9999 })
+
+  // promise on connected is maybe nice
+
+
+
+
+  await registry.destroy()
+  await origin.destroy()
+  await client.destroy()
+})

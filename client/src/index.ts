@@ -23,6 +23,9 @@ import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
 import conformToSchema from './conformToSchema'
 
+
+import { waitUntilEvent } from './util'
+
 import hardDisconnect from './hardDisconnect'
 
 import { connections, Connection, createConnection } from './connection'
@@ -161,6 +164,10 @@ export class SelvaClient extends EventEmitter {
   ): Promise<void> {
     await this.initializeSchema({ $db: name })
     return updateSchema(this, opts, { name })
+  }
+
+  async waitUntilEvent(event: string): Promise<void> {
+    return waitUntilEvent(this, event)
   }
 
   // subscribeSchema(name: string = 'default'): Observable<Schema> {
