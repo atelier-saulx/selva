@@ -22,10 +22,10 @@ type RequestBody = {
   $language: string
 }
 
-class TextServer {
+export class TextServer {
   private srv: http.Server
 
-  async start() {
+  start(opts: { port: number }) {
     this.srv = http.createServer(
       (req: http.IncomingMessage, res: http.ServerResponse) => {
         const url = _url.parse(req.url)
@@ -87,5 +87,11 @@ class TextServer {
         })
       }
     )
+
+    this.srv.listen(opts.port)
+  }
+
+  stop() {
+    this.srv.close()
   }
 }
