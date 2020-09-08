@@ -172,6 +172,7 @@ const parseQuery = (
     if (findIn) {
       logger.info('finding matches in ids', findIn, joinPaddedIds(findIn))
 
+      // TODO: add subscription meta info???
       const allArgs: string[] = []
       appendSearchArgs(allArgs, [
         'selva.hierarchy.findIn',
@@ -190,6 +191,7 @@ const parseQuery = (
         resultIds = queryResult
       }
     } else {
+      // TODO: add subscription meta info???
       const allArgs: string[] = []
       appendSearchArgs(allArgs, [
         'selva.hierarchy.find',
@@ -377,6 +379,7 @@ const parseQuery = (
         }
 
         for (let i = 0; i < resultIds.length; i++) {
+          // TODO: how does this play out with getByType doing marker additions?
           const r: GetResult = {}
           getField(
             getOptions,
@@ -403,6 +406,7 @@ const parseQuery = (
         }
 
         for (let i = 0; i < resultIds.length; i++) {
+          // TODO: how does this play out with getByType doing marker additions?
           const r: GetResult = {}
           getField(
             getOptions,
