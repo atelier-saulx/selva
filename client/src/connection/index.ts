@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events'
 import { RedisCommand, SelvaClient } from '..'
 import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
@@ -9,6 +8,8 @@ import startRedisClient from './startRedisClient'
 import { RedisClient } from 'redis'
 import { Callback } from '../redis/types'
 import { serverId } from '../util'
+import { createObservable } from '~selva/observe/_yesh'
+import { convertNow } from 'lua/src/get/query/util'
 
 const connections: Map<string, Connection> = new Map()
 
@@ -23,7 +24,7 @@ type ConnectionState = {
   listeners: [string, (x: any) => {}][]
 }
 
-class Connection extends EventEmitter {
+class Connection {
   public subscriber: RedisClient
 
   public publisher: RedisClient
@@ -43,6 +44,19 @@ class Connection extends EventEmitter {
 
   // listener / id
   public redisListeners: { [key: string]: { [key: string]: Set<Callback> } }
+
+  public listeners: { [key: string]: { [key: string]: Set<Callback> } }
+
+  public emit(event: string, payload?: any) {
+    const listeners = this.listeners[event]
+    if (listeners) {
+      for (let key in listeners) {
+        listeners[key].forEach(cb => {
+          cb(payload)
+        })
+      }
+    }
+  }
 
   public hardDisconnect() {
     this.emit('hard-disconnect')
