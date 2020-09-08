@@ -4,6 +4,7 @@
 
 const char * const hierarchyStrError[] = {
     (const char *)"ERR_SELVA No Error",
+    (const char *)"ERR_SELVA EGENERAL Unknown error",
     (const char *)"ERR_HIERARCHY EGENERAL Unknown error",
     (const char *)"ERR_HIERARCHY ENOTSUP Operation not supported",
     (const char *)"ERR_HIERARCHY EINVAL Invalid argument or input value",
