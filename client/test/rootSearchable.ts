@@ -98,3 +98,39 @@ test.serial('root is searchable', async t => {
     }
   )
 })
+
+test.serial('root is searchable', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      sport: {
+        prefix: 'sp',
+        fields: {
+          default: {
+            type: 'object',
+            properties: {
+              rando: { type: 'text' }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  try {
+    await client.set({
+      $id: 'sp1',
+      default: {
+        rando: {
+          en: 'jonko'
+        }
+      }
+    })
+    t.pass()
+  } catch (e) {
+    console.error(e)
+    t.fail()
+  }
+})

@@ -17,7 +17,7 @@ test.before(async t => {
 
   const client = connect({ port })
   await client.updateSchema({
-    languages: ['en'],
+    languages: ['en', 'de', 'fr', 'it', 'nl'],
     types: {
       league: {
         prefix: 'le',
@@ -25,14 +25,43 @@ test.before(async t => {
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
         }
       },
+      team: {
+        prefix: 'te',
+        fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          published: { type: 'boolean', search: { type: ['TAG'] } }
+        }
+      },
+      video: {
+        prefix: 'vi',
+        fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          published: { type: 'boolean', search: { type: ['TAG'] } }
+        }
+      },
+      sport: {
+        prefix: 'sp',
+        fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          published: { type: 'boolean', search: { type: ['TAG'] } }
+        }
+      },
       match: {
         prefix: 'ma',
         fields: {
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          published: { type: 'boolean', search: { type: ['TAG'] } },
+          homeTeam: { type: 'reference' },
+          awayTeam: { type: 'reference' },
           startTime: {
             type: 'timestamp',
             search: { type: ['NUMERIC', 'SORTABLE'] }
           },
           endTime: {
+            type: 'timestamp',
+            search: { type: ['NUMERIC', 'SORTABLE'] }
+          },
+          date: {
             type: 'timestamp',
             search: { type: ['NUMERIC', 'SORTABLE'] }
           },
@@ -54,6 +83,688 @@ test.after(async _t => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+})
+
+test.serial('subs layout', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+  let now = Date.now()
+  let viIdx = 0
+
+  await client.set({
+    $id: 'te1',
+    published: true,
+    title: {
+      en: 'team one',
+      de: 'team ein'
+    }
+  })
+
+  await client.set({
+    $id: 'te2',
+    published: true,
+    title: {
+      en: 'team two',
+      de: 'team zwei'
+    }
+  })
+
+  await client.set({
+    $id: 'sp1',
+    title: { en: 'sport one', de: 'sport ein' },
+    published: true,
+    children: ['te1', 'te2']
+  })
+
+  client
+    .observe({
+      $language: 'en',
+      matches: {
+        id: true,
+        title: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'published',
+                $operator: '=',
+                $value: true
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(r => console.log(r))
+  client
+    .observe({
+      $language: 'de',
+      matches: {
+        id: true,
+        title: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'published',
+                $operator: '=',
+                $value: true
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(r => console.log(r))
+
+  const past = []
+  let pastPublishedIds = []
+  for (let i = 0; i < 1000; i++) {
+    const team = i % 2 === 0 ? 'te2' : 'te1'
+    let published = true
+    if (i % 3 == 0) {
+      published = false
+    }
+
+    past.push(
+      client.set({
+        type: 'match',
+        $id: 'map' + i,
+        published,
+        homeTeam: 'te1',
+        awayTeam: 'te2',
+        title: {
+          en: 'past match ' + i,
+          de: 'vorbei match ' + i,
+          nl: 'verleden match ' + 1
+        },
+        name: 'past match',
+        date: now - 1000 * 60 - i - 1,
+        startTime: now - 1000 * 60 - i - 1,
+        endTime: now - (1000 * 60 - i - 1),
+        parents: [team],
+        children: [{ $id: 'vi' + viIdx++, published: true }]
+      })
+    )
+
+    if (published) {
+      pastPublishedIds.push({ id: 'map' + i })
+    }
+  }
+
+  await Promise.all(past)
+
+  const upcoming = []
+  const upcomingPublishedIds = []
+  for (let i = 0; i < 1000; i++) {
+    const team = i % 2 === 0 ? 'te2' : 'te1'
+    let published = true
+    if (i % 3 == 0) {
+      published = false
+    }
+
+    upcoming.push(
+      client.set({
+        type: 'match',
+        $id: 'maug' + i,
+        published,
+        name: 'past match',
+        homeTeam: 'te1',
+        awayTeam: 'te2',
+        title: {
+          en: 'gen upcoming match ' + i,
+          de: 'gen kommend match ' + i,
+          nl: 'gen aanstaande match ' + i
+        },
+        date: now + 1000 * 60 + i,
+        startTime: now + 1000 * 60 + i,
+        endTime: now + (1000 * 60 + i + 1),
+        parents: [team],
+        children: [{ $id: 'vi' + viIdx++, published: true }]
+      })
+    )
+
+    if (published) {
+      upcomingPublishedIds.push({ id: 'maug' + i })
+    }
+  }
+
+  await Promise.all(upcomingPublishedIds)
+
+  await wait(4000)
+  now = Date.now()
+
+  await Promise.all([
+    client.set({
+      type: 'match',
+      $id: 'mau1',
+      published: true,
+      homeTeam: 'te1',
+      awayTeam: 'te2',
+      title: {
+        en: 'upcoming match 1',
+        de: 'kommend match 1',
+        nl: 'aanstaande match 1'
+      },
+      name: 'upcoming match',
+      date: now + 2000,
+      parents: ['te1'],
+      startTime: now + 2000, // 2 sec from now
+      endTime: now + 5000, // 5 sec from now
+      children: [
+        { $id: 'vi' + viIdx++, published: true },
+        { $id: 'vi' + viIdx++, published: true }
+      ]
+    }),
+    client.set({
+      type: 'match',
+      $id: 'mau2',
+      homeTeam: 'te1',
+      awayTeam: 'te2',
+      title: {
+        en: 'upcoming match 2',
+        de: 'kommend match 2',
+        nl: 'aanstaande match 2'
+      },
+      published: true,
+      parents: ['te2'],
+      name: 'upcoming match',
+      date: now + 5000,
+      startTime: now + 5000, // 5 sec from now
+      endTime: now + 7000, // 7 sec from now
+      children: [
+        { $id: 'vi' + viIdx++, published: true },
+        { $id: 'vi' + viIdx++, published: true }
+      ]
+    })
+  ])
+
+  let result
+  client
+    .observe({
+      past: {
+        id: true,
+        $list: {
+          $sort: {
+            $field: 'date',
+            $order: 'desc'
+          },
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $operator: '=',
+                $value: true,
+                $field: 'published'
+              },
+              {
+                $value: 'now',
+                $field: 'endTime',
+                $operator: '<'
+              }
+            ]
+          }
+        }
+      },
+      live: {
+        id: true,
+        $list: {
+          $sort: {
+            $field: 'date',
+            $order: 'asc'
+          },
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $operator: '=',
+                $value: true,
+                $field: 'published'
+              },
+              {
+                $value: 'now',
+                $field: 'startTime',
+                $operator: '<'
+              },
+              {
+                $value: 'now',
+                $field: 'endTime',
+                $operator: '>'
+              }
+            ]
+          }
+        }
+      },
+      upcoming: {
+        id: true,
+        $list: {
+          $sort: {
+            $field: 'date',
+            $order: 'asc'
+          },
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $value: true,
+                $field: 'published'
+              },
+              {
+                $operator: '=',
+                $value: 'match',
+                $field: 'type'
+              },
+              {
+                $value: 'now',
+                $field: 'startTime',
+                $operator: '>'
+              }
+            ]
+          }
+        }
+      }
+    })
+    .subscribe(r => {
+      result = r
+      console.log('-->', result)
+    })
+
+  let otherResult1
+  client
+    .observe({
+      $id: 'mau1',
+      $language: 'en',
+      components: [
+        {
+          component: {
+            $value: 'Table'
+          },
+          title: {
+            $value: 'Live'
+          },
+          children: {
+            teams: [
+              {
+                id: true,
+                $id: {
+                  $field: 'homeTeam'
+                },
+                title: true
+              },
+              {
+                id: true,
+                $id: {
+                  $field: 'awayTeam'
+                },
+                title: true
+              }
+            ],
+            type: true,
+            title: true,
+            id: true,
+            $list: {
+              $limit: 30,
+              $find: {
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'sport'
+                  },
+                  {
+                    $field: 'published',
+                    $operator: '=',
+                    $value: true
+                  }
+                ],
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: [
+                    {
+                      $field: 'type',
+                      $operator: '=',
+                      $value: 'match'
+                    },
+                    {
+                      $field: 'published',
+                      $operator: '=',
+                      $value: true
+                    },
+                    {
+                      $operator: '<',
+                      $value: 'now',
+                      $field: 'startTime'
+                    },
+                    {
+                      $operator: '>',
+                      $value: 'now',
+                      $field: 'endTime'
+                    }
+                  ]
+                },
+                $traverse: 'ancestors'
+              },
+              $sort: {
+                $order: 'desc',
+                $field: 'date'
+              }
+            }
+          }
+        },
+        {
+          component: {
+            $value: 'GridLarge'
+          },
+          title: {
+            $value: 'Team Videos'
+          },
+          children: {
+            type: true,
+            title: true,
+            $list: {
+              $limit: 10,
+              $find: {
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'team'
+                  },
+                  {
+                    $field: 'published',
+                    $operator: '=',
+                    $value: true
+                  }
+                ],
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: [
+                    {
+                      $field: 'type',
+                      $operator: '=',
+                      $value: 'video'
+                    },
+                    {
+                      $field: 'published',
+                      $operator: '=',
+                      $value: true
+                    }
+                  ]
+                },
+                $traverse: 'ancestors'
+              },
+              $sort: {
+                $order: 'desc',
+                $field: 'date'
+              }
+            },
+            id: true
+          }
+        }
+      ]
+    })
+    .subscribe(r => {
+      otherResult1 = r
+      console.log('match layout 1', r)
+    })
+
+  let otherResult2
+  client
+    .observe({
+      $id: 'mau2',
+      $language: 'en',
+      components: [
+        {
+          component: {
+            $value: 'Table'
+          },
+          title: {
+            $value: 'Live'
+          },
+          children: {
+            teams: [
+              {
+                id: true,
+                $id: {
+                  $field: 'homeTeam'
+                },
+                title: true
+              },
+              {
+                id: true,
+                $id: {
+                  $field: 'awayTeam'
+                },
+                title: true
+              }
+            ],
+            type: true,
+            title: true,
+            id: true,
+            $list: {
+              $limit: 30,
+              $find: {
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'sport'
+                  },
+                  {
+                    $field: 'published',
+                    $operator: '=',
+                    $value: true
+                  }
+                ],
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: [
+                    {
+                      $field: 'type',
+                      $operator: '=',
+                      $value: 'match'
+                    },
+                    {
+                      $field: 'published',
+                      $operator: '=',
+                      $value: true
+                    },
+                    {
+                      $operator: '<',
+                      $value: 'now',
+                      $field: 'startTime'
+                    },
+                    {
+                      $operator: '>',
+                      $value: 'now',
+                      $field: 'endTime'
+                    }
+                  ]
+                },
+                $traverse: 'ancestors'
+              },
+              $sort: {
+                $order: 'desc',
+                $field: 'date'
+              }
+            }
+          }
+        },
+        {
+          component: {
+            $value: 'GridLarge'
+          },
+          title: {
+            $value: 'Team Videos'
+          },
+          children: {
+            type: true,
+            title: true,
+            $list: {
+              $limit: 10,
+              $find: {
+                $filter: [
+                  {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'team'
+                  },
+                  {
+                    $field: 'published',
+                    $operator: '=',
+                    $value: true
+                  }
+                ],
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: [
+                    {
+                      $field: 'type',
+                      $operator: '=',
+                      $value: 'video'
+                    },
+                    {
+                      $field: 'published',
+                      $operator: '=',
+                      $value: true
+                    }
+                  ]
+                },
+                $traverse: 'ancestors'
+              },
+              $sort: {
+                $order: 'desc',
+                $field: 'date'
+              }
+            },
+            id: true
+          }
+        }
+      ]
+    })
+    .subscribe(r => {
+      otherResult2 = r
+      console.log('match layout 2', r)
+    })
+
+  await wait(500)
+  console.log('should be upcoming')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
+      upcomingPublishedIds.slice(0, 8)
+    ),
+    past: pastPublishedIds.slice(0, 10),
+    live: []
+  })
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
+  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
+  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+
+  await wait(3000)
+
+  console.log('should be live')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: [{ id: 'mau2' }].concat(upcomingPublishedIds.slice(0, 9)),
+    past: pastPublishedIds.slice(0, 10),
+    live: [{ id: 'mau1' }]
+  })
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
+    {
+      id: 'mau1',
+      type: 'match',
+      teams: [
+        { id: 'te1', title: 'team one' },
+        { id: 'te2', title: 'team two' }
+      ],
+      title: 'upcoming match 1'
+    }
+  ])
+  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [
+    {
+      id: 'mau1',
+      type: 'match',
+      teams: [
+        { id: 'te1', title: 'team one' },
+        { id: 'te2', title: 'team two' }
+      ],
+      title: 'upcoming match 1'
+    }
+  ])
+  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+
+  await wait(3000)
+
+  console.log('should be past')
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: upcomingPublishedIds.slice(0, 10),
+    past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
+    live: [{ id: 'mau2' }]
+  })
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
+    {
+      id: 'mau2',
+      type: 'match',
+      teams: [
+        { id: 'te1', title: 'team one' },
+        { id: 'te2', title: 'team two' }
+      ],
+      title: 'upcoming match 2'
+    }
+  ])
+  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [
+    {
+      id: 'mau2',
+      type: 'match',
+      teams: [
+        { id: 'te1', title: 'team one' },
+        { id: 'te2', title: 'team two' }
+      ],
+      title: 'upcoming match 2'
+    }
+  ])
+  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+
+  await wait(2000)
+
+  t.deepEqualIgnoreOrder(result, {
+    upcoming: upcomingPublishedIds.slice(0, 10),
+    past: [{ id: 'mau1' }, { id: 'mau2' }].concat(pastPublishedIds.slice(0, 8)),
+    live: []
+  })
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
+  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
+  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+
+  await client.delete('root')
 })
 
 test.serial('subs upcoming, live and past', async t => {
