@@ -361,13 +361,13 @@ test.only('time out / failure reconnects and ramp up', async t => {
 
   })
 
-  console.log('start dop it')
+  // console.log('start dop it')
 
-  const y = await client.getServer({ type: 'origin' })
+  // const y = await client.getServer({ type: 'origin' })
 
-  console.log('got y')
+  // console.log('got y')
 
-  // await x()
+  await x()
 
 
   // 12x faster with callback

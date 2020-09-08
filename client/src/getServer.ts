@@ -43,15 +43,11 @@ const getServer = (
 
       // for now only subscription
       if (selectionOptions) {
-        console.log('if selection options')
+        // console.log('if selection options')
       }
 
       if (!server) {
-        console.log('add to update... listeners!', selector)
         selvaClient.addServerUpdateListeners.push(() => {
-
-          console.log('ok next?', selector, selvaClient.servers.origins, name)
-
           getServer(selvaClient, cb, selector, selectionOptions)
         })
       } else {
