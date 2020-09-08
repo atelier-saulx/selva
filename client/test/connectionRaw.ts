@@ -335,42 +335,7 @@ test.only('time out / failure reconnects and ramp up', async t => {
   // await wait(1e3)
   const d = Date.now()
 
-  const x = () => new Promise(r => {
-    let cnt = 0
-    const all = () => {
-      cnt++
-      if (cnt === 1e6) {
-        r()
-      }
-    }
 
-    // and an await ofc...
-
-    // will make 'raw get server'
-    const px = []
-    for (let i = 0; i < 1e6; i++) {
-      // client.getServerCb({ type: 'origin' }, all)
-      px.push(client.getServer({ type: 'origin' }))
-
-
-
-    }
-
-    Promise.all(px).then(r)
-
-
-  })
-
-  // console.log('start dop it')
-
-  // const y = await client.getServer({ type: 'origin' })
-
-  // console.log('got y')
-
-  await x()
-
-
-  // 12x faster with callback
 
 
   console.log(Date.now() - d, 'ms')
@@ -380,20 +345,14 @@ test.only('time out / failure reconnects and ramp up', async t => {
     p.push(worker(async ({ connect, wait }, { index }) => {
       console.log('start worker', index)
       const client = connect({ port: 9999 })
-
-      await wait(1000)
-
-      // initial connection listeners are very very slow fix this
-
       const makeitrain = async (index) => {
         let p = []
         for (let i = 0; i < 50e3; i++) {
           p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'cnt', i + (index * 50e3)))
         }
         await Promise.all(p)
-        await wait(100)
       }
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 10; i++) {
         await makeitrain(i)
       }
       console.log('worker', index, 'ready')
