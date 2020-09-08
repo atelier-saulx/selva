@@ -327,30 +327,22 @@ test.serial('connection / server orchestration', async t => {
 test.only('time out / failure reconnects and ramp up', async t => {
   const registry = await startRegistry({ port: 9999 })
   const origin = await startOrigin({ registry: { port: 9999 }, default: true })
-
-
   const client = connect({ port: 9999 })
-
-
-  // await wait(1e3)
-  const d = Date.now()
-
-
-
-
-  console.log(Date.now() - d, 'ms')
-
   const p = []
-  const amount = 10e3
-
+  const d = Date.now()
+  const amount = 20e3
+  const compare = []
   for (let i = 0; i < 20; i++) {
-    p.push(worker(async ({ connect, amount }, { index }) => {
+    compare.push({
+      money: String(amount * 3 - 1)
+    })
+    p.push(worker(async ({ connect }, { index, amount }) => {
       console.log('start worker', index)
       const client = connect({ port: 9999 })
       const makeitrain = async (index) => {
         let p = []
-        for (let i = 0; i < 50e3; i++) {
-          p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'money', i + (index * 50e3)))
+        for (let i = 0; i < amount; i++) {
+          p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'money', i + (index * amount)))
         }
         await Promise.all(p)
       }
@@ -363,13 +355,18 @@ test.only('time out / failure reconnects and ramp up', async t => {
 
   ; (await Promise.all(p)).map(([, w]) => w.terminate())
 
-  console.log('workers done...')
-
   const keys = await client.redis.keys({ type: 'origin' }, '*')
   const results = await Promise.all(keys.map(k => client.redis.hgetall({ type: 'origin' }, k)))
-  console.log('snurky', keys, results)
+
+  const total = amount * 3 * 20
+
+
+  console.log('Executed', total / 1e3, 'k hsets', 'in', Date.now() - d, 'ms')
+
+  t.deepEqualIgnoreOrder(results, compare, `used workers to set all fields correctly (${total} sets)`)
 
   // set 10mil mil counts
 
-  t.pass()
+  await registry.destroy()
+  await origin.destroy()
 })
