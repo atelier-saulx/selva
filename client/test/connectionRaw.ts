@@ -328,8 +328,55 @@ test.only('time out / failure reconnects and ramp up', async t => {
   const registry = await startRegistry({ port: 9999 })
   const origin = await startOrigin({ registry: { port: 9999 }, default: true })
 
+
+  const client = connect({ port: 9999 })
+
+
+  // await wait(1e3)
+  const d = Date.now()
+
+  const x = () => new Promise(r => {
+    let cnt = 0
+    const all = () => {
+      cnt++
+      if (cnt === 1e6) {
+        r()
+      }
+    }
+
+    // and an await ofc...
+
+    // will make 'raw get server'
+    const px = []
+    for (let i = 0; i < 1e6; i++) {
+      // client.getServerCb({ type: 'origin' }, all)
+      px.push(client.getServer({ type: 'origin' }))
+
+
+
+    }
+
+    Promise.all(px).then(r)
+
+
+  })
+
+  console.log('start dop it')
+
+  const y = await client.getServer({ type: 'origin' })
+
+  console.log('got y')
+
+  // await x()
+
+
+  // 12x faster with callback
+
+
+  console.log(Date.now() - d, 'ms')
+
   const p = []
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 20; i++) {
     p.push(worker(async ({ connect, wait }, { index }) => {
       console.log('start worker', index)
       const client = connect({ port: 9999 })
@@ -346,7 +393,7 @@ test.only('time out / failure reconnects and ramp up', async t => {
         await Promise.all(p)
         await wait(100)
       }
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 20; i++) {
         await makeitrain(i)
       }
       console.log('worker', index, 'ready')
@@ -357,12 +404,11 @@ test.only('time out / failure reconnects and ramp up', async t => {
 
   console.log('workers done...')
 
-  const client = connect({ port: 9999 })
   const keys = await client.redis.keys({ type: 'origin' }, '*')
   const results = await Promise.all(keys.map(k => client.redis.hgetall({ type: 'origin' }, k)))
   console.log('snurky', keys, results)
 
-  // set 7.5 mil counts
+  // set 20mil mil counts
 
   t.pass()
 })

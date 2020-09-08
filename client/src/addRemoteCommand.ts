@@ -20,18 +20,18 @@ export default (
     method === 'unsubscribe' ||
     method === 'punsubscribe'
   ) {
-    getServer(selvaClient, selector).then(server => {
+    getServer(selvaClient, server => {
       if (typeof command.args[0] === 'string') {
         const connection = createConnection(server)
         connection.attachSelvaClient(selvaClient)
         connection[method](command.args[0], command.id)
       }
-    })
+    }, selector)
   } else {
-    getServer(selvaClient, selector).then(server => {
+    getServer(selvaClient, server => {
       const connection = createConnection(server)
       connection.attachSelvaClient(selvaClient)
       connection.command(command)
-    })
+    }, selector)
   }
 }

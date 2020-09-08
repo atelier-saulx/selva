@@ -29,6 +29,7 @@ import { connections, Connection, createConnection } from './connection'
 
 import connectRegistry from './connectRegistry'
 
+
 import destroy from './destroy'
 
 import { v4 as uuidv4 } from 'uuid'
@@ -55,6 +56,8 @@ export class SelvaClient extends EventEmitter {
   public schemas: Record<string, Schema> = {}
 
   public server: ServerDescriptor
+
+  public addServerUpdateListeners: (() => void)[] = []
 
   public servers: {
     ids: Set<string>
@@ -180,7 +183,9 @@ export class SelvaClient extends EventEmitter {
   }
 
   getServer(opts: ServerSelector, selectOptions?: ServerSelectOptions): Promise<ServerDescriptor> {
-    return getServer(this, opts, selectOptions)
+    return new Promise(r => {
+      getServer(this, r, opts, selectOptions)
+    })
   }
 
   async destroy() {

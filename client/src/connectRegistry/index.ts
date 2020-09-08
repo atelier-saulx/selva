@@ -17,6 +17,20 @@ import moveReplicas from './moveReplicas'
     sends updates of all info objects (make this specific as well)
 */
 
+const updateServerListeners = (selvaClient: SelvaClient) => {
+  if (selvaClient.addServerUpdateListeners.length) {
+    const len = selvaClient.addServerUpdateListeners.length
+    for (let i = 0; i < len; i++) {
+      selvaClient.addServerUpdateListeners[i]()
+    }
+    if (selvaClient.addServerUpdateListeners.length > len) {
+      selvaClient.addServerUpdateListeners = selvaClient.addServerUpdateListeners.slice(len)
+    } else {
+      selvaClient.addServerUpdateListeners = []
+    }
+  }
+}
+
 export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
   if (connectOptions instanceof Promise) {
     // do shit
@@ -45,13 +59,16 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
       selvaClient.registryConnection.on('connect', () => {
         getInitialRegistryServers(selvaClient).then(() => {
           selvaClient.emit('added-servers', { event: '*' })
+          updateServerListeners(selvaClient)
         })
       })
 
       // if a registry client is being re-used
       if (selvaClient.registryConnection.connected) {
+        // not a promise is faster
         getInitialRegistryServers(selvaClient).then(() => {
           selvaClient.emit('added-servers', { event: '*' })
+          updateServerListeners(selvaClient)
         })
       }
 
@@ -76,6 +93,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
             const { server } = payload
             if (addServer(selvaClient, <ServerDescriptor>server)) {
               selvaClient.emit('added-servers', payload)
+              updateServerListeners(selvaClient)
             }
           } else if (event === 'remove') {
             const { server } = payload
@@ -109,6 +127,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
 
       // add listeners
       selvaClient.emit('registry-started')
+      updateServerListeners(selvaClient)
     }
   }
 }
