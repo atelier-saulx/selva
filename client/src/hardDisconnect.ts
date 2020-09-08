@@ -28,23 +28,30 @@ export default async (selvaClient: SelvaClient, connection: Connection) => {
       : 0
   )
 
+  let newConnection
+
   if (
     selvaClient.server &&
     selvaClient.server.port === serverDescriptor.port &&
     selvaClient.server.host === serverDescriptor.host
   ) {
     console.log('new conn on server!', selvaClient.server)
-    const newConnection = createConnection(serverDescriptor)
-    newConnection.attachSelvaClient(selvaClient)
-    newConnection.applyConnectionState(state)
+    newConnection = createConnection(serverDescriptor)
   } else {
     const newDescriptor = await selvaClient.getServer({
       type: serverDescriptor.type,
       name: serverDescriptor.name
     })
     console.log('go new descriptor!!!!!!', newDescriptor, serverDescriptor)
-    const newConnection = createConnection(newDescriptor)
+    newConnection = createConnection(newDescriptor)
+  }
+
+  if (newConnection) {
     newConnection.attachSelvaClient(selvaClient)
     newConnection.applyConnectionState(state)
+    if (serverDescriptor.type === 'registry') {
+      console.log('o o this is a registry :/')
+      selvaClient.registryConnection = newConnection
+    }
   }
 }

@@ -137,7 +137,7 @@ test.serial('connection / server orchestration', async t => {
         const fn = async (r, cnt = 0) => {
           let q = []
           // has to depend a bit on the computer
-          for (let i = 0; i < 100000; i++) {
+          for (let i = 0; i < 1e5; i++) {
             q.push(
               client.redis.hgetall(r, ~~(1000 * Math.random()).toString(16))
             )
@@ -328,25 +328,41 @@ test.only('time out / failure reconnects and ramp up', async t => {
   const registry = await startRegistry({ port: 9999 })
   const origin = await startOrigin({ registry: { port: 9999 }, default: true })
 
-
-  for (let i = 0; i < 10; i++) {
-    const [, w] = await worker(async ({ connect, wait }) => {
+  const p = []
+  for (let i = 0; i < 15; i++) {
+    p.push(worker(async ({ connect, wait }, { index }) => {
+      console.log('start worker', index)
       const client = connect({ port: 9999 })
-      let p = []
-      for (let i = 0; i < 100e3; i++) {
-        p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'cnt', ~~(Math.random() * 1000000)))
+
+      await wait(1000)
+
+      // initial connection listeners are very very slow fix this
+
+      const makeitrain = async (index) => {
+        let p = []
+        for (let i = 0; i < 50e3; i++) {
+          p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'cnt', i + (index * 50e3)))
+        }
+        await Promise.all(p)
+        await wait(100)
       }
-      await Promise.all(p)
-    })
+      for (let i = 0; i < 10; i++) {
+        await makeitrain(i)
+      }
+      console.log('worker', index, 'ready')
+    }, { index: i }))
   }
 
+  await Promise.all(p)
 
-  await wait(100)
+  console.log('workers done...')
+
   const client = connect({ port: 9999 })
   const keys = await client.redis.keys({ type: 'origin' }, '*')
+  const results = await Promise.all(keys.map(k => client.redis.hgetall({ type: 'origin' }, k)))
+  console.log('snurky', keys, results)
 
-  console.log('snurky', keys)
-
+  // set 7.5 mil counts
 
   t.pass()
 })
