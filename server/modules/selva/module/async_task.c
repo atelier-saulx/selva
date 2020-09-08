@@ -187,6 +187,10 @@ error:
 }
 
 int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
+    if (ASYNC_TASK_DEBUG_DROP_ALL) {
+        return 0;
+    }
+
     for (size_t i = 0; i < ASYNC_TASK_HIREDIS_WORKER_COUNT; i++) {
         if (thread_ids[i] == 0) {
             pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);

@@ -61,6 +61,11 @@
  */
 
 /**
+ * Drop all messages.
+ */
+#define ASYNC_TASK_DEBUG_DROP_ALL       0
+
+/**
  * Task buffer block size.
  * Tasks are sent over fixed size buffers but a single task can occupy multiple
  * buffers. This value should be big enough to fit majority of tasks sent in
