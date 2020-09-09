@@ -227,7 +227,11 @@ class Connection {
     }
   }
 
-  public addListener(event: string, cb?: Callback, id: string = '') {
+  public on(event: string, cb: Callback, id: string = '') {
+    this.addListener(event, cb, id)
+  }
+
+  public addListener(event: string, cb: Callback, id: string = '') {
     let listeners = this.listeners
     if (!listeners) {
       listeners = this.listeners = {}
