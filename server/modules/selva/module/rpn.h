@@ -32,11 +32,16 @@ struct rpn_ctx {
 
 typedef char rpn_token[RPN_MAX_TOKEN_SIZE];
 
+/*
+ * Free register values after unref.
+ */
+#define RPN_SET_REG_FLAG_RMFREE 0x01
+
 extern const char *rpn_str_error[11];
 
 struct rpn_ctx *rpn_init(struct RedisModuleCtx *redis_ctx, int nr_reg);
 void rpn_destroy(struct rpn_ctx *ctx);
-enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen);
+enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags);
 rpn_token *rpn_compile(const char *input, size_t len);
 enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out);
 enum rpn_error rpn_double(struct rpn_ctx *ctx, const rpn_token *expr, double *out);

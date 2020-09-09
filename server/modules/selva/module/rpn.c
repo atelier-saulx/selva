@@ -12,7 +12,7 @@
 #include "rpn.h"
 
 #define RPN_ASSERTS         0
-#define RPN_SINGLETON       1
+#define RPN_SINGLETON       0
 
 /*
  * Codes for primitive types.
@@ -40,14 +40,15 @@ struct redisObjectAccessor {
 
 struct rpn_operand {
     struct {
-        unsigned in_use :  1; /* In use/in stack, do not free. */
-        unsigned pooled :  1; /* Pooled operand, do not free. */
-        unsigned regist :  1; /* Register value, do not free. */
+        unsigned in_use :  1; /*!< In use/in stack, do not free. */
+        unsigned pooled :  1; /*!< Pooled operand, do not free. */
+        unsigned regist :  1; /*!< Register value, do not free. */
+        unsigned spfree :  1; /*!< Free sp if set when freeing the operand. */
     } flags;
     double d;
     size_t s_size;
     struct rpn_operand *next_free; /* Next free in pool */
-    const char *sp;
+    const char *sp; /*!< A pointer to a user provided string */
     char s[RPN_SMALL_OPERAND_SIZE];
 };
 
@@ -170,6 +171,10 @@ static void free_rpn_operand(void *p) {
         return;
     }
 
+    if (v->flags.spfree && v->sp) {
+        RedisModule_Free((void *)v->sp);
+        v->sp = NULL;
+    }
     if (v->flags.pooled) {
         struct rpn_operand *prev = small_operand_pool_next;
 
@@ -318,7 +323,7 @@ static int to_bool(struct rpn_operand *v) {
     return !!((long long)d);
 }
 
-enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen) {
+enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags) {
     struct rpn_operand *old;
 
     if (i >= (size_t)ctx->nr_reg) {
@@ -342,6 +347,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
          * Set the string value.
          */
         r->flags.regist = 1; /* Can't be freed when this flag is set. */
+        r->flags.spfree = (flags & RPN_SET_REG_FLAG_RMFREE) == RPN_SET_REG_FLAG_RMFREE;
         r->s_size = slen;
         r->sp = s;
 
@@ -813,6 +819,7 @@ rpn_token *rpn_compile(const char *input, size_t len) {
             return NULL;
         }
 
+        /* TODO verify s len */
         strncpy(expr[i++], s, RPN_MAX_TOKEN_SIZE - 1);
         size += sizeof(rpn_token);
     }
