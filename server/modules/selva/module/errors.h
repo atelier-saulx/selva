@@ -54,8 +54,12 @@
  * Node or entity already exist.
  */
 #define SELVA_SUBSCRIPTIONS_EEXIST      (-12)
+/**
+ * RPN compilation error.
+ */
+#define SELVA_RPN_ECOMP                 (-13)
 /* This must be the last error */
-#define SELVA_INVALID_ERROR             (-13)
+#define SELVA_INVALID_ERROR             (-14)
 
 struct RedisModuleCtx;
 

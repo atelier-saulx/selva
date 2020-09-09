@@ -1690,7 +1690,7 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
 int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
-    if (argc == 3) {
+    if (argc != 4) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -2237,7 +2237,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         rpn_ctx = rpn_init(ctx, nr_reg);
         if (!rpn_ctx) {
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
+            return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
         }
 
         /*
@@ -2260,7 +2260,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         if (!filter_expression) {
             fprintf(stderr, "Hierarchy: Failed to compile a filter expression: %.*s\n",
                     (int)input_len, input);
-            return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_EGENERAL]);
+            return replyWithSelvaError(ctx, SELVA_RPN_ECOMP);
         }
     }
 
@@ -2348,6 +2348,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     }
 
     return REDISMODULE_OK;
+#undef SHIFT_ARGS
 }
 
 /**
@@ -2436,7 +2437,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     size_t nr_reg = argc - ARGV_FILTER_ARGS + 1;
     struct rpn_ctx *rpn_ctx = rpn_init(ctx, nr_reg);
     if (!rpn_ctx) {
-        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_ENOMEM]);
+        return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
     }
 
     RedisModuleString *ids = argv[ARGV_NODE_IDS];
@@ -2450,7 +2451,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     if (!filter_expression) {
         fprintf(stderr, "Hierarchy: Failed to compile a filter expression: %.*s\n",
                 (int)filter_len, filter_str);
-        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_MODIFY_HIERARCHY_EGENERAL]);
+        return replyWithSelvaError(ctx, SELVA_RPN_ECOMP);
     }
 
     /*
@@ -2511,6 +2512,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     rpn_destroy(rpn_ctx);
 
     return REDISMODULE_OK;
+#undef SHIFT_ARGS
 }
 
 static int DumpCommand_PrintNode(SelvaModify_HierarchyNode *node, void *arg) {
