@@ -199,7 +199,6 @@ class Connection {
   public emit(event: string, payload?: any) {
     const listeners = this.listeners[event]
     if (listeners) {
-      console.log('emit', event)
       for (let id in listeners) {
         listeners[id].forEach(cb => {
           cb(payload)

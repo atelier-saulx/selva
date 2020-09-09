@@ -7,29 +7,13 @@ import {
   SelvaServer
 } from '../../server'
 import './assertions'
-import { wait, worker } from './assertions'
+import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
-import fs from 'fs'
-import rimraf from 'rimraf'
 
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
-const removeDump = async () => {
-  console.log('go remove?')
-  if (fs.existsSync(dir)) {
-    console.log('remove it')
-    rimraf(dir, err => {
-      console.log('remove', dir)
-      if (err) {
-        console.log('cannot remove dump')
-      }
-    })
-  }
-  await wait(2e3)
-}
-
-test.before(removeDump)
-// test.after(removeDump)
+test.before(removeDump(dir))
+test.after(removeDump(dir))
 
 test.serial('connection / server orchestration', async t => {
   await wait(2e3)

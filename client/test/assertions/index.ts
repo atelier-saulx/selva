@@ -5,6 +5,7 @@ import hash from '@sindresorhus/fnv1a'
 import { join } from 'path'
 import fs from 'fs'
 import { Worker } from 'worker_threads'
+import rimraf from 'rimraf'
 
 declare module 'ava' {
   export interface Assertions {
@@ -142,4 +143,18 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
     })
   })
 
-export { logDb, dumpDb, idExists, wait, worker }
+const removeDump = (dir: string) => {
+  return async () => {
+    if (fs.existsSync(dir)) {
+      console.log('remove it')
+      rimraf(dir, err => {
+        if (err) {
+          console.log('cannot remove dump')
+        }
+      })
+    }
+    await wait(1e3)
+  }
+}
+
+export { logDb, dumpDb, idExists, wait, worker, removeDump }

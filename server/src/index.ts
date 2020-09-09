@@ -59,9 +59,6 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
 
   }
 
-
-  console.log('return opts ', parsedOpts)
-
   return parsedOpts
 }
 

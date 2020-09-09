@@ -6,7 +6,7 @@ import {
   startReplica,
   startSubscriptionManager
 } from '@saulx/selva-server'
-import { wait } from './assertions'
+import { wait, removeDump } from './assertions'
 import getPort from 'get-port'
 import fs from 'fs'
 import { join } from 'path'
@@ -14,22 +14,8 @@ import rimraf from 'rimraf'
 
 const dir = join(process.cwd(), 'tmp', 'orchestrationtest')
 
-const removeDump = async () => {
-  if (fs.existsSync(dir)) {
-    rimraf(dir, err => {
-      if (err) {
-        console.log('cannot remove dump')
-      }
-    })
-  }
-  await wait(1e3)
-}
-
-test.before(removeDump)
-test.after(removeDump)
-
-// first test destroying serversx
-// finish this test
+test.before(removeDump(dir))
+test.after(removeDump(dir))
 
 // need to clean dumps if testing replicas
 test.skip('Create a full cluster (replica, origin, subs manager, registry)', async t => {
