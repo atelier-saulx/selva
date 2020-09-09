@@ -27,7 +27,7 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
         newConnection.attachSelvaClient(selvaClient)
         newConnection.applyConnectionState(state)
         if (serverDescriptor.type === 'registry') {
-          console.log('o o this is a registry :/')
+          console.log('o o this is a registry :/ HDC make it')
           selvaClient.registryConnection = newConnection
         }
       }
