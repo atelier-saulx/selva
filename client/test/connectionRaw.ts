@@ -200,7 +200,7 @@ test.serial('connection / server orchestration', async t => {
 
   const client2 = connect({ port: 9999 })
 
-  client2.redis.on({ type: 'replica' }, 'message', () => { })
+  client2.redis.on({ type: 'replica' }, 'message', () => {})
   client2.redis.subscribe({ type: 'replica' }, 'snurf')
 
   await wait(50)
@@ -232,10 +232,7 @@ test.serial('connection / server orchestration', async t => {
 
   const p = []
   for (let i = 0; i < 10e3; i++) {
-    p.push(client.redis.hgetall(
-      { type: 'replica' },
-      'flappie'
-    ))
+    p.push(client.redis.hgetall({ type: 'replica' }, 'flappie'))
   }
 
   await wait(1e3)
@@ -280,7 +277,7 @@ test.serial('connection / server orchestration', async t => {
       )
     }
 
-    await (1e3)
+    await 1e3
 
     return
   })
@@ -305,7 +302,6 @@ test.serial('connection / server orchestration', async t => {
   // need to add ramp up!!!
   t.is(snuxResults.length, 20e3 + 4, 'Resend all events on hard disconnect')
 
-
   const stateReconnectedSets = await Promise.all(p)
 
   const x = []
@@ -313,7 +309,11 @@ test.serial('connection / server orchestration', async t => {
     x.push({ snurf: 'snarx' })
   }
 
-  t.deepEqualIgnoreOrder(stateReconnectedSets, x, 'handled all gets from a reconnection state (20k)')
+  t.deepEqualIgnoreOrder(
+    stateReconnectedSets,
+    x,
+    'handled all gets from a reconnection state (20k)'
+  )
 
   await registry.destroy()
   await origin.destroy()
@@ -336,29 +336,46 @@ test.serial('Get server raw - heavy load', async t => {
     compare.push({
       money: String(amount * 3 - 1)
     })
-    p.push(worker(async ({ connect }, { index, amount }) => {
-      const client = connect({ port: 9999 })
-      const makeitrain = async (index) => {
-        let p = []
-        for (let i = 0; i < amount; i++) {
-          p.push(client.redis.hset({ type: 'origin' }, 'flax-' + client.uuid, 'money', i + (index * amount)))
-        }
-        await Promise.all(p)
-      }
-      for (let i = 0; i < 3; i++) {
-        await makeitrain(i)
-      }
-    }, { index: i, amount }))
+    p.push(
+      worker(
+        async ({ connect }, { index, amount }) => {
+          const client = connect({ port: 9999 })
+          const makeitrain = async index => {
+            let p = []
+            for (let i = 0; i < amount; i++) {
+              p.push(
+                client.redis.hset(
+                  { type: 'origin' },
+                  'flax-' + client.uuid,
+                  'money',
+                  i + index * amount
+                )
+              )
+            }
+            await Promise.all(p)
+          }
+          for (let i = 0; i < 3; i++) {
+            await makeitrain(i)
+          }
+        },
+        { index: i, amount }
+      )
+    )
   }
-  ; (await Promise.all(p)).map(([, w]) => w.terminate())
+  ;(await Promise.all(p)).map(([, w]) => w.terminate())
   const keys = await client.redis.keys({ type: 'origin' }, '*')
-  const results = await Promise.all(keys
-    .filter((k: string) => k.indexOf('flax-') === 0)
-    .map((k: string) => client.redis.hgetall({ type: 'origin' }, k))
+  const results = await Promise.all(
+    keys
+      .filter((k: string) => k.indexOf('flax-') === 0)
+      .map((k: string) => client.redis.hgetall({ type: 'origin' }, k))
   )
   const total = amount * 3 * 20
   console.log('Executed', total / 1e3, 'k hsets', 'in', Date.now() - d, 'ms')
-  t.deepEqualIgnoreOrder(results, compare, `used workers to set all fields correctly (${total} sets)`)
+  t.deepEqualIgnoreOrder(
+    results,
+    compare,
+    `used workers to set all fields correctly (${total} sets)`
+  )
   // set 10mil mil counts
   await registry.destroy()
   await origin.destroy()
@@ -367,17 +384,14 @@ test.serial('Get server raw - heavy load', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.only('registry hard disconnect', async t => {
-  let registry = await startRegistry({ port: 9999 })
-  const origin = await startOrigin({ registry: { port: 9999 }, default: true })
-  const client = connect({ port: 9999 })
+// test.only('registry hard disconnect', async t => {
+//   let registry = await startRegistry({ port: 9999 })
+//   const origin = await startOrigin({ registry: { port: 9999 }, default: true })
+//   const client = connect({ port: 9999 })
 
-  // promise on connected is maybe nice
+//   // promise on connected is maybe nice
 
-
-
-
-  await registry.destroy()
-  await origin.destroy()
-  await client.destroy()
-})
+//   await registry.destroy()
+//   await origin.destroy()
+//   await client.destroy()
+// })
