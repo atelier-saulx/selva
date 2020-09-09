@@ -111,9 +111,13 @@ export default (connection: Connection) => {
     }, 60e3)
   }
 
-  connection.on('connect', () => {
-    serverHeartbeat()
-  })
+  connection.on(
+    'connect',
+    () => {
+      serverHeartbeat()
+    },
+    'connection'
+  )
 
   connection.subscriber.subscribe(SERVER_HEARTBEAT)
 

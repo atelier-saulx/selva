@@ -9,26 +9,53 @@ import {
 import './assertions'
 import { wait, worker } from './assertions'
 import { join } from 'path'
+import fs from 'fs'
+import rimraf from 'rimraf'
 
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
+const removeDump = async () => {
+  console.log('go remove?')
+  if (fs.existsSync(dir)) {
+    console.log('remove it')
+    rimraf(dir, err => {
+      console.log('remove', dir)
+      if (err) {
+        console.log('cannot remove dump')
+      }
+    })
+  }
+  await wait(2e3)
+}
+
+test.before(removeDump)
+// test.after(removeDump)
+
 test.serial('connection / server orchestration', async t => {
+  await wait(2e3)
+
   const registry = await startRegistry({ port: 9999 })
 
   const client = connect({
     port: 9999
   })
 
+  console.log('go')
+
   const origin = await startOrigin({
     default: true,
     registry: { port: 9999 }
   })
 
+  console.log('go2')
+
   const snurfServer = await startOrigin({
     name: 'snurf',
     registry: { port: 9999 },
-    dir: join(dir, 'origin')
+    dir: join(dir, 'snurforigin')
   })
+
+  console.log('go3')
 
   await client.redis.keys(
     {
@@ -324,65 +351,65 @@ test.serial('connection / server orchestration', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.serial('Get server raw - heavy load', async t => {
-  const registry = await startRegistry({ port: 9999 })
-  const origin = await startOrigin({ registry: { port: 9999 }, default: true })
-  const client = connect({ port: 9999 })
-  const p = []
-  const d = Date.now()
-  const amount = 50e3
-  const compare = []
-  for (let i = 0; i < 20; i++) {
-    compare.push({
-      money: String(amount * 3 - 1)
-    })
-    p.push(
-      worker(
-        async ({ connect }, { index, amount }) => {
-          const client = connect({ port: 9999 })
-          const makeitrain = async index => {
-            let p = []
-            for (let i = 0; i < amount; i++) {
-              p.push(
-                client.redis.hset(
-                  { type: 'origin' },
-                  'flax-' + client.uuid,
-                  'money',
-                  i + index * amount
-                )
-              )
-            }
-            await Promise.all(p)
-          }
-          for (let i = 0; i < 3; i++) {
-            await makeitrain(i)
-          }
-        },
-        { index: i, amount }
-      )
-    )
-  }
-  ;(await Promise.all(p)).map(([, w]) => w.terminate())
-  const keys = await client.redis.keys({ type: 'origin' }, '*')
-  const results = await Promise.all(
-    keys
-      .filter((k: string) => k.indexOf('flax-') === 0)
-      .map((k: string) => client.redis.hgetall({ type: 'origin' }, k))
-  )
-  const total = amount * 3 * 20
-  console.log('Executed', total / 1e3, 'k hsets', 'in', Date.now() - d, 'ms')
-  t.deepEqualIgnoreOrder(
-    results,
-    compare,
-    `used workers to set all fields correctly (${total} sets)`
-  )
-  // set 10mil mil counts
-  await registry.destroy()
-  await origin.destroy()
-  await client.destroy()
-  await wait(5000)
-  t.is(connections.size, 0, 'all connections removed')
-})
+// test.serial('Get server raw - heavy load', async t => {
+//   const registry = await startRegistry({ port: 9999 })
+//   const origin = await startOrigin({ registry: { port: 9999 }, default: true })
+//   const client = connect({ port: 9999 })
+//   const p = []
+//   const d = Date.now()
+//   const amount = 50e3
+//   const compare = []
+//   for (let i = 0; i < 20; i++) {
+//     compare.push({
+//       money: String(amount * 3 - 1)
+//     })
+//     p.push(
+//       worker(
+//         async ({ connect }, { index, amount }) => {
+//           const client = connect({ port: 9999 })
+//           const makeitrain = async index => {
+//             let p = []
+//             for (let i = 0; i < amount; i++) {
+//               p.push(
+//                 client.redis.hset(
+//                   { type: 'origin' },
+//                   'flax-' + client.uuid,
+//                   'money',
+//                   i + index * amount
+//                 )
+//               )
+//             }
+//             await Promise.all(p)
+//           }
+//           for (let i = 0; i < 3; i++) {
+//             await makeitrain(i)
+//           }
+//         },
+//         { index: i, amount }
+//       )
+//     )
+//   }
+//   ;(await Promise.all(p)).map(([, w]) => w.terminate())
+//   const keys = await client.redis.keys({ type: 'origin' }, '*')
+//   const results = await Promise.all(
+//     keys
+//       .filter((k: string) => k.indexOf('flax-') === 0)
+//       .map((k: string) => client.redis.hgetall({ type: 'origin' }, k))
+//   )
+//   const total = amount * 3 * 20
+//   console.log('Executed', total / 1e3, 'k hsets', 'in', Date.now() - d, 'ms')
+//   t.deepEqualIgnoreOrder(
+//     results,
+//     compare,
+//     `used workers to set all fields correctly (${total} sets)`
+//   )
+//   // set 10mil mil counts
+//   await registry.destroy()
+//   await origin.destroy()
+//   await client.destroy()
+//   await wait(5000)
+//   t.is(connections.size, 0, 'all connections removed')
+// })
 
 // test.only('registry hard disconnect', async t => {
 //   let registry = await startRegistry({ port: 9999 })

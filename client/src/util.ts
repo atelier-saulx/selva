@@ -17,7 +17,7 @@ export const waitUntilEvent = (
 }
 
 export const isEmptyObject = (obj: { [key: string]: any }): boolean => {
-  for (const k in obj) {
+  for (const _k in obj) {
     return false
   }
   return true

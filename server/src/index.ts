@@ -5,7 +5,7 @@ import chalk from 'chalk'
 import os from 'os'
 import { join } from 'path'
 import fs from 'fs'
-import mkdirp from 'mkdirp-promise'
+import mkdirp from 'mkdirp'
 
 export * as s3Backups from './backup-plugins/s3'
 
@@ -56,7 +56,11 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
 
   if (parsedOpts.default ) {
     parsedOpts.name = 'default'
+
   }
+
+
+  console.log('return opts ', parsedOpts)
 
   return parsedOpts
 }

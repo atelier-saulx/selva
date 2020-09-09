@@ -20,6 +20,7 @@ type ConnectionState = {
   pSubscribes: string[]
   subscribes: string[]
   listeners: [string, (x: any) => {}][]
+  connectionListeners: [string, (x: any) => {}][]
 }
 
 class Connection {
@@ -198,6 +199,7 @@ class Connection {
   public emit(event: string, payload?: any) {
     const listeners = this.listeners[event]
     if (listeners) {
+      console.log('emit', event)
       for (let id in listeners) {
         listeners[id].forEach(cb => {
           cb(payload)
@@ -358,7 +360,8 @@ class Connection {
       queue: [],
       pSubscribes: [],
       subscribes: [],
-      listeners: []
+      listeners: [],
+      connectionListeners: []
     }
 
     // and do this also
@@ -385,6 +388,15 @@ class Connection {
           this.redisListeners[event][id].forEach(cb => {
             state.isEmpty = false
             state.listeners.push([event, cb])
+          })
+        }
+      }
+
+      for (const event in this.listeners) {
+        if (id in this.listeners[event]) {
+          this.listeners[event][id].forEach(cb => {
+            state.isEmpty = false
+            state.connectionListeners.push([event, cb])
           })
         }
       }
@@ -526,13 +538,18 @@ class Connection {
       loadScripts(this)
     }
 
-    this.on('connect', () => {
-      // this is prob a good place...
-      this.destroyIfIdle()
-      if (this.queue.length) {
-        drainQueue(this)
-      }
-    })
+    // connection connect
+    this.on(
+      'connect',
+      () => {
+        // this is prob a good place...
+        this.destroyIfIdle()
+        if (this.queue.length) {
+          drainQueue(this)
+        }
+      },
+      'connection'
+    )
   }
 }
 
