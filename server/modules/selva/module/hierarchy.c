@@ -2703,4 +2703,4 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
 
     return REDISMODULE_OK;
 }
-SELVA_MODIFY_ONLOAD(Hierarchy_OnLoad);
+SELVA_ONLOAD(Hierarchy_OnLoad);

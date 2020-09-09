@@ -33,8 +33,8 @@ struct subscriptionMarker {
 
 struct Selva_Subscription {
     Selva_SubscriptionId sub_id;
+    unsigned marker_flags_filter; /* All marker flags OR'd for faster lookup. */
     RB_ENTRY(Selva_Subscription) _sub_index_entry;
-    size_t nr_markers;
     SVector markers; /* struct subscriptionMarker */
 };
 
@@ -122,7 +122,6 @@ static void init_node_metadata_subs(
         struct SelvaModify_HierarchyMetaData *metadata) {
     /* TODO Lazy alloc */
     SVector_Init(&metadata->sub_markers, 1, marker_svector_compare);
-    metadata->sub_flags_filter;
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_subs);
 
@@ -215,7 +214,6 @@ static int Selva_AddSubscriptionMarker(
     va_list args;
     struct Selva_Subscription *sub;
     struct subscriptionMarker *marker;
-    int err;
 
     sub = find_sub(hierarchy, sub_id);
     if (!sub) {
@@ -234,6 +232,7 @@ static int Selva_AddSubscriptionMarker(
 
     marker->marker_flags = flags;
     marker->sub = sub;
+    sub->marker_flags_filter |= flags;
 
     va_start(args, fmt);
     while (*fmt != '\0') {
@@ -261,25 +260,40 @@ static int Selva_AddSubscriptionMarker(
     }
     va_end(args);
 
-    /*
-     * Set subscription markers.
-     * Currently we expect that node_id and dir are always given but that may
-     * change in the future.
-     */
-    struct SelvaModify_HierarchyCallback cb = {
-        .node_cb = set_marker,
-        .node_arg = marker,
-    };
-
-    err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
-    if (err) {
-        /* We assume that the marker was not inserted anywhere. */
-        destroy_marker(marker);
-        return err;
-    }
     SVector_Insert(&sub->markers, marker);
 
     return 0;
+}
+
+static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
+    struct subscriptionMarker **it;
+    int res = 0;
+
+    SVECTOR_FOREACH(it, &sub->markers) {
+        struct subscriptionMarker *marker = *it;
+        int err;
+
+        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
+            /* This is a non-traversing marker. */
+            continue;
+        }
+
+        /*
+         * Set subscription markers.
+         */
+        struct SelvaModify_HierarchyCallback cb = {
+            .node_cb = set_marker,
+            .node_arg = marker,
+        };
+
+        err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+        if (err) {
+            fprintf(stderr, "Subscriptions: Could not fully apply a subscription: %s\n", subId2str(sub->sub_id));
+            res = err; /* Report the last error */
+        }
+    }
+
+    return res;
 }
 
 /**
@@ -540,10 +554,55 @@ out:
 }
 
 /*
+ * KEY SUB_ID
+ */
+int Selva_RefreshSubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    int err;
+
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    const size_t ARGV_REDIS_KEY = 1;
+    const size_t ARGV_SUB_ID    = 2;
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    Selva_SubscriptionId sub_id;
+    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    if (err) {
+        fprintf(stderr, "Invalid sub_id\n");
+        return replyWithSelvaError(ctx, err);
+    }
+
+    struct Selva_Subscription *sub;
+    sub = find_sub(hierarchy, sub_id);
+    if (!sub) {
+        replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOENT);
+        return REDISMODULE_OK;
+    }
+
+    err = refreshSubscription(hierarchy, sub);
+    if (err) {
+        replyWithSelvaError(ctx, err);
+    } else {
+        RedisModule_ReplyWithLongLong(ctx, 1);
+    }
+
+    return REDISMODULE_OK;
+}
+
+/*
  * KEY
  */
 int Selva_SubscriptionsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc < 2) {
+    if (argc != 2) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -552,7 +611,7 @@ int Selva_SubscriptionsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
@@ -588,7 +647,7 @@ int Selva_SubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
@@ -681,13 +740,14 @@ static int Hierarchy_Subscriptions_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
      */
-    if (RedisModule_CreateCommand(ctx, "selva.subscribe", Selva_SubscribeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.subscriptions", Selva_SubscriptionsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.subscription", Selva_SubscriptionCommand, "readonly", 1, 1, 1) ||
-        RedisModule_CreateCommand(ctx, "selva.unsubscribe", Selva_UnsubscribeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.subscriptions.add", Selva_SubscribeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.refresh", Selva_RefreshSubscriptionCommand, "write deny-oom", 1, 1 ,1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.list", Selva_SubscriptionsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.debug", Selva_SubscriptionCommand, "readonly deny-script", 1, 1, 1) ||
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.del", Selva_UnsubscribeCommand, "write", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
     return REDISMODULE_OK;
 }
-SELVA_MODIFY_ONLOAD(Hierarchy_Subscriptions_OnLoad);
+SELVA_ONLOAD(Hierarchy_Subscriptions_OnLoad);

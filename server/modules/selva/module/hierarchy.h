@@ -26,7 +26,6 @@ typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
  * declared structures.
  */
 struct SelvaModify_HierarchyMetaData {
-    unsigned sub_flags_filter; /* All flags OR'd together. */
     struct SVector sub_markers;
 };
 

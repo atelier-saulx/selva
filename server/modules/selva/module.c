@@ -18,7 +18,7 @@
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
 
-SET_DECLARE(selva_Onload, SelvaModify_Onload);
+SET_DECLARE(selva_onload, Selva_Onload);
 
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     REDISMODULE_NOT_USED(argv);
@@ -343,10 +343,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
-    SelvaModify_Onload **onload_p;
+    Selva_Onload **onload_p;
 
-    SET_FOREACH(onload_p, selva_Onload) {
-        SelvaModify_Onload *onload = *onload_p;
+    SET_FOREACH(onload_p, selva_onload) {
+        Selva_Onload *onload = *onload_p;
         int err;
 
         err = onload(ctx);
