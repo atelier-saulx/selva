@@ -70,6 +70,7 @@ struct SelvaModify_Hierarchy {
  * Used by SelvaModify_TraverseHierarchy().
  */
 enum SelvaModify_HierarchyTraversal {
+    SELVA_HIERARCHY_TRAVERSAL_NONE, /* DO NOT USE */
     SELVA_HIERARCHY_TRAVERSAL_NODE,
     SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS,
     SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS,
@@ -217,6 +218,7 @@ ssize_t SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_
  */
 ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
 
+const char *SelvaModify_HierarchyDir2str(enum SelvaModify_HierarchyTraversal dir);
 int SelvaModify_TraverseHierarchy(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,

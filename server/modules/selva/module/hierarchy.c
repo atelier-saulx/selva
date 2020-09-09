@@ -1332,6 +1332,27 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
     return 0;
 }
 
+const char *SelvaModify_HierarchyDir2str(enum SelvaModify_HierarchyTraversal dir) {
+    switch (dir) {
+    case SELVA_HIERARCHY_TRAVERSAL_NONE:
+        return "none";
+    case SELVA_HIERARCHY_TRAVERSAL_NODE:
+        return "node";
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
+        return "bfs_ancestors";
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
+        return "bfs_descendants";
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
+        return "dfs_ancestors";
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
+        return "dfs_descendants";
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
+        return "dfs_full";
+    default:
+        return "invalid";
+    }
+}
+
 /*
  * A little trampoline to hide the scary internals of the hierarchy
  * implementation from the innocent users just wanting to traverse the
@@ -1358,6 +1379,10 @@ int SelvaModify_TraverseHierarchy(
     };
     SelvaModify_HierarchyNode *head;
     int err;
+
+    if (dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
+        return SELVA_MODIFY_HIERARCHY_EINVAL;
+    }
 
     if (dir != SELVA_HIERARCHY_TRAVERSAL_DFS_FULL) {
         head = findNode(hierarchy, id);
@@ -2672,7 +2697,7 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaModify_Hierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaModify_Hierarchy_FindInCommand,   "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.dump", SelvaModify_Hierarchy_DumpCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.dump", SelvaModify_Hierarchy_DumpCommand,       "readonly deny-script", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

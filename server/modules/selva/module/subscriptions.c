@@ -25,7 +25,8 @@ struct subscriptionMarker {
     unsigned marker_flags;
     Selva_NodeId node_id;
     enum SelvaModify_HierarchyTraversal dir;
-    rpn_token *filter;
+    struct rpn_ctx *filter_ctx;
+    rpn_token *filter_expression;
     char *fields; /* \n separated and \0 terminated. */
     struct Selva_Subscription *sub; /* Pointer back to the subscription. */
 };
@@ -72,7 +73,9 @@ static char *subId2str(Selva_SubscriptionId sub_id) {
 }
 
 static void destroy_marker(struct subscriptionMarker *marker) {
-    /* TODO free all data in the marker */
+    rpn_destroy(marker->filter_ctx);
+    RedisModule_Free(marker->filter_expression);
+    RedisModule_Free(marker->fields);
     RedisModule_Free(marker);
 }
 
@@ -94,6 +97,8 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
             clear_sub(hierarchy, marker, marker->node_id);
             destroy_marker(marker);
         }
+        /* This isn't technically necessary but we dot it for clarity. */
+        SVector_Clear(&sub->markers);
     }
 
     RB_REMOVE(hierarchy_subscriptions_tree, &hierarchy->subs_head, sub);
@@ -191,6 +196,16 @@ static struct Selva_Subscription *create_subscription(
     return sub;
 }
 
+/**
+ * Add a new marker to a subscription.
+ * Specifiers:
+ *  - n = node_id, copied.
+ *  - d = traversal direction, value.
+ *  - r = RPN context and expression, pointers used directly and must be valid
+ *        until the subscription is deleted.
+ *  - f = field names, separated by `\n` and terminated by `\0`. The string is
+ *        duplicated.
+ */
 static int Selva_AddSubscriptionMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,
@@ -215,6 +230,7 @@ static int Selva_AddSubscriptionMarker(
         /* The subscription won't be freed. */
         return SELVA_SUBSCRIPTIONS_ENOMEM;
     }
+    memset(marker, 0, sizeof(*marker));
 
     marker->marker_flags = flags;
     marker->sub = sub;
@@ -230,9 +246,11 @@ static int Selva_AddSubscriptionMarker(
             marker->dir = va_arg(args, enum SelvaModify_HierarchyTraversal);
             break;
         case 'r': /* RPN filter */
-            /* TODO */
+            marker->filter_ctx = va_arg(args, struct rpn_ctx *);
+            marker->filter_expression = va_arg(args, rpn_token *);
+            break;
         case 'f': /* Fields */
-            marker->fields = strdup(va_arg(args, char *));
+            marker->fields = RedisModule_Strdup(va_arg(args, char *));
             break;
         default:
             fprintf(stderr, "Subscriptions: Invalid marker specifier '%c' for subscription %s\n",
@@ -368,18 +386,25 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
 }
 
 /*
- * KEY SUB_ID ancestors|descendants NODE_ID
+ * KEY SUB_ID node|ancestors|descendants NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
  */
 int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_SUB_ID    = 2;
-    const size_t ARGV_SUB_TYPE  = 3;
-    const size_t ARGV_NODE_ID   = 4;
+    const size_t ARGV_REDIS_KEY     = 1;
+    const size_t ARGV_SUB_ID        = 2;
+    const size_t ARGV_MARKER_TYPE   = 3;
+    const size_t ARGV_NODE_ID       = 4;
+    const size_t ARGV_FIELDS        = 5;
+    const size_t ARGV_FIELD_NAMES   = 6;
+    size_t ARGV_FILTER_EXPR         = 5;
+    size_t ARGV_FILTER_ARGS         = 6;
+#define SHIFT_ARGS(i) \
+    ARGV_FILTER_EXPR += i; \
+    ARGV_FILTER_ARGS += i
 
-    if (argc < 4) {
+    if (argc < 5) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -391,38 +416,127 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         return REDISMODULE_OK;
     }
 
+    /*
+     * Get the subscription id.
+     */
     Selva_SubscriptionId sub_id;
     err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "Invalid sub_id\n");
         return replyWithSelvaError(ctx, err);
     }
 
+    /*
+     * Parse the traversal argument.
+     */
     enum SelvaModify_HierarchyTraversal sub_dir;
-    err = parse_subscription_type(&sub_dir, argv[ARGV_SUB_TYPE]);
+    err = parse_subscription_type(&sub_dir, argv[ARGV_MARKER_TYPE]);
     if (err) {
-        fprintf(stderr, "Invalid type\n");
         return replyWithSelvaError(ctx, err);
     }
 
+    /*
+     * Get the nodeId.
+     */
     Selva_NodeId node_id;
     size_t len;
     const char *str = RedisModule_StringPtrLen(argv[ARGV_NODE_ID], &len);
     memset(node_id, 0, SELVA_NODE_ID_SIZE);
     memcpy(node_id, str, (SELVA_NODE_ID_SIZE > len) ? len : SELVA_NODE_ID_SIZE);
 
+    /*
+     * Get field names for change events.
+     * Optional.
+     */
+    const char *fields = NULL;
+    if (argc > (int)ARGV_FIELD_NAMES) {
+        const char *fields_arg;
+
+        fields_arg = RedisModule_StringPtrLen(argv[ARGV_FIELDS], NULL);
+        if(strcmp(fields_arg, "fields")) {
+            return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_EINVAL);
+        }
+
+        fields = RedisModule_StringPtrLen(argv[ARGV_FIELD_NAMES], NULL);
+
+        SHIFT_ARGS(2);
+    }
+
+    /*
+     * Parse & compile the filter expression.
+     * Optional.
+     */
+    struct rpn_ctx *filter_ctx = NULL;
+    rpn_token *filter_expression = NULL;
+    if (argc > (int)ARGV_FILTER_EXPR) {
+        if (argc >= (int)ARGV_FILTER_EXPR + 1) {
+            const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
+            const char *input;
+            size_t input_len;
+
+            filter_ctx = rpn_init(ctx, nr_reg);
+            if (!filter_ctx) {
+                err = SELVA_SUBSCRIPTIONS_ENOMEM;
+                goto out;
+            }
+
+            /*
+             * Compile the filter expression.
+             */
+            input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
+            filter_expression = rpn_compile(input, input_len);
+            if (!filter_expression) {
+                fprintf(stderr, "Hierarchy: Failed to compile a filter expression: %.*s\n",
+                        (int)input_len, input);
+                err = SELVA_RPN_ECOMP;
+                goto out;
+            }
+
+            /*
+             * Get the filter expression arguments and set them to the registers.
+             */
+            for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
+                /* reg[0] is reserved for the current nodeId */
+                const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
+                size_t str_len;
+                const char *str;
+                const char *arg;
+
+                /*
+                 * Args needs to be duplicated so the strings don't get freed
+                 * when the command returns.
+                 */
+                str = RedisModule_StringPtrLen(argv[i], &str_len);
+                str_len++;
+                arg = RedisModule_Alloc(str_len);
+
+                rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_RMFREE);
+            }
+        }
+    }
+
     unsigned marker_flags = SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
     err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_flags, "nd",
                                       node_id, sub_dir);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        goto out;
     }
 
     RedisModule_ReplyWithLongLong(ctx, 1);
 #if 0
     RedisModule_ReplicateVerbatim(ctx);
 #endif
+out:
+    if (err) {
+        if (filter_ctx) {
+            rpn_destroy(filter_ctx);
+            RedisModule_Free(filter_expression);
+        }
+
+        replyWithSelvaError(ctx, err);
+    }
+
     return REDISMODULE_OK;
+#undef SHIFT_ARGS
 }
 
 /*
@@ -461,10 +575,74 @@ int Selva_SubscriptionsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 /*
  * KEY SUB_ID
  */
+int Selva_SubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    int err;
+
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    const size_t ARGV_REDIS_KEY = 1;
+    const size_t ARGV_SUB_ID    = 2;
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    Selva_SubscriptionId sub_id;
+    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    if (err) {
+        fprintf(stderr, "Invalid sub_id\n");
+        return replyWithSelvaError(ctx, err);
+    }
+
+    struct Selva_Subscription *sub;
+    sub = find_sub(hierarchy, sub_id);
+    if (!sub) {
+        replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOENT);
+        return REDISMODULE_OK;
+    }
+
+    size_t array_len = 0;
+    struct subscriptionMarker **it;
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    SVECTOR_FOREACH(it, &sub->markers) {
+        RedisModuleString *str;
+        struct subscriptionMarker *marker = *it;
+
+        str = RedisModule_CreateStringPrintf(ctx,
+                "flags: %u\n"
+                "node_id: \"%.*s\"\n"
+                "dir: %s\n"
+                "expression: %s\n"
+                "fields: \"%s\"",
+                marker->marker_flags,
+                (int)SELVA_NODE_ID_SIZE, marker->node_id,
+                SelvaModify_HierarchyDir2str(marker->dir),
+                (marker->filter_ctx) ? "set" : "unset",
+                marker->fields);
+        if (!str) {
+            return REDISMODULE_ERR;
+        }
+        RedisModule_ReplyWithString(ctx, str);
+        array_len++;
+    }
+    RedisModule_ReplySetArrayLength(ctx, array_len);
+
+    return REDISMODULE_OK;
+}
+
+/*
+ * KEY SUB_ID
+ */
 int Selva_UnsubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;
 
-    if (argc < 3) {
+    if (argc != 3) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -505,6 +683,7 @@ static int Hierarchy_Subscriptions_OnLoad(RedisModuleCtx *ctx) {
      */
     if (RedisModule_CreateCommand(ctx, "selva.subscribe", Selva_SubscribeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions", Selva_SubscriptionsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.subscription", Selva_SubscriptionCommand, "readonly", 1, 1, 1) ||
         RedisModule_CreateCommand(ctx, "selva.unsubscribe", Selva_UnsubscribeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
