@@ -92,13 +92,13 @@ static char * test_necessarily(void)
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
 
-    err = rpn_set_reg(ctx, 1, "0", 1);
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
     err = rpn_integer(ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("necess(0) || 1 == false", res, 0);
 
-    err = rpn_set_reg(ctx, 1, "1", 1);
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
     err = rpn_integer(ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
@@ -117,25 +117,25 @@ static char * test_range(void)
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
 
-    err = rpn_set_reg(ctx, 1, "0", 1);
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
     err = rpn_integer(ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 <= 0 <= 10 == false", res, 0);
 
-    err = rpn_set_reg(ctx, 1, "1", 1);
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
     err = rpn_integer(ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 <= 1 <= 10 == true", res, 1);
 
-    err = rpn_set_reg(ctx, 1, "10", 1);
+    err = rpn_set_reg(ctx, 1, "10", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
     err = rpn_integer(ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 <= 10 <= 10 == true", res, 1);
 
-    err = rpn_set_reg(ctx, 1, "11", 1);
+    err = rpn_set_reg(ctx, 1, "11", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
     err = rpn_integer(ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);

@@ -65,6 +65,6 @@ struct RedisModuleCtx;
 
 int replyWithSelvaError(struct RedisModuleCtx *ctx, int err);
 
-extern const char * const hierarchyStrError[-SELVA_INVALID_ERROR + 1];
+extern const char * const selvaStrError[-SELVA_INVALID_ERROR + 1];
 
 #endif /* SELVA_MODIFY_ERRORS */

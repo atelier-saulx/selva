@@ -2,7 +2,7 @@
 #include "linker_set.h"
 #include "errors.h"
 
-const char * const hierarchyStrError[] = {
+const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
     [0]                                 = (const char *)"ERR_SELVA No Error",
     [-SELVA_EGENERAL]                   = (const char *)"ERR_SELVA EGENERAL Unknown error",
     [-SELVA_MODIFY_HIERARCHY_EGENERAL]  = (const char *)"ERR_HIERARCHY EGENERAL Unknown error",
@@ -21,9 +21,9 @@ const char * const hierarchyStrError[] = {
 };
 
 int replyWithSelvaError(RedisModuleCtx *ctx, int err) {
-    if (err >= 0 || -err >= (int)num_elem(hierarchyStrError)) {
-        return RedisModule_ReplyWithError(ctx, hierarchyStrError[-SELVA_EGENERAL]);
+    if (err >= 0 || -err >= (int)num_elem(selvaStrError)) {
+        return RedisModule_ReplyWithError(ctx, selvaStrError[-SELVA_EGENERAL]);
     }
-    return RedisModule_ReplyWithError(ctx, hierarchyStrError[-err]);
+    return RedisModule_ReplyWithError(ctx, selvaStrError[-err]);
 }
 

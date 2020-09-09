@@ -1,7 +1,7 @@
 # PUnit example project #######################################################
 
 # Add here one or more include directories.
-IDIR := ./ ../../util ../../include ../../modify
+IDIR := ./ ../../util ../../include ../../module
 
 # Set this to 1 if you will use asserts that compares floats or doubles;
 # or 0 disable
