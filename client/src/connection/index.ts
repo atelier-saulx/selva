@@ -297,6 +297,12 @@ class Connection {
           this.addRemoteListener(event, cb, state.id)
         }
       }
+      if (state.connectionListeners.length) {
+        for (let i = 0; i < state.connectionListeners.length; i++) {
+          const [event, cb] = state.connectionListeners[i]
+          this.addListener(event, cb, state.id)
+        }
+      }
       if (state.queue.length) {
         for (let i = 0; i < state.queue.length; i++) {
           this.command(state.queue[i])
@@ -345,6 +351,9 @@ class Connection {
         for (let i = 0; i < state.pSubscribes.length; i++) {
           this.punsubscribe(state.subscribes[i], id)
         }
+      }
+      if (state.connectionListeners.length) {
+        this.removeAllListeners(id)
       }
     }
   }
