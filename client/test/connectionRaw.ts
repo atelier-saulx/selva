@@ -330,7 +330,9 @@ test.serial('connection / server orchestration', async t => {
   await origin.destroy()
   await client.destroy()
 
-  await wait(4000)
+  await wait(5000)
+
+  console.log(connections)
 
   t.is(connections.size, 0, 'all connections removed')
 })
