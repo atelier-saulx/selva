@@ -34,7 +34,7 @@ export type Filter =
   | ExistsFilter
   | GeoFilter
   | {
-      $operator: '=' | '!=' | '>' | '<' | '..'
+      $operator: '=' | '!=' | '>' | '<' | '..' | 'textSearch'
       $field: string
       $value: string | number | (string | number)[]
       $and?: Filter
