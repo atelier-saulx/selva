@@ -7,9 +7,7 @@ import SubscriptionEmitter from '../observe/emitter'
 import startRedisClient from './startRedisClient'
 import { RedisClient } from 'redis'
 import { Callback } from '../redis/types'
-import { serverId } from '../util'
-import { createObservable } from '~selva/observe/_yesh'
-import { convertNow } from 'lua/src/get/query/util'
+import { serverId, isEmptyObject } from '../util'
 
 const connections: Map<string, Connection> = new Map()
 
@@ -22,6 +20,7 @@ type ConnectionState = {
   pSubscribes: string[]
   subscribes: string[]
   listeners: [string, (x: any) => {}][]
+  connectionListeners: [string, (x: any) => {}][]
 }
 
 class Connection {
@@ -46,17 +45,6 @@ class Connection {
   public redisListeners: { [key: string]: { [key: string]: Set<Callback> } }
 
   public listeners: { [key: string]: { [key: string]: Set<Callback> } }
-
-  public emit(event: string, payload?: any) {
-    const listeners = this.listeners[event]
-    if (listeners) {
-      for (let key in listeners) {
-        listeners[key].forEach(cb => {
-          cb(payload)
-        })
-      }
-    }
-  }
 
   public hardDisconnect() {
     this.emit('hard-disconnect')
@@ -158,11 +146,9 @@ class Connection {
   }
 
   public subscribe(channel: string, id: string = '') {
-
     if (!id) {
-      console.log('NO ID PROVIDED', channel, id, (new Error()).stack)
+      console.log('NO ID PROVIDED', channel, id, new Error().stack)
     }
-
     this.genericSubscribe('subscriptions', 'subscribe', channel, id)
   }
 
@@ -194,7 +180,7 @@ class Connection {
         if (!listeners[event][id].size) {
           this.subscriber.removeListener(event, cb)
           delete listeners[event][id]
-          if (Object.keys(listeners[event]).length === 0) {
+          if (isEmptyObject(listeners[event])) {
             delete listeners[event]
           }
         }
@@ -203,10 +189,76 @@ class Connection {
           this.subscriber.removeListener(event, cb)
         })
         delete listeners[event][id]
-        if (Object.keys(listeners[event]).length === 0) {
+        if (isEmptyObject(listeners[event])) {
           delete listeners[event]
         }
       }
+    }
+  }
+
+  public emit(event: string, payload?: any) {
+    const listeners = this.listeners[event]
+    if (listeners) {
+      for (let id in listeners) {
+        listeners[id].forEach(cb => {
+          cb(payload)
+        })
+      }
+    }
+  }
+
+  public removeListener(event: string, cb?: Callback, id: string = '') {
+    const listeners = this.listeners
+    if (listeners && listeners[event] && listeners[event][id]) {
+      if (cb) {
+        listeners[event][id].delete(cb)
+        if (!listeners[event][id].size) {
+          this.subscriber.removeListener(event, cb)
+          delete listeners[event][id]
+          if (isEmptyObject(listeners[event])) {
+            delete listeners[event]
+          }
+        }
+      } else {
+        delete listeners[event][id]
+        if (isEmptyObject(listeners[event])) {
+          delete listeners[event]
+        }
+      }
+    }
+  }
+
+  public on(event: string, cb: Callback, id: string = '') {
+    this.addListener(event, cb, id)
+  }
+
+  public addListener(event: string, cb: Callback, id: string = '') {
+    let listeners = this.listeners
+    if (!listeners) {
+      listeners = this.listeners = {}
+    }
+    if (!listeners[event]) {
+      listeners[event] = {}
+    }
+    if (!listeners[event][id]) {
+      listeners[event][id] = new Set()
+    }
+    listeners[event][id].add(cb)
+  }
+
+  public removeAllListeners(id: string = '') {
+    // make it gone
+    if (id) {
+      for (const event in this.listeners) {
+        if (this.listeners[event][id]) {
+          delete this.listeners[event][id]
+          if (isEmptyObject(this.listeners[event])) {
+            delete this.listeners[event]
+          }
+        }
+      }
+    } else {
+      this.listeners = {}
     }
   }
 
@@ -243,6 +295,12 @@ class Connection {
         for (let i = 0; i < state.listeners.length; i++) {
           const [event, cb] = state.listeners[i]
           this.addRemoteListener(event, cb, state.id)
+        }
+      }
+      if (state.connectionListeners.length) {
+        for (let i = 0; i < state.connectionListeners.length; i++) {
+          const [event, cb] = state.connectionListeners[i]
+          this.addListener(event, cb, state.id)
         }
       }
       if (state.queue.length) {
@@ -294,13 +352,15 @@ class Connection {
           this.punsubscribe(state.subscribes[i], id)
         }
       }
+      if (state.connectionListeners.length) {
+        this.removeAllListeners(id)
+      }
     }
   }
 
   public getConnectionState(id?: string): ConnectionState {
     // no id needs to mean all :/
     // different behaviour then empty string
-
     // nice to know the id
     const state = {
       isEmpty: true,
@@ -308,16 +368,15 @@ class Connection {
       queue: [],
       pSubscribes: [],
       subscribes: [],
-      listeners: []
+      listeners: [],
+      connectionListeners: []
     }
 
     // and do this also
     if (id === undefined) {
       // empty string is also a target
       // take the quue
-
       // do this later
-
     } else {
       for (const channel in this.psubscriptions) {
         if (id in this.psubscriptions[channel]) {
@@ -341,8 +400,17 @@ class Connection {
         }
       }
 
+      for (const event in this.listeners) {
+        if (id in this.listeners[event]) {
+          this.listeners[event][id].forEach(cb => {
+            state.isEmpty = false
+            state.connectionListeners.push([event, cb])
+          })
+        }
+      }
+
       if (this.queueBeingDrained) {
-        const q = this.queueBeingDrained.filter(command => command.id === id)1
+        const q = this.queueBeingDrained.filter(command => command.id === id)
         if (q.length) {
           state.isEmpty = false
           state.queue = q
@@ -369,7 +437,6 @@ class Connection {
   destroyTimer: NodeJS.Timeout = null
 
   // add destroy timer on create?
-
   public addActive() {
     this.activeCounter++
     if (this.destroyTimer) {
@@ -409,8 +476,8 @@ class Connection {
     this.subscriber.removeAllListeners()
     this.publisher.removeAllListeners()
 
-    this.subscriber.on('error', () => { })
-    this.publisher.on('error', () => { })
+    this.subscriber.on('error', () => {})
+    this.publisher.on('error', () => {})
 
     console.log('quit')
 
@@ -448,10 +515,6 @@ class Connection {
   }
 
   constructor(serverDescriptor: ServerDescriptor) {
-    super()
-
-    this.setMaxListeners(1e5)
-
     this.uuid = uuidv4()
 
     this.serverDescriptor = serverDescriptor
@@ -483,13 +546,18 @@ class Connection {
       loadScripts(this)
     }
 
-    this.on('connect', () => {
-      // this is prob a good place...
-      this.destroyIfIdle()
-      if (this.queue.length) {
-        drainQueue(this)
-      }
-    })
+    // connection connect
+    this.on(
+      'connect',
+      () => {
+        // this is prob a good place...
+        this.destroyIfIdle()
+        if (this.queue.length) {
+          drainQueue(this)
+        }
+      },
+      'connection'
+    )
   }
 }
 
