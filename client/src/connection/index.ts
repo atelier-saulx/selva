@@ -42,7 +42,7 @@ class Connection {
   // channel / id
   public psubscriptions: { [key: string]: { [key: string]: number } }
 
-  // listener / id
+  // listener // id
   public redisListeners: { [key: string]: { [key: string]: Set<Callback> } }
 
   public listeners: { [key: string]: { [key: string]: Set<Callback> } }
