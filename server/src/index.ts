@@ -5,6 +5,7 @@ import chalk from 'chalk'
 import os from 'os'
 import { join } from 'path'
 import fs from 'fs'
+import {TextServer} from './server/text'
 
 export * as s3Backups from './backup-plugins/s3'
 
@@ -168,8 +169,23 @@ export async function startSubscriptionManager(opts: Options) {
   return startServer('subscriptionManager', parsedOpts)
 }
 
-export async function startTextSearchServer(_opts: Options) {
-  // TODO
+export async function startTextServer(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+  // default name is 'main'
+  const err = validate(parsedOpts, ['registry'], ['port'])
+
+  parsedOpts.name = 'text'
+
+  if (err) {
+    console.error(
+      `Error starting text search server${chalk.red(err)}`
+    )
+    throw new Error(err)
+  }
+
+  const server = new TextServer()
+  server.start(parsedOpts) 
+  return server
 }
 
 // make a registry, then add origin, then add subs manager

@@ -25,7 +25,7 @@ type RequestBody = {
 export class TextServer {
   private srv: http.Server
 
-  start(opts: { port: number }) {
+  start(opts: { port?: number }) {
     this.srv = http.createServer(
       (req: http.IncomingMessage, res: http.ServerResponse) => {
         const url = _url.parse(req.url)
