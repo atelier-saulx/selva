@@ -41,7 +41,6 @@ export class TextServer {
 
           const body: RequestBody = (<any>req).body
           const { $field, $language, $searchString } = body
-          console.log('BODY', body)
 
           const idxKey = $field + '.' + $language
           let idx = searchIndices[idxKey]
