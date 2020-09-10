@@ -171,17 +171,6 @@ export async function startSubscriptionManager(opts: Options) {
 
 export async function startTextServer(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
-  // default name is 'main'
-  const err = validate(parsedOpts, ['registry'], ['port'])
-
-  parsedOpts.name = 'text'
-
-  if (err) {
-    console.error(
-      `Error starting text search server${chalk.red(err)}`
-    )
-    throw new Error(err)
-  }
 
   const server = new TextServer()
   server.start(parsedOpts) 

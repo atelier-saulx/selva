@@ -1,17 +1,23 @@
 import test from 'ava'
+import fetch from 'node-fetch'
 import { connect } from '../src/index'
-import { start } from '@saulx/selva-server'
+import { start, startTextServer } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
+let txtSrv
 let port
+let txtPort
 test.before(async t => {
   port = await getPort()
+  txtPort = await getPort()
   srv = await start({
     port
   })
+
+  txtSrv = startTextServer({ port: txtPort })
 
   await wait(500)
 
@@ -46,6 +52,67 @@ test.after(async _t => {
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  txtSrv.stop()
+})
+
+test.serial.only('hmm', async t => {
+  let resp = await fetch(`http://localhost:${txtPort}/set`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maga',
+      $searchString: 'hello world',
+      $field: 'title',
+      $language: 'en'
+    })
+  })
+
+  console.log('YES', await resp.text())
+
+  resp = await fetch(`http://localhost:${txtPort}/set`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'masa',
+      $searchString: 'hell song',
+      $field: 'title',
+      $language: 'en'
+    })
+  })
+
+  console.log('YES', await resp.text())
+
+  resp = await fetch(`http://localhost:${txtPort}/get`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $searchString: 'hell',
+      $field: 'title',
+      $language: 'en'
+    })
+  })
+
+  console.log('YES', await resp.text())
+
+  resp = await fetch(`http://localhost:${txtPort}/get`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $searchString: 'wor',
+      $field: 'title',
+      $language: 'en'
+    })
+  })
+
+  console.log('YES', await resp.text())
 })
 
 // TODO: this needs to use a non-TEXT-lANGUAGE-SUG field

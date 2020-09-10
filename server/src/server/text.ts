@@ -52,6 +52,9 @@ export class TextServer {
             }
 
             idx.add(body.$id, $searchString)
+
+            res.statusCode = 200
+            res.end('OK')
           } else if (pathname === 'delete') {
             if (!idx) {
               console.error(`No index found for ${idxKey}`)
@@ -66,6 +69,9 @@ export class TextServer {
               idx.destroy()
               searchIndices[idxKey] = null
             }
+
+            res.statusCode = 200
+            res.end('OK')
           } else if (pathname === '/get') {
             if (!idx) {
               console.error(`No index found for ${idxKey}`)
