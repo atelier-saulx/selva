@@ -16,7 +16,7 @@ export default function validateFilter(
     throw new Error(
       `${mainMsg} for filter in ${path}. Required type object with the following properties:
         {
-          $operator: '=' | '!=' | '>' | '<' | '..'
+          $operator: '=' | '!=' | '>' | '<' | '..' | 'textSearch'
           $field: string
           $value: string | number | boolean | (string | number | boolean)[]
 
@@ -66,7 +66,8 @@ export default function validateFilter(
     filter.$operator !== '..' &&
     filter.$operator !== 'distance' &&
     filter.$operator !== 'exists' &&
-    filter.$operator !== 'notExists'
+    filter.$operator !== 'notExists' &&
+    filter.$operator !== 'textSearch'
   ) {
     err(
       `Unsupported $operator ${filter.$operator}, has to be one of =, !=, >, <, .., distance, exists, notExists`

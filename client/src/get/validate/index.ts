@@ -8,6 +8,14 @@ import validateInherit from './inherit'
 import validateList from './list'
 import validateFind from './find'
 
+export type TextSearchExtraQuery = {
+  type: 'text_search'
+  meta: any
+  $db: string // TODO: this is not supported yet but maybe should be
+  path: string
+  value: string[]
+}
+
 export type TraverseExtraQuery = {
   type: 'traverse'
   meta: any
