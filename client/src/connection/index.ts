@@ -437,6 +437,8 @@ class Connection {
     return state
   }
 
+  public isDc: boolean
+
   public startClientTimer: NodeJS.Timeout = null
 
   public serverHeartbeatTimer: NodeJS.Timeout = null
@@ -459,22 +461,12 @@ class Connection {
   }
 
   public destroyIfIdle() {
-    if (this.serverDescriptor.port === 9999) {
-      console.log(
-        'ok murder it?',
-        this.serverDescriptor,
-        this.activeCounter,
-        this.connected,
-        this.isDestroyed,
-        !!this.destroyTimer
-      )
-    }
-
+    // maybe have to say after a dc just throw it away
     // dont know if connectd is rly nessecary for thi
     if (
       this.activeCounter === 0 &&
       !this.destroyTimer &&
-      this.connected &&
+      (this.connected || this.isDc) &&
       !this.isDestroyed
     ) {
       this.destroyTimer = setTimeout(() => {

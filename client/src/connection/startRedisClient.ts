@@ -22,10 +22,10 @@ const startClient = (
 
   const retryStrategy = () => {
     tries++
-    if (tries > 60) {
+    if (tries > 45) {
       if (!connection.isDestroyed) {
         console.error(
-          '🧟‍♀️ More then 60 retries connection to server destroy connection',
+          '🧟‍♀️ More then 45 retries connection to server destroy connection',
           connection.serverDescriptor
         )
         connection.hardDisconnect()
@@ -37,6 +37,7 @@ const startClient = (
       if (connection.connected) {
         clearTimeout(connection.serverHeartbeatTimer)
         connection.connected = false
+        connection.isDc = true
         connection.emit('disconnect', type)
       }
     }
