@@ -410,11 +410,11 @@ test.only('registry reconnect', async t => {
 
   await client.redis.hset({ type: 'origin' }, 'snurk', 'x', 1)
 
-  await wait(500)
+  await wait(5)
 
   current = 9998
 
-  registry.destroy()
+  await registry.destroy()
 
   await wait(4500)
 
@@ -424,9 +424,10 @@ test.only('registry reconnect', async t => {
 
   const x = await client.redis.hget({ type: 'origin' }, 'snurk', 'x')
 
+  console.log('re get value')
   t.is(x * 1, 1, 'get back value after destroy')
 
-  await wait(6000)
+  await wait(1500)
 
   await registry.destroy()
   await origin.destroy()
