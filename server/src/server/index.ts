@@ -139,12 +139,11 @@ export class SelvaServer extends EventEmitter {
 
   async destroy() {
     this.isDestroyed = true
-
-    clearTimeout(this.registryTimer)
     clearTimeout(this.serverHeartbeatTimeout)
-
     if (this.type !== 'registry') {
       await removeFromRegistry(this.selvaClient)
+    } else {
+      clearTimeout(this.registryTimer)
     }
     if (this.pm) {
       this.pm.destroy()
@@ -158,12 +157,6 @@ export class SelvaServer extends EventEmitter {
       this.backupCleanup()
       this.backupCleanup = undefined
     }
-
-    console.log(
-      'KILL S-CLIENT FROM SERVER',
-      this.selvaClient.selvaId,
-      this.port
-    )
     this.selvaClient.destroy()
     this.emit('close')
   }
