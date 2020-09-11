@@ -392,7 +392,7 @@ test.serial('Get server raw - heavy load', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.only('registry reconnect', async t => {
+test.serial('registry reconnect', async t => {
   let registry = await startRegistry({ port: 9999 })
 
   let current = 9999

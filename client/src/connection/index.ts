@@ -452,11 +452,6 @@ class Connection {
     if (this.destroyTimer) {
       clearTimeout(this.destroyTimer)
     }
-
-    if (this.serverDescriptor.port === 9999 && this.destroyTimer) {
-      console.log('cleared clearing it', this.serverDescriptor)
-    }
-
     this.destroyTimer = null
   }
 
