@@ -23,7 +23,13 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
   // especialy important if something was a replica and there are no other replicas (else it falls back to origin)
   setTimeout(
     () => {
-      const gotNewConnection = newConnection => {
+      const gotNewConnection = (newConnection: Connection) => {
+        console.log(
+          '😃 new conn on !',
+          newConnection.serverDescriptor,
+          selvaClient.selvaId
+        )
+
         newConnection.attachSelvaClient(selvaClient)
         newConnection.applyConnectionState(state)
         if (serverDescriptor.type === 'registry') {
@@ -36,7 +42,6 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
         selvaClient.server.port === serverDescriptor.port &&
         selvaClient.server.host === serverDescriptor.host
       ) {
-        console.log('new conn on server!', selvaClient.server)
         gotNewConnection(createConnection(serverDescriptor))
       } else {
         getServer(

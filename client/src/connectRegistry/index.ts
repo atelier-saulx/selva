@@ -1,4 +1,5 @@
 import { SelvaClient, ConnectOptions, ServerDescriptor } from '..'
+import { Connect } from '../types'
 import { createConnection, connections } from '../connection'
 import { REGISTRY_UPDATE } from '../constants'
 import getInitialRegistryServers from './getInitialRegistryServers'
@@ -33,11 +34,56 @@ const updateServerListeners = (selvaClient: SelvaClient) => {
   }
 }
 
-export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
+const connectRegistry = (
+  selvaClient: SelvaClient,
+  connectOptions: ConnectOptions
+) => {
   if (connectOptions instanceof Promise) {
-    // do shit
+    connectOptions.then((opts: Connect) => {
+      connectRegistry(selvaClient, opts)
+    })
   } else if (typeof connectOptions === 'function') {
-    // do shit also
+    connectOptions().then((opts: Connect) => {
+      connectRegistry(selvaClient, opts)
+      const addReconnect = (opts: Connect) => {
+        const reConnect = () => {
+          connectOptions().then((nOpts: Connect) => {
+            console.log('hello its dc or hdc')
+            if (nOpts.port !== opts.port || nOpts.host !== opts.host) {
+              if (
+                selvaClient.registryConnection.removeSelvaClient(selvaClient)
+              ) {
+                selvaClient.registryConnection.removeConnectionState(
+                  selvaClient.registryConnection.getConnectionState(
+                    selvaClient.selvaId
+                  )
+                )
+              }
+              console.log(
+                'R-CONN',
+                opts.port,
+                selvaClient.selvaId,
+                selvaClient.server
+              )
+              delete selvaClient.registryConnection
+              connectRegistry(selvaClient, nOpts)
+              addReconnect(nOpts)
+            }
+          })
+        }
+        selvaClient.registryConnection.on(
+          'hard-disconnect',
+          reConnect,
+          selvaClient.selvaId
+        )
+        selvaClient.registryConnection.on(
+          'disconnect',
+          reConnect,
+          selvaClient.selvaId
+        )
+      }
+      addReconnect(opts)
+    })
   } else {
     const { port = 6379, host = '0.0.0.0' } = connectOptions
 
@@ -51,6 +97,8 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
         host
       }
       const registryConnection = createConnection(descriptor)
+
+      console.log('create registry conn', descriptor, selvaClient.selvaId)
 
       // maybe for registry we want to handle it a bit different....
       registryConnection.attachSelvaClient(selvaClient)
@@ -121,6 +169,8 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
                       'Incoming remove event from registry - hard dc',
                       id
                     )
+
+                    console.log('ok---', id)
                     connection.hardDisconnect()
                   }
                 }
@@ -147,3 +197,5 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
     }
   }
 }
+
+export default connectRegistry

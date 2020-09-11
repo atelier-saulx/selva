@@ -81,6 +81,7 @@ export class SelvaClient extends EventEmitter {
   public logFn: LogFn
 
   public loglevel: string
+  public isDestroyed: boolean
 
   public async hardDisconnect(connection: Connection) {
     return hardDisconnect(this, connection)

@@ -30,6 +30,7 @@ import heartbeat from './heartbeat'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
+  public registryTimer?: NodeJS.Timeout
   public port: number
   public host: string
   public isDestroyed: boolean
@@ -51,7 +52,6 @@ export class SelvaServer extends EventEmitter {
     beforeExit.do(() => {
       return this.destroy()
     })
-
   }
 
   async start(opts: ServerOptions) {
@@ -139,6 +139,10 @@ export class SelvaServer extends EventEmitter {
 
   async destroy() {
     this.isDestroyed = true
+
+    clearTimeout(this.registryTimer)
+    clearTimeout(this.serverHeartbeatTimeout)
+
     await removeFromRegistry(this.selvaClient)
     if (this.pm) {
       this.pm.destroy()
@@ -148,11 +152,16 @@ export class SelvaServer extends EventEmitter {
       await stopSubscriptionManager(this.subscriptionManager)
     }
     // need to call destroy if it crashes
-    clearTimeout(this.serverHeartbeatTimeout)
     if (this.backupCleanup) {
       this.backupCleanup()
       this.backupCleanup = undefined
     }
+
+    console.log(
+      'KILL S-CLIENT FROM SERVER',
+      this.selvaClient.selvaId,
+      this.port
+    )
     this.selvaClient.destroy()
     this.emit('close')
   }

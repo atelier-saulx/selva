@@ -47,14 +47,29 @@ class Connection {
   public listeners: { [key: string]: { [key: string]: Set<Callback> } }
 
   public hardDisconnect() {
-    this.emit('hard-disconnect')
-    this.selvaClients.forEach(s => {
-      s.hardDisconnect(this)
-    })
-    this.destroy()
+    if (!this.isDestroyed) {
+      this.emit('hard-disconnect')
+      if (!this.isDestroyed) {
+        console.log(
+          'go HDC',
+          this.isDestroyed,
+          this.serverDescriptor,
+          this.selvaClients.size
+        )
+
+        this.selvaClients.forEach(s => {
+          s.hardDisconnect(this)
+        })
+
+        this.destroy()
+      }
+    }
   }
 
   public attachSelvaClient(selvaClient: SelvaClient) {
+    if (selvaClient.selvaId === '1' && this.serverDescriptor.port === 9999) {
+      console.log('add client', selvaClient.selvaId, new Error().stack)
+    }
     this.selvaClients.add(selvaClient)
   }
 
@@ -62,6 +77,12 @@ class Connection {
     const hasClient = this.selvaClients.has(selvaClient)
     if (hasClient) {
       this.selvaClients.delete(selvaClient)
+    }
+
+    if (this.selvaClients.size === 0) {
+      console.log('may need to remove this', this.serverDescriptor)
+      console.log(this.activeCounter)
+      this.destroyIfIdle()
     }
     return hasClient
   }
@@ -355,6 +376,19 @@ class Connection {
       if (state.connectionListeners.length) {
         this.removeAllListeners(id)
       }
+
+      console.log(
+        id,
+        'remove sate and kill it',
+        this.activeCounter,
+        this.serverDescriptor
+      )
+
+      console.log(this.subscriptions)
+      console.log(this.psubscriptions)
+      console.log(this.queue)
+
+      this.destroyIfIdle()
     }
   }
 
@@ -447,7 +481,12 @@ class Connection {
 
   public destroyIfIdle() {
     // dont know if connectd is rly nessecary for thi
-    if (this.activeCounter === 0 && !this.destroyTimer && this.connected) {
+    if (
+      this.activeCounter === 0 &&
+      !this.destroyTimer &&
+      this.connected &&
+      !this.isDestroyed
+    ) {
       this.destroyTimer = setTimeout(() => {
         console.log('🐰 Destroy connection from idle')
         this.destroy()
@@ -564,6 +603,7 @@ class Connection {
 const createConnection = (serverDescriptor: ServerDescriptor) => {
   let connection = connections.get(serverId(serverDescriptor))
   if (!connection) {
+    console.log('make connection', serverDescriptor)
     connection = new Connection(serverDescriptor)
   }
   return connection

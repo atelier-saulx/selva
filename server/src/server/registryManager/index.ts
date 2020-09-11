@@ -69,6 +69,10 @@ export const registryManager = (server: SelvaServer) => {
     const subsManagers: ServerIndex[] = []
     const redis = server.selvaClient.redis
 
+    if (server.isDestroyed === true) {
+      return
+    }
+
     await Promise.all(
       [...server.selvaClient.servers.ids].map(async id => {
         try {
@@ -206,7 +210,7 @@ export const registryManager = (server: SelvaServer) => {
       await Promise.all(q)
     }
 
-    setTimeout(updateFromStats, 1e3)
+    server.registryTimer = setTimeout(updateFromStats, 1e3)
   }
   updateFromStats()
 }

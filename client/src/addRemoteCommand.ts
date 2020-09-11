@@ -14,24 +14,52 @@ export default (
 
   const method = command.command
 
+  if (selvaClient.isDestroyed) {
+    return
+  }
+
   if (
     method === 'subscribe' ||
     method === 'psubscribe' ||
     method === 'unsubscribe' ||
     method === 'punsubscribe'
   ) {
-    getServer(selvaClient, server => {
-      if (typeof command.args[0] === 'string') {
+    getServer(
+      selvaClient,
+      server => {
+        if (selvaClient.isDestroyed) {
+          return
+        }
+
+        if (selvaClient.selvaId === '1' && server.port === 9999) {
+          console.log('q time', method, command.args)
+        }
+
+        if (typeof command.args[0] === 'string') {
+          const connection = createConnection(server)
+          connection.attachSelvaClient(selvaClient)
+          connection[method](command.args[0], command.id)
+        }
+      },
+      selector
+    )
+  } else {
+    getServer(
+      selvaClient,
+      server => {
+        if (selvaClient.isDestroyed) {
+          return
+        }
+
+        if (selvaClient.selvaId === '1' && server.port === 9999) {
+          console.log('q time', method, command.args)
+        }
+
         const connection = createConnection(server)
         connection.attachSelvaClient(selvaClient)
-        connection[method](command.args[0], command.id)
-      }
-    }, selector)
-  } else {
-    getServer(selvaClient, server => {
-      const connection = createConnection(server)
-      connection.attachSelvaClient(selvaClient)
-      connection.command(command)
-    }, selector)
+        connection.command(command)
+      },
+      selector
+    )
   }
 }

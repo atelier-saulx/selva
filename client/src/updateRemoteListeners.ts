@@ -11,15 +11,21 @@ export const addRemoteListener = (
   cb: Callback,
   id?: string
 ) => {
-  getServer(selvaClient, server => {
-    const connection = createConnection(server)
-    connection.attachSelvaClient(selvaClient)
-    connection.addRemoteListener(
-      event,
-      cb,
-      id === undefined ? selvaClient.selvaId : id
-    )
-  }, selector)
+  getServer(
+    selvaClient,
+    server => {
+      console.log('😃 new xxxx on !', server, selvaClient.selvaId)
+
+      const connection = createConnection(server)
+      connection.attachSelvaClient(selvaClient)
+      connection.addRemoteListener(
+        event,
+        cb,
+        id === undefined ? selvaClient.selvaId : id
+      )
+    },
+    selector
+  )
 }
 
 export const removeRemoteListener = (
@@ -29,13 +35,19 @@ export const removeRemoteListener = (
   cb?: Callback,
   id?: string
 ) => {
-  getServer(selvaClient, server => {
-    const connection = createConnection(server)
-    connection.attachSelvaClient(selvaClient)
-    connection.removeRemoteListener(
-      event,
-      cb,
-      id === undefined ? selvaClient.selvaId : id
-    )
-  }, selector)
+  getServer(
+    selvaClient,
+    server => {
+      console.log('😃 new gurken on !', server, selvaClient.selvaId)
+
+      const connection = createConnection(server)
+      connection.attachSelvaClient(selvaClient)
+      connection.removeRemoteListener(
+        event,
+        cb,
+        id === undefined ? selvaClient.selvaId : id
+      )
+    },
+    selector
+  )
 }

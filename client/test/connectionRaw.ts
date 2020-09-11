@@ -389,36 +389,76 @@ test.serial('Get server raw - heavy load', async t => {
   await client.destroy()
   await wait(6000)
 
-  console.log(connections)
-
   t.is(connections.size, 0, 'all connections removed')
 })
 
 test.only('registry reconnect', async t => {
   let registry = await startRegistry({ port: 9999 })
 
-  const origin = await startOrigin({ registry: { port: 9999 }, default: true })
+  let current = 9999
 
-  const client = connect(async () => {
+  const connectOpts = async () => {
+    console.log('go start', current)
     return {
-      port: 9999,
+      port: current,
       host: '0.0.0.0'
     }
-  })
+  }
+
+  const origin = await startOrigin({ registry: connectOpts, default: true })
+
+  const client = connect(connectOpts)
+
+  await client.redis.hset({ type: 'origin' }, 'snurk', 'x', 1)
 
   client.on('connect', () => {
     console.log('ok go')
   })
 
-  console.log(client)
+  await wait(500)
+
+  current = 9998
+
+  console.log('REMOVE REGISTRY')
+
+  registry.destroy()
+
+  await wait(4500)
+
+  registry = await startRegistry({ port: current })
 
   // promise on connected is maybe nice
 
-  // await registry.destroy()
-  // await origin.destroy()
-  // await client.destroy()
+  const x = await client.redis.hget({ type: 'origin' }, 'snurk', 'x')
 
-  await wait(1500)
+  t.is(x * 1, 1, 'get back value after destroy')
 
-  t.pass()
+  await wait(6000)
+
+  connections.forEach((v, k) => {
+    console.log('------------------')
+    console.log('connections', k, v.activeCounter, v.selvaClients.size)
+    v.selvaClients.forEach(v => {
+      console.log(v.selvaId)
+    })
+  })
+
+  console.log('DESTROY ALL SERVERS')
+
+  await registry.destroy()
+  await origin.destroy()
+  await client.destroy()
+
+  await wait(6000)
+
+  connections.forEach(v => {
+    console.log('------------------')
+    console.log('hello', v.serverDescriptor)
+    v.selvaClients.forEach(c => {
+      console.log(c.selvaId)
+    })
+    console.log('------------------')
+  })
+
+  t.is(connections.size, 0, 'all connections removed')
 })
