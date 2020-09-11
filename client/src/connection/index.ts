@@ -363,6 +363,7 @@ class Connection {
         this.removeAllListeners(id)
       }
     }
+    this.destroyIfIdle()
   }
 
   public getConnectionState(id?: string): ConnectionState {
@@ -449,10 +450,26 @@ class Connection {
     if (this.destroyTimer) {
       clearTimeout(this.destroyTimer)
     }
+
+    if (this.serverDescriptor.port === 9999 && this.destroyTimer) {
+      console.log('cleared clearing it', this.serverDescriptor)
+    }
+
     this.destroyTimer = null
   }
 
   public destroyIfIdle() {
+    if (this.serverDescriptor.port === 9999) {
+      console.log(
+        'ok murder it?',
+        this.serverDescriptor,
+        this.activeCounter,
+        this.connected,
+        this.isDestroyed,
+        !!this.destroyTimer
+      )
+    }
+
     // dont know if connectd is rly nessecary for thi
     if (
       this.activeCounter === 0 &&
@@ -461,7 +478,8 @@ class Connection {
       !this.isDestroyed
     ) {
       this.destroyTimer = setTimeout(() => {
-        console.log('🐰 Destroy connection from idle')
+        this.destroyTimer = null
+        console.log('🐰 Destroy connection from idle', this.serverDescriptor)
         this.destroy()
       }, 3000)
     }
