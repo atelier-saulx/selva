@@ -8,9 +8,10 @@
 #include "selva_onload.h"
 #include "svector.h"
 #include "module/errors.h"
-#include "module/modify.h"
 #include "module/async_task.h"
 #include "module/hierarchy.h"
+#include "module/modify.h"
+#include "module/subscriptions.h"
 
 #define FLAG_NO_ROOT    0x1
 #define FLAG_NO_MERGE   0x2
@@ -97,11 +98,7 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
     }
 }
 
-static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, RedisModuleString *id, int no_root) {
-    Selva_NodeId nodeId;
-
-    RedisModuleString2Selva_NodeId(nodeId, id);
-
+static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, RedisModuleString *id, Selva_NodeId nodeId, int no_root) {
     /*
      * If this is a new node we need to create a hierarchy node for it.
      */
@@ -185,8 +182,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     const unsigned flags = parse_flags(argv[2]);
     const int no_root = FISSET_NO_ROOT(flags);
+    Selva_NodeId nodeId;
 
-    id_key = open_node(ctx, hierarchy, id, no_root);
+    RedisModuleString2Selva_NodeId(nodeId, id);
+    id_key = open_node(ctx, hierarchy, id, nodeId, no_root);
     if (!id_key) {
         TO_STR(id);
         char err_msg[80];
@@ -290,10 +289,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
 
         if (publish) {
-            size_t id_len;
-            const char *id_str = RedisModule_StringPtrLen(id, &id_len);
+            struct SelvaModify_HierarchyMetadata *metadata;
 
-            SelvaModify_PublishUpdate(id_str, field_str, field_len);
+            metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
+            Selva_HandleFieldChangeSubscriptions(nodeId, metadata, field_str);
         }
     }
 

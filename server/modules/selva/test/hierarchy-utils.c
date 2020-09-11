@@ -40,8 +40,5 @@ void SelvaModify_PublishCreated(const char *id_str) {
 void SelvaModify_PublishDeleted(const char *id_str, const char *fields) {
 }
 
-void SelvaModify_PublishUpdate(const char *id_str, const char *field_str, size_t field_len) {
-}
-
-void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
+void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
 }

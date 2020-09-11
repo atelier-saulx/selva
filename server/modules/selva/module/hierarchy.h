@@ -25,11 +25,12 @@ typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
  * This structure should contain primitive data types or pointers to forward
  * declared structures.
  */
-struct SelvaModify_HierarchyMetaData {
+struct SelvaModify_HierarchyMetadata {
     struct SVector sub_markers;
+    unsigned sub_marker_flags_filter; /* All marker flags OR'd for faster lookup. */
 };
 
-typedef void SelvaModify_HierarchyMetadataHook(Selva_NodeId id, struct SelvaModify_HierarchyMetaData *metadata);
+typedef void SelvaModify_HierarchyMetadataHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);
 
 #define SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(fun) \
     DATA_SET(selva_HMCtor, fun)
@@ -82,7 +83,7 @@ enum SelvaModify_HierarchyTraversal {
  * Called for each node found during a traversal.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
-typedef int (*SelvaModify_HierarchyCallback)(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetaData *metadata);
+typedef int (*SelvaModify_HierarchyCallback)(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata);
 
 struct SelvaModify_HierarchyCallback {
     SelvaModify_HierarchyCallback node_cb;
@@ -109,11 +110,13 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, str
 
 int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
 
-struct SelvaModify_HierarchyMetaData *SelvaModify_HierarchyGetNodeMetadata(
+struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadata(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id);
 
+#if HIERARCHY_SORT_BY_DEPTH
 ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
+#endif
 
 int SelvaModify_DelHierarchyChildren(
         SelvaModify_Hierarchy *hierarchy,
@@ -223,10 +226,5 @@ int SelvaModify_TraverseHierarchy(
         const Selva_NodeId id,
         enum SelvaModify_HierarchyTraversal dir,
         struct SelvaModify_HierarchyCallback *cb);
-
-/*
- * hierarchy_events.c
- */
-void SelvaModify_PublishDescendants(struct SelvaModify_Hierarchy *hierarchy, const char *id_str);
 
 #endif /* SELVA_MODIFY_HIERARCHY */

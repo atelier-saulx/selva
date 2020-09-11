@@ -30,7 +30,7 @@ typedef struct SelvaModify_HierarchyNode {
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
 #endif
-    struct SelvaModify_HierarchyMetaData metadata;
+    struct SelvaModify_HierarchyMetadata metadata;
     SVector parents;
     SVector children;
     RB_ENTRY(SelvaModify_HierarchyNode) _index_entry;
@@ -433,7 +433,7 @@ int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selv
     return findNode(hierarchy, id) != NULL;
 }
 
-struct SelvaModify_HierarchyMetaData *SelvaModify_HierarchyGetNodeMetadata(
+struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadata(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node;
@@ -557,12 +557,16 @@ ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Se
 }
 #endif
 
-static inline void publishChildrenUpdate(const Selva_NodeId id) {
-    SelvaModify_PublishUpdate(id, "children", 8);
+static inline void publishAncestorsUpdate(const SelvaModify_HierarchyNode *node) {
+    Selva_HandleFieldChangeSubscriptions(node->id, &node->metadata, "ancestors");
 }
 
-static inline void publishParentsUpdate(const Selva_NodeId id) {
-    SelvaModify_PublishUpdate(id, "parents", 7);
+static inline void publishChildrenUpdate(const SelvaModify_HierarchyNode *node) {
+    Selva_HandleFieldChangeSubscriptions(node->id, &node->metadata, "children");
+}
+
+static inline void publishParentsUpdate(const SelvaModify_HierarchyNode *node) {
+    Selva_HandleFieldChangeSubscriptions(node->id, &node->metadata, "parents");
 }
 
 static int crossInsert(
@@ -615,20 +619,15 @@ static int crossInsert(
                 /*
                  * Publish that the children field was changed.
                  */
-                publishChildrenUpdate(adjacent->id);
+                publishChildrenUpdate(adjacent);
             }
         }
 
         /*
          * Publish that the parents field was changed.
          */
-        publishParentsUpdate(node->id);
-#if HIERARCHY_EN_ANCESTORS_EVENTS
-        /*
-         * Publish the change to the descendants of node.
-         */
-        (void)SelvaModify_PublishDescendants(hierarchy, node->id);
-#endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
+        publishParentsUpdate(node);
+        publishAncestorsUpdate(node);
     } else if (rel == RELATIONSHIP_PARENT) { /* node is a parent to adjacent */
         for (size_t i = 0; i < n; i++) {
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
@@ -663,21 +662,16 @@ static int crossInsert(
                 /*
                  * Publish that the parents field was changed.
                  */
-                publishParentsUpdate(node->id);
+                publishParentsUpdate(node);
             }
 
-#if HIERARCHY_EN_ANCESTORS_EVENTS
-            /*
-             * Publish the change to the descendants of nodes[i].
-             */
-            (void)SelvaModify_PublishDescendants(hierarchy, nodes[i]);
-#endif /* HIERARCHY_EN_ANCESTORS_EVENTS */
+            publishAncestorsUpdate(adjacent);
         }
 
         /*
          * Publish that the children field was changed.
          */
-        publishChildrenUpdate(node->id);
+        publishChildrenUpdate(node);
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
@@ -714,7 +708,7 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
 #if HIERARCHY_SORT_BY_DEPTH
             updateDepth(hierarchy, adjacent);
 #endif
-            publishChildrenUpdate(adjacent->id);
+            publishChildrenUpdate(adjacent);
             pubParents = 1;
         }
 
@@ -724,7 +718,7 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         }
 
         if (pubParents) {
-            publishParentsUpdate(node->id);
+            publishParentsUpdate(node);
         }
     } else if (rel == RELATIONSHIP_PARENT) { /* no longer a parent of adjacent */
         int pubChildren = 0;
@@ -751,12 +745,12 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
 #if HIERARCHY_SORT_BY_DEPTH
             updateDepth(hierarchy, adjacent);
 #endif
-            publishParentsUpdate(adjacent->id);
+            publishParentsUpdate(adjacent);
             pubChildren = 1;
         }
 
         if (pubChildren) {
-            publishChildrenUpdate(node->id);
+            publishChildrenUpdate(node);
         }
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
