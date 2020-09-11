@@ -210,7 +210,6 @@ test.serial('connection / server orchestration', async t => {
 
   await wait(50)
 
-  console.log('DESTROY 2nd client!')
   const cId = client2.selvaId
   await client2.destroy()
 
@@ -325,8 +324,6 @@ test.serial('connection / server orchestration', async t => {
   await client.destroy()
 
   await wait(5000)
-
-  console.log(connections)
 
   t.is(connections.size, 0, 'all connections removed')
 })
