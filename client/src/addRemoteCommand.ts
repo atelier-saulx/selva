@@ -31,10 +31,6 @@ export default (
           return
         }
 
-        if (selvaClient.selvaId === '1' && server.port === 9999) {
-          console.log('q time', method, command.args)
-        }
-
         if (typeof command.args[0] === 'string') {
           const connection = createConnection(server)
           connection.attachSelvaClient(selvaClient)
@@ -49,10 +45,6 @@ export default (
       server => {
         if (selvaClient.isDestroyed) {
           return
-        }
-
-        if (selvaClient.selvaId === '1' && server.port === 9999) {
-          console.log('q time', method, command.args)
         }
 
         const connection = createConnection(server)

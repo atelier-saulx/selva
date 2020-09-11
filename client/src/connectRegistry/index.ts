@@ -48,7 +48,6 @@ const connectRegistry = (
       const addReconnect = (opts: Connect) => {
         const reConnect = () => {
           connectOptions().then((nOpts: Connect) => {
-            console.log('hello its dc or hdc')
             if (nOpts.port !== opts.port || nOpts.host !== opts.host) {
               if (
                 selvaClient.registryConnection.removeSelvaClient(selvaClient)
@@ -59,12 +58,6 @@ const connectRegistry = (
                   )
                 )
               }
-              console.log(
-                'R-CONN',
-                opts.port,
-                selvaClient.selvaId,
-                selvaClient.server
-              )
               delete selvaClient.registryConnection
               connectRegistry(selvaClient, nOpts)
               addReconnect(nOpts)
@@ -97,8 +90,6 @@ const connectRegistry = (
         host
       }
       const registryConnection = createConnection(descriptor)
-
-      console.log('create registry conn', descriptor, selvaClient.selvaId)
 
       // maybe for registry we want to handle it a bit different....
       registryConnection.attachSelvaClient(selvaClient)
@@ -169,15 +160,13 @@ const connectRegistry = (
                       'Incoming remove event from registry - hard dc',
                       id
                     )
-
-                    console.log('ok---', id)
                     connection.hardDisconnect()
                   }
                 }
                 selvaClient.emit('removed-servers', payload)
               }
             } else if (event === 'move-sub') {
-              console.log('MOVE SUBSCRIPTION')
+              // console.log('MOVE SUBSCRIPTION')
             } else if ('update-index') {
               // now we are going to move them!
               // can be either a subs manager update of index or replica

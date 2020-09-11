@@ -50,26 +50,15 @@ class Connection {
     if (!this.isDestroyed) {
       this.emit('hard-disconnect')
       if (!this.isDestroyed) {
-        console.log(
-          'go HDC',
-          this.isDestroyed,
-          this.serverDescriptor,
-          this.selvaClients.size
-        )
-
         this.selvaClients.forEach(s => {
           s.hardDisconnect(this)
         })
-
         this.destroy()
       }
     }
   }
 
   public attachSelvaClient(selvaClient: SelvaClient) {
-    if (selvaClient.selvaId === '1' && this.serverDescriptor.port === 9999) {
-      console.log('add client', selvaClient.selvaId, new Error().stack)
-    }
     this.selvaClients.add(selvaClient)
   }
 
@@ -78,10 +67,7 @@ class Connection {
     if (hasClient) {
       this.selvaClients.delete(selvaClient)
     }
-
     if (this.selvaClients.size === 0) {
-      console.log('may need to remove this', this.serverDescriptor)
-      console.log(this.activeCounter)
       this.destroyIfIdle()
     }
     return hasClient
@@ -376,19 +362,6 @@ class Connection {
       if (state.connectionListeners.length) {
         this.removeAllListeners(id)
       }
-
-      console.log(
-        id,
-        'remove sate and kill it',
-        this.activeCounter,
-        this.serverDescriptor
-      )
-
-      console.log(this.subscriptions)
-      console.log(this.psubscriptions)
-      console.log(this.queue)
-
-      this.destroyIfIdle()
     }
   }
 
@@ -517,8 +490,6 @@ class Connection {
 
     this.subscriber.on('error', () => {})
     this.publisher.on('error', () => {})
-
-    console.log('quit')
 
     this.subscriber.quit()
     this.publisher.quit()
