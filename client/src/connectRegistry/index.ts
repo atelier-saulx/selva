@@ -44,12 +44,13 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
     if (selvaClient.registryConnection) {
       console.info('Update existing connection to registry')
     } else {
-      const registryConnection = createConnection({
+      const descriptor: ServerDescriptor = {
         type: 'registry',
         name: 'registry',
         port,
         host
-      })
+      }
+      const registryConnection = createConnection(descriptor)
 
       // maybe for registry we want to handle it a bit different....
       registryConnection.attachSelvaClient(selvaClient)
@@ -61,6 +62,7 @@ export default (selvaClient: SelvaClient, connectOptions: ConnectOptions) => {
       selvaClient.registryConnection.on(
         'connect',
         () => {
+          selvaClient.emit('connect', descriptor)
           getInitialRegistryServers(selvaClient).then(() => {
             selvaClient.emit('added-servers', { event: '*' })
             updateServerListeners(selvaClient)

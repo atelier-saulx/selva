@@ -394,14 +394,31 @@ test.serial('Get server raw - heavy load', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-// test.only('registry hard disconnect', async t => {
-//   let registry = await startRegistry({ port: 9999 })
-//   const origin = await startOrigin({ registry: { port: 9999 }, default: true })
-//   const client = connect({ port: 9999 })
+test.only('registry reconnect', async t => {
+  let registry = await startRegistry({ port: 9999 })
 
-//   // promise on connected is maybe nice
+  const origin = await startOrigin({ registry: { port: 9999 }, default: true })
 
-//   await registry.destroy()
-//   await origin.destroy()
-//   await client.destroy()
-// })
+  const client = connect(async () => {
+    return {
+      port: 9999,
+      host: '0.0.0.0'
+    }
+  })
+
+  client.on('connect', () => {
+    console.log('ok go')
+  })
+
+  console.log(client)
+
+  // promise on connected is maybe nice
+
+  // await registry.destroy()
+  // await origin.destroy()
+  // await client.destroy()
+
+  await wait(1500)
+
+  t.pass()
+})
