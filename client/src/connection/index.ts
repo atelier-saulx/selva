@@ -574,7 +574,6 @@ class Connection {
 const createConnection = (serverDescriptor: ServerDescriptor) => {
   let connection = connections.get(serverId(serverDescriptor))
   if (!connection) {
-    console.log('make connection', serverDescriptor)
     connection = new Connection(serverDescriptor)
   }
   return connection

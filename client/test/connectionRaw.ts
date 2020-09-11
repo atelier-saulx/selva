@@ -398,7 +398,6 @@ test.only('registry reconnect', async t => {
   let current = 9999
 
   const connectOpts = async () => {
-    console.log('go start', current)
     return {
       port: current,
       host: '0.0.0.0'
@@ -411,15 +410,9 @@ test.only('registry reconnect', async t => {
 
   await client.redis.hset({ type: 'origin' }, 'snurk', 'x', 1)
 
-  client.on('connect', () => {
-    console.log('ok go')
-  })
-
   await wait(500)
 
   current = 9998
-
-  console.log('REMOVE REGISTRY')
 
   registry.destroy()
 
@@ -435,30 +428,11 @@ test.only('registry reconnect', async t => {
 
   await wait(6000)
 
-  connections.forEach((v, k) => {
-    console.log('------------------')
-    console.log('connections', k, v.activeCounter, v.selvaClients.size)
-    v.selvaClients.forEach(v => {
-      console.log(v.selvaId)
-    })
-  })
-
-  console.log('DESTROY ALL SERVERS')
-
   await registry.destroy()
   await origin.destroy()
   await client.destroy()
 
   await wait(6000)
-
-  connections.forEach(v => {
-    console.log('------------------')
-    console.log('hello', v.serverDescriptor)
-    v.selvaClients.forEach(c => {
-      console.log(c.selvaId)
-    })
-    console.log('------------------')
-  })
 
   t.is(connections.size, 0, 'all connections removed')
 })
