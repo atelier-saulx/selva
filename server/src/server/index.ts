@@ -143,7 +143,9 @@ export class SelvaServer extends EventEmitter {
     clearTimeout(this.registryTimer)
     clearTimeout(this.serverHeartbeatTimeout)
 
-    await removeFromRegistry(this.selvaClient)
+    if (this.type !== 'registry') {
+      await removeFromRegistry(this.selvaClient)
+    }
     if (this.pm) {
       this.pm.destroy()
       this.pm = undefined
