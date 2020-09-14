@@ -460,16 +460,13 @@ test.only('connection failure', async t => {
     console.log(msg)
   })
 
-
   const r = await client.redis.eval({ type: 'origin' }, lua, 0)
-
-  console.log('RESULT', r)
 
   t.is(timeoutCnt, 1, 'origin timed out once')
 
   t.is(r, 'x', 'correct return after heavy script / busy errors')
 
-  await (1e3)
+  await wait(5e3)
 
   await registry.destroy()
   await origin.destroy()
