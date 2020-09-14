@@ -9,6 +9,7 @@ import { addExtraQuery, ExtraQueries } from '.'
 
 import fetch from 'node-fetch'
 
+// TODO: more concurrency for fetching
 async function evaluateTextSearch(
   filters: Filter[],
   language: string,
