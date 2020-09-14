@@ -439,14 +439,7 @@ test.serial('registry reconnect', async t => {
 test.only('connection failure', async t => {
   let registry = await startRegistry({ port: 9999 })
 
-  let current = 9999
-
-  const connectOpts = async () => {
-    return {
-      port: current,
-      host: '0.0.0.0'
-    }
-  }
+  const connectOpts = { port: 9999 }
 
   const origin = await startOrigin({ registry: connectOpts, default: true })
 
@@ -466,5 +459,13 @@ test.only('connection failure', async t => {
 
   console.log('RESULT', r)
 
-  t.pass()
+  t.is(r, 'x', 'correct return after heavy script / busy errors')
+
+  await registry.destroy()
+  await origin.destroy()
+  await client.destroy()
+
+  await wait(20000)
+
+  t.is(connections.size, 0, 'all connections removed')
 })

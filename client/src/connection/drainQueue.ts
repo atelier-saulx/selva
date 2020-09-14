@@ -7,6 +7,9 @@ import { Connection, connections } from './'
 const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
   if (!connection.queueInProgress) {
     connection.addActive()
+
+    // allways scripts first!
+
     connection.queueInProgress = true
     process.nextTick(() => {
       let modify: RedisCommand
