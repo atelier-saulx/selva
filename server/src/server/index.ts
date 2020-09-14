@@ -9,11 +9,8 @@ import { EventEmitter } from 'events'
 import startRedis from './startRedis'
 import ProcessManager from './processManager'
 import attachStatusListeners from './attachStatusListeners'
-
 import { removeFromRegistry } from './updateRegistry'
-
 import beforeExit from 'before-exit'
-
 import {
   startSubscriptionManager,
   stopSubscriptionManager,

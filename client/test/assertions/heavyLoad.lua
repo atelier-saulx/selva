@@ -1,0 +1,1 @@
+return redis.pcall("PUBLISH", "log", "x")

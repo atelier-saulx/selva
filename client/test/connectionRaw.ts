@@ -9,6 +9,7 @@ import {
 import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
+import fs from 'fs'
 
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
@@ -205,7 +206,7 @@ test.serial('connection / server orchestration', async t => {
 
   const client2 = connect({ port: 9999 })
 
-  client2.redis.on({ type: 'replica' }, 'message', () => {})
+  client2.redis.on({ type: 'replica' }, 'message', () => { })
   client2.redis.subscribe({ type: 'replica' }, 'snurf')
 
   await wait(50)
@@ -366,7 +367,7 @@ test.serial('Get server raw - heavy load', async t => {
       )
     )
   }
-  ;(await Promise.all(p)).map(([, w]) => w.terminate())
+  ; (await Promise.all(p)).map(([, w]) => w.terminate())
   const keys = await client.redis.keys({ type: 'origin' }, '*')
   const results = await Promise.all(
     keys
@@ -433,4 +434,33 @@ test.serial('registry reconnect', async t => {
   await wait(6000)
 
   t.is(connections.size, 0, 'all connections removed')
+})
+
+test.only('connection failure', async t => {
+  let registry = await startRegistry({ port: 9999 })
+
+  let current = 9999
+
+  const connectOpts = async () => {
+    return {
+      port: current,
+      host: '0.0.0.0'
+    }
+  }
+
+  const origin = await startOrigin({ registry: connectOpts, default: true })
+
+  const lua = fs.readFileSync(join(__dirname, './assertions/heavyLoad.lua')).toString()
+
+  const client = connect({ port: 9999 })
+
+  client.redis.subscribe({ type: 'origin' }, 'log')
+  client.redis.on({ type: 'origin' }, 'message', (c, msg) => {
+    console.log(msg)
+  })
+
+
+  await client.redis.eval({ type: 'origin' }, lua)
+
+  t.pass()
 })
