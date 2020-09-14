@@ -25,6 +25,8 @@ export default function execBatch(
     } else {
       const batch = connection.publisher.batch()
 
+      // console.log(queue.filter(v => v.command !== 'SCRIPT'))
+
       queue.forEach(({ command, args }) => {
         if (!batch[command]) {
           throw new Error(`Command "${command}" is not a valid redis command!`)

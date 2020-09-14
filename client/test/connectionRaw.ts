@@ -450,6 +450,8 @@ test.only('connection failure', async t => {
 
   const origin = await startOrigin({ registry: connectOpts, default: true })
 
+  origin.on('error', () => { })
+
   const lua = fs.readFileSync(join(__dirname, './assertions/heavyLoad.lua')).toString()
 
   const client = connect({ port: 9999 })
@@ -460,7 +462,9 @@ test.only('connection failure', async t => {
   })
 
 
-  await client.redis.eval({ type: 'origin' }, lua)
+  const r = await client.redis.eval({ type: 'origin' }, lua, 0)
+
+  console.log('RESULT', r)
 
   t.pass()
 })

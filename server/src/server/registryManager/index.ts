@@ -113,7 +113,7 @@ export const registryManager = (server: SelvaServer) => {
               console.warn(
                 chalk.red(
                   `Server timed out last heartbeat ${Date.now() -
-                    ts}ms ago ${id}, ${type}, ${name}`
+                  ts}ms ago ${id}, ${type}, ${name}`
                 )
               )
 

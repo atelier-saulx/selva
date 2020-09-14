@@ -41,7 +41,7 @@ export default class RedisManager extends ProcessManager {
       const wait = () =>
         new Promise((_resolve, reject) => {
           timeout = setTimeout(
-            () => reject(new Error('info-timeout took longer then 2 seconds')),
+            () => reject(new Error('Info-timeout took longer then 2 seconds')),
             2e3
           )
         })
@@ -81,7 +81,8 @@ export default class RedisManager extends ProcessManager {
         return { isBusy: true, runtimeInfo }
       }
     } catch (err) {
-      console.error('Cannot get info ', this.selvaClient.server, err.message)
+      // this.emit('error', err)
+      // console.error('Cannot get info ', this.selvaClient.server, err.message)
       return {
         redisInfo: {},
         runtimeInfo,
