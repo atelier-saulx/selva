@@ -201,31 +201,17 @@ export default async function validateFind(
       filterAry = [find.$filter]
     }
 
-    const textSearches = filterAry.filter(f => {
-      return f.$operator === 'textSearch'
-    })
+    // FIXME: proper $language param
+    const textSearchIds = await evaluateTextSearch(
+      filterAry,
+      'en',
+      'and',
+      false
+    )
 
-    // FIXME: scrap this, need to traverse all the $and and $or and find the right set of ids to do union/intersection on them ???
-    if (textSearches.length) {
-      const results: string[][] = await Promise.all(
-        textSearches.map(async f => {
-          // TODO: replace hard coded url and port
-          const resp = await fetch('http://localhost:33333/get', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-              $searchString: f.$value,
-              $field: f.$field,
-              $language: 'en' // FIXME
-            })
-          })
-
-          const ids = await resp.json()
-          return ids
-        })
-      )
+    if (textSearchIds) {
+      // TODO: add this as a rule -->
+      // parentProp.$find.$traverse = textSearchIds
     }
   }
 }
