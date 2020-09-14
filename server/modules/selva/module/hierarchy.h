@@ -63,6 +63,7 @@ struct SelvaModify_Hierarchy {
      * A tree of all subscriptions applying to this tree.
      */
     struct hierarchy_subscriptions_tree subs_head;
+    struct SelvaSubscriptions_DeferredEvents *subs_deferred_events;
 };
 
 /**
@@ -70,7 +71,7 @@ struct SelvaModify_Hierarchy {
  * Used by SelvaModify_TraverseHierarchy().
  */
 enum SelvaModify_HierarchyTraversal {
-    SELVA_HIERARCHY_TRAVERSAL_NONE, /* DO NOT USE */
+    SELVA_HIERARCHY_TRAVERSAL_NONE,
     SELVA_HIERARCHY_TRAVERSAL_NODE,
     SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS,
     SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS,

@@ -17,6 +17,8 @@
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 struct hierarchy_subscriptions_tree;
+struct SelvaSubscriptions_DeferredEvents;
+struct SVector;
 
 /**
  * Selva subscription ID to hex string.
@@ -25,12 +27,24 @@ char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], con
 
 int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src);
 
-void Selva_DestroySubscriptions(struct SelvaModify_Hierarchy *hierarchy);
-void Selva_DeleteSubscription(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
-void Selva_ClearAllSubscriptionMarkers(
+void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy);
+int SelvaSubscriptions_Refresh(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+void SelvaSubscriptions_RefreshByMarker(struct SelvaModify_Hierarchy *hierarchy, struct SVector *markers);
+void SelvaSubscriptions_Delete(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *metadata);
-void Selva_HandleFieldChangeSubscriptions(const Selva_NodeId node_id, const struct SelvaModify_HierarchyMetadata *metadata, const char *field);
+
+
+struct SelvaSubscriptions_DeferredEvents *SelvaSubscriptions_NewDeferredEvents(void);
+void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def);
+void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaSubscriptions_DeferredEvents *def,
+                                             const struct SelvaModify_HierarchyMetadata *metadata);
+void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaSubscriptions_DeferredEvents *def,
+                                               const Selva_NodeId node_id,
+                                               const struct SelvaModify_HierarchyMetadata *metadata,
+                                               const char *field);
+void SelvaSubscriptions_SendDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def);
 
 #endif /* SELVA_MODIFY_SUBSCRIPTIONS */
