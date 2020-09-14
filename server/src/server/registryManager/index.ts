@@ -11,7 +11,6 @@ type ServerIndex = {
   name: string
 }
 
-
 const insert = (array: ServerIndex[], target: ServerIndex): void => {
   var l: number = 0
   var h: number = array.length - 1
@@ -138,7 +137,6 @@ export const registryManager = (server: SelvaServer) => {
               }
 
               for (let i = 0; i < serverTimeouts[id].length; i++) {
-                console.log(serverTimeouts[id][i])
                 const timeout = serverTimeouts[id][i]
                 // keep max for 1 hour
                 // make this configurable for testing
