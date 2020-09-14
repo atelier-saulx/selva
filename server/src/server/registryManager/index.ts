@@ -11,6 +11,7 @@ type ServerIndex = {
   name: string
 }
 
+
 const insert = (array: ServerIndex[], target: ServerIndex): void => {
   var l: number = 0
   var h: number = array.length - 1
@@ -64,6 +65,11 @@ export const registryManager = (server: SelvaServer) => {
     }
   })
 
+  const serverTimeouts: {
+    [id: string]: number[]
+  } = {}
+
+
   const updateFromStats = async () => {
     const replicas: ServerIndex[] = []
     const subsManagers: ServerIndex[] = []
@@ -103,8 +109,9 @@ export const registryManager = (server: SelvaServer) => {
 
             const ts = stats.timestamp
 
+            const now = Date.now()
             // very sensitive...
-            if (Date.now() - ts > 3e3) {
+            if (now - ts > 3e3) {
               await Promise.all([
                 redis.srem({ type: 'registry' }, 'servers', id),
                 redis.del({ type: 'registry' }, id)
@@ -116,6 +123,40 @@ export const registryManager = (server: SelvaServer) => {
                   ts}ms ago ${id}, ${type}, ${name}`
                 )
               )
+
+
+              // also store this - somewhere can be just in mem
+
+              if (!serverTimeouts[id]) {
+                serverTimeouts[id] = []
+              }
+
+              serverTimeouts[id].unshift(now)
+
+              if (serverTimeouts[id].length > 50) {
+                serverTimeouts[id].pop()
+              }
+
+              for (let i = 0; i < serverTimeouts[id].length; i++) {
+                console.log(serverTimeouts[id][i])
+                const timeout = serverTimeouts[id][i]
+                // keep max for 1 hour
+                // make this configurable for testing
+                if (now - timeout > 1e3 * 60 * 60 * 1) {
+                  serverTimeouts[id] = serverTimeouts[id].slice(0, i)
+                  break
+                }
+              }
+
+              server.emit('server-timeout', {
+                id,
+                serverTimeouts: serverTimeouts[id],
+                port,
+                host,
+                name,
+                type,
+                index
+              })
 
               // ok you want to store last timeoud event maybe an array (max 10)
               // this is the metric we are going to use to

@@ -22,7 +22,7 @@ const startClient = (
 
   const retryStrategy = () => {
     tries++
-    if (tries > 45) {
+    if (tries > 30) {
       if (!connection.isDestroyed) {
         console.error(
           '🧟‍♀️ More then 45 retries connection to server destroy connection',

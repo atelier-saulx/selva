@@ -445,6 +445,12 @@ test.only('connection failure', async t => {
 
   origin.on('error', () => { })
 
+  let timeoutCnt = 0
+
+  registry.on('server-timeout', s => {
+    timeoutCnt++
+  })
+
   const lua = fs.readFileSync(join(__dirname, './assertions/heavyLoad.lua')).toString()
 
   const client = connect({ port: 9999 })
@@ -458,6 +464,8 @@ test.only('connection failure', async t => {
   const r = await client.redis.eval({ type: 'origin' }, lua, 0)
 
   console.log('RESULT', r)
+
+  t.is(timeoutCnt, 1, 'origin timed out once')
 
   t.is(r, 'x', 'correct return after heavy script / busy errors')
 
