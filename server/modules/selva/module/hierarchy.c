@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#define _SELVA_MODIFY_HIERARCHY_INTERNAL_
 #include "errors.h"
 #include "selva_onload.h"
 #include "subscriptions.h"

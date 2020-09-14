@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#define _SELVA_MODIFY_HIERARCHY_INTERNAL_
 #include "redismodule.h"
 #include "cdefs.h"
 #include "async_task.h"
