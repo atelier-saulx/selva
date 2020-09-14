@@ -1,1 +1,1 @@
-return redis.pcall("PUBLISH", "log", "x")
+return redis.call("PUBLISH", "log", "x")
