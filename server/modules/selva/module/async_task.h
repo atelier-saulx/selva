@@ -6,8 +6,6 @@
 
 enum SelvaModify_AsyncEventType {
     SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE,
-    SELVA_MODIFY_ASYNC_TASK_CREATED,
-    SELVA_MODIFY_ASYNC_TASK_DELETED,
 };
 
 struct SelvaModify_AsyncTask {
@@ -26,8 +24,6 @@ struct SelvaModify_AsyncTask {
 };
 
 int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len);
-void SelvaModify_PublishCreated(const char *id_str);
-void SelvaModify_PublishDeleted(const char *id_str, const char *fields);
 void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id);
 
 #endif /* SELVA_MODIFY_ASYNC_TASK */

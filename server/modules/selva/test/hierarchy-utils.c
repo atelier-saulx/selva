@@ -34,11 +34,5 @@ void SelvaNodeId_copy2buf(char buf[SELVA_NODE_ID_SIZE + 1], const Selva_NodeId i
     buf[SELVA_NODE_ID_SIZE] = '\0';
 }
 
-void SelvaModify_PublishCreated(const char *id_str) {
-}
-
-void SelvaModify_PublishDeleted(const char *id_str, const char *fields) {
-}
-
 void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
 }

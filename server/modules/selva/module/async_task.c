@@ -132,47 +132,6 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
             }
 
             freeReplyObject(reply);
-        } else if (task->type == SELVA_MODIFY_ASYNC_TASK_CREATED) {
-            const char prefix[] = "___selva_events:";
-            char channel[sizeof(prefix) + SELVA_NODE_ID_SIZE];
-            redisReply *reply = NULL;
-
-            snprintf(channel, sizeof(channel), "%s%.*s",
-                     prefix,
-                     (int)SELVA_NODE_ID_SIZE, task->id);
-
-#if 0
-            fprintf(stderr, "Redis publish \"%s\": \"created\"\n", channel);
-#endif
-            reply = redisCommand(ctx, "PUBLISH %s created", channel);
-            if (reply == NULL) {
-                fprintf(stderr, "Error occurred in publish %s\n", ctx->errstr);
-            }
-
-            freeReplyObject(reply);
-        } else if (task->type == SELVA_MODIFY_ASYNC_TASK_DELETED) {
-            const char prefix[] = "___selva_events:";
-            char channel[sizeof(prefix) + SELVA_NODE_ID_SIZE];
-            redisReply *reply = NULL;
-
-            snprintf(channel, sizeof(channel), "%s%.*s",
-                     prefix,
-                     (int)SELVA_NODE_ID_SIZE, task->id);
-
-            const char *msg = task->field_name_len == 0 ? "" : task->field_name;
-
-#if 0
-            fprintf(stderr, "Redis publish \"%s\": \"delete:%.*s\" (%zu)\n",
-                    channel,
-                    (int)task->field_name_len, msg,
-                    task->field_name_len);
-#endif
-            reply = redisCommand(ctx, "PUBLISH %s delete:%b", channel, msg, (size_t)task->field_name_len);
-            if (reply == NULL) {
-                fprintf(stderr, "Error occurred in publish %s\n", ctx->errstr);
-            }
-
-            freeReplyObject(reply);
         } else {
             fprintf(stderr, "Unsupported task type %d\n", task->type);
         }
@@ -229,54 +188,6 @@ int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
     total_publishes++;
 
     return 0;
-}
-
-void SelvaModify_PublishCreated(const char *id_str) {
-    const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
-    const size_t payload_len = sizeof(int32_t) + struct_len;
-    char payload_str[payload_len];
-    struct SelvaModify_AsyncTask publish_task = {
-        .type = SELVA_MODIFY_ASYNC_TASK_CREATED,
-        .field_name = NULL,
-        .field_name_len = 0,
-    };
-    strncpy(publish_task.id, id_str, SELVA_NODE_ID_SIZE);
-
-    char *ptr = payload_str;
-
-    int32_t total_len = struct_len;
-    memcpy(ptr, &total_len, sizeof(int32_t));
-    ptr += sizeof(int32_t);
-
-    memcpy(ptr, &publish_task, struct_len);
-
-    SelvaModify_SendAsyncTask(payload_str, payload_len);
-}
-
-void SelvaModify_PublishDeleted(const char *id_str, const char *fields) {
-    const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
-    const size_t fields_len = fields == NULL ? 0 : strlen(fields);
-    const size_t payload_len = sizeof(int32_t) + struct_len + fields_len;
-    char payload_str[payload_len];
-    struct SelvaModify_AsyncTask publish_task = {
-        .type = SELVA_MODIFY_ASYNC_TASK_DELETED,
-        .field_name = NULL,
-        .field_name_len = fields_len,
-    };
-    strncpy(publish_task.id, id_str, SELVA_NODE_ID_SIZE);
-
-    char *ptr = payload_str;
-
-    int32_t total_len = struct_len + fields_len;
-    memcpy(ptr, &total_len, sizeof(int32_t));
-    ptr += sizeof(int32_t);
-
-    memcpy(ptr, &publish_task, struct_len);
-    ptr += struct_len;
-
-    memcpy(ptr, fields, fields_len);
-
-    SelvaModify_SendAsyncTask(payload_str, payload_len);
 }
 
 void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {

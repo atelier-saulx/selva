@@ -269,7 +269,6 @@ static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     }
 
     RedisModule_CloseKey(set_key);
-    SelvaModify_PublishCreated(id);
 
     return 0;
 }
@@ -487,12 +486,14 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     }
 
     if (likely(ctx)) {
+#if 0
         char *fields;
 
         fields = get_node_field_names(ctx, id);
         remove_node_fields(ctx, id);
-        SelvaModify_PublishDeleted(id, fields);
+        /* event here */
         RedisModule_Free(fields);
+#endif
 
         if (is_root) {
             createNodeHash(ctx, id);
