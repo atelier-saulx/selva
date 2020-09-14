@@ -1,4 +1,4 @@
-import { Find, GetOptions } from '../types'
+import { Find, GetOptions, Filter } from '../types'
 import { SelvaClient } from '../..'
 
 import checkAllowed from './checkAllowed'
@@ -6,6 +6,100 @@ import validateFilter from './filter'
 
 import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
+
+import fetch from 'node-fetch'
+
+async function evaluateTextSearch(
+  filters: Filter[],
+  language: string,
+  logicalOperator: 'and' | 'or',
+  nested: boolean = false
+): Promise<string[]> {
+  const textSearches = (
+    await Promise.all(
+      filters.map(async (f, i) => {
+        if ((!nested && f.$and) || (i && f.$and)) {
+          return evaluateTextSearch([f, f.$and], language, 'and', true)
+        } else if ((!nested && f.$or) || (i && f.$or)) {
+          return evaluateTextSearch([f, f.$or], language, 'or', true)
+        } else if (f.$operator === 'textSearch') {
+          const resp = await fetch('http://localhost:33333/get', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+              $searchString: f.$value,
+              $field: f.$field,
+              $language: language // FIXME
+            })
+          })
+
+          const ids = await resp.json()
+          return ids
+        } else {
+          return null
+        }
+      })
+    )
+  ).filter(ids => !!ids)
+
+  if (textSearches.length) {
+    const results: string[][] = await Promise.all(
+      textSearches.map(async (f: Filter | string[]) => {
+        // TODO: replace hard coded url and port
+        if (Array.isArray(f)) {
+        } else {
+          const resp = await fetch('http://localhost:33333/get', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+              $searchString: f.$value,
+              $field: f.$field,
+              $language: language // FIXME
+            })
+          })
+
+          const ids = await resp.json()
+          return ids
+        }
+      })
+    )
+
+    if (logicalOperator === 'or') {
+      // set union
+      const set: Set<string> = new Set()
+      for (const resultSet of results) {
+        for (const id of resultSet) {
+          set.add(id)
+        }
+      }
+
+      return [...set.values()]
+    } else {
+      // set intersection
+      const resultSet: Set<string> = new Set()
+      for (const id of results[0]) {
+        resultSet.add(id)
+      }
+
+      for (let i = 1; i < results.length; i++) {
+        const set = new Set(...results[i])
+        for (const x of resultSet.values()) {
+          if (!set.has(x)) {
+            resultSet.delete(x)
+          }
+        }
+      }
+
+      return [...resultSet.values()]
+    }
+  }
+
+  return []
+}
 
 export default async function validateFind(
   extraQueries: ExtraQueries,
@@ -95,12 +189,43 @@ export default async function validateFind(
   }
 
   if (find.$filter) {
+    let filterAry: Filter[] = []
     if (Array.isArray(find.$filter)) {
       for (const filter of find.$filter) {
         validateFilter(client, filter, path + '.$find')
       }
+
+      filterAry = find.$filter
     } else {
       validateFilter(client, find.$filter, path + '.$find')
+      filterAry = [find.$filter]
+    }
+
+    const textSearches = filterAry.filter(f => {
+      return f.$operator === 'textSearch'
+    })
+
+    // FIXME: scrap this, need to traverse all the $and and $or and find the right set of ids to do union/intersection on them ???
+    if (textSearches.length) {
+      const results: string[][] = await Promise.all(
+        textSearches.map(async f => {
+          // TODO: replace hard coded url and port
+          const resp = await fetch('http://localhost:33333/get', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+              $searchString: f.$value,
+              $field: f.$field,
+              $language: 'en' // FIXME
+            })
+          })
+
+          const ids = await resp.json()
+          return ids
+        })
+      )
     }
   }
 }
