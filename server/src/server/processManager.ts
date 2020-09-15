@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from 'child_process'
 import pidusage from 'pidusage'
 import { EventEmitter } from 'events'
+import chalk from 'chalk'
 
 // const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
 const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every 10 seconds
@@ -13,6 +14,7 @@ export default class ProcessManager extends EventEmitter {
   private isMeasuring: boolean
 
   public isDestroyed: boolean
+  public pid: number
 
   constructor(command: string, args: string[]) {
     super()
@@ -70,6 +72,8 @@ export default class ProcessManager extends EventEmitter {
 
     this.childProcess = spawn(this.command, this.args)
 
+    this.pid = this.childProcess.pid
+
     this.childProcess.stdout.on('data', d => {
       this.emit('stdout', d.toString())
     })
@@ -80,13 +84,17 @@ export default class ProcessManager extends EventEmitter {
 
     const exitHandler = (code: number) => {
       console.error(
-        `🔥  Child process for ${this.command} exited with code ${code}. Restarting...`
+        chalk.red(`Child process for ${this.command} exited with code ${code} at ${(new Date()).toLocaleTimeString()} ${(new Date()).toLocaleDateString()}. Attempt restart.`)
       )
+
+      this.emit('error', new Error(`Child process for ${this.command} exited with code ${code}.`))
 
       this.childProcess.removeAllListeners()
       this.childProcess = undefined
 
       this.start()
+
+      console.info(chalk.green('Restarted server successfully after crash'))
     }
 
     this.childProcess.on('exit', exitHandler)
