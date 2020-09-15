@@ -477,44 +477,68 @@ test.serial('connection failure', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.only('Forcefully destroy redis server (and hope for restart)', async t => {
+test.serial('Forcefully destroy redis server (and hope for restart)', async t => {
   let registry = await startRegistry({ port: 9999 })
-
   const connectOpts = { port: 9999 }
-
   const origin = await startOrigin({ registry: connectOpts, default: true, port: 9998 })
-
   let timeoutCnt = 0
-
   origin.on('error', (err) => {
     // redis crash
     timeoutCnt++
   })
-
   const client = connect({ port: 9999 })
-
-  //  lsof -i:3000
   await wait(100)
-
   console.log('kill server')
   await exec(`kill -9 ${origin.pm.pid}`)
-
   await client.redis.set({ type: 'origin' }, 'x', 'bla')
-
   const x = await client.redis.get({ type: 'origin' }, 'x')
-
   t.is(x, 'bla')
-
   t.is(timeoutCnt, 1, 'origin timed out once')
-
   await wait(100)
-
   await registry.destroy()
   await origin.destroy()
   await client.destroy()
-
   await wait(6000)
+  // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
+  t.is(connections.size, 0, 'all connections removed')
+})
 
+test.only('Change origin and re-conn replica', async t => {
+  let registry = await startRegistry({ port: 9999 })
+  const connectOpts = { port: 9999 }
+  const origin = await startOrigin({
+    registry: connectOpts, default: true,
+    dir: join(dir, 'replicarestarterorigin')
+  })
+
+  const replica = await startReplica({
+    registry: connectOpts,
+    default: true,
+    dir: join(dir, 'replicarestarter')
+  })
+
+  replica.on('error', (err) => {
+    console.log(err)
+  })
+
+  const client = connect({ port: 9999 })
+
+  await client.redis.set({ type: 'origin' }, 'f', 'snurf')
+
+  await client.redis.get({ type: 'replica', strict: true }, 'f')
+
+  await wait(100)
+
+  await origin.destroy()
+
+
+
+
+  await wait(100000)
+  await registry.destroy()
+  await origin.destroy()
+  await client.destroy()
+  await wait(6000)
   // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
   t.is(connections.size, 0, 'all connections removed')
 })

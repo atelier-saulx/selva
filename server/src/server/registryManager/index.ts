@@ -100,9 +100,14 @@ export const registryManager = (server: SelvaServer) => {
               // not very strange this can happen on register before info update
               console.warn(
                 chalk.yellow(
-                  `⚠️  ${type}, ${name}, ${id} Does not have stats (from registry server)'`
+                  `⚠️  ${type}, ${name}, ${id} Does not have stats (from registry server)`
                 )
               )
+
+              await redis.hset({ type: 'registry' }, id, 'stats', JSON.stringify({
+                timestamp: Date.now()
+              }))
+
               return
             }
 
@@ -179,10 +184,18 @@ export const registryManager = (server: SelvaServer) => {
               let weight = Math.round(stats.cpu / 5)
 
               // slow connection so something must be up
-              if (Date.now() - ts > 2e3) {
+
+              if (stats.cpu === undefined) {
                 console.warn(
                   chalk.yellow(
-                    `Connection to replica is slow something must be weird (emulate a weight of 100) ${type} ${id}`
+                    `Connection to replica has no full stats, emulate a weight of 100 ${type} ${id}`
+                  )
+                )
+                weight = 100
+              } else if (Date.now() - ts > 2e3 || stats.cpu === undefined) {
+                console.warn(
+                  chalk.yellow(
+                    `Connection to replica is slow ${Date.now() - ts}ms since last timestamp, emulate a weight of 100 ${type} ${id}`
                   )
                 )
                 weight = 100
