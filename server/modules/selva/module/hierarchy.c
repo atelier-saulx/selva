@@ -171,9 +171,9 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     }
 
 
-    RB_INIT(&hierarchy->subs_head);
-    hierarchy->subs_deferred_events = SelvaSubscriptions_NewDeferredEvents();
-    if (!hierarchy->subs_deferred_events) {
+    RB_INIT(&hierarchy->subs.head);
+    hierarchy->subs.deferred_events = SelvaSubscriptions_NewDeferredEvents();
+    if (!hierarchy->subs.deferred_events) {
         SelvaModify_DestroyHierarchy(hierarchy);
     }
 
@@ -196,7 +196,7 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
         SelvaModify_DestroyNode(node);
     }
 
-    SelvaSubscriptions_DestroyDeferredEvents(hierarchy->subs_deferred_events);
+    SelvaSubscriptions_DestroyDeferredEvents(hierarchy->subs.deferred_events);
     SelvaSubscriptions_DestroyAll(hierarchy);
 
     SVector_Destroy(&hierarchy->heads);
@@ -486,6 +486,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     }
 
     if (likely(ctx)) {
+        /* TODO We may want a deletion marker support? */
 #if 0
         char *fields;
 
@@ -565,17 +566,17 @@ ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Se
 #endif
 
 static inline void publishAncestorsUpdate(struct SelvaModify_Hierarchy *hierarchy, const SelvaModify_HierarchyNode *node) {
-    SelvaSubscriptions_DeferFieldChangeEvents(hierarchy->subs_deferred_events,
+    SelvaSubscriptions_DeferFieldChangeEvents(hierarchy->subs.deferred_events,
                                               node->id, &node->metadata, "ancestors");
 }
 
 static inline void publishChildrenUpdate(struct SelvaModify_Hierarchy *hierarchy, const SelvaModify_HierarchyNode *node) {
-    SelvaSubscriptions_DeferFieldChangeEvents(hierarchy->subs_deferred_events,
+    SelvaSubscriptions_DeferFieldChangeEvents(hierarchy->subs.deferred_events,
                                               node->id, &node->metadata, "children");
 }
 
 static inline void publishParentsUpdate(struct SelvaModify_Hierarchy *hierarchy, const SelvaModify_HierarchyNode *node) {
-    SelvaSubscriptions_DeferFieldChangeEvents(hierarchy->subs_deferred_events,
+    SelvaSubscriptions_DeferFieldChangeEvents(hierarchy->subs.deferred_events,
                                               node->id, &node->metadata, "parents");
 }
 
@@ -598,7 +599,7 @@ static int crossInsert(
         rmHead(hierarchy, node);
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy->subs_deferred_events, &node->metadata);
+    SelvaSubscriptions_DeferHierarchyEvents(hierarchy->subs.deferred_events, &node->metadata);
     if (rel == RELATIONSHIP_CHILD) { /* node is a child to adjacent */
         for (size_t i = 0; i < n; i++) {
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
@@ -706,7 +707,7 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy->subs_deferred_events, &node->metadata);
+    SelvaSubscriptions_DeferHierarchyEvents(hierarchy->subs.deferred_events, &node->metadata);
     SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
 
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
@@ -819,7 +820,7 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
         return;
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy->subs_deferred_events, &node->metadata);
+    SelvaSubscriptions_DeferHierarchyEvents(hierarchy->subs.deferred_events, &node->metadata);
     SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
 
     SelvaModify_HierarchyNode **itt;
@@ -1701,7 +1702,7 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
 
     RedisModule_ReplyWithLongLong(ctx, 1);
     RedisModule_ReplicateVerbatim(ctx);
-    SelvaSubscriptions_SendDeferredEvents(hierarchy->subs_deferred_events);
+    SelvaSubscriptions_SendDeferredEvents(hierarchy->subs.deferred_events);
 
     return REDISMODULE_OK;
 }
@@ -1738,7 +1739,7 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
 
     RedisModule_ReplyWithLongLong(ctx, nr_deleted);
     RedisModule_ReplicateVerbatim(ctx);
-    SelvaSubscriptions_SendDeferredEvents(hierarchy->subs_deferred_events);
+    SelvaSubscriptions_SendDeferredEvents(hierarchy->subs.deferred_events);
 
     return REDISMODULE_OK;
 }
@@ -1821,7 +1822,7 @@ int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString *
 
     RedisModule_ReplyWithLongLong(ctx, 1);
     RedisModule_ReplicateVerbatim(ctx);
-    SelvaSubscriptions_SendDeferredEvents(hierarchy->subs_deferred_events);
+    SelvaSubscriptions_SendDeferredEvents(hierarchy->subs.deferred_events);
 
     return REDISMODULE_OK;
 }

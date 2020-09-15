@@ -26,8 +26,11 @@ typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
  * declared structures.
  */
 struct SelvaModify_HierarchyMetadata {
+    /*
+     * Subscription markers.
+     */
     struct SVector sub_markers;
-    unsigned sub_marker_flags_filter; /* All marker flags OR'd for faster lookup. */
+    unsigned sub_markers_filter; /* All flags from sub_markers OR'd for faster lookup. */
 };
 
 typedef void SelvaModify_HierarchyMetadataHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);
@@ -59,11 +62,14 @@ struct SelvaModify_Hierarchy {
      */
     SVector heads;
 
-    /**
-     * A tree of all subscriptions applying to this tree.
-     */
-    struct hierarchy_subscriptions_tree subs_head;
-    struct SelvaSubscriptions_DeferredEvents *subs_deferred_events;
+    struct {
+        /**
+         * A tree of all subscriptions applying to this tree.
+         */
+        struct hierarchy_subscriptions_tree head;
+
+        struct SelvaSubscriptions_DeferredEvents *deferred_events;
+    } subs;
 };
 
 /**

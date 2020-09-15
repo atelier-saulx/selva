@@ -181,13 +181,13 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
         SVector_Clear(&sub->markers);
     }
 
-    RB_REMOVE(hierarchy_subscriptions_tree, &hierarchy->subs_head, sub);
+    RB_REMOVE(hierarchy_subscriptions_tree, &hierarchy->subs.head, sub);
     SVector_Destroy(&sub->markers);
     RedisModule_Free(sub);
 }
 
 void SelvaSubscriptions_DestroyAll(SelvaModify_Hierarchy *hierarchy) {
-    struct hierarchy_subscriptions_tree *subs_head = &hierarchy->subs_head;
+    struct hierarchy_subscriptions_tree *subs_head = &hierarchy->subs.head;
     struct Selva_Subscription *sub;
     struct Selva_Subscription *next;
 
@@ -216,7 +216,7 @@ static struct Selva_Subscription *find_sub(SelvaModify_Hierarchy *hierarchy, Sel
     struct Selva_Subscription filter;
 
     memcpy(&filter.sub_id, sub_id, sizeof(Selva_SubscriptionId));
-    return RB_FIND(hierarchy_subscriptions_tree, &hierarchy->subs_head, &filter);
+    return RB_FIND(hierarchy_subscriptions_tree, &hierarchy->subs.head, &filter);
 }
 
 static int set_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
@@ -227,7 +227,7 @@ static int set_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMe
     fprintf(stderr, "Set sub %s marker to %.*s\n",
             Selva_SubscriptionId2str(str, marker->sub->sub_id), (int)SELVA_NODE_ID_SIZE, id);
     SVector_InsertFast(&metadata->sub_markers, marker);
-    metadata->sub_marker_flags_filter |= marker->marker_flags;
+    metadata->sub_markers_filter |= marker->marker_flags;
 
     return 0;
 }
@@ -235,12 +235,12 @@ static int set_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMe
 static void reset_marker_filter(struct SelvaModify_HierarchyMetadata * restrict metadata) {
     struct subscriptionMarker **it;
 
-    metadata->sub_marker_flags_filter = 0;
+    metadata->sub_markers_filter = 0;
 
     SVECTOR_FOREACH(it, &metadata->sub_markers) {
         struct subscriptionMarker *marker = *it;
 
-        metadata->sub_marker_flags_filter |= marker->marker_flags;
+        metadata->sub_markers_filter |= marker->marker_flags;
     }
 }
 
@@ -282,7 +282,7 @@ static struct Selva_Subscription *create_subscription(
     /*
      * Add to the list of subscriptions.
      */
-    if (unlikely(RB_INSERT(hierarchy_subscriptions_tree, &hierarchy->subs_head, sub) != NULL)) {
+    if (unlikely(RB_INSERT(hierarchy_subscriptions_tree, &hierarchy->subs.head, sub) != NULL)) {
         SVector_Destroy(&sub->markers);
         RedisModule_Free(sub);
         return NULL;
@@ -525,7 +525,7 @@ void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaSubscriptions_Deferre
                                                const char *field) {
     const unsigned flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
 
-    if (metadata && (metadata->sub_marker_flags_filter & flags)) {
+    if (metadata && (metadata->sub_markers_filter & flags)) {
         struct subscriptionMarker **it;
 
         SVECTOR_FOREACH(it, &metadata->sub_markers) {
@@ -805,7 +805,7 @@ int Selva_SubscriptionsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    RB_FOREACH(sub, hierarchy_subscriptions_tree, &hierarchy->subs_head) {
+    RB_FOREACH(sub, hierarchy_subscriptions_tree, &hierarchy->subs.head) {
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
         RedisModule_ReplyWithStringBuffer(ctx, Selva_SubscriptionId2str(str, sub->sub_id), SELVA_SUBSCRIPTION_ID_STR_LEN);
