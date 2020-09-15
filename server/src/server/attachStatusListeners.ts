@@ -12,7 +12,9 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
   }
   server.on('stats', rawStats => {
     if (server.type === 'replica') {
-      console.log(rawStats.redisInfo.sync_full, rawStats.redisInfo.master_sync_in_progress, rawStats.redisInfo.sync_partial_ok, rawStats.redisInfo.role, server.type)
+      if (rawStats.redisInfo.master_sync_in_progress !== '0') {
+        return
+      }
     }
     const stats: Stats = {
       cpu: rawStats.runtimeInfo.cpu,

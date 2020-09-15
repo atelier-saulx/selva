@@ -128,9 +128,7 @@ export const registryManager = (server: SelvaServer) => {
                 )
               )
 
-
               // also store this - somewhere can be just in mem
-
               if (!serverTimeouts[id]) {
                 serverTimeouts[id] = []
               }
