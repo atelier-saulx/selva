@@ -59,14 +59,14 @@ void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_HierarchyMetadata *metadata);
 
 
-int SelvaSubscriptions_InitDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def);
-void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def);
-void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaSubscriptions_DeferredEvents *def,
+int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
+void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
+void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hierarchy,
                                              const struct SelvaModify_HierarchyMetadata *metadata);
-void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaSubscriptions_DeferredEvents *def,
+void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaModify_Hierarchy *hierarchy,
                                                const Selva_NodeId node_id,
                                                const struct SelvaModify_HierarchyMetadata *metadata,
                                                const char *field);
-void SelvaSubscriptions_SendDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def);
+void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 
 #endif /* SELVA_MODIFY_SUBSCRIPTIONS */

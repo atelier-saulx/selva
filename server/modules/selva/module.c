@@ -292,7 +292,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             struct SelvaModify_HierarchyMetadata *metadata;
 
             metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
-            SelvaSubscriptions_DeferFieldChangeEvents(&hierarchy->subs.deferred_events, nodeId, metadata, field_str);
+            SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, nodeId, metadata, field_str);
         }
     }
 
@@ -322,7 +322,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplicateVerbatim(ctx);
 out:
     /* Maybe something was changed even if the command failed. */
-    SelvaSubscriptions_SendDeferredEvents(&hierarchy->subs.deferred_events);
+    SelvaSubscriptions_SendDeferredEvents(hierarchy);
 
     RedisModule_CloseKey(id_key);
 

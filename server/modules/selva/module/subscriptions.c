@@ -217,7 +217,7 @@ static void destroy_all_sub_markers(SelvaModify_Hierarchy *hierarchy) {
  * Destroy all subscriptions and markers in a hierarchy.
  */
 void SelvaSubscriptions_DestroyAll(SelvaModify_Hierarchy *hierarchy) {
-    SelvaSubscriptions_DestroyDeferredEvents(&hierarchy->subs.deferred_events);
+    SelvaSubscriptions_DestroyDeferredEvents(hierarchy);
     SVector_Destroy(&hierarchy->subs.detached_markers.vec);
     destroy_all_sub_markers(hierarchy);
 }
@@ -528,7 +528,9 @@ void SelvaSubscriptions_ClearAllMarkers(
     SVector_Clear(&metadata->sub_markers.vec);
 }
 
-int SelvaSubscriptions_InitDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def) {
+int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
+
     if (unlikely(!SVector_Init(&def->subs, 2, SelvaSubscription_svector_compare))) {
         return SELVA_SUBSCRIPTIONS_ENOMEM;
     }
@@ -536,17 +538,18 @@ int SelvaSubscriptions_InitDeferredEvents(struct SelvaSubscriptions_DeferredEven
     return 0;
 }
 
-void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def) {
+void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     if (!def) {
         return;
     }
 
     SVector_Destroy(&def->subs);
-    RedisModule_Free(def);
 }
 
-void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaSubscriptions_DeferredEvents *def,
+void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hierarchy,
                                              const struct SelvaModify_HierarchyMetadata *metadata) {
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct subscriptionMarker **it;
 
     SVECTOR_FOREACH(it, &metadata->sub_markers.vec) {
@@ -559,10 +562,11 @@ void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaSubscriptions_DeferredE
 }
 
 /* TODO Check if RPN changed from 1 -> 0 */
-void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaSubscriptions_DeferredEvents *def,
+void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaModify_Hierarchy *hierarchy,
                                                const Selva_NodeId node_id,
                                                const struct SelvaModify_HierarchyMetadata *metadata,
                                                const char *field) {
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     const unsigned flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
 
     if (metadata && (metadata->sub_markers.flags_filter & flags)) {
@@ -580,7 +584,8 @@ void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaSubscriptions_Deferre
     }
 }
 
-void SelvaSubscriptions_SendDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def) {
+void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct Selva_Subscription **it;
 
     SVECTOR_FOREACH(it, &def->subs) {
@@ -606,7 +611,7 @@ static int parse_subscription_id(Selva_SubscriptionId id, RedisModuleString *arg
 static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, RedisModuleString *arg) {
     TO_STR(arg);
 
-    if (!strncmp("none", args_sr, arg_len)) {
+    if (!strncmp("none", arg_str, arg_len)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
     }else if (!strncmp("node", arg_str, arg_len)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
