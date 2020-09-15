@@ -2,8 +2,7 @@ import { SelvaServer } from './'
 import { ServerOptions } from '../types'
 import path from 'path'
 import fs from 'fs'
-import { spawn, execSync } from 'child_process'
-import chalk from 'chalk'
+import { execSync } from 'child_process'
 import RedisManager from './redisManager'
 
 // this is only for the 'raw' redis
@@ -49,12 +48,10 @@ export default (server: SelvaServer, opts: ServerOptions) => {
   })
 
   if (server.type === 'replica') {
-    args.push('--replicaof', server.origin.host, String(server.origin.port))
-  }
 
-  const tmpPath = path.join(process.cwd(), './tmp')
-  if (!fs.existsSync(tmpPath)) {
-    fs.mkdirSync(tmpPath)
+    console.log('REPLICA', dir)
+
+    args.push('--replicaof', server.origin.host, String(server.origin.port))
   }
 
   try {

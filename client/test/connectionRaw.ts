@@ -503,7 +503,7 @@ test.serial('Forcefully destroy redis server (and hope for restart)', async t =>
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.serial('Change origin and re-conn replica', async t => {
+test.only('Change origin and re-conn replica', async t => {
   let registry = await startRegistry({ port: 9999 })
   const connectOpts = { port: 9999 }
   let origin = await startOrigin({

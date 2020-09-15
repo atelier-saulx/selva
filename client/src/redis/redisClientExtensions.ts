@@ -27,7 +27,7 @@ const redisSearchCommands = [
   'CONFIG'
 ]
 
-redis.RedisClient.prototype.on_info_cmd = function(err, res) {
+redis.RedisClient.prototype.on_info_cmd = function (err, res) {
   if (err) {
     if (err.message.includes('BUSY')) {
       this.on_ready()
@@ -39,16 +39,16 @@ redis.RedisClient.prototype.on_info_cmd = function(err, res) {
       return
     }
 
-    if (err.message.includes('connection is already closed')) {
+    if (err.message.includes('connection is already closed') || err.message.includes('ERR only (P)SUBSCRIBE / (P)UNSUBSCRIBE / PING / QUIT allowed in this context')) {
       err.message = 'Ready check failed: ' + err.message
       this.emit('hard-disconnect', err)
       return
     }
 
     err.message = 'Ready check failed: ' + err.message
-    console.log(err.message)
+    console.log(err)
     setTimeout(
-      function(self) {
+      function (self) {
         self.ready_check()
       },
       1e3,
@@ -83,7 +83,7 @@ redis.RedisClient.prototype.on_info_cmd = function(err, res) {
   }
 
   setTimeout(
-    function(self) {
+    function (self) {
       self.ready_check()
     },
     retry_time,
