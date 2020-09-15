@@ -176,10 +176,9 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
         SVECTOR_FOREACH(it, &markers) {
             struct subscriptionMarker *marker = *it;
 
-            if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE ||
-                !memcmp(marker->node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+            if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
                 /*
-                 * TRAVERSAL_NONE and root markers are stored as detached.
+                 * TRAVERSAL_NONE (e.g. root) markers are stored as detached.
                  */
                 (void)SVector_Remove(&hierarchy->subs.detached_markers.vec, marker);
             } else {
@@ -255,32 +254,36 @@ static struct Selva_Subscription *find_sub(SelvaModify_Hierarchy *hierarchy, Sel
     return RB_FIND(hierarchy_subscriptions_tree, &hierarchy->subs.head, &filter);
 }
 
+static void set_marker(struct Selva_SubscriptionMarkers *sub_markers, struct subscriptionMarker *marker) {
+    SVector_InsertFast(&sub_markers->vec, marker);
+    sub_markers->flags_filter |= marker->marker_flags;
+}
+
+static void reset_marker_filter(struct Selva_SubscriptionMarkers *sub_markers) {
+    struct subscriptionMarker **it;
+
+    sub_markers->flags_filter = 0;
+
+    SVECTOR_FOREACH(it, &sub_markers->vec) {
+        struct subscriptionMarker *marker = *it;
+
+        sub_markers->flags_filter |= marker->marker_flags;
+    }
+}
+
 /*
  * Set a marker to a node metadata.
  */
-static int set_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int set_node_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
     struct subscriptionMarker *marker;
 
     marker = (struct subscriptionMarker *)arg;
     fprintf(stderr, "Set sub %s marker to %.*s\n",
             Selva_SubscriptionId2str(str, marker->sub->sub_id), (int)SELVA_NODE_ID_SIZE, id);
-    SVector_InsertFast(&metadata->sub_markers.vec, marker);
-    metadata->sub_markers.flags_filter |= marker->marker_flags;
+    set_marker(&metadata->sub_markers, marker);
 
     return 0;
-}
-
-static void reset_marker_filter(struct SelvaModify_HierarchyMetadata * restrict metadata) {
-    struct subscriptionMarker **it;
-
-    metadata->sub_markers.flags_filter = 0;
-
-    SVECTOR_FOREACH(it, &metadata->sub_markers.vec) {
-        struct subscriptionMarker *marker = *it;
-
-        metadata->sub_markers.flags_filter |= marker->marker_flags;
-    }
 }
 
 static int clear_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
@@ -292,7 +295,7 @@ static int clear_marker(Selva_NodeId id, void *arg, struct SelvaModify_Hierarchy
             Selva_SubscriptionId2str(str, marker->sub->sub_id), (int)SELVA_NODE_ID_SIZE, id,
             SVector_Size(&metadata->sub_markers.vec));
     SVector_Remove(&metadata->sub_markers.vec, marker);
-    reset_marker_filter(metadata);
+    reset_marker_filter(&metadata->sub_markers);
 
     return 0;
 }
@@ -410,7 +413,11 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
         int err;
 
         if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
-            /* This is a non-traversing marker. */
+            /*
+             * This is a non-traversing marker but it needs to exist in the
+             * detached markers.
+             */
+            set_marker(&hierarchy->subs.detached_markers, marker);
             continue;
         }
 
@@ -418,7 +425,7 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
          * Set subscription markers.
          */
         struct SelvaModify_HierarchyCallback cb = {
-            .node_cb = set_marker,
+            .node_cb = set_node_marker,
             .node_arg = marker,
         };
 
@@ -599,7 +606,9 @@ static int parse_subscription_id(Selva_SubscriptionId id, RedisModuleString *arg
 static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, RedisModuleString *arg) {
     TO_STR(arg);
 
-    if (!strncmp("node", arg_str, arg_len)) {
+    if (!strncmp("none", args_sr, arg_len)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
+    }else if (!strncmp("node", arg_str, arg_len)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
     } else if (!strncmp("ancestors", arg_str, arg_len)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS;
