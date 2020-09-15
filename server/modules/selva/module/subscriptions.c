@@ -201,14 +201,15 @@ static void init_node_metadata_subs(
         Selva_NodeId id __unused,
         struct SelvaModify_HierarchyMetadata *metadata) {
     /* TODO Lazy alloc */
-    SVector_Init(&metadata->sub_markers, 1, marker_svector_compare);
+    SVector_Init(&metadata->sub_markers.vec, 1, marker_svector_compare);
+    metadata->sub_markers.flags_filter = 0;
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_subs);
 
 static void deinit_node_metadata_subs(
         Selva_NodeId id __unused,
         struct SelvaModify_HierarchyMetadata *metadata) {
-    SVector_Destroy(&metadata->sub_markers);
+    SVector_Destroy(&metadata->sub_markers.vec);
 }
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_subs);
 
@@ -226,8 +227,8 @@ static int set_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMe
     marker = (struct subscriptionMarker *)arg;
     fprintf(stderr, "Set sub %s marker to %.*s\n",
             Selva_SubscriptionId2str(str, marker->sub->sub_id), (int)SELVA_NODE_ID_SIZE, id);
-    SVector_InsertFast(&metadata->sub_markers, marker);
-    metadata->sub_markers_filter |= marker->marker_flags;
+    SVector_InsertFast(&metadata->sub_markers.vec, marker);
+    metadata->sub_markers.flags_filter |= marker->marker_flags;
 
     return 0;
 }
@@ -235,12 +236,12 @@ static int set_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMe
 static void reset_marker_filter(struct SelvaModify_HierarchyMetadata * restrict metadata) {
     struct subscriptionMarker **it;
 
-    metadata->sub_markers_filter = 0;
+    metadata->sub_markers.flags_filter = 0;
 
-    SVECTOR_FOREACH(it, &metadata->sub_markers) {
+    SVECTOR_FOREACH(it, &metadata->sub_markers.vec) {
         struct subscriptionMarker *marker = *it;
 
-        metadata->sub_markers_filter |= marker->marker_flags;
+        metadata->sub_markers.flags_filter |= marker->marker_flags;
     }
 }
 
@@ -251,8 +252,8 @@ static int clear_marker(Selva_NodeId id, void *arg, struct SelvaModify_Hierarchy
     marker = (struct subscriptionMarker*)arg;
     fprintf(stderr, "Clear sub %s from %.*s (nr_subs: %zd)\n",
             Selva_SubscriptionId2str(str, marker->sub->sub_id), (int)SELVA_NODE_ID_SIZE, id,
-            SVector_Size(&metadata->sub_markers));
-    SVector_Remove(&metadata->sub_markers, marker);
+            SVector_Size(&metadata->sub_markers.vec));
+    SVector_Remove(&metadata->sub_markers.vec, marker);
     reset_marker_filter(metadata);
 
     return 0;
@@ -454,7 +455,7 @@ void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *metadata) {
-    const size_t nr_markers = SVector_Size(&metadata->sub_markers);
+    const size_t nr_markers = SVector_Size(&metadata->sub_markers.vec);
     svector_autofree SVector markers = {0};
     struct subscriptionMarker **it;
 
@@ -465,7 +466,7 @@ void SelvaSubscriptions_ClearAllMarkers(
     fprintf(stderr, "Removing %zu subscription markers from %.*s\n",
             nr_markers, (int)SELVA_NODE_ID_SIZE, node_id);
 
-    if (unlikely(!SVector_Clone(&markers, &metadata->sub_markers, NULL))) {
+    if (unlikely(!SVector_Clone(&markers, &metadata->sub_markers.vec, NULL))) {
         fprintf(stderr, "Hierarchy: %s ENOMEM\n", __func__);
         return;
     }
@@ -478,7 +479,7 @@ void SelvaSubscriptions_ClearAllMarkers(
 
         clear_sub(hierarchy, marker, node_id);
     }
-    SVector_Clear(&metadata->sub_markers);
+    SVector_Clear(&metadata->sub_markers.vec);
 }
 
 struct SelvaSubscriptions_DeferredEvents *SelvaSubscriptions_NewDeferredEvents(void) {
@@ -509,7 +510,7 @@ void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaSubscriptions_DeferredE
                                              const struct SelvaModify_HierarchyMetadata *metadata) {
     struct subscriptionMarker **it;
 
-    SVECTOR_FOREACH(it, &metadata->sub_markers) {
+    SVECTOR_FOREACH(it, &metadata->sub_markers.vec) {
         struct subscriptionMarker *marker = *it;
 
         if (isHierarchySubscription(marker)) {
@@ -525,10 +526,10 @@ void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaSubscriptions_Deferre
                                                const char *field) {
     const unsigned flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
 
-    if (metadata && (metadata->sub_markers_filter & flags)) {
+    if (metadata && (metadata->sub_markers.flags_filter & flags)) {
         struct subscriptionMarker **it;
 
-        SVECTOR_FOREACH(it, &metadata->sub_markers) {
+        SVECTOR_FOREACH(it, &metadata->sub_markers.vec) {
             struct subscriptionMarker *marker = *it;
 
             if ((marker->marker_flags & flags) &&

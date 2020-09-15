@@ -5,6 +5,7 @@
 #include "linker_set.h"
 #include "selva.h"
 #include "svector.h"
+#include "subscriptions.h"
 #include "tree.h"
 #include "trx.h"
 
@@ -29,8 +30,7 @@ struct SelvaModify_HierarchyMetadata {
     /*
      * Subscription markers.
      */
-    struct SVector sub_markers;
-    unsigned sub_markers_filter; /* All flags from sub_markers OR'd for faster lookup. */
+    struct Selva_SubscriptionMarkers sub_markers;
 };
 
 typedef void SelvaModify_HierarchyMetadataHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);
@@ -55,6 +55,9 @@ struct SelvaModify_Hierarchy {
      */
     Trx current_trx;
 
+    /**
+     * Index of all hierarchy nodes by ID.
+     */
     struct hierarchy_index_tree index_head;
 
     /**
@@ -68,6 +71,13 @@ struct SelvaModify_Hierarchy {
          */
         struct hierarchy_subscriptions_tree head;
 
+        /**
+         * Deferred subscription events.
+         * The events are deduplicated by subscription ID and the events will
+         * be sent out when * SelvaSubscriptions_SendDeferredEvents() is called.
+         *
+         * The intended type in this list is struct Selva_Subscription.
+         */
         struct SelvaSubscriptions_DeferredEvents *deferred_events;
     } subs;
 };

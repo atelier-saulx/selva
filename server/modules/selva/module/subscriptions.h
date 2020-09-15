@@ -3,6 +3,7 @@
 #define SELVA_MODIFY_SUBSCRIPTIONS
 
 #include "selva.h"
+#include "svector.h"
 
 /**
  * Hierarchy changed.
@@ -18,7 +19,22 @@ struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 struct hierarchy_subscriptions_tree;
 struct SelvaSubscriptions_DeferredEvents;
-struct SVector;
+
+/**
+ * A data structure for subscription markers.
+ */
+struct Selva_SubscriptionMarkers {
+    /**
+     * A list of subscriptionMarker structures.
+     */
+    struct SVector vec;
+    /* *
+     * Lookup filter.
+     * All flags from sub_markers OR'ed for faster lookup.
+     */
+    unsigned flags_filter;
+};
+
 
 /**
  * Selva subscription ID to hex string.
