@@ -148,6 +148,9 @@ static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct subs
     return res;
 }
 
+/*
+ * Destroy and free a marker.
+ */
 static void destroy_marker(struct subscriptionMarker *marker) {
     rpn_destroy(marker->filter_ctx);
     RedisModule_Free(marker->filter_expression);
@@ -155,6 +158,9 @@ static void destroy_marker(struct subscriptionMarker *marker) {
     RedisModule_Free(marker);
 }
 
+/*
+ * Destroy all markers in a subscription.
+ */
 static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
     struct subscriptionMarker **it;
 
@@ -173,7 +179,7 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
             clear_sub(hierarchy, marker, marker->node_id);
             destroy_marker(marker);
         }
-        /* This isn't technically necessary but we dot it for clarity. */
+        /* This isn't technically necessary but we do it for clarity. */
         SVector_Clear(&sub->markers);
     }
 
@@ -182,6 +188,9 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
     RedisModule_Free(sub);
 }
 
+/*
+ * Destroy all subscription markers.
+ */
 static void destroy_all_sub_markers(SelvaModify_Hierarchy *hierarchy) {
     struct hierarchy_subscriptions_tree *subs_head = &hierarchy->subs.head;
     struct Selva_Subscription *sub;
@@ -193,6 +202,9 @@ static void destroy_all_sub_markers(SelvaModify_Hierarchy *hierarchy) {
     }
 }
 
+/*
+ * Destroy all subscriptions and markers in a hierarchy.
+ */
 void SelvaSubscriptions_DestroyAll(SelvaModify_Hierarchy *hierarchy) {
     SelvaSubscriptions_DestroyDeferredEvents(&hierarchy->subs.deferred_events);
     SVector_Destroy(&hierarchy->subs.detached_markers.vec);
