@@ -723,6 +723,11 @@ astral-regex@^2.0.0:
   resolved "https://registry.yarnpkg.com/astral-regex/-/astral-regex-2.0.0.tgz#483143c567aeed4785759c0865786dc77d7d2e31"
   integrity sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==
 
+async-exec@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/async-exec/-/async-exec-1.1.0.tgz#f7021613678fa5827edf0b42e600f27af1b8c1f0"
+  integrity sha1-9wIWE2ePpYJ+3wtC5gDyevG4wfA=
+
 asynckit@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"

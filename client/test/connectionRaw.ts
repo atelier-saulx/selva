@@ -10,6 +10,7 @@ import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
 import fs from 'fs'
+import exec from 'async-exec'
 
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
@@ -300,7 +301,6 @@ test.serial('connection / server orchestration', async t => {
   await wait(5000)
 
   // server exemption
-
   // maybe put this in a worker - better for testing if it actualy arrives
   await wait(1500)
 
@@ -422,7 +422,6 @@ test.serial('registry reconnect', async t => {
 
   const x = await client.redis.hget({ type: 'origin' }, 'snurk', 'x')
 
-  console.log('re get value')
   t.is(x * 1, 1, 'get back value after destroy')
 
   await wait(1500)
@@ -436,7 +435,7 @@ test.serial('registry reconnect', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.only('connection failure', async t => {
+test.serial('connection failure', async t => {
   let registry = await startRegistry({ port: 9999 })
 
   const connectOpts = { port: 9999 }
@@ -475,6 +474,45 @@ test.only('connection failure', async t => {
   await wait(20000)
 
   // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
+  t.is(connections.size, 0, 'all connections removed')
+})
 
+test.only('Forcefully destroy redis server (and hope for restart)', async t => {
+  let registry = await startRegistry({ port: 9999 })
+
+  const connectOpts = { port: 9999 }
+
+  const origin = await startOrigin({ registry: connectOpts, default: true, port: 9998 })
+
+  origin.on('error', () => {
+    // redis crash
+  })
+
+  let timeoutCnt = 0
+
+  registry.on('server-timeout', s => {
+    timeoutCnt++
+  })
+
+  const client = connect({ port: 9999 })
+
+  //  lsof -i:3000
+  const x = await exec('lsof -i:9998')
+
+  console.log(x)
+
+  await client.redis.set({ type: 'origin' }, 'x', 1)
+
+  t.is(timeoutCnt, 1, 'origin timed out once')
+
+  await wait(5e3)
+
+  await registry.destroy()
+  await origin.destroy()
+  await client.destroy()
+
+  await wait(20000)
+
+  // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
   t.is(connections.size, 0, 'all connections removed')
 })
