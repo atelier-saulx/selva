@@ -5,15 +5,17 @@
 #include "selva.h"
 #include "svector.h"
 
+#define SELVA_SUBSCRIPTION_FLAG_TRAVERSING      0x0001
+
 /**
  * Hierarchy changed.
  */
-#define SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY    0x0001
+#define SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY    0x0002
 
 /**
  * Field changed.
  */
-#define SELVA_SUBSCRIPTION_FLAG_CH_FIELD        0x0002
+#define SELVA_SUBSCRIPTION_FLAG_CH_FIELD        0x0004
 
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
