@@ -88,7 +88,6 @@ export class SelvaServer extends EventEmitter {
 
     if (this.type === 'replica') {
       const initReplica = async () => {
-        console.log('trying to get new origin...')
         const origin = await this.selvaClient.getServer({
           name: opts.name,
           type: 'origin'
