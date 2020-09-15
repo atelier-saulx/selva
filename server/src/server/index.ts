@@ -29,10 +29,8 @@ import heartbeat from './heartbeat'
 
 const clearReplicaDump = (dir: string): Promise<void> => new Promise(r => {
   fs.exists(dir, (exists) => {
-    console.log(exists)
     if (exists) {
-      fs.readdir(dir, (err, x) => {
-        console.log(x)
+      fs.readdir(dir, (_err, x) => {
         if (x && x.length) {
           const rdb = x.filter(v => /\.rdb$/.test(v))
           if (rdb.length) {
@@ -41,7 +39,7 @@ const clearReplicaDump = (dir: string): Promise<void> => new Promise(r => {
               fs.unlink(join(dir, v), (_err) => {
                 cnt--
                 if (cnt === 0) {
-                  console.log('Remove dump for replica', join(dir, v))
+                  console.info('Remove dump for replica', join(dir, v))
                   r()
                 }
               })

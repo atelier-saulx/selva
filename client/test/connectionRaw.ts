@@ -511,6 +511,33 @@ test.only('Change origin and re-conn replica', async t => {
     dir: join(dir, 'replicarestarterorigin')
   })
 
+  console.log('go worker')
+
+  // await worker(
+  //   async ({ connect }) => {
+  //     const client = connect({ port: 9999 })
+  //     const makeitrain = async index => {
+  //       let p = []
+  //       for (let i = 0; i < 50e3; i++) {
+  //         p.push(
+  //           client.redis.hset(
+  //             { type: 'origin' },
+  //             'flax-' + client.uuid,
+  //             'money',
+  //             i + index * 50e3
+  //           )
+  //         )
+  //       }
+  //       await Promise.all(p)
+  //     }
+  //     for (let i = 0; i < 1000; i++) {
+  //       await makeitrain(i)
+  //     }
+  //   }
+  // )
+
+  // console.log('added 100 * 50k entries')
+
   const replica = await startReplica({
     registry: connectOpts,
     default: true,
@@ -544,6 +571,7 @@ test.only('Change origin and re-conn replica', async t => {
 
   t.is(y2, 'snurf', 'get snurf from backup on origin')
 
+  // wait till done
   const y = await client.redis.get({ type: 'replica', strict: true }, 'f')
 
   // may need to remove dump

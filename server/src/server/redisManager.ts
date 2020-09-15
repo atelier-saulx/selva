@@ -60,6 +60,8 @@ export default class RedisManager extends ProcessManager {
 
       if (info) {
         const infoLines = info.split('\r\n')
+
+
         const redisInfo = infoLines.reduce((acc, line) => {
           if (line.startsWith('#')) {
             return acc

@@ -10,23 +10,12 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     port: opts.port,
     host: opts.host
   }
-
   server.on('stats', rawStats => {
+    if (server.type === 'replica') {
+      console.log(rawStats.redisInfo.sync_full, rawStats.redisInfo.master_sync_in_progress, rawStats.redisInfo.sync_partial_ok, rawStats.redisInfo.role, server.type)
+    }
     const stats: Stats = {
-      memory: rawStats.runtimeInfo.memory,
-      redisMemory: Number(rawStats.redisInfo.used_memory),
       cpu: rawStats.runtimeInfo.cpu,
-      luaMemory: Number(rawStats.redisInfo.used_memory_lua),
-      totalMemoryAvailable: Number(rawStats.redisInfo.total_system_memory),
-      memoryFragmentationRatio: Number(
-        rawStats.redisInfo.mem_fragmentation_ratio
-      ),
-      lastSaveTime: Number(rawStats.redisInfo.rdb_last_save_time),
-      uptime: rawStats.runtimeInfo.elapsed,
-      lastSaveError:
-        rawStats.redisInfo.last_bgsave_status === 'ok' ? false : true,
-      totalNetInputBytes: Number(rawStats.redisInfo.total_net_input_bytes),
-      totalNetOutputBytes: Number(rawStats.redisInfo.total_net_output_bytes),
       activeChannels: Number(rawStats.redisInfo.pubsub_channels),
       opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
       timestamp: rawStats.runtimeInfo.timestamp
@@ -41,21 +30,6 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
       )
     )
   })
-
-  // need to send this to registry!
-  // very important infor
-  // maybe busy and a timer or something
-
-  // TODO: no busy indicator atm
-  server.on('busy', () => {
-    console.log('SERVER IS BUSY')
-  })
-
-  server.selvaClient.on('connect', () => {
-    updateRegistry(server, info)
-  })
-
-  updateRegistry(server, info)
 }
 
 export default attachStatusListeners
