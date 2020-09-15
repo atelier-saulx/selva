@@ -11,11 +11,12 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     host: opts.host
   }
   server.on('stats', rawStats => {
-    if (server.type === 'replica') {
-      if (rawStats.redisInfo.master_sync_in_progress !== '0') {
-        return
-      }
-    }
+    // if (server.type === 'replica') {
+    // only want this if it is not registred before
+    // if (rawStats.redisInfo.master_sync_in_progress !== '0') {
+    // return
+    // }
+    // }
     const stats: Stats = {
       cpu: rawStats.runtimeInfo.cpu,
       activeChannels: Number(rawStats.redisInfo.pubsub_channels),
