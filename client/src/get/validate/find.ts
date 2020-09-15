@@ -211,8 +211,14 @@ export default async function validateFind(
     )
 
     if (textSearchIds) {
-      // TODO: add this as a rule -->
-      // parentProp.$find.$traverse = textSearchIds
+      // if there already is a traverse, we need to get the intersection with textSearchIds
+      addExtraQuery(extraQueries, {
+        type: 'text_search',
+        $db: 'default', // TODO: fix this
+        meta: null, // TODO: do we need this?
+        path: path + '.$find.$traverse',
+        value: textSearchIds
+      })
     }
   }
 }

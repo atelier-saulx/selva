@@ -30,7 +30,10 @@ export type PostGetExtraQuery = {
   type: 'reference' | 'references' | 'nested_query'
 }
 
-export type ExtraQuery = TraverseExtraQuery | PostGetExtraQuery
+export type ExtraQuery =
+  | TextSearchExtraQuery
+  | TraverseExtraQuery
+  | PostGetExtraQuery
 
 export type ExtraQueries = Record<string, ExtraQuery[]>
 

@@ -9,10 +9,10 @@ import getPort from 'get-port'
 let srv
 let txtSrv
 let port
-let txtPort
+let txtPort = 33333
 test.before(async t => {
   port = await getPort()
-  txtPort = await getPort()
+  // txtPort = await getPort()
   srv = await start({
     port
   })
@@ -55,7 +55,7 @@ test.after(async _t => {
   txtSrv.stop()
 })
 
-test.serial.only('hmm', async t => {
+test.serial.only('hhnn', async t => {
   let resp = await fetch(`http://localhost:${txtPort}/set`, {
     method: 'POST',
     headers: {
@@ -86,34 +86,105 @@ test.serial.only('hmm', async t => {
 
   console.log('YES', await resp.text())
 
-  resp = await fetch(`http://localhost:${txtPort}/get`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      $searchString: 'hell',
-      $field: 'title',
-      $language: 'en'
-    })
+  const client = connect({ port })
+
+  await client.set({
+    $language: 'en',
+    $id: 'maga',
+    title: 'hello world',
+    value: 10
   })
 
-  console.log('YES', await resp.text())
-
-  resp = await fetch(`http://localhost:${txtPort}/get`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      $searchString: 'wor',
-      $field: 'title',
-      $language: 'en'
-    })
+  await client.set({
+    $language: 'en',
+    $id: 'masa',
+    title: 'hell song',
+    value: 11
   })
 
-  console.log('YES', await resp.text())
+  const res = await client.get({
+    descendants: {
+      id: true,
+      title: true,
+      value: true,
+      $list: {
+        $find: {
+          $filter: [
+            {
+              $operator: 'textSearch',
+              $field: 'title',
+              $value: 'hel'
+            }
+          ]
+        }
+      }
+    }
+  })
+
+  console.log('YES', res)
+
+  await client.destroy()
 })
+
+// test.serial.only('hmm', async t => {
+//   let resp = await fetch(`http://localhost:${txtPort}/set`, {
+//     method: 'POST',
+//     headers: {
+//       'content-type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       $id: 'maga',
+//       $searchString: 'hello world',
+//       $field: 'title',
+//       $language: 'en'
+//     })
+//   })
+//
+//   console.log('YES', await resp.text())
+//
+//   resp = await fetch(`http://localhost:${txtPort}/set`, {
+//     method: 'POST',
+//     headers: {
+//       'content-type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       $id: 'masa',
+//       $searchString: 'hell song',
+//       $field: 'title',
+//       $language: 'en'
+//     })
+//   })
+//
+//   console.log('YES', await resp.text())
+//
+//   resp = await fetch(`http://localhost:${txtPort}/get`, {
+//     method: 'POST',
+//     headers: {
+//       'content-type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       $searchString: 'hell',
+//       $field: 'title',
+//       $language: 'en'
+//     })
+//   })
+//
+//   console.log('YES', await resp.text())
+//
+//   resp = await fetch(`http://localhost:${txtPort}/get`, {
+//     method: 'POST',
+//     headers: {
+//       'content-type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       $searchString: 'wor',
+//       $field: 'title',
+//       $language: 'en'
+//     })
+//   })
+//
+//   console.log('YES', await resp.text())
+// })
 
 // TODO: this needs to use a non-TEXT-lANGUAGE-SUG field
 test.serial.skip('find - exact text match on exact field', async t => {
