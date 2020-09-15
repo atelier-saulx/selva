@@ -159,7 +159,7 @@ static void destroy_marker(struct subscriptionMarker *marker) {
 }
 
 /*
- * Destroy all markers in a subscription.
+ * Destroy all markers owned by a subscription.
  */
 static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
     struct subscriptionMarker **it;
@@ -176,7 +176,19 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
         SVECTOR_FOREACH(it, &markers) {
             struct subscriptionMarker *marker = *it;
 
-            clear_sub(hierarchy, marker, marker->node_id);
+            if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE ||
+                !memcmp(marker->node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+                /*
+                 * TRAVERSAL_NONE and root markers are stored as detached.
+                 */
+                (void)SVector_Remove(&hierarchy->subs.detached_markers.vec, marker);
+            } else {
+                /*
+                 * Other markers are pointed by one or more nodes in the
+                 * hierarchy.
+                 */
+                clear_sub(hierarchy, marker, marker->node_id);
+            }
             destroy_marker(marker);
         }
         /* This isn't technically necessary but we do it for clarity. */
@@ -243,6 +255,9 @@ static struct Selva_Subscription *find_sub(SelvaModify_Hierarchy *hierarchy, Sel
     return RB_FIND(hierarchy_subscriptions_tree, &hierarchy->subs.head, &filter);
 }
 
+/*
+ * Set a marker to a node metadata.
+ */
 static int set_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
     struct subscriptionMarker *marker;
@@ -472,6 +487,9 @@ void SelvaSubscriptions_Delete(struct SelvaModify_Hierarchy *hierarchy, Selva_Su
     }
 }
 
+/*
+ * Clear all markers from a node.
+ */
 void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_NodeId node_id,
