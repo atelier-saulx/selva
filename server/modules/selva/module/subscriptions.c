@@ -775,13 +775,14 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         }
     }
 
-    /*
-     * TODO Subscription on root could be made a special case
-     *      with no actual traversal
-     */
     unsigned marker_flags = 0;
 
     if (!strcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+        /*
+         * A root node marker is a special case which is stored as detached to
+         * save time and space.
+         * TODO Maybe sometimes we want a NODE marker on root and no hierarchy flag?
+         */
         marker_flags = SELVA_SUBSCRIPTION_FLAG_TRAVERSING | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
         sub_dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
     } else if (sub_dir != SELVA_HIERARCHY_TRAVERSAL_NONE) {
