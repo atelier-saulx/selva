@@ -215,7 +215,7 @@ export default async function validateFind(
       addExtraQuery(extraQueries, {
         type: 'text_search',
         $db: 'default', // TODO: fix this
-        meta: null, // TODO: do we need this?
+        meta: null,
         path: path + '.$find.$traverse',
         value: textSearchIds
       })

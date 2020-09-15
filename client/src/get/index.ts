@@ -32,12 +32,7 @@ async function combineResults(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
         query.map(async q => {
-          if (q.type === 'text_search') {
-            // TODO
-            return
-          }
-
-          if (q.type === 'traverse') {
+          if (q.type === 'traverse' || q.type === 'text_search') {
             // these are processed before the main query
             if (meta) {
               deepMerge(meta, q.meta)
