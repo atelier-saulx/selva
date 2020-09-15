@@ -232,6 +232,8 @@ function makeNewGetOptions(
       const extraQuery: ExtraQuery = extraQueries[newPath]
       if (extraQuery.type === 'traverse') {
         newOpts[key] = extraQuery.value || []
+      } else if (extraQuery.type === 'text_search') {
+        // TODO
       } else {
         newOpts[key] = extraQuery.placeholder
       }

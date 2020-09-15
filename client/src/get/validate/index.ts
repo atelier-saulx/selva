@@ -38,7 +38,10 @@ export type ExtraQuery =
 export type ExtraQueries = Record<string, ExtraQuery[]>
 
 export function addExtraQuery(extraQueries: ExtraQueries, query: ExtraQuery) {
-  const db = query.type === 'traverse' ? query.$db : query.getOpts.$db
+  const db =
+    query.type === 'traverse' || query.type === 'text_search'
+      ? query.$db
+      : query.getOpts.$db
   const current = extraQueries[db] || []
   current.push(query)
   extraQueries[db] = current
