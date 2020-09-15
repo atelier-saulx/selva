@@ -39,10 +39,6 @@ struct Selva_Subscription {
     SVector markers; /* struct subscriptionMarker */
 };
 
-struct SelvaSubscriptions_DeferredEvents {
-    SVector subs;
-};
-
 static void clear_sub(struct SelvaModify_Hierarchy *hierarchy, struct subscriptionMarker *marker, Selva_NodeId node_id);
 
 static int marker_svector_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
@@ -198,7 +194,7 @@ static void destroy_all_sub_markers(SelvaModify_Hierarchy *hierarchy) {
 }
 
 void SelvaSubscriptions_DestroyAll(SelvaModify_Hierarchy *hierarchy) {
-    SelvaSubscriptions_DestroyDeferredEvents(hierarchy->subs.deferred_events);
+    SelvaSubscriptions_DestroyDeferredEvents(&hierarchy->subs.deferred_events);
     SVector_Destroy(&hierarchy->subs.detached_markers.vec);
     destroy_all_sub_markers(hierarchy);
 }
@@ -282,12 +278,11 @@ static struct Selva_Subscription *create_subscription(
         Selva_SubscriptionId sub_id) {
     struct Selva_Subscription *sub;
 
-    sub = RedisModule_Alloc(sizeof(struct Selva_Subscription));
+    sub = RedisModule_Calloc(1, sizeof(struct Selva_Subscription));
     if (!sub) {
         return NULL;
     }
 
-    memset(sub, 0, sizeof(struct Selva_Subscription));
     memcpy(sub->sub_id, sub_id, sizeof(sub->sub_id));
 
     if (!SVector_Init(&sub->markers, 1, NULL)) {
@@ -335,12 +330,11 @@ static int Selva_AddSubscriptionMarker(
         }
     }
 
-    marker = RedisModule_Alloc(sizeof(struct subscriptionMarker));
+    marker = RedisModule_Calloc(1, sizeof(struct subscriptionMarker));
     if (!marker) {
         /* The subscription won't be freed. */
         return SELVA_SUBSCRIPTIONS_ENOMEM;
     }
-    memset(marker, 0, sizeof(*marker));
 
     marker->marker_flags = flags;
     marker->sub = sub;
@@ -497,19 +491,12 @@ void SelvaSubscriptions_ClearAllMarkers(
     SVector_Clear(&metadata->sub_markers.vec);
 }
 
-struct SelvaSubscriptions_DeferredEvents *SelvaSubscriptions_NewDeferredEvents(void) {
-    struct SelvaSubscriptions_DeferredEvents *def;
-
-    def = RedisModule_Alloc(sizeof(struct SelvaSubscriptions_DeferredEvents));
-    if (unlikely(!def)) {
-        return NULL;
-    }
+int SelvaSubscriptions_InitDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def) {
     if (unlikely(!SVector_Init(&def->subs, 2, SelvaSubscription_svector_compare))) {
-        RedisModule_Free(def);
-        return NULL;
+        return SELVA_SUBSCRIPTIONS_ENOMEM;
     }
 
-    return def;
+    return 0;
 }
 
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def) {

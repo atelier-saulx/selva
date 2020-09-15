@@ -18,7 +18,6 @@
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 struct hierarchy_subscriptions_tree;
-struct SelvaSubscriptions_DeferredEvents;
 
 /**
  * A data structure for subscription markers.
@@ -35,6 +34,12 @@ struct Selva_SubscriptionMarkers {
     unsigned flags_filter;
 };
 
+/**
+ * A structure for deferring subscription events.
+ */
+struct SelvaSubscriptions_DeferredEvents {
+    SVector subs;
+};
 
 /**
  * Selva subscription ID to hex string.
@@ -54,7 +59,7 @@ void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_HierarchyMetadata *metadata);
 
 
-struct SelvaSubscriptions_DeferredEvents *SelvaSubscriptions_NewDeferredEvents(void);
+int SelvaSubscriptions_InitDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def);
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaSubscriptions_DeferredEvents *def);
 void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaSubscriptions_DeferredEvents *def,
                                              const struct SelvaModify_HierarchyMetadata *metadata);

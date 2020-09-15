@@ -89,7 +89,7 @@ struct SelvaModify_Hierarchy {
          *
          * The intended type in this list is struct Selva_Subscription.
          */
-        struct SelvaSubscriptions_DeferredEvents *deferred_events;
+        struct SelvaSubscriptions_DeferredEvents deferred_events;
     } subs;
 };
 
