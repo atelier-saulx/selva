@@ -50,14 +50,14 @@ CFLAGS_OBJC_Debug :=
 CFLAGS_OBJCC_Debug :=
 
 INCS_Debug := \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/include/node \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/src \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/openssl/config \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/openssl/openssl/include \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/uv/include \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/zlib \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/v8/include \
-	-I/Users/jimdebeer/saulx/selva/node_modules/node-addon-api
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/include/node \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/src \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/openssl/config \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/openssl/openssl/include \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/uv/include \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/zlib \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/v8/include \
+	-I/Users/jim/saulx/selva/node_modules/node-addon-api
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=testaddon' \
@@ -104,14 +104,14 @@ CFLAGS_OBJC_Release :=
 CFLAGS_OBJCC_Release :=
 
 INCS_Release := \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/include/node \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/src \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/openssl/config \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/openssl/openssl/include \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/uv/include \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/zlib \
-	-I/Users/jimdebeer/Library/Caches/node-gyp/12.14.1/deps/v8/include \
-	-I/Users/jimdebeer/saulx/selva/node_modules/node-addon-api
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/include/node \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/src \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/openssl/config \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/openssl/openssl/include \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/uv/include \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/zlib \
+	-I/Users/jim/Library/Caches/node-gyp/12.13.0/deps/v8/include \
+	-I/Users/jim/saulx/selva/node_modules/node-addon-api
 
 OBJS := \
 	$(obj).target/$(TARGET)/node-bindings/main.o \
