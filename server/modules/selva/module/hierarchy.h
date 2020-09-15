@@ -72,6 +72,17 @@ struct SelvaModify_Hierarchy {
         struct hierarchy_subscriptions_tree head;
 
         /**
+         * Special subscription markers.
+         * Possible reasons to add a subscription marker to this list are:
+         * - the marker is applying to all nodes starting from the root node
+         *   towards descendants
+         * - the marker is applying to all nodes
+         * - the marker is applying to new nodes
+         * - the marker is applying to deletions
+         */
+        struct Selva_SubscriptionMarkers detached_markers;
+
+        /**
          * Deferred subscription events.
          * The events are deduplicated by subscription ID and the events will
          * be sent out when * SelvaSubscriptions_SendDeferredEvents() is called.

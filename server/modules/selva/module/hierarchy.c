@@ -161,28 +161,40 @@ static size_t SelvaModify_NodeIdLen(Selva_NodeId nodeId) {
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     SelvaModify_Hierarchy *hierarchy = RedisModule_Alloc(sizeof(SelvaModify_HierarchyNode));
     if (unlikely(!hierarchy)) {
-        return NULL;
+        goto fail;
     }
+    memset(hierarchy, 0, sizeof(SelvaModify_HierarchyNode));
 
     RB_INIT(&hierarchy->index_head);
     if (unlikely(!SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare))) {
         RedisModule_Free(hierarchy);
-        return NULL;
+        hierarchy = NULL;
+        goto fail;
     }
 
-
+    /*
+     * Subscriptions.
+     */
     RB_INIT(&hierarchy->subs.head);
+    if (SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers)) {
+        SelvaModify_DestroyHierarchy(hierarchy);
+        hierarchy = NULL;
+        goto fail;
+    }
     hierarchy->subs.deferred_events = SelvaSubscriptions_NewDeferredEvents();
     if (!hierarchy->subs.deferred_events) {
         SelvaModify_DestroyHierarchy(hierarchy);
+        hierarchy = NULL;
+        goto fail;
     }
-
 
     if(unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL))) {
         SelvaModify_DestroyHierarchy(hierarchy);
-        return NULL;
+        hierarchy = NULL;
+        goto fail;
     }
 
+fail:
     return hierarchy;
 }
 
@@ -196,7 +208,6 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
         SelvaModify_DestroyNode(node);
     }
 
-    SelvaSubscriptions_DestroyDeferredEvents(hierarchy->subs.deferred_events);
     SelvaSubscriptions_DestroyAll(hierarchy);
 
     SVector_Destroy(&hierarchy->heads);
