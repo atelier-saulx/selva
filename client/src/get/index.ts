@@ -228,7 +228,9 @@ function makeNewGetOptions(
       if (extraQuery.type === 'traverse') {
         newOpts[key] = extraQuery.value || []
       } else if (extraQuery.type === 'text_search') {
-        // TODO
+        // TODO: in full
+        // here we gotta somehow convert the text search results into a $traverse and/or filter and/or something that makes sense in our new query
+        // TODO: add $db support?
       } else {
         newOpts[key] = extraQuery.placeholder
       }
