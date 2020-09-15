@@ -779,9 +779,25 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      * TODO Subscription on root could be made a special case
      *      with no actual traversal
      */
-    unsigned marker_flags = SELVA_SUBSCRIPTION_FLAG_TRAVERSING | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
-    err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_flags, "nd",
-                                      node_id, sub_dir);
+    unsigned marker_flags = 0;
+
+    if (!strcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+        marker_flags = SELVA_SUBSCRIPTION_FLAG_TRAVERSING | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
+        sub_dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
+    } else if (sub_dir != SELVA_HIERARCHY_TRAVERSAL_NONE) {
+        marker_flags = SELVA_SUBSCRIPTION_FLAG_TRAVERSING | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
+    }
+
+    if (fields) {
+        marker_flags |= SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
+        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_flags, "ndfr",
+                                          node_id, sub_dir, fields,
+                                          filter_ctx, filter_expression);
+    } else {
+        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_flags, "ndr",
+                                          node_id, sub_dir,
+                                          filter_ctx, filter_expression);
+    }
     if (err) {
         goto out;
     }
