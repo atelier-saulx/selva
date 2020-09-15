@@ -39,7 +39,11 @@ redis.RedisClient.prototype.on_info_cmd = function (err, res) {
       return
     }
 
-    if (err.message.includes('connection is already closed') || err.message.includes('ERR only (P)SUBSCRIBE / (P)UNSUBSCRIBE / PING / QUIT allowed in this context')) {
+    if (err.message.includes('connection is already closed')
+      || err.message.includes('ERR only (P)SUBSCRIBE / (P)UNSUBSCRIBE / PING / QUIT allowed in this context')
+      || err.message.includes('Redis connection lost and command aborted. It might have been processed.')
+      || err.message.includes('Stream connection ended and command aborted. It might have been processed.')
+    ) {
       err.message = 'Ready check failed: ' + err.message
       this.emit('hard-disconnect', err)
       return

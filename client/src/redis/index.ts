@@ -2,7 +2,6 @@ import { ServerSelector } from '../types'
 import { RedisCommand, Callback } from './types'
 import RedisMethods from './methods'
 import { SelvaClient } from '..'
-import './redisClientExtensions'
 import {
   addRemoteListener,
   removeRemoteListener

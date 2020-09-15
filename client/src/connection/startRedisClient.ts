@@ -1,6 +1,7 @@
 import { Connection, connections } from '.'
 import { RedisClient } from 'redis'
 import { SERVER_HEARTBEAT } from '../constants'
+import './redisClientExtensions'
 
 /*
     hard-disconnect
