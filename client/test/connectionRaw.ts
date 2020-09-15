@@ -556,6 +556,5 @@ test.serial('Change origin and re-conn replica', async t => {
   await origin.destroy()
   await client.destroy()
   await wait(20000)
-  // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
   t.is(connections.size, 0, 'all connections removed')
 })
