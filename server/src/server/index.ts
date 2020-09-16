@@ -25,7 +25,7 @@ import {
 } from '../backups'
 import { registryManager } from './registryManager'
 import heartbeat from './heartbeat'
-import clearReplicaDum from './clearReplicaDump'
+import clearReplicaDump from './clearReplicaDump'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType

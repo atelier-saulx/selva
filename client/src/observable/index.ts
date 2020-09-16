@@ -9,6 +9,8 @@ var observableIds = 0
 
 // need an 'update' method
 
+// unique ness is the resulting connect options of a selva client
+
 export class Observable {
   constructor(options: ObservableOptions, uuid?: string) {
     console.log('make observable for you')
@@ -26,6 +28,9 @@ export class Observable {
     this.uuid = uuid
 
     this.selvaId = String('o' + ++observableIds)
+
+    // add to observables map
+    // but - twist - need to add to specific port / host of a registry (annoying!)
   }
 
   public uuid: string // hash of getoptions

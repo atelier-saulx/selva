@@ -146,7 +146,6 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
 const removeDump = (dir: string) => {
   return async () => {
     if (fs.existsSync(dir)) {
-      console.log('remove it')
       rimraf(dir, err => {
         if (err) {
           console.log('cannot remove dump')

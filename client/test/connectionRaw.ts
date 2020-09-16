@@ -18,8 +18,11 @@ const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-test.serial('connection / server orchestration', async t => {
+test.only('connection / server orchestration', async t => {
+  await wait(2e3)
   const port = await getPort()
+
+  console.log(port)
 
   const registry = await startRegistry({ port })
 
