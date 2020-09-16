@@ -14,7 +14,7 @@ function makeSubscriptionId(opts: GetOptions) {
 
 // has state as well
 
-const observables: Map<string, Observable> = new Map()
+export const observables: Map<string, Observable> = new Map()
 
 // is it an emitter?
 
@@ -61,6 +61,8 @@ var observableIds = 0
 
 // need a typeof check! tony help
 
+// make it getOptions | 'specialSubscription'
+
 export class Observable {
   constructor(getOptions: GetOptions, uuid?: string) {
     console.log('make observable for you')
@@ -104,7 +106,7 @@ export class Observable {
   }
 }
 
-export const createConnection = (getOptions: GetOptions) => {
+export const createObservable = (getOptions: GetOptions) => {
   const uuid = makeSubscriptionId(getOptions)
   let observable = observables.get(uuid)
   if (!observable) {
