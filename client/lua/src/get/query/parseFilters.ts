@@ -1,10 +1,9 @@
 import { FilterAST, Fork, Value } from './types'
 import addSearch from './addSearch'
-import { Filter, GeoFilter } from '~selva/get/types'
+import { Filter, GeoFilter } from '../../../../src/get/types'
 import { isFork } from './util'
 import { isArray, stringStartsWith } from '../../util'
 import reduceAnd from './reduceAnd'
-import * as logger from '../../logger'
 
 const addToOption = (
   prevList: (FilterAST | Fork)[],

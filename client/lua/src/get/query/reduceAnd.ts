@@ -1,7 +1,6 @@
 import { Fork, FilterAST, Value } from './types'
-import { isArray, indexOf, now, stringStartsWith } from '../../util'
+import { isArray, indexOf, stringStartsWith } from '../../util'
 import { isFork, convertNow } from './util'
-import * as logger from '../../logger'
 
 const valueIsEqual = (a: Value, b: Value, strict: boolean): boolean => {
   if (a === b) {
