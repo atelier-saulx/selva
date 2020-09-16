@@ -10,6 +10,7 @@
   "main": "./index.js",
   "gypfile": true,
   "scripts": {
+    "killall": "pkill -9 node && pkill -9 redis",
     "build-cpp": "node-gyp rebuild",
     "publish-major": "yarn build && node ./bin/publish.js major && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
     "publish-minor": "yarn build && node ./bin/publish.js minor && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",

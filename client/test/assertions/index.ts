@@ -6,6 +6,7 @@ import { join } from 'path'
 import fs from 'fs'
 import { Worker } from 'worker_threads'
 import rimraf from 'rimraf'
+import beforeExit from 'before-exit'
 
 declare module 'ava' {
   export interface Assertions {
@@ -133,6 +134,13 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
     if (context) {
       worker.postMessage(context)
     }
+
+    beforeExit.do(() => {
+      try {
+        console.log('Before exit hook close worker')
+        worker.terminate()
+      } catch (_err) {}
+    })
 
     worker.on('message', msg => {
       resolve([msg, worker])

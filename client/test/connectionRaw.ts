@@ -492,40 +492,36 @@ test.serial('connection failure', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.serial(
-  'Forcefully destroy redis server (and hope for restart)',
-  async t => {
-    const port = await getPort()
+test.only('Forcefully destroy redis server (and hope for restart)', async t => {
+  const port = await getPort()
 
-    let registry = await startRegistry({ port })
-    const connectOpts = { port }
-    const origin = await startOrigin({
-      registry: connectOpts,
-      default: true,
-      port
-    })
-    let timeoutCnt = 0
-    origin.on('error', err => {
-      // redis crash
-      timeoutCnt++
-    })
-    const client = connect({ port })
-    await wait(100)
-    console.log('kill server')
-    await exec(`kill -9 ${origin.pm.pid}`)
-    await client.redis.set({ type: 'origin' }, 'x', 'bla')
-    const x = await client.redis.get({ type: 'origin' }, 'x')
-    t.is(x, 'bla')
-    t.is(timeoutCnt, 1, 'origin timed out once')
-    await wait(100)
-    await registry.destroy()
-    await origin.destroy()
-    await client.destroy()
-    await wait(6000)
-    // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
-    t.is(connections.size, 0, 'all connections removed')
-  }
-)
+  let registry = await startRegistry({ port })
+  const connectOpts = { port }
+  const origin = await startOrigin({
+    registry: connectOpts,
+    default: true
+  })
+  let timeoutCnt = 0
+  origin.on('error', err => {
+    // redis crash
+    timeoutCnt++
+  })
+  const client = connect({ port })
+  await wait(100)
+  console.log('kill server')
+  await exec(`kill -9 ${origin.pm.pid}`)
+  await client.redis.set({ type: 'origin' }, 'x', 'bla')
+  const x = await client.redis.get({ type: 'origin' }, 'x')
+  t.is(x, 'bla')
+  t.is(timeoutCnt, 1, 'origin timed out once')
+  await wait(100)
+  await registry.destroy()
+  await origin.destroy()
+  await client.destroy()
+  await wait(6000)
+  // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
+  t.is(connections.size, 0, 'all connections removed')
+})
 
 test.serial('Change origin and re-conn replica', async t => {
   const port = await getPort()

@@ -49,7 +49,7 @@ export class SelvaServer extends EventEmitter {
     this.type = type
 
     this.on('error', err => {
-      console.error(err)
+      // console.error(err)
     })
 
     beforeExit.do(() => {

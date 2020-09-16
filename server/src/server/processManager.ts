@@ -1,33 +1,59 @@
 import { spawn, ChildProcess } from 'child_process'
 import pidusage from 'pidusage'
 import { EventEmitter } from 'events'
-import chalk from 'chalk'
+import chalk, { keyword } from 'chalk'
+import { wait } from '../util'
 
 // const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
 const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every 10 seconds
+var cnt = 0
 
 export default class ProcessManager extends EventEmitter {
   private command: string
   private args: string[]
   private childProcess: ChildProcess
   private loadMeasurementsTimeout: NodeJS.Timeout
+
+  private restartTimer: NodeJS.Timeout
+
   private isMeasuring: boolean
 
+  public uuid: number
+
+  public restartCount: number = 0
   public isDestroyed: boolean
   public pid: number
+
+  public errorLog: string[]
+
+  public successTimeout: NodeJS.Timeout
 
   constructor(command: string, args: string[]) {
     super()
     this.command = command
     this.args = args
-    this.on('error', err => {
-      console.error('go', err)
+    this.uuid = ++cnt
+
+    this.errorLog = []
+
+    this.on('error', () => {})
+    this.on('stderr', data => {
+      this.errorLog.unshift(data)
+      if (this.errorLog.length === 5) {
+        this.errorLog.pop()
+      }
+    })
+    this.on('stdout', data => {
+      this.errorLog.unshift(data)
+      if (this.errorLog.length === 5) {
+        this.errorLog.pop()
+      }
     })
   }
 
   protected async collect(): Promise<any> {
     if (this.childProcess && this.childProcess.pid) {
-      return await pidusage(this.childProcess.pid)
+      return pidusage(this.childProcess.pid)
     }
   }
 
@@ -45,10 +71,10 @@ export default class ProcessManager extends EventEmitter {
             }
           })
           .catch(e => {
-            console.error(
-              `Error collecting load measurements from ${this.command}`,
-              e
-            )
+            // console.error(
+            //   `Error collecting load measurements from ${this.command}`,
+            //   e
+            // )
           })
           .finally(() => {
             if (this.isMeasuring) {
@@ -86,14 +112,6 @@ export default class ProcessManager extends EventEmitter {
     })
 
     const exitHandler = (code: number) => {
-      console.error(
-        chalk.red(
-          `Child process for ${
-            this.command
-          } exited with code ${code} at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}. Attempt restart.`
-        )
-      )
-
       this.emit(
         'error',
         new Error(`Child process for ${this.command} exited with code ${code}.`)
@@ -102,9 +120,62 @@ export default class ProcessManager extends EventEmitter {
       this.childProcess.removeAllListeners()
       this.childProcess = undefined
 
-      this.start()
+      clearTimeout(this.restartTimer)
+      clearTimeout(this.successTimeout)
 
-      console.info(chalk.green('Restarted server successfully after crash'))
+      this.restartTimer = setTimeout(() => {
+        console.error(
+          chalk.red(
+            `Child process for ${
+              this.command
+            } exited with code ${code} at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()} pm: ${
+              this.uuid
+            } port: ${this.args[1]}. Attempting restart #${this.restartCount +
+              1}`
+          )
+        )
+
+        clearTimeout(this.successTimeout)
+
+        this.restartCount++
+        if (this.restartCount > 4) {
+          console.info('')
+
+          for (let i = this.errorLog.length - 1; i > -1; i--) {
+            console.info(chalk.grey(`Redis log #${i}:`, this.errorLog[i]))
+          }
+
+          console.info(
+            chalk.red(
+              `Tried restarting server 5 times something is very wrong pm: ${
+                this.uuid
+              } port: ${
+                this.args[1]
+              } at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`
+            )
+          )
+          console.log(chalk.grey(`${this.command} ${this.args}`))
+          console.info('')
+        } else {
+          this.start()
+
+          this.successTimeout = setTimeout(() => {
+            this.restartCount = 0
+            console.info('')
+
+            for (let i = this.errorLog.length - 1; i > -1; i--) {
+              console.info(chalk.grey(`Redis log #${i}:`, this.errorLog[i]))
+            }
+
+            console.info(
+              chalk.green(
+                `Restarted server successfully after crash pm: ${this.uuid} port: ${this.args[1]}`
+              )
+            )
+            console.info('')
+          }, 1e3)
+        }
+      }, 100)
     }
 
     this.childProcess.on('exit', exitHandler)
@@ -133,26 +204,4 @@ export default class ProcessManager extends EventEmitter {
       }, 1000 * 10)
     }
   }
-}
-
-if (module === require.main) {
-  // TODO: remove test stuff
-  const pm = new ProcessManager('redis-server', [
-    '--loadmodule',
-    './modules/binaries/darwin_x64/redisearch.so',
-    '--loadmodule',
-    './modules/binaries/darwin_x64/selva.so'
-  ])
-
-  pm.on('stdout', console.log)
-  pm.on('stats', console.log)
-  pm.on('stderr', console.error)
-
-  pm.start()
-
-  setTimeout(() => {
-    console.log('Closing...')
-    pm.destroy()
-    process.exit(0)
-  }, 5e3)
 }

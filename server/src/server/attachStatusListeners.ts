@@ -17,21 +17,24 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     // return
     // }
     // }
-    const stats: Stats = {
-      cpu: rawStats.runtimeInfo.cpu,
-      activeChannels: Number(rawStats.redisInfo.pubsub_channels),
-      opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
-      timestamp: rawStats.runtimeInfo.timestamp
-    }
-    updateRegistry(
-      server,
-      Object.assign(
-        {
-          stats
-        },
-        info
+
+    if (rawStats.runtimeInfo) {
+      const stats: Stats = {
+        cpu: rawStats.runtimeInfo.cpu,
+        activeChannels: Number(rawStats.redisInfo.pubsub_channels),
+        opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
+        timestamp: rawStats.runtimeInfo.timestamp
+      }
+      updateRegistry(
+        server,
+        Object.assign(
+          {
+            stats
+          },
+          info
+        )
       )
-    )
+    }
   })
 }
 

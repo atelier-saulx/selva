@@ -33,13 +33,13 @@ export default (server: SelvaServer, opts: ServerOptions) => {
       m.indexOf('.so') !== -1
         ? m
         : path.join(
-          __dirname,
-          '../../',
-          'modules',
-          'binaries',
-          platform,
-          m + '.so'
-        )
+            __dirname,
+            '../../',
+            'modules',
+            'binaries',
+            platform,
+            m + '.so'
+          )
     if (fs.existsSync(p)) {
       args.push('--loadmodule', p)
     } else {
@@ -54,7 +54,7 @@ export default (server: SelvaServer, opts: ServerOptions) => {
   try {
     execSync(`redis-cli -p ${port} config set dir ${dir}`, { stdio: 'ignore' })
     execSync(`redis-cli -p ${port} shutdown`)
-  } catch (_err) { }
+  } catch (_err) {}
 
   server.pm = new RedisManager(args, {
     port,
@@ -63,6 +63,7 @@ export default (server: SelvaServer, opts: ServerOptions) => {
     type: server.type,
     selvaClient: server.selvaClient
   })
+
   server.pm.start()
   server.pm.on('error', err => server.emit('error', err))
   server.pm.on('stdout', s => server.emit('stdout', s))
