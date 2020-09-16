@@ -44,7 +44,8 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
       o === '!=' ||
       o === 'distance' ||
       o === 'exists' ||
-      o === 'notExists'
+      o === 'notExists' ||
+      o === 'textSearch'
     )
   ) {
     return [{ isFork: true }, `Invalid filter operator ${o}`]
