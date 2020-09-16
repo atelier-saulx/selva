@@ -604,7 +604,7 @@ static int crossInsert(
         rmHead(hierarchy, node);
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, &node->metadata);
+    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
     if (rel == RELATIONSHIP_CHILD) { /* node is a child to adjacent */
         for (size_t i = 0; i < n; i++) {
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
@@ -712,7 +712,7 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, &node->metadata);
+    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
     SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
 
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
@@ -825,7 +825,7 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
         return;
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, &node->metadata);
+    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
     SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
 
     SelvaModify_HierarchyNode **itt;

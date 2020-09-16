@@ -60,8 +60,28 @@ static int subscription_rb_compare(const struct Selva_Subscription *a, const str
     return memcmp(a->sub_id, b->sub_id, sizeof(Selva_SubscriptionId));
 }
 
+/**
+ * The given marker flags matches to a hierarchy marker of any kind.
+ */
 static int isHierarchyMarker(unsigned flags) {
     return !!(flags & (SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_TRAVERSING));
+}
+
+/**
+ * Inhibit a marker event.
+ * Return true if no event should be sent for node_id by this marker.
+ */
+static int inhibitMarkerEvent(const Selva_NodeId node_id, const struct subscriptionMarker *marker) {
+    /*
+     * SELVA_SUBSCRIPTION_FLAG_REF inhibits an event when node_id matches to the
+     * root node_id of the marker.
+     */
+    if ((marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_REF) == SELVA_SUBSCRIPTION_FLAG_REF &&
+        !memcmp(node_id, marker->node_id, SELVA_NODE_ID_SIZE)) {
+        return 1;
+    }
+
+    return 0;
 }
 
 RB_PROTOTYPE_STATIC(hierarchy_subscriptions_tree, Selva_Subscription, _sub_index_entry, subscription_rb_compare)
@@ -259,7 +279,7 @@ static struct Selva_Subscription *find_sub(SelvaModify_Hierarchy *hierarchy, Sel
 
 static void set_marker(struct Selva_SubscriptionMarkers *sub_markers, struct subscriptionMarker *marker) {
     SVector_InsertFast(&sub_markers->vec, marker);
-    sub_markers->flags_filter |= marker->marker_flags;
+    sub_markers->flags_filter |= marker->marker_flags & SELVA_SUBSCRIPTION_MATCHER_FLAGS_MASK;
 }
 
 static void reset_marker_filter(struct Selva_SubscriptionMarkers *sub_markers) {
@@ -270,7 +290,7 @@ static void reset_marker_filter(struct Selva_SubscriptionMarkers *sub_markers) {
     SVECTOR_FOREACH(it, &sub_markers->vec) {
         struct subscriptionMarker *marker = *it;
 
-        sub_markers->flags_filter |= marker->marker_flags;
+        sub_markers->flags_filter |= marker->marker_flags & SELVA_SUBSCRIPTION_MATCHER_FLAGS_MASK;
     }
 }
 
@@ -557,7 +577,9 @@ void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hier
     SVector_Destroy(&def->subs);
 }
 
-static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy, const struct Selva_SubscriptionMarkers *sub_markers) {
+static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,
+                                    const Selva_NodeId node_id,
+                                   const struct Selva_SubscriptionMarkers *sub_markers) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct subscriptionMarker **it;
 
@@ -565,7 +587,7 @@ static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy, cons
         SVECTOR_FOREACH(it, &sub_markers->vec) {
             struct subscriptionMarker *marker = *it;
 
-            if (isHierarchyMarker(marker->marker_flags)) {
+            if (isHierarchyMarker(marker->marker_flags) && !inhibitMarkerEvent(node_id, marker)) {
                 SVector_InsertFast(&def->subs, marker->sub);
             }
         }
@@ -573,12 +595,13 @@ static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy, cons
 }
 
 void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hierarchy,
+                                             const Selva_NodeId node_id,
                                              const struct SelvaModify_HierarchyMetadata *metadata) {
     /* Detached markers. */
-    defer_hierarchy_events(hierarchy, &hierarchy->subs.detached_markers);
+    defer_hierarchy_events(hierarchy, node_id, &hierarchy->subs.detached_markers);
 
     /* Markers on the node.  */
-    defer_hierarchy_events(hierarchy, &metadata->sub_markers);
+    defer_hierarchy_events(hierarchy, node_id, &metadata->sub_markers);
 }
 
 static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
@@ -595,6 +618,7 @@ static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
             struct subscriptionMarker *marker = *it;
 
             if (((marker->marker_flags & flags) == flags) &&
+                !inhibitMarkerEvent(node_id, marker) &&
                 Selva_SubscriptionFieldMatch(marker, field) &&
                 Selva_SubscriptionFilterMatch(node_id, marker)) {
                 SVector_InsertFast(&def->subs, marker->sub);

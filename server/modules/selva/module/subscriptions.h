@@ -5,17 +5,54 @@
 #include "selva.h"
 #include "svector.h"
 
+/*
+ * Subscription Marker Flags
+ * -------------------------
+ *
+ *  Flags from 0x0001 to 0x0080 are reserved for matcher flags that are used to
+ *  check whether an event should be sent on particular kind of change in the
+ *  database. These flags are essentially type information.
+ *
+ *  Flags from 0x0100 to 0x8000 are reserved for modifier flags modifying the
+ *  match result. These flags may for example make an early short-circuit to
+ *  skip the matching logic even when the matcher flags would cause a check.
+ *  These flags are never included in the flags_filters.
+ */
+
+/**
+ * Traversing marker.
+ * This marker is traversing to some direction specified by
+ * dir. This flag is mainly useful for fast filtering of relevant
+ * markers and subscriptions.
+ */
 #define SELVA_SUBSCRIPTION_FLAG_TRAVERSING      0x0001
 
 /**
  * Hierarchy changed.
+ * Send an event if children or parents changes.
  */
 #define SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY    0x0002
 
 /**
  * Field changed.
+ * Send an event if a named field changes.
  */
 #define SELVA_SUBSCRIPTION_FLAG_CH_FIELD        0x0004
+
+/**
+ * Reference subscription.
+ * Ignores changes to the root node of the marker and only
+ * sends events for changes to referenced nodes. I.e. when
+ * node_id != marker->node_id.
+ */
+#define SELVA_SUBSCRIPTION_FLAG_REF             0x0100
+
+#define SELVA_SUBSCRIPTION_MATCHER_FLAGS_MASK   0x00ff
+#define SELVA_SUBSCRIPTION_MODIFIER_FLAGS       0xff00
+
+/*
+ * End of Subscription Marker Flags.
+ */
 
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
@@ -64,6 +101,7 @@ void SelvaSubscriptions_ClearAllMarkers(
 int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hierarchy,
+                                             const Selva_NodeId node_id,
                                              const struct SelvaModify_HierarchyMetadata *metadata);
 void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaModify_Hierarchy *hierarchy,
                                                const Selva_NodeId node_id,
