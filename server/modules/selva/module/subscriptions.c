@@ -45,6 +45,10 @@ static int marker_svector_compare(const void ** restrict a_raw, const void ** re
     const struct subscriptionMarker *a = *(const struct subscriptionMarker **)a_raw;
     const struct subscriptionMarker *b = *(const struct subscriptionMarker **)b_raw;
 
+    /*
+     * Subscription markers are never duplicated so the pointers are always
+     * unique and thus can be used for comparison.
+     */
     return (uintptr_t)a - (uintptr_t)b;
 }
 
@@ -99,6 +103,9 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
     return 0;
 }
 
+/**
+ * Check if field matches to any of the fields specified in the marker.
+ */
 static int Selva_SubscriptionFieldMatch(const struct subscriptionMarker *marker, const char *field) {
     const char *s1 = marker->fields;
 
