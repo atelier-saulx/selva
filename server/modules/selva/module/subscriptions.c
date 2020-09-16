@@ -767,7 +767,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
                 const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
                 size_t str_len;
                 const char *str;
-                const char *arg;
+                char *arg;
 
                 /*
                  * Args needs to be duplicated so the strings don't get freed
@@ -776,6 +776,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
                 str = RedisModule_StringPtrLen(argv[i], &str_len);
                 str_len++;
                 arg = RedisModule_Alloc(str_len);
+                memcpy(arg, str, str_len);
 
                 rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_RMFREE);
             }
