@@ -48,9 +48,9 @@ export class SelvaServer extends EventEmitter {
     this.setMaxListeners(10000)
     this.type = type
 
-    // this.on('error', err => {
-    //   console.error(err)
-    // })
+    this.on('error', err => {
+      console.error(err)
+    })
 
     beforeExit.do(() => {
       return this.destroy()

@@ -20,7 +20,9 @@ export default class ProcessManager extends EventEmitter {
     super()
     this.command = command
     this.args = args
-    this.on('error', () => {})
+    this.on('error', err => {
+      console.error('go', err)
+    })
   }
 
   protected async collect(): Promise<any> {
