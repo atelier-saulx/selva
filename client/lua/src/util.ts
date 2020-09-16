@@ -115,6 +115,18 @@ export function joinAny(strs: any[], delim: string): string {
   return str
 }
 
+export function adler32(str: string): number {
+  let a: number = 1
+  let b: number = 0
+
+  for (let i = 0; i < str.length; i++) {
+    a = (a + string.byte(str[i])) % 65521
+    b = (b + a) % 65521
+  }
+
+  return bit.bor(bit.lshift(b, 16), a)
+}
+
 export function stringStartsWith(str: string, slice: string): boolean {
   if (slice.length > str.length) {
     return false
