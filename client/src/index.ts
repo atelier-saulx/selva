@@ -39,9 +39,10 @@ import destroy from './destroy'
 
 import { v4 as uuidv4 } from 'uuid'
 
-// import { observe, observeSchema} from './observe'
 
 import getServer from './getServer'
+
+// import { observe, observeSchema} from './observe'
 
 // import Observable from './observe/observable'
 
@@ -129,7 +130,7 @@ export class SelvaClient extends EventEmitter {
   }
 
   async initializeSchema(opts: any) {
-    // return initializeSchema(this, opts)
+    return initializeSchema(this, opts)
   }
 
   async id(props: IdOptions): Promise<string> {

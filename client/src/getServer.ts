@@ -19,6 +19,12 @@ const getServer = (
       selvaClient.addServerUpdateListeners.push(() => getServer(selvaClient, cb, selector, selectionOptions))
     } else {
       let server
+
+      // this makes sense
+      if (name && !type) {
+        type = 'replica'
+      }
+
       if (type === 'registry') {
         server = selvaClient.registryConnection.serverDescriptor
       } else if (type === 'origin') {

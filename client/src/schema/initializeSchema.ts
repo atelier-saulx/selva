@@ -3,6 +3,8 @@ import { SelvaClient } from '..'
 const initlializeSchema = async (client: SelvaClient, opts: any) => {
   const dbName = (typeof opts === 'object' && opts.$db) || 'default'
 
+  console.log('ok?>', dbName)
+
   if (!client.schemas[dbName]) {
     await client.getSchema(dbName)
   }
