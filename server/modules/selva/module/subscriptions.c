@@ -24,6 +24,7 @@
  * Subscription marker.
  */
 struct subscriptionMarker {
+    int32_t marker_id;
     unsigned marker_flags;
     Selva_NodeId node_id;
     enum SelvaModify_HierarchyTraversal dir;
@@ -45,11 +46,7 @@ static int marker_svector_compare(const void ** restrict a_raw, const void ** re
     const struct subscriptionMarker *a = *(const struct subscriptionMarker **)a_raw;
     const struct subscriptionMarker *b = *(const struct subscriptionMarker **)b_raw;
 
-    /*
-     * Subscription markers are never duplicated so the pointers are always
-     * unique and thus can be used for comparison.
-     */
-    return (uintptr_t)a - (uintptr_t)b;
+    return a->marker_id - b->marker_id;
 }
 
 static int SelvaSubscription_svector_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
@@ -321,7 +318,7 @@ static struct Selva_Subscription *create_subscription(
 
     memcpy(sub->sub_id, sub_id, sizeof(sub->sub_id));
 
-    if (!SVector_Init(&sub->markers, 1, NULL)) {
+    if (!SVector_Init(&sub->markers, 1, marker_svector_compare)) {
         RedisModule_Free(sub);
         return NULL;
     }
@@ -351,6 +348,7 @@ static struct Selva_Subscription *create_subscription(
 static int Selva_AddSubscriptionMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,
+        int32_t marker_id,
         unsigned flags,
         const char *fmt,
         ...) {
@@ -366,12 +364,17 @@ static int Selva_AddSubscriptionMarker(
         }
     }
 
+    if (SVector_Search(&sub->markers, &(struct subscriptionMarker){ .marker_id = marker_id })) {
+        return SELVA_SUBSCRIPTIONS_EEXIST;
+    }
+
     marker = RedisModule_Calloc(1, sizeof(struct subscriptionMarker));
     if (!marker) {
         /* The subscription won't be freed. */
         return SELVA_SUBSCRIPTIONS_ENOMEM;
     }
 
+    marker->marker_id = marker_id;
     marker->marker_flags = flags;
     marker->sub = sub;
 
@@ -405,7 +408,8 @@ static int Selva_AddSubscriptionMarker(
     }
     va_end(args);
 
-    SVector_Insert(&sub->markers, marker);
+    /* We already checked that the id doesn't exist. */
+    (void)SVector_InsertFast(&sub->markers, marker);
 
     return 0;
 }
@@ -635,6 +639,17 @@ static int parse_subscription_id(Selva_SubscriptionId id, RedisModuleString *arg
     return Selva_SubscriptionStr2id(id, arg_str);
 }
 
+static int parse_marker_id(int32_t *marker_id, RedisModuleString *arg) {
+    long long ll;
+
+    if (RedisModule_StringToLongLong(arg, &ll) != REDISMODULE_OK) {
+        return SELVA_SUBSCRIPTIONS_EINVAL;
+    }
+
+    *marker_id = (int32_t)ll;
+    return 0;
+}
+
 static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, RedisModuleString *arg) {
     TO_STR(arg);
 
@@ -654,7 +669,7 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
 }
 
 /*
- * KEY SUB_ID node|ancestors|descendants NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
+ * KEY SUB_ID MARKER_ID node|ancestors|descendants NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
  */
 int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -662,17 +677,18 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     const size_t ARGV_REDIS_KEY     = 1;
     const size_t ARGV_SUB_ID        = 2;
-    const size_t ARGV_MARKER_TYPE   = 3;
-    const size_t ARGV_NODE_ID       = 4;
-    const size_t ARGV_FIELDS        = 5;
-    const size_t ARGV_FIELD_NAMES   = 6;
-    size_t ARGV_FILTER_EXPR         = 5;
-    size_t ARGV_FILTER_ARGS         = 6;
+    const size_t ARGV_MARKER_ID     = 3;
+    const size_t ARGV_MARKER_TYPE   = 4;
+    const size_t ARGV_NODE_ID       = 5;
+    const size_t ARGV_FIELDS        = 6;
+    const size_t ARGV_FIELD_NAMES   = 7;
+    size_t ARGV_FILTER_EXPR         = 6;
+    size_t ARGV_FILTER_ARGS         = 7;
 #define SHIFT_ARGS(i) \
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < 5) {
+    if (argc < (int)(ARGV_NODE_ID + 1)) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -692,6 +708,12 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     if (err) {
         return replyWithSelvaError(ctx, err);
     }
+
+    /*
+     * Get the marker id.
+     */
+    int32_t marker_id;
+    err = parse_marker_id(&marker_id, argv[ARGV_MARKER_ID]);
 
     /*
      * Parse the traversal argument.
@@ -767,7 +789,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
                 const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
                 size_t str_len;
                 const char *str;
-                const char *arg;
+                char *arg;
 
                 /*
                  * Args needs to be duplicated so the strings don't get freed
@@ -776,6 +798,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
                 str = RedisModule_StringPtrLen(argv[i], &str_len);
                 str_len++;
                 arg = RedisModule_Alloc(str_len);
+                memcpy(arg, str, str_len);
 
                 rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_RMFREE);
             }
@@ -798,29 +821,35 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     if (fields) {
         marker_flags |= SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
-        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_flags, "ndfr",
+        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "ndfr",
                                           node_id, sub_dir, fields,
                                           filter_ctx, filter_expression);
     } else {
-        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_flags, "ndr",
+        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "ndr",
                                           node_id, sub_dir,
                                           filter_ctx, filter_expression);
     }
-    if (err) {
-        goto out;
-    }
-
-    RedisModule_ReplyWithLongLong(ctx, 1);
-#if 0
-    RedisModule_ReplicateVerbatim(ctx);
-#endif
-out:
-    if (err) {
-        if (filter_ctx) {
+    if (err == 0 || err == SELVA_SUBSCRIPTIONS_EEXIST) {
+        /*
+         * TODO We might want to find the subscription first and check whether
+         * the marker exist before doing the hard work. This would require
+         * Selva_AddSubscriptionMarker() to take a subscription as an arg.
+         */
+        if (err == SELVA_SUBSCRIPTIONS_EEXIST) {
             rpn_destroy(filter_ctx);
             RedisModule_Free(filter_expression);
         }
 
+        RedisModule_ReplyWithLongLong(ctx, 1);
+#if 0
+        RedisModule_ReplicateVerbatim(ctx);
+#endif
+    } else if (err) {
+out:
+        if (filter_ctx) {
+            rpn_destroy(filter_ctx);
+            RedisModule_Free(filter_expression);
+        }
         replyWithSelvaError(ctx, err);
     }
 

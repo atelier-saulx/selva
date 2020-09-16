@@ -502,6 +502,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
         /* event here */
         RedisModule_Free(fields);
 #endif
+        remove_node_fields(ctx, id);
 
         if (is_root) {
             createNodeHash(ctx, id);
