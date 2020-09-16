@@ -200,7 +200,7 @@ void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
         .type = SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE,
     };
 
-    memcpy(publish_task.sub_id, sub_id, sizeof(SELVA_SUBSCRIPTION_ID_SIZE));
+    memcpy(publish_task.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
     memcpy(ptr, &total_len, sizeof(int32_t));
     ptr += sizeof(int32_t);
     memcpy(ptr, &publish_task, struct_len);
