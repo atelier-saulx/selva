@@ -83,7 +83,7 @@ export class Observable {
   public selvaId: string
 
   public hardDisconnect() {
-    console.log('hdc bitch')
+    console.log('hdc on obs bitch')
   }
 
   public attachClient(client: SelvaClient) {

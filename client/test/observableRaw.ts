@@ -14,6 +14,7 @@ import {
 import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
+import getPort from 'get-port'
 
 const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 
@@ -21,25 +22,17 @@ test.before(removeDump(dir))
 test.after(removeDump(dir))
 
 test.serial('Make some observables', async t => {
-  let registry = await startRegistry({ port: 9999 })
-  const connectOpts = { port: 9999 }
+  const port = await getPort()
+
+  let registry = await startRegistry({ port })
+  const connectOpts = { port }
   let origin = await startOrigin({
     registry: connectOpts,
     default: true,
-    dir: join(dir, 'replicarestarterorigin')
+    dir: join(dir, 'observablesgotime')
   })
 
-  const replica = await startReplica({
-    registry: connectOpts,
-    default: true,
-    dir: join(dir, 'replicarestarter')
-  })
-
-  replica.on('error', err => {
-    console.log(err)
-  })
-
-  const client = connect({ port: 9999 })
+  const client = connect({ port })
 
   t.pass()
 })

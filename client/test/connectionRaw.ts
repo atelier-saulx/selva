@@ -11,6 +11,7 @@ import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
 import fs from 'fs'
 import exec from 'async-exec'
+import getPort from 'get-port'
 
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
@@ -18,28 +19,28 @@ test.before(removeDump(dir))
 test.after(removeDump(dir))
 
 test.serial('connection / server orchestration', async t => {
-  await wait(2e3)
+  const port = await getPort()
 
-  const registry = await startRegistry({ port: 9999 })
+  const registry = await startRegistry({ port })
 
   const client = connect({
-    port: 9999
+    port
   })
 
   const origin = await startOrigin({
     default: true,
-    registry: { port: 9999 }
+    registry: { port }
   })
 
   const snurfServer = await startOrigin({
     name: 'snurf',
-    registry: { port: 9999 },
+    registry: { port },
     dir: join(dir, 'snurforigin')
   })
 
   await client.redis.keys(
     {
-      port: 9999,
+      port,
       host: '0.0.0.0'
     },
     '*'
@@ -47,7 +48,7 @@ test.serial('connection / server orchestration', async t => {
 
   await client.redis.smembers(
     {
-      port: 9999,
+      port,
       host: '0.0.0.0'
     },
     'servers'
@@ -57,7 +58,7 @@ test.serial('connection / server orchestration', async t => {
 
   await client.redis.smembers(
     {
-      port: 9999,
+      port,
       host: '0.0.0.0'
     },
     'servers'
@@ -101,25 +102,25 @@ test.serial('connection / server orchestration', async t => {
 
   const replicasPromises = [
     startReplica({
-      registry: { port: 9999 },
+      registry: { port },
       default: true,
       dir: join(dir, 'replica1')
     }),
 
     startReplica({
-      registry: { port: 9999 },
+      registry: { port },
       default: true,
       dir: join(dir, 'replica2')
     }),
 
     startReplica({
-      registry: { port: 9999 },
+      registry: { port },
       default: true,
       dir: join(dir, 'replica3')
     }),
 
     startReplica({
-      registry: { port: 9999 },
+      registry: { port },
       default: true,
       dir: join(dir, 'replica4')
     })
@@ -139,8 +140,8 @@ test.serial('connection / server orchestration', async t => {
 
   const putUnderLoad = async r => {
     worker(
-      async ({ connect }, { r }) => {
-        const client = connect({ port: 9999 })
+      async ({ connect }, { r, port }) => {
+        const client = connect({ port })
         const fn = async (r, cnt = 0) => {
           let q = []
           // has to depend a bit on the computer
@@ -159,7 +160,7 @@ test.serial('connection / server orchestration', async t => {
         }
         fn(r)
       },
-      { r }
+      { r, port }
     )
     await wait(500)
   }
@@ -180,15 +181,16 @@ test.serial('connection / server orchestration', async t => {
   await putUnderLoad(secondReplica)
 
   const [{ replica, moduleId, size }, w1] = await worker(
-    async ({ connect, wait, moduleId, connections }) => {
-      const client = connect({ port: 9999 })
+    async ({ connect, wait, moduleId, connections }, { port }) => {
+      const client = connect({ port })
       const replica = await client.getServer({ type: 'replica' })
       await client.redis.hgetall(replica, 'flappie')
       await wait(3100)
       await client.redis.hset({ type: 'origin' }, 'hurk', 'snef', 'schlurhp')
       await wait(3100)
       return { replica, moduleId, size: connections.size }
-    }
+    },
+    { port }
   )
 
   w1.terminate()
@@ -205,7 +207,7 @@ test.serial('connection / server orchestration', async t => {
     'When the second replica is under load, other replica becomes prefered'
   )
 
-  const client2 = connect({ port: 9999 })
+  const client2 = connect({ port })
 
   client2.redis.on({ type: 'replica' }, 'message', () => {})
   client2.redis.subscribe({ type: 'replica' }, 'snurf')
@@ -245,48 +247,51 @@ test.serial('connection / server orchestration', async t => {
 
   const snuxResults = []
 
-  const [, w2] = await worker(async ({ connect, wait }) => {
-    console.log('connect')
-    const client = connect({ port: 9999 })
+  const [, w2] = await worker(
+    async ({ connect, wait, port }) => {
+      console.log('connect')
+      const client = connect({ port })
 
-    client.redis.on(
-      { type: 'replica', strict: true },
-      'message',
-      (channel, msg) => {
-        if (channel === 'snux') {
-          // and count these!
-          console.log('something from oneReplica', msg)
+      client.redis.on(
+        { type: 'replica', strict: true },
+        'message',
+        (channel, msg) => {
+          if (channel === 'snux') {
+            // and count these!
+            console.log('something from oneReplica', msg)
+          }
         }
-      }
-    )
+      )
 
-    client.redis.subscribe({ type: 'replica', strict: true }, 'snux')
-    client.redis.publish(
-      { type: 'replica', strict: true },
-      'snux',
-      'flurpy pants swaffi'
-    )
-    client.redis.publish(
-      { type: 'replica', strict: true },
-      'snux',
-      'flurpy pants 1'
-    )
-
-    await wait(30)
-
-    // no we want to get hard dc and have this in the queue in progress
-    for (let i = 0; i < 5; i++) {
+      client.redis.subscribe({ type: 'replica', strict: true }, 'snux')
       client.redis.publish(
         { type: 'replica', strict: true },
         'snux',
-        'flurpy pants -- looper - ' + i
+        'flurpy pants swaffi'
       )
-    }
+      client.redis.publish(
+        { type: 'replica', strict: true },
+        'snux',
+        'flurpy pants 1'
+      )
 
-    await 1e3
+      await wait(30)
 
-    return
-  })
+      // no we want to get hard dc and have this in the queue in progress
+      for (let i = 0; i < 5; i++) {
+        client.redis.publish(
+          { type: 'replica', strict: true },
+          'snux',
+          'flurpy pants -- looper - ' + i
+        )
+      }
+
+      await 1e3
+
+      return
+    },
+    { port }
+  )
 
   w2.terminate()
 
@@ -330,9 +335,10 @@ test.serial('connection / server orchestration', async t => {
 })
 
 test.serial('Get server raw - heavy load', async t => {
-  const registry = await startRegistry({ port: 9999 })
-  const origin = await startOrigin({ registry: { port: 9999 }, default: true })
-  const client = connect({ port: 9999 })
+  const port = await getPort()
+  const registry = await startRegistry({ port })
+  const origin = await startOrigin({ registry: { port }, default: true })
+  const client = connect({ port })
   const p = []
   const d = Date.now()
   const amount = 50e3
@@ -343,8 +349,8 @@ test.serial('Get server raw - heavy load', async t => {
     })
     p.push(
       worker(
-        async ({ connect }, { index, amount }) => {
-          const client = connect({ port: 9999 })
+        async ({ connect }, { port, amount }) => {
+          const client = connect({ port })
           const makeitrain = async index => {
             let p = []
             for (let i = 0; i < amount; i++) {
@@ -363,7 +369,7 @@ test.serial('Get server raw - heavy load', async t => {
             await makeitrain(i)
           }
         },
-        { index: i, amount }
+        { amount, port }
       )
     )
   }
@@ -391,9 +397,11 @@ test.serial('Get server raw - heavy load', async t => {
 })
 
 test.serial('registry reconnect', async t => {
-  let registry = await startRegistry({ port: 9999 })
+  const port = await getPort()
 
-  let current = 9999
+  let registry = await startRegistry({ port })
+
+  let current = port
 
   const connectOpts = async () => {
     return {
@@ -410,7 +418,7 @@ test.serial('registry reconnect', async t => {
 
   await wait(5)
 
-  current = 9998
+  current = await getPort()
 
   await registry.destroy()
 
@@ -436,9 +444,11 @@ test.serial('registry reconnect', async t => {
 })
 
 test.serial('connection failure', async t => {
-  let registry = await startRegistry({ port: 9999 })
+  const port = await getPort()
 
-  const connectOpts = { port: 9999 }
+  let registry = await startRegistry({ port })
+
+  const connectOpts = { port }
 
   const origin = await startOrigin({ registry: connectOpts, default: true })
 
@@ -454,7 +464,7 @@ test.serial('connection failure', async t => {
     .readFileSync(join(__dirname, './assertions/heavyLoad.lua'))
     .toString()
 
-  const client = connect({ port: 9999 })
+  const client = connect({ port })
 
   client.redis.subscribe({ type: 'origin' }, 'log')
   client.redis.on({ type: 'origin' }, 'message', (c, msg) => {
@@ -482,19 +492,21 @@ test.serial('connection failure', async t => {
 test.serial(
   'Forcefully destroy redis server (and hope for restart)',
   async t => {
-    let registry = await startRegistry({ port: 9999 })
-    const connectOpts = { port: 9999 }
+    const port = await getPort()
+
+    let registry = await startRegistry({ port })
+    const connectOpts = { port }
     const origin = await startOrigin({
       registry: connectOpts,
       default: true,
-      port: 9998
+      port
     })
     let timeoutCnt = 0
     origin.on('error', err => {
       // redis crash
       timeoutCnt++
     })
-    const client = connect({ port: 9999 })
+    const client = connect({ port })
     await wait(100)
     console.log('kill server')
     await exec(`kill -9 ${origin.pm.pid}`)
@@ -513,8 +525,10 @@ test.serial(
 )
 
 test.serial('Change origin and re-conn replica', async t => {
-  let registry = await startRegistry({ port: 9999 })
-  const connectOpts = { port: 9999 }
+  const port = await getPort()
+
+  let registry = await startRegistry({ port })
+  const connectOpts = { port }
   let origin = await startOrigin({
     registry: connectOpts,
     default: true,
@@ -531,7 +545,7 @@ test.serial('Change origin and re-conn replica', async t => {
     console.log(err)
   })
 
-  const client = connect({ port: 9999 })
+  const client = connect({ port })
 
   await client.redis.set({ type: 'origin' }, 'f', 'snurf')
 
