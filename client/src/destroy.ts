@@ -7,7 +7,7 @@ export default async (selvaClient: SelvaClient) => {
   }
   selvaClient.isDestroyed = true
   connections.forEach(connection => {
-    if (connection.removeSelvaClient(selvaClient)) {
+    if (connection.removeClient(selvaClient)) {
       connection.removeConnectionState(
         connection.getConnectionState(selvaClient.selvaId)
       )

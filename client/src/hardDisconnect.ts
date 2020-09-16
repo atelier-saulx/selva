@@ -14,7 +14,7 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
   setTimeout(
     () => {
       const gotNewConnection = (newConnection: Connection) => {
-        newConnection.attachSelvaClient(selvaClient)
+        newConnection.attachClient(selvaClient)
         newConnection.applyConnectionState(state)
         if (serverDescriptor.type === 'registry') {
           selvaClient.registryConnection = newConnection

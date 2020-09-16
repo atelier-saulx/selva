@@ -49,9 +49,7 @@ const connectRegistry = (
         const reConnect = () => {
           connectOptions().then((nOpts: Connect) => {
             if (nOpts.port !== opts.port || nOpts.host !== opts.host) {
-              if (
-                selvaClient.registryConnection.removeSelvaClient(selvaClient)
-              ) {
+              if (selvaClient.registryConnection.removeClient(selvaClient)) {
                 selvaClient.registryConnection.removeConnectionState(
                   selvaClient.registryConnection.getConnectionState(
                     selvaClient.selvaId
@@ -92,7 +90,7 @@ const connectRegistry = (
       const registryConnection = createConnection(descriptor)
 
       // maybe for registry we want to handle it a bit different....
-      registryConnection.attachSelvaClient(selvaClient)
+      registryConnection.attachClient(selvaClient)
 
       selvaClient.registryConnection = registryConnection
 

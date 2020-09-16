@@ -31,19 +31,15 @@ import hardDisconnect from './hardDisconnect'
 
 import { connections, Connection, createConnection } from './connection'
 
-import connectRegistry from './connectRegistry'
+import { observables, Observable, createObservable } from './observable'
 
+import connectRegistry from './connectRegistry'
 
 import destroy from './destroy'
 
 import { v4 as uuidv4 } from 'uuid'
 
-
 import getServer from './getServer'
-
-// import { observe, observeSchema} from './observe'
-
-// import Observable from './observe/observable'
 
 export * as constants from './constants'
 
@@ -183,9 +179,11 @@ export class SelvaClient extends EventEmitter {
   //   return observeSchema(this, name)
   // }
 
-  // observe(props: GetOptions) {
-  //   return observe(this, props)
-  // }
+  observe(props: GetOptions): Observable {
+    const observable = createObservable(props)
+    observable.attachClient(this)
+    return observable
+  }
 
   async conformToSchema(props: SetOptions, dbName: string = 'default') {
     await this.initializeSchema({ $db: dbName })
@@ -222,5 +220,7 @@ export {
   FieldSchemaObject,
   RedisCommand,
   Connection,
+  Observable,
+  observables,
   moduleId
 }

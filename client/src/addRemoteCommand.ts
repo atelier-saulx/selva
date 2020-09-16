@@ -33,7 +33,7 @@ export default (
 
         if (typeof command.args[0] === 'string') {
           const connection = createConnection(server)
-          connection.attachSelvaClient(selvaClient)
+          connection.attachClient(selvaClient)
           connection[method](command.args[0], command.id)
         }
       },
@@ -48,7 +48,7 @@ export default (
         }
 
         const connection = createConnection(server)
-        connection.attachSelvaClient(selvaClient)
+        connection.attachClient(selvaClient)
         connection.command(command)
       },
       selector

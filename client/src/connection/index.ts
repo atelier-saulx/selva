@@ -46,7 +46,7 @@ class Connection {
     if (!this.isDestroyed) {
       this.emit('hard-disconnect')
       if (!this.isDestroyed) {
-        this.selvaClients.forEach(s => {
+        this.clients.forEach(s => {
           s.hardDisconnect(this)
         })
         this.destroy()
@@ -54,16 +54,16 @@ class Connection {
     }
   }
 
-  public attachSelvaClient(selvaClient: SelvaClient) {
-    this.selvaClients.add(selvaClient)
+  public attachClient(client: SelvaClient | Observable) {
+    this.clients.add(client)
   }
 
-  public removeSelvaClient(selvaClient: SelvaClient): boolean {
-    const hasClient = this.selvaClients.has(selvaClient)
+  public removeClient(client: SelvaClient | Observable): boolean {
+    const hasClient = this.clients.has(client)
     if (hasClient) {
-      this.selvaClients.delete(selvaClient)
+      this.clients.delete(client)
     }
-    if (this.selvaClients.size === 0) {
+    if (this.clients.size === 0) {
       this.destroyIfIdle()
     }
     return hasClient
@@ -461,7 +461,7 @@ class Connection {
       return
     }
 
-    this.selvaClients = new Set()
+    this.clients = new Set()
 
     this.isDestroyed = true
 
