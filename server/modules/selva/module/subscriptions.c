@@ -553,7 +553,7 @@ void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hier
     SVector_Destroy(&def->subs);
 }
 
-static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarkers *sub_markers) {
+static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy, const struct Selva_SubscriptionMarkers *sub_markers) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct subscriptionMarker **it;
 
@@ -561,7 +561,7 @@ static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy, stru
         SVECTOR_FOREACH(it, &sub_markers->vec) {
             struct subscriptionMarker *marker = *it;
 
-            if (isHierarchyMarker(marker->flags_filter)) {
+            if (isHierarchyMarker(marker->marker_flags)) {
                 SVector_InsertFast(&def->subs, marker->sub);
             }
         }
@@ -579,7 +579,7 @@ void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hiera
 
 static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
                                       const Selva_NodeId node_id,
-                                      struct Selva_SubscriptionMarkers *sub_markers,
+                                      const struct Selva_SubscriptionMarkers *sub_markers,
                                       const char *field) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     const unsigned flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
@@ -605,7 +605,7 @@ void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaModify_Hierarchy *hie
                                                const struct SelvaModify_HierarchyMetadata *metadata,
                                                const char *field) {
     /* Detached markers. */
-    defer_field_change_events(hierarchy, node_id, &hierarchy->sub.detached_markers, field);
+    defer_field_change_events(hierarchy, node_id, &hierarchy->subs.detached_markers, field);
 
     /* Markers on the node.  */
     defer_field_change_events(hierarchy, node_id, &metadata->sub_markers, field);
@@ -784,7 +784,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     unsigned marker_flags = 0;
 
-    if (!strcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+    if (!memcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
         /*
          * A root node marker is a special case which is stored as detached to
          * save time and space.
