@@ -2,6 +2,8 @@ import { GetOptions } from '../get'
 
 export type GetObservableOptions = {
   type: 'get'
+  cache?: boolean
+  maxMemory?: number
   options: GetOptions
 }
 

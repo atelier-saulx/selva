@@ -1,41 +1,52 @@
 import { SelvaClient } from '..'
 import generateSubscriptionId from './generateSubscriptionId'
 import { ObservableOptions } from './types'
-// has state as well
-
-export const observables: Map<string, Observable> = new Map()
 
 var observableIds = 0
 
-// need an 'update' method
-
-// unique ness is the resulting connect options of a selva client
-
-// give registry a unique id?
-
-// or based on registry fn :/
-
-// for now expect it to be connected to the same cluster?
-
 export class Observable {
-  constructor(options: ObservableOptions, id: string = '', uuid?: string) {
-    console.log('make observable for you')
-    // on create need to connect
-    // what about move subscription event?
-    // just go trough all the subs managers
-    // whats wrong here is that we dont know if you connect to multiple registries
+  constructor(
+    options: ObservableOptions,
+    selvaClient: SelvaClient,
+    uuid?: string
+  ) {
+    this.selvaClient = selvaClient
+
+    if (!this.selvaClient.observables) {
+      this.selvaClient.observables = new Map()
+    }
+
     if (!uuid) {
       uuid = generateSubscriptionId(options)
     }
+
+    if (options.type === 'get') {
+      if (options.cache === undefined) {
+        this.useCache = true
+      } else {
+        this.useCache = options.cache
+      }
+
+      if (options.maxMemory === undefined) {
+        this.maxMemory = 1e6 // 1 mb as max cache size
+      } else {
+        this.maxMemory = options.maxMemory
+      }
+    }
+
+    this.selvaClient.observables.set(uuid, this)
+
     this.uuid = uuid
     this.selvaId = String('o' + ++observableIds)
-
-    this.id = id
-
-    observables.set(uuid + id, this)
-    // add to observables map
-    // but - twist - need to add to specific port / host of a registry (annoying!)
   }
+
+  public subscriptionMoved() {
+    console.log('this subscription moved to another server! (potentialy')
+  }
+
+  public isDestroyed: boolean
+
+  public selvaClient: SelvaClient
 
   public id: string
 
@@ -45,44 +56,57 @@ export class Observable {
 
   public selvaId: string
 
+  public checksum: string
+
+  public cache: any // last received data
+
+  public maxMemory: number //= 1000000 // 1MB
+
+  public useCache: boolean
+
   public hardDisconnect() {
     console.log('hdc on obs bitch')
   }
 
-  public attachClient(client: SelvaClient) {
-    this.clients.add(client)
-  }
+  public unsubscribe() {}
 
-  public destroyIfIdle() {
-    // do it
+  public subscribe(
+    // needs an iff for the type of things
+
+    // how to do?
+
+    // TODO: make this type based on the Observable options (type schema or type get for now)
+    onNext: (x: any) => void,
+    onError?: (e: Error) => void,
+    onComplete?: () => void
+  ) {
+    /*
+    subscribe(
+      onNext: ((x: T) => void) | Observer<T>,
+      onError?: (e: Error) => void,
+      onComplete?: () => void
+    )
+    */
+    // make this nice observable like
   }
 
   public destroy() {
-    observables.delete(this.uuid + this.id)
-    // emit
-  }
+    console.log('destroy')
+    this.isDestroyed = true
 
-  public removeClient(client: SelvaClient): boolean {
-    const hasClient = this.clients.has(client)
-    if (hasClient) {
-      this.clients.delete(client)
-    }
-    if (this.clients.size === 0) {
-      this.destroyIfIdle()
-    }
-    return hasClient
+    this.selvaClient.observables.delete(this.uuid)
   }
 }
 
 // maybe have to remove the re-use... :/
 export const createObservable = (
   options: ObservableOptions,
-  id: string = ''
+  selvaClient: SelvaClient
 ) => {
   const uuid = generateSubscriptionId(options)
-  let observable = observables.get(uuid + id)
+  let observable = selvaClient.observables.get(uuid)
   if (!observable) {
-    observable = new Observable(options, id, uuid)
+    observable = new Observable(options, selvaClient, uuid)
   }
   return observable
 }

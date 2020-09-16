@@ -31,7 +31,7 @@ import hardDisconnect from './hardDisconnect'
 
 import { connections, Connection, createConnection } from './connection'
 
-import { observables, Observable, createObservable } from './observable'
+import { Observable, createObservable } from './observable'
 
 import connectRegistry from './connectRegistry'
 
@@ -40,6 +40,7 @@ import destroy from './destroy'
 import { v4 as uuidv4 } from 'uuid'
 
 import getServer from './getServer'
+import { ObservableOptions } from './observable/types'
 
 export * as constants from './constants'
 
@@ -51,6 +52,8 @@ export class SelvaClient extends EventEmitter {
   public selvaId: string
 
   public uuid: string
+
+  public observables: Map<string, Observable> 
 
   // add these on the registry scince that is the thing that gets reused
   // public schemaObservables: Record<string, Observable<Schema>> = {}
@@ -179,13 +182,16 @@ export class SelvaClient extends EventEmitter {
   //   return observeSchema(this, name)
   // }
 
-  observe(props: GetOptions): Observable {
-    const observable = createObservable({
-      type: 'get',
-      options: props
-    })
-    observable.attachClient(this)
-    return observable
+
+  observe(props: ObservableOptions | GetOptions): Observable {
+    if (props.type === 'get' || props.type === 'schema') {
+      return createObservable(<ObservableOptions>props, this)
+    } else {
+      return createObservable({
+        type: 'get',
+        options: props
+      }, this)
+    }
   }
 
   async conformToSchema(props: SetOptions, dbName: string = 'default') {
@@ -224,6 +230,5 @@ export {
   RedisCommand,
   Connection,
   Observable,
-  observables,
   moduleId
 }
