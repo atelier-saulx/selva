@@ -16,8 +16,6 @@ test.before(async t => {
     port
   })
 
-  console.log('ok? update dat schema')
-
   await client.updateSchema({
     languages: ['en'],
     rootType: {

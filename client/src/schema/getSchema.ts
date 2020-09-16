@@ -19,16 +19,12 @@ async function getSchema(
 
   let searchIndexes: SearchIndexes = {}
 
-  console.log(selector)
-
   const [fetchedTypes, fetchedIndexes] = await client.redis.hmget(
     selector,
     '___selva_schema',
     'types',
     'searchIndexes'
   )
-
-  console.log('go time?')
 
   if (fetchedTypes) {
     schema = JSON.parse(fetchedTypes)
