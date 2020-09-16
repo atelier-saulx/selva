@@ -9,8 +9,7 @@ import { EventEmitter } from 'events'
 import startRedis from './startRedis'
 import ProcessManager from './processManager'
 import attachStatusListeners from './attachStatusListeners'
-import fs from 'fs'
-import { join } from 'path'
+
 import { removeFromRegistry } from './updateRegistry'
 import beforeExit from 'before-exit'
 import {
@@ -26,36 +25,7 @@ import {
 } from '../backups'
 import { registryManager } from './registryManager'
 import heartbeat from './heartbeat'
-
-const clearReplicaDump = (dir: string): Promise<void> => new Promise(r => {
-  fs.exists(dir, (exists) => {
-    if (exists) {
-      fs.readdir(dir, (_err, x) => {
-        if (x && x.length) {
-          const rdb = x.filter(v => /\.rdb$/.test(v))
-          if (rdb.length) {
-            let cnt = rdb.length
-            rdb.forEach(v => {
-              fs.unlink(join(dir, v), (_err) => {
-                cnt--
-                if (cnt === 0) {
-                  console.info('Remove dump for replica', join(dir, v))
-                  r()
-                }
-              })
-            })
-          } else {
-            r()
-          }
-        } else {
-          r()
-        }
-      })
-    } else {
-      r()
-    }
-  })
-})
+import clearReplicaDum from './clearReplicaDump'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
@@ -77,6 +47,10 @@ export class SelvaServer extends EventEmitter {
     super()
     this.setMaxListeners(10000)
     this.type = type
+
+    // this.on('error', err => {
+    //   console.error(err)
+    // })
 
     beforeExit.do(() => {
       return this.destroy()
@@ -128,7 +102,6 @@ export class SelvaServer extends EventEmitter {
           this.origin = origin
           await clearReplicaDump(opts.dir)
           startRedis(this, opts)
-
         } else if (
           origin.port !== this.origin.port ||
           origin.host !== this.origin.host

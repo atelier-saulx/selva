@@ -20,6 +20,7 @@ export default class ProcessManager extends EventEmitter {
     super()
     this.command = command
     this.args = args
+    this.on('error', () => {})
   }
 
   protected async collect(): Promise<any> {
@@ -84,10 +85,17 @@ export default class ProcessManager extends EventEmitter {
 
     const exitHandler = (code: number) => {
       console.error(
-        chalk.red(`Child process for ${this.command} exited with code ${code} at ${(new Date()).toLocaleTimeString()} ${(new Date()).toLocaleDateString()}. Attempt restart.`)
+        chalk.red(
+          `Child process for ${
+            this.command
+          } exited with code ${code} at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}. Attempt restart.`
+        )
       )
 
-      this.emit('error', new Error(`Child process for ${this.command} exited with code ${code}.`))
+      this.emit(
+        'error',
+        new Error(`Child process for ${this.command} exited with code ${code}.`)
+      )
 
       this.childProcess.removeAllListeners()
       this.childProcess = undefined

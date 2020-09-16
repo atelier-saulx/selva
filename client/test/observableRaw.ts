@@ -1,10 +1,5 @@
 import test from 'ava'
-import {
-  moduleId as parentModuleId,
-  connect,
-  connections,
-  observables
-} from '@saulx/selva'
+import { connect, connections, Observable, observables } from '@saulx/selva'
 import {
   startRegistry,
   startOrigin,
@@ -22,17 +17,20 @@ test.before(removeDump(dir))
 test.after(removeDump(dir))
 
 test.serial('Make some observables', async t => {
+  // maybe run all the servers in workers
   const port = await getPort()
-
-  let registry = await startRegistry({ port })
+  const registry = await startRegistry({ port })
   const connectOpts = { port }
-  let origin = await startOrigin({
+  const origin = await startOrigin({
     registry: connectOpts,
     default: true,
     dir: join(dir, 'observablesgotime')
   })
 
   const client = connect({ port })
+
+  // what to do here?
+  client.observe()
 
   t.pass()
 })
