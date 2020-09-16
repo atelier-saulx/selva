@@ -176,9 +176,9 @@ export default class ProcessManager extends EventEmitter {
               )
             )
             console.info('')
-          }, 1e3)
+          }, 2e3)
         }
-      }, 100)
+      }, 1000)
     }
 
     this.childProcess.on('exit', exitHandler)
