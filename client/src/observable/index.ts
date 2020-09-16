@@ -1,6 +1,17 @@
 // re-use some code here
 // also diffing is handled here
 
+import { GetOptions } from '../get'
+import { SelvaClient } from '..'
+
+import { createHash } from 'crypto'
+
+function makeSubscriptionId(opts: GetOptions) {
+  const hash = createHash('sha256')
+  hash.update(JSON.stringify(opts))
+  return hash.digest('hex')
+}
+
 // has state as well
 
 const observables: Map<string, Observable> = new Map()
@@ -14,24 +25,6 @@ const observables: Map<string, Observable> = new Map()
 // Observables get a way to handlke hdc theneselves
 
 // OBservables store things the same way as connections - with selvaClients in there
-
-//
-
-var observableIds = 0
-
-// esentialy a selvaClient
-
-export class Observable {
-  constructor() {
-    console.log('make observable for you')
-    this.selvaId = String(++observableIds)
-  }
-  public selvaId: string
-
-  public hardDisconnect() {
-    console.log('hdc bitch')
-  }
-}
 
 // logs are easier to handle just add the id in the command to the other id
 
@@ -61,3 +54,61 @@ export class Observable {
 // makes reuse a lot better
 
 // so observables are just as connections seperate entities
+
+var observableIds = 0
+
+// maybe not only get options
+
+// need a typeof check! tony help
+
+export class Observable {
+  constructor(getOptions: GetOptions, uuid?: string) {
+    console.log('make observable for you')
+
+    if (!uuid) {
+      uuid = makeSubscriptionId(getOptions)
+    }
+
+    this.uuid = uuid
+
+    this.selvaId = String('o' + ++observableIds)
+  }
+
+  public uuid: string // hash of getoptions
+
+  public clients: Set<SelvaClient> = new Set()
+
+  public selvaId: string
+
+  public hardDisconnect() {
+    console.log('hdc bitch')
+  }
+
+  public attachClient(client: SelvaClient) {
+    this.clients.add(client)
+  }
+
+  public destroyIfIdle() {
+    // do it
+  }
+
+  public removeClient(client: SelvaClient): boolean {
+    const hasClient = this.clients.has(client)
+    if (hasClient) {
+      this.clients.delete(client)
+    }
+    if (this.clients.size === 0) {
+      this.destroyIfIdle()
+    }
+    return hasClient
+  }
+}
+
+export const createConnection = (getOptions: GetOptions) => {
+  const uuid = makeSubscriptionId(getOptions)
+  let observable = observables.get(uuid)
+  if (!observable) {
+    observable = new Observable(observable, uuid)
+  }
+  return observable
+}
