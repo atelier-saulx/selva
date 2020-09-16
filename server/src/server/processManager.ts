@@ -140,14 +140,16 @@ export default class ProcessManager extends EventEmitter {
         this.restartCount++
         if (this.restartCount > 4) {
           console.info('')
+          const err = new Error(`Tried restarting server 5 times`)
 
           for (let i = this.errorLog.length - 1; i > -1; i--) {
             console.info(chalk.grey(`Redis log #${i}:`, this.errorLog[i]))
           }
+          err.stack = this.errorLog.join('\n')
 
           console.info(
             chalk.red(
-              `Tried restarting server 5 times something is very wrong pm: ${
+              `Tried restarting server 5 times something is wrong pm: ${
                 this.uuid
               } port: ${
                 this.args[1]
@@ -156,6 +158,7 @@ export default class ProcessManager extends EventEmitter {
           )
           console.log(chalk.grey(`${this.command} ${this.args}`))
           console.info('')
+          throw err
         } else {
           this.start()
 
