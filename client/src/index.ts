@@ -180,7 +180,10 @@ export class SelvaClient extends EventEmitter {
   // }
 
   observe(props: GetOptions): Observable {
-    const observable = createObservable(props)
+    const observable = createObservable({
+      type: 'get',
+      options: props
+    })
     observable.attachClient(this)
     return observable
   }
