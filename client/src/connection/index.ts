@@ -3,15 +3,13 @@ import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import drainQueue from './drainQueue'
 import { loadScripts } from './scripts'
-import SubscriptionEmitter from '../observe/emitter'
 import startRedisClient from './startRedisClient'
 import { RedisClient } from 'redis'
 import { Callback } from '../redis/types'
 import { serverId, isEmptyObject } from '../util'
+import { Observable } from '../observable'
 
 const connections: Map<string, Connection> = new Map()
-
-// logs are easier to handle just add the id in the command to the other id
 
 type ConnectionState = {
   id?: string
@@ -32,9 +30,9 @@ class Connection {
 
   public serverDescriptor: ServerDescriptor
 
-  public selvaSubscriptionEmitters: Set<SubscriptionEmitter>
-
   public selvaClients: Set<SelvaClient> = new Set()
+
+  public Observables: Set<Observable> = new Set()
 
   public subscriptions: { [key: string]: { [key: string]: number } }
 
@@ -71,27 +69,6 @@ class Connection {
       this.destroyIfIdle()
     }
     return hasClient
-  }
-
-  public selvaSubscribe() {
-    if (!this.selvaSubscriptionsActive) {
-      console.log('need to add hearthbeat')
-      console.log('need to add message listener')
-      // this does not have to go to the state (scince we have the selva subscription itself!)
-      this.selvaSubscriptionsActive = true
-    }
-    console.log('selva subscribe')
-    // need to add a counter to the subscription
-    // add hearthbeat if you dont have it
-    // initializeSubscriptions
-    // returns value as well
-  }
-
-  public selvaUnsubscribe() {
-    // if empty (no selva subscriptions stop hearthbeat)
-    // and handle activity counter ofc
-    // if counter === 0 remove subs and remove
-    // if all counters are zero remove all ( also on destory )
   }
 
   public queue: RedisCommand[]
@@ -493,8 +470,8 @@ class Connection {
     this.subscriber.removeAllListeners()
     this.publisher.removeAllListeners()
 
-    this.subscriber.on('error', () => { })
-    this.publisher.on('error', () => { })
+    this.subscriber.on('error', () => {})
+    this.publisher.on('error', () => {})
 
     this.subscriber.quit()
     this.publisher.quit()
