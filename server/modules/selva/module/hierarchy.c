@@ -1389,6 +1389,36 @@ const char *SelvaModify_HierarchyDir2str(enum SelvaModify_HierarchyTraversal dir
     }
 }
 
+static int traverse_adjacent(
+        SelvaModify_Hierarchy *hierarchy,
+        SelvaModify_HierarchyNode *head,
+        enum SelvaModify_HierarchyTraversal dir,
+        const TraversalCallback *tcb) {
+    SVector *adjVec;
+    SelvaModify_HierarchyNode **it;
+
+    assert(tcb->node_cb);
+    if (dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
+        adjVec = &head->children;
+    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS) {
+        adjVec = &head->parents;
+    } else {
+        return SELVA_MODIFY_HIERARCHY_EINVAL;
+    }
+
+    SVECTOR_FOREACH(it, adjVec) {
+        SelvaModify_HierarchyNode *node = *it;
+
+        /*
+         * We don't want to support skipping here, and therefore we ignore
+         * the return value.
+         */
+        (void)tcb->node_cb(node, tcb->node_arg);
+    }
+
+    return 0;
+}
+
 /*
  * A little trampoline to hide the scary internals of the hierarchy
  * implementation from the innocent users just wanting to traverse the
@@ -1431,6 +1461,10 @@ int SelvaModify_TraverseHierarchy(
     case SELVA_HIERARCHY_TRAVERSAL_NODE:
         cb->node_cb(head->id, cb->node_arg, &head->metadata);
         err = 0;
+        break;
+    case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
+    case SELVA_HIERARCHY_TRAVERSAL_PARENTS:
+        err = traverse_adjacent(hierarchy, head, dir, &tcb);
         break;
     case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
         err = bfs(hierarchy, head, RELATIONSHIP_PARENT, &tcb);
