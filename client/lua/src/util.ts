@@ -162,12 +162,24 @@ export function markEmptyArraysInJSON(str: string): string {
   return str
 }
 
+// NOTE: also removes trailing whitespace from the start of the string
+// NOTE: also removes more than one occurrence of whitespace in a row
 export function escapeSpecial(str: string): string {
-  const transformed = transformSupportedSpecialChars(str.toLowerCase())
+  let wsIdx: number = 0
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] !== ' ') {
+      wsIdx = i
+      break
+    }
+  }
+
+  const noTrailing = str.substring(wsIdx, str.length)
+  const transformed = transformSupportedSpecialChars(noTrailing.toLowerCase())
 
   // remove all unsupported alphanumerics
   const [replaced] = string.gsub(transformed, '[^%w ]', '')
-  return replaced
+  const [wsTrimmed] = string.gsub(replaced, '[ ]+', ' ')
+  return wsTrimmed
 }
 
 export const isEqual = (a: any, b: any): boolean => {

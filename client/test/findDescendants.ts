@@ -309,6 +309,30 @@ test.serial('find - descendants', async t => {
       [99, 98, 97, 96, 95]
     )
 
+    const { items: nextVideosSorted } = await client.get({
+      items: {
+        value: true,
+        $list: {
+          $sort: { $field: 'value', $order: 'desc' },
+          $limit: 5,
+          $offset: 5,
+          $find: {
+            $traverse: 'descendants',
+            $filter: {
+              $field: 'type',
+              $operator: '=',
+              $value: 'video'
+            }
+          }
+        }
+      }
+    })
+
+    t.deepEqual(
+      nextVideosSorted.map(v => v.value),
+      [94, 93, 92, 91, 90]
+    )
+
     const { items: empty } = await client.get({
       items: {
         name: true,

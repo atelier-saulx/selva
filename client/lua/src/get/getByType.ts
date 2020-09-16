@@ -484,7 +484,8 @@ const ancestors = (
   _language?: string,
   _version?: string
 ): true => {
-  result.ancestors = redis.zrange(id + '.ancestors', 0, -1) || []
+  const ancestors = redis.zrange(id + '.ancestors', 0, -1) || []
+  result.ancestors = ancestors.length > 0 ? ancestors : emptyArray()
   return true
 }
 

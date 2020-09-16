@@ -108,6 +108,7 @@ const parseQuery = (
   }
 
   if (resultFork) {
+    let noLimitAndOffset = true
     const idMap: Record<string, true> = {}
     const [queries, err] = createSearchString(resultFork, language)
     if (queries.length === 1) {
@@ -128,6 +129,7 @@ const parseQuery = (
         }
       }
     } else {
+      noLimitAndOffset = false
       for (const q of queries) {
         if (err) {
           return [{ results }, err]
@@ -162,7 +164,7 @@ const parseQuery = (
       for (const id in idMap) {
         resultIds[resultIds.length] = id
       }
-      resultIds = parseList(resultIds, getOptions.$list)
+      resultIds = parseList(resultIds, getOptions.$list, noLimitAndOffset)
     } else {
       for (const id in idMap) {
         resultIds[resultIds.length] = id
