@@ -39,13 +39,13 @@ export default class ProcessManager extends EventEmitter {
     this.on('error', () => {})
     this.on('stderr', data => {
       this.errorLog.unshift(data)
-      if (this.errorLog.length === 5) {
+      if (this.errorLog.length === 30) {
         this.errorLog.pop()
       }
     })
     this.on('stdout', data => {
       this.errorLog.unshift(data)
-      if (this.errorLog.length === 5) {
+      if (this.errorLog.length === 30) {
         this.errorLog.pop()
       }
     })
