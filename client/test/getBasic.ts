@@ -16,7 +16,7 @@ test.before(async t => {
     setTimeout(resolve, 100)
   })
 
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -200,7 +200,7 @@ test.serial('get $value', async t => {
 })
 
 test.serial('get nested queries', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'maTest',
@@ -293,7 +293,7 @@ test.serial('get boolean value', async t => {
 })
 
 test.serial('get complex with $value and array syntax', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'maTest',
@@ -465,7 +465,7 @@ test.serial('get - basic', async t => {
 })
 
 test.serial('get - $all simple', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'maA',
@@ -640,7 +640,7 @@ test.serial('get - $all nested', async t => {
 })
 
 test.serial('get - $all deeply nested', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   const entry = await client.set({
     type: 'lekkerType',
@@ -879,7 +879,7 @@ test.serial('get - hierarchy', async t => {
 })
 
 test.serial('get - $inherit', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   /*
     root
@@ -1100,7 +1100,7 @@ test.serial('get - $inherit', async t => {
 })
 
 test.serial('get - $inherit with object types does shallow merge', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   const parentOfParent = await client.set({
     type: 'lekkerType',
@@ -1174,7 +1174,7 @@ test.serial('get - $inherit with object types does shallow merge', async t => {
 test.serial(
   'get - $inherit with object types shallow merge can be disabled',
   async t => {
-    const client = connect({ port }, { loglevel: 'info' })
+    const client = connect({ port })
 
     const parentOfParent = await client.set({
       type: 'lekkerType',
@@ -1247,7 +1247,7 @@ test.serial(
 test.serial(
   'get - $inherit with object types of nested objects, does shallow merge',
   async t => {
-    const client = connect({ port }, { loglevel: 'info' })
+    const client = connect({ port })
 
     const parentOfParent = await client.set({
       type: 'lekkerType',
@@ -1423,7 +1423,7 @@ test.serial('get - basic with many ids', async t => {
 })
 
 test.serial('get - basic with non-priority language', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viA',
@@ -1513,7 +1513,7 @@ test.serial('get - basic with non-priority language', async t => {
 })
 
 test.serial('get - record', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viA',
