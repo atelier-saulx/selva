@@ -16,6 +16,10 @@ const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
+// const x= '/dahsbo/:id/:smurk'.replace(/:s*.*?(?=\s*\/)/g, 'lur')
+
+// in: '/dahsbo/:id/:smurk' out: '/dahsbo/lur/lur'
+
 test.serial('Make some observables', async t => {
   // maybe run all the servers in workers
   const port = await getPort()
@@ -30,7 +34,7 @@ test.serial('Make some observables', async t => {
   const client = connect({ port })
 
   // what to do here?
-  client.observe()
+  // client.observe()
 
   t.pass()
 })

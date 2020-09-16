@@ -13,6 +13,12 @@ export class Observable {
   constructor(options: ObservableOptions, uuid?: string) {
     console.log('make observable for you')
 
+    // on create need to connect
+
+    // what about move subscription event?
+    // just go trough all the subs managers
+
+    // whats wrong here is that we dont know if you connect to multiple registries
     if (!uuid) {
       uuid = generateSubscriptionId(options)
     }
