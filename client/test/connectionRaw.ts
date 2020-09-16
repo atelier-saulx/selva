@@ -207,7 +207,7 @@ test.serial('connection / server orchestration', async t => {
 
   const client2 = connect({ port: 9999 })
 
-  client2.redis.on({ type: 'replica' }, 'message', () => { })
+  client2.redis.on({ type: 'replica' }, 'message', () => {})
   client2.redis.subscribe({ type: 'replica' }, 'snurf')
 
   await wait(50)
@@ -367,7 +367,7 @@ test.serial('Get server raw - heavy load', async t => {
       )
     )
   }
-  ; (await Promise.all(p)).map(([, w]) => w.terminate())
+  ;(await Promise.all(p)).map(([, w]) => w.terminate())
   const keys = await client.redis.keys({ type: 'origin' }, '*')
   const results = await Promise.all(
     keys
@@ -442,7 +442,7 @@ test.serial('connection failure', async t => {
 
   const origin = await startOrigin({ registry: connectOpts, default: true })
 
-  origin.on('error', () => { })
+  origin.on('error', () => {})
 
   let timeoutCnt = 0
 
@@ -450,7 +450,9 @@ test.serial('connection failure', async t => {
     timeoutCnt++
   })
 
-  const lua = fs.readFileSync(join(__dirname, './assertions/heavyLoad.lua')).toString()
+  const lua = fs
+    .readFileSync(join(__dirname, './assertions/heavyLoad.lua'))
+    .toString()
 
   const client = connect({ port: 9999 })
 
@@ -477,37 +479,45 @@ test.serial('connection failure', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.serial('Forcefully destroy redis server (and hope for restart)', async t => {
-  let registry = await startRegistry({ port: 9999 })
-  const connectOpts = { port: 9999 }
-  const origin = await startOrigin({ registry: connectOpts, default: true, port: 9998 })
-  let timeoutCnt = 0
-  origin.on('error', (err) => {
-    // redis crash
-    timeoutCnt++
-  })
-  const client = connect({ port: 9999 })
-  await wait(100)
-  console.log('kill server')
-  await exec(`kill -9 ${origin.pm.pid}`)
-  await client.redis.set({ type: 'origin' }, 'x', 'bla')
-  const x = await client.redis.get({ type: 'origin' }, 'x')
-  t.is(x, 'bla')
-  t.is(timeoutCnt, 1, 'origin timed out once')
-  await wait(100)
-  await registry.destroy()
-  await origin.destroy()
-  await client.destroy()
-  await wait(6000)
-  // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
-  t.is(connections.size, 0, 'all connections removed')
-})
+test.serial(
+  'Forcefully destroy redis server (and hope for restart)',
+  async t => {
+    let registry = await startRegistry({ port: 9999 })
+    const connectOpts = { port: 9999 }
+    const origin = await startOrigin({
+      registry: connectOpts,
+      default: true,
+      port: 9998
+    })
+    let timeoutCnt = 0
+    origin.on('error', err => {
+      // redis crash
+      timeoutCnt++
+    })
+    const client = connect({ port: 9999 })
+    await wait(100)
+    console.log('kill server')
+    await exec(`kill -9 ${origin.pm.pid}`)
+    await client.redis.set({ type: 'origin' }, 'x', 'bla')
+    const x = await client.redis.get({ type: 'origin' }, 'x')
+    t.is(x, 'bla')
+    t.is(timeoutCnt, 1, 'origin timed out once')
+    await wait(100)
+    await registry.destroy()
+    await origin.destroy()
+    await client.destroy()
+    await wait(6000)
+    // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
+    t.is(connections.size, 0, 'all connections removed')
+  }
+)
 
 test.serial('Change origin and re-conn replica', async t => {
   let registry = await startRegistry({ port: 9999 })
   const connectOpts = { port: 9999 }
   let origin = await startOrigin({
-    registry: connectOpts, default: true,
+    registry: connectOpts,
+    default: true,
     dir: join(dir, 'replicarestarterorigin')
   })
 
@@ -517,7 +527,7 @@ test.serial('Change origin and re-conn replica', async t => {
     dir: join(dir, 'replicarestarter')
   })
 
-  replica.on('error', (err) => {
+  replica.on('error', err => {
     console.log(err)
   })
 
@@ -536,7 +546,8 @@ test.serial('Change origin and re-conn replica', async t => {
   await wait(5e3)
 
   origin = await startOrigin({
-    registry: connectOpts, default: true,
+    registry: connectOpts,
+    default: true,
     dir: join(dir, 'replicarestarterorigin')
   })
 

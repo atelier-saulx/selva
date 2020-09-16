@@ -1,7 +1,9 @@
 // re-use some code here
 // also diffing is handled here
 
-const connections: Map<string, Observable> = new Map()
+// has state as well
+
+const observables: Map<string, Observable> = new Map()
 
 // is it an emitter?
 
@@ -15,7 +17,21 @@ const connections: Map<string, Observable> = new Map()
 
 //
 
-export class Observable {}
+var observableIds = 0
+
+// esentialy a selvaClient
+
+export class Observable {
+  constructor() {
+    console.log('make observable for you')
+    this.selvaId = String(++observableIds)
+  }
+  public selvaId: string
+
+  public hardDisconnect() {
+    console.log('hdc bitch')
+  }
+}
 
 // logs are easier to handle just add the id in the command to the other id
 

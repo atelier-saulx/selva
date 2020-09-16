@@ -30,9 +30,7 @@ class Connection {
 
   public serverDescriptor: ServerDescriptor
 
-  public selvaClients: Set<SelvaClient> = new Set()
-
-  public Observables: Set<Observable> = new Set()
+  public clients: Set<SelvaClient | Observable> = new Set()
 
   public subscriptions: { [key: string]: { [key: string]: number } }
 

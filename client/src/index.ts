@@ -25,7 +25,6 @@ import { DeleteOptions, deleteItem } from './delete'
 import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
 
-
 import { waitUntilEvent } from './util'
 
 import hardDisconnect from './hardDisconnect'
