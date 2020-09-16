@@ -2,13 +2,11 @@ import { SelvaClient } from '../'
 import { rootDefaultFields } from './constants'
 import { Schema, SearchIndexes, GetSchemaResult } from './types'
 import { ServerSelector } from '../types'
-import { wait } from '../util'
 
 // we want to remove
 async function getSchema(
   client: SelvaClient,
-  selector: ServerSelector,
-  retry: number = 0
+  selector: ServerSelector
 ): Promise<GetSchemaResult> {
   let schema: Schema = {
     languages: [],
@@ -27,17 +25,6 @@ async function getSchema(
     'types',
     'searchIndexes'
   )
-
-  // if (!fetchedTypes) {
-  //   // means empty schema
-  //   if (retry > 30) {
-  //     console.log('max retries use default schema')
-  //   } else {
-  //     // console.log('no fetched types wait a bit')
-  //     await wait(20)
-  //     return getSchema(client, selector, ++retry)
-  //   }
-  // }
 
   if (fetchedTypes) {
     schema = JSON.parse(fetchedTypes)

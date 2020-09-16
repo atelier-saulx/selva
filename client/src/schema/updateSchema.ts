@@ -204,14 +204,14 @@ function newFieldDefinition(
   ) {
     throw new Error(
       `Path ${fieldPath} has mismatching types, trying to change collection with type ${
-        oldField.items.type
+      oldField.items.type
       } to type ${(<any>newField).items.type}`
     )
   }
 
   if (!(<any>newField).search) {
     if (oldField.search) {
-      ;(<any>newField).search = oldField.search
+      ; (<any>newField).search = oldField.search
     }
   }
 
@@ -243,8 +243,7 @@ export async function updateSchema(
       selector,
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it
       0,
-      '',
-      // `${client.loglevel}:${client.uuid}`,
+      `${client.loglevel}:${client.uuid}`,
       JSON.stringify(newSchema)
     )
 

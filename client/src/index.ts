@@ -9,11 +9,14 @@ import {
 } from './types'
 import digest from './digest'
 import Redis from './redis'
+
 import { GetSchemaResult, SchemaOptions, Id, Schema, FieldSchema } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
-// import initializeSchema from './schema/initializeSchema'
+import conformToSchema from './schema/conformToSchema'
+import initializeSchema from './schema/initializeSchema'
+
 import { GetOptions, GetResult, get } from './get'
 import { SetOptions, set } from './set'
 import { IdOptions } from 'lua/src/id'
@@ -21,7 +24,6 @@ import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
 import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
-import conformToSchema from './conformToSchema'
 
 
 import { waitUntilEvent } from './util'
