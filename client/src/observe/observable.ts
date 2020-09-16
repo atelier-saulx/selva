@@ -37,14 +37,14 @@ export class Subscription<T> {
 
     const subObserver: SubscriptionObserver<T> = {
       next: !observer.next
-        ? () => {}
+        ? () => { }
         : (value: any) => {
-            if (this.closed) {
-              return
-            }
+          if (this.closed) {
+            return
+          }
 
-            observer.next(value)
-          },
+          observer.next(value)
+        },
       error: (e: Error) => {
         if (this.closed) {
           return

@@ -10,11 +10,8 @@ function makeSubscriptionId(opts: GetOptions) {
 }
 
 // calls getServer and then connection.addSelvaSubscription
-
 // reuse emitter and stuff
-
 // observer (also add on selva client) { emitter, Observable }
-
 // and cache them ofc!
 
 export function observe(
