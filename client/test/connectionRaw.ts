@@ -337,7 +337,7 @@ test.serial('connection / server orchestration', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.only('Get server raw - heavy load', async t => {
+test.serial('Get server raw - heavy load', async t => {
   const port = await getPort()
   const registry = await startRegistry({ port })
   const origin = await startOrigin({ registry: { port }, default: true })

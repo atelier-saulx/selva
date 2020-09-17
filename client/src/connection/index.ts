@@ -441,7 +441,7 @@ class Connection {
     ) {
       this.destroyTimer = setTimeout(() => {
         this.destroyTimer = null
-        console.log('🐰 Destroy connection from idle', this.serverDescriptor)
+        // console.log(`🐰 Destroy connection from idle ${}`, this.serverDescriptor)
         this.destroy()
       }, 3000)
     }
@@ -454,7 +454,7 @@ class Connection {
 
   public destroy() {
     // remove this log later...
-    console.log('Destroy connection', serverId(this.serverDescriptor))
+    // console.log('Destroy connection', serverId(this.serverDescriptor))
 
     if (this.isDestroyed) {
       console.warn('Allready destroyed connection', this.serverDescriptor)
