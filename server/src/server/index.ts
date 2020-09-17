@@ -150,10 +150,10 @@ export class SelvaServer extends EventEmitter {
       // timeout of 1 sec if the registry is allready gone
       const x = await Promise.race([removeFromRegistry(this.selvaClient), (async () => {
         await wait(1e3)
-        return new Error(`Cannot remove server from registry, ${this.type}, ${this.name}, ${this.port}`)
+        return new Error(`Cannot remove server from registry within 1s, registry might be removed itself, ${this.type}, ${this.name}, ${this.port}`)
       })()])
       if (x instanceof Error) {
-        console.error(chalk.red(x.message))
+        console.error(chalk.yellow(x.message))
       }
     } else {
       clearTimeout(this.registryTimer)
