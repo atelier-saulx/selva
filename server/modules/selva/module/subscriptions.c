@@ -578,7 +578,7 @@ void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hier
 }
 
 static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,
-                                    const Selva_NodeId node_id,
+                                   const Selva_NodeId node_id,
                                    const struct Selva_SubscriptionMarkers *sub_markers) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct subscriptionMarker **it;
@@ -587,7 +587,14 @@ static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,
         SVECTOR_FOREACH(it, &sub_markers->vec) {
             struct subscriptionMarker *marker = *it;
 
-            if (isHierarchyMarker(marker->marker_flags) && !inhibitMarkerEvent(node_id, marker)) {
+            /*
+             * We cannot call inhibitMarkerEvent() here because the client needs
+             * to refresh the subscription even if this node is not part of the
+             * marker filter.
+             * E.g. consider subscription marker for children of a node. In this
+             * case we need to apply the marker to any new children.
+             */
+            if (isHierarchyMarker(marker->marker_flags)) {
                 SVector_InsertFast(&def->subs, marker->sub);
             }
         }
@@ -679,8 +686,12 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
 
     if (!strncmp("none", arg_str, arg_len)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
-    }else if (!strncmp("node", arg_str, arg_len)) {
+    } else if (!strncmp("node", arg_str, arg_len)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
+    } else if (!strncmp("children", arg_str, arg_len)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_CHILDREN;
+    } else if (!strncmp("parents", arg_str, arg_len)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_PARENTS;
     } else if (!strncmp("ancestors", arg_str, arg_len)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS;
     } else if (!strncmp("descendants", arg_str, arg_len)) {
@@ -839,6 +850,13 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
          */
         marker_flags = SELVA_SUBSCRIPTION_FLAG_TRAVERSING | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
         sub_dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
+    } else if (sub_dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN || sub_dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS) {
+        /*
+         * RFE We might want to have an arg for REF flag
+         * but currently it seems to be enough to support
+         * it only for these specific traversal types.
+         */
+        marker_flags = SELVA_SUBSCRIPTION_FLAG_REF | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
     } else if (sub_dir != SELVA_HIERARCHY_TRAVERSAL_NONE) {
         marker_flags = SELVA_SUBSCRIPTION_FLAG_TRAVERSING | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
     }
