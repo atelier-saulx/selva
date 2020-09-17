@@ -53,7 +53,7 @@ export default function execBatch(
                 if (v.code === 'UNCERTAIN_STATE') {
                   // if publish ignore
                   // console.log(connection.queue, connection.queueBeingDrained, connection.queueInProgress)
-                  console.warn('Uncertain state error (connection lost) re-add to queue', queue[i].command, queue[i].args)
+                  console.warn('Uncertain state error (connection lost) re-add commabd to queue', queue[i].command)
                   // publish will be lost
                   connection.queue.push(queue[i])
                 } else {

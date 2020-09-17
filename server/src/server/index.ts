@@ -153,7 +153,7 @@ export class SelvaServer extends EventEmitter {
         return new Error(`Cannot remove server from registry within 1s, registry might be removed itself, ${this.type}, ${this.name}, ${this.port}`)
       })()])
       if (x instanceof Error) {
-        console.error(chalk.yellow(x.message))
+        console.warn(chalk.yellow(x.message))
       }
     } else {
       clearTimeout(this.registryTimer)
