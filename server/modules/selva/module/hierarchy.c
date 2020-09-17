@@ -1413,7 +1413,7 @@ int SelvaModify_TraverseHierarchy(
         .head_cb = NULL,
         .head_arg = NULL,
         .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
-        .node_arg = cb,
+        .node_arg = (void *)cb,
         .child_cb = NULL,
         .child_arg = NULL,
     };
