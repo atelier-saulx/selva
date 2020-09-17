@@ -5,8 +5,6 @@ import getServer from './getServer'
 export default (selvaClient: SelvaClient, connection: Connection) => {
   const serverDescriptor = connection.serverDescriptor
 
-  console.log('🥞 Go somethign is hard dc arrived at selva client!')
-
   const state = connection.getConnectionState(selvaClient.selvaId)
 
   // Eases timing between remove and re-trying to connect
