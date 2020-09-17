@@ -468,8 +468,8 @@ class Connection {
     this.subscriber.removeAllListeners()
     this.publisher.removeAllListeners()
 
-    this.subscriber.on('error', () => {})
-    this.publisher.on('error', () => {})
+    this.subscriber.on('error', () => { })
+    this.publisher.on('error', () => { })
 
     this.subscriber.quit()
     this.publisher.quit()

@@ -49,7 +49,17 @@ export default function execBatch(
                 hasBusy = true
                 busySlice.push(queue[i])
               } else if (queue[i].reject) {
-                queue[i].reject(v)
+                // @ts-ignore
+                if (v.code === 'UNCERTAIN_STATE') {
+                  // if publish ignore
+                  // console.log(connection.queue, connection.queueBeingDrained, connection.queueInProgress)
+                  console.warn('Uncertain state error (connection lost) re-add to queue', queue[i].command, queue[i].args)
+                  // publish will be lost
+                  connection.queue.push(queue[i])
+                } else {
+                  // most cases here we want to treat it as a busy error
+                  queue[i].reject(v)
+                }
               } else {
                 console.error('Error executing command', queue[i], v)
               }

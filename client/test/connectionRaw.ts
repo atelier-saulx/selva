@@ -212,7 +212,7 @@ test.serial('connection / server orchestration', async t => {
 
   const client2 = connect({ port })
 
-  client2.redis.on({ type: 'replica' }, 'message', () => {})
+  client2.redis.on({ type: 'replica' }, 'message', () => { })
   client2.redis.subscribe({ type: 'replica' }, 'snurf')
 
   await wait(50)
@@ -337,7 +337,7 @@ test.serial('connection / server orchestration', async t => {
   t.is(connections.size, 0, 'all connections removed')
 })
 
-test.serial('Get server raw - heavy load', async t => {
+test.only('Get server raw - heavy load', async t => {
   const port = await getPort()
   const registry = await startRegistry({ port })
   const origin = await startOrigin({ registry: { port }, default: true })
@@ -376,7 +376,7 @@ test.serial('Get server raw - heavy load', async t => {
       )
     )
   }
-  ;(await Promise.all(p)).map(([, w]) => w.terminate())
+  ; (await Promise.all(p)).map(([, w]) => w.terminate())
   const keys = await client.redis.keys({ type: 'origin' }, '*')
   const results = await Promise.all(
     keys
@@ -390,11 +390,12 @@ test.serial('Get server raw - heavy load', async t => {
     compare,
     `used workers to set all fields correctly (${total} sets)`
   )
-  // set 10mil mil counts
   await registry.destroy()
   await origin.destroy()
   await client.destroy()
-  await wait(6000)
+
+  // when an uncertain state error happens it will take longer to clean
+  await wait(20000)
 
   t.is(connections.size, 0, 'all connections removed')
 })
@@ -455,7 +456,7 @@ test.serial('connection failure', async t => {
 
   const origin = await startOrigin({ registry: connectOpts, default: true })
 
-  origin.on('error', () => {})
+  origin.on('error', () => { })
 
   let timeoutCnt = 0
 

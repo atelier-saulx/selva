@@ -163,8 +163,6 @@ export const registryManager = (server: SelvaServer) => {
               // this is the metric we are going to use to
               // ramp up
               // scale
-              // also emit an event on the server 'server-timedout'
-
               await redis.publish(
                 { type: 'registry' },
                 REGISTRY_UPDATE,

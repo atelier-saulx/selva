@@ -9,7 +9,8 @@ import { EventEmitter } from 'events'
 import startRedis from './startRedis'
 import ProcessManager from './processManager'
 import attachStatusListeners from './attachStatusListeners'
-
+import { wait } from '../util'
+import chalk from 'chalk'
 import { removeFromRegistry } from './updateRegistry'
 import beforeExit from 'before-exit'
 import {
@@ -146,7 +147,14 @@ export class SelvaServer extends EventEmitter {
     this.isDestroyed = true
     clearTimeout(this.serverHeartbeatTimeout)
     if (this.type !== 'registry') {
-      await removeFromRegistry(this.selvaClient)
+      // timeout of 1 sec if the registry is allready gone
+      const x = await Promise.race([removeFromRegistry(this.selvaClient), (async () => {
+        await wait(1e3)
+        return new Error(`Cannot remove server from registry, ${this.type}, ${this.name}, ${this.port}`)
+      })()])
+      if (x instanceof Error) {
+        console.error(chalk.red(x.message))
+      }
     } else {
       clearTimeout(this.registryTimer)
     }
