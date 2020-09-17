@@ -2,6 +2,8 @@
 #ifndef _SELVA_
 #define _SELVA_
 
+#include <stdint.h>
+
 #define SELVA_NODE_ID_SIZE      10ul
 #define SELVA_NODE_TYPE_SIZE    2
 #define ROOT_NODE_ID            "root\0\0\0\0\0\0"
@@ -19,5 +21,9 @@ typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
  * SHA256 in binary.
  */
 typedef unsigned char Selva_SubscriptionId[SELVA_SUBSCRIPTION_ID_SIZE];
+
+typedef int32_t Selva_SubscriptionMarkerId;
+
+size_t Selva_NodeIdLen(Selva_NodeId nodeId);
 
 #endif /* _SELVA_ */

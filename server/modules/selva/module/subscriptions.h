@@ -57,6 +57,7 @@
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 struct hierarchy_subscriptions_tree;
+struct Selva_SubscriptionMarker;
 
 /**
  * A data structure for subscription markers.
@@ -92,6 +93,9 @@ void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy);
 int SelvaSubscriptions_Refresh(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
 void SelvaSubscriptions_RefreshByMarker(struct SelvaModify_Hierarchy *hierarchy, struct SVector *markers);
 void SelvaSubscriptions_Delete(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+void Selva_Subscriptions_SetMarker(
+        struct SelvaModify_HierarchyMetadata *metadata,
+        struct Selva_SubscriptionMarker *marker);
 void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_NodeId node_id,

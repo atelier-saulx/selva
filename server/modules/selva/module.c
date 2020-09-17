@@ -5,6 +5,7 @@
 #include "rmutil/util.h"
 #include "rmutil/strings.h"
 #include "rmutil/test_util.h"
+#include "selva.h"
 #include "selva_onload.h"
 #include "svector.h"
 #include "module/errors.h"
@@ -20,6 +21,20 @@
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
 
 SET_DECLARE(selva_onload, Selva_Onload);
+
+/*
+ * Technically a nodeId is always 10 bytes but sometimes a printable
+ * representation without padding zeroes is needed.
+ */
+size_t Selva_NodeIdLen(Selva_NodeId nodeId) {
+    size_t len = SELVA_NODE_ID_SIZE;
+
+    while (len >= 1 && nodeId[len - 1] == '\0') {
+        len--;
+    }
+
+    return len;
+}
 
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     REDISMODULE_NOT_USED(argv);

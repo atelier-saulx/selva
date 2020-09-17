@@ -4,6 +4,16 @@ uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 INCLUDE_DIR := ./include ./util
 RMUTIL_LIBDIR := rmutil
 UTIL_LIBDIR := util
+OBJS := \
+	module.o \
+	module/alias.o \
+	module/async_task.o \
+	module/errors.o \
+	module/find.o \
+	module/hierarchy.o \
+	module/modify.o \
+	module/rpn.o \
+	module/subscriptions.o
 
 IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
 
@@ -33,7 +43,7 @@ rmutil: FORCE
 util: FORCE
 	$(MAKE) -C util
 
-module.so: module.o module/alias.o module/errors.o module/modify.o module/async_task.o module/hierarchy.o module/subscriptions.o module/rpn.o
+module.so: $(OBJS)
 	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1g/lib/ $(SHOBJ_LDLIBS)
 
 check:

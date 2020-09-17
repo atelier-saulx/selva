@@ -255,6 +255,6 @@ int SelvaModify_TraverseHierarchy(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaModify_HierarchyTraversal dir,
-        struct SelvaModify_HierarchyCallback *cb);
+        const struct SelvaModify_HierarchyCallback *cb);
 
 #endif /* SELVA_MODIFY_HIERARCHY */
