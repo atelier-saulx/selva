@@ -7,6 +7,7 @@ import addServer from './addServer'
 import removeServer from './removeServer'
 import { serverId } from '../util'
 import moveReplicas from './moveReplicas'
+import moveSubscriptionManager from './moveSubscriptionManager'
 
 /*
  registry-update
@@ -165,13 +166,16 @@ const connectRegistry = (
                 selvaClient.emit('removed-servers', payload)
               }
             } else if (event === 'move-sub') {
-              // console.log('MOVE SUBSCRIPTION')
+              // from server to server
+              console.log('MOVE SUBSCRIPTION')
             } else if ('update-index') {
               // now we are going to move them!
               // can be either a subs manager update of index or replica
               const { type, move } = payload
               if (type === 'replica') {
                 moveReplicas(selvaClient, move)
+              } else if (type === 'subscriptionManager') {
+                moveSubscriptionManager(selvaClient, move)
               }
             }
           }

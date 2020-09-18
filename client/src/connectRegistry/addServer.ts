@@ -11,7 +11,6 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       if (!selvaClient.servers.replicas[server.name]) {
         selvaClient.servers.replicas[server.name] = []
       }
-
       // double check if this is correct
       selvaClient.servers.replicas[server.name].splice(
         server.index === -1 ? 0 : server.index || 0,
@@ -19,7 +18,11 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
         server
       )
     } else if (type === 'subscriptionManager') {
-      selvaClient.servers.subsManagers.push(server)
+      selvaClient.servers.subsManagers.splice(
+        server.index === -1 ? 0 : server.index || 0,
+        0,
+        server
+      )
     } else if (type === 'subscriptionRegistry') {
       selvaClient.servers.subRegisters[id] = server
     }

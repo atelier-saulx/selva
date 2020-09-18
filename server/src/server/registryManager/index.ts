@@ -1,5 +1,5 @@
 import { SelvaServer } from '../'
-import { constants, ServerDescriptor } from '@saulx/selva'
+import { constants, ServerDescriptor, SelvaClient } from '@saulx/selva'
 import chalk, { keyword } from 'chalk'
 
 const { REGISTRY_UPDATE } = constants
@@ -29,6 +29,51 @@ const insert = (array: ServerIndex[], target: ServerIndex): void => {
     }
   }
   array.splice(l, 0, target)
+}
+
+const orderServers = (type: string, servers: ServerIndex[], client: SelvaClient, includeName: boolean) => {
+  const redis = client.redis
+  let move
+  let q
+  for (let i = 0; i < servers.length; i++) {
+    const server = servers[i]
+    if (i !== server.index) {
+      if (
+        !servers[server.index] ||
+        server.weight !== servers[server.index].weight
+      ) {
+        if (!q) {
+          q = []
+          move = {}
+        }
+        q.push(redis.hset({ type: 'registry' }, server.id, 'index', i))
+        move[server.id] = [i]
+        if (includeName && server.name !== 'default') {
+          move[server.id].push(server.name)
+        }
+      }
+    }
+  }
+
+  if (move) {
+    console.log('MOVE', servers)
+    q.push(
+      redis.publish(
+        {
+          type: 'registry'
+        },
+        REGISTRY_UPDATE,
+        JSON.stringify({
+          event: 'update-index',
+          type,
+          move
+        })
+      )
+    )
+  }
+
+  return q
+
 }
 
 // on remove need to get rid of subs stuff
@@ -114,7 +159,6 @@ export const registryManager = (server: SelvaServer) => {
                   `⚠️  ${type}, ${name}, ${id} Does not have stats (from registry server)`
                 )
               )
-
               await redis.hset(
                 { type: 'registry' },
                 id,
@@ -123,7 +167,6 @@ export const registryManager = (server: SelvaServer) => {
                   timestamp: Date.now()
                 })
               )
-
               return
             }
 
@@ -136,25 +179,20 @@ export const registryManager = (server: SelvaServer) => {
                 redis.srem({ type: 'registry' }, 'servers', id),
                 redis.del({ type: 'registry' }, id)
               ])
-
               console.warn(
                 chalk.red(
                   `Server timed out last heartbeat ${Date.now() -
                     ts}ms ago ${id}, ${type}, ${name}`
                 )
               )
-
               // also store this - somewhere can be just in mem
               if (!serverTimeouts[id]) {
                 serverTimeouts[id] = []
               }
-
               serverTimeouts[id].unshift(now)
-
               if (serverTimeouts[id].length > 50) {
                 serverTimeouts[id].pop()
               }
-
               for (let i = 0; i < serverTimeouts[id].length; i++) {
                 const timeout = serverTimeouts[id][i]
                 // keep max for 1 hour
@@ -164,7 +202,6 @@ export const registryManager = (server: SelvaServer) => {
                   break
                 }
               }
-
               server.emit('server-timeout', {
                 id,
                 serverTimeouts: serverTimeouts[id],
@@ -174,7 +211,6 @@ export const registryManager = (server: SelvaServer) => {
                 type,
                 index
               })
-
               // ok you want to store last timeoud event maybe an array (max 10)
               // this is the metric we are going to use to
               // ramp up
@@ -219,14 +255,15 @@ export const registryManager = (server: SelvaServer) => {
                 name,
                 index: index === null ? -1 : Number(index) // original index
               }
-
               insert(replicas, target)
             } else if (type === 'subscriptionManager') {
-
-
-              console.log('  subs manager', id,  subs)
-
-
+              const target: ServerIndex = {
+                weight: Number(subs),
+                id,
+                name,
+                index: index === null ? -1 : Number(index) // original index
+              }
+              insert(subsManagers, target)
             }
             // else subs manager (also just order them)
           }
@@ -236,48 +273,11 @@ export const registryManager = (server: SelvaServer) => {
       })
     )
 
-    let move
-    let q
-    for (let i = 0; i < replicas.length; i++) {
-      const replica = replicas[i]
-      if (i !== replica.index) {
-        if (
-          !replicas[replica.index] ||
-          replica.weight !== replicas[replica.index].weight
-        ) {
-          if (!q) {
-            q = []
-            move = {}
-          }
-          q.push(redis.hset({ type: 'registry' }, replica.id, 'index', i))
-          move[replica.id] = [i]
-          if (replica.name !== 'default') {
-            move[replica.id].push(replica.name)
-          }
-        }
-      }
+    const rQ = orderServers('replica', replicas, server.selvaClient, true)
+    const sQ = orderServers('subscriptionManager', subsManagers, server.selvaClient, false)
+    if (rQ || sQ) {
+      await Promise.all(rQ && sQ ? [...rQ, ...sQ] : rQ || sQ)
     }
-
-    if (move) {
-      q.push(
-        redis.publish(
-          {
-            type: 'registry'
-          },
-          REGISTRY_UPDATE,
-          JSON.stringify({
-            event: 'update-index',
-            type: 'replica',
-            move
-          })
-        )
-      )
-    }
-
-    if (q) {
-      await Promise.all(q)
-    }
-
     server.registryTimer = setTimeout(updateFromStats, 1e3)
   }
   updateFromStats()
