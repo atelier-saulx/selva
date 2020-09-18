@@ -992,6 +992,7 @@ int Selva_AddSubscriptionMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleStr
     }
 
     marker->fields = fields;
+    marker->marker_flags |= SELVA_SUBSCRIPTION_FLAG_CH_FIELD; /* This is not set yet if old was NULL. */
 
     RedisModule_ReplyWithLongLong(ctx, 1);
     return REDISMODULE_OK;
