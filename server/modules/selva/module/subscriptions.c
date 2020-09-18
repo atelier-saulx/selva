@@ -51,7 +51,7 @@ static int subscription_rb_compare(const struct Selva_Subscription *a, const str
  * The given marker flags matches to a hierarchy marker of any kind.
  */
 static int isHierarchyMarker(unsigned flags) {
-    return !!(flags & (SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_TRAVERSING));
+    return !!(flags & SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
 }
 
 /**
@@ -463,7 +463,8 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
         struct Selva_SubscriptionMarker *marker = *it;
         int err;
 
-        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
+        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE ||
+            (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_DETACH)) {
             /*
              * This is a non-traversing marker but it needs to exist in the
              * detached markers.
@@ -770,6 +771,9 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      */
     Selva_SubscriptionMarkerId marker_id;
     err = parse_marker_id(&marker_id, argv[ARGV_MARKER_ID]);
+    if (err) {
+        return replyWithSelvaError(ctx, err);
+    }
 
     /*
      * Parse the traversal argument.
@@ -787,7 +791,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     size_t len;
     const char *str = RedisModule_StringPtrLen(argv[ARGV_NODE_ID], &len);
     memset(node_id, 0, SELVA_NODE_ID_SIZE);
-    memcpy(node_id, str, (SELVA_NODE_ID_SIZE > len) ? len : SELVA_NODE_ID_SIZE);
+    memcpy(node_id, str, min(SELVA_NODE_ID_SIZE, len));
 
     /*
      * Get field names for change events.
@@ -867,10 +871,8 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         /*
          * A root node marker is a special case which is stored as detached to
          * save time and space.
-         * TODO Maybe sometimes we want a NODE marker on root and no hierarchy flag?
          */
-        marker_flags = SELVA_SUBSCRIPTION_FLAG_TRAVERSING | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
-        sub_dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
+        marker_flags = SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_DETACH;
     } else if (sub_dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN || sub_dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS) {
         /*
          * RFE We might want to have an arg for REF flag
@@ -879,7 +881,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
          */
         marker_flags = SELVA_SUBSCRIPTION_FLAG_REF | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
     } else if (sub_dir != SELVA_HIERARCHY_TRAVERSAL_NONE) {
-        marker_flags = SELVA_SUBSCRIPTION_FLAG_TRAVERSING | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
+        marker_flags = SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
     }
 
     if (fields) {
@@ -1043,11 +1045,13 @@ int Selva_SubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         struct Selva_SubscriptionMarker *marker = *it;
 
         str = RedisModule_CreateStringPrintf(ctx,
+                "marker_id: %d\n"
                 "flags: %u\n"
                 "node_id: \"%.*s\"\n"
                 "dir: %s\n"
                 "expression: %s\n"
                 "fields: \"%s\"",
+                (int)marker->marker_id,
                 marker->marker_flags,
                 (int)SELVA_NODE_ID_SIZE, marker->node_id,
                 SelvaModify_HierarchyDir2str(marker->dir),

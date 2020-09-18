@@ -15,18 +15,11 @@
  *  database. These flags are essentially type information.
  *
  *  Flags from 0x0100 to 0x8000 are reserved for modifier flags modifying the
- *  match result. These flags may for example make an early short-circuit to
- *  skip the matching logic even when the matcher flags would cause a check.
- *  These flags are never included in the flags_filters.
+ *  match result or the behavior of the marker. These flags may for example
+ *  make an early short-circuit to skip the matching logic even when the
+ *  matcher flags would cause a check. These flags are never included in the
+ *  flags_filters.
  */
-
-/**
- * Traversing marker.
- * This marker is traversing to some direction specified by
- * dir. This flag is mainly useful for fast filtering of relevant
- * markers and subscriptions.
- */
-#define SELVA_SUBSCRIPTION_FLAG_TRAVERSING      0x0001
 
 /**
  * Hierarchy changed.
@@ -47,6 +40,13 @@
  * node_id != marker->node_id.
  */
 #define SELVA_SUBSCRIPTION_FLAG_REF             0x0100
+
+/**
+ * Detached marker.
+ * The marker should not be applied to nodes directly regardless
+ * whether tarversal direction is set.
+ */
+#define SELVA_SUBSCRIPTION_FLAG_DETACH          0x0200
 
 #define SELVA_SUBSCRIPTION_MATCHER_FLAGS_MASK   0x00ff
 #define SELVA_SUBSCRIPTION_MODIFIER_FLAGS       0xff00

@@ -280,10 +280,15 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
 
 static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
+    struct Selva_SubscriptionMarker *marker = args->marker;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
 
-    Selva_Subscriptions_SetMarker(metadata, args->marker);
+    /* TODO Ideally we'd do this check only once somewhere. */
+    if (marker->dir != SELVA_HIERARCHY_TRAVERSAL_NONE &&
+        !(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_DETACH)) {
+        Selva_Subscriptions_SetMarker(metadata, marker);
+    }
 
     if (take && rpn_ctx) {
         int err;
@@ -306,7 +311,7 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
              * doesn't actually support sending an error in the middle
              * of an array response.
              */
-            return 0;
+            take = 0;
         }
     }
 
@@ -315,9 +320,10 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
 
         if (!sort) {
             ssize_t * restrict limit = args->limit;
-            ssize_t *nr_nodes = args->nr_nodes;
 
-            if (*limit > 0) {
+            if (*limit != 0) {
+                ssize_t *nr_nodes = args->nr_nodes;
+
                 RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
                 *nr_nodes = *nr_nodes + 1;
                 *limit = *limit - 1;
@@ -889,6 +895,7 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
         .filter = marker->filter_expression,
         .order_field = order_by_field,
         .order_result = &order_result,
+        .marker = marker,
     };
     const struct SelvaModify_HierarchyCallback cb = {
         .node_cb = FindInSubCommand_NodeCb,
@@ -898,11 +905,13 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
     /* TODO We expect here that all markers have a valid nodeId. */
     err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
     if (err != 0) {
+        char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
         /* FIXME This will make redis crash */
 #if 0
         return replyWithSelvaError(ctx, err);
 #endif
-        fprintf(stderr, "%s: Find failed for node: \"%.*s\"", __FILE__, (int)SELVA_NODE_ID_SIZE, marker->node_id);
+        fprintf(stderr, "%s: FindInSub failed. sub_id: \"%s\" marker_id: %d err: \"%s\"",
+                __FILE__, Selva_SubscriptionId2str(str, sub_id), (int)marker_id, selvaStrError[-err]);
     }
 
     /*
