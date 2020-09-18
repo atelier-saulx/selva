@@ -7,10 +7,13 @@ import fs from 'fs'
 import { Worker } from 'worker_threads'
 import rimraf from 'rimraf'
 import beforeExit from 'before-exit'
+import { connections } from '@saulx/selva'
+import chalk from 'chalk'
 
 declare module 'ava' {
   export interface Assertions {
     deepEqualIgnoreOrder(a: any, b: any, message?: string): boolean
+    connectionsAreEmpty(): Promise<void>
   }
 }
 
@@ -47,6 +50,27 @@ const deepSort = (a: any, b: any): void => {
     }
   }
 }
+
+Object.assign(Assertions.prototype, {
+  async connectionsAreEmpty() {
+    if (connections.size === 0) {
+      console.log(chalk.grey('    Connections are empty'))
+      this.pass('Connections are empty')
+      return
+    } else {
+      for (let i = 0; i < 60; i++) {
+        await wait(1e3)
+        if (connections.size === 0) {
+          console.log(chalk.grey('    Connections are empty after ' + (i + 1) + 's'))
+          this.pass('Connection are empty after ' + (i + 1) + 's')
+          return
+        }
+      }
+    }
+    this.fail("Connection are not empty after 1 min" + connections.size)
+  }
+})
+
 
 Object.assign(Assertions.prototype, {
   deepEqualIgnoreOrder(actual, expected, message = '') {
@@ -139,7 +163,7 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
       try {
         console.log('Before exit hook close worker')
         worker.terminate()
-      } catch (_err) {}
+      } catch (_err) { }
     })
 
     worker.on('message', msg => {

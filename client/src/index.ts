@@ -53,7 +53,7 @@ export class SelvaClient extends EventEmitter {
 
   public uuid: string
 
-  public observables: Map<string, Observable> 
+  public observables: Map<string, Observable>
 
   // add these on the registry scince that is the thing that gets reused
   // public schemaObservables: Record<string, Observable<Schema>> = {}

@@ -331,9 +331,7 @@ test.serial('connection / server orchestration', async t => {
   await client.destroy()
 
   // can happen that registyr is closed before the other servers and it needs to wait for a hdc
-  await wait(20000)
-
-  t.is(connections.size, 0, 'all connections removed')
+  await t.connectionsAreEmpty()
 })
 
 test.serial('Get server raw - heavy load', async t => {
@@ -394,9 +392,8 @@ test.serial('Get server raw - heavy load', async t => {
   await client.destroy()
 
   // when an uncertain state error happens it will take longer to clean
-  await wait(20000)
 
-  t.is(connections.size, 0, 'all connections removed')
+  await t.connectionsAreEmpty()
 })
 
 test.serial('registry reconnect', async t => {
@@ -441,9 +438,8 @@ test.serial('registry reconnect', async t => {
   await origin.destroy()
   await client.destroy()
 
-  await wait(6000)
 
-  t.is(connections.size, 0, 'all connections removed')
+  await t.connectionsAreEmpty()
 })
 
 test.serial('connection failure', async t => {
@@ -486,10 +482,9 @@ test.serial('connection failure', async t => {
   await origin.destroy()
   await client.destroy()
 
-  await wait(25000)
 
   // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
-  t.is(connections.size, 0, 'all connections removed')
+  await t.connectionsAreEmpty()
 })
 
 test.serial(
@@ -520,9 +515,8 @@ test.serial(
     await registry.destroy()
     await origin.destroy()
     await client.destroy()
-    await wait(6000)
     // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
-    t.is(connections.size, 0, 'all connections removed')
+    await t.connectionsAreEmpty()
   }
 )
 
@@ -582,6 +576,5 @@ test.serial('Change origin and re-conn replica', async t => {
   await registry.destroy()
   await origin.destroy()
   await client.destroy()
-  await wait(20000)
-  t.is(connections.size, 0, 'all connections removed')
+  await t.connectionsAreEmpty()
 })

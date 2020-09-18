@@ -19,6 +19,7 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
         server
       )
     } else if (type === 'subscriptionManager') {
+      selvaClient.servers.subsManagers.push(server)
     }
     return true
   } else {

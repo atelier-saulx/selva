@@ -68,7 +68,6 @@ export class Observable {
       }
 
       this.getOptions = options.options
-      this.start()
     } else {
       console.log('different type of observable', options)
     }
@@ -149,6 +148,8 @@ export class Observable {
 
   public completeListeners: ((x?: any) => void)[]
 
+  public isStarted: boolean = false
+
   public subsCounter: number = 0
 
   public emitUpdate(value: any, checksum?: string, diff?: any) {
@@ -197,6 +198,12 @@ export class Observable {
       }
       this.completeListeners.push(onComplete)
     }
+
+    if (!this.isStarted) {
+      this.start()
+    } else {
+      this.geValueSingleListener(onNext, onError)
+    }
   }
 
   public unsubscribe() {
@@ -214,7 +221,10 @@ export class Observable {
     onNext: UpdateCallback,
     onError?: (err: Error) => void,
   ) {
+    console.log('go')
     if (this.connection) {
+
+      console.log('make time do')
       const channel = this.uuid
       this.connection.command({
         command: 'hmget',
@@ -278,6 +288,10 @@ export class Observable {
     if (this.connection) {
       console.log('STARTING BUT ALLREADY HAVE A CONNECTION WRONG!!!')
     }
+    this.isStarted = true
+
+    console.log('go start')
+
     const channel = this.uuid
     const getOptions = this.getOptions
     const server = await this.selvaClient.getServer({
@@ -315,6 +329,9 @@ export class Observable {
     }))
     connection.subscribe(channel, id)
     this.startSubscriptionHeartbeat()
+
+    console.log('get dat value')
+
     this.getValue()
   }
 
@@ -377,7 +394,7 @@ export const createObservable = (
   selvaClient: SelvaClient
 ) => {
   const uuid = generateSubscriptionId(options)
-  let observable = selvaClient.observables.get(uuid)
+  let observable = selvaClient.observables && selvaClient.observables.get(uuid)
   if (!observable) {
     observable = new Observable(options, selvaClient, uuid)
   }

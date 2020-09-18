@@ -25,7 +25,9 @@ const getServer = (
         type = 'replica'
       }
 
-      if (type === 'registry') {
+      if (type === 'subscriptionManager') {
+        server = selvaClient.servers.subsManagers[0]
+      } else if (type === 'registry') {
         server = selvaClient.registryConnection.serverDescriptor
       } else if (type === 'origin') {
         if (!name) {

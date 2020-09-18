@@ -23,6 +23,14 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
         }
       }
     } else if (type === 'subscriptionManager') {
+      const subsManagers = selvaClient.servers.subsManagers
+      for (let i = 0; i < subsManagers.length; i++) {
+        const subscriptionManager = subsManagers[i]
+        if (subscriptionManager.host === server.host && subscriptionManager.port === server.port) {
+          subsManagers.splice(i, 1)
+          break
+        }
+      }
     }
     return true
   } else {
