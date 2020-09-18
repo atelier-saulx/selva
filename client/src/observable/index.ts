@@ -156,7 +156,6 @@ export class Observable {
   }
 }
 
-// maybe have to remove the re-use... :/
 export const createObservable = (
   options: ObservableOptions,
   selvaClient: SelvaClient
