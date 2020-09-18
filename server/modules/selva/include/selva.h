@@ -24,6 +24,22 @@ typedef unsigned char Selva_SubscriptionId[SELVA_SUBSCRIPTION_ID_SIZE];
 
 typedef int32_t Selva_SubscriptionMarkerId;
 
+/**
+ * Hierarchy traversal order.
+ * Recognized by SelvaModify_TraverseHierarchy().
+ */
+enum SelvaModify_HierarchyTraversal {
+    SELVA_HIERARCHY_TRAVERSAL_NONE,
+    SELVA_HIERARCHY_TRAVERSAL_NODE,
+    SELVA_HIERARCHY_TRAVERSAL_CHILDREN,
+    SELVA_HIERARCHY_TRAVERSAL_PARENTS,
+    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS,
+    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS,
+    SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS,
+    SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS,
+    SELVA_HIERARCHY_TRAVERSAL_DFS_FULL,
+};
+
 size_t Selva_NodeIdLen(Selva_NodeId nodeId);
 
 #endif /* _SELVA_ */

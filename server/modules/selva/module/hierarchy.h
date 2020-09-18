@@ -94,22 +94,6 @@ struct SelvaModify_Hierarchy {
 };
 
 /**
- * Hierarchy traversal order.
- * Used by SelvaModify_TraverseHierarchy().
- */
-enum SelvaModify_HierarchyTraversal {
-    SELVA_HIERARCHY_TRAVERSAL_NONE,
-    SELVA_HIERARCHY_TRAVERSAL_NODE,
-    SELVA_HIERARCHY_TRAVERSAL_CHILDREN,
-    SELVA_HIERARCHY_TRAVERSAL_PARENTS,
-    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS,
-    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS,
-    SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS,
-    SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS,
-    SELVA_HIERARCHY_TRAVERSAL_DFS_FULL,
-};
-
-/**
  * Called for each node found during a traversal.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */

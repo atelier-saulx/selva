@@ -134,6 +134,30 @@ static int parse_dir(enum SelvaModify_HierarchyTraversal *dir, enum SelvaModify_
     return 0;
 }
 
+/* TODO This is ugly copy & pase */
+static int parse_subscription_id(Selva_SubscriptionId id, RedisModuleString *arg) {
+    TO_STR(arg);
+
+    if (arg_len != SELVA_SUBSCRIPTION_ID_STR_LEN) {
+        return SELVA_SUBSCRIPTIONS_EINVAL;
+    }
+
+    return Selva_SubscriptionStr2id(id, arg_str);
+}
+
+/* TODO This is ugly copy & pase */
+static int parse_marker_id(Selva_SubscriptionMarkerId *marker_id, RedisModuleString *arg) {
+    long long ll;
+
+    if (RedisModule_StringToLongLong(arg, &ll) != REDISMODULE_OK) {
+        return SELVA_SUBSCRIPTIONS_EINVAL;
+    }
+
+    *marker_id = (Selva_SubscriptionMarkerId)ll;
+    return 0;
+}
+
+
 static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** restrict b_raw) {
     const struct FindCommand_OrderedItem *a = *(const struct FindCommand_OrderedItem **)a_raw;
     const struct FindCommand_OrderedItem *b = *(const struct FindCommand_OrderedItem **)b_raw;
@@ -198,8 +222,6 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
-    ssize_t *nr_nodes = args->nr_nodes;
-    const int sort = !!args->order_field;
     int take = (args->offset > 0) ? !args->offset-- : 1;
 
     if (take && rpn_ctx) {
@@ -228,7 +250,10 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
     }
 
     if (take) {
+        const int sort = !!args->order_field;
+
         if (!sort) {
+            ssize_t *nr_nodes = args->nr_nodes;
             ssize_t * restrict limit = args->limit;
 
             RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
@@ -253,16 +278,61 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
     return 0;
 }
 
-static int FindInSubCommand_NodeCb(Selva_NodeId node_id, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
+    struct rpn_ctx *rpn_ctx = args->rpn_ctx;
+    int take = (args->offset > 0) ? !args->offset-- : 1;
 
     Selva_Subscriptions_SetMarker(metadata, args->marker);
 
-    /*
-     * The return value is ignored here because we need to apply the marker to
-     * all nodes we can find.
-     */
-    (void)FindCommand_NodeCb(node_id, arg, metadata);
+    if (take && rpn_ctx) {
+        int err;
+
+        /* Set node_id to the register */
+        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, 0);
+
+        /*
+         * Resolve the expression and get the result.
+         */
+        err = rpn_bool(rpn_ctx, args->filter, &take);
+        if (err) {
+            fprintf(stderr, "%s: Expression failed (node: \"%.*s\"): \"%s\"\n",
+                    __FILE__,
+                    (int)SELVA_NODE_ID_SIZE, nodeId,
+                    rpn_str_error[err]);
+            /*
+             * TODO Propagate error?
+             * It would be a good idea to propagate the error but Redis
+             * doesn't actually support sending an error in the middle
+             * of an array response.
+             */
+            return 0;
+        }
+    }
+
+    if (take) {
+        const int sort = !!args->order_field;
+
+        if (!sort) {
+            ssize_t * restrict limit = args->limit;
+            ssize_t *nr_nodes = args->nr_nodes;
+
+            if (*limit > 0) {
+                RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
+                *nr_nodes = *nr_nodes + 1;
+                *limit = *limit - 1;
+            }
+        } else {
+            struct FindCommand_OrderedItem *item;
+
+            item = createFindCommand_OrderItem(args->ctx, nodeId, args->order_field);
+            if (item) {
+                SVector_InsertFast(args->order_result, item);
+            } else {
+                fprintf(stderr, "%s: Out of memory while creating an ordered result item\n", __FILE__);
+            }
+        }
+    }
 
     return 0;
 }
@@ -690,12 +760,171 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
 #undef SHIFT_ARGS
 }
 
+/**
+ * Find node in set.
+ * SELVA.HIERARCHY.findInSub REDIS_KEY SUB_ID MARKER_ID [order field asc|desc] [offset 1234] [limit 1234]
+ */
+int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    int err;
+
+    const size_t ARGV_REDIS_KEY = 1;
+    const size_t ARGV_SUB_ID    = 2;
+    const size_t ARGV_MARKER_ID = 3;
+    const size_t ARGV_ORDER_TXT = 4;
+    const size_t ARGV_ORDER_FLD = 5;
+    const size_t ARGV_ORDER_ORD = 6;
+    size_t ARGV_OFFSET_TXT      = 4;
+    size_t ARGV_OFFSET_NUM      = 5;
+    size_t ARGV_LIMIT_TXT       = 4;
+    size_t ARGV_LIMIT_NUM       = 5;
+#define SHIFT_ARGS(i) \
+    ARGV_OFFSET_TXT += i; \
+    ARGV_OFFSET_NUM += i; \
+    ARGV_LIMIT_TXT += i; \
+    ARGV_LIMIT_NUM += i;
+
+    if (argc < 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    /*
+     * Get the subscription id.
+     */
+    Selva_SubscriptionId sub_id;
+    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    if (err) {
+        return replyWithSelvaError(ctx, err);
+    }
+
+    /*
+     * Get the marker id.
+     */
+    Selva_SubscriptionMarkerId marker_id;
+    err = parse_marker_id(&marker_id, argv[ARGV_MARKER_ID]);
+
+
+    /*
+     * Find the subscription marker.
+     */
+    struct Selva_SubscriptionMarker *marker;
+    marker = SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id);
+    if (!marker) {
+        return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_EINVAL);
+    }
+
+    /*
+     * Parse the order arg.
+     */
+    enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
+    const char *order_by_field = NULL;
+    if (argc > (int)ARGV_ORDER_ORD) {
+        err = parse_order(&order_by_field, &order,
+                          argv[ARGV_ORDER_TXT],
+                          argv[ARGV_ORDER_FLD],
+                          argv[ARGV_ORDER_ORD]);
+        if (err == 0) {
+            SHIFT_ARGS(3);
+        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+            return replyWithSelvaError(ctx, err);
+        }
+    }
+
+    /*
+     * Parse the offset arg.
+     */
+    ssize_t offset = 0;
+    if (argc > (int)ARGV_OFFSET_NUM) {
+        err = parse_opt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+            return replyWithSelvaError(ctx, err);
+        }
+    }
+
+    /*
+     * Parse the limit arg. -1 = inf
+     */
+    ssize_t limit = -1;
+    if (argc > (int)ARGV_LIMIT_NUM) {
+        err = parse_opt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+            return replyWithSelvaError(ctx, err);
+        }
+    }
+
+    svector_autofree SVector order_result = { 0 };
+    /* TODO Error handling */
+    if (order == HIERARCHY_RESULT_ORDER_ASC) {
+        SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc);
+    } else if (order == HIERARCHY_RESULT_ORDER_DESC) {
+        SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc);
+    }
+
+    ssize_t array_len = 0;
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+
+    /*
+     * Run the traverse function.
+     */
+    ssize_t tmp_limit = -1;
+    struct FindCommand_Args args = {
+        .ctx = ctx,
+        .nr_nodes = &array_len,
+        /* Find needs to always skip the head node of the traverse. */
+        .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + 1 : 1,
+        .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
+        .rpn_ctx = marker->filter_ctx,
+        .filter = marker->filter_expression,
+        .order_field = order_by_field,
+        .order_result = &order_result,
+    };
+    const struct SelvaModify_HierarchyCallback cb = {
+        .node_cb = FindInSubCommand_NodeCb,
+        .node_arg = &args,
+    };
+
+    /* TODO We expect here that all markers have a valid nodeId. */
+    err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+    if (err != 0) {
+        /* FIXME This will make redis crash */
+#if 0
+        return replyWithSelvaError(ctx, err);
+#endif
+        fprintf(stderr, "%s: Find failed for node: \"%.*s\"", __FILE__, (int)SELVA_NODE_ID_SIZE, marker->node_id);
+    }
+
+    /*
+     * If an ordered request was requested then nothing was send to the client yet
+     * and we need to do it now.
+     */
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        array_len = FindCommand_PrintOrderedResult(ctx, offset, limit, &order_result);
+    }
+
+    RedisModule_ReplySetArrayLength(ctx, array_len);
+
+    return REDISMODULE_OK;
+}
+
 static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
      */
     if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaModify_Hierarchy_FindInCommand,   "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaModify_Hierarchy_FindInCommand,   "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.findInSub", SelvaModify_Hierarchy_FindInSubCommand,   "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

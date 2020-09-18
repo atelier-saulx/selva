@@ -21,20 +21,6 @@
 #include "subscriptions.h"
 #include "svector.h"
 
-/**
- * Subscription marker.
- */
-struct Selva_SubscriptionMarker {
-    Selva_SubscriptionMarkerId marker_id;
-    unsigned marker_flags;
-    Selva_NodeId node_id;
-    enum SelvaModify_HierarchyTraversal dir;
-    struct rpn_ctx *filter_ctx;
-    rpn_token *filter_expression;
-    char *fields; /* \n separated and \0 terminated. */
-    struct Selva_Subscription *sub; /* Pointer back to the subscription. */
-};
-
 struct Selva_Subscription {
     Selva_SubscriptionId sub_id;
     RB_ENTRY(Selva_Subscription) _sub_index_entry;
@@ -96,7 +82,7 @@ char *Selva_SubscriptionId2str(char dest[static SELVA_SUBSCRIPTION_ID_STR_LEN + 
     for (size_t i = 0; i < sizeof(Selva_SubscriptionId); i++) {
         sprintf(dest + 2 * i, "%02x", sub_id[i]);
     }
-    dest[SELVA_SUBSCRIPTION_ID_STR_LEN - 1] = '\0';
+    dest[SELVA_SUBSCRIPTION_ID_STR_LEN] = '\0';
 
     return dest;
 }
@@ -728,9 +714,9 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
     } else if (!strcmp("parents", arg_str)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_PARENTS;
     } else if (!strcmp("ancestors", arg_str)) {
-        *dir = SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS;
+        *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS;
     } else if (!strcmp("descendants", arg_str)) {
-        *dir = SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS;
+        *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS;
     } else {
         return SELVA_SUBSCRIPTIONS_EINVAL;
     }

@@ -4,6 +4,7 @@
 
 #include "selva.h"
 #include "svector.h"
+#include "rpn.h"
 
 /*
  * Subscription Marker Flags
@@ -57,7 +58,21 @@
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 struct hierarchy_subscriptions_tree;
-struct Selva_SubscriptionMarker;
+struct Selva_Subscription;
+
+/**
+ * Subscription marker.
+ */
+struct Selva_SubscriptionMarker {
+    Selva_SubscriptionMarkerId marker_id;
+    unsigned marker_flags;
+    Selva_NodeId node_id;
+    enum SelvaModify_HierarchyTraversal dir;
+    struct rpn_ctx *filter_ctx;
+    rpn_token *filter_expression;
+    char *fields; /* \n separated and \0 terminated. */
+    struct Selva_Subscription *sub; /* Pointer back to the subscription. */
+};
 
 /**
  * A data structure for subscription markers.
@@ -93,6 +108,10 @@ void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy);
 int SelvaSubscriptions_Refresh(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
 void SelvaSubscriptions_RefreshByMarker(struct SelvaModify_Hierarchy *hierarchy, struct SVector *markers);
 void SelvaSubscriptions_Delete(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
+        struct SelvaModify_Hierarchy *hierarchy,
+        Selva_SubscriptionId sub_id,
+        Selva_SubscriptionMarkerId marker_id);
 void Selva_Subscriptions_SetMarker(
         struct SelvaModify_HierarchyMetadata *metadata,
         struct Selva_SubscriptionMarker *marker);
