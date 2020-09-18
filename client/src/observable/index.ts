@@ -10,12 +10,15 @@ import {
   NEW_SUBSCRIPTION,
   SUBSCRIPTIONS,
   REMOVE_SUBSCRIPTION,
+  HEARTBEAT,
+  CLIENTS,
   CACHE
 } from '../constants'
 
 import parseError from './parseError'
 
 var observableIds = 0
+const HEARTBEAT_TIMER = 1e3
 
 type UpdateCallback = (value: any, checksum?: string, diff?: any) => void
 
@@ -100,8 +103,44 @@ export class Observable {
 
   public useCache: boolean
 
+  public heartbeatTimout: NodeJS.Timeout
+
+  public startSubscriptionHeartbeat() {
+    clearTimeout(this.heartbeatTimout)
+    const setHeartbeat = () => {
+      if (this.connection) {
+
+        if (this.connection.connected) {
+          this.connection.command({
+            id: this.selvaId,
+            command: 'hset',
+            args: [CLIENTS, this.clientUuid, Date.now()]
+          })
+          this.connection.command({
+            command: 'publish',
+            id: this.selvaId,
+            args: [
+              HEARTBEAT,
+              JSON.stringify({
+                client: this.clientUuid,
+                ts: Date.now()
+              })
+            ]
+          })
+        }
+        this.heartbeatTimout = setTimeout(setHeartbeat, HEARTBEAT_TIMER)
+      }
+    }
+    setHeartbeat()
+  }
+
   public hardDisconnect() {
-    console.log('hdc on obs bitch')
+    console.log('hdc on obs bitch', this.uuid, this.selvaId, this.clientUuid)
+
+    // cleaer timer
+    delete this.connection
+    clearTimeout(this.heartbeatTimout)
+
   }
 
   public listeners: UpdateCallback[] = []
@@ -171,7 +210,6 @@ export class Observable {
     }
   }
 
-
   public geValueSingleListener(
     onNext: UpdateCallback,
     onError?: (err: Error) => void,
@@ -206,6 +244,8 @@ export class Observable {
   }
 
   public getValue() {
+    // then store diff + last diff version
+    // so you first do a check here
     if (this.connection) {
       const channel = this.uuid
       this.connection.command({
@@ -274,6 +314,7 @@ export class Observable {
       }
     }))
     connection.subscribe(channel, id)
+    this.startSubscriptionHeartbeat()
     this.getValue()
   }
 
@@ -282,6 +323,7 @@ export class Observable {
       console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
+    clearTimeout(this.heartbeatTimout)
 
     // need to stop hb
 
