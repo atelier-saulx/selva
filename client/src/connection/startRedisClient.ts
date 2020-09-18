@@ -2,6 +2,7 @@ import { Connection, connections } from '.'
 import { RedisClient } from 'redis'
 import { SERVER_HEARTBEAT } from '../constants'
 import './redisClientExtensions'
+import { SelvaClient } from '..'
 
 /*
     hard-disconnect
@@ -20,6 +21,7 @@ const startClient = (
 ): RedisClient => {
   let tries = 0
   let retryTimer = 0
+  let isReconnect = false
 
   const retryStrategy = () => {
     tries++
@@ -57,6 +59,7 @@ const startClient = (
 
   client.on('ready', () => {
     tries = 0
+
     connection.clientsConnected[type] = true
     for (const t in connection.clientsConnected) {
       if (connection.clientsConnected[t] === false) {
@@ -67,6 +70,19 @@ const startClient = (
     clearTimeout(connection.startClientTimer)
     connection.startClientTimer = null
     connection.emit('connect')
+
+
+    if (isReconnect) {
+
+      connection.clients.forEach(c => {
+        if (c instanceof SelvaClient) {
+          c.emit('reconnect', connection.serverDescriptor)
+        }
+      })
+
+    }
+
+    isReconnect = true
   })
 
   client.on('error', err => {

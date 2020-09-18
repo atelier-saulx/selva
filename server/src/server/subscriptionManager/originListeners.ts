@@ -20,7 +20,9 @@ const addOriginListeners = async (
   if (!subsManager.originListeners[name]) {
     const selector: ServerSelector = { name, type: 'replica' }
 
-    const descriptor = await subsManager.client.getServerDescriptor(selector)
+    // this has to be refactored a lot
+
+    const descriptor = await subsManager.client.getServer(selector)
 
     const listener = (_pattern, channel, message) => {
       subsManager.incomingCount++
@@ -55,7 +57,9 @@ const addOriginListeners = async (
       listener,
       reconnectListener: descriptor => {
         const { name: dbName } = descriptor
-        console.log('reconn in subs manager', name)
+        console.log('reconn in subs manager - need to only do reconn  when we are actively connected to this server...', name)
+
+        // not enough ofcourse
         if (name === dbName) {
           // need to resend subs if it dc'ed
           const origin = subsManager.originListeners[name]

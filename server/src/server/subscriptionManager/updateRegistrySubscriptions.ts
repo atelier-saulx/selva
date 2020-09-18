@@ -13,39 +13,40 @@ export default function updateRegistry(
   client: SelvaClient,
   info: Subscriptions
 ) {
-  console.log('ok this is now a different thingy')
-  // need to find if created etc - have to send the 'removed'
-  // make a constant registry_subscription_index
+  console.log('UPDATE SUBS', info)
+  // console.log('ok this is now a different thingy')
+  // // need to find if created etc - have to send the 'removed'
+  // // make a constant registry_subscription_index
 
-  for (let key in info.subscriptions) {
-    subscriptions[key] = info.subscriptions[key]
-  }
-  if (!publishInProgress) {
-    publishInProgress = true
-    const id = info.host + ':' + info.port
-    process.nextTick(() => {
-      const q = []
-      for (let key in subscriptions) {
-        const event = subscriptions[key]
-        if (event === 'created') {
-          q.push(
-            client.redis.sadd({ type: 'registry' }, `${id}_subscriptions`, key)
-          )
-        } else if (event === 'removed') {
-          q.push(
-            client.redis.srem({ type: 'registry' }, `${id}_subscriptions`, key)
-          )
-        }
-      }
-      publishInProgress = false
-      subscriptions = {}
-      Promise.all(q).then(() => {
-        client.redis.publish(
-          { type: 'registry' },
-          constants.REGISTRY_UPDATE_SUBSCRIPTION,
-          JSON.stringify(info)
-        )
-      })
-    })
-  }
+  // for (let key in info.subscriptions) {
+  //   subscriptions[key] = info.subscriptions[key]
+  // }
+  // if (!publishInProgress) {
+  //   publishInProgress = true
+  //   const id = info.host + ':' + info.port
+  //   process.nextTick(() => {
+  //     const q = []
+  //     for (let key in subscriptions) {
+  //       const event = subscriptions[key]
+  //       if (event === 'created') {
+  //         q.push(
+  //           client.redis.sadd({ type: 'registry' }, `${id}_subscriptions`, key)
+  //         )
+  //       } else if (event === 'removed') {
+  //         q.push(
+  //           client.redis.srem({ type: 'registry' }, `${id}_subscriptions`, key)
+  //         )
+  //       }
+  //     }
+  //     publishInProgress = false
+  //     subscriptions = {}
+  //     Promise.all(q).then(() => {
+  //       client.redis.publish(
+  //         { type: 'registry' },
+  //         constants.REGISTRY_UPDATE_SUBSCRIPTION,
+  //         JSON.stringify(info)
+  //       )
+  //     })
+  //   })
+  // }
 }
