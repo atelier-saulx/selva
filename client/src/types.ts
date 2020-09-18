@@ -11,6 +11,7 @@ export type ClientOpts = {
 export type ServerType =
   | 'origin'
   | 'subscriptionManager'
+  | 'subscriptionRegistry'
   | 'replica'
   | 'registry'
 
@@ -36,7 +37,6 @@ export type ServerSelector = {
 }
 
 export type ServerSelectOptions = { subscription?: string; strict?: true }
-
 // complete server selector + registry client
 
 // TODO: make non optional

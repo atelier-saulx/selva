@@ -54,7 +54,7 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
     parsedOpts.modules = defaultModules
   }
 
-  if (parsedOpts.default ) {
+  if (parsedOpts.default) {
     parsedOpts.name = 'default'
 
   }
@@ -113,7 +113,7 @@ export async function startOrigin(opts: Options): Promise<SelvaServer> {
     console.error(`Error starting origin selva server ${chalk.red(err)}`)
     throw new Error(err)
   }
-  if  (!parsedOpts.name) {
+  if (!parsedOpts.name) {
     parsedOpts.name = 'default'
   }
   return startServer('origin', parsedOpts)
@@ -146,7 +146,7 @@ export async function startReplica(opts: Options) {
     console.error(`Error starting replica selva server ${chalk.red(err)}`)
     throw new Error(err)
   }
-  if  (!parsedOpts.name && parsedOpts.default) {
+  if (!parsedOpts.name && parsedOpts.default) {
     parsedOpts.name = 'default'
   }
   return startServer('replica', parsedOpts)
@@ -165,6 +165,19 @@ export async function startSubscriptionManager(opts: Options) {
     throw new Error(err)
   }
   return startServer('subscriptionManager', parsedOpts)
+}
+
+export async function startSubscriptionRegistry(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+  const err = validate(parsedOpts, ['registry'], ['name', 'default', 'backups'])
+  parsedOpts.name = 'subscriptionRegistry'
+  if (err) {
+    console.error(
+      `Error starting subscription Registry selva server ${chalk.red(err)}`
+    )
+    throw new Error(err)
+  }
+  return startServer('subscriptionRegistry', parsedOpts)
 }
 
 // make a registry, then add origin, then add subs manager
@@ -203,18 +216,30 @@ export async function start(opts: Options) {
     }
   })
 
+  const subsRegistry = await startSubscriptionRegistry({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host
+    }
+  })
+
 
   origin.pm.on('stdout', (d) => console.log(d.toString()))
   subs.pm.on('stdout', (d) => console.log(d.toString()))
   registry.pm.on('stdout', (d) => console.log(d.toString()))
+  subsRegistry.pm.on('stdout', (d) => console.log(d.toString()))
 
   origin.pm.on('stderr', (d) => console.error(d.toString()))
   subs.pm.on('stderr', (d) => console.error(d.toString()))
   registry.pm.on('stderr', (d) => console.error(d.toString()))
+  subsRegistry.pm.on('stderr', (d) => console.error(d.toString()))
 
-  registry.on('close', () => {
-    origin.destroy()
-    subs.destroy()
+  registry.on('close', async () => {
+    // TODO: Remove comment
+    console.log('Close all servers does it work ?')
+    await origin.destroy()
+    await subs.destroy()
+    await subsRegistry.destroy()
   })
 
   return registry

@@ -80,5 +80,19 @@ test.serial('Make some observables', async t => {
   await wait(10e3)
   console.log('ok')
 
+  // --------------------------------------------
+
+  // subs registry is next step
+
+  // then move subscription
+
+  // --------------------------------------------
+
+  // then diff
+
+  // thene checks for connections destroy
+
+  // --------------------------------------------
+
   t.pass()
 })
