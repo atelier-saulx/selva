@@ -330,7 +330,8 @@ test.serial('connection / server orchestration', async t => {
   await origin.destroy()
   await client.destroy()
 
-  await wait(5000)
+  // can happen that registyr is closed before the other servers and it needs to wait for a hdc
+  await wait(20000)
 
   t.is(connections.size, 0, 'all connections removed')
 })

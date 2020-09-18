@@ -74,7 +74,7 @@ export class Observable {
 
   public errorListeners: ((err: Error) => void)[]
 
-  public completeListeners: ((x?: any) => void[])[]
+  public completeListeners: ((x?: any) => void)[]
 
   public subsCounter: number = 0
 
@@ -103,6 +103,7 @@ export class Observable {
     onComplete?: (x?: any) => void
   ) {
     if (this.isDestroyed) {
+      console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
 
@@ -127,6 +128,7 @@ export class Observable {
 
   public unsubscribe() {
     if (this.isDestroyed) {
+      console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
     this.subsCounter--
@@ -138,8 +140,10 @@ export class Observable {
 
   public destroy() {
     if (this.isDestroyed) {
+      console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
+
     console.log('destroy obs')
 
     this.isDestroyed = true
