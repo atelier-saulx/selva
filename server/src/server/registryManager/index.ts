@@ -99,11 +99,12 @@ export const registryManager = (server: SelvaServer) => {
             'host',
             'port',
             'type',
-            'index'
+            'index',
+            'subs'
           )
 
           if (result) {
-            const [rawStats, name, host, port, type, index] = result
+            const [rawStats, name, host, port, type, index, subs] = result
             const stats = rawStats && JSON.parse(rawStats)
 
             if (!stats) {
@@ -193,9 +194,7 @@ export const registryManager = (server: SelvaServer) => {
               )
             } else if (type === 'replica') {
               let weight = Math.round(stats.cpu / 5)
-
               // slow connection so something must be up
-
               if (stats.cpu === undefined) {
                 console.warn(
                   chalk.yellow(
@@ -213,16 +212,21 @@ export const registryManager = (server: SelvaServer) => {
                 weight = 100
               }
               // opsPerSecond is also very good as a measure
-
               // console.log(type, id, weight, 'cpu', stats.cpu, '%')
-
               const target: ServerIndex = {
                 weight,
                 id,
                 name,
                 index: index === null ? -1 : Number(index) // original index
               }
+
               insert(replicas, target)
+            } else if (type === 'subscriptionManager') {
+
+
+              console.log('  subs manager', id,  subs)
+
+
             }
             // else subs manager (also just order them)
           }

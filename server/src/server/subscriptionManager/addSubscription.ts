@@ -114,10 +114,14 @@ const addSubscription = (
   }
 
   // TODO: refactor this!
-  updateRegistry(subsManager.client, {
-    ...subsManager.selector,
-    subscriptions: { [channel]: 'created' }
-  })
+  updateRegistry(
+    subsManager.client,
+    {
+      ...subsManager.selector,
+      subscriptions: { [channel]: 'created' }
+    },
+    subsManager
+  )
   updateSubscription(subsManager, channel, subscription)
 }
 

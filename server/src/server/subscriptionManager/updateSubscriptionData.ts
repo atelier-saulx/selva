@@ -104,7 +104,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
   }
 
   if (Object.keys(info.subscriptions).length) {
-    updateRegistry(client, info)
+    updateRegistry(client, info, subsManager)
   }
 }
 

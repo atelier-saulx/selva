@@ -80,6 +80,17 @@ test.serial('Make some observables', async t => {
     value: true
   })
 
+  client
+    .getServer(
+      {
+        type: 'subscriptionManager'
+      },
+      { subscription: obs.uuid }
+    )
+    .then(v => {
+      console.log('--->', v)
+    })
+
   obs.subscribe((value, checksum, diff) => {
     console.log('yesh', value, checksum, diff)
   })

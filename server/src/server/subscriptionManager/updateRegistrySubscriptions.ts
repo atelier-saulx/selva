@@ -1,4 +1,5 @@
 import { SelvaClient, constants } from '@saulx/selva'
+import { SubscriptionManager } from './types'
 
 type Subscriptions = {
   host: string
@@ -11,29 +12,60 @@ let publishInProgress = false
 
 export default async function updateRegistry(
   client: SelvaClient,
-  info: Subscriptions
+  info: Subscriptions,
+  subsManager: SubscriptionManager
 ) {
   console.log('Update subs in registry', info)
 
   const id = info.host + ':' + info.port
 
+  // UPDATE NUMBER OF SUBS
+
+  const size = Object.keys(subsManager.subscriptions).length
+
+  client.redis.hset({ type: 'registry' }, id, 'subs', size)
+
   for (let channel in info.subscriptions) {
-    await client.redis.sadd(
-      { type: 'subscriptionRegistry' },
-      constants.REGISTRY_SUBSCRIPTION_INDEX + '_' + id,
-      channel
-    )
+    const type = info.subscriptions[channel]
 
-    const prev = await client.redis.get(
-      { type: 'subscriptionRegistry' },
-      channel
-    )
+    if (type === 'created') {
+      await client.redis.sadd(
+        { type: 'subscriptionRegistry' },
+        constants.REGISTRY_SUBSCRIPTION_INDEX + '_' + id,
+        channel
+      )
+      const prev = await client.redis.get(
+        { type: 'subscriptionRegistry' },
+        channel
+      )
+      if (prev) {
+        if (prev !== id) {
+          console.log('previous!', prev)
+          // publish
 
-    console.log('previous!', prev)
-
-    if (prev) {
-      // check if server exists
-      // if so then send a move publish command to the registry
+          // await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
+        } else {
+          console.log('allrdy keep')
+        }
+        // check if server exists
+        // if so then send a move publish command to the registry
+      } else {
+        await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
+      }
+    } else {
+      await client.redis.srem(
+        { type: 'subscriptionRegistry' },
+        constants.REGISTRY_SUBSCRIPTION_INDEX + '_' + id,
+        channel
+      )
+      const prev = await client.redis.get(
+        { type: 'subscriptionRegistry' },
+        channel
+      )
+      if (prev === id) {
+        console.log('remove it')
+        await client.redis.del(channel)
+      }
     }
 
     await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
