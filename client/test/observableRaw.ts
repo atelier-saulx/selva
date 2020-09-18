@@ -26,18 +26,19 @@ test.serial('Make some observables', async t => {
   const port = await getPort()
   const registry = await startRegistry({ port })
   const connectOpts = { port }
+
   const origin = await startOrigin({
     registry: connectOpts,
     default: true,
     dir: join(dir, 'observablesgotime')
   })
 
-  // do this later startReplica
-  const subsmanager = await startSubscriptionManager({
+  const subsregistry = await startSubscriptionRegistry({
     registry: connectOpts
   })
 
-  const subsregistry = await startSubscriptionRegistry({
+  // do this later startReplica
+  const subsmanager = await startSubscriptionManager({
     registry: connectOpts
   })
 
