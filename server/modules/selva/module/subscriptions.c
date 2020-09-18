@@ -923,7 +923,82 @@ out:
 }
 
 /*
- * KEY SUB_ID
+ * SELVA.SUBSCRIPTIONS.addMarkerField KEY SUB_ID MARKER_ID field_names
+ */
+int Selva_AddSubscriptionMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    int err;
+
+    if (argc != 5) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    const size_t ARGV_REDIS_KEY     = 1;
+    const size_t ARGV_SUB_ID        = 2;
+    const size_t ARGV_MARKER_ID     = 3;
+    const size_t ARGV_FIELD_NAMES   = 4;
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    /*
+     * Get the subscription id.
+     */
+    Selva_SubscriptionId sub_id;
+    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    if (err) {
+        return replyWithSelvaError(ctx, err);
+    }
+
+    /*
+     * Get the marker id.
+     */
+    Selva_SubscriptionMarkerId marker_id;
+    err = parse_marker_id(&marker_id, argv[ARGV_MARKER_ID]);
+    if (err) {
+        return replyWithSelvaError(ctx, err);
+    }
+
+    /*
+     * Get field names for change events.
+     */
+    const char *new_fields = NULL;
+    size_t new_fields_len;
+    new_fields = RedisModule_StringPtrLen(argv[ARGV_FIELD_NAMES], &new_fields_len);
+
+    struct Selva_SubscriptionMarker *marker;
+    marker = SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id);
+    if (!marker) {
+        return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOENT);
+    }
+
+    char *fields = marker->fields;
+    const size_t old_len = fields ? strlen(fields) : 0;
+
+    fields = RedisModule_Realloc(fields, old_len + new_fields_len + 2);
+    if (!fields) {
+        return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOMEM);
+    }
+
+    if (old_len > 0) {
+        fields[old_len] = '\n';
+        memcpy(fields + old_len + 1, new_fields, new_fields_len + 1);
+    } else {
+        memcpy(fields, new_fields, new_fields_len + 1);
+    }
+
+    marker->fields = fields;
+
+    RedisModule_ReplyWithLongLong(ctx, 1);
+    return REDISMODULE_OK;
+}
+
+/*
+ * SELVA.SUBSCRIPTIONS.refresh KEY SUB_ID
  */
 int Selva_RefreshSubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;
@@ -1005,7 +1080,7 @@ int Selva_SubscriptionsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 /*
  * KEY SUB_ID
  */
-int Selva_SubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;
 
     if (argc != 3) {
@@ -1114,9 +1189,10 @@ static int Hierarchy_Subscriptions_OnLoad(RedisModuleCtx *ctx) {
      * Register commands.
      */
     if (RedisModule_CreateCommand(ctx, "selva.subscriptions.add", Selva_SubscribeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.addMarkerFields", Selva_AddSubscriptionMarkerFieldsCommand, "write deny-oom", 1, 1 ,1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.refresh", Selva_RefreshSubscriptionCommand, "write deny-oom", 1, 1 ,1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.list", Selva_SubscriptionsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.subscriptions.debug", Selva_SubscriptionCommand, "readonly deny-script", 1, 1, 1) ||
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.debug", Selva_SubscriptionDebugCommand, "readonly deny-script", 1, 1, 1) ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.del", Selva_UnsubscribeCommand, "write", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }

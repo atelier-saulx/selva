@@ -925,6 +925,7 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
     RedisModule_ReplySetArrayLength(ctx, array_len);
 
     return REDISMODULE_OK;
+#undef SHIFT_ARGS
 }
 
 static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
