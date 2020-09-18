@@ -1,6 +1,8 @@
 import { SelvaClient } from '.'
 import { ServerSelector, ServerDescriptor, ServerSelectOptions } from './types'
 
+const getSubInprogress = {}
+
 const getServer = (
   selvaClient: SelvaClient,
   cb: (descriptor: ServerDescriptor) => void,
@@ -33,7 +35,42 @@ const getServer = (
           break
         }
       } else if (type === 'subscriptionManager') {
-        server = selvaClient.servers.subsManagers[0]
+        // with a timeout
+        if (selectionOptions && selectionOptions.subscription) {
+          let isCanceled = false
+          const timer = setTimeout(() => {
+            console.log('Timeout getting from subs registry')
+            isCanceled = true
+            delete getSubInprogress[selectionOptions.subscription]
+            getServer(selvaClient, cb, selector)
+          }, 1e3)
+          if (!getSubInprogress[selectionOptions.subscription]) {
+            getSubInprogress[
+              selectionOptions.subscription
+            ] = selvaClient.redis.get(
+              { type: 'subscriptionRegistry' },
+              selectionOptions.subscription
+            )
+          }
+          getSubInprogress[selectionOptions.subscription].then(v => {
+            if (!isCanceled) {
+              console.log('V is there', v)
+              if (v) {
+              } else {
+                if (selvaClient.servers.subsManagers[0]) {
+                  cb(selvaClient.servers.subsManagers[0])
+                } else {
+                  getServer(selvaClient, cb, selector)
+                }
+              }
+              clearTimeout(timer)
+              delete getSubInprogress[selectionOptions.subscription]
+            }
+          })
+          return
+        } else {
+          server = selvaClient.servers.subsManagers[0]
+        }
       } else if (type === 'registry') {
         server = selvaClient.registryConnection.serverDescriptor
       } else if (type === 'origin') {

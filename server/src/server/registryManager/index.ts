@@ -1,5 +1,5 @@
 import { SelvaServer } from '../'
-import { constants } from '@saulx/selva'
+import { constants, ServerDescriptor } from '@saulx/selva'
 import chalk, { keyword } from 'chalk'
 
 const { REGISTRY_UPDATE } = constants
@@ -31,6 +31,8 @@ const insert = (array: ServerIndex[], target: ServerIndex): void => {
   array.splice(l, 0, target)
 }
 
+// on remove need to get rid of subs stuff
+
 export const registryManager = (server: SelvaServer) => {
   // not reallty nessecary but nice to see for now
   server.selvaClient.on('added-servers', ({ event, server }) => {
@@ -49,25 +51,33 @@ export const registryManager = (server: SelvaServer) => {
     }
   })
 
-  server.selvaClient.on('removed-servers', ({ event, server }) => {
-    if (event === '*') {
-      // got all of them
-      // console.log('remove all servers')
-    } else {
-      console.log(
-        chalk.red('Server is removed from registry'),
-        server.name,
-        server.type,
-        server.host,
-        server.port
-      )
+  server.selvaClient.on(
+    'removed-servers',
+    ({ event, server }: { event: string; server: ServerDescriptor }) => {
+      if (event === '*') {
+        // got all of them
+        // console.log('remove all servers')
+      } else {
+        console.log(
+          chalk.red('Server is removed from registry'),
+          server.name,
+          server.type,
+          server.host,
+          server.port
+        )
+
+        if (server.type === 'subscriptionManager') {
+          console.log('A subscriptionManager is removed remove from index!') {
+            // get rid of it
+          }
+        }
+      }
     }
-  })
+  )
 
   const serverTimeouts: {
     [id: string]: number[]
   } = {}
-
 
   const updateFromStats = async () => {
     const replicas: ServerIndex[] = []
@@ -104,9 +114,14 @@ export const registryManager = (server: SelvaServer) => {
                 )
               )
 
-              await redis.hset({ type: 'registry' }, id, 'stats', JSON.stringify({
-                timestamp: Date.now()
-              }))
+              await redis.hset(
+                { type: 'registry' },
+                id,
+                'stats',
+                JSON.stringify({
+                  timestamp: Date.now()
+                })
+              )
 
               return
             }
@@ -124,7 +139,7 @@ export const registryManager = (server: SelvaServer) => {
               console.warn(
                 chalk.red(
                   `Server timed out last heartbeat ${Date.now() -
-                  ts}ms ago ${id}, ${type}, ${name}`
+                    ts}ms ago ${id}, ${type}, ${name}`
                 )
               )
 
@@ -191,7 +206,8 @@ export const registryManager = (server: SelvaServer) => {
               } else if (Date.now() - ts > 2e3 || stats.cpu === undefined) {
                 console.warn(
                   chalk.yellow(
-                    `Connection to replica is slow ${Date.now() - ts}ms since last timestamp, emulate a weight of 100 ${type} ${id}`
+                    `Connection to replica is slow ${Date.now() -
+                      ts}ms since last timestamp, emulate a weight of 100 ${type} ${id}`
                   )
                 )
                 weight = 100

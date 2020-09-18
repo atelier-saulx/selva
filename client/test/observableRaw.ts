@@ -43,6 +43,10 @@ test.serial('Make some observables', async t => {
     registry: connectOpts
   })
 
+  const subsmanager2 = await startSubscriptionManager({
+    registry: connectOpts
+  })
+
   const client = connect({ port })
 
   await client.updateSchema({
@@ -79,6 +83,28 @@ test.serial('Make some observables', async t => {
   obs.subscribe((value, checksum, diff) => {
     console.log('yesh', value, checksum, diff)
   })
+
+  await wait(3e3)
+
+  console.log('XXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+
+  await worker(
+    async ({ connect, wait }, { port }) => {
+      const client = connect({ port })
+      client
+        .observe({
+          $id: 'root',
+          value: true
+        })
+        .subscribe((value, checksum, diff) => {
+          console.log('yesh2', value, checksum, diff)
+        })
+
+      await wait(3e3)
+      client.destroy()
+    },
+    { port }
+  )
 
   await wait(3e3)
   obs.unsubscribe()

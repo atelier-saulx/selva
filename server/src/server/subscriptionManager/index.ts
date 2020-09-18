@@ -21,9 +21,7 @@ export const startSubscriptionManager = (
   state: SubscriptionManagerState = {}
 ): Promise<SubscriptionManagerState> => {
   return new Promise(resolve => {
-    const worker = (this.worker = new Worker(
-      path.join(__dirname, '/worker.js')
-    ))
+    const worker = new Worker(path.join(__dirname, '/worker.js'))
     state = { worker }
     worker.once('connect', () => resolve(state))
     worker.on('message', message => {
