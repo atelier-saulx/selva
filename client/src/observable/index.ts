@@ -4,6 +4,8 @@ import { ObservableOptions } from './types'
 
 var observableIds = 0
 
+type UpdateCallback = (value: any, checksum?: string, diff?: any) => void
+
 export class Observable {
   constructor(
     options: ObservableOptions,
@@ -68,31 +70,83 @@ export class Observable {
     console.log('hdc on obs bitch')
   }
 
-  public unsubscribe() {}
+  public listeners: UpdateCallback[] = []
+
+  public errorListeners: ((err: Error) => void)[]
+
+  public completeListeners: ((x?: any) => void[])[]
+
+  public subsCounter: number = 0
+
+  public emitUpdate(value: any, checksum?: string, diff?: any) {
+    this.listeners.forEach(fn => fn(value, checksum, diff))
+  }
+
+  public emitError(err: Error) {
+    if (this.errorListeners) {
+      this.errorListeners.forEach(fn => fn(err))
+    }
+  }
+
+  public emitComplete(x?: any) {
+    if (this.completeListeners) {
+      this.completeListeners.forEach(fn => fn(x))
+    }
+  }
 
   public subscribe(
     // needs an iff for the type of things
-
     // how to do?
-
     // TODO: make this type based on the Observable options (type schema or type get for now)
-    onNext: (x: any) => void,
-    onError?: (e: Error) => void,
-    onComplete?: () => void
+    onNext: UpdateCallback,
+    onError?: (err: Error) => void,
+    onComplete?: (x?: any) => void
   ) {
-    /*
-    subscribe(
-      onNext: ((x: T) => void) | Observer<T>,
-      onError?: (e: Error) => void,
-      onComplete?: () => void
-    )
-    */
-    // make this nice observable like
+    if (this.isDestroyed) {
+      return
+    }
+
+    this.subsCounter++
+
+    this.listeners.push(onNext)
+
+    if (onError) {
+      if (!this.errorListeners) {
+        this.errorListeners = []
+      }
+      this.errorListeners.push(onError)
+    }
+
+    if (onComplete) {
+      if (!this.completeListeners) {
+        this.completeListeners = []
+      }
+      this.completeListeners.push(onComplete)
+    }
   }
 
+  public unsubscribe() {
+    if (this.isDestroyed) {
+      return
+    }
+    this.subsCounter--
+    if (this.subsCounter === 0) {
+      this.destroy()
+    }
+  }
+
+
   public destroy() {
-    console.log('destroy')
+    if (this.isDestroyed) {
+      return
+    }
+    console.log('destroy obs')
+
     this.isDestroyed = true
+
+    this.listeners = []
+    delete this.errorListeners
+    delete this.completeListeners
 
     this.selvaClient.observables.delete(this.uuid)
   }
