@@ -6,6 +6,9 @@ var observableIds = 0
 
 type UpdateCallback = (value: any, checksum?: string, diff?: any) => void
 
+// write // remove
+// needs to check if they exist on connection
+
 export class Observable {
   constructor(
     options: ObservableOptions,

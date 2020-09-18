@@ -28,6 +28,11 @@ class Connection {
 
   public uuid: string
 
+  // uuid  // counter // if counter is zero remove it // if it higher add it
+  public selvaSubscriptions: {
+    [key: string]: number
+  }
+
   public serverDescriptor: ServerDescriptor
 
   public clients: Set<SelvaClient | Observable> = new Set()
@@ -352,7 +357,8 @@ class Connection {
       pSubscribes: [],
       subscribes: [],
       listeners: [],
-      connectionListeners: []
+      connectionListeners: [],
+      selvaSubscriptions: []
     }
 
     // and do this also

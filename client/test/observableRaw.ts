@@ -1,5 +1,5 @@
 import test from 'ava'
-import { connect, connections, Observable, observables } from '@saulx/selva'
+import { connect, connections, Observable } from '@saulx/selva'
 import {
   startRegistry,
   startOrigin,
@@ -30,8 +30,19 @@ test.serial('Make some observables', async t => {
     default: true,
     dir: join(dir, 'observablesgotime')
   })
+
+  // do this later startReplica
+  const subsmanager = await startSubscriptionManager({
+    registry: connectOpts,
+    default: true,
+    dir: join(dir, 'observablesgotime')
+  })
+
   const client = connect({ port })
   // what to do here?
   // client.observe()
+
+
+
   t.pass()
 })
