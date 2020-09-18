@@ -34,11 +34,34 @@ test.serial('Make some observables', async t => {
   // do this later startReplica
   const subsmanager = await startSubscriptionManager({
     registry: connectOpts,
-    default: true,
     dir: join(dir, 'observablesgotime')
   })
 
   const client = connect({ port })
+
+  await client.updateSchema({
+    rootType: {
+      fields: {
+        value: { type: 'number' },
+        nested: {
+          type: 'object',
+          properties: {
+            fun: { type: 'string' }
+          }
+        }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'root',
+    value: 1
+  })
+
+  const x = await client.get({ $id: 'root', value: true })
+
+  t.deepEqual(x, { value: 1 })
+
   // what to do here?
   // client.observe()
 
