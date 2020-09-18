@@ -1,7 +1,6 @@
 import { SelvaClient } from '.'
 import { ServerSelector, ServerDescriptor, ServerSelectOptions } from './types'
 
-
 const getServer = (
   selvaClient: SelvaClient,
   cb: (descriptor: ServerDescriptor) => void,
@@ -16,7 +15,9 @@ const getServer = (
       console.log(
         'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
       )
-      selvaClient.addServerUpdateListeners.push(() => getServer(selvaClient, cb, selector, selectionOptions))
+      selvaClient.addServerUpdateListeners.push(() =>
+        getServer(selvaClient, cb, selector, selectionOptions)
+      )
     } else {
       let server
 
@@ -25,7 +26,13 @@ const getServer = (
         type = 'replica'
       }
 
-      if (type === 'subscriptionManager') {
+      if (type === 'subscriptionRegistry') {
+        // just get first for now
+        for (let k in selvaClient.servers.subRegisters) {
+          server = selvaClient.servers.subRegisters[k]
+          break
+        }
+      } else if (type === 'subscriptionManager') {
         server = selvaClient.servers.subsManagers[0]
       } else if (type === 'registry') {
         server = selvaClient.registryConnection.serverDescriptor

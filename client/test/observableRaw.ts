@@ -33,6 +33,7 @@ test.serial('Make some observables', async t => {
     dir: join(dir, 'observablesgotime')
   })
 
+  // one extra to offload registry
   const subsregistry = await startSubscriptionRegistry({
     registry: connectOpts
   })
