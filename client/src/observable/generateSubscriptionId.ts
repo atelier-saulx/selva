@@ -1,4 +1,3 @@
-import { GetOptions } from '../get'
 import { createHash } from 'crypto'
 import { ObservableOptions } from './types'
 
