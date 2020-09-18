@@ -70,11 +70,14 @@ export class SelvaClient extends EventEmitter {
     replicas: { [key: string]: ServerDescriptor[] }
     // origins by name
     origins: { [key: string]: ServerDescriptor }
+
+    subRegisters: { [key: string]: ServerDescriptor }
   } = {
       ids: new Set(),
       origins: {},
       subsManagers: [],
-      replicas: {}
+      replicas: {},
+      subRegisters: {}
     }
 
   public registryConnection?: Connection

@@ -122,7 +122,8 @@ const connectRegistry = (
           ids: new Set(),
           origins: {},
           subsManagers: [],
-          replicas: {}
+          replicas: {},
+          subRegisters: {}
         }
         selvaClient.emit('removed-servers', { event: '*' })
       }

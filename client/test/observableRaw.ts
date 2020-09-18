@@ -4,7 +4,8 @@ import {
   startRegistry,
   startOrigin,
   startReplica,
-  startSubscriptionManager
+  startSubscriptionManager,
+  startSubscriptionRegistry
 } from '../../server/dist'
 import './assertions'
 import { wait, worker, removeDump } from './assertions'
@@ -33,8 +34,11 @@ test.serial('Make some observables', async t => {
 
   // do this later startReplica
   const subsmanager = await startSubscriptionManager({
-    registry: connectOpts,
-    dir: join(dir, 'observablesgotime')
+    registry: connectOpts
+  })
+
+  const subsregistry = await startSubscriptionRegistry({
+    registry: connectOpts
   })
 
   const client = connect({ port })

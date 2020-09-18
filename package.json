@@ -26,6 +26,16 @@
     "watchClientTests": "cd client && yarn watch",
     "watch": "watch"
   },
+  "lint-staged": {
+    "{js,json}": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
   "prettier": "@saulx/prettier-config",
   "eslintConfig": {
     "extends": "@saulx/eslint-config"
