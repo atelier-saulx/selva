@@ -65,6 +65,16 @@ test.serial('Make some observables', async t => {
   // what to do here?
   // client.observe()
 
+  const obs = client.observe({
+    $id: 'root',
+    value: true
+  })
+
+  obs.subscribe((value, checksum, diff) => {
+    console.log('yesh', value, checksum, diff)
+  })
+
+  await wait(10e3)
 
 
   t.pass()
