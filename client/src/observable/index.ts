@@ -211,6 +211,8 @@ export class Observable {
       console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
+
+    console.log('gooo???')
     this.subsCounter--
     if (this.subsCounter === 0) {
       this.destroy()
@@ -309,14 +311,14 @@ export class Observable {
     })
     connection.command({
       command: 'sadd',
-      args: [channel, connection.uuid],
+      args: [channel, this.clientUuid],
       id
     })
     connection.command({
       command: 'publish',
       args: [
         NEW_SUBSCRIPTION,
-        JSON.stringify({ client: connection.uuid, channel })
+        JSON.stringify({ client: this.clientUuid, channel })
       ],
       id
     })
@@ -328,6 +330,8 @@ export class Observable {
       }
     }))
     connection.subscribe(channel, id)
+
+    console.log('STAERT HB')
     this.startSubscriptionHeartbeat()
 
     console.log('get dat value')
@@ -352,7 +356,6 @@ export class Observable {
     delete this.errorListeners
     delete this.completeListeners
 
-    this.selvaClient.observables.delete(this.uuid)
 
     // when destroy do this
     const channel = this.uuid
@@ -372,20 +375,23 @@ export class Observable {
       // this is to close so it sues the selva id
       connection.command({
         command: 'srem',
-        args: [channel, connection.uuid],
+        args: [channel, this.clientUuid],
         id: selvaClientId
       })
       connection.command({
         command: 'publish',
         args: [
           REMOVE_SUBSCRIPTION,
-          JSON.stringify({ client: this.uuid, channel })
+          JSON.stringify({ client: this.clientUuid, channel })
         ],
         id: selvaClientId
       })
 
       delete this.connection
     }
+
+    this.selvaClient.observables.delete(this.uuid)
+
   }
 }
 

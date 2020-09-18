@@ -74,8 +74,11 @@ test.serial('Make some observables', async t => {
     console.log('yesh', value, checksum, diff)
   })
 
-  await wait(10e3)
+  await wait(3e3)
+  obs.unsubscribe()
 
+  await wait(10e3)
+  console.log('ok')
 
   t.pass()
 })
