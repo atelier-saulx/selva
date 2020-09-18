@@ -29,9 +29,10 @@ class Connection {
   public uuid: string
 
   // uuid  // counter // if counter is zero remove it // if it higher add it
-  public selvaSubscriptions: {
-    [key: string]: number
-  }
+  // maybe just check the redis server fuck it
+  // public selvaSubscriptions: {
+  //   [key: string]: number
+  // }
 
   public serverDescriptor: ServerDescriptor
 

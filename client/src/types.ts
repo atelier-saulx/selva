@@ -47,7 +47,6 @@ export type ServerDescriptor = {
   port: number
   index?: number
   stats?: any
-  subscriptions?: Set<string>
 }
 
 export type Servers = Record<string, Record<string, ServerDescriptor[]>>

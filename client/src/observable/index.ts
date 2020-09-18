@@ -1,6 +1,19 @@
 import { SelvaClient } from '..'
 import generateSubscriptionId from './generateSubscriptionId'
 import { ObservableOptions } from './types'
+import { v4 as uuidv4 } from 'uuid'
+
+import { GetOptions } from '../get'
+import { createConnection, Connection } from '../connection'
+
+import {
+  NEW_SUBSCRIPTION,
+  SUBSCRIPTIONS,
+  REMOVE_SUBSCRIPTION,
+  CACHE
+} from '../constants'
+
+import parseError from './parseError'
 
 var observableIds = 0
 
@@ -10,11 +23,18 @@ type UpdateCallback = (value: any, checksum?: string, diff?: any) => void
 // needs to check if they exist on connection
 
 export class Observable {
+  public connection: Connection
+
   constructor(
     options: ObservableOptions,
     selvaClient: SelvaClient,
     uuid?: string
   ) {
+
+    // so this is a bit weird scince we dont do re-use over selva clients for now
+    // but this optimizes for diconnecting clients 
+    // and scince we are going to do more stuff with markers / balancing etc i think this is better
+    this.clientUuid = uuidv4()
     this.selvaClient = selvaClient
 
     if (!this.selvaClient.observables) {
@@ -24,6 +44,12 @@ export class Observable {
     if (!uuid) {
       uuid = generateSubscriptionId(options)
     }
+
+    this.selvaClient.observables.set(uuid, this)
+
+    this.uuid = uuid
+
+    this.selvaId = String('o' + ++observableIds)
 
     if (options.type === 'get') {
       if (options.cache === undefined) {
@@ -37,13 +63,16 @@ export class Observable {
       } else {
         this.maxMemory = options.maxMemory
       }
+
+      this.getOptions = options.options
+      this.start()
+    } else {
+      console.log('different type of observable', options)
     }
 
-    this.selvaClient.observables.set(uuid, this)
-
-    this.uuid = uuid
-    this.selvaId = String('o' + ++observableIds)
   }
+
+  public getOptions: GetOptions
 
   public subscriptionMoved() {
     console.log('this subscription moved to another server! (potentialy')
@@ -56,6 +85,8 @@ export class Observable {
   public id: string
 
   public uuid: string // hash of getoptions
+
+  public clientUuid: string // this will be written on the subs manager fuck it!
 
   public clients: Set<SelvaClient> = new Set()
 
@@ -141,11 +172,118 @@ export class Observable {
   }
 
 
+  public geValueSingleListener(
+    onNext: UpdateCallback,
+    onError?: (err: Error) => void,
+  ) {
+    if (this.connection) {
+      const channel = this.uuid
+      this.connection.command({
+        command: 'hmget',
+        id: this.selvaId,
+        args: [CACHE, channel, channel + '_version'],
+        resolve: ([data, version]) => {
+          if (data) {
+            const obj = JSON.parse(data)
+            // obj.version = version
+            if (obj.payload && obj.payload.___$error___) {
+              if (onError) {
+                onError(parseError(obj))
+              }
+            } else {
+              // obj.payload
+              onNext(obj.payload, version)
+            }
+          } else {
+            // maybe not send this
+            console.log('no datax...')
+            onNext(data)
+          }
+        },
+        reject: onError
+      })
+    }
+  }
+
+  public getValue() {
+    if (this.connection) {
+      const channel = this.uuid
+      this.connection.command({
+        command: 'hmget',
+        id: this.selvaId,
+        args: [CACHE, channel, channel + '_version'],
+        resolve: ([data, version]) => {
+          if (data) {
+            const obj = JSON.parse(data)
+            // obj.version = version
+            if (obj.payload && obj.payload.___$error___) {
+              this.emitError(parseError(obj))
+            } else {
+              // obj.payload
+              this.emitUpdate(obj.payload, version)
+            }
+          } else {
+            // maybe not send this
+            console.log('no datax...')
+            this.emitUpdate(data, version)
+          }
+        },
+        reject: err => this.emitError(err)
+
+      })
+    }
+  }
+
+  public async start() {
+    if (this.connection) {
+      console.log('STARTING BUT ALLREADY HAVE A CONNECTION WRONG!!!')
+    }
+    const channel = this.uuid
+    const getOptions = this.getOptions
+    const server = await this.selvaClient.getServer({
+      type: 'subscriptionManager',
+      subscription: channel
+    })
+    const connection = this.connection = createConnection(server)
+    const id = this.selvaId
+    // yes and then you can handle it yourself also easy to unload things in the q
+    connection.attachClient(this)
+    connection.command({
+      command: 'hsetnx',
+      args: [SUBSCRIPTIONS, channel, JSON.stringify(getOptions)],
+      id
+    })
+    connection.command({
+      command: 'sadd',
+      args: [channel, connection.uuid],
+      id
+    })
+    connection.command({
+      command: 'publish',
+      args: [
+        NEW_SUBSCRIPTION,
+        JSON.stringify({ client: connection.uuid, channel })
+      ],
+      id
+    })
+    // need to start hb
+    // also need to get initial value!
+    connection.addRemoteListener('message', ((incomingChannel, msg) => {
+      if (channel === incomingChannel) {
+        console.log('GO A MSG', msg)
+      }
+    }))
+    connection.subscribe(channel, id)
+    this.getValue()
+  }
+
   public destroy() {
     if (this.isDestroyed) {
       console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
+
+    // need to stop hb
 
     console.log('destroy obs')
 
@@ -156,6 +294,39 @@ export class Observable {
     delete this.completeListeners
 
     this.selvaClient.observables.delete(this.uuid)
+
+    // when destroy do this
+    const channel = this.uuid
+    const id = this.selvaId
+    const connection = this.connection
+    if (connection) {
+      const selvaClientId = this.selvaClient.selvaId
+      // use selvaId probably
+      connection.unsubscribe(channel, id)
+
+      if (connection.removeClient(this)) {
+        connection.removeConnectionState(
+          connection.getConnectionState(id)
+        )
+      }
+
+      // this is to close so it sues the selva id
+      connection.command({
+        command: 'srem',
+        args: [channel, connection.uuid],
+        id: selvaClientId
+      })
+      connection.command({
+        command: 'publish',
+        args: [
+          REMOVE_SUBSCRIPTION,
+          JSON.stringify({ client: this.uuid, channel })
+        ],
+        id: selvaClientId
+      })
+
+      delete this.connection
+    }
   }
 }
 
