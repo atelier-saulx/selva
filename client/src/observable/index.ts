@@ -106,6 +106,10 @@ export class Observable {
   public startSubscriptionHeartbeat() {
     clearTimeout(this.heartbeatTimout)
     const setHeartbeat = () => {
+      // this has to be a thing in the connection
+      // checks if it allrdy ok
+
+      // then this uuid is allwats just the selva uuid
       if (this.connection) {
         if (this.connection.connected) {
           this.connection.command({
@@ -340,6 +344,9 @@ export class Observable {
     })
     connection.subscribe(channel, id)
 
+    // this is not good! per observable a hb is waaay too much
+    // we need to include the connectin id or something
+    // or just use the selva uuid (prob the best)
     this.startSubscriptionHeartbeat()
 
     // has to be a bit different!

@@ -127,21 +127,11 @@ test.serial('Make some observables', async t => {
 
   await wait(1200)
 
-  const spread = await getServersSubscriptions()
-
-  const v = Object.values(spread)
-
-  const resultSpread = [
-    ['706795659de96229b7166f18062a5d5d10f64b446187accc80a4679fd2c03a53'],
-    [
-      '63aef0b842066c8ff446a0f53b90c0b54120e7c100573fb5dfd31434b029993c',
-      '85ea0edb9f8024a57df3f6b465c26eaeedc83d14f75b537fddbddf07f108cd17'
-    ],
-    ['c22547f0f450fd5d51635e157bb4f47559c815fb7c1eff01bc9cdee1c38540f2']
-  ]
+  // need to test lesst strict we just want these numbers
+  const resultSpread = [1, 2, 1]
 
   t.deepEqualIgnoreOrder(
-    v,
+    Object.values(await getServersSubscriptions()).map(v => v.length),
     resultSpread,
     'Correct spread of subscriptions on subs managers'
   )
@@ -158,7 +148,6 @@ test.serial('Make some observables', async t => {
           value: true
         })
         .subscribe(() => {})
-
       client
         .observe({
           $id: 'root',
@@ -168,7 +157,6 @@ test.serial('Make some observables', async t => {
           value: true
         })
         .subscribe(() => {})
-
       client
         .observe({
           $id: 'root',
@@ -177,37 +165,75 @@ test.serial('Make some observables', async t => {
         })
         .subscribe(() => {})
 
-      await wait(3e3)
-      client.destroy()
+      await wait(1e3)
+      await client.destroy()
+      await wait(1e3)
     },
     { port }
   )
 
   t.deepEqualIgnoreOrder(
-    v,
+    Object.values(await getServersSubscriptions()).map(v => v.length),
     resultSpread,
     'Correct spread after worker tries the same subscriptions'
   )
 
-  await wait(3e3)
+  await wait(1e3)
   obs.unsubscribe()
+  obs2.unsubscribe()
+  obs3.unsubscribe()
+  obs4.unsubscribe()
 
-  await wait(10e3)
-  console.log('ok')
+  await wait(2000)
 
-  // --------------------------------------------
+  t.deepEqual(
+    await getServersSubscriptions(),
+    {},
+    'all subs are removed form subsregistry'
+  )
 
-  // subs registry is next step
+  const [, w] = await worker(
+    async ({ connect, wait }, { port }) => {
+      const client = connect({ port })
+      const obs = client.observe({
+        $id: 'root',
+        value: true
+      })
+      obs.subscribe(() => {})
+      console.log('UUID FOR WORKER', obs.clientUuid)
+      await wait(1e3)
+    },
+    { port }
+  )
+  w.terminate()
 
-  // then move subscription
+  t.deepEqualIgnoreOrder(
+    Object.values(await getServersSubscriptions()).map(v => v.length),
+    [1],
+    'New sub is added'
+  )
 
-  // --------------------------------------------
+  const servers2 = await getServersSubscriptions()
 
-  // then diff
+  console.log(servers2)
 
-  // thene checks for connections destroy
+  // make a thign to check that it auto clears
 
-  // --------------------------------------------
+  await wait(30e3)
 
-  t.pass()
+  t.deepEqual(
+    await getServersSubscriptions(),
+    {},
+    'all subs are removed form subsregistry'
+  )
+
+  await wait(500)
+  await client.destroy()
+  await subsmanager.destroy()
+  await subsmanager2.destroy()
+  await subsmanager3.destroy()
+  await subsregistry.destroy()
+  await registry.destroy()
+  await origin.destroy()
+  await t.connectionsAreEmpty()
 })

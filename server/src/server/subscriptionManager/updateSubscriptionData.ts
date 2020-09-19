@@ -46,6 +46,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
         }
       }
     } else {
+      // this should get removed...
       console.log('Client is timedout from server', client)
       cleanUpQ.push(redis.hdel(selector, CLIENTS, client))
       if (client in subsManager.clients) {

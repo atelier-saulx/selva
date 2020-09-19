@@ -6,6 +6,15 @@ export default async (selvaClient: SelvaClient) => {
     return
   }
   selvaClient.isDestroyed = true
+
+  if (selvaClient.observables) {
+    selvaClient.observables.forEach(observable => {
+      observable.destroy()
+    })
+  }
+
+  delete selvaClient.observables
+
   connections.forEach(connection => {
     if (connection.removeClient(selvaClient)) {
       connection.removeConnectionState(
