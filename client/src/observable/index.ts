@@ -16,6 +16,7 @@ import {
 } from '../constants'
 
 import parseError from './parseError'
+import { wait } from '../util'
 
 var observableIds = 0
 const HEARTBEAT_TIMER = 1e3
@@ -279,12 +280,21 @@ export class Observable {
   }
 
   public async start() {
-    if (this.connection) {
-      console.log('STARTING BUT ALLREADY HAVE A CONNECTION WRONG!!!')
+    if (this.isStarted) {
+      console.error('observable allrdy started')
+      return
     }
+
+    if (this.connection) {
+      console.error(
+        'STARTING OBSERVABLE BUT ALLREADY HAVE A CONNECTION WRONG!!!'
+      )
+      return
+    }
+
     this.isStarted = true
 
-    console.log('go start')
+    await wait(0)
 
     const channel = this.uuid
     const getOptions = this.getOptions
@@ -327,11 +337,10 @@ export class Observable {
     })
     connection.subscribe(channel, id)
 
-    console.log('STAERT HB')
     this.startSubscriptionHeartbeat()
 
+    // has to be a bit different!
     console.log('get dat value')
-
     this.getValue()
   }
 

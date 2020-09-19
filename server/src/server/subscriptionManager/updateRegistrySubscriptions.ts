@@ -68,23 +68,6 @@ export default async function updateRegistry(
     await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
   }
 
-  const servers = await client.redis.keys(
-    { type: 'subscriptionRegistry' },
-    constants.REGISTRY_SUBSCRIPTION_INDEX + '*'
-  )
-
-  // for information
-  for (let k of servers) {
-    const x = await client.redis.smembers({ type: 'subscriptionRegistry' }, k)
-    console.log(
-      '  subs manager server amount of subscriptions -> ',
-      k.replace(constants.REGISTRY_SUBSCRIPTION_INDEX, ''),
-      x.length
-    )
-  }
-
-  // do similair things with the process on next tick
-
   // console.log('ok this is now a different thingy')
   // // need to find if created etc - have to send the 'removed'
   // // make a constant registry_subscription_index

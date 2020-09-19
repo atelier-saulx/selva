@@ -1,5 +1,5 @@
 import test from 'ava'
-import { connect, connections, Observable } from '@saulx/selva'
+import { connect, connections, Observable, constants } from '@saulx/selva'
 import {
   startRegistry,
   startOrigin,
@@ -53,6 +53,21 @@ test.serial('Make some observables', async t => {
 
   const client = connect({ port })
 
+  const getServersSubscriptions = async (): Promise<{
+    [server: string]: string[]
+  }> => {
+    const servers = await client.redis.keys(
+      { type: 'subscriptionRegistry' },
+      constants.REGISTRY_SUBSCRIPTION_INDEX + '*'
+    )
+    const s = {}
+    for (let k of servers) {
+      const x = await client.redis.smembers({ type: 'subscriptionRegistry' }, k)
+      s[k.replace(constants.REGISTRY_SUBSCRIPTION_INDEX, '')] = x
+    }
+    return s
+  }
+
   await client.updateSchema({
     rootType: {
       fields: {
@@ -88,6 +103,8 @@ test.serial('Make some observables', async t => {
 
   obs2.subscribe(() => {})
 
+  await wait(100)
+
   const obs3 = client.observe({
     $id: 'root',
     nest: true,
@@ -114,6 +131,8 @@ test.serial('Make some observables', async t => {
   await wait(3e3)
 
   console.log('XXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+
+  console.log(await getServersSubscriptions())
 
   console.log(client.servers.subsManagers)
 
