@@ -103,7 +103,7 @@ test.serial('Make some observables', async t => {
 
   obs2.subscribe(() => {})
 
-  await wait(100)
+  // await wait(100)
 
   const obs3 = client.observe({
     $id: 'root',
