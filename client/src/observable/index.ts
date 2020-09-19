@@ -297,7 +297,7 @@ export class Observable {
     // to start selecting on process next tick
     // is 1 second maybe too much?
     // keep a timer with in the same tick for selecting subs managers - use this to determine delay
-    await wait(~~(Math.random() * 500))
+    // await wait(~~(Math.random() * 1000))
 
     const channel = this.uuid
     const getOptions = this.getOptions
