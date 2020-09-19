@@ -18,7 +18,10 @@ const handleAddPrev = async (
   const prev = await client.redis.get({ type: 'subscriptionRegistry' }, channel)
   if (prev) {
     if (prev !== id) {
-      console.log('previous id SUBS MANAGER need to override', prev)
+      console.log(
+        'previous id SUBS MANAGER need to override and send a move commaand',
+        prev
+      )
       // publish
       // await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
     } else {
@@ -36,7 +39,6 @@ const handleRemovePrev = async (
 ) => {
   const prev = await client.redis.get({ type: 'subscriptionRegistry' }, channel)
   if (prev === id) {
-    console.log('remove it')
     await client.redis.del(channel)
   }
 }
@@ -49,16 +51,13 @@ export default async function updateRegistry(
   for (let key in info.subscriptions) {
     subscriptions[key] = info.subscriptions[key]
   }
-
   if (!publishInProgress) {
     publishInProgress = true
     process.nextTick(() => {
-      console.log('ok process', subscriptions)
       const q = []
       const id = info.host + ':' + info.port
       const size = Object.keys(subsManager.subscriptions).length
       q.push(client.redis.hset({ type: 'registry' }, id, 'subs', size))
-
       for (let channel in subscriptions) {
         // make this efficient wiht a q
         const type = subscriptions[channel]
@@ -71,9 +70,6 @@ export default async function updateRegistry(
             )
           )
           q.push(handleAddPrev(client, channel, id))
-          // q.push(
-          //   client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
-          // )
         } else if (type === 'removed') {
           q.push(
             client.redis.srem(
@@ -85,7 +81,6 @@ export default async function updateRegistry(
           q.push(handleRemovePrev(client, channel, id))
         }
       }
-
       publishInProgress = false
       subscriptions = {}
       Promise.all(q)
