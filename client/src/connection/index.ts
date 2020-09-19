@@ -8,6 +8,9 @@ import { RedisClient } from 'redis'
 import { Callback } from '../redis/types'
 import { serverId, isEmptyObject } from '../util'
 import { Observable } from '../observable'
+import { CLIENTS, HEARTBEAT, STOP_HEARTBEAT } from '../constants'
+
+const CLIENT_HEARTBEAT_TIMER = 1e3
 
 const connections: Map<string, Connection> = new Map()
 
@@ -84,6 +87,71 @@ class Connection {
   public clientsConnected: { subscriber: boolean; publisher: boolean } = {
     subscriber: false,
     publisher: false
+  }
+
+  // dont add this to state keep it simple
+  public clientHb: {
+    [uuid: string]: {
+      counter: number
+      timer: NodeJS.Timeout
+    }
+  } = {}
+
+  public stopClientHb(uuid: string, id: string) {
+    const s = this.clientHb[uuid]
+    if (s) {
+      s.counter--
+      if (s.counter === 0) {
+        clearTimeout(s.timer)
+        delete this.clientHb[uuid]
+        console.log('HB STOPPED WE WANT TO SEND IT NOW!', this.uuid, uuid)
+        this.command({
+          id: id,
+          command: 'hdel',
+          args: [CLIENTS, uuid]
+        })
+        this.command({
+          command: 'publish',
+          id: id,
+          args: [STOP_HEARTBEAT, uuid]
+        })
+      }
+    }
+  }
+
+  public startClientHb(uuid: string, id: string) {
+    if (this.clientHb[uuid]) {
+      this.clientHb[uuid].counter++
+      return
+    }
+    this.clientHb[uuid] = { counter: 0, timer: null }
+    this.clientHb[uuid].counter++
+    clearTimeout(this.clientHb[uuid].timer)
+    const setHeartbeat = () => {
+      if (this.connected) {
+        this.command({
+          id: id,
+          command: 'hset',
+          args: [CLIENTS, uuid, Date.now()]
+        })
+        this.command({
+          command: 'publish',
+          id: id,
+          args: [
+            HEARTBEAT,
+            JSON.stringify({
+              client: uuid,
+              ts: Date.now()
+            })
+          ]
+        })
+      }
+      this.clientHb[uuid].timer = setTimeout(
+        setHeartbeat,
+        CLIENT_HEARTBEAT_TIMER
+      )
+    }
+    setHeartbeat()
   }
 
   public isDestroyed: boolean = false
@@ -475,8 +543,8 @@ class Connection {
     this.subscriber.removeAllListeners()
     this.publisher.removeAllListeners()
 
-    this.subscriber.on('error', () => { })
-    this.publisher.on('error', () => { })
+    this.subscriber.on('error', () => {})
+    this.publisher.on('error', () => {})
 
     this.subscriber.quit()
     this.publisher.quit()
@@ -494,6 +562,13 @@ class Connection {
     if (this.startClientTimer) {
       clearTimeout(this.startClientTimer)
     }
+
+    for (const k in this.clientHb) {
+      // does not send a remove client event scine we want those to stay persistent trough a hdc
+      clearTimeout(this.clientHb[k].timer)
+      delete this.clientHb[k]
+    }
+
     this.startClientTimer = null
 
     connections.delete(serverId(this.serverDescriptor))

@@ -1,17 +1,14 @@
 import { SelvaClient } from '..'
 import generateSubscriptionId from './generateSubscriptionId'
 import { ObservableOptions } from './types'
-import { v4 as uuidv4 } from 'uuid'
 
 import { GetOptions } from '../get'
-import { createConnection, Connection } from '../connection'
+import { createConnection, Connection, connections } from '../connection'
 
 import {
   NEW_SUBSCRIPTION,
   SUBSCRIPTIONS,
   REMOVE_SUBSCRIPTION,
-  HEARTBEAT,
-  CLIENTS,
   CACHE
 } from '../constants'
 
@@ -19,7 +16,6 @@ import parseError from './parseError'
 import { wait } from '../util'
 
 var observableIds = 0
-const HEARTBEAT_TIMER = 1e3
 
 type UpdateCallback = (value: any, checksum?: string, diff?: any) => void
 
@@ -37,7 +33,6 @@ export class Observable {
     // so this is a bit weird scince we dont do re-use over selva clients for now
     // but this optimizes for diconnecting clients
     // and scince we are going to do more stuff with markers / balancing etc i think this is better
-    this.clientUuid = uuidv4()
     this.selvaClient = selvaClient
 
     if (!this.selvaClient.observables) {
@@ -87,8 +82,6 @@ export class Observable {
 
   public uuid: string // hash of getoptions
 
-  public clientUuid: string // this will be written on the subs manager fuck it!
-
   public clients: Set<SelvaClient> = new Set()
 
   public selvaId: string
@@ -101,46 +94,18 @@ export class Observable {
 
   public useCache: boolean
 
-  public heartbeatTimout: NodeJS.Timeout
-
-  public startSubscriptionHeartbeat() {
-    clearTimeout(this.heartbeatTimout)
-    const setHeartbeat = () => {
-      // this has to be a thing in the connection
-      // checks if it allrdy ok
-
-      // then this uuid is allwats just the selva uuid
-      if (this.connection) {
-        if (this.connection.connected) {
-          this.connection.command({
-            id: this.selvaId,
-            command: 'hset',
-            args: [CLIENTS, this.clientUuid, Date.now()]
-          })
-          this.connection.command({
-            command: 'publish',
-            id: this.selvaId,
-            args: [
-              HEARTBEAT,
-              JSON.stringify({
-                client: this.clientUuid,
-                ts: Date.now()
-              })
-            ]
-          })
-        }
-        this.heartbeatTimout = setTimeout(setHeartbeat, HEARTBEAT_TIMER)
-      }
-    }
-    setHeartbeat()
-  }
-
   public hardDisconnect() {
-    console.log('hdc on obs bitch', this.uuid, this.selvaId, this.clientUuid)
+    console.log(
+      'hdc on obs bitch',
+      this.uuid,
+      this.selvaId,
+      this.selvaClient.uuid
+    )
 
-    // cleaer timer
+    // cleaer timer - dont need to auto handled
+    // this.connection.stopClientHb(this.selvaClient.uuid, this.selvaId)
+
     delete this.connection
-    clearTimeout(this.heartbeatTimout)
   }
 
   public listeners: UpdateCallback[] = []
@@ -322,14 +287,14 @@ export class Observable {
     })
     connection.command({
       command: 'sadd',
-      args: [channel, this.clientUuid],
+      args: [channel, this.selvaClient.uuid],
       id
     })
     connection.command({
       command: 'publish',
       args: [
         NEW_SUBSCRIPTION,
-        JSON.stringify({ client: this.clientUuid, channel })
+        JSON.stringify({ client: this.selvaClient.uuid, channel })
       ],
       id
     })
@@ -347,7 +312,7 @@ export class Observable {
     // this is not good! per observable a hb is waaay too much
     // we need to include the connectin id or something
     // or just use the selva uuid (prob the best)
-    this.startSubscriptionHeartbeat()
+    connection.startClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
 
     // has to be a bit different!
     console.log('get dat value')
@@ -359,9 +324,6 @@ export class Observable {
       console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
-    clearTimeout(this.heartbeatTimout)
-
-    // need to stop hb
 
     console.log('destroy obs')
 
@@ -377,6 +339,10 @@ export class Observable {
     const connection = this.connection
     if (connection) {
       const selvaClientId = this.selvaClient.selvaId
+
+      console.log('STOP CLIENT HB')
+      connection.stopClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
+
       // use selvaId probably
       connection.unsubscribe(channel, id)
 
@@ -387,14 +353,14 @@ export class Observable {
       // this is to close so it sues the selva id
       connection.command({
         command: 'srem',
-        args: [channel, this.clientUuid],
+        args: [channel, this.selvaClient.uuid],
         id: selvaClientId
       })
       connection.command({
         command: 'publish',
         args: [
           REMOVE_SUBSCRIPTION,
-          JSON.stringify({ client: this.clientUuid, channel })
+          JSON.stringify({ client: this.selvaClient.uuid, channel })
         ],
         id: selvaClientId
       })

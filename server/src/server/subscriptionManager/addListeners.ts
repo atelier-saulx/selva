@@ -3,7 +3,13 @@ import { constants } from '@saulx/selva'
 import { addClientSubscription } from './addSubscription'
 import { removeClientSubscription } from './removeSubscription'
 
-const { HEARTBEAT, CLIENTS, REMOVE_SUBSCRIPTION, NEW_SUBSCRIPTION } = constants
+const {
+  HEARTBEAT,
+  CLIENTS,
+  REMOVE_SUBSCRIPTION,
+  NEW_SUBSCRIPTION,
+  STOP_HEARTBEAT
+} = constants
 
 const addListeners = async (
   subsManager: SubscriptionManager
@@ -12,7 +18,15 @@ const addListeners = async (
   const redis = subsManager.client.redis
 
   redis.on(selector, 'message', (channel, message) => {
-    if (channel === HEARTBEAT) {
+    if (channel === STOP_HEARTBEAT) {
+      if (message in subsManager.clients) {
+        subsManager.clients[message].subscriptions.forEach(channel => {
+          removeClientSubscription(subsManager, message, channel)
+        })
+        delete subsManager.clients[message]
+      }
+      // remove all subs
+    } else if (channel === HEARTBEAT) {
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {
         // console.log('Received new client on server', client)
@@ -33,6 +47,7 @@ const addListeners = async (
     }
   })
 
+  redis.subscribe(selector, STOP_HEARTBEAT)
   redis.subscribe(selector, NEW_SUBSCRIPTION)
   redis.subscribe(selector, HEARTBEAT)
   redis.subscribe(selector, REMOVE_SUBSCRIPTION)
