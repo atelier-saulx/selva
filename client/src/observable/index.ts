@@ -207,8 +207,6 @@ export class Observable {
       console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
-
-    console.log('gooo???')
     this.subsCounter--
     if (this.subsCounter === 0) {
       this.destroy()
@@ -322,7 +320,9 @@ export class Observable {
     // also need to get initial value!
     connection.addRemoteListener('message', (incomingChannel, msg) => {
       if (channel === incomingChannel) {
-        console.log('GO A MSG', msg)
+        // msg is checksum
+        // will also add diff maybe? or store the last diff?
+        console.log('Incoming msg for observable')
       }
     })
     connection.subscribe(channel, id)

@@ -56,7 +56,6 @@ const orderServers = (type: string, servers: ServerIndex[], client: SelvaClient,
   }
 
   if (move) {
-    console.log('MOVE', servers)
     q.push(
       redis.publish(
         {

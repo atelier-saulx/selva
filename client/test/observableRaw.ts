@@ -47,6 +47,10 @@ test.serial('Make some observables', async t => {
     registry: connectOpts
   })
 
+  const subsmanager3 = await startSubscriptionManager({
+    registry: connectOpts
+  })
+
   const client = connect({ port })
 
   await client.updateSchema({
@@ -72,13 +76,25 @@ test.serial('Make some observables', async t => {
 
   t.deepEqual(x, { value: 1 })
 
-  // what to do here?
-  // client.observe()
-
   const obs = client.observe({
     $id: 'root',
     value: true
   })
+
+  const obs2 = client.observe({
+    $id: 'root',
+    nest: true
+  })
+
+  obs2.subscribe(() => {})
+
+  const obs3 = client.observe({
+    $id: 'root',
+    nest: true,
+    value: true
+  })
+
+  obs3.subscribe(() => {})
 
   client
     .getServer(
@@ -98,6 +114,8 @@ test.serial('Make some observables', async t => {
   await wait(3e3)
 
   console.log('XXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+
+  console.log(client.servers.subsManagers)
 
   await worker(
     async ({ connect, wait }, { port }) => {

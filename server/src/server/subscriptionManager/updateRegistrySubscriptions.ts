@@ -26,8 +26,8 @@ export default async function updateRegistry(
   client.redis.hset({ type: 'registry' }, id, 'subs', size)
 
   for (let channel in info.subscriptions) {
+    // make this efficient wiht a q
     const type = info.subscriptions[channel]
-
     if (type === 'created') {
       await client.redis.sadd(
         { type: 'subscriptionRegistry' },
@@ -40,19 +40,17 @@ export default async function updateRegistry(
       )
       if (prev) {
         if (prev !== id) {
-          console.log('previous!', prev)
+          console.log('previous id SUBS MANAGER need to override', prev)
           // publish
 
           // await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
         } else {
-          console.log('allrdy keep')
+          console.log('allrdy have subs (sm update reg) keep')
         }
-        // check if server exists
-        // if so then send a move publish command to the registry
       } else {
         await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
       }
-    } else {
+    } else if (type === 'removed') {
       await client.redis.srem(
         { type: 'subscriptionRegistry' },
         constants.REGISTRY_SUBSCRIPTION_INDEX + '_' + id,
@@ -67,16 +65,25 @@ export default async function updateRegistry(
         await client.redis.del(channel)
       }
     }
-
     await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
   }
 
-  const x = await client.redis.smembers(
+  const servers = await client.redis.keys(
     { type: 'subscriptionRegistry' },
-    constants.REGISTRY_SUBSCRIPTION_INDEX + '_' + id
+    constants.REGISTRY_SUBSCRIPTION_INDEX + '*'
   )
 
-  console.log(x)
+  // for information
+  for (let k of servers) {
+    const x = await client.redis.smembers({ type: 'subscriptionRegistry' }, k)
+    console.log(
+      '  subs manager server amount of subscriptions -> ',
+      k.replace(constants.REGISTRY_SUBSCRIPTION_INDEX, ''),
+      x.length
+    )
+  }
+
+  // do similair things with the process on next tick
 
   // console.log('ok this is now a different thingy')
   // // need to find if created etc - have to send the 'removed'
