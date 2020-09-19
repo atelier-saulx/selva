@@ -130,6 +130,9 @@ test.serial('Make some observables', async t => {
   // need to test lesst strict we just want these numbers
   const resultSpread = [1, 2, 1]
 
+  const s = await getServersSubscriptions()
+  console.log('???????', s)
+
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map(v => v.length),
     resultSpread,

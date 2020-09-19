@@ -16,7 +16,6 @@ const addListeners = async (
 ): Promise<void> => {
   const { selector } = subsManager
   const redis = subsManager.client.redis
-
   redis.on(selector, 'message', (channel, message) => {
     if (channel === STOP_HEARTBEAT) {
       if (message in subsManager.clients) {
@@ -25,24 +24,20 @@ const addListeners = async (
         })
         delete subsManager.clients[message]
       }
-      // remove all subs
     } else if (channel === HEARTBEAT) {
       const { client, ts } = JSON.parse(message)
       if (!subsManager.clients[client]) {
-        // console.log('Received new client on server', client)
         subsManager.clients[client] = { subscriptions: new Set(), lastTs: ts }
         redis.hset(selector, CLIENTS, client, ts)
       } else {
         subsManager.clients[client].lastTs = ts
         redis.hset(selector, CLIENTS, client, ts)
       }
-      // want to remove these clients!
     } else if (channel === NEW_SUBSCRIPTION) {
       const { client, channel } = JSON.parse(message)
       addClientSubscription(subsManager, client, channel)
     } else if (channel === REMOVE_SUBSCRIPTION) {
       const { client, channel } = JSON.parse(message)
-      console.log('Got a remove sub on (server)', subsManager.client.uuid)
       removeClientSubscription(subsManager, client, channel)
     }
   })
