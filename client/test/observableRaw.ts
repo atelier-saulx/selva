@@ -99,7 +99,7 @@ test.serial('Make some observables', async t => {
 
   obs2.subscribe(() => {})
 
-  await wait(500)
+  await wait(1200)
 
   const obs3 = client.observe({
     $id: 'root',
@@ -125,7 +125,7 @@ test.serial('Make some observables', async t => {
 
   obs4.subscribe(() => {})
 
-  await wait(1e3)
+  await wait(1200)
 
   const spread = await getServersSubscriptions()
 
