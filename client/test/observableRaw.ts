@@ -17,10 +17,6 @@ const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-// const x= '/dahsbo/:id/:smurk'.replace(/:s*.*?(?=\s*\/)/g, 'lur')
-
-// in: '/dahsbo/:id/:smurk' out: '/dahsbo/lur/lur'
-
 test.serial('Make some observables', async t => {
   // maybe run all the servers in workers
   const port = await getPort()
@@ -103,7 +99,7 @@ test.serial('Make some observables', async t => {
 
   obs2.subscribe(() => {})
 
-  await wait(100)
+  await wait(500)
 
   const obs3 = client.observe({
     $id: 'root',
@@ -112,17 +108,6 @@ test.serial('Make some observables', async t => {
   })
 
   obs3.subscribe(() => {})
-
-  client
-    .getServer(
-      {
-        type: 'subscriptionManager'
-      },
-      { subscription: obs.uuid }
-    )
-    .then(v => {
-      console.log('--->', v)
-    })
 
   obs.subscribe((value, checksum, diff) => {
     console.log('yesh', value, checksum, diff)
@@ -142,12 +127,28 @@ test.serial('Make some observables', async t => {
 
   await wait(1e3)
 
-  console.log('XXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+  const spread = await getServersSubscriptions()
 
-  console.log(await getServersSubscriptions())
+  const v = Object.values(spread)
 
-  console.log(client.servers.subsManagers)
+  const resultSpread = [
+    ['706795659de96229b7166f18062a5d5d10f64b446187accc80a4679fd2c03a53'],
+    [
+      '63aef0b842066c8ff446a0f53b90c0b54120e7c100573fb5dfd31434b029993c',
+      '85ea0edb9f8024a57df3f6b465c26eaeedc83d14f75b537fddbddf07f108cd17'
+    ],
+    ['c22547f0f450fd5d51635e157bb4f47559c815fb7c1eff01bc9cdee1c38540f2']
+  ]
 
+  t.deepEqualIgnoreOrder(
+    v,
+    resultSpread,
+    'Correct spread of subscriptions on subs managers'
+  )
+
+  // use this worker to test
+  //  - ordering of stuff
+  //  - adds to the same subs manager
   await worker(
     async ({ connect, wait }, { port }) => {
       const client = connect({ port })
@@ -156,14 +157,36 @@ test.serial('Make some observables', async t => {
           $id: 'root',
           value: true
         })
-        .subscribe((value, checksum, diff) => {
-          console.log('yesh2', value, checksum, diff)
+        .subscribe(() => {})
+
+      client
+        .observe({
+          $id: 'root',
+          nest: {
+            fun: true
+          },
+          value: true
         })
+        .subscribe(() => {})
+
+      client
+        .observe({
+          $id: 'root',
+          nest: true,
+          value: true
+        })
+        .subscribe(() => {})
 
       await wait(3e3)
       client.destroy()
     },
     { port }
+  )
+
+  t.deepEqualIgnoreOrder(
+    v,
+    resultSpread,
+    'Correct spread after worker tries the same subscriptions'
   )
 
   await wait(3e3)
