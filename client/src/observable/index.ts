@@ -294,7 +294,8 @@ export class Observable {
 
     this.isStarted = true
 
-    await wait(0)
+    // to start selecting on process next tick
+    await wait(10)
 
     const channel = this.uuid
     const getOptions = this.getOptions
