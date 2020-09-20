@@ -2,7 +2,7 @@ import { SelvaServer } from '../'
 import { constants, ServerDescriptor, SelvaClient } from '@saulx/selva'
 import chalk from 'chalk'
 
-const { REGISTRY_UPDATE } = constants
+const { REGISTRY_UPDATE, REGISTRY_SUBSCRIPTION_INDEX } = constants
 
 type ServerIndex = {
   index: number
@@ -79,11 +79,43 @@ const orderServers = (
   return q
 }
 
-// on remove need to get rid of subs stuff
+const removeServerFromSubsRegistry = async (
+  client: SelvaClient,
+  server: ServerDescriptor
+) => {
+  const id = `${server.host}:${server.port}`
+  const serverIndex = await client.redis.smembers(
+    { type: 'subscriptionRegistry' },
+    REGISTRY_SUBSCRIPTION_INDEX + id
+  )
+  await Promise.all(
+    serverIndex.map(async (channel: string) => {
+      const prev = await client.redis.get(
+        { type: 'subscriptionRegistry' },
+        channel
+      )
+      if (prev === id) {
+        await client.redis.del({ type: 'subscriptionRegistry' }, channel)
+      } else {
+        console.warn(
+          chalk.yellow(
+            `Trying to remove a subscription registry channel index that does not match. index: ${channel}:${prev} server: ${id}`
+          )
+        )
+      }
+    })
+  )
+  await client.redis.del(
+    { type: 'subscriptionRegistry' },
+    REGISTRY_SUBSCRIPTION_INDEX + id
+  )
+}
 
 export const registryManager = (server: SelvaServer) => {
   // not reallty nessecary but nice to see for now
-  server.selvaClient.on('added-servers', ({ event, server }) => {
+  const client = server.selvaClient
+
+  client.on('added-servers', ({ event, server }) => {
     // this means we are going to re-index
     if (event === '*') {
       // got all of them
@@ -99,7 +131,7 @@ export const registryManager = (server: SelvaServer) => {
     }
   })
 
-  server.selvaClient.on(
+  client.on(
     'removed-servers',
     ({ event, server }: { event: string; server: ServerDescriptor }) => {
       if (event === '*') {
@@ -113,12 +145,14 @@ export const registryManager = (server: SelvaServer) => {
           server.host,
           server.port
         )
-
         if (server.type === 'subscriptionManager') {
-          console.log(
-            'REGISTRY: A subscriptionManager is removed! now its time to clean the subs registry'
-          )
-          // get rid of it
+          removeServerFromSubsRegistry(client, server).then(() => {
+            console.log(
+              chalk.gray(
+                'Succesfully removed subsmanager from subscription-registry'
+              )
+            )
+          })
         }
       }
     }

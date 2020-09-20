@@ -180,6 +180,8 @@ test.serial('Make some observables and many subs managers', async t => {
 
   const servers = await getServersSubscriptions()
 
+  const newClient = connect({ port })
+
   const obs5 = new Observable(
     {
       type: 'get',
@@ -191,7 +193,7 @@ test.serial('Make some observables and many subs managers', async t => {
         value: true
       }
     },
-    client
+    newClient
   )
 
   const uuid = obs5.uuid
@@ -240,9 +242,48 @@ test.serial('Make some observables and many subs managers', async t => {
     'New server does have moved channel'
   )
 
+  t.is(
+    Object.values(await getServersSubscriptions()).reduce((a, b) => {
+      return a + b.length
+    }, 0),
+    4,
+    'after moving to obs5 still has 4 things'
+  )
+
+  // we just destroyed the other observable as well :/
   obs5.destroy()
 
+  await wait(1e3)
+  await newClient.destroy()
+
+  t.is(
+    Object.values(await getServersSubscriptions()).reduce((a, b) => {
+      return a + b.length
+    }, 0),
+    4,
+    'after removing obs5 still has 4 subs'
+  )
+
   await wait(3e3)
+
+  console.log('BEFORE REMOVE', await getServersSubscriptions())
+
+  await subsmanager.destroy()
+  await subsmanager2.destroy()
+
+  console.log('AFTER REMOVE', await getServersSubscriptions())
+
+  const s = await getServersSubscriptions()
+
+  t.is(
+    Object.values(await getServersSubscriptions()).reduce((a, b) => {
+      return a + b.length
+    }, 0),
+    4,
+    'after removing servers still has 4 subs'
+  )
+
+  await wait(10e3)
 
   obs.unsubscribe()
   obs2.unsubscribe()
@@ -255,7 +296,7 @@ test.serial('Make some observables and many subs managers', async t => {
   t.deepEqual(
     await getServersSubscriptions(),
     {},
-    'all subs are removed form subsregistry'
+    'all subs are removed from subsregistry'
   )
 
   const [, w] = await worker(
@@ -289,8 +330,6 @@ test.serial('Make some observables and many subs managers', async t => {
 
   await wait(500)
   await client.destroy()
-  await subsmanager.destroy()
-  await subsmanager2.destroy()
   await subsmanager3.destroy()
   await subsregistry.destroy()
   await registry.destroy()
