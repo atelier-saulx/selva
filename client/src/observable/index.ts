@@ -93,19 +93,10 @@ export class Observable {
   public useCache: boolean
 
   public async hardDisconnect() {
-    console.log(
-      'hdc on obs bitch',
-      this.uuid,
-      this.selvaId,
-      this.selvaClient.uuid
-    )
     // just call start again
     this.isStarted = false
-
     const prevServer = `${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
-
     delete this.connection
-
     console.log(
       chalk.yellow(
         `Hard disconnection event on observable ${this.uuid} ${prevServer}`
