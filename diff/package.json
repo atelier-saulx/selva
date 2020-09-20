@@ -3,8 +3,10 @@
   "version": "0.0.1",
   "main": "./dist/index.js",
   "scripts": {
+    "build-cpp": "node-gyp rebuild",
     "build": "tsc",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "test": "ava --verbose"
   },
   "repository": "https://github.com/atelier-saulx/selva",
   "lint-staged": {
@@ -38,6 +40,8 @@
     "selva-server": "/bin/index.js"
   },
   "devDependencies": {
+    "node-gyp": "^7.0.0",
+    "node-addon-api": "^3.0.0",
     "ava": "2.4.0",
     "husky": "^3.0.8",
     "lint-staged": "^9.4.2",

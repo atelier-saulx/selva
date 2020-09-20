@@ -3,7 +3,7 @@ import { performance } from 'perf_hooks'
 import { Worker } from 'worker_threads'
 import { join } from 'path'
 
-const testAddon = require('../../../../../../../build/Release/testaddon.node')
+// const testAddon = require('../../../../../../../build/Release/testaddon.node')
 
 // const workerPath = join(__dirname, 'worker.js')
 
