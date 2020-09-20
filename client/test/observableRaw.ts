@@ -266,14 +266,10 @@ test.serial('Make some observables and many subs managers', async t => {
 
   await wait(3e3)
 
-  console.log('BEFORE REMOVE', await getServersSubscriptions())
-
   await subsmanager.destroy()
   await subsmanager2.destroy()
 
-  console.log('AFTER REMOVE', await getServersSubscriptions())
-
-  const s = await getServersSubscriptions()
+  await wait(3e3)
 
   t.is(
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
@@ -281,6 +277,12 @@ test.serial('Make some observables and many subs managers', async t => {
     }, 0),
     4,
     'after removing servers still has 4 subs'
+  )
+
+  t.deepEqualIgnoreOrder(
+    Object.values(await getServersSubscriptions()).map(v => v.length),
+    [4],
+    'Correct spread one 1 server is left'
   )
 
   await wait(10e3)

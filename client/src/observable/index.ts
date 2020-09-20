@@ -92,15 +92,21 @@ export class Observable {
 
   public useCache: boolean
 
-  public hardDisconnect() {
+  public async hardDisconnect() {
     console.log(
       'hdc on obs bitch',
       this.uuid,
       this.selvaId,
       this.selvaClient.uuid
     )
+    // just call start again
+    this.isStarted = false
+
     // cleaer timer - dont need to auto handled
     delete this.connection
+
+    await this.start()
+    console.log('Successfully restarted obs after hard disconnect')
   }
 
   public listeners: UpdateCallback[] = []
