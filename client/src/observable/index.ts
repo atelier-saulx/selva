@@ -140,7 +140,7 @@ export class Observable {
     if (this.isDestroyed) {
       console.warn(
         chalk.yellow(
-          `Trying to subscribe to an observable that is allready destroyed`
+          `Trying to subscribe to an observable that is already destroyed`
         ),
         this.getOptions || this.options
       )
@@ -176,7 +176,7 @@ export class Observable {
     if (this.isDestroyed) {
       console.warn(
         chalk.yellow(
-          `Trying to unsubscribe to an observable that is allready destroyed ${this.uuid}`
+          `Trying to unsubscribe to an observable that is already destroyed ${this.uuid}`
         )
       )
       return
@@ -268,7 +268,7 @@ export class Observable {
     if (this.isStarted) {
       console.warn(
         chalk.yellow(
-          `Trying to start an observable that is allready started ${this.uuid}`
+          `Trying to start an observable that is already started ${this.uuid}`
         )
       )
       return
@@ -276,7 +276,7 @@ export class Observable {
     if (this.connection) {
       console.warn(
         chalk.yellow(
-          `Trying to start an observable that allready has an active connection ${this.uuid}`
+          `Trying to start an observable that already has an active connection ${this.uuid}`
         )
       )
       return
@@ -356,7 +356,7 @@ export class Observable {
     if (this.isDestroyed) {
       console.warn(
         chalk.yellow(
-          `Trying to destroy an observable that is allready destroyed ${this.uuid}`
+          `Trying to destroy an observable that is already destroyed ${this.uuid}`
         )
       )
       return

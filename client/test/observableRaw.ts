@@ -18,7 +18,7 @@ const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-test.serial('Make some observables', async t => {
+test.serial('Make some observables and many subs managers', async t => {
   // maybe run all the servers in workers
   const port = await getPort()
   const registry = await startRegistry({ port })
