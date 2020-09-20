@@ -1,13 +1,3 @@
-// hack for colors in a worker process
-for (const stream of ['stdout', 'stdin', 'stderr']) {
-  if (process[stream].isTTY === undefined) {
-    process[stream].isTTY = true
-  }
-}
-
-// import chalk from 'chalk'
-// console.log(chalk.red('x'))
-
 import { ServerOptions } from '../../types'
 import { SubscriptionManager } from './types'
 import { SelvaClient } from '@saulx/selva'

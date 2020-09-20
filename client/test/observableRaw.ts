@@ -26,8 +26,7 @@ test.serial('Make some observables and many subs managers', async t => {
 
   const origin = await startOrigin({
     registry: connectOpts,
-    default: true,
-    dir: join(dir, 'observablesgotime')
+    default: true
   })
 
   // one extra to offload registry
@@ -333,6 +332,75 @@ test.serial('Make some observables and many subs managers', async t => {
   await wait(500)
   await client.destroy()
   await subsmanager3.destroy()
+  await subsregistry.destroy()
+  await registry.destroy()
+  await origin.destroy()
+  await t.connectionsAreEmpty()
+})
+
+test.only('diff observables', async t => {
+  const port = await getPort()
+  const registry = await startRegistry({ port })
+  const connectOpts = { port }
+
+  const origin = await startOrigin({
+    registry: connectOpts,
+    default: true,
+    dir: join(dir, 'diff-origin')
+  })
+
+  // add in a replica
+
+  // one extra to offload registry
+  const subsregistry = await startSubscriptionRegistry({
+    registry: connectOpts
+  })
+
+  // do this later startReplica
+  const subsmanager = await startSubscriptionManager({
+    registry: connectOpts
+  })
+
+  const subsmanager2 = await startSubscriptionManager({
+    registry: connectOpts
+  })
+
+  const client = connect({ port })
+
+  await client.updateSchema({
+    rootType: {
+      fields: {
+        value: { type: 'number' },
+        nested: {
+          type: 'object',
+          properties: {
+            fun: { type: 'string' }
+          }
+        }
+      }
+    }
+  })
+
+  const obs = client.observe({
+    $id: 'root',
+    value: true
+  })
+
+  obs.subscribe((value, checksum, diff) => {
+    console.log('GET DAT SHIT', value, checksum, diff)
+  })
+
+  await wait(500)
+
+  await client.set({
+    $id: 'root',
+    value: 1
+  })
+
+  await wait(2500)
+  await client.destroy()
+  await subsmanager.destroy()
+  await subsmanager2.destroy()
   await subsregistry.destroy()
   await registry.destroy()
   await origin.destroy()

@@ -3,10 +3,11 @@ import { addSubscriptionToTree, removeSubscriptionFromTree } from '../../tree'
 import { hash } from '../../util'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
-import diff from './diff'
+// import diff from './diff'
 
 const { CACHE } = constants
 
+console.log('!@#!@#!@##!@')
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
   subscription: Subscription
@@ -14,6 +15,8 @@ const sendUpdate = async (
   const channel = subscription.channel
   const { client, selector } = subscriptionManager
   const redis = client.redis
+
+  console.log('SEND UPDATE')
 
   if (subscriptionManager.subscriptions[channel] !== subscription) {
     return
@@ -109,9 +112,12 @@ const sendUpdate = async (
 
   subscription.version = newVersion
 
+  console.log('snurf')
   // not the best will use te cache for this!
   // const prev = await redis.hget(selector, CACHE, channel)
   // const patch = diff(prev, resultStr)
+
+  // console.log('MAKE PATCH', patch)
 
   q.push(
     redis.hmset(
@@ -125,6 +131,8 @@ const sendUpdate = async (
   )
 
   await Promise.all(q)
+
+  console.log('YESH NICE!')
 
   await redis.publish(
     selector,
