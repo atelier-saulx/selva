@@ -11,6 +11,7 @@ import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
 import getPort from 'get-port'
+import { ServerSelector } from '../dist/src/types'
 
 const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 
@@ -99,7 +100,7 @@ test.serial('Make some observables', async t => {
 
   obs2.subscribe(() => {})
 
-  await wait(1200)
+  await wait(1e3)
 
   const obs3 = client.observe({
     $id: 'root',
@@ -108,12 +109,9 @@ test.serial('Make some observables', async t => {
   })
 
   obs3.subscribe(() => {})
+  obs.subscribe(() => {})
 
-  obs.subscribe((value, checksum, diff) => {
-    console.log('yesh', value, checksum, diff)
-  })
-
-  await wait(3e3)
+  await wait(1e3)
 
   const obs4 = client.observe({
     $id: 'root',
@@ -125,7 +123,7 @@ test.serial('Make some observables', async t => {
 
   obs4.subscribe(() => {})
 
-  await wait(1200)
+  await wait(1e3)
 
   // need to test lesst strict we just want these numbers
   const resultSpread = [1, 2, 1]
@@ -179,10 +177,49 @@ test.serial('Make some observables', async t => {
   )
 
   await wait(1e3)
+
+  console.log(client.servers.subsManagers)
+
+  const servers = await getServersSubscriptions()
+
+  const obs5 = new Observable(
+    {
+      type: 'get',
+      options: {
+        $id: 'root',
+        nest: {
+          fun: true
+        },
+        value: true
+      }
+    },
+    client
+  )
+
+  const uuid = obs5.uuid
+
+  const serverSelector: ServerSelector = {}
+  for (const id in servers) {
+    const f = servers[id].find(u => u === uuid)
+    if (!f) {
+      const [host, port] = id.split(':')
+      serverSelector.host = host
+      serverSelector.port = Number(port)
+      break
+    }
+  }
+
+  console.log('TRY MOVEMENT')
+  // await obs5.start(serverSelector)
+
+  await wait(2e3)
+
   obs.unsubscribe()
   obs2.unsubscribe()
   obs3.unsubscribe()
   obs4.unsubscribe()
+
+  // send a publish of a subscription to a specific sub manager
 
   await wait(2000)
 
@@ -200,18 +237,18 @@ test.serial('Make some observables', async t => {
         value: true
       })
       obs.subscribe(() => {})
-      console.log('UUID FOR WORKER', obs.clientUuid)
       await wait(1e3)
     },
     { port }
   )
-  w.terminate()
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map(v => v.length),
     [1],
     'New sub is added'
   )
+
+  w.terminate()
 
   const servers2 = await getServersSubscriptions()
 
@@ -224,7 +261,7 @@ test.serial('Make some observables', async t => {
   t.deepEqual(
     await getServersSubscriptions(),
     {},
-    'all subs are removed form subsregistry'
+    'all subs are removed from subsregistry'
   )
 
   await wait(500)

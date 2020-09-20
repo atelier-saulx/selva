@@ -104,7 +104,6 @@ class Connection {
       if (s.counter === 0) {
         clearTimeout(s.timer)
         delete this.clientHb[uuid]
-        console.log('HB STOPPED WE WANT TO SEND IT NOW!', this.uuid, uuid)
         this.command({
           id: id,
           command: 'hdel',

@@ -14,6 +14,7 @@ import {
 
 import parseError from './parseError'
 import { wait } from '../util'
+import { ServerSelector } from '~selva/types'
 
 var observableIds = 0
 
@@ -101,10 +102,7 @@ export class Observable {
       this.selvaId,
       this.selvaClient.uuid
     )
-
     // cleaer timer - dont need to auto handled
-    // this.connection.stopClientHb(this.selvaClient.uuid, this.selvaId)
-
     delete this.connection
   }
 
@@ -187,9 +185,7 @@ export class Observable {
     onNext: UpdateCallback,
     onError?: (err: Error) => void
   ) {
-    console.log('go')
     if (this.connection) {
-      console.log('make time do')
       const channel = this.uuid
       this.connection.command({
         command: 'hmget',
@@ -209,7 +205,7 @@ export class Observable {
             }
           } else {
             // maybe not send this
-            console.log('no datax...')
+            // console.log('no datax...')
             onNext(data)
           }
         },
@@ -239,7 +235,7 @@ export class Observable {
             }
           } else {
             // maybe not send this
-            console.log('no datax...')
+            // console.log('no datax...')
             this.emitUpdate(data, version)
           }
         },
@@ -248,7 +244,7 @@ export class Observable {
     }
   }
 
-  public async start() {
+  public async start(selector?: ServerSelector) {
     if (this.isStarted) {
       console.error('observable allrdy started')
       return
@@ -271,7 +267,7 @@ export class Observable {
     const channel = this.uuid
     const getOptions = this.getOptions
     const server = await this.selvaClient.getServer(
-      {
+      selector || {
         type: 'subscriptionManager'
       },
       { subscription: channel }
@@ -304,7 +300,7 @@ export class Observable {
       if (channel === incomingChannel) {
         // msg is checksum
         // will also add diff maybe? or store the last diff?
-        console.log('Incoming msg for observable')
+        // console.log('Incoming msg for observable')
       }
     })
     connection.subscribe(channel, id)
@@ -315,7 +311,6 @@ export class Observable {
     connection.startClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
 
     // has to be a bit different!
-    console.log('get dat value')
     this.getValue()
   }
 
@@ -324,8 +319,6 @@ export class Observable {
       console.warn('Observable is allready destroyed!', this.uuid)
       return
     }
-
-    console.log('destroy obs')
 
     this.isDestroyed = true
 
@@ -340,7 +333,6 @@ export class Observable {
     if (connection) {
       const selvaClientId = this.selvaClient.selvaId
 
-      console.log('STOP CLIENT HB')
       connection.stopClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
 
       // use selvaId probably
