@@ -2,6 +2,7 @@ import { Connection, connections } from '.'
 import { RedisClient } from 'redis'
 import { SERVER_HEARTBEAT } from '../constants'
 import './redisClientExtensions'
+import chalk from 'chalk'
 import { SelvaClient } from '..'
 
 /*
@@ -15,6 +16,15 @@ import { SelvaClient } from '..'
     When both subscriber and publisher are connected
 */
 
+const log = (connection: Connection, msg: string) => {
+  const id = `${connection.serverDescriptor.host}:${connection.serverDescriptor.port}`
+  console.error(
+    chalk.red(
+      `${msg} ${id} ${connection.serverDescriptor.type} ${connection.serverDescriptor.name}`
+    )
+  )
+}
+
 const startClient = (
   connection: Connection,
   type: 'subscriber' | 'publisher'
@@ -27,9 +37,9 @@ const startClient = (
     tries++
     if (tries > 30) {
       if (!connection.isDestroyed) {
-        console.error(
-          '🧟‍♀️ More then 30 retries connection to server destroy connection',
-          connection.serverDescriptor
+        log(
+          connection,
+          'More then 30 retries to connect to server hard-disconnect'
         )
         connection.hardDisconnect()
       }
@@ -71,15 +81,12 @@ const startClient = (
     connection.startClientTimer = null
     connection.emit('connect')
 
-
     if (isReconnect) {
-
       connection.clients.forEach(c => {
         if (c instanceof SelvaClient) {
           c.emit('reconnect', connection.serverDescriptor)
         }
       })
-
     }
 
     isReconnect = true
@@ -91,9 +98,9 @@ const startClient = (
 
   client.on('hard-disconnect', () => {
     if (!connection.isDestroyed) {
-      console.error(
-        '🧟‍♀️ Strange info error node redis client is corrupt destroy connection',
-        connection.serverDescriptor
+      log(
+        connection,
+        'Strange info error node redis client is corrupt destroy connection'
       )
       connection.hardDisconnect()
     }
@@ -105,9 +112,9 @@ const startClient = (
 export default (connection: Connection) => {
   connection.startClientTimer = setTimeout(() => {
     if (!connection.isDestroyed) {
-      console.error(
-        '🧟‍♀️ Took longer then 1 minute to connect to server destroy connection',
-        connection.serverDescriptor
+      log(
+        connection,
+        'Took longer then 1 minute to connect to server destroy connection'
       )
       connection.hardDisconnect()
     }
@@ -120,9 +127,9 @@ export default (connection: Connection) => {
     clearTimeout(connection.serverHeartbeatTimer)
     connection.serverHeartbeatTimer = setTimeout(() => {
       if (!connection.isDestroyed) {
-        console.error(
-          '🧟‍♀️ Server heartbeat expired (longer then 1 min) destroy connection',
-          connection.serverDescriptor
+        log(
+          connection,
+          'Server heartbeat expired (longer then 1 min) destroy connection'
         )
         connection.hardDisconnect()
       }
