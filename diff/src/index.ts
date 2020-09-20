@@ -1,3 +1,6 @@
+import apply from './apply'
+import create from './create'
+
 console.log('hello')
 const testAddon = require('../build/Release/testaddon.node')
 
@@ -8,7 +11,7 @@ console.log(testAddon.hello('x', 'y'))
 
 // start with object diff!
 
-export const diff = () => {}
+export const diff = create
 
+export { apply }
 // apply diff is browser as well (important for hub etc)
-export const applyDiff = () => {}

@@ -1,12 +1,15 @@
-const compareString = () => {}
+// 2 = delete
+// 3 = insert in array
+// 0 = add
+
+// array + object are all the things in here
 
 const compareNode = (a, b, result, key) => {
   const type = typeof b
-  // eslint-disable-next-line
   if (type !== typeof a) {
     // different type good start
     // strong
-    // console.info('type is different', a, b)
+    console.info('type is different', a, b)
     result[key] = b
   } else if (type === 'object') {
     if (b === null) {
@@ -50,6 +53,8 @@ const compareNode = (a, b, result, key) => {
         }
       }
 
+      // what does this mean?
+      // checks if not empty...
       for (let x in r) {
         result[key] = r
         break
@@ -60,6 +65,7 @@ const compareNode = (a, b, result, key) => {
       // no change do nothing
     } else {
       if (type === 'string') {
+        console.log('will add string later!')
       } else {
         // add change
       }
@@ -115,9 +121,4 @@ const compare = (a, b) => {
   }
 }
 
-const applyStringPatch = () => {}
-
-const applyPatch = () => {}
-
-exports.compare = compare
-exports.compareString = compareString
+export default compare
