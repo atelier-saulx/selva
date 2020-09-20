@@ -3,6 +3,6 @@ import { diff } from '@saulx/selva-diff'
 
 test('Diff object', async t => {
   console.log('go')
-  // diff()
+  diff()
   t.pass()
 })
