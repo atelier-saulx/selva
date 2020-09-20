@@ -1,5 +1,9 @@
 import { Connection } from '.'
 import { RedisCommand } from '../redis/types'
+import chalk from 'chalk'
+
+let uncertainStateCnt = 0
+let showUncertainState = true
 
 export default function execBatch(
   connection: Connection,
@@ -36,7 +40,6 @@ export default function execBatch(
       })
       batch.exec((err: Error, reply: any[]) => {
         if (err) {
-
           console.log('ERROR FROM BATCH', err)
 
           reject(err)
@@ -53,7 +56,19 @@ export default function execBatch(
                 if (v.code === 'UNCERTAIN_STATE') {
                   // if publish ignore
                   // console.log(connection.queue, connection.queueBeingDrained, connection.queueInProgress)
-                  console.warn('Uncertain state error (connection lost) re-add command to queue', queue[i].command)
+                  if (showUncertainState) {
+                    showUncertainState = false
+                    uncertainStateCnt++
+                    setTimeout(() => {
+                      showUncertainState = true
+                      console.warn(
+                        chalk.yellow(
+                          `Uncertain state errors (connection lost) fired ${uncertainStateCnt}x in the last second`
+                        )
+                      )
+                      uncertainStateCnt = 0
+                    }, 1e3)
+                  }
                   // publish will be lost
                   connection.queue.push(queue[i])
                 } else {
