@@ -156,7 +156,7 @@ test.serial('connection / server orchestration', async t => {
             fn(r, ++cnt)
           } else {
             await client.destroy()
-            console.log('Done with load (50 x 100k)')
+            console.log('Done with load (30 x 100k)')
           }
         }
         fn(r)
@@ -210,7 +210,7 @@ test.serial('connection / server orchestration', async t => {
 
   const client2 = connect({ port })
 
-  client2.redis.on({ type: 'replica' }, 'message', () => { })
+  client2.redis.on({ type: 'replica' }, 'message', () => {})
   client2.redis.subscribe({ type: 'replica' }, 'snurf')
 
   await wait(50)
@@ -373,7 +373,7 @@ test.serial('Get server raw - heavy load', async t => {
       )
     )
   }
-  ; (await Promise.all(p)).map(([, w]) => w.terminate())
+  ;(await Promise.all(p)).map(([, w]) => w.terminate())
   const keys = await client.redis.keys({ type: 'origin' }, '*')
   const results = await Promise.all(
     keys
@@ -438,7 +438,6 @@ test.serial('registry reconnect', async t => {
   await origin.destroy()
   await client.destroy()
 
-
   await t.connectionsAreEmpty()
 })
 
@@ -451,7 +450,7 @@ test.serial('connection failure', async t => {
 
   const origin = await startOrigin({ registry: connectOpts, default: true })
 
-  origin.on('error', () => { })
+  origin.on('error', () => {})
 
   let timeoutCnt = 0
 
@@ -481,7 +480,6 @@ test.serial('connection failure', async t => {
   await registry.destroy()
   await origin.destroy()
   await client.destroy()
-
 
   // takes longer because it needs to wait for a hard dc for the origin (a load script command is still in the queue)
   await t.connectionsAreEmpty()
