@@ -12,7 +12,7 @@ import {
 } from '../constants'
 import parseError from './parseError'
 import { ServerSelector } from '../types'
-import chalk from 'chalk'
+import chalk, { keyword } from 'chalk'
 
 var observableIds = 0
 
@@ -102,11 +102,21 @@ export class Observable {
     // just call start again
     this.isStarted = false
 
-    // cleaer timer - dont need to auto handled
+    const prevServer = `${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
+
     delete this.connection
 
+    console.log(
+      chalk.yellow(
+        `Hard disconnection event on observable ${this.uuid} ${prevServer}`
+      )
+    )
     await this.start()
-    console.log('Successfully restarted obs after hard disconnect')
+    console.log(
+      chalk.gray(
+        `Successfully restarted observable ${this.uuid} after hard disconnect connect to ${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
+      )
+    )
   }
 
   public listeners: UpdateCallback[] = []
