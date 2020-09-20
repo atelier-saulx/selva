@@ -1,0 +1,47 @@
+{
+  "name": "@saulx/selva-diff",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "repository": "https://github.com/atelier-saulx/selva",
+  "lint-staged": {
+    "{js,json}": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.ts": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "ava": {
+    "files": [
+      "test/**/*.ts",
+      "!test/assertions"
+    ],
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
+  },
+  "bin": {
+    "selva-server": "/bin/index.js"
+  },
+  "devDependencies": {
+    "ava": "2.4.0",
+    "husky": "^3.0.8",
+    "lint-staged": "^9.4.2",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.3"
+  }
+}

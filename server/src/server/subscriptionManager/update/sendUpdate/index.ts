@@ -3,11 +3,10 @@ import { addSubscriptionToTree, removeSubscriptionFromTree } from '../../tree'
 import { hash } from '../../util'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
-// import diff from './diff'
+import diff from './diff'
 
 const { CACHE } = constants
 
-console.log('!@#!@#!@##!@')
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
   subscription: Subscription
@@ -114,10 +113,11 @@ const sendUpdate = async (
 
   console.log('snurf')
   // not the best will use te cache for this!
-  // const prev = await redis.hget(selector, CACHE, channel)
-  // const patch = diff(prev, resultStr)
+  const prev = await redis.hget(selector, CACHE, channel)
+  // lets do time
+  const patch = diff(prev, resultStr)
 
-  // console.log('MAKE PATCH', patch)
+  console.log('MAKE PATCH', patch, ' ', prev, ' --> ', resultStr)
 
   q.push(
     redis.hmset(

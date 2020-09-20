@@ -5,7 +5,8 @@
     "client",
     "server",
     "api",
-    "tools"
+    "tools",
+    "diff"
   ],
   "main": "./index.js",
   "gypfile": true,
