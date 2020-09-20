@@ -111,7 +111,7 @@ export const registryManager = (server: SelvaServer) => {
         )
 
         if (server.type === 'subscriptionManager') {
-          console.log('A subscriptionManager is removed remove from index! now its time to clean the subs registry') {
+          console.log('REGISTRY: A subscriptionManager is removed! now its time to clean the subs registry') {
             // get rid of it
           }
         }
