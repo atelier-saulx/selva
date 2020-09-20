@@ -1,6 +1,6 @@
 import { SelvaServer } from '../'
 import { constants, ServerDescriptor, SelvaClient } from '@saulx/selva'
-import chalk, { keyword } from 'chalk'
+import chalk from 'chalk'
 
 const { REGISTRY_UPDATE } = constants
 
@@ -111,7 +111,7 @@ export const registryManager = (server: SelvaServer) => {
         )
 
         if (server.type === 'subscriptionManager') {
-          console.log('A subscriptionManager is removed remove from index!') {
+          console.log('A subscriptionManager is removed remove from index! now its time to clean the subs registry') {
             // get rid of it
           }
         }

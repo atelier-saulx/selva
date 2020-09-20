@@ -12,7 +12,6 @@ export const EVENTS = '___selva_events:'
 export const SCHEMA_SUBSCRIPTION = '___selva_subscription:schema_update'
 export const REGISTRY_UPDATE = '__selva_registry_update'
 export const REGISTRY_UPDATE_STATS = '__selva_registry_update_stats'
-export const REGISTRY_UPDATE_SUBSCRIPTION =
-  '__selva_registry_update_subscriptions'
+export const REGISTRY_MOVE_SUBSCRIPTION = '__selva_registry_mobe_subscriptions'
 export const REGISTRY_SUBSCRIPTION_INDEX = '___selva_registry_s_index'
 export const SCHEMA = '___selva_schema'

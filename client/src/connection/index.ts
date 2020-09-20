@@ -71,6 +71,15 @@ class Connection {
     const hasClient = this.clients.has(client)
     if (hasClient) {
       this.clients.delete(client)
+      if (client instanceof Observable) {
+        if (this.clientHb[client.selvaClient.uuid]) {
+          this.stopClientHb(client.selvaClient.uuid, client.selvaClient.selvaId)
+        }
+      } else {
+        if (this.clientHb[client.uuid]) {
+          this.stopClientHb(client.uuid, client.selvaId)
+        }
+      }
     }
     if (this.clients.size === 0) {
       this.destroyIfIdle()

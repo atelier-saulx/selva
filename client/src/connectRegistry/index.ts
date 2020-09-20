@@ -1,7 +1,7 @@
 import { SelvaClient, ConnectOptions, ServerDescriptor } from '..'
 import { Connect } from '../types'
 import { createConnection, connections } from '../connection'
-import { REGISTRY_UPDATE } from '../constants'
+import { REGISTRY_UPDATE, REGISTRY_MOVE_SUBSCRIPTION } from '../constants'
 import getInitialRegistryServers from './getInitialRegistryServers'
 import addServer from './addServer'
 import removeServer from './removeServer'
@@ -156,10 +156,6 @@ const connectRegistry = (
                 // if its from this we know to increase a counter for soft ramp up
                 if (connection) {
                   if (!connection.isDestroyed) {
-                    console.log(
-                      'Incoming remove event from registry - hard dc',
-                      id
-                    )
                     connection.hardDisconnect()
                   }
                 }

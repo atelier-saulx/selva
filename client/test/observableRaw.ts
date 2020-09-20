@@ -178,8 +178,6 @@ test.serial('Make some observables', async t => {
 
   await wait(1e3)
 
-  console.log(client.servers.subsManagers)
-
   const servers = await getServersSubscriptions()
 
   const obs5 = new Observable(
@@ -198,7 +196,10 @@ test.serial('Make some observables', async t => {
 
   const uuid = obs5.uuid
 
-  const serverSelector: ServerSelector = {}
+  const serverSelector: ServerSelector = {
+    type: 'subscriptionManager'
+  }
+
   for (const id in servers) {
     const f = servers[id].find(u => u === uuid)
     if (!f) {
@@ -209,16 +210,44 @@ test.serial('Make some observables', async t => {
     }
   }
 
-  console.log('TRY MOVEMENT')
-  // await obs5.start(serverSelector)
+  const previousLocation = obs4.connection.serverDescriptor
 
-  await wait(2e3)
+  await obs5.start(serverSelector)
+
+  await wait(5e3)
+
+  const serversAfter = await getServersSubscriptions()
+
+  t.deepEqual(
+    obs4.connection.serverDescriptor,
+    obs5.connection.serverDescriptor,
+    'obs4 is moved to the same server as obs5'
+  )
+
+  const movedUuid = obs5.uuid
+  const prevId = previousLocation.host + ':' + previousLocation.port
+  const newId = serverSelector.host + ':' + serverSelector.port
+
+  console.log(prevId, newId)
+
+  t.true(
+    !serversAfter[prevId] || !serversAfter[prevId].includes(movedUuid),
+    'Previous server does not have moved channel'
+  )
+
+  t.true(
+    serversAfter[newId].includes(movedUuid),
+    'New server does have moved channel'
+  )
+
+  obs5.destroy()
+
+  await wait(3e3)
 
   obs.unsubscribe()
   obs2.unsubscribe()
   obs3.unsubscribe()
   obs4.unsubscribe()
-
   // send a publish of a subscription to a specific sub manager
 
   await wait(2000)
@@ -250,18 +279,12 @@ test.serial('Make some observables', async t => {
 
   w.terminate()
 
-  const servers2 = await getServersSubscriptions()
-
-  console.log(servers2)
-
-  // make a thign to check that it auto clears
-
-  await wait(10e3)
+  await wait(5e3)
 
   t.deepEqual(
     await getServersSubscriptions(),
     {},
-    'all subs are removed from subsregistry'
+    'all subs are removed from subsregistry after worker is terminated'
   )
 
   await wait(500)

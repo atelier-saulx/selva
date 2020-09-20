@@ -1,5 +1,6 @@
 import { SelvaClient, constants } from '@saulx/selva'
 import { SubscriptionManager } from './types'
+import chalk from 'chalk'
 
 type Subscriptions = {
   host: string
@@ -18,14 +19,35 @@ const handleAddPrev = async (
   const prev = await client.redis.get({ type: 'subscriptionRegistry' }, channel)
   if (prev) {
     if (prev !== id) {
-      console.log(
-        'previous id SUBS MANAGER need to override and send a move commaand',
-        prev
-      )
-      // publish
-      // await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
+      await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
+      // server has to do removal etc
+      const [host, port] = prev.split(':')
+
+      if (
+        client.servers.subsManagers.find(
+          s => s.port === Number(port) && s.host === host
+        )
+      ) {
+        // if the server is unregistered this will be useless to add to a quuee
+        await client.redis.publish(
+          { host, port: Number(port), type: 'subscriptionManager' },
+          constants.REGISTRY_MOVE_SUBSCRIPTION,
+          JSON.stringify([channel, id])
+        )
+      } else {
+        // this is a bit hard if it is not synced yet something can go wrong here
+        console.log(
+          chalk.yellow(
+            `Cannot find previous server to move subscription ${prev} has to move to ${id}`
+          )
+        )
+      }
     } else {
-      console.log('allrdy have subs (sm update reg) keep')
+      console.log(
+        chalk.gray(
+          `Allready have subscription ${channel} on ${id} don't do anything`
+        )
+      )
     }
   } else {
     await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
@@ -51,6 +73,7 @@ export default async function updateRegistry(
   for (let key in info.subscriptions) {
     subscriptions[key] = info.subscriptions[key]
   }
+
   if (!publishInProgress) {
     publishInProgress = true
     process.nextTick(() => {
@@ -65,7 +88,7 @@ export default async function updateRegistry(
           q.push(
             client.redis.sadd(
               { type: 'subscriptionRegistry' },
-              constants.REGISTRY_SUBSCRIPTION_INDEX + '_' + id,
+              constants.REGISTRY_SUBSCRIPTION_INDEX + id,
               channel
             )
           )
@@ -74,7 +97,7 @@ export default async function updateRegistry(
           q.push(
             client.redis.srem(
               { type: 'subscriptionRegistry' },
-              constants.REGISTRY_SUBSCRIPTION_INDEX + '_' + id,
+              constants.REGISTRY_SUBSCRIPTION_INDEX + id,
               channel
             )
           )

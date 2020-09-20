@@ -57,7 +57,10 @@ const addOriginListeners = async (
       listener,
       reconnectListener: descriptor => {
         const { name: dbName } = descriptor
-        console.log('reconn in subs manager - need to only do reconn  when we are actively connected to this server...', name)
+        console.log(
+          'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
+          name
+        )
 
         // not enough ofcourse
         if (name === dbName) {
@@ -94,7 +97,7 @@ const removeOriginListeners = (
 ) => {
   const origin = subsManager.originListeners[name]
 
-  console.log('remove origin', name)
+  // console.log('remove origin', name)
 
   if (origin) {
     const { client } = subsManager

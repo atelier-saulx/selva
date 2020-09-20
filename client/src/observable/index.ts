@@ -1,20 +1,18 @@
 import { SelvaClient } from '..'
 import generateSubscriptionId from './generateSubscriptionId'
 import { ObservableOptions } from './types'
-
 import { GetOptions } from '../get'
-import { createConnection, Connection, connections } from '../connection'
-
+import { createConnection, Connection } from '../connection'
 import {
   NEW_SUBSCRIPTION,
   SUBSCRIPTIONS,
   REMOVE_SUBSCRIPTION,
+  REGISTRY_MOVE_SUBSCRIPTION,
   CACHE
 } from '../constants'
-
 import parseError from './parseError'
-import { wait } from '../util'
-import { ServerSelector } from '~selva/types'
+import { ServerSelector } from '../types'
+import chalk from 'chalk'
 
 var observableIds = 0
 
@@ -25,6 +23,7 @@ type UpdateCallback = (value: any, checksum?: string, diff?: any) => void
 
 export class Observable {
   public connection: Connection
+  public options: ObservableOptions
 
   constructor(
     options: ObservableOptions,
@@ -65,15 +64,13 @@ export class Observable {
 
       this.getOptions = options.options
     } else {
+      this.options = options
+
       console.log('different type of observable', options)
     }
   }
 
   public getOptions: GetOptions
-
-  public subscriptionMoved() {
-    console.log('this subscription moved to another server! (potentialy')
-  }
 
   public isDestroyed: boolean
 
@@ -141,7 +138,12 @@ export class Observable {
     onComplete?: (x?: any) => void
   ) {
     if (this.isDestroyed) {
-      console.warn('Observable is allready destroyed!', this.uuid)
+      console.warn(
+        chalk.yellow(
+          `Trying to subscribe to an observable that is allready destroyed`
+        ),
+        this.getOptions || this.options
+      )
       return
     }
 
@@ -172,7 +174,11 @@ export class Observable {
 
   public unsubscribe() {
     if (this.isDestroyed) {
-      console.warn('Observable is allready destroyed!', this.uuid)
+      console.warn(
+        chalk.yellow(
+          `Trying to unsubscribe to an observable that is allready destroyed ${this.uuid}`
+        )
+      )
       return
     }
     this.subsCounter--
@@ -244,28 +250,47 @@ export class Observable {
     }
   }
 
-  public async start(selector?: ServerSelector) {
-    if (this.isStarted) {
-      console.error('observable allrdy started')
+  public async moveToServer(selector: ServerSelector) {
+    if (this.isDestroyed) {
       return
     }
+    if (this.connection.removeClient(this)) {
+      this.connection.removeConnectionState(
+        this.connection.getConnectionState(this.id)
+      )
+    }
+    delete this.connection
+    this.isStarted = false
+    await this.start(selector)
+  }
 
+  public async start(selector?: ServerSelector) {
+    if (this.isStarted) {
+      console.warn(
+        chalk.yellow(
+          `Trying to start an observable that is allready started ${this.uuid}`
+        )
+      )
+      return
+    }
     if (this.connection) {
-      console.error(
-        'STARTING OBSERVABLE BUT ALLREADY HAVE A CONNECTION WRONG!!!'
+      console.warn(
+        chalk.yellow(
+          `Trying to start an observable that allready has an active connection ${this.uuid}`
+        )
       )
       return
     }
 
     this.isStarted = true
 
+    const channel = this.uuid
+    const getOptions = this.getOptions
+
     // to start selecting on process next tick
     // is 1 second maybe too much?
     // keep a timer with in the same tick for selecting subs managers - use this to determine delay
     // await wait(~~(Math.random() * 1000))
-
-    const channel = this.uuid
-    const getOptions = this.getOptions
     const server = await this.selvaClient.getServer(
       selector || {
         type: 'subscriptionManager'
@@ -274,7 +299,7 @@ export class Observable {
     )
     const connection = (this.connection = createConnection(server))
     const id = this.selvaId
-    // yes and then you can handle it yourself also easy to unload things in the q
+
     connection.attachClient(this)
     connection.command({
       command: 'hsetnx',
@@ -294,20 +319,33 @@ export class Observable {
       ],
       id
     })
-    // need to start hb
-    // also need to get initial value!
+
     connection.addRemoteListener('message', (incomingChannel, msg) => {
-      if (channel === incomingChannel) {
+      if (incomingChannel === REGISTRY_MOVE_SUBSCRIPTION) {
+        const [moveChannel, newServer] = JSON.parse(msg)
+        if (channel === moveChannel) {
+          console.info(
+            chalk.gray(
+              `Receive move command in observable from ${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port} to ${newServer} (channel: ${this.uuid})`
+            )
+          )
+          const [host, port] = newServer.split(':')
+          this.moveToServer({
+            type: 'subscriptionManager',
+            host,
+            port: Number(port)
+          })
+        }
+      } else if (channel === incomingChannel) {
         // msg is checksum
         // will also add diff maybe? or store the last diff?
         // console.log('Incoming msg for observable')
       }
     })
-    connection.subscribe(channel, id)
 
-    // this is not good! per observable a hb is waaay too much
-    // we need to include the connectin id or something
-    // or just use the selva uuid (prob the best)
+    connection.subscribe(channel, id)
+    connection.subscribe(REGISTRY_MOVE_SUBSCRIPTION, id)
+
     connection.startClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
 
     // has to be a bit different!
@@ -316,7 +354,11 @@ export class Observable {
 
   public destroy() {
     if (this.isDestroyed) {
-      console.warn('Observable is allready destroyed!', this.uuid)
+      console.warn(
+        chalk.yellow(
+          `Trying to destroy an observable that is allready destroyed ${this.uuid}`
+        )
+      )
       return
     }
 
@@ -332,8 +374,6 @@ export class Observable {
     const connection = this.connection
     if (connection) {
       const selvaClientId = this.selvaClient.selvaId
-
-      connection.stopClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
 
       // use selvaId probably
       connection.unsubscribe(channel, id)
