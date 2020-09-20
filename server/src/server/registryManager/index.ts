@@ -31,7 +31,12 @@ const insert = (array: ServerIndex[], target: ServerIndex): void => {
   array.splice(l, 0, target)
 }
 
-const orderServers = (type: string, servers: ServerIndex[], client: SelvaClient, includeName: boolean) => {
+const orderServers = (
+  type: string,
+  servers: ServerIndex[],
+  client: SelvaClient,
+  includeName: boolean
+) => {
   const redis = client.redis
   let move
   let q
@@ -72,7 +77,6 @@ const orderServers = (type: string, servers: ServerIndex[], client: SelvaClient,
   }
 
   return q
-
 }
 
 // on remove need to get rid of subs stuff
@@ -111,9 +115,10 @@ export const registryManager = (server: SelvaServer) => {
         )
 
         if (server.type === 'subscriptionManager') {
-          console.log('REGISTRY: A subscriptionManager is removed! now its time to clean the subs registry') {
-            // get rid of it
-          }
+          console.log(
+            'REGISTRY: A subscriptionManager is removed! now its time to clean the subs registry'
+          )
+          // get rid of it
         }
       }
     }
@@ -273,7 +278,12 @@ export const registryManager = (server: SelvaServer) => {
     )
 
     const rQ = orderServers('replica', replicas, server.selvaClient, true)
-    const sQ = orderServers('subscriptionManager', subsManagers, server.selvaClient, false)
+    const sQ = orderServers(
+      'subscriptionManager',
+      subsManagers,
+      server.selvaClient,
+      false
+    )
     if (rQ || sQ) {
       await Promise.all(rQ && sQ ? [...rQ, ...sQ] : rQ || sQ)
     }
