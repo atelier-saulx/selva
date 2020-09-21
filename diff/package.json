@@ -39,6 +39,9 @@
   "bin": {
     "selva-server": "/bin/index.js"
   },
+  "dependencies": {
+    "fast-myers-diff": "^1.0.3"
+  },
   "devDependencies": {
     "node-gyp": "^7.0.0",
     "node-addon-api": "^3.0.0",

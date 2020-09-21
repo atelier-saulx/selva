@@ -2,6 +2,8 @@
 // 3 = insert in array
 // 0 = add
 
+// 1 will become string diff apply
+
 // array + object are all the things in here
 
 const compareNode = (a, b, result, key) => {
