@@ -11,18 +11,23 @@ test('Diff object (basic)', async t => {
     c: 'snurx',
     d: {
       e: 'x'
-    },
-    x: [{ a: true }, 1, 2, 3, 4, { c: true }]
+    }
+    // x: [{ a: true }, 1, 2, 3, 4, { c: true }]
   }
 
   // in array we want INSERT and move
   const b = {
     a: 'BLARF',
     z: true,
-    x: [{ b: true }, 1, 2, { a: true }, 'x', 'x', 3, 'x', 4, { c: true }],
+    // x: [{ b: true }, 1, 2, { a: true }, 'x', 'x', 3, 'x', 4, { c: true }],
     snurkypants: {
       a: true,
       b: false
+    },
+    d: {
+      e: {
+        x: true
+      }
     }
   }
 
@@ -30,6 +35,6 @@ test('Diff object (basic)', async t => {
 
   const r = apply(a, firstPatch)
 
-  // console.log('frist', JSON.stringify(firstPatch, null, 2))
+  console.log('frist', JSON.stringify(firstPatch, null, 2))
   t.pass()
 })

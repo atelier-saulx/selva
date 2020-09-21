@@ -2121,6 +2121,11 @@ fast-levenshtein@~2.0.6:
   resolved "https://registry.yarnpkg.com/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz#3d8a5c66883a16a30ca8643e851f19baa7797917"
   integrity sha1-PYpcZog6FqMMqGQ+hR8Zuqd5eRc=
 
+fast-myers-diff@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/fast-myers-diff/-/fast-myers-diff-1.0.3.tgz#6e569a4b06e2bc47a495377092fbfe2e88c93dae"
+  integrity sha512-excViC+lxKo4MRVAVJEE87b99otgvaCrH8GbooBOyLUAC9mc4xH6cLIdid6USInnpRG/Mckz4Nwkors1M/B+9Q==
+
 fastq@^1.6.0:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/fastq/-/fastq-1.7.0.tgz#fcd79a08c5bd7ec5b55cd3f5c4720db551929801"

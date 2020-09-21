@@ -1,45 +1,17 @@
-// 2 = delete
-// 3 = insert in array
-// 0 = add
-
-// 1 will become string diff apply
-
-// array + object are all the things in here
-
+// 2 something with arrays
 const compareNode = (a, b, result, key) => {
   const type = typeof b
   if (type !== typeof a) {
     // different type good start
     // strong
     console.info('type is different', a, b)
-    result[key] = b
+    result[key] = [0, b]
   } else if (type === 'object') {
     if (b === null) {
       result[key] = b
     } else {
       const r = {}
       if (b.constructor === Array) {
-        if (a.constructor === Array) {
-          const bLen = b.length
-          const aLen = a.length
-          if (aLen > bLen) {
-            for (let i = 0; i < bLen; i++) {
-              compareNode(a[i], b[i], r, i)
-            }
-            r[bLen] = [2, aLen - bLen]
-          } else if (aLen < bLen) {
-            for (let i = 0; i < aLen; i++) {
-              compareNode(a[i], b[i], r, i)
-            }
-            r[bLen] = [3, b.slice(aLen)]
-          } else {
-            for (let i = 0; i < bLen; i++) {
-              compareNode(a[i], b[i], r, i)
-            }
-          }
-        } else {
-          result[key] = [0, b]
-        }
       } else {
         for (const key in b) {
           if (!(key in a)) {
@@ -50,7 +22,7 @@ const compareNode = (a, b, result, key) => {
         }
         for (const key in a) {
           if (!(key in b)) {
-            result[key] = [2]
+            result[key] = [1]
           }
         }
       }
@@ -71,7 +43,7 @@ const compareNode = (a, b, result, key) => {
       } else {
         // add change
       }
-      result[key] = b
+      result[key] = [0, b]
       // for now
     }
   }
@@ -104,7 +76,7 @@ const compare = (a, b) => {
         }
         for (const key in a) {
           if (!(key in b)) {
-            result[key] = [2]
+            result[key] = [1]
           }
         }
         return result
@@ -114,11 +86,11 @@ const compare = (a, b) => {
     if (a === b) {
       // no change do nothing
     } else {
-      if (type === 'string') {
-      } else {
-        // add change
-      }
-      return b
+      //   if (type === 'string') {
+      //   } else {
+      //     // add change
+      //   }
+      return [0, b]
     }
   }
 }
