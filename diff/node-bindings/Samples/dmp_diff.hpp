@@ -48,7 +48,7 @@ public:
   /**
      * Number of milliseconds to map a diff before giving up (0 for infinity).
      */
-  long Diff_Timeout = 1000;
+  long Diff_Timeout = 100;
   /**
      * Cost of an empty edit operation in terms of edit characters.
      */
@@ -62,7 +62,7 @@ public:
      * A match this many characters away from the expected location will add
      * 1.0 to the score (0.0 is a perfect match).
      */
-  int Match_Distance = 1000;
+  int Match_Distance = 500;
   /**
      * When deleting a large block of text (over ~64 characters), how close do
      * the contents have to be to match the expected contents. (0.0 =

@@ -16,7 +16,12 @@ using MyersStringDiff = MyersDiff<string>;
 // need to return some kind of struct prob
 std::string functionexample::hello(std::string a, std::string b)
 {
+    printf("Hello 1\n");
+
     MyersStringDiff diff{a, b};
+
+    printf("Hello 2\n");
+
     bool isStart = true;
     std::string greeting = "[";
     // can pass stats as well!

@@ -1,21 +1,10 @@
 import test from 'ava'
 import { diff, apply } from '@saulx/selva-diff'
 
-import { calcPatch } from '@saulx/selva-diff/lcs'
-
-// implement LCS for arrays
+import stringA from './exampleStringA'
+import stringB from './exampleStringB'
 
 test('Diff object (basic)', async t => {
-  console.log('go')
-
-  const a1 = [1, 2, 3, 4, 5]
-
-  const b2 = [323, 2, 123, 123, 1221, 11]
-
-  const x = calcPatch(a1, b2)
-
-  console.log(x)
-
   const a = {
     a: 'hello',
     b: 'shurf',
@@ -41,6 +30,6 @@ test('Diff object (basic)', async t => {
 
   const r = apply(a, firstPatch)
 
-  console.log('frist', JSON.stringify(firstPatch, null, 2))
+  // console.log('frist', JSON.stringify(firstPatch, null, 2))
   t.pass()
 })
