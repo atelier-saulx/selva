@@ -14,11 +14,7 @@ struct SelvaModify_AsyncTask {
     union {
         struct {
             Selva_SubscriptionId sub_id;
-        };
-        struct {
-            char id[SELVA_NODE_ID_SIZE];
-            char *field_name;
-            size_t field_name_len;
+            Selva_SubscriptionMarkerId marker_id;
         };
     };
 };

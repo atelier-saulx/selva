@@ -1100,7 +1100,7 @@ int Selva_RefreshSubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     Selva_SubscriptionId sub_id;
     err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "%s: Invalid sub_id\n" __FILE__);
+        fprintf(stderr, "%s: Invalid sub_id\n", __FILE__);
         return replyWithSelvaError(ctx, err);
     }
 

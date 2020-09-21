@@ -111,7 +111,6 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         } while (remaining > 0);
 
         struct SelvaModify_AsyncTask *task = (struct SelvaModify_AsyncTask *)read_buffer;
-        task->field_name = (char *)(read_buffer + sizeof(struct SelvaModify_AsyncTask));
 
 #if 0
         fprintf(stderr, "New task received. type: %d size: %d bytes\n", (int)task->type, (int)size);
