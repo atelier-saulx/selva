@@ -141,7 +141,6 @@ static int update_zset(
     RedisModuleString *id,
     RedisModuleString *field,
     const char *field_str,
-    size_t field_len,
     struct SelvaModify_OpSet *setOpts
 ) {
     RedisModuleKey *alias_key = NULL;
@@ -272,26 +271,24 @@ int SelvaModify_ModifySet(
     if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
         return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
     } else {
-        return update_zset(ctx, id_key, id, field, field_str, field_len, setOpts);
+        return update_zset(ctx, id_key, id, field, field_str, setOpts);
     }
 }
 
 void SelvaModify_ModifyIncrement(
     RedisModuleCtx *ctx,
     RedisModuleKey *id_key,
-    RedisModuleString *id,
     RedisModuleString *field,
-    const char *field_str,
-    size_t field_len,
     RedisModuleString *current_value,
-    const char *current_value_str,
-    size_t current_value_len,
     struct SelvaModify_OpIncrement *incrementOpts
 ) {
-    int32_t num = current_value == NULL
-        ? incrementOpts->$default
-        : strtol(current_value_str, NULL, 10) + incrementOpts->$increment;
+    int32_t num = incrementOpts->$default;
 
+    if (current_value) {
+        TO_STR(current_value);
+
+        num = strtol(current_value_str, NULL, 10) + incrementOpts->$increment;
+    }
 
     size_t num_str_size = (int)(log10(num)) + 1;
     char increment_str[num_str_size];

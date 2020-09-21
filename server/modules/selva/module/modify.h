@@ -73,13 +73,8 @@ int SelvaModify_ModifySet(
 void SelvaModify_ModifyIncrement(
     RedisModuleCtx *ctx,
     RedisModuleKey *id_key,
-    RedisModuleString *id,
     RedisModuleString *field,
-    const char *field_str,
-    size_t field_len,
     RedisModuleString *current_value,
-    const char *current_value_str,
-    size_t current_value_len,
     struct SelvaModify_OpIncrement *incrementOpts
 );
 
