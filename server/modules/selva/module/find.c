@@ -578,7 +578,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 #if 0
             return replyWithSelvaError(ctx, err);
 #endif
-            fprintf(stderr, "%s: Find failed for node: \"%.*s\"", __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId);
+            fprintf(stderr, "%s: Find failed for node: \"%.*s\"\n", __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     }
 
@@ -910,7 +910,7 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
 #if 0
         return replyWithSelvaError(ctx, err);
 #endif
-        fprintf(stderr, "%s: FindInSub failed. sub_id: \"%s\" marker_id: %d err: \"%s\"",
+        fprintf(stderr, "%s: FindInSub failed. sub_id: \"%s\" marker_id: %d err: \"%s\"\n",
                 __FILE__, Selva_SubscriptionId2str(str, sub_id), (int)marker_id, selvaStrError[-err]);
     }
 

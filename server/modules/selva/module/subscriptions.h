@@ -71,6 +71,25 @@ struct Selva_SubscriptionMarker {
     struct rpn_ctx *filter_ctx;
     rpn_token *filter_expression;
     char *fields; /* \n separated and \0 terminated. */
+
+    /*
+     * Temp storage for tracking filter result changes.
+     * Temp storage for tracking changes during a selva.modify command.
+     * Anything using these should assume that the initial value is undefined
+     * before SelvaSubscriptions_FieldChangePrecheck() is called.
+     */
+    struct {
+        /**
+         * The node that is undergoing a change.
+         * This shall be used as an invariant between function calls to
+         * subscriptions.
+         */
+        Selva_NodeId node_id;
+        /**
+         * Filter result on SelvaSubscriptions_FieldChangePrecheck().
+         */
+        int res;
+    } filter_history;
     struct Selva_Subscription *sub; /* Pointer back to the subscription. */
 };
 
@@ -124,6 +143,10 @@ void SelvaSubscriptions_ClearAllMarkers(
 int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 void SelvaSubscriptions_DeferHierarchyEvents(
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        const struct SelvaModify_HierarchyMetadata *metadata);
+void SelvaSubscriptions_FieldChangePrecheck(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata);

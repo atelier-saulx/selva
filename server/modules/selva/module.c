@@ -130,8 +130,12 @@ static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hie
     return RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
 }
 
-// TODO: clean this up
-// id, R|N type, key, value [, ... type, key, value]]
+/*
+ * TODO: clean this up
+ * id, FLAGS type, key, value [, ... type, key, value]]
+ * N = No root
+ * M = Merge
+ */
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     SelvaModify_Hierarchy *hierarchy;
@@ -209,6 +213,14 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModule_ReplyWithError(ctx, err_msg);
         return REDISMODULE_ERR;
     }
+
+    struct SelvaModify_HierarchyMetadata *metadata;
+
+    /*
+     * TODO Getting the metadata this way might slow us down a bit.
+     */
+    metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
+    SelvaSubscriptions_FieldChangePrecheck(hierarchy, nodeId, metadata);
 
     /*
      * Parse the rest of the arguments.
@@ -304,9 +316,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
 
         if (publish) {
-            struct SelvaModify_HierarchyMetadata *metadata;
-
-            metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
             SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, nodeId, metadata, field_str);
         }
     }
