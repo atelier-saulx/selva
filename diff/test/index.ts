@@ -125,11 +125,5 @@ test('Array + nested object', async t => {
     ]
   }
   const patch = diff(a, b)
-
-  console.dir(patch, { depth: 10 })
-
-  console.dir(applyPatch(a, patch), { depth: 10 })
-
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
-  t.pass()
 })
