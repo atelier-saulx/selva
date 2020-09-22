@@ -1,5 +1,6 @@
 import test from 'ava'
 import diff, { applyPatch } from '@saulx/selva-diff'
+import region from './examples/region.json'
 
 test('Array', async t => {
   const a = ['a', 'b', 'c', 'd']
@@ -236,6 +237,26 @@ test('Deep in array', async t => {
       }
     ]
   }
+
+  // can add optimization techniques to not send the diff is the
+  // diff is larger then the new object (on every level)
+
+  const patch = diff(a, b)
+
+  console.dir(patch, { depth: 10 })
+
+  t.deepEqual(applyPatch(a, patch), b, 'is equal')
+})
+
+test('Real life', async t => {
+  const a = region
+
+  const b = JSON.parse(JSON.stringify(a))
+
+  // console.log(b.components[3])
+
+  // can add optimization techniques to not send the diff is the
+  // diff is larger then the new object (on every level)
 
   const patch = diff(a, b)
 

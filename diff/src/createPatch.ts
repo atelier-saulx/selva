@@ -156,6 +156,11 @@ export const arrayDiff = (a, b) => {
   if (last[0] === 1) {
     last[2] = last[2][0]
   }
+
+  if (r.length == 2 && r[1][0] === 1) {
+    return
+  }
+
   return r
 }
 
@@ -173,11 +178,18 @@ const compareNode = (a, b, result, key: string) => {
       let r
       if (b.constructor === Array) {
         if (a.constructor === Array) {
-          r = [2, arrayDiff(a, b)]
+          const isDiff = arrayDiff(a, b)
+          if (isDiff && isDiff.length > 1) {
+            r = [2, isDiff]
+            result[key] = r
+          }
         } else {
-          r = [0, arrayDiff(a, b)]
+          const isDiff = arrayDiff(a, b)
+          if (isDiff && isDiff.length > 1) {
+            r = [0, isDiff]
+            result[key] = r
+          }
         }
-        result[key] = r
       } else {
         r = {}
         for (const key in b) {
