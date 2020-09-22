@@ -1198,23 +1198,14 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         RedisModuleString *str;
         struct Selva_SubscriptionMarker *marker = *it;
 
-        str = RedisModule_CreateStringPrintf(ctx,
-                "marker_id: %d\n"
-                "flags: %u\n"
-                "node_id: \"%.*s\"\n"
-                "dir: %s\n"
-                "expression: %s\n"
-                "fields: \"%s\"",
-                (int)marker->marker_id,
-                marker->marker_flags,
-                (int)SELVA_NODE_ID_SIZE, marker->node_id,
-                SelvaModify_HierarchyDir2str(marker->dir),
-                (marker->filter_ctx) ? "set" : "unset",
-                marker->fields);
-        if (!str) {
-            return REDISMODULE_ERR;
-        }
-        RedisModule_ReplyWithString(ctx, str);
+        RedisModule_ReplyWithArray(ctx, 6);
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "marker_id: %d", (int)marker->marker_id));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "flags: %u", marker->marker_flags));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "node_id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, marker->node_id));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaModify_HierarchyDir2str(marker->dir)));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "filter_expression: %s", (marker->filter_ctx) ? "set" : "unset"));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "fields: \"%s\"", marker->fields));
+
         array_len++;
     }
     RedisModule_ReplySetArrayLength(ctx, array_len);
