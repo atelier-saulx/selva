@@ -58,7 +58,79 @@ test('Object', async t => {
     }
   }
   const patch = diff(a, b)
+
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
+})
+
+test('Array + nested object lots the same', async t => {
+  const obj = {
+    x: true,
+    y: true,
+    cnt: 324,
+    kookiepants: {
+      x: true,
+      y: {
+        g: {
+          x: true,
+          flurpypants: 'x',
+          myText: 'fdwefjwef ewofihewfoihwef weoifh'
+        }
+      }
+    }
+  }
+
+  const a = {
+    f: []
+  }
+
+  const b = {
+    f: []
+  }
+
+  for (let i = 0; i < 20; i++) {
+    a.f.push(JSON.parse(JSON.stringify(obj)))
+    b.f.push(JSON.parse(JSON.stringify(obj)))
+  }
+
+  b.f[5] = { gurken: true }
+
+  const patch = diff(a, b)
+
+  //   console.dir(patch, { depth: 10 })
+
+  t.deepEqual(applyPatch(a, patch), b, 'is equal')
+
+  b.f.splice(8, 1, { gurky: true })
+  b.f.splice(1, 1, { flurb: true })
+  b.f.splice(3, 1, { flura: true })
+  b.f.splice(10, 1, {
+    kookiepants: {
+      x: false,
+      y: {
+        g: {
+          myText: 'yuzi pants'
+        }
+      }
+    }
+  })
+
+  var d = Date.now()
+  const patch2 = diff(a, b)
+
+  console.dir(patch2, { depth: 10 })
+
+  console.log('Make large object patch', Date.now() - d, 'ms')
+
+  var d = Date.now()
+  const x = applyPatch(a, patch2)
+
+  // console.dir(x, { depth: 10 })
+
+  // console.log('Apply large object patch', Date.now() - d, 'ms')
+
+  t.deepEqual(x, b, 'insert object')
+
+  // t.pass()
 })
 
 test('Array + nested object', async t => {
@@ -125,45 +197,49 @@ test('Array + nested object', async t => {
     ]
   }
   const patch = diff(a, b)
+
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test('Array + nested object lots the same', async t => {
+test('Deep in array', async t => {
   const obj = {
     x: true,
     y: true,
-    cnt: 324
+    cnt: 324,
+    kookiepants: {
+      x: true,
+      y: {
+        g: {
+          x: true,
+          flurpypants: 'x',
+          myText: 'fdwefjwef ewofihewfoihwef weoifh'
+        }
+      }
+    }
   }
 
   const a = {
-    f: []
+    f: [obj]
   }
 
   const b = {
-    f: []
+    f: [
+      {
+        kookiepants: {
+          x: false,
+          y: {
+            g: {
+              myText: 'yuzi pants'
+            }
+          }
+        }
+      }
+    ]
   }
-
-  for (let i = 0; i < 10000; i++) {
-    a.f.push({ ...obj })
-    b.f.push({ ...obj })
-  }
-
-  b.f[5] = { gurken: true }
 
   const patch = diff(a, b)
 
+  console.dir(patch, { depth: 10 })
+
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
-
-  b.f.splice(8, 1, { gurky: true })
-  b.f.splice(1000, 1, { flurb: true })
-
-  var d = Date.now()
-  const patch2 = diff(a, b)
-  console.log('Make large object patch', Date.now() - d, 'ms')
-
-  var d = Date.now()
-  const x = applyPatch(a, patch2)
-  console.log('Apply large object patch', Date.now() - d, 'ms')
-
-  t.deepEqual(x, b, 'insert object')
 })

@@ -47,9 +47,7 @@ const applyArrayPatch = (value: any[], arrayPatch) => {
       // generate the hash in the create patch
       const piv = operation[1]
       const range = operation.length - 2 + piv
-
       for (let j = piv; j < range; j++) {
-        // still not ok
         newArray[++aI] = applyPatch(value[j], operation[j - piv + 2])
       }
     }

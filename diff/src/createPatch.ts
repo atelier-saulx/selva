@@ -131,7 +131,6 @@ export const arrayDiff = (a, b) => {
       if (type === 1) {
         current[2] = current[2][0]
       }
-
       // we need more places for patches probably
       if (typeof a[i] === 'object' && typeof b[i] === 'object') {
         const patchTime = createPatch(a[i], b[i])
@@ -190,7 +189,7 @@ const compareNode = (a, b, result, key: string) => {
         }
         for (const key in a) {
           if (!(key in b)) {
-            result[key] = [1]
+            r[key] = [1]
           }
         }
         // check if not empty
