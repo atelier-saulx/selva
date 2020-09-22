@@ -1,9 +1,7 @@
-import apply from './apply'
-import create from './create'
-// start with object diff!
-import lcs from './lcs'
+import applyPatch from './applyPatch'
 
-export const diff = create
+import { createPatch, arrayDiff } from './createPatch'
 
-export { apply, lcs }
-// apply diff is browser as well (important for hub etc)
+export default createPatch
+
+export { arrayDiff, applyPatch, createPatch }
