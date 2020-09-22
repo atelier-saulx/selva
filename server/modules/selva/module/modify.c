@@ -334,7 +334,7 @@ int SelvaModify_ModifyDel(
 
             reply = RedisModule_Call(ctx, "HKEYS", "s", id);
             if (reply == NULL) {
-                // FIXME errno handling
+                /* FIXME errno handling */
                 switch (errno) {
                 case EINVAL:
                 case EPERM:

@@ -317,7 +317,7 @@ static char *get_node_field_names(RedisModuleCtx *ctx, Selva_NodeId id) {
 
     reply = RedisModule_Call(ctx, "HKEYS", "b", id, SELVA_NODE_ID_SIZE);
     if (reply == NULL) {
-        // FIXME errno handling
+        /* FIXME errno handling */
 #if 0
         switch (errno) {
         case EINVAL:
@@ -903,7 +903,7 @@ int SelvaModify_SetHierarchy(
 
     /*
      * Set relationship relative to other nodes
-     * TODO if isNewNode == 0 then errors are not handled properly as
+     * RFE if isNewNode == 0 then errors are not handled properly as
      * we don't know how to rollback.
      */
     err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
@@ -1019,7 +1019,7 @@ int SelvaModify_AddHierarchy(
 
     /*
      * Update relationship relative to other nodes
-     * TODO if isNewNode == 0 then errors are not handled properly as
+     * RFE if isNewNode == 0 then errors are not handled properly as
      * we don't know how to rollback.
      */
     err = crossInsert(ctx, hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
