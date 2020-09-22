@@ -13,6 +13,7 @@
 #include "redismodule.h"
 #include "cdefs.h"
 #include "selva.h"
+#include "arg_parser.h"
 #include "async_task.h"
 #include "errors.h"
 #include "hierarchy.h"
@@ -756,27 +757,6 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarc
     SVector_Clear(&def->subs);
 }
 
-static int parse_subscription_id(Selva_SubscriptionId id, RedisModuleString *arg) {
-    TO_STR(arg);
-
-    if (arg_len != SELVA_SUBSCRIPTION_ID_STR_LEN) {
-        return SELVA_SUBSCRIPTIONS_EINVAL;
-    }
-
-    return Selva_SubscriptionStr2id(id, arg_str);
-}
-
-static int parse_marker_id(Selva_SubscriptionMarkerId *marker_id, RedisModuleString *arg) {
-    long long ll;
-
-    if (RedisModule_StringToLongLong(arg, &ll) != REDISMODULE_OK) {
-        return SELVA_SUBSCRIPTIONS_EINVAL;
-    }
-
-    *marker_id = (Selva_SubscriptionMarkerId)ll;
-    return 0;
-}
-
 static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, RedisModuleString *arg) {
     TO_STR(arg);
 
@@ -835,7 +815,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      * Get the subscription id.
      */
     Selva_SubscriptionId sub_id;
-    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }
@@ -844,7 +824,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      * Get the marker id.
      */
     Selva_SubscriptionMarkerId marker_id;
-    err = parse_marker_id(&marker_id, argv[ARGV_MARKER_ID]);
+    err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }
@@ -878,14 +858,12 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      */
     const char *fields = NULL;
     if (argc > (int)ARGV_FIELD_NAMES) {
-        const char *fields_arg;
+        int err;
 
-        fields_arg = RedisModule_StringPtrLen(argv[ARGV_FIELDS], NULL);
-        if(strcmp(fields_arg, "fields")) {
-            return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_EINVAL);
+        err = SelvaArgParser_StrOpt(&fields, "fields", argv[ARGV_FIELDS], argv[ARGV_FIELD_NAMES]);
+        if(err) {
+            return replyWithSelvaError(ctx, err);
         }
-
-        fields = RedisModule_StringPtrLen(argv[ARGV_FIELD_NAMES], NULL);
 
         SHIFT_ARGS(2);
     }
@@ -1027,7 +1005,7 @@ int Selva_AddSubscriptionMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleStr
      * Get the subscription id.
      */
     Selva_SubscriptionId sub_id;
-    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }
@@ -1036,7 +1014,7 @@ int Selva_AddSubscriptionMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleStr
      * Get the marker id.
      */
     Selva_SubscriptionMarkerId marker_id;
-    err = parse_marker_id(&marker_id, argv[ARGV_MARKER_ID]);
+    err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }
@@ -1098,7 +1076,7 @@ int Selva_RefreshSubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     }
 
     Selva_SubscriptionId sub_id;
-    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
         fprintf(stderr, "%s: Invalid sub_id\n", __FILE__);
         return replyWithSelvaError(ctx, err);
@@ -1178,7 +1156,7 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     }
 
     Selva_SubscriptionId sub_id;
-    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
         fprintf(stderr, "%s: Invalid sub_id\n", __FILE__);
         return replyWithSelvaError(ctx, err);
@@ -1195,7 +1173,6 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     struct Selva_SubscriptionMarker **it;
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     SVECTOR_FOREACH(it, &sub->markers) {
-        RedisModuleString *str;
         struct Selva_SubscriptionMarker *marker = *it;
 
         RedisModule_ReplyWithArray(ctx, 6);
@@ -1235,7 +1212,7 @@ int Selva_UnsubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int 
     }
 
     Selva_SubscriptionId sub_id;
-    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
         fprintf(stderr, "%s: Invalid sub_id\n", __FILE__);
         return replyWithSelvaError(ctx, err);

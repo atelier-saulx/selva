@@ -1,6 +1,6 @@
 #pragma once
-#ifndef SELVA_MODIFY_ERRORS
-#define SELVA_MODIFY_ERRORS
+#ifndef SELVA_ERRORS
+#define SELVA_ERRORS
 
 /*
  * Error codes.
@@ -67,4 +67,4 @@ int replyWithSelvaError(struct RedisModuleCtx *ctx, int err);
 
 extern const char * const selvaStrError[-SELVA_INVALID_ERROR + 1];
 
-#endif /* SELVA_MODIFY_ERRORS */
+#endif /* SELVA_ERRORS */

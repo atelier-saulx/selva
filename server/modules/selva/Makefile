@@ -7,6 +7,7 @@ UTIL_LIBDIR := util
 OBJS := \
 	module.o \
 	module/alias.o \
+	module/arg_parser.o \
 	module/async_task.o \
 	module/errors.o \
 	module/find.o \

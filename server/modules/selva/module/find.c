@@ -7,6 +7,7 @@
 #include "redismodule.h"
 #include "selva.h"
 #include "selva_onload.h"
+#include "arg_parser.h"
 #include "errors.h"
 #include "hierarchy.h"
 #include "rpn.h"
@@ -63,17 +64,21 @@ static int parse_order(
     if (strcmp("order", txt_str)) {
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
+    if (unlikely(ord_len < 3)) {
+        goto einval;
+    }
 
-    if (!strcmp("asc", ord_str)) {
+    if (ord_str[0] == 'a' && !strcmp("asc", ord_str)) {
         tmpOrder = HIERARCHY_RESULT_ORDER_ASC;
-    } else if (!strcmp("desc", ord_str)) {
+    } else if (ord_str[0] == 'd' && !strcmp("desc", ord_str)) {
         tmpOrder = HIERARCHY_RESULT_ORDER_DESC;
     } else {
+einval:
         fprintf(stderr, "%s: Invalid order \"%.*s\"\n", __FILE__, (int)ord_len, ord_str);
         return SELVA_MODIFY_HIERARCHY_EINVAL;
     }
 
-    if (!strcmp(fld_str, "")) {
+    if (fld_len == 0 || fld_str[0] == '\0') {
         tmpOrder = HIERARCHY_RESULT_ORDER_NONE;
         *order_by_field = NULL;
     } else {
@@ -81,22 +86,6 @@ static int parse_order(
     }
 
     *order = tmpOrder;
-
-    return 0;
-}
-
-static int parse_opt(ssize_t *limit, const char *name, RedisModuleString *txt, RedisModuleString *num) {
-    TO_STR(txt, num)
-    char *end = NULL;
-
-    if (strcmp(name, txt_str)) {
-        return SELVA_MODIFY_HIERARCHY_ENOENT;
-    }
-
-    *limit = strtoull(num_str, &end, 10);
-    if (num_str == end) {
-        return SELVA_MODIFY_HIERARCHY_EINVAL;
-    }
 
     return 0;
 }
@@ -133,30 +122,6 @@ static int parse_dir(enum SelvaModify_HierarchyTraversal *dir, enum SelvaModify_
 
     return 0;
 }
-
-/* TODO This is ugly copy & pase */
-static int parse_subscription_id(Selva_SubscriptionId id, RedisModuleString *arg) {
-    TO_STR(arg);
-
-    if (arg_len != SELVA_SUBSCRIPTION_ID_STR_LEN) {
-        return SELVA_SUBSCRIPTIONS_EINVAL;
-    }
-
-    return Selva_SubscriptionStr2id(id, arg_str);
-}
-
-/* TODO This is ugly copy & pase */
-static int parse_marker_id(Selva_SubscriptionMarkerId *marker_id, RedisModuleString *arg) {
-    long long ll;
-
-    if (RedisModule_StringToLongLong(arg, &ll) != REDISMODULE_OK) {
-        return SELVA_SUBSCRIPTIONS_EINVAL;
-    }
-
-    *marker_id = (Selva_SubscriptionMarkerId)ll;
-    return 0;
-}
-
 
 static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** restrict b_raw) {
     const struct FindCommand_OrderedItem *a = *(const struct FindCommand_OrderedItem **)a_raw;
@@ -465,7 +430,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      */
     ssize_t offset = 0;
     if (argc > (int)ARGV_OFFSET_NUM) {
-        err = parse_opt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
+        err = SelvaArgParser_IntOpt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
@@ -478,7 +443,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      */
     ssize_t limit = -1;
     if (argc > (int)ARGV_LIMIT_NUM) {
-        err = parse_opt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
+        err = SelvaArgParser_IntOpt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
@@ -663,7 +628,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
      */
     ssize_t offset = 0;
     if (argc > (int)ARGV_OFFSET_NUM) {
-        err = parse_opt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
+        err = SelvaArgParser_IntOpt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
@@ -676,7 +641,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
      */
     ssize_t limit = -1;
     if (argc > (int)ARGV_LIMIT_NUM) {
-        err = parse_opt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
+        err = SelvaArgParser_IntOpt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
@@ -806,7 +771,7 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
      * Get the subscription id.
      */
     Selva_SubscriptionId sub_id;
-    err = parse_subscription_id(sub_id, argv[ARGV_SUB_ID]);
+    err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }
@@ -815,7 +780,7 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
      * Get the marker id.
      */
     Selva_SubscriptionMarkerId marker_id;
-    err = parse_marker_id(&marker_id, argv[ARGV_MARKER_ID]);
+    err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
 
 
     /*
@@ -849,7 +814,7 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
      */
     ssize_t offset = 0;
     if (argc > (int)ARGV_OFFSET_NUM) {
-        err = parse_opt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
+        err = SelvaArgParser_IntOpt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
@@ -862,7 +827,7 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
      */
     ssize_t limit = -1;
     if (argc > (int)ARGV_LIMIT_NUM) {
-        err = parse_opt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
+        err = SelvaArgParser_IntOpt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
