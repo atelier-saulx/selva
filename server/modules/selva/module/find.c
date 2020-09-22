@@ -496,9 +496,15 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
     svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
     if (order == HIERARCHY_RESULT_ORDER_ASC) {
-        SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc);
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc)) {
+            replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
+            goto out;
+        }
     } else if (order == HIERARCHY_RESULT_ORDER_DESC) {
-        SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc);
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc)) {
+            replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
+            goto out;
+        }
     }
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
@@ -556,6 +562,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
     RedisModule_ReplySetArrayLength(ctx, nr_nodes);
 
+out:
     if (rpn_ctx) {
         RedisModule_Free(filter_expression);
         rpn_destroy(rpn_ctx);
@@ -682,11 +689,16 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     }
 
     svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
-    /* TODO Error handling */
     if (order == HIERARCHY_RESULT_ORDER_ASC) {
-        SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc);
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc)) {
+            replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
+            goto out;
+        }
     } else if (order == HIERARCHY_RESULT_ORDER_DESC) {
-        SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc);
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc)) {
+            replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
+            goto out;
+        }
     }
 
     ssize_t array_len = 0;
@@ -723,6 +735,7 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
 
     RedisModule_ReplySetArrayLength(ctx, array_len);
 
+out:
     rpn_destroy(rpn_ctx);
     RedisModule_Free(filter_expression);
 
@@ -834,12 +847,15 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
         }
     }
 
-    svector_autofree SVector order_result = { 0 };
-    /* TODO Error handling */
+    svector_autofree SVector order_result = { 0 }; /* No need to init for ORDER_NODE */
     if (order == HIERARCHY_RESULT_ORDER_ASC) {
-        SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc);
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc)) {
+            return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
+        }
     } else if (order == HIERARCHY_RESULT_ORDER_DESC) {
-        SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc);
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc)) {
+            return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);
+        }
     }
 
     ssize_t array_len = 0;
@@ -867,7 +883,7 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
         .node_arg = &args,
     };
 
-    /* TODO We expect here that all markers have a valid nodeId. */
+    /* RFE We expect here that all markers have a valid nodeId. */
     err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
     if (err != 0) {
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
