@@ -127,3 +127,44 @@ test('Array + nested object', async t => {
   const patch = diff(a, b)
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
+
+test('Array + nested object lots the same', async t => {
+  const obj = {
+    x: true,
+    y: true,
+    cnt: 324
+  }
+
+  const a = {
+    f: []
+  }
+
+  const b = {
+    f: []
+  }
+
+  for (let i = 0; i < 10000; i++) {
+    a.f.push({ ...obj })
+    b.f.push({ ...obj })
+  }
+
+  b.f[5] = { gurken: true }
+
+  const patch = diff(a, b)
+
+  t.deepEqual(applyPatch(a, patch), b, 'is equal')
+
+  b.f.splice(8, 1, { gurky: true })
+
+  var d = Date.now()
+  const patch2 = diff(a, b)
+  console.log('Make large object patch', Date.now() - d, 'ms')
+
+  console.dir(patch2, { depth: 10 })
+
+  var d = Date.now()
+  const x = applyPatch(a, patch2)
+  console.log('Apply large object patch', Date.now() - d, 'ms')
+
+  t.deepEqual(x, b, 'insert object')
+})
