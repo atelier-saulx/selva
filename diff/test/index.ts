@@ -155,12 +155,11 @@ test('Array + nested object lots the same', async t => {
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 
   b.f.splice(8, 1, { gurky: true })
+  b.f.splice(1000, 1, { flurb: true })
 
   var d = Date.now()
   const patch2 = diff(a, b)
   console.log('Make large object patch', Date.now() - d, 'ms')
-
-  console.dir(patch2, { depth: 10 })
 
   var d = Date.now()
   const x = applyPatch(a, patch2)
