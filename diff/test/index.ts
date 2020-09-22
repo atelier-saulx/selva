@@ -118,8 +118,6 @@ test('Array + nested object lots the same', async t => {
   var d = Date.now()
   const patch2 = diff(a, b)
 
-  console.dir(patch2, { depth: 10 })
-
   console.log('Make large object patch', Date.now() - d, 'ms')
 
   var d = Date.now()
@@ -243,8 +241,6 @@ test('Deep in array', async t => {
 
   const patch = diff(a, b)
 
-  console.dir(patch, { depth: 10 })
-
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
@@ -253,14 +249,32 @@ test('Real life', async t => {
 
   const b = JSON.parse(JSON.stringify(a))
 
-  // console.log(b.components[3])
-
   // can add optimization techniques to not send the diff is the
   // diff is larger then the new object (on every level)
 
   const patch = diff(a, b)
-
-  console.dir(patch, { depth: 10 })
-
+  t.is(patch, undefined, 'is the same no diff')
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
+
+  b.components[3].children.unshift()
+  b.components[3].children.unshift()
+  b.components[3].children.unshift()
+
+  b.components[1].children = [
+    JSON.parse(JSON.stringify(b.components[3].children[0])),
+    JSON.parse(JSON.stringify(b.components[3].children[1])),
+    JSON.parse(JSON.stringify(b.components[3].children[2]))
+  ]
+
+  var d = Date.now()
+  const patch2 = diff(a, b)
+  console.log('Make sstv patch', Date.now() - d, 'ms')
+
+  console.dir(patch2, { depth: 10 })
+
+  var d = Date.now()
+  const x = applyPatch(a, patch2)
+  console.log('Apply sstv patch', Date.now() - d, 'ms')
+
+  t.deepEqual(x, b, 'is equal after games put to live')
 })
