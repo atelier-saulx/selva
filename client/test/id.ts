@@ -33,7 +33,7 @@ test('generates a unique id from type', async t => {
   // new types what this means is that the client allways needs to load a map add it to prefix
   // allways subscribe on it (hash)
 
-  server.destroy()
+  await server.destroy()
 
   await client.destroy()
 
