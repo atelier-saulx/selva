@@ -153,7 +153,7 @@ test.serial('string field ref', async t => {
     }
   )
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('json field ref', async t => {
@@ -191,7 +191,7 @@ test.serial('json field ref', async t => {
       }
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('whole object ref', async t => {
@@ -221,7 +221,7 @@ test.serial('whole object ref', async t => {
       value: 25
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('simple object field ref', async t => {
@@ -249,7 +249,7 @@ test.serial('simple object field ref', async t => {
       value: 25
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('nested object in object field ref', async t => {

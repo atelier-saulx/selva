@@ -223,7 +223,7 @@ test.serial(
     )
 
     await client.delete('root')
-    client.destroy()
+    await client.destroy()
   }
 )
 
@@ -331,7 +331,7 @@ test.serial(
     )
 
     await client.delete('root')
-    client.destroy()
+    await client.destroy()
   }
 )
 
@@ -382,7 +382,7 @@ test.serial('children/parents update checks source on create', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('children/parents update checks source on delete', async t => {
@@ -472,5 +472,5 @@ test.serial('children/parents update checks source on delete', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
