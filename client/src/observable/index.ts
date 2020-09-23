@@ -194,10 +194,17 @@ export class Observable {
     }
   }
 
+  public storeInCache(value: any, version: string) {
+    // check total cached mem (store it)
+    if (this.useCache) {
+    }
+  }
+
   public geValueSingleListener(
     onNext: UpdateCallback,
     onError?: (err: Error) => void
   ) {
+    // make this different
     if (this.connection) {
       const channel = this.uuid
       this.connection.command({
@@ -230,15 +237,23 @@ export class Observable {
   public getValue() {
     // then store diff + last diff version
     // so you first do a check here
+
+    console.log('getValue')
     if (this.connection) {
       const channel = this.uuid
       this.connection.command({
         command: 'hmget',
         id: this.selvaId,
-        args: [CACHE, channel, channel + '_version'],
-        resolve: ([data, version]) => {
+        args: [CACHE, channel, channel + '_version', channel + '_diff'],
+        resolve: ([data, version, diff]) => {
           if (data) {
             const obj = JSON.parse(data)
+
+            if (diff) {
+              diff = JSON.parse(diff)
+            }
+
+            console.log(obj, diff)
             // obj.version = version
             if (obj.payload && obj.payload.___$error___) {
               this.emitError(parseError(obj))
@@ -347,6 +362,10 @@ export class Observable {
         // msg is checksum
         // will also add diff maybe? or store the last diff?
         console.log('Incoming msg for observable', msg)
+
+        const versions = JSON.parse(msg)
+
+        console.log(versions)
       }
     })
 

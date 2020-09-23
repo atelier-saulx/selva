@@ -3,7 +3,7 @@ import { addSubscriptionToTree, removeSubscriptionFromTree } from '../../tree'
 import { hash } from '../../util'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
-// import diff from './diff'
+import diff from '@saulx/selva-diff'
 
 const { CACHE } = constants
 
@@ -111,35 +111,47 @@ const sendUpdate = async (
 
   subscription.version = newVersion
 
-  // console.log('snurf')
-  // not the best will use te cache for this!
-  // const prev = await redis.hget(selector, CACHE, channel)
-  // lets do time
-  // const patch = diff(prev, resultStr)
+  let patch
 
-  // console.log('MAKE PATCH', patch, ' ', prev, ' --> ', resultStr)
+  if (currentVersion) {
+    const prev = await redis.hget(selector, CACHE, channel)
+    const diffPatch = diff(prev.payload, payload)
+    patch = diffPatch
+  }
 
-  q.push(
-    redis.hmset(
-      selector,
-      CACHE,
-      channel,
-      resultStr,
-      channel + '_version',
-      newVersion
+  if (patch) {
+    q.push(
+      redis.hmset(
+        selector,
+        CACHE,
+        channel,
+        resultStr,
+        channel + '_version',
+        newVersion,
+        channel + '_diff',
+        JSON.stringify([patch, currentVersion])
+      )
     )
-  )
+  } else {
+    q.push(
+      redis.hmset(
+        selector,
+        CACHE,
+        channel,
+        resultStr,
+        channel + '_version',
+        newVersion
+      )
+    )
+  }
 
   await Promise.all(q)
 
   await redis.publish(
     selector,
     channel,
-    // now this an just be used if the prev version corresponds else just get from server cache
-    // important to not have too large patches
-    JSON.stringify({ version: newVersion, fromversion: currentVersion })
+    JSON.stringify([newVersion, currentVersion])
   )
-  // will send patch as well
 
   clearTimeout(time)
 

@@ -15,7 +15,7 @@ export type Subscription = {
   get: GetOptions
   version?: string
   tree?: SubTree
-  treeVersion?: string
+  treeVersion?: number
   inProgress?: boolean
   channel: string
   refreshAt?: number
