@@ -1,4 +1,5 @@
 import { createHash } from 'crypto'
+import { stringHash as hash } from '@saulx/utils'
 
 export function LargeHash(str: string): string {
   const hashingFn = createHash('sha256')
@@ -6,10 +7,4 @@ export function LargeHash(str: string): string {
   return hashingFn.digest('hex')
 }
 
-export function hash(str: string, hash = 5381): number {
-  var i = str.length
-  while (i) {
-    hash = (hash * 33) ^ str.charCodeAt(--i)
-  }
-  return hash >>> 0
-}
+export { hash }

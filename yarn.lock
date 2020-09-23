@@ -384,11 +384,6 @@
   version "1.0.0"
   resolved "https://github.com/atelier-saulx/prettier-config#bfbde3d591b3d9c26f68ffa063e7cb2a4bc5f6de"
 
-"@saulx/selva-diff@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@saulx/selva-diff/-/selva-diff-1.0.1.tgz#7cdbf0f8fe2af9194fb6082543f00502afcc166a"
-  integrity sha512-PYFxPZjcrCNl+JfXFi0e0LE66Oib+JowfzPJi4uq/ClszN5Ttm2682weBBi1oGoBkM4FjZF9Fz26gh4E/XUPdg==
-
 "@saulx/selva-server@1.9.0":
   version "1.9.0"
   resolved "https://registry.yarnpkg.com/@saulx/selva-server/-/selva-server-1.9.0.tgz#00a8b43702c345371d3316e88177424619549913"
