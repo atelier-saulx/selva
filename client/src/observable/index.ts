@@ -261,10 +261,9 @@ export class Observable {
           resolve: async ([version, diff]) => {
             version = Number(version)
 
-            // only certain sizes
+            // // only certain sizes
             // if (diff) {
             //   try {
-            //     console.log('DIFF', diff)
             //     const buf = Buffer.from(diff, 'base64')
             //     console.log({ buf })
             //     diff = await unzip(buf)
@@ -282,8 +281,6 @@ export class Observable {
                 this.version === fromVersion &&
                 this.cache
               ) {
-                // console.dir(this.cache, { depth: 10 })
-
                 const data = applyPatch(this.cache, patch)
                 if (this.useCache) {
                   this.storeInCache(data, version)

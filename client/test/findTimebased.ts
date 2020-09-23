@@ -418,6 +418,11 @@ test.serial('subs layout', async t => {
       }
     })
     .subscribe((r, v, d) => {
+      // console.log('INCOMING------------')
+      // console.dir(result, { depth: 10 })
+      // console.dir(r, { depth: 10 })
+      // console.dir(d, { depth: 10 })
+      // console.log('----------------------------')
       result = deepCopy(r)
     })
 
@@ -949,11 +954,11 @@ test.serial('subs layout', async t => {
 
   t.deepEqualIgnoreOrder(
     result,
-    {
+    deepCopy({
       upcoming: upcomingPublishedIds.slice(0, 10),
       past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
       live: [{ id: 'mau2' }]
-    },
+    }),
     'upcoming 6'
   )
   t.deepEqualIgnoreOrder(
@@ -1134,7 +1139,7 @@ test.serial('subs upcoming, live and past', async t => {
         }
       }
     })
-    .subscribe(r => {
+    .subscribe((r, checksum, diff) => {
       result = deepCopy(r)
     })
 

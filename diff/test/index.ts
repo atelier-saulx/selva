@@ -526,3 +526,67 @@ test('Weird array 2 register copy', async t => {
 
   t.deepEqual(x, b, 'is equal')
 })
+
+test('Weird array 3 register copy', async t => {
+  const a = {
+    upcoming: [
+      { id: 'mau2' },
+      { id: 'maug1' },
+      { id: 'maug2' },
+      { id: 'maug4' },
+      { id: 'maug5' },
+      { id: 'maug7' },
+      { id: 'maug8' },
+      { id: 'maug10' },
+      { id: 'maug11' },
+      { id: 'maug13' }
+    ],
+    past: [
+      { id: 'map1' },
+      { id: 'map2' },
+      { id: 'map4' },
+      { id: 'map5' },
+      { id: 'map7' },
+      { id: 'map8' },
+      { id: 'map10' },
+      { id: 'map11' },
+      { id: 'map13' },
+      { id: 'map14' }
+    ],
+    live: [{ id: 'mau1' }]
+  }
+
+  const b = {
+    upcoming: [
+      { id: 'maug1' },
+      { id: 'maug2' },
+      { id: 'maug4' },
+      { id: 'maug5' },
+      { id: 'maug7' },
+      { id: 'maug8' },
+      { id: 'maug10' },
+      { id: 'maug11' },
+      { id: 'maug13' },
+      { id: 'maug14' }
+    ],
+    past: [
+      { id: 'mau1' },
+      { id: 'map1' },
+      { id: 'map2' },
+      { id: 'map4' },
+      { id: 'map5' },
+      { id: 'map7' },
+      { id: 'map8' },
+      { id: 'map10' },
+      { id: 'map11' },
+      { id: 'map13' }
+    ],
+    live: [{ id: 'mau2' }]
+  }
+
+  const patch = diff(a, b)
+
+  const x = applyPatch(a, patch)
+
+  t.deepEqual(x, b, 'is equal')
+})
