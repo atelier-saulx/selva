@@ -68,6 +68,10 @@ export const arrayDiff = (a, b) => {
         current[1]++
         current[2] = [f]
       } else if (f === false) {
+        if (type === 1) {
+          current[2] = current[2][0]
+        }
+
         rIndex++
         r[rIndex] = [1, 1, [i]]
       }

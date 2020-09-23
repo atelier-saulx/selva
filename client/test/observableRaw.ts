@@ -412,7 +412,19 @@ test.only('diff observables', async t => {
   await wait(500)
 
   obs.subscribe((value, checksum, diff) => {
-    console.log('on subscription 2', value, checksum, diff)
+    console.log(
+      'on subscription 2',
+      value,
+      checksum,
+      JSON.stringify(diff, null, 2)
+    )
+  })
+
+  await wait(500)
+
+  await client.set({
+    $id: 'root',
+    flurp: [1, 3, 2, 4]
   })
 
   await wait(2500)

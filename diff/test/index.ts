@@ -383,3 +383,22 @@ test('Remove deep', async t => {
 
   t.deepEqual(x, b, 'is equal')
 })
+
+test.only('Flip', async t => {
+  const a = {
+    $id: 'root',
+    flurp: [1, 2, 3, 4]
+  }
+
+  const b = {
+    $id: 'root',
+    flurp: [1, 3, 2, 4]
+  }
+
+  const patch = diff(a, b)
+  console.dir(patch, { depth: 10 })
+  const x = applyPatch(a, patch)
+  console.dir(x, { depth: 10 })
+
+  t.deepEqual(x, b, 'is equal')
+})
