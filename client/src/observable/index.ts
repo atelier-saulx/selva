@@ -57,7 +57,7 @@ export class Observable {
 
     if (options.type === 'get') {
       if (options.cache === undefined) {
-        this.useCache = false // true
+        this.useCache = true // true
       } else {
         this.useCache = options.cache
       }
