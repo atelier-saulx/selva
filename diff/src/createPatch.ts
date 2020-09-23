@@ -138,7 +138,8 @@ export const arrayDiff = (a, b) => {
     r[0] === aLen
   ) {
     // is equal remove!
-    console.log('REMOVE', aLen, r)
+    // console.log('REMOVE', aLen, r)
+
     return
   }
 
@@ -159,8 +160,12 @@ const compareNode = (a, b, result, key: string) => {
       let r
       if (b.constructor === Array) {
         if (b.length === 0) {
-          r = [0, []]
-          result[key] = r
+          if (a.constructor === Array && a.length === 0) {
+            // is allready etmpyy
+          } else {
+            r = [0, []]
+            result[key] = r
+          }
         } else if (a.constructor === Array) {
           const isDiff = arrayDiff(a, b)
           if (isDiff && isDiff.length > 1) {
@@ -217,6 +222,9 @@ export const createPatch = (a: any, b: any) => {
       // fastest check
       if (b.constructor === Array) {
         if (b.length === 0) {
+          if (a.constructor === Array && a.length === 0) {
+            return
+          }
           return [0, b]
         } else if (a.constructor === Array) {
           const isDiff = arrayDiff(a, b)

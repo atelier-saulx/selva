@@ -246,7 +246,7 @@ test('Deep in array', async t => {
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test('Real life', async t => {
+test.only('Real life', async t => {
   const a = JSON.parse(JSON.stringify(region))
 
   const b = JSON.parse(JSON.stringify(a))
@@ -284,8 +284,6 @@ test('Real life', async t => {
 })
 
 test('Remove', async t => {
-  const ax = JSON.parse(JSON.stringify(region))
-
   const comp = [
     { a: 1 },
     { b: 1 },
@@ -295,8 +293,6 @@ test('Remove', async t => {
     { snurkels: 'blurf' }
   ]
 
-  // const comp = ax.components[3].children
-
   const a = comp
 
   const b = JSON.parse(JSON.stringify(comp))
@@ -305,17 +301,12 @@ test('Remove', async t => {
   b.shift()
   b.shift()
 
-  console.log('go diff!', a, '->', b)
   const patch = diff(a, b)
-  console.dir(patch, { depth: 10 })
-  // console.dir(applyPatch(a, patch), { depth: 10 })
 
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test.only('Remove nested array', async t => {
-  const ax = JSON.parse(JSON.stringify(region))
-
+test('Remove nested array', async t => {
   const comp = {
     a: [
       { a: 1 },
@@ -328,13 +319,10 @@ test.only('Remove nested array', async t => {
         children: [{ x: true }, { y: true }, { z: true }, { glur: true }]
       },
       { c: 1, children: [{ cx: true }, { cy: true }, { ca: true }] },
-      // { d: 1 },
       { e: 1, children: [{ cx: true }, { cy: true }, { ca: true }] },
       { snurkels: 'blurf' }
     ]
   }
-
-  // const comp = ax.components[3].children
 
   const a = comp
 
@@ -351,15 +339,8 @@ test.only('Remove nested array', async t => {
 
   b.a[4].children = []
 
-  console.log('go diff!')
-  console.dir(a, { depth: 10 })
-  console.dir(b, { depth: 10 })
-
   const patch = diff(a, b)
-  console.dir(patch, { depth: 10 })
   const x = applyPatch(a, patch)
-
-  console.dir(x, { depth: 10 })
 
   t.deepEqual(x, b, 'is equal')
 })
@@ -378,11 +359,9 @@ test('Remove deep', async t => {
   b.shift()
 
   const patch = diff(a, b)
-  console.dir(patch, { depth: 10 })
+  // console.dir(patch, { depth: 10 })
   const x = applyPatch(a, patch)
-  console.dir(x, { depth: 10 })
-
-  // console.dir(b, { depth: 10 })
+  // console.dir(x, { depth: 10 })
 
   t.deepEqual(x, b, 'is equal')
 })
