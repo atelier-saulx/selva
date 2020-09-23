@@ -270,8 +270,6 @@ export class Observable {
             // }
 
             if (diff) {
-              console.log('RESULT', diff)
-
               const [patch, fromVersion] = JSON.parse(diff)
               if (
                 fromVersion === versions[1] &&
