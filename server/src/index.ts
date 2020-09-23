@@ -223,20 +223,9 @@ export async function start(opts: Options) {
     }
   })
 
-
-  origin.pm.on('stdout', (d) => console.log(d.toString()))
-  subs.pm.on('stdout', (d) => console.log(d.toString()))
-  registry.pm.on('stdout', (d) => console.log(d.toString()))
-  subsRegistry.pm.on('stdout', (d) => console.log(d.toString()))
-
-  origin.pm.on('stderr', (d) => console.error(d.toString()))
-  subs.pm.on('stderr', (d) => console.error(d.toString()))
-  registry.pm.on('stderr', (d) => console.error(d.toString()))
-  subsRegistry.pm.on('stderr', (d) => console.error(d.toString()))
-
   registry.on('close', async () => {
     // TODO: Remove comment
-    console.log('Close all servers does it work ?')
+    // console.log('Close all servers does it work ?')
     await origin.destroy()
     await subs.destroy()
     await subsRegistry.destroy()

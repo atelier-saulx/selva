@@ -173,7 +173,7 @@ test.serial.only('one client', async t => {
       title: true
     })
     .subscribe(r => {
-      console.log('result:', r)
+      // console.log('result:', r)
     })
 
   await wait(500)
@@ -210,7 +210,7 @@ test.serial('many async clients - timebased query', async t => {
     })
 
     client.observe(timeQuery).subscribe(r => {
-      console.log('time:', r)
+      // console.log('time:', r)
       result = r
     })
   }
@@ -235,4 +235,5 @@ test.serial('many async clients - timebased query', async t => {
   })
   await wait(10000)
   await client.delete('root')
+  t.pass()
 })

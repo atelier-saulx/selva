@@ -32,8 +32,6 @@ const sendUpdate = async (
     const schemaResp = await client.getSchema(dbName)
     const version = schemaResp.schema.sha
 
-    console.log('ok got it', dbName)
-
     const value = JSON.stringify({ type: 'update', payload: schemaResp.schema })
     await redis.hmset(
       selector,

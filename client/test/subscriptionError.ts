@@ -49,7 +49,7 @@ test.serial('subscription validation error', async t => {
     .subscribe(
       () => {},
       () => {
-        console.log('yesh')
+        // console.log('yesh')
         errorCnt++
       }
     )

@@ -53,7 +53,7 @@ export default (server: SelvaServer, opts: ServerOptions) => {
 
   try {
     execSync(`redis-cli -p ${port} config set dir ${dir}`, { stdio: 'ignore' })
-    execSync(`redis-cli -p ${port} shutdown`)
+    execSync(`redis-cli -p ${port} shutdown`, { stdio: 'ignore' })
   } catch (_err) {}
 
   server.pm = new RedisManager(args, {

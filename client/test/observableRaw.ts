@@ -229,7 +229,7 @@ test.serial('Make some observables and many subs managers', async t => {
   const prevId = previousLocation.host + ':' + previousLocation.port
   const newId = serverSelector.host + ':' + serverSelector.port
 
-  console.log(prevId, newId)
+  // console.log(prevId, newId)
 
   t.true(
     !serversAfter[prevId] || !serversAfter[prevId].includes(movedUuid),
@@ -392,7 +392,7 @@ test.only('diff observables', async t => {
   })
 
   obs.subscribe((value, checksum, diff) => {
-    console.log('on subscription', value, checksum, diff)
+    // console.log('on subscription', value, checksum, diff)
   })
 
   await wait(500)
@@ -412,7 +412,7 @@ test.only('diff observables', async t => {
   await wait(500)
 
   obs.subscribe((value, checksum, diff) => {
-    console.log('on subscription 2', value, checksum, diff)
+    // console.log('on subscription 2', value, checksum, diff)
   })
 
   await wait(500)

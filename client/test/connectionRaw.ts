@@ -30,7 +30,8 @@ test.serial('connection / server orchestration', async t => {
 
   const origin = await startOrigin({
     default: true,
-    registry: { port }
+    registry: { port },
+    dir: join(dir, 'or')
   })
 
   const snurfServer = await startOrigin({

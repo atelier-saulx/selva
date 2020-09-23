@@ -377,9 +377,7 @@ test('Remove deep', async t => {
   b.shift()
 
   const patch = diff(a, b)
-  // console.dir(patch, { depth: 10 })
   const x = applyPatch(a, patch)
-  // console.dir(x, { depth: 10 })
 
   t.deepEqual(x, b, 'is equal')
 })

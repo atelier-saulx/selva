@@ -166,7 +166,7 @@ test.serial('subs layout', async t => {
         }
       }
     })
-    .subscribe(r => console.log(r))
+    .subscribe(r => {})
   client
     .observe({
       $language: 'de',
@@ -192,7 +192,7 @@ test.serial('subs layout', async t => {
         }
       }
     })
-    .subscribe(r => console.log(r))
+    .subscribe(r => {})
 
   const past = []
   let pastPublishedIds = []
@@ -417,7 +417,6 @@ test.serial('subs layout', async t => {
     })
     .subscribe(r => {
       result = r
-      console.log('-->', result)
     })
 
   let otherResult1
@@ -556,7 +555,6 @@ test.serial('subs layout', async t => {
     })
     .subscribe(r => {
       otherResult1 = r
-      console.log('match layout 1', r)
     })
 
   let otherResult2
@@ -695,7 +693,6 @@ test.serial('subs layout', async t => {
     })
     .subscribe(r => {
       otherResult2 = r
-      console.log('match layout 2', r)
     })
 
   let otherResult3
@@ -847,11 +844,9 @@ test.serial('subs layout', async t => {
     })
     .subscribe(r => {
       otherResult3 = r
-      console.log('sport layout', r)
     })
 
   await wait(500)
-  console.log('should be upcoming')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
       upcomingPublishedIds.slice(0, 8)
@@ -886,7 +881,6 @@ test.serial('subs layout', async t => {
 
   await wait(3000)
 
-  console.log('should be live')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'mau2' }].concat(upcomingPublishedIds.slice(0, 9)),
     past: pastPublishedIds.slice(0, 10),
@@ -933,7 +927,6 @@ test.serial('subs layout', async t => {
 
   await wait(3000)
 
-  console.log('should be past')
   t.deepEqualIgnoreOrder(result, {
     upcoming: upcomingPublishedIds.slice(0, 10),
     past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
@@ -1004,6 +997,11 @@ test.serial('subs layout', async t => {
   t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
 
   await client.delete('root')
+  await client.destroy()
+
+  await wait(3e3)
+
+  t.true(true)
 })
 
 test.serial('subs upcoming, live and past', async t => {
@@ -1095,18 +1093,23 @@ test.serial('subs upcoming, live and past', async t => {
     })
 
   await wait(500)
+
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'ma1' }],
     past: [],
     live: []
   })
+
   await wait(3000)
+
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [],
     live: [{ id: 'ma1' }]
   })
+
   await wait(3000)
+
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [{ id: 'ma1' }],
@@ -1114,6 +1117,11 @@ test.serial('subs upcoming, live and past', async t => {
   })
 
   await client.delete('root')
+  await client.destroy()
+
+  await wait(3e3)
+
+  t.true(true)
 })
 
 test.serial('find - already started', async t => {
@@ -1183,37 +1191,10 @@ test.serial('find - already started', async t => {
     ).$meta.___refreshAt,
     nextRefresh
   )
-
-  // FIXME: wft ASC sort broken?
-  // t.deepEqual(
-  //   (
-  //     await client.get({
-  //       $includeMeta: true,
-  //       $id: 'root',
-  //       items: {
-  //         name: true,
-  //         value: true,
-  //         $list: {
-  //           $sort: { $field: 'startTime', $order: 'asc' },
-  //           $find: {
-  //             $traverse: 'children',
-  //             $filter: [
-  //               {
-  //                 $field: 'startTime',
-  //                 $operator: '<',
-  //                 $value: 'now'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     })
-  //   ).items.map(i => i.name),
-  //   ['started 2m ago', 'started 5m ago', 'started 2h ago']
-  // )
-
   await client.delete('root')
   await client.destroy()
+
+  t.true(true)
 })
 
 test.serial('find - already started subscription', async t => {
@@ -1283,8 +1264,6 @@ test.serial('find - already started subscription', async t => {
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
   })
 
-  t.plan(5)
-
   const observable = client.observe({
     $includeMeta: true,
     $id: 'root',
@@ -1306,6 +1285,8 @@ test.serial('find - already started subscription', async t => {
       }
     }
   })
+
+  await wait(100)
 
   let o1counter = 0
   const sub = observable.subscribe(d => {
@@ -1329,7 +1310,15 @@ test.serial('find - already started subscription', async t => {
   await wait(10 * 1000)
 
   sub.unsubscribe()
+
+  await wait(100)
+
   await client.delete('root')
+  await client.destroy()
+
+  await wait(1000)
+
+  t.true(true)
 })
 
 test.serial('find - starting soon', async t => {
@@ -1465,4 +1454,6 @@ test.serial('find - starting soon', async t => {
   )
 
   await client.destroy()
+
+  t.true(true)
 })

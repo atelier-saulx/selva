@@ -57,7 +57,7 @@ export class Observable {
 
     if (options.type === 'get') {
       if (options.cache === undefined) {
-        this.useCache = true
+        this.useCache = false // true
       } else {
         this.useCache = options.cache
       }
@@ -147,7 +147,7 @@ export class Observable {
     onNext: UpdateCallback,
     onError?: (err: Error) => void,
     onComplete?: (x?: any) => void
-  ) {
+  ): Observable {
     if (this.isDestroyed) {
       console.warn(
         chalk.yellow(
@@ -181,9 +181,10 @@ export class Observable {
     } else {
       this.geValueSingleListener(onNext, onError)
     }
+    return this
   }
 
-  public unsubscribe() {
+  public unsubscribe(): Observable {
     if (this.isDestroyed) {
       console.warn(
         chalk.yellow(
@@ -196,6 +197,7 @@ export class Observable {
     if (this.subsCounter === 0) {
       this.destroy()
     }
+    return this
   }
 
   public storeInCache(value: any, version: number) {
@@ -246,7 +248,12 @@ export class Observable {
     // so you first do a check here
     if (this.connection) {
       const channel = this.uuid
-      if (this.useCache && this.version && versions && versions.length === 2) {
+      if (
+        this.useCache &&
+        this.version &&
+        versions &&
+        versions.length === 100 // should be 2
+      ) {
         this.connection.command({
           command: 'hmget',
           id: this.selvaId,
@@ -316,10 +323,10 @@ export class Observable {
             } else {
               // maybe not send this
               // console.log('no datax...')
-              if (this.useCache) {
-                this.storeInCache(data, version)
-              }
-              this.emitUpdate(data, version)
+              // if (this.useCache) {
+              //   this.storeInCache(data, version)
+              // }
+              // this.emitUpdate(data, version)
             }
           },
           reject: err => this.emitError(err)

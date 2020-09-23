@@ -99,7 +99,7 @@ test.serial('root is searchable', async t => {
   )
 })
 
-test.serial('root is searchable', async t => {
+test.serial('root is searchable 2', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({

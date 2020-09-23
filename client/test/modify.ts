@@ -494,7 +494,8 @@ test.serial('basic', async t => {
 
   // delete root
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [])
+  const d = await dumpDb(client)
+  t.deepEqual(d, [])
 
   await client.destroy()
 })

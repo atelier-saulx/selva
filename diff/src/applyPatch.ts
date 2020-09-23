@@ -22,7 +22,6 @@ const nestedApplyPatch = (value: object, key: string, patch) => {
 // hash
 // nested object
 const applyArrayPatch = (value: any[], arrayPatch) => {
-  //   console.log('go do array!', arrayPatch)
   const patchLength = arrayPatch.length
   const newArray = new Array(arrayPatch[0])
   let aI = -1
@@ -78,7 +77,6 @@ const applyPatch = (value, patch) => {
       return value
     }
   } else {
-    // console.log('NO CHANGE IN APPLY PATCH!')
     return value
   }
 }

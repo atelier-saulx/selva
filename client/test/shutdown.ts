@@ -27,20 +27,21 @@ test.serial('Should close redis after destroy', async t => {
 
 test.serial.only('Should hangle SIGTERM', async t => {
   t.plan(1)
-  const info:any = await new Promise((resolve, reject) => {
-    const spawned = spawn('node', ['test/assertions/selvaProcessRunner.js'], { detached: true })
-    spawned.stdout.on('data', (data) => {
-      resolve(JSON.parse(data.toString()))
+  const info: any = await new Promise((resolve, reject) => {
+    const spawned = spawn('node', ['test/assertions/selvaProcessRunner.js'], {
+      detached: true
+    })
+    spawned.stdout.on('data', data => {
+      // resolve(JSON.parse(data.toString()))
     })
   })
-  console.log(info)
+  // console.log(info)
 
   await new Promise(resolve => setTimeout(resolve, 1000))
 
-  execSync(`kill -2 ${ info.pid }`)
+  execSync(`kill -2 ${info.pid}`)
 
   await new Promise(resolve => setTimeout(resolve, 6000))
 
-  t.throws(() => (execSync(`lsof -n -i :${info.port} | grep LISTEN`).toString()))
+  t.throws(() => execSync(`lsof -n -i :${info.port} | grep LISTEN`).toString())
 })
-

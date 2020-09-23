@@ -100,4 +100,7 @@ test.serial('basic schema based subscriptions', async t => {
   sub2.unsubscribe()
 
   await wait(1500)
+
+  await client.destroy()
+  t.pass()
 })

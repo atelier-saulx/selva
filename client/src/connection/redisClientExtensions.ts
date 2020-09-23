@@ -27,7 +27,7 @@ const redisSearchCommands = [
   'CONFIG'
 ]
 
-redis.RedisClient.prototype.on_info_cmd = function (err, res) {
+redis.RedisClient.prototype.on_info_cmd = function(err, res) {
   if (err) {
     if (err.message.includes('BUSY')) {
       this.on_ready()
@@ -39,10 +39,20 @@ redis.RedisClient.prototype.on_info_cmd = function (err, res) {
       return
     }
 
-    if (err.message.includes('connection is already closed')
-      || err.message.includes('ERR only (P)SUBSCRIBE / (P)UNSUBSCRIBE / PING / QUIT allowed in this context')
-      || err.message.includes('Redis connection lost and command aborted. It might have been processed.')
-      || err.message.includes('Stream connection ended and command aborted. It might have been processed.')
+    if (
+      err.message.includes('connection is already closed') ||
+      err.message.includes(
+        'ERR only (P)SUBSCRIBE / (P)UNSUBSCRIBE / PING / QUIT allowed in this context'
+      ) ||
+      err.message.includes(
+        'Redis connection lost and command aborted. It might have been processed.'
+      ) ||
+      err.message.includes(
+        'Stream connection ended and command aborted. It might have been processed.'
+      ) ||
+      err.message.includes(
+        "PUBLISH can't be processed. The connection is already closed."
+      )
     ) {
       err.message = 'Ready check failed: ' + err.message
       this.emit('hard-disconnect', err)
@@ -52,7 +62,7 @@ redis.RedisClient.prototype.on_info_cmd = function (err, res) {
     err.message = 'Ready check failed: ' + err.message
     console.log(err)
     setTimeout(
-      function (self) {
+      function(self) {
         self.ready_check()
       },
       1e3,
@@ -87,7 +97,7 @@ redis.RedisClient.prototype.on_info_cmd = function (err, res) {
   }
 
   setTimeout(
-    function (self) {
+    function(self) {
       self.ready_check()
     },
     retry_time,
