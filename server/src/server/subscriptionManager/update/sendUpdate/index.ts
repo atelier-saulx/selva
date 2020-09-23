@@ -4,6 +4,9 @@ import { hash } from '../../util'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
 import diff from '@saulx/selva-diff'
+import { gzip as zipCb } from 'zlib'
+import { promisify } from 'util'
+const gzip = promisify(zipCb)
 
 const { CACHE } = constants
 
@@ -115,7 +118,15 @@ const sendUpdate = async (
     const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
     // maybe gzip the patch (very efficient format for gzip)
     const diffPatch = diff(prev.payload, payload)
-    patch = diffPatch
+
+    // gzip only makes sense for a certain size of update
+    // patch = (
+    //   await (<Promise<Buffer>>gzip(JSON.stringify([diffPatch, currentVersion])))
+    // ).toString('base64')
+
+    // console.log('PATCH', patch)
+
+    patch = JSON.stringify([diffPatch, currentVersion])
   }
 
   if (patch) {
@@ -128,7 +139,7 @@ const sendUpdate = async (
         channel + '_version',
         newVersion,
         channel + '_diff',
-        JSON.stringify([patch, currentVersion])
+        patch
       )
     )
   } else {

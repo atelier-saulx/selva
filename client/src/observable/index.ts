@@ -15,6 +15,11 @@ import { ServerSelector } from '../types'
 import chalk from 'chalk'
 import { applyPatch } from '@saulx/selva-diff'
 
+import { unzip as unzipCb } from 'zlib'
+import { promisify } from 'util'
+
+const unzip = promisify(unzipCb)
+
 var observableIds = 0
 
 type UpdateCallback = (value: any, checksum?: number, diff?: any) => void
@@ -197,6 +202,7 @@ export class Observable {
 
   public storeInCache(value: any, version: number) {
     // check total cached mem (store it)
+
     this.cache = value
     this.version = version
   }
@@ -247,9 +253,25 @@ export class Observable {
           command: 'hmget',
           id: this.selvaId,
           args: [CACHE, channel + '_version', channel + '_diff'],
-          resolve: ([version, diff]) => {
+          resolve: async ([version, diff]) => {
             version = Number(version)
+
+            // only certain sizes
+            // if (diff) {
+            //   try {
+            //     console.log('DIFF', diff)
+            //     const buf = Buffer.from(diff, 'base64')
+            //     console.log({ buf })
+            //     diff = await unzip(buf)
+            //   } catch (err) {
+            //     diff = undefined
+            //     console.error('CANNOT UNZIP', err)
+            //   }
+            // }
+
             if (diff) {
+              console.log('RESULT', diff)
+
               const [patch, fromVersion] = JSON.parse(diff)
               if (
                 fromVersion === versions[1] &&
