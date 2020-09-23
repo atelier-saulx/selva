@@ -423,6 +423,7 @@ function resolveId(ids: Id[], aliases: string[]): string | null {
 function get(opts: GetOptions): GetResult {
   const schema = getSchema()
   const result: GetResult = {}
+  console.log('MIT')
 
   let {
     $version: version,
@@ -430,6 +431,7 @@ function get(opts: GetOptions): GetResult {
     $alias: aliases,
     $language: language,
     $includeMeta: includeMeta,
+    $subscription: subscription,
     $rawAncestors: rawAncestors
   } = opts
 
@@ -446,6 +448,12 @@ function get(opts: GetOptions): GetResult {
   if (includeMeta) {
     global.$meta = {}
     result.$meta = global.$meta
+  }
+
+  console.log('SUBSCR', subscription)
+  if (subscription) {
+    global.$subscription = subscription
+    console.log('GLOBAL', global)
   }
 
   getField(opts, schema, result, id, undefined, language, version)

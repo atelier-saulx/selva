@@ -22,6 +22,7 @@ const sendUpdate = async (
   subscription.beingProcessed = true
   const getOptions = subscription.get
   getOptions.$includeMeta = true
+  getOptions.$subscription = subscription.channel.slice(22)
 
   if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
     const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)

@@ -178,6 +178,7 @@ const parseQuery = (
         'selva.hierarchy.findIn',
         '___selva_hierarchy'
       ])
+      // TODO: here create marker _for_each_id_ separately
 
       appendSearchArgs(allArgs, order)
       appendSearchArgs(allArgs, offset)
@@ -191,8 +192,10 @@ const parseQuery = (
         resultIds = queryResult
       }
     } else {
+      // TODO: here ensure/create marker if $subscription
       // TODO: add subscription meta info???
       const allArgs: string[] = []
+      // TODO: here call findInSub
       appendSearchArgs(allArgs, [
         'selva.hierarchy.find',
         '___selva_hierarchy',
