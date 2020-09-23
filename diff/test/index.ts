@@ -60,8 +60,6 @@ test('Object', async t => {
   }
   const patch = diff(a, b)
 
-  console.dir(patch, { depth: 10 })
-
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
