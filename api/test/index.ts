@@ -4,7 +4,7 @@ import { connect } from '@saulx/selva'
 import { start } from '@saulx/selva-server'
 import getPort from 'get-port'
 import { start as apiStart } from '../src/index'
-import { constructPoop, noHasPoop } from '../src/handler'
+import { constructGuard, noHasGuard } from '../src/handler'
 import fetch from 'node-fetch'
 
 let srv
@@ -439,19 +439,19 @@ test.serial('test funky passing funky middleware', async t => {
   cleanup()
 })
 
-test.serial('test poopy poop', async t => {
+test.serial('test Guardy Guard', async t => {
   const simple = {
     $alias: 'hello',
     myString: 'hmmhmm'
   }
 
-  t.deepEqual(constructPoop(simple), {
+  t.deepEqual(constructGuard(simple), {
     $alias: 'hello',
     id: true,
     myString: true
   })
-  t.deepEqual(true, noHasPoop(simple, { id: 'maYes', myString: 'hmmhmm' }))
-  t.deepEqual(false, noHasPoop(simple, { id: 'maYes', myString: 'mmyes' }))
+  t.deepEqual(true, noHasGuard(simple, { id: 'maYes', myString: 'hmmhmm' }))
+  t.deepEqual(false, noHasGuard(simple, { id: 'maYes', myString: 'mmyes' }))
 
   const settingAliases = {
     $alias: 'hello',
@@ -459,7 +459,7 @@ test.serial('test poopy poop', async t => {
     aliases: ['a', 'b', 'abba']
   }
 
-  t.deepEqual(constructPoop(settingAliases), {
+  t.deepEqual(constructGuard(settingAliases), {
     $alias: 'hello',
     id: true,
     myString: true,
@@ -467,7 +467,7 @@ test.serial('test poopy poop', async t => {
   })
   t.deepEqual(
     true,
-    noHasPoop(settingAliases, {
+    noHasGuard(settingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['a', 'b', 'abba']
@@ -475,7 +475,7 @@ test.serial('test poopy poop', async t => {
   )
   t.deepEqual(
     false,
-    noHasPoop(settingAliases, {
+    noHasGuard(settingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['a', 'b']
@@ -483,7 +483,7 @@ test.serial('test poopy poop', async t => {
   )
   t.deepEqual(
     false,
-    noHasPoop(settingAliases, {
+    noHasGuard(settingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['a', 'abba']
@@ -496,7 +496,7 @@ test.serial('test poopy poop', async t => {
     aliases: { $value: ['a', 'b', 'abba'] }
   }
 
-  t.deepEqual(constructPoop(valueAliases), {
+  t.deepEqual(constructGuard(valueAliases), {
     $alias: 'hello',
     id: true,
     myString: true,
@@ -504,7 +504,7 @@ test.serial('test poopy poop', async t => {
   })
   t.deepEqual(
     true,
-    noHasPoop(valueAliases, {
+    noHasGuard(valueAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['a', 'b', 'abba']
@@ -512,7 +512,7 @@ test.serial('test poopy poop', async t => {
   )
   t.deepEqual(
     false,
-    noHasPoop(valueAliases, {
+    noHasGuard(valueAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['a', 'b']
@@ -520,7 +520,7 @@ test.serial('test poopy poop', async t => {
   )
   t.deepEqual(
     false,
-    noHasPoop(valueAliases, {
+    noHasGuard(valueAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['a', 'abba']
@@ -533,7 +533,7 @@ test.serial('test poopy poop', async t => {
     aliases: { $add: ['a', 'b'] }
   }
 
-  t.deepEqual(constructPoop(addingAliases), {
+  t.deepEqual(constructGuard(addingAliases), {
     $alias: 'hello',
     id: true,
     myString: true,
@@ -541,7 +541,7 @@ test.serial('test poopy poop', async t => {
   })
   t.deepEqual(
     true,
-    noHasPoop(addingAliases, {
+    noHasGuard(addingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['a', 'b', 'abba']
@@ -549,7 +549,7 @@ test.serial('test poopy poop', async t => {
   )
   t.deepEqual(
     false,
-    noHasPoop(addingAliases, {
+    noHasGuard(addingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['abba', 'b']
@@ -557,7 +557,7 @@ test.serial('test poopy poop', async t => {
   )
   t.deepEqual(
     false,
-    noHasPoop(addingAliases, {
+    noHasGuard(addingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['b', 'abba']
@@ -570,7 +570,7 @@ test.serial('test poopy poop', async t => {
     aliases: { $delete: ['a', 'b'] }
   }
 
-  t.deepEqual(constructPoop(removingAliases), {
+  t.deepEqual(constructGuard(removingAliases), {
     $alias: 'hello',
     id: true,
     myString: true,
@@ -578,7 +578,7 @@ test.serial('test poopy poop', async t => {
   })
   t.deepEqual(
     true,
-    noHasPoop(removingAliases, {
+    noHasGuard(removingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['abba']
@@ -586,7 +586,7 @@ test.serial('test poopy poop', async t => {
   )
   t.deepEqual(
     false,
-    noHasPoop(removingAliases, {
+    noHasGuard(removingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['abba', 'b']
@@ -594,7 +594,7 @@ test.serial('test poopy poop', async t => {
   )
   t.deepEqual(
     false,
-    noHasPoop(removingAliases, {
+    noHasGuard(removingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
       aliases: ['b', 'abba']

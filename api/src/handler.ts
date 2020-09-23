@@ -42,7 +42,7 @@ function checkPost(
   next(true)
 }
 
-export function constructPoop(setOpts: SetOptions): GetOptions {
+export function constructGuard(setOpts: SetOptions): GetOptions {
   const result: GetOptions = {}
   for (const key in setOpts) {
     if (key.startsWith('$')) {
@@ -68,7 +68,7 @@ export function constructPoop(setOpts: SetOptions): GetOptions {
   return result
 }
 
-export function noHasPoop(setOpts: any, result: any): boolean {
+export function noHasGuard(setOpts: any, result: any): boolean {
   if (Array.isArray(setOpts) && Array.isArray(result)) {
     if (setOpts.length !== result.length) {
       return false
@@ -132,7 +132,7 @@ export function noHasPoop(setOpts: any, result: any): boolean {
         return true
       }
 
-      return noHasPoop(val, result[key])
+      return noHasGuard(val, result[key])
     })
   } else {
     return setOpts === result
@@ -233,11 +233,11 @@ export default function(
         // that we use to check if something meaningful will change with this set
         // to reduce load on the cluster due to replication
         // NUKE THIS PLS
-        const fakeGetBody: GetOptions = constructPoop(body)
+        const fakeGetBody: GetOptions = constructGuard(body)
         client
           .get(fakeGetBody)
           .then(result => {
-            if (noHasPoop(body, result)) {
+            if (noHasGuard(body, result)) {
               console.log('HAHA, NOTHING ACTUALLY UPDATED')
               return Promise.resolve(result.id)
             }
