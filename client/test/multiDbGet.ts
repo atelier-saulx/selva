@@ -92,6 +92,7 @@ test.after(async t => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await srv2.destroy()
   await t.connectionsAreEmpty()
 })
 
