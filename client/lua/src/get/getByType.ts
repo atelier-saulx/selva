@@ -294,16 +294,13 @@ const object = (
 ): boolean => {
   const keys = redis.hkeys(id)
 
-  table.sort(keys, (a, b) => a < b)
-
-  logger.info('hello', keys)
-
   let isComplete = true
   let noKeys = true
 
   let usedResult = merge ? {} : result
+  const checkField = field + '.'
   for (const key of keys) {
-    if (key.indexOf(field) === 0) {
+    if (key.indexOf(checkField) === 0) {
       noKeys = false
 
       if (stringEndsWith(key, '$ref')) {
@@ -326,12 +323,12 @@ const object = (
 
   if (merge) {
     for (const key of keys) {
-      if (key.indexOf(field) === 0) {
+      if (key.indexOf(checkField) === 0) {
         const keyPartsAfterField = splitString(
           key.substring(field.length + 1),
           '.'
         )[0]
-        const topLevelPropertyField = field + '.' + keyPartsAfterField
+        const topLevelPropertyField = checkField + keyPartsAfterField
 
         const intermediate = getNestedField(usedResult, topLevelPropertyField)
         const nested = getNestedField(result, topLevelPropertyField)
@@ -347,7 +344,7 @@ const object = (
 
     if (mergeProps && mergeProps.properties) {
       for (const topLevelKey in mergeProps.properties) {
-        const fullPathToKey = field + '.' + topLevelKey
+        const fullPathToKey = checkField + topLevelKey
         const nested = getNestedField(result, fullPathToKey)
         if (
           !nested ||
@@ -378,12 +375,15 @@ const record = (
   mergeProps?: any
 ): boolean => {
   const keys = redis.hkeys(id)
+
+  table.sort(keys)
   let isComplete = true
   let noKeys = true
 
   let usedResult = merge ? {} : result
+  const checkField = field + '.'
   for (const key of keys) {
-    if (key.indexOf(field) === 0) {
+    if (key.indexOf(checkField) === 0) {
       noKeys = false
 
       if (stringEndsWith(key, '$ref')) {
@@ -406,12 +406,12 @@ const record = (
 
   if (merge) {
     for (const key of keys) {
-      if (key.indexOf(field) === 0) {
+      if (key.indexOf(checkField) === 0) {
         const keyPartsAfterField = splitString(
           key.substring(field.length + 1),
           '.'
         )[0]
-        const topLevelPropertyField = field + '.' + keyPartsAfterField
+        const topLevelPropertyField = checkField + keyPartsAfterField
 
         const intermediate = getNestedField(usedResult, topLevelPropertyField)
         const nested = getNestedField(result, topLevelPropertyField)
