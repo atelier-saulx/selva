@@ -116,11 +116,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get non-existing by $alias', async t => {
@@ -275,7 +276,7 @@ test.serial('set alias and get by $alias', async t => {
   ])
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('set new entry with alias', async t => {
@@ -311,7 +312,7 @@ test.serial('set new entry with alias', async t => {
   ])
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('set existing entry with alias', async t => {
@@ -375,7 +376,7 @@ test.serial('set existing entry with alias', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('set and get by $alias as id', async t => {
@@ -400,7 +401,7 @@ test.serial('set and get by $alias as id', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('set parent by alias', async t => {
@@ -462,5 +463,5 @@ test.serial('set parent by alias', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })

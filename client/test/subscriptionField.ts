@@ -3,6 +3,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import getPort from 'get-port'
 import { wait } from './assertions'
+import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
@@ -112,11 +113,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('subscribe - simple alias', async t => {
@@ -148,7 +150,7 @@ test.serial('subscribe - simple alias', async t => {
 
   const results = []
   obs.subscribe(res => {
-    results.push(res)
+    results.push(deepCopy(res))
   })
 
   await wait(500)
@@ -180,6 +182,8 @@ test.serial('subscribe - simple alias', async t => {
       value: 25
     }
   ])
+
+  await client.destroy()
 })
 
 test.serial('subscribe - simple alias with variable', async t => {
@@ -214,7 +218,7 @@ test.serial('subscribe - simple alias with variable', async t => {
   })
 
   const sub = obs.subscribe(res => {
-    results.push(res)
+    results.push(deepCopy(res))
   })
 
   await wait(500)
@@ -249,6 +253,7 @@ test.serial('subscribe - simple alias with variable', async t => {
 
   sub.unsubscribe()
   await wait(1500)
+  await client.destroy()
 })
 
 test.serial('subscribe - alias with nested structure variable', async t => {
@@ -283,7 +288,7 @@ test.serial('subscribe - alias with nested structure variable', async t => {
   })
 
   obs.subscribe(res => {
-    results.push(res)
+    results.push(deepCopy(res))
   })
 
   await wait(500)
@@ -315,6 +320,7 @@ test.serial('subscribe - alias with nested structure variable', async t => {
       value: 25
     }
   ])
+  await client.destroy()
 })
 
 // for later if you're bored
@@ -353,7 +359,7 @@ test.serial.skip('subscribe - alias with variables', async t => {
   })
 
   obs.subscribe(res => {
-    results.push(res)
+    results.push(deepCopy(res))
   })
 
   await wait(500)
@@ -386,6 +392,7 @@ test.serial.skip('subscribe - alias with variables', async t => {
       value: 25
     }
   ])
+  await client.destroy()
 })
 
 test.serial(
@@ -416,7 +423,7 @@ test.serial(
     })
 
     obs.subscribe(res => {
-      results.push(res)
+      results.push(deepCopy(res))
     })
 
     await wait(500)
@@ -443,6 +450,8 @@ test.serial(
         valueOrAge: 32
       }
     ])
+
+    await client.destroy()
   }
 )
 
@@ -474,7 +483,7 @@ test.serial(
     })
 
     obs.subscribe(res => {
-      results.push(res)
+      results.push(deepCopy(res))
     })
 
     await wait(500)
@@ -501,6 +510,8 @@ test.serial(
         valueOrAge: 32
       }
     ])
+
+    await client.destroy()
   }
 )
 
@@ -541,7 +552,7 @@ test.serial(
     })
 
     obs.subscribe(res => {
-      results.push(res)
+      results.push(deepCopy(res))
     })
 
     await wait(500)
@@ -570,6 +581,8 @@ test.serial(
         complexOr: 'Thing-y Ding-y Wing Ding Dong'
       }
     ])
+
+    await client.destroy()
   }
 )
 
@@ -623,7 +636,7 @@ test.serial('get - simple $field with $inherit: true', async t => {
   })
 
   obs.subscribe(res => {
-    results.push(res)
+    results.push(deepCopy(res))
   })
 
   await wait(500)
@@ -652,6 +665,8 @@ test.serial('get - simple $field with $inherit: true', async t => {
       germanTitle: 'Oops, Nederlands'
     }
   ])
+
+  await client.destroy()
 })
 
 test.serial('subscribe - simple $field with $inherit: $type', async t => {
@@ -703,7 +718,7 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
   })
 
   obs.subscribe(res => {
-    results.push(res)
+    results.push(deepCopy(res))
   })
 
   await wait(500)
@@ -732,6 +747,8 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
       germanTitle: 'Oops, Nederlands!'
     }
   ])
+
+  await client.destroy()
 })
 
 test.serial('subscribe - more complex $field with $inherit: $name', async t => {
@@ -780,7 +797,7 @@ test.serial('subscribe - more complex $field with $inherit: $name', async t => {
   })
 
   obs.subscribe(res => {
-    results.push(res)
+    results.push(deepCopy(res))
   })
 
   await wait(500)
@@ -809,6 +826,8 @@ test.serial('subscribe - more complex $field with $inherit: $name', async t => {
       thumby: 'parent update!'
     }
   ])
+
+  await client.destroy()
 })
 
 test.serial(
@@ -873,7 +892,7 @@ test.serial(
     })
 
     obs.subscribe(res => {
-      results.push(res)
+      results.push(deepCopy(res))
     })
 
     await wait(500)
@@ -902,6 +921,8 @@ test.serial(
         complexThingy: 'even better'
       }
     ])
+
+    await client.destroy()
   }
 )
 
@@ -936,7 +957,7 @@ test.serial('subscribe - $field with object structure', async t => {
   })
 
   obs.subscribe(res => {
-    results.push(res)
+    results.push(deepCopy(res))
   })
 
   await wait(500)
@@ -974,4 +995,6 @@ test.serial('subscribe - $field with object structure', async t => {
       value: 25
     }
   ])
+
+  await client.destroy()
 })

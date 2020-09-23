@@ -506,12 +506,10 @@ function checkLanguageChange(
       }
     }
     if (addedLanguages.length !== 0) {
-      logger.info(`Added languages ${cjson.encode(addedLanguages)}`)
       for (const index in searchIndexes) {
         const searchIndex = searchIndexes[index]
         for (const field in searchIndex) {
           if (searchIndex[field][0] === 'TEXT-LANGUAGE') {
-            logger.info(`Language added update ${index} ${field}`)
             changedSearchIndexes[index] = true
             break
           }

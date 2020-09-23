@@ -165,7 +165,6 @@ export async function castField(
   }
 
   it = it.fields || it.properties || it
-  console.log('IT', it, parts)
   it[parts[parts.length - 1]] = newType
 
   schema.sha = sha1hex(JSON.stringify(schema))

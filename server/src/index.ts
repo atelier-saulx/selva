@@ -5,6 +5,7 @@ import chalk from 'chalk'
 import os from 'os'
 import { join } from 'path'
 import fs from 'fs'
+import mkdirp from 'mkdirp'
 
 export * as s3Backups from './backup-plugins/s3'
 
@@ -38,8 +39,9 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
     parsedOpts.dir = join(process.cwd(), 'tmp')
   }
 
+  // has to be mkdirp
   if (!fs.existsSync(parsedOpts.dir)) {
-    fs.mkdirSync(parsedOpts.dir)
+    await mkdirp(parsedOpts.dir)
   }
 
   if (parsedOpts.modules) {
@@ -52,8 +54,9 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
     parsedOpts.modules = defaultModules
   }
 
-  if (parsedOpts.default ) {
+  if (parsedOpts.default) {
     parsedOpts.name = 'default'
+
   }
 
   return parsedOpts
@@ -105,14 +108,12 @@ const validate = (
 
 export async function startOrigin(opts: Options): Promise<SelvaServer> {
   const parsedOpts = await resolveOpts(opts)
-
-  // default name is 'default'
   const err = validate(parsedOpts, ['registry', 'name'], [])
   if (err) {
     console.error(`Error starting origin selva server ${chalk.red(err)}`)
     throw new Error(err)
   }
-  if  (!parsedOpts.name) {
+  if (!parsedOpts.name) {
     parsedOpts.name = 'default'
   }
   return startServer('origin', parsedOpts)
@@ -140,13 +141,12 @@ export async function startRegistry(opts: Options): Promise<SelvaServer> {
 export async function startReplica(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
 
-  // default name is 'main'
   const err = validate(parsedOpts, ['registry', 'name'], ['backups'])
   if (err) {
     console.error(`Error starting replica selva server ${chalk.red(err)}`)
     throw new Error(err)
   }
-  if  (!parsedOpts.name && parsedOpts.default) {
+  if (!parsedOpts.name && parsedOpts.default) {
     parsedOpts.name = 'default'
   }
   return startServer('replica', parsedOpts)
@@ -154,7 +154,6 @@ export async function startReplica(opts: Options) {
 
 export async function startSubscriptionManager(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
-  // default name is 'main'
   const err = validate(parsedOpts, ['registry'], ['name', 'default', 'backups'])
 
   parsedOpts.name = 'subscriptionManager'
@@ -166,6 +165,19 @@ export async function startSubscriptionManager(opts: Options) {
     throw new Error(err)
   }
   return startServer('subscriptionManager', parsedOpts)
+}
+
+export async function startSubscriptionRegistry(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+  const err = validate(parsedOpts, ['registry'], ['name', 'default', 'backups'])
+  parsedOpts.name = 'subscriptionRegistry'
+  if (err) {
+    console.error(
+      `Error starting subscription Registry selva server ${chalk.red(err)}`
+    )
+    throw new Error(err)
+  }
+  return startServer('subscriptionRegistry', parsedOpts)
 }
 
 // make a registry, then add origin, then add subs manager
@@ -192,7 +204,6 @@ export async function start(opts: Options) {
   })
   const origin = await startOrigin({
     name: 'default',
-    default: true,
     registry,
     // @ts-ignore
     dir: opts.dir
@@ -205,18 +216,19 @@ export async function start(opts: Options) {
     }
   })
 
+  const subsRegistry = await startSubscriptionRegistry({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host
+    }
+  })
 
-  origin.pm.on('stdout', (d) => console.log(d.toString()))
-  subs.pm.on('stdout', (d) => console.log(d.toString()))
-  registry.pm.on('stdout', (d) => console.log(d.toString()))
-
-  origin.pm.on('stderr', (d) => console.error(d.toString()))
-  subs.pm.on('stderr', (d) => console.error(d.toString()))
-  registry.pm.on('stderr', (d) => console.error(d.toString()))
-
-  registry.on('close', () => {
-    origin.destroy()
-    subs.destroy()
+  registry.on('close', async () => {
+    // TODO: Remove comment
+    // console.log('Close all servers does it work ?')
+    await origin.destroy()
+    await subs.destroy()
+    await subsRegistry.destroy()
   })
 
   return registry

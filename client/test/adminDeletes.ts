@@ -64,18 +64,15 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   let client = connect({ port: port1 })
-  let d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await srv1.destroy()
 
-  d = Date.now()
   await client.delete({ $id: 'root', $db: 'matchdb' })
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv2.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('admin deletes', async t => {
@@ -177,11 +174,9 @@ test.serial('admin deletes', async t => {
     (await client.getSchema('users')).schema.types
   )
 
-  console.log('first keys', firstKeys)
   for (let i = 0; i < firstKeys.length; i++) {
     if (firstKeys[i].startsWith('wa') && firstKeys[i].indexOf('.') === -1) {
       const hkeys = await client.redis.hkeys({ name: 'users' }, firstKeys[i])
-      console.log('hkeys', hkeys)
       if (hkeys.includes('time')) {
         t.fail()
       }
@@ -200,10 +195,6 @@ test.serial('admin deletes', async t => {
     'testObject.testProp',
     { type: 'number' },
     'users'
-  )
-  console.log(
-    'HMM YES',
-    JSON.stringify(await client.getSchema('users'), null, 2)
   )
 
   await client.delete('root')

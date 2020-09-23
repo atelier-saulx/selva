@@ -100,5 +100,7 @@ test('can strip all non-schema fields from body', async t => {
   })
 
   await wait(100)
+  await client.destroy()
   await server.destroy()
+  await t.connectionsAreEmpty()
 })

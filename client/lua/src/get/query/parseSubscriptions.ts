@@ -226,7 +226,7 @@ function parseSubscriptions(
     }
     const field = meta.traverse || traverse
     if (!field) {
-      logger.error('WRONG MISSING FIELD or TRAVERSE')
+      logger.error('WRONG MISSING FIELD or TRAVERSE in parse subscriptions')
     } else {
       for (let i = 0; i < ids.length; i++) {
         sub.idFields[`${ids[i]}.${field}`] = true

@@ -4,7 +4,7 @@ import { start } from '@saulx/selva-server'
 import '../../assertions'
 import { wait } from '../../assertions'
 // @ts-ignore suppressing module can only be default-imported using the 'esModuleInterop' flag
-import getPort from 'get-port' 
+import getPort from 'get-port'
 
 import { schema } from '../_schema'
 import { setDataSet } from '../_dataSet'
@@ -21,11 +21,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('$language', async t => {
@@ -33,15 +34,23 @@ test.serial('$language', async t => {
 
   await setDataSet(client)
 
-  t.deepEqual(await client.get({
-    $language: 'en',
-    $id: 'mo2001ASpaceOdyssey',
-    title: true
-  }), { title: '2001: A Space Odyssey' })
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      $id: 'mo2001ASpaceOdyssey',
+      title: true
+    }),
+    { title: '2001: A Space Odyssey' }
+  )
 
-  t.deepEqual(await client.get({
-    $language: 'nl',
-    $id: 'mo2001ASpaceOdyssey',
-    title: true
-  }), { title: '2001: Een zwerftocht in de ruimte' })
+  t.deepEqual(
+    await client.get({
+      $language: 'nl',
+      $id: 'mo2001ASpaceOdyssey',
+      title: true
+    }),
+    { title: '2001: Een zwerftocht in de ruimte' }
+  )
+
+  await client.destroy()
 })

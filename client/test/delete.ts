@@ -88,11 +88,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('can delete root', async t => {
@@ -284,41 +285,3 @@ test.serial('can delete a field when only nested specified', async t => {
   await client.delete(match)
   await client.destroy()
 })
-
-// test.serial.only('can delete child from root', async t => {
-//   const client = connect(
-//     {
-//       port
-//     },
-//     { loglevel: 'info' }
-//   )
-
-//   client
-//     .observe({
-//       $id: 'root',
-//       children: {
-//         id: true,
-//         title: true,
-//         $list: true
-//       }
-//     })
-//     .subscribe(res => console.log('-->', res))
-
-//   const match = await client.set({
-//     type: 'match',
-//     title: {
-//       en: 'yes text',
-//       de: 'ja text'
-//     }
-//   })
-
-//   await client.delete({
-//     $id: match
-//   })
-
-//   await wait(500)
-
-//   console.log('check me:', await client.get({ $id: 'root', children: true }))
-
-//   await client.destroy()
-// })

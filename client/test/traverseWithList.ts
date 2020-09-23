@@ -40,11 +40,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get - simple $list with id $traverse', async t => {
@@ -93,4 +94,6 @@ test.serial('get - simple $list with id $traverse', async t => {
       { value: 3, name: 'flurp3' }
     ]
   })
+
+  await client.destroy()
 })

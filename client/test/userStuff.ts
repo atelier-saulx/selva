@@ -63,18 +63,14 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
-  let client = connect({ port: port1 })
-  let d = Date.now()
+test.after(async t => {
+  const client = connect({ port: port1 })
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
-  await srv1.destroy()
-
-  d = Date.now()
-  await client.delete({ $id: 'root', $db: 'matchdb' })
-  console.log('removed', Date.now() - d, 'ms')
+  await client.delete({ $id: 'root', $db: 'users' })
   await client.destroy()
   await srv2.destroy()
+  await srv1.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('make it nice with users', async t => {
@@ -159,173 +155,44 @@ test.serial('make it nice with users', async t => {
   })
 
   try {
-    console.log(
-      'YEEEEEEEEEEES',
-      JSON.stringify(
-        await client.get({
-          $includeMeta: true,
-          $language: 'en',
-          components: [
-            // {
-            //   component: { $value: 'favorites' },
-            //   $db: 'users',
-            //   $id: 'us1',
-            //   favorites: {
-            //     $db: 'default',
-            //     id: true,
-            //     title: true,
-            //     $list: true
-            //   }
-            // },
-            // {
-            //   component: { $value: 'watching' },
-            //   $db: 'users',
-            //   $id: 'us1',
-            //   watching: {
-            //     id: true,
-            //     item: {
-            //       $db: 'default',
-            //       id: true,
-            //       title: true
-            //     },
-            //     $list: true
-            //   }
-            // },
-            // {
-            //   component: { $value: 'matches' },
-            //   matches: {
-            //     id: true,
-            //     title: true,
-            //     $list: {
-            //       $find: {
-            //         $traverse: 'descendants',
-            //         $filter: [
-            //           {
-            //             $operator: '=',
-            //             $field: 'type',
-            //             $value: 'match'
-            //           }
-            //         ]
-            //       }
-            //     }
-            //   }
-            // },
-            // {
-            //   component: { $value: 'lolol' },
-            //   things: {
-            //     id: true,
-            //     title: true,
-            //     $list: {
-            //       $find: {
-            //         $traverse: {
-            //           $db: 'users',
-            //           $id: 'us2',
-            //           $field: 'favorites'
-            //         },
-            //         $filter: [
-            //           {
-            //             $operator: '=',
-            //             $field: 'title',
-            //             $value: 'match 2'
-            //           }
-            //         ]
-            //       }
-            //     }
-            //   }
-            // },
-            // {
-            //   component: { $value: 'hmmhmm' },
-            //   things: {
-            //     id: true,
-            //     title: true,
-            //     $list: {
-            //       $find: {
-            //         $traverse: {
-            //           $db: 'users',
-            //           $id: 'us3',
-            //           $field: 'favorites'
-            //         },
-            //         $filter: [
-            //           {
-            //             $operator: '=',
-            //             $field: 'title',
-            //             $value: 'match 2'
-            //           }
-            //         ]
-            //       }
-            //     }
-            //   }
-            // },
-            // {
-            //   component: { $value: 'GridLarge' },
-            //   title: { $value: 'My matches from leagues' },
-            //   children: {
-            //     title: true,
-            //     type: true,
-            //     id: true,
-            //     $list: {
-            //       $limit: 16,
-            //       $find: {
-            //         $traverse: {
-            //           $db: 'users',
-            //           $id: 'us3',
-            //           $field: 'favorites'
-            //         },
-            //         $filter: {
-            //           $field: 'type',
-            //           $operator: '=',
-            //           $value: 'league'
-            //         },
-            //         $find: {
-            //           $traverse: 'descendants',
-            //           $filter: {
-            //             $field: 'type',
-            //             $operator: '=',
-            //             $value: 'match'
-            //           }
-            //         }
-            //       }
-            //     }
-            //   }
-            // }
-            {
-              component: { $value: 'GridLarge' },
-              title: { $value: 'My matches from clubs' },
-              children: {
-                title: true,
-                type: true,
-                id: true,
-                $list: {
-                  $limit: 16,
-                  $find: {
-                    $traverse: {
-                      $db: 'users',
-                      $id: 'us3',
-                      $field: 'favorites'
-                    },
-                    $filter: {
-                      $field: 'type',
-                      $operator: '=',
-                      $value: 'clubs'
-                    },
-                    $find: {
-                      $traverse: 'descendants',
-                      $filter: {
-                        $field: 'type',
-                        $operator: '=',
-                        $value: 'match'
-                      }
-                    }
+    await client.get({
+      $includeMeta: true,
+      $language: 'en',
+      components: [
+        {
+          component: { $value: 'GridLarge' },
+          title: { $value: 'My matches from clubs' },
+          children: {
+            title: true,
+            type: true,
+            id: true,
+            $list: {
+              $limit: 16,
+              $find: {
+                $traverse: {
+                  $db: 'users',
+                  $id: 'us3',
+                  $field: 'favorites'
+                },
+                $filter: {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'clubs'
+                },
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: {
+                    $field: 'type',
+                    $operator: '=',
+                    $value: 'match'
                   }
                 }
               }
             }
-          ]
-        }),
-        null,
-        2
-      )
-    )
+          }
+        }
+      ]
+    })
   } catch (e) {
     console.error(e)
     t.fail()
@@ -491,9 +358,7 @@ test.serial('make it nice with users', async t => {
         }
       ]
     })
-    .subscribe(yesh => {
-      console.log('SUBBYSUB', JSON.stringify(yesh))
-    })
+    .subscribe(yesh => {})
 
   await wait(5e3)
 
@@ -514,8 +379,9 @@ test.serial('make it nice with users', async t => {
   await wait(5e3)
   sub.unsubscribe()
 
-  t.pass()
-
   await client.delete('root')
   await client.destroy()
+  await wait(5e3)
+
+  t.pass()
 })

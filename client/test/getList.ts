@@ -13,11 +13,12 @@ test.before(async t => {
   await wait(500)
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get - simple $list', async t => {
@@ -127,6 +128,8 @@ test.serial('get - simple $list', async t => {
     }
   })
   */
+
+  await client.destroy()
 })
 
 test.serial('get - simple $list with $field of one field', async t => {
@@ -210,6 +213,8 @@ test.serial('get - simple $list with $field of one field', async t => {
     },
     'non redis search sort'
   )
+
+  await client.destroy()
 })
 
 test.serial('get - simple $list with $field of two field entries', async t => {
@@ -294,6 +299,8 @@ test.serial('get - simple $list with $field of two field entries', async t => {
     },
     'non redis search sort'
   )
+
+  await client.destroy()
 })
 
 test.serial('get - simple $list with query $field of one field', async t => {
@@ -390,6 +397,8 @@ test.serial('get - simple $list with query $field of one field', async t => {
   })
 
   t.is(c2.otherName.length, 100, 'list true')
+
+  await client.destroy()
 })
 
 test.serial('get - simple $list nested query structure', async t => {
@@ -549,6 +558,8 @@ test.serial('get - simple $list nested query structure', async t => {
     }
   })
   */
+
+  await client.destroy()
 })
 
 test.serial('get - default sorting in $list with references', async t => {
@@ -678,4 +689,5 @@ test.serial('get - default sorting in $list with references', async t => {
     }
   })
   */
+  await client.destroy()
 })

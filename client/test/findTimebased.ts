@@ -4,6 +4,7 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
+import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
@@ -88,13 +89,13 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('subs layout', async t => {
@@ -167,7 +168,7 @@ test.serial('subs layout', async t => {
         }
       }
     })
-    .subscribe(r => console.log(r))
+    .subscribe(r => {})
   client
     .observe({
       $language: 'de',
@@ -193,7 +194,7 @@ test.serial('subs layout', async t => {
         }
       }
     })
-    .subscribe(r => console.log(r))
+    .subscribe(r => {})
 
   const past = []
   let pastPublishedIds = []
@@ -416,9 +417,13 @@ test.serial('subs layout', async t => {
         }
       }
     })
-    .subscribe(r => {
-      result = r
-      console.log('-->', result)
+    .subscribe((r, v, d) => {
+      // console.log('INCOMING------------')
+      // console.dir(result, { depth: 10 })
+      // console.dir(r, { depth: 10 })
+      // console.dir(d, { depth: 10 })
+      // console.log('----------------------------')
+      result = deepCopy(r)
     })
 
   let otherResult1
@@ -556,8 +561,7 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult1 = r
-      console.log('match layout 1', r)
+      otherResult1 = deepCopy(r)
     })
 
   let otherResult2
@@ -695,8 +699,7 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult2 = r
-      console.log('match layout 2', r)
+      otherResult2 = deepCopy(r)
     })
 
   let otherResult3
@@ -847,23 +850,25 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult3 = r
-      console.log('sport layout', r)
+      otherResult3 = deepCopy(r)
     })
 
   await wait(500)
-  console.log('should be upcoming')
-  t.deepEqualIgnoreOrder(result, {
-    upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
-      upcomingPublishedIds.slice(0, 8)
-    ),
-    past: pastPublishedIds.slice(0, 10),
-    live: []
-  })
+  t.deepEqualIgnoreOrder(
+    result,
+    {
+      upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
+        upcomingPublishedIds.slice(0, 8)
+      ),
+      past: pastPublishedIds.slice(0, 10),
+      live: []
+    },
+    'first assertion'
+  )
   t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
-  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
+  t.is(otherResult1.components[1].children.length, 10)
   t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
-  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+  t.is(otherResult2.components[1].children.length, 10)
   const pick = ({ id, type, ancestors, general, meta }) => ({
     id,
     type,
@@ -882,129 +887,172 @@ test.serial('subs layout', async t => {
       title: 'sport one'
     }
   })
-  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
+  t.is(otherResult3.components[0].children.length, 100)
+  t.is(otherResult3.components[1].children.length, 0)
 
   await wait(3000)
 
-  console.log('should be live')
-  t.deepEqualIgnoreOrder(result, {
+  const expect = {
     upcoming: [{ id: 'mau2' }].concat(upcomingPublishedIds.slice(0, 9)),
     past: pastPublishedIds.slice(0, 10),
     live: [{ id: 'mau1' }]
-  })
-  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
-    {
-      id: 'mau1',
-      type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
-      title: 'upcoming match 1'
-    }
-  ])
+  }
+
+  t.deepEqualIgnoreOrder(result, expect, 'upcoming 2')
+  t.deepEqualIgnoreOrder(
+    otherResult1.components[0].children,
+    [
+      {
+        id: 'mau1',
+        type: 'match',
+        teams: [
+          { id: 'te1', title: 'team one' },
+          { id: 'te2', title: 'team two' }
+        ],
+        title: 'upcoming match 1'
+      }
+    ],
+    'upcoming 3'
+  )
   t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [
+  t.deepEqualIgnoreOrder(
+    otherResult2.components[0].children,
+    [
+      {
+        id: 'mau1',
+        type: 'match',
+        teams: [
+          { id: 'te1', title: 'team one' },
+          { id: 'te2', title: 'team two' }
+        ],
+        title: 'upcoming match 1'
+      }
+    ],
+    'upcoming 4'
+  )
+  t.is(otherResult2.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(
+    pick(otherResult3),
     {
-      id: 'mau1',
-      type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
-      title: 'upcoming match 1'
-    }
-  ])
-  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(pick(otherResult3), {
-    id: 'sp1',
-    type: 'sport',
-    ancestors: ['root'],
-    general: {
-      title: 'root'
+      id: 'sp1',
+      type: 'sport',
+      ancestors: ['root'],
+      general: {
+        title: 'root'
+      },
+      meta: {
+        title: 'sport one'
+      }
     },
-    meta: {
-      title: 'sport one'
-    }
-  })
-  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 1)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children[0].id, 'mau1')
+    'upcoming 5'
+  )
+  t.is(otherResult3.components[0].children.length, 100)
+  t.is(otherResult3.components[1].children.length, 1)
+  t.is(otherResult3.components[1].children[0].id, 'mau1')
 
   await wait(3000)
 
-  console.log('should be past')
-  t.deepEqualIgnoreOrder(result, {
-    upcoming: upcomingPublishedIds.slice(0, 10),
-    past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
-    live: [{ id: 'mau2' }]
-  })
-  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
-    {
-      id: 'mau2',
-      type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
-      title: 'upcoming match 2'
-    }
-  ])
-  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [
-    {
-      id: 'mau2',
-      type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
-      title: 'upcoming match 2'
-    }
-  ])
+  t.deepEqualIgnoreOrder(
+    result,
+    deepCopy({
+      upcoming: upcomingPublishedIds.slice(0, 10),
+      past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
+      live: [{ id: 'mau2' }]
+    }),
+    'upcoming 6'
+  )
+  t.deepEqualIgnoreOrder(
+    otherResult1.components[0].children,
+    [
+      {
+        id: 'mau2',
+        type: 'match',
+        teams: [
+          { id: 'te1', title: 'team one' },
+          { id: 'te2', title: 'team two' }
+        ],
+        title: 'upcoming match 2'
+      }
+    ],
+    'upcoming 7'
+  )
+  t.is(otherResult1.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(
+    otherResult2.components[0].children,
+    [
+      {
+        id: 'mau2',
+        type: 'match',
+        teams: [
+          { id: 'te1', title: 'team one' },
+          { id: 'te2', title: 'team two' }
+        ],
+        title: 'upcoming match 2'
+      }
+    ],
+    'upcoming 8'
+  )
   t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(pick(otherResult3), {
-    id: 'sp1',
-    type: 'sport',
-    ancestors: ['root'],
-    general: {
-      title: 'root'
+  t.deepEqualIgnoreOrder(
+    pick(otherResult3),
+    {
+      id: 'sp1',
+      type: 'sport',
+      ancestors: ['root'],
+      general: {
+        title: 'root'
+      },
+      meta: {
+        title: 'sport one'
+      }
     },
-    meta: {
-      title: 'sport one'
-    }
-  })
-  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 1)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children[0].id, 'mau2')
+    'upcoming 9'
+  )
+  t.is(otherResult3.components[0].children.length, 100)
+  t.is(otherResult3.components[1].children.length, 1)
+  t.is(otherResult3.components[1].children[0].id, 'mau2')
 
   await wait(2000)
 
-  t.deepEqualIgnoreOrder(result, {
-    upcoming: upcomingPublishedIds.slice(0, 10),
-    past: [{ id: 'mau1' }, { id: 'mau2' }].concat(pastPublishedIds.slice(0, 8)),
-    live: []
-  })
-  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
-  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
-  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(pick(otherResult3), {
-    id: 'sp1',
-    type: 'sport',
-    ancestors: ['root'],
-    general: {
-      title: 'root'
+  t.deepEqualIgnoreOrder(
+    result,
+    {
+      upcoming: upcomingPublishedIds.slice(0, 10),
+      past: [{ id: 'mau1' }, { id: 'mau2' }].concat(
+        pastPublishedIds.slice(0, 8)
+      ),
+      live: []
     },
-    meta: {
-      title: 'sport one'
-    }
-  })
-  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
+    'upcoming 10'
+  )
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
+  t.is(otherResult1.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
+  t.is(otherResult2.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(
+    pick(otherResult3),
+    {
+      id: 'sp1',
+      type: 'sport',
+      ancestors: ['root'],
+      general: {
+        title: 'root'
+      },
+      meta: {
+        title: 'sport one'
+      }
+    },
+    'upcoming 11'
+  )
+  t.is(otherResult3.components[0].children.length, 100)
+  t.is(otherResult3.components[1].children.length, 0)
 
   await client.delete('root')
+  await client.destroy()
+
+  await wait(3e3)
+
+  t.true(true)
 })
 
 test.serial('subs upcoming, live and past', async t => {
@@ -1091,27 +1139,28 @@ test.serial('subs upcoming, live and past', async t => {
         }
       }
     })
-    .subscribe(r => {
-      result = r
-      console.log('-->', result)
+    .subscribe((r, checksum, diff) => {
+      result = deepCopy(r)
     })
 
   await wait(500)
-  console.log('should be upcoming')
+
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'ma1' }],
     past: [],
     live: []
   })
+
   await wait(3000)
-  console.log('should be live')
+
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [],
     live: [{ id: 'ma1' }]
   })
+
   await wait(3000)
-  console.log('should be past')
+
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [{ id: 'ma1' }],
@@ -1119,6 +1168,12 @@ test.serial('subs upcoming, live and past', async t => {
   })
 
   await client.delete('root')
+  await client.destroy()
+
+  await wait(3e3)
+  await client.destroy()
+
+  t.true(true)
 })
 
 test.serial('find - already started', async t => {
@@ -1162,8 +1217,6 @@ test.serial('find - already started', async t => {
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
   })
 
-  console.log(await client.redis.hgetall(match1))
-
   t.deepEqualIgnoreOrder(
     (
       await client.get({
@@ -1190,63 +1243,10 @@ test.serial('find - already started', async t => {
     ).$meta.___refreshAt,
     nextRefresh
   )
-
-  console.log(
-    (
-      await client.get({
-        $includeMeta: true,
-        $id: 'root',
-        items: {
-          name: true,
-          value: true,
-          $list: {
-            $sort: { $field: 'startTime', $order: 'asc' },
-            $find: {
-              $traverse: 'children',
-              $filter: [
-                {
-                  $field: 'startTime',
-                  $operator: '<',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
-      })
-    ).items.map(i => i.name)
-  )
-
-  // FIXME: wft ASC sort broken?
-  // t.deepEqual(
-  //   (
-  //     await client.get({
-  //       $includeMeta: true,
-  //       $id: 'root',
-  //       items: {
-  //         name: true,
-  //         value: true,
-  //         $list: {
-  //           $sort: { $field: 'startTime', $order: 'asc' },
-  //           $find: {
-  //             $traverse: 'children',
-  //             $filter: [
-  //               {
-  //                 $field: 'startTime',
-  //                 $operator: '<',
-  //                 $value: 'now'
-  //               }
-  //             ]
-  //           }
-  //         }
-  //       }
-  //     })
-  //   ).items.map(i => i.name),
-  //   ['started 2m ago', 'started 5m ago', 'started 2h ago']
-  // )
-
   await client.delete('root')
   await client.destroy()
+
+  t.true(true)
 })
 
 test.serial('find - already started subscription', async t => {
@@ -1297,9 +1297,7 @@ test.serial('find - already started subscription', async t => {
         }
       }
     })
-    .subscribe(() => {
-      console.log('do nothing')
-    })
+    .subscribe(() => {})
   // =======================
 
   await client.set({
@@ -1317,8 +1315,6 @@ test.serial('find - already started subscription', async t => {
     startTime: nextNextRefresh,
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
   })
-
-  t.plan(5)
 
   const observable = client.observe({
     $includeMeta: true,
@@ -1342,9 +1338,10 @@ test.serial('find - already started subscription', async t => {
     }
   })
 
+  await wait(100)
+
   let o1counter = 0
   const sub = observable.subscribe(d => {
-    console.log('odata', d)
     if (o1counter === 0) {
       // gets start event
       t.true(d.items.length === 3)
@@ -1365,7 +1362,15 @@ test.serial('find - already started subscription', async t => {
   await wait(10 * 1000)
 
   sub.unsubscribe()
+
+  await wait(100)
+
   await client.delete('root')
+  await client.destroy()
+
+  await wait(1000)
+
+  t.true(true)
 })
 
 test.serial('find - starting soon', async t => {
@@ -1408,8 +1413,6 @@ test.serial('find - starting soon', async t => {
     startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 2 hour
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 3 hours
   })
-
-  console.log(await client.redis.hgetall(match1))
 
   t.deepEqualIgnoreOrder(
     (
@@ -1502,8 +1505,7 @@ test.serial('find - starting soon', async t => {
     ['started 5m ago', 'started 2m ago']
   )
 
-  t.pass()
-
-  await client.delete('root')
   await client.destroy()
+
+  t.true(true)
 })

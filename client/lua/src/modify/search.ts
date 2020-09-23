@@ -275,14 +275,6 @@ export function addFieldToSearch(
 function addSuggestion(sug: string, _lang: string) {
   const current: number = redis.call('hincrby', `sug_counts`, sug, '1')
   if (current === 1) {
-    logger.info('ft.sugadd', `sug`, sug, '1')
-    const v = redis.pcall('ft.sugadd', `sug`, sug, '1')
-  } else {
-    logger.info(
-      `ft.sugadd -- exists, incrementing to ${current}`,
-      `sug`,
-      sug,
-      '1'
-    )
+    redis.pcall('ft.sugadd', `sug`, sug, '1')
   }
 }

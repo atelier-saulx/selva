@@ -140,18 +140,15 @@ test.before(async t => {
   //   return false
   // })
 
-  // console.log(matches, matches.length)
-
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('find - descendants', async t => {
@@ -360,12 +357,12 @@ test.serial('find - descendants', async t => {
       }
     })
 
-    await wait(1000)
+    await wait(2000)
 
     //@ts-ignore
     t.deepEqual(empty, [], 'does not throw for TAG fields')
 
-    await wait(1000)
+    await wait(2000)
 
     const { items: videosText } = await client.get({
       items: {
@@ -392,6 +389,8 @@ test.serial('find - descendants', async t => {
       { value: 96 },
       { value: 95 }
     ])
+
+    await client.destroy()
   } catch (err) {
     console.error(err)
   }
