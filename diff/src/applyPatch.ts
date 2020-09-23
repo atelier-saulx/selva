@@ -25,6 +25,9 @@ const applyArrayPatch = (value: any[], arrayPatch) => {
   const newArray = new Array(arrayPatch[0])
   let aI = -1
 
+  const copied = []
+  const patches = []
+
   for (let i = 1; i < patchLength; i++) {
     // 0 - insert, value
     // 1 - from , index, amount (can be a copy a well)
@@ -39,6 +42,8 @@ const applyArrayPatch = (value: any[], arrayPatch) => {
       const piv = operation[2]
       const range = operation[1] + piv
 
+      copied.push(operation)
+
       for (let j = piv; j < range; j++) {
         newArray[++aI] = value[j]
       }
@@ -48,12 +53,29 @@ const applyArrayPatch = (value: any[], arrayPatch) => {
       const piv = operation[1]
       const range = operation.length - 2 + piv
       for (let j = piv; j < range; j++) {
-        // problem is that you have to check back and forth here actualy
-
-        // make deep copy in patch (this is tmp)
-        const copy = deepCopy(value[j])
-        newArray[++aI] = applyPatch(copy, operation[j - piv + 2])
+        ++aI
+        patches.push([aI, j, operation[j - piv + 2]])
       }
+    }
+  }
+
+  const len = patches.length
+  for (let i = 0; i < len; i++) {
+    const [aI, j, patch] = patches[i]
+    let needsCopy = false
+    for (let k = 0; k < copied.length; k++) {
+      const [_, a, b] = copied[k]
+      if (j >= b && j < b + a) {
+        needsCopy = true
+        break
+      }
+    }
+    if (needsCopy) {
+      console.log('copy', value[i])
+      const copy = deepCopy(value[j])
+      newArray[aI] = applyPatch(copy, patch)
+    } else {
+      newArray[aI] = applyPatch(value[j], patch)
     }
   }
 
