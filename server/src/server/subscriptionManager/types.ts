@@ -13,7 +13,7 @@ export type RefreshSubscriptions = {
 export type Subscription = {
   clients: Set<string>
   get: GetOptions
-  version?: string
+  version?: number
   tree?: SubTree
   treeVersion?: number
   inProgress?: boolean
