@@ -41,8 +41,6 @@ export const arrayDiff = (a, b) => {
     aCalced[j] = v
   }
 
-  console.log(resultA)
-
   const r = []
   let rIndex = 0
   r[0] = bLen
@@ -227,7 +225,6 @@ export const createPatch = (a: any, b: any) => {
           }
           return [0, b]
         } else if (a.constructor === Array) {
-          console.log('go array diff!', a, b)
           const isDiff = arrayDiff(a, b)
           if (isDiff && isDiff.length > 1) {
             return [2, arrayDiff(a, b)]
