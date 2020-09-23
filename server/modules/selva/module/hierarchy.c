@@ -1423,13 +1423,13 @@ static int traverse_ref(
         TO_STR(ele);
         memset(nodeId, 0, SELVA_NODE_ID_SIZE);
         memcpy(nodeId, ele_str, min(ele_len, SELVA_NODE_ID_SIZE));
+        RedisModule_FreeString(ctx, ele);
 
         node = findNode(hierarchy, nodeId);
         if (node) {
             cb->node_cb(nodeId, cb->node_arg, &node->metadata);
         }
 
-        RedisModule_FreeString(ctx, ele);
         RedisModule_ZsetRangeNext(key);
     }
     RedisModule_ZsetRangeStop(key);
