@@ -4,6 +4,7 @@ import { connect } from '@saulx/selva'
 import { start } from '@saulx/selva-server'
 import getPort from 'get-port'
 import { start as apiStart } from '../src/index'
+import { constructPoop, noHasPoop } from '../src/handler'
 import fetch from 'node-fetch'
 
 let srv
@@ -434,6 +435,223 @@ test.serial('test funky passing funky middleware', async t => {
   )
 
   t.is(res.headers.get('x-my-special-header'), 'flurpy')
+
+  cleanup()
+})
+
+test.serial('test poopy poop', async t => {
+  const simple = {
+    $alias: 'hello',
+    myString: 'hmmhmm'
+  }
+
+  t.deepEqual(constructPoop(simple), {
+    $alias: 'hello',
+    id: true,
+    myString: true
+  })
+  t.deepEqual(true, noHasPoop(simple, { id: 'maYes', myString: 'hmmhmm' }))
+  t.deepEqual(false, noHasPoop(simple, { id: 'maYes', myString: 'mmyes' }))
+
+  const settingAliases = {
+    $alias: 'hello',
+    myString: 'hmmhmm',
+    aliases: ['a', 'b', 'abba']
+  }
+
+  t.deepEqual(constructPoop(settingAliases), {
+    $alias: 'hello',
+    id: true,
+    myString: true,
+    aliases: true
+  })
+  t.deepEqual(
+    true,
+    noHasPoop(settingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b', 'abba']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasPoop(settingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasPoop(settingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'abba']
+    })
+  )
+
+  const valueAliases = {
+    $alias: 'hello',
+    myString: 'hmmhmm',
+    aliases: { $value: ['a', 'b', 'abba'] }
+  }
+
+  t.deepEqual(constructPoop(valueAliases), {
+    $alias: 'hello',
+    id: true,
+    myString: true,
+    aliases: true
+  })
+  t.deepEqual(
+    true,
+    noHasPoop(valueAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b', 'abba']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasPoop(valueAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasPoop(valueAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'abba']
+    })
+  )
+
+  const addingAliases = {
+    $alias: 'hello',
+    myString: 'hmmhmm',
+    aliases: { $add: ['a', 'b'] }
+  }
+
+  t.deepEqual(constructPoop(addingAliases), {
+    $alias: 'hello',
+    id: true,
+    myString: true,
+    aliases: true
+  })
+  t.deepEqual(
+    true,
+    noHasPoop(addingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b', 'abba']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasPoop(addingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['abba', 'b']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasPoop(addingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['b', 'abba']
+    })
+  )
+
+  const removingAliases = {
+    $alias: 'hello',
+    myString: 'hmmhmm',
+    aliases: { $delete: ['a', 'b'] }
+  }
+
+  t.deepEqual(constructPoop(removingAliases), {
+    $alias: 'hello',
+    id: true,
+    myString: true,
+    aliases: true
+  })
+  t.deepEqual(
+    true,
+    noHasPoop(removingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['abba']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasPoop(removingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['abba', 'b']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasPoop(removingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['b', 'abba']
+    })
+  )
+})
+
+test.serial.only('things', async t => {
+  const srvPort = await getPort()
+  const cleanup = apiStart({ port }, [], srvPort)
+
+  await fetch(`http://localhost:${srvPort}/set`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1',
+      $language: 'en',
+      title: 'yes en'
+    })
+  })
+
+  await fetch(`http://localhost:${srvPort}/set`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1',
+      $language: 'en',
+      title: 'yes en',
+      parents: {
+        $add: ['root']
+      }
+      // value: 112
+    })
+  })
+
+  const res = await fetch(`http://localhost:${srvPort}/get`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1',
+      $language: 'en',
+      id: true,
+      title: true
+    })
+  })
+
+  const body = await res.json()
+  t.deepEqualIgnoreOrder(body, {
+    id: 'maMatch1',
+    title: 'yes en'
+  })
 
   cleanup()
 })
