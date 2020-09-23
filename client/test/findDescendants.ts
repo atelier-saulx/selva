@@ -356,12 +356,12 @@ test.serial('find - descendants', async t => {
       }
     })
 
-    await wait(1000)
+    await wait(2000)
 
     //@ts-ignore
     t.deepEqual(empty, [], 'does not throw for TAG fields')
 
-    await wait(1000)
+    await wait(2000)
 
     const { items: videosText } = await client.get({
       items: {

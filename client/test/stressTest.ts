@@ -156,7 +156,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.only('one client', async t => {
+test.serial('one client', async t => {
   const client = connect(
     async () => {
       await wait(10)
@@ -187,6 +187,8 @@ test.serial.only('one client', async t => {
 
   await wait(500)
   await client.delete('root')
+
+  t.true(true)
 })
 
 test.serial('many async clients - timebased query', async t => {
