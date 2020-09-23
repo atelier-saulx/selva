@@ -284,6 +284,23 @@ test('Real life', async t => {
   t.deepEqual(x, b, 'is equal after games put to live')
 })
 
+test('Real life - theme', async t => {
+  const a = JSON.parse(JSON.stringify(region))
+  const b = JSON.parse(JSON.stringify(a))
+
+  b.theme.colors.backgroundPastel = 'rgb(255,0,0)'
+
+  var d = Date.now()
+  const patch2 = diff(a, b)
+  console.log('Make sstv patch', Date.now() - d, 'ms')
+
+  var d = Date.now()
+  const x = applyPatch(a, patch2)
+  console.log('Apply sstv patch', Date.now() - d, 'ms')
+
+  t.deepEqual(x, b, 'is equal after games put to live')
+})
+
 test('Remove', async t => {
   const comp = [
     { a: 1 },
