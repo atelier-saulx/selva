@@ -71,7 +71,7 @@ const applyArrayPatch = (value: any[], arrayPatch) => {
       }
     }
     if (needsCopy) {
-      console.log('copy', value[i])
+      // console.log('copy', value[i])
       const copy = deepCopy(value[j])
       newArray[aI] = applyPatch(copy, patch)
     } else {
