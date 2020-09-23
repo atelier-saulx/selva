@@ -27,55 +27,29 @@ const parseValue = (v: any) => {
 export const arrayDiff = (a, b) => {
   const aLen = a.length
   const bLen = b.length
-  const resultA = new Map()
-  let bCalced: any[]
-  let aCalced: any[]
-  if (bLen < aLen) {
-    // optimized for removal of things in the array (mostly at the end :/)
-    let j = 0
-    bCalced = new Array(bLen)
-    aCalced = new Array(aLen)
-    let isDone = false
-    for (let i = 0; i < bLen && !isDone; i++) {
-      bCalced[i] = parseValue(b[i]) // only for hash
-      for (; j < aLen; j++) {
-        const v = parseValue(a[j])
-        if (!resultA[v]) {
-          resultA[v] = []
-        }
-        resultA[v].push(j)
-        aCalced[j] = v
-        if (j === aLen - 1) {
-          isDone = true
-          break
-        }
-        if (v === b[i]) {
-          break
-        }
-      }
+
+  const resultA = {}
+  let aCalced: any[] = new Array(aLen)
+
+  // can optmize this a little bit more
+  for (let j = 0; j < aLen; j++) {
+    const v = parseValue(a[j])
+    if (!resultA[v]) {
+      resultA[v] = []
     }
-    // if (!isDone) {
-    //   console.log('saved checking', aLen - j, 'entries!', 'checked ', j)
-    // }
+    resultA[v].push(j)
+    aCalced[j] = v
   }
+
   const r = []
   let rIndex = 0
   r[0] = bLen
   for (let i = 0; i < bLen; i++) {
     let av: any, bv: any
-    if (aLen <= bLen) {
-      if (i < aLen) {
-        av = parseValue(a[i])
-        if (!resultA[av]) {
-          resultA[av] = []
-        }
-        resultA[av].push(i)
-      }
-      bv = parseValue(b[i])
-    } else {
-      av = aCalced[i]
-      bv = bCalced[i]
-    }
+
+    av = aCalced[i]
+    bv = parseValue(b[i])
+
     const current = r[rIndex]
     const type = r[rIndex] && r[rIndex][0]
     if (av === bv) {
@@ -134,7 +108,6 @@ export const arrayDiff = (a, b) => {
       // we need more places for patches probably
       if (typeof a[i] === 'object' && typeof b[i] === 'object') {
         const patchTime = createPatch(a[i], b[i])
-        // console.log(patchTime)
         if (type === 2) {
           current.push(patchTime)
         } else {
@@ -157,7 +130,15 @@ export const arrayDiff = (a, b) => {
     last[2] = last[2][0]
   }
 
-  if (r.length == 2 && r[1][0] === 1) {
+  if (
+    r.length == 2 &&
+    r[1][0] === 1 &&
+    r[1][1] === r[0] &&
+    r[1][2] === 0 &&
+    r[0] === aLen
+  ) {
+    // is equal remove!
+    console.log('REMOVE', aLen, r)
     return
   }
 
@@ -177,7 +158,10 @@ const compareNode = (a, b, result, key: string) => {
     } else {
       let r
       if (b.constructor === Array) {
-        if (a.constructor === Array) {
+        if (b.length === 0) {
+          r = [0, []]
+          result[key] = r
+        } else if (a.constructor === Array) {
           const isDiff = arrayDiff(a, b)
           if (isDiff && isDiff.length > 1) {
             r = [2, isDiff]
@@ -232,8 +216,15 @@ export const createPatch = (a: any, b: any) => {
     } else {
       // fastest check
       if (b.constructor === Array) {
-        if (a.constructor === Array) {
-          return [2, arrayDiff(a, b)]
+        if (b.length === 0) {
+          return [0, b]
+        } else if (a.constructor === Array) {
+          const isDiff = arrayDiff(a, b)
+          if (isDiff && isDiff.length > 1) {
+            return [2, arrayDiff(a, b)]
+          } else {
+            return
+          }
         } else {
           return [0, b]
         }

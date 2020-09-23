@@ -16,7 +16,7 @@ test('Array', async t => {
   for (let i = 0; i < 10001; i++) {
     largeArr2.push(i)
   }
-  largeArr2.splice(10, 0, 'flap')
+  largeArr2.splice(5000, 0, 'flap')
   var d = Date.now()
   const largePatch = diff(largeArr, largeArr2)
   console.log('Time to calculate large patch (10k)', Date.now() - d, 'ms')
@@ -60,6 +60,8 @@ test('Object', async t => {
   }
   const patch = diff(a, b)
 
+  console.dir(patch, { depth: 10 })
+
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
@@ -88,7 +90,7 @@ test('Array + nested object lots the same', async t => {
     f: []
   }
 
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 1000; i++) {
     a.f.push(JSON.parse(JSON.stringify(obj)))
     b.f.push(JSON.parse(JSON.stringify(obj)))
   }
@@ -245,7 +247,7 @@ test('Deep in array', async t => {
 })
 
 test('Real life', async t => {
-  const a = region
+  const a = JSON.parse(JSON.stringify(region))
 
   const b = JSON.parse(JSON.stringify(a))
 
@@ -256,15 +258,17 @@ test('Real life', async t => {
   t.is(patch, undefined, 'is the same no diff')
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 
-  b.components[3].children.unshift()
-  b.components[3].children.unshift()
-  b.components[3].children.unshift()
-
   b.components[1].children = [
     JSON.parse(JSON.stringify(b.components[3].children[0])),
     JSON.parse(JSON.stringify(b.components[3].children[1])),
     JSON.parse(JSON.stringify(b.components[3].children[2]))
   ]
+
+  console.log('len', b.components[3].children.length)
+  b.components[3].children.shift()
+  b.components[3].children.shift()
+  b.components[3].children.shift()
+  console.log('len --- x', b.components[3].children.length)
 
   var d = Date.now()
   const patch2 = diff(a, b)
@@ -277,4 +281,108 @@ test('Real life', async t => {
   console.log('Apply sstv patch', Date.now() - d, 'ms')
 
   t.deepEqual(x, b, 'is equal after games put to live')
+})
+
+test('Remove', async t => {
+  const ax = JSON.parse(JSON.stringify(region))
+
+  const comp = [
+    { a: 1 },
+    { b: 1 },
+    { c: 1 },
+    { d: 1 },
+    { e: 1 },
+    { snurkels: 'blurf' }
+  ]
+
+  // const comp = ax.components[3].children
+
+  const a = comp
+
+  const b = JSON.parse(JSON.stringify(comp))
+
+  b.shift()
+  b.shift()
+  b.shift()
+
+  console.log('go diff!', a, '->', b)
+  const patch = diff(a, b)
+  console.dir(patch, { depth: 10 })
+  // console.dir(applyPatch(a, patch), { depth: 10 })
+
+  t.deepEqual(applyPatch(a, patch), b, 'is equal')
+})
+
+test.only('Remove nested array', async t => {
+  const ax = JSON.parse(JSON.stringify(region))
+
+  const comp = {
+    a: [
+      { a: 1 },
+      {
+        x: 1,
+        children: []
+      },
+      {
+        b: 1,
+        children: [{ x: true }, { y: true }, { z: true }, { glur: true }]
+      },
+      { c: 1, children: [{ cx: true }, { cy: true }, { ca: true }] },
+      // { d: 1 },
+      { e: 1, children: [{ cx: true }, { cy: true }, { ca: true }] },
+      { snurkels: 'blurf' }
+    ]
+  }
+
+  // const comp = ax.components[3].children
+
+  const a = comp
+
+  const b = JSON.parse(JSON.stringify(comp))
+
+  b.a[1].children.push({ poop: true })
+  b.a[1].children.push({ poop: true })
+
+  b.a[2].children.shift()
+  b.a[2].children.shift()
+
+  b.a[3].children.pop()
+  b.a[3].children.pop()
+
+  b.a[4].children = []
+
+  console.log('go diff!')
+  console.dir(a, { depth: 10 })
+  console.dir(b, { depth: 10 })
+
+  const patch = diff(a, b)
+  console.dir(patch, { depth: 10 })
+  const x = applyPatch(a, patch)
+
+  console.dir(x, { depth: 10 })
+
+  t.deepEqual(x, b, 'is equal')
+})
+
+test('Remove deep', async t => {
+  const ax = JSON.parse(JSON.stringify(region))
+
+  const comp = ax.components[3].children
+
+  const a = comp
+
+  const b = JSON.parse(JSON.stringify(comp))
+
+  b.shift()
+  b.shift()
+  b.shift()
+
+  const patch = diff(a, b)
+  console.dir(patch, { depth: 10 })
+  const x = applyPatch(a, patch)
+  console.dir(x, { depth: 10 })
+
+  // console.dir(b, { depth: 10 })
+
+  t.deepEqual(x, b, 'is equal')
 })
