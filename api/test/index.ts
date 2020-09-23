@@ -629,7 +629,8 @@ test.serial('things', async t => {
         recordA: { a: 'abba' },
         recordB: { b: 'baab' }
       },
-      title: { en: 'yes en', de: 'ja de' }
+      title: { en: 'yes en', de: 'ja de' },
+      value: 112
     })
   })
 
@@ -648,8 +649,8 @@ test.serial('things', async t => {
       },
       parents: {
         $add: ['root']
-      }
-      // value: 112
+      },
+      value: 112
     })
   })
 
