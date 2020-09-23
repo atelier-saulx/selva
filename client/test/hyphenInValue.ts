@@ -86,7 +86,7 @@ test.serial('get value without hyphen', async t => {
   t.pass()
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get value with hyphen', async t => {
@@ -133,5 +133,5 @@ test.serial('get value with hyphen', async t => {
   t.pass()
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
