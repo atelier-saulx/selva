@@ -4,6 +4,7 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
+import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
@@ -416,7 +417,7 @@ test.serial('subs layout', async t => {
       }
     })
     .subscribe((r, v, d) => {
-      result = JSON.parse(JSON.stringify(r))
+      result = deepCopy(r)
     })
 
   let otherResult1
@@ -554,7 +555,7 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult1 = JSON.parse(JSON.stringify(r))
+      otherResult1 = deepCopy(r)
     })
 
   let otherResult2
@@ -692,7 +693,7 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult2 = JSON.parse(JSON.stringify(r))
+      otherResult2 = deepCopy(r)
     })
 
   let otherResult3
@@ -843,7 +844,7 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult3 = JSON.parse(JSON.stringify(r))
+      otherResult3 = deepCopy(r)
     })
 
   await wait(500)
@@ -1133,7 +1134,7 @@ test.serial('subs upcoming, live and past', async t => {
       }
     })
     .subscribe(r => {
-      result = JSON.parse(JSON.stringify(r))
+      result = deepCopy(r)
     })
 
   await wait(500)

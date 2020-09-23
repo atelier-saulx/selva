@@ -4,6 +4,7 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
+import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
@@ -60,7 +61,7 @@ test.serial('yes', async t => {
       niceSet: true
     })
     .subscribe(res => {
-      results.push(JSON.parse(JSON.stringify(res)))
+      results.push(deepCopy(res))
     })
 
   await wait(500)
