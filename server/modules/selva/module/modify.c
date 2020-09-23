@@ -17,10 +17,27 @@ static size_t ref2rms(RedisModuleCtx *ctx, struct SelvaModify_OpSet * restrict s
     return len;
 }
 
-static RedisModuleKey *openSet(RedisModuleCtx *ctx, RedisModuleString *id, RedisModuleString *field) {
-    TO_STR(id, field);
-    RedisModuleString *set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s.%.*s", id_len, id_str, field_len, field_str);
-    RedisModuleKey *set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
+RedisModuleKey *SelvaModify_OpenSet(
+        RedisModuleCtx *ctx,
+        const char *id_str, size_t id_len,
+        const char *field_str) {
+    RedisModuleString *set_key_name;
+    RedisModuleKey *set_key;
+
+    set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s.%s", id_len, id_str, field_str);
+    if (unlikely(!set_key_name)) {
+        return NULL;
+    }
+
+    set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
+    if (!set_key) {
+        return NULL;
+    }
+
+    if (RedisModule_KeyType(set_key) != REDISMODULE_KEYTYPE_ZSET) {
+        RedisModule_CloseKey(set_key);
+        return NULL;
+    }
 
     return set_key;
 }
@@ -140,16 +157,16 @@ static int update_zset(
     RedisModuleKey *id_key,
     RedisModuleString *id,
     RedisModuleString *field,
-    const char *field_str,
     struct SelvaModify_OpSet *setOpts
 ) {
+    TO_STR(id, field);
     RedisModuleKey *alias_key = NULL;
 
     // add in the hash that it's a set/references field
     RedisModuleString *set_field_identifier = RedisModule_CreateString(ctx, "___selva_$set", 13);
     RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, set_field_identifier, NULL);
 
-    RedisModuleKey *set_key = openSet(ctx, id, field);
+    RedisModuleKey *set_key = SelvaModify_OpenSet(ctx, id_str, id_len, field_str);
     if (!set_key) {
         RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
         return REDISMODULE_ERR;
@@ -252,7 +269,7 @@ int SelvaModify_ModifySet(
         } else if (!strcmp(field_str, "parents")) {
             err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
         } else {
-            RedisModuleKey *set_key = openSet(ctx, id, field);
+            RedisModuleKey *set_key = SelvaModify_OpenSet(ctx, id_str, id_len, field_str);
             err = removeSet(set_key, NULL);
             if (err) {
                 RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
@@ -271,7 +288,7 @@ int SelvaModify_ModifySet(
     if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
         return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
     } else {
-        return update_zset(ctx, id_key, id, field, field_str, setOpts);
+        return update_zset(ctx, id_key, id, field, setOpts);
     }
 }
 

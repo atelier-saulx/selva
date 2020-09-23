@@ -368,10 +368,11 @@ static struct Selva_Subscription *create_subscription(
  * Specifiers:
  *  - n = node_id, copied.
  *  - d = traversal direction, value.
- *  - r = RPN context and expression, pointers used directly and must be valid
+ *  - e = RPN context and expression, pointers used directly and must be valid
  *        until the subscription is deleted.
  *  - f = field names, separated by `\n` and terminated by `\0`. The string is
  *        duplicated.
+ *  - r = ref_field for SELVA_HIERARCHY_TRAVERSAL_REF.
  */
 static int Selva_AddSubscriptionMarker(
         struct SelvaModify_Hierarchy *hierarchy,
@@ -410,18 +411,25 @@ static int Selva_AddSubscriptionMarker(
     while (*fmt != '\0') {
         char c = *fmt;
         switch (c) {
-        case 'n': /* node_id */
-            memcpy(marker->node_id, va_arg(args, char *), SELVA_NODE_ID_SIZE);
-            break;
         case 'd': /* Hierarchy traversal direction */
             marker->dir = va_arg(args, enum SelvaModify_HierarchyTraversal);
             break;
-        case 'r': /* RPN filter */
+        case 'e': /* RPN expression filter */
             marker->filter_ctx = va_arg(args, struct rpn_ctx *);
             marker->filter_expression = va_arg(args, rpn_token *);
             break;
         case 'f': /* Fields */
             marker->fields = RedisModule_Strdup(va_arg(args, char *));
+            break;
+        case 'n': /* node_id */
+            memcpy(marker->node_id, va_arg(args, char *), SELVA_NODE_ID_SIZE);
+            break;
+        case 'r': /* ref_field */
+            {
+                const char *ref_field = va_arg(args, char *);
+
+                marker->ref_field = !ref_field ? NULL : RedisModule_Strdup(ref_field);
+            }
             break;
         default:
             {
@@ -772,6 +780,8 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
         *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS;
     } else if (!strcmp("descendants", arg_str)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS;
+    } else if (arg_len > 0) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_REF;
     } else {
         return SELVA_SUBSCRIPTIONS_EINVAL;
     }
@@ -780,7 +790,7 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
 }
 
 /*
- * KEY SUB_ID MARKER_ID node|ancestors|descendants NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
+ * KEY SUB_ID MARKER_ID node|ancestors|descendants|ref_field_name NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
  */
 int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -838,9 +848,14 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      * Parse the traversal argument.
      */
     enum SelvaModify_HierarchyTraversal sub_dir;
+    const char *ref_field = NULL;
     err = parse_subscription_type(&sub_dir, argv[ARGV_MARKER_TYPE]);
     if (err) {
         return replyWithSelvaError(ctx, err);
+    }
+    if (sub_dir == SELVA_HIERARCHY_TRAVERSAL_REF) {
+        /* The arg is a field name. */
+        ref_field = RedisModule_StringPtrLen(argv[ARGV_MARKER_TYPE], NULL);
     }
 
     /*
@@ -944,13 +959,15 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     if (fields) {
         marker_flags |= SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
-        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "ndfr",
+        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "ndfer",
                                           node_id, sub_dir, fields,
-                                          filter_ctx, filter_expression);
+                                          filter_ctx, filter_expression,
+                                          ref_field);
     } else {
-        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "ndr",
+        err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "nder",
                                           node_id, sub_dir,
-                                          filter_ctx, filter_expression);
+                                          filter_ctx, filter_expression,
+                                          ref_field);
     }
     if (err == 0 || err == SELVA_SUBSCRIPTIONS_EEXIST) {
         if (err == SELVA_SUBSCRIPTIONS_EEXIST) {

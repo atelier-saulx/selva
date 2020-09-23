@@ -68,6 +68,7 @@ struct Selva_SubscriptionMarker {
     unsigned marker_flags;
     Selva_NodeId node_id;
     enum SelvaModify_HierarchyTraversal dir;
+    const char *ref_field; /*!< Ref field to traverse. */
     struct rpn_ctx *filter_ctx;
     rpn_token *filter_expression;
     char *fields; /* \n separated and \0 terminated. */

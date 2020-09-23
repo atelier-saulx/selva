@@ -29,15 +29,16 @@ typedef int32_t Selva_SubscriptionMarkerId;
  * Recognized by SelvaModify_TraverseHierarchy().
  */
 enum SelvaModify_HierarchyTraversal {
-    SELVA_HIERARCHY_TRAVERSAL_NONE,
-    SELVA_HIERARCHY_TRAVERSAL_NODE,
-    SELVA_HIERARCHY_TRAVERSAL_CHILDREN,
-    SELVA_HIERARCHY_TRAVERSAL_PARENTS,
+    SELVA_HIERARCHY_TRAVERSAL_NONE, /*!< Do nothing. */
+    SELVA_HIERARCHY_TRAVERSAL_NODE, /*!< Visit just the given node. */
+    SELVA_HIERARCHY_TRAVERSAL_CHILDREN, /*!< Visit children of the given node. */
+    SELVA_HIERARCHY_TRAVERSAL_PARENTS, /*!< Visit parents of the given node. */
     SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS,
     SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS,
     SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS,
     SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS,
     SELVA_HIERARCHY_TRAVERSAL_DFS_FULL,
+    SELVA_HIERARCHY_TRAVERSAL_REF, /*!< Visit nodes pointed by a ref field. */
 };
 
 size_t Selva_NodeIdLen(Selva_NodeId nodeId);

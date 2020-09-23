@@ -884,7 +884,11 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
     };
 
     /* RFE We expect here that all markers have a valid nodeId. */
-    err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+    if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_REF && marker->ref_field) {
+        err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, marker->node_id, marker->ref_field, &cb);
+    } else {
+        err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+    }
     if (err != 0) {
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
         /* FIXME This will make redis crash */
@@ -913,9 +917,9 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
      */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand,       "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaModify_Hierarchy_FindInCommand,   "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.findInSub", SelvaModify_Hierarchy_FindInSubCommand,   "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaModify_Hierarchy_FindInCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.findInSub", SelvaModify_Hierarchy_FindInSubCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

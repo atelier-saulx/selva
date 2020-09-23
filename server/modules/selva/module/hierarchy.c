@@ -6,15 +6,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "redismodule.h"
 #include "errors.h"
 #include "selva_onload.h"
-#include "subscriptions.h"
 #include "alias.h"
+#include "async_task.h"
 #include "cdefs.h"
 #include "hierarchy.h"
-#include "redismodule.h"
-#include "async_task.h"
+#include "modify.h"
 #include "rpn.h"
+#include "subscriptions.h"
 #include "svector.h"
 
 #define HIERARCHY_ENCODING_VERSION  0
@@ -1398,6 +1399,44 @@ static int traverse_adjacent(
     return 0;
 }
 
+static int traverse_ref(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        SelvaModify_HierarchyNode *head,
+        const char *ref_field,
+        const struct SelvaModify_HierarchyCallback *cb) {
+    RedisModuleKey *key;
+
+    key = SelvaModify_OpenSet(ctx, head->id, Selva_NodeIdLen(head->id), ref_field);
+    if (!key) {
+        return SELVA_MODIFY_HIERARCHY_EINVAL;
+    }
+
+    RedisModule_ZsetFirstInScoreRange(key, 0, 1, 0, 0);
+    while (!RedisModule_ZsetRangeEndReached(key)) {
+        double score;
+        RedisModuleString *ele;
+        Selva_NodeId nodeId;
+        SelvaModify_HierarchyNode *node;
+
+        ele = RedisModule_ZsetRangeCurrentElement(key, &score);
+        TO_STR(ele);
+        memset(nodeId, 0, SELVA_NODE_ID_SIZE);
+        memcpy(nodeId, ele_str, min(ele_len, SELVA_NODE_ID_SIZE));
+
+        node = findNode(hierarchy, nodeId);
+        if (node) {
+            cb->node_cb(nodeId, cb->node_arg, &node->metadata);
+        }
+
+        RedisModule_FreeString(ctx, ele);
+        RedisModule_ZsetRangeNext(key);
+    }
+    RedisModule_ZsetRangeStop(key);
+
+    return 0;
+}
+
 /*
  * A little trampoline to hide the scary internals of the hierarchy
  * implementation from the innocent users just wanting to traverse the
@@ -1427,6 +1466,10 @@ int SelvaModify_TraverseHierarchy(
 
     if (dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
         return SELVA_MODIFY_HIERARCHY_EINVAL;
+    }
+    if (unlikely(dir == SELVA_HIERARCHY_TRAVERSAL_REF)) {
+        /* Use SelvaModify_TraverseHierarchyRef() instead */
+        return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
     if (dir != SELVA_HIERARCHY_TRAVERSAL_DFS_FULL) {
@@ -1466,6 +1509,22 @@ int SelvaModify_TraverseHierarchy(
     }
 
     return err;
+}
+
+int SelvaModify_TraverseHierarchyRef(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        const char *ref_field,
+        const struct SelvaModify_HierarchyCallback *cb) {
+    SelvaModify_HierarchyNode *head;
+
+    head = findNode(hierarchy, id);
+    if (!head) {
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
+    }
+
+    return traverse_ref(ctx, hierarchy, head, ref_field, cb);
 }
 
 static int dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
