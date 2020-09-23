@@ -43,7 +43,7 @@
       "!test/assertions",
       "!test/performance"
     ],
-    "concurrency": 0,
+    "concurrency": 1,
     "compileEnhancements": false,
     "extensions": [
       "ts"
