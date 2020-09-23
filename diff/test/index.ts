@@ -398,3 +398,131 @@ test('Flip', async t => {
 
   t.deepEqual(x, b, 'is equal')
 })
+
+test('Weird array', async t => {
+  const a = {
+    upcoming: [
+      { id: 'maug8' },
+      { id: 'maug7' },
+      { id: 'maug5' },
+      { id: 'maug4' },
+      { id: 'maug2' },
+      { id: 'maug11' },
+      { id: 'maug10' },
+      { id: 'maug1' },
+      { id: 'mau2' },
+      { id: 'mau1' }
+    ],
+    past: [
+      { id: 'map8' },
+      { id: 'map7' },
+      { id: 'map5' },
+      { id: 'map4' },
+      { id: 'map2' },
+      { id: 'map14' },
+      { id: 'map13' },
+      { id: 'map11' },
+      { id: 'map10' },
+      { id: 'map1' }
+    ],
+    live: []
+  }
+
+  const b = {
+    upcoming: [
+      { id: 'mau2' },
+      { id: 'maug1' },
+      { id: 'maug2' },
+      { id: 'maug4' },
+      { id: 'maug5' },
+      { id: 'maug7' },
+      { id: 'maug8' },
+      { id: 'maug10' },
+      { id: 'maug11' },
+      { id: 'maug13' }
+    ],
+    past: [
+      { id: 'map1' },
+      { id: 'map2' },
+      { id: 'map4' },
+      { id: 'map5' },
+      { id: 'map7' },
+      { id: 'map8' },
+      { id: 'map10' },
+      { id: 'map11' },
+      { id: 'map13' },
+      { id: 'map14' }
+    ],
+    live: [{ id: 'mau1' }]
+  }
+
+  const patch = diff(a, b)
+
+  const x = applyPatch(a, patch)
+
+  t.deepEqual(x, b, 'is equal')
+})
+
+test('Weird array 2 register copy', async t => {
+  const a = {
+    upcoming: [
+      { id: 'mau1' },
+      { id: 'mau2' },
+      { id: 'maug1' },
+      { id: 'maug2' },
+      { id: 'maug4' },
+      { id: 'maug5' },
+      { id: 'maug7' },
+      { id: 'maug8' },
+      { id: 'maug10' },
+      { id: 'maug11' }
+    ],
+    past: [
+      { id: 'map1' },
+      { id: 'map2' },
+      { id: 'map4' },
+      { id: 'map5' },
+      { id: 'map7' },
+      { id: 'map8' },
+      { id: 'map10' },
+      { id: 'map11' },
+      { id: 'map13' },
+      { id: 'map14' }
+    ],
+    live: []
+  }
+
+  const b = {
+    upcoming: [
+      { id: 'mau2' },
+      { id: 'maug1' },
+      { id: 'maug2' },
+      { id: 'maug4' },
+      { id: 'maug5' },
+      { id: 'maug7' },
+      { id: 'maug8' },
+      { id: 'maug10' },
+      { id: 'maug11' }, // re-uses this
+      { id: 'maug13' }
+    ],
+    past: [
+      { id: 'map1' },
+      { id: 'map2' },
+      { id: 'map4' },
+      { id: 'map5' },
+      { id: 'map7' },
+      { id: 'map8' },
+      { id: 'map10' },
+      { id: 'map11' },
+      { id: 'map13' },
+      { id: 'map14' }
+    ],
+    live: [{ id: 'mau1' }]
+  }
+
+  const patch = diff(a, b)
+
+  const x = applyPatch(a, patch)
+
+  t.deepEqual(x, b, 'is equal')
+})

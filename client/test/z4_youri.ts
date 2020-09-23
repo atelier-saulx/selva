@@ -60,7 +60,7 @@ test.serial('yes', async t => {
       niceSet: true
     })
     .subscribe(res => {
-      results.push(res)
+      results.push(JSON.parse(JSON.stringify(res)))
     })
 
   await wait(500)

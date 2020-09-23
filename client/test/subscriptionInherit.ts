@@ -69,7 +69,8 @@ test.serial('inherit object nested field from root youzi', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    // its now not immatable - think about if we want it immutable
+    results.push(JSON.parse(JSON.stringify(p)))
   })
 
   await wait(2000)
@@ -132,7 +133,7 @@ test.serial('inherit object youzi', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(JSON.parse(JSON.stringify(p)))
   })
 
   await wait(1000)
@@ -217,7 +218,7 @@ test.serial('basic inherit subscription', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(JSON.parse(JSON.stringify(p)))
   })
 
   await wait(1000)
@@ -319,7 +320,7 @@ test.serial('inherit object', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(JSON.parse(JSON.stringify(p)))
   })
 
   await wait(1000)
@@ -416,7 +417,7 @@ test.serial('list inherit subscription', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(JSON.parse(JSON.stringify(p)))
   })
 
   await wait(1000)
@@ -571,7 +572,7 @@ test.serial('list inherit + field subscription', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(JSON.parse(JSON.stringify(p)))
   })
 
   await wait(1000)

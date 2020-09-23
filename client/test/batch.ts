@@ -42,7 +42,7 @@ test.serial('exec big batch', async t => {
     promises.push(client.set({ type: 'blurf', rando: 'ballz' + cnt }))
   }
 
-  t.timeout(60000)
+  t.timeout(120000)
   try {
     await Promise.all(promises)
     t.pass()

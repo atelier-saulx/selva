@@ -415,8 +415,8 @@ test.serial('subs layout', async t => {
         }
       }
     })
-    .subscribe(r => {
-      result = r
+    .subscribe((r, v, d) => {
+      result = JSON.parse(JSON.stringify(r))
     })
 
   let otherResult1
@@ -554,7 +554,7 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult1 = r
+      otherResult1 = JSON.parse(JSON.stringify(r))
     })
 
   let otherResult2
@@ -692,7 +692,7 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult2 = r
+      otherResult2 = JSON.parse(JSON.stringify(r))
     })
 
   let otherResult3
@@ -843,21 +843,25 @@ test.serial('subs layout', async t => {
       ]
     })
     .subscribe(r => {
-      otherResult3 = r
+      otherResult3 = JSON.parse(JSON.stringify(r))
     })
 
   await wait(500)
-  t.deepEqualIgnoreOrder(result, {
-    upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
-      upcomingPublishedIds.slice(0, 8)
-    ),
-    past: pastPublishedIds.slice(0, 10),
-    live: []
-  })
+  t.deepEqualIgnoreOrder(
+    result,
+    {
+      upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
+        upcomingPublishedIds.slice(0, 8)
+      ),
+      past: pastPublishedIds.slice(0, 10),
+      live: []
+    },
+    'first assertion'
+  )
   t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
-  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
+  t.is(otherResult1.components[1].children.length, 10)
   t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
-  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+  t.is(otherResult2.components[1].children.length, 10)
   const pick = ({ id, type, ancestors, general, meta }) => ({
     id,
     type,
@@ -876,125 +880,165 @@ test.serial('subs layout', async t => {
       title: 'sport one'
     }
   })
-  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
+  t.is(otherResult3.components[0].children.length, 100)
+  t.is(otherResult3.components[1].children.length, 0)
 
   await wait(3000)
 
-  t.deepEqualIgnoreOrder(result, {
+  const expect = {
     upcoming: [{ id: 'mau2' }].concat(upcomingPublishedIds.slice(0, 9)),
     past: pastPublishedIds.slice(0, 10),
     live: [{ id: 'mau1' }]
-  })
-  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
-    {
-      id: 'mau1',
-      type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
-      title: 'upcoming match 1'
-    }
-  ])
+  }
+
+  t.deepEqualIgnoreOrder(result, expect, 'upcoming 2')
+  t.deepEqualIgnoreOrder(
+    otherResult1.components[0].children,
+    [
+      {
+        id: 'mau1',
+        type: 'match',
+        teams: [
+          { id: 'te1', title: 'team one' },
+          { id: 'te2', title: 'team two' }
+        ],
+        title: 'upcoming match 1'
+      }
+    ],
+    'upcoming 3'
+  )
   t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [
+  t.deepEqualIgnoreOrder(
+    otherResult2.components[0].children,
+    [
+      {
+        id: 'mau1',
+        type: 'match',
+        teams: [
+          { id: 'te1', title: 'team one' },
+          { id: 'te2', title: 'team two' }
+        ],
+        title: 'upcoming match 1'
+      }
+    ],
+    'upcoming 4'
+  )
+  t.is(otherResult2.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(
+    pick(otherResult3),
     {
-      id: 'mau1',
-      type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
-      title: 'upcoming match 1'
-    }
-  ])
-  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(pick(otherResult3), {
-    id: 'sp1',
-    type: 'sport',
-    ancestors: ['root'],
-    general: {
-      title: 'root'
+      id: 'sp1',
+      type: 'sport',
+      ancestors: ['root'],
+      general: {
+        title: 'root'
+      },
+      meta: {
+        title: 'sport one'
+      }
     },
-    meta: {
-      title: 'sport one'
-    }
-  })
-  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 1)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children[0].id, 'mau1')
+    'upcoming 5'
+  )
+  t.is(otherResult3.components[0].children.length, 100)
+  t.is(otherResult3.components[1].children.length, 1)
+  t.is(otherResult3.components[1].children[0].id, 'mau1')
 
   await wait(3000)
 
-  t.deepEqualIgnoreOrder(result, {
-    upcoming: upcomingPublishedIds.slice(0, 10),
-    past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
-    live: [{ id: 'mau2' }]
-  })
-  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
+  t.deepEqualIgnoreOrder(
+    result,
     {
-      id: 'mau2',
-      type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
-      title: 'upcoming match 2'
-    }
-  ])
-  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [
-    {
-      id: 'mau2',
-      type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
-      title: 'upcoming match 2'
-    }
-  ])
-  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(pick(otherResult3), {
-    id: 'sp1',
-    type: 'sport',
-    ancestors: ['root'],
-    general: {
-      title: 'root'
+      upcoming: upcomingPublishedIds.slice(0, 10),
+      past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
+      live: [{ id: 'mau2' }]
     },
-    meta: {
-      title: 'sport one'
-    }
-  })
-  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 1)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children[0].id, 'mau2')
+    'upcoming 6'
+  )
+  t.deepEqualIgnoreOrder(
+    otherResult1.components[0].children,
+    [
+      {
+        id: 'mau2',
+        type: 'match',
+        teams: [
+          { id: 'te1', title: 'team one' },
+          { id: 'te2', title: 'team two' }
+        ],
+        title: 'upcoming match 2'
+      }
+    ],
+    'upcoming 7'
+  )
+  t.is(otherResult1.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(
+    otherResult2.components[0].children,
+    [
+      {
+        id: 'mau2',
+        type: 'match',
+        teams: [
+          { id: 'te1', title: 'team one' },
+          { id: 'te2', title: 'team two' }
+        ],
+        title: 'upcoming match 2'
+      }
+    ],
+    'upcoming 8'
+  )
+  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(
+    pick(otherResult3),
+    {
+      id: 'sp1',
+      type: 'sport',
+      ancestors: ['root'],
+      general: {
+        title: 'root'
+      },
+      meta: {
+        title: 'sport one'
+      }
+    },
+    'upcoming 9'
+  )
+  t.is(otherResult3.components[0].children.length, 100)
+  t.is(otherResult3.components[1].children.length, 1)
+  t.is(otherResult3.components[1].children[0].id, 'mau2')
 
   await wait(2000)
 
-  t.deepEqualIgnoreOrder(result, {
-    upcoming: upcomingPublishedIds.slice(0, 10),
-    past: [{ id: 'mau1' }, { id: 'mau2' }].concat(pastPublishedIds.slice(0, 8)),
-    live: []
-  })
-  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
-  t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
-  t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
-  t.deepEqualIgnoreOrder(pick(otherResult3), {
-    id: 'sp1',
-    type: 'sport',
-    ancestors: ['root'],
-    general: {
-      title: 'root'
+  t.deepEqualIgnoreOrder(
+    result,
+    {
+      upcoming: upcomingPublishedIds.slice(0, 10),
+      past: [{ id: 'mau1' }, { id: 'mau2' }].concat(
+        pastPublishedIds.slice(0, 8)
+      ),
+      live: []
     },
-    meta: {
-      title: 'sport one'
-    }
-  })
-  t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
-  t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
+    'upcoming 10'
+  )
+  t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
+  t.is(otherResult1.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(otherResult2.components[0].children, [])
+  t.is(otherResult2.components[1].children.length, 10)
+  t.deepEqualIgnoreOrder(
+    pick(otherResult3),
+    {
+      id: 'sp1',
+      type: 'sport',
+      ancestors: ['root'],
+      general: {
+        title: 'root'
+      },
+      meta: {
+        title: 'sport one'
+      }
+    },
+    'upcoming 11'
+  )
+  t.is(otherResult3.components[0].children.length, 100)
+  t.is(otherResult3.components[1].children.length, 0)
 
   await client.delete('root')
   await client.destroy()
@@ -1089,7 +1133,7 @@ test.serial('subs upcoming, live and past', async t => {
       }
     })
     .subscribe(r => {
-      result = r
+      result = JSON.parse(JSON.stringify(r))
     })
 
   await wait(500)

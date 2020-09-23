@@ -1,4 +1,4 @@
-import hash from './hash'
+import { hashObject } from './hash'
 
 // check faster way - map or this
 const parseValue = (v: any) => {
@@ -15,7 +15,7 @@ const parseValue = (v: any) => {
   }
 
   if (typeof v === 'object' && v !== null) {
-    return '___obj' + hash(v)
+    return '___obj' + hashObject(v)
   }
   // very long string might be a problem...
   return v

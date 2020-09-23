@@ -57,7 +57,7 @@ export class Observable {
 
     if (options.type === 'get') {
       if (options.cache === undefined) {
-        this.useCache = false // true
+        this.useCache = true // true
       } else {
         this.useCache = options.cache
       }
@@ -252,7 +252,7 @@ export class Observable {
         this.useCache &&
         this.version &&
         versions &&
-        versions.length === 100 // should be 2
+        versions.length === 2 // should be 2
       ) {
         this.connection.command({
           command: 'hmget',
@@ -279,8 +279,11 @@ export class Observable {
               if (
                 fromVersion === versions[1] &&
                 versions[0] === version &&
-                this.version === fromVersion
+                this.version === fromVersion &&
+                this.cache
               ) {
+                // console.dir(this.cache, { depth: 10 })
+
                 const data = applyPatch(this.cache, patch)
                 if (this.useCache) {
                   this.storeInCache(data, version)
