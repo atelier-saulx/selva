@@ -17,7 +17,7 @@ import { applyPatch } from '@saulx/selva-diff'
 
 var observableIds = 0
 
-type UpdateCallback = (value: any, checksum?: string, diff?: any) => void
+type UpdateCallback = (value: any, checksum?: number, diff?: any) => void
 
 // write // remove
 // needs to check if they exist on connection
@@ -121,7 +121,7 @@ export class Observable {
 
   public subsCounter: number = 0
 
-  public emitUpdate(value: any, checksum?: string, diff?: any) {
+  public emitUpdate(value: any, checksum?: number, diff?: any) {
     this.listeners.forEach(fn => fn(value, checksum, diff))
   }
 
@@ -205,8 +205,10 @@ export class Observable {
     onNext: UpdateCallback,
     onError?: (err: Error) => void
   ) {
-    // make this different
-    if (this.connection) {
+    if (this.useCache && this.version) {
+      console.log('get it from cache!')
+      onNext(this.cache, this.version)
+    } else if (this.connection) {
       const channel = this.uuid
       this.connection.command({
         command: 'hmget',

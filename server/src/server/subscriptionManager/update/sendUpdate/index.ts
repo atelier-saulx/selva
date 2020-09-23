@@ -113,7 +113,7 @@ const sendUpdate = async (
 
   if (currentVersion) {
     const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
-
+    // maybe gzip the patch (very efficient format for gzip)
     const diffPatch = diff(prev.payload, payload)
     patch = diffPatch
   }
