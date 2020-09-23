@@ -12,7 +12,8 @@ import {
 } from '../constants'
 import parseError from './parseError'
 import { ServerSelector } from '../types'
-import chalk, { keyword } from 'chalk'
+import chalk from 'chalk'
+import { applyPatch } from '@saulx/selva-diff'
 
 var observableIds = 0
 
@@ -84,7 +85,7 @@ export class Observable {
 
   public selvaId: string
 
-  public checksum: string
+  public version: number
 
   public cache: any // last received data
 
@@ -194,10 +195,10 @@ export class Observable {
     }
   }
 
-  public storeInCache(value: any, version: string) {
+  public storeInCache(value: any, version: number) {
     // check total cached mem (store it)
-    if (this.useCache) {
-    }
+    this.cache = value
+    this.version = version
   }
 
   public geValueSingleListener(
@@ -234,41 +235,76 @@ export class Observable {
     }
   }
 
-  public getValue() {
+  public getValue(versions?: number[]) {
     // then store diff + last diff version
     // so you first do a check here
-
-    console.log('getValue')
     if (this.connection) {
       const channel = this.uuid
-      this.connection.command({
-        command: 'hmget',
-        id: this.selvaId,
-        args: [CACHE, channel, channel + '_version', channel + '_diff'],
-        resolve: ([data, version, diff]) => {
-          if (data) {
-            const obj = JSON.parse(data)
-
+      if (this.useCache && this.version && versions && versions.length === 2) {
+        this.connection.command({
+          command: 'hmget',
+          id: this.selvaId,
+          args: [CACHE, channel + '_version', channel + '_diff'],
+          resolve: ([version, diff]) => {
+            version = Number(version)
             if (diff) {
-              diff = JSON.parse(diff)
-            }
-
-            console.log(obj, diff)
-            // obj.version = version
-            if (obj.payload && obj.payload.___$error___) {
-              this.emitError(parseError(obj))
+              const [patch, fromVersion] = JSON.parse(diff)
+              if (
+                fromVersion === versions[1] &&
+                versions[0] === version &&
+                this.version === fromVersion
+              ) {
+                const data = applyPatch(this.cache, patch)
+                if (this.useCache) {
+                  this.storeInCache(data, version)
+                }
+                this.emitUpdate(data, version, patch)
+              } else {
+                console.log(
+                  'Mismatching versions from diff!',
+                  this.version,
+                  fromVersion,
+                  versions
+                )
+                this.getValue()
+              }
             } else {
-              // obj.payload
-              this.emitUpdate(obj.payload, version)
+              this.getValue()
             }
-          } else {
-            // maybe not send this
-            // console.log('no datax...')
-            this.emitUpdate(data, version)
-          }
-        },
-        reject: err => this.emitError(err)
-      })
+          },
+          reject: err => this.emitError(err)
+        })
+      } else {
+        this.connection.command({
+          command: 'hmget',
+          id: this.selvaId,
+          args: [CACHE, channel, channel + '_version'],
+          resolve: ([data, version]) => {
+            version = Number(version)
+            if (data) {
+              const obj = JSON.parse(data)
+              // obj.version = version
+              if (obj.payload && obj.payload.___$error___) {
+                this.emitError(parseError(obj))
+              } else {
+                // obj.payload
+                if (this.useCache) {
+                  this.storeInCache(obj.payload, version)
+                }
+                this.emitUpdate(obj.payload, version)
+              }
+            } else {
+              // maybe not send this
+              // console.log('no datax...')
+              if (this.useCache) {
+                this.storeInCache(data, version)
+              }
+              this.emitUpdate(data, version)
+            }
+          },
+          reject: err => this.emitError(err)
+        })
+      }
     }
   }
 
@@ -362,10 +398,12 @@ export class Observable {
         // msg is checksum
         // will also add diff maybe? or store the last diff?
         console.log('Incoming msg for observable', msg)
-
         const versions = JSON.parse(msg)
-
-        console.log(versions)
+        if (versions && versions[0] === this.version) {
+          console.log('subs manager send current version...', this.uuid)
+        } else {
+          this.getValue(versions)
+        }
       }
     })
 

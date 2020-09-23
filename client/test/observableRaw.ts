@@ -371,6 +371,10 @@ test.only('diff observables', async t => {
     rootType: {
       fields: {
         value: { type: 'number' },
+        flurp: {
+          type: 'array',
+          items: { type: 'number' }
+        },
         nested: {
           type: 'object',
           properties: {
@@ -383,11 +387,12 @@ test.only('diff observables', async t => {
 
   const obs = client.observe({
     $id: 'root',
-    value: true
+    value: true,
+    flurp: true
   })
 
   obs.subscribe((value, checksum, diff) => {
-    console.log('GET DAT SHIT', value, checksum, diff)
+    console.log('on subscription', value, checksum, diff)
   })
 
   await wait(500)
@@ -398,6 +403,14 @@ test.only('diff observables', async t => {
   })
 
   await wait(2500)
+
+  await client.set({
+    $id: 'root',
+    flurp: [1, 2, 3, 4]
+  })
+
+  await wait(2500)
+
   await client.destroy()
   await subsmanager.destroy()
   await subsmanager2.destroy()

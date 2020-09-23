@@ -112,7 +112,8 @@ const sendUpdate = async (
   let patch
 
   if (currentVersion) {
-    const prev = await redis.hget(selector, CACHE, channel)
+    const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
+
     const diffPatch = diff(prev.payload, payload)
     patch = diffPatch
   }
