@@ -602,7 +602,7 @@ test.serial('test poopy poop', async t => {
   )
 })
 
-test.serial.only('things', async t => {
+test.serial('things', async t => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 

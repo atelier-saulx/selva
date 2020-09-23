@@ -84,20 +84,22 @@ export function noHasPoop(setOpts: any, result: any): boolean {
     }
 
     return true
-  } else if (typeof setOpts === 'object' && setOpts.$add) {
-    const asSet = new Set(result)
-    for (const val of setOpts.$add) {
-      if (!asSet.has(val)) {
-        return false
+  } else if (typeof setOpts === 'object' && (setOpts.$add || setOpts.$delete)) {
+    if (setOpts.$add) {
+      const asSet = new Set(result)
+      for (const val of setOpts.$add) {
+        if (!asSet.has(val)) {
+          return false
+        }
       }
     }
 
-    return true
-  } else if (typeof setOpts === 'object' && setOpts.$delete) {
-    const asSet = new Set(result)
-    for (const val of setOpts.$delete) {
-      if (asSet.has(val)) {
-        return false
+    if (setOpts.$delete) {
+      const asSet = new Set(result)
+      for (const val of setOpts.$delete) {
+        if (asSet.has(val)) {
+          return false
+        }
       }
     }
 
