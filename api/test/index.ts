@@ -122,6 +122,7 @@ test.before(async t => {
           title: { type: 'text' },
           value: { type: 'number' },
           description: { type: 'text' },
+          booly: { type: 'boolean' },
           recordy: {
             type: 'record',
             values: {
@@ -624,6 +625,7 @@ test.serial('things', async t => {
     body: JSON.stringify({
       $id: 'maMatch1',
       $language: 'en',
+      booly: false,
       recordy: {
         recordA: { a: 'abba' },
         recordB: { b: 'baab' }
@@ -641,6 +643,7 @@ test.serial('things', async t => {
       $id: 'maMatch1',
       $language: 'en',
       title: 'yes en',
+      booly: false,
       recordy: {
         recordB: { b: 'baab' }
       },
