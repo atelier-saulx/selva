@@ -46,7 +46,7 @@ test.after(async t => {
 })
 
 test.serial('get - correct order', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'flA',
@@ -61,8 +61,6 @@ test.serial('get - correct order', async t => {
     $id: 'flA',
     f: true
   })
-
-  console.log(x)
 
   await client.set({
     $id: 'flA',
@@ -89,10 +87,6 @@ test.serial('get - correct order', async t => {
     })
     t.deepEqual(z, y)
   }
-
-  console.log(y)
-
-  t.pass()
 
   await client.destroy()
 })

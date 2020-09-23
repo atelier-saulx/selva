@@ -1,6 +1,5 @@
 import { GetResult } from '~selva/get/types'
 import { splitString, ensureArray } from '../util'
-import * as logger from '../logger'
 
 import globals from '../globals'
 import { getSchema } from '../schema/index'
