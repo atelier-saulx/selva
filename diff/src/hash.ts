@@ -16,7 +16,7 @@ const argHasher = (obj, hash = 5381) => {
       hash = (((hash * 33) ^ field) * 33) ^ djb2(key, hash)
     } else if (type === 'object') {
       if (field !== null) {
-        hash = argHasher(field, hash)
+        hash = (argHasher(field, hash) * 33) ^ djb2(key, hash)
       }
     } else if (type === 'boolean') {
       hash = (((hash * 33) ^ (field === true ? 1 : 0)) * 33) ^ djb2(key, hash)

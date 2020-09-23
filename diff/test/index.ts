@@ -246,7 +246,28 @@ test('Deep in array', async t => {
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test.only('Real life', async t => {
+test.only('Real life only components', async t => {
+  const a = JSON.parse(JSON.stringify(region.components.slice(0, 1)))
+  const b = JSON.parse(JSON.stringify(a))
+
+  b[0].children.shift()
+  b[0].children.shift()
+  b[0].children.shift()
+
+  var d = Date.now()
+  const patch2 = diff(a, b)
+  console.log('Make sstv patch', Date.now() - d, 'ms')
+
+  console.dir(patch2, { depth: 10 })
+
+  var d = Date.now()
+  const x = applyPatch(a, patch2)
+  console.log('Apply sstv patch', Date.now() - d, 'ms')
+  // t.deepEqual(x, b, 'is equal after games put to live')
+  t.pass()
+})
+
+test('Real life', async t => {
   const a = JSON.parse(JSON.stringify(region))
 
   const b = JSON.parse(JSON.stringify(a))
