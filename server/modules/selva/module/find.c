@@ -32,7 +32,6 @@ struct FindCommand_Args {
     const char *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Result of the find. Only used if sorting is requested. */
 
-    int set_marker; /*!< Set if a marker should be set on nodes. */
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
 };
 
@@ -250,9 +249,7 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
 
-    if (args->set_marker) {
-        Selva_Subscriptions_SetMarker(metadata, marker);
-    }
+    Selva_Subscriptions_SetMarker(nodeId, metadata, marker);
 
     if (take && rpn_ctx) {
         int err;
@@ -875,7 +872,6 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
         .filter = marker->filter_expression,
         .order_field = order_by_field,
         .order_result = &order_result,
-        .set_marker = marker->dir != SELVA_HIERARCHY_TRAVERSAL_NONE && !(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_DETACH),
         .marker = marker,
     };
     const struct SelvaModify_HierarchyCallback cb = {

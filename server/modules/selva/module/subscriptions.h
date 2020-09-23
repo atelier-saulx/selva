@@ -133,6 +133,7 @@ struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
         Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id);
 void Selva_Subscriptions_SetMarker(
+        const Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *metadata,
         struct Selva_SubscriptionMarker *marker);
 void SelvaSubscriptions_ClearAllMarkers(
@@ -143,6 +144,20 @@ void SelvaSubscriptions_ClearAllMarkers(
 
 int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
+void SelvaSubscriptions_InheritParent(
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        struct SelvaModify_HierarchyMetadata *node_metadata,
+        size_t node_nr_children,
+        const Selva_NodeId parent_id,
+        struct SelvaModify_HierarchyMetadata *parent_metadata);
+void SelvaSubscriptions_InheritChild(
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        struct SelvaModify_HierarchyMetadata *node_metadata,
+        size_t node_nr_parents,
+        const Selva_NodeId child_id,
+        struct SelvaModify_HierarchyMetadata *child_metadata);
 void SelvaSubscriptions_DeferHierarchyEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,

@@ -471,11 +471,28 @@ struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
  * avoiding calling a separate refresh on the subscription marker.
  */
 void Selva_Subscriptions_SetMarker(
+        const Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *metadata,
         struct Selva_SubscriptionMarker *marker) {
     struct Selva_SubscriptionMarkers *sub_markers = &metadata->sub_markers;
 
-    set_marker(sub_markers, marker);
+    if (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_DETACH) {
+        return;
+    }
+
+    switch (marker->dir) {
+    case SELVA_HIERARCHY_TRAVERSAL_NONE:
+        break;
+    case SELVA_HIERARCHY_TRAVERSAL_NODE:
+    case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
+    case SELVA_HIERARCHY_TRAVERSAL_PARENTS:
+        if (memcmp(marker->node_id, node_id, SELVA_NODE_ID_SIZE) != 0) {
+            break;
+        }
+    default:
+        set_marker(sub_markers, marker);
+        break;
+    }
 }
 
 
@@ -617,6 +634,94 @@ void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hier
     }
 
     SVector_Destroy(&def->subs);
+}
+
+void SelvaSubscriptions_InheritParent(
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id __unused,
+        struct SelvaModify_HierarchyMetadata *node_metadata,
+        size_t node_nr_children,
+        const Selva_NodeId parent_id,
+        struct SelvaModify_HierarchyMetadata *parent_metadata) {
+    /*
+     * Trigger all relevant subscriptions to make sure the subscriptions are
+     * propagated properly.
+     * If the root node is a parent for this node then we'll just trigger
+     * everything for now.
+     */
+    if (node_nr_children > 0 || !memcmp(parent_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+        SelvaSubscriptions_DeferHierarchyEvents(hierarchy, parent_id, parent_metadata);
+    } else {
+        struct Selva_SubscriptionMarker **it;
+        struct Selva_SubscriptionMarkers *node_sub_markers = &node_metadata->sub_markers;
+
+        SVECTOR_FOREACH(it, &parent_metadata->sub_markers.vec) {
+            struct Selva_SubscriptionMarker *marker = *it;
+
+            if (!isHierarchyMarker(marker->marker_flags)) {
+                continue;
+            }
+
+            switch (marker->dir) {
+            case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
+            case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
+            case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
+                /* These markers can be copied safely. */
+                set_marker(node_sub_markers, marker);
+                break;
+            default:
+                /*
+                 * There is no fast & reliable way to figure out what to do with
+                 * the other types so we'll just send a generic hierarchy event.
+                 */
+                SelvaSubscriptions_DeferHierarchyEvents(hierarchy, parent_id, parent_metadata);
+                break;
+            }
+        }
+    }
+}
+
+void SelvaSubscriptions_InheritChild(
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id __unused,
+        struct SelvaModify_HierarchyMetadata *node_metadata,
+        size_t node_nr_parents,
+        const Selva_NodeId child_id,
+        struct SelvaModify_HierarchyMetadata *child_metadata) {
+    /*
+     * Trigger all relevant subscriptions to make sure the subscriptions are
+     * propagated properly.
+     * TODO We could skip this if the only parent was root.
+     */
+    if (node_nr_parents > 0) {
+        SelvaSubscriptions_DeferHierarchyEvents(hierarchy, child_id, child_metadata);
+    } else {
+        struct Selva_SubscriptionMarker **it;
+        struct Selva_SubscriptionMarkers *node_sub_markers = &node_metadata->sub_markers;
+
+        SVECTOR_FOREACH(it, &child_metadata->sub_markers.vec) {
+            struct Selva_SubscriptionMarker *marker = *it;
+
+            if (!isHierarchyMarker(marker->marker_flags)) {
+                continue;
+            }
+
+            switch (marker->dir) {
+            case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
+            case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
+                /* These markers can be copied safely. */
+                set_marker(node_sub_markers, marker);
+                break;
+            default:
+                /*
+                 * There is no fast & reliable way to figure out what to do with
+                 * the other types so we'll just send a generic hierarchy event.
+                 */
+                SelvaSubscriptions_DeferHierarchyEvents(hierarchy, child_id, child_metadata);
+                break;
+            }
+        }
+    }
 }
 
 static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,
