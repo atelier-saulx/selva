@@ -15,7 +15,8 @@ import {
   stringEndsWith,
   ensureArray,
   emptyArray,
-  markEmptyArraysInJSON
+  markEmptyArraysInJSON,
+  subscriptionAddField
 } from '../util'
 
 import * as logger from '../logger'
@@ -617,7 +618,7 @@ function getByType(
     }
   }
 
-  // TODO: add marker??
+  subscriptionAddField(id, field)
   const fn = types[prop.type] || string
   return fn(result, schema, id, field, language, version, merge, prop)
 }

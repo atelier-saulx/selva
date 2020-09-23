@@ -127,6 +127,30 @@ export function adler32(str: string): number {
   return bit.bor(bit.lshift(b, 16), a)
 }
 
+export function subscriptionAddField(id: string, field: string): void {
+  if (!globals.$subscription || globals.$traversing) {
+    return
+  }
+
+  // FIXME: does this make sense?
+  const markerId = adler32(id + '#fields')
+
+  redis.call(
+    'SELVA.SUBSCRIPTIONS.ADD',
+    '___selva_hierarchy',
+    globals.$subscription,
+    String(markerId),
+    'node'
+  )
+  redis.call(
+    'SELVA.SUBSCRIPTIONS.addMarkerField',
+    '___selva_hierarchy',
+    globals.$subscription,
+    String(markerId),
+    field
+  )
+}
+
 export function stringStartsWith(str: string, slice: string): boolean {
   if (slice.length > str.length) {
     return false

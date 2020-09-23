@@ -442,6 +442,7 @@ const queryGet = (
     ids = [<string>getOptions.$id || 'root']
   }
 
+  globals.$traversing = true
   const [r, err] = parseQuery(
     getField,
     schema,
@@ -454,6 +455,8 @@ const queryGet = (
   )
 
   let { results, meta } = r
+
+  globals.$traversing = false
 
   if ((!results.length || results.length === 0) && !getOptions.$find) {
     setNestedResult(result, resultField, emptyArray())
