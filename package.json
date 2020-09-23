@@ -8,8 +8,6 @@
     "tools",
     "diff"
   ],
-  "main": "./index.js",
-  "gypfile": true,
   "scripts": {
     "killall": "pkill -9 node && pkill -9 redis",
     "publish-major": "yarn build && node ./bin/publish.js major && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",

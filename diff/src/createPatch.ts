@@ -1,4 +1,4 @@
-import { hashObject } from './hash'
+import { hashObject } from '@saulx/utils'
 
 // check faster way - map or this
 const parseValue = (v: any) => {

@@ -1,3 +1,5 @@
+import { deepCopy } from '@saulx/utils'
+
 const nestedApplyPatch = (value: object, key: string, patch) => {
   if (patch.constructor === Array) {
     const type = patch[0]
@@ -16,18 +18,6 @@ const nestedApplyPatch = (value: object, key: string, patch) => {
       nestedApplyPatch(value[key], nkey, patch[nkey])
     }
   }
-}
-
-const deepCopy = (a: object): object => {
-  const r = a.constructor === Array ? [] : {}
-  for (let k in a) {
-    if (a[k] !== null && typeof a[k] === 'object') {
-      r[k] = deepCopy(a[k])
-    } else {
-      r[k] = a[k]
-    }
-  }
-  return r
 }
 
 const applyArrayPatch = (value: any[], arrayPatch) => {
