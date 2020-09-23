@@ -21,16 +21,18 @@ const handleAddPrev = async (
     if (prev !== id) {
       await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
       // server has to do removal etc
-      const [host, port] = prev.split(':')
+      const [host, p] = prev.split(':')
+
+      const port = Number(p)
 
       if (
         client.servers.subsManagers.find(
-          s => s.port === Number(port) && s.host === host
+          s => s.port === port && s.host === host
         )
       ) {
         // if the server is unregistered this will be useless to add to a quuee
         await client.redis.publish(
-          { host, port: Number(port), type: 'subscriptionManager' },
+          { host, port: port, type: 'subscriptionManager' },
           constants.REGISTRY_MOVE_SUBSCRIPTION,
           JSON.stringify([channel, id])
         )

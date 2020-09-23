@@ -91,6 +91,8 @@ test.serial('inherit object nested field from root youzi', async t => {
   ])
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('inherit object youzi', async t => {
@@ -152,6 +154,8 @@ test.serial('inherit object youzi', async t => {
   ])
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('basic inherit subscription', async t => {
@@ -241,6 +245,8 @@ test.serial('basic inherit subscription', async t => {
   subs.unsubscribe()
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('inherit object', async t => {
@@ -335,6 +341,8 @@ test.serial('inherit object', async t => {
   ])
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('list inherit subscription', async t => {
@@ -453,10 +461,43 @@ test.serial('list inherit subscription', async t => {
   subs.unsubscribe()
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('list inherit + field subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
+
+  // await client.updateSchema({
+  //   languages: ['en', 'de', 'nl'],
+  //   rootType: {
+  //     fields: {
+  //       yesh: { type: 'string' },
+  //       flapper: {
+  //         type: 'object',
+  //         properties: {
+  //           snurk: { type: 'json' },
+  //           bob: { type: 'json' }
+  //         }
+  //       }
+  //     }
+  //   },
+  //   types: {
+  //     yeshType: {
+  //       prefix: 'ye',
+  //       fields: {
+  //         yesh: { type: 'string' },
+  //         flapper: {
+  //           type: 'object',
+  //           properties: {
+  //             snurk: { type: 'json' },
+  //             bob: { type: 'json' }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
