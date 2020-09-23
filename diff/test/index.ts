@@ -560,11 +560,11 @@ test('Weird array 3 register copy', async t => {
 
   const patch = diff(a, b)
 
-  console.dir(patch, { depth: 10 })
+  // console.dir(patch, { depth: 10 })
 
   const x = applyPatch(a, patch)
 
-  console.dir(x, { depth: 10 })
+  // console.dir(x, { depth: 10 })
 
   t.deepEqual(x, b, 'is equal')
 })
