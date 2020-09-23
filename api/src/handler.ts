@@ -237,7 +237,13 @@ export default function(
         client
           .get(fakeGetBody)
           .then(result => {
-            if (noHasGuard(body, result)) {
+            let needsChanges = true
+            try {
+              const r = noHasGuard(body, result)
+              needsChanges = !r
+            } catch (_e) {}
+
+            if (!needsChanges) {
               console.log('HAHA, NOTHING ACTUALLY UPDATED')
               return Promise.resolve(result.id)
             }
