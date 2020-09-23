@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva-diff",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -34,9 +34,6 @@
     "require": [
       "ts-node/register"
     ]
-  },
-  "bin": {
-    "selva-server": "/bin/index.js"
   },
   "devDependencies": {
     "ava": "2.4.0",
