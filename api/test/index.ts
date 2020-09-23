@@ -624,13 +624,12 @@ test.serial('things', async t => {
     },
     body: JSON.stringify({
       $id: 'maMatch1',
-      $language: 'en',
       booly: false,
       recordy: {
         recordA: { a: 'abba' },
         recordB: { b: 'baab' }
       },
-      title: 'yes en'
+      title: { en: 'yes en', de: 'ja de' }
     })
   })
 
