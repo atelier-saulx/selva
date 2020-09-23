@@ -4,7 +4,7 @@ import { start } from '@saulx/selva-server'
 import '../../assertions'
 import { wait } from '../../assertions'
 // @ts-ignore suppressing module can only be default-imported using the 'esModuleInterop' flag
-import getPort from 'get-port' 
+import getPort from 'get-port'
 
 import { schema } from '../_schema'
 import { setDataSet } from '../_dataSet'
@@ -21,11 +21,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('$field', async t => {
@@ -33,20 +34,31 @@ test.serial('$field', async t => {
 
   await setDataSet(client)
 
-  t.deepEqual(await client.get({
-    $id: 'mo2001ASpaceOdyssey',
-    directedBy: { $field: 'director' }
-  }), { directedBy: 'Stanley Kubrick' })
+  t.deepEqual(
+    await client.get({
+      $id: 'mo2001ASpaceOdyssey',
+      directedBy: { $field: 'director' }
+    }),
+    { directedBy: 'Stanley Kubrick' }
+  )
 
-  t.deepEqual(await client.get({
-    $id: 'mo2001ASpaceOdyssey',
-    ratio: { $field: 'technicalData.aspectRatio' }
-  }), { ratio: '2.20:1' })
+  t.deepEqual(
+    await client.get({
+      $id: 'mo2001ASpaceOdyssey',
+      ratio: { $field: 'technicalData.aspectRatio' }
+    }),
+    { ratio: '2.20:1' }
+  )
 
-  t.deepEqual(await client.get({
-    $id: 'mo2001ASpaceOdyssey',
-    englishTitle: { $field: 'title.en' }
-  }), { englishTitle: '2001: A Space Odyssey' })
+  t.deepEqual(
+    await client.get({
+      $id: 'mo2001ASpaceOdyssey',
+      englishTitle: { $field: 'title.en' }
+    }),
+    { englishTitle: '2001: A Space Odyssey' }
+  )
+
+  await client.destroy()
 })
 
 test.serial('$field:Array<string>', async t => {
@@ -54,8 +66,13 @@ test.serial('$field:Array<string>', async t => {
 
   await setDataSet(client)
 
-  t.deepEqual(await client.get({
-    $id: 'mo2001ASpaceOdyssey',
-    by: { $field: ['producer', 'director'] }
-  }), { by: 'Stanley Kubrick' })
+  t.deepEqual(
+    await client.get({
+      $id: 'mo2001ASpaceOdyssey',
+      by: { $field: ['producer', 'director'] }
+    }),
+    { by: 'Stanley Kubrick' }
+  )
+
+  await client.destroy()
 })
