@@ -70,7 +70,7 @@
     "@saulx/selva-server": "1.13.0"
   },
   "dependencies": {
-    "@saulx/selva-diff": "^1.0.3",
+    "@saulx/selva-diff": "^1.0.4",
     "chalk": "^4.0.0",
     "@types/uuid": "^3.4.6",
     "redis": "^2.8.0",
