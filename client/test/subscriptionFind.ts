@@ -42,13 +42,15 @@ test.before(async t => {
       }
     }
   })
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('subscription find', async t => {
@@ -262,4 +264,5 @@ test.serial('subscription find', async t => {
 
   t.is(cnt3, 3, 'check for count')
   await wait(2000)
+  await client.destroy()
 })

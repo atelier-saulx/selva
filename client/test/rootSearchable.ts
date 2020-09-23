@@ -12,14 +12,14 @@ test.before(async t => {
   srv = await start({
     port
   })
-  const client = connect({ port })
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('root is searchable', async t => {
@@ -97,6 +97,8 @@ test.serial('root is searchable', async t => {
       ]
     }
   )
+
+  await client.destroy()
 })
 
 test.serial('root is searchable 2', async t => {
@@ -133,4 +135,6 @@ test.serial('root is searchable 2', async t => {
     console.error(e)
     t.fail()
   }
+
+  await client.destroy()
 })

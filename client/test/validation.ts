@@ -20,13 +20,15 @@ test.before(async t => {
       }
     }
   })
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('correct validation #1', async t => {
@@ -41,6 +43,7 @@ test.serial('correct validation #1', async t => {
       `Field .pollId should be a boolean or an object, got RandomPollName`
     )
   }
+  await client.destroy()
 })
 
 test.serial('correct validation #2', async t => {
@@ -53,4 +56,5 @@ test.serial('correct validation #2', async t => {
       `.set() without the type property requires an existing record or $id to be set with the wanted type prefix. No existing id found for alias "RandomPollName"`
     )
   }
+  await client.destroy()
 })

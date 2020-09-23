@@ -104,7 +104,7 @@ test('Connect and re-connect', async t => {
     { $isNull: true }
   )
 
-  server2.destroy()
+  await server2.destroy()
   await wait(2e3)
 
   client
@@ -126,9 +126,10 @@ test('Connect and re-connect', async t => {
     })
 
   await wait(1e3)
-  const server3 = await start({ port: current })
 
-  await wait(3e3)
+  await client.destroy()
+
+  await t.connectionsAreEmpty()
 
   // const item = await client.get({ $id: 'flap', snurk: true })
 

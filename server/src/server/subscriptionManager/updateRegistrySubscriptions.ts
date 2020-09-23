@@ -45,11 +45,11 @@ const handleAddPrev = async (
         )
       }
     } else {
-      console.log(
-        chalk.gray(
-          `Allready have subscription ${channel} on ${id} don't do anything`
-        )
-      )
+      // console.log(
+      //   chalk.gray(
+      //     `Allready have subscription ${channel} on ${id} don't do anything`
+      //   )
+      // )
     }
   } else {
     await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)

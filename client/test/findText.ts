@@ -39,11 +39,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 // TODO: this needs to use a non-TEXT-lANGUAGE-SUG field

@@ -53,13 +53,16 @@ test.before(async t => {
       }
     }
   })
+
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('inherit even when skipping hierarchy node', async t => {
@@ -89,4 +92,6 @@ test.serial('inherit even when skipping hierarchy node', async t => {
   })
 
   t.deepEqualIgnoreOrder(res, { theme: { colors: { blue: 'red' } } })
+
+  await client.destroy()
 })

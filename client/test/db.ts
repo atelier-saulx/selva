@@ -55,13 +55,14 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   let client = connect({ port: port1 })
   await client.delete('root')
   await srv1.destroy()
   await client.delete({ $id: 'root', $db: 'matchdb' })
   await client.destroy()
   await srv2.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('$db with nested query', async t => {

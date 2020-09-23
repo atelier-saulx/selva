@@ -36,13 +36,16 @@ test.before(async t => {
       }
     }
   })
+
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get nested results', async t => {
@@ -128,5 +131,8 @@ test.serial('get nested results', async t => {
   t.is(result.items[0].teams.length, 2, 'has teams')
 
   await wait(1e3)
+
+  await client.destroy()
+
   t.true(true)
 })

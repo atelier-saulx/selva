@@ -14,11 +14,12 @@ test.before(async () => {
   })
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('exec big batch', async t => {
@@ -50,4 +51,6 @@ test.serial('exec big batch', async t => {
     console.error(e)
     t.fail()
   }
+
+  await client.destroy()
 })

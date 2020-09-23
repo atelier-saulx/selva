@@ -72,13 +72,15 @@ test.before(async t => {
       }
     }
   })
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('yes', async t => {
@@ -181,4 +183,6 @@ test.serial('yes', async t => {
   t.truthy(result.matches && result.matches.length)
   t.truthy(result.matches[0].teams && result.matches[0].teams.length)
   t.truthy(result.matches[0].team && result.matches[0].team.title)
+
+  await client.destroy()
 })

@@ -14,8 +14,9 @@ test.before(async () => {
   })
 })
 
-test.after(async () => {
+test.after(async t => {
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('inherit object nested field from root youzi', async t => {
@@ -636,4 +637,5 @@ test.serial('list inherit + field subscription', async t => {
   subs.unsubscribe()
 
   await client.delete('root')
+  await client.destroy()
 })

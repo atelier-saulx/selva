@@ -39,15 +39,15 @@ test.before(async t => {
       }
     }
   })
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('$field in $id should work', async t => {

@@ -34,46 +34,51 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get value without hyphen', async t => {
   const client = connect({ port })
 
-  await Promise.all([
-    {
-      name: 'Charlton Heston',
-      born: 1923,
-      died: 2008
-    },
-    {
-      name: 'Leigh TaylorYoung',
-      born: 1945
-    }
-  ].map((actor) => client.set({
-    type: 'actor',
-    ...actor
-  })))
+  await Promise.all(
+    [
+      {
+        name: 'Charlton Heston',
+        born: 1923,
+        died: 2008
+      },
+      {
+        name: 'Leigh TaylorYoung',
+        born: 1945
+      }
+    ].map(actor =>
+      client.set({
+        type: 'actor',
+        ...actor
+      })
+    )
+  )
 
   t.deepEqualIgnoreOrder(
     await client.get({
-    items: {
-      name: true,
-      $list: {
-        $find: {
-          $traverse: 'children',
-          $filter: [
-            { $field: 'type', $operator: '=', $value: 'actor' },
-            { $field: 'name', $operator: '=', $value: 'Leigh TaylorYoung' }
-          ]
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              { $field: 'type', $operator: '=', $value: 'actor' },
+              { $field: 'name', $operator: '=', $value: 'Leigh TaylorYoung' }
+            ]
+          }
         }
       }
-    }
-  }),
+    }),
     {
       items: [{ name: 'Leigh TaylorYoung' }]
     }
@@ -87,36 +92,40 @@ test.serial('get value without hyphen', async t => {
 test.serial('get value with hyphen', async t => {
   const client = connect({ port })
 
-  await Promise.all([
-    {
-      name: 'Charlton Heston',
-      born: 1923,
-      died: 2008
-    },
-    {
-      name: 'Leigh Taylor-Young',
-      born: 1945
-    }
-  ].map((actor) => client.set({
-    type: 'actor',
-    ...actor
-  })))
+  await Promise.all(
+    [
+      {
+        name: 'Charlton Heston',
+        born: 1923,
+        died: 2008
+      },
+      {
+        name: 'Leigh Taylor-Young',
+        born: 1945
+      }
+    ].map(actor =>
+      client.set({
+        type: 'actor',
+        ...actor
+      })
+    )
+  )
 
   t.deepEqualIgnoreOrder(
     await client.get({
-    items: {
-      name: true,
-      $list: {
-        $find: {
-          $traverse: 'children',
-          $filter: [
-            { $field: 'type', $operator: '=', $value: 'actor' },
-            { $field: 'name', $operator: '=', $value: 'Leigh Taylor-Young' }
-          ]
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              { $field: 'type', $operator: '=', $value: 'actor' },
+              { $field: 'name', $operator: '=', $value: 'Leigh Taylor-Young' }
+            ]
+          }
         }
       }
-    }
-  }),
+    }),
     {
       items: [{ name: 'Leigh Taylor-Young' }]
     }

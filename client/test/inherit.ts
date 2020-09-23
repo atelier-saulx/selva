@@ -53,11 +53,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('simple', async t => {
@@ -81,6 +82,8 @@ test.serial('simple', async t => {
   })
 
   t.true(result.icon === 'scifi.png')
+
+  await client.destroy()
 })
 
 test.serial('simple with circular', async t => {
@@ -106,6 +109,8 @@ test.serial('simple with circular', async t => {
   })
 
   t.true(result.icon === 'scifi.png')
+
+  await client.destroy()
 })
 
 test.serial('$all', async t => {
@@ -142,6 +147,8 @@ test.serial('$all', async t => {
   })
 
   t.deepEqual(result.fields, { name: 'hello', something: '' }, 'inherit')
+
+  await client.destroy()
 })
 
 test.serial('$field + object', async t => {
@@ -178,6 +185,8 @@ test.serial('$field + object', async t => {
   })
 
   t.deepEqual(result, { flaprdol: { name: 'hello' } }, 'inherit')
+
+  await client.destroy()
 })
 
 test.serial('$field + object + all', async t => {
@@ -216,6 +225,8 @@ test.serial('$field + object + all', async t => {
   })
 
   t.deepEqual(result, { flaprdol: { name: 'hello' } }, 'inherit')
+
+  await client.destroy()
 })
 
 test.serial('$field + object + all + nested', async t => {
@@ -279,6 +290,8 @@ test.serial('$field + object + all + nested', async t => {
     },
     'inherit'
   )
+
+  await client.destroy()
 })
 
 test.serial('$field +  multiple options', async t => {
@@ -377,6 +390,8 @@ test.serial('$field +  multiple options', async t => {
   t.is(y.layout.components.c1.component.$value, 'hello')
 
   t.true(true)
+
+  await client.destroy()
 })
 
 test.serial('$field +  multiple options + inherit from root', async t => {
@@ -487,6 +502,8 @@ test.serial('$field +  multiple options + inherit from root', async t => {
   t.is(y.layout.components.c1.component.$value, 'hello')
 
   t.true(true)
+
+  await client.destroy()
 })
 
 test.serial.skip('$field + inherit from root + query root', async t => {
@@ -575,4 +592,6 @@ test.serial.skip('$field + inherit from root + query root', async t => {
   })
 
   t.is(x.layout.components[0].component.$value, 'bye')
+
+  await client.destroy()
 })

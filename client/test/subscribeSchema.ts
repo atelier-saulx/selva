@@ -18,8 +18,10 @@ test.before(async () => {
   })
 })
 
-test.after(async () => {
+test.after(async t => {
+  await srv2.does()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('basic schema based subscriptions', async t => {

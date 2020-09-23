@@ -89,12 +89,13 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('subs layout', async t => {
@@ -1165,6 +1166,7 @@ test.serial('subs upcoming, live and past', async t => {
   await client.destroy()
 
   await wait(3e3)
+  await client.destroy()
 
   t.true(true)
 })

@@ -13,8 +13,9 @@ test.before(async () => {
   })
 })
 
-test.after(async () => {
+test.after(async t => {
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('basic id based subscriptions', async t => {
@@ -103,6 +104,8 @@ test.serial('basic id based subscriptions', async t => {
   await client.delete('root')
 
   await wait(1000)
+
+  await client.destroy()
 })
 
 test.serial('using $field works', async t => {
@@ -157,6 +160,8 @@ test.serial('using $field works', async t => {
   sub.unsubscribe()
 
   await client.delete('root')
+
+  await client.destroy()
 })
 
 test.serial('refs resolve and get tracked correctly', async t => {
@@ -216,6 +221,7 @@ test.serial('refs resolve and get tracked correctly', async t => {
   sub.unsubscribe()
 
   await client.delete('root')
+  await client.destroy()
 })
 
 test.serial('basic $inherit when ancestors change', async t => {
@@ -275,6 +281,7 @@ test.serial('basic $inherit when ancestors change', async t => {
   sub.unsubscribe()
 
   await client.delete('root')
+  await client.destroy()
 })
 
 test.serial(
@@ -345,6 +352,7 @@ test.serial(
 
     await client.delete('root')
     await server.destroy()
+    await client.destroy()
   }
 )
 
@@ -420,6 +428,8 @@ test.serial(
 
     await client.delete('root')
     await server.destroy()
+    await client.destroy()
+
     // somethign fishy here
   }
 )
@@ -496,5 +506,6 @@ test.serial.skip(
 
     await client.delete('root')
     await server.destroy()
+    await client.destroy()
   }
 )

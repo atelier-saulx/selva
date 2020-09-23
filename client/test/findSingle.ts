@@ -37,11 +37,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('find - single', async t => {
@@ -90,6 +91,8 @@ test.serial('find - single', async t => {
   t.deepEqual(r, {
     singleMatch: { name: 'match0' }
   })
+
+  await client.destroy()
 })
 
 test.serial('find - single with no wrapping', async t => {
@@ -136,6 +139,8 @@ test.serial('find - single with no wrapping', async t => {
   t.deepEqual(r, {
     name: 'match0'
   })
+
+  await client.destroy()
 })
 
 test.serial('find - single in array', async t => {
@@ -188,6 +193,8 @@ test.serial('find - single in array', async t => {
   t.deepEqual(r, {
     results: [{ singleMatch: { name: 'match0' } }]
   })
+
+  await client.destroy()
 })
 
 test.serial('find - single no wrapping in array', async t => {
@@ -238,4 +245,6 @@ test.serial('find - single no wrapping in array', async t => {
   t.deepEqual(r, {
     results: [{ name: 'match0' }]
   })
+
+  await client.destroy()
 })

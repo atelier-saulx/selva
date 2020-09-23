@@ -27,13 +27,15 @@ test.before(async t => {
       }
     }
   })
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('subscription list', async t => {
@@ -91,4 +93,6 @@ test.serial('subscription list', async t => {
 
   t.deepEqual(a, { children: [{ rando: 'rando!' }] })
   t.deepEqual(a, b)
+
+  await client.destroy()
 })

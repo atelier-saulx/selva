@@ -65,11 +65,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('find - ancestors', async t => {
@@ -231,6 +232,8 @@ test.serial('find - ancestors', async t => {
     ['league2', 'league3', 'league4'],
     'find ancestors redis search'
   )
+
+  await client.destroy()
 })
 
 test.serial('find - ancestors - regions', async t => {
@@ -295,6 +298,8 @@ test.serial('find - ancestors - regions', async t => {
     },
     'dutch teams'
   )
+
+  await client.destroy()
 })
 
 test.serial('find - ancestors - regions - no wrapping', async t => {
@@ -355,4 +360,6 @@ test.serial('find - ancestors - regions - no wrapping', async t => {
     ],
     'dutch teams'
   )
+
+  await client.destroy()
 })

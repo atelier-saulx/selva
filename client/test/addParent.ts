@@ -12,14 +12,14 @@ test.before(async t => {
   srv = await start({
     port
   })
-  const client = connect({ port })
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial(
@@ -46,6 +46,8 @@ test.serial(
     t.deepEqualIgnoreOrder(await client.get({ $id: 'sp11', ancestors: true }), {
       ancestors: ['root']
     })
+
+    await client.destroy()
   }
 )
 

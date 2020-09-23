@@ -34,4 +34,8 @@ test('generates a unique id from type', async t => {
   // allways subscribe on it (hash)
 
   server.destroy()
+
+  await client.destroy()
+
+  await t.connectionsAreEmpty()
 })

@@ -92,13 +92,16 @@ test.before(async t => {
     // @ts-ignore
     types: types
   })
+
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 const layoutSubsTest = async (t, layoutSub) => {
@@ -408,4 +411,6 @@ test.serial('layout with inheritance', async t => {
       ]
     }
   })
+
+  await client.destroy()
 })

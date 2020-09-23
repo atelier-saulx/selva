@@ -63,13 +63,14 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
-  let client = connect({ port: port1 })
+test.after(async t => {
+  const client = connect({ port: port1 })
   await client.delete('root')
-  await srv1.destroy()
-  await client.delete({ $id: 'root', $db: 'matchdb' })
+  await client.delete({ $id: 'root', $db: 'users' })
   await client.destroy()
   await srv2.destroy()
+  await srv1.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('make it nice with users', async t => {
@@ -378,8 +379,9 @@ test.serial('make it nice with users', async t => {
   await wait(5e3)
   sub.unsubscribe()
 
-  t.pass()
-
   await client.delete('root')
   await client.destroy()
+  await wait(5e3)
+
+  t.pass()
 })

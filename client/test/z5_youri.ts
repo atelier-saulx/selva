@@ -12,15 +12,15 @@ test.before(async t => {
   srv = await start({
     port
   })
-  const client = connect({ port })
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('yes', async t => {
@@ -50,4 +50,6 @@ test.serial('yes', async t => {
   await wait(500)
 
   t.is(cnt, 2)
+
+  await client.destroy()
 })

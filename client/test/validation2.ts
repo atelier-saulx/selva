@@ -27,13 +27,16 @@ test.before(async t => {
       }
     }
   })
+
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('correct validation for booleans', async t => {
@@ -67,4 +70,6 @@ test.serial('correct validation for booleans', async t => {
     console.error(e)
     t.fail()
   }
+
+  await client.destroy()
 })

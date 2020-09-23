@@ -36,13 +36,15 @@ test.before(async t => {
       }
     }
   })
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('yes', async t => {
@@ -105,4 +107,6 @@ test.serial('yes', async t => {
     { niceSet: ['b', 'c'], aliases: ['b', 'c'] },
     { niceSet: ['b'], aliases: ['b'] }
   ])
+
+  await client.destroy()
 })
