@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@saulx/utils": "^1.0.3",
-    "@saulx/selva-diff": "^1.0.5",
+    "@saulx/selva-diff": "^1.0.6",
     "@saulx/selva": "1.14.0",
     "aws-sdk": "^2.616.0",
     "before-exit": "^1.0.0",
