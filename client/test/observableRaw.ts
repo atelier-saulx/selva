@@ -412,12 +412,7 @@ test.only('diff observables', async t => {
   await wait(500)
 
   obs.subscribe((value, checksum, diff) => {
-    console.log(
-      'on subscription 2',
-      value,
-      checksum,
-      JSON.stringify(diff, null, 2)
-    )
+    console.log('on subscription 2', value, checksum, diff)
   })
 
   await wait(500)
