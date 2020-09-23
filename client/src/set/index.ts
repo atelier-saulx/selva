@@ -13,7 +13,7 @@ export async function _set(
   db?: string
 ): Promise<string> {
   return await client.redis.evalsha(
-    { name: db || 'default' },
+    { name: db || 'default', type: 'origin' },
     `${SCRIPT}:modify`,
     0,
     `${client.loglevel}:${client.uuid}`,
