@@ -39,7 +39,7 @@ const getServer = (
         if (selectionOptions && selectionOptions.subscription) {
           let isCanceled = false
           const timer = setTimeout(() => {
-            console.log('Timeout getting from subs registry')
+            // console.log('Timeout getting from subs registry')
             isCanceled = true
             delete getSubInprogress[selectionOptions.subscription]
             getServer(selvaClient, cb, selector)
