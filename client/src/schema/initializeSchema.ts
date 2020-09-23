@@ -7,13 +7,9 @@ const initlializeSchema = async (client: SelvaClient, opts: any) => {
     await client.getSchema(dbName)
   }
 
-  // if (!client.schemaObservables[dbName]) {
-  //   client.schemaObservables[dbName] = client.subscribeSchema(dbName)
-  //   client.schemaObservables[dbName].subscribe((v: any) => {
-  //     // console.log('Update schema subscription --->', dbName, v)
-  //     client.schemas[dbName] = v
-  //   })
-  // }
+  if (!client.schemaObservables[dbName]) {
+    client.subscribeSchema(dbName)
+  }
 }
 
 export default initlializeSchema

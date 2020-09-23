@@ -56,7 +56,8 @@ export class SelvaClient extends EventEmitter {
   public observables: Map<string, Observable>
 
   // add these on the registry scince that is the thing that gets reused
-  // public schemaObservables: Record<string, Observable<Schema>> = {}
+  public schemaObservables: Map<string, Observable> = new Map()
+
   public schemas: Record<string, Schema> = {}
 
   public server: ServerDescriptor
@@ -115,8 +116,6 @@ export class SelvaClient extends EventEmitter {
     this.selvaId = ++clientId + ''
     this.redis = new Redis(this)
     connectRegistry(this, opts)
-
-
   }
 
   connect(opts: ConnectOptions) {
@@ -186,7 +185,26 @@ export class SelvaClient extends EventEmitter {
   // }
 
 
-  observe(props: ObservableOptions | GetOptions): Observable {
+  public subscribeSchema (name: string = 'default'): Observable {
+    const props: ObservableOptions = {
+      type: 'schema',
+      db: name
+    }
+
+    if (!this.schemaObservables.get(name)) {
+      const obs = createObservable(props, this)
+      this.schemaObservables.set(name, obs)
+      obs.subscribe(d => {
+        // console.log('incoming schema', d)
+        this.schemas[name] = d
+      })
+      return obs
+    } else {
+      return this.schemaObservables.get(name)
+    }
+  }
+
+  public observe(props: ObservableOptions | GetOptions): Observable {
     if (props.type === 'get' || props.type === 'schema') {
       return createObservable(<ObservableOptions>props, this)
     } else {
@@ -197,12 +215,12 @@ export class SelvaClient extends EventEmitter {
     }
   }
 
-  async conformToSchema(props: SetOptions, dbName: string = 'default') {
+  public async conformToSchema(props: SetOptions, dbName: string = 'default') {
     await this.initializeSchema({ $db: dbName })
     return conformToSchema(this, props, dbName)
   }
 
-  getServer(opts: ServerSelector, selectOptions?: ServerSelectOptions): Promise<ServerDescriptor> {
+  public getServer(opts: ServerSelector, selectOptions?: ServerSelectOptions): Promise<ServerDescriptor> {
     return new Promise(r => {
       getServer(this, r, opts, selectOptions)
     })
@@ -214,7 +232,7 @@ export class SelvaClient extends EventEmitter {
 }
 
 export function connect(
-  opts: ConnectOptions
+  opts: ConnectOptions, specialOpts?: object
 ): SelvaClient {
   const client = new SelvaClient(opts)
   return client

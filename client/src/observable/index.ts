@@ -67,12 +67,10 @@ export class Observable {
       } else {
         this.maxMemory = options.maxMemory
       }
-
+      this.options = options
       this.getOptions = options.options
     } else {
       this.options = options
-
-      console.log('different type of observable', options)
     }
   }
 
@@ -302,7 +300,7 @@ export class Observable {
           id: this.selvaId,
           args: [CACHE, channel, channel + '_version'],
           resolve: ([data, version]) => {
-            version = Number(version)
+            version = this.options.type === 'schema' ? version : Number(version)
             if (data) {
               const obj = JSON.parse(data)
               // obj.version = version
@@ -383,7 +381,9 @@ export class Observable {
     connection.attachClient(this)
     connection.command({
       command: 'hsetnx',
-      args: [SUBSCRIPTIONS, channel, JSON.stringify(getOptions)],
+      args: getOptions
+        ? [SUBSCRIPTIONS, channel, JSON.stringify(getOptions)]
+        : [SUBSCRIPTIONS, channel, '{}'],
       id
     })
     connection.command({
@@ -419,7 +419,7 @@ export class Observable {
       } else if (channel === incomingChannel) {
         // msg is checksum
         // will also add diff maybe? or store the last diff?
-        console.log('Incoming msg for observable', msg)
+        // console.log('Incoming msg for observable', msg)
         const versions = JSON.parse(msg)
         if (versions && versions[0] === this.version) {
           console.log('subs manager send current version...', this.uuid)
@@ -446,6 +446,10 @@ export class Observable {
         )
       )
       return
+    }
+
+    if (this.options.type === 'schema') {
+      this.selvaClient.schemaObservables.delete(this.options.db)
     }
 
     this.isDestroyed = true

@@ -422,6 +422,8 @@ test.only('diff observables', async t => {
     flurp: [1, 3, 2, 4]
   })
 
+  client.subscribeSchema()
+
   await wait(2500)
 
   await client.destroy()

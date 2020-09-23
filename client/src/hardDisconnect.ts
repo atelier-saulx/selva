@@ -16,7 +16,7 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
         newConnection.applyConnectionState(state)
 
         // emit reconnect
-        selvaClient.emit('reconnect')
+        selvaClient.emit('reconnect', newConnection.serverDescriptor)
 
         if (serverDescriptor.type === 'registry') {
           selvaClient.registryConnection = newConnection

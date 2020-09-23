@@ -31,6 +31,9 @@ const sendUpdate = async (
     const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
     const schemaResp = await client.getSchema(dbName)
     const version = schemaResp.schema.sha
+
+    console.log('ok got it', dbName)
+
     const value = JSON.stringify({ type: 'update', payload: schemaResp.schema })
     await redis.hmset(
       selector,
@@ -40,7 +43,7 @@ const sendUpdate = async (
       channel + '_version',
       version
     )
-    await redis.publish(selector, channel, version)
+    await redis.publish(selector, channel, JSON.stringify([version]))
     subscription.beingProcessed = false
     return
   }

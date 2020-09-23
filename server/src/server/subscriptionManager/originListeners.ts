@@ -23,6 +23,7 @@ const addOriginListeners = async (
     // this has to be refactored a lot
 
     const descriptor = await subsManager.client.getServer(selector)
+    let collect = 0
 
     const listener = (_pattern, channel, message) => {
       subsManager.incomingCount++
@@ -77,7 +78,6 @@ const addOriginListeners = async (
 
     const { client } = subsManager
     const redis = client.redis
-    let collect = 0
 
     // make this better
     // use this with the global connectorClients
