@@ -8,7 +8,7 @@ import { RedisClient } from 'redis'
 import { Callback } from '../redis/types'
 import { serverId, isEmptyObject } from '../util'
 import { Observable } from '../observable'
-import { CLIENTS, HEARTBEAT, STOP_HEARTBEAT } from '../constants'
+import { CLIENTS, HEARTBEAT, STOP_HEARTBEAT, LOG } from '../constants'
 
 const CLIENT_HEARTBEAT_TIMER = 1e3
 
@@ -64,6 +64,27 @@ class Connection {
   }
 
   public attachClient(client: SelvaClient | Observable) {
+    if (
+      client instanceof SelvaClient &&
+      client.loglevel &&
+      !this.clients.has(client)
+    ) {
+      // @ts-ignore
+      const log = `${LOG}:${client.uuid}`
+
+      this.subscribe(log, client.selvaId)
+      this.addRemoteListener(
+        'message',
+        (v, m) => {
+          if (v === log) {
+            const { msg } = JSON.parse(m)
+            console.info('LUA LOG:', msg)
+          }
+        },
+        client.selvaId
+      )
+    }
+
     this.clients.add(client)
   }
 

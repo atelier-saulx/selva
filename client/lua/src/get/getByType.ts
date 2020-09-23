@@ -293,6 +293,11 @@ const object = (
   mergeProps?: any
 ): boolean => {
   const keys = redis.hkeys(id)
+
+  table.sort(keys, (a, b) => a < b)
+
+  logger.info('hello', keys)
+
   let isComplete = true
   let noKeys = true
 

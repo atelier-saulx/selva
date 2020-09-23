@@ -1,6 +1,6 @@
 import { Connection, connections } from '.'
 import { RedisClient } from 'redis'
-import { SERVER_HEARTBEAT } from '../constants'
+import { SERVER_HEARTBEAT, LOG } from '../constants'
 import './redisClientExtensions'
 import chalk from 'chalk'
 import { SelvaClient } from '..'
@@ -105,6 +105,7 @@ const startClient = (
       connection.hardDisconnect()
     }
   })
+
   client.setMaxListeners(1e4)
   return client
 }

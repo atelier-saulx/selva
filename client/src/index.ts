@@ -83,8 +83,6 @@ export class SelvaClient extends EventEmitter {
 
   public registryConnection?: Connection
 
-  public logFn: LogFn
-
   public loglevel: string
   public isDestroyed: boolean
 
@@ -124,7 +122,8 @@ export class SelvaClient extends EventEmitter {
     // diffrent name
   }
 
-  logLevel() {
+  logLevel(loglevel: string) {
+    this.loglevel = loglevel
     // for logs its connection uuid + client id
     // can enable / disable logleves
   }
@@ -232,9 +231,12 @@ export class SelvaClient extends EventEmitter {
 }
 
 export function connect(
-  opts: ConnectOptions, specialOpts?: object
+  opts: ConnectOptions, specialOpts?: { loglevel?: string }
 ): SelvaClient {
   const client = new SelvaClient(opts)
+  if (specialOpts && specialOpts.loglevel) {
+    client.logLevel(specialOpts.loglevel)
+  }
   return client
 }
 
