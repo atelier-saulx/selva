@@ -46,7 +46,7 @@ test.after(async t => {
 })
 
 test.serial('get - correct order', async t => {
-  const client = connect({ port })
+  const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'flA',

@@ -1,6 +1,6 @@
 import { constants } from '@saulx/selva'
 import { addSubscriptionToTree, removeSubscriptionFromTree } from '../../tree'
-import { hash } from '../../util'
+import { hashObjectIgnoreKeyOrder, hash } from '@saulx/utils'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
 import diff from '@saulx/selva-diff'
@@ -64,10 +64,14 @@ const sendUpdate = async (
   delete payload.$meta
 
   // make this without payload
+  // const newVersion = typeof payload === 'object' ?
+
+  // TODO: lua is unstable with object tmp fix
+  const newVersion = hashObjectIgnoreKeyOrder(payload)
+
   const resultStr = JSON.stringify({ type: 'update', payload })
   const currentVersion = subscription.version
   // can get the value from the client cache later
-  const newVersion = hash(resultStr)
 
   const treeVersion = subscription.treeVersion
   const q = []
