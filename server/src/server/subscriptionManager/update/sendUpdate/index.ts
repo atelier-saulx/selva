@@ -15,8 +15,6 @@ const sendUpdate = async (
   const { client, selector } = subscriptionManager
   const redis = client.redis
 
-  console.log('SEND UPDATE')
-
   if (subscriptionManager.subscriptions[channel] !== subscription) {
     return
   }
@@ -150,7 +148,7 @@ const sendUpdate = async (
   await redis.publish(
     selector,
     channel,
-    JSON.stringify([newVersion, currentVersion])
+    JSON.stringify(currentVersion ? [newVersion, currentVersion] : [newVersion])
   )
 
   clearTimeout(time)
