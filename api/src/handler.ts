@@ -239,7 +239,7 @@ export default function(
           .then(result => {
             let needsChanges = true
             try {
-              const r = noHasGuard(body, result)
+              const r = !result.id ? false : noHasGuard(body, result)
               needsChanges = !r
             } catch (_e) {}
 
