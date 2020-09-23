@@ -4,6 +4,7 @@ import { connect } from '@saulx/selva'
 import { start } from '@saulx/selva-server'
 import getPort from 'get-port'
 import { start as apiStart } from '../src/index'
+import { constructGuard, noHasGuard } from '../src/handler'
 import fetch from 'node-fetch'
 
 let srv
@@ -120,7 +121,18 @@ test.before(async t => {
         fields: {
           title: { type: 'text' },
           value: { type: 'number' },
-          description: { type: 'text' }
+          description: { type: 'text' },
+          booly: { type: 'boolean' },
+          recordy: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                a: { type: 'string' },
+                b: { type: 'string' }
+              }
+            }
+          }
         }
       },
       yesno: {
@@ -434,6 +446,232 @@ test.serial('test funky passing funky middleware', async t => {
   )
 
   t.is(res.headers.get('x-my-special-header'), 'flurpy')
+
+  cleanup()
+})
+
+test.serial('test Guardy Guard', async t => {
+  const simple = {
+    $alias: 'hello',
+    myString: 'hmmhmm'
+  }
+
+  t.deepEqual(constructGuard(simple), {
+    $alias: 'hello',
+    id: true,
+    myString: true
+  })
+  t.deepEqual(true, noHasGuard(simple, { id: 'maYes', myString: 'hmmhmm' }))
+  t.deepEqual(false, noHasGuard(simple, { id: 'maYes', myString: 'mmyes' }))
+
+  const settingAliases = {
+    $alias: 'hello',
+    myString: 'hmmhmm',
+    aliases: ['a', 'b', 'abba']
+  }
+
+  t.deepEqual(constructGuard(settingAliases), {
+    $alias: 'hello',
+    id: true,
+    myString: true,
+    aliases: true
+  })
+  t.deepEqual(
+    true,
+    noHasGuard(settingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b', 'abba']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasGuard(settingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasGuard(settingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'abba']
+    })
+  )
+
+  const valueAliases = {
+    $alias: 'hello',
+    myString: 'hmmhmm',
+    aliases: { $value: ['a', 'b', 'abba'] }
+  }
+
+  t.deepEqual(constructGuard(valueAliases), {
+    $alias: 'hello',
+    id: true,
+    myString: true,
+    aliases: true
+  })
+  t.deepEqual(
+    true,
+    noHasGuard(valueAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b', 'abba']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasGuard(valueAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasGuard(valueAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'abba']
+    })
+  )
+
+  const addingAliases = {
+    $alias: 'hello',
+    myString: 'hmmhmm',
+    aliases: { $add: ['a', 'b'] }
+  }
+
+  t.deepEqual(constructGuard(addingAliases), {
+    $alias: 'hello',
+    id: true,
+    myString: true,
+    aliases: true
+  })
+  t.deepEqual(
+    true,
+    noHasGuard(addingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['a', 'b', 'abba']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasGuard(addingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['abba', 'b']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasGuard(addingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['b', 'abba']
+    })
+  )
+
+  const removingAliases = {
+    $alias: 'hello',
+    myString: 'hmmhmm',
+    aliases: { $delete: ['a', 'b'] }
+  }
+
+  t.deepEqual(constructGuard(removingAliases), {
+    $alias: 'hello',
+    id: true,
+    myString: true,
+    aliases: true
+  })
+  t.deepEqual(
+    true,
+    noHasGuard(removingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['abba']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasGuard(removingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['abba', 'b']
+    })
+  )
+  t.deepEqual(
+    false,
+    noHasGuard(removingAliases, {
+      id: 'maYes',
+      myString: 'hmmhmm',
+      aliases: ['b', 'abba']
+    })
+  )
+})
+
+test.serial('things', async t => {
+  const srvPort = await getPort()
+  const cleanup = apiStart({ port }, [], srvPort)
+
+  await fetch(`http://localhost:${srvPort}/set`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1',
+      booly: false,
+      recordy: {
+        recordA: { a: 'abba' },
+        recordB: { b: 'baab' }
+      },
+      title: { en: 'yes en', de: 'ja de' },
+      value: 112
+    })
+  })
+
+  await fetch(`http://localhost:${srvPort}/set`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1',
+      $language: 'en',
+      title: 'yes en',
+      booly: false,
+      recordy: {
+        recordB: { b: 'baab' }
+      },
+      parents: {
+        $add: ['root']
+      },
+      value: 112
+    })
+  })
+
+  const res = await fetch(`http://localhost:${srvPort}/get`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      $id: 'maMatch1',
+      $language: 'en',
+      id: true,
+      title: true
+    })
+  })
+
+  const body = await res.json()
+  t.deepEqualIgnoreOrder(body, {
+    id: 'maMatch1',
+    title: 'yes en'
+  })
 
   cleanup()
 })

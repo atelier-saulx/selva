@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva-server",
-  "version": "1.12.1",
+  "version": "1.13.0",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -56,8 +56,8 @@
   },
   "dependencies": {
     "@saulx/utils": "^1.0.3",
-    "@saulx/selva": "1.12.1",
     "@saulx/selva-diff": "^1.0.2",
+    "@saulx/selva": "1.13.0",
     "aws-sdk": "^2.616.0",
     "before-exit": "^1.0.0",
     "chalk": "^4.0.0",
@@ -65,9 +65,9 @@
     "rimraf": "^3.0.2",
     "dropbox": "^4.0.30",
     "get-port": "^5.1.1",
-    "node-fetch": "^2.6.0",
     "os-utils": "^0.0.14",
     "mkdirp": "1.0.4",
+    "node-fetch": "^2.6.1",
     "pidusage": "^2.0.18",
     "redis": "^2.8.0"
   }
