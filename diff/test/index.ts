@@ -97,8 +97,6 @@ test('Array + nested object lots the same', async t => {
 
   const patch = diff(a, b)
 
-  //   console.dir(patch, { depth: 10 })
-
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 
   b.f.splice(8, 1, { gurky: true })
