@@ -84,6 +84,7 @@ test.serial('basic schema based subscriptions', async t => {
   sub.unsubscribe()
 
   await wait(500)
+
   t.is(o1counter, 3)
   const observable2 = client.subscribeSchema()
   var cnt = 0

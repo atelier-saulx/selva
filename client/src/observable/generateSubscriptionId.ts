@@ -8,7 +8,7 @@ const generateSubscriptionId = (opts: ObservableOptions) => {
     hash.update(JSON.stringify(opts.options))
     return hash.digest('hex')
   } else if (opts.type === 'schema') {
-    return SCHEMA_SUBSCRIPTION + '_' + opts.db
+    return SCHEMA_SUBSCRIPTION + ':' + opts.db
   }
 }
 
