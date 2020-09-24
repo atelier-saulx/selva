@@ -9,10 +9,14 @@
 #include "hierarchy.h"
 #include "modify.h"
 
-static size_t ref2rms(RedisModuleCtx *ctx, struct SelvaModify_OpSet * restrict setOpts, const char *s, RedisModuleString **out) {
-    unsigned long len = setOpts->is_reference ? strnlen(s, SELVA_NODE_ID_SIZE) : strlen(s);
-    *out = RedisModule_CreateString(ctx, s, len);
-    /* TODO Null check */
+static ssize_t ref2rms(RedisModuleCtx *ctx, struct SelvaModify_OpSet * restrict setOpts, const char *s, RedisModuleString **out) {
+    size_t len = setOpts->is_reference ? strnlen(s, SELVA_NODE_ID_SIZE) : strlen(s);
+    RedisModuleString *rms = RedisModule_CreateString(ctx, s, len);
+
+    if (!rms) {
+        return SELVA_ENOMEM;
+    }
+    *out = rms;
 
     return len;
 }
@@ -190,7 +194,11 @@ static int update_zset(
         char *ptr = setOpts->$value;
         for (size_t i = 0; i < setOpts->$value_len; ) {
             RedisModuleString *ref;
-            size_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
+            const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
+
+            if (part_len < 0) {
+                return REDISMODULE_ERR;
+            }
 
             if (alias_key) {
                 update_alias(ctx, alias_key, id, ref);
@@ -198,7 +206,7 @@ static int update_zset(
             RedisModule_ZsetAdd(set_key, 0, ref, NULL);
 
             // +1 to skip the nullbyte
-            const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : part_len + 1;
+            const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
             ptr += skip_off;
             i += skip_off;
         }
@@ -207,7 +215,11 @@ static int update_zset(
             char *ptr = setOpts->$add;
             for (size_t i = 0; i < setOpts->$add_len; ) {
                 RedisModuleString *ref;
-                size_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
+                const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
+
+                if (part_len < 0) {
+                    return REDISMODULE_ERR;
+                }
 
                 if (alias_key) {
                     update_alias(ctx, alias_key, id, ref);
@@ -215,7 +227,7 @@ static int update_zset(
                 RedisModule_ZsetAdd(set_key, 0, ref, NULL);
 
                 // +1 to skip the nullbyte
-                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : part_len + 1;
+                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
                 ptr += skip_off;
                 i += skip_off;
             }
@@ -225,12 +237,16 @@ static int update_zset(
             char *ptr = setOpts->$delete;
             for (size_t i = 0; i < setOpts->$delete_len; ) {
                 RedisModuleString *ref;
-                size_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
+                const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
+
+                if (part_len < 0) {
+                    return REDISMODULE_ERR;
+                }
 
                 RedisModule_ZsetRem(set_key, ref, NULL);
 
                 // +1 to skip the nullbyte
-                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : part_len + 1;
+                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
                 ptr += skip_off;
                 i += skip_off;
 
