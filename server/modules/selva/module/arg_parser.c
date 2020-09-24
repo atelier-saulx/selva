@@ -16,8 +16,7 @@ int SelvaArgParser_IntOpt(ssize_t *value, const char *name, RedisModuleString *t
 
     *value = strtoull(num_str, &end, 10);
     if (num_str == end) {
-        /* TODO Change this error code to generic */
-        return SELVA_MODIFY_HIERARCHY_EINVAL;
+        return SELVA_EINVAL;
     }
 
     return 0;
@@ -27,8 +26,7 @@ int SelvaArgParser_StrOpt(const char **value, const char *name, RedisModuleStrin
     TO_STR(arg_key, arg_val);
 
     if(strcmp(name, arg_key_str)) {
-        /* TODO Change this error code to generic */
-        return SELVA_MODIFY_HIERARCHY_EINVAL;
+        return SELVA_EINVAL;
     }
 
     *value = arg_val_str;
