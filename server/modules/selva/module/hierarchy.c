@@ -555,6 +555,10 @@ static inline void publishAncestorsUpdate(struct SelvaModify_Hierarchy *hierarch
     SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, node->id, &node->metadata, "ancestors");
 }
 
+static inline void publishDescendantsUpdate(struct SelvaModify_Hierarchy *hierarchy, const SelvaModify_HierarchyNode *node) {
+    SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, node->id, &node->metadata, "descendants");
+}
+
 static inline void publishChildrenUpdate(struct SelvaModify_Hierarchy *hierarchy, const SelvaModify_HierarchyNode *node) {
     SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, node->id, &node->metadata, "children");
 }
@@ -588,7 +592,7 @@ static int crossInsert(
             SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
 
             if (!adjacent) {
-                /* TODO no_root is not propagated */
+                /* RFE no_root is not propagated */
                 err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i],
                         1, ((Selva_NodeId []){ ROOT_NODE_ID }),
                         0, NULL);
@@ -613,11 +617,19 @@ static int crossInsert(
             /* Do inserts only if the relationship doesn't exist already */
             if (SVector_InsertFast(&node->parents, adjacent) == NULL) {
                 (void)SVector_InsertFast(&adjacent->children, node);
+
                 /*
                  * Publish that the children field was changed.
-                 * The actual event is only sent if there is a subscription marker set.
+                 * Actual events are only sent if there are subscription markers
+                 * set on this node.
                  */
                 publishChildrenUpdate(hierarchy, adjacent);
+                publishDescendantsUpdate(hierarchy, adjacent);
+                SelvaSubscriptions_InheritParent(
+                    hierarchy,
+                    node->id, &node->metadata,
+                    SVector_Size(&node->children),
+                    adjacent->id, &adjacent->metadata);
             }
         }
 
@@ -658,19 +670,30 @@ static int crossInsert(
 
             if (SVector_InsertFast(&node->children, adjacent) == NULL) {
                 (void)SVector_InsertFast(&adjacent->parents, node);
+
                 /*
                  * Publish that the parents field was changed.
+                 * Actual events are only sent if there are subscription markers
+                 * set on this node.
                  */
-                publishParentsUpdate(hierarchy, node);
+                publishParentsUpdate(hierarchy, adjacent);
+                publishAncestorsUpdate(hierarchy, adjacent);
+                SelvaSubscriptions_InheritChild(
+                    hierarchy,
+                    node->id, &node->metadata,
+                    SVector_Size(&node->parents),
+                    adjacent->id, &adjacent->metadata);
             }
 
-            publishAncestorsUpdate(hierarchy, adjacent);
+            publishChildrenUpdate(hierarchy, node);
+            publishDescendantsUpdate(hierarchy, node);
         }
 
         /*
          * Publish that the children field was changed.
          */
         publishChildrenUpdate(hierarchy, node);
+        publishDescendantsUpdate(hierarchy, node);
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }

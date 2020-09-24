@@ -32,7 +32,6 @@ struct FindCommand_Args {
     const char *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Result of the find. Only used if sorting is requested. */
 
-    int set_marker; /*!< Set if a marker should be set on nodes. */
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
 };
 
@@ -109,7 +108,13 @@ static int parse_algo(enum SelvaModify_Hierarchy_Algo *algo, RedisModuleString *
 static int parse_dir(enum SelvaModify_HierarchyTraversal *dir, enum SelvaModify_Hierarchy_Algo algo, RedisModuleString *arg) {
     TO_STR(arg);
 
-    if (!strcmp("ancestors", arg_str)) {
+    if (!strcmp("node", arg_str)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
+    } else if (!strcmp("children", arg_str)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_CHILDREN;
+    } else if (!strcmp("parents", arg_str)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_PARENTS;
+    } else if (!strcmp("ancestors", arg_str)) {
         *dir = algo == HIERARCHY_BFS
             ? SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS
             : SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS;
@@ -117,6 +122,8 @@ static int parse_dir(enum SelvaModify_HierarchyTraversal *dir, enum SelvaModify_
         *dir = algo == HIERARCHY_BFS
             ? SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS
             : SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS;
+    } else if (arg_len > 0) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_REF;
     } else {
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
@@ -250,9 +257,7 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
 
-    if (args->set_marker) {
-        Selva_Subscriptions_SetMarker(metadata, marker);
-    }
+    Selva_Subscriptions_SetMarker(nodeId, metadata, marker);
 
     if (take && rpn_ctx) {
         int err;
@@ -402,9 +407,14 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Get the direction parameter.
      */
     enum SelvaModify_HierarchyTraversal dir;
+    const char *ref_field = NULL;
     err = parse_dir(&dir, algo, argv[ARGV_DIRECTION]);
     if (err) {
         return replyWithSelvaError(ctx, err);
+    }
+    if (dir == SELVA_HIERARCHY_TRAVERSAL_REF) {
+        /* The arg is a field name. */
+        ref_field = RedisModule_StringPtrLen(argv[ARGV_DIRECTION], NULL);
     }
 
     /*
@@ -542,7 +552,11 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             break;
         }
 
-        err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
+        if (dir == SELVA_HIERARCHY_TRAVERSAL_REF && ref_field) {
+            err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field, &cb);
+        } else {
+            err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
+        }
         if (err != 0) {
             /* FIXME This will make redis crash */
 #if 0
@@ -875,7 +889,6 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
         .filter = marker->filter_expression,
         .order_field = order_by_field,
         .order_result = &order_result,
-        .set_marker = marker->dir != SELVA_HIERARCHY_TRAVERSAL_NONE && !(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_DETACH),
         .marker = marker,
     };
     const struct SelvaModify_HierarchyCallback cb = {
