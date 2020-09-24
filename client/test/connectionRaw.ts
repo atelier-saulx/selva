@@ -140,6 +140,19 @@ test.serial('connection / server orchestration', async t => {
     { strict: true }
   )
 
+  await client.updateSchema({
+    rootType: {
+      fields: {
+        flap: { type: 'string' }
+      }
+    }
+  })
+
+  await client.set({
+    $id: 'root',
+    flap: 'flurpypants'
+  })
+
   const putUnderLoad = async r => {
     worker(
       async ({ connect }, { r, port }) => {
