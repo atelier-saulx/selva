@@ -157,7 +157,7 @@ test.serial('get - correct order', async t => {
 
   await wait(1e3)
 
-  t.deepEqual(results, [
+  t.deepEqualIgnoreOrder(results, [
     {
       children: [
         { title: { en: 'match 2' }, published: true },
