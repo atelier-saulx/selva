@@ -28,6 +28,9 @@ const addOriginListeners = async (
     const listener = (_pattern, channel, message) => {
       subsManager.incomingCount++
       collect++
+
+      console.log('MSG', message)
+
       if (message === 'schema_update') {
         const subscription =
           subsManager.subscriptions[`${constants.SCHEMA_SUBSCRIPTION}:${name}`]

@@ -250,7 +250,7 @@ export class Observable {
           } else {
             // maybe not send this
             // console.log('no datax...')
-            onNext(data)
+            // onNext(data)
           }
         },
         reject: onError
