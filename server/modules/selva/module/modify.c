@@ -100,7 +100,8 @@ static int update_hierarchy(
     RedisModuleString *key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
     hierarchy = SelvaModify_OpenHierarchy(ctx, key_name, REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        fprintf(stderr, "%s: Failed to open hierarchy\n", __FILE__);
+        return 0; /* RFE Not sure if it's ok to return 0 here */
     }
 
     /*
@@ -149,12 +150,7 @@ static int update_hierarchy(
         }
     }
 
-    if (err) {
-        replyWithSelvaError(ctx, err);
-        return REDISMODULE_ERR;
-    }
-
-    return REDISMODULE_OK;
+    return err;
 }
 
 static int update_zset(
@@ -173,15 +169,15 @@ static int update_zset(
 
     RedisModuleKey *set_key = SelvaModify_OpenSet(ctx, id_str, id_len, field_str);
     if (!set_key) {
-        RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
-        return REDISMODULE_ERR;
+        fprintf(stderr, "%s: Unable to open a set key", __FILE__);
+        return SELVA_ENOENT;
     }
 
     if (!strcmp(field_str, "aliases")) {
         alias_key = open_aliases_key(ctx);
         if (!alias_key) {
             fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
-            return REDISMODULE_ERR;
+            return SELVA_ENOENT;
         }
     }
 
@@ -189,7 +185,7 @@ static int update_zset(
         int err = removeSet(set_key, alias_key);
         if (err) {
             fprintf(stderr, "%s: Unable to remove a set owned by %s\n", __FILE__, id_str);
-            return REDISMODULE_ERR;
+            return SELVA_ENOENT;
         }
 
         /*
@@ -201,7 +197,7 @@ static int update_zset(
             const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
 
             if (part_len < 0) {
-                return REDISMODULE_ERR;
+                return SELVA_EINVAL;
             }
 
             if (alias_key) {
@@ -222,7 +218,7 @@ static int update_zset(
                 const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
 
                 if (part_len < 0) {
-                    return REDISMODULE_ERR;
+                    return SELVA_EINVAL;
                 }
 
                 if (alias_key) {
@@ -244,7 +240,7 @@ static int update_zset(
                 const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
 
                 if (part_len < 0) {
-                    return REDISMODULE_ERR;
+                    return SELVA_EINVAL;
                 }
 
                 RedisModule_ZsetRem(set_key, ref, NULL);
@@ -262,7 +258,7 @@ static int update_zset(
     }
 
     RedisModule_CloseKey(set_key);
-    return REDISMODULE_OK;
+    return 0;
 }
 
 int SelvaModify_ModifySet(
@@ -292,8 +288,8 @@ int SelvaModify_ModifySet(
             RedisModuleKey *set_key = SelvaModify_OpenSet(ctx, id_str, id_len, field_str);
             err = removeSet(set_key, NULL);
             if (err) {
-                RedisModule_ReplyWithError(ctx, "ERR Unable to open a set key");
-                return REDISMODULE_ERR;
+                fprintf(stderr, "%s: ERR Unable to open a set key\n", __FILE__);
+                return SELVA_EGENERAL;
             }
         }
 
@@ -301,7 +297,7 @@ int SelvaModify_ModifySet(
             char err_msg[80];
 
             snprintf(err_msg, sizeof(err_msg), "ERR Failed to delete the set: \"%s\"", field_str);
-            return REDISMODULE_ERR;
+            return SELVA_EGENERAL;
         }
     }
 
@@ -353,8 +349,9 @@ int SelvaModify_ModifyDel(
         memset(node_id, '\0', SELVA_NODE_ID_SIZE);
         memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
 
-        if (!SelvaModify_DelHierarchyChildren(hierarchy, node_id)) {
-            err = REDISMODULE_ERR;
+        err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
+        if (err) {
+            return err;
         }
     } else if (!strcmp(field_str, "parents")) {
         Selva_NodeId node_id;
@@ -376,7 +373,7 @@ int SelvaModify_ModifyDel(
                 case EINVAL:
                 case EPERM:
                 default:
-                    err = REDISMODULE_ERR;
+                    err = SELVA_EGENERAL;
                 }
                 goto hkeys_err;
             }

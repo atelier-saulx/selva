@@ -24,10 +24,14 @@ const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
     [-SELVA_INVALID_ERROR]              = (const char *)"ERR_SELVA Invalid error code"
 };
 
-int replyWithSelvaError(RedisModuleCtx *ctx, int err) {
+const char *getSelvaErrorStr(int err) {
     if (err >= 0 || -err >= (int)num_elem(selvaStrError)) {
-        return RedisModule_ReplyWithError(ctx, selvaStrError[-SELVA_EGENERAL]);
+        return selvaStrError[-SELVA_EGENERAL];
     }
-    return RedisModule_ReplyWithError(ctx, selvaStrError[-err]);
+    return selvaStrError[-err];
+}
+
+int replyWithSelvaError(RedisModuleCtx *ctx, int err) {
+    return RedisModule_ReplyWithError(ctx, getSelvaErrorStr(err));
 }
 

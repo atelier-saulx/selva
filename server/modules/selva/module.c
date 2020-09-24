@@ -294,9 +294,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             err = SelvaModify_ModifyDel(ctx, hierarchy, id_key, id, field, value_str);
             if (err) {
                 TO_STR(field);
-                char err_msg[80];
+                char err_msg[120];
 
-                snprintf(err_msg, sizeof(err_msg), "ERR Failed to delete the field: \"%s\"", field_str);
+                snprintf(err_msg, sizeof(err_msg), "%s; Failed to delete the field: \"%s\"", getSelvaErrorStr(err), field_str);
                 RedisModule_ReplyWithError(ctx, err_msg);
                 goto out;
             }
@@ -347,7 +347,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     RedisModule_ReplyWithString(ctx, id);
     RedisModule_ReplicateVerbatim(ctx);
+    err = 0;
 out:
+    if (err) {
+        replyWithSelvaError(ctx, err);
+    }
+
     /* Maybe something was changed even if the command failed. */
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 
