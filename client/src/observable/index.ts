@@ -55,6 +55,7 @@ export class Observable {
 
     this.selvaId = String('o' + ++observableIds)
 
+    // maybe this can be configured from the subs manager?
     if (options.type === 'get') {
       if (options.cache === undefined) {
         this.useCache = false // true
