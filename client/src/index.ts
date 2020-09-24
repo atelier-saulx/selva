@@ -166,7 +166,7 @@ export class SelvaClient extends EventEmitter {
     name: string = 'default'
   ): Promise<void> {
     await this.initializeSchema({ $db: name })
-    return updateSchema(this, opts, { name })
+    return updateSchema(this, opts, { name, type: 'origin' })
   }
 
   async waitUntilEvent(event: string): Promise<void> {
