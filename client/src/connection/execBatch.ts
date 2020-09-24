@@ -46,50 +46,53 @@ export default function execBatch(
         } else {
           let hasBusy = false
           let busySlice = []
-          reply.forEach((v: any, i: number) => {
-            if (v instanceof Error) {
-              if (v.message.indexOf('BUSY') !== -1) {
-                hasBusy = true
-                busySlice.push(queue[i])
-              } else if (queue[i].reject) {
-                if (v.message.includes('READONLY')) {
-                  console.log(
-                    'OK HERE SOMETHING WRONG',
-                    queue[i],
-                    connection.serverDescriptor
-                  )
-                }
 
-                // @ts-ignore
-                if (v.code === 'UNCERTAIN_STATE') {
-                  // if publish ignore
-                  // console.log(connection.queue, connection.queueBeingDrained, connection.queueInProgress)
-                  if (showUncertainState) {
-                    showUncertainState = false
-                    uncertainStateCnt++
-                    setTimeout(() => {
-                      showUncertainState = true
-                      console.warn(
-                        chalk.yellow(
-                          `Uncertain state errors (connection lost) fired ${uncertainStateCnt}x in the last second`
-                        )
-                      )
-                      uncertainStateCnt = 0
-                    }, 1e3)
+          if (reply) {
+            reply.forEach((v: any, i: number) => {
+              if (v instanceof Error) {
+                if (v.message.indexOf('BUSY') !== -1) {
+                  hasBusy = true
+                  busySlice.push(queue[i])
+                } else if (queue[i].reject) {
+                  if (v.message.includes('READONLY')) {
+                    console.log(
+                      'OK HERE SOMETHING WRONG',
+                      queue[i],
+                      connection.serverDescriptor
+                    )
                   }
-                  // publish will be lost
-                  connection.queue.push(queue[i])
+
+                  // @ts-ignore
+                  if (v.code === 'UNCERTAIN_STATE') {
+                    // if publish ignore
+                    // console.log(connection.queue, connection.queueBeingDrained, connection.queueInProgress)
+                    if (showUncertainState) {
+                      showUncertainState = false
+                      uncertainStateCnt++
+                      setTimeout(() => {
+                        showUncertainState = true
+                        console.warn(
+                          chalk.yellow(
+                            `Uncertain state errors (connection lost) fired ${uncertainStateCnt}x in the last second`
+                          )
+                        )
+                        uncertainStateCnt = 0
+                      }, 1e3)
+                    }
+                    // publish will be lost
+                    connection.queue.push(queue[i])
+                  } else {
+                    // most cases here we want to treat it as a busy error
+                    queue[i].reject(v)
+                  }
                 } else {
-                  // most cases here we want to treat it as a busy error
-                  queue[i].reject(v)
+                  console.error('Error executing command', queue[i], v)
                 }
-              } else {
-                console.error('Error executing command', queue[i], v)
+              } else if (queue[i].resolve) {
+                queue[i].resolve(v)
               }
-            } else if (queue[i].resolve) {
-              queue[i].resolve(v)
-            }
-          })
+            })
+          }
           if (hasBusy) {
             connection.serverIsBusy = true
             console.log('exec it again from busy')

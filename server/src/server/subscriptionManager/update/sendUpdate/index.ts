@@ -69,20 +69,12 @@ const sendUpdate = async (
   // TODO: lua is unstable with object tmp fix
   const newVersion = hashObjectIgnoreKeyOrder(payload)
 
-  if (
-    subscription.channel ===
-    '1d916a69704f2c08841a1630a0166ec4eb75decad388f2f4f706f45dc514b4bc'
-  ) {
-    console.log('GOT UPDATE', subscription.channel, newVersion)
-  }
-
   const resultStr = JSON.stringify({ type: 'update', payload })
 
-  if (
-    subscription.channel ===
-    '1d916a69704f2c08841a1630a0166ec4eb75decad388f2f4f706f45dc514b4bc'
-  ) {
-    console.log('GOT UPDATE --?', newVersion, hash(resultStr))
+  // const newVersionX = hash(resultStr)
+
+  if (subscription.get.components) {
+    console.log('UPDATE ON PAGE', newVersion)
   }
 
   const currentVersion = subscription.version
@@ -118,6 +110,7 @@ const sendUpdate = async (
   }
 
   if (currentVersion === newVersion) {
+    console.log('SAME NO UPDATE')
     clearTimeout(time)
     subscriptionManager.inProgressCount--
     if (subscription.processNext) {

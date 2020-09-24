@@ -162,13 +162,13 @@ const compareNode = (a, b, result, key: string) => {
       let r
       if (b.constructor === Array) {
         if (b.length === 0) {
-          if (a.constructor === Array && a.length === 0) {
+          if (a && a.constructor === Array && a.length === 0) {
             // is allready etmpyy
           } else {
             r = [0, []]
             result[key] = r
           }
-        } else if (a.constructor === Array) {
+        } else if (a && a.constructor === Array) {
           const isDiff = arrayDiff(a, b)
           if (isDiff && isDiff.length > 1) {
             r = [2, isDiff]

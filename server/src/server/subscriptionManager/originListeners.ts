@@ -18,18 +18,13 @@ const addOriginListeners = async (
   // we need to use name and unsubscribe as well
 
   if (!subsManager.originListeners[name]) {
-    const selector: ServerSelector = { name, type: 'replica' }
+    const selector: ServerSelector = { name }
 
-    // this has to be refactored a lot
-
-    const descriptor = await subsManager.client.getServer(selector)
     let collect = 0
 
     const listener = (_pattern, channel, message) => {
       subsManager.incomingCount++
       collect++
-
-      console.log('MSG', message)
 
       if (message === 'schema_update') {
         const subscription =
@@ -39,6 +34,9 @@ const addOriginListeners = async (
         }
       } else {
         const eventName = channel.slice(prefixLength)
+
+        console.log('INCOMING EVENT', eventName, name)
+
         // make this batch as well (the check)
         if (message === 'update') {
           traverseTree(subsManager, eventName, name)
@@ -86,8 +84,9 @@ const addOriginListeners = async (
     // use this with the global connectorClients
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
-    redis.on(descriptor, 'pmessage', listener)
-    redis.psubscribe(descriptor, EVENTS + '*')
+    console.log('ADD LISTENER', selector)
+    redis.on(selector, 'pmessage', listener)
+    redis.psubscribe(selector, EVENTS + '*')
   }
 
   subsManager.originListeners[name].subscriptions.add(subscription)
@@ -100,7 +99,7 @@ const removeOriginListeners = (
 ) => {
   const origin = subsManager.originListeners[name]
 
-  // console.log('remove origin', name)
+  console.log('remove origin', name, !!origin)
 
   if (origin) {
     const { client } = subsManager

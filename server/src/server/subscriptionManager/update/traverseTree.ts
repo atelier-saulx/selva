@@ -32,9 +32,25 @@ const traverse = (
     if (segment) {
       if (segment.___ids) {
         const subs = segment.___ids[id]
+
         if (subs) {
+          // @ts-ignore
+          if (global.log) {
+            console.log('got subs', id)
+          }
           subs.forEach(subscription => {
             if (!subscription.inProgress) {
+              // @ts-ignore
+              if (global.log) {
+                if (
+                  subscription.channel ===
+                  '1d916a69704f2c08841a1630a0166ec4eb75decad388f2f4f706f45dc514b4bc'
+                ) {
+                  // this id has to be in meta
+                  console.log('GO UPDATE FOUND CORRECT', id)
+                }
+              }
+
               addUpdate(subscriptionManager, subscription)
             }
           })
@@ -46,6 +62,7 @@ const traverse = (
           prefix = id.slice(0, 2)
         }
         const match = segment.___types[prefix]
+
         if (match) {
           for (let containsId in match) {
             contains(
@@ -59,6 +76,16 @@ const traverse = (
       }
 
       if (segment.__any) {
+        // @ts-ignore
+        if (global.log) {
+          // if (
+          //   subscription.channel ===
+          //   '1d916a69704f2c08841a1630a0166ec4eb75decad388f2f4f706f45dc514b4bc'
+          // ) {
+          console.log('GO UPDATE', id)
+          // }
+        }
+
         for (let containsId in segment.__any) {
           contains(
             subscriptionManager,
