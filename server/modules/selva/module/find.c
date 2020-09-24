@@ -343,6 +343,23 @@ static size_t FindCommand_PrintOrderedResult(RedisModuleCtx *ctx, ssize_t offset
     return len;
 }
 
+static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
+    switch (dir) {
+     /*
+      * Find needs to skip the head node of the traverse for some types as we
+      * are not interested in the node we already know.
+      */
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /**
  * Find node ancestors/descendants.
  * SELVA.HIERARCHY.find REDIS_KEY dfs|bfs descendants|ancestors [order field asc|desc] [offset 1234] [limit 1234] NODE_IDS [filter expression] [args...]
@@ -523,6 +540,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Run for each NODE_ID.
      */
     ssize_t nr_nodes = 0;
+    size_t skip = get_skip(dir); /* Skip n nodes from the results. */
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
         Selva_NodeId nodeId;
 
@@ -535,8 +553,7 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         struct FindCommand_Args args = {
             .ctx = ctx,
             .nr_nodes = &nr_nodes,
-            /* Find needs to always skip the head node of the traverse. */
-            .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + 1 : 1,
+            .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
@@ -879,11 +896,11 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
      * Run the traverse function.
      */
     ssize_t tmp_limit = -1;
+    size_t skip = get_skip(marker->dir); /* Skip n nodes from the results. */
     struct FindCommand_Args args = {
         .ctx = ctx,
         .nr_nodes = &array_len,
-        /* Find needs to always skip the head node of the traverse. */
-        .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + 1 : 1,
+        .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
         .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
         .rpn_ctx = marker->filter_ctx,
         .filter = marker->filter_expression,
