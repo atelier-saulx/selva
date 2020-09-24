@@ -157,6 +157,8 @@ test.serial('get - correct order', async t => {
 
   await wait(1e3)
 
+  console.dir(results, { depth: 10 })
+
   t.deepEqualIgnoreOrder(results, [
     {
       children: [
