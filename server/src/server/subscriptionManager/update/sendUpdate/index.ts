@@ -119,20 +119,20 @@ const sendUpdate = async (
 
   let patch
 
-  if (currentVersion) {
-    const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
-    // maybe gzip the patch (very efficient format for gzip)
-    const diffPatch = diff(prev.payload, payload)
+  // if (currentVersion) {
+  //   const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
+  //   // maybe gzip the patch (very efficient format for gzip)
+  //   const diffPatch = diff(prev.payload, payload)
 
-    // gzip only makes sense for a certain size of update
-    // patch = (
-    //   await (<Promise<Buffer>>gzip(JSON.stringify([diffPatch, currentVersion])))
-    // ).toString('base64')
+  //   // gzip only makes sense for a certain size of update
+  //   // patch = (
+  //   //   await (<Promise<Buffer>>gzip(JSON.stringify([diffPatch, currentVersion])))
+  //   // ).toString('base64')
 
-    // console.log('PATCH', patch)
+  //   // console.log('PATCH', patch)
 
-    patch = JSON.stringify([diffPatch, currentVersion])
-  }
+  //   patch = JSON.stringify([diffPatch, currentVersion])
+  // }
 
   if (patch) {
     q.push(
