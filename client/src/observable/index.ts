@@ -58,7 +58,8 @@ export class Observable {
     // maybe this can be configured from the subs manager?
     if (options.type === 'get') {
       if (options.cache === undefined) {
-        this.useCache = false // true
+        // fix max mem somehow - gzip can also be interesseting!
+        this.useCache = true // true
       } else {
         this.useCache = options.cache
       }
