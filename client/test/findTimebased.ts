@@ -4,7 +4,6 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
-import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
@@ -320,537 +319,544 @@ test.serial('subs layout', async t => {
 
   let result
   client
-    .observe({
-      past: {
-        id: true,
-        $list: {
-          $sort: {
-            $field: 'date',
-            $order: 'desc'
-          },
-          $limit: 10,
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $operator: '=',
-                $value: true,
-                $field: 'published'
-              },
-              {
-                $value: 'now',
-                $field: 'endTime',
-                $operator: '<'
-              }
-            ]
+    .observe(
+      {
+        past: {
+          id: true,
+          $list: {
+            $sort: {
+              $field: 'date',
+              $order: 'desc'
+            },
+            $limit: 10,
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $operator: '=',
+                  $value: 'match',
+                  $field: 'type'
+                },
+                {
+                  $operator: '=',
+                  $value: true,
+                  $field: 'published'
+                },
+                {
+                  $value: 'now',
+                  $field: 'endTime',
+                  $operator: '<'
+                }
+              ]
+            }
+          }
+        },
+        live: {
+          id: true,
+          $list: {
+            $sort: {
+              $field: 'date',
+              $order: 'asc'
+            },
+            $limit: 10,
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $operator: '=',
+                  $value: 'match',
+                  $field: 'type'
+                },
+                {
+                  $operator: '=',
+                  $value: true,
+                  $field: 'published'
+                },
+                {
+                  $value: 'now',
+                  $field: 'startTime',
+                  $operator: '<'
+                },
+                {
+                  $value: 'now',
+                  $field: 'endTime',
+                  $operator: '>'
+                }
+              ]
+            }
+          }
+        },
+        upcoming: {
+          id: true,
+          $list: {
+            $sort: {
+              $field: 'date',
+              $order: 'asc'
+            },
+            $limit: 10,
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $operator: '=',
+                  $value: true,
+                  $field: 'published'
+                },
+                {
+                  $operator: '=',
+                  $value: 'match',
+                  $field: 'type'
+                },
+                {
+                  $value: 'now',
+                  $field: 'startTime',
+                  $operator: '>'
+                }
+              ]
+            }
           }
         }
       },
-      live: {
-        id: true,
-        $list: {
-          $sort: {
-            $field: 'date',
-            $order: 'asc'
-          },
-          $limit: 10,
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $operator: '=',
-                $value: true,
-                $field: 'published'
-              },
-              {
-                $value: 'now',
-                $field: 'startTime',
-                $operator: '<'
-              },
-              {
-                $value: 'now',
-                $field: 'endTime',
-                $operator: '>'
-              }
-            ]
-          }
-        }
-      },
-      upcoming: {
-        id: true,
-        $list: {
-          $sort: {
-            $field: 'date',
-            $order: 'asc'
-          },
-          $limit: 10,
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: true,
-                $field: 'published'
-              },
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $value: 'now',
-                $field: 'startTime',
-                $operator: '>'
-              }
-            ]
-          }
-        }
-      }
-    })
-    .subscribe((r, v, d) => {
-      // console.log('INCOMING------------')
-      // console.dir(result, { depth: 10 })
-      // console.dir(r, { depth: 10 })
-      // console.dir(d, { depth: 10 })
-      // console.log('----------------------------')
-      result = deepCopy(r)
+      { immutable: true }
+    )
+    .subscribe(r => {
+      result = r
     })
 
   let otherResult1
   client
-    .observe({
-      $id: 'mau1',
-      $language: 'en',
-      components: [
-        {
-          component: {
-            $value: 'Table'
-          },
-          title: {
-            $value: 'Live'
-          },
-          children: {
-            teams: [
-              {
-                id: true,
-                $id: {
-                  $field: 'homeTeam'
-                },
-                title: true
-              },
-              {
-                id: true,
-                $id: {
-                  $field: 'awayTeam'
-                },
-                title: true
-              }
-            ],
-            type: true,
-            title: true,
-            id: true,
-            $list: {
-              $limit: 30,
-              $find: {
-                $filter: [
-                  {
-                    $field: 'type',
-                    $operator: '=',
-                    $value: 'sport'
+    .observe(
+      {
+        $id: 'mau1',
+        $language: 'en',
+        components: [
+          {
+            component: {
+              $value: 'Table'
+            },
+            title: {
+              $value: 'Live'
+            },
+            children: {
+              teams: [
+                {
+                  id: true,
+                  $id: {
+                    $field: 'homeTeam'
                   },
-                  {
-                    $field: 'published',
-                    $operator: '=',
-                    $value: true
-                  }
-                ],
+                  title: true
+                },
+                {
+                  id: true,
+                  $id: {
+                    $field: 'awayTeam'
+                  },
+                  title: true
+                }
+              ],
+              type: true,
+              title: true,
+              id: true,
+              $list: {
+                $limit: 30,
                 $find: {
-                  $traverse: 'descendants',
                   $filter: [
                     {
                       $field: 'type',
                       $operator: '=',
-                      $value: 'match'
+                      $value: 'sport'
                     },
                     {
                       $field: 'published',
                       $operator: '=',
                       $value: true
-                    },
-                    {
-                      $operator: '<',
-                      $value: 'now',
-                      $field: 'startTime'
-                    },
-                    {
-                      $operator: '>',
-                      $value: 'now',
-                      $field: 'endTime'
                     }
-                  ]
+                  ],
+                  $find: {
+                    $traverse: 'descendants',
+                    $filter: [
+                      {
+                        $field: 'type',
+                        $operator: '=',
+                        $value: 'match'
+                      },
+                      {
+                        $field: 'published',
+                        $operator: '=',
+                        $value: true
+                      },
+                      {
+                        $operator: '<',
+                        $value: 'now',
+                        $field: 'startTime'
+                      },
+                      {
+                        $operator: '>',
+                        $value: 'now',
+                        $field: 'endTime'
+                      }
+                    ]
+                  },
+                  $traverse: 'ancestors'
                 },
-                $traverse: 'ancestors'
-              },
-              $sort: {
-                $order: 'desc',
-                $field: 'date'
+                $sort: {
+                  $order: 'desc',
+                  $field: 'date'
+                }
               }
             }
-          }
-        },
-        {
-          component: {
-            $value: 'GridLarge'
           },
-          title: {
-            $value: 'Team Videos'
-          },
-          children: {
-            type: true,
-            title: true,
-            $list: {
-              $limit: 10,
-              $find: {
-                $filter: [
-                  {
-                    $field: 'type',
-                    $operator: '=',
-                    $value: 'team'
-                  },
-                  {
-                    $field: 'published',
-                    $operator: '=',
-                    $value: true
-                  }
-                ],
+          {
+            component: {
+              $value: 'GridLarge'
+            },
+            title: {
+              $value: 'Team Videos'
+            },
+            children: {
+              type: true,
+              title: true,
+              $list: {
+                $limit: 10,
                 $find: {
-                  $traverse: 'descendants',
                   $filter: [
                     {
                       $field: 'type',
                       $operator: '=',
-                      $value: 'video'
+                      $value: 'team'
                     },
                     {
                       $field: 'published',
                       $operator: '=',
                       $value: true
                     }
-                  ]
+                  ],
+                  $find: {
+                    $traverse: 'descendants',
+                    $filter: [
+                      {
+                        $field: 'type',
+                        $operator: '=',
+                        $value: 'video'
+                      },
+                      {
+                        $field: 'published',
+                        $operator: '=',
+                        $value: true
+                      }
+                    ]
+                  },
+                  $traverse: 'ancestors'
                 },
-                $traverse: 'ancestors'
+                $sort: {
+                  $order: 'desc',
+                  $field: 'date'
+                }
               },
-              $sort: {
-                $order: 'desc',
-                $field: 'date'
-              }
-            },
-            id: true
+              id: true
+            }
           }
-        }
-      ]
-    })
+        ]
+      },
+      { immutable: true }
+    )
     .subscribe(r => {
-      otherResult1 = deepCopy(r)
+      otherResult1 = r
     })
 
   let otherResult2
   client
-    .observe({
-      $id: 'mau2',
-      $language: 'en',
-      components: [
-        {
-          component: {
-            $value: 'Table'
-          },
-          title: {
-            $value: 'Live'
-          },
-          children: {
-            teams: [
-              {
-                id: true,
-                $id: {
-                  $field: 'homeTeam'
-                },
-                title: true
-              },
-              {
-                id: true,
-                $id: {
-                  $field: 'awayTeam'
-                },
-                title: true
-              }
-            ],
-            type: true,
-            title: true,
-            id: true,
-            $list: {
-              $limit: 30,
-              $find: {
-                $filter: [
-                  {
-                    $field: 'type',
-                    $operator: '=',
-                    $value: 'sport'
+    .observe(
+      {
+        $id: 'mau2',
+        $language: 'en',
+        components: [
+          {
+            component: {
+              $value: 'Table'
+            },
+            title: {
+              $value: 'Live'
+            },
+            children: {
+              teams: [
+                {
+                  id: true,
+                  $id: {
+                    $field: 'homeTeam'
                   },
-                  {
-                    $field: 'published',
-                    $operator: '=',
-                    $value: true
-                  }
-                ],
+                  title: true
+                },
+                {
+                  id: true,
+                  $id: {
+                    $field: 'awayTeam'
+                  },
+                  title: true
+                }
+              ],
+              type: true,
+              title: true,
+              id: true,
+              $list: {
+                $limit: 30,
                 $find: {
-                  $traverse: 'descendants',
                   $filter: [
                     {
                       $field: 'type',
                       $operator: '=',
-                      $value: 'match'
+                      $value: 'sport'
                     },
                     {
                       $field: 'published',
                       $operator: '=',
                       $value: true
-                    },
-                    {
-                      $operator: '<',
-                      $value: 'now',
-                      $field: 'startTime'
-                    },
-                    {
-                      $operator: '>',
-                      $value: 'now',
-                      $field: 'endTime'
                     }
-                  ]
+                  ],
+                  $find: {
+                    $traverse: 'descendants',
+                    $filter: [
+                      {
+                        $field: 'type',
+                        $operator: '=',
+                        $value: 'match'
+                      },
+                      {
+                        $field: 'published',
+                        $operator: '=',
+                        $value: true
+                      },
+                      {
+                        $operator: '<',
+                        $value: 'now',
+                        $field: 'startTime'
+                      },
+                      {
+                        $operator: '>',
+                        $value: 'now',
+                        $field: 'endTime'
+                      }
+                    ]
+                  },
+                  $traverse: 'ancestors'
                 },
-                $traverse: 'ancestors'
-              },
-              $sort: {
-                $order: 'desc',
-                $field: 'date'
+                $sort: {
+                  $order: 'desc',
+                  $field: 'date'
+                }
               }
             }
-          }
-        },
-        {
-          component: {
-            $value: 'GridLarge'
           },
-          title: {
-            $value: 'Team Videos'
-          },
-          children: {
-            type: true,
-            title: true,
-            $list: {
-              $limit: 10,
-              $find: {
-                $filter: [
-                  {
-                    $field: 'type',
-                    $operator: '=',
-                    $value: 'team'
-                  },
-                  {
-                    $field: 'published',
-                    $operator: '=',
-                    $value: true
-                  }
-                ],
+          {
+            component: {
+              $value: 'GridLarge'
+            },
+            title: {
+              $value: 'Team Videos'
+            },
+            children: {
+              type: true,
+              title: true,
+              $list: {
+                $limit: 10,
                 $find: {
-                  $traverse: 'descendants',
                   $filter: [
                     {
                       $field: 'type',
                       $operator: '=',
-                      $value: 'video'
+                      $value: 'team'
                     },
                     {
                       $field: 'published',
                       $operator: '=',
                       $value: true
                     }
-                  ]
+                  ],
+                  $find: {
+                    $traverse: 'descendants',
+                    $filter: [
+                      {
+                        $field: 'type',
+                        $operator: '=',
+                        $value: 'video'
+                      },
+                      {
+                        $field: 'published',
+                        $operator: '=',
+                        $value: true
+                      }
+                    ]
+                  },
+                  $traverse: 'ancestors'
                 },
-                $traverse: 'ancestors'
+                $sort: {
+                  $order: 'desc',
+                  $field: 'date'
+                }
               },
-              $sort: {
-                $order: 'desc',
-                $field: 'date'
-              }
-            },
-            id: true
+              id: true
+            }
           }
-        }
-      ]
-    })
+        ]
+      },
+      { immutable: true }
+    )
     .subscribe(r => {
-      otherResult2 = deepCopy(r)
+      otherResult2 = r
     })
 
   let otherResult3
   client
-    .observe({
-      $id: 'sp1',
-      id: true,
-      $language: 'nl',
-      type: true,
-      ancestors: true,
-      general: {
-        $id: 'root',
-        title: {
-          $field: 'title'
-        }
-      },
-      meta: {
-        title: {
-          $field: 'title'
-        }
-      },
-      components: [
-        {
-          component: {
-            $value: 'Highlights'
-          },
+    .observe(
+      {
+        $id: 'sp1',
+        id: true,
+        $language: 'nl',
+        type: true,
+        ancestors: true,
+        general: {
+          $id: 'root',
           title: {
-            $value: 'Highlights'
-          },
-          children: {
-            title: true,
-            $list: {
-              $limit: 100,
-              $find: {
-                $filter: [
-                  {
-                    $operator: '=',
-                    $value: 'folder',
-                    $field: 'type'
+            $field: 'title'
+          }
+        },
+        meta: {
+          title: {
+            $field: 'title'
+          }
+        },
+        components: [
+          {
+            component: {
+              $value: 'Highlights'
+            },
+            title: {
+              $value: 'Highlights'
+            },
+            children: {
+              title: true,
+              $list: {
+                $limit: 100,
+                $find: {
+                  $filter: [
+                    {
+                      $operator: '=',
+                      $value: 'folder',
+                      $field: 'type'
+                    },
+                    {
+                      $operator: '=',
+                      $value: 'Highlights',
+                      $field: 'title'
+                    }
+                  ],
+                  $find: {
+                    $traverse: 'descendants',
+                    $filter: [
+                      {
+                        $operator: '=',
+                        $value: true,
+                        $field: 'published'
+                      }
+                    ]
                   },
-                  {
-                    $operator: '=',
-                    $value: 'Highlights',
-                    $field: 'title'
-                  }
-                ],
+                  $traverse: 'descendants'
+                },
+                $sort: {
+                  $order: 'desc',
+                  $field: 'date'
+                }
+              },
+              teams: [
+                {
+                  id: true,
+                  $id: {
+                    $field: 'homeTeam'
+                  },
+                  title: true
+                },
+                {
+                  id: true,
+                  $id: {
+                    $field: 'awayTeam'
+                  },
+                  title: true
+                }
+              ],
+              date: true,
+              type: true,
+              id: true
+            }
+          },
+          {
+            component: {
+              $value: 'Table'
+            },
+            title: {
+              $value: 'Live Now'
+            },
+            children: {
+              teams: [
+                {
+                  id: true,
+                  $id: {
+                    $field: 'homeTeam'
+                  },
+                  title: true
+                },
+                {
+                  id: true,
+                  $id: {
+                    $field: 'awayTeam'
+                  },
+                  title: true
+                }
+              ],
+              type: true,
+              title: true,
+              date: true,
+              startTime: true,
+              id: true,
+              $list: {
+                $limit: 15,
                 $find: {
                   $traverse: 'descendants',
                   $filter: [
                     {
-                      $operator: '=',
+                      $value: 'match',
+                      $field: 'type',
+                      $operator: '='
+                    },
+                    {
                       $value: true,
-                      $field: 'published'
+                      $field: 'published',
+                      $operator: '='
+                    },
+                    {
+                      $field: 'startTime',
+                      $operator: '<',
+                      $value: 'now'
+                    },
+                    {
+                      $field: 'endTime',
+                      $operator: '>',
+                      $value: 'now'
                     }
                   ]
                 },
-                $traverse: 'descendants'
-              },
-              $sort: {
-                $order: 'desc',
-                $field: 'date'
-              }
-            },
-            teams: [
-              {
-                id: true,
-                $id: {
-                  $field: 'homeTeam'
-                },
-                title: true
-              },
-              {
-                id: true,
-                $id: {
-                  $field: 'awayTeam'
-                },
-                title: true
-              }
-            ],
-            date: true,
-            type: true,
-            id: true
-          }
-        },
-        {
-          component: {
-            $value: 'Table'
-          },
-          title: {
-            $value: 'Live Now'
-          },
-          children: {
-            teams: [
-              {
-                id: true,
-                $id: {
-                  $field: 'homeTeam'
-                },
-                title: true
-              },
-              {
-                id: true,
-                $id: {
-                  $field: 'awayTeam'
-                },
-                title: true
-              }
-            ],
-            type: true,
-            title: true,
-            date: true,
-            startTime: true,
-            id: true,
-            $list: {
-              $limit: 15,
-              $find: {
-                $traverse: 'descendants',
-                $filter: [
-                  {
-                    $value: 'match',
-                    $field: 'type',
-                    $operator: '='
-                  },
-                  {
-                    $value: true,
-                    $field: 'published',
-                    $operator: '='
-                  },
-                  {
-                    $field: 'startTime',
-                    $operator: '<',
-                    $value: 'now'
-                  },
-                  {
-                    $field: 'endTime',
-                    $operator: '>',
-                    $value: 'now'
-                  }
-                ]
-              },
-              $sort: {
-                $order: 'desc',
-                $field: 'date'
+                $sort: {
+                  $order: 'desc',
+                  $field: 'date'
+                }
               }
             }
           }
-        }
-      ]
-    })
+        ]
+      },
+      { immutable: true }
+    )
     .subscribe(r => {
-      otherResult3 = deepCopy(r)
+      otherResult3 = r
     })
 
   await wait(500)
@@ -954,11 +960,11 @@ test.serial('subs layout', async t => {
 
   t.deepEqualIgnoreOrder(
     result,
-    deepCopy({
+    {
       upcoming: upcomingPublishedIds.slice(0, 10),
       past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
       live: [{ id: 'mau2' }]
-    }),
+    },
     'upcoming 6'
   )
   t.deepEqualIgnoreOrder(
@@ -1069,78 +1075,81 @@ test.serial('subs upcoming, live and past', async t => {
   })
 
   client
-    .observe({
-      past: {
-        id: true,
-        $list: {
-          $limit: 10,
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $value: 'now',
-                $field: 'endTime',
-                $operator: '<'
-              }
-            ]
+    .observe(
+      {
+        past: {
+          id: true,
+          $list: {
+            $limit: 10,
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $operator: '=',
+                  $value: 'match',
+                  $field: 'type'
+                },
+                {
+                  $value: 'now',
+                  $field: 'endTime',
+                  $operator: '<'
+                }
+              ]
+            }
+          }
+        },
+        live: {
+          id: true,
+          $list: {
+            $limit: 10,
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $operator: '=',
+                  $value: 'match',
+                  $field: 'type'
+                },
+                {
+                  $value: 'now',
+                  $field: 'startTime',
+                  $operator: '<'
+                },
+                {
+                  $value: 'now',
+                  $field: 'endTime',
+                  $operator: '>'
+                }
+              ]
+            }
+          }
+        },
+        upcoming: {
+          id: true,
+          $list: {
+            $limit: 10,
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $operator: '=',
+                  $value: 'match',
+                  $field: 'type'
+                },
+                {
+                  $value: 'now',
+                  $field: 'startTime',
+                  $operator: '>'
+                }
+              ]
+            }
           }
         }
       },
-      live: {
-        id: true,
-        $list: {
-          $limit: 10,
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $value: 'now',
-                $field: 'startTime',
-                $operator: '<'
-              },
-              {
-                $value: 'now',
-                $field: 'endTime',
-                $operator: '>'
-              }
-            ]
-          }
-        }
-      },
-      upcoming: {
-        id: true,
-        $list: {
-          $limit: 10,
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $operator: '=',
-                $value: 'match',
-                $field: 'type'
-              },
-              {
-                $value: 'now',
-                $field: 'startTime',
-                $operator: '>'
-              }
-            ]
-          }
-        }
-      }
-    })
+      { immutable: true }
+    )
     .subscribe((r, checksum, diff) => {
-      result = deepCopy(r)
+      result = r
     })
 
   await wait(500)

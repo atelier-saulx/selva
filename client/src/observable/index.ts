@@ -18,6 +18,8 @@ import { applyPatch } from '@saulx/selva-diff'
 import { unzip as unzipCb } from 'zlib'
 import { promisify } from 'util'
 
+import { deepCopy } from '@saulx/utils'
+
 const unzip = promisify(unzipCb)
 
 var observableIds = 0
@@ -29,6 +31,9 @@ type UpdateCallback = (value: any, checksum?: number, diff?: any) => void
 
 export class Observable {
   public connection: Connection
+
+  public monitor: boolean
+
   public options: ObservableOptions
 
   constructor(
@@ -127,7 +132,11 @@ export class Observable {
   public subsCounter: number = 0
 
   public emitUpdate(value: any, checksum?: number, diff?: any) {
-    this.listeners.forEach(fn => fn(value, checksum, diff))
+    if (this.options.immutable) {
+      this.listeners.forEach(fn => fn(deepCopy(value), checksum, diff))
+    } else {
+      this.listeners.forEach(fn => fn(value, checksum, diff))
+    }
   }
 
   public emitError(err: Error) {
@@ -215,7 +224,11 @@ export class Observable {
   ) {
     if (this.useCache && this.version) {
       console.log('get it from cache!')
-      onNext(this.cache, this.version)
+      if (this.options.immutable) {
+        onNext(deepCopy(this.cache), this.version)
+      } else {
+        onNext(this.cache, this.version)
+      }
     } else if (this.connection) {
       const channel = this.uuid
       this.connection.command({
@@ -277,13 +290,26 @@ export class Observable {
 
             if (diff) {
               const [patch, fromVersion] = JSON.parse(diff)
+
               if (
                 fromVersion === versions[1] &&
                 versions[0] === version &&
                 this.version === fromVersion &&
                 this.cache
               ) {
-                const data = applyPatch(this.cache, patch)
+                let data
+                if (this.monitor) {
+                  console.log('--------------------------------')
+                  console.dir(this.cache, { depth: 10 })
+                  console.dir(diff, { depth: 10 })
+                  data = applyPatch(this.cache, patch)
+                  console.log('result')
+                  console.dir(data, { depth: 10 })
+                  console.log('--------------------------------')
+                } else {
+                  data = applyPatch(this.cache, patch)
+                }
+
                 if (this.useCache) {
                   this.storeInCache(data, version)
                 }
@@ -431,7 +457,13 @@ export class Observable {
         // console.log('Incoming msg for observable', msg)
         const versions = JSON.parse(msg)
         if (versions && versions[0] === this.version) {
-          console.log('subs manager send current version...', this.uuid)
+          console.log(
+            'Subs manager send current version (with no update)',
+            this.options,
+            this.uuid,
+            this.version,
+            versions
+          )
         } else {
           this.getValue(versions)
         }

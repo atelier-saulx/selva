@@ -1,12 +1,5 @@
 export type LogEntry = { level: LogLevel; msg: string; clientId: string }
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
-export type LogFn = (log: LogEntry, dbName: string) => void
-
-export type ClientOpts = {
-  loglevel?: LogLevel
-  log?: LogFn
-  serverType?: string
-}
 
 export type ServerType =
   | 'origin'

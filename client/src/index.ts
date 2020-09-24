@@ -5,7 +5,6 @@ import {
   ServerType,
   ServerSelector,
   ServerSelectOptions,
-  LogFn
 } from './types'
 import digest from './digest'
 import Redis from './redis'
@@ -40,7 +39,7 @@ import destroy from './destroy'
 import { v4 as uuidv4 } from 'uuid'
 
 import getServer from './getServer'
-import { ObservableOptions } from './observable/types'
+import { ObservableOptions, ObsSettings } from './observable/types'
 
 export * as constants from './constants'
 
@@ -203,9 +202,16 @@ export class SelvaClient extends EventEmitter {
     }
   }
 
-  public observe(props: ObservableOptions | GetOptions): Observable {
+  public observe(props: ObservableOptions | GetOptions, opts?: ObsSettings): Observable {
     if (props.type === 'get' || props.type === 'schema') {
       return createObservable(<ObservableOptions>props, this)
+    } 
+    if (opts) {
+      return createObservable({
+        type: 'get',
+        options: props,
+        ...opts
+      }, this)
     } else {
       return createObservable({
         type: 'get',
