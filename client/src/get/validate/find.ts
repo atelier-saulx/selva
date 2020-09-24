@@ -202,15 +202,16 @@ export default async function validateFind(
       filterAry = [find.$filter]
     }
 
-    // FIXME: proper $language param
-    const textSearchIds = await evaluateTextSearch(
-      filterAry,
-      'en',
-      'and',
-      false
-    )
+    // // FIXME: proper $language param
+    // const textSearchIds = await evaluateTextSearch(
+    //   filterAry,
+    //   'en',
+    //   'and',
+    //   false
+    // )
+    const textSearchIds = []
 
-    if (textSearchIds) {
+    if (textSearchIds && textSearchIds.length) {
       // if there already is a traverse, we need to get the intersection with textSearchIds
       addExtraQuery(extraQueries, {
         type: 'text_search',
