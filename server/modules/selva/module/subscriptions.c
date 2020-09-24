@@ -476,16 +476,19 @@ void Selva_Subscriptions_SetMarker(
         struct Selva_SubscriptionMarker *marker) {
     struct Selva_SubscriptionMarkers *sub_markers = &metadata->sub_markers;
 
+    /* Detached markers are never set directly on the nodes */
     if (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_DETACH) {
         return;
     }
 
     switch (marker->dir) {
     case SELVA_HIERARCHY_TRAVERSAL_NONE:
+        /* NOP */
         break;
     case SELVA_HIERARCHY_TRAVERSAL_NODE:
     case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
     case SELVA_HIERARCHY_TRAVERSAL_PARENTS:
+        /* These traversal direction types are only copied/set on the node itself. */
         if (memcmp(marker->node_id, node_id, SELVA_NODE_ID_SIZE) != 0) {
             break;
         }
