@@ -84,7 +84,6 @@ const addOriginListeners = async (
     // use this with the global connectorClients
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
-    console.log('ADD LISTENER', selector)
     redis.on(selector, 'pmessage', listener)
     redis.psubscribe(selector, EVENTS + '*')
   }
@@ -99,8 +98,6 @@ const removeOriginListeners = (
 ) => {
   const origin = subsManager.originListeners[name]
 
-  console.log('remove origin', name, !!origin)
-
   if (origin) {
     const { client } = subsManager
     const redis = client.redis
@@ -109,6 +106,7 @@ const removeOriginListeners = (
       if (name in subsManager.memberMemCache) {
         delete subsManager.memberMemCache[name]
       }
+      console.log('DELETE ORIGIN LISTENER')
       redis.punsubscribe({ name }, EVENTS + '*')
       client.removeListener('reconnect', origin.reconnectListener)
       redis.removeListener({ name }, 'pmessage', origin.listener)
