@@ -82,7 +82,7 @@ int pu_run_tests(void (*all_tests)(void))
     return (pu_tests_passed + pu_tests_skipped) != pu_tests_count;
 }
 
-int main(int argc, char **argv)
+int main(int argc __unused, char **argv __unused)
 {
     void all_tests();
     return pu_run_tests(&all_tests);

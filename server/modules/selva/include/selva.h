@@ -2,6 +2,7 @@
 #ifndef _SELVA_
 #define _SELVA_
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define SELVA_NODE_ID_SIZE      10ul
