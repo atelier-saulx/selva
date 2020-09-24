@@ -169,31 +169,35 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (SVector_Size(&alias_query) > 0) {
         RedisModuleKey *alias_key = open_aliases_key(ctx);
 
-        /*
-         * Replace id with the first match from alias_query.
-         */
-        char **it;
-        SVECTOR_FOREACH(it, &alias_query) {
-            RedisModuleString *tmp_id;
+        if (alias_key && RedisModule_KeyType(alias_key) == REDISMODULE_KEYTYPE_HASH) {
+            /*
+             * Replace id with the first match from alias_query.
+             */
+            char **it;
+            SVECTOR_FOREACH(it, &alias_query) {
+                RedisModuleString *tmp_id;
 
-            if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_CFIELDS, *it, &tmp_id, NULL)) {
-                Selva_NodeId nodeId;
+                if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_CFIELDS, *it, &tmp_id, NULL)) {
+                    Selva_NodeId nodeId;
 
-                RedisModuleString2Selva_NodeId(nodeId, tmp_id);
+                    RedisModuleString2Selva_NodeId(nodeId, tmp_id);
 
-                if (SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
-                    id = tmp_id;
+                    if (SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
+                        id = tmp_id;
 
-                    /*
-                     * If no match was found all the aliases should be assigned.
-                     * If a match was found the query vector can be cleared now
-                     * to prevent any aliases from being created.
-                     */
-                    SVector_Clear(&alias_query);
+                        /*
+                         * If no match was found all the aliases should be assigned.
+                         * If a match was found the query vector can be cleared now
+                         * to prevent any aliases from being created.
+                         */
+                        SVector_Clear(&alias_query);
 
-                    break;
+                        break;
+                    }
                 }
             }
+        } else {
+            fprintf(stderr, "%s: Unable open aliases key or its type is invalid\n", __FILE__);
         }
 
         RedisModule_CloseKey(alias_key);

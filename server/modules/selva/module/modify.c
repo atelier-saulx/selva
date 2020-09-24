@@ -38,7 +38,8 @@ RedisModuleKey *SelvaModify_OpenSet(
         return NULL;
     }
 
-    if (RedisModule_KeyType(set_key) != REDISMODULE_KEYTYPE_ZSET) {
+    const int keytype = RedisModule_KeyType(set_key);
+    if (keytype != REDISMODULE_KEYTYPE_ZSET && keytype != REDISMODULE_KEYTYPE_EMPTY) {
         RedisModule_CloseKey(set_key);
         return NULL;
     }
@@ -177,14 +178,17 @@ static int update_zset(
     }
 
     if (!strcmp(field_str, "aliases")) {
-        /* TODO NULL check */
         alias_key = open_aliases_key(ctx);
+        if (!alias_key) {
+            fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+            return REDISMODULE_ERR;
+        }
     }
 
     if (setOpts->$value_len > 0) {
         int err = removeSet(set_key, alias_key);
         if (err) {
-            /* TODO Send error string */
+            fprintf(stderr, "%s: Unable to remove a set owned by %s\n", __FILE__, id_str);
             return REDISMODULE_ERR;
         }
 

@@ -404,8 +404,12 @@ static void remove_node_fields(RedisModuleCtx *ctx, Selva_NodeId id) {
     if (key) {
         RedisModuleKey *aliases_key = open_aliases_key(ctx);
 
-        delete_aliases(aliases_key, key);
-        RedisModule_CloseKey(aliases_key);
+        if (aliases_key) {
+            delete_aliases(aliases_key, key);
+            RedisModule_CloseKey(aliases_key);
+        } else {
+            fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+        }
 
         RedisModule_DeleteKey(key);
         RedisModule_CloseKey(key);
