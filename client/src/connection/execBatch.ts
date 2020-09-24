@@ -52,6 +52,14 @@ export default function execBatch(
                 hasBusy = true
                 busySlice.push(queue[i])
               } else if (queue[i].reject) {
+                if (v.message.includes('READONLY')) {
+                  console.log(
+                    'OK HERE SOMETHING WRONG',
+                    queue[i],
+                    connection.serverDescriptor
+                  )
+                }
+
                 // @ts-ignore
                 if (v.code === 'UNCERTAIN_STATE') {
                   // if publish ignore

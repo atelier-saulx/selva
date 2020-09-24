@@ -69,7 +69,12 @@ const sendUpdate = async (
   // TODO: lua is unstable with object tmp fix
   const newVersion = hashObjectIgnoreKeyOrder(payload)
 
+  console.log('GOT UPDATE', subscription.get, newVersion)
+
   const resultStr = JSON.stringify({ type: 'update', payload })
+
+  console.log('GOT UPDATE --?', subscription.get, newVersion, hash(resultStr))
+
   const currentVersion = subscription.version
   // can get the value from the client cache later
 

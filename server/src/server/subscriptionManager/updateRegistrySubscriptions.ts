@@ -63,7 +63,7 @@ const handleRemovePrev = async (
 ) => {
   const prev = await client.redis.get({ type: 'subscriptionRegistry' }, channel)
   if (prev === id) {
-    await client.redis.del(channel)
+    await client.redis.del({ type: 'subscriptionRegistry' }, channel)
   }
 }
 
