@@ -297,18 +297,16 @@ export class Observable {
                 this.version === fromVersion &&
                 this.cache
               ) {
-                let data
                 if (this.monitor) {
                   console.log('--------------------------------')
-                  console.dir(this.cache, { depth: 10 })
+                  // console.dir(this.cache, { depth: 10 })
                   console.dir(diff, { depth: 10 })
-                  data = applyPatch(this.cache, patch)
-                  console.log('result')
-                  console.dir(data, { depth: 10 })
+                  // console.dir(data, { depth: 10 })
                   console.log('--------------------------------')
                 } else {
-                  data = applyPatch(this.cache, patch)
                 }
+
+                const data = applyPatch(this.cache, patch)
 
                 if (this.useCache) {
                   this.storeInCache(data, version)
