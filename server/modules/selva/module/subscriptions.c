@@ -529,8 +529,10 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
         if (err) {
             char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-            fprintf(stderr, "%s: Could not fully apply a subscription: %s\n",
-                    __FILE__, Selva_SubscriptionId2str(str, sub->sub_id));
+            fprintf(stderr, "%s: Could not fully apply a subscription: %s:%d err: %s\n",
+                    __FILE__,
+                    Selva_SubscriptionId2str(str, sub->sub_id), marker->marker_id,
+                    getSelvaErrorStr(err));
             res = err; /* Report the last error */
         }
     }
