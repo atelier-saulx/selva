@@ -1,6 +1,5 @@
 import sendUpdate from './sendUpdate'
 import { Subscription, SubscriptionManager } from '../types'
-import { removeSubscriptionFromTree } from '../tree'
 
 var delayCount = 0
 

@@ -2,7 +2,6 @@ import { SubscriptionManager, Subscription } from './types'
 import { constants, GetOptions } from '@saulx/selva'
 import { hash } from './util'
 import addUpdate from './update/addUpdate'
-import { addSubscriptionToTree } from './tree'
 import { addOriginListeners } from './originListeners'
 import updateRegistry from './updateRegistrySubscriptions'
 
@@ -83,7 +82,6 @@ const updateSubscription = async (
             subsManager.subscriptions[channel].version = version
             subsManager.subscriptions[channel].tree = JSON.parse(tree)
             subsManager.subscriptions[channel].treeVersion = hash(tree)
-            addSubscriptionToTree(subsManager, subscription)
           }
         }
       }

@@ -1,6 +1,5 @@
 import { SubscriptionManager, Subscription } from './types'
 import { constants } from '@saulx/selva'
-import traverseTree from './update/traverseTree'
 import addUpdate from './update/addUpdate'
 import { ServerSelector } from '@saulx/selva/dist/src/types'
 

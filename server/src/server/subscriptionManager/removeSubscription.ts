@@ -1,6 +1,5 @@
 import { SubscriptionManager } from './types'
 import { constants } from '@saulx/selva'
-import { removeSubscriptionFromTree } from './tree'
 import { removeOriginListeners } from './originListeners'
 import updateRegistry from './updateRegistrySubscriptions'
 
@@ -63,7 +62,6 @@ const removeSubscription = async (
     for (const origin of subscription.origins) {
       removeOriginListeners(origin, subsManager, subscription)
     }
-    removeSubscriptionFromTree(subsManager, subscription)
     // check if this is ok!
     subsManager.stagedForUpdates.delete(subscription)
     delete subscriptions[channel]

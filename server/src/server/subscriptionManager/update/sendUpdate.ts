@@ -1,5 +1,4 @@
 import { constants } from '@saulx/selva'
-import { addSubscriptionToTree, removeSubscriptionFromTree } from '../tree'
 import { hash } from '../util'
 import { Subscription, SubscriptionManager } from '../types'
 import { wait } from '../../../util'
@@ -82,12 +81,8 @@ const sendUpdate = async (
     const newTreeJson = JSON.stringify(newTree)
     const newTreeVersion = hash(newTreeJson)
     if (treeVersion !== newTreeVersion) {
-      if (treeVersion) {
-        removeSubscriptionFromTree(subscriptionManager, subscription)
-      }
       subscription.treeVersion = newTreeVersion
       subscription.tree = newTree
-      addSubscriptionToTree(subscriptionManager, subscription)
       q.push(redis.hset(selector, CACHE, channel + '_tree', newTreeJson))
     }
   } else if (treeVersion) {
