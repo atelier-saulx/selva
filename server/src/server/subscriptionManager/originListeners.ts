@@ -4,9 +4,9 @@ import traverseTree from './update/traverseTree'
 import addUpdate from './update/addUpdate'
 import { ServerSelector } from '@saulx/selva/dist/src/types'
 
-const { EVENTS } = constants
+const { EVENTS, SUBSCRIPTION_UPDATE } = constants
 
-const prefixLength = EVENTS.length
+const prefixLength = SUBSCRIPTION_UPDATE.length
 const deleteLength = 'delete:'.length
 
 // pass subscription
@@ -38,17 +38,24 @@ const addOriginListeners = async (
           addUpdate(subsManager, subscription)
         }
       } else {
-        const eventName = channel.slice(prefixLength)
-        // make this batch as well (the check)
-        if (message === 'update') {
-          traverseTree(subsManager, eventName, name)
-        } else if (message && message.startsWith('delete')) {
-          const fields = message.slice(deleteLength).split(',')
+        const subId = channel.slice(prefixLength)
+        const subscription =
+          subsManager.subscriptions[`${constants.NEW_SUBSCRIPTION}:${subId}`]
 
-          fields.forEach((v: string) => {
-            traverseTree(subsManager, eventName + '.' + v, name)
-          })
+        if (subscription) {
+          addUpdate(subsManager, subscription)
         }
+
+        // make this batch as well (the check)
+        // if (message === 'update') {
+        //   traverseTree(subsManager, eventName, name)
+        // } else if (message && message.startsWith('delete')) {
+        //   const fields = message.slice(deleteLength).split(',')
+
+        //   fields.forEach((v: string) => {
+        //     traverseTree(subsManager, eventName + '.' + v, name)
+        //   })
+        // }
       }
 
       if (!subsManager.stagedInProgess) {
