@@ -350,7 +350,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     err = 0;
 out:
     if (err) {
-        replyWithSelvaError(ctx, err);
+        (void)replyWithSelvaError(ctx, err);
     }
 
     /* Maybe something was changed even if the command failed. */
@@ -358,7 +358,7 @@ out:
 
     RedisModule_CloseKey(id_key);
 
-    return err;
+    return REDISMODULE_OK;
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
