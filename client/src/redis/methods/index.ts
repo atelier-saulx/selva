@@ -3038,36 +3038,6 @@ async zunionstore(opts: any, ...args: args): Promise<any> {
 }
 
 
-async selva_modify(opts: ServerSelector, ...args: args): Promise<any>
-async selva_modify(...args: args): Promise<any>
-async selva_modify(opts: any, ...args: args): Promise<any> {
-  if (typeof opts === 'object') {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_modify', args, resolve, reject }, opts)
-    })
-  } else {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_modify', args: [opts, ...args], resolve, reject })
-    })
-  }
-}
-
-
-async selva_hierarchy_parents(opts: ServerSelector, ...args: args): Promise<any>
-async selva_hierarchy_parents(...args: args): Promise<any>
-async selva_hierarchy_parents(opts: any, ...args: args): Promise<any> {
-  if (typeof opts === 'object') {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_parents', args, resolve, reject }, opts)
-    })
-  } else {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_parents', args: [opts, ...args], resolve, reject })
-    })
-  }
-}
-
-
 async selva_hierarchy_children(opts: ServerSelector, ...args: args): Promise<any>
 async selva_hierarchy_children(...args: args): Promise<any>
 async selva_hierarchy_children(opts: any, ...args: args): Promise<any> {
@@ -3093,6 +3063,156 @@ async selva_hierarchy_find(opts: any, ...args: args): Promise<any> {
   } else {
     return new Promise((resolve, reject) => {
       this.addCommandToQueue({ command: 'selva_hierarchy_find', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_hierarchy_findin(opts: ServerSelector, ...args: args): Promise<any>
+async selva_hierarchy_findin(...args: args): Promise<any>
+async selva_hierarchy_findin(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_findin', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_findin', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_hierarchy_findinsub(opts: ServerSelector, ...args: args): Promise<any>
+async selva_hierarchy_findinsub(...args: args): Promise<any>
+async selva_hierarchy_findinsub(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_findinsub', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_findinsub', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_hierarchy_parents(opts: ServerSelector, ...args: args): Promise<any>
+async selva_hierarchy_parents(...args: args): Promise<any>
+async selva_hierarchy_parents(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_parents', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_parents', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_modify(opts: ServerSelector, ...args: args): Promise<any>
+async selva_modify(...args: args): Promise<any>
+async selva_modify(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_modify', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_modify', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_subscriptions_add(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_add(...args: args): Promise<any>
+async selva_subscriptions_add(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_add', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_add', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_subscriptions_addmarkerfields(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_addmarkerfields(...args: args): Promise<any>
+async selva_subscriptions_addmarkerfields(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_addmarkerfields', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_addmarkerfields', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_subscriptions_debug(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_debug(...args: args): Promise<any>
+async selva_subscriptions_debug(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_debug', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_debug', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_subscriptions_del(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_del(...args: args): Promise<any>
+async selva_subscriptions_del(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_del', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_del', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_subscriptions_list(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_list(...args: args): Promise<any>
+async selva_subscriptions_list(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_list', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_list', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_subscriptions_refresh(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_refresh(...args: args): Promise<any>
+async selva_subscriptions_refresh(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_refresh', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_refresh', args: [opts, ...args], resolve, reject })
     })
   }
 }

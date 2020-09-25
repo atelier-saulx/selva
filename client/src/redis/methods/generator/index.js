@@ -37,10 +37,18 @@ export default RedisMethods
 const methods = []
 
 // redis.add_command(`FT.${cmd}`)
-redis.add_command('selva.modify')
-redis.add_command('selva.hierarchy.parents')
 redis.add_command('selva.hierarchy.children')
 redis.add_command('selva.hierarchy.find')
+redis.add_command('selva.hierarchy.findIn')
+redis.add_command('selva.hierarchy.findInSub')
+redis.add_command('selva.hierarchy.parents')
+redis.add_command('selva.modify')
+redis.add_command('selva.subscriptions.add')
+redis.add_command('selva.subscriptions.addMarkerFields')
+redis.add_command('selva.subscriptions.debug')
+redis.add_command('selva.subscriptions.del')
+redis.add_command('selva.subscriptions.list')
+redis.add_command('selva.subscriptions.refresh')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
   if (/[A-Z]/.test(key[0]) && typeof proto[key] === 'function') {
