@@ -114,16 +114,16 @@ redis.add_command('selva.hierarchy.children')
 redis.add_command('selva.hierarchy.find')
 
 // @ts-ignore
-redis.add_command('selva.hierarchy.findIn')
+redis.add_command('selva.hierarchy.findin')
 
 // @ts-ignore
-redis.add_command('selva.hierarchy.findInSub')
+redis.add_command('selva.hierarchy.findinsub')
 
 // @ts-ignore
 redis.add_command('selva.subscriptions.add')
 
 // @ts-ignore
-redis.add_command('selva.subscriptions.addMarkerFields')
+redis.add_command('selva.subscriptions.addmarkerfields')
 
 // @ts-ignore
 redis.add_command('selva.subscriptions.debug')
