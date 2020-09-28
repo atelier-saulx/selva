@@ -151,47 +151,48 @@ test.serial('get - correct order', async t => {
 
   console.log('------------------ ')
 
-  // const results = []
+  const results = []
 
-  // client.observe(obs, { immutable: true }).subscribe(v => {
-  //   results.push(v)
-  // })
+  client.observe(obs, { immutable: true }).subscribe(v => {
+    console.dir(v, { depth: 10 })
+    results.push(v)
+  })
 
-  // await wait(1e3)
+  await wait(1e3)
 
-  // client.set({ $id: 'ma1', published: false })
+  client.set({ $id: 'ma1', published: false })
 
-  // await wait(1e3)
+  await wait(1e3)
 
   // console.log('this goes wrong')
-  // client.set({ $id: 'ma1', published: true })
+  client.set({ $id: 'ma1', published: true })
 
   await wait(3e3)
 
   // console.dir(results, { depth: 10 })
 
-  // t.deepEqualIgnoreOrder(results, [
-  //   {
-  //     children: [
-  //       { title: { en: 'match 2' }, published: true },
-  //       { title: { en: 'match 3' }, published: true },
-  //       { title: { en: 'match 1' }, published: true }
-  //     ]
-  //   },
-  //   {
-  //     children: [
-  //       { title: { en: 'match 2' }, published: true },
-  //       { title: { en: 'match 3' }, published: true }
-  //     ]
-  //   },
-  //   {
-  //     children: [
-  //       { title: { en: 'match 2' }, published: true },
-  //       { title: { en: 'match 3' }, published: true },
-  //       { title: { en: 'match 1' }, published: true }
-  //     ]
-  //   }
-  // ])
+  t.deepEqualIgnoreOrder(results, [
+    {
+      children: [
+        { title: { en: 'match 2' }, published: true },
+        { title: { en: 'match 3' }, published: true },
+        { title: { en: 'match 1' }, published: true }
+      ]
+    },
+    {
+      children: [
+        { title: { en: 'match 2' }, published: true },
+        { title: { en: 'match 3' }, published: true }
+      ]
+    },
+    {
+      children: [
+        { title: { en: 'match 2' }, published: true },
+        { title: { en: 'match 3' }, published: true },
+        { title: { en: 'match 1' }, published: true }
+      ]
+    }
+  ])
 
   await client.destroy()
   await Promise.all(servers.map(s => s.destroy()))

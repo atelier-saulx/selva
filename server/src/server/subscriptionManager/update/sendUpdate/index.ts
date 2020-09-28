@@ -73,8 +73,6 @@ const sendUpdate = async (
 
   // const newVersionX = hash(resultStr)
 
-  console.log('UPDATE', payload, newVersion)
-
   const currentVersion = subscription.version
   // can get the value from the client cache later
 
@@ -95,8 +93,6 @@ const sendUpdate = async (
     const newTreeJson = JSON.stringify(newTree)
     const newTreeVersion = hash(newTreeJson)
     if (treeVersion !== newTreeVersion) {
-      console.dir(newTree, { depth: 10 })
-
       if (treeVersion) {
         removeSubscriptionFromTree(subscriptionManager, subscription)
       }
@@ -110,7 +106,6 @@ const sendUpdate = async (
   }
 
   if (currentVersion === newVersion) {
-    console.log('SAME NO UPDATE')
     clearTimeout(time)
     subscriptionManager.inProgressCount--
     if (subscription.processNext) {

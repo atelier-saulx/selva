@@ -35,8 +35,6 @@ const addOriginListeners = async (
       } else {
         const eventName = channel.slice(prefixLength)
 
-        console.log('INCOMING EVENT', eventName, name)
-
         // make this batch as well (the check)
         if (message === 'update') {
           traverseTree(subsManager, eventName, name)
