@@ -125,7 +125,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 #undef PREFIX
 
             fprintf(stderr, "Redis publish subscription update: \"%s\"\n", channel);
-            reply = redisCommand(ctx, "PUBLISH %s \"\"", channel);
+            reply = redisCommand(ctx, "PUBLISH %s %s", channel, "");
             if (reply == NULL) {
                 fprintf(stderr, "Error occurred in publish %s\n", ctx->errstr);
             }
