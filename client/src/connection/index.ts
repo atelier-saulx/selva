@@ -9,6 +9,7 @@ import { Callback } from '../redis/types'
 import { serverId, isEmptyObject } from '../util'
 import { Observable } from '../observable'
 import { CLIENTS, HEARTBEAT, STOP_HEARTBEAT, LOG } from '../constants'
+import chalk from 'chalk'
 
 const CLIENT_HEARTBEAT_TIMER = 1e3
 
@@ -78,7 +79,7 @@ class Connection {
         (v, m) => {
           if (v === log) {
             const { msg } = JSON.parse(m)
-            console.info('LUA LOG:', msg)
+            console.info(chalk.blue(`lua`), msg)
           }
         },
         client.selvaId

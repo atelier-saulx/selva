@@ -118,8 +118,6 @@ const parseQuery = (
         return [{ results }, err]
       }
 
-      logger.info(getOptions, query, resultFork)
-
       const args = createSearchArgs(getOptions, query, resultFork)
 
       // printAst(resultFork, args)
@@ -211,6 +209,8 @@ const parseQuery = (
       }
 
       if (resultIds.length !== 0) {
+        logger.info(resultIds)
+
         const [{ results: nestedResults }, err] = parseQuery(
           getField,
           schema,
@@ -263,10 +263,6 @@ const parseQuery = (
         meta.traverse = getOptions.$find.$traverse
       } else if (traverse) {
         meta.traverse = traverse
-      }
-
-      if (meta.traverse === 'children') {
-        logger.info('ok here', meta)
       }
 
       if (resultFork) {
@@ -389,7 +385,6 @@ const queryGet = (
   if (!ids) {
     ids = [<string>getOptions.$id || 'root']
   }
-
   const [r, err] = parseQuery(
     getField,
     schema,

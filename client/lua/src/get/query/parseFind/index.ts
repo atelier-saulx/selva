@@ -8,6 +8,8 @@ import * as logger from '../../../logger'
 import { GetFieldFn } from '../../types'
 import { getSchema } from '../../../schema/index'
 import { getNestedField } from '../../nestedFields'
+import { joinString } from '../../../util'
+import globals from '../../../globals'
 
 const getIds = (
   getField: GetFieldFn,
@@ -120,6 +122,16 @@ function parseFind(
     } else {
       // @ts-ignore
       const resultIds = getIds(getField, $traverse, ids, $inherit)
+
+      // @ts-ignore
+      if (globals.$meta) {
+        if (!meta.parsedIds) {
+          meta.parsedIds = {}
+        }
+        const x = joinString(ids, '.') + '.' + $traverse
+        meta.parsedIds[x] = resultIds
+      }
+
       return parseFindIds(filters, resultIds, meta)
     }
   } else if ($fields) {

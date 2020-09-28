@@ -945,7 +945,7 @@ test.serial('subscribe - $field with object structure', async t => {
   })
 
   const results = []
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: 'viA',
     id: true,
     wrappingObject: {
