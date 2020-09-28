@@ -73,9 +73,7 @@ const sendUpdate = async (
 
   // const newVersionX = hash(resultStr)
 
-  if (subscription.get.components) {
-    console.log('UPDATE ON PAGE', newVersion)
-  }
+  console.log('UPDATE', payload, newVersion)
 
   const currentVersion = subscription.version
   // can get the value from the client cache later
@@ -97,6 +95,8 @@ const sendUpdate = async (
     const newTreeJson = JSON.stringify(newTree)
     const newTreeVersion = hash(newTreeJson)
     if (treeVersion !== newTreeVersion) {
+      console.dir(newTree, { depth: 10 })
+
       if (treeVersion) {
         removeSubscriptionFromTree(subscriptionManager, subscription)
       }

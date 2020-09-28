@@ -111,11 +111,14 @@ const parseQuery = (
     let noLimitAndOffset = true
     const idMap: Record<string, true> = {}
     const [queries, err] = createSearchString(resultFork, language)
+
     if (queries.length === 1) {
       const query: string = queries[0]
       if (err) {
         return [{ results }, err]
       }
+
+      logger.info(getOptions, query, resultFork)
 
       const args = createSearchArgs(getOptions, query, resultFork)
 
@@ -260,6 +263,10 @@ const parseQuery = (
         meta.traverse = getOptions.$find.$traverse
       } else if (traverse) {
         meta.traverse = traverse
+      }
+
+      if (meta.traverse === 'children') {
+        logger.info('ok here', meta)
       }
 
       if (resultFork) {
