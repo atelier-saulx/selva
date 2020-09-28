@@ -63,18 +63,12 @@ const sendUpdate = async (
 
   delete payload.$meta
 
-  // make this without payload
-  // const newVersion = typeof payload === 'object' ?
-
   // TODO: lua is unstable with object tmp fix
   const newVersion = hashObjectIgnoreKeyOrder(payload)
 
   const resultStr = JSON.stringify({ type: 'update', payload })
 
-  // const newVersionX = hash(resultStr)
-
   const currentVersion = subscription.version
-  // can get the value from the client cache later
 
   const treeVersion = subscription.treeVersion
   const q = []
@@ -132,7 +126,6 @@ const sendUpdate = async (
     // patch = (
     //   await (<Promise<Buffer>>gzip(JSON.stringify([diffPatch, currentVersion])))
     // ).toString('base64')
-
     // console.log('PATCH', patch)
 
     patch = JSON.stringify([diffPatch, currentVersion])
