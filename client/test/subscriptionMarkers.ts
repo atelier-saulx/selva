@@ -1,11 +1,14 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
+import redis, {RedisClient} from 'redis'
 import './assertions'
+import {wait} from './assertions'
 import getPort from 'get-port'
 
 let srv
 let port: number
+let rclient: RedisClient | null = null
 
 test.before(async t => {
   port = await getPort()
@@ -58,6 +61,14 @@ test.after(async _t => {
   await client.destroy()
   await srv.destroy()
 })
+
+test.afterEach(async () => {
+  if (rclient) {
+    rclient.end(true)
+    rclient = null
+  }
+})
+
 
 test.serial('create a node marker', async t => {
   const client = connect({ port })
@@ -445,6 +456,53 @@ test.serial('FindInSub: simple lookups', async t => {
     await client.redis.selva_hierarchy_findinsub('___selva_hierarchy', subId1, 5),
     [ 'maTest0001' ]
   )
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('subscribe to hierarchy events', async t => {
+  const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b70'
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' },
+  })
+
+  await client.redis.selva_subscriptions_add('___selva_hierarchy', subId1, '1', 'descendants', 'maTest0001', 'fields', 'descendants')
+
+  let msgCount = 0
+  const subChannel = `___selva_subscription_update:${subId1}`
+  const rclient = redis.createClient(port + 2)
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, '')
+    msgCount++
+  })
+  rclient.subscribe(`___selva_subscription_update:${subId1}`)
+
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+  await client.set({
+    $id: 'maTest0002',
+    title: { en: 'ma2' },
+    parents: [
+      'maTest0001',
+    ]
+  })
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+  await client.set({
+    $id: 'maTest0001',
+    children: [
+      {
+        $id: 'maTest0003',
+        title: { en: 'ma3' },
+      }
+    ]
+  })
+
+  await wait(100)
+  t.assert(msgCount >= 2)
 
   await client.delete('root')
   client.destroy()
