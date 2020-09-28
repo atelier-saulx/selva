@@ -230,15 +230,15 @@ function parseSubscriptions(
     if (!field) {
       logger.error('WRONG MISSING FIELD or TRAVERSE in parse subscriptions')
     } else {
-      for (let k in meta.parsedIds) {
-        const x = meta.parsedIds[k]
-        for (let i = 0; i < x.length; i++) {
-          if (!sub.ids) {
-            sub.ids = {}
-          }
-          sub.ids[x[i]] = true
-        }
-      }
+      // for (let k in meta.parsedIds) {
+      //   const x = meta.parsedIds[k]
+      //   for (let i = 0; i < x.length; i++) {
+      //     if (!sub.ids) {
+      //       sub.ids = {}
+      //     }
+      //     sub.ids[x[i]] = true
+      //   }
+      // }
     }
   }
 
@@ -251,6 +251,8 @@ function parseSubscriptions(
       sub.fields[sort[i].$field] = true
     }
   }
+
+  // logger.info(sub.ids)
 
   return sub
 }
