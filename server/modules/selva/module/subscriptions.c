@@ -151,6 +151,7 @@ static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct Selv
     int res = 0;
     int err;
 
+    /* When no filter is set the result should be true. */
     if (!ctx) {
         return 1;
     }
@@ -837,7 +838,7 @@ static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
                  */
                 if (after ||
                     /* before */
-                    (marker->filter_history.res && memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE))) {
+                    (marker->filter_history.res && !memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE))) {
                     SVector_InsertFast(&def->subs, marker->sub);
                 }
             }
