@@ -463,6 +463,69 @@ test.serial('FindInSub: simple lookups', async t => {
   client.destroy()
 })
 
+test.serial('FindInSub: expression filter', async t => {
+  const client = connect({ port })
+  const subId1 = '1c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b69'
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' },
+    children: [
+        {
+            $id: 'maTest0011',
+            title: { en: 'test' },
+            children: [
+              {
+                $id: 'maTest0021',
+                title: { en: 'test' }
+              }
+            ]
+        },
+        {
+            $id: 'maTest0012',
+            title: { en: 'ma12' },
+        },
+        {
+            $id: 'maTest0013',
+            title: { en: 'ma13' },
+            children: [
+              {
+                $id: 'maTest0022',
+                title: { en: 'test' },
+                children: [
+                  {
+                    $id: 'maTest0031',
+                    title: { en: 'ma31' }
+                  }
+                ]
+              }
+            ]
+        }
+    ]
+  })
+
+  await client.redis.selva_subscriptions_add('___selva_hierarchy', subId1, '1', 'descendants', 'maTest0001', '"title.en f $1 c', 'test')
+
+  const s1 = await client.redis.selva_subscriptions_debug('___selva_hierarchy', subId1)
+  t.is(s1.length, 1, "subscription1 has one marker")
+  const s1marker1 = s1[0]
+  t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
+  t.deepEqual(s1marker1[1], 'marker_id: 1')
+  t.deepEqual(s1marker1[2], 'flags: 0x0002')
+  t.deepEqual(s1marker1[3], 'node_id: "maTest0001"')
+  t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
+  t.deepEqual(s1marker1[5], 'filter_expression: set')
+  t.deepEqual(s1marker1[6], 'fields: "(null)"')
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_findinsub('___selva_hierarchy', subId1, 1),
+    ['maTest0011', 'maTest0021', 'maTest0022']
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
+
 test.serial('subscribe to hierarchy events', async t => {
   const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b70'
   const client = connect({ port })
@@ -504,6 +567,70 @@ test.serial('subscribe to hierarchy events', async t => {
 
   await wait(100)
   t.assert(msgCount >= 2)
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('FindInSub: expression filter and sort', async t => {
+  const client = connect({ port })
+  const subId1 = '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b69'
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'z' },
+    children: [
+        {
+            $id: 'maTest0011',
+            title: { en: 'test' },
+            children: [
+              {
+                $id: 'maTest0021',
+                title: { en: 'test' }
+              }
+            ]
+        },
+        {
+            $id: 'maTest0012',
+            title: { en: 'o' },
+        },
+        {
+            $id: 'maTest0013',
+            title: { en: 'b' },
+            children: [
+              {
+                $id: 'maTest0022',
+                title: { en: 'x' },
+                children: [
+                  {
+                    $id: 'maTest0031',
+                    title: { en: 'a' }
+                  }
+                ]
+              }
+            ]
+        }
+    ]
+  })
+
+  await client.redis.selva_subscriptions_add('___selva_hierarchy', subId1, '1', 'descendants', 'root', '"title.en f $1 c L', 'test')
+
+  const s1 = await client.redis.selva_subscriptions_debug('___selva_hierarchy', subId1)
+  t.is(s1.length, 1, "subscription1 has one marker")
+  const s1marker1 = s1[0]
+  t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
+  t.deepEqual(s1marker1[1], 'marker_id: 1')
+  t.deepEqual(s1marker1[2], 'flags: 0x0202')
+  t.deepEqual(s1marker1[3], 'node_id: "root"')
+  t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
+  t.deepEqual(s1marker1[5], 'filter_expression: set')
+  t.deepEqual(s1marker1[6], 'fields: "(null)"')
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_findinsub('___selva_hierarchy', subId1, 1, 'order', 'title.en', 'asc', 'offset', '1', 'limit', 3),
+    // b, o, x
+    ['maTest0013', 'maTest0012', 'maTest0022']
+  )
 
   await client.delete('root')
   client.destroy()
@@ -606,7 +733,6 @@ test.serial('subscribe to field events with an expression', async t => {
   })
 
   await wait(100)
-  console.log('loollers', msgCount);
   t.assert(msgCount === 3)
 
   await client.delete('root')

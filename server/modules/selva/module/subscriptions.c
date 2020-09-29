@@ -987,11 +987,11 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         int err;
 
         err = SelvaArgParser_StrOpt(&fields, "fields", argv[ARGV_FIELDS], argv[ARGV_FIELD_NAMES]);
-        if(err) {
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_EINVAL) {
             return replyWithSelvaError(ctx, err);
         }
-
-        SHIFT_ARGS(2);
     }
 
     /*
@@ -1000,52 +1000,50 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      */
     struct rpn_ctx *filter_ctx = NULL;
     rpn_token *filter_expression = NULL;
-    if (argc > (int)ARGV_FILTER_EXPR) {
-        if (argc >= (int)ARGV_FILTER_EXPR + 1) {
-            const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
-            const char *input;
-            size_t input_len;
+    if (argc >= (int)ARGV_FILTER_EXPR + 1) {
+        const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
+        const char *input;
+        size_t input_len;
 
-            filter_ctx = rpn_init(ctx, nr_reg);
-            if (!filter_ctx) {
-                err = SELVA_SUBSCRIPTIONS_ENOMEM;
-                goto out;
-            }
+        filter_ctx = rpn_init(ctx, nr_reg);
+        if (!filter_ctx) {
+            err = SELVA_SUBSCRIPTIONS_ENOMEM;
+            goto out;
+        }
+
+        /*
+         * Compile the filter expression.
+         */
+        input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
+        filter_expression = rpn_compile(input, input_len);
+        if (!filter_expression) {
+            fprintf(stderr, "%s: Failed to compile a filter expression: %.*s\n",
+                    __FILE__,
+                    (int)input_len, input);
+            err = SELVA_RPN_ECOMP;
+            goto out;
+        }
+
+        /*
+         * Get the filter expression arguments and set them to the registers.
+         */
+        for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
+            /* reg[0] is reserved for the current nodeId */
+            const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
+            size_t str_len;
+            const char *str;
+            char *arg;
 
             /*
-             * Compile the filter expression.
+             * Args needs to be duplicated so the strings don't get freed
+             * when the command returns.
              */
-            input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
-            filter_expression = rpn_compile(input, input_len);
-            if (!filter_expression) {
-                fprintf(stderr, "%s: Failed to compile a filter expression: %.*s\n",
-                        __FILE__,
-                        (int)input_len, input);
-                err = SELVA_RPN_ECOMP;
-                goto out;
-            }
+            str = RedisModule_StringPtrLen(argv[i], &str_len);
+            str_len++;
+            arg = RedisModule_Alloc(str_len);
+            memcpy(arg, str, str_len);
 
-            /*
-             * Get the filter expression arguments and set them to the registers.
-             */
-            for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
-                /* reg[0] is reserved for the current nodeId */
-                const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
-                size_t str_len;
-                const char *str;
-                char *arg;
-
-                /*
-                 * Args needs to be duplicated so the strings don't get freed
-                 * when the command returns.
-                 */
-                str = RedisModule_StringPtrLen(argv[i], &str_len);
-                str_len++;
-                arg = RedisModule_Alloc(str_len);
-                memcpy(arg, str, str_len);
-
-                rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_RMFREE);
-            }
+            rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_RMFREE);
         }
     }
 
@@ -1345,7 +1343,7 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "node_id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, marker->node_id));
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaModify_HierarchyDir2str(marker->dir)));
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "filter_expression: %s", (marker->filter_ctx) ? "set" : "unset"));
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "fields: \"%s\"", marker->fields));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "fields: \"%s\"", marker->fields ? marker->fields : "(null)"));
 
         array_len++;
     }
