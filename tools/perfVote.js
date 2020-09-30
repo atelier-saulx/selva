@@ -37,22 +37,27 @@ async function before() {
     }
   })
 
-  await Promise.all([
-    client.set({
-      $id: 'sh1',
-      $language: 'en',
-      type: 'show',
-      title: 'LOL',
-      votes: 0
-    }),
-    client.set({
-      $id: 'sh2',
-      $language: 'en',
-      type: 'show',
-      title: 'ROFL',
-      votes: 0
-    })
-  ])
+  await client.set({
+    $id: 'root',
+    children: [
+      {
+        $id: 'sh1',
+        $language: 'en',
+        type: 'show',
+        title: 'LOL',
+        votes: 0
+      },
+      {
+        $id: 'sh2',
+        $language: 'en',
+        type: 'show',
+        title: 'ROFL',
+        votes: 0
+      }
+    ]
+  })
+
+  await client.redis.selva_subscriptions_add('___selva_hierarchy', 'aa35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b93', 1, 'children', 'fields', 'votes')
 }
 
 async function after() {
