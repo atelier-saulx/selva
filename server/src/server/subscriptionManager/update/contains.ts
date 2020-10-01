@@ -178,8 +178,6 @@ const contains = (
     }
   }
   if (!inProgress) {
-    console.log(subManager.tree[context.db].___contains)
-
     const memberCheck =
       subManager.tree[context.db].___contains &&
       subManager.tree[context.db].___contains[contains]
