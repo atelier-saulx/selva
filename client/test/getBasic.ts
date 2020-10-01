@@ -1372,7 +1372,7 @@ test.serial.skip(
   }
 )
 
-test.serial.only('get - basic with many ids', async t => {
+test.serial('get - basic with many ids', async t => {
   const client = connect({ port })
 
   await client.set({

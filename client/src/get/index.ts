@@ -315,7 +315,9 @@ async function resolveId(
   }
 }
 
-type GetOp = { id: string; field: string; sourceField: string }
+type GetOp =
+  | { type: 'db'; id: string; field: string; sourceField: string }
+  | { type: 'value'; value: string; field: string }
 
 async function _thing(
   ops: GetOp[],
@@ -325,7 +327,11 @@ async function _thing(
   field: string
 ): Promise<void> {
   if (props.$value) {
-    // TODO: $value
+    ops.push({
+      type: 'value',
+      field: field.substr(1),
+      value: props.$value
+    })
   } else if (props.$id && field) {
     // TODO: nested query
   } else if (props.$list || props.$find) {
@@ -346,6 +352,7 @@ async function _thing(
     }
   } else {
     ops.push({
+      type: 'db',
       id,
       field: field.substr(1),
       sourceField: field.substr(1)
@@ -439,7 +446,8 @@ const TYPE_TO_SPECIAL_OP: Record<
     return id
   },
   references: async (id: string, field: string) => {},
-  object: async (id: string, field: string) => {}
+  object: async (id: string, field: string) => {},
+  record: async (id: string, field: string) => {}
 }
 
 const TYPE_CASTS: Record<string, (x: any) => any> = {
@@ -455,6 +463,10 @@ async function getThings(
 ): Promise<GetResult> {
   const results = await Promise.all(
     ops.map(async op => {
+      if (op.type === 'value') {
+        return op.value
+      }
+
       const fieldSchema = getNestedSchema(
         client.schemas.default,
         op.id,
