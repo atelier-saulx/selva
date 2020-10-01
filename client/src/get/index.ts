@@ -435,6 +435,9 @@ const TYPE_TO_SPECIAL_OP: Record<
   string,
   (id: string, field: string) => Promise<any>
 > = {
+  id: async (id: string, field: string) => {
+    return id
+  },
   references: async (id: string, field: string) => {},
   object: async (id: string, field: string) => {}
 }
