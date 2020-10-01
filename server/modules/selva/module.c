@@ -84,6 +84,11 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
         }
     }
 
+    if (argc == 0) {
+        /* Nothing to replicate. */
+        return;
+    }
+
     RedisModule_Replicate(ctx, "selva.modify", fmt,
                           orig_argv[0], orig_argv[1], orig_argv[2],
                           argv[0],
