@@ -246,25 +246,27 @@ test.serial.only(
       }
     )
 
+    const ancestors = (id) => client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', id);
+
     // check ancestors
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(league + '.ancestors', 0, -1),
+      await ancestors(league),
       ['root']
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(season + '.ancestors', 0, -1),
+      await ancestors(season),
       ['root', league]
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(club + '.ancestors', 0, -1),
+      await ancestors(club),
       ['root']
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(team + '.ancestors', 0, -1),
+      await ancestors(team),
       ['root', club, season, league]
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(match + '.ancestors', 0, -1),
+      await ancestors(match),
       [team, club, 'root']
     )
 
@@ -358,23 +360,25 @@ test.serial('ancestry has only one season in real world setting', async t => {
     value: 90
   })
 
+  const ancestors = (id) => client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', id);
+
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(match1 + '.ancestors', 0, -1),
+    await ancestors(match1),
     ['root', league1, season1, team1, team2]
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(match2 + '.ancestors', 0, -1),
+    await ancestors(match2),
     ['root', league1, season2, team1, team2]
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(match3 + '.ancestors', 0, -1),
+    await ancestors(match3),
     ['root', league2, season3, team1, team2]
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(match4 + '.ancestors', 0, -1),
+    await ancestors(match4),
     ['root', league2, season4, team1, team2]
   )
 
@@ -439,25 +443,27 @@ test.serial(
       }
     )
 
+    const ancestors = (id) => client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', id);
+
     // check ancestors
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(league + '.ancestors', 0, -1),
+      await ancestors(league),
       ['root']
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(season + '.ancestors', 0, -1),
+      await ancestors(season),
       ['root', league]
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(club + '.ancestors', 0, -1),
+      await ancestors(club),
       ['root']
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(team + '.ancestors', 0, -1),
+      await ancestors(team),
       ['root', club, season, league]
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(match + '.ancestors', 0, -1),
+      await ancestors(match),
       [team, club, 'root']
     )
 
