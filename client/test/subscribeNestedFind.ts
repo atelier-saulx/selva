@@ -167,7 +167,7 @@ test.serial('get - correct order', async t => {
 
   t.is(results[0].children.length, 3)
   t.is(results[1].children.length, 2)
-  t.is(results[0].children.length, 3)
+  t.is(results[2].children.length, 3)
 
   await client.destroy()
   await Promise.all(servers.map(s => s.destroy()))
