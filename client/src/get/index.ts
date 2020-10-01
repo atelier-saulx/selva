@@ -287,7 +287,11 @@ async function resolveId(
     const alias = Array.isArray(props.$alias) ? props.$alias : [props.$alias]
     const resolved: (string | null)[] = await Promise.all(
       alias.map(alias => {
-        return client.redis.hget('___selva_aliases', alias)
+        return client.redis.hget(
+          { name: props.$db || 'default' },
+          '___selva_aliases',
+          alias
+        )
       })
     )
 
