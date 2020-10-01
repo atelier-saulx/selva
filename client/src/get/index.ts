@@ -285,30 +285,38 @@ async function resolveId(
     }
   } else if (props.$alias) {
     const alias = Array.isArray(props.$alias) ? props.$alias : [props.$alias]
-    const resolved: (string | null)[] = await Promise.all(
-      alias.map(alias => {
-        return client.redis.hget(
-          { name: props.$db || 'default' },
-          '___selva_aliases',
-          alias
-        )
-      })
+    const resolved: [string | null, boolean][] = <[string | null, boolean][]>(
+      await Promise.all(
+        alias.map(async alias => {
+          return [
+            await client.redis.hget(
+              { name: props.$db || 'default' },
+              '___selva_aliases',
+              alias
+            ),
+            await client.redis.exists({ name: props.$db || 'default' }, alias)
+          ]
+        })
+      )
     )
 
-    return resolved.find(x => !!x) || null
+    const idx = resolved.findIndex(x => {
+      return !!x[0] || x[1]
+    })
+
+    if (idx === -1) {
+      return null
+    }
+
+    return resolved[idx][0] || props.$alias[idx]
   } else {
-    throw new Error(
-      `No $id or $alias property defined in get: ${JSON.stringify(
-        props,
-        null,
-        2
-      )}`
-    )
+    return 'root'
   }
 }
 
 async function run(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const id = await resolveId(client, props)
+  console.log('id', id)
   return {}
 }
 
@@ -318,6 +326,7 @@ async function get(
   meta?: any,
   nested: boolean = false
 ): Promise<GetResult> {
+  await run(client, props)
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
