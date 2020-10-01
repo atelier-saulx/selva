@@ -308,6 +308,12 @@ export class Observable {
 
                 const data = applyPatch(this.cache, patch)
 
+                if (data === null) {
+                  console.warn('Could not apply diff to cache')
+                  this.getValue()
+                  return
+                }
+
                 if (this.useCache) {
                   this.storeInCache(data, version)
                 }
