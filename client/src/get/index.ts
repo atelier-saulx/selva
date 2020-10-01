@@ -316,7 +316,7 @@ async function resolveId(
 }
 
 type GetOp =
-  | { type: 'db'; id: string; field: string; sourceField: string }
+  | { type: 'db'; id: string; field: string; sourceField: string | string[] }
   | { type: 'value'; value: string; field: string }
 
 async function _thing(
@@ -339,7 +339,12 @@ async function _thing(
   } else if (Array.isArray(props)) {
     // TODO: array query syntax
   } else if (props.$field) {
-    // TODO
+    ops.push({
+      type: 'db',
+      id,
+      field: field.substr(1),
+      sourceField: <string[]>props.$field
+    })
   } else if (props.$all) {
     // TODO
   } else if (typeof props === 'object') {
@@ -467,23 +472,49 @@ async function getThings(
         return op.value
       }
 
-      const fieldSchema = getNestedSchema(
-        client.schemas.default,
-        op.id,
-        op.sourceField
-      )
-
-      if (!fieldSchema) {
-        return null
-      }
-
-      const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
-
       let r: any
-      if (specialOp) {
-        r = await specialOp(op.id, op.sourceField)
+      let fieldSchema
+      if (Array.isArray(op.sourceField)) {
+        fieldSchema = getNestedSchema(
+          client.schemas.default,
+          op.id,
+          op.sourceField[0]
+        )
+
+        if (!fieldSchema) {
+          return null
+        }
+
+        const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
+
+        const nested: GetOp[] = await Promise.all(
+          op.sourceField.map(f => {
+            if (specialOp) {
+              return specialOp(op.id, f)
+            }
+
+            return client.redis.hget(op.id, f)
+          })
+        )
+
+        r = nested.find(x => !!x)
       } else {
-        r = await client.redis.hget(op.id, op.sourceField)
+        fieldSchema = getNestedSchema(
+          client.schemas.default,
+          op.id,
+          op.sourceField
+        )
+
+        if (!fieldSchema) {
+          return null
+        }
+
+        const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
+        if (specialOp) {
+          r = await specialOp(op.id, op.sourceField)
+        } else {
+          r = await client.redis.hget(op.id, op.sourceField)
+        }
       }
 
       const typeCast = TYPE_CASTS[fieldSchema.type]
