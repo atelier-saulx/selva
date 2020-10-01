@@ -7,7 +7,7 @@ import validate, {
   PostGetExtraQuery
 } from './validate'
 import { deepMerge } from './deepMerge'
-import { FieldSchema, TypeSchema } from '~selva/schema'
+import { FieldSchema, TypeSchema, Schema } from '~selva/schema'
 
 async function combineResults(
   client: SelvaClient,
@@ -383,20 +383,84 @@ export const setNestedResult = (
   }
 }
 
+function getTypeFromId(schema: Schema, id: string): string | undefined {
+  return schema.prefixToTypeMapping[id.substr(0, 2)]
+}
+
+export function getNestedSchema(
+  schema: Schema,
+  id: string,
+  field: string
+): FieldSchema | null {
+  if (!field || field === '') {
+    return null
+  }
+
+  const type = getTypeFromId(schema, id)
+  const fields = field.split('.')
+
+  const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
+  if (!typeSchema || !typeSchema.fields) {
+    return null
+  }
+
+  let prop: any = typeSchema.fields[fields[0]]
+  if (!prop) {
+    return null
+  }
+
+  for (let i = 1; i < fields.length; i++) {
+    const segment = fields[i]
+
+    if (!prop) {
+      return null
+    }
+
+    if (prop.values) {
+      // record types skip the next key
+      prop = prop.values
+    } else {
+      if (!prop.properties) {
+        return null
+      }
+
+      prop = prop.properties[segment]
+    }
+  }
+
+  return prop
+}
+
 async function getThings(
   client: SelvaClient,
   ops: GetOp[]
 ): Promise<GetResult> {
   const results = await Promise.all(
-    ops.map(op => {
-      // TODO: this is obviously too naive to always do hget
-      return client.redis.hget(op.id, op.sourceField)
+    ops.map(async op => {
+      const fieldSchema = getNestedSchema(
+        client.schemas.default,
+        op.id,
+        op.sourceField
+      )
+
+      if (!fieldSchema) {
+        return null
+      }
+
+      const r = await client.redis.hget(op.id, op.sourceField)
+      if (fieldSchema.type === 'number') {
+        return Number(r)
+      }
+
+      return r
     })
   )
 
   const o: GetResult = {}
   results.map((r, i) => {
-    setNestedResult(o, ops[i].field, r)
+    if (r !== null && r !== undefined) {
+      setNestedResult(o, ops[i].field, r)
+    }
   })
 
   return o
