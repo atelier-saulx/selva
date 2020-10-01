@@ -22,8 +22,6 @@ const drainQueue = (subsManager: SubscriptionManager) => {
       const field = fieldsInQueue[i]
       // making a batch fn is nice for optmizations (for later!)
       command.command.resolve = m => {
-        console.log('-------->', m)
-
         cnt--
         if (!m) m = []
 
@@ -39,8 +37,6 @@ const drainQueue = (subsManager: SubscriptionManager) => {
         m.forEach(v => (members[v] = true))
         const listeners = fieldsInProgressNow[field]
 
-        console.log('????', listeners)
-
         for (let i = 0; i < listeners.length - 1; i += 2) {
           const v = listeners[i + 1]
           if (members[v]) {
@@ -54,8 +50,6 @@ const drainQueue = (subsManager: SubscriptionManager) => {
           queueIsBeingDrained = false
         }
       }
-
-      console.log('CONTAINS', command.context.db, command)
 
       redis.addCommandToQueue(command.command, { name: command.context.db })
     }
@@ -75,7 +69,6 @@ const addAncestorsToBatch = (
   if (!queueIsBeingDrained) {
     drainQueue(subsManager)
   }
-  console.log('FIELD', field, v)
 
   if (!fieldsProgress[field]) {
     queue.push({

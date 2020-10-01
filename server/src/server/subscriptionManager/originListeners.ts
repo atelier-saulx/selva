@@ -104,7 +104,6 @@ const removeOriginListeners = (
       if (name in subsManager.memberMemCache) {
         delete subsManager.memberMemCache[name]
       }
-      console.log('DELETE ORIGIN LISTENER')
       redis.punsubscribe({ name }, EVENTS + '*')
       client.removeListener('reconnect', origin.reconnectListener)
       redis.removeListener({ name }, 'pmessage', origin.listener)

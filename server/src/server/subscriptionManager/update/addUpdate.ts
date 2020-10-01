@@ -30,19 +30,6 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     }
   })
 
-  // if (cnt) {
-  //   console.log(
-  //     'subsManager',
-  //     subscriptionManager.client.uuid.slice(-6),
-  //     'Handled',
-  //     subscriptionManager.incomingCount,
-  //     'beingProcessed',
-  //     subscriptionManager.inProgressCount,
-  //     'actual subscriptions being updated',
-  //     cnt
-  //   )
-  // }
-
   subscriptionManager.stagedInProgess = false
 
   subscriptionManager.incomingCount = 0
