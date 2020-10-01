@@ -431,6 +431,21 @@ export function getNestedSchema(
   return prop
 }
 
+const TYPE_TO_SPECIAL_OP: Record<
+  string,
+  (id: string, field: string) => Promise<any>
+> = {
+  references: async (id: string, field: string) => {},
+  object: async (id: string, field: string) => {}
+}
+
+const TYPE_CASTS: Record<string, (x: any) => any> = {
+  float: Number,
+  number: Number,
+  int: Number,
+  boolean: Boolean
+}
+
 async function getThings(
   client: SelvaClient,
   ops: GetOp[]
@@ -447,9 +462,18 @@ async function getThings(
         return null
       }
 
-      const r = await client.redis.hget(op.id, op.sourceField)
-      if (fieldSchema.type === 'number') {
-        return Number(r)
+      const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
+
+      let r: any
+      if (specialOp) {
+        r = await specialOp(op.id, op.sourceField)
+      } else {
+        r = await client.redis.hget(op.id, op.sourceField)
+      }
+
+      const typeCast = TYPE_CASTS[fieldSchema.type]
+      if (typeCast) {
+        return typeCast(r)
       }
 
       return r
