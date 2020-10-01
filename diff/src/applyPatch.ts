@@ -1,6 +1,6 @@
 import { deepCopy } from '@saulx/utils'
 
-const nestedApplyPatch = (value: object, key: string, patch) => {
+const nestedApplyPatch = (value: object, key: string, patch): void | null => {
   if (patch.constructor === Array) {
     const type = patch[0]
     // 0 - insert
@@ -11,16 +11,32 @@ const nestedApplyPatch = (value: object, key: string, patch) => {
     } else if (type === 1) {
       delete value[key]
     } else if (type === 2) {
-      value[key] = applyArrayPatch(value[key], patch[1])
+      const r = applyArrayPatch(value[key], patch[1])
+      if (r === null) {
+        return null
+      }
+      value[key] = r
     }
   } else {
-    for (let nkey in patch) {
-      nestedApplyPatch(value[key], nkey, patch[nkey])
+    if (value[key] === undefined) {
+      console.warn(
+        'Diff apply patch: Cannot find key in original object',
+        key,
+        JSON.stringify(patch, null, 2)
+      )
+      return null
+      // lets throw
+    } else {
+      for (let nkey in patch) {
+        if (nestedApplyPatch(value[key], nkey, patch[nkey]) === null) {
+          return null
+        }
+      }
     }
   }
 }
 
-const applyArrayPatch = (value: any[], arrayPatch) => {
+const applyArrayPatch = (value: any[], arrayPatch): any[] | null => {
   const patchLength = arrayPatch.length
   const newArray = new Array(arrayPatch[0])
   let aI = -1
@@ -71,12 +87,18 @@ const applyArrayPatch = (value: any[], arrayPatch) => {
       }
     }
     if (needsCopy) {
-      // can prob make this better...
-      // console.log('copy', value[i])
       const copy = deepCopy(value[j])
-      newArray[aI] = applyPatch(copy, patch)
+      const newObject = applyPatch(copy, patch)
+      if (newObject === null) {
+        return null
+      }
+      newArray[aI] = newObject
     } else {
-      newArray[aI] = applyPatch(value[j], patch)
+      const newObject = applyPatch(value[j], patch)
+      if (newObject === null) {
+        return null
+      }
+      newArray[aI] = newObject
     }
   }
 
@@ -84,7 +106,7 @@ const applyArrayPatch = (value: any[], arrayPatch) => {
   // can also be nested
 }
 
-const applyPatch = (value, patch) => {
+const applyPatch = (value, patch): any | null => {
   if (patch) {
     if (patch.constructor === Array) {
       const type = patch[0]
@@ -100,7 +122,10 @@ const applyPatch = (value, patch) => {
       }
     } else {
       for (let key in patch) {
-        nestedApplyPatch(value, key, patch[key])
+        const r = nestedApplyPatch(value, key, patch[key])
+        if (r === null) {
+          return null
+        }
       }
       return value
     }
