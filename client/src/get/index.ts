@@ -262,6 +262,52 @@ function makeNewGetOptions(
   return newOpts
 }
 
+async function resolveId(
+  client: SelvaClient,
+  props: GetOptions
+): Promise<string | undefined> {
+  if (props.$id) {
+    if (Array.isArray(props.$id)) {
+      const exists: boolean[] = await Promise.all(
+        props.$id.map(id => {
+          return client.redis.exists({ name: props.$db || 'default' }, id)
+        })
+      )
+
+      const idx = exists.findIndex(x => !!x)
+      if (idx === -1) {
+        return null
+      }
+
+      return props.$id[idx]
+    } else {
+      return props.$id
+    }
+  } else if (props.$alias) {
+    const alias = Array.isArray(props.$alias) ? props.$alias : [props.$alias]
+    const resolved: (string | null)[] = await Promise.all(
+      alias.map(alias => {
+        return client.redis.hget('___selva_aliases', alias)
+      })
+    )
+
+    return resolved.find(x => !!x) || null
+  } else {
+    throw new Error(
+      `No $id or $alias property defined in get: ${JSON.stringify(
+        props,
+        null,
+        2
+      )}`
+    )
+  }
+}
+
+async function run(client: SelvaClient, props: GetOptions): Promise<GetResult> {
+  const id = await resolveId(client, props)
+  return {}
+}
+
 async function get(
   client: SelvaClient,
   props: GetOptions,
