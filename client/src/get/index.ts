@@ -316,6 +316,11 @@ async function resolveId(
 
 async function run(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const id = await resolveId(client, props)
+
+  if (!id) {
+    return { $isNull: true }
+  }
+
   console.log('id', id)
   return {}
 }
