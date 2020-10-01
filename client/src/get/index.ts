@@ -7,6 +7,7 @@ import validate, {
   PostGetExtraQuery
 } from './validate'
 import { deepMerge } from './deepMerge'
+import { FieldSchema, TypeSchema } from '~selva/schema'
 
 async function combineResults(
   client: SelvaClient,
@@ -314,12 +315,106 @@ async function resolveId(
   }
 }
 
+type GetOp = { id: string; field: string; sourceField: string }
+
+async function _thing(
+  ops: GetOp[],
+  client: SelvaClient,
+  props: GetOptions,
+  id: string,
+  field: string
+): Promise<void> {
+  if (props.$value) {
+    // TODO: $value
+  } else if (props.$id && field) {
+    // TODO: nested query
+  } else if (props.$list || props.$find) {
+    // TODO: queries and lists
+  } else if (Array.isArray(props)) {
+    // TODO: array query syntax
+  } else if (props.$field) {
+    // TODO
+  } else if (props.$all) {
+    // TODO
+  } else if (typeof props === 'object') {
+    for (const key in props) {
+      if (key.startsWith('$')) {
+        continue
+      }
+
+      _thing(ops, client, props[key], id, field + '.' + key)
+    }
+  } else {
+    ops.push({
+      id,
+      field: field.substr(1),
+      sourceField: field.substr(1)
+    })
+  }
+}
+
+export const setNestedResult = (
+  result: GetResult,
+  field: string,
+  value: any
+) => {
+  if (!field) {
+    return
+  }
+
+  if (field === '') {
+    for (const k in value) {
+      result[k] = value[k]
+    }
+
+    return
+  }
+
+  const fields = field.split('.')
+  const len = fields.length
+  if (len > 1) {
+    let segment = result
+    for (let i = 0; i < len - 1; i++) {
+      segment = segment[fields[i]] || (segment[fields[i]] = {})
+    }
+    segment[fields[len - 1]] = value
+  } else {
+    result[field] = value
+  }
+}
+
+async function getThings(
+  client: SelvaClient,
+  ops: GetOp[]
+): Promise<GetResult> {
+  const results = await Promise.all(
+    ops.map(op => {
+      // TODO: this is obviously too naive to always do hget
+      return client.redis.hget(op.id, op.sourceField)
+    })
+  )
+
+  const o: GetResult = {}
+  results.map((r, i) => {
+    setNestedResult(o, ops[i].field, r)
+  })
+
+  return o
+}
+
 async function run(client: SelvaClient, props: GetOptions): Promise<GetResult> {
   const id = await resolveId(client, props)
 
   if (!id) {
     return { $isNull: true }
   }
+
+  const schema = client.schemas[props.$db || 'default']
+
+  const things: any[] = []
+  _thing(things, client, props, id, '')
+  console.log('things', things)
+  console.log('gotten things', await getThings(client, things))
 
   console.log('id', id)
   return {}
