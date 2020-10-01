@@ -6,6 +6,7 @@ import { wait } from '../../../../util'
 import diff from '@saulx/selva-diff'
 import { gzip as zipCb } from 'zlib'
 import { promisify } from 'util'
+import chalk from 'chalk'
 const gzip = promisify(zipCb)
 
 const { CACHE } = constants
@@ -47,7 +48,7 @@ const sendUpdate = async (
   }
 
   const time = setTimeout(() => {
-    throw new Error('Time out ' + channel)
+    console.error(chalk.red('Time out (took longer then 15s)' + channel))
   }, 15e3)
 
   let payload
