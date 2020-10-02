@@ -374,12 +374,20 @@ async function _thing(
       }
 
       for (const key in typeSchema.fields) {
-        ops.push({
-          type: 'db',
-          id,
-          field: key,
-          sourceField: key
-        })
+        if (
+          key !== 'children' &&
+          key !== 'parents' &&
+          key !== 'ancestors' &&
+          key !== 'descendants' &&
+          props[key] === undefined
+        ) {
+          ops.push({
+            type: 'db',
+            id,
+            field: key,
+            sourceField: key
+          })
+        }
       }
 
       return
@@ -632,9 +640,11 @@ async function getThings(
         }
       }
 
-      const typeCast = TYPE_CASTS[fieldSchema.type]
-      if (typeCast) {
-        return typeCast(r)
+      if (r !== null && r !== undefined) {
+        const typeCast = TYPE_CASTS[fieldSchema.type]
+        if (typeCast) {
+          return typeCast(r)
+        }
       }
 
       return r
