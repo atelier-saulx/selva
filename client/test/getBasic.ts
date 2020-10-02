@@ -552,56 +552,53 @@ test.serial('get - $all root level whitelist + $all', async t => {
   client.destroy()
 })
 
-test.serial.only(
-  'get - $all root level whitelist + blacklists + $all',
-  async t => {
-    const client = connect({ port })
+test.serial('get - $all root level whitelist + blacklists + $all', async t => {
+  const client = connect({ port })
 
-    await client.set({
+  await client.set({
+    $id: 'clA',
+    title: {
+      en: 'nice!'
+    },
+    description: {
+      en: 'yesh'
+    },
+    image: {
+      thumb: 'thumb',
+      poster: 'poster'
+    }
+  })
+
+  t.deepEqual(
+    await client.get({
       $id: 'clA',
+      image: {
+        $all: true,
+        thumb: true,
+        poster: false
+      },
+      description: false,
+      $all: true,
+      aliases: false
+    }),
+    {
+      id: 'clA',
+      type: 'club',
       title: {
         en: 'nice!'
       },
-      description: {
-        en: 'yesh'
-      },
       image: {
-        thumb: 'thumb',
-        poster: 'poster'
+        thumb: 'thumb'
       }
-    })
+    }
+  )
 
-    t.deepEqual(
-      await client.get({
-        $id: 'clA',
-        image: {
-          $all: true,
-          thumb: true,
-          poster: false
-        },
-        description: false,
-        $all: true,
-        aliases: false
-      }),
-      {
-        id: 'clA',
-        type: 'club',
-        title: {
-          en: 'nice!'
-        },
-        image: {
-          thumb: 'thumb'
-        }
-      }
-    )
+  await client.delete('root')
 
-    await client.delete('root')
+  client.destroy()
+})
 
-    client.destroy()
-  }
-)
-
-test.serial('get - $all nested', async t => {
+test.serial.only('get - $all nested', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -628,14 +625,10 @@ test.serial('get - $all nested', async t => {
     {
       id: 'maA',
       title: {
-        en: 'nice!',
-        de: '',
-        nl: ''
+        en: 'nice!'
       },
       description: {
-        en: 'yesh',
-        de: '',
-        nl: ''
+        en: 'yesh'
       }
     }
   )

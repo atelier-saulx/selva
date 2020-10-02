@@ -418,13 +418,14 @@ async function _thing(
           _thing(ops, client, props[key], id, field + '.' + key)
         }
       }
-    } else if (fieldSchema.type === 'record') {
+    } else if (fieldSchema.type === 'record' || fieldSchema.type === 'text') {
+      console.log('NO??', id, field)
       // basically this is the same as: `field: true`
       ops.push({
         type: 'db',
         id,
-        field: field,
-        sourceField: field
+        field: field.slice(1),
+        sourceField: field.slice(1)
       })
     }
   } else if (typeof props === 'object') {
