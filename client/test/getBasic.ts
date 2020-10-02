@@ -272,7 +272,7 @@ test.serial('get nested queries', async t => {
   client.destroy()
 })
 
-test.serial.only('get boolean value', async t => {
+test.serial('get boolean value', async t => {
   const client = connect({ port })
 
   await client.set({
