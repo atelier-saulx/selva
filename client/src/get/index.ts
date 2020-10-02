@@ -419,7 +419,6 @@ async function _thing(
         }
       }
     } else if (fieldSchema.type === 'record' || fieldSchema.type === 'text') {
-      console.log('NO??', id, field)
       // basically this is the same as: `field: true`
       ops.push({
         type: 'db',
@@ -564,14 +563,35 @@ const TYPE_TO_SPECIAL_OP: Record<
     const all = await client.redis.hgetall(id)
     const result: any = {}
     Object.entries(all).forEach(([key, val]) => {
-      if (key.startsWith(field)) {
+      if (key.startsWith(field + '.')) {
         setNestedResult(result, key.slice(field.length + 1), val)
       }
     })
 
     return result
   },
-  object: async (client: SelvaClient, id: string, field: string) => {},
+  object: async (client: SelvaClient, id: string, field: string) => {
+    const all = await client.redis.hgetall(id)
+    const result: any = {}
+    let hasKeys = false
+    Object.entries(all).forEach(([key, val]) => {
+      if (key.startsWith(field + '.')) {
+        hasKeys = true
+        const fieldSchema = getNestedSchema(client.schemas.default, id, key)
+        const typeCast = TYPE_CASTS[fieldSchema.type]
+        if (typeCast) {
+          val = typeCast(val)
+        }
+        setNestedResult(result, key.slice(field.length + 1), val)
+      }
+    })
+
+    if (hasKeys) {
+      return result
+    }
+
+    return null
+  },
   record: async (client: SelvaClient, id: string, field: string) => {}
 }
 
