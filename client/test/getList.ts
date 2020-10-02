@@ -20,7 +20,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial.only('get - simple $list', async t => {
+test.serial('get - simple $list', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -129,7 +129,7 @@ test.serial.only('get - simple $list', async t => {
   */
 })
 
-test.serial('get - simple $list with $field of one field', async t => {
+test.serial.only('get - simple $list with $field of one field', async t => {
   const client = connect({ port })
 
   await client.updateSchema({

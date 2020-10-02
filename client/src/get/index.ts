@@ -377,7 +377,7 @@ function _thing(
         id,
         props,
         field: field.substr(1),
-        sourceField: <string[]>props.$field || field.substr(1),
+        sourceField: <string>props.$field || field.substr(1),
         options: {
           limit: props.$list.$limit || -1,
           offset: props.$list.$offset || 0,
@@ -750,7 +750,7 @@ async function getThings(
         const ids = await client.redis.selva_hierarchy_find(
           '___selva_hierarchy',
           'bfs',
-          op.field, // TODO: this needs to support sourceField I think?
+          <string>op.sourceField, // TODO: this needs to support sourceField I think?
           'order',
           op.options.sort.$field || '',
           op.options.sort.$order || 'asc',
@@ -762,11 +762,23 @@ async function getThings(
           '#1'
         )
 
+        console.log('IDS', ids)
+
         return Promise.all(
           ids.map(id => {
+            const realOpts: any = {}
+            for (const key in op.props) {
+              if (!key.startsWith('$')) {
+                realOpts[key] = op.props[key]
+              }
+            }
+
             return run(
               client,
-              Object.assign(op.props, { $id: id, $list: undefined })
+              Object.assign(op.props, {
+                $id: id,
+                ...realOpts
+              })
             )
           })
         )
