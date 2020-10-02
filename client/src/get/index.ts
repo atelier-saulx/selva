@@ -587,8 +587,6 @@ async function get(
   meta?: any,
   nested: boolean = false
 ): Promise<GetResult> {
-  const r = await run(client, props)
-  console.log('HMM', r)
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
@@ -596,16 +594,7 @@ async function get(
     props
   )
 
-  const getResult = JSON.parse(
-    await client.redis.evalsha(
-      { name: props.$db || 'default', type: 'replica' },
-      `${SCRIPT}:fetch`,
-      0,
-      `${client.loglevel}:${client.uuid}`,
-      JSON.stringify(newProps)
-    )
-  )
-
+  const getResult = await run(client, props)
   if (meta || props.$includeMeta) {
     if (!meta) {
       if (!getResult.$meta) {

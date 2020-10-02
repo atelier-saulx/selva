@@ -206,7 +206,7 @@ test.serial('get $value', async t => {
   client.destroy()
 })
 
-test.serial('get nested queries', async t => {
+test.serial.only('get nested queries', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
