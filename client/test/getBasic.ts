@@ -803,12 +803,10 @@ test.serial('get - field with empty array', async t => {
   })
 
   t.deepEqual(result, {
-    thing: [],
     children: [],
     descendants: [],
     dingdongs: [],
     refs: [],
-    ding: { dong: [] },
     dong: { dingdong: [] }
   })
 
@@ -823,9 +821,7 @@ test.serial('get - field with empty array', async t => {
       type: 'lekkerType',
       dingdongs: [],
       refs: [],
-      thing: [],
-      ding: { dong: [] },
-      aliases: []
+      ding: { dong: [] }
     }
   )
 
@@ -1536,7 +1532,7 @@ test.serial('get - basic with non-priority language', async t => {
   client.destroy()
 })
 
-test.serial.only('get - record', async t => {
+test.serial('get - record', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({

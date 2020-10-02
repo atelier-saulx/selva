@@ -598,7 +598,10 @@ const TYPE_TO_SPECIAL_OP: Record<
     field: string,
     _lang?: string
   ) => {
-    return client.redis.zrange(id + '.' + field, 0, -1)
+    const set = await client.redis.zrange(id + '.' + field, 0, -1)
+    if (set && set.length) {
+      return set
+    }
   },
   text: async (
     client: SelvaClient,
