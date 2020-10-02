@@ -636,7 +636,6 @@ test.serial('get - $field with object structure', async t => {
     }),
     {
       id: 'viA',
-      wrappingObject: {},
       value: 25
     }
   )
