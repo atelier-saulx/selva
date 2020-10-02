@@ -506,7 +506,7 @@ test.serial('get - $all simple', async t => {
   client.destroy()
 })
 
-test.serial.only('get - $all root level whitelist + $all', async t => {
+test.serial('get - $all root level whitelist + $all', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -552,52 +552,54 @@ test.serial.only('get - $all root level whitelist + $all', async t => {
   client.destroy()
 })
 
-test.serial('get - $all root level whitelist + blacklists + $all', async t => {
-  const client = connect({ port })
+test.serial.only(
+  'get - $all root level whitelist + blacklists + $all',
+  async t => {
+    const client = connect({ port })
 
-  await client.set({
-    $id: 'clA',
-    title: {
-      en: 'nice!'
-    },
-    description: {
-      en: 'yesh'
-    },
-    image: {
-      thumb: 'thumb',
-      poster: 'poster'
-    }
-  })
-
-  t.deepEqual(
-    await client.get({
+    await client.set({
       $id: 'clA',
-      image: {
-        $all: true,
-        thumb: true,
-        poster: false
-      },
-      description: false,
-      $all: true,
-      aliases: false
-    }),
-    {
-      id: 'clA',
-      type: 'club',
-      name: '',
       title: {
         en: 'nice!'
       },
+      description: {
+        en: 'yesh'
+      },
       image: {
-        thumb: 'thumb'
+        thumb: 'thumb',
+        poster: 'poster'
       }
-    }
-  )
+    })
 
-  await client.delete('root')
+    t.deepEqual(
+      await client.get({
+        $id: 'clA',
+        image: {
+          $all: true,
+          thumb: true,
+          poster: false
+        },
+        description: false,
+        $all: true,
+        aliases: false
+      }),
+      {
+        id: 'clA',
+        type: 'club',
+        title: {
+          en: 'nice!'
+        },
+        image: {
+          thumb: 'thumb'
+        }
+      }
+    )
 
-  client.destroy()
-})
+    await client.delete('root')
+
+    client.destroy()
+  }
+)
 
 test.serial('get - $all nested', async t => {
   const client = connect({ port })

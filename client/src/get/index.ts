@@ -387,6 +387,8 @@ async function _thing(
               field: key,
               sourceField: key
             })
+          } else if (props[key] === false) {
+            // do nothing
           } else {
             _thing(ops, client, props[key], id, field + '.' + key)
           }
@@ -403,12 +405,18 @@ async function _thing(
 
     if (fieldSchema.type === 'object') {
       for (const key in fieldSchema.properties) {
-        ops.push({
-          type: 'db',
-          id,
-          field: field.slice(1) + '.' + key,
-          sourceField: field.slice(1) + '.' + key
-        })
+        if (props[key] === undefined) {
+          ops.push({
+            type: 'db',
+            id,
+            field: field.slice(1) + '.' + key,
+            sourceField: field.slice(1) + '.' + key
+          })
+        } else if (props[key] === false) {
+          // do nothing
+        } else {
+          _thing(ops, client, props[key], id, field + '.' + key)
+        }
       }
     } else if (fieldSchema.type === 'record') {
       // basically this is the same as: `field: true`
