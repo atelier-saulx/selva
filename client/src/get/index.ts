@@ -363,7 +363,51 @@ async function _thing(
       sourceField: <string[]>props.$field
     })
   } else if (props.$all) {
-    // TODO
+    // TODO: proper $db support, well, everywhere basically not just here
+    const schema = client.schemas.default
+    if (field === '') {
+      const type = getTypeFromId(schema, id)
+      const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
+
+      if (!typeSchema) {
+        return
+      }
+
+      for (const key in typeSchema.fields) {
+        ops.push({
+          type: 'db',
+          id,
+          field: key,
+          sourceField: key
+        })
+      }
+
+      return
+    }
+
+    const fieldSchema = getNestedSchema(schema, id, field.slice(1))
+    if (!fieldSchema) {
+      return
+    }
+
+    if (fieldSchema.type === 'object') {
+      for (const key in fieldSchema.properties) {
+        ops.push({
+          type: 'db',
+          id,
+          field: field.slice(1) + '.' + key,
+          sourceField: field.slice(1) + '.' + key
+        })
+      }
+    } else if (fieldSchema.type === 'record') {
+      // basically this is the same as: `field: true`
+      ops.push({
+        type: 'db',
+        id,
+        field: field,
+        sourceField: field
+      })
+    }
   } else if (typeof props === 'object') {
     for (const key in props) {
       if (key.startsWith('$')) {
