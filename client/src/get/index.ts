@@ -338,6 +338,12 @@ async function _thing(
     // TODO: queries and lists
   } else if (Array.isArray(props)) {
     // TODO: array query syntax
+  } else if (
+    props.$field &&
+    typeof props.$field === 'object' &&
+    (<any>props.$field).value
+  ) {
+    // TODO
   } else if (props.$field) {
     ops.push({
       type: 'db',
