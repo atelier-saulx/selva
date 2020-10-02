@@ -15,12 +15,12 @@ import { ServerSelector } from '../types'
 import chalk from 'chalk'
 import { applyPatch } from '@saulx/selva-diff'
 
-import { unzip as unzipCb } from 'zlib'
-import { promisify } from 'util'
+// import { unzip as unzipCb } from 'zlib'
+// import { promisify } from 'util'
 
 import { deepCopy } from '@saulx/utils'
 
-const unzip = promisify(unzipCb)
+// const unzip = promisify(unzipCb)
 
 var observableIds = 0
 
@@ -67,6 +67,10 @@ export class Observable {
         this.useCache = true // true
       } else {
         this.useCache = options.cache
+      }
+
+      if (options.raw) {
+        this.raw = true
       }
 
       if (options.maxMemory === undefined) {
@@ -299,7 +303,7 @@ export class Observable {
               ) {
                 if (this.monitor) {
                   console.log('--------------------------------')
-                  // console.dir(this.cache, { depth: 10 })
+                  console.dir(this.cache, { depth: 10 })
                   console.dir(diff, { depth: 10 })
                   // console.dir(data, { depth: 10 })
                   console.log('--------------------------------')

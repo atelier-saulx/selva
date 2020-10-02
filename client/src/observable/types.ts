@@ -6,14 +6,12 @@ export type GetObservableOptions = {
   maxMemory?: number
   options: GetOptions
   immutable?: boolean
-  raw?: boolean
 }
 
 export type ObsSettings = {
   cache?: boolean
   maxMemory?: number
   immutable?: boolean
-  raw?: boolean
 }
 
 export type SchemaObservableOptions = {
@@ -22,7 +20,6 @@ export type SchemaObservableOptions = {
   cache?: boolean
   maxMemory?: number
   immutable?: boolean
-  raw?: boolean
 }
 
 export type ObservableOptions = GetObservableOptions | SchemaObservableOptions
