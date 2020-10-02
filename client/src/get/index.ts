@@ -316,7 +316,13 @@ async function resolveId(
 }
 
 type GetOp =
-  | { type: 'db'; id: string; field: string; sourceField: string | string[] }
+  | {
+      type: 'db'
+      id: string
+      field: string
+      sourceField: string | string[]
+      default?: any
+    }
   | { type: 'value'; value: string; field: string }
   | { type: 'nested_query'; props: GetOptions; field: string }
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
@@ -427,6 +433,14 @@ async function _thing(
         sourceField: field.slice(1)
       })
     }
+  } else if (props.$default) {
+    ops.push({
+      type: 'db',
+      id,
+      field: field.substr(1),
+      sourceField: field.substr(1),
+      default: props.$default
+    })
   } else if (typeof props === 'object') {
     for (const key in props) {
       if (key.startsWith('$')) {
@@ -681,9 +695,11 @@ async function getThings(
         if (typeCast) {
           return typeCast(r)
         }
-      }
 
-      return r
+        return r
+      } else if (op.default) {
+        return op.default
+      }
     })
   )
 

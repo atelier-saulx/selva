@@ -638,7 +638,7 @@ test.serial('get - $all nested', async t => {
   client.destroy()
 })
 
-test.serial.only('get - $all deeply nested', async t => {
+test.serial('get - $all deeply nested', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const entry = await client.set({
@@ -705,7 +705,7 @@ test.serial.only('get - $all deeply nested', async t => {
   client.destroy()
 })
 
-test.serial('get - $default', async t => {
+test.serial.only('get - $default', async t => {
   const client = connect({ port })
 
   await client.set({
