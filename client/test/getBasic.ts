@@ -349,7 +349,7 @@ test.serial('get complex with $value and array syntax', async t => {
   client.destroy()
 })
 
-test.serial('get - root', async t => {
+test.serial.only('get - root', async t => {
   const client = connect({ port })
 
   const match = await client.set({

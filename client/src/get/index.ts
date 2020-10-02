@@ -413,6 +413,10 @@ export const setNestedResult = (
 }
 
 function getTypeFromId(schema: Schema, id: string): string | undefined {
+  if (id.startsWith('ro')) {
+    return 'root'
+  }
+
   return schema.prefixToTypeMapping[id.substr(0, 2)]
 }
 
