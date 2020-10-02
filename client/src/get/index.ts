@@ -589,8 +589,16 @@ const TYPE_TO_SPECIAL_OP: Record<
     } else if (field === 'children') {
       return client.redis.selva_hierarchy_children('___selva_hierarchy', id)
     } else {
-      return client.redis.zrange(id, 0, -1)
+      return client.redis.zrange(id + '.' + field, 0, -1)
     }
+  },
+  set: async (
+    client: SelvaClient,
+    id: string,
+    field: string,
+    _lang?: string
+  ) => {
+    return client.redis.zrange(id + '.' + field, 0, -1)
   },
   text: async (
     client: SelvaClient,
@@ -601,13 +609,17 @@ const TYPE_TO_SPECIAL_OP: Record<
     if (!lang) {
       const all = await client.redis.hgetall(id)
       const result: any = {}
+      let hasFields = false
       Object.entries(all).forEach(([key, val]) => {
         if (key.startsWith(field + '.')) {
+          hasFields = true
           setNestedResult(result, key.slice(field.length + 1), val)
         }
       })
 
-      return result
+      if (hasFields) {
+        return result
+      }
     }
 
     return client.redis.hget(id, field + '.' + lang)
@@ -621,17 +633,28 @@ const TYPE_TO_SPECIAL_OP: Record<
     const all = await client.redis.hgetall(id)
     const result: any = {}
     let hasKeys = false
-    Object.entries(all).forEach(([key, val]) => {
-      if (key.startsWith(field + '.')) {
-        hasKeys = true
-        const fieldSchema = getNestedSchema(client.schemas.default, id, key)
-        const typeCast = TYPE_CASTS[fieldSchema.type]
-        if (typeCast) {
-          val = typeCast(val)
+    await Promise.all(
+      Object.entries(all).map(async ([key, val]) => {
+        if (key.startsWith(field + '.')) {
+          hasKeys = true
+
+          if (val === '___selva_$set') {
+            const set = await client.redis.zrange(id + '.' + field, 0, -1)
+            if (set) {
+              setNestedResult(result, key.slice(field.length + 1), set)
+            }
+            return
+          }
+
+          const fieldSchema = getNestedSchema(client.schemas.default, id, key)
+          const typeCast = TYPE_CASTS[fieldSchema.type]
+          if (typeCast) {
+            val = typeCast(val)
+          }
+          setNestedResult(result, key.slice(field.length + 1), val)
         }
-        setNestedResult(result, key.slice(field.length + 1), val)
-      }
-    })
+      })
+    )
 
     if (hasKeys) {
       return result
@@ -652,7 +675,8 @@ const TYPE_CASTS: Record<string, (x: any) => any> = {
   number: Number,
   int: Number,
   boolean: (x: any) => (x === '0' ? false : true),
-  json: (x: any) => JSON.parse(x)
+  json: (x: any) => JSON.parse(x),
+  array: (x: any) => JSON.parse(x)
 }
 
 async function getThings(

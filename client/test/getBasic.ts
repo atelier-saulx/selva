@@ -739,7 +739,7 @@ test.serial('get - $default', async t => {
   client.destroy()
 })
 
-test.serial.only('get - $language', async t => {
+test.serial('get - $language', async t => {
   const client = connect({ port })
   await client.set({
     $id: 'viflap',
@@ -779,7 +779,7 @@ test.serial.only('get - $language', async t => {
   client.destroy()
 })
 
-test.serial('get - field with empty array', async t => {
+test.serial.only('get - field with empty array', async t => {
   const client = connect({ port })
 
   const id = await client.set({
@@ -823,7 +823,6 @@ test.serial('get - field with empty array', async t => {
       type: 'lekkerType',
       dingdongs: [],
       refs: [],
-      name: '',
       thing: [],
       ding: { dong: [] },
       aliases: []
