@@ -547,12 +547,27 @@ export function getNestedSchema(
 
 const TYPE_TO_SPECIAL_OP: Record<
   string,
-  (client: SelvaClient, id: string, field: string) => Promise<any>
+  (
+    client: SelvaClient,
+    id: string,
+    field: string,
+    _lang?: string
+  ) => Promise<any>
 > = {
-  id: async (client: SelvaClient, id: string, field: string) => {
+  id: async (
+    client: SelvaClient,
+    id: string,
+    field: string,
+    _lang?: string
+  ) => {
     return id
   },
-  references: async (client: SelvaClient, id: string, field: string) => {
+  references: async (
+    client: SelvaClient,
+    id: string,
+    field: string,
+    _lang?: string
+  ) => {
     const paddedId = id.padEnd(10, '\0')
 
     if (field === 'ancestors') {
@@ -577,18 +592,32 @@ const TYPE_TO_SPECIAL_OP: Record<
       return client.redis.zrange(id, 0, -1)
     }
   },
-  text: async (client: SelvaClient, id: string, field: string) => {
-    const all = await client.redis.hgetall(id)
-    const result: any = {}
-    Object.entries(all).forEach(([key, val]) => {
-      if (key.startsWith(field + '.')) {
-        setNestedResult(result, key.slice(field.length + 1), val)
-      }
-    })
+  text: async (
+    client: SelvaClient,
+    id: string,
+    field: string,
+    lang?: string
+  ) => {
+    if (!lang) {
+      const all = await client.redis.hgetall(id)
+      const result: any = {}
+      Object.entries(all).forEach(([key, val]) => {
+        if (key.startsWith(field + '.')) {
+          setNestedResult(result, key.slice(field.length + 1), val)
+        }
+      })
 
-    return result
+      return result
+    }
+
+    return client.redis.hget(id, field + '.' + lang)
   },
-  object: async (client: SelvaClient, id: string, field: string) => {
+  object: async (
+    client: SelvaClient,
+    id: string,
+    field: string,
+    _lang?: string
+  ) => {
     const all = await client.redis.hgetall(id)
     const result: any = {}
     let hasKeys = false
@@ -610,7 +639,12 @@ const TYPE_TO_SPECIAL_OP: Record<
 
     return null
   },
-  record: async (client: SelvaClient, id: string, field: string) => {}
+  record: async (
+    client: SelvaClient,
+    id: string,
+    field: string,
+    _lang: string
+  ) => {}
 }
 
 const TYPE_CASTS: Record<string, (x: any) => any> = {
@@ -623,6 +657,7 @@ const TYPE_CASTS: Record<string, (x: any) => any> = {
 
 async function getThings(
   client: SelvaClient,
+  lang: string | undefined,
   ops: GetOp[]
 ): Promise<GetResult> {
   const results = await Promise.all(
@@ -663,7 +698,7 @@ async function getThings(
         const nested: GetOp[] = await Promise.all(
           op.sourceField.map(f => {
             if (specialOp) {
-              return specialOp(client, op.id, f)
+              return specialOp(client, op.id, f, lang)
             }
 
             return client.redis.hget(op.id, f)
@@ -684,7 +719,7 @@ async function getThings(
 
         const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
         if (specialOp) {
-          r = await specialOp(client, op.id, op.sourceField)
+          r = await specialOp(client, op.id, op.sourceField, lang)
         } else {
           r = await client.redis.hget(op.id, op.sourceField)
         }
@@ -720,11 +755,11 @@ async function run(client: SelvaClient, props: GetOptions): Promise<GetResult> {
     return { $isNull: true }
   }
 
-  const schema = client.schemas[props.$db || 'default']
+  const lang = props.$language
 
   const things: any[] = []
   _thing(things, client, props, id, '')
-  return getThings(client, things)
+  return getThings(client, lang, things)
 }
 
 async function get(

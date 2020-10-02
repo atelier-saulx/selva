@@ -705,7 +705,7 @@ test.serial('get - $all deeply nested', async t => {
   client.destroy()
 })
 
-test.serial.only('get - $default', async t => {
+test.serial('get - $default', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -739,7 +739,7 @@ test.serial.only('get - $default', async t => {
   client.destroy()
 })
 
-test.serial('get - $language', async t => {
+test.serial.only('get - $language', async t => {
   const client = connect({ port })
   await client.set({
     $id: 'viflap',
