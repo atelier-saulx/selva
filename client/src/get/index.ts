@@ -606,23 +606,32 @@ const TYPE_TO_SPECIAL_OP: Record<
     field: string,
     lang?: string
   ) => {
-    if (!lang) {
-      const all = await client.redis.hgetall(id)
-      const result: any = {}
-      let hasFields = false
-      Object.entries(all).forEach(([key, val]) => {
-        if (key.startsWith(field + '.')) {
-          hasFields = true
-          setNestedResult(result, key.slice(field.length + 1), val)
-        }
-      })
+    const all = await client.redis.hgetall(id)
+    const result: any = {}
+    let hasFields = false
+    Object.entries(all).forEach(([key, val]) => {
+      if (key.startsWith(field + '.')) {
+        hasFields = true
+        setNestedResult(result, key.slice(field.length + 1), val)
+      }
+    })
 
-      if (hasFields) {
-        return result
+    if (lang) {
+      if (result[lang]) {
+        return result[lang]
+      }
+
+      const allLangs = client.schemas.default.languages
+      for (const l of allLangs) {
+        if (result[l]) {
+          return result[l]
+        }
       }
     }
 
-    return client.redis.hget(id, field + '.' + lang)
+    if (hasFields) {
+      return result
+    }
   },
   object: async (
     client: SelvaClient,
