@@ -318,6 +318,7 @@ async function resolveId(
 type GetOp =
   | { type: 'db'; id: string; field: string; sourceField: string | string[] }
   | { type: 'value'; value: string; field: string }
+  | { type: 'nested_query'; props: GetOptions; field: string }
 
 async function _thing(
   ops: GetOp[],
@@ -333,7 +334,11 @@ async function _thing(
       value: props.$value
     })
   } else if (props.$id && field) {
-    // TODO: nested query
+    ops.push({
+      type: 'nested_query',
+      field: field.substr(1),
+      props
+    })
   } else if (props.$list || props.$find) {
     // TODO: queries and lists
   } else if (Array.isArray(props)) {
@@ -476,7 +481,11 @@ async function getThings(
     ops.map(async op => {
       if (op.type === 'value') {
         return op.value
+      } else if (op.type === 'nested_query') {
+        return run(client, op.props)
       }
+
+      // op.type === 'db'
 
       let r: any
       let fieldSchema
@@ -553,11 +562,7 @@ async function run(client: SelvaClient, props: GetOptions): Promise<GetResult> {
 
   const things: any[] = []
   _thing(things, client, props, id, '')
-  console.log('things', things)
-  console.log('gotten things', await getThings(client, things))
-
-  console.log('id', id)
-  return {}
+  return getThings(client, things)
 }
 
 async function get(
@@ -566,7 +571,8 @@ async function get(
   meta?: any,
   nested: boolean = false
 ): Promise<GetResult> {
-  await run(client, props)
+  const r = await run(client, props)
+  console.log('HMM', r)
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
