@@ -747,6 +747,7 @@ async function getThings(
           })
         )
       } else if (op.type === 'find') {
+        console.log('OP', op)
         const ids = await client.redis.selva_hierarchy_find(
           '___selva_hierarchy',
           'bfs',
@@ -773,13 +774,10 @@ async function getThings(
               }
             }
 
-            return run(
-              client,
-              Object.assign(op.props, {
-                $id: id,
-                ...realOpts
-              })
-            )
+            return run(client, {
+              $id: id,
+              ...realOpts
+            })
           })
         )
       }
