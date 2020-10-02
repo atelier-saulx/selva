@@ -668,15 +668,15 @@ const TYPE_TO_SPECIAL_OP: Record<
     if (hasKeys) {
       return result
     }
-
-    return null
   },
   record: async (
     client: SelvaClient,
     id: string,
     field: string,
     _lang: string
-  ) => {}
+  ) => {
+    return TYPE_TO_SPECIAL_OP.object(client, id, field, _lang)
+  }
 }
 
 const TYPE_CASTS: Record<string, (x: any) => any> = {

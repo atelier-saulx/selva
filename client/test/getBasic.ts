@@ -1446,7 +1446,7 @@ test.serial('get - basic with many ids', async t => {
   client.destroy()
 })
 
-test.serial.only('get - basic with non-priority language', async t => {
+test.serial('get - basic with non-priority language', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -1536,7 +1536,7 @@ test.serial.only('get - basic with non-priority language', async t => {
   client.destroy()
 })
 
-test.serial('get - record', async t => {
+test.serial.only('get - record', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
