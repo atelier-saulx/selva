@@ -319,6 +319,7 @@ type GetOp =
   | { type: 'db'; id: string; field: string; sourceField: string | string[] }
   | { type: 'value'; value: string; field: string }
   | { type: 'nested_query'; props: GetOptions; field: string }
+  | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
 
 async function _thing(
   ops: GetOp[],
@@ -339,10 +340,15 @@ async function _thing(
       field: field.substr(1),
       props
     })
+  } else if (Array.isArray(props)) {
+    ops.push({
+      type: 'array_query',
+      id,
+      field: field.substr(1),
+      props
+    })
   } else if (props.$list || props.$find) {
     // TODO: queries and lists
-  } else if (Array.isArray(props)) {
-    // TODO: array query syntax
   } else if (
     props.$field &&
     typeof props.$field === 'object' &&
@@ -483,6 +489,16 @@ async function getThings(
         return op.value
       } else if (op.type === 'nested_query') {
         return run(client, op.props)
+      } else if (op.type === 'array_query') {
+        return Promise.all(
+          op.props.map(p => {
+            if (p.$id) {
+              return run(client, p)
+            } else {
+              return run(client, Object.assign({}, p, { $id: op.id }))
+            }
+          })
+        )
       }
 
       // op.type === 'db'
