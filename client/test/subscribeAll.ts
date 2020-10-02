@@ -122,8 +122,6 @@ test.serial('no json parsing', async t => {
     buttonText: 'my ballz'
   })
 
-  const a = await client.get(get)
-
   await wait(100)
 
   client.set({
@@ -133,10 +131,6 @@ test.serial('no json parsing', async t => {
   })
 
   await wait(100)
-
-  const b = await client.get(get)
-
-  console.log(a, b)
 
   t.deepEqual(results, [
     'my ballz',

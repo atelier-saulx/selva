@@ -409,10 +409,10 @@
     redis "^2.8.0"
     uuid "^3.3.3"
 
-"@saulx/utils@^1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@saulx/utils/-/utils-1.0.4.tgz#4d9ad6c5cbbd134426dec0a64286c7a2e5b12ddf"
-  integrity sha512-E0ZLQcQG8vKuudz0v3F2YDSy0jWB2i/Ovd7xFCLConsuBdrL+crz2XzWBb7slJDjsZWMJX6MfmeWmHlDOve9NA==
+"@saulx/utils@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@saulx/utils/-/utils-1.0.5.tgz#be44caa95b84f735342364bcbeb037fa345420fb"
+  integrity sha512-ATj2dm+oEEUtmCfOfgcCbOJqC0+LwUOyACnne8dsusBH/6RlmCV6cTJk9bUhGPoD+7zAJbjLYVGhi1cDO/dXlQ==
 
 "@sindresorhus/fnv1a@^2.0.1":
   version "2.0.1"
