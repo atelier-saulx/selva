@@ -327,13 +327,13 @@ type GetOp =
   | { type: 'nested_query'; props: GetOptions; field: string }
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
 
-async function _thing(
+function _thing(
   ops: GetOp[],
   client: SelvaClient,
   props: GetOptions,
   id: string,
   field: string
-): Promise<void> {
+): void {
   if (props.$value) {
     ops.push({
       type: 'value',
