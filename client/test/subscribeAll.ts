@@ -38,18 +38,30 @@ test.serial('no json parsing', async t => {
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     types: {
+      folder: {
+        prefix: 'fo',
+        fields: { title: { type: 'text' } }
+      },
       match: {
         prefix: 'ma',
         fields: {
           published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true }
+          buttonText: { type: 'text', search: true }
         }
       }
     }
   })
 
+  await client.set({
+    $language: 'en',
+    $id: 'fo1'
+  })
+
   const obs = client.observe(
     {
+      $id: 'fo1',
+      $all: true,
+      $language: 'en',
       children: {
         $list: true,
         $all: true
@@ -63,19 +75,18 @@ test.serial('no json parsing', async t => {
   const results = []
 
   obs.subscribe((v, hash, diff) => {
-    console.log(v, hash, diff)
-
-    results.push(v)
+    if (v.children[0]) {
+      results.push(v.children[0].buttonText)
+    }
   })
 
   client.set({
-    $id: 'root',
+    $id: 'fo1',
     $language: 'en',
     children: [
       {
         $id: 'ma1',
-        title: 'my ballz',
-        published: true
+        buttonText: 'my ballz'
       }
     ]
   })
@@ -85,8 +96,7 @@ test.serial('no json parsing', async t => {
   client.set({
     $id: 'ma1',
     $language: 'en',
-    title: 'my ball',
-    published: true
+    buttonText: 'my ball'
   })
 
   await wait(100)
@@ -94,11 +104,36 @@ test.serial('no json parsing', async t => {
   client.set({
     $id: 'ma1',
     $language: 'en',
-    title: 'my ba',
-    published: true
+    buttonText: 'my ba'
   })
 
   await wait(100)
+
+  client.set({
+    $id: 'ma1',
+    $language: 'en',
+    buttonText: 'my bal'
+  })
+
+  await wait(100)
+
+  client.set({
+    $id: 'ma1',
+    $language: 'en',
+    buttonText: 'my ballz'
+  })
+
+  await wait(100)
+
+  client.set({
+    $id: 'ma1',
+    $language: 'en',
+    buttonText: 'my ballzzzz'
+  })
+
+  await wait(100)
+
+  console.log(results)
 
   await client.destroy()
   await Promise.all(servers.map(s => s.destroy()))
