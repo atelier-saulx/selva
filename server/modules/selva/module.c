@@ -70,23 +70,42 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
     char fmt[3 + max_argc + 1];
 
     argv = RedisModule_PoolAlloc(ctx, max_argc * sizeof(RedisModuleString *));
+    if (!argv) {
+        fprintf(stderr, "Replication: %s\n", getSelvaErrorStr(SELVA_ENOMEM));
+    }
 
-    memset(fmt, '\0', sizeof(fmt));
     fmt[0] = 's';
     fmt[1] = 's';
     fmt[2] = 's';
 
+    int i_arg_type = 3;
     for (int i = 0; i < max_argc; i++) {
         if (get_replset(r, i)) {
-            argv[argc] = orig_argv[i];
-            fmt[argc] = 's';
-            argc++;
+            argv[argc] = orig_argv[i_arg_type];
+            argv[argc + 1] = orig_argv[i_arg_type + 1];
+            argv[argc + 2] = orig_argv[i_arg_type + 2];
+            fmt[argc + 3] = 's';
+            fmt[argc + 4] = 's';
+            fmt[argc + 5] = 's';
+            argc += 3;
         }
+        i_arg_type += 3;
     }
+    fmt[argc + 3] = '\0';
+
+    // TODO Remove
+    fprintf(stderr, "Replicating %d changes, \"%s\"\n", argc / 3, fmt);
 
     if (argc == 0) {
         /* Nothing to replicate. */
         return;
+    }
+
+    // TODO Remove
+    for (int i = 0; i < argc; i++) {
+        const RedisModuleString *arg = argv[i];
+
+        fprintf(stderr, "arg[%d] = %s\n", i, arg ? RedisModule_StringPtrLen(arg, NULL) : "NULL");
     }
 
     RedisModule_Replicate(ctx, "selva.modify", fmt,
