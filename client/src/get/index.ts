@@ -476,7 +476,7 @@ const TYPE_CASTS: Record<string, (x: any) => any> = {
   float: Number,
   number: Number,
   int: Number,
-  boolean: Boolean
+  boolean: (x: any) => (x === '0' ? false : true)
 }
 
 async function getThings(
