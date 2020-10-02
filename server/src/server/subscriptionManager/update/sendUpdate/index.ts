@@ -68,11 +68,6 @@ const sendUpdate = async (
 
   const newVersion = hashObjectIgnoreKeyOrder(payload)
 
-  console.log('------------------------')
-  console.log('version: ', newVersion)
-  console.log(payload)
-  console.log('------------------------')
-
   const resultStr = JSON.stringify({ type: 'update', payload })
 
   const currentVersion = subscription.version
@@ -166,7 +161,6 @@ const sendUpdate = async (
 
   await Promise.all(q)
 
-  console.log('GO PUBLISH', currentVersion, '-->', newVersion)
   await redis.publish(
     selector,
     channel,
