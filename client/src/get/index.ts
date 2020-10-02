@@ -467,7 +467,31 @@ const TYPE_TO_SPECIAL_OP: Record<
   id: async (client: SelvaClient, id: string, field: string) => {
     return id
   },
-  references: async (client: SelvaClient, id: string, field: string) => {},
+  references: async (client: SelvaClient, id: string, field: string) => {
+    const paddedId = id.padEnd(10, '\0')
+
+    if (field === 'ancestors') {
+      return client.redis.selva_hierarchy_find(
+        '___selva_hierarchy',
+        'bfs',
+        'ancestors',
+        paddedId
+      )
+    } else if (field === 'descendants') {
+      return client.redis.selva_hierarchy_find(
+        '___selva_hierarchy',
+        'bfs',
+        'descendants',
+        paddedId
+      )
+    } else if (field === 'parents') {
+      return client.redis.selva_hierarchy_parents('___selva_hierarchy', id)
+    } else if (field === 'children') {
+      return client.redis.selva_hierarchy_children('___selva_hierarchy', id)
+    } else {
+      return client.redis.zrange(id, 0, -1)
+    }
+  },
   text: async (client: SelvaClient, id: string, field: string) => {
     const all = await client.redis.hgetall(id)
     const result: any = {}

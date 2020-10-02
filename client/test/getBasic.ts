@@ -335,7 +335,6 @@ test.serial('get complex with $value and array syntax', async t => {
           ancestors: ['root']
         },
         {
-          name: '',
           somethingNice: 'yesh'
         },
         {
