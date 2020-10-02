@@ -378,15 +378,18 @@ async function _thing(
           key !== 'children' &&
           key !== 'parents' &&
           key !== 'ancestors' &&
-          key !== 'descendants' &&
-          props[key] === undefined
+          key !== 'descendants'
         ) {
-          ops.push({
-            type: 'db',
-            id,
-            field: key,
-            sourceField: key
-          })
+          if (props[key] === undefined) {
+            ops.push({
+              type: 'db',
+              id,
+              field: key,
+              sourceField: key
+            })
+          } else {
+            _thing(ops, client, props[key], id, field + '.' + key)
+          }
         }
       }
 

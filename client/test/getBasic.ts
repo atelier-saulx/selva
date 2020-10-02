@@ -470,7 +470,7 @@ test.serial('get - basic', async t => {
   client.destroy()
 })
 
-test.serial.only('get - $all simple', async t => {
+test.serial('get - $all simple', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -506,7 +506,7 @@ test.serial.only('get - $all simple', async t => {
   client.destroy()
 })
 
-test.serial('get - $all root level whitelist + $all', async t => {
+test.serial.only('get - $all root level whitelist + $all', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -535,7 +535,6 @@ test.serial('get - $all root level whitelist + $all', async t => {
     {
       id: 'clA',
       type: 'club',
-      name: '',
       title: {
         en: 'nice!'
       },
