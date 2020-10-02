@@ -57,20 +57,19 @@ test.serial('no json parsing', async t => {
     $id: 'fo1'
   })
 
-  const obs = client.observe(
-    {
-      $id: 'fo1',
-      $all: true,
-      $language: 'en',
-      children: {
-        $list: true,
-        $all: true
-      }
-    },
-    {
-      immutable: true
+  const get = {
+    $id: 'fo1',
+    $all: true,
+    $language: 'en',
+    children: {
+      $list: true,
+      $all: true
     }
-  )
+  }
+
+  const obs = client.observe(get, {
+    immutable: true
+  })
 
   const results = []
 
@@ -123,6 +122,8 @@ test.serial('no json parsing', async t => {
     buttonText: 'my ballz'
   })
 
+  const a = await client.get(get)
+
   await wait(100)
 
   client.set({
@@ -133,7 +134,18 @@ test.serial('no json parsing', async t => {
 
   await wait(100)
 
-  console.log(results)
+  const b = await client.get(get)
+
+  console.log(a, b)
+
+  t.deepEqual(results, [
+    'my ballz',
+    'my ball',
+    'my ba',
+    'my bal',
+    'my ballz',
+    'my ballzzzz'
+  ])
 
   await client.destroy()
   await Promise.all(servers.map(s => s.destroy()))
