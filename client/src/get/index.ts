@@ -559,7 +559,8 @@ const TYPE_CASTS: Record<string, (x: any) => any> = {
   float: Number,
   number: Number,
   int: Number,
-  boolean: (x: any) => (x === '0' ? false : true)
+  boolean: (x: any) => (x === '0' ? false : true),
+  json: (x: any) => JSON.parse(x)
 }
 
 async function getThings(
