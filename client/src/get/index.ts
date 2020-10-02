@@ -1,5 +1,5 @@
 import { SelvaClient } from '..'
-import { GetResult, GetOptions } from './types'
+import { GetResult, GetOptions, Sort } from './types'
 import { SCRIPT } from '../constants'
 import validate, {
   ExtraQueries,
@@ -326,6 +326,14 @@ type GetOp =
   | { type: 'value'; value: string; field: string }
   | { type: 'nested_query'; props: GetOptions; field: string }
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
+  | {
+      type: 'find'
+      props: GetOptions
+      field: string
+      sourceField: string | string[]
+      id: string
+      options: { limit: number; offset: number; sort?: Sort | undefined }
+    }
 
 function _thing(
   ops: GetOp[],
@@ -353,8 +361,34 @@ function _thing(
       field: field.substr(1),
       props
     })
-  } else if (props.$list || props.$find) {
-    // TODO: queries and lists
+  } else if (props.$list) {
+    if (props.$list === true) {
+      ops.push({
+        type: 'db',
+        id,
+        field: field.substr(1),
+        sourceField: <string[]>props.$field || field.substr(1)
+      })
+    } else if (props.$list.$find) {
+      // TODO: $find in $list
+    } else {
+      ops.push({
+        type: 'find',
+        id,
+        props,
+        field: field.substr(1),
+        sourceField: <string[]>props.$field || field.substr(1),
+        options: {
+          limit: props.$list.$limit || -1,
+          offset: props.$list.$offset || 0,
+          sort: Array.isArray(props.$list.$sort)
+            ? props.$list.$sort[0]
+            : props.$list.$sort || undefined
+        }
+      })
+    }
+  } else if (props.$find) {
+    // TODO
   } else if (
     props.$field &&
     typeof props.$field === 'object' &&
@@ -710,6 +744,30 @@ async function getThings(
             } else {
               return run(client, Object.assign({}, p, { $id: op.id }))
             }
+          })
+        )
+      } else if (op.type === 'find') {
+        const ids = await client.redis.selva_hierarchy_find(
+          '___selva_hierarchy',
+          'bfs',
+          op.field, // TODO: this needs to support sourceField I think?
+          'order',
+          op.options.sort.$field || '',
+          op.options.sort.$order || 'asc',
+          'offset',
+          op.options.offset,
+          'limit',
+          op.options.limit,
+          op.id.padEnd(10, '\0'),
+          '#1'
+        )
+
+        return Promise.all(
+          ids.map(id => {
+            return run(
+              client,
+              Object.assign(op.props, { $id: id, $list: undefined })
+            )
           })
         )
       }
