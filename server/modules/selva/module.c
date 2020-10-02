@@ -108,8 +108,8 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
         fprintf(stderr, "arg[%d] = %s\n", i, arg ? RedisModule_StringPtrLen(arg, NULL) : "NULL");
     }
 
-    RedisModule_Replicate(ctx, "selva.modify", fmt,
-                          orig_argv[0], orig_argv[1], orig_argv[2],
+    RedisModule_Replicate(ctx, RedisModule_StringPtrLen(orig_argv[0], NULL), fmt,
+                          orig_argv[1], orig_argv[2], orig_argv[3],
                           argv[0],
                           argv[1],
                           argv[2],
