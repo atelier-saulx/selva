@@ -48,15 +48,24 @@ test.serial('no json parsing', async t => {
     }
   })
 
-  const obs = client.observe({
-    children: {
-      $list: true,
-      $all: true
+  const obs = client.observe(
+    {
+      children: {
+        $list: true,
+        $all: true
+      }
+    },
+    {
+      immutable: true
     }
-  })
+  )
+
+  const results = []
 
   obs.subscribe((v, hash, diff) => {
     console.log(v, hash, diff)
+
+    results.push(v)
   })
 
   client.set({
@@ -65,10 +74,28 @@ test.serial('no json parsing', async t => {
     children: [
       {
         $id: 'ma1',
-        title: 'flapdrol',
+        title: 'my ballz',
         published: true
       }
     ]
+  })
+
+  await wait(100)
+
+  client.set({
+    $id: 'ma1',
+    $language: 'en',
+    title: 'my ball',
+    published: true
+  })
+
+  await wait(100)
+
+  client.set({
+    $id: 'ma1',
+    $language: 'en',
+    title: 'my ba',
+    published: true
   })
 
   await wait(100)

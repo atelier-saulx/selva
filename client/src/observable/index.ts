@@ -69,10 +69,6 @@ export class Observable {
         this.useCache = options.cache
       }
 
-      if (options.raw) {
-        this.raw = true
-      }
-
       if (options.maxMemory === undefined) {
         this.maxMemory = 1e6 // 1 mb as max cache size
       } else {
