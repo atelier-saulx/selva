@@ -302,14 +302,14 @@ async function resolveId(
     )
 
     const idx = resolved.findIndex(x => {
-      return !!x[0] || x[1]
+      return !!x[0] || !!x[1]
     })
 
     if (idx === -1) {
       return null
     }
 
-    return resolved[idx][0] || props.$alias[idx]
+    return resolved[idx][0] || alias[idx]
   } else {
     return 'root'
   }
