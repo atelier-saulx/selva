@@ -512,6 +512,10 @@ export function getNestedSchema(
       return null
     }
 
+    if (prop.type === 'text' && i === fields.length - 1) {
+      return { type: 'string' }
+    }
+
     if (prop.values) {
       // record types skip the next key
       prop = prop.values
