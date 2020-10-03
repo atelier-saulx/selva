@@ -20,6 +20,7 @@ const sendUpdate = async (
   const redis = client.redis
 
   if (subscriptionManager.subscriptions[channel] !== subscription) {
+    subscription.beingProcessed = false
     return
   }
 
@@ -27,6 +28,8 @@ const sendUpdate = async (
   subscription.beingProcessed = true
   const getOptions = subscription.get
   getOptions.$includeMeta = true
+
+  const startTime = Date.now()
 
   if (channel.startsWith(constants.SCHEMA_SUBSCRIPTION)) {
     const dbName = channel.slice(constants.SCHEMA_SUBSCRIPTION.length + 1)
@@ -42,6 +45,9 @@ const sendUpdate = async (
       channel + '_version',
       version
     )
+
+    console.log('Schema subscription took', Date.now() - startTime, 'ms')
+
     await redis.publish(selector, channel, JSON.stringify([version]))
     subscription.beingProcessed = false
     return
@@ -49,11 +55,17 @@ const sendUpdate = async (
 
   const time = setTimeout(() => {
     console.error(chalk.red('Time out (took longer then 15s)' + channel))
+    console.dir(getOptions, { depth: 10 })
   }, 15e3)
 
   let payload
   try {
     payload = await client.get(getOptions)
+
+    console.log('\n----------------------------------------------------')
+    console.log('Get subscription took', Date.now() - startTime, 'ms')
+    console.dir(getOptions, { depth: 10 })
+    console.log('----------------------------------------------------')
   } catch (err) {
     payload = {
       ___$error___: err.message
