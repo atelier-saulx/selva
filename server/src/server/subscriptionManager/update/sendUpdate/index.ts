@@ -62,10 +62,14 @@ const sendUpdate = async (
   try {
     payload = await client.get(getOptions)
 
-    console.log('\n----------------------------------------------------')
-    console.log('Get subscription took', Date.now() - startTime, 'ms')
-    console.dir(getOptions, { depth: 10 })
-    console.log('----------------------------------------------------')
+    const t = Date.now() - startTime
+
+    if (t > 300) {
+      console.log('\n----------------------------------------------------')
+      console.log('Get subscription took', t, 'ms')
+      console.dir(getOptions, { depth: 10 })
+      console.log('----------------------------------------------------')
+    }
   } catch (err) {
     payload = {
       ___$error___: err.message
