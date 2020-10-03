@@ -135,6 +135,10 @@ export function noHasGuard(setOpts: any, result: any): boolean {
       return noHasGuard(val, result[key])
     })
   } else {
+    if (typeof setOpts === 'object' && Object.keys(setOpts).length === 0) {
+      setOpts = undefined
+    }
+
     return setOpts === result
   }
 }
@@ -229,31 +233,29 @@ export default function(
           }
         }
 
-        // // FIXME: this is some bullshit logic right here
-        // // that we use to check if something meaningful will change with this set
-        // // to reduce load on the cluster due to replication
-        // // NUKE THIS PLS
-        // const fakeGetBody: GetOptions = constructGuard(body)
-        // client
-        //   .get(fakeGetBody)
-        //   .then(result => {
-        //     let needsChanges = true
-        //     try {
-        //       const r = !result.id ? false : noHasGuard(body, result)
-        //       needsChanges = !r
-        //     } catch (_e) {}
-
-        //     if (!needsChanges) {
-        //       console.log('HAHA, NOTHING ACTUALLY UPDATED')
-        //       return Promise.resolve(result.id)
-        //     }
-
-        //     console.log('ACTUALLY SETTING')
-        //     // only this needs to be the "entrypoint" to the promise chain... later at least
-        //     return client.set(body)
-        //   })
+        // FIXME: this is some bullshit logic right here
+        // that we use to check if something meaningful will change with this set
+        // to reduce load on the cluster due to replication
+        // NUKE THIS PLS
+        const fakeGetBody: GetOptions = constructGuard(body)
         client
-          .set(body)
+          .get(fakeGetBody)
+          .then(result => {
+            let needsChanges = true
+            try {
+              const r = !result.id ? false : noHasGuard(body, result)
+              needsChanges = !r
+            } catch (_e) {}
+
+            if (!needsChanges) {
+              console.log('HAHA, NOTHING ACTUALLY UPDATED')
+              return Promise.resolve(result.id)
+            }
+
+            console.log('ACTUALLY SETTING')
+            // only this needs to be the "entrypoint" to the promise chain... later at least
+            return client.set(body)
+          })
           .then(result => {
             if (!result) {
               console.error('Nothing was created')
