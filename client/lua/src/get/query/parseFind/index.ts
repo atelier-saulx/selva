@@ -124,13 +124,13 @@ function parseFind(
       const resultIds = getIds(getField, $traverse, ids, $inherit)
 
       // @ts-ignore
-      // if (globals.$meta) {
-      //   if (!meta.parsedIds) {
-      //     meta.parsedIds = {}
-      //   }
-      //   const x = joinString(ids, '.') + '.' + $traverse
-      //   meta.parsedIds[x] = resultIds
-      // }
+      if (globals.$meta) {
+        if (!meta.parsedIds) {
+          meta.parsedIds = {}
+        }
+        const x = joinString(ids, '.') + '.' + $traverse
+        meta.parsedIds[x] = resultIds
+      }
 
       return parseFindIds(filters, resultIds, meta)
     }
