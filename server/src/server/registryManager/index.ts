@@ -212,7 +212,7 @@ export const registryManager = (server: SelvaServer) => {
 
             const now = Date.now()
             // very sensitive...
-            if (now - ts > 3e3) {
+            if (now - ts > 8e3) {
               await Promise.all([
                 redis.srem({ type: 'registry' }, 'servers', id),
                 redis.del({ type: 'registry' }, id)
@@ -276,7 +276,7 @@ export const registryManager = (server: SelvaServer) => {
                   )
                 )
                 weight = 100
-              } else if (Date.now() - ts > 2e3 || stats.cpu === undefined) {
+              } else if (Date.now() - ts > 5e3 || stats.cpu === undefined) {
                 console.warn(
                   chalk.yellow(
                     `Connection to replica is slow ${Date.now() -
