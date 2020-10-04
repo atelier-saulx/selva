@@ -46,8 +46,6 @@ const sendUpdate = async (
       version
     )
 
-    console.log('Schema subscription took', Date.now() - startTime, 'ms')
-
     await redis.publish(selector, channel, JSON.stringify([version]))
     subscription.beingProcessed = false
     return
