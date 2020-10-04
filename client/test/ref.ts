@@ -116,11 +116,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.skip('string field ref', async t => {
@@ -152,7 +153,7 @@ test.skip('string field ref', async t => {
     }
   )
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('json field ref', async t => {
@@ -190,7 +191,7 @@ test.skip('json field ref', async t => {
       }
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('whole object ref', async t => {
@@ -220,7 +221,7 @@ test.skip('whole object ref', async t => {
       value: 25
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('simple object field ref', async t => {
@@ -248,7 +249,7 @@ test.skip('simple object field ref', async t => {
       value: 25
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('nested object in object field ref', async t => {
@@ -280,7 +281,7 @@ test.skip('nested object in object field ref', async t => {
       value: 25
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('text field ref', async t => {
@@ -313,7 +314,7 @@ test.skip('text field ref', async t => {
       value: 25
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('text object ref', async t => {
@@ -353,7 +354,7 @@ test.skip('text object ref', async t => {
       value: 25
     }
   )
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('string field ref with $default', async t => {
@@ -411,7 +412,7 @@ test.skip('string field ref with $default', async t => {
     }
   )
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('number field ref with $default', async t => {
@@ -459,7 +460,7 @@ test.skip('number field ref with $default', async t => {
     }
   )
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('object nested field ref with $default', async t => {
@@ -512,7 +513,7 @@ test.skip('object nested field ref with $default', async t => {
     }
   )
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.skip('text field ref with $default', async t => {
@@ -554,5 +555,5 @@ test.skip('text field ref with $default', async t => {
     }
   )
 
-  client.destroy()
+  await client.destroy()
 })

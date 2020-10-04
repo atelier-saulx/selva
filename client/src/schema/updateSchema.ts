@@ -204,14 +204,14 @@ function newFieldDefinition(
   ) {
     throw new Error(
       `Path ${fieldPath} has mismatching types, trying to change collection with type ${
-        oldField.items.type
+      oldField.items.type
       } to type ${(<any>newField).items.type}`
     )
   }
 
   if (!(<any>newField).search) {
     if (oldField.search) {
-      ;(<any>newField).search = oldField.search
+      ; (<any>newField).search = oldField.search
     }
   }
 

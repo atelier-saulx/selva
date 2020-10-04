@@ -4,7 +4,7 @@ import { start } from '@saulx/selva-server'
 import '../../assertions'
 import { wait } from '../../assertions'
 // @ts-ignore suppressing module can only be default-imported using the 'esModuleInterop' flag
-import getPort from 'get-port' 
+import getPort from 'get-port'
 
 import { schema } from '../_schema'
 import { setDataSet } from '../_dataSet'
@@ -21,11 +21,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('$any', async t => {
@@ -38,11 +39,10 @@ test.serial('$any', async t => {
     $all: true
   })
 
-  t.true([
-    'name',
-    'born',
-    'died'
-  ].every(key => Object.keys(result).includes(key)))
+  t.true(
+    ['name', 'born', 'died'].every(key => Object.keys(result).includes(key))
+  )
+  await client.destroy()
 })
 
 test.serial('$all with blacklist', async t => {
@@ -57,4 +57,5 @@ test.serial('$all with blacklist', async t => {
   })
 
   t.false(Object.keys(result).includes('died'))
+  await client.destroy()
 })

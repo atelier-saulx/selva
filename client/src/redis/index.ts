@@ -1,79 +1,42 @@
-import { SelvaClient, ServerDescriptor } from '../'
-import { ConnectOptions, ServerSelector, LogFn } from '../types'
-import { RedisCommand, Servers, ServersById, Callback } from './types'
+import { ServerSelector } from '../types'
+import { RedisCommand, Callback } from './types'
 import RedisMethods from './methods'
-import { getClient, Client, addCommandToQueue } from './clients'
-import connectRegistry from './connectRegistry'
-import getServerDescriptor from './getServerDescriptor'
-import handleListener from './handleListener'
-import Observable from '../observe/observable'
-import { GetOptions, GetResult } from '../get/types'
-import { createObservable, ObserverEmitter } from './observers'
+import { SelvaClient } from '..'
+import {
+  addRemoteListener,
+  removeRemoteListener
+} from '../updateRemoteListeners'
+import addRemoteCommand from '../addRemoteCommand'
 
-// add schema handling subscriptions / unsubscribe destorying making clients
 class RedisSelvaClient extends RedisMethods {
-  public selvaClient: SelvaClient
-  public queue: { command: RedisCommand; selector: ServerSelector }[] = []
-  public listenerQueue: {
-    selector: ServerSelector
-    event: string
-    callback: Callback
-  }[] = []
+  selvaClient: SelvaClient
 
-  public registry: Client
-  public logFn: LogFn
-
-  public timeoutServers: NodeJS.Timeout
-
-  public servers: Servers
-  public serversById: ServersById
-  public subsManagers: ServerDescriptor[]
-
-  public observables: Record<string, Observable<GetResult>> = {}
-  public observerEmitters: Record<string, ObserverEmitter> = {}
-
-  constructor(selvaClient: SelvaClient, connectOptions: ConnectOptions) {
+  constructor(selvaClient: SelvaClient) {
     super()
     this.selvaClient = selvaClient
-    connectRegistry(this, connectOptions)
-  }
-
-  observe(channel: string, props: GetOptions): Observable<GetResult> {
-    return createObservable(this, channel, props)
   }
 
   on(selector: ServerSelector, event: string, callback: Callback): void
   on(event: string, callback: Callback): void
   on(selector: any, event: any, callback?: any): void {
-    handleListener(this, 'on', selector, event, callback)
+    addRemoteListener(this.selvaClient, selector, event, callback)
   }
 
   removeListener(
     selector: ServerSelector,
     event: string,
-    callback: Callback
+    callback?: Callback
   ): void
   removeListener(event: string, callback: Callback): void
   removeListener(selector: any, event: any, callback?: any): void {
-    handleListener(this, 'removeListener', selector, event, callback)
+    removeRemoteListener(this.selvaClient, selector, event, callback)
   }
 
   addCommandToQueue(
     command: RedisCommand,
     selector: ServerSelector = { name: 'default' }
   ) {
-    if (!this.registry) {
-      this.queue.push({ command, selector })
-    } else {
-      if (selector.type === 'registry' || selector.name === 'registry') {
-        // this is nessecary scince you need to start somewhere
-        addCommandToQueue(this.registry, command)
-      } else {
-        getServerDescriptor(this, selector).then(descriptor => {
-          addCommandToQueue(getClient(this, descriptor), command)
-        })
-      }
-    }
+    addRemoteCommand(this.selvaClient, command, selector)
   }
 }
 

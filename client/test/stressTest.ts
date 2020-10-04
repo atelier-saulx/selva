@@ -149,14 +149,15 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
-test.serial.only('one client', async t => {
+test.serial('one client', async t => {
   const client = connect(
     async () => {
       await wait(10)
@@ -173,7 +174,7 @@ test.serial.only('one client', async t => {
       title: true
     })
     .subscribe(r => {
-      console.log('result:', r)
+      // console.log('result:', r)
     })
 
   await wait(500)
@@ -187,6 +188,9 @@ test.serial.only('one client', async t => {
 
   await wait(500)
   await client.delete('root')
+  await client.destroy()
+
+  t.true(true)
 })
 
 test.serial('many async clients - timebased query', async t => {
@@ -210,7 +214,7 @@ test.serial('many async clients - timebased query', async t => {
     })
 
     client.observe(timeQuery).subscribe(r => {
-      console.log('time:', r)
+      // console.log('time:', r)
       result = r
     })
   }
@@ -235,4 +239,7 @@ test.serial('many async clients - timebased query', async t => {
   })
   await wait(10000)
   await client.delete('root')
+  await client.destroy()
+
+  t.pass()
 })

@@ -45,14 +45,13 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port }, { loglevel: 'info' })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
   txtSrv.stop()
+  await t.connectionsAreEmpty()
 })
 
 test.serial.only('hhnn', async t => {

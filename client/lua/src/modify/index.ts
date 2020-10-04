@@ -332,8 +332,6 @@ function removeSpecified(
 
   if (onlyFalse) {
     const allKeys = redis.hkeys(id)
-    logger.info('allKeys', allKeys)
-    logger.info('falses', falses)
     for (const key of allKeys) {
       let skip = false
       if (stringStartsWith(key, path)) {
@@ -440,7 +438,6 @@ export default function modify(
   const results: (Id | boolean | null)[] = []
   for (let i = 0; i < payload.length; i++) {
     let operation = payload[i]
-    // logger.info(`OPERATION ${operation.kind}`)
     if (operation.kind === 'update') {
       results[i] = update(operation.payload)
       // TODO: how do we want to handle errors here?

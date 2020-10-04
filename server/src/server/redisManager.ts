@@ -43,7 +43,10 @@ export default class RedisManager extends ProcessManager {
       let timeout
       const wait = () =>
         new Promise((_resolve, reject) => {
-          timeout = setTimeout(() => reject(new Error('timedout info')), 2e3)
+          timeout = setTimeout(
+            () => reject(new Error('Info-timeout took longer then 2 seconds')),
+            2e3
+          )
         })
 
       const info = await Promise.race([
@@ -58,8 +61,9 @@ export default class RedisManager extends ProcessManager {
 
       clearTimeout(timeout)
 
-      if (typeof info === 'string') {
+      if (info && typeof info === 'string') {
         const infoLines = info.split('\r\n')
+
         const redisInfo = infoLines.reduce((acc, line) => {
           if (line.startsWith('#')) {
             return acc
@@ -81,7 +85,7 @@ export default class RedisManager extends ProcessManager {
         return { isBusy: true, runtimeInfo }
       }
     } catch (err) {
-      console.error('Cannot get info', err.message)
+      // this.emit('error', err)
       return {
         redisInfo: {},
         runtimeInfo,

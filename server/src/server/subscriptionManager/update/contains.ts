@@ -36,6 +36,7 @@ const drainQueue = (subsManager: SubscriptionManager) => {
         const members = (memberMemCache[command.context.db][field] = {})
         m.forEach(v => (members[v] = true))
         const listeners = fieldsInProgressNow[field]
+
         for (let i = 0; i < listeners.length - 1; i += 2) {
           const v = listeners[i + 1]
           if (members[v]) {
@@ -68,6 +69,7 @@ const addAncestorsToBatch = (
   if (!queueIsBeingDrained) {
     drainQueue(subsManager)
   }
+
   if (!fieldsProgress[field]) {
     console.log('HMM', field)
     queue.push({
@@ -78,6 +80,7 @@ const addAncestorsToBatch = (
       context
     })
     fieldsInQueue.push(field)
+
     fieldsProgress[field] = [subscriptions, v]
   } else {
     fieldsProgress[field].push(subscriptions, v)
@@ -114,34 +117,49 @@ const membersContainsId = (
   subsManager: SubscriptionManager,
   context: { id: string; db: string },
   m: Contains,
-  subscriptions: Set<Subscription>
+  subscriptions: Set<Subscription>,
+  value?: string[]
 ): boolean => {
-  const value = m.$value
+  if (!value) {
+    value = m.$value
+  }
 
   const memberMemCache = subsManager.memberMemCache
   if (m.$field === 'ancestors') {
     for (let k = 0; k < value.length; k++) {
-      const v = value[k]
-      if (v === 'root') {
-        return true
-      }
-      const field = `${context.id}.ancestors`
-      const f = memberMemCache[context.db] && memberMemCache[context.db][field]
-      if (!f) {
-        addAncestorsToBatch(subsManager, subscriptions, field, v, context)
-      } else if (f[v]) {
-        return true
+      let v = value[k]
+      if (v.includes('|')) {
+        const arr = v.split('|')
+        if (membersContainsId(subsManager, context, m, subscriptions, arr)) {
+          return true
+        }
+      } else {
+        const field = `${context.id}.ancestors`
+        const f =
+          memberMemCache[context.db] && memberMemCache[context.db][field]
+        if (!f) {
+          addAncestorsToBatch(subsManager, subscriptions, field, v, context)
+        } else if (f[v]) {
+          return true
+        }
       }
     }
   } else {
     for (let k = 0; k < value.length; k++) {
       const v = value[k]
-      const field = `${context.id}.${m.$field}`
-      let f = memberMemCache[context.db][field]
-      if (!f) {
-        addMembersToBatch(subsManager, subscriptions, field, v, context)
-      } else if (f[v]) {
-        return true
+      if (v.includes('|')) {
+        const arr = v.split('|')
+        if (membersContainsId(subsManager, context, m, subscriptions, arr)) {
+          return true
+        }
+      } else {
+        const field = `${context.id}.${m.$field}`
+        let f = memberMemCache[context.db][field]
+        if (!f) {
+          addMembersToBatch(subsManager, subscriptions, field, v, context)
+        } else if (f[v]) {
+          return true
+        }
       }
     }
   }
@@ -165,6 +183,7 @@ const contains = (
     const memberCheck =
       subManager.tree[context.db].___contains &&
       subManager.tree[context.db].___contains[contains]
+
     if (memberCheck) {
       if (membersContainsId(subManager, context, <Contains>memberCheck, subs)) {
         subs.forEach(s => {

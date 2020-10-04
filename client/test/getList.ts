@@ -13,11 +13,12 @@ test.before(async t => {
   await wait(500)
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get - simple $list', async t => {
@@ -127,6 +128,8 @@ test.serial('get - simple $list', async t => {
     }
   })
   */
+
+  await client.destroy()
 })
 
 test.serial('get - simple $list with $field of one field', async t => {
@@ -210,6 +213,8 @@ test.serial('get - simple $list with $field of one field', async t => {
     },
     'non redis search sort'
   )
+
+  await client.destroy()
 })
 
 test.serial('get - simple $list with $field of two field entries', async t => {
@@ -263,7 +268,7 @@ test.serial('get - simple $list with $field of two field entries', async t => {
     })
   ])
 
-  const c = await client.get({
+  let c = await client.get({
     $id: 'cuA',
     otherName: {
       name: true,
@@ -294,6 +299,8 @@ test.serial('get - simple $list with $field of two field entries', async t => {
     },
     'non redis search sort'
   )
+
+  await client.destroy()
 })
 
 test.serial('get - simple $list with query $field of one field', async t => {
@@ -390,6 +397,8 @@ test.serial('get - simple $list with query $field of one field', async t => {
   })
 
   t.is(c2.otherName.length, 100, 'list true')
+
+  await client.destroy()
 })
 
 test.serial('get - simple $list nested query structure', async t => {
@@ -441,7 +450,7 @@ test.serial('get - simple $list nested query structure', async t => {
     })
   ])
 
-  const c = await client.get({
+  let c = await client.get({
     $id: 'cuA',
     hello: {
       yesyes: {
@@ -481,6 +490,47 @@ test.serial('get - simple $list nested query structure', async t => {
     'non redis search sort'
   )
 
+  c = await client.get({
+    $id: 'cuA',
+    hello: {
+      yesyes: {
+        children: {
+          $field: 'children',
+          name: true,
+          value: true,
+          $list: {
+            $sort: { $field: 'value', $order: 'asc' },
+            $limit: 10,
+            $offset: 10
+          }
+        }
+      }
+    }
+  })
+
+  t.deepEqual(
+    c,
+    {
+      hello: {
+        yesyes: {
+          children: [
+            { value: 10, name: 'flurp10' },
+            { value: 11, name: 'flurp11' },
+            { value: 12, name: 'flurp12' },
+            { value: 13, name: 'flurp13' },
+            { value: 14, name: 'flurp14' },
+            { value: 15, name: 'flurp15' },
+            { value: 16, name: 'flurp16' },
+            { value: 17, name: 'flurp17' },
+            { value: 18, name: 'flurp18' },
+            { value: 19, name: 'flurp19' }
+          ]
+        }
+      }
+    },
+    'non redis search sort'
+  )
+
   const { children: rangeResult } = await client.get({
     $id: 'cuA',
     children: {
@@ -508,6 +558,8 @@ test.serial('get - simple $list nested query structure', async t => {
     }
   })
   */
+
+  await client.destroy()
 })
 
 test.serial('get - default sorting in $list with references', async t => {
@@ -560,7 +612,7 @@ test.serial('get - default sorting in $list with references', async t => {
     })
   ])
 
-  const c = await client.get({
+  let c = await client.get({
     $id: 'cuA',
     children: {
       name: true,
@@ -590,6 +642,39 @@ test.serial('get - default sorting in $list with references', async t => {
     'non redis search sort'
   )
 
+  c = await client.get({
+    $id: 'cuA',
+    otherName: {
+      name: true,
+      value: true,
+      $field: ['related', 'children'],
+      $list: {
+        $offset: 10,
+        $sort: { $field: 'value', $order: 'asc' },
+        $limit: 10
+      }
+    }
+  })
+
+  t.deepEqual(
+    c,
+    {
+      otherName: [
+        { value: 10, name: 'flurp10' },
+        { value: 11, name: 'flurp11' },
+        { value: 12, name: 'flurp12' },
+        { value: 13, name: 'flurp13' },
+        { value: 14, name: 'flurp14' },
+        { value: 15, name: 'flurp15' },
+        { value: 16, name: 'flurp16' },
+        { value: 17, name: 'flurp17' },
+        { value: 18, name: 'flurp18' },
+        { value: 19, name: 'flurp19' }
+      ]
+    },
+    'non redis search sort'
+  )
+
   /*
   const x = await client.get({
     $id: 'cuA',
@@ -604,4 +689,5 @@ test.serial('get - default sorting in $list with references', async t => {
     }
   })
   */
+  await client.destroy()
 })

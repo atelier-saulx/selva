@@ -12,16 +12,14 @@ test.before(async () => {
   srv = await start({
     port
   })
-  console.log('ok server started!')
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('exec big batch', async t => {
@@ -45,12 +43,14 @@ test.serial('exec big batch', async t => {
     promises.push(client.set({ type: 'blurf', rando: 'ballz' + cnt }))
   }
 
-  t.timeout(5000)
+  t.timeout(120000)
   try {
     await Promise.all(promises)
     t.pass()
   } catch (e) {
-    console.error('---', e)
+    console.error(e)
     t.fail()
   }
+
+  await client.destroy()
 })

@@ -375,8 +375,33 @@ const parseQuery = (
           } else {
             // can choose to make this in member checks
             setMeta(meta.traverse, { ___ids: ids })
+
+            let m: { [key: string]: boolean } = {}
+            let parsedIds: string[] = []
+            if (meta.parsedIds) {
+              for (let k in meta.parsedIds) {
+                const x = meta.parsedIds[k]
+
+                for (let i = 0; i < x.length; i++) {
+                  const id = x[i]
+                  if (!m[id]) {
+                    m[id] = true
+                    parsedIds[parsedIds.length] = id
+                  }
+                }
+              }
+            }
+
+            for (let j = 0; j < resultIds.length; j++) {
+              const id = resultIds[j]
+              if (!m[id]) {
+                m[id] = true
+                parsedIds[parsedIds.length] = id
+              }
+            }
+
             for (let key in fields) {
-              setMeta(key, { ___ids: resultIds })
+              setMeta(key, { ___ids: parsedIds || resultIds })
             }
           }
         }

@@ -129,31 +129,24 @@ test.beforeEach(async t => {
     }
   })
 
-  console.log('SCHEMA SET')
-
-  // A small delay is needed after setting the schema
-  await new Promise(r => setTimeout(r, 100))
-
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('root', async t => {
-  console.log('CONNECTING')
   const client = connect(
     {
       port
     },
     { loglevel: 'info' }
   )
-
-  console.log('CONNECTED')
 
   const match = await client.set({
     type: 'match'
@@ -178,15 +171,12 @@ test.serial('root', async t => {
 })
 
 test.serial('root.children $delete: []', async t => {
-  console.log('CONNECTING')
   const client = connect(
     {
       port
     },
     { loglevel: 'info' }
   )
-
-  console.log('CONNECTED')
 
   const match = await client.set({
     type: 'match'
@@ -602,8 +592,8 @@ test.serial('basic', async t => {
 
   // delete root
   await client.delete('root')
-  console.log(await dumpDb(client))
-  t.deepEqual(await dumpDb(client), [])
+  const d = await dumpDb(client)
+  t.deepEqual(d, [])
 
   await client.destroy()
 })
@@ -706,15 +696,6 @@ test.serial('deep hierarchy manipulation', async t => {
     ['root']
   )
 
-  console.log(
-    '!!!',
-    await client.redis.selva_hierarchy_find(
-      '___selva_hierarchy',
-      'bfs',
-      'ancestors',
-      'cuE'
-    )
-  )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
       '___selva_hierarchy',
@@ -724,6 +705,8 @@ test.serial('deep hierarchy manipulation', async t => {
     ),
     ['root', 'cuD']
   )
+
+  await client.destroy()
 })
 
 test.serial('array, json and set', async t => {
@@ -779,6 +762,8 @@ test.serial('array, json and set', async t => {
       flap: '6734082360af7f0c5aef4123f43abc44c4fbf19e8b251a316d7b9da95fde448e'
     }
   ])
+
+  await client.destroy()
 })
 
 test.serial('set empty object', async t => {
@@ -846,6 +831,8 @@ test.serial('set empty object', async t => {
       }
     }
   )
+
+  await client.destroy()
 })
 
 test.serial('$increment, $default', async t => {
@@ -912,7 +899,7 @@ test.serial('$increment, $default', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial.skip('$merge = false', async t => {
@@ -1056,6 +1043,8 @@ test.serial('automatic child creation', async t => {
     parent
   )
   t.is(newChildren.length, 5, 'Should have 5 children created')
+
+  await client.destroy()
 })
 
 test.serial.skip('createdAt set if defined as timestamp', async t => {
@@ -1220,6 +1209,7 @@ test.serial('Set empty object', async t => {
   }
 
   await client.delete('root')
+  await client.destroy()
 })
 
 test.serial.only('no root in parents when adding nested', async t => {
@@ -1386,15 +1376,12 @@ test.serial.skip('createdAt not set if nothing changed', async t => {
 })
 
 test.serial('$delete: true', async t => {
-  console.log('CONNECTING')
   const client = connect(
     {
       port
     },
     { loglevel: 'info' }
   )
-
-  console.log('CONNECTED')
 
   const match = await client.set({
     type: 'match'
