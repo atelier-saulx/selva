@@ -29,10 +29,14 @@ export default class ProcessManager extends EventEmitter {
 
   public successTimeout: NodeJS.Timeout
 
-  constructor(command: string, args: string[]) {
+  constructor(
+    command: string,
+    opts?: { args: string[]; env?: Record<string, string> }
+  ) {
     super()
     this.command = command
-    this.args = args
+    this.env = opts.env || {}
+    this.args = opts.args
     this.uuid = ++cnt
 
     this.errorLog = []
