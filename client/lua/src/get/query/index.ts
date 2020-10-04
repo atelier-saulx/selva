@@ -396,7 +396,7 @@ const parseQuery = (
             }
 
             for (let key in fields) {
-              setMeta(key, { ___ids: resultIds || resultIds })
+              setMeta(key, { ___ids: parsedIds || resultIds })
             }
           }
         }

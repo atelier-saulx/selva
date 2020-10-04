@@ -100,7 +100,7 @@ test.serial('get - correct order', async t => {
         children: [
           {
             type: 'folder',
-            title: 'Highlights',
+            name: 'Highlights',
             published: true,
             children: ['ma1', 'ma2', 'ma3', 'ma4']
           }
@@ -124,7 +124,7 @@ test.serial('get - correct order', async t => {
               $value: 'folder'
             },
             {
-              $field: 'title',
+              $field: 'name',
               $operator: '=',
               $value: 'Highlights'
             }
