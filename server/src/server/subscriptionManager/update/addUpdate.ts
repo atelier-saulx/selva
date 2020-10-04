@@ -1,5 +1,6 @@
 import sendUpdate from './sendUpdate'
 import { Subscription, SubscriptionManager } from '../types'
+import chalk from 'chalk'
 
 var delayCount = 0
 
@@ -15,16 +16,11 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     } else {
       cnt++
       sendUpdate(subscriptionManager, subscription)
-        .then(v => {
+        .then(_v => {
           // console.log('SEND UPDATE FOR', subscription.channel)
         })
         .catch(err => {
-          console.log('WRONG ERROR IN SENDUPDATE', err)
-          console.log(
-            'ok still beign processed?',
-            subscription.beingProcessed,
-            subscription.processNext
-          )
+          console.error(chalk.red(`Error in send update ${err.message}`))
           subscriptionManager.inProgressCount--
           subscription.beingProcessed = false
           if (subscription.processNext) {
@@ -34,26 +30,13 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     }
   })
 
-  if (cnt) {
-    console.log(
-      'subsManager',
-      subscriptionManager.client.uuid.slice(-6),
-      'Handled',
-      subscriptionManager.incomingCount,
-      'beingProcessed',
-      subscriptionManager.inProgressCount,
-      'actual subscriptions being updated',
-      cnt
-    )
-  }
-
   subscriptionManager.stagedInProgess = false
 
   subscriptionManager.incomingCount = 0
   subscriptionManager.memberMemCache = {}
 
   if (subscriptionManager.memberMemCacheSize > 1e5) {
-    console.log('memberMemCache is larger then 100k flush')
+    console.info(chalk.gray(`MemberMemCache is larger then 100k flush`))
     subscriptionManager.memberMemCacheSize = 0
   }
   delayCount = 0
@@ -67,7 +50,9 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
     const lastIncoming = subscriptionManager.incomingCount
 
     delayCount++
-    console.log('Sendupdate delay #', delayCount, lastIncoming)
+
+    console.info(chalk.gray(`Sendupdate delay # ${delayCount} ${lastIncoming}`))
+
     subscriptionManager.stagedTimeout = setTimeout(() => {
       const incoming = subscriptionManager.incomingCount - lastIncoming
       if (incoming / time > eventsPerMs) {
@@ -80,11 +65,10 @@ const delay = (subscriptionManager, time = 1000, totalTime = 0) => {
       }
     }, time)
   } else {
-    console.log(
-      '10 seconds pass drain',
-      totalTime,
-      'incoming',
-      subscriptionManager.incomingCount
+    console.info(
+      chalk.gray(
+        `Sendupdate 10 seconds pass drain delay ${totalTime} incoming events ${subscriptionManager.incomingCount}x in the last period`
+      )
     )
     sendUpdates(subscriptionManager)
   }
@@ -96,7 +80,11 @@ const addUpdate = (
 ) => {
   if (subscription.inProgress) {
     if (!subscriptionManager.stagedInProgess) {
-      console.error('CANNOT HAVE BATCH UPDATES IN PROGRESS + SUBS IN PROGRESS')
+      console.error(
+        chalk.red(
+          `Cannot have subs in progress without the batch being in progress`
+        )
+      )
     }
   } else {
     subscriptionManager.stagedForUpdates.add(subscription)

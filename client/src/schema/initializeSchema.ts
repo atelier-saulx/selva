@@ -8,11 +8,7 @@ const initlializeSchema = async (client: SelvaClient, opts: any) => {
   }
 
   if (!client.schemaObservables[dbName]) {
-    client.schemaObservables[dbName] = client.subscribeSchema(dbName)
-    client.schemaObservables[dbName].subscribe((v: any) => {
-      // console.log('Update schema subscription --->', dbName, v)
-      client.schemas[dbName] = v
-    })
+    client.subscribeSchema(dbName)
   }
 }
 

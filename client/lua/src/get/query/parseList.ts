@@ -4,7 +4,11 @@ import { emptyArray, isArray } from '../../util'
 import * as logger from '../../logger'
 import { getSearchIndexes } from '../../schema/index'
 
-function parseList(results: string[], list: List): string[] {
+function parseList(
+  results: string[],
+  list: List,
+  noLimitAndOffset: boolean = false
+): string[] {
   if (typeof list === 'object') {
     if (list.$sort) {
       const sort: Sort[] = !isArray(list.$sort) ? [list.$sort] : list.$sort
@@ -52,7 +56,7 @@ function parseList(results: string[], list: List): string[] {
       }
     }
 
-    if (list.$limit || list.$offset) {
+    if (!noLimitAndOffset && (list.$limit || list.$offset)) {
       let start = 0
       let end = results.length
 

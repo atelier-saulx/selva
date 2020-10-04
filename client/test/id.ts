@@ -1,6 +1,7 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
+import './assertions'
 
 import getPort from 'get-port'
 
@@ -33,5 +34,9 @@ test('generates a unique id from type', async t => {
   // new types what this means is that the client allways needs to load a map add it to prefix
   // allways subscribe on it (hash)
 
-  server.destroy()
+  await server.destroy()
+
+  await client.destroy()
+
+  await t.connectionsAreEmpty()
 })

@@ -4,12 +4,12 @@ import { start, SelvaServer } from '@saulx/selva-server'
 import '../../assertions'
 import { wait } from '../../assertions'
 // @ts-ignore suppressing module can only be default-imported using the 'esModuleInterop' flag
-import getPort from 'get-port' 
+import getPort from 'get-port'
 
 import { schema } from '../_schema'
 import { setDataSet } from '../_dataSet'
 
-let srv:SelvaServer
+let srv: SelvaServer
 let port
 
 test.before(async t => {
@@ -21,11 +21,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('$inherit', async t => {
@@ -35,8 +36,9 @@ test.serial('$inherit', async t => {
 
   const result = await client.get({
     $id: 'moSoylentGreen',
-    icon: { $inherit: true },
+    icon: { $inherit: true }
   })
 
   t.true(result.icon === 'scifi.png')
+  await client.destroy()
 })

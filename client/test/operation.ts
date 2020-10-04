@@ -35,20 +35,15 @@ test.beforeEach(async t => {
       }
     }
   })
-
-  // A small delay is needed after setting the schema
-  await new Promise(r => setTimeout(r, 100))
-
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('insert works only if object is not defined', async t => {

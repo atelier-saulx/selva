@@ -1,4 +1,6 @@
 import { SelvaClient, constants } from '@saulx/selva'
+import { SubscriptionManager } from './types'
+import chalk from 'chalk'
 
 type Subscriptions = {
   host: string
@@ -9,39 +11,104 @@ type Subscriptions = {
 let subscriptions: Record<string, 'created' | 'removed'> = {}
 let publishInProgress = false
 
-export default function updateRegistry(
+const handleAddPrev = async (
   client: SelvaClient,
-  info: Subscriptions
+  channel: string,
+  id: string
+) => {
+  const prev = await client.redis.get({ type: 'subscriptionRegistry' }, channel)
+  if (prev) {
+    if (prev !== id) {
+      await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
+      // server has to do removal etc
+      const [host, p] = prev.split(':')
+
+      const port = Number(p)
+
+      if (
+        client.servers.subsManagers.find(
+          s => s.port === port && s.host === host
+        )
+      ) {
+        // if the server is unregistered this will be useless to add to a quuee
+        await client.redis.publish(
+          { host, port: port, type: 'subscriptionManager' },
+          constants.REGISTRY_MOVE_SUBSCRIPTION,
+          JSON.stringify([channel, id])
+        )
+      } else {
+        // this is a bit hard if it is not synced yet something can go wrong here
+        console.log(
+          chalk.yellow(
+            `Cannot find previous server to move subscription ${prev} has to move to ${id}`
+          )
+        )
+      }
+    } else {
+      // console.log(
+      //   chalk.gray(
+      //     `Allready have subscription ${channel} on ${id} don't do anything`
+      //   )
+      // )
+    }
+  } else {
+    await client.redis.set({ type: 'subscriptionRegistry' }, channel, id)
+  }
+}
+
+const handleRemovePrev = async (
+  client: SelvaClient,
+  channel: string,
+  id: string
+) => {
+  const prev = await client.redis.get({ type: 'subscriptionRegistry' }, channel)
+  if (prev === id) {
+    await client.redis.del({ type: 'subscriptionRegistry' }, channel)
+  }
+}
+
+export default async function updateRegistry(
+  client: SelvaClient,
+  info: Subscriptions,
+  subsManager: SubscriptionManager
 ) {
   for (let key in info.subscriptions) {
     subscriptions[key] = info.subscriptions[key]
   }
+
   if (!publishInProgress) {
     publishInProgress = true
-    const id = info.host + ':' + info.port
     process.nextTick(() => {
       const q = []
-      for (let key in subscriptions) {
-        const event = subscriptions[key]
-        if (event === 'created') {
+      const id = info.host + ':' + info.port
+      const size = Object.keys(subsManager.subscriptions).length
+      q.push(client.redis.hset({ type: 'registry' }, id, 'subs', size))
+      for (let channel in subscriptions) {
+        // make this efficient wiht a q
+        const type = subscriptions[channel]
+        if (type === 'created') {
           q.push(
-            client.redis.sadd({ type: 'registry' }, `${id}_subscriptions`, key)
+            client.redis.sadd(
+              { type: 'subscriptionRegistry' },
+              constants.REGISTRY_SUBSCRIPTION_INDEX + id,
+              channel
+            )
           )
-        } else if (event === 'removed') {
+          q.push(handleAddPrev(client, channel, id))
+        } else if (type === 'removed') {
           q.push(
-            client.redis.srem({ type: 'registry' }, `${id}_subscriptions`, key)
+            client.redis.srem(
+              { type: 'subscriptionRegistry' },
+              constants.REGISTRY_SUBSCRIPTION_INDEX + id,
+              channel
+            )
           )
+          q.push(handleRemovePrev(client, channel, id))
         }
       }
       publishInProgress = false
       subscriptions = {}
-      Promise.all(q).then(() => {
-        client.redis.publish(
-          { type: 'registry' },
-          constants.REGISTRY_UPDATE_SUBSCRIPTION,
-          JSON.stringify(info)
-        )
-      })
+      Promise.all(q)
     })
   }
 }

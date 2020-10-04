@@ -112,11 +112,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get - simple alias', async t => {
@@ -152,6 +153,8 @@ test.serial('get - simple alias', async t => {
       value: 25
     }
   )
+
+  await client.destroy()
 })
 
 test.serial('get - simple alias with variable', async t => {
@@ -190,6 +193,8 @@ test.serial('get - simple alias with variable', async t => {
       value: 25
     }
   )
+
+  await client.destroy()
 })
 
 test.serial('get - alias with nested structure variable', async t => {
@@ -228,6 +233,8 @@ test.serial('get - alias with nested structure variable', async t => {
       value: 25
     }
   )
+
+  await client.destroy()
 })
 
 test.serial('get - alias with variables', async t => {
@@ -267,6 +274,8 @@ test.serial('get - alias with variables', async t => {
       value: 25
     }
   )
+
+  await client.destroy()
 })
 
 test.serial('get - $field with multiple options, taking the first', async t => {
@@ -298,6 +307,8 @@ test.serial('get - $field with multiple options, taking the first', async t => {
       valueOrAge: 25
     }
   )
+
+  await client.destroy()
 })
 
 test.serial(
@@ -331,6 +342,8 @@ test.serial(
         valueOrAge: 62
       }
     )
+
+    await client.destroy()
   }
 )
 
@@ -374,6 +387,8 @@ test.serial(
         complexOr: 'Thing-y Ding-y'
       }
     )
+
+    await client.destroy()
   }
 )
 
@@ -430,6 +445,8 @@ test.serial.skip('get - simple $field with $inherit: true', async t => {
       germanTitle: 'Ja, auf Deutsch'
     }
   )
+
+  await client.destroy()
 })
 
 test.serial.skip('get - simple $field with $inherit: $type', async t => {
@@ -484,6 +501,8 @@ test.serial.skip('get - simple $field with $inherit: $type', async t => {
       germanTitle: 'Ja, auf Deutsch 2'
     }
   )
+
+  await client.destroy()
 })
 
 test.serial.skip('get - more complex $field with $inherit: $name', async t => {
@@ -535,6 +554,8 @@ test.serial.skip('get - more complex $field with $inherit: $name', async t => {
       thumby: 'parent'
     }
   )
+
+  await client.destroy()
 })
 
 test.serial(
@@ -602,6 +623,8 @@ test.serial(
         complexThingy: 'best'
       }
     )
+
+    await client.destroy()
   }
 )
 
@@ -639,6 +662,8 @@ test.serial('get - $field with object structure', async t => {
       value: 25
     }
   )
+
+  await client.destroy()
 })
 
 test.serial('get - nested query with $field in $id', async t => {
@@ -685,4 +710,5 @@ test.serial('get - nested query with $field in $id', async t => {
       }
     }
   )
+  await client.destroy()
 })

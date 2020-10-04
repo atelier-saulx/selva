@@ -47,6 +47,8 @@ struct FindCommand_OrderedItem {
     char data[];
 };
 
+typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_raw);
+
 /*
  * txt = "order"
  * fld = field_name
@@ -131,23 +133,32 @@ static int parse_dir(enum SelvaModify_HierarchyTraversal *dir, enum SelvaModify_
     return 0;
 }
 
+static int FindCommand_compareNone(const void ** restrict a_raw __unused, const void ** restrict b_raw __unused) {
+    return 0;
+}
+
 static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** restrict b_raw) {
     const struct FindCommand_OrderedItem *a = *(const struct FindCommand_OrderedItem **)a_raw;
     const struct FindCommand_OrderedItem *b = *(const struct FindCommand_OrderedItem **)b_raw;
+    const char *aStr = a->data;
+    const char *bStr = b->data;
 
-    assert(a);
-    assert(b);
-
-    /* TODO different langs may have differing order. */
-    /* TODO verify the min len thing */
-    const int res1 = strncmp(a->data, b->data, min(a->data_len, b->data_len));
-    if (res1 != 0) {
-        return res1;
-    }
-
-    const int res2 = a->data_len - b->data_len;
-    if (res2 != 0) {
-        return res2;
+    char *aEnd;
+    char *bEnd;
+    const double x = strtod(aStr, &aEnd);
+    const double y = strtod(bStr, &bEnd);
+    if (aEnd != aStr && bEnd != bStr) {
+        if (x < y) {
+            return -1;
+        } else if (x > y) {
+            return 1;
+        }
+    } else {
+        /* TODO different langs may have differing order. */
+        const int res = strcmp(aStr, bStr);
+        if (res != 0) {
+            return res;
+        }
     }
 
     return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
@@ -155,6 +166,18 @@ static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** re
 
 static int FindCommand_compareDesc(const void ** restrict a_raw, const void ** restrict b_raw) {
     return FindCommand_compareAsc(b_raw, a_raw);
+}
+
+static orderFunc getOrderFunc(enum hierarchy_result_order order) {
+    switch (order) {
+    case HIERARCHY_RESULT_ORDER_ASC:
+        return FindCommand_compareAsc;
+    case HIERARCHY_RESULT_ORDER_DESC:
+        return FindCommand_compareDesc;
+    case HIERARCHY_RESULT_ORDER_NONE:
+    default:
+        return FindCommand_compareNone;
+    }
 }
 
 static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCtx *ctx, Selva_NodeId nodeId, const char *order_field) {
@@ -522,13 +545,8 @@ int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     TO_STR(ids);
 
     svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
-    if (order == HIERARCHY_RESULT_ORDER_ASC) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc)) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
-            goto out;
-        }
-    } else if (order == HIERARCHY_RESULT_ORDER_DESC) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc)) {
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }
@@ -720,13 +738,8 @@ int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString *
     }
 
     svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
-    if (order == HIERARCHY_RESULT_ORDER_ASC) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc)) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
-            goto out;
-        }
-    } else if (order == HIERARCHY_RESULT_ORDER_DESC) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc)) {
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }
@@ -879,12 +892,8 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
     }
 
     svector_autofree SVector order_result = { 0 }; /* No need to init for ORDER_NODE */
-    if (order == HIERARCHY_RESULT_ORDER_ASC) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareAsc)) {
-            return replyWithSelvaError(ctx, SELVA_ENOMEM);
-        }
-    } else if (order == HIERARCHY_RESULT_ORDER_DESC) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, FindCommand_compareDesc)) {
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
             return replyWithSelvaError(ctx, SELVA_ENOMEM);
         }
     }

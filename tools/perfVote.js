@@ -162,6 +162,7 @@ run()
       process.exit(0)
     }
   })
+  .then(() => new Promise(r => setTimeout(r, 1e3)))
   .then(() => {
     return getStats()
   })

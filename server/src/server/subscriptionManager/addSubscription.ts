@@ -4,6 +4,7 @@ import { hash } from './util'
 import addUpdate from './update/addUpdate'
 import { addOriginListeners } from './originListeners'
 import updateRegistry from './updateRegistrySubscriptions'
+import { addRefreshMeta } from './updateRefresh'
 
 const { CACHE, SUBSCRIPTIONS } = constants
 
@@ -81,7 +82,7 @@ const updateSubscription = async (
           } else {
             subsManager.subscriptions[channel].version = version
             subsManager.subscriptions[channel].tree = JSON.parse(tree)
-            subsManager.subscriptions[channel].treeVersion = hash(tree)
+            addRefreshMeta(subsManager, subscription)
           }
         }
       }
@@ -110,10 +111,16 @@ const addSubscription = (
   for (const origin of subscription.origins) {
     addOriginListeners(origin, subsManager, subscription)
   }
-  updateRegistry(subsManager.client, {
-    ...subsManager.selector,
-    subscriptions: { [channel]: 'created' }
-  })
+
+  // TODO: refactor this!
+  updateRegistry(
+    subsManager.client,
+    {
+      ...subsManager.selector,
+      subscriptions: { [channel]: 'created' }
+    },
+    subsManager
+  )
   updateSubscription(subsManager, channel, subscription)
 }
 

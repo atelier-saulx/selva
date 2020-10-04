@@ -37,13 +37,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('find - single', async t => {
@@ -67,8 +66,6 @@ test.serial('find - single', async t => {
 
   await Promise.all(matches.map(v => client.set(v)))
 
-  // console.log('r', r)
-  // t.fail()
   const r = await client.get({
     $id: 'te0',
     singleMatch: {
@@ -91,10 +88,11 @@ test.serial('find - single', async t => {
     }
   })
 
-  console.log('>>', r)
   t.deepEqual(r, {
     singleMatch: { name: 'match0' }
   })
+
+  await client.destroy()
 })
 
 test.serial('find - single with no wrapping', async t => {
@@ -118,8 +116,6 @@ test.serial('find - single with no wrapping', async t => {
 
   await Promise.all(matches.map(v => client.set(v)))
 
-  // console.log('r', r)
-  // t.fail()
   const r = await client.get({
     $id: 'te0',
     name: true,
@@ -140,10 +136,11 @@ test.serial('find - single with no wrapping', async t => {
     }
   })
 
-  console.log('>>', r)
   t.deepEqual(r, {
     name: 'match0'
   })
+
+  await client.destroy()
 })
 
 test.serial('find - single in array', async t => {
@@ -167,8 +164,6 @@ test.serial('find - single in array', async t => {
 
   await Promise.all(matches.map(v => client.set(v)))
 
-  // console.log('r', r)
-  // t.fail()
   const r = await client.get({
     $id: 'te0',
     results: [
@@ -195,10 +190,11 @@ test.serial('find - single in array', async t => {
     ]
   })
 
-  console.log('>>', r)
   t.deepEqual(r, {
     results: [{ singleMatch: { name: 'match0' } }]
   })
+
+  await client.destroy()
 })
 
 test.serial('find - single no wrapping in array', async t => {
@@ -222,8 +218,6 @@ test.serial('find - single no wrapping in array', async t => {
 
   await Promise.all(matches.map(v => client.set(v)))
 
-  // console.log('r', r)
-  // t.fail()
   const r = await client.get({
     $id: 'te0',
     results: [
@@ -248,8 +242,9 @@ test.serial('find - single no wrapping in array', async t => {
     ]
   })
 
-  console.log('>>', r)
   t.deepEqual(r, {
     results: [{ name: 'match0' }]
   })
+
+  await client.destroy()
 })

@@ -1072,15 +1072,16 @@ int SelvaModify_DelHierarchy(
         size_t nr_children,
         const Selva_NodeId *children) {
     SelvaModify_HierarchyNode *node = findNode(hierarchy, id);
+    int err1, err2;
 
     if (!node) {
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
-    (void)crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
-    (void)crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    err1 = crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
+    err2 = crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
 
-    return 0;
+    return err1 ? err1 : err2;
 }
 
 static Selva_NodeId *NodeList_New(int nr_nodes) {
@@ -1139,6 +1140,7 @@ static int SelvaModify_DelHierarchyNodeP(
      */
     for (size_t i = 0; i < ids_len; i++) {
         Selva_NodeId nodeId;
+        int err;
 
         memcpy(nodeId, ids + i, SELVA_NODE_ID_SIZE);
 
@@ -1153,15 +1155,23 @@ static int SelvaModify_DelHierarchyNodeP(
             continue;
         }
 
-        crossRemove(hierarchy, node, RELATIONSHIP_PARENT, 1, (Selva_NodeId *)child->id);
+        err = crossRemove(hierarchy, node, RELATIONSHIP_PARENT, 1, (Selva_NodeId *)child->id);
+        if (err) {
+            return err;
+        }
+
+        /*
+         * Recursively delete children if this node no longer has parents.
+         */
         if (SVector_Size(&child->parents) == 0) {
-            /* TODO Just ignoring any errors for now. */
-            (void)SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
+            err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
+            if (err) {
+                return err;
+            }
         }
     }
 
     RedisModule_Free(ids);
-
     del_node(ctx, hierarchy, node);
 
     return 0;

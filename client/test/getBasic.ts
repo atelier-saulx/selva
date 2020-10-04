@@ -18,9 +18,7 @@ test.before(async t => {
 })
 
 test.beforeEach(async t => {
-  const client = connect({ port }, { loglevel: 'info' })
-
-  await client.redis.flushall()
+  const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -161,11 +159,12 @@ test.beforeEach(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get $value', async t => {
@@ -203,11 +202,11 @@ test.serial('get $value', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get nested queries', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'maTest',
@@ -269,7 +268,7 @@ test.serial('get nested queries', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get boolean value', async t => {
@@ -296,11 +295,11 @@ test.serial('get boolean value', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get complex with $value and array syntax', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'maTest',
@@ -346,7 +345,7 @@ test.serial('get complex with $value and array syntax', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - root', async t => {
@@ -407,7 +406,7 @@ test.serial('get - root', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - basic', async t => {
@@ -467,11 +466,11 @@ test.serial('get - basic', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - $all simple', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'maA',
@@ -503,7 +502,7 @@ test.serial('get - $all simple', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - $all root level whitelist + $all', async t => {
@@ -549,7 +548,7 @@ test.serial('get - $all root level whitelist + $all', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - $all root level whitelist + blacklists + $all', async t => {
@@ -595,7 +594,7 @@ test.serial('get - $all root level whitelist + blacklists + $all', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - $all nested', async t => {
@@ -635,11 +634,11 @@ test.serial('get - $all nested', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - $all deeply nested', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   const entry = await client.set({
     type: 'lekkerType',
@@ -702,7 +701,7 @@ test.serial('get - $all deeply nested', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - $default', async t => {
@@ -894,12 +893,11 @@ test.serial('get - hierarchy', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial.skip('get - $inherit', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
-
+  const client = connect({ port })
   /*
     root
       |_ cuX
@@ -1115,13 +1113,13 @@ test.serial.skip('get - $inherit', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial.skip(
   'get - $inherit with object types does shallow merge',
   async t => {
-    const client = connect({ port }, { loglevel: 'info' })
+    const client = connect({ port })
 
     const parentOfParent = await client.set({
       type: 'lekkerType',
@@ -1196,7 +1194,7 @@ test.serial.skip(
 test.serial.skip(
   'get - $inherit with object types shallow merge can be disabled',
   async t => {
-    const client = connect({ port }, { loglevel: 'info' })
+    const client = connect({ port })
 
     const parentOfParent = await client.set({
       type: 'lekkerType',
@@ -1262,14 +1260,14 @@ test.serial.skip(
 
     await client.delete('root')
 
-    client.destroy()
+    await client.destroy()
   }
 )
 
 test.serial.skip(
   'get - $inherit with object types of nested objects, does shallow merge',
   async t => {
-    const client = connect({ port }, { loglevel: 'info' })
+    const client = connect({ port })
 
     const parentOfParent = await client.set({
       type: 'lekkerType',
@@ -1354,7 +1352,7 @@ test.serial.skip(
 
     await client.delete('root')
 
-    client.destroy()
+    await client.destroy()
   }
 )
 
@@ -1439,11 +1437,11 @@ test.serial('get - basic with many ids', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - basic with non-priority language', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viA',
@@ -1529,11 +1527,11 @@ test.serial('get - basic with non-priority language', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('get - record', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+  const client = connect({ port })
 
   await client.set({
     $id: 'viA',
@@ -1648,5 +1646,5 @@ test.serial('get - record', async t => {
 
   await client.delete('root')
 
-  client.destroy()
+  await client.destroy()
 })

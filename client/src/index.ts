@@ -2,19 +2,20 @@ import { EventEmitter } from 'events'
 import {
   ConnectOptions,
   ServerDescriptor,
-  ClientOpts,
   ServerType,
   ServerSelector,
-  LogFn,
-  LogEntry
+  ServerSelectOptions,
 } from './types'
 import digest from './digest'
 import Redis from './redis'
+
 import { GetSchemaResult, SchemaOptions, Id, Schema, FieldSchema } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
+import conformToSchema from './schema/conformToSchema'
 import initializeSchema from './schema/initializeSchema'
+
 import { GetOptions, GetResult, get } from './get'
 import { SetOptions, set } from './set'
 import { IdOptions } from 'lua/src/id'
@@ -22,68 +23,111 @@ import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
 import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
-import { v4 as uuidv4 } from 'uuid'
-import { observe, observeSchema } from './observe'
-import conformToSchema from './conformToSchema'
-import getServerDescriptor from './redis/getServerDescriptor'
-import Observable from './observe/observable'
-import { getClient } from './redis/clients'
 
+import { waitUntilEvent } from './util'
+
+import hardDisconnect from './hardDisconnect'
+
+import { connections, Connection, createConnection } from './connection'
+
+import { Observable, createObservable } from './observable'
+
+import connectRegistry from './connectRegistry'
+
+import destroy from './destroy'
+
+import { v4 as uuidv4 } from 'uuid'
+
+import getServer from './getServer'
+import { ObservableOptions, ObsSettings } from './observable/types'
 
 export * as constants from './constants'
 
+let clientId = 0
+
 export class SelvaClient extends EventEmitter {
   public redis: Redis
+
+  public selvaId: string
+
   public uuid: string
-  public logFn: LogFn
-  public loglevel: string
-  public schemaObservables: Record<string, Observable<Schema>> = {}
+
+  public observables: Map<string, Observable>
+
+  // add these on the registry scince that is the thing that gets reused
+  public schemaObservables: Map<string, Observable> = new Map()
+
   public schemas: Record<string, Schema> = {}
-  public serverType: string
- 
+
+  public server: ServerDescriptor
+
+  public addServerUpdateListeners: (() => void)[] = []
+
+  public servers: {
+    ids: Set<string>
+    subsManagers: ServerDescriptor[]
+    // replicas by name
+    replicas: { [key: string]: ServerDescriptor[] }
+    // origins by name
+    origins: { [key: string]: ServerDescriptor }
+
+    subRegisters: { [key: string]: ServerDescriptor }
+  } = {
+      ids: new Set(),
+      origins: {},
+      subsManagers: [],
+      replicas: {},
+      subRegisters: {}
+    }
+
+  public registryConnection?: Connection
+
+  public loglevel: string
+  public isDestroyed: boolean
+
+  public async hardDisconnect(connection: Connection) {
+    return hardDisconnect(this, connection)
+  }
+
   public admin: {
     deleteType(name: string, dbName?: string): Promise<void>,
     deleteField(type: string, name: string, dbName?: string): Promise<void>,
     castField(type: string, name: string, newType: FieldSchema, dbName?: string): Promise<void>
   } = {
-    deleteType: (name: string, dbName: string = 'default') => {
-      return deleteType(this, name, { name: dbName })
-    },
-
-    deleteField: (type: string, name: string, dbName: string = 'default') => {
-      return deleteField(this, type, name, { name: dbName })
-    },
-
-    castField: (type: string, name: string, newType: FieldSchema, dbName: string = 'default') => {
-      return castField(this, type, name, newType, { name: dbName })
+      deleteType: (name: string, dbName: string = 'default') => {
+        return deleteType(this, name, { name: dbName })
+      },
+      deleteField: (type: string, name: string, dbName: string = 'default') => {
+        return deleteField(this, type, name, { name: dbName })
+      },
+      castField: (type: string, name: string, newType: FieldSchema, dbName: string = 'default') => {
+        return castField(this, type, name, newType, { name: dbName })
+      }
     }
-  }
 
-  constructor(opts: ConnectOptions, clientOpts?: ClientOpts) {
+  constructor(opts: ConnectOptions) {
     super()
-    // uuid is used for logs
+    this.setMaxListeners(1e5)
+    // tmp for logs
     this.uuid = uuidv4()
-    this.setMaxListeners(10000)
-    if (!clientOpts) {
-      clientOpts = {}
-    }
-
-    this.loglevel = clientOpts.loglevel || 'warning'
-    this.logFn =
-      clientOpts.log ||
-      ((l: LogEntry, dbName: string) =>
-        console.log(`LUA: [{${dbName}} ${l.level}] ${l.msg}`))
-
-    this.on('log', ({ dbName, log }) => {
-      this.logFn(log, dbName)
-    })
-
-    this.serverType = clientOpts.serverType
-
-    this.redis = new Redis(this, opts)
+    this.selvaId = ++clientId + ''
+    this.redis = new Redis(this)
+    connectRegistry(this, opts)
   }
 
-   async initializeSchema(opts: any) {
+  connect(opts: ConnectOptions) {
+    console.log('maybe bit different name? connect :/')
+    connectRegistry(this, opts)
+    // diffrent name
+  }
+
+  logLevel(loglevel: string) {
+    this.loglevel = loglevel
+    // for logs its connection uuid + client id
+    // can enable / disable logleves
+  }
+
+  async initializeSchema(opts: any) {
     return initializeSchema(this, opts)
   }
 
@@ -97,9 +141,6 @@ export class SelvaClient extends EventEmitter {
     return get(this, getOpts)
   }
 
-  observe(props: GetOptions) {
-    return observe(this, props)
-  }
 
   async set(setOpts: SetOptions): Promise<Id | undefined> {
     await this.initializeSchema(setOpts)
@@ -115,10 +156,6 @@ export class SelvaClient extends EventEmitter {
     return digest(payload)
   }
 
-  getClient(descriptor: ServerDescriptor) {
-   return getClient(this.redis, descriptor)
-  }
-
   getSchema(name: string = 'default'): Promise<GetSchemaResult> {
     return getSchema(this, { name: name })
   }
@@ -128,40 +165,99 @@ export class SelvaClient extends EventEmitter {
     name: string = 'default'
   ): Promise<void> {
     await this.initializeSchema({ $db: name })
-    return updateSchema(this, opts, { name })
+    return updateSchema(this, opts, { name, type: 'origin' })
   }
 
-  subscribeSchema(name: string = 'default'): Observable<Schema> {
-    return observeSchema(this, name)
+  async waitUntilEvent(event: string): Promise<void> {
+    return waitUntilEvent(this, event)
   }
 
-  async conformToSchema(props: SetOptions, dbName: string = 'default') {
+  // subscribeSchema(name: string = 'default'): Observable<Schema> {
+  //   //  call this observeSchema....
+  //   console.warn('subscribeSchema changed to observeSchema will be removed in future versions')
+  //   return observeSchema(this, name)
+  // }
+
+  // observeSchema(name: string = 'default'): Observable<Schema> {
+  //   return observeSchema(this, name)
+  // }
+
+
+  public subscribeSchema (name: string = 'default'): Observable {
+    const props: ObservableOptions = {
+      type: 'schema',
+      db: name
+    }
+
+    if (!this.schemaObservables.get(name)) {
+      const obs = createObservable(props, this)
+      this.schemaObservables.set(name, obs)
+      obs.subscribe(d => {
+        // console.log('incoming schema', d)
+        this.schemas[name] = d
+      })
+      return obs
+    } else {
+      return this.schemaObservables.get(name)
+    }
+  }
+
+  public observe(props: ObservableOptions | GetOptions, opts?: ObsSettings): Observable {
+    if (props.type === 'get' || props.type === 'schema') {
+      return createObservable(<ObservableOptions>props, this)
+    } 
+    if (opts) {
+      return createObservable({
+        type: 'get',
+        options: props,
+        ...opts
+      }, this)
+    } else {
+      return createObservable({
+        type: 'get',
+        options: props
+      }, this)
+    }
+  }
+
+  public async conformToSchema(props: SetOptions, dbName: string = 'default') {
     await this.initializeSchema({ $db: dbName })
     return conformToSchema(this, props, dbName)
   }
 
-  getServerDescriptor(opts: ServerSelector): Promise<ServerDescriptor> {
-    return getServerDescriptor(this.redis, opts)
+  public getServer(opts: ServerSelector, selectOptions?: ServerSelectOptions): Promise<ServerDescriptor> {
+    return new Promise(r => {
+      getServer(this, r, opts, selectOptions)
+    })
   }
 
-  destroy() {
-    // console.log('destroy client - not implemented yet!')
+  async destroy() {
+    return destroy(this)
   }
 }
 
 export function connect(
-  opts: ConnectOptions,
-  selvaOpts?: ClientOpts
+  opts: ConnectOptions, specialOpts?: { loglevel?: string }
 ): SelvaClient {
-  const client = new SelvaClient(opts, selvaOpts)
+  const client = new SelvaClient(opts)
+  if (specialOpts && specialOpts.loglevel) {
+    client.logLevel(specialOpts.loglevel)
+  }
   return client
 }
 
+const moduleId = ~~(Math.random() * 100000)
+
 export {
+  connections,
+  createConnection,
   ConnectOptions,
   ServerType,
   ServerDescriptor,
   GetOptions,
   FieldSchemaObject,
-  RedisCommand
+  RedisCommand,
+  Connection,
+  Observable,
+  moduleId
 }

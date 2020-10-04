@@ -38,6 +38,11 @@ test.before(async t => {
   await client.destroy()
 })
 
+test.after(async t => {
+  await srv.destroy()
+  await t.connectionsAreEmpty()
+})
+
 test.serial('basic set', async t => {
   const client = connect({
     port
@@ -57,4 +62,6 @@ test.serial('basic set', async t => {
     '814f4c8863d6621f81ab494460f6c4fa66a86208839aba687a2da37db21e99d5',
     '9211490f0570d4b8288817d66fa39bebabee80ae64567baeb00ee6afe392f200'
   ])
+
+  await client.destroy()
 })

@@ -3,7 +3,7 @@ const path = require('path')
 
 const CWD = process.cwd()
 
-let filename = process.argv[2]
+const filename = process.argv[2]
 
 if (!filename) {
   console.error('No filename provided')
@@ -12,7 +12,7 @@ if (!filename) {
 
 fs.readFile(path.join(CWD, filename), 'utf8')
   .then(content => {
-    let moduleTableLocation = content.indexOf('____modules = {\n')
+    const moduleTableLocation = content.indexOf('____modules = {\n')
     const withoutRequireShim = content.substring(
       moduleTableLocation,
       content.length

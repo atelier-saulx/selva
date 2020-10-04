@@ -20,6 +20,11 @@
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
 
+#if __SIZEOF_INT128__ != 16
+#error The compiler and architecture must have Tetra-Integer support
+#endif
+typedef unsigned __int128 replset_t;
+
 SET_DECLARE(selva_onload, Selva_Onload);
 
 /*
@@ -34,6 +39,205 @@ size_t Selva_NodeIdLen(Selva_NodeId nodeId) {
     }
 
     return len;
+}
+
+static inline void clear_replset(replset_t *r) {
+    *r = 0;
+}
+
+static inline void set_replset(replset_t *r, int i) {
+    *r |= (replset_t)1 << i;
+}
+
+static inline int get_replset(const replset_t *r, int i) {
+    return (int)((*r >> i) & 1);
+}
+
+/*
+ * Replicate the selva.modify command.
+ * This function depends on the argument order of selva.modify.
+ */
+void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString **orig_argv) {
+    /*
+     * Redis doesn't have an external API to call commands nor replication the
+     * same way as it delivers them. Also the API is quite horrible because it
+     * only provides variadic function for replication. Therefore, we need to
+     * do a little hack here make dynamic arguments work.
+     */
+    const int max_argc = 128; /* This size depends on the size of replset_t */
+    int argc = 0;
+    RedisModuleString **argv;
+    char fmt[3 + max_argc + 1];
+
+    argv = RedisModule_PoolAlloc(ctx, max_argc * sizeof(RedisModuleString *));
+    if (!argv) {
+        fprintf(stderr, "Replication: %s\n", getSelvaErrorStr(SELVA_ENOMEM));
+    }
+
+    fmt[0] = 's';
+    fmt[1] = 's';
+    fmt[2] = 's';
+
+    int i_arg_type = 3;
+    for (int i = 0; i < max_argc; i++) {
+        if (get_replset(r, i)) {
+            argv[argc] = orig_argv[i_arg_type];
+            argv[argc + 1] = orig_argv[i_arg_type + 1];
+            argv[argc + 2] = orig_argv[i_arg_type + 2];
+            fmt[argc + 3] = 's';
+            fmt[argc + 4] = 's';
+            fmt[argc + 5] = 's';
+            argc += 3;
+        }
+        i_arg_type += 3;
+    }
+    fmt[argc + 3] = '\0';
+
+    // TODO Remove
+    fprintf(stderr, "Replicating %d changes, \"%s\"\n", argc / 3, fmt);
+
+    if (argc == 0) {
+        /* Nothing to replicate. */
+        return;
+    }
+
+    // TODO Remove
+    for (int i = 0; i < argc; i++) {
+        const RedisModuleString *arg = argv[i];
+
+        fprintf(stderr, "arg[%d] = %s\n", i, arg ? RedisModule_StringPtrLen(arg, NULL) : "NULL");
+    }
+
+    RedisModule_Replicate(ctx, RedisModule_StringPtrLen(orig_argv[0], NULL), fmt,
+                          orig_argv[1], orig_argv[2], orig_argv[3],
+                          argv[0],
+                          argv[1],
+                          argv[2],
+                          argv[3],
+                          argv[4],
+                          argv[5],
+                          argv[6],
+                          argv[7],
+                          argv[8],
+                          argv[9],
+                          argv[10],
+                          argv[11],
+                          argv[12],
+                          argv[13],
+                          argv[14],
+                          argv[15],
+                          argv[16],
+                          argv[17],
+                          argv[18],
+                          argv[19],
+                          argv[20],
+                          argv[21],
+                          argv[22],
+                          argv[23],
+                          argv[24],
+                          argv[25],
+                          argv[26],
+                          argv[27],
+                          argv[28],
+                          argv[29],
+                          argv[30],
+                          argv[31],
+                          argv[32],
+                          argv[33],
+                          argv[34],
+                          argv[35],
+                          argv[36],
+                          argv[37],
+                          argv[38],
+                          argv[39],
+                          argv[40],
+                          argv[41],
+                          argv[42],
+                          argv[43],
+                          argv[44],
+                          argv[45],
+                          argv[46],
+                          argv[47],
+                          argv[48],
+                          argv[49],
+                          argv[50],
+                          argv[51],
+                          argv[52],
+                          argv[53],
+                          argv[54],
+                          argv[55],
+                          argv[56],
+                          argv[57],
+                          argv[58],
+                          argv[59],
+                          argv[60],
+                          argv[61],
+                          argv[62],
+                          argv[63],
+                          argv[64],
+                          argv[65],
+                          argv[66],
+                          argv[67],
+                          argv[68],
+                          argv[69],
+                          argv[70],
+                          argv[71],
+                          argv[72],
+                          argv[73],
+                          argv[74],
+                          argv[75],
+                          argv[76],
+                          argv[77],
+                          argv[78],
+                          argv[79],
+                          argv[80],
+                          argv[81],
+                          argv[82],
+                          argv[83],
+                          argv[84],
+                          argv[85],
+                          argv[86],
+                          argv[87],
+                          argv[88],
+                          argv[89],
+                          argv[90],
+                          argv[91],
+                          argv[92],
+                          argv[93],
+                          argv[94],
+                          argv[95],
+                          argv[96],
+                          argv[97],
+                          argv[98],
+                          argv[99],
+                          argv[100],
+                          argv[101],
+                          argv[102],
+                          argv[103],
+                          argv[104],
+                          argv[105],
+                          argv[106],
+                          argv[107],
+                          argv[108],
+                          argv[109],
+                          argv[110],
+                          argv[111],
+                          argv[112],
+                          argv[113],
+                          argv[114],
+                          argv[115],
+                          argv[116],
+                          argv[117],
+                          argv[118],
+                          argv[119],
+                          argv[120],
+                          argv[121],
+                          argv[122],
+                          argv[123],
+                          argv[124],
+                          argv[125],
+                          argv[126],
+                          argv[127]);
 }
 
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -131,10 +335,21 @@ static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hie
 }
 
 /*
- * TODO: clean this up
+ * Request:
  * id, FLAGS type, key, value [, ... type, key, value]]
  * N = No root
  * M = Merge
+ *
+ * Response:
+ * [
+ * id,
+ * [err | 0 | 1]
+ * ...
+ * ]
+ *
+ * err = error in parsing or executing the triplet
+ * OK = the triplet made no changes
+ * UPDATED = changes made and replicated
  */
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -170,10 +385,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModuleKey *alias_key = open_aliases_key(ctx);
 
         if (alias_key && RedisModule_KeyType(alias_key) == REDISMODULE_KEYTYPE_HASH) {
+            char **it;
+
             /*
              * Replace id with the first match from alias_query.
              */
-            char **it;
             SVECTOR_FOREACH(it, &alias_query) {
                 RedisModuleString *tmp_id;
 
@@ -226,9 +442,27 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
     SelvaSubscriptions_FieldChangePrecheck(hierarchy, nodeId, metadata);
 
+
     /*
-     * Parse the rest of the arguments.
+     * Replication bitmap.
+     *
+     * bit  desc
+     * 0    replicate the first triplet
+     * 1    replicate the second triplet
+     * ...  ...
      */
+    replset_t repl_set;
+    clear_replset(&repl_set);
+    const int nr_triplets = (argc - 3) / 3;
+
+    /*
+     * Parse the rest of the arguments and run the modify operations.
+     * TODO Each part of the command will send a separate response back to the client.
+     * Each part is also replicated separately.
+     */
+    RedisModule_ReplyWithArray(ctx, 1 + nr_triplets);
+    RedisModule_ReplyWithString(ctx, id);
+
     for (int i = 3; i < argc; i += 3) {
         bool publish = true;
         RedisModuleString *type = argv[i];
@@ -253,6 +487,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             printf("Current value is equal to the specified value for key %s and value %s\n",
                    field_str, value_str);
 #endif
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
             continue;
         }
 
@@ -268,7 +503,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
                 snprintf(err_msg, sizeof(err_msg), "ERR Invalid argument at: %d", i);
                 RedisModule_ReplyWithError(ctx, err_msg);
-                goto out;
+                continue;
             }
 
             /*
@@ -280,7 +515,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             err = SelvaModify_ModifySet(ctx, hierarchy, id_key, id, field, setOpts);
             if (err) {
-                goto out;
+                replyWithSelvaError(ctx, err);
+                continue;
             }
         } else if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY) {
             /*
@@ -300,7 +536,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
                 snprintf(err_msg, sizeof(err_msg), "%s; Failed to delete the field: \"%s\"", getSelvaErrorStr(err), field_str);
                 RedisModule_ReplyWithError(ctx, err_msg);
-                goto out;
+                continue;
             }
         } else {
             if (type_code == SELVA_MODIFY_ARG_DEFAULT) {
@@ -316,19 +552,24 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
                 snprintf(err_msg, sizeof(err_msg), "ERR Invalid type: \"%c\"", type_code);
                 RedisModule_ReplyWithError(ctx, err_msg);
-                goto out;
+                continue;
             }
         }
+
+        /* This triplet needs to be replicated. */
+        set_replset(&repl_set, i / 3 - 1);
 
         if (publish) {
             SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, nodeId, metadata, field_str);
         }
+
+        RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
     }
 
     /*
      * If the size of alias_query is greater than zero it means that no match
-     * was not found for $alias and we need to create all the aliases listed in
-     * the query.
+     * was found for $alias and we need to create all the aliases listed in the
+     * query.
      * We know that the aliases are in an array so it's enough to get the
      * address of the first alias to have access to the whole array.
      */
@@ -347,17 +588,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         (void)SelvaModify_ModifySet(ctx, hierarchy, id_key, id, field, &opSet);
     }
 
-    RedisModule_ReplyWithString(ctx, id);
-    RedisModule_ReplicateVerbatim(ctx);
-    err = 0;
-out:
-    if (err) {
-        (void)replyWithSelvaError(ctx, err);
-    }
-
-    /* Maybe something was changed even if the command failed. */
+    replicateModify(ctx, &repl_set, argv);
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
-
     RedisModule_CloseKey(id_key);
 
     return REDISMODULE_OK;

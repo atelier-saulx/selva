@@ -1,6 +1,5 @@
 import { GetResult } from '~selva/get/types'
 import { splitString, ensureArray } from '../util'
-import * as logger from '../logger'
 
 import globals from '../globals'
 import { getSchema } from '../schema/index'
@@ -111,6 +110,7 @@ export const setNestedResult = (
     for (let i = 0; i < len - 1; i++) {
       segment = segment[fields[i]] || (segment[fields[i]] = {})
     }
+
     segment[fields[len - 1]] = value
   } else {
     result[field] = value
