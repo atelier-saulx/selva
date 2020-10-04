@@ -35,6 +35,7 @@ function parseFork(
   if (list) {
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
+
       if (isFork(item)) {
         const newNode: Fork = { isFork: true }
         newAstList[idx++] = newNode
@@ -259,13 +260,20 @@ function parseSubscriptions(
     if (!sub.idFields) {
       sub.idFields = {}
     }
+
     const field = meta.traverse || traverse
     if (!field) {
-      logger.error('WRONG MISSING FIELD or TRAVERSE')
+      logger.error('WRONG MISSING FIELD or TRAVERSE in parse subscriptions')
     } else {
-      for (let i = 0; i < ids.length; i++) {
-        sub.idFields[`${ids[i]}.${field}`] = true
-      }
+      // for (let k in meta.parsedIds) {
+      //   const x = meta.parsedIds[k]
+      //   for (let i = 0; i < x.length; i++) {
+      //     if (!sub.ids) {
+      //       sub.ids = {}
+      //     }
+      //     sub.ids[x[i]] = true
+      //   }
+      // }
     }
   }
 
@@ -278,6 +286,8 @@ function parseSubscriptions(
       sub.fields[sort[i].$field] = true
     }
   }
+
+  // logger.info(sub.ids)
 
   return sub
 }

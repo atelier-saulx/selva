@@ -5,23 +5,36 @@
     "client",
     "server",
     "api",
-    "tools"
+    "tools",
+    "diff"
   ],
   "scripts": {
+    "killall": "pkill -9 node && pkill -9 redis",
     "publish-major": "yarn build && node ./bin/publish.js major && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
     "publish-minor": "yarn build && node ./bin/publish.js minor && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
     "publish-patch": "yarn build && node ./bin/publish.js && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
-    "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist",
+    "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist && rm -rf diff/node_modules diff/dist",
     "test": "cd client && yarn test",
     "build-c": "cd ./server/modules/selva/module && make clean && make && cp module.so ../../binaries/darwin_x64/selva.so",
-    "build": "yarn buildClient && yarn buildServer && yarn buildApi",
+    "build": "yarn build-c && yarn buildDiff && yarn buildClient && yarn buildServer && yarn buildDiff && yarn buildApi",
     "buildClient": "cd client && yarn buildLua && yarn build",
-    "buildLua": "cd client && yarn buildLua && yarn buildLua",
+    "buildDiff": "cd diff && yarn build",
+    "buildLua": "cd client && yarn buildLua",
     "buildServer": "cd server && yarn build",
     "buildApi": "cd api && yarn build",
     "watchServer": "cd server && yarn watch",
     "watchClientTests": "cd client && yarn watch",
     "watch": "watch"
+  },
+  "lint-staged": {
+    "{js,json}": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
   },
   "prettier": "@saulx/prettier-config",
   "eslintConfig": {

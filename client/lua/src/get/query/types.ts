@@ -23,6 +23,7 @@ export type Meta = {
   traverse?: string | string[]
   ids: string[]
   type?: string[]
+  parsedIds?: { [key: string]: string[] }
 }
 
 export type FieldSubscription = {

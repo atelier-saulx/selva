@@ -51,13 +51,12 @@ test.beforeEach(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port: port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('find - numeric exists field', async t => {
@@ -209,32 +208,34 @@ test.serial('find - string field only not exists indexed', async t => {
     thing: 'yes some value here'
   })
 
-  t.deepEqualIgnoreOrder(
-    await client.get({
-      $id: 'root',
-      id: true,
-      items: {
-        name: true,
-        $list: {
-          $find: {
-            $traverse: 'children',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'league'
-              },
-              {
-                $field: 'thing',
-                $operator: 'notExists'
-              }
-            ]
-          }
+  const m = await client.get({
+    $includeMeta: true,
+    $id: 'root',
+    id: true,
+    items: {
+      name: true,
+      $list: {
+        $find: {
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league'
+            },
+            {
+              $field: 'thing',
+              $operator: 'notExists'
+            }
+          ]
         }
       }
-    }),
-    { id: 'root', items: [{ name: 'league 1' }] }
-  )
+    }
+  })
+
+  delete m.$meta
+
+  t.deepEqualIgnoreOrder(m, { id: 'root', items: [{ name: 'league 1' }] })
 
   await client.delete('root')
   await client.destroy()

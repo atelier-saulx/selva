@@ -116,11 +116,12 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial(
@@ -222,7 +223,7 @@ test.serial(
     )
 
     await client.delete('root')
-    client.destroy()
+    await client.destroy()
   }
 )
 
@@ -330,7 +331,7 @@ test.serial(
     )
 
     await client.delete('root')
-    client.destroy()
+    await client.destroy()
   }
 )
 
@@ -381,7 +382,7 @@ test.serial('children/parents update checks source on create', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })
 
 test.serial('children/parents update checks source on delete', async t => {
@@ -471,5 +472,5 @@ test.serial('children/parents update checks source on delete', async t => {
   )
 
   await client.delete('root')
-  client.destroy()
+  await client.destroy()
 })

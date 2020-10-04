@@ -3,6 +3,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
+import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
@@ -11,11 +12,11 @@ test.before(async () => {
   srv = await start({
     port
   })
-  console.log('ok server started!')
 })
 
-test.after(async () => {
+test.after(async t => {
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('inherit object nested field from root youzi', async t => {
@@ -70,8 +71,8 @@ test.serial('inherit object nested field from root youzi', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    console.log('-----------', p)
-    results.push(p)
+    // its now not immatable - think about if we want it immutable
+    results.push(deepCopy(p))
   })
 
   await wait(2000)
@@ -87,13 +88,14 @@ test.serial('inherit object nested field from root youzi', async t => {
 
   subs.unsubscribe()
 
-  console.log('myesh', results)
   t.deepEqual(results, [
     { flapper: { snurk: 'hello' } },
     { flapper: { snurk: 'snurkels' } }
   ])
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('inherit object youzi', async t => {
@@ -133,7 +135,7 @@ test.serial('inherit object youzi', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(deepCopy(p))
   })
 
   await wait(1000)
@@ -155,6 +157,8 @@ test.serial('inherit object youzi', async t => {
   ])
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('basic inherit subscription', async t => {
@@ -216,8 +220,7 @@ test.serial('basic inherit subscription', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    console.log(p)
-    results.push(p)
+    results.push(deepCopy(p))
   })
 
   await wait(1000)
@@ -245,6 +248,8 @@ test.serial('basic inherit subscription', async t => {
   subs.unsubscribe()
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('inherit object', async t => {
@@ -317,7 +322,7 @@ test.serial('inherit object', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(deepCopy(p))
   })
 
   await wait(1000)
@@ -339,6 +344,8 @@ test.serial('inherit object', async t => {
   ])
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('list inherit subscription', async t => {
@@ -412,7 +419,7 @@ test.serial('list inherit subscription', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(deepCopy(p))
   })
 
   await wait(1000)
@@ -431,7 +438,6 @@ test.serial('list inherit subscription', async t => {
 
   await wait(1000)
 
-  console.dir(results, { depth: 10 })
   t.deepEqualIgnoreOrder(results, [
     {
       flapdrol: [
@@ -458,6 +464,8 @@ test.serial('list inherit subscription', async t => {
   subs.unsubscribe()
 
   await client.delete('root')
+  await client.destroy()
+  t.true(true)
 })
 
 test.serial('list inherit + field subscription', async t => {
@@ -535,7 +543,7 @@ test.serial('list inherit + field subscription', async t => {
   const results = []
 
   const subs = observable.subscribe(p => {
-    results.push(p)
+    results.push(deepCopy(p))
   })
 
   await wait(1000)
@@ -572,7 +580,6 @@ test.serial('list inherit + field subscription', async t => {
 
   await wait(1000)
 
-  console.dir(results, { depth: 10 })
   t.deepEqualIgnoreOrder(results, [
     {
       flapdrol: [
@@ -599,4 +606,5 @@ test.serial('list inherit + field subscription', async t => {
   subs.unsubscribe()
 
   await client.delete('root')
+  await client.destroy()
 })

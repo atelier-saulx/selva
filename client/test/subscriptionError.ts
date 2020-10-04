@@ -28,15 +28,17 @@ test.before(async t => {
       }
     }
   })
+  await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('subscription validation error', async t => {
@@ -49,7 +51,7 @@ test.serial('subscription validation error', async t => {
     .subscribe(
       () => {},
       () => {
-        console.log('yesh')
+        // console.log('yesh')
         errorCnt++
       }
     )
@@ -76,6 +78,7 @@ test.serial('subscription validation error', async t => {
     )
   await wait(2e3)
   t.is(errorCnt, 2)
+  await client.destroy()
 })
 
 test.serial(
@@ -123,6 +126,7 @@ test.serial(
     })
     await wait(1000)
     t.is(cnt, 4)
+    await client.destroy()
   }
 )
 
@@ -178,4 +182,5 @@ test.serial('subscription error on subs manager', async t => {
     )
   await wait(1000)
   t.is(errorCnt, 1)
+  await client.destroy()
 })

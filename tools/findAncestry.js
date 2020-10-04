@@ -13,7 +13,7 @@ function find(ancestry, db, id) {
   }
 
   const references = JSON.parse(referenceStr)
-  console.log(id, '-->', references)
+  // console.log(id, '-->', references)
 
   const newIds = []
   for (const reference of references) {

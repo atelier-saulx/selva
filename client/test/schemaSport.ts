@@ -4,24 +4,8 @@ import { Schema, SchemaOptions, Fields, FieldSchema } from '../src/schema'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
-const mangleResults = (
-  correctSchema: Schema | SchemaOptions,
-  schemaResult: Schema
-) => {
-  if (!correctSchema.sha) {
-    delete schemaResult.sha
-  }
 
-  for (const type in schemaResult.types) {
-    if (!correctSchema.types[type].prefix) {
-      delete schemaResult.types[type].prefix
-    }
-  }
-  delete schemaResult.idSeedCounter
-  delete schemaResult.prefixToTypeMapping
-}
-
-test.serial.only('schemas - sport', async t => {
+test.serial('schemas - sport', async t => {
   const port = await getPort()
   const server = await start({
     port
@@ -387,10 +371,9 @@ test.serial.only('schemas - sport', async t => {
   await client.updateSchema(schema)
 
   const { schema: schemaResult, searchIndexes } = await client.getSchema()
+  await client.destroy()
 
-  console.log(schema)
+  await server.destroy()
 
-  server.destroy()
-
-  t.true(true)
+  await t.connectionsAreEmpty()
 })

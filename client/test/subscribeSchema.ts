@@ -16,11 +16,12 @@ test.before(async () => {
     registry: { port },
     name: 'snurk'
   })
-  console.log('ok server started!')
 })
 
-test.after(async () => {
+test.after(async t => {
+  await srv2.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('basic schema based subscriptions', async t => {
@@ -31,9 +32,7 @@ test.serial('basic schema based subscriptions', async t => {
   let snurkCnt = 0
   obssnurk.subscribe(x => {
     snurkCnt++
-    console.log('SNURK', x.rootType)
     if (snurkCnt === 2) {
-      console.log(x.rootType.fields)
       if (!x.rootType.fields.snurk) {
         throw new Error('does not have snurk!')
       }
@@ -41,9 +40,6 @@ test.serial('basic schema based subscriptions', async t => {
   })
   await wait(2000)
 
-  console.log('----------------------------------')
-
-  console.log('update snurk')
   await client.updateSchema(
     {
       languages: ['en', 'de', 'nl'],
@@ -53,8 +49,6 @@ test.serial('basic schema based subscriptions', async t => {
     },
     'snurk'
   )
-
-  console.log('snurk updated')
 
   const observable = client.subscribeSchema()
   let o1counter = 0
@@ -73,8 +67,6 @@ test.serial('basic schema based subscriptions', async t => {
 
   await wait(500)
 
-  console.log('----------------------------------')
-  console.log('set some things')
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -91,15 +83,11 @@ test.serial('basic schema based subscriptions', async t => {
 
   await wait(500)
 
-  console.log('----------------------------------')
-  console.log('unsubscribe')
-
   sub.unsubscribe()
 
   await wait(500)
+
   t.is(o1counter, 3)
-  console.log('----------------------------------')
-  console.log('best')
   const observable2 = client.subscribeSchema()
   var cnt = 0
   const sub2 = observable2.subscribe(d => {
@@ -113,6 +101,10 @@ test.serial('basic schema based subscriptions', async t => {
   t.is(snurkCnt, 2)
 
   sub2.unsubscribe()
+
+  await wait(1500)
+
+  await client.destroy()
 
   await wait(1500)
 })

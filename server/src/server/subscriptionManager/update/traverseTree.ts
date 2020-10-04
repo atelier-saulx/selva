@@ -7,16 +7,12 @@ const traverse = (
   channel: string,
   dbName: string
 ) => {
-  // make it batch
   const path = channel.split('.')
   const id = path[0]
-
-  // we can add this to tree
   if (
     subscriptionManager.memberMemCache[dbName] &&
     subscriptionManager.memberMemCache[dbName][channel]
   ) {
-    console.log('Remove from memcache update!', path)
     delete subscriptionManager.memberMemCache[dbName][channel]
     subscriptionManager.memberMemCacheSize--
   }
@@ -35,6 +31,7 @@ const traverse = (
         if (subs) {
           subs.forEach(subscription => {
             if (!subscription.inProgress) {
+              // @ts-ignore
               addUpdate(subscriptionManager, subscription)
             }
           })
@@ -46,6 +43,7 @@ const traverse = (
           prefix = id.slice(0, 2)
         }
         const match = segment.___types[prefix]
+
         if (match) {
           for (let containsId in match) {
             contains(
@@ -57,8 +55,8 @@ const traverse = (
           }
         }
       }
-
       if (segment.__any) {
+        // @ts-ignore
         for (let containsId in segment.__any) {
           contains(
             subscriptionManager,

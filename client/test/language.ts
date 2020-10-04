@@ -13,16 +13,14 @@ test.before(async () => {
   srv = await start({
     port
   })
-  console.log('ok server started!')
 })
 
-test.after(async _t => {
+test.after(async t => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial.skip('language in all types of objects', async t => {
@@ -83,4 +81,6 @@ test.serial.skip('language in all types of objects', async t => {
       }
     }
   )
+
+  await client.destroy()
 })

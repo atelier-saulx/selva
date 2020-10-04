@@ -18,19 +18,14 @@ const addOriginListeners = async (
   // we need to use name and unsubscribe as well
 
   if (!subsManager.originListeners[name]) {
-    const selector: ServerSelector = { name, type: 'replica' }
+    const selector: ServerSelector = { name }
 
-    console.log('ADD ORIGIN LISTENERS', name)
-
-    const descriptor = await subsManager.client.getServerDescriptor(selector)
+    let collect = 0
 
     const listener = (_pattern, channel, message) => {
-      // console.info('----->>>>>>', name, channel, message)
-
       subsManager.incomingCount++
       collect++
-      // use this for batching here
-      // merge tree for checks?
+
       if (message === 'schema_update') {
         const subscription =
           subsManager.subscriptions[`${constants.SCHEMA_SUBSCRIPTION}:${name}`]
@@ -39,6 +34,7 @@ const addOriginListeners = async (
         }
       } else {
         const eventName = channel.slice(prefixLength)
+
         // make this batch as well (the check)
         if (message === 'update') {
           traverseTree(subsManager, eventName, name)
@@ -59,13 +55,19 @@ const addOriginListeners = async (
     subsManager.originListeners[name] = {
       subscriptions: new Set(),
       listener,
-      reconnectListener: ({ name: dbName }) => {
+      reconnectListener: descriptor => {
+        const { name: dbName } = descriptor
+        console.log(
+          'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
+          name
+        )
+
+        // not enough ofcourse
         if (name === dbName) {
-          console.log('RE-RUN ALL SUBSCRIPTIONS')
+          // need to resend subs if it dc'ed
           const origin = subsManager.originListeners[name]
           if (origin && origin.subscriptions) {
             origin.subscriptions.forEach(subscription => {
-              console.log('  ---> re fire sub', subscription.channel)
               addUpdate(subsManager, subscription)
             })
           }
@@ -75,12 +77,13 @@ const addOriginListeners = async (
 
     const { client } = subsManager
     const redis = client.redis
-    let collect = 0
 
+    // make this better
+    // use this with the global connectorClients
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
-    redis.on(descriptor, 'pmessage', listener)
-    redis.psubscribe(descriptor, EVENTS + '*')
+    redis.on(selector, 'pmessage', listener)
+    redis.psubscribe(selector, EVENTS + '*')
   }
 
   subsManager.originListeners[name].subscriptions.add(subscription)
@@ -92,13 +95,12 @@ const removeOriginListeners = (
   subscription: Subscription
 ) => {
   const origin = subsManager.originListeners[name]
+
   if (origin) {
     const { client } = subsManager
     const redis = client.redis
     origin.subscriptions.delete(subscription)
     if (origin.subscriptions.size === 0) {
-      console.log('REMOVE ORIGIN LISTENERS', name)
-
       if (name in subsManager.memberMemCache) {
         delete subsManager.memberMemCache[name]
       }

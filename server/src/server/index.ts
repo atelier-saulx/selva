@@ -7,9 +7,12 @@ import {
 import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
 import startRedis from './startRedis'
-import chalk from 'chalk'
 import ProcessManager from './processManager'
 import attachStatusListeners from './attachStatusListeners'
+import { wait } from '../util'
+import chalk from 'chalk'
+import { removeFromRegistry } from './updateRegistry'
+import beforeExit from 'before-exit'
 import {
   startSubscriptionManager,
   stopSubscriptionManager,
@@ -23,11 +26,15 @@ import {
 } from '../backups'
 import { registryManager } from './registryManager'
 import heartbeat from './heartbeat'
+import clearReplicaDump from './clearReplicaDump'
+import { subscriptionRegistry } from './subscriptionRegistry'
 
 export class SelvaServer extends EventEmitter {
   public type: ServerType
+  public registryTimer?: NodeJS.Timeout
   public port: number
   public host: string
+  public isDestroyed: boolean
   public name: string
   public selvaClient: SelvaClient
   public serverHeartbeatTimeout?: NodeJS.Timeout
@@ -42,18 +49,21 @@ export class SelvaServer extends EventEmitter {
     super()
     this.setMaxListeners(10000)
     this.type = type
+
+    this.on('error', err => {
+      // console.error(err)
+    })
+
+    beforeExit.do(() => {
+      return this.destroy()
+    })
   }
 
   async start(opts: ServerOptions) {
-    console.info(
-      `Start SelvaServer ${chalk.white(opts.name)} of type ${chalk.blue(
-        this.type
-      )} on port ${chalk.blue(String(opts.port))}`
-    )
-
     this.port = opts.port
     this.host = opts.host
     this.name = opts.name
+
     if (opts.backups && opts.backups.backupFns) {
       if (!opts.save && opts.save !== false) {
         opts.save = true
@@ -67,55 +77,48 @@ export class SelvaServer extends EventEmitter {
     if (opts.registry) {
       this.selvaClient = connect(opts.registry)
 
-      //
       // important to define that you want to get stuff from the registry! - do it in nested methods
       // in get and set you can also pass 'registry'
     } else if (this.type === 'registry') {
-      this.selvaClient = connect({ port: opts.port }, { serverType: this.type })
+      this.selvaClient = connect({ port: opts.port })
+    }
+
+    this.selvaClient.server = {
+      name: opts.name,
+      port: opts.port,
+      host: opts.host,
+      type: this.type
     }
 
     if (opts.backups && opts.backups.loadBackup) {
-      console.log('Loading backup')
       await loadBackup(this.backupDir, this.backupFns)
-      console.log('Backup loaded')
     }
 
     if (this.type === 'replica') {
-      this.selvaClient.on('servers_updated', async servers => {
-        if (!this.origin) {
-          return
-        }
-
-        const origin = await this.selvaClient.getServerDescriptor({
+      const initReplica = async () => {
+        const origin = await this.selvaClient.getServer({
           name: opts.name,
           type: 'origin'
         })
-
-        if (
+        if (!this.origin) {
+          this.origin = origin
+          await clearReplicaDump(opts.dir)
+          startRedis(this, opts)
+        } else if (
           origin.port !== this.origin.port ||
           origin.host !== this.origin.host
         ) {
-          console.log(
-            'ORIGIN CHANGED FOR REPLICA from',
-            this.origin.port,
-            'to',
-            origin.port
-          )
-
           this.pm.destroy()
           this.origin = origin
-
-          console.log('starts it on ', opts.port)
-          setTimeout(() => {
+          setTimeout(async () => {
+            await clearReplicaDump(opts.dir)
             startRedis(this, opts)
           }, 500)
         }
-      })
-      this.origin = await this.selvaClient.getServerDescriptor({
-        name: opts.name,
-        type: 'origin'
-      })
-      startRedis(this, opts)
+      }
+      this.selvaClient.on('added-servers', initReplica)
+      this.selvaClient.on('removed-servers', initReplica)
+      initReplica()
     } else {
       startRedis(this, opts)
     }
@@ -134,7 +137,9 @@ export class SelvaServer extends EventEmitter {
       heartbeat(this)
     }
 
-    if (this.type === 'subscriptionManager') {
+    if (this.type === 'subscriptionRegistry') {
+      subscriptionRegistry(this)
+    } if (this.type === 'subscriptionManager') {
       this.subscriptionManager = await startSubscriptionManager(opts)
     } else if (this.type === 'registry') {
       registryManager(this)
@@ -142,6 +147,20 @@ export class SelvaServer extends EventEmitter {
   }
 
   async destroy() {
+    this.isDestroyed = true
+    clearTimeout(this.serverHeartbeatTimeout)
+    if (this.type !== 'registry') {
+      // timeout of 1 sec if the registry is allready gone
+      const x = await Promise.race([removeFromRegistry(this.selvaClient), (async () => {
+        await wait(1e3)
+        return new Error(`Cannot remove server from registry within 1s, registry might be removed itself, ${this.type}, ${this.name}, ${this.port}`)
+      })()])
+      if (x instanceof Error) {
+        console.warn(chalk.yellow(x.message))
+      }
+    } else {
+      clearTimeout(this.registryTimer)
+    }
     if (this.pm) {
       this.pm.destroy()
       this.pm = undefined
@@ -149,15 +168,12 @@ export class SelvaServer extends EventEmitter {
     if (this.type === 'subscriptionManager') {
       await stopSubscriptionManager(this.subscriptionManager)
     }
-
     // need to call destroy if it crashes
-    clearTimeout(this.serverHeartbeatTimeout)
-
     if (this.backupCleanup) {
       this.backupCleanup()
       this.backupCleanup = undefined
     }
-
+    this.selvaClient.destroy()
     this.emit('close')
   }
 

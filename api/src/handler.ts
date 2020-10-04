@@ -1,7 +1,8 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import { json } from 'body-parser'
-import { connect, ConnectOptions, SelvaClient } from '@saulx/selva'
+import { connect, ConnectOptions, SelvaClient, GetOptions } from '@saulx/selva'
 import * as url from 'url'
+import { SetOptions } from '@saulx/selva/dist/src/set'
 
 export type MiddlewareNext = (proceed: boolean) => void
 
@@ -39,6 +40,107 @@ function checkPost(
   }
 
   next(true)
+}
+
+export function constructGuard(setOpts: SetOptions): GetOptions {
+  const result: GetOptions = {}
+  for (const key in setOpts) {
+    if (key.startsWith('$')) {
+      continue
+    }
+
+    result[key] = true
+  }
+
+  // we use this elsewhere so always get id
+  result.id = true
+
+  if (setOpts.$alias) {
+    result.$alias = setOpts.$alias
+  } else if (setOpts.$id) {
+    result.$id = setOpts.$id
+  }
+
+  if (setOpts.$language) {
+    result.$language = setOpts.$language
+  }
+
+  return result
+}
+
+export function noHasGuard(setOpts: any, result: any): boolean {
+  if (Array.isArray(setOpts) && Array.isArray(result)) {
+    if (setOpts.length !== result.length) {
+      return false
+    }
+
+    setOpts.sort()
+    result.sort()
+
+    for (let i = 0; i < setOpts.length; i++) {
+      if (setOpts[i] !== result[i]) {
+        return false
+      }
+    }
+
+    return true
+  } else if (typeof setOpts === 'object' && (setOpts.$add || setOpts.$delete)) {
+    if (setOpts.$add) {
+      const asSet = new Set(result)
+      for (const val of setOpts.$add) {
+        if (!asSet.has(val)) {
+          return false
+        }
+      }
+    }
+
+    if (setOpts.$delete) {
+      const asSet = new Set(result)
+      for (const val of setOpts.$delete) {
+        if (asSet.has(val)) {
+          return false
+        }
+      }
+    }
+
+    return true
+  } else if (
+    typeof setOpts === 'object' &&
+    setOpts.$value &&
+    Array.isArray(result)
+  ) {
+    setOpts = setOpts.$value
+
+    if (setOpts.length !== result.length) {
+      return false
+    }
+
+    setOpts.sort()
+    result.sort()
+
+    for (let i = 0; i < setOpts.length; i++) {
+      if (setOpts[i] !== result[i]) {
+        return false
+      }
+    }
+
+    return true
+  } else if (typeof setOpts === 'object' && typeof result === 'object') {
+    return Object.entries(setOpts).every(([key, val]) => {
+      if (key.startsWith('$')) {
+        // skip
+        return true
+      }
+
+      return noHasGuard(val, result[key])
+    })
+  } else {
+    if (typeof setOpts === 'object' && Object.keys(setOpts).length === 0) {
+      setOpts = undefined
+    }
+
+    return setOpts === result
+  }
 }
 
 function parseJson(
@@ -130,8 +232,30 @@ export default function(
             $overwrite: true
           }
         }
+
+        // FIXME: this is some bullshit logic right here
+        // that we use to check if something meaningful will change with this set
+        // to reduce load on the cluster due to replication
+        // NUKE THIS PLS
+        const fakeGetBody: GetOptions = constructGuard(body)
         client
-          .set(body)
+          .get(fakeGetBody)
+          .then(result => {
+            let needsChanges = true
+            try {
+              const r = !result.id ? false : noHasGuard(body, result)
+              needsChanges = !r
+            } catch (_e) {}
+
+            if (!needsChanges) {
+              console.log('HAHA, NOTHING ACTUALLY UPDATED')
+              return Promise.resolve(result.id)
+            }
+
+            console.log('ACTUALLY SETTING')
+            // only this needs to be the "entrypoint" to the promise chain... later at least
+            return client.set(body)
+          })
           .then(result => {
             if (!result) {
               console.error('Nothing was created')
