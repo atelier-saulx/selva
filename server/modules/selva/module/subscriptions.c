@@ -948,10 +948,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      * Get the nodeId.
      */
     Selva_NodeId node_id;
-    size_t len;
-    const char *str = RedisModule_StringPtrLen(argv[ARGV_NODE_ID], &len);
-    memset(node_id, 0, SELVA_NODE_ID_SIZE);
-    memcpy(node_id, str, min(SELVA_NODE_ID_SIZE, len));
+    SelvaArgParser_NodeId(node_id, argv[ARGV_NODE_ID]);
 
     /*
      * Get field names for change events.
