@@ -1426,11 +1426,9 @@ static int traverse_adjacent(
     SVECTOR_FOREACH(it, adjVec) {
         SelvaModify_HierarchyNode *node = *it;
 
-        /*
-         * We don't want to support skipping here, and therefore we ignore
-         * the return value.
-         */
-        (void)tcb->node_cb(node, tcb->node_arg);
+        if (tcb->node_cb(node, tcb->node_arg)) {
+            return 0;
+        }
     }
 
     return 0;
