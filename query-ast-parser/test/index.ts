@@ -144,6 +144,30 @@ test('complex filter', async t => {
   ])
 })
 
+test.only('exists & not exist', async t => {
+  const filter: Filter[] = [
+    {
+      $field: 'type',
+      $operator: 'exists'
+    },
+    {
+      $field: 'flurp',
+      $operator: 'notExists'
+    }
+  ]
+
+  const ast = createAst(filter)
+  printAst(ast)
+
+  t.deepEqual(ast, {
+    isFork: true,
+    $and: [
+      { $operator: 'exists', $field: 'type' },
+      { $operator: 'notExists', $field: 'flurp' }
+    ]
+  })
+})
+
 test('reduce exists', async t => {
   const filter: Filter[] = [
     {

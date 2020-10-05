@@ -47,12 +47,14 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   }
 
   const filter: FilterAST = {
-    $value: isGeoFilterValue(filterOpt)
-      ? convertGeoFilterValue(filterOpt)
-      : <Value>filterOpt.$value,
     $operator: o,
     $field: filterOpt.$field
-    // $search: search
+  }
+
+  if (o !== 'notExists' && o !== 'exists') {
+    filter.$value = isGeoFilterValue(filterOpt)
+      ? convertGeoFilterValue(filterOpt)
+      : <Value>filterOpt.$value
   }
 
   let hasNow = false

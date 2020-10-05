@@ -14,7 +14,7 @@ export type FilterAST = {
     | 'exists'
     | 'notExists'
     | 'textSearch'
-  $value: Value
+  $value?: Value
   // $search: string[]
   hasNow?: true
 }

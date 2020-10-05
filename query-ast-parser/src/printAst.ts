@@ -36,7 +36,9 @@ const log = (str: string, number: number, last?: boolean) => {
 
 const logFilter = (filter: FilterAST, number: number, last?: boolean) => {
   const str = `${filter.$field} ${filter.$operator} ${
-    Array.isArray(filter.$value)
+    filter.$value === undefined
+      ? ''
+      : Array.isArray(filter.$value)
       ? `[${filter.$value.join(',')}]`
       : filter.$value
   }`
