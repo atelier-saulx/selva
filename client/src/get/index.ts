@@ -915,7 +915,7 @@ async function getThings(
         let prevIds = ids
         while (isNest) {
           let nids = []
-          console.log('LEVEL ', level, prevIds.length, prevIds)
+          // console.log('LEVEL ', level, prevIds.length, prevIds)
 
           nids = await makeNestedNice(prevIds, isNest)
           prevIds = nids

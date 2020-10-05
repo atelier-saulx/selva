@@ -4,8 +4,7 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
-import set from '../src/set/fieldParsers/set'
-import { level } from 'chalk'
+import chalk from 'chalk'
 
 let srv
 let port: number
@@ -22,6 +21,7 @@ test.before(async t => {
       glurp: {
         prefix: 'gl',
         fields: {
+          levelCnt: { type: 'number' },
           title: { type: 'string' }
         }
       }
@@ -46,7 +46,8 @@ test.serial('get very deep results', async t => {
   let s: any = q
 
   const setObj: any = {}
-  const levels = 6
+  const levels = 10
+  const amount = 2
 
   for (let i = 0; i < levels; i++) {
     s.$find = {
@@ -64,18 +65,17 @@ test.serial('get very deep results', async t => {
 
   const recurse = (x: any, i = 0) => {
     let myLevel = i
-
     if (!levelMap[myLevel]) {
       levelMap[myLevel] = 0
     }
-
     if (i < levels) {
       x.children = []
       const nextI = i + 1
-      for (let j = 0; j < 2; j++) {
+      for (let j = 0; j < amount; j++) {
         ++levelMap[myLevel]
         let n: any = {
           type: 'glurp',
+          levelCnt: levelMap[myLevel],
           title: `Level ${myLevel} child ${j} level count -> ${levelMap[myLevel]}`
         }
         x.children.push(n)
@@ -85,29 +85,49 @@ test.serial('get very deep results', async t => {
   }
   recurse(setObj)
 
-  console.dir(setObj, { depth: 100 })
-
   setObj.$id = 'root'
 
   var d = Date.now()
   await client.set(setObj)
-
-  console.log('ok make it nice', Date.now() - d, 'ms')
+  console.log(
+    chalk.gray(`  Set ${amount}^${levels} things ${Date.now() - d}ms`)
+  )
 
   const myQuery = {
     x: {
-      title: true,
-      id: true,
+      //   title: true,
+      //   id: true,
+      levelCnt: true,
       $list: {
         $find: q.$find
       }
     }
   }
-  console.dir(myQuery, { depth: 100 })
 
+  d = Date.now()
   const ultraResults = await client.get(myQuery)
+  console.log(
+    chalk.gray(
+      `  Get ${amount}^${levels} things using nested queries in ${Date.now() -
+        d} ms`
+    )
+  )
 
-  console.dir(ultraResults, { depth: 10 })
+  //   console.dir(ultraResults, { depth: 10 })
+
+  const r = []
+
+  for (let i = 0; i < levelMap[levels - 1]; i++) {
+    r.push({
+      levelCnt: i + 1
+    })
+  }
+
+  t.deepEqualIgnoreOrder(
+    ultraResults.x,
+    r,
+    `has correct amount of result (${levelMap[levels - 1]}) for ${levels} deep`
+  )
 
   await wait(1e3)
 
