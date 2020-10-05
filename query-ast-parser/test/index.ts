@@ -216,3 +216,53 @@ test.only('reduce exists', async t => {
 
   printAst(ast)
 })
+
+test.only('perf test', async t => {
+  const filter: Filter[] = [
+    {
+      $field: 'type',
+      $operator: '=',
+      $value: 'team'
+    },
+    {
+      $field: 'type',
+      $operator: 'exists'
+    },
+    {
+      $field: 'flap',
+      $operator: '>',
+      $value: 1,
+      $or: {
+        $field: 'snurf',
+        $operator: 'exists',
+        $and: {
+          $field: 'snurf',
+          $operator: '<',
+          $value: 10
+        }
+      }
+    }
+  ]
+
+  for (let i = 0; i < 1000; i++) {
+    filter.push({
+      $field: 'flap',
+      $operator: '<',
+      $value: ~~(Math.random() * 1000)
+    })
+  }
+
+  var d = Date.now()
+  const r = []
+  for (let i = 0; i < 1000; i++) {
+    r.push(createAst(filter))
+  }
+
+  const time = Date.now() - d
+
+  printAst(r[0])
+
+  t.is(r[0].$and.length, 3, 'reduced a 1000 options')
+
+  t.true(time < 5000, 'takes less then 5second to check 1000 queries')
+})
