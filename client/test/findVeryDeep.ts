@@ -152,7 +152,7 @@ test.serial('get very deep results', async t => {
     chalk.gray(`    Get all desc using descendants in ${Date.now() - d} ms`)
   )
 
-  console.log(x2.x.length)
+  t.is(x2.x.length, 16382)
 
   await wait(1e3)
 
