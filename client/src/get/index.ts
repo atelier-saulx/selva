@@ -333,6 +333,7 @@ type GetOp =
       rpn?: Rpn
       inKeys?: string[]
       field: string
+      nested?: GetOp
       sourceField: string | string[]
       id: string
       options: { limit: number; offset: number; sort?: Sort | undefined }
@@ -368,7 +369,7 @@ function _thing(
     if (props.$list === true) {
       ops.push({
         type: 'find',
-        id,
+        id: id.padEnd(10, '\0'),
         props,
         field: field.substr(1),
         sourceField: field.substr(1),
@@ -381,14 +382,16 @@ function _thing(
       // TODO: $find in $list
       const allwaysWant: GetOp = {
         type: 'find',
-        id,
+        id: id.padEnd(10, '\0'),
         props,
         field: field.substr(1),
         sourceField: field.substr(1),
         options: {
-          limit: props.$list.$limit || -1,
-          offset: props.$list.$offset || 0,
-          sort: Array.isArray(props.$list.$sort)
+          limit: props.$list.$find.$find ? -1 : props.$list.$limit || -1,
+          offset: props.$list.$find.$find ? 0 : props.$list.$offset || 0,
+          sort: props.$list.$find.$find
+            ? undefined
+            : Array.isArray(props.$list.$sort)
             ? props.$list.$sort[0]
             : props.$list.$sort || undefined
         }
@@ -409,15 +412,65 @@ function _thing(
         }
       }
 
+      // props.$list
+
       if (props.$list.$find.$find) {
-        console.log('NESTED FIND FOR YO ASS! 💩')
+        const makeitnice = (myFind: any): GetOp => {
+          if (props.$list !== true) {
+            const flapperPants: GetOp = {
+              type: 'find',
+              id: '',
+              props,
+              field: field.substr(1),
+              sourceField: field.substr(1),
+              options: {
+                limit: props.$list.$limit || -1,
+                offset: props.$list.$offset || 0,
+                sort: Array.isArray(props.$list.$sort)
+                  ? props.$list.$sort[0]
+                  : props.$list.$sort || undefined
+              }
+            }
+
+            if (myFind.$traverse) {
+              if (typeof myFind.$traverse === 'string') {
+                flapperPants.sourceField = myFind.$traverse
+              } else if (Array.isArray(myFind.$traverse)) {
+                flapperPants.inKeys = myFind.$traverse
+              }
+            }
+
+            if (myFind.$filter) {
+              const rpn = createRpn(myFind.$filter)
+              if (rpn) {
+                flapperPants.rpn = rpn
+              }
+            }
+
+            if (myFind.$find) {
+              flapperPants.nested = makeitnice(myFind.$find)
+            }
+
+            return flapperPants
+          }
+        }
+
+        allwaysWant.nested = makeitnice(props.$list.$find.$find)
+        // call _things again and put opts
+
+        // const getOpts = Object.assign({}, props)
+        // delete getOpts.$list
+
+        // _thing(x, client, getOpts, '', field)
+
+        // allwaysWant.nested = x[0]
       }
 
       ops.push(allwaysWant)
     } else {
       ops.push({
         type: 'find',
-        id,
+        id: id.padEnd(10, '\0'),
         props,
         field: field.substr(1),
         sourceField: <string>props.$field || field.substr(1),
@@ -773,146 +826,199 @@ async function getThings(
   lang: string | undefined,
   ops: GetOp[]
 ): Promise<GetResult> {
-  const results = await Promise.all(
-    ops.map(async op => {
-      if (op.type === 'value') {
-        return op.value
-      } else if (op.type === 'nested_query') {
-        return run(client, op.props)
-      } else if (op.type === 'array_query') {
-        return Promise.all(
-          op.props.map(p => {
-            if (p.$id) {
-              return run(client, p)
-            } else {
-              return run(client, Object.assign({}, p, { $id: op.id }))
+  const myBlurx = async op => {
+    if (op.type === 'value') {
+      return op.value
+    } else if (op.type === 'nested_query') {
+      return run(client, op.props)
+    } else if (op.type === 'array_query') {
+      return Promise.all(
+        op.props.map(p => {
+          if (p.$id) {
+            return run(client, p)
+          } else {
+            return run(client, Object.assign({}, p, { $id: op.id }))
+          }
+        })
+      )
+    } else if (op.type === 'find') {
+      let sourceField: string = <string>op.sourceField
+      if (Array.isArray(op.sourceField)) {
+        const exists = await Promise.all(
+          op.sourceField.map(f => {
+            if (
+              ['children', 'parents', 'ancestors', 'descendants'].indexOf(f) !==
+              -1
+            ) {
+              return true
             }
+            return client.redis.hexists(op.id, f)
           })
         )
-      } else if (op.type === 'find') {
-        console.log('OP', op)
-        let sourceField: string = <string>op.sourceField
-        if (Array.isArray(op.sourceField)) {
-          const exists = await Promise.all(
-            op.sourceField.map(f => {
-              if (
-                ['children', 'parents', 'ancestors', 'descendants'].indexOf(
-                  f
-                ) !== -1
-              ) {
-                return true
-              }
-              return client.redis.hexists(op.id, f)
-            })
+
+        const idx = exists.findIndex(x => !!x)
+        if (idx === -1) {
+          return
+        }
+
+        sourceField = op.sourceField[idx]
+      }
+
+      // todo IN KEYS
+
+      if (op.inKeys) {
+        console.log('MAKE INKEYS')
+      }
+
+      let ids = await client.redis.selva_hierarchy_find(
+        '___selva_hierarchy',
+        'bfs',
+        sourceField,
+        'order',
+        op.options?.sort?.$field || '',
+        op.options?.sort?.$order || 'asc',
+        'offset',
+        op.options.offset,
+        'limit',
+        op.options.limit,
+        op.id,
+        ...(op.rpn || ['#1'])
+      )
+
+      if (op.nested) {
+        const makeNestedNice = async (ids: string[], nested: any) => {
+          const makeOp = Object.assign({}, nested, {
+            id: ids.map(id => id.padEnd(10, '\0')).join('')
+          })
+
+          // console.log(makeOp)
+
+          let nids = await client.redis.selva_hierarchy_find(
+            '___selva_hierarchy',
+            'bfs',
+            makeOp.sourceField,
+            'order',
+            makeOp.options?.sort?.$field || '',
+            makeOp.options?.sort?.$order || 'asc',
+            'offset',
+            0, // makeOp.options.offset,
+            'limit',
+            -1, //  makeOp.options.limit,
+            makeOp.id,
+            ...(makeOp.rpn || ['#1'])
           )
-
-          const idx = exists.findIndex(x => !!x)
-          if (idx === -1) {
-            return
-          }
-
-          sourceField = op.sourceField[idx]
+          return nids
         }
 
-        console.log('sourcefield', sourceField)
+        let isNest = op.nested
+        let level = 0
+        let prevIds = ids
+        while (isNest) {
+          let nids = []
+          console.log('LEVEL ', level, prevIds.length, prevIds)
 
-        // todo IN KEYS
+          nids = await makeNestedNice(prevIds, isNest)
+          prevIds = nids
 
-        if (op.inKeys) {
-          console.log('MAKE INKEYS')
+          level++
+          isNest = isNest.nested
         }
 
-        const ids = await client.redis.selva_hierarchy_find(
-          '___selva_hierarchy',
-          'bfs',
-          sourceField,
-          'order',
-          op.options?.sort?.$field || '',
-          op.options?.sort?.$order || 'asc',
-          'offset',
-          op.options.offset,
-          'limit',
-          op.options.limit,
-          op.id.padEnd(10, '\0'),
-          ...(op.rpn || ['#1'])
-        )
-
-        return Promise.all(
-          ids.map(id => {
+        return await Promise.all(
+          prevIds.map(id => {
             const realOpts: any = {}
             for (const key in op.props) {
               if (!key.startsWith('$')) {
                 realOpts[key] = op.props[key]
               }
             }
-
             return run(client, {
               $id: id,
               ...realOpts
             })
           })
         )
+
+        return null
       }
 
-      // op.type === 'db'
-
-      let r: any
-      let fieldSchema
-      if (Array.isArray(op.sourceField)) {
-        fieldSchema = getNestedSchema(
-          client.schemas.default,
-          op.id,
-          op.sourceField[0]
-        )
-
-        if (!fieldSchema) {
-          return null
-        }
-
-        const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
-
-        const nested: GetOp[] = await Promise.all(
-          op.sourceField.map(f => {
-            if (specialOp) {
-              return specialOp(client, op.id, f, lang)
+      return Promise.all(
+        ids.map(id => {
+          const realOpts: any = {}
+          for (const key in op.props) {
+            if (!key.startsWith('$')) {
+              realOpts[key] = op.props[key]
             }
+          }
 
-            return client.redis.hget(op.id, f)
+          return run(client, {
+            $id: id,
+            ...realOpts
           })
-        )
+        })
+      )
+    }
 
-        r = nested.find(x => !!x)
+    // op.type === 'db'
+
+    let r: any
+    let fieldSchema
+    if (Array.isArray(op.sourceField)) {
+      fieldSchema = getNestedSchema(
+        client.schemas.default,
+        op.id,
+        op.sourceField[0]
+      )
+
+      if (!fieldSchema) {
+        return null
+      }
+
+      const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
+
+      const nested: GetOp[] = await Promise.all(
+        op.sourceField.map(f => {
+          if (specialOp) {
+            return specialOp(client, op.id, f, lang)
+          }
+
+          return client.redis.hget(op.id, f)
+        })
+      )
+
+      r = nested.find(x => !!x)
+    } else {
+      fieldSchema = getNestedSchema(
+        client.schemas.default,
+        op.id,
+        op.sourceField
+      )
+
+      if (!fieldSchema) {
+        return null
+      }
+
+      const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
+      if (specialOp) {
+        r = await specialOp(client, op.id, op.sourceField, lang)
       } else {
-        fieldSchema = getNestedSchema(
-          client.schemas.default,
-          op.id,
-          op.sourceField
-        )
+        r = await client.redis.hget(op.id, op.sourceField)
+      }
+    }
 
-        if (!fieldSchema) {
-          return null
-        }
-
-        const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
-        if (specialOp) {
-          r = await specialOp(client, op.id, op.sourceField, lang)
-        } else {
-          r = await client.redis.hget(op.id, op.sourceField)
-        }
+    if (r !== null && r !== undefined) {
+      const typeCast = TYPE_CASTS[fieldSchema.type]
+      if (typeCast) {
+        return typeCast(r)
       }
 
-      if (r !== null && r !== undefined) {
-        const typeCast = TYPE_CASTS[fieldSchema.type]
-        if (typeCast) {
-          return typeCast(r)
-        }
+      return r
+    } else if (op.default) {
+      return op.default
+    }
+  }
 
-        return r
-      } else if (op.default) {
-        return op.default
-      }
-    })
-  )
+  const results = await Promise.all(ops.map(myBlurx))
 
   const o: GetResult = {}
   results.map((r, i) => {
