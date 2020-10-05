@@ -402,8 +402,6 @@ function _thing(
         }
       }
 
-      // nested is not so much fun but do do
-
       if (props.$list.$find.$filter) {
         const rpn = createRpn(props.$list.$find.$filter)
         if (rpn) {
@@ -414,6 +412,8 @@ function _thing(
       if (props.$list.$find.$find) {
         console.log('NESTED FIND FOR YO ASS! 💩')
       }
+
+      ops.push(allwaysWant)
     } else {
       ops.push({
         type: 'find',
@@ -815,6 +815,13 @@ async function getThings(
         }
 
         console.log('sourcefield', sourceField)
+
+        // todo IN KEYS
+
+        if (op.inKeys) {
+          console.log('MAKE INKEYS')
+        }
+
         const ids = await client.redis.selva_hierarchy_find(
           '___selva_hierarchy',
           'bfs',
@@ -827,9 +834,8 @@ async function getThings(
           'limit',
           op.options.limit,
           op.id.padEnd(10, '\0'),
-          '#1' // put filter is there is one
+          ...(op.rpn || ['#1'])
         )
-        console.log('IDS', ids)
 
         return Promise.all(
           ids.map(id => {
