@@ -6,7 +6,8 @@
     "server",
     "api",
     "tools",
-    "diff"
+    "diff",
+    "query-ast-parser"
   ],
   "scripts": {
     "killall": "pkill -9 node && pkill -9 redis",
@@ -16,9 +17,10 @@
     "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist && rm -rf diff/node_modules diff/dist",
     "test": "cd client && yarn test",
     "build-c": "cd ./server/modules/selva/module && make clean && make && cp module.so ../../binaries/darwin_x64/selva.so",
-    "build": "yarn buildDiff && yarn buildClient && yarn buildServer && yarn buildDiff && yarn buildApi",
+    "build": "yarn buildDiff && yarn buildClient && yarn buildServer && yarn buildDiff && yarn buildApi && yarn buildAstParser",
     "buildClient": "cd client && yarn buildLua && yarn build",
     "buildDiff": "cd diff && yarn build",
+    "buildAstParser": "cd query-ast-parser && yarn build",
     "buildLua": "cd client && yarn buildLua",
     "buildServer": "cd server && yarn build",
     "buildApi": "cd api && yarn build",

@@ -13,7 +13,7 @@ function parseList(
     if (list.$sort) {
       const sort: Sort[] = !isArray(list.$sort) ? [list.$sort] : list.$sort
 
-      const searchIndexes = getSearchIndexes()
+      const searchIndexes = getSearchIndexes() // need to pass these to ast parser  (schema)
 
       // FIXME: multiple
       const field = sort[0].$field
