@@ -748,13 +748,37 @@ async function getThings(
         )
       } else if (op.type === 'find') {
         console.log('OP', op)
+        let sourceField: string = <string>op.sourceField
+        if (Array.isArray(op.sourceField)) {
+          const exists = await Promise.all(
+            op.sourceField.map(f => {
+              if (
+                ['children', 'parents', 'ancestors', 'descendants'].indexOf(
+                  f
+                ) !== -1
+              ) {
+                return true
+              }
+              return client.redis.hexists(op.id, f)
+            })
+          )
+
+          const idx = exists.findIndex(x => !!x)
+          if (idx === -1) {
+            return
+          }
+
+          sourceField = op.sourceField[idx]
+        }
+
+        console.log('sourcefield', sourceField)
         const ids = await client.redis.selva_hierarchy_find(
           '___selva_hierarchy',
           'bfs',
-          <string>op.sourceField, // TODO: this needs to support sourceField I think?
+          sourceField,
           'order',
-          op.options.sort.$field || '',
-          op.options.sort.$order || 'asc',
+          op.options?.sort?.$field || '',
+          op.options?.sort?.$order || 'asc',
           'offset',
           op.options.offset,
           'limit',
@@ -762,7 +786,6 @@ async function getThings(
           op.id.padEnd(10, '\0'),
           '#1'
         )
-
         console.log('IDS', ids)
 
         return Promise.all(

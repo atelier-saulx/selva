@@ -217,8 +217,7 @@ test.serial('get - simple $list with $field of one field', async t => {
   await client.destroy()
 })
 
-// FIXME: is this needed?
-test.serial.skip(
+test.serial.only(
   'get - simple $list with $field of two field entries',
   async t => {
     const client = connect({ port })
@@ -406,7 +405,7 @@ test.serial.skip(
   }
 )
 
-test.serial.only('get - simple $list nested query structure', async t => {
+test.serial('get - simple $list nested query structure', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
