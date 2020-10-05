@@ -46,7 +46,7 @@ test.serial('get very deep results', async t => {
   let s: any = q
 
   const setObj: any = {}
-  const levels = 10
+  const levels = 13
   const amount = 2
 
   for (let i = 0; i < levels; i++) {
@@ -104,7 +104,7 @@ test.serial('get very deep results', async t => {
     }
   }
 
-  console.dir(myQuery, { depth: 100 })
+  //   console.dir(myQuery, { depth: 100 })
 
   d = Date.now()
   const ultraResults = await client.get(myQuery)
@@ -130,6 +130,29 @@ test.serial('get very deep results', async t => {
     r,
     `has correct amount of result (${levelMap[levels - 1]}) for ${levels} deep`
   )
+
+  d = Date.now()
+  const x2 = await client.get({
+    x: {
+      levelCnt: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $operator: '=',
+            $field: 'type',
+            $value: 'glurp'
+          }
+        }
+      }
+    }
+  })
+
+  console.log(
+    chalk.gray(`    Get all desc using descendants in ${Date.now() - d} ms`)
+  )
+
+  console.log(x2.x.length)
 
   await wait(1e3)
 
