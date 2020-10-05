@@ -25,7 +25,7 @@ export type GeoFilter = {
 export type ExistsFilter = {
   $operator: 'exists' | 'notExists'
   $field: string
-  $value: undefined // makes copmiling this easier, nice...
+  $value?: undefined // makes compiling this easier, nice...
   $and?: Filter
   $or?: Filter
 }
