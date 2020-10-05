@@ -396,7 +396,7 @@ static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
  * RPN expression filter -------------------------------------------------------------------------------------------------/                    |
  * Register arguments for the RPN filter -----------------------------------------------------------------------------------------------------/
  */
-int SelvaModify_Hierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
@@ -625,7 +625,7 @@ out:
  * Find node in set.
  * SELVA.HIERARCHY.findIn REDIS_KEY [order field asc|desc] [offset 1234] [limit 1234] NODE_IDS [filter expression] [args...]
  */
-int SelvaModify_Hierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
@@ -791,7 +791,7 @@ out:
  * Find node in set.
  * SELVA.HIERARCHY.findInSub REDIS_KEY SUB_ID MARKER_ID [order field asc|desc] [offset 1234] [limit 1234]
  */
-int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
@@ -952,16 +952,16 @@ int SelvaModify_Hierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleStrin
 #undef SHIFT_ARGS
 }
 
-static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
+static int Find_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
      */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaModify_Hierarchy_FindCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaModify_Hierarchy_FindInCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.findInSub", SelvaModify_Hierarchy_FindInSubCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaHierarchy_FindCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaHierarchy_FindInCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.findInSub", SelvaHierarchy_FindInSubCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
     return REDISMODULE_OK;
 }
-SELVA_ONLOAD(Hierarchy_OnLoad);
+SELVA_ONLOAD(Find_OnLoad);
