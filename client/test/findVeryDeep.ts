@@ -2,7 +2,7 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait } from './assertions'
+import { wait, worker } from './assertions'
 import getPort from 'get-port'
 import chalk from 'chalk'
 
@@ -153,6 +153,52 @@ test.serial('get very deep results', async t => {
   )
 
   t.is(x2.x.length, 16382)
+
+  const workers = []
+
+  for (let i = 0; i < 20; i++) {
+    workers.push(
+      worker(
+        async ({ connect, wait }, { port }) => {
+          const client = connect({ port })
+
+          await client.set({ type: 'glurp' })
+
+          await wait(1e3)
+
+          var d = Date.now()
+          await client.get({
+            x: {
+              levelCnt: true,
+              $list: {
+                $find: {
+                  $traverse: 'descendants',
+                  $filter: {
+                    $operator: '=',
+                    $field: 'type',
+                    $value: 'glurp'
+                  }
+                }
+              }
+            }
+          })
+          return Date.now() - d
+        },
+        { port }
+      )
+    )
+  }
+
+  const results = await Promise.all(workers)
+
+  results.forEach((v, i) => {
+    console.log(
+      chalk.gray(
+        `    worker #${i} {Get all desc using descendants in ${v[0]} ms`
+      )
+    )
+    v[1].terminate()
+  })
 
   await wait(1e3)
 
