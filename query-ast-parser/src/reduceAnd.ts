@@ -153,7 +153,7 @@ const hasExists = (a: FilterAST, b: FilterAST): [boolean, null | string] => {
     }
 
     a.$operator = b.$operator
-    if (a.$value !== undefined) {
+    if (b.$value !== undefined) {
       a.$value = b.$value
     }
     a.$field = b.$field

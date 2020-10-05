@@ -207,7 +207,7 @@ test.only('reduce exists', async t => {
           { $operator: '>', $field: 'flap', $value: 1 },
           {
             isFork: true,
-            $and: [{ $operator: '<', $field: 'snurf' }]
+            $and: [{ $operator: '<', $field: 'snurf', $value: 10 }]
           }
         ]
       }
