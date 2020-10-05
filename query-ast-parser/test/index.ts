@@ -30,10 +30,7 @@ test('basic filter', async t => {
 
   printAst(ast)
 
-  t.deepEqual(rpn, [
-    undefined,
-    [' $2 $1 f c @4 $3 g G M', 'type', 'team', 'value', '2']
-  ])
+  t.deepEqual(rpn, [' $2 $1 f c @4 $3 g G M', 'type', 'team', 'value', '2'])
 })
 
 test('complex filter', async t => {
@@ -123,24 +120,21 @@ test('complex filter', async t => {
   printAst(ast)
 
   t.deepEqual(rpn, [
-    undefined,
-    [
-      ' $2 $1 f c @4 $3 g G M @6 $5 g I M @8 $7 g I M @10 $9 g I $12 $11 f c $14 $13 f c M N M',
-      'type',
-      'team',
-      'value',
-      '2',
-      'flapdrol',
-      '100',
-      'x',
-      '10',
-      'x',
-      '100',
-      'y',
-      'flapperdrol',
-      'z',
-      'snurkypants'
-    ]
+    ' $2 $1 f c @4 $3 g G M @6 $5 g I M @8 $7 g I M @10 $9 g I $12 $11 f c $14 $13 f c M N M',
+    'type',
+    'team',
+    'value',
+    '2',
+    'flapdrol',
+    '100',
+    'x',
+    '10',
+    'x',
+    '100',
+    'y',
+    'flapperdrol',
+    'z',
+    'snurkypants'
   ])
 })
 

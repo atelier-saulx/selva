@@ -7,7 +7,8 @@ import validate, {
   PostGetExtraQuery
 } from './validate'
 import { deepMerge } from './deepMerge'
-import { FieldSchema, TypeSchema, Schema } from '~selva/schema'
+import { FieldSchema, Schema } from '../schema'
+import { createRpn, Rpn } from '@saulx/selva-query-ast-parser'
 
 async function combineResults(
   client: SelvaClient,
@@ -329,6 +330,8 @@ type GetOp =
   | {
       type: 'find'
       props: GetOptions
+      rpn?: Rpn
+      inKeys?: string[]
       field: string
       sourceField: string | string[]
       id: string
@@ -364,13 +367,53 @@ function _thing(
   } else if (props.$list) {
     if (props.$list === true) {
       ops.push({
-        type: 'db',
+        type: 'find',
         id,
+        props,
         field: field.substr(1),
-        sourceField: <string[]>props.$field || field.substr(1)
+        sourceField: field.substr(1),
+        options: {
+          limit: -1, // no limit
+          offset: 0
+        }
       })
     } else if (props.$list.$find) {
       // TODO: $find in $list
+      const allwaysWant: GetOp = {
+        type: 'find',
+        id,
+        props,
+        field: field.substr(1),
+        sourceField: field.substr(1),
+        options: {
+          limit: props.$list.$limit || -1,
+          offset: props.$list.$offset || 0,
+          sort: Array.isArray(props.$list.$sort)
+            ? props.$list.$sort[0]
+            : props.$list.$sort || undefined
+        }
+      }
+
+      if (props.$list.$find.$traverse) {
+        if (typeof props.$list.$find.$traverse === 'string') {
+          allwaysWant.sourceField = props.$list.$find.$traverse
+        } else if (Array.isArray(props.$list.$find.$traverse)) {
+          allwaysWant.inKeys = props.$list.$find.$traverse
+        }
+      }
+
+      // nested is not so much fun but do do
+
+      if (props.$list.$find.$filter) {
+        const rpn = createRpn(props.$list.$find.$filter)
+        if (rpn) {
+          allwaysWant.rpn = rpn
+        }
+      }
+
+      if (props.$list.$find.$find) {
+        console.log('NESTED FIND FOR YO ASS! 💩')
+      }
     } else {
       ops.push({
         type: 'find',
@@ -388,7 +431,7 @@ function _thing(
       })
     }
   } else if (props.$find) {
-    // TODO
+    // TODO shitty
   } else if (
     props.$field &&
     typeof props.$field === 'object' &&
@@ -784,7 +827,7 @@ async function getThings(
           'limit',
           op.options.limit,
           op.id.padEnd(10, '\0'),
-          '#1'
+          '#1' // put filter is there is one
         )
         console.log('IDS', ids)
 

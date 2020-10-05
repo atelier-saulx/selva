@@ -1,4 +1,4 @@
-import { Fork, FilterAST as Filter } from './types'
+import { Fork, FilterAST as Filter, Rpn } from './types'
 import convertNow from './convertNow'
 
 function isFork(x: any): x is Fork {
@@ -29,10 +29,7 @@ const opMapNumber = {
   notExists: 'h'
 }
 
-export default function ast2rpn(
-  f: Fork,
-  language?: string
-): [string[] | undefined, string[]] {
+export default function ast2rpn(f: Fork, language?: string): Rpn {
   let findIn: string[] | undefined = undefined
   let out = ''
   let reg: string[] = []
@@ -209,5 +206,5 @@ export default function ast2rpn(
   for (let i = 1; i < regIndex; i++) {
     res[i] = reg[i]
   }
-  return [findIn, res]
+  return res
 }

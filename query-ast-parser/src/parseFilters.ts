@@ -1,5 +1,5 @@
 import { FilterAST, Fork, Value, WithRequired } from './types'
-import { Filter, GeoFilter } from '../../client/src/get/types'
+import { Filter, GeoFilter } from './types'
 import isFork from './isFork'
 import reduceAnd from './reduceAnd'
 
@@ -135,7 +135,11 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   }
 }
 
-const parseFilters = ($filter: Filter[]): Fork | void => {
+const parseFilters = ($filter: Filter | Filter[]): Fork | void => {
+  if (!Array.isArray($filter)) {
+    $filter = [$filter]
+  }
+
   const fork: WithRequired<Fork, '$and'> = { isFork: true, $and: [] }
   for (let i = 0; i < $filter.length; i++) {
     const [nestedFork, err] = convertFilter($filter[i])
