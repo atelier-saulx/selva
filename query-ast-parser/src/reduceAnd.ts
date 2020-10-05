@@ -103,13 +103,13 @@ const isRangeAndLargerOrSmaller = (
 
   const otherVal =
     typeof other.$value === 'string' && other.$value.startsWith('now')
-      ? convertNow(<string>other.$value)
+      ? convertNow(other.$value)
       : other.$value
 
   if (other.$operator === '>') {
     const rangeVal =
       typeof range.$value[1] === 'string' && range.$value[1].startsWith('now')
-        ? convertNow(<string>range.$value[1])
+        ? convertNow(range.$value[1])
         : range.$value[1]
 
     if (otherVal > rangeVal) {
@@ -122,7 +122,7 @@ const isRangeAndLargerOrSmaller = (
   if (other.$operator === '<') {
     const rangeVal =
       typeof range.$value[0] === 'string' && range.$value[0].startsWith('now')
-        ? convertNow(<string>range.$value[0])
+        ? convertNow(range.$value[0])
         : range.$value[0]
 
     if (otherVal > rangeVal) {
