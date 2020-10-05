@@ -7,6 +7,8 @@ function addSearch(filter: Filter): [string[], null | string] {
 
   // pass schema here
 
+  // do want search schema here probably
+
   console.log('ADD SEARCH STILL SHAKY DONT WANT SEARCH SCHEMA!')
   console.log('trying to find search...', filter)
 
