@@ -168,7 +168,7 @@ test('exists & not exist', async t => {
   })
 })
 
-test.only('reduce exists', async t => {
+test('reduce exists', async t => {
   const filter: Filter[] = [
     {
       $field: 'type',
@@ -217,7 +217,7 @@ test.only('reduce exists', async t => {
   printAst(ast)
 })
 
-test.only('perf test', async t => {
+test('perf test', async t => {
   const filter: Filter[] = [
     {
       $field: 'type',
