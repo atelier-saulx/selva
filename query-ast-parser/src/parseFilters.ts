@@ -1,5 +1,4 @@
 import { FilterAST, Fork, Value, WithRequired } from './types'
-import addSearch from './addSearch'
 import { Filter, GeoFilter } from '../../client/src/get/types'
 import isFork from './isFork'
 import reduceAnd from './reduceAnd'
@@ -28,10 +27,7 @@ function convertGeoFilterValue(geoFilter: GeoFilter): (string | number)[] {
 }
 
 const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
-  const [search, err] = addSearch(filterOpt)
-  if (err) {
-    return [{ isFork: true }, err]
-  }
+  //   const [search, err] = addSearch(filterOpt)
 
   const o = filterOpt.$operator
   if (
@@ -43,7 +39,8 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
       o === '!=' ||
       o === 'distance' ||
       o === 'exists' ||
-      o === 'notExists'
+      o === 'notExists' ||
+      o === 'textSearch'
     )
   ) {
     return [{ isFork: true }, `Invalid filter operator ${o}`]
@@ -54,8 +51,8 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
       ? convertGeoFilterValue(filterOpt)
       : <Value>filterOpt.$value,
     $operator: o,
-    $field: filterOpt.$field,
-    $search: search
+    $field: filterOpt.$field
+    // $search: search
   }
 
   let hasNow = false
@@ -136,12 +133,12 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   }
 }
 
-const parseFilters = ($filter: Filter[]): [Fork, string | null] => {
+const parseFilters = ($filter: Filter[]): Fork | void => {
   const fork: WithRequired<Fork, '$and'> = { isFork: true, $and: [] }
   for (let i = 0; i < $filter.length; i++) {
     const [nestedFork, err] = convertFilter($filter[i])
     if (err) {
-      return [fork, err]
+      return
     }
     if (nestedFork.$and) {
       for (let j = 0; j < nestedFork.$and.length; j++) {
@@ -152,7 +149,10 @@ const parseFilters = ($filter: Filter[]): [Fork, string | null] => {
     }
   }
   const err = reduceAnd(fork)
-  return [fork, err]
+  if (err) {
+    return
+  }
+  return fork
 }
 
 export default parseFilters

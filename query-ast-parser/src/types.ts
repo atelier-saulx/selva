@@ -4,9 +4,18 @@ export type Value = (string | number) | (string | number)[]
 
 export type FilterAST = {
   $field: string
-  $operator: '=' | '>' | '<' | '..' | '!=' | 'distance' | 'exists' | 'notExists'
+  $operator:
+    | '='
+    | '>'
+    | '<'
+    | '..'
+    | '!='
+    | 'distance'
+    | 'exists'
+    | 'notExists'
+    | 'textSearch'
   $value: Value
-  $search: string[]
+  // $search: string[]
   hasNow?: true
 }
 

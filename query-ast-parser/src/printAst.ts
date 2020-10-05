@@ -2,12 +2,20 @@ import { Fork, FilterAST } from './types'
 import isFork from './isFork'
 
 // use chalk maybe...
-const colors = {
-  red: '\u001b[31m',
-  white: '\u001b[37;1m',
-  blue: '\u001b[34m',
-  reset: '\u001b[0m'
-}
+const colors =
+  typeof window === 'undefined'
+    ? {
+        red: '\u001b[31m',
+        white: '\u001b[37;1m',
+        blue: '\u001b[34m',
+        reset: '\u001b[0m'
+      }
+    : {
+        red: '',
+        white: '',
+        blue: '',
+        reset: ''
+      }
 
 const addIndent = (number: number, last?: boolean): string => {
   let str = colors.reset
@@ -72,10 +80,15 @@ const forkLogger = (fork: Fork, indent: number = 0, last?: boolean) => {
   }
 }
 
-export default function(fork: Fork, ...args: any[]) {
+export default function(fork: Fork | void, ...args: any[]) {
   if (args.length) {
     console.info(...args)
   }
+  if (!fork) {
+    console.info('No ast passed to printAst')
+    return
+  }
+
   forkLogger(fork)
   console.info(`${colors.reset}`)
 }

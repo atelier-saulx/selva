@@ -1,5 +1,5 @@
 import test from 'ava'
-import { parseFilters, printAst } from '../src'
+import { createAst, printAst } from '../src'
 import { Filter, GeoFilter } from '../../client/src/get/types'
 
 test('basic filter', async t => {
@@ -18,7 +18,9 @@ test('basic filter', async t => {
     }
   ]
 
-  const ast = parseFilters(filter)
+  const ast = createAst(filter)
+
+  printAst(ast)
 
   console.log({ ast })
 

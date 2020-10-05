@@ -39,12 +39,7 @@ const isEqual = (a: FilterAST, b: FilterAST): [boolean, null | string] => {
     }
   }
   // if a field is a tag then you can have multiple values
-  if (a.$search.indexOf('TAG') === -1 && a.$value !== b.$value) {
-    return [
-      false,
-      `Cannot have 2 isEqual conditions @${a.$field} (${a.$value}) and (${b.$value})`
-    ]
-  }
+
   return [true, null]
 }
 
