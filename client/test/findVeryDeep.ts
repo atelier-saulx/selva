@@ -90,7 +90,7 @@ test.serial('get very deep results', async t => {
   var d = Date.now()
   await client.set(setObj)
   console.log(
-    chalk.gray(`  Set ${amount}^${levels} things ${Date.now() - d} ms`)
+    chalk.gray(`    Set ${amount}^${levels} things ${Date.now() - d} ms`)
   )
 
   const myQuery = {
@@ -108,7 +108,7 @@ test.serial('get very deep results', async t => {
   const ultraResults = await client.get(myQuery)
   console.log(
     chalk.gray(
-      `  Get ${amount}^${levels} things using nested queries in ${Date.now() -
+      `    Get ${amount}^${levels} things using nested queries in ${Date.now() -
         d} ms`
     )
   )
