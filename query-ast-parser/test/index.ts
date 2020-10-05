@@ -144,7 +144,7 @@ test('complex filter', async t => {
   ])
 })
 
-test.only('exists & not exist', async t => {
+test('exists & not exist', async t => {
   const filter: Filter[] = [
     {
       $field: 'type',
@@ -168,7 +168,7 @@ test.only('exists & not exist', async t => {
   })
 })
 
-test('reduce exists', async t => {
+test.only('reduce exists', async t => {
   const filter: Filter[] = [
     {
       $field: 'type',
@@ -178,6 +178,20 @@ test('reduce exists', async t => {
     {
       $field: 'type',
       $operator: 'exists'
+    },
+    {
+      $field: 'flap',
+      $operator: '>',
+      $value: 1,
+      $or: {
+        $field: 'snurf',
+        $operator: 'exists',
+        $and: {
+          $field: 'snurf',
+          $operator: '<',
+          $value: 10
+        }
+      }
     }
   ]
 
@@ -186,17 +200,19 @@ test('reduce exists', async t => {
   t.deepEqual(ast, {
     isFork: true,
     $and: [
-      { $value: 'team', $operator: '=', $field: 'type' },
-      { $value: 2, $operator: '!=', $field: 'value' }
+      { $operator: '=', $field: 'type', $value: 'team' },
+      {
+        isFork: true,
+        $or: [
+          { $operator: '>', $field: 'flap', $value: 1 },
+          {
+            isFork: true,
+            $and: [{ $operator: '<', $field: 'snurf' }]
+          }
+        ]
+      }
     ]
   })
 
-  const rpn = createRpn(filter)
-
   printAst(ast)
-
-  t.deepEqual(rpn, [
-    undefined,
-    [' $2 $1 f c @4 $3 g G M', 'type', 'team', 'value', '2']
-  ])
 })

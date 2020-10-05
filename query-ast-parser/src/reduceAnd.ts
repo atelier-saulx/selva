@@ -134,6 +134,34 @@ const isRangeAndLargerOrSmaller = (
   return [false, null]
 }
 
+const hasExists = (a: FilterAST, b: FilterAST): [boolean, null | string] => {
+  let other: FilterAST
+
+  if (b.$operator === 'exists') {
+    other = a
+    if (other.$operator === 'notExists') {
+      return [false, 'Cannot have exists and not exists!']
+    }
+
+    return [false, null]
+  }
+
+  if (a.$operator === 'exists') {
+    other = b
+    if (other.$operator === 'notExists') {
+      return [false, 'Cannot have exists and not exists!']
+    }
+
+    a.$operator = b.$operator
+    if (a.$value !== undefined) {
+      a.$value = b.$value
+    }
+    a.$field = b.$field
+
+    return [false, null]
+  }
+}
+
 const isLargerThenAndSmallerThen = (
   a: FilterAST,
   b: FilterAST
@@ -210,7 +238,13 @@ function reduceAnd(fork: WithRequired<Fork, '$and'>): string | null {
           const $a = prevFilter.$operator
           const $b = filter.$operator
           let fn: undefined | ((a: any, b: any) => [boolean, string | null])
-          if ($a === '=' && $b === '=') {
+
+          if (
+            ($a === 'exists' && $b !== 'exists') ||
+            ($a !== 'exists' && $b === 'exists')
+          ) {
+            fn = hasExists
+          } else if ($a === '=' && $b === '=') {
             fn = isEqual
           } else if ($a === '!=' && $b === '!=') {
             fn = isNotEqual
