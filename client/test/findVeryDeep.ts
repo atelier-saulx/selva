@@ -156,28 +156,38 @@ test.serial('get very deep results', async t => {
 
   const workers = []
 
-  for (let i = 0; i < 5; i++) {
+  const workerAmount = 10
+
+  for (let i = 0; i < workerAmount; i++) {
     workers.push(
       worker(
         async ({ connect, wait }, { port }) => {
           const client = connect({ port })
           var d = Date.now()
-          await client.get({
+          const x = await client.get({
             x: {
               levelCnt: true,
               $list: {
                 $find: {
                   $traverse: 'descendants',
-                  $filter: {
-                    $operator: '=',
-                    $field: 'type',
-                    $value: 'glurp'
-                  }
+                  $filter: [
+                    {
+                      $operator: '=',
+                      $field: 'type',
+                      $value: 'glurp'
+                    },
+                    {
+                      $operator: '>',
+                      $field: 'levelCnt',
+                      $value: 1000
+                    }
+                  ]
                 }
               }
             }
           })
-          return Date.now() - d
+
+          return { ms: Date.now() - d, amount: x.x.length }
         },
         { port }
       )
@@ -194,11 +204,15 @@ test.serial('get very deep results', async t => {
     //     `    worker #${i} {Get all desc using descendants in ${v[0]} ms`
     //   )
     // )
+    t.is(v[0].amount, 11360)
     v[1].terminate()
   })
 
   console.log(
-    chalk.gray(`    Get all desc using descendants x5 in ${Date.now() - d} ms`)
+    chalk.gray(
+      `    Get all desc using descendants x${workerAmount} in ${Date.now() -
+        d} ms`
+    )
   )
 
   await wait(1e3)
