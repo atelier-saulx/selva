@@ -1,3 +1,5 @@
+import { Schema, SearchSchema } from '../../client/src/schema/types'
+
 export type Value = (string | number) | (string | number)[]
 
 export type FilterAST = {
