@@ -161,11 +161,6 @@ test.serial('get very deep results', async t => {
       worker(
         async ({ connect, wait }, { port }) => {
           const client = connect({ port })
-
-          await client.set({ type: 'glurp' })
-
-          await wait(1e3)
-
           var d = Date.now()
           await client.get({
             x: {
@@ -189,16 +184,22 @@ test.serial('get very deep results', async t => {
     )
   }
 
+  d = Date.now()
+
   const results = await Promise.all(workers)
 
   results.forEach((v, i) => {
-    console.log(
-      chalk.gray(
-        `    worker #${i} {Get all desc using descendants in ${v[0]} ms`
-      )
-    )
+    // console.log(
+    //   chalk.gray(
+    //     `    worker #${i} {Get all desc using descendants in ${v[0]} ms`
+    //   )
+    // )
     v[1].terminate()
   })
+
+  console.log(
+    chalk.gray(`    Get all desc using descendants x5 in ${Date.now() - d} ms`)
+  )
 
   await wait(1e3)
 

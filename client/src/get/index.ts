@@ -1050,6 +1050,13 @@ async function get(
   meta?: any,
   nested: boolean = false
 ): Promise<GetResult> {
+  // all dbs
+
+  // TODO: need to intialize for each db!
+  await client.initializeSchema({
+    db: 'default'
+  })
+
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
