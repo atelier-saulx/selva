@@ -262,7 +262,9 @@ test.only('perf test', async t => {
 
   printAst(r[0])
 
+  console.log(`1000x 1000 filters takes ${time}ms`)
+
   t.is(r[0].$and.length, 3, 'reduced a 1000 options')
 
-  t.true(time < 5000, 'takes less then 5second to check 1000 queries')
+  t.true(time < 5000, 'takes less then 5 seconds to check 1000 queries')
 })
