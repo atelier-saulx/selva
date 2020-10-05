@@ -46,7 +46,7 @@ test.serial('get very deep results', async t => {
   let s: any = q
 
   const setObj: any = {}
-  const levels = 13
+  const levels = 14
   const amount = 2
 
   for (let i = 0; i < levels; i++) {
@@ -154,7 +154,7 @@ test.serial('get very deep results', async t => {
     chalk.gray(`    Get all desc using descendants in ${Date.now() - d} ms`)
   )
 
-  t.is(x2.x.length, 16382)
+  t.is(x2.x.length, 32766)
 
   const workers = []
 
@@ -206,7 +206,8 @@ test.serial('get very deep results', async t => {
     //     `    worker #${i} {Get all desc using descendants in ${v[0]} ms`
     //   )
     // )
-    t.is(v[0].amount, 16369)
+    // (larger then 1)
+    t.is(v[0].amount, 32752)
     v[1].terminate()
   })
 
