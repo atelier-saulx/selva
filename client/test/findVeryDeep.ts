@@ -90,7 +90,7 @@ test.serial('get very deep results', async t => {
   var d = Date.now()
   await client.set(setObj)
   console.log(
-    chalk.gray(`  Set ${amount}^${levels} things ${Date.now() - d}ms`)
+    chalk.gray(`  Set ${amount}^${levels} things ${Date.now() - d} ms`)
   )
 
   const myQuery = {
