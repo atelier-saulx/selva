@@ -135,6 +135,7 @@ test.serial('get very deep results', async t => {
   const x2 = await client.get({
     x: {
       levelCnt: true,
+      title: true,
       $list: {
         $find: {
           $traverse: 'descendants',
