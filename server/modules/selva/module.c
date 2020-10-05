@@ -64,52 +64,44 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
      * only provides variadic function for replication. Therefore, we need to
      * do a little hack here make dynamic arguments work.
      */
+    const int leading_args = 2;
     const int max_argc = 128; /* This size depends on the size of replset_t */
     int argc = 0;
     RedisModuleString **argv;
-    char fmt[3 + max_argc + 1];
+    char fmt[leading_args + max_argc + 1];
 
     argv = RedisModule_PoolAlloc(ctx, max_argc * sizeof(RedisModuleString *));
     if (!argv) {
-        fprintf(stderr, "Replication: %s\n", getSelvaErrorStr(SELVA_ENOMEM));
+        fprintf(stderr, "%s: Replication: %s\n", __FILE__, getSelvaErrorStr(SELVA_ENOMEM));
     }
 
     fmt[0] = 's';
     fmt[1] = 's';
-    fmt[2] = 's';
 
+    char *fmt_p = fmt + leading_args;
     int i_arg_type = 3;
     for (int i = 0; i < max_argc; i++) {
         if (get_replset(r, i)) {
             argv[argc] = orig_argv[i_arg_type];
             argv[argc + 1] = orig_argv[i_arg_type + 1];
             argv[argc + 2] = orig_argv[i_arg_type + 2];
-            fmt[argc + 3] = 's';
-            fmt[argc + 4] = 's';
-            fmt[argc + 5] = 's';
+            *fmt_p++ = 's';
+            *fmt_p++ = 's';
+            *fmt_p++ = 's';
             argc += 3;
         }
         i_arg_type += 3;
     }
-    fmt[argc + 3] = '\0';
-
-    // TODO Remove
-    fprintf(stderr, "Replicating %d changes, \"%s\"\n", argc / 3, fmt);
+    *fmt_p = '\0';
 
     if (argc == 0) {
         /* Nothing to replicate. */
         return;
     }
 
-    // TODO Remove
-    for (int i = 0; i < argc; i++) {
-        const RedisModuleString *arg = argv[i];
-
-        fprintf(stderr, "arg[%d] = %s\n", i, arg ? RedisModule_StringPtrLen(arg, NULL) : "NULL");
-    }
-
+    /* This call must have max_argc argv arguments. */
     RedisModule_Replicate(ctx, RedisModule_StringPtrLen(orig_argv[0], NULL), fmt,
-                          orig_argv[1], orig_argv[2], orig_argv[3],
+                          orig_argv[1], orig_argv[2],
                           argv[0],
                           argv[1],
                           argv[2],
