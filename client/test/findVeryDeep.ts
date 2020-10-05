@@ -110,8 +110,8 @@ test.serial('get very deep results', async t => {
   const ultraResults = await client.get(myQuery)
   console.log(
     chalk.gray(
-      `    Get ${amount}^${levels} things using nested queries in ${Date.now() -
-        d} ms`
+      `    Get ${amount}^${levels +
+        1} things using nested queries in ${Date.now() - d} ms`
     )
   )
 
@@ -128,7 +128,8 @@ test.serial('get very deep results', async t => {
   t.deepEqualIgnoreOrder(
     ultraResults.x,
     r,
-    `has correct amount of result (${levelMap[levels - 1]}) for ${levels} deep`
+    `has correct amount of result (${levelMap[levels - 1]}) for ${levels +
+      1} deep`
   )
 
   d = Date.now()
