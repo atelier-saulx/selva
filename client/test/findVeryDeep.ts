@@ -179,7 +179,7 @@ test.serial('get very deep results', async t => {
                     {
                       $operator: '>',
                       $field: 'levelCnt',
-                      $value: 1000
+                      $value: 1
                     }
                   ]
                 }
@@ -204,7 +204,7 @@ test.serial('get very deep results', async t => {
     //     `    worker #${i} {Get all desc using descendants in ${v[0]} ms`
     //   )
     // )
-    t.is(v[0].amount, 11360)
+    t.is(v[0].amount, 16369)
     v[1].terminate()
   })
 
