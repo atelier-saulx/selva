@@ -104,6 +104,8 @@ test.serial('get very deep results', async t => {
     }
   }
 
+  console.dir(myQuery, { depth: 100 })
+
   d = Date.now()
   const ultraResults = await client.get(myQuery)
   console.log(
