@@ -1,7 +1,7 @@
 import { Fork, FilterAST } from './types'
-import { isArray, joinAny } from '../../util'
-import { isFork } from './util'
+import isFork from './isFork'
 
+// use chalk maybe...
 const colors = {
   red: '\u001b[31m',
   white: '\u001b[37;1m',
@@ -23,12 +23,14 @@ const addIndent = (number: number, last?: boolean): string => {
 }
 
 const log = (str: string, number: number, last?: boolean) => {
-  logger.info(`${colors.white}${addIndent(number, last)}${str}`)
+  console.info(`${colors.white}${addIndent(number, last)}${str}`)
 }
 
 const logFilter = (filter: FilterAST, number: number, last?: boolean) => {
   const str = `${filter.$field} ${filter.$operator} ${
-    isArray(filter.$value) ? `[${joinAny(filter.$value, ',')}]` : filter.$value
+    Array.isArray(filter.$value)
+      ? `[${filter.$value.join(',')}]`
+      : filter.$value
   }`
   log(str, number, last)
 }
@@ -72,8 +74,8 @@ const forkLogger = (fork: Fork, indent: number = 0, last?: boolean) => {
 
 export default function(fork: Fork, ...args: any[]) {
   if (args.length) {
-    logger.info(...args)
+    console.info(...args)
   }
   forkLogger(fork)
-  logger.info(`${colors.reset}`)
+  console.info(`${colors.reset}`)
 }

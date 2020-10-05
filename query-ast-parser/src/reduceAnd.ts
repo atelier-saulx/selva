@@ -1,4 +1,4 @@
-import { Fork, FilterAST, Value } from './types'
+import { Fork, FilterAST, Value, WithRequired } from './types'
 import isFork from './isFork'
 import convertNow from './convertNow'
 
