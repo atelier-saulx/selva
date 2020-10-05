@@ -34,8 +34,6 @@ test('basic filter', async t => {
     undefined,
     [' $2 $1 f c @4 $3 g G M', 'type', 'team', 'value', '2']
   ])
-
-  t.pass()
 })
 
 test('complex filter', async t => {
@@ -88,11 +86,6 @@ test('complex filter', async t => {
   ]
 
   const ast = createAst(filter)
-
-  // if equals remove exists
-  // some for not exists etc etc
-
-  console.dir({ ast }, { depth: 10 })
 
   t.deepEqual(ast, {
     isFork: true,
@@ -149,8 +142,4 @@ test('complex filter', async t => {
       'snurkypants'
     ]
   ])
-
-  console.dir({ rpn })
-
-  t.pass()
 })
