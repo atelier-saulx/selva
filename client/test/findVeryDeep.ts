@@ -156,7 +156,7 @@ test.serial('get very deep results', async t => {
 
   const workers = []
 
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 5; i++) {
     workers.push(
       worker(
         async ({ connect, wait }, { port }) => {
