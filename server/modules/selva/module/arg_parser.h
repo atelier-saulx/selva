@@ -15,6 +15,7 @@
 int SelvaArgParser_IntOpt(ssize_t *value, const char *name, RedisModuleString *txt, RedisModuleString *num);
 
 int SelvaArgParser_StrOpt(const char **value, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val);
+void SelvaArgParser_NodeId(Selva_NodeId node_id, RedisModuleString *arg);
 int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, RedisModuleString *arg);
 int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, RedisModuleString *arg);
 

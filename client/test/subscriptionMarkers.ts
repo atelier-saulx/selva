@@ -71,7 +71,6 @@ test.afterEach(async () => {
   }
 })
 
-
 test.serial('create a node marker', async t => {
   const client = connect({ port })
 

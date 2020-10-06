@@ -33,6 +33,16 @@ int SelvaArgParser_StrOpt(const char **value, const char *name, RedisModuleStrin
     return 0;
 }
 
+
+void SelvaArgParser_NodeId(Selva_NodeId node_id, RedisModuleString *arg) {
+    size_t len;
+    const char *str;
+
+    str = RedisModule_StringPtrLen(arg, &len);
+    memset(node_id, 0, SELVA_NODE_ID_SIZE);
+    memcpy(node_id, str, min(SELVA_NODE_ID_SIZE, len));
+}
+
 int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, RedisModuleString *arg) {
     TO_STR(arg);
 

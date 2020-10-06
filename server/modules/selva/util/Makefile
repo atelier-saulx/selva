@@ -4,7 +4,7 @@ CFLAGS ?= -g -fPIC -O3 -std=gnu99 -Wall -Wno-unused-function -Wno-unused-value
 CFLAGS += -I$(RM_INCLUDE_DIR)
 CC=gcc
 
-OBJS=queue_r.o svector.o trx.o
+OBJS := cstrings.o queue_r.o svector.o trx.o
 
 all: libutil.a
 
