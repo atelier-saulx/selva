@@ -178,6 +178,7 @@ test.serial('find - descendants', async t => {
         type: true,
         $list: {
           $sort: { $field: 'status', $order: 'desc' },
+          $limit: 1000,
           $find: {
             $traverse: 'descendants',
             $filter: [
