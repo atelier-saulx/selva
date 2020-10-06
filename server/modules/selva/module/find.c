@@ -41,8 +41,16 @@ enum hierarchy_result_order {
     HIERARCHY_RESULT_ORDER_DESC,
 };
 
+enum FindCommand_OrderedItemType {
+    ORDERED_ITEM_TYPE_EMPTY,
+    ORDERED_ITEM_TYPE_TEXT,
+    ORDERED_ITEM_TYPE_DOUBLE,
+};
+
 struct FindCommand_OrderedItem {
     Selva_NodeId id;
+    enum FindCommand_OrderedItemType data_type;
+    double d;
     size_t data_len;
     char data[];
 };
@@ -144,12 +152,11 @@ static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** re
     const char *bStr = b->data;
 
     if (a->data_len && b->data_len) {
-        char *aEnd = NULL;
-        char *bEnd = NULL;
-        const double x = strtod(aStr, &aEnd);
-        const double y = strtod(bStr, &bEnd);
+        if (a->data_type == ORDERED_ITEM_TYPE_DOUBLE &&
+            b->data_type == ORDERED_ITEM_TYPE_DOUBLE) {
+            double x = a->d;
+            double y = b->d;
 
-        if (aEnd != aStr && bEnd != bStr) {
             if (x < y) {
                 return -1;
             } else if (x > y) {
@@ -187,8 +194,10 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     RedisModuleString *id;
     RedisModuleKey *key;
     struct FindCommand_OrderedItem *item;
+    double d = 0.0;
     const char *data = NULL;
     size_t data_len = 0;
+    enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
     if (!id) {
@@ -202,7 +211,17 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
         err = RedisModule_HashGet(key, REDISMODULE_HASH_CFIELDS, order_field, &value, NULL);
         if (err != REDISMODULE_ERR && value) {
+            char *end;
+
             data = RedisModule_StringPtrLen(value, &data_len);
+
+            /* Check if it's a number. */
+            d = strtod(data, &end);
+            if (end != data) {
+                type = ORDERED_ITEM_TYPE_DOUBLE;
+            } else {
+                type = ORDERED_ITEM_TYPE_TEXT;
+            }
         }
 
         RedisModule_CloseKey(key);
@@ -215,8 +234,10 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     }
 
     memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
+    item->data_type = type;
     item->data_len = data_len;
-    if (data_len) {
+    if (data_len > 0) {
+        item->d = d;
         memcpy(item->data, data, data_len);
         item->data[data_len] = '\0';
     }
