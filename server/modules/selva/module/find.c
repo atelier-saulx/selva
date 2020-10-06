@@ -208,7 +208,6 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         RedisModule_CloseKey(key);
     }
 
-    //item = RedisModule_Alloc(sizeof(struct FindCommand_OrderedItem) + data_len);
     item = RedisModule_PoolAlloc(ctx, sizeof(struct FindCommand_OrderedItem) + data_len + 1);
     if (!item) {
         /* FIXME Handle ENOMEM */
