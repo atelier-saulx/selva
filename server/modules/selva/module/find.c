@@ -29,7 +29,7 @@ struct FindCommand_Args {
     struct rpn_ctx *rpn_ctx;
     const rpn_token *filter;
 
-    const char *order_field; /*!< Order by field name; Otherwise NULL. */
+    const RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Result of the find. Only used if sorting is requested. */
 
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
@@ -63,7 +63,7 @@ typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_
  * ord = asc|desc
  */
 static int parse_order(
-        const char **order_by_field,
+        const RedisModuleString **order_by_field,
         enum hierarchy_result_order *order,
         RedisModuleString *txt,
         RedisModuleString *fld,
@@ -92,7 +92,7 @@ einval:
         tmpOrder = HIERARCHY_RESULT_ORDER_NONE;
         *order_by_field = NULL;
     } else {
-        *order_by_field = fld_str;
+        *order_by_field = fld;
     }
 
     *order = tmpOrder;
@@ -190,7 +190,7 @@ static orderFunc getOrderFunc(enum hierarchy_result_order order) {
     }
 }
 
-static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCtx *ctx, Selva_NodeId nodeId, const char *order_field) {
+static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCtx *ctx, Selva_NodeId nodeId, const RedisModuleString *order_field) {
     RedisModuleString *id;
     RedisModuleKey *key;
     struct FindCommand_OrderedItem *item;
@@ -209,7 +209,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         RedisModuleString *value = NULL;
         int err;
 
-        err = RedisModule_HashGet(key, REDISMODULE_HASH_CFIELDS, order_field, &value, NULL);
+        err = RedisModule_HashGet(key, REDISMODULE_HASH_NONE, order_field, &value, NULL);
         if (err != REDISMODULE_ERR && value) {
             char *end;
 
@@ -490,7 +490,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      * Parse the order arg.
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
-    const char *order_by_field = NULL;
+    const RedisModuleString *order_by_field = NULL;
     if (argc > (int)ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
@@ -694,7 +694,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Parse the order arg.
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
-    const char *order_by_field = NULL;
+    const RedisModuleString *order_by_field = NULL;
     if (argc > (int)ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
@@ -881,7 +881,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Parse the order arg.
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
-    const char *order_by_field = NULL;
+    const RedisModuleString *order_by_field = NULL;
     if (argc > (int)ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
