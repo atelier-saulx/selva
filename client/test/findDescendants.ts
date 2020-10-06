@@ -336,6 +336,8 @@ test.serial('find - descendants', async t => {
       }
     })
 
+    console.log(nextVideosSorted)
+
     t.deepEqual(
       nextVideosSorted.map(v => v.value),
       [94, 93, 92, 91, 90]
