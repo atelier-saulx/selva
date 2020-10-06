@@ -1,6 +1,28 @@
 import { Id } from '../schema/index'
-import { FilterAST, Rpn, Fork } from '@saulx/selva-query-ast-parser'
+// import { FilterAST, Rpn, Fork } from '@saulx/selva-query-ast-parser'
 
+export declare type Value = (string | number) | (string | number)[]
+export declare type FilterAST = {
+  $field: string
+  $operator:
+    | '='
+    | '>'
+    | '<'
+    | '..'
+    | '!='
+    | 'distance'
+    | 'exists'
+    | 'notExists'
+    | 'textSearch'
+  $value?: Value
+  hasNow?: true
+}
+export declare type Fork = {
+  $and?: (Fork | FilterAST)[]
+  $or?: (Fork | FilterAST)[]
+  ids?: string[]
+  isFork: true
+}
 export type Inherit =
   | boolean
   | {

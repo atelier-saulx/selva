@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include "redismodule.h"
 #include "cdefs.h"
+#include "cstrings.h"
 #include "selva.h"
 #include "arg_parser.h"
 #include "async_task.h"
@@ -116,33 +117,7 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
  * Check if field matches to any of the fields specified in the marker.
  */
 static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *marker, const char *field) {
-    const char *s1 = marker->fields;
-
-    while (*s1 != '\0') {
-        const char *s2 = field;
-
-        /* strcmp */
-        while (*s1 == *s2++) {
-            const char c = *s1++;
-            if (c == '\n' || c == '\0') {
-                return 1;
-            }
-        }
-        if (*s1 == '\n' && *(s2 - 1) == '\0') {
-            return 1;
-        }
-
-        /* Skip the rest of the current field */
-        while (*s1 != '\0') {
-            s1++;
-            if (*s1 == '\n') {
-                s1++;
-                break;
-            }
-        }
-    }
-
-    return 0;
+    return stringlist_search(marker->fields, field);
 }
 
 static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct Selva_SubscriptionMarker *marker) {
@@ -973,10 +948,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      * Get the nodeId.
      */
     Selva_NodeId node_id;
-    size_t len;
-    const char *str = RedisModule_StringPtrLen(argv[ARGV_NODE_ID], &len);
-    memset(node_id, 0, SELVA_NODE_ID_SIZE);
-    memcpy(node_id, str, min(SELVA_NODE_ID_SIZE, len));
+    SelvaArgParser_NodeId(node_id, argv[ARGV_NODE_ID]);
 
     /*
      * Get field names for change events.
