@@ -1,4 +1,5 @@
 import { Id } from '../schema/index'
+import { Rpn } from '@saulx/selva-query-ast-parser'
 
 export type Inherit =
   | boolean
@@ -114,3 +115,26 @@ export type GetOptions = GetItem & {
   $language?: string
   $rawAncestors?: true
 }
+
+export type GetOperation =
+  | {
+      type: 'db'
+      id: string
+      field: string
+      sourceField: string | string[]
+      default?: any
+    }
+  | { type: 'value'; value: string; field: string }
+  | { type: 'nested_query'; props: GetOptions; field: string }
+  | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
+  | {
+      type: 'find'
+      props: GetOptions
+      rpn?: Rpn
+      inKeys?: string[]
+      field: string
+      nested?: GetOperation
+      sourceField: string | string[]
+      id: string
+      options: { limit: number; offset: number; sort?: Sort | undefined }
+    }
