@@ -238,6 +238,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     item->data_len = data_len;
     if (data_len > 0) {
         item->d = d;
+
         memcpy(item->data, data, data_len);
         item->data[data_len] = '\0';
     }
