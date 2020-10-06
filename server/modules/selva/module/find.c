@@ -143,21 +143,24 @@ static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** re
     const char *aStr = a->data;
     const char *bStr = b->data;
 
-    char *aEnd;
-    char *bEnd;
-    const double x = strtod(aStr, &aEnd);
-    const double y = strtod(bStr, &bEnd);
-    if (aEnd != aStr && bEnd != bStr) {
-        if (x < y) {
-            return -1;
-        } else if (x > y) {
-            return 1;
-        }
-    } else {
-        /* TODO different langs may have differing order. */
-        const int res = strcmp(aStr, bStr);
-        if (res != 0) {
-            return res;
+    if (a->data_len && b->data_len) {
+        char *aEnd;
+        char *bEnd;
+        const double x = strtod(aStr, &aEnd);
+        const double y = strtod(bStr, &bEnd);
+
+        if (aEnd != aStr && bEnd != bStr) {
+            if (x < y) {
+                return -1;
+            } else if (x > y) {
+                return 1;
+            }
+        } else {
+            /* TODO different langs may have differing order. */
+            const int res = strcmp(aStr, bStr);
+            if (res != 0) {
+                return res;
+            }
         }
     }
 
