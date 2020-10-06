@@ -208,7 +208,14 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         RedisModule_CloseKey(key);
     }
 
-    item = RedisModule_Alloc(sizeof(struct FindCommand_OrderedItem) + data_len);
+    //item = RedisModule_Alloc(sizeof(struct FindCommand_OrderedItem) + data_len);
+    item = RedisModule_PoolAlloc(ctx, sizeof(struct FindCommand_OrderedItem) + data_len + 1);
+    if (!item) {
+        /* FIXME Handle ENOMEM */
+        abort();
+    }
+    memset(item->data, '\0', data_len + 1);
+
     memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
     item->data_len = data_len;
     if (data_len) {
