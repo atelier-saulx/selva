@@ -219,6 +219,7 @@ export default async function executeGetOperations(
       }
 
       const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
+      console.log('SORT', op.options?.sort, args, op.filter)
 
       let ids = await client.redis.selva_hierarchy_find(
         '___selva_hierarchy',
