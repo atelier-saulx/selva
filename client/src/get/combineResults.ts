@@ -1,5 +1,5 @@
 import { SelvaClient } from '../'
-import { deepMerge } from './deepMerge'
+import { deepMerge } from '@saulx/utils'
 // add this later!
 import { ExtraQueries, ExtraQuery } from './validate'
 import { GetResult } from './types'

@@ -13,10 +13,7 @@ import validate, {
 } from './validate'
 
 // move to saulx/utils
-import { deepMerge } from './deepMerge'
-
-import { SCRIPT } from '../constants'
-import { FieldSchema, Schema } from '../schema'
+import { deepMerge } from '@saulx/utils'
 
 function getExtraQueriesByField(
   extraQueries: ExtraQueries
