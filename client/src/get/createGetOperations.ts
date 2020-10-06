@@ -4,6 +4,8 @@ import { getNestedSchema } from './utils'
 import { createAst } from '@saulx/selva-query-ast-parser'
 import { getTypeFromId } from './utils'
 
+// make this rly nice
+
 export default function createGetOperations(
   client: SelvaClient,
   props: GetOptions,
