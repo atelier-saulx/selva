@@ -144,8 +144,8 @@ static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** re
     const char *bStr = b->data;
 
     if (a->data_len && b->data_len) {
-        char *aEnd;
-        char *bEnd;
+        char *aEnd = NULL;
+        char *bEnd = NULL;
         const double x = strtod(aStr, &aEnd);
         const double y = strtod(bStr, &bEnd);
 
@@ -363,7 +363,13 @@ static size_t FindCommand_PrintOrderedResult(RedisModuleCtx *ctx, ssize_t offset
         RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
         len++;
 
+        /*
+         * Commenting out the free should make the response faster. Redis will
+         * free the memory anyway.
+         */
+#if 0
         RedisModule_Free(item);
+#endif
     }
 
     return len;
