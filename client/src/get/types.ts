@@ -130,6 +130,7 @@ export type GetOperation =
   | {
       type: 'find'
       props: GetOptions
+      single?: boolean
       filter?: Fork
       inKeys?: string[]
       field: string

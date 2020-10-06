@@ -142,6 +142,37 @@ export default function createGetOperations(
       })
     }
   } else if (props.$find) {
+    // inKeys
+
+    console.log('hello this', field)
+
+    const myFind: GetOperation = {
+      type: 'find',
+      id: id.padEnd(10, '\0'),
+      props,
+      single: true,
+      field: field.substr(1),
+      sourceField:
+        props.$find.$traverse && !Array.isArray(props.$find.$traverse)
+          ? <string>props.$find.$traverse
+          : field.substr(1),
+      options: {
+        limit: 1,
+        offset: 0
+      }
+    }
+
+    if (props.$find.$filter) {
+      const ast = createAst(props.$find.$filter)
+      if (ast) {
+        myFind.filter = ast
+      }
+    }
+
+    ops.push(myFind)
+
+    console.dir({ myFind }, { depth: 10 })
+
     // TODO shitty
   } else if (
     props.$field &&

@@ -277,7 +277,7 @@ export default async function executeGetOperations(
           isNest = isNest.nested
         }
 
-        return await Promise.all(
+        const results = await Promise.all(
           prevIds.map(id => {
             const realOpts: any = {}
             for (const key in op.props) {
@@ -295,9 +295,15 @@ export default async function executeGetOperations(
             )
           })
         )
+
+        if (op.single) {
+          return results[0]
+        }
+
+        return results
       }
 
-      return Promise.all(
+      const results = await Promise.all(
         ids.map(async id => {
           const realOpts: any = {}
           for (const key in op.props) {
@@ -318,6 +324,12 @@ export default async function executeGetOperations(
           return x
         })
       )
+
+      if (op.single) {
+        return results[0]
+      }
+
+      return results
     }
 
     // op.type === 'db'
@@ -383,7 +395,17 @@ export default async function executeGetOperations(
 
   const o: GetResult = {}
   results.map((r, i) => {
-    if (r !== null && r !== undefined) {
+    if (
+      ops[i].field === '' &&
+      // @ts-ignore
+      ops[i].single === true
+    ) {
+      console.log('hello!', ops[i], o)
+
+      Object.assign(o, r)
+
+      //   return r
+    } else if (r !== null && r !== undefined) {
       setNestedResult(o, ops[i].field, r)
     }
   })
