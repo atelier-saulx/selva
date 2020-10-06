@@ -1,5 +1,5 @@
 import { Id } from '../schema/index'
-import { Rpn } from '@saulx/selva-query-ast-parser'
+import { FilterAST, Rpn, Fork } from '@saulx/selva-query-ast-parser'
 
 export type Inherit =
   | boolean
@@ -130,7 +130,7 @@ export type GetOperation =
   | {
       type: 'find'
       props: GetOptions
-      rpn?: Rpn
+      filter?: Fork
       inKeys?: string[]
       field: string
       nested?: GetOperation

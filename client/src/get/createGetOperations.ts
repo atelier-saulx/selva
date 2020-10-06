@@ -1,7 +1,7 @@
 import { SelvaClient } from '../'
 import { GetOperation, GetOptions } from './types'
 import { getNestedSchema } from './utils'
-import { createRpn } from '@saulx/selva-query-ast-parser'
+import { createAst } from '@saulx/selva-query-ast-parser'
 import { getTypeFromId } from './utils'
 
 export default function createGetOperations(
@@ -71,9 +71,10 @@ export default function createGetOperations(
       }
 
       if (props.$list.$find.$filter) {
-        const rpn = createRpn(props.$list.$find.$filter)
-        if (rpn) {
-          allwaysWant.rpn = rpn
+        const ast = createAst(props.$list.$find.$filter)
+        // const rpn = createRpn(props.$list.$find.$filter, lang)
+        if (ast) {
+          allwaysWant.filter = ast
         }
       }
 
@@ -106,9 +107,9 @@ export default function createGetOperations(
             }
 
             if (myFind.$filter) {
-              const rpn = createRpn(myFind.$filter)
-              if (rpn) {
-                flapperPants.rpn = rpn
+              const ast = createAst(myFind.$filter)
+              if (ast) {
+                flapperPants.filter = ast
               }
             }
 

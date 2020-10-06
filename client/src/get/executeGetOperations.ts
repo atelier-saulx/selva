@@ -4,6 +4,7 @@ import { setNestedResult, getNestedSchema } from './utils'
 import resolveId from './resolveId'
 import createGetOperations from './createGetOperations'
 import { GetOptions } from '.'
+import { ast2rpn } from '@saulx/selva-query-ast-parser'
 
 const TYPE_CASTS: Record<string, (x: any) => any> = {
   float: Number,
@@ -217,6 +218,8 @@ export default async function executeGetOperations(
         console.log('MAKE INKEYS')
       }
 
+      const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
+
       let ids = await client.redis.selva_hierarchy_find(
         '___selva_hierarchy',
         'bfs',
@@ -229,7 +232,7 @@ export default async function executeGetOperations(
         'limit',
         op.options.limit,
         op.id,
-        ...(op.rpn || ['#1'])
+        ...args
       )
 
       if (op.nested) {
@@ -252,7 +255,7 @@ export default async function executeGetOperations(
             'limit',
             -1, //  makeOp.options.limit,
             makeOp.id,
-            ...(makeOp.rpn || ['#1'])
+            ...(makeOp.filter ? ast2rpn(makeOp.filter, lang) : ['#1'])
           )
           return nids
         }
@@ -289,12 +292,10 @@ export default async function executeGetOperations(
             )
           })
         )
-
-        return null
       }
 
       return Promise.all(
-        ids.map(id => {
+        ids.map(async id => {
           const realOpts: any = {}
           for (const key in op.props) {
             if (!key.startsWith('$')) {
@@ -302,7 +303,7 @@ export default async function executeGetOperations(
             }
           }
 
-          return executeNestedGetOperations(
+          const x = await executeNestedGetOperations(
             client,
             {
               $id: id,
@@ -310,6 +311,8 @@ export default async function executeGetOperations(
             },
             lang
           )
+
+          return x
         })
       )
     }

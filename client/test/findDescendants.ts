@@ -164,7 +164,7 @@ test.serial('find - descendants', async t => {
   try {
     const client = connect({ port }, { loglevel: 'info' })
 
-    // extra option in find is index or auto from fields
+    // // extra option in find is index or auto from fields
     let d = Date.now()
     const { items: results } = await client.get({
       items: {
@@ -336,7 +336,10 @@ test.serial('find - descendants', async t => {
       }
     })
 
-    console.log(nextVideosSorted)
+    console.log(
+      'hello nice',
+      nextVideosSorted.map(v => v.value)
+    )
 
     t.deepEqual(
       nextVideosSorted.map(v => v.value),
@@ -391,6 +394,8 @@ test.serial('find - descendants', async t => {
         }
       }
     })
+
+    console.info('videos text make it nice nice', videosText)
 
     t.deepEqual(videosText, [
       { value: 99 },
