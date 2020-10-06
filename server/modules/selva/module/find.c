@@ -369,14 +369,6 @@ static size_t FindCommand_PrintOrderedResult(RedisModuleCtx *ctx, ssize_t offset
 
         RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
         len++;
-
-        /*
-         * Commenting out the free should make the response faster. Redis will
-         * free the memory anyway.
-         */
-#if 0
-        RedisModule_Free(item);
-#endif
     }
 
     return len;
