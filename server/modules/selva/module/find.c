@@ -214,12 +214,12 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         /* FIXME Handle ENOMEM */
         abort();
     }
-    memset(item->data, '\0', data_len + 1);
 
     memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
     item->data_len = data_len;
     if (data_len) {
         memcpy(item->data, data, data_len);
+        item->data[data_len] = '\0';
     }
 
     return item;
