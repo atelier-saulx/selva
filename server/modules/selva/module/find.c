@@ -546,7 +546,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
+        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }
@@ -739,7 +739,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
     svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
+        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }
@@ -893,7 +893,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 
     svector_autofree SVector order_result = { 0 }; /* No need to init for ORDER_NODE */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
+        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
             return replyWithSelvaError(ctx, SELVA_ENOMEM);
         }
     }
