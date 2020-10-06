@@ -400,8 +400,6 @@ export default async function executeGetOperations(
       // @ts-ignore
       ops[i].single === true
     ) {
-      console.log('hello!', ops[i], o)
-
       Object.assign(o, r)
 
       //   return r
