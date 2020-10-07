@@ -32,7 +32,7 @@ const findHierarchy = async (
   if (op.inKeys) {
     console.log('MAKE INKEYS', op.inKeys)
   }
-  console.log('SORT', op.options?.sort, args, op.filter)
+  //   console.log('SORT', op.options?.sort, args, op.filter)
   const ids = await client.redis.selva_hierarchy_find(
     {
       name: db
