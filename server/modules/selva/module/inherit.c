@@ -4,18 +4,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "redismodule.h"
 #include "selva.h"
-#include "selva_onload.h"
+#include "redismodule.h"
 #include "arg_parser.h"
 #include "errors.h"
 #include "hierarchy.h"
+#include "modify.h"
 #include "rpn.h"
+#include "selva_onload.h"
 #include "subscriptions.h"
 #include "svector.h"
 
 struct InheritCommand_Args {
     RedisModuleCtx *ctx;
+    SelvaModify_Hierarchy *hierarchy;
 
     size_t nr_types;
     const Selva_NodeType *types;
@@ -24,7 +26,45 @@ struct InheritCommand_Args {
     ssize_t nr_results; /*!< Number of results sent. */
 };
 
-static int get_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId, const RedisModuleString *field, RedisModuleString **out) {
+static int send_selva_set(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
+    RedisModuleKey *key;
+    size_t len = 0;
+
+    key = SelvaModify_OpenSet(ctx, nodeId, Selva_NodeIdLen(nodeId),
+                              RedisModule_StringPtrLen(field, NULL));
+    if (!key) {
+        return SELVA_MODIFY_HIERARCHY_EINVAL;
+    }
+
+    /*
+     * Start a new array reply:
+     * [field_name, [set_value1, set_value2,.. set_valuen]]
+     */
+    RedisModule_ReplyWithArray(ctx, 2);
+    RedisModule_ReplyWithString(ctx, field);
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+
+    RedisModule_ZsetFirstInScoreRange(key, 0, 1, 0, 0);
+    while (!RedisModule_ZsetRangeEndReached(key)) {
+        double score;
+        RedisModuleString *ele;
+
+        ele = RedisModule_ZsetRangeCurrentElement(key, &score);
+
+        RedisModule_ReplyWithString(ctx, ele);
+
+        RedisModule_FreeString(ctx, ele);
+        RedisModule_ZsetRangeNext(key);
+        len++;
+    }
+    RedisModule_ZsetRangeStop(key);
+
+    RedisModule_ReplySetArrayLength(ctx, len);
+
+    return 0;
+}
+
+static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
     int err;
     RedisModuleString *id;
     RedisModuleKey *key;
@@ -43,14 +83,95 @@ static int get_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId, const
     err = RedisModule_HashGet(key, REDISMODULE_HASH_NONE, field, &value, NULL);
     RedisModule_CloseKey(key);
 
-    /* TODO Check for magic values */
-
     if (err || !value) {
         return SELVA_ENOENT;
     }
 
-    *out = value;
+    /*
+     * Start a new array reply:
+     * [ field_name, field_value ]
+     */
+    RedisModule_ReplyWithArray(ctx, 2);
+    RedisModule_ReplyWithString(ctx, field);
+
+    TO_STR(value);
+    if (!strcmp(value_str, "___selva_$set")) {
+        /* Set */
+        return send_selva_set(ctx, nodeId, field);
+    } else {
+        /* Regular value */
+        (void)RedisModule_ReplyWithString(ctx, value);
+    }
+
     return 0;
+}
+
+struct send_hierarchy_field_data {
+    RedisModuleCtx *ctx;
+    size_t len;
+};
+
+/*
+ * Used for ancestors, children, descendants, parents
+ */
+static int send_hierarchy_field_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
+    struct send_hierarchy_field_data *args = (struct send_hierarchy_field_data *)arg;
+
+    RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
+    args->len++;
+
+    return 0;
+}
+
+static int send_hierarchy_field(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId nodeId,
+        RedisModuleString *field,
+        enum SelvaModify_HierarchyTraversal dir) {
+    struct send_hierarchy_field_data args = {
+        .ctx = ctx,
+        .len = 0,
+    };
+    const struct SelvaModify_HierarchyCallback cb = {
+        .node_cb = send_hierarchy_field_NodeCb,
+        .node_arg = &args,
+    };
+    int err;
+
+    /*
+     * Start a new array reply:
+     * [field_name, [nodeId1, nodeId2,.. nodeIdn]]
+     */
+    RedisModule_ReplyWithArray(ctx, 2);
+    RedisModule_ReplyWithString(ctx, field);
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
+    RedisModule_ReplySetArrayLength(ctx, args.len);
+
+    return err;
+}
+
+static int send_field_value(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId nodeId,
+        RedisModuleString *field) {
+    TO_STR(field);
+
+    if (!strcmp(field_str, "aliases")) {
+        return send_selva_set(ctx, nodeId, field);
+    } else if (!strcmp(field_str, "ancestors")) {
+        return send_hierarchy_field(ctx, hierarchy, nodeId, field, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
+    } else if (!strcmp(field_str, "children")) {
+        return send_hierarchy_field(ctx, hierarchy, nodeId, field, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
+    } else if (!strcmp(field_str, "descendants")) {
+        return send_hierarchy_field(ctx, hierarchy, nodeId, field, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
+    } else if (!strcmp(field_str, "parents")) {
+        return send_hierarchy_field(ctx, hierarchy, nodeId, field, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
+    } else {
+        return send_hash_field_value(ctx, nodeId, field);
+    }
 }
 
 static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
@@ -74,7 +195,6 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
 
     for (size_t i = 0; i < args->nr_fields; i++) {
         RedisModuleString *field_name = args->field_names[i];
-        RedisModuleString *value;
 
         /* Field already found. */
         if (!field_name) {
@@ -82,19 +202,15 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
         }
 
         /*
-         * Get the field value.
+         * Get and send the field value to the client.
          */
-        err = get_field_value(args->ctx, nodeId, field_name, &value);
-        if (err == 0 && value) { /* found */
+        err = send_field_value(args->ctx, args->hierarchy, nodeId, field_name);
+        if (err == 0) { /* found */
             args->field_names[i] = NULL; /* No need to look for this one anymore. */
-
-            (void)RedisModule_ReplyWithArray(args->ctx, 2);
-            (void)RedisModule_ReplyWithString(args->ctx, field_name);
-            (void)RedisModule_ReplyWithString(args->ctx, value);
             args->nr_results++;
 
             /* Stop traversing if all fields were found. */
-            if (args->nr_results == args->nr_fields) {
+            if (args->nr_results == (ssize_t)args->nr_fields) {
                 return 1;
             }
         } else if (err != SELVA_ENOENT) {
@@ -166,6 +282,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     struct InheritCommand_Args args = {
         .ctx = ctx,
+        .hierarchy = hierarchy,
         .nr_types = nr_types,
         .types = types,
         .field_names = field_names,
