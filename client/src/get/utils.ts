@@ -90,3 +90,6 @@ export const setNestedResult = (
     result[field] = value
   }
 }
+
+export const joinIds = (ids: string[]): string =>
+  ids.map(id => padId(id)).join('')

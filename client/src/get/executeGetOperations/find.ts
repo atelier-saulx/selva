@@ -1,8 +1,8 @@
 import { SelvaClient } from '../../'
-import { GetOperation, GetOperationFind, GetResult } from '../types'
+import { GetOperationFind, GetResult } from '../types'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
 import { executeNestedGetOperations } from './'
-import { padId } from '../utils'
+import { padId, joinIds } from '../utils'
 
 const findHierarchy = async (
   client: SelvaClient,
@@ -30,14 +30,13 @@ const findHierarchy = async (
   }
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
   if (op.inKeys) {
-    console.log('MAKE INKEYS', op.inKeys)
-    const ids = await client.redis.selva_hierarchy_find(
+    console.log('MAKE INKEYS', op.inKeys, args, op.inKeys)
+
+    const ids = await client.redis.selva_hierarchy_findin(
       {
         name: db
       },
       '___selva_hierarchy',
-      'bfs',
-      sourceField,
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -45,9 +44,11 @@ const findHierarchy = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      op.id,
+      ...joinIds(op.inKeys),
       ...args
     )
+
+    return ids
   } else {
     const ids = await client.redis.selva_hierarchy_find(
       {
@@ -85,7 +86,7 @@ const executeFindOperation = async (
       ids = await findHierarchy(
         client,
         Object.assign({}, nestedOperation, {
-          id: ids.map(id => padId(id)).join('')
+          id: joinIds(ids)
         }),
         lang,
         db

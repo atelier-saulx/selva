@@ -74,7 +74,7 @@ test.serial('get in keys result', async t => {
       id: true,
       $list: {
         $find: {
-          $traverse: ['gl1', 'gl2', 'gl3'],
+          $traverse: ['gl0', 'gl1', 'gl2'],
           $filter: {
             $field: 'title',
             $operator: '=',
@@ -86,6 +86,8 @@ test.serial('get in keys result', async t => {
   })
 
   console.log({ gimme })
+
+  t.deepEqual(gimme, { flap: [{ title: 'cookie', id: 'gl0' }] })
 
   await wait(1e3)
 
