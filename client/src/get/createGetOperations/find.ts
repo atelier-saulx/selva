@@ -1,4 +1,4 @@
-import { Find, GetOperation, GetOptions, Sort } from '../types'
+import { Find, GetOperationFind, GetOptions, Sort } from '../types'
 import { createAst } from '@saulx/selva-query-ast-parser'
 import { padId } from '../utils'
 
@@ -11,8 +11,8 @@ const createFindOperation = (
   limit: number = single ? 1 : -1,
   offset: number = 0,
   sort?: Sort | Sort[]
-): GetOperation => {
-  const findOperation: GetOperation = {
+): GetOperationFind => {
+  const findOperation: GetOperationFind = {
     type: 'find',
     id: padId(id),
     props,

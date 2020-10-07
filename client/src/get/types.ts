@@ -138,6 +138,19 @@ export type GetOptions = GetItem & {
   $rawAncestors?: true
 }
 
+export type GetOperationFind = {
+  type: 'find'
+  props: GetOptions
+  single?: boolean
+  filter?: Fork
+  inKeys?: string[]
+  field: string
+  nested?: GetOperationFind
+  sourceField: string | string[]
+  id: string
+  options: { limit: number; offset: number; sort?: Sort | undefined }
+}
+
 export type GetOperation =
   | {
       type: 'db'
@@ -149,15 +162,4 @@ export type GetOperation =
   | { type: 'value'; value: string; field: string }
   | { type: 'nested_query'; props: GetOptions; field: string }
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
-  | {
-      type: 'find'
-      props: GetOptions
-      single?: boolean
-      filter?: Fork
-      inKeys?: string[]
-      field: string
-      nested?: GetOperation
-      sourceField: string | string[]
-      id: string
-      options: { limit: number; offset: number; sort?: Sort | undefined }
-    }
+  | GetOperationFind
