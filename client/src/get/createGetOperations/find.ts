@@ -42,10 +42,8 @@ const createFindOperation = (
   }
 
   if (find.$find) {
-    if (find.$filter || sort) {
-      findOperation.options.limit = -1
-      findOperation.options.offset = 0
-    }
+    findOperation.options.limit = -1
+    findOperation.options.offset = 0
     findOperation.nested = createFindOperation(
       find.$find,
       props,
