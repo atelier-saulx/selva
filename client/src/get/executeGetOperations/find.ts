@@ -42,7 +42,7 @@ const findHierarchy = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      ...joinIds(op.inKeys),
+      joinIds(op.inKeys),
       ...args
     )
     return ids
