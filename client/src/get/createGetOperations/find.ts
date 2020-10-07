@@ -54,7 +54,8 @@ const createFindOperation = (
       single,
       limit,
       offset,
-      sort
+      // this is a bit tricky... may need to add sort
+      find.$find.$find ? undefined : sort
     )
   }
 

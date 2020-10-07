@@ -197,8 +197,6 @@ export const executeGetOperation = async (
     return find(client, op, lang, db)
   }
 
-  // op.type === 'db'
-
   let r: any
   let fieldSchema
   if (Array.isArray(op.sourceField)) {

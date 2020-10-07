@@ -27,6 +27,8 @@ export default async function combineResults(
     return
   }
 
+  // TODO: Pass DB everywhere
+
   await Promise.all(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
@@ -183,7 +185,7 @@ export default async function combineResults(
               {
                 $language,
                 $includeMeta: !!meta,
-                $db: db,
+                $db: db, // if not db ofc
                 ...q.getOpts
               },
               meta,
