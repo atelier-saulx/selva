@@ -206,7 +206,6 @@ test.serial('get very deep results', async t => {
     //     `    worker #${i} {Get all desc using descendants in ${v[0]} ms`
     //   )
     // )
-    // (larger then 1)
     t.is(v[0].amount, 32752)
     v[1].terminate()
   })
@@ -217,6 +216,17 @@ test.serial('get very deep results', async t => {
         d} ms`
     )
   )
+
+  const q2 = {
+    levelCnt: true,
+    $find: q.$find
+  }
+
+  const justOne = await client.get(q2)
+
+  // console.dir(q2, { depth: 1000 })
+
+  t.true(justOne.levelCnt !== undefined, 'find single nested')
 
   await wait(1e3)
 

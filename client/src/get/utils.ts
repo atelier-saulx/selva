@@ -57,6 +57,10 @@ export function getNestedSchema(
   return prop
 }
 
+export const padId = (id: string): string => {
+  return id.padEnd(10, '\0')
+}
+
 export const setNestedResult = (
   result: GetResult,
   field: string,

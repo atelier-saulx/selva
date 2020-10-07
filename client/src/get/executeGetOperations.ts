@@ -155,36 +155,40 @@ const TYPE_TO_SPECIAL_OP: Record<
 const executeNestedGetOperations = async (
   client: SelvaClient,
   props: GetOptions,
-  lang: string | undefined
+  lang: string | undefined,
+  db: string
 ): Promise<GetResult> => {
   const id = await resolveId(client, props)
   return await executeGetOperations(
     client,
     props.$language || lang,
-    createGetOperations(client, props, id, '')
+    db,
+    createGetOperations(client, props, id, '', db)
   )
 }
 
 export default async function executeGetOperations(
   client: SelvaClient,
   lang: string | undefined,
+  db: string,
   ops: GetOperation[]
 ): Promise<GetResult> {
   const myBlurx = async op => {
     if (op.type === 'value') {
       return op.value
     } else if (op.type === 'nested_query') {
-      return executeNestedGetOperations(client, op.props, lang)
+      return executeNestedGetOperations(client, op.props, lang, db)
     } else if (op.type === 'array_query') {
       return Promise.all(
         op.props.map(p => {
           if (p.$id) {
-            return executeNestedGetOperations(client, p, lang)
+            return executeNestedGetOperations(client, p, lang, db)
           } else {
             return executeNestedGetOperations(
               client,
               Object.assign({}, p, { $id: op.id }),
-              lang
+              lang,
+              db
             )
           }
         })
@@ -244,8 +248,6 @@ export default async function executeGetOperations(
             id: ids.map(id => id.padEnd(10, '\0')).join('')
           })
 
-          // console.log(makeOp)
-
           let nids = await client.redis.selva_hierarchy_find(
             '___selva_hierarchy',
             'bfs',
@@ -254,9 +256,9 @@ export default async function executeGetOperations(
             makeOp.options?.sort?.$field || '',
             makeOp.options?.sort?.$order || 'asc',
             'offset',
-            0, // makeOp.options.offset,
+            0,
             'limit',
-            -1, //  makeOp.options.limit,
+            -1,
             makeOp.id,
             ...(makeOp.filter ? ast2rpn(makeOp.filter, lang) : ['#1'])
           )
@@ -291,7 +293,8 @@ export default async function executeGetOperations(
                 $id: id,
                 ...realOpts
               },
-              lang
+              lang,
+              db
             )
           })
         )
@@ -318,7 +321,8 @@ export default async function executeGetOperations(
               $id: id,
               ...realOpts
             },
-            lang
+            lang,
+            db
           )
 
           return x

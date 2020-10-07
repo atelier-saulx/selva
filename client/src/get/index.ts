@@ -87,9 +87,10 @@ async function get(
   // -------------
   // // this is where we collect the dbs and  which initialize schemas to do after
   // TODO: need to intialize for each db!
-  await client.initializeSchema({
-    db: props.$db || 'default'
-  })
+
+  const db = props.$db || 'default'
+
+  await client.initializeSchema({ db })
 
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
@@ -109,7 +110,8 @@ async function get(
   const getResult = await executeGetOperations(
     client,
     lang,
-    createGetOperations(client, newProps, id, '')
+    db,
+    createGetOperations(client, newProps, id, '', db)
   )
 
   // maybe ncie function?
