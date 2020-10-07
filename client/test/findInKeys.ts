@@ -39,7 +39,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get very deep results', async t => {
+test.serial('get in keys result', async t => {
   const client = connect({ port })
 
   await client.set({
