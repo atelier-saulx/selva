@@ -31,26 +31,43 @@ const findHierarchy = async (
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
   if (op.inKeys) {
     console.log('MAKE INKEYS', op.inKeys)
+    const ids = await client.redis.selva_hierarchy_find(
+      {
+        name: db
+      },
+      '___selva_hierarchy',
+      'bfs',
+      sourceField,
+      'order',
+      op.options.sort?.$field || '',
+      op.options.sort?.$order || 'asc',
+      'offset',
+      op.options.offset,
+      'limit',
+      op.options.limit,
+      op.id,
+      ...args
+    )
+  } else {
+    const ids = await client.redis.selva_hierarchy_find(
+      {
+        name: db
+      },
+      '___selva_hierarchy',
+      'bfs',
+      sourceField,
+      'order',
+      op.options.sort?.$field || '',
+      op.options.sort?.$order || 'asc',
+      'offset',
+      op.options.offset,
+      'limit',
+      op.options.limit,
+      op.id,
+      ...args
+    )
+    return ids
   }
-  //   console.log('SORT', op.options?.sort, args, op.filter)
-  const ids = await client.redis.selva_hierarchy_find(
-    {
-      name: db
-    },
-    '___selva_hierarchy',
-    'bfs',
-    sourceField,
-    'order',
-    op.options.sort?.$field || '',
-    op.options.sort?.$order || 'asc',
-    'offset',
-    op.options.offset,
-    'limit',
-    op.options.limit,
-    op.id,
-    ...args
-  )
-  return ids
 }
 
 const executeFindOperation = async (
