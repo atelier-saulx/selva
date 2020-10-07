@@ -838,7 +838,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
     ARGV_LIMIT_TXT += i; \
-    ARGV_LIMIT_NUM += i;
+    ARGV_LIMIT_NUM += i
 
     if (argc < 4) {
         return RedisModule_WrongArity(ctx);

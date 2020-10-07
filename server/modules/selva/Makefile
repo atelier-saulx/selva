@@ -12,6 +12,7 @@ OBJS := \
 	module/errors.o \
 	module/find.o \
 	module/hierarchy.o \
+	module/inherit.o \
 	module/modify.o \
 	module/rpn.o \
 	module/subscriptions.o

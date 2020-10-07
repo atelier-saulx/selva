@@ -14,6 +14,8 @@
  */
 typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
 
+typedef char Selva_NodeType[SELVA_NODE_TYPE_SIZE];
+
 #define SELVA_SUBSCRIPTION_ID_SIZE 32
 #define SELVA_SUBSCRIPTION_ID_STR_LEN (2 * SELVA_SUBSCRIPTION_ID_SIZE)
 
@@ -42,6 +44,6 @@ enum SelvaModify_HierarchyTraversal {
     SELVA_HIERARCHY_TRAVERSAL_REF, /*!< Visit nodes pointed by a ref field. */
 };
 
-size_t Selva_NodeIdLen(Selva_NodeId nodeId);
+size_t Selva_NodeIdLen(const Selva_NodeId nodeId);
 
 #endif /* _SELVA_ */
