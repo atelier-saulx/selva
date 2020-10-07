@@ -42,11 +42,9 @@ const createFindOperation = (
   }
 
   if (find.$find) {
-    findOperation.options.limit = -1
-    findOperation.options.offset = 0
     if (find.$filter || sort) {
-      // only remove is this is nessecary
-      findOperation.single = false
+      findOperation.options.limit = -1
+      findOperation.options.offset = 0
     }
     findOperation.nested = createFindOperation(
       find.$find,

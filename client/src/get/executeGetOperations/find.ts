@@ -3,6 +3,7 @@ import { GetOperation, GetResult } from '../types'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
 import { executeNestedGetOperations } from './'
 import { ServerSelector } from '~selva/types'
+import { padId } from '../utils'
 
 // make nice here
 const executeFindOperation = async (
@@ -56,8 +57,8 @@ const executeFindOperation = async (
       'bfs',
       sourceField,
       'order',
-      op.options?.sort?.$field || '',
-      op.options?.sort?.$order || 'asc',
+      op.options.sort?.$field || '',
+      op.options.sort?.$order || 'asc',
       'offset',
       op.options.offset,
       'limit',
@@ -69,21 +70,21 @@ const executeFindOperation = async (
     if (op.nested) {
       const makeNestedNice = async (ids: string[], nested: any) => {
         const makeOp = Object.assign({}, nested, {
-          id: ids.map(id => id.padEnd(10, '\0')).join('')
+          id: ids.map(id => padId(id)).join('')
         })
 
-        let nids = await client.redis.selva_hierarchy_find(
+        const nids = await client.redis.selva_hierarchy_find(
           selector,
           '___selva_hierarchy',
           'bfs',
           makeOp.sourceField,
           'order',
-          makeOp.options?.sort?.$field || '',
-          makeOp.options?.sort?.$order || 'asc',
+          makeOp.options.sort?.$field || '',
+          makeOp.options.sort?.$order || 'asc',
           'offset',
-          0,
+          makeOp.options.offset,
           'limit',
-          -1,
+          makeOp.options.limit,
           makeOp.id,
           ...(makeOp.filter ? ast2rpn(makeOp.filter, lang) : ['#1'])
         )
@@ -91,7 +92,6 @@ const executeFindOperation = async (
       }
 
       let isNest = op.nested
-      let level = 0
       let prevIds = ids
       while (isNest) {
         let nids = []
@@ -100,7 +100,6 @@ const executeFindOperation = async (
         nids = await makeNestedNice(prevIds, isNest)
         prevIds = nids
 
-        level++
         isNest = isNest.nested
       }
 
@@ -123,6 +122,8 @@ const executeFindOperation = async (
           )
         })
       )
+
+      console.log('ok is it single?')
 
       if (op.single) {
         return results[0]
