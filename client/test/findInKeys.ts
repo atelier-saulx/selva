@@ -69,14 +69,18 @@ test.serial('get in keys result', async t => {
   })
 
   const gimme = await client.get({
-    tilte: true,
-    id: true,
-    $find: {
-      $traverse: ['gl1', 'gl2', 'gl3'],
-      $filter: {
-        $field: 'title',
-        $operator: '=',
-        $value: 'cookie'
+    flap: {
+      tilte: true,
+      id: true,
+      $list: {
+        $find: {
+          $traverse: ['gl1', 'gl2', 'gl3'],
+          $filter: {
+            $field: 'title',
+            $operator: '=',
+            $value: 'cookie'
+          }
+        }
       }
     }
   })
