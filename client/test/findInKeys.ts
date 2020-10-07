@@ -47,22 +47,22 @@ test.serial('get in keys result', async t => {
     children: [
       {
         type: 'glurp',
-        id: 'gl0',
+        $id: 'gl0',
         title: 'cookie'
       },
       {
         type: 'glurp',
-        id: 'gl1',
+        $id: 'gl1',
         title: 'glurpie pants'
       },
       {
         type: 'glurp',
-        id: 'gl2',
+        $id: 'gl2',
         title: 'glurpie pants 2'
       },
       {
         type: 'glurp',
-        id: 'gl3',
+        $id: 'gl3',
         title: 'cookie'
       }
     ]
@@ -70,7 +70,7 @@ test.serial('get in keys result', async t => {
 
   const gimme = await client.get({
     flap: {
-      tilte: true,
+      title: true,
       id: true,
       $list: {
         $find: {
