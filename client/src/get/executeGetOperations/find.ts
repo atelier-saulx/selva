@@ -30,6 +30,7 @@ const findHierarchy = async (
   }
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
   if (op.inKeys) {
+    // can make this a bit better....
     const ids = await client.redis.selva_hierarchy_findin(
       {
         name: db
