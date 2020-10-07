@@ -45,6 +45,7 @@ const findHierarchy = async (
       joinIds(op.inKeys),
       ...args
     )
+    console.log({ ids: joinIds(op.inKeys) })
     return ids
   } else {
     const ids = await client.redis.selva_hierarchy_find(
