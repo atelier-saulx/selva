@@ -30,8 +30,6 @@ const findHierarchy = async (
   }
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
   if (op.inKeys) {
-    console.log('MAKE INKEYS', op.inKeys, args, op.inKeys)
-
     const ids = await client.redis.selva_hierarchy_findin(
       {
         name: db
@@ -47,7 +45,6 @@ const findHierarchy = async (
       ...joinIds(op.inKeys),
       ...args
     )
-
     return ids
   } else {
     const ids = await client.redis.selva_hierarchy_find(
