@@ -31,6 +31,15 @@ struct redisObjectAccessor {
     void *ptr;
 };
 
+/**
+ * RedisModuleString template.
+ * This string can be used to ensure that RedisModule_CreateString() will create
+ * a createRawStringObject instead of using an embedded string. This must be
+ * longer than OBJ_ENCODING_EMBSTR_SIZE_LIMIT and preferrably large enough to
+ * fit most of the strings we'll ever see to avoid reallocs.
+ */
+#define RMSTRING_TEMPLATE "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
 #define OPERAND(ctx, x) \
     struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx); \
     if (!x) return RPN_ERR_BADSTK
@@ -102,6 +111,7 @@ struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
     ctx->depth = 0;
     ctx->redis_ctx = redis_ctx;
     ctx->redis_hkey = NULL;
+    ctx->rm_tmp_str = NULL;
     ctx->nr_reg = nr_reg;
 
     ctx->reg = RedisModule_Calloc(nr_reg, sizeof(struct rpn_operand *));
@@ -135,6 +145,44 @@ void rpn_destroy(struct rpn_ctx *ctx) {
         RedisModule_Free(ctx);
 #endif
     }
+}
+
+/**
+ * Copy string to the rm_tmp_str.
+ */
+static int cpy2rm_tmp_str(struct rpn_ctx *ctx, const char *str, size_t len) {
+    if (unlikely(!ctx->rm_tmp_str)) {
+        RedisModuleString *rms;
+
+        rms = RedisModule_CreateString(NULL, RMSTRING_TEMPLATE, sizeof(RMSTRING_TEMPLATE));
+        if (unlikely(!rms)) {
+            return RPN_ERR_ENOMEM;
+        }
+
+        ctx->rm_tmp_str = rms;
+    }
+    /*
+     * The sds string pointer might change so we need to update the
+     * redis object every time. This is not how the RM API nor robj
+     * was meant to be used but * we know enough about the internals
+     * to be confident with this.
+     *
+     * There is a huge performance benefit in doing all this mangling
+     * as we avoid doing dozens of mallocs and frees.
+     */
+    sds old = (sds)RedisModule_StringPtrLen(ctx->rm_tmp_str, NULL);
+    sds new = sdscpylen(old, str, len);
+    ((struct redisObjectAccessor *)ctx->rm_tmp_str)->ptr = new;
+
+
+    if (unlikely(!new)) {
+        /* FIXME what to do with the robj? */
+        ctx->rm_tmp_str = NULL;
+
+        return RPN_ERR_ENOMEM;
+    }
+
+    return 0;
 }
 
 static struct rpn_operand *alloc_rpn_operand(size_t slen) {
@@ -266,7 +314,6 @@ static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
 
     return RPN_ERR_OK;
 }
-
 
 /**
  * Push a RedisModuleString to the stack.
@@ -466,7 +513,12 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         return push_empty_value(ctx);
     }
 
-    err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS, OPERAND_GET_S(field), &value, NULL);
+    /* FIXME error handling */
+    const char *field_str = OPERAND_GET_S(field);
+    cpy2rm_tmp_str(ctx, field_str, strlen(field_str));
+    assert(ctx->rm_tmp_str);
+
+    err = RedisModule_HashGet(id_key, 0, ctx->rm_tmp_str, &value, NULL);
     if (err == REDISMODULE_ERR || !value) {
 #if 0
         fprintf(stderr, "RPN: Field \"%s\" not found for node: \"%.*s\"\n",
