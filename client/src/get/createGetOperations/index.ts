@@ -36,15 +36,13 @@ export default function createGetOperations(
     ops.push(list(props, id, field))
   } else if (props.$find) {
     ops.push(find(props.$find, props, id, field, true))
-  } else if (props.$field) {
-    ops.push({
-      type: 'db',
-      id,
-      field: field.substr(1),
-      sourceField: <string[]>props.$field
-    })
   } else if (props.$all) {
-    all(client, props, id, field, db, ops)
+    if (props.$field) {
+      const $field = Array.isArray(props.$field) ? props.$field : [props.$field]
+      all(client, props, id, $field[0], db, ops)
+    } else {
+      all(client, props, id, field, db, ops)
+    }
   } else if (props.$default) {
     ops.push({
       type: 'db',
@@ -52,6 +50,13 @@ export default function createGetOperations(
       field: field.substr(1),
       sourceField: field.substr(1),
       default: props.$default
+    })
+  } else if (props.$field) {
+    ops.push({
+      type: 'db',
+      id,
+      field: field.substr(1),
+      sourceField: <string[]>props.$field
     })
   } else if (typeof props === 'object') {
     for (const key in props) {
