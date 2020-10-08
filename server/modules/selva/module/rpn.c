@@ -461,32 +461,15 @@ static RedisModuleKey *open_hkey(struct rpn_ctx *ctx) {
     if (ctx->redis_hkey) {
         id_key = ctx->redis_hkey;
     } else {
-#if 0
-        static struct redisObjectAccessor *cid;
-
-        if (unlikely(!cid)) {
-            static const char empty_id[SELVA_NODE_ID_SIZE];
-            cid = (struct redisObjectAccessor *)RedisModule_CreateString(NULL, empty_id, sizeof(empty_id));
-        }
-#endif
-
 #if RPN_ASSERTS
         assert(ctx->reg[0]);
         assert(ctx->redis_ctx);
 #endif
 
-#if 0
         /* Current node_id is stored in reg[0] */
-        cid->ptr = sdscpylen(cid->ptr, (const void *)OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_ID_SIZE);
-        id_key = RedisModule_OpenKey(ctx->redis_ctx, (RedisModuleString *)(cid), REDISMODULE_READ);
-        if (!id_key) {
-            return NULL;
-        }
-#endif
-
-        /* TODO Remove this hack. This is here because sometimes the ID length is not 10 bytes. */
         const char *id_str = OPERAND_GET_S(ctx->reg[0]);
-        RedisModuleString *id = RedisModule_CreateString(ctx->redis_ctx, id_str, strnlen(id_str, SELVA_NODE_ID_SIZE));
+        cpy2rm_tmp_str(ctx, id_str, strnlen(id_str, SELVA_NODE_ID_SIZE));
+        RedisModuleString *id = ctx->rm_tmp_str;
         if (!id) {
             return NULL;
         }
