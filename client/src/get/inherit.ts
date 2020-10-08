@@ -50,8 +50,21 @@ export default function createInheritOperation(
   }
 
   if (inherit.$item) {
-    // TODO: inherit item
-    return <any>null
+    const realKeys: Record<string, true> = {}
+    for (const prop in props) {
+      if (!prop.startsWith('$')) {
+        realKeys[field + '.' + prop] = true
+      }
+    }
+
+    return {
+      type: 'inherit',
+      id,
+      field,
+      sourceField: props.$field || field,
+      props: realKeys,
+      item: true
+    }
   }
 
   const types: string[] = Array.isArray(inherit.$type)
@@ -77,8 +90,7 @@ export default function createInheritOperation(
       id,
       field,
       sourceField: props.$field || field,
-      props: realKeys,
-      isRecord: false
+      props: realKeys
     }
   }
 
@@ -87,7 +99,6 @@ export default function createInheritOperation(
     id,
     field,
     sourceField: props.$field || field,
-    props: { [field]: true },
-    isRecord: false
+    props: { [field]: true }
   }
 }
