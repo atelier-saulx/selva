@@ -1777,6 +1777,7 @@ void HierarchyTypeFree(void *value) {
     SelvaModify_DestroyHierarchy(hierarchy);
 }
 
+/* FIXME Add gets stuck if parents are missing */
 int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     SelvaModify_Hierarchy *hierarchy;
@@ -1787,7 +1788,7 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
 
     hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_ERR;
+        return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
     }
 
     /*

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "redismodule.h"
 #include "selva.h"
 #include "selva_onload.h"
@@ -29,7 +30,7 @@ struct FindCommand_Args {
     struct rpn_ctx *rpn_ctx;
     const rpn_token *filter;
 
-    const char *order_field; /*!< Order by field name; Otherwise NULL. */
+    const RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Result of the find. Only used if sorting is requested. */
 
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
@@ -41,8 +42,16 @@ enum hierarchy_result_order {
     HIERARCHY_RESULT_ORDER_DESC,
 };
 
+enum FindCommand_OrderedItemType {
+    ORDERED_ITEM_TYPE_EMPTY,
+    ORDERED_ITEM_TYPE_TEXT,
+    ORDERED_ITEM_TYPE_DOUBLE,
+};
+
 struct FindCommand_OrderedItem {
     Selva_NodeId id;
+    enum FindCommand_OrderedItemType data_type;
+    double d;
     size_t data_len;
     char data[];
 };
@@ -55,7 +64,7 @@ typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_
  * ord = asc|desc
  */
 static int parse_order(
-        const char **order_by_field,
+        const RedisModuleString **order_by_field,
         enum hierarchy_result_order *order,
         RedisModuleString *txt,
         RedisModuleString *fld,
@@ -84,7 +93,7 @@ einval:
         tmpOrder = HIERARCHY_RESULT_ORDER_NONE;
         *order_by_field = NULL;
     } else {
-        *order_by_field = fld_str;
+        *order_by_field = fld;
     }
 
     *order = tmpOrder;
@@ -144,12 +153,11 @@ static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** re
     const char *bStr = b->data;
 
     if (a->data_len && b->data_len) {
-        char *aEnd = NULL;
-        char *bEnd = NULL;
-        const double x = strtod(aStr, &aEnd);
-        const double y = strtod(bStr, &bEnd);
+        if (a->data_type == ORDERED_ITEM_TYPE_DOUBLE &&
+            b->data_type == ORDERED_ITEM_TYPE_DOUBLE) {
+            double x = a->d;
+            double y = b->d;
 
-        if (aEnd != aStr && bEnd != bStr) {
             if (x < y) {
                 return -1;
             } else if (x > y) {
@@ -183,12 +191,14 @@ static orderFunc getOrderFunc(enum hierarchy_result_order order) {
     }
 }
 
-static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCtx *ctx, Selva_NodeId nodeId, const char *order_field) {
+static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCtx *ctx, Selva_NodeId nodeId, const RedisModuleString *order_field) {
     RedisModuleString *id;
     RedisModuleKey *key;
     struct FindCommand_OrderedItem *item;
+    double d = 0.0;
     const char *data = NULL;
     size_t data_len = 0;
+    enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
     if (!id) {
@@ -200,9 +210,19 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         RedisModuleString *value = NULL;
         int err;
 
-        err = RedisModule_HashGet(key, REDISMODULE_HASH_CFIELDS, order_field, &value, NULL);
+        err = RedisModule_HashGet(key, REDISMODULE_HASH_NONE, order_field, &value, NULL);
         if (err != REDISMODULE_ERR && value) {
+            char *end;
+
             data = RedisModule_StringPtrLen(value, &data_len);
+
+            /* Check if it's a number. */
+            d = strtod(data, &end);
+            if (end != data) {
+                type = ORDERED_ITEM_TYPE_DOUBLE;
+            } else {
+                type = ORDERED_ITEM_TYPE_TEXT;
+            }
         }
 
         RedisModule_CloseKey(key);
@@ -215,8 +235,11 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     }
 
     memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
+    item->data_type = type;
     item->data_len = data_len;
-    if (data_len) {
+    if (data_len > 0) {
+        item->d = d;
+
         memcpy(item->data, data, data_len);
         item->data[data_len] = '\0';
     }
@@ -407,6 +430,10 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_AutoMemory(ctx);
     int err;
 
+    struct timespec start, end;
+
+        clock_gettime(CLOCK_REALTIME, &start);
+
     const size_t ARGV_REDIS_KEY = 1;
     const size_t ARGV_ALGO      = 2;
     const size_t ARGV_DIRECTION = 3;
@@ -468,7 +495,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      * Parse the order arg.
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
-    const char *order_by_field = NULL;
+    const RedisModuleString *order_by_field = NULL;
     if (argc > (int)ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
@@ -624,6 +651,11 @@ out:
         rpn_destroy(rpn_ctx);
     }
 
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    double time_spent = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
+    fprintf(stderr, "find took %f ms", time_spent);
+
     return REDISMODULE_OK;
 #undef SHIFT_ARGS
 }
@@ -672,7 +704,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Parse the order arg.
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
-    const char *order_by_field = NULL;
+    const RedisModuleString *order_by_field = NULL;
     if (argc > (int)ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
@@ -816,7 +848,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
     ARGV_LIMIT_TXT += i; \
-    ARGV_LIMIT_NUM += i;
+    ARGV_LIMIT_NUM += i
 
     if (argc < 4) {
         return RedisModule_WrongArity(ctx);
@@ -859,7 +891,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Parse the order arg.
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
-    const char *order_by_field = NULL;
+    const RedisModuleString *order_by_field = NULL;
     if (argc > (int)ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],

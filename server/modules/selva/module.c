@@ -31,7 +31,7 @@ SET_DECLARE(selva_onload, Selva_Onload);
  * Technically a nodeId is always 10 bytes but sometimes a printable
  * representation without padding zeroes is needed.
  */
-size_t Selva_NodeIdLen(Selva_NodeId nodeId) {
+size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
     size_t len = SELVA_NODE_ID_SIZE;
 
     while (len >= 1 && nodeId[len - 1] == '\0') {
