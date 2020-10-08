@@ -1,7 +1,6 @@
-import { GetOperationInherit, GetOptions, Inherit, GetOperation } from './types'
-import { SelvaClient } from '..'
-import { Schema, FieldSchema, FieldSchemaObject } from '~selva/schema'
-import { getNestedSchema } from 'lua/src/get/nestedFields'
+import { GetOptions, Inherit, GetOperation } from '../types'
+import { SelvaClient } from '../..'
+import { Schema, FieldSchema } from '~selva/schema'
 
 function createInheritItemOperation() {}
 
@@ -64,7 +63,8 @@ export default function createInheritOperation(
       field,
       sourceField: props.$field || field,
       props: realKeys,
-      item: true
+      item: true,
+      types: Array.isArray(inherit.$item) ? inherit.$item : [inherit.$item]
     })
 
     return
@@ -93,7 +93,8 @@ export default function createInheritOperation(
       id,
       field,
       sourceField: props.$field || field,
-      props: realKeys
+      props: realKeys,
+      types
     })
 
     return
@@ -104,7 +105,8 @@ export default function createInheritOperation(
     id,
     field,
     sourceField: props.$field || field,
-    props: { [field]: true }
+    props: { [field]: true },
+    types
   })
 
   return

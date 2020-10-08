@@ -156,6 +156,7 @@ export type GetOperationInherit = {
   field: string
   sourceField: string | string[]
   props: Record<string, true>
+  types: string[]
   item?: boolean
 }
 

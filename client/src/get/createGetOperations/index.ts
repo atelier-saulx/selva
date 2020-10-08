@@ -4,7 +4,7 @@ import { GetOperation, GetOptions } from '../types'
 import find from './find'
 import list from './list'
 import all from './all'
-import createInheritOperation from '../inherit'
+import createInheritOperation from './inherit'
 
 export default function createGetOperations(
   client: SelvaClient,
