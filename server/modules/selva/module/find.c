@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "redismodule.h"
 #include "selva.h"
 #include "selva_onload.h"
@@ -429,6 +430,10 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_AutoMemory(ctx);
     int err;
 
+    struct timespec start, end;
+
+        clock_gettime(CLOCK_REALTIME, &start);
+
     const size_t ARGV_REDIS_KEY = 1;
     const size_t ARGV_ALGO      = 2;
     const size_t ARGV_DIRECTION = 3;
@@ -645,6 +650,11 @@ out:
         RedisModule_Free(filter_expression);
         rpn_destroy(rpn_ctx);
     }
+
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    double time_spent = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
+    fprintf(stderr, "find took %f ms", time_spent);
 
     return REDISMODULE_OK;
 #undef SHIFT_ARGS
