@@ -420,8 +420,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
 /*
  * This is way faster than strtoll() in glibc.
  */
-static int fast_atou(const char * str)
-{
+static int fast_atou(const char * str) {
     int n = 0;
 
     while (*str >= '0' && *str <= '9') {
