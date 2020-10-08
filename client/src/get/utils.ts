@@ -6,7 +6,6 @@ export function getTypeFromId(schema: Schema, id: string): string | undefined {
     return 'root'
   }
 
-  console.log('VITTU', id)
   return schema.prefixToTypeMapping[id.substr(0, 2)]
 }
 
