@@ -14,79 +14,69 @@ const all = (
 ): GetOperation[] => {
   const schema = client.schemas[db]
   if (field === '') {
-    const type = getTypeFromId(schema, id)
-    const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
+    return
+  }
 
-    if (!typeSchema) {
-      return
-    }
+  const type = getTypeFromId(schema, id)
+  const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
 
-    for (const key in typeSchema.fields) {
-      if (
-        key !== 'children' &&
-        key !== 'parents' &&
-        key !== 'ancestors' &&
-        key !== 'descendants'
-      ) {
-        if (props[key] === undefined) {
-          ops.push({
-            type: 'db',
-            id,
-            field: key,
-            sourceField: key
-          })
-        } else if (props[key] === false) {
-          // do nothing
-        } else {
-          createGetOperations(
-            client,
-            props[key],
-            id,
-            field + '.' + key,
-            db,
-            ops
-          )
-        }
+  if (!typeSchema) {
+    return
+  }
+
+  for (const key in typeSchema.fields) {
+    if (
+      key !== 'children' &&
+      key !== 'parents' &&
+      key !== 'ancestors' &&
+      key !== 'descendants' &&
+      key !== 'type'
+    ) {
+      if (props[key] === undefined) {
+        ops.push({
+          type: 'db',
+          id,
+          field: key,
+          sourceField: key
+        })
+      } else if (props[key] === false) {
+        // do nothing
+      } else {
+        createGetOperations(client, props[key], id, field + '.' + key, db, ops)
       }
-    }
-
-    const fieldSchema = getNestedSchema(schema, id, field.slice(1))
-    if (!fieldSchema) {
-      return
-    }
-
-    if (fieldSchema.type === 'object') {
-      for (const key in fieldSchema.properties) {
-        if (props[key] === undefined) {
-          ops.push({
-            type: 'db',
-            id,
-            field: field.slice(1) + '.' + key,
-            sourceField: field.slice(1) + '.' + key
-          })
-        } else if (props[key] === false) {
-          // do nothing
-        } else {
-          createGetOperations(
-            client,
-            props[key],
-            id,
-            field + '.' + key,
-            db,
-            ops
-          )
-        }
-      }
-    } else if (fieldSchema.type === 'record' || fieldSchema.type === 'text') {
-      // basically this is the same as: `field: true`
-      ops.push({
-        type: 'db',
-        id,
-        field: field.slice(1),
-        sourceField: field.slice(1)
-      })
     }
   }
+
+  const fieldSchema = getNestedSchema(schema, id, field.slice(1))
+  if (!fieldSchema) {
+    return
+  }
+
+  if (fieldSchema.type === 'object') {
+    for (const key in fieldSchema.properties) {
+      if (props[key] === undefined) {
+        ops.push({
+          type: 'db',
+          id,
+          field: field.slice(1) + '.' + key,
+          sourceField: field.slice(1) + '.' + key
+        })
+      } else if (props[key] === false) {
+        // do nothing
+      } else {
+        createGetOperations(client, props[key], id, field + '.' + key, db, ops)
+      }
+    }
+  } else if (fieldSchema.type === 'record' || fieldSchema.type === 'text') {
+    // basically this is the same as: `field: true`
+    ops.push({
+      type: 'db',
+      id,
+      field: field.slice(1),
+      sourceField: field.slice(1)
+    })
+  }
+
   return ops
 }
 

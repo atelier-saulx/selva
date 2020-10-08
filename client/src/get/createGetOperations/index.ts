@@ -44,7 +44,7 @@ export default function createGetOperations(
       sourceField: <string[]>props.$field
     })
   } else if (props.$all) {
-    all(client, props, field, id, db, ops)
+    all(client, props, id, field, db, ops)
   } else if (props.$default) {
     ops.push({
       type: 'db',
