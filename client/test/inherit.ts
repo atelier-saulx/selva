@@ -71,13 +71,13 @@ test.serial.only('simple', async t => {
   })
 
   await client.set({
-    $id: 'moSoylentGreen',
+    $id: 'moSoylentG',
     title: 'Soylent Green',
     parents: [genre]
   })
 
   const result = await client.get({
-    $id: 'moSoylentGreen',
+    $id: 'moSoylentG',
     // icon: { $inherit: true } // TODO
     icon: { $inherit: { $type: 'genre' } }
   })

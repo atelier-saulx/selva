@@ -60,7 +60,15 @@ export default function createGetOperations(
       sourceField: <string[]>props.$field
     })
   } else if (props.$inherit) {
-    createInheritOperation(client, props.$inherit, props, id, field, db, ops)
+    createInheritOperation(
+      client,
+      props.$inherit,
+      props,
+      id,
+      field.slice(1),
+      db,
+      ops
+    )
   } else if (typeof props === 'object') {
     for (const key in props) {
       if (key.startsWith('$')) {
