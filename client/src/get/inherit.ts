@@ -34,7 +34,6 @@ function validateTypes(schema: Schema, field: string, types: string[]): void {
   }
 }
 
-// TODO: do $field here?
 export default function createInheritOperation(
   client: SelvaClient,
   inherit: Inherit,
