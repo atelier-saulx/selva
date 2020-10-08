@@ -48,7 +48,7 @@ export default function createGetOperations(
       type: 'db',
       id,
       field: field.substr(1),
-      sourceField: field.substr(1),
+      sourceField: props.$field || field.substr(1),
       default: props.$default
     })
   } else if (props.$field) {
