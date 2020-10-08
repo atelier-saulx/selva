@@ -417,14 +417,23 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
     return RPN_ERR_OK;
 }
 
+/*
+ * This is way faster than strtoll() in glibc.
+ */
+static int fast_atou(const char * str)
+{
+    int n = 0;
+
+    while (*str >= '0' && *str <= '9') {
+        n = n * 10 + (int)(*str++) - '0';
+    }
+
+    return n;
+}
+
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
     char *end = NULL;
-    const size_t i = strtoll(str_index, &end, 10);
-
-    if (str_index == end) {
-        fprintf(stderr, "RPN: Register index is not a number: \"%s\"", str_index);
-        return RPN_ERR_NAN;
-    }
+    const size_t i = fast_atou(str_index);
 
     if (i >= (size_t)ctx->nr_reg) {
         fprintf(stderr, "RPN: Register index out of bounds: %zu\n", i);
