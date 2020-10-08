@@ -17,7 +17,6 @@
 
 struct InheritCommand_Args {
     RedisModuleCtx *ctx;
-    SelvaModify_Hierarchy *hierarchy;
 
     size_t nr_types;
     const Selva_NodeType *types;
@@ -167,7 +166,6 @@ static int send_hierarchy_field(
 
 static int send_field_value(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId nodeId,
         RedisModuleString *field) {
     TO_STR(field);
@@ -209,7 +207,7 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
         /*
          * Get and send the field value to the client.
          */
-        err = send_field_value(args->ctx, args->hierarchy, nodeId, field_name);
+        err = send_field_value(args->ctx, nodeId, field_name);
         if (err == 0) { /* found */
             args->field_names[i] = NULL; /* No need to look for this one anymore. */
             args->nr_results++;
@@ -322,7 +320,6 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     struct InheritCommand_Args args = {
         .ctx = ctx,
-        .hierarchy = hierarchy,
         .nr_types = nr_types,
         .types = types,
         .field_names = field_names,
