@@ -5,6 +5,7 @@ import resolveId from '../resolveId'
 import createGetOperations from '../createGetOperations'
 import { GetOptions } from '../'
 import find from './find'
+import inherit from './inherit'
 
 const TYPE_CASTS: Record<string, (x: any) => any> = {
   float: Number,
@@ -195,6 +196,10 @@ export const executeGetOperation = async (
     )
   } else if (op.type === 'find') {
     return find(client, op, lang, db)
+  } else if (op.type === 'inherit') {
+    const x = await inherit(client, op, lang, db)
+    console.log('XXX', x)
+    return x
   }
 
   let r: any

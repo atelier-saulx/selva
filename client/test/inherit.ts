@@ -61,7 +61,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('simple', async t => {
+test.serial.only('simple', async t => {
   const client = connect({ port: port })
 
   const genre = await client.set({
@@ -78,7 +78,8 @@ test.serial('simple', async t => {
 
   const result = await client.get({
     $id: 'moSoylentGreen',
-    icon: { $inherit: true }
+    // icon: { $inherit: true } // TODO
+    icon: { $inherit: { $type: 'genre' } }
   })
 
   t.true(result.icon === 'scifi.png')

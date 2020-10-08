@@ -4,6 +4,7 @@ import { GetOperation, GetOptions } from '../types'
 import find from './find'
 import list from './list'
 import all from './all'
+import createInheritOperation from '../inherit'
 
 export default function createGetOperations(
   client: SelvaClient,
@@ -58,6 +59,8 @@ export default function createGetOperations(
       field: field.substr(1),
       sourceField: <string[]>props.$field
     })
+  } else if (props.$inherit) {
+    createInheritOperation(client, props.$inherit, props, id, field, db, ops)
   } else if (typeof props === 'object') {
     for (const key in props) {
       if (key.startsWith('$')) {

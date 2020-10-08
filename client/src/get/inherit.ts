@@ -1,4 +1,4 @@
-import { GetOperationInherit, GetOptions, Inherit } from './types'
+import { GetOperationInherit, GetOptions, Inherit, GetOperation } from './types'
 import { SelvaClient } from '..'
 import { Schema, FieldSchema, FieldSchemaObject } from '~selva/schema'
 import { getNestedSchema } from 'lua/src/get/nestedFields'
@@ -40,8 +40,9 @@ export default function createInheritOperation(
   props: GetOptions,
   id: string,
   field: string,
-  db: string
-): GetOperationInherit {
+  db: string,
+  ops: GetOperation[]
+): void {
   if (typeof inherit === 'boolean') {
     // TODO: make this nice when we have a custom record type in redis
     throw new Error(
@@ -57,14 +58,16 @@ export default function createInheritOperation(
       }
     }
 
-    return {
+    ops.push({
       type: 'inherit',
       id,
       field,
       sourceField: props.$field || field,
       props: realKeys,
       item: true
-    }
+    })
+
+    return
   }
 
   const types: string[] = Array.isArray(inherit.$type)
@@ -85,20 +88,24 @@ export default function createInheritOperation(
   }
 
   if (hasKeys) {
-    return {
+    ops.push({
       type: 'inherit',
       id,
       field,
       sourceField: props.$field || field,
       props: realKeys
-    }
+    })
+
+    return
   }
 
-  return {
+  ops.push({
     type: 'inherit',
     id,
     field,
     sourceField: props.$field || field,
     props: { [field]: true }
-  }
+  })
+
+  return
 }
