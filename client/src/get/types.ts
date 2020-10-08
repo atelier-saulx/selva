@@ -27,7 +27,6 @@ export type Inherit =
   | boolean
   | {
       $type?: string | string[]
-      $name?: string | string[]
       $item?: Id | Id[]
       $merge: boolean
       $required?: Id | Id[]
@@ -94,7 +93,7 @@ export type List =
     }
 
 export type GetField<T> = {
-  $field?: string | string[] | { path: string | string[]; value: GetOptions }
+  $field?: string | string[]
   $inherit?: Inherit
   $list?: List
   $find?: Find
@@ -149,6 +148,15 @@ export type GetOperationFind = {
   sourceField: string | string[]
   id: string
   options: { limit: number; offset: number; sort?: Sort | undefined }
+}
+
+export type GetOperationInherit = {
+  type: 'inherit'
+  id: string
+  field: string
+  sourceField: string | string[]
+  props: Record<string, true>
+  isRecord?: boolean
 }
 
 export type GetOperation =
