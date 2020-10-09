@@ -17,7 +17,7 @@ export default async function(
     return acc
   }, '')
 
-  const fields = Object.keys(op.props)
+  const fields = Object.keys(op.props).map(f => op.field + '.' + f)
   const res = await client.redis.selva_inherit(
     {
       name: db
@@ -33,7 +33,7 @@ export default async function(
     const o: GetResult = {}
     for (let i = 0; i < res.length; i++) {
       const [f, v] = res[i]
-      o[f] = v
+      o[f.slice(op.field.length + 1)] = v
     }
 
     return o

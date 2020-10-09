@@ -1,6 +1,7 @@
 import { GetOptions, Inherit, GetOperation } from '../types'
 import { SelvaClient } from '../..'
-import { Schema, FieldSchema } from '~selva/schema'
+import { Schema, FieldSchema } from '../../schema'
+import { makeAll } from './all'
 
 function validateTypes(schema: Schema, field: string, types: string[]): void {
   let fst: FieldSchema
@@ -48,11 +49,16 @@ export default function createInheritOperation(
   }
 
   if (inherit.$item) {
-    const realKeys: Record<string, true> = {}
+    let realKeys: Record<string, true> = {}
     for (const prop in props) {
       if (!prop.startsWith('$')) {
         realKeys[field + '.' + prop] = true
       }
+    }
+
+    if (props.$all) {
+      const newKeys = makeAll(client, id, field, db, realKeys)
+      realKeys = newKeys || realKeys
     }
 
     ops.push({
@@ -77,12 +83,21 @@ export default function createInheritOperation(
   validateTypes(schema, field, types)
 
   let hasKeys = false
-  const realKeys: Record<string, true> = {}
+  let realKeys: Record<string, true> = {}
   for (const prop in props) {
     if (!prop.startsWith('$')) {
       hasKeys = true
       realKeys[field + '.' + prop] = true
     }
+  }
+
+  if (props.$all) {
+    const newKeys = makeAll(client, id, field, db, props)
+    if (newKeys) {
+      hasKeys = true
+    }
+
+    realKeys = newKeys || realKeys
   }
 
   if (hasKeys) {

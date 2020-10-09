@@ -67,7 +67,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('simple', async t => {
+test.serial.only('simple', async t => {
   const client = connect({ port: port })
 
   const genre = await client.set({
@@ -141,21 +141,21 @@ test.serial('$all', async t => {
     $id: 'geA',
     fields: {
       $all: true,
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
-  t.deepEqual(result1.fields, { name: 'hello', something: '' }, 'from field')
+  t.deepEqual(result1.fields, { name: 'hello' }, 'from field')
 
   const result = await client.get({
     $id: 'geB',
     fields: {
       $all: true,
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
-  t.deepEqual(result.fields, { name: 'hello', something: '' }, 'inherit')
+  t.deepEqual(result.fields, { name: 'hello' }, 'inherit')
 
   await client.destroy()
 })

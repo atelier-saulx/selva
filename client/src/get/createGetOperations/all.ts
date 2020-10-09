@@ -3,6 +3,40 @@ import { GetOptions } from '..'
 import { GetOperation } from '../types'
 import { getTypeFromId, getNestedSchema } from '../utils'
 import createGetOperations from './'
+
+export function makeAll(
+  client: SelvaClient,
+  id: string,
+  field: string,
+  db: string,
+  props: GetOptions
+): GetOptions {
+  const schema = client.schemas[db]
+
+  const fieldSchema = getNestedSchema(schema, id, field)
+  if (!fieldSchema) {
+    return null
+  }
+
+  if (fieldSchema.type === 'object') {
+    const o: GetOptions = {}
+    for (const key in fieldSchema.properties) {
+      if (props[key] === false) {
+        // do nothing
+      } else {
+        o[key] = true
+      }
+    }
+
+    return o
+  } else if (fieldSchema.type === 'record' || fieldSchema.type === 'text') {
+    // basically this is the same as: `field: true`
+    return null
+  }
+
+  return {}
+}
+
 // needs async to fetch schema...
 const all = (
   client: SelvaClient,
@@ -12,7 +46,6 @@ const all = (
   db: string,
   ops: GetOperation[] = []
 ): void => {
-  console.log('hmmm', id, field, props)
   const schema = client.schemas[db]
   if (field === '') {
     const type = getTypeFromId(schema, id)
