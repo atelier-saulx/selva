@@ -17,13 +17,27 @@ export default async function(
     return acc
   }, '')
 
-  return client.redis.selva_inherit(
+  const fields = Object.keys(op.props)
+  const res = await client.redis.selva_inherit(
     {
       name: db
     },
     '___selva_hierarchy',
     op.id,
     prefixes,
-    ...Object.keys(op.props)
+    ...fields
   )
+
+  // TODO: cast based on schema
+  if (fields.length > 1) {
+    const o: GetResult = {}
+    for (let i = 0; i < res.length; i++) {
+      const [f, v] = res[i]
+      o[f] = v
+    }
+
+    return o
+  }
+
+  return res[0][1]
 }

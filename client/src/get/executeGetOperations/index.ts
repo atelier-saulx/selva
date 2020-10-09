@@ -197,9 +197,7 @@ export const executeGetOperation = async (
   } else if (op.type === 'find') {
     return find(client, op, lang, db)
   } else if (op.type === 'inherit') {
-    const x = await inherit(client, op, lang, db)
-    console.log('XXX', x)
-    return x
+    return inherit(client, op, lang, db)
   }
 
   let r: any

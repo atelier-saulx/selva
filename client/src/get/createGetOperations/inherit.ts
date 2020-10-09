@@ -2,8 +2,6 @@ import { GetOptions, Inherit, GetOperation } from '../types'
 import { SelvaClient } from '../..'
 import { Schema, FieldSchema } from '~selva/schema'
 
-function createInheritItemOperation() {}
-
 function validateTypes(schema: Schema, field: string, types: string[]): void {
   let fst: FieldSchema
   let i = 0
