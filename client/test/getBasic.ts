@@ -896,6 +896,7 @@ test.serial('get - hierarchy', async t => {
   await client.destroy()
 })
 
+// TODO: needs work and ___selva_$obj
 test.serial.skip('get - $inherit', async t => {
   const client = connect({ port })
   /*
@@ -985,7 +986,7 @@ test.serial.skip('get - $inherit', async t => {
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'cuD',
-      title: { $inherit: true }
+      title: { $inherit: { $type: ['custom', 'club'] } }
     }),
     {
       title: {
@@ -998,7 +999,7 @@ test.serial.skip('get - $inherit', async t => {
     await client.get({
       $id: 'cuC',
       $language: 'nl',
-      title: { $inherit: true }
+      title: { $inherit: { $type: ['custom', 'club'] } }
     }),
     {
       title: 'snurf'
