@@ -328,9 +328,11 @@ static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hie
 
 /*
  * Request:
- * id, FLAGS type, key, value [, ... type, key, value]]
+ * id, FLAGS type, field, value [, ... type, field, value]]
  * N = No root
  * M = Merge
+ *
+ * The behavior and meaning of `value` depends on `type` (enum SelvaModify_ArgType).
  *
  * Response:
  * [

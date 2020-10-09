@@ -363,7 +363,7 @@ int SelvaModify_ModifyDel(
             err = REDISMODULE_ERR;
         }
     } else {
-        if (value_str[0] == 'O') {
+        if (value_str[0] == 'O') { /* Delete an object completely. */
             RedisModuleCallReply * reply;
 
             reply = RedisModule_Call(ctx, "HKEYS", "s", id);
@@ -416,7 +416,7 @@ hkeys_err:
             if (reply) {
                 RedisModule_FreeCallReply(reply);
             }
-        } else {
+        } else { /* Delete a field. */
             RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, REDISMODULE_HASH_DELETE, NULL);
         }
     }
