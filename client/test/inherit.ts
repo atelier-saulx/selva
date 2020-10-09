@@ -160,7 +160,7 @@ test.serial('$all', async t => {
   await client.destroy()
 })
 
-test.serial.only('$field + object', async t => {
+test.serial('$field + object', async t => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
@@ -198,7 +198,7 @@ test.serial.only('$field + object', async t => {
   await client.destroy()
 })
 
-test.serial('$field + object + all', async t => {
+test.serial.only('$field + object + all', async t => {
   const client = connect({ port: port })
 
   const genre = await client.set({

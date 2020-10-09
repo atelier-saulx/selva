@@ -26,15 +26,24 @@ export default async function(
       '___selva_hierarchy',
       op.id,
       prefixes,
-      <string>op.sourceField // TODO
+      <string>op.sourceField // TODO?
     )
 
     return res.length ? res[0][1] : null
   }
 
-  const fields = Object.keys(op.props).map(f =>
-    op.field ? op.field + '.' + f : f
-  )
+  const remapped: Record<string, string> = {}
+  const fields = Object.keys(op.props).map(f => {
+    if (typeof op.props[f] === 'string') {
+      remapped[<string>op.props[f]] = f
+      return <string>op.props[f]
+    }
+
+    return op.field ? op.field + '.' + f : f
+  })
+
+  console.log('remapepd', remapped, op.props)
+
   const res = await client.redis.selva_inherit(
     {
       name: db
@@ -47,7 +56,11 @@ export default async function(
 
   const o: GetResult = {}
   for (let i = 0; i < res.length; i++) {
-    const [f, v] = res[i]
+    let [f, v] = res[i]
+    if (remapped[f]) {
+      f = remapped[f]
+    }
+
     o[f.slice(op.field.length + 1)] = v
   }
 

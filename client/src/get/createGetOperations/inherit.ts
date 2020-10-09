@@ -49,10 +49,14 @@ export default function createInheritOperation(
   }
 
   if (inherit.$item) {
-    let realKeys: Record<string, true> = {}
+    let realKeys: Record<string, true | string> = {}
     for (const prop in props) {
       if (!prop.startsWith('$')) {
-        realKeys[field + '.' + prop] = true
+        if (props[prop].$field) {
+          realKeys[field + '.' + prop] = <string>props[prop].$field
+        } else {
+          realKeys[field + '.' + prop] = true
+        }
       }
     }
 
@@ -83,11 +87,15 @@ export default function createInheritOperation(
   validateTypes(schema, field, types)
 
   let hasKeys = false
-  let realKeys: Record<string, true> = {}
+  let realKeys: Record<string, true | string> = {}
   for (const prop in props) {
     if (!prop.startsWith('$')) {
       hasKeys = true
-      realKeys[field + '.' + prop] = true
+      if (props[prop].$field) {
+        realKeys[field + '.' + prop] = <string>props[prop].$field
+      } else {
+        realKeys[field + '.' + prop] = true
+      }
     }
   }
 
