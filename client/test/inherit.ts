@@ -67,7 +67,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('simple', async t => {
+test.serial('simple', async t => {
   const client = connect({ port: port })
 
   const genre = await client.set({
@@ -160,7 +160,7 @@ test.serial('$all', async t => {
   await client.destroy()
 })
 
-test.serial('$field + object', async t => {
+test.serial.only('$field + object', async t => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({

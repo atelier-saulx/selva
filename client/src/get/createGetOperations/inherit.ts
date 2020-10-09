@@ -119,7 +119,8 @@ export default function createInheritOperation(
     field,
     sourceField: props.$field || field,
     props: { [field]: true },
-    types
+    types,
+    single: true
   })
 
   return
