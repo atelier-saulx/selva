@@ -26,6 +26,7 @@ struct rpn_ctx {
     int nr_reg;
     struct RedisModuleCtx *redis_ctx;
     struct RedisModuleKey *redis_hkey; /*!< Redis hash key of the current node. */
+    struct RedisModuleString *rm_tmp_str;
     struct rpn_operand **reg;
     struct rpn_operand *stack[RPN_MAX_D];
 };
