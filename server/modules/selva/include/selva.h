@@ -47,10 +47,13 @@ enum SelvaModify_HierarchyTraversal {
 size_t Selva_NodeIdLen(const Selva_NodeId nodeId);
 
 static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(dest, src, SELVA_NODE_ID_SIZE);
 #pragma GCC diagnostic pop
+#pragma clang diagnostic pop
 }
 
 #endif /* _SELVA_ */
