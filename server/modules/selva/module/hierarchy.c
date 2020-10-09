@@ -14,6 +14,7 @@
 #include "hierarchy.h"
 #include "modify.h"
 #include "rpn.h"
+#include "selva_node.h"
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "subscriptions.h"
@@ -228,33 +229,25 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModul
 }
 
 static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
-    RedisModuleString *set_key_name;
-    RedisModuleKey *set_key = NULL;
+    RedisModuleString *node_name;
+    RedisModuleKey *key = NULL;
     const int is_root = !memcmp(id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
 
-    set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
-    if (unlikely(!set_key_name)) {
+    node_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
+    if (unlikely(!node_name)) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
-    if (!set_key) {
+    /*
+     * Open the key to create the mandatory fields used internally.
+     */
+    key = SelvaNode_Open(ctx, NULL, node_name, id, SELVA_NODE_OPEN_WRFLD_FLAG);
+    if (!key) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "$id", set_key_name, NULL);
-    if (is_root) {
-        RedisModuleString *type;
-
-        type = RedisModule_CreateStringPrintf(ctx, "root");
-        if (unlikely(!type)) {
-            return SELVA_MODIFY_HIERARCHY_ENOMEM;
-        }
-
-        RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "type", type, NULL);
-    }
-
-    RedisModule_CloseKey(set_key);
+    /* We don't actually need to access it so just close it immediately. */
+    RedisModule_CloseKey(key);
 
     return 0;
 }

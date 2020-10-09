@@ -402,7 +402,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     const int no_root = FISSET_NO_ROOT(flags);
     const unsigned open_flags =
         (no_root ? SELVA_NODE_OPEN_NO_ROOT_FLAG : 0) |
-        SELVA_NODE_OPEN_CREATE_FLAG;
+        SELVA_NODE_OPEN_CREATE_FLAG | SELVA_NODE_OPEN_WRFLD_FLAG;
 
     RedisModuleString2Selva_NodeId(nodeId, id);
     id_key = SelvaNode_Open(ctx, hierarchy, id, nodeId, open_flags);
