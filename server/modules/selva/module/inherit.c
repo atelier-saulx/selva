@@ -18,11 +18,19 @@
 struct InheritCommand_Args {
     RedisModuleCtx *ctx;
 
+    size_t first_node; /*!< We ignore the type of the first node. */
     size_t nr_types;
     const Selva_NodeType *types;
     RedisModuleString **field_names;
     size_t nr_fields;
     ssize_t nr_results; /*!< Number of results sent. */
+};
+
+struct send_hierarchy_field_data {
+    RedisModuleCtx *ctx;
+
+    size_t skip;
+    size_t len;
 };
 
 static int send_selva_set(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
@@ -105,12 +113,6 @@ static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId,
     return 0;
 }
 
-struct send_hierarchy_field_data {
-    RedisModuleCtx *ctx;
-    size_t skip;
-    size_t len;
-};
-
 /*
  * Used for ancestors, children, descendants, parents
  */
@@ -185,15 +187,19 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
     /*
      * Check that the node is of an accepted type.
      */
-    for (size_t i = 0; i < args->nr_types; i++) {
-        match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
-    }
-    if (!match) {
-        /*
-         * This node type is not accepted and we don't need to check whether has
-         * the field set.
-         */
-        return 0;
+    if (likely(!args->first_node)) {
+        for (size_t i = 0; i < args->nr_types; i++) {
+            match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
+        }
+        if (!match) {
+            /*
+             * This node type is not accepted and we don't need to check whether has
+             * the field set.
+             */
+            return 0;
+        }
+    } else {
+        args->first_node = 0;
     }
 
     for (size_t i = 0; i < args->nr_fields; i++) {
@@ -320,6 +326,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     struct InheritCommand_Args args = {
         .ctx = ctx,
+        .first_node = 1,
         .nr_types = nr_types,
         .types = types,
         .field_names = field_names,
