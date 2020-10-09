@@ -131,7 +131,7 @@ static void wrapFree(void *p) {
 }
 
 static inline void RMString2NodeId(Selva_NodeId nodeId, RedisModuleString *rmStr) {
-        strncpy(nodeId, RedisModule_StringPtrLen(rmStr, NULL), SELVA_NODE_ID_SIZE);
+    Selva_NodeIdCpy(nodeId, RedisModule_StringPtrLen(rmStr, NULL));
 }
 
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {

@@ -334,6 +334,11 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     err = SelvaModify_TraverseHierarchy(hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
     RedisModule_ReplySetArrayLength(ctx, args.nr_results);
 
+    if (err) {
+        /* TODO What to do with this error? */
+        fprintf(stderr, "%s: %s\n", __FILE__, getSelvaErrorStr(err));
+    }
+
     return REDISMODULE_OK;
 }
 

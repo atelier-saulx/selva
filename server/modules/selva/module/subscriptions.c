@@ -1282,7 +1282,7 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         RedisModuleString *hkey_name;
         struct SelvaModify_HierarchyMetadata *metadata;
 
-        strncpy(node_id, id_str, SELVA_NODE_ID_SIZE);
+        Selva_NodeIdCpy(node_id, id_str);
 
         hkey_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
         hierarchy = SelvaModify_OpenHierarchy(ctx, hkey_name, REDISMODULE_READ);
