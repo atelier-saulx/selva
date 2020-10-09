@@ -179,7 +179,7 @@ test.serial.only('$field + object', async t => {
     $id: 'geC',
     flaprdol: {
       name: { $field: 'fields.name' },
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
@@ -189,7 +189,7 @@ test.serial.only('$field + object', async t => {
     $id: 'geD',
     flaprdol: {
       name: { $field: 'fields.name' },
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
