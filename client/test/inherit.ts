@@ -47,6 +47,12 @@ test.before(async t => {
         fields: {
           title: { type: 'string' }
         }
+      },
+      imaginary: {
+        prefix: 'im',
+        fields: {
+          imaginary: { type: 'string' }
+        }
       }
     }
   })
@@ -61,7 +67,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('simple', async t => {
+test.serial('simple', async t => {
   const client = connect({ port: port })
 
   const genre = await client.set({
@@ -98,15 +104,17 @@ test.serial('simple with circular', async t => {
   })
 
   await client.set({
-    $id: 'moSoylentGreen',
+    $id: 'moSoylentG',
     title: 'Soylent Green',
     parents: [genre]
   })
 
   const result = await client.get({
-    $id: 'moSoylentGreen',
-    icon: { $inherit: true },
-    imaginary: { $inherit: true } // should not follow circular references to find this
+    $id: 'moSoylentG',
+    // icon: { $inherit: true },
+    icon: { $inherit: { $type: ['genre'] } },
+    // imaginary: { $inherit: true } // should not follow circular references to find this
+    imaginary: { $inherit: { $type: ['imaginary'] } }
   })
 
   t.true(result.icon === 'scifi.png')

@@ -39,5 +39,5 @@ export default async function(
     return o
   }
 
-  return res[0][1]
+  return res.length ? res[0][1] : null
 }
