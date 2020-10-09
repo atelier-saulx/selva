@@ -45,13 +45,6 @@ export default function createGetOperations(
       sourceField: props.$field || field.substr(1),
       default: props.$default
     })
-  } else if (props.$field) {
-    ops.push({
-      type: 'db',
-      id,
-      field: field.substr(1),
-      sourceField: <string[]>props.$field
-    })
   } else if (props.$inherit) {
     createInheritOperation(
       client,
@@ -69,6 +62,13 @@ export default function createGetOperations(
     } else {
       all(client, props, id, field, db, ops)
     }
+  } else if (props.$field) {
+    ops.push({
+      type: 'db',
+      id,
+      field: field.substr(1),
+      sourceField: <string[]>props.$field
+    })
   } else if (typeof props === 'object') {
     for (const key in props) {
       if (key.startsWith('$')) {

@@ -39,10 +39,8 @@ export default async function(
       return <string>op.props[f]
     }
 
-    return op.field ? op.field + '.' + f : f
+    return f
   })
-
-  console.log('remapepd', remapped, op.props)
 
   const res = await client.redis.selva_inherit(
     {

@@ -8,12 +8,13 @@ export function makeAll(
   client: SelvaClient,
   id: string,
   field: string,
+  $field: string | undefined,
   db: string,
   props: GetOptions
 ): GetOptions {
   const schema = client.schemas[db]
 
-  const fieldSchema = getNestedSchema(schema, id, field)
+  const fieldSchema = getNestedSchema(schema, id, $field || field)
   if (!fieldSchema) {
     return null
   }
@@ -23,8 +24,10 @@ export function makeAll(
     for (const key in fieldSchema.properties) {
       if (props[key] === false) {
         // do nothing
+      } else if ($field) {
+        o[field + '.' + key] = $field + '.' + key
       } else {
-        o[key] = true
+        o[field + '.' + key] = true
       }
     }
 

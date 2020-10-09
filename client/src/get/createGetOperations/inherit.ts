@@ -61,7 +61,14 @@ export default function createInheritOperation(
     }
 
     if (props.$all) {
-      const newKeys = makeAll(client, id, field, db, realKeys)
+      const newKeys = makeAll(
+        client,
+        id,
+        field,
+        <string>props.$field,
+        db,
+        props
+      )
       realKeys = newKeys || realKeys
     }
 
@@ -100,7 +107,7 @@ export default function createInheritOperation(
   }
 
   if (props.$all) {
-    const newKeys = makeAll(client, id, field, db, props)
+    const newKeys = makeAll(client, id, field, <string>props.$field, db, props)
     if (newKeys) {
       hasKeys = true
     }
