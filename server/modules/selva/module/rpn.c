@@ -12,7 +12,6 @@
 #include "rpn.h"
 
 #define RPN_ASSERTS         0
-#define RPN_SINGLETON       0
 
 /*
  * Codes for primitive types.
@@ -38,7 +37,7 @@ struct redisObjectAccessor {
  * longer than OBJ_ENCODING_EMBSTR_SIZE_LIMIT and preferrably large enough to
  * fit most of the strings we'll ever see to avoid reallocs.
  */
-#define RMSTRING_TEMPLATE "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+#define RMSTRING_TEMPLATE "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 #define OPERAND(ctx, x) \
     struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx); \
@@ -93,17 +92,9 @@ __constructor static void init_pool(void) {
 }
 
 struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
-#if RPN_SINGLETON
-    static struct rpn_ctx * ctx;
-
-    if (unlikely(!ctx)) {
-        ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
-    }
-#else
     struct rpn_ctx * ctx;
 
     ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
-#endif
     if (unlikely(!ctx)) {
         return NULL;
     }
@@ -138,12 +129,9 @@ void rpn_destroy(struct rpn_ctx *ctx) {
             free_rpn_operand(&v);
         }
 
+        RedisModule_Free(ctx->rm_tmp_str);
         RedisModule_Free(ctx->reg);
-#if RPN_SINGLETON
-        memset(ctx, 0, sizeof(struct rpn_ctx));
-#else
         RedisModule_Free(ctx);
-#endif
     }
 }
 
@@ -493,6 +481,7 @@ static RedisModuleKey *open_hkey(struct rpn_ctx *ctx) {
 }
 
 static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field, int type) {
+    const char *field_str = OPERAND_GET_S(field);
     RedisModuleKey *id_key;
     RedisModuleString *value = NULL;
     int err;
@@ -500,12 +489,11 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
     id_key = open_hkey(ctx);
     if (!id_key) {
         fprintf(stderr, "RPN: Node hash not found for: \"%.*s\"\n",
-                (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]));
+                (int)SELVA_NODE_ID_SIZE, field_str);
         return push_empty_value(ctx);
     }
 
     /* FIXME error handling */
-    const char *field_str = OPERAND_GET_S(field);
     cpy2rm_tmp_str(ctx, field_str, strlen(field_str));
     assert(ctx->rm_tmp_str);
 
