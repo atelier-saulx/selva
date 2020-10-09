@@ -238,7 +238,7 @@ test.serial('$field + object + all', async t => {
   await client.destroy()
 })
 
-test.serial('$field + object + all + nested', async t => {
+test.serial.only('$field + object + all + nested', async t => {
   const client = connect({ port: port })
 
   const genre = await client.set({
@@ -260,7 +260,7 @@ test.serial('$field + object + all + nested', async t => {
     $id: 'geX',
     myTheme: {
       $field: 'theme',
-      $inherit: true,
+      $inherit: { $type: 'genre' },
       $all: true
     }
   })
@@ -282,7 +282,7 @@ test.serial('$field + object + all + nested', async t => {
     $id: 'geY',
     myTheme: {
       $field: 'theme',
-      $inherit: true,
+      $inherit: { $type: 'genre' },
       $all: true
     }
   })

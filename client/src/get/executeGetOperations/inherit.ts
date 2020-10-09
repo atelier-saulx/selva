@@ -42,6 +42,7 @@ export default async function(
     return f
   })
 
+  console.log('F', fields)
   const res = await client.redis.selva_inherit(
     {
       name: db

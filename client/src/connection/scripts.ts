@@ -5,7 +5,7 @@ import { Connection } from '.'
 let SCRIPTS: Record<string, { content: string; sha: string }>
 
 try {
-  SCRIPTS = ['modify', 'update-schema'].reduce((obj, scriptName) => {
+  SCRIPTS = ['update-schema'].reduce((obj, scriptName) => {
     let distPath = pathJoin(__dirname, '..', '..')
     if (!distPath.endsWith('dist')) {
       distPath = pathJoin(distPath, 'dist')
