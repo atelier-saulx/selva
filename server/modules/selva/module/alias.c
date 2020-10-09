@@ -1,3 +1,4 @@
+#include "cdefs.h"
 #include "redismodule.h"
 
 RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx) {
@@ -25,4 +26,27 @@ int delete_aliases(RedisModuleKey *aliases_key, RedisModuleKey *set_key) {
     RedisModule_ZsetRangeStop(set_key);
 
     return 0;
+}
+
+void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleString *id, RedisModuleString *ref) {
+    RedisModuleString *orig;
+
+    /*
+     * Remove the alias from the previous "ID.aliases" zset.
+     */
+    if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_NONE, ref, &orig, NULL)) {
+        TO_STR(orig);
+        RedisModuleString *key_name;
+        RedisModuleKey *key;
+
+        key_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", orig_len, orig_str, ".aliases");
+        key = RedisModule_OpenKey(ctx, key_name, REDISMODULE_READ | REDISMODULE_WRITE);
+        if (key) {
+            RedisModule_ZsetRem(key, ref, NULL);
+        }
+
+         RedisModule_CloseKey(key);
+    }
+
+    RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, id, NULL);
 }

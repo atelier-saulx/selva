@@ -12,6 +12,7 @@
 #include "module/async_task.h"
 #include "module/hierarchy.h"
 #include "module/modify.h"
+#include "module/selva_node.h"
 #include "module/subscriptions.h"
 
 #define FLAG_NO_ROOT    0x1
@@ -309,23 +310,6 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
     }
 }
 
-static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, RedisModuleString *id, Selva_NodeId nodeId, int no_root) {
-    /*
-     * If this is a new node we need to create a hierarchy node for it.
-     */
-    if (!SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
-        size_t nr_parents = unlikely(no_root) ? 0 : 1;
-
-        int err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
-        if (err) {
-            replyWithSelvaError(ctx, err);
-            return NULL;
-        }
-    }
-
-    return RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
-}
-
 /*
  * Request:
  * id, FLAGS type, field, value [, ... type, field, value]]
@@ -418,7 +402,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     Selva_NodeId nodeId;
 
     RedisModuleString2Selva_NodeId(nodeId, id);
-    id_key = open_node(ctx, hierarchy, id, nodeId, no_root);
+    id_key = SelvaNode_Open(ctx, hierarchy, id, nodeId, no_root);
     if (!id_key) {
         TO_STR(id);
         char err_msg[80];

@@ -12,6 +12,7 @@
 #include "modify.h"
 #include "rpn.h"
 #include "selva_onload.h"
+#include "selva_set.h"
 #include "subscriptions.h"
 #include "svector.h"
 
@@ -37,8 +38,8 @@ static int send_selva_set(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisM
     RedisModuleKey *key;
     size_t len = 0;
 
-    key = SelvaModify_OpenSet(ctx, nodeId, Selva_NodeIdLen(nodeId),
-                              RedisModule_StringPtrLen(field, NULL));
+    key = SelvaSet_Open(ctx, nodeId, Selva_NodeIdLen(nodeId),
+                        RedisModule_StringPtrLen(field, NULL));
     if (!key) {
         return SELVA_MODIFY_HIERARCHY_EINVAL;
     }

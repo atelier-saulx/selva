@@ -7,14 +7,15 @@
 #include <string.h>
 #include <time.h>
 #include "redismodule.h"
-#include "errors.h"
-#include "selva_onload.h"
 #include "alias.h"
 #include "async_task.h"
 #include "cdefs.h"
+#include "errors.h"
 #include "hierarchy.h"
 #include "modify.h"
 #include "rpn.h"
+#include "selva_onload.h"
+#include "selva_set.h"
 #include "subscriptions.h"
 #include "svector.h"
 
@@ -1442,7 +1443,7 @@ static int traverse_ref(
         const struct SelvaModify_HierarchyCallback *cb) {
     RedisModuleKey *key;
 
-    key = SelvaModify_OpenSet(ctx, head->id, Selva_NodeIdLen(head->id), ref_field);
+    key = SelvaSet_Open(ctx, head->id, Selva_NodeIdLen(head->id), ref_field);
     if (!key) {
         return SELVA_MODIFY_HIERARCHY_EINVAL;
     }

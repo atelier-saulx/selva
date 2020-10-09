@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #define SELVA_NODE_ID_SIZE      10ul
 #define SELVA_NODE_TYPE_SIZE    2

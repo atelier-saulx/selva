@@ -16,7 +16,7 @@ int SelvaNodeId_Compare(const void *a, const void *b) {
 }
 
 /* Copied from module.c */
-size_t Selva_NodeIdLen(Selva_NodeId nodeId) {
+size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
     size_t len = SELVA_NODE_ID_SIZE;
 
     while (len >= 1 && nodeId[len - 1] == '\0') {

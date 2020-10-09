@@ -15,6 +15,8 @@ OBJS := \
 	module/inherit.o \
 	module/modify.o \
 	module/rpn.o \
+	module/selva_node.o \
+	module/selva_set.o \
 	module/subscriptions.o
 
 IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
