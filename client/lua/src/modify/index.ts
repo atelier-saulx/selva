@@ -24,7 +24,7 @@ import sendEvent from './events'
 import { setUpdatedAt, setCreatedAt, markUpdated } from './timestamps'
 import globals from '../globals'
 import checkSource from './source'
-import { setNestedResult } from '../get/nestedFields'
+import { setNestedResult } from '../nestedFields'
 
 function isSetPayload(value: any): boolean {
   if (isArray(value)) {

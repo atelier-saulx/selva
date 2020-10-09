@@ -1,10 +1,10 @@
 import { GetResult } from '~selva/get/types'
-import { splitString, ensureArray } from '../util'
+import { splitString, ensureArray } from './util'
 
-import globals from '../globals'
-import { getSchema } from '../schema/index'
+import globals from './globals'
+import { getSchema } from './schema/index'
 import { FieldSchema } from '~selva/schema/index'
-import { getTypeFromId } from '../typeIdMapping'
+import { getTypeFromId } from './typeIdMapping'
 
 const SCHEMA_PATH_CACHE: Record<string, Record<string, FieldSchema>> = {}
 
