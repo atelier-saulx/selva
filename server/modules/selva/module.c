@@ -397,12 +397,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModule_CloseKey(alias_key);
     }
 
+    Selva_NodeId nodeId;
     const unsigned flags = parse_flags(argv[2]);
     const int no_root = FISSET_NO_ROOT(flags);
-    Selva_NodeId nodeId;
+    const unsigned open_flags =
+        (no_root ? SELVA_NODE_OPEN_NO_ROOT_FLAG : 0) |
+        SELVA_NODE_OPEN_CREATE_FLAG;
 
     RedisModuleString2Selva_NodeId(nodeId, id);
-    id_key = SelvaNode_Open(ctx, hierarchy, id, nodeId, no_root);
+    id_key = SelvaNode_Open(ctx, hierarchy, id, nodeId, open_flags);
     if (!id_key) {
         TO_STR(id);
         char err_msg[80];

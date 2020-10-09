@@ -9,12 +9,15 @@ struct RedisModuleCtx;
 struct SelvaModify_Hierarchy;
 struct RedisModuleString;
 
+#define SELVA_NODE_OPEN_CREATE_FLAG     0x01 /*!< Create the node if it didn't exist. */
+#define SELVA_NODE_OPEN_NO_ROOT_FLAG    0x02 /*!< Don't mark the root node as a parent when creating. */
+
 struct RedisModuleKey *SelvaNode_Open(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         struct RedisModuleString *id,
         Selva_NodeId nodeId,
-        int no_root);
+        unsigned flags);
 
 int SelvaNode_GetField(
         struct RedisModuleCtx *ctx,

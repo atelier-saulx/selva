@@ -4,14 +4,19 @@
 #include "errors.h"
 #include "selva_node.h"
 
-RedisModuleKey *SelvaNode_Open(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, RedisModuleString *id, Selva_NodeId nodeId, int no_root) {
+RedisModuleKey *SelvaNode_Open(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, RedisModuleString *id, Selva_NodeId nodeId, unsigned flags) {
     /*
      * If this is a new node we need to create a hierarchy node for it.
      */
     if (!SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
-        size_t nr_parents = unlikely(no_root) ? 0 : 1;
+        size_t nr_parents;
         int err;
 
+        if ((flags & SELVA_NODE_OPEN_CREATE_FLAG) == 0) {
+            return NULL;
+        }
+
+        nr_parents = unlikely(flags & SELVA_NODE_OPEN_NO_ROOT_FLAG) ? 0 : 1;
         err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
         if (err) {
             fprintf(stderr, "%s: %s\n", __FILE__, getSelvaErrorStr(err));
@@ -19,7 +24,6 @@ RedisModuleKey *SelvaNode_Open(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hiera
         }
     }
 
-    /* TODO Maybe check the key type */
     return RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
 }
 
