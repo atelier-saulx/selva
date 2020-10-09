@@ -419,7 +419,6 @@ static int fast_atou(const char * str) {
 }
 
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
-    char *end = NULL;
     const size_t i = fast_atou(str_index);
 
     if (i >= (size_t)ctx->nr_reg) {
