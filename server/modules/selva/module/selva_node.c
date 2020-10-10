@@ -1,7 +1,9 @@
 #include <stddef.h>
 #include "redismodule.h"
-#include "hierarchy.h"
+#include "alias.h"
 #include "errors.h"
+#include "hierarchy.h"
+#include "selva_set.h"
 #include "selva_node.h"
 
 static int initialize_node(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleString *key_name, const Selva_NodeId nodeId) {
@@ -87,6 +89,129 @@ RedisModuleKey *SelvaNode_Open(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hiera
     }
 
     return key;
+}
+
+static char *delete_selva_sets(RedisModuleCtx *ctx, RedisModuleString *id) {
+    RedisModuleCallReply * reply;
+    TO_STR(id);
+
+    reply = RedisModule_Call(ctx, "HGETALL", "s", id);
+    if (reply == NULL) {
+        /* FIXME errno handling */
+#if 0
+        switch (errno) {
+        case EINVAL:
+        case EPERM:
+        default:
+        }
+#endif
+        goto out;
+    }
+
+    int replyType = RedisModule_CallReplyType(reply);
+    if (replyType != REDISMODULE_REPLY_ARRAY) {
+        goto out;
+    }
+
+    RedisModuleString *field_name = NULL;
+    RedisModuleString *field_value = NULL;
+    size_t replyLen = RedisModule_CallReplyLength(reply);
+    for (size_t idx = 0; idx < replyLen; idx++) {
+        RedisModuleCallReply *elem;
+        const char * str;
+        size_t len;
+
+        elem = RedisModule_CallReplyArrayElement(reply, idx);
+        if (!elem) {
+            continue;
+        }
+
+        if (RedisModule_CallReplyType(elem) != REDISMODULE_REPLY_STRING) {
+            continue;
+        }
+
+        str = RedisModule_CallReplyStringPtr(elem, &len);
+        if (!str) {
+            continue;
+        }
+
+        if ((idx & 1) == 0) {
+            /* Even indices are field names. */
+            field_name = RedisModule_CreateString(ctx, str, len);
+        } else {
+            /* Odd indices are field values. */
+            field_value = RedisModule_CreateString(ctx, str, len);
+            TO_STR(field_name, field_value);
+
+            /* Look for the magic value. */
+            if (!strcmp(field_value_str, "___selva_$set")) {
+                RedisModuleKey *key;
+
+                key = SelvaSet_Open(ctx, id_str, id_len, field_name_str);
+                if (key) {
+                    RedisModule_DeleteKey(key);
+                    RedisModule_CloseKey(key);
+                }
+            }
+
+            RedisModule_FreeString(ctx, field_name);
+            RedisModule_FreeString(ctx, field_value);
+        }
+    }
+
+out:
+    if (reply) {
+        RedisModule_FreeCallReply(reply);
+    }
+
+    return 0;
+}
+
+static void delete_node_aliases(RedisModuleCtx *ctx, RedisModuleString *id) {
+    RedisModuleString *akey_name;
+    RedisModuleKey *key;
+    TO_STR(id);
+
+    akey_name = RedisModule_CreateStringPrintf(ctx, "%s.aliases", id_str);
+    if (unlikely(!akey_name)) {
+        fprintf(stderr, "%s: OOM; Unable to remove aliases of the node: \"%s\"", __FILE__, id_str);
+    }
+
+    key = RedisModule_OpenKey(ctx, akey_name, REDISMODULE_WRITE);
+    if (key) {
+        RedisModuleKey *aliases_key = open_aliases_key(ctx);
+
+        if (aliases_key) {
+            delete_aliases(aliases_key, key);
+            RedisModule_CloseKey(aliases_key);
+        } else {
+            fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+        }
+
+        RedisModule_DeleteKey(key);
+        RedisModule_CloseKey(key);
+    }
+}
+
+static void delete_node_hash(RedisModuleCtx *ctx, RedisModuleString *id) {
+    RedisModuleKey *key;
+
+    /*
+     * We could use SelvaNode_Open() here but that would be overkill.
+     */
+    key = RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
+    if (key) {
+        RedisModule_DeleteKey(key);
+        RedisModule_CloseKey(key);
+    }
+}
+
+int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id) {
+    delete_selva_sets(ctx, id);
+    delete_node_aliases(ctx, id);
+    delete_node_hash(ctx, id);
+
+    return 0;
 }
 
 int SelvaNode_GetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field, RedisModuleString **out) {

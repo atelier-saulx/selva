@@ -71,7 +71,9 @@ test.beforeEach(async t => {
           },
           value: {
             type: 'number'
-          }
+          },
+          things: { type: 'set', items: { type: 'string' } },
+          otherThings: { type: 'set', items: { type: 'string' } }
         }
       },
       otherTestThing: {
@@ -294,4 +296,35 @@ test.serial('can delete a field when only nested specified', async t => {
   await client.delete('root')
   await client.delete(match)
   await client.destroy()
+})
+
+test.serial.only('can delete a set', async t => {
+  const client = connect(
+    {
+      port
+    },
+    { loglevel: 'info' }
+  )
+
+  const vi = await client.set({
+    type: 'someTestThing',
+    title: {
+      en: 'yes text',
+      de: 'ja text'
+    },
+    value: 5,
+    things: ['a', 'b', 'c'],
+    otherThings: ['x', 'y', 'z']
+  })
+
+  t.deepEqual(await client.redis.zcard(`${vi}.things`), 3)
+  await client.set({
+    $id: vi,
+    things: { $delete: true }
+  })
+  t.deepEqual(await client.redis.zcard(`${vi}.things`), 0)
+
+  t.deepEqual(await client.redis.zcard(`${vi}.otherThings`), 3)
+  await client.delete(vi)
+  t.deepEqual(await client.redis.zcard(`${vi}.otherThings`), 0)
 })
