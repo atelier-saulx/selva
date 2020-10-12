@@ -10,12 +10,12 @@
 struct SelvaModify_Hierarchy;
 
 enum SelvaModify_ArgType {
-    SELVA_MODIFY_ARG_VALUE = '0',
-    SELVA_MODIFY_ARG_DEFAULT = '2',
-    SELVA_MODIFY_ARG_OP_INCREMENT = '4',
-    SELVA_MODIFY_ARG_OP_SET = '5',
-    SELVA_MODIFY_ARG_STRING_ARRAY = '6',
-    SELVA_MODIFY_ARG_OP_DEL = '7',
+    SELVA_MODIFY_ARG_VALUE = '0', /*!< Value is a string. */
+    SELVA_MODIFY_ARG_DEFAULT = '2', /*!< Set a string value if unset. */
+    SELVA_MODIFY_ARG_OP_INCREMENT = '4', /*!< Increment long long. */
+    SELVA_MODIFY_ARG_OP_SET = '5', /*!< Value is a struct SelvaModify_OpSet. */
+    SELVA_MODIFY_ARG_STRING_ARRAY = '6', /*!< Array of C-strings. */
+    SELVA_MODIFY_ARG_OP_DEL = '7', /*!< Delete field; value is a modifier. */
 };
 
 struct SelvaModify_OpIncrement {
@@ -25,18 +25,15 @@ struct SelvaModify_OpIncrement {
 };
 
 struct SelvaModify_OpSet {
-    int8_t is_reference;
-    int8_t delete_all;
+    int8_t is_reference; /*!< If set then the arrays are of len SELVA_NODE_ID_SIZE. */
+    int8_t delete_all; /*!< Delete all intems from the set. */
 
-    // filled with multiple ids of length 10
     char *$add;
     size_t $add_len;
 
-    // filled with multiple ids of length 10
     char *$delete;
     size_t $delete_len;
 
-    // filled with multiple ids of length 10
     char *$value;
     size_t $value_len;
 };
@@ -60,11 +57,6 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleStrin
 
     return op;
 }
-
-RedisModuleKey *SelvaModify_OpenSet(
-        RedisModuleCtx *ctx,
-        const char *id_str, size_t id_len,
-        const char *field_str);
 
 int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,

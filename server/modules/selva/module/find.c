@@ -591,7 +591,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
         Selva_NodeId nodeId;
 
-        strncpy(nodeId, ids_str + i, SELVA_NODE_ID_SIZE);
+        Selva_NodeIdCpy(nodeId, ids_str + i);
 
         /*
          * Run BFS/DFS.
@@ -794,7 +794,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             .order_result = &order_result,
         };
 
-        strncpy(nodeId, ids_str + i, SELVA_NODE_ID_SIZE);
+        Selva_NodeIdCpy(nodeId, ids_str + i);
         (void)FindCommand_NodeCb(nodeId, &args, NULL);
     }
 

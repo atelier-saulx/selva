@@ -4,10 +4,15 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #define SELVA_NODE_ID_SIZE      10ul
 #define SELVA_NODE_TYPE_SIZE    2
 #define ROOT_NODE_ID            "root\0\0\0\0\0\0"
+
+#define SELVA_ALIASES_KEY       "___selva_aliases"
+#define SELVA_OBJECT_KEYWORD    "___selva_$object"
+#define SELVA_SET_KEYWORD       "___selva_$set"
 
 /**
  * Type for Selva NodeId.
@@ -45,5 +50,15 @@ enum SelvaModify_HierarchyTraversal {
 };
 
 size_t Selva_NodeIdLen(const Selva_NodeId nodeId);
+
+static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+    strncpy(dest, src, SELVA_NODE_ID_SIZE);
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
+}
 
 #endif /* _SELVA_ */

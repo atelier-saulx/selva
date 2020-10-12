@@ -12,12 +12,14 @@
 #include "modify.h"
 #include "rpn.h"
 #include "selva_onload.h"
+#include "selva_set.h"
 #include "subscriptions.h"
 #include "svector.h"
 
 struct InheritCommand_Args {
     RedisModuleCtx *ctx;
 
+    size_t first_node; /*!< We ignore the type of the first node. */
     size_t nr_types;
     const Selva_NodeType *types;
     RedisModuleString **field_names;
@@ -25,12 +27,19 @@ struct InheritCommand_Args {
     ssize_t nr_results; /*!< Number of results sent. */
 };
 
+struct send_hierarchy_field_data {
+    RedisModuleCtx *ctx;
+
+    size_t skip;
+    size_t len;
+};
+
 static int send_selva_set(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
     RedisModuleKey *key;
     size_t len = 0;
 
-    key = SelvaModify_OpenSet(ctx, nodeId, Selva_NodeIdLen(nodeId),
-                              RedisModule_StringPtrLen(field, NULL));
+    key = SelvaSet_Open(ctx, nodeId, Selva_NodeIdLen(nodeId),
+                        RedisModule_StringPtrLen(field, NULL));
     if (!key) {
         return SELVA_MODIFY_HIERARCHY_EINVAL;
     }
@@ -94,7 +103,7 @@ static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId,
     RedisModule_ReplyWithString(ctx, field);
 
     TO_STR(value);
-    if (!strcmp(value_str, "___selva_$set")) {
+    if (!strcmp(value_str, SELVA_SET_KEYWORD)) {
         /* Set */
         return send_selva_set(ctx, nodeId, field);
     } else {
@@ -104,12 +113,6 @@ static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId,
 
     return 0;
 }
-
-struct send_hierarchy_field_data {
-    RedisModuleCtx *ctx;
-    size_t skip;
-    size_t len;
-};
 
 /*
  * Used for ancestors, children, descendants, parents
@@ -185,15 +188,19 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
     /*
      * Check that the node is of an accepted type.
      */
-    for (size_t i = 0; i < args->nr_types; i++) {
-        match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
-    }
-    if (!match) {
-        /*
-         * This node type is not accepted and we don't need to check whether has
-         * the field set.
-         */
-        return 0;
+    if (likely(!args->first_node)) {
+        for (size_t i = 0; i < args->nr_types; i++) {
+            match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
+        }
+        if (!match) {
+            /*
+             * This node type is not accepted and we don't need to check whether has
+             * the field set.
+             */
+            return 0;
+        }
+    } else {
+        args->first_node = 0;
     }
 
     for (size_t i = 0; i < args->nr_fields; i++) {
@@ -320,6 +327,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     struct InheritCommand_Args args = {
         .ctx = ctx,
+        .first_node = 1,
         .nr_types = nr_types,
         .types = types,
         .field_names = field_names,
@@ -333,6 +341,11 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     err = SelvaModify_TraverseHierarchy(hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
     RedisModule_ReplySetArrayLength(ctx, args.nr_results);
+
+    if (err) {
+        /* TODO What to do with this error? */
+        fprintf(stderr, "%s: %s\n", __FILE__, getSelvaErrorStr(err));
+    }
 
     return REDISMODULE_OK;
 }

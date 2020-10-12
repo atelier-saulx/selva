@@ -12,6 +12,7 @@
 #include "module/async_task.h"
 #include "module/hierarchy.h"
 #include "module/modify.h"
+#include "module/selva_node.h"
 #include "module/subscriptions.h"
 
 #define FLAG_NO_ROOT    0x1
@@ -309,28 +310,13 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
     }
 }
 
-static RedisModuleKey *open_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, RedisModuleString *id, Selva_NodeId nodeId, int no_root) {
-    /*
-     * If this is a new node we need to create a hierarchy node for it.
-     */
-    if (!SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
-        size_t nr_parents = unlikely(no_root) ? 0 : 1;
-
-        int err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
-        if (err) {
-            replyWithSelvaError(ctx, err);
-            return NULL;
-        }
-    }
-
-    return RedisModule_OpenKey(ctx, id, REDISMODULE_WRITE);
-}
-
 /*
  * Request:
- * id, FLAGS type, key, value [, ... type, key, value]]
+ * id, FLAGS type, field, value [, ... type, field, value]]
  * N = No root
  * M = Merge
+ *
+ * The behavior and meaning of `value` depends on `type` (enum SelvaModify_ArgType).
  *
  * Response:
  * [
@@ -411,12 +397,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModule_CloseKey(alias_key);
     }
 
+    Selva_NodeId nodeId;
     const unsigned flags = parse_flags(argv[2]);
     const int no_root = FISSET_NO_ROOT(flags);
-    Selva_NodeId nodeId;
+    const unsigned open_flags =
+        (no_root ? SELVA_NODE_OPEN_NO_ROOT_FLAG : 0) |
+        SELVA_NODE_OPEN_CREATE_FLAG | SELVA_NODE_OPEN_WRFLD_FLAG;
 
     RedisModuleString2Selva_NodeId(nodeId, id);
-    id_key = open_node(ctx, hierarchy, id, nodeId, no_root);
+    id_key = SelvaNode_Open(ctx, hierarchy, id, nodeId, open_flags);
     if (!id_key) {
         TO_STR(id);
         char err_msg[80];
@@ -535,10 +524,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 if (current_value != NULL) {
                     publish = false;
                 } else {
-                    RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
+                    SelvaNode_SetField(ctx, id_key, field, value);
                 }
             } else if (type_code == SELVA_MODIFY_ARG_VALUE) {
-                RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
+                SelvaNode_SetField(ctx, id_key, field, value);
             } else {
                 char err_msg[80];
 

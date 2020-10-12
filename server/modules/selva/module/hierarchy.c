@@ -7,14 +7,16 @@
 #include <string.h>
 #include <time.h>
 #include "redismodule.h"
-#include "errors.h"
-#include "selva_onload.h"
 #include "alias.h"
 #include "async_task.h"
 #include "cdefs.h"
+#include "errors.h"
 #include "hierarchy.h"
 #include "modify.h"
 #include "rpn.h"
+#include "selva_node.h"
+#include "selva_onload.h"
+#include "selva_set.h"
 #include "subscriptions.h"
 #include "svector.h"
 
@@ -131,7 +133,7 @@ static void wrapFree(void *p) {
 }
 
 static inline void RMString2NodeId(Selva_NodeId nodeId, RedisModuleString *rmStr) {
-        strncpy(nodeId, RedisModule_StringPtrLen(rmStr, NULL), SELVA_NODE_ID_SIZE);
+    Selva_NodeIdCpy(nodeId, RedisModule_StringPtrLen(rmStr, NULL));
 }
 
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
@@ -227,33 +229,24 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModul
 }
 
 static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
-    RedisModuleString *set_key_name;
-    RedisModuleKey *set_key = NULL;
-    const int is_root = !memcmp(id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
+    RedisModuleString *node_name;
+    RedisModuleKey *key = NULL;
 
-    set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
-    if (unlikely(!set_key_name)) {
+    node_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
+    if (unlikely(!node_name)) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
-    if (!set_key) {
+    /*
+     * Open the key to create the mandatory fields used internally.
+     */
+    key = SelvaNode_Open(ctx, NULL, node_name, id, SELVA_NODE_OPEN_WRFLD_FLAG);
+    if (!key) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "$id", set_key_name, NULL);
-    if (is_root) {
-        RedisModuleString *type;
-
-        type = RedisModule_CreateStringPrintf(ctx, "root");
-        if (unlikely(!type)) {
-            return SELVA_MODIFY_HIERARCHY_ENOMEM;
-        }
-
-        RedisModule_HashSet(set_key, REDISMODULE_HASH_NX | REDISMODULE_HASH_CFIELDS, "type", type, NULL);
-    }
-
-    RedisModule_CloseKey(set_key);
+    /* We don't actually need to access it so just close it immediately. */
+    RedisModule_CloseKey(key);
 
     return 0;
 }
@@ -375,47 +368,6 @@ hkeys_err:
     return res;
 }
 
-static void remove_node_fields(RedisModuleCtx *ctx, Selva_NodeId id) {
-    RedisModuleString *hkey_name;
-    RedisModuleString *akey_name;
-    RedisModuleKey *key;
-
-    hkey_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
-    akey_name = RedisModule_CreateStringPrintf(ctx, "%.*s.aliases", SELVA_NODE_ID_SIZE, id);
-    if (unlikely(!(hkey_name && akey_name))) {
-        fprintf(stderr, "%s: OOM; Unable to remove fields of the node: \"%.*s\"",
-                __FILE__,
-                (int)SELVA_NODE_ID_SIZE, id);
-    }
-
-    /*
-     * Delete fields.
-     */
-    key = RedisModule_OpenKey(ctx, hkey_name, REDISMODULE_WRITE);
-    if (key) {
-        RedisModule_DeleteKey(key);
-        RedisModule_CloseKey(key);
-    }
-
-    /*
-     * Delete aliases.
-     */
-    key = RedisModule_OpenKey(ctx, akey_name, REDISMODULE_WRITE);
-    if (key) {
-        RedisModuleKey *aliases_key = open_aliases_key(ctx);
-
-        if (aliases_key) {
-            delete_aliases(aliases_key, key);
-            RedisModule_CloseKey(aliases_key);
-        } else {
-            fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
-        }
-
-        RedisModule_DeleteKey(key);
-        RedisModule_CloseKey(key);
-    }
-}
-
 static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
         SelvaModify_HierarchySearchFilter filter;
 
@@ -475,16 +427,19 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     }
 
     if (likely(ctx)) {
+        RedisModuleString *rms_id;
+
+        rms_id = RedisModule_CreateString(ctx, id, Selva_NodeIdLen(id));
         /* TODO We may want a deletion marker support? */
 #if 0
         char *fields;
 
         fields = get_node_field_names(ctx, id);
-        remove_node_fields(ctx, id);
+        SelvaNode_Delete(ctx, rms_id);
         /* event here */
         RedisModule_Free(fields);
 #endif
-        remove_node_fields(ctx, id);
+        SelvaNode_Delete(ctx, rms_id);
 
         if (is_root) {
             createNodeHash(ctx, id);
@@ -1442,7 +1397,7 @@ static int traverse_ref(
         const struct SelvaModify_HierarchyCallback *cb) {
     RedisModuleKey *key;
 
-    key = SelvaModify_OpenSet(ctx, head->id, Selva_NodeIdLen(head->id), ref_field);
+    key = SelvaSet_Open(ctx, head->id, Selva_NodeIdLen(head->id), ref_field);
     if (!key) {
         return SELVA_MODIFY_HIERARCHY_EINVAL;
     }
