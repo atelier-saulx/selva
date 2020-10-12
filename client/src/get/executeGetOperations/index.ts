@@ -7,7 +7,7 @@ import { GetOptions } from '../'
 import find from './find'
 import inherit from './inherit'
 
-const TYPE_CASTS: Record<string, (x: any) => any> = {
+export const TYPE_CASTS: Record<string, (x: any) => any> = {
   float: Number,
   number: Number,
   int: Number,

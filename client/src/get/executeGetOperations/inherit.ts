@@ -1,5 +1,7 @@
 import { SelvaClient } from '../../'
 import { GetOperationInherit, GetResult } from '../types'
+import { getNestedSchema } from '../utils'
+import { TYPE_CASTS } from './'
 
 export default async function(
   client: SelvaClient,
@@ -7,6 +9,7 @@ export default async function(
   lang: string,
   db: string
 ): Promise<GetResult> {
+  const schema = client.schemas[db]
   // TODO: lang for text fields (this goes in create op)
   const prefixes: string = op.types.reduce((acc, t) => {
     const p = client.schemas[db].types[t].prefix
@@ -17,8 +20,13 @@ export default async function(
     return acc
   }, '')
 
-  // TODO: cast based on schema
   if (op.single) {
+    const fs = getNestedSchema(
+      schema,
+      schema.types[op.types[0]].prefix,
+      <string>op.sourceField
+    )
+
     const res = await client.redis.selva_inherit(
       {
         name: db
@@ -28,6 +36,10 @@ export default async function(
       prefixes,
       <string>op.sourceField // TODO?
     )
+
+    if (TYPE_CASTS[fs.type]) {
+      return TYPE_CASTS[fs.type](res[0][1])
+    }
 
     return res.length ? res[0][1] : null
   }
@@ -42,7 +54,6 @@ export default async function(
     return f
   })
 
-  console.log('F', fields)
   const res = await client.redis.selva_inherit(
     {
       name: db
@@ -56,11 +67,14 @@ export default async function(
   const o: GetResult = {}
   for (let i = 0; i < res.length; i++) {
     let [f, v] = res[i]
+    const fs = getNestedSchema(schema, schema.types[op.types[0]].prefix, f)
+    const typeCast = TYPE_CASTS[fs.type]
+
     if (remapped[f]) {
       f = remapped[f]
     }
 
-    o[f.slice(op.field.length + 1)] = v
+    o[f.slice(op.field.length + 1)] = typeCast ? typeCast(v) : v
   }
 
   return o
