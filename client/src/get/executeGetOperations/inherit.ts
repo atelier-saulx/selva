@@ -20,6 +20,10 @@ export default async function(
     return acc
   }, '')
 
+  if (op.item) {
+    return {}
+  }
+
   if (op.single) {
     const fs = getNestedSchema(
       schema,
