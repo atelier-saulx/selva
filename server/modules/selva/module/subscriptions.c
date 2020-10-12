@@ -158,20 +158,10 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
  * Destroy all markers owned by a subscription.
  */
 static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
-    struct Selva_SubscriptionMarker **it;
-
     if (SVector_Size(&sub->markers) > 0) {
-        svector_autofree SVector markers = {0};
+        struct Selva_SubscriptionMarker *marker;
 
-        if (!SVector_Clone(&markers, &sub->markers, NULL)) {
-            fprintf(stderr, "%s: Subs ENOMEM, can't destroy a subscription\n", __FILE__);
-            return;
-        }
-
-        /* TODO implement safe foreach instead of using cloning */
-        SVECTOR_FOREACH(it, &markers) {
-            struct Selva_SubscriptionMarker *marker = *it;
-
+        while ((marker = SVector_Shift(&sub->markers))) {
             if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
                 /*
                  * TRAVERSAL_NONE (e.g. root) markers are stored as detached.
@@ -186,8 +176,7 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
             }
             destroy_marker(marker);
         }
-        /* This isn't technically necessary but we do it for clarity. */
-        SVector_Clear(&sub->markers);
+        SVector_ShiftReset(&sub->markers);
     }
 
     RB_REMOVE(hierarchy_subscriptions_tree, &hierarchy->subs.head, sub);
