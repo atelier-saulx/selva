@@ -457,6 +457,9 @@ void Selva_Subscriptions_SetMarker(
         return;
     }
 
+#if !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough=n"
     switch (marker->dir) {
     case SELVA_HIERARCHY_TRAVERSAL_NONE:
         /* NOP */
@@ -472,6 +475,8 @@ void Selva_Subscriptions_SetMarker(
         set_marker(sub_markers, marker);
         break;
     }
+#pragma GCC diagnostic pop
+#endif
 }
 
 
