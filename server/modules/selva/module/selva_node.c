@@ -144,7 +144,7 @@ static char *delete_selva_sets(RedisModuleCtx *ctx, RedisModuleString *id) {
             TO_STR(field_name, field_value);
 
             /* Look for the magic value. */
-            if (!strcmp(field_value_str, "___selva_$set")) {
+            if (!strcmp(field_value_str, SELVA_SET_KEYWORD)) {
                 RedisModuleKey *key;
 
                 key = SelvaSet_Open(ctx, id_str, id_len, field_name_str);
@@ -224,7 +224,29 @@ int SelvaNode_GetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModul
 }
 
 int SelvaNode_SetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field, RedisModuleString *value) {
-    /* TODO handle objects properly */
+    TO_STR(field);
+
+    /*
+     * If the field name contains a dot then the field is an object of some
+     * kind, presumably "object" or "text". In case an object field is found
+     * we need to set a special value for the containing object names so that
+     * when accessing one we know that it's a part of an object. This is
+     * particularly useful for inherit.c
+     *
+     * Example:
+     * title    = "___selva_$object" (SELVA_OBJECT_KEYWORD)
+     * title.en = "New title"
+     */
+    const char *cname = field_str;
+    while ((cname = strstr(cname, "."))) {
+        const size_t len = (uintptr_t)cname++ - (uintptr_t)field_str;
+        RedisModuleString *field_container;
+        RedisModuleString *object_field_identifier;
+
+        field_container = RedisModule_CreateString(ctx, field_str, len);
+        object_field_identifier = RedisModule_CreateString(ctx, SELVA_OBJECT_KEYWORD, sizeof(SELVA_OBJECT_KEYWORD) - 1);
+        (void)RedisModule_HashSet(node_key, REDISMODULE_HASH_NONE, field_container, object_field_identifier, NULL);
+    }
 
     (void)RedisModule_HashSet(node_key, REDISMODULE_HASH_NONE, field, value, NULL);
 

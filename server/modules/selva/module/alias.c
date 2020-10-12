@@ -1,10 +1,13 @@
 #include "cdefs.h"
 #include "redismodule.h"
+#include "selva.h"
+#include "alias.h"
 
 RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx) {
     RedisModuleKey * key;
+    RedisModuleString *alias_key_name;
 
-    RedisModuleString *alias_key_name = RedisModule_CreateStringPrintf(ctx, "___selva_aliases");
+    alias_key_name = RedisModule_CreateString(ctx, SELVA_ALIASES_KEY, sizeof(SELVA_ALIASES_KEY) - 1);
     key = RedisModule_OpenKey(ctx, alias_key_name, REDISMODULE_READ | REDISMODULE_WRITE);
 
     return key;

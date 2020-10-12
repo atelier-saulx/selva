@@ -524,10 +524,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 if (current_value != NULL) {
                     publish = false;
                 } else {
-                    RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
+                    SelvaNode_SetField(ctx, id_key, field, value);
                 }
             } else if (type_code == SELVA_MODIFY_ARG_VALUE) {
-                RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, value, NULL);
+                SelvaNode_SetField(ctx, id_key, field, value);
             } else {
                 char err_msg[80];
 

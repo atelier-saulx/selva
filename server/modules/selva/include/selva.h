@@ -10,6 +10,10 @@
 #define SELVA_NODE_TYPE_SIZE    2
 #define ROOT_NODE_ID            "root\0\0\0\0\0\0"
 
+#define SELVA_ALIASES_KEY       "___selva_aliases"
+#define SELVA_OBJECT_KEYWORD    "___selva_$object"
+#define SELVA_SET_KEYWORD       "___selva_$set"
+
 /**
  * Type for Selva NodeId.
  */

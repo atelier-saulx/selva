@@ -103,7 +103,7 @@ static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId,
     RedisModule_ReplyWithString(ctx, field);
 
     TO_STR(value);
-    if (!strcmp(value_str, "___selva_$set")) {
+    if (!strcmp(value_str, SELVA_SET_KEYWORD)) {
         /* Set */
         return send_selva_set(ctx, nodeId, field);
     } else {
