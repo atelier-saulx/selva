@@ -55,7 +55,9 @@ static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
 #if !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
     strncpy(dest, src, SELVA_NODE_ID_SIZE);
+#if !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
 #pragma GCC diagnostic pop
 #endif
 }
