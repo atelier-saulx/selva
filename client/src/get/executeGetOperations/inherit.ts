@@ -42,10 +42,10 @@ export default async function(
     )
 
     if (TYPE_CASTS[fs.type]) {
-      return TYPE_CASTS[fs.type](res[0][1])
+      return TYPE_CASTS[fs.type](res[0][2])
     }
 
-    return res.length ? res[0][1] : null
+    return res.length ? res[0][2] : null
   }
 
   const remapped: Record<string, string> = {}
@@ -70,7 +70,7 @@ export default async function(
 
   const o: GetResult = {}
   for (let i = 0; i < res.length; i++) {
-    let [f, v] = res[i]
+    let [idx, f, v] = res[i]
     const fs = getNestedSchema(schema, schema.types[op.types[0]].prefix, f)
     const typeCast = TYPE_CASTS[fs.type]
 
