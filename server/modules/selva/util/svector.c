@@ -11,13 +11,13 @@
 SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b)) {
     *vec = (SVector){
         .vec_compar = compar,
-        .vec_len = initial_len < 2 ? 2 : initial_len,
+        .vec_len = initial_len,
         .vec_shift_index = 0,
         .vec_last = 0,
-        .vec_data = RedisModule_Alloc(VEC_SIZE(initial_len)),
+        .vec_data = initial_len > 0 ? RedisModule_Alloc(VEC_SIZE(initial_len)) : NULL,
     };
 
-    if (!vec->vec_data) {
+    if (initial_len > 0 && !vec->vec_data) {
         return NULL;
     }
 
@@ -39,6 +39,11 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
         return NULL;
     }
 
+    /* Support lazy alloc. */
+    if (unlikely(!src->vec_data)) {
+        return dest;
+    }
+
     SVECTOR_FOREACH(it, src) {
         SVector_Insert(dest, *it);
     }
@@ -47,14 +52,14 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
 }
 
 void SVector_Insert(SVector *vec, void *el) {
-    size_t i = vec->vec_last++;
-    size_t vec_len = vec->vec_len;
+    ssize_t i = vec->vec_last++;
+    ssize_t vec_len = vec->vec_len;
     void **vec_data = vec->vec_data;
 
     assert(el);
 
     if (i >= vec_len - 1) {
-        const size_t new_len = vec_len * 2;
+        const size_t new_len = vec_len * 2 + 1; /* + 1 to make lazy alloc work. */
         const size_t new_size = VEC_SIZE(new_len);
 
         void **new_data = RedisModule_Realloc(vec_data, new_size);
@@ -81,6 +86,18 @@ void SVector_Insert(SVector *vec, void *el) {
 }
 
 void *SVector_InsertFast(SVector *vec, void *el) {
+    /* Support lazy alloc. */
+    if (unlikely(!vec->vec_data)) {
+        const size_t sz = 1;
+
+        vec->vec_len = sz;
+        vec->vec_data = RedisModule_Alloc(VEC_SIZE(sz));
+        if (!vec->vec_data) {
+            fprintf(stderr, "SVector realloc failed\n");
+            abort(); /* This will cause a core dump. */
+        }
+    }
+
     ssize_t l = 0;
     ssize_t r = (ssize_t)vec->vec_last - 1;
     void **vec_data = vec->vec_data;
@@ -133,6 +150,11 @@ void *SVector_InsertFast(SVector *vec, void *el) {
 void *SVector_Search(const SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
 
+    /* Support lazy alloc. */
+    if (unlikely(!vec->vec_data)) {
+        return NULL;
+    }
+
     void **pp = bsearch(&key, vec->vec_data + vec->vec_shift_index,
                         vec->vec_last - vec->vec_shift_index,
                         sizeof(void *), VEC_COMPAR(vec->vec_compar));
@@ -142,6 +164,11 @@ void *SVector_Search(const SVector * restrict vec, void *key) {
 
 void *SVector_Remove(SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
+
+    /* Support lazy alloc. */
+    if (unlikely(!vec->vec_data)) {
+        return NULL;
+    }
 
     void **pp = bsearch(&key, vec->vec_data + vec->vec_shift_index,
                         vec->vec_last - vec->vec_shift_index,
@@ -204,6 +231,10 @@ void *SVector_Peek(SVector * restrict vec) {
 }
 
 void SVector_ShiftReset(SVector * restrict vec) {
+    /*
+     * We assume that nobody will call this function when nothing was
+     * actually inserted, thus no need to check if vec_data is NULL.
+     */
     vec->vec_last -= vec->vec_shift_index;
     memmove(vec->vec_data, vec->vec_data + vec->vec_shift_index, VEC_SIZE(vec->vec_last));
     vec->vec_shift_index = 0;

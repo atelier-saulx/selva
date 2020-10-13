@@ -223,7 +223,7 @@ static void deinit_node_metadata_subs(
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_subs);
 
 int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
-    if (!SVector_Init(&markers->vec, 1, marker_svector_compare)) {
+    if (!SVector_Init(&markers->vec, 0, marker_svector_compare)) {
         return SELVA_SUBSCRIPTIONS_ENOMEM;
     }
 
