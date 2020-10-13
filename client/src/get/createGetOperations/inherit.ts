@@ -82,6 +82,9 @@ export default function createInheritOperation(
       sourceField: props.$field || field,
       props: realKeys,
       item: true,
+      required: Array.isArray(inherit.$required)
+        ? inherit.$required
+        : (inherit.$required && [inherit.$required]) || undefined,
       types: Array.isArray(inherit.$item) ? inherit.$item : [inherit.$item]
     })
 

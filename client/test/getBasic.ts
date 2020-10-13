@@ -896,8 +896,7 @@ test.serial('get - hierarchy', async t => {
   await client.destroy()
 })
 
-// TODO: needs work and ___selva_$obj
-test.serial.only('get - $inherit', async t => {
+test.serial('get - $inherit', async t => {
   const client = connect({ port })
   /*
     root
@@ -1034,8 +1033,8 @@ test.serial.only('get - $inherit', async t => {
     }),
     {
       flapdrol: {
-        // image: { thumb: 'flurp.jpg' }, // image is not required
-        id: 'cuB'
+        image: { thumb: 'flurp.jpg' },
+        id: 'cuA'
       }
     }
   )
@@ -1067,7 +1066,7 @@ test.serial.only('get - $inherit', async t => {
       }
     }),
     {
-      flapdrol: {}
+      // flapdrol: {}
     }
   )
 
@@ -1094,8 +1093,8 @@ test.serial.only('get - $inherit', async t => {
       }
     }),
     {
-      id: 'cuC',
-      flapdrol: {}
+      id: 'cuC'
+      // flapdrol: {}
     }
   )
 

@@ -159,6 +159,7 @@ export type GetOperationInherit = {
   types: string[]
   single?: boolean
   item?: boolean
+  required?: string[]
 }
 
 export type GetOperation =

@@ -3,7 +3,8 @@ import {
   GetOperationInherit,
   GetResult,
   GetOptions,
-  GetOperation
+  GetOperation,
+  Fork
 } from '../types'
 import { getNestedSchema, setNestedResult } from '../utils'
 import executeGetOperations, { TYPE_CASTS } from './'
@@ -16,6 +17,8 @@ async function inheritItem(
   lang: string,
   db: string
 ): Promise<GetResult> {
+  const schema = client.schemas[db]
+
   const remapped: Record<string, string> = {}
   const fields = Object.keys(op.props).map(f => {
     f = f.slice(op.field.length + 1)
@@ -27,18 +30,37 @@ async function inheritItem(
     return f
   })
 
-  // TODO: required fields
-  const rpn = ast2rpn({
+  let fork: Fork = {
     isFork: true,
-    $and: op.types.map(t => {
+    $or: op.types.map(t => {
       return {
         $operator: '=',
         $field: 'type',
         $value: t
       }
     })
-  })
-  console.log('RPN', rpn)
+  }
+
+  if (op.required) {
+    fork = {
+      isFork: true,
+      $and: [
+        {
+          isFork: true,
+          $and: op.required.map(f => {
+            return {
+              $operator: 'exists',
+              $field: f
+            }
+          })
+        },
+        fork
+      ]
+    }
+  }
+
+  const rpn = ast2rpn(fork)
+
   const [id] = await client.redis.selva_hierarchy_find(
     {
       name: db
@@ -52,7 +74,6 @@ async function inheritItem(
     ...rpn
   )
 
-  console.log('IDDD', rpn, id)
   if (!id) {
     return null
   }
@@ -66,9 +87,7 @@ async function inheritItem(
     }
   })
 
-  console.log('OPS', ops)
   const o = await executeGetOperations(client, lang, db, ops)
-  console.log('OO', o)
   return o
 }
 
@@ -118,6 +137,10 @@ export default async function(
   db: string
 ): Promise<GetResult> {
   const schema = client.schemas[db]
+  if (op.item) {
+    return inheritItem(client, op, lang, db)
+  }
+
   const prefixes: string = op.types.reduce((acc, t) => {
     if (t === 'root') {
       return 'ro'
@@ -130,10 +153,6 @@ export default async function(
 
     return acc
   }, '')
-
-  if (op.item) {
-    return inheritItem(client, op, lang, db)
-  }
 
   if (op.single) {
     const fs = getNestedSchema(
