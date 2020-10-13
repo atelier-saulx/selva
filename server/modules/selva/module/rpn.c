@@ -514,7 +514,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
     }
 
     err = SelvaNode_GetField(ctx->redis_ctx, id_key, ctx->rms_field, &value);
-    if (err == REDISMODULE_ERR || !value) {
+    if (err || !value) {
 #if 0
         fprintf(stderr, "RPN: Field \"%s\" not found for node: \"%.*s\"\n",
                 OPERAND_GET_S(field),

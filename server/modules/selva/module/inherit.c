@@ -11,6 +11,7 @@
 #include "hierarchy.h"
 #include "modify.h"
 #include "rpn.h"
+#include "selva_node.h"
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "subscriptions.h"
@@ -89,7 +90,7 @@ static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId,
         return SELVA_ENOENT;
     }
 
-    err = RedisModule_HashGet(key, REDISMODULE_HASH_NONE, field, &value, NULL);
+    err = SelvaNode_GetField(ctx, key, field, &value);
     RedisModule_CloseKey(key);
 
     if (err || !value) {

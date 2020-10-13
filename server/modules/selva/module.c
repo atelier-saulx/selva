@@ -457,7 +457,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModuleString *current_value = NULL;
         const char *current_value_str = NULL;
 
-        if (!RedisModule_HashGet(id_key, REDISMODULE_HASH_NONE, field, &current_value, NULL)) {
+        if (!SelvaNode_GetField(ctx, id_key, field, &current_value)) {
             current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
         }
 

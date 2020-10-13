@@ -5,12 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "redismodule.h"
-#include "selva.h"
-#include "selva_onload.h"
 #include "arg_parser.h"
 #include "errors.h"
 #include "hierarchy.h"
 #include "rpn.h"
+#include "selva.h"
+#include "selva_node.h"
+#include "selva_onload.h"
 #include "subscriptions.h"
 #include "svector.h"
 
@@ -209,8 +210,8 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         RedisModuleString *value = NULL;
         int err;
 
-        err = RedisModule_HashGet(key, REDISMODULE_HASH_NONE, order_field, &value, NULL);
-        if (err != REDISMODULE_ERR && value) {
+        err = SelvaNode_GetField(ctx, key, order_field, &value);
+        if (!err && value) {
             char *end;
 
             data = RedisModule_StringPtrLen(value, &data_len);

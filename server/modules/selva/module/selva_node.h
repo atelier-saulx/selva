@@ -30,12 +30,12 @@ int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id);
 int SelvaNode_ExistField(
         struct RedisModuleCtx *ctx,
         struct RedisModuleKey *node_key,
-        struct RedisModuleString *field);
+        const struct RedisModuleString *field);
 
 int SelvaNode_GetField(
         struct RedisModuleCtx *ctx,
         struct RedisModuleKey *node_key,
-        struct RedisModuleString *field,
+        const struct RedisModuleString *field,
         struct RedisModuleString **out);
 
 int SelvaNode_SetField(
