@@ -1,8 +1,89 @@
 import { SelvaClient } from '../../'
-import { GetOperationInherit, GetResult } from '../types'
+import {
+  GetOperationInherit,
+  GetResult,
+  GetOptions,
+  GetOperation
+} from '../types'
 import { getNestedSchema, setNestedResult } from '../utils'
-import { TYPE_CASTS } from './'
+import executeGetOperations, { TYPE_CASTS } from './'
 import { FieldSchema } from '../../schema'
+import { ast2rpn } from '@saulx/selva-query-ast-parser'
+
+async function inheritItem(
+  client: SelvaClient,
+  op: GetOperationInherit,
+  lang: string,
+  db: string
+): Promise<GetResult> {
+  const schema = client.schemas[db]
+
+  const prefixes: string = op.types.reduce((acc, t) => {
+    if (t === 'root') {
+      return 'ro'
+    }
+
+    const p = client.schemas[db].types[t].prefix
+    if (p) {
+      acc += p
+    }
+
+    return acc
+  }, '')
+
+  const remapped: Record<string, string> = {}
+  const fields = Object.keys(op.props).map(f => {
+    f = f.slice(op.field.length + 1)
+    if (typeof op.props[f] === 'string') {
+      remapped[<string>op.props[f]] = f
+      return <string>op.props[f]
+    }
+
+    return f
+  })
+
+  const rpn = ast2rpn({
+    isFork: true,
+    $and: op.types.map(t => {
+      return {
+        $operator: '=',
+        $field: 'type',
+        $value: t
+      }
+    })
+  })
+  console.log('RPN', rpn)
+  const [id] = await client.redis.selva_hierarchy_find(
+    {
+      name: db
+    },
+    '___selva_hierarchy',
+    'bfs',
+    'ancestors',
+    'limit',
+    1,
+    op.id,
+    ...rpn
+  )
+
+  if (!id) {
+    return null
+  }
+
+  const ops: GetOperation[] = fields.map(f => {
+    return {
+      id,
+      type: 'db',
+      field: f,
+      sourceField: f
+    }
+  })
+
+  console.log('OPS', ops)
+  const o = await executeGetOperations(client, lang, db, ops)
+  console.log('OO', o)
+  return o
+}
 
 async function getObject(
   client: SelvaClient,
@@ -50,7 +131,6 @@ export default async function(
   db: string
 ): Promise<GetResult> {
   const schema = client.schemas[db]
-  // TODO: lang for text fields (this goes in create op)
   const prefixes: string = op.types.reduce((acc, t) => {
     if (t === 'root') {
       return 'ro'
@@ -65,7 +145,7 @@ export default async function(
   }, '')
 
   if (op.item) {
-    return {}
+    return inheritItem(client, op, lang, db)
   }
 
   if (op.single) {
