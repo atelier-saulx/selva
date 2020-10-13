@@ -9,6 +9,7 @@
 #include "../rmutil/sds.h"
 #include "redismodule.h"
 #include "hierarchy.h"
+#include "selva_node.h"
 #include "rpn.h"
 
 #define RPN_ASSERTS         0
@@ -102,7 +103,8 @@ struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
     ctx->depth = 0;
     ctx->redis_ctx = redis_ctx;
     ctx->redis_hkey = NULL;
-    ctx->rm_tmp_str = NULL;
+    ctx->rms_id = NULL;
+    ctx->rms_field = NULL;
     ctx->nr_reg = nr_reg;
 
     ctx->reg = RedisModule_Calloc(nr_reg, sizeof(struct rpn_operand *));
@@ -129,26 +131,34 @@ void rpn_destroy(struct rpn_ctx *ctx) {
             free_rpn_operand(&v);
         }
 
-        RedisModule_Free(ctx->rm_tmp_str);
+        RedisModule_Free(ctx->rms_id);
+        RedisModule_Free(ctx->rms_field);
         RedisModule_Free(ctx->reg);
         RedisModule_Free(ctx);
     }
 }
 
 /**
- * Copy string to the rm_tmp_str.
+ * Copy C string to RedisModuleString.
+ * Be careful to not change something that is already referenced somewhere.
  */
-static int cpy2rm_tmp_str(struct rpn_ctx *ctx, const char *str, size_t len) {
-    if (unlikely(!ctx->rm_tmp_str)) {
-        RedisModuleString *rms;
+static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
+    RedisModuleString *rms;
 
-        rms = RedisModule_CreateString(NULL, RMSTRING_TEMPLATE, sizeof(RMSTRING_TEMPLATE));
-        if (unlikely(!rms)) {
+    if (!*rms_p) {
+        *rms_p = RedisModule_CreateString(NULL, RMSTRING_TEMPLATE, sizeof(RMSTRING_TEMPLATE));
+        if (unlikely(!*rms_p)) {
             return RPN_ERR_ENOMEM;
         }
-
-        ctx->rm_tmp_str = rms;
     }
+
+    rms = *rms_p;
+    if (((struct redisObjectAccessor *)rms)->refcount > 1) {
+        fprintf(stderr, "%s, The given RMS (%p) is already in use and cannot be modified\n",
+                __FILE__, rms);
+        return RPN_ERR_NOTSUP;
+    }
+
     /*
      * The sds string pointer might change so we need to update the
      * redis object every time. This is not how the RM API nor robj
@@ -158,19 +168,26 @@ static int cpy2rm_tmp_str(struct rpn_ctx *ctx, const char *str, size_t len) {
      * There is a huge performance benefit in doing all this mangling
      * as we avoid doing dozens of mallocs and frees.
      */
-    sds old = (sds)RedisModule_StringPtrLen(ctx->rm_tmp_str, NULL);
+    sds old = (sds)RedisModule_StringPtrLen(rms, NULL);
     sds new = sdscpylen(old, str, len);
-    ((struct redisObjectAccessor *)ctx->rm_tmp_str)->ptr = new;
+    ((struct redisObjectAccessor *)rms)->ptr = new;
 
 
     if (unlikely(!new)) {
-        /* FIXME what to do with the robj? */
-        ctx->rm_tmp_str = NULL;
+        /* FIXME what to do with the robj, it will leak now!? */
+        *rms_p = NULL;
 
         return RPN_ERR_ENOMEM;
     }
 
     return 0;
+}
+
+static int rpn_operand2rms(RedisModuleString **rms, struct rpn_operand *o) {
+    const char *str = OPERAND_GET_S(o);
+    const size_t len = o->s_size > 0 ? o->s_size - 1 : 0;
+
+    return cpy2rm_str(rms, str, len);
 }
 
 static struct rpn_operand *alloc_rpn_operand(size_t slen) {
@@ -463,12 +480,12 @@ static RedisModuleKey *open_hkey(struct rpn_ctx *ctx) {
 
         /* Current node_id is stored in reg[0] */
         const char *id_str = OPERAND_GET_S(ctx->reg[0]);
-        cpy2rm_tmp_str(ctx, id_str, strnlen(id_str, SELVA_NODE_ID_SIZE));
-        RedisModuleString *id = ctx->rm_tmp_str;
-        if (!id) {
+        int err = cpy2rm_str(&ctx->rms_id, id_str, strnlen(id_str, SELVA_NODE_ID_SIZE));
+        if (err) {
             return NULL;
         }
-        id_key = RedisModule_OpenKey(ctx->redis_ctx, id, REDISMODULE_READ);
+
+        id_key = RedisModule_OpenKey(ctx->redis_ctx, ctx->rms_id, REDISMODULE_READ);
         if (!id_key) {
             return NULL;
         }
@@ -480,23 +497,23 @@ static RedisModuleKey *open_hkey(struct rpn_ctx *ctx) {
 }
 
 static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field, int type) {
-    const char *field_str = OPERAND_GET_S(field);
     RedisModuleKey *id_key;
     RedisModuleString *value = NULL;
     int err;
 
+    err = rpn_operand2rms(&ctx->rms_field, field);
+    if (err) {
+        return err;
+    }
+
     id_key = open_hkey(ctx);
     if (!id_key) {
         fprintf(stderr, "RPN: Node hash not found for: \"%.*s\"\n",
-                (int)SELVA_NODE_ID_SIZE, field_str);
+                (int)SELVA_NODE_ID_SIZE, RedisModule_StringPtrLen(ctx->rms_field, NULL));
         return push_empty_value(ctx);
     }
 
-    /* FIXME error handling */
-    cpy2rm_tmp_str(ctx, field_str, strlen(field_str));
-    assert(ctx->rm_tmp_str);
-
-    err = RedisModule_HashGet(id_key, 0, ctx->rm_tmp_str, &value, NULL);
+    err = SelvaNode_GetField(ctx->redis_ctx, id_key, ctx->rms_field, &value);
     if (err == REDISMODULE_ERR || !value) {
 #if 0
         fprintf(stderr, "RPN: Field \"%s\" not found for node: \"%.*s\"\n",
@@ -660,9 +677,14 @@ static enum rpn_error rpn_op_exists(struct rpn_ctx *ctx) {
         return push_double_result(ctx, 0.0);
     }
 
-    err = RedisModule_HashGet(id_key, REDISMODULE_HASH_CFIELDS | REDISMODULE_HASH_EXISTS, OPERAND_GET_S(field), &exists, NULL);
+    err = rpn_operand2rms(&ctx->rms_field, field);
+    if (!err) {
+        return RPN_ERR_ENOMEM;
+    }
 
-    return push_int_result(ctx, err == REDISMODULE_OK && exists);
+    exists = SelvaNode_ExistField(ctx->redis_ctx, id_key, ctx->rms_field);
+
+    return push_int_result(ctx, exists);
 }
 
 static enum rpn_error rpn_op_range(struct rpn_ctx *ctx) {

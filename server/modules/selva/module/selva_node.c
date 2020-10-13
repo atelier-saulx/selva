@@ -214,6 +214,14 @@ int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id) {
     return 0;
 }
 
+int SelvaNode_ExistField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field) {
+    int exists, err;
+
+    err = RedisModule_HashGet(node_key, REDISMODULE_HASH_EXISTS, field, &exists, NULL);
+
+    return err == REDISMODULE_OK && exists;
+}
+
 int SelvaNode_GetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field, RedisModuleString **out) {
     if (RedisModule_HashGet(node_key, REDISMODULE_HASH_NONE, field, out, NULL) != REDISMODULE_OK) {
         /* TODO Can we determine the exact cause? */
