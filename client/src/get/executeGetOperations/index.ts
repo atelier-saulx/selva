@@ -127,6 +127,8 @@ const TYPE_TO_SPECIAL_OP: Record<
               setNestedResult(result, key.slice(field.length + 1), set)
             }
             return
+          } else if (val === '___selva_$object') {
+            return
           }
 
           const fieldSchema = getNestedSchema(client.schemas.default, id, key)
