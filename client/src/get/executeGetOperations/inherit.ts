@@ -2,11 +2,14 @@ import { SelvaClient } from '../../'
 import { GetOperationInherit, GetResult } from '../types'
 import { getNestedSchema, setNestedResult } from '../utils'
 import { TYPE_CASTS } from './'
+import { FieldSchema } from '../../schema'
 
 async function getObject(
   client: SelvaClient,
   db: string,
   field: string,
+  fieldSchema: FieldSchema,
+  lang: string | undefined,
   id: string
 ): Promise<GetResult> {
   const res = await client.redis.hgetall({ name: db }, id)
@@ -20,6 +23,21 @@ async function getObject(
       const f = k.slice(field.length + 1)
       setNestedResult(o, f, res[k])
     }
+  }
+
+  if (lang && fieldSchema.type === 'text') {
+    if (o[lang]) {
+      return o[lang]
+    }
+
+    const allLangs = client.schemas[db].languages
+    for (const l of allLangs) {
+      if (o[l]) {
+        return o[l]
+      }
+    }
+
+    return null
   }
 
   return o
@@ -70,7 +88,14 @@ export default async function(
     const v = res.length ? res[0][2] : null
 
     if (v === '___selva_$object') {
-      return await getObject(client, db, <string>op.sourceField, res[0][0])
+      return await getObject(
+        client,
+        db,
+        <string>op.sourceField,
+        fs,
+        lang,
+        res[0][0]
+      )
     }
 
     if (TYPE_CASTS[fs.type]) {
@@ -106,7 +131,7 @@ export default async function(
     const fs = getNestedSchema(schema, schema.types[op.types[0]].prefix, f)
 
     if (v === '___selva_$object') {
-      return await getObject(client, db, <string>op.sourceField, idx)
+      return await getObject(client, db, <string>op.sourceField, fs, lang, idx)
     }
 
     const typeCast = TYPE_CASTS[fs.type]

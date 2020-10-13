@@ -897,7 +897,7 @@ test.serial('get - hierarchy', async t => {
 })
 
 // TODO: needs work and ___selva_$obj
-test.serial.skip('get - $inherit', async t => {
+test.serial.only('get - $inherit', async t => {
   const client = connect({ port })
   /*
     root
