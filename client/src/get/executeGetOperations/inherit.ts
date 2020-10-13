@@ -95,39 +95,19 @@ async function getObject(
   client: SelvaClient,
   db: string,
   field: string,
-  fieldSchema: FieldSchema,
+  _fieldSchema: FieldSchema,
   lang: string | undefined,
   id: string
 ): Promise<GetResult> {
-  const res = await client.redis.hgetall({ name: db }, id)
-  const o: GetResult = {}
-  for (const k in res) {
-    if (
-      k.length > field.length &&
-      k.startsWith(field) &&
-      res[k] !== '___selva_$object'
-    ) {
-      const f = k.slice(field.length + 1)
-      setNestedResult(o, f, res[k])
-    }
+  const op: GetOperation = {
+    type: 'db',
+    id,
+    field: field,
+    sourceField: field
   }
 
-  if (lang && fieldSchema.type === 'text') {
-    if (o[lang]) {
-      return o[lang]
-    }
-
-    const allLangs = client.schemas[db].languages
-    for (const l of allLangs) {
-      if (o[l]) {
-        return o[l]
-      }
-    }
-
-    return null
-  }
-
-  return o
+  const o = await executeGetOperations(client, lang, db, [op])
+  return o[field]
 }
 
 export default async function(

@@ -1191,8 +1191,8 @@ test.serial.skip(
   }
 )
 
-test.serial.skip(
-  'get - $inherit with object types shallow merge can be disabled',
+test.serial(
+  'get - $inherit with object types shallow merge is by default disabled',
   async t => {
     const client = connect({ port })
 
@@ -1242,8 +1242,8 @@ test.serial.skip(
       await client.get({
         $id: entry,
         id: true,
-        title: { $inherit: true },
-        ding: { $inherit: { $merge: false } }
+        title: { $inherit: { $type: 'lekkerType' } },
+        ding: { $inherit: { $type: ['lekkerType'] } }
       }),
       {
         id: entry,
