@@ -14,10 +14,6 @@
 #include "subscriptions.h"
 #include "queue_r.h"
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wstringop-truncation"
-#endif
-
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 

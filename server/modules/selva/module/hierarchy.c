@@ -22,10 +22,6 @@
 
 #define HIERARCHY_ENCODING_VERSION  0
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wstringop-truncation"
-#endif
-
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
     struct timespec visit_stamp;
