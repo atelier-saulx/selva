@@ -31,7 +31,8 @@ const char *getSelvaErrorStr(int err) {
     return selvaStrError[-err];
 }
 
-int replyWithSelvaError(RedisModuleCtx *ctx, int err) {
+/* declared as weak so the unit tests can override it. */
+int replyWithSelvaError(RedisModuleCtx *ctx, int err) __attribute__((weak)) {
     return RedisModule_ReplyWithError(ctx, getSelvaErrorStr(err));
 }
 
