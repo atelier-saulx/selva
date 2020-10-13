@@ -40,6 +40,19 @@ static char * test_init_works(void)
     return NULL;
 }
 
+static char * test_init_lazy_alloc(void)
+{
+    SVector *vecP = SVector_Init(&vec, 0, compar);
+
+    pu_assert_ptr_equal("the vector is returned", vecP, &vec);
+    pu_assert_ptr_equal("compar is set", vec.vec_compar, compar);
+    pu_assert_ptr_equal("vec_data is not allocated", vec.vec_data, NULL);
+    pu_assert_equal("length is correct", vec.vec_len, 0);
+    pu_assert_equal("last is zeroed", vec.vec_last, 0);
+
+    return NULL;
+}
+
 static char * test_can_destroy(void)
 {
     SVector *vecP = SVector_Init(&vec, 100, compar);
@@ -61,6 +74,22 @@ static char * test_insert_one(void)
     SVector_Insert(&vec, &el1);
 
     pu_assert_equal("last is incremented", vec.vec_last, 1);
+    pu_assert_ptr_equal("el1 was inserted", vec.vec_data[0], &el1);
+
+    return NULL;
+}
+
+static char * test_insert_one_lazy_alloc(void)
+{
+    struct data el1 = {
+        .id = 10,
+    };
+
+    SVector_Init(&vec, 0, compar);
+    SVector_Insert(&vec, &el1);
+
+    pu_assert_equal("last is incremented", vec.vec_last, 1);
+    pu_assert("vec_data is allocated", vec.vec_data != NULL);
     pu_assert_ptr_equal("el1 was inserted", vec.vec_data[0], &el1);
 
     return NULL;
@@ -107,6 +136,22 @@ static char * test_insert_many(void)
     pu_assert_ptr_equal("el was inserted correctly", data[5]->id, 20);
     pu_assert_ptr_equal("el was inserted correctly", data[6]->id, 300);
     pu_assert_ptr_equal("el was inserted correctly", data[7]->id, 800);
+
+    return NULL;
+}
+
+static char * test_insertFast_lazy_alloc(void)
+{
+    struct data el1 = {
+        .id = 10,
+    };
+
+    SVector_Init(&vec, 0, compar);
+    SVector_InsertFast(&vec, &el1);
+
+    pu_assert_equal("last is incremented", vec.vec_last, 1);
+    pu_assert("vec_data is allocated", vec.vec_data != NULL);
+    pu_assert_ptr_equal("el1 was inserted", vec.vec_data[0], &el1);
 
     return NULL;
 }
@@ -515,10 +560,13 @@ static char * test_foreach(void)
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
+    pu_def_test(test_init_lazy_alloc, PU_RUN);
     pu_def_test(test_can_destroy, PU_RUN);
     pu_def_test(test_insert_one, PU_RUN);
+    pu_def_test(test_insert_one_lazy_alloc, PU_RUN);
     pu_def_test(test_insert_two_desc, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
+    pu_def_test(test_insertFast_lazy_alloc, PU_RUN);
     pu_def_test(test_insertFast_many, PU_RUN);
     pu_def_test(test_insertFast_dedup, PU_RUN);
     pu_def_test(test_mixed_insertFast_and_Remove, PU_RUN);

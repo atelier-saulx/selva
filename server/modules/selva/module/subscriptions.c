@@ -158,20 +158,10 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
  * Destroy all markers owned by a subscription.
  */
 static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
-    struct Selva_SubscriptionMarker **it;
-
     if (SVector_Size(&sub->markers) > 0) {
-        svector_autofree SVector markers = {0};
+        struct Selva_SubscriptionMarker *marker;
 
-        if (!SVector_Clone(&markers, &sub->markers, NULL)) {
-            fprintf(stderr, "%s: Subs ENOMEM, can't destroy a subscription\n", __FILE__);
-            return;
-        }
-
-        /* TODO implement safe foreach instead of using cloning */
-        SVECTOR_FOREACH(it, &markers) {
-            struct Selva_SubscriptionMarker *marker = *it;
-
+        while ((marker = SVector_Shift(&sub->markers))) {
             if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
                 /*
                  * TRAVERSAL_NONE (e.g. root) markers are stored as detached.
@@ -186,8 +176,7 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
             }
             destroy_marker(marker);
         }
-        /* This isn't technically necessary but we do it for clarity. */
-        SVector_Clear(&sub->markers);
+        SVector_ShiftReset(&sub->markers);
     }
 
     RB_REMOVE(hierarchy_subscriptions_tree, &hierarchy->subs.head, sub);
@@ -234,7 +223,7 @@ static void deinit_node_metadata_subs(
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_subs);
 
 int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
-    if (!SVector_Init(&markers->vec, 1, marker_svector_compare)) {
+    if (!SVector_Init(&markers->vec, 0, marker_svector_compare)) {
         return SELVA_SUBSCRIPTIONS_ENOMEM;
     }
 
@@ -457,6 +446,10 @@ void Selva_Subscriptions_SetMarker(
         return;
     }
 
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough=n"
+#endif
     switch (marker->dir) {
     case SELVA_HIERARCHY_TRAVERSAL_NONE:
         /* NOP */
@@ -472,6 +465,9 @@ void Selva_Subscriptions_SetMarker(
         set_marker(sub_markers, marker);
         break;
     }
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 }
 
 

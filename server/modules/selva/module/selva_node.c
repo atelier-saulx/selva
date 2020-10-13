@@ -254,6 +254,20 @@ int SelvaNode_SetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModul
 }
 
 int SelvaNode_DelField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field) {
+    TO_STR(field);
+
+    /*
+     * See the comment in SelvaNode_SetField().
+     */
+    const char *cname = field_str;
+    while ((cname = strstr(cname, "."))) {
+        const size_t len = (uintptr_t)cname++ - (uintptr_t)field_str;
+        RedisModuleString *field_container;
+
+        field_container = RedisModule_CreateString(ctx, field_str, len);
+        (void)RedisModule_HashSet(node_key, REDISMODULE_HASH_NONE, field_container, REDISMODULE_HASH_DELETE, NULL);
+    }
+
     (void)RedisModule_HashSet(node_key, REDISMODULE_HASH_NONE, field, REDISMODULE_HASH_DELETE, NULL);
 
     return 0;

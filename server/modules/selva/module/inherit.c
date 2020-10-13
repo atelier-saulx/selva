@@ -46,9 +46,10 @@ static int send_selva_set(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisM
 
     /*
      * Start a new array reply:
-     * [field_name, [set_value1, set_value2,.. set_valuen]]
+     * [node_id, field_name, [set_value1, set_value2,.. set_valuen]]
      */
-    RedisModule_ReplyWithArray(ctx, 2);
+    RedisModule_ReplyWithArray(ctx, 3);
+    RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
     RedisModule_ReplyWithString(ctx, field);
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
@@ -95,20 +96,21 @@ static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId,
         return SELVA_ENOENT;
     }
 
-    /*
-     * Start a new array reply:
-     * [ field_name, field_value ]
-     */
-    RedisModule_ReplyWithArray(ctx, 2);
-    RedisModule_ReplyWithString(ctx, field);
-
     TO_STR(value);
     if (!strcmp(value_str, SELVA_SET_KEYWORD)) {
         /* Set */
         return send_selva_set(ctx, nodeId, field);
     } else {
         /* Regular value */
-        (void)RedisModule_ReplyWithString(ctx, value);
+
+        /*
+         * Start a new array reply:
+         * [node_id, field_name, field_value]
+         */
+        RedisModule_ReplyWithArray(ctx, 3);
+        RedisModule_ReplyWithString(ctx, id);
+        RedisModule_ReplyWithString(ctx, field);
+        RedisModule_ReplyWithString(ctx, value);
     }
 
     return 0;
@@ -156,9 +158,10 @@ static int send_hierarchy_field(
 
     /*
      * Start a new array reply:
-     * [field_name, [nodeId1, nodeId2,.. nodeIdn]]
+     * [node_id, field_name, [nodeId1, nodeId2,.. nodeIdn]]
      */
-    RedisModule_ReplyWithArray(ctx, 2);
+    RedisModule_ReplyWithArray(ctx, 3);
+    RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
     RedisModule_ReplyWithString(ctx, field);
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
@@ -172,6 +175,11 @@ static int send_field_value(
         const Selva_NodeId nodeId,
         RedisModuleString *field) {
     TO_STR(field);
+
+    /*
+     * The response should always start like this: [node_id, field_name, ...]
+     * but we don't send the header yet.
+     */
 
     if (!strcmp(field_str, "aliases")) {
         return send_selva_set(ctx, nodeId, field);
