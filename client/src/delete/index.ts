@@ -10,7 +10,7 @@ async function deleteItem(
   const schema = client.schemas[db]
 
   return await client.redis.evalsha(
-    { name: db || 'default' },
+    { name: db || 'default', type: 'origin' },
     `${SCRIPT}:modify`,
     0,
     `${client.loglevel}:${client.uuid}`,
