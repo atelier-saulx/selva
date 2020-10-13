@@ -27,6 +27,7 @@ async function inheritItem(
     return f
   })
 
+  // TODO: required fields
   const rpn = ast2rpn({
     isFork: true,
     $and: op.types.map(t => {
@@ -51,7 +52,7 @@ async function inheritItem(
     ...rpn
   )
 
-  console.log('IDDD', id)
+  console.log('IDDD', rpn, id)
   if (!id) {
     return null
   }
