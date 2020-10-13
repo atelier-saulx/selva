@@ -34,6 +34,10 @@ export default async function(
   const schema = client.schemas[db]
   // TODO: lang for text fields (this goes in create op)
   const prefixes: string = op.types.reduce((acc, t) => {
+    if (t === 'root') {
+      return 'ro'
+    }
+
     const p = client.schemas[db].types[t].prefix
     if (p) {
       acc += p

@@ -238,8 +238,7 @@ test.serial('$field + object + all', async t => {
   await client.destroy()
 })
 
-// TODO: broken needs ___selva_$obj
-test.serial.only('$field + object + all + nested', async t => {
+test.serial('$field + object + all + nested', async t => {
   const client = connect({ port: port })
 
   const genre = await client.set({
@@ -598,7 +597,7 @@ test.serial.skip('$field + inherit from root + query root', async t => {
     $id: 'root',
     id: true,
     layout: {
-      $inherit: true,
+      $inherit: { $type: ['match', 'region', 'root'] },
       $field: ['layout.${type}', 'layout.default']
     }
   })

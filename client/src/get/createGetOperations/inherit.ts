@@ -17,7 +17,10 @@ function validateTypes(schema: Schema, field: string, types: string[]): void {
   }
 
   for (; i < types.length; i++) {
-    const f = schema.types[types[i]].fields[field]
+    const f =
+      types[i] === 'root'
+        ? schema.rootType.fields[field]
+        : schema.types[types[i]].fields[field]
     if (!f) {
       continue
     }
