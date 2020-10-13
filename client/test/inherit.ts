@@ -239,7 +239,7 @@ test.serial('$field + object + all', async t => {
 })
 
 // TODO: broken needs ___selva_$obj
-test.serial.skip('$field + object + all + nested', async t => {
+test.serial.only('$field + object + all + nested', async t => {
   const client = connect({ port: port })
 
   const genre = await client.set({

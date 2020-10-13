@@ -1,7 +1,29 @@
 import { SelvaClient } from '../../'
 import { GetOperationInherit, GetResult } from '../types'
-import { getNestedSchema } from '../utils'
+import { getNestedSchema, setNestedResult } from '../utils'
 import { TYPE_CASTS } from './'
+
+async function getObject(
+  client: SelvaClient,
+  db: string,
+  field: string,
+  id: string
+): Promise<GetResult> {
+  const res = await client.redis.hgetall({ name: db }, id)
+  const o: GetResult = {}
+  for (const k in res) {
+    if (
+      k.length > field.length &&
+      k.startsWith(field) &&
+      res[k] !== '___selva_$object'
+    ) {
+      const f = k.slice(field.length + 1)
+      setNestedResult(o, f, res[k])
+    }
+  }
+
+  return o
+}
 
 export default async function(
   client: SelvaClient,
@@ -41,11 +63,17 @@ export default async function(
       <string>op.sourceField // TODO?
     )
 
-    if (TYPE_CASTS[fs.type]) {
-      return TYPE_CASTS[fs.type](res[0][2])
+    const v = res.length ? res[0][2] : null
+
+    if (v === '___selva_$object') {
+      return await getObject(client, db, <string>op.sourceField, res[0][0])
     }
 
-    return res.length ? res[0][2] : null
+    if (TYPE_CASTS[fs.type]) {
+      return TYPE_CASTS[fs.type](v)
+    }
+
+    return v
   }
 
   const remapped: Record<string, string> = {}
@@ -72,6 +100,11 @@ export default async function(
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
     const fs = getNestedSchema(schema, schema.types[op.types[0]].prefix, f)
+
+    if (v === '___selva_$object') {
+      return await getObject(client, db, <string>op.sourceField, idx)
+    }
+
     const typeCast = TYPE_CASTS[fs.type]
 
     if (remapped[f]) {
