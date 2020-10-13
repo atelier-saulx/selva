@@ -16,21 +16,6 @@ async function inheritItem(
   lang: string,
   db: string
 ): Promise<GetResult> {
-  const schema = client.schemas[db]
-
-  const prefixes: string = op.types.reduce((acc, t) => {
-    if (t === 'root') {
-      return 'ro'
-    }
-
-    const p = client.schemas[db].types[t].prefix
-    if (p) {
-      acc += p
-    }
-
-    return acc
-  }, '')
-
   const remapped: Record<string, string> = {}
   const fields = Object.keys(op.props).map(f => {
     f = f.slice(op.field.length + 1)
@@ -66,6 +51,7 @@ async function inheritItem(
     ...rpn
   )
 
+  console.log('IDDD', id)
   if (!id) {
     return null
   }
