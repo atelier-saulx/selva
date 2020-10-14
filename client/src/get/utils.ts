@@ -6,14 +6,18 @@ export const getNestedField = (result: GetResult, field: string): any => {
     return result
   }
 
+  if (!result) {
+    return undefined
+  }
+
   const fields = field.split('.')
   const len = fields.length
   if (len > 1) {
     let segment = result
     for (let i = 0; i < len; i++) {
       segment = segment[fields[i]]
-      if (segment === null) {
-        return null
+      if (segment === undefined) {
+        return undefined
       }
     }
     return segment

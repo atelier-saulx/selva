@@ -68,20 +68,22 @@ async function mergeObj(
 
   ids.unshift(op.id)
 
-  const objs: GetOperation[] = await Promise.all(
-    ids.map(async idx => {
-      const o = await executeGetOperations(client, lang, db, [
-        {
-          id: idx,
-          type: 'db',
-          field,
-          sourceField: field
-        }
-      ])
+  const objs: GetResult[] = (
+    await Promise.all(
+      ids.map(async idx => {
+        const o = await executeGetOperations(client, lang, db, [
+          {
+            id: idx,
+            type: 'db',
+            field,
+            sourceField: field
+          }
+        ])
 
-      return getNestedField(o, field)
-    })
-  )
+        return getNestedField(o, field)
+      })
+    )
+  ).filter(x => !!x)
 
   const o: GetResult = {}
   for (const obj of objs) {

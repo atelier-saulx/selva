@@ -1264,7 +1264,7 @@ test.serial(
   }
 )
 
-test.serial.skip(
+test.serial(
   'get - $inherit with object types of nested objects, does shallow merge',
   async t => {
     const client = connect({ port })
@@ -1324,11 +1324,11 @@ test.serial.skip(
       await client.get({
         $id: entry,
         id: true,
-        title: { $inherit: true },
+        title: { $inherit: { $type: 'lekkerType' } },
         ding: {
-          dang: { $inherit: true },
-          dunk: { $inherit: true },
-          dung: { $inherit: true }
+          dang: { $inherit: { $type: 'lekkerType', $merge: true } },
+          dunk: { $inherit: { $type: 'lekkerType', $merge: true } },
+          dung: { $inherit: { $type: 'lekkerType' } }
         }
       }),
       {
