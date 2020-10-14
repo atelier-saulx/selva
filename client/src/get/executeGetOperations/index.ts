@@ -123,6 +123,7 @@ const TYPE_TO_SPECIAL_OP: Record<
 
           if (val === '___selva_$set') {
             const set = await client.redis.zrange(id + '.' + field, 0, -1)
+            console.log('????', id, key, val, set)
             if (set) {
               setNestedResult(result, key.slice(field.length + 1), set)
             }

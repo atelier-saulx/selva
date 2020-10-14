@@ -1122,6 +1122,7 @@ test.serial.only(
     const client = connect({ port })
 
     const parentOfParent = await client.set({
+      $id: 'vipofp',
       type: 'lekkerType',
       title: {
         en: 'nice!',
@@ -1138,6 +1139,7 @@ test.serial.only(
     })
 
     const parentEntry = await client.set({
+      $id: 'vip',
       type: 'lekkerType',
       title: {
         en: 'nice!',
@@ -1167,7 +1169,7 @@ test.serial.only(
       await client.get({
         $id: entry,
         id: true,
-        title: { $inherit: { $type: 'lekkerType', $merge: true } },
+        title: { $inherit: { $type: 'lekkerType', $merge: true } }, // TODO: throw, not allowed probably
         ding: { $inherit: { $type: 'lekkerType', $merge: true } }
       }),
       {
