@@ -141,7 +141,8 @@ export default function createInheritOperation(
     sourceField: props.$field || field,
     props: { [field]: true },
     types,
-    single: true
+    single: true,
+    merge: inherit.$merge
   })
 
   return

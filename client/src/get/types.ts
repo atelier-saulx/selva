@@ -160,6 +160,7 @@ export type GetOperationInherit = {
   single?: boolean
   item?: boolean
   required?: string[]
+  merge?: boolean
 }
 
 export type GetOperation =

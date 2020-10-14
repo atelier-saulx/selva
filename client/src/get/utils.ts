@@ -1,6 +1,27 @@
 import { FieldSchema, Schema } from '../schema'
 import { GetResult } from './types'
 
+export const getNestedField = (result: GetResult, field: string): any => {
+  if (!field || field === '') {
+    return result
+  }
+
+  const fields = field.split('.')
+  const len = fields.length
+  if (len > 1) {
+    let segment = result
+    for (let i = 0; i < len; i++) {
+      segment = segment[fields[i]]
+      if (segment === null) {
+        return null
+      }
+    }
+    return segment
+  } else {
+    return result[field]
+  }
+}
+
 export function getTypeFromId(schema: Schema, id: string): string | undefined {
   if (id.startsWith('ro')) {
     return 'root'
