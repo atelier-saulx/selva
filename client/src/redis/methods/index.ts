@@ -3128,6 +3128,21 @@ async selva_hierarchy_children(opts: any, ...args: args): Promise<any> {
 }
 
 
+async selva_hierarchy_del(opts: ServerSelector, ...args: args): Promise<any>
+async selva_hierarchy_del(...args: args): Promise<any>
+async selva_hierarchy_del(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_del', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_del', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async selva_hierarchy_find(opts: ServerSelector, ...args: args): Promise<any>
 async selva_hierarchy_find(...args: args): Promise<any>
 async selva_hierarchy_find(opts: any, ...args: args): Promise<any> {
@@ -3188,16 +3203,16 @@ async selva_hierarchy_parents(opts: any, ...args: args): Promise<any> {
 }
 
 
-async selva_hierarchy_del(opts: ServerSelector, ...args: args): Promise<any>
-async selva_hierarchy_del(...args: args): Promise<any>
-async selva_hierarchy_del(opts: any, ...args: args): Promise<any> {
+async selva_inherit(opts: ServerSelector, ...args: args): Promise<any>
+async selva_inherit(...args: args): Promise<any>
+async selva_inherit(opts: any, ...args: args): Promise<any> {
   if (typeof opts === 'object') {
     return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_del', args, resolve, reject }, opts)
+      this.addCommandToQueue({ command: 'selva_inherit', args, resolve, reject }, opts)
     })
   } else {
     return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_del', args: [opts, ...args], resolve, reject })
+      this.addCommandToQueue({ command: 'selva_inherit', args: [opts, ...args], resolve, reject })
     })
   }
 }
@@ -3218,16 +3233,31 @@ async selva_modify(opts: any, ...args: args): Promise<any> {
 }
 
 
-async selva_inherit(opts: ServerSelector, ...args: args): Promise<any>
-async selva_inherit(...args: args): Promise<any>
-async selva_inherit(opts: any, ...args: args): Promise<any> {
+async selva_object_get(opts: ServerSelector, ...args: args): Promise<any>
+async selva_object_get(...args: args): Promise<any>
+async selva_object_get(opts: any, ...args: args): Promise<any> {
   if (typeof opts === 'object') {
     return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_inherit', args, resolve, reject }, opts)
+      this.addCommandToQueue({ command: 'selva_object_get', args, resolve, reject }, opts)
     })
   } else {
     return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_inherit', args: [opts, ...args], resolve, reject })
+      this.addCommandToQueue({ command: 'selva_object_get', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_object_getall(opts: ServerSelector, ...args: args): Promise<any>
+async selva_object_getall(...args: args): Promise<any>
+async selva_object_getall(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_getall', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_getall', args: [opts, ...args], resolve, reject })
     })
   }
 }

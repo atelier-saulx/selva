@@ -527,7 +527,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         double dvalue;
 
         err = RedisModule_StringToDouble(value, &dvalue);
-        RedisModule_FreeString(ctx->redis_ctx, value);
+        //RedisModule_FreeString(ctx->redis_ctx, value);
 
         if (unlikely(err != REDISMODULE_OK)) {
             fprintf(stderr, "RPN: Field value [%.*s].%.*s is not a number\n",

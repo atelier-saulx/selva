@@ -56,6 +56,8 @@ async function mergeObj(
     op.id,
     ...rpn
   )
+  console.log('___selva_hierarchy', 'bfs', 'ancestors', op.id, rpn);
+  console.log(ids)
 
   if (!ids || !ids.length) {
     return null

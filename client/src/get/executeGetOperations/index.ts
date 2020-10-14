@@ -189,7 +189,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     field: string,
     lang?: string
   ) => {
-    const all = await client.redis.hgetall(id)
+    const all = await client.redis.selva_object_getall(id)
     const result: any = {}
     let hasFields = false
     Object.entries(all).forEach(([key, val]) => {
@@ -222,7 +222,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     field: string,
     _lang?: string
   ) => {
-    const all = await client.redis.hgetall(id)
+    const all = await client.redis.selva_object_getall(id)
     const result: any = {}
     let hasKeys = false
     await Promise.all(
@@ -335,7 +335,7 @@ export const executeGetOperation = async (
             return specialOp(client, op.id, f, lang)
           }
 
-          return client.redis.hget({ name: db }, op.id, f)
+          return client.redis.selva_object_get({ name: db }, op.id, f)
         })
       )
 
@@ -357,7 +357,7 @@ export const executeGetOperation = async (
       if (specialOp) {
         r = await specialOp(client, op.id, op.sourceField, lang)
       } else {
-        r = await client.redis.hget({ name: db }, op.id, op.sourceField)
+        r = await client.redis.selva_object_get({ name: db }, op.id, op.sourceField)
       }
     }
 
