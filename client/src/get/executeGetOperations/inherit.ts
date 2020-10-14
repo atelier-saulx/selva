@@ -196,12 +196,29 @@ async function getObject(
   return getNestedField(o, field)
 }
 
-export default async function(
+export default async function inherit(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
   db: string
 ): Promise<GetResult> {
+  if (Array.isArray(op.sourceField)) {
+    for (const sf of op.sourceField) {
+      const r = await inherit(
+        client,
+        Object.assign({}, op, { sourceField: sf }),
+        lang,
+        db
+      )
+
+      if (r) {
+        return r
+      }
+    }
+
+    return
+  }
+
   const schema = client.schemas[db]
   if (op.item) {
     return inheritItem(client, op, lang, db)
@@ -209,7 +226,7 @@ export default async function(
 
   const prefixes: string = op.types.reduce((acc, t) => {
     if (t === 'root') {
-      return 'ro'
+      return acc + 'ro'
     }
 
     const p = client.schemas[db].types[t].prefix

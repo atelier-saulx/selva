@@ -303,8 +303,7 @@ test.serial('$field + object + all + nested', async t => {
   await client.destroy()
 })
 
-// TODO: annoying
-test.serial.skip('$field +  multiple options', async t => {
+test.serial('$field +  multiple options', async t => {
   const client = connect({ port: port })
 
   const types = ['match', 'region']
@@ -379,8 +378,8 @@ test.serial.skip('$field +  multiple options', async t => {
     $alias: 'maA',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.match', 'layout.default']
     }
   }
 
@@ -392,8 +391,8 @@ test.serial.skip('$field +  multiple options', async t => {
     $alias: 'reB',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.region', 'layout.default']
     }
   })
 
