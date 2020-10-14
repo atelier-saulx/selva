@@ -6,6 +6,7 @@ const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
     [0]                                 = (const char *)"ERR_SELVA No Error",
     [-SELVA_EGENERAL]                   = (const char *)"ERR_SELVA EGENERAL Unknown error",
     [-SELVA_EINVAL]                     = (const char *)"ERR_SELVA EINVAL Invalid argument or input value",
+    [-SELVA_EINTYPE]                    = (const char *)"ERR_SELVA EINTYPE Invalid type",
     [-SELVA_ENOMEM]                     = (const char *)"ERR_SELVA ENOMEM Out of memory",
     [-SELVA_ENOENT]                     = (const char *)"ERR_SELVA ENOENT Not found",
     [-SELVA_EEXIST]                     = (const char *)"ERR_SELVA EEXIST Exist",

@@ -15,67 +15,71 @@
  */
 #define SELVA_EINVAL                    (-2)
 /**
+ * Invalid type.
+ */
+#define SELVA_EINTYPE                   (-3)
+/**
  * Out of memory.
  */
-#define SELVA_ENOMEM                    (-3)
+#define SELVA_ENOMEM                    (-4)
 /**
  * Node or entity not found.
  */
-#define SELVA_ENOENT                    (-4)
+#define SELVA_ENOENT                    (-5)
 /**
  * Node or entity already exist.
  */
-#define SELVA_EEXIST                    (-5)
+#define SELVA_EEXIST                    (-6)
 /**
  * General error.
  */
-#define SELVA_MODIFY_HIERARCHY_EGENERAL (-6)
+#define SELVA_MODIFY_HIERARCHY_EGENERAL (-7)
 /**
  * Operation not supported.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOTSUP  (-7)
+#define SELVA_MODIFY_HIERARCHY_ENOTSUP  (-8)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_MODIFY_HIERARCHY_EINVAL   (-8)
+#define SELVA_MODIFY_HIERARCHY_EINVAL   (-9)
 /**
  * Out of memory.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-9)
+#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-10)
 /**
  * Node or entity not found.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOENT   (-10)
+#define SELVA_MODIFY_HIERARCHY_ENOENT   (-11)
 /**
  * Node or entity already exist.
  */
-#define SELVA_MODIFY_HIERARCHY_EEXIST   (-11)
+#define SELVA_MODIFY_HIERARCHY_EEXIST   (-12)
 /**
  * General error.
  */
-#define SELVA_SUBSCRIPTIONS_EGENERAL    (-12)
+#define SELVA_SUBSCRIPTIONS_EGENERAL    (-13)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_SUBSCRIPTIONS_EINVAL      (-13)
+#define SELVA_SUBSCRIPTIONS_EINVAL      (-14)
 /**
  * Out of memory.
  */
-#define SELVA_SUBSCRIPTIONS_ENOMEM      (-14)
+#define SELVA_SUBSCRIPTIONS_ENOMEM      (-15)
 /**
  * Node or entity not found.
  */
-#define SELVA_SUBSCRIPTIONS_ENOENT      (-15)
+#define SELVA_SUBSCRIPTIONS_ENOENT      (-16)
 /**
  * Node or entity already exist.
  */
-#define SELVA_SUBSCRIPTIONS_EEXIST      (-16)
+#define SELVA_SUBSCRIPTIONS_EEXIST      (-17)
 /**
  * RPN compilation error.
  */
-#define SELVA_RPN_ECOMP                 (-17)
+#define SELVA_RPN_ECOMP                 (-18)
 /* This must be the last error */
-#define SELVA_INVALID_ERROR             (-18)
+#define SELVA_INVALID_ERROR             (-19)
 
 struct RedisModuleCtx;
 

@@ -16,6 +16,7 @@ OBJS := \
 	module/modify.o \
 	module/rpn.o \
 	module/selva_node.o \
+	module/selva_object.o \
 	module/selva_set.o \
 	module/subscriptions.o
 
