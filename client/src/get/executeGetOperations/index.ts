@@ -122,8 +122,7 @@ const TYPE_TO_SPECIAL_OP: Record<
           hasKeys = true
 
           if (val === '___selva_$set') {
-            const set = await client.redis.zrange(id + '.' + field, 0, -1)
-            console.log('????', id, key, val, set)
+            const set = await client.redis.zrange(id + '.' + key, 0, -1)
             if (set) {
               setNestedResult(result, key.slice(field.length + 1), set)
             }

@@ -86,7 +86,6 @@ async function mergeObj(
   const o: GetResult = {}
   for (const obj of objs) {
     for (const k in obj) {
-      console.log('HMM', k, obj[k])
       if (o[k]) {
         continue
       }
