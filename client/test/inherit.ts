@@ -403,8 +403,7 @@ test.serial('$field +  multiple options', async t => {
   await client.destroy()
 })
 
-// TODO: very annoying
-test.serial.skip('$field +  multiple options + inherit from root', async t => {
+test.serial('$field +  multiple options + inherit from root', async t => {
   const client = connect({ port: port })
 
   // adding extra field to schema as well
@@ -491,8 +490,8 @@ test.serial.skip('$field +  multiple options + inherit from root', async t => {
     $alias: 'maA',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.match', 'layout.default']
     }
   }
 
@@ -504,8 +503,8 @@ test.serial.skip('$field +  multiple options + inherit from root', async t => {
     $alias: 'reB',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.region', 'layout.default']
     }
   })
 
@@ -597,7 +596,7 @@ test.serial.skip('$field + inherit from root + query root', async t => {
     id: true,
     layout: {
       $inherit: { $type: ['match', 'region', 'root'] },
-      $field: ['layout.${type}', 'layout.default']
+      $field: ['layout.match', 'layout.default']
     }
   })
 
