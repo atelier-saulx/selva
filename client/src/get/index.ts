@@ -110,7 +110,7 @@ async function get(
   const getResult = await executeGetOperations(
     client,
     lang,
-    { db },
+    { db, subId: props.$subscription },
     createGetOperations(client, newProps, id, '', db)
   )
 
