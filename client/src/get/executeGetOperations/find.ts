@@ -1,14 +1,14 @@
 import { SelvaClient } from '../../'
 import { GetOperationFind, GetResult } from '../types'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
-import { executeNestedGetOperations } from './'
+import { executeNestedGetOperations, ExecContext } from './'
 import { padId, joinIds } from '../utils'
 
 const findHierarchy = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
-  ctx: { db: string; subId?: string }
+  ctx: ExecContext
 ): Promise<string[]> => {
   const { db, subId } = ctx
 
@@ -75,7 +75,7 @@ const executeFindOperation = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
-  ctx: { db: string; subId?: string }
+  ctx: ExecContext
 ): Promise<GetResult> => {
   let ids = await findHierarchy(client, op, lang, ctx)
 

@@ -7,6 +7,8 @@ import { GetOptions } from '../'
 import find from './find'
 import inherit from './inherit'
 
+export type ExecContext = { db: string; subId?: string }
+
 export const TYPE_CASTS: Record<string, (x: any) => any> = {
   float: Number,
   number: Number,
@@ -159,7 +161,7 @@ export const executeNestedGetOperations = async (
   client: SelvaClient,
   props: GetOptions,
   lang: string | undefined,
-  ctx: { db: string; subId?: string }
+  ctx: ExecContext
 ): Promise<GetResult> => {
   const id = await resolveId(client, props)
   return await executeGetOperations(
@@ -174,7 +176,7 @@ export const executeNestedGetOperations = async (
 export const executeGetOperation = async (
   client: SelvaClient,
   lang: string,
-  ctx: { db: string; subId?: string },
+  ctx: ExecContext,
   op: GetOperation
 ): Promise<any> => {
   if (op.type === 'value') {
@@ -260,7 +262,7 @@ export const executeGetOperation = async (
 export default async function executeGetOperations(
   client: SelvaClient,
   lang: string | undefined,
-  ctx: { db: string; subId?: string },
+  ctx: ExecContext,
   ops: GetOperation[]
 ): Promise<GetResult> {
   const o: GetResult = {}

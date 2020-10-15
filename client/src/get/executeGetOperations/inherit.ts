@@ -1,7 +1,7 @@
 import { SelvaClient } from '../../'
 import { GetOperationInherit, GetResult, GetOperation, Fork } from '../types'
 import { getNestedSchema, getNestedField } from '../utils'
-import executeGetOperations, { TYPE_CASTS } from './'
+import executeGetOperations, { TYPE_CASTS, ExecContext } from './'
 import { FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
 
@@ -9,7 +9,7 @@ async function mergeObj(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  ctx: { db: string; subId?: string }
+  ctx: ExecContext
 ): Promise<GetResult> {
   const { db } = ctx
   const remapped: Record<string, string> = {}
@@ -98,7 +98,7 @@ async function inheritItem(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  ctx: { db: string; subId?: string }
+  ctx: ExecContext
 ): Promise<GetResult> {
   const { db } = ctx
 
@@ -176,7 +176,7 @@ async function inheritItem(
 
 async function getObject(
   client: SelvaClient,
-  ctx: { db: string; subId?: string },
+  ctx: ExecContext,
   field: string,
   _fieldSchema: FieldSchema,
   lang: string | undefined,
@@ -197,7 +197,7 @@ export default async function inherit(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  ctx: { db: string; subId?: string }
+  ctx: ExecContext
 ): Promise<GetResult> {
   if (Array.isArray(op.sourceField)) {
     for (const sf of op.sourceField) {
