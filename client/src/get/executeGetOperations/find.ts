@@ -31,6 +31,7 @@ const findHierarchy = async (
     sourceField = op.sourceField[idx]
   }
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
+  // TODO: change this if ctx.subId (for markers)
   if (op.inKeys) {
     // can make this a bit better....
     const ids = await client.redis.selva_hierarchy_findin(

@@ -222,6 +222,7 @@ export const executeGetOperation = async (
 
       const nested: GetOperation[] = await Promise.all(
         op.sourceField.map(f => {
+          // TODO: add sub marker
           if (specialOp) {
             return specialOp(client, op.id, f, lang)
           }
@@ -255,6 +256,8 @@ export const executeGetOperation = async (
       if (typeCast) {
         return typeCast(r)
       }
+
+      // TODO: add sub marker
 
       return r
     } else if (op.default) {
