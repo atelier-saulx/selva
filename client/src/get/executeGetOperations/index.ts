@@ -159,14 +159,14 @@ export const executeNestedGetOperations = async (
   client: SelvaClient,
   props: GetOptions,
   lang: string | undefined,
-  db: string
+  ctx: { db: string; subId?: string }
 ): Promise<GetResult> => {
   const id = await resolveId(client, props)
   return await executeGetOperations(
     client,
     props.$language || lang,
-    db,
-    createGetOperations(client, props, id, '', db)
+    ctx,
+    createGetOperations(client, props, id, '', ctx.db)
   )
 }
 
@@ -174,33 +174,35 @@ export const executeNestedGetOperations = async (
 export const executeGetOperation = async (
   client: SelvaClient,
   lang: string,
-  db: string,
+  ctx: { db: string; subId?: string },
   op: GetOperation
 ): Promise<any> => {
   if (op.type === 'value') {
     return op.value
   } else if (op.type === 'nested_query') {
-    return executeNestedGetOperations(client, op.props, lang, db)
+    return executeNestedGetOperations(client, op.props, lang, ctx)
   } else if (op.type === 'array_query') {
     return Promise.all(
       op.props.map(p => {
         if (p.$id) {
-          return executeNestedGetOperations(client, p, lang, db)
+          return executeNestedGetOperations(client, p, lang, ctx)
         } else {
           return executeNestedGetOperations(
             client,
             Object.assign({}, p, { $id: op.id }),
             lang,
-            db
+            ctx
           )
         }
       })
     )
   } else if (op.type === 'find') {
-    return find(client, op, lang, db)
+    return find(client, op, lang, ctx)
   } else if (op.type === 'inherit') {
-    return inherit(client, op, lang, db)
+    return inherit(client, op, lang, ctx)
   }
+
+  const { db } = ctx
 
   let r: any
   let fieldSchema
@@ -258,12 +260,12 @@ export const executeGetOperation = async (
 export default async function executeGetOperations(
   client: SelvaClient,
   lang: string | undefined,
-  db: string,
+  ctx: { db: string; subId?: string },
   ops: GetOperation[]
 ): Promise<GetResult> {
   const o: GetResult = {}
   const results = await Promise.all(
-    ops.map(op => executeGetOperation(client, lang, db, op))
+    ops.map(op => executeGetOperation(client, lang, ctx, op))
   )
   results.map((r, i) => {
     if (

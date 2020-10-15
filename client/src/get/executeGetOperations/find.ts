@@ -8,8 +8,10 @@ const findHierarchy = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
-  db: string
+  ctx: { db: string; subId?: string }
 ): Promise<string[]> => {
+  const { db, subId } = ctx
+
   let sourceField: string = <string>op.sourceField
   if (Array.isArray(op.sourceField)) {
     const exists = await Promise.all(
@@ -73,9 +75,9 @@ const executeFindOperation = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
-  db: string
+  ctx: { db: string; subId?: string }
 ): Promise<GetResult> => {
-  let ids = await findHierarchy(client, op, lang, db)
+  let ids = await findHierarchy(client, op, lang, ctx)
 
   if (op.nested) {
     let nestedOperation = op.nested
@@ -87,7 +89,7 @@ const executeFindOperation = async (
           id: joinIds(ids)
         }),
         lang,
-        db
+        ctx
       )
       prevIds = ids
       nestedOperation = nestedOperation.nested
@@ -109,7 +111,7 @@ const executeFindOperation = async (
           ...realOpts
         },
         lang,
-        db
+        ctx
       )
     })
   )

@@ -1,12 +1,6 @@
 import { SelvaClient } from '../../'
-import {
-  GetOperationInherit,
-  GetResult,
-  GetOptions,
-  GetOperation,
-  Fork
-} from '../types'
-import { getNestedSchema, setNestedResult, getNestedField } from '../utils'
+import { GetOperationInherit, GetResult, GetOperation, Fork } from '../types'
+import { getNestedSchema, getNestedField } from '../utils'
 import executeGetOperations, { TYPE_CASTS } from './'
 import { FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
@@ -15,8 +9,9 @@ async function mergeObj(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  db: string
+  ctx: { db: string; subId?: string }
 ): Promise<GetResult> {
+  const { db } = ctx
   const remapped: Record<string, string> = {}
   const fields = Object.keys(op.props).map(f => {
     if (typeof op.props[f] === 'string') {
@@ -71,7 +66,7 @@ async function mergeObj(
   const objs: GetResult[] = (
     await Promise.all(
       ids.map(async idx => {
-        const o = await executeGetOperations(client, lang, db, [
+        const o = await executeGetOperations(client, lang, ctx, [
           {
             id: idx,
             type: 'db',
@@ -103,8 +98,10 @@ async function inheritItem(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  db: string
+  ctx: { db: string; subId?: string }
 ): Promise<GetResult> {
+  const { db } = ctx
+
   const remapped: Record<string, string> = {}
   const fields = Object.keys(op.props).map(f => {
     f = f.slice(op.field.length + 1)
@@ -173,13 +170,13 @@ async function inheritItem(
     }
   })
 
-  const o = await executeGetOperations(client, lang, db, ops)
+  const o = await executeGetOperations(client, lang, ctx, ops)
   return o
 }
 
 async function getObject(
   client: SelvaClient,
-  db: string,
+  ctx: { db: string; subId?: string },
   field: string,
   _fieldSchema: FieldSchema,
   lang: string | undefined,
@@ -192,7 +189,7 @@ async function getObject(
     sourceField: field
   }
 
-  const o = await executeGetOperations(client, lang, db, [op])
+  const o = await executeGetOperations(client, lang, ctx, [op])
   return getNestedField(o, field)
 }
 
@@ -200,7 +197,7 @@ export default async function inherit(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  db: string
+  ctx: { db: string; subId?: string }
 ): Promise<GetResult> {
   if (Array.isArray(op.sourceField)) {
     for (const sf of op.sourceField) {
@@ -208,7 +205,7 @@ export default async function inherit(
         client,
         Object.assign({}, op, { sourceField: sf }),
         lang,
-        db
+        ctx
       )
 
       if (r) {
@@ -219,9 +216,10 @@ export default async function inherit(
     return
   }
 
+  const { db } = ctx
   const schema = client.schemas[db]
   if (op.item) {
-    return inheritItem(client, op, lang, db)
+    return inheritItem(client, op, lang, ctx)
   }
 
   const prefixes: string = op.types.reduce((acc, t) => {
@@ -245,7 +243,7 @@ export default async function inherit(
     )
 
     if (op.merge === true && (fs.type === 'object' || fs.type === 'record')) {
-      return mergeObj(client, op, lang, db)
+      return mergeObj(client, op, lang, ctx)
     }
 
     const res = await client.redis.selva_inherit(
@@ -263,7 +261,7 @@ export default async function inherit(
     if (v === '___selva_$object') {
       return await getObject(
         client,
-        db,
+        ctx,
         <string>op.sourceField,
         fs,
         lang,
@@ -304,7 +302,7 @@ export default async function inherit(
     const fs = getNestedSchema(schema, schema.types[op.types[0]].prefix, f)
 
     if (v === '___selva_$object') {
-      return await getObject(client, db, <string>op.sourceField, fs, lang, idx)
+      return await getObject(client, ctx, <string>op.sourceField, fs, lang, idx)
     }
 
     const typeCast = TYPE_CASTS[fs.type]
