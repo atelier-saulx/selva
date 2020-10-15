@@ -89,6 +89,7 @@ async function get(
   // TODO: need to intialize for each db!
 
   const db = props.$db || 'default'
+  const subId = props.$subscription
 
   await client.initializeSchema({ db })
 
@@ -107,10 +108,11 @@ async function get(
 
   const lang = newProps.$language
 
+  console.log('MIT', db, subId)
   const getResult = await executeGetOperations(
     client,
     lang,
-    { db, subId: props.$subscription },
+    { db, subId },
     createGetOperations(client, newProps, id, '', db)
   )
 
