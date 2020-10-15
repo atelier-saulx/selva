@@ -202,60 +202,66 @@ export const executeGetOperation = async (
     return find(client, op, lang, ctx)
   } else if (op.type === 'inherit') {
     return inherit(client, op, lang, ctx)
-  }
+  } else if (op.type === 'db') {
+    const { db } = ctx
 
-  const { db } = ctx
+    let r: any
+    let fieldSchema
+    if (Array.isArray(op.sourceField)) {
+      fieldSchema = getNestedSchema(
+        client.schemas.default,
+        op.id,
+        op.sourceField[0]
+      )
 
-  let r: any
-  let fieldSchema
-  if (Array.isArray(op.sourceField)) {
-    fieldSchema = getNestedSchema(
-      client.schemas.default,
-      op.id,
-      op.sourceField[0]
-    )
+      if (!fieldSchema) {
+        return null
+      }
 
-    if (!fieldSchema) {
-      return null
-    }
+      const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
 
-    const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
+      const nested: GetOperation[] = await Promise.all(
+        op.sourceField.map(f => {
+          if (specialOp) {
+            return specialOp(client, op.id, f, lang)
+          }
 
-    const nested: GetOperation[] = await Promise.all(
-      op.sourceField.map(f => {
-        if (specialOp) {
-          return specialOp(client, op.id, f, lang)
-        }
+          return client.redis.hget({ name: db }, op.id, f)
+        })
+      )
 
-        return client.redis.hget({ name: db }, op.id, f)
-      })
-    )
-
-    r = nested.find(x => !!x)
-  } else {
-    fieldSchema = getNestedSchema(client.schemas.default, op.id, op.sourceField)
-
-    if (!fieldSchema) {
-      return null
-    }
-
-    const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
-    if (specialOp) {
-      r = await specialOp(client, op.id, op.sourceField, lang)
+      r = nested.find(x => !!x)
     } else {
-      r = await client.redis.hget({ name: db }, op.id, op.sourceField)
-    }
-  }
+      fieldSchema = getNestedSchema(
+        client.schemas.default,
+        op.id,
+        op.sourceField
+      )
 
-  if (r !== null && r !== undefined) {
-    const typeCast = TYPE_CASTS[fieldSchema.type]
-    if (typeCast) {
-      return typeCast(r)
+      if (!fieldSchema) {
+        return null
+      }
+
+      const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
+      if (specialOp) {
+        r = await specialOp(client, op.id, op.sourceField, lang)
+      } else {
+        r = await client.redis.hget({ name: db }, op.id, op.sourceField)
+      }
     }
 
-    return r
-  } else if (op.default) {
-    return op.default
+    if (r !== null && r !== undefined) {
+      const typeCast = TYPE_CASTS[fieldSchema.type]
+      if (typeCast) {
+        return typeCast(r)
+      }
+
+      return r
+    } else if (op.default) {
+      return op.default
+    }
+  } else {
+    throw new Error(`Unsupported query type ${(<any>op).type}`)
   }
 }
 
