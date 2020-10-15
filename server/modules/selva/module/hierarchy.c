@@ -1695,7 +1695,9 @@ static void HierarchyAOFSaveHead(SelvaModify_HierarchyNode *node, void *arg) {
     RedisModuleString *key = (RedisModuleString *)args[1];
 
     /* Create the head node */
-    RedisModule_EmitAOF(aof,"SELVA.HIERARCHY.ADD", "ss", key, node->id);
+    RedisModule_EmitAOF(aof, "SELVA.HIERARCHY.ADD", "sb",
+        key,
+        node->id, (size_t)SELVA_NODE_ID_SIZE);
 }
 
 static void HierarchyAOFSaveChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
@@ -1704,7 +1706,10 @@ static void HierarchyAOFSaveChild(SelvaModify_HierarchyNode *parent, SelvaModify
     RedisModuleString *key = (RedisModuleString *)args[1];
 
     /* Create the children */
-    RedisModule_EmitAOF(aof,"SELVA.HIERARCHY.ADD", "ss", key, child->id, parent->id);
+    RedisModule_EmitAOF(aof, "SELVA.HIERARCHY.ADD", "sbb",
+    key,
+    child->id, (size_t)SELVA_NODE_ID_SIZE,
+    parent->id, (size_t)SELVA_NODE_ID_SIZE);
 }
 
 void HierarchyTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
