@@ -1,10 +1,32 @@
 import { Id } from '../schema/index'
+// import { FilterAST, Rpn, Fork } from '@saulx/selva-query-ast-parser'
 
+export declare type Value = (string | number) | (string | number)[]
+export declare type FilterAST = {
+  $field: string
+  $operator:
+    | '='
+    | '>'
+    | '<'
+    | '..'
+    | '!='
+    | 'distance'
+    | 'exists'
+    | 'notExists'
+    | 'textSearch'
+  $value?: Value
+  hasNow?: true
+}
+export declare type Fork = {
+  $and?: (Fork | FilterAST)[]
+  $or?: (Fork | FilterAST)[]
+  ids?: string[]
+  isFork: true
+}
 export type Inherit =
   | boolean
   | {
       $type?: string | string[]
-      $name?: string | string[]
       $item?: Id | Id[]
       $merge: boolean
       $required?: Id | Id[]
@@ -25,7 +47,7 @@ export type GeoFilter = {
 export type ExistsFilter = {
   $operator: 'exists' | 'notExists'
   $field: string
-  $value: undefined // makes copmiling this easier, nice...
+  $value?: undefined // makes compiling this easier, nice...
   $and?: Filter
   $or?: Filter
 }
@@ -71,7 +93,7 @@ export type List =
     }
 
 export type GetField<T> = {
-  $field?: string | string[] | { path: string | string[]; value: GetOptions }
+  $field?: string | string[]
   $inherit?: Inherit
   $list?: List
   $find?: Find
@@ -114,3 +136,43 @@ export type GetOptions = GetItem & {
   $language?: string
   $rawAncestors?: true
 }
+
+export type GetOperationFind = {
+  type: 'find'
+  props: GetOptions
+  single?: boolean
+  filter?: Fork
+  inKeys?: string[]
+  field: string
+  nested?: GetOperationFind
+  sourceField: string | string[]
+  id: string
+  options: { limit: number; offset: number; sort?: Sort | undefined }
+}
+
+export type GetOperationInherit = {
+  type: 'inherit'
+  id: string
+  field: string
+  sourceField: string | string[]
+  props: Record<string, true | string>
+  types: string[]
+  single?: boolean
+  item?: boolean
+  required?: string[]
+  merge?: boolean
+}
+
+export type GetOperation =
+  | {
+      type: 'db'
+      id: string
+      field: string
+      sourceField: string | string[]
+      default?: any
+    }
+  | { type: 'value'; value: string; field: string }
+  | { type: 'nested_query'; props: GetOptions; field: string }
+  | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
+  | GetOperationFind
+  | GetOperationInherit

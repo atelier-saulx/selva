@@ -47,6 +47,12 @@ test.before(async t => {
         fields: {
           title: { type: 'string' }
         }
+      },
+      imaginary: {
+        prefix: 'im',
+        fields: {
+          imaginary: { type: 'string' }
+        }
       }
     }
   })
@@ -71,14 +77,15 @@ test.serial('simple', async t => {
   })
 
   await client.set({
-    $id: 'moSoylentGreen',
+    $id: 'moSoylentG',
     title: 'Soylent Green',
     parents: [genre]
   })
 
   const result = await client.get({
-    $id: 'moSoylentGreen',
-    icon: { $inherit: true }
+    $id: 'moSoylentG',
+    // icon: { $inherit: true } // TODO
+    icon: { $inherit: { $type: 'genre' } }
   })
 
   t.true(result.icon === 'scifi.png')
@@ -97,15 +104,17 @@ test.serial('simple with circular', async t => {
   })
 
   await client.set({
-    $id: 'moSoylentGreen',
+    $id: 'moSoylentG',
     title: 'Soylent Green',
     parents: [genre]
   })
 
   const result = await client.get({
-    $id: 'moSoylentGreen',
-    icon: { $inherit: true },
-    imaginary: { $inherit: true } // should not follow circular references to find this
+    $id: 'moSoylentG',
+    // icon: { $inherit: true },
+    icon: { $inherit: { $type: ['genre'] } },
+    // imaginary: { $inherit: true } // should not follow circular references to find this
+    imaginary: { $inherit: { $type: ['imaginary'] } }
   })
 
   t.true(result.icon === 'scifi.png')
@@ -132,21 +141,21 @@ test.serial('$all', async t => {
     $id: 'geA',
     fields: {
       $all: true,
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
-  t.deepEqual(result1.fields, { name: 'hello', something: '' }, 'from field')
+  t.deepEqual(result1.fields, { name: 'hello' }, 'from field')
 
   const result = await client.get({
     $id: 'geB',
     fields: {
       $all: true,
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
-  t.deepEqual(result.fields, { name: 'hello', something: '' }, 'inherit')
+  t.deepEqual(result.fields, { name: 'hello' }, 'inherit')
 
   await client.destroy()
 })
@@ -170,7 +179,7 @@ test.serial('$field + object', async t => {
     $id: 'geC',
     flaprdol: {
       name: { $field: 'fields.name' },
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
@@ -180,7 +189,7 @@ test.serial('$field + object', async t => {
     $id: 'geD',
     flaprdol: {
       name: { $field: 'fields.name' },
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
@@ -209,7 +218,7 @@ test.serial('$field + object + all', async t => {
     flaprdol: {
       $all: true,
       $field: 'fields',
-      $inherit: true
+      $inherit: { $type: ['genre'] }
     }
   })
 
@@ -220,7 +229,7 @@ test.serial('$field + object + all', async t => {
     flaprdol: {
       $all: true,
       $field: 'fields',
-      $inherit: true
+      $inherit: { $type: 'genre' }
     }
   })
 
@@ -251,7 +260,7 @@ test.serial('$field + object + all + nested', async t => {
     $id: 'geX',
     myTheme: {
       $field: 'theme',
-      $inherit: true,
+      $inherit: { $type: 'genre' },
       $all: true
     }
   })
@@ -273,7 +282,7 @@ test.serial('$field + object + all + nested', async t => {
     $id: 'geY',
     myTheme: {
       $field: 'theme',
-      $inherit: true,
+      $inherit: { $type: 'genre' },
       $all: true
     }
   })
@@ -369,8 +378,8 @@ test.serial('$field +  multiple options', async t => {
     $alias: 'maA',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.match', 'layout.default']
     }
   }
 
@@ -382,8 +391,8 @@ test.serial('$field +  multiple options', async t => {
     $alias: 'reB',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.region', 'layout.default']
     }
   })
 
@@ -481,8 +490,8 @@ test.serial('$field +  multiple options + inherit from root', async t => {
     $alias: 'maA',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.match', 'layout.default']
     }
   }
 
@@ -494,8 +503,8 @@ test.serial('$field +  multiple options + inherit from root', async t => {
     $alias: 'reB',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.region', 'layout.default']
     }
   })
 
@@ -586,8 +595,8 @@ test.serial.skip('$field + inherit from root + query root', async t => {
     $id: 'root',
     id: true,
     layout: {
-      $inherit: true,
-      $field: ['layout.${type}', 'layout.default']
+      $inherit: { $type: ['match', 'region', 'root'] },
+      $field: ['layout.match', 'layout.default']
     }
   })
 

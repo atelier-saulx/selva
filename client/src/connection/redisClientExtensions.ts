@@ -133,6 +133,12 @@ redis.add_command('selva.hierarchy.findin')
 redis.add_command('selva.hierarchy.findinsub')
 
 // @ts-ignore
+redis.add_command('selva.hierarchy.del')
+
+// @ts-ignore
+redis.add_command('selva.inherit')
+
+// @ts-ignore
 redis.add_command('selva.subscriptions.add')
 
 // @ts-ignore

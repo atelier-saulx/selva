@@ -18,7 +18,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('basic id based subscriptions', async t => {
+test.serial.only('basic id based subscriptions', async t => {
   const client = connect({ port })
 
   await client.updateSchema({

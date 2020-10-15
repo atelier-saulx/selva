@@ -218,6 +218,21 @@ async punsubscribe(opts: any, ...args: args): Promise<any> {
 }
 
 
+async acl(opts: ServerSelector, ...args: args): Promise<any>
+async acl(...args: args): Promise<any>
+async acl(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'acl', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'acl', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async append(opts: ServerSelector, ...args: args): Promise<any>
 async append(...args: args): Promise<any>
 async append(opts: any, ...args: args): Promise<any> {
@@ -303,6 +318,21 @@ async bitfield(opts: any, ...args: args): Promise<any> {
   } else {
     return new Promise((resolve, reject) => {
       this.addCommandToQueue({ command: 'bitfield', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async bitfield_ro(opts: ServerSelector, ...args: args): Promise<any>
+async bitfield_ro(...args: args): Promise<any>
+async bitfield_ro(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'bitfield_ro', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'bitfield_ro', args: [opts, ...args], resolve, reject })
     })
   }
 }
@@ -878,6 +908,21 @@ async hdel(opts: any, ...args: args): Promise<any> {
 }
 
 
+async hello(opts: ServerSelector, ...args: args): Promise<any>
+async hello(...args: args): Promise<any>
+async hello(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'hello', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'hello', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async hexists(opts: ServerSelector, ...args: args): Promise<any>
 async hexists(...args: args): Promise<any>
 async hexists(opts: any, ...args: args): Promise<any> {
@@ -1248,6 +1293,21 @@ async lpop(opts: any, ...args: args): Promise<any> {
   } else {
     return new Promise((resolve, reject) => {
       this.addCommandToQueue({ command: 'lpop', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async lpos(opts: ServerSelector, ...args: args): Promise<any>
+async lpos(...args: args): Promise<any>
+async lpos(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'lpos', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'lpos', args: [opts, ...args], resolve, reject })
     })
   }
 }
@@ -2273,6 +2333,21 @@ async sscan(opts: any, ...args: args): Promise<any> {
 }
 
 
+async stralgo(opts: ServerSelector, ...args: args): Promise<any>
+async stralgo(...args: args): Promise<any>
+async stralgo(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'stralgo', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'stralgo', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async strlen(opts: ServerSelector, ...args: args): Promise<any>
 async strlen(...args: args): Promise<any>
 async strlen(opts: any, ...args: args): Promise<any> {
@@ -3113,6 +3188,21 @@ async selva_hierarchy_parents(opts: any, ...args: args): Promise<any> {
 }
 
 
+async selva_hierarchy_del(opts: ServerSelector, ...args: args): Promise<any>
+async selva_hierarchy_del(...args: args): Promise<any>
+async selva_hierarchy_del(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_del', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_del', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async selva_modify(opts: ServerSelector, ...args: args): Promise<any>
 async selva_modify(...args: args): Promise<any>
 async selva_modify(opts: any, ...args: args): Promise<any> {
@@ -3123,6 +3213,21 @@ async selva_modify(opts: any, ...args: args): Promise<any> {
   } else {
     return new Promise((resolve, reject) => {
       this.addCommandToQueue({ command: 'selva_modify', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_inherit(opts: ServerSelector, ...args: args): Promise<any>
+async selva_inherit(...args: args): Promise<any>
+async selva_inherit(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_inherit', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_inherit', args: [opts, ...args], resolve, reject })
     })
   }
 }

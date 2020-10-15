@@ -268,7 +268,7 @@ test.serial('get - simple $list with $field of two field entries', async t => {
     })
   ])
 
-  let c = await client.get({
+  const c = await client.get({
     $id: 'cuA',
     otherName: {
       name: true,
@@ -299,107 +299,108 @@ test.serial('get - simple $list with $field of two field entries', async t => {
     },
     'non redis search sort'
   )
-
-  await client.destroy()
 })
 
-test.serial('get - simple $list with query $field of one field', async t => {
-  const client = connect({ port }, { loglevel: 'info' })
+// FIXME: yes?
+test.serial.skip(
+  'get - simple $list with query $field of one field',
+  async t => {
+    const client = connect({ port }, { loglevel: 'info' })
 
-  await client.updateSchema({
-    languages: ['en', 'de', 'nl'],
-    types: {
-      custom: {
-        prefix: 'cu',
-        fields: {
-          name: { type: 'string' },
-          value: { type: 'number', search: true },
-          age: { type: 'number' },
-          auth: {
-            type: 'json'
-          },
-          title: { type: 'text' },
-          description: { type: 'text' },
-          image: {
-            type: 'object',
-            properties: {
-              thumb: { type: 'string' },
-              poster: { type: 'string' }
+    await client.updateSchema({
+      languages: ['en', 'de', 'nl'],
+      types: {
+        custom: {
+          prefix: 'cu',
+          fields: {
+            name: { type: 'string' },
+            value: { type: 'number', search: true },
+            age: { type: 'number' },
+            auth: {
+              type: 'json'
+            },
+            title: { type: 'text' },
+            description: { type: 'text' },
+            image: {
+              type: 'object',
+              properties: {
+                thumb: { type: 'string' },
+                poster: { type: 'string' }
+              }
             }
           }
         }
       }
+    })
+
+    const children = []
+
+    for (let i = 0; i < 100; i++) {
+      children.push({
+        type: 'custom',
+        value: i,
+        name: 'flurp' + i
+      })
     }
-  })
 
-  const children = []
+    await Promise.all([
+      client.set({
+        $id: 'cuA',
+        image: {
+          thumb: 'flurp.jpg'
+        },
+        title: { en: 'snurf' },
+        children
+      })
+    ])
 
-  for (let i = 0; i < 100; i++) {
-    children.push({
-      type: 'custom',
-      value: i,
-      name: 'flurp' + i
-    })
-  }
-
-  await Promise.all([
-    client.set({
-      $id: 'cuA',
-      image: {
-        thumb: 'flurp.jpg'
-      },
-      title: { en: 'snurf' },
-      children
-    })
-  ])
-
-  const c = await client.get({
-    $id: 'cuB',
-    otherName: {
-      name: true,
-      value: true,
-      $field: { path: 'children', value: { $id: 'cuA', children: true } },
-      $list: {
-        $sort: { $field: 'value', $order: 'asc' },
-        $limit: 10
+    const c = await client.get({
+      $id: 'cuB',
+      otherName: {
+        name: true,
+        value: true,
+        $field: { path: 'children', value: { $id: 'cuA', children: true } },
+        $list: {
+          $sort: { $field: 'value', $order: 'asc' },
+          $limit: 10
+        }
       }
-    }
-  })
+    })
 
-  t.deepEqual(
-    c,
-    {
-      $isNull: true,
-      otherName: [
-        { value: 0, name: 'flurp0' },
-        { value: 1, name: 'flurp1' },
-        { value: 2, name: 'flurp2' },
-        { value: 3, name: 'flurp3' },
-        { value: 4, name: 'flurp4' },
-        { value: 5, name: 'flurp5' },
-        { value: 6, name: 'flurp6' },
-        { value: 7, name: 'flurp7' },
-        { value: 8, name: 'flurp8' },
-        { value: 9, name: 'flurp9' }
-      ]
-    },
-    'non redis search sort'
-  )
+    t.deepEqual(
+      c,
+      {
+        $isNull: true,
+        otherName: [
+          { value: 0, name: 'flurp0' },
+          { value: 1, name: 'flurp1' },
+          { value: 2, name: 'flurp2' },
+          { value: 3, name: 'flurp3' },
+          { value: 4, name: 'flurp4' },
+          { value: 5, name: 'flurp5' },
+          { value: 6, name: 'flurp6' },
+          { value: 7, name: 'flurp7' },
+          { value: 8, name: 'flurp8' },
+          { value: 9, name: 'flurp9' }
+        ]
+      },
+      'non redis search sort'
+    )
 
-  const c2 = await client.get({
-    $id: 'cuB',
-    otherName: {
-      name: true,
-      value: true,
-      $field: { path: 'children', value: { $id: 'cuA', children: true } },
-      $list: true
-    }
-  })
+    const c2 = await client.get({
+      $id: 'cuB',
+      otherName: {
+        name: true,
+        value: true,
+        $field: { path: 'children', value: { $id: 'cuA', children: true } },
+        $list: true
+      }
+    })
 
-  t.is(c2.otherName.length, 100, 'list true')
-
-  await client.destroy()
-})
+    t.is(c2.otherName.length, 100, 'list true')
+    await client.destroy()
+  }
+)
 
 test.serial('get - simple $list nested query structure', async t => {
   const client = connect({ port }, { loglevel: 'info' })

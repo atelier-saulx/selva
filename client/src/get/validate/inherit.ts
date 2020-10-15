@@ -21,7 +21,7 @@ export default function validateInherit(
         } 
         or
         {
-          $type: string | string[] or $name?: string | string[] but not both (optional)
+          $type: string | string[] (optional)
           $merge: boolean (optional)
         }
     `
@@ -38,10 +38,6 @@ export default function validateInherit(
     }
 
     if (inherit.$type) {
-      if (inherit.$name) {
-        err('Both $type and $name are not supported')
-      }
-
       if (!Array.isArray(inherit.$type) && typeof inherit.$type !== 'string') {
         err(`Inherit by $type must target a specific type or array of types`)
       }
@@ -49,19 +45,6 @@ export default function validateInherit(
       const allowed = checkAllowed(inherit, new Set(['$type', '$merge']))
       if (allowed !== true) {
         err(`Field or operator ${allowed} not allowed in inherit with $type`)
-      }
-
-      return
-    } else if (inherit.$name) {
-      if (!Array.isArray(inherit.$name) && typeof inherit.$name !== 'string') {
-        err(
-          `Inherit by $name must target a specific name (string) or array of names`
-        )
-      }
-
-      const allowed = checkAllowed(inherit, new Set(['$name', '$merge']))
-      if (allowed !== true) {
-        err(`Field or operator ${allowed} not allowed in inherit with $name`)
       }
 
       return
