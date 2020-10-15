@@ -6,8 +6,15 @@ import createGetOperations from '../createGetOperations'
 import { GetOptions } from '../'
 import find from './find'
 import inherit from './inherit'
+import { Rpn } from '@saulx/selva-query-ast-parser'
 
 export type ExecContext = { db: string; subId?: string }
+export type SubscriptionMarker =
+  | { type: 'node'; fields: string[] }
+  // this encompasses ancestors|descendants|<any other field traversed>
+  | { type: string; fields: string[]; rpn: Rpn }
+
+export async function addMarker(marker: SubscriptionMarker): Promise<void> {}
 
 export const TYPE_CASTS: Record<string, (x: any) => any> = {
   float: Number,
