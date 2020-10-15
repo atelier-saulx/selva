@@ -271,6 +271,9 @@ export default async function executeGetOperations(
   ctx: ExecContext,
   ops: GetOperation[]
 ): Promise<GetResult> {
+  if (ctx.subId) {
+    console.log('YEEEAH SUB ID', ctx)
+  }
   const o: GetResult = {}
   const results = await Promise.all(
     ops.map(op => executeGetOperation(client, lang, ctx, op))
