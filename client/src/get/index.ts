@@ -108,7 +108,6 @@ async function get(
 
   const lang = newProps.$language
 
-  console.log('MIT', db, subId)
   const getResult = await executeGetOperations(
     client,
     lang,
