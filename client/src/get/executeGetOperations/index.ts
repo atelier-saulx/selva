@@ -9,12 +9,44 @@ import inherit from './inherit'
 import { Rpn } from '@saulx/selva-query-ast-parser'
 
 export type ExecContext = { db: string; subId?: string }
-export type SubscriptionMarker =
-  | { type: 'node'; fields: string[] }
-  // this encompasses ancestors|descendants|<any other field traversed>
-  | { type: string; fields: string[]; rpn: Rpn }
+export type SubscriptionMarker = {
+  type: string // ancestors|descendants|<any other field traversed>
+  id: string
+  fields: string[]
+  rpn: Rpn
+}
 
-export async function addMarker(marker: SubscriptionMarker): Promise<void> {}
+function adler32(marker: SubscriptionMarker): number {
+  const MOD_ADLER = 65521
+
+  const str: string = JSON.stringify(marker)
+
+  let a = 1
+  let b = 0
+  for (let i = 0; i < str.length; i++) {
+    a = (a + Number(str[i])) % MOD_ADLER
+    b = (b + a) % MOD_ADLER
+  }
+
+  return (b << 16) | a
+}
+
+export async function addMarker(
+  client: SelvaClient,
+  ctx: ExecContext,
+  marker: SubscriptionMarker
+): Promise<void> {
+  const markerId = adler32(marker)
+  return client.redis.selva_subscriptions_add(
+    { name: ctx.db },
+    ctx.subId,
+    markerId,
+    marker.type,
+    marker.id,
+    ...marker.fields,
+    ...(marker.rpn || [])
+  )
+}
 
 export const TYPE_CASTS: Record<string, (x: any) => any> = {
   float: Number,
