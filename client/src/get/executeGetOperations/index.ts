@@ -103,16 +103,16 @@ async function addNodeMarkers(
         })
       })
     )
+
+    if (count > 0) {
+      await client.redis.selva_subscriptions_refresh(
+        { name: ctx.db },
+        '___selva_hierarchy',
+        ctx.subId
+      )
+    }
   } catch (e) {
     console.error(e)
-  }
-
-  if (count > 0) {
-    await client.redis.selva_subscriptions_refresh(
-      { name: ctx.db },
-      '___selva_hierarchy',
-      ctx.subId
-    )
   }
 }
 
