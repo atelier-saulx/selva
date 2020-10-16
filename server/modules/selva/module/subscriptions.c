@@ -909,7 +909,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "Subscription ID");
     }
 
     /*

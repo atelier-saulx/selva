@@ -1,3 +1,5 @@
+#include <stdarg.h>
+#include <string.h>
 #include "redismodule.h"
 #include "linker_set.h"
 #include "errors.h"
@@ -37,3 +39,32 @@ __attribute__((weak)) int replyWithSelvaError(RedisModuleCtx *ctx, int err) {
     return RedisModule_ReplyWithError(ctx, getSelvaErrorStr(err));
 }
 
+__attribute__((weak)) int replyWithSelvaErrorf(RedisModuleCtx *ctx, int selvaErr, char *fmt, ...) {
+    va_list args;
+    char buf[512];
+    const char *msg;
+    size_t len;
+    int err;
+
+    va_start(args, fmt);
+    msg = getSelvaErrorStr(selvaErr);
+    len = strlen(msg);
+
+    if (len <= sizeof(buf) - 1) {
+        strcpy(buf, msg);
+
+        if (len + 2 < sizeof(buf)) {
+            buf[len++] = ':';
+            buf[len++] = ' ';
+            vsnprintf(buf + len, sizeof(buf) - len, fmt, args);
+        } else {
+            buf[len] = '\0';
+        }
+        msg = buf;
+    }
+
+    err = RedisModule_ReplyWithError(ctx, msg);
+
+    va_end(args);
+    return err;
+}
