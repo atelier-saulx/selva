@@ -8,12 +8,16 @@ import find from './find'
 import inherit from './inherit'
 import { Rpn } from '@saulx/selva-query-ast-parser'
 
-export type ExecContext = { db: string; subId?: string }
+export type ExecContext = {
+  db: string
+  subId?: string
+  nodeMarkers?: Record<string, Set<string>>
+}
 export type SubscriptionMarker = {
   type: string // ancestors|descendants|<any other field traversed>
   id: string
   fields: string[]
-  rpn: Rpn
+  rpn?: Rpn
 }
 
 function adler32(marker: SubscriptionMarker): number {
@@ -24,7 +28,7 @@ function adler32(marker: SubscriptionMarker): number {
   let a = 1
   let b = 0
   for (let i = 0; i < str.length; i++) {
-    a = (a + Number(str[i])) % MOD_ADLER
+    a = (a + str.charCodeAt(i)) % MOD_ADLER
     b = (b + a) % MOD_ADLER
   }
 
@@ -43,9 +47,61 @@ export async function addMarker(
     markerId,
     marker.type,
     marker.id,
-    ...marker.fields,
+    marker.fields.join('\n'),
     ...(marker.rpn || [])
   )
+}
+
+export function bufferNodeMarker(
+  ctx: ExecContext,
+  id: string,
+  ...fields: string[]
+): void {
+  if (!ctx.subId) {
+    return
+  }
+
+  if (!ctx.nodeMarkers) {
+    ctx.nodeMarkers = {}
+  }
+
+  let current = ctx.nodeMarkers[id]
+  if (!current) {
+    current = new Set()
+  }
+
+  fields.forEach(f => current.add(f))
+
+  ctx.nodeMarkers[id] = current
+}
+
+async function addNodeMarkers(
+  client: SelvaClient,
+  ctx: ExecContext
+): Promise<void> {
+  if (!ctx.nodeMarkers) {
+    return
+  }
+
+  try {
+    await Promise.all(
+      Object.entries(ctx.nodeMarkers).map(async ([id, fields]) => {
+        console.log('adding marker', {
+          type: 'node',
+          id,
+          fields: [...fields.values()]
+        })
+
+        return addMarker(client, ctx, {
+          type: 'node',
+          id,
+          fields: [...fields.values()]
+        })
+      })
+    )
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 export const TYPE_CASTS: Record<string, (x: any) => any> = {
@@ -260,8 +316,9 @@ export const executeGetOperation = async (
       const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
 
       const nested: GetOperation[] = await Promise.all(
-        op.sourceField.map(f => {
+        op.sourceField.map(async f => {
           // TODO: add sub marker
+          bufferNodeMarker(ctx, op.id, f)
           if (specialOp) {
             return specialOp(client, op.id, f, lang)
           }
@@ -297,6 +354,7 @@ export const executeGetOperation = async (
       }
 
       // TODO: add sub marker
+      bufferNodeMarker(ctx, op.id, <string>op.sourceField)
 
       return r
     } else if (op.default) {
@@ -331,5 +389,9 @@ export default async function executeGetOperations(
       setNestedResult(o, ops[i].field, r)
     }
   })
+
+  // add buffered subscription markers
+  await addNodeMarkers(client, ctx)
+
   return o
 }
