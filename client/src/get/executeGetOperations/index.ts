@@ -43,12 +43,14 @@ export async function addMarker(
   const markerId = adler32(marker)
   return client.redis.selva_subscriptions_add(
     { name: ctx.db },
+    '___selva_hierarchy',
     ctx.subId,
     markerId,
     marker.type,
     marker.id,
+    'fields',
     marker.fields.join('\n'),
-    ...(marker.rpn || [])
+    ...(marker.rpn ? ['filter', ...marker.rpn] : [])
   )
 }
 

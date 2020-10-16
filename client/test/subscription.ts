@@ -28,6 +28,7 @@ test.serial.only('basic id based subscriptions', async t => {
     },
     types: {
       yeshType: {
+        prefix: 'ye',
         fields: {
           yesh: { type: 'string' }
         }
