@@ -85,9 +85,11 @@ async function addNodeMarkers(
     return
   }
 
+  let count = 0
   try {
     await Promise.all(
       Object.entries(ctx.nodeMarkers).map(async ([id, fields]) => {
+        count++
         console.log('adding marker', {
           type: 'node',
           id,
@@ -103,6 +105,14 @@ async function addNodeMarkers(
     )
   } catch (e) {
     console.error(e)
+  }
+
+  if (count > 0) {
+    await client.redis.selva_subscriptions_refresh(
+      { name: ctx.db },
+      '___selva_hierarchy',
+      ctx.subId
+    )
   }
 }
 
@@ -301,6 +311,7 @@ export const executeGetOperation = async (
     return inherit(client, op, lang, ctx)
   } else if (op.type === 'db') {
     const { db } = ctx
+    console.log('GET', op)
 
     let r: any
     let fieldSchema
@@ -319,7 +330,6 @@ export const executeGetOperation = async (
 
       const nested: GetOperation[] = await Promise.all(
         op.sourceField.map(async f => {
-          // TODO: add sub marker
           bufferNodeMarker(ctx, op.id, f)
           if (specialOp) {
             return specialOp(client, op.id, f, lang)
@@ -331,6 +341,8 @@ export const executeGetOperation = async (
 
       r = nested.find(x => !!x)
     } else {
+      bufferNodeMarker(ctx, op.id, <string>op.sourceField)
+
       fieldSchema = getNestedSchema(
         client.schemas.default,
         op.id,
@@ -354,9 +366,6 @@ export const executeGetOperation = async (
       if (typeCast) {
         return typeCast(r)
       }
-
-      // TODO: add sub marker
-      bufferNodeMarker(ctx, op.id, <string>op.sourceField)
 
       return r
     } else if (op.default) {

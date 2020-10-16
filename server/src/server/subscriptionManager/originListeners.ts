@@ -22,6 +22,7 @@ const addOriginListeners = async (
     let collect = 0
 
     const listener = (_pattern, channel, message) => {
+      console.log('CHAN', channel)
       subsManager.incomingCount++
       collect++
 
