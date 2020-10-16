@@ -678,7 +678,7 @@ static enum rpn_error rpn_op_exists(struct rpn_ctx *ctx) {
     }
 
     err = rpn_operand2rms(&ctx->rms_field, field);
-    if (!err) {
+    if (err) {
         return RPN_ERR_ENOMEM;
     }
 
