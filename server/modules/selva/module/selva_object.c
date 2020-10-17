@@ -405,7 +405,6 @@ int SelvaObject_GetAllCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
-        RedisModule_ReplyWithArray(ctx, 2);
         RedisModule_ReplyWithStringBuffer(ctx, key->name, key->name_len);
 
         switch (key->type) {
@@ -425,7 +424,7 @@ int SelvaObject_GetAllCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
             RedisModule_ReplyWithError(ctx, "type error");
         }
 
-        n++;
+        n += 2;
     }
     RedisModule_ReplySetArrayLength(ctx, n);
 

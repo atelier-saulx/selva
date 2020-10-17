@@ -192,12 +192,14 @@ const TYPE_TO_SPECIAL_OP: Record<
     const all = await client.redis.selva_object_getall(id)
     const result: any = {}
     let hasFields = false
-    Object.entries(all).forEach(([key, val]) => {
+    for (let i = 0; i < all.length; i += 2) {
+      const key = all[i]
+      const val = all[i + 1]
       if (key.startsWith(field + '.')) {
         hasFields = true
         setNestedResult(result, key.slice(field.length + 1), val)
       }
-    })
+    }
 
     if (lang) {
       if (result[lang]) {
@@ -226,7 +228,10 @@ const TYPE_TO_SPECIAL_OP: Record<
     const result: any = {}
     let hasKeys = false
     await Promise.all(
-      Object.entries(all).map(async ([key, val]) => {
+      all.map(async (key, i, arr) => {
+        if ((i & 1) === 1) return
+        let val = arr[i + 1]
+
         if (key.startsWith(field + '.')) {
           hasKeys = true
 
