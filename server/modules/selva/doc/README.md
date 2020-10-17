@@ -74,6 +74,10 @@ Create or update Selva nodes.
 
 See [modify.c](../module/modify.c).
 
+### Inherit
+
+See [inherit.c](../module/inherit.c).
+
 ### Selva Objects
 
 See [selva_object](../module/selva_object.c).
