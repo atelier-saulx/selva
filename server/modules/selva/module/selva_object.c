@@ -378,7 +378,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     if (err == SELVA_ENOENT) {
         return RedisModule_ReplyWithNull(ctx);
     } else if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "Object key");
     }
     RedisModule_ReplyWithString(ctx, value);
 

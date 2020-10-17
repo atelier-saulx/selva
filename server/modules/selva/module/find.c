@@ -470,7 +470,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     enum SelvaModify_Hierarchy_Algo algo;
     err = parse_algo(&algo, argv[ARGV_ALGO]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "traversal method");
     }
 
     /*
@@ -480,7 +480,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     const char *ref_field = NULL;
     err = parse_dir(&dir, algo, argv[ARGV_DIRECTION]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "direction");
     }
     if (dir == SELVA_HIERARCHY_TRAVERSAL_REF) {
         /* The arg is a field name. */
@@ -500,7 +500,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         if (err == 0) {
             SHIFT_ARGS(3);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "order");
         }
     }
 
@@ -513,7 +513,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "offset");
         }
     }
 
@@ -526,7 +526,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "limit");
         }
     }
 
@@ -542,7 +542,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
         rpn_ctx = rpn_init(ctx, nr_reg);
         if (!rpn_ctx) {
-            return replyWithSelvaError(ctx, SELVA_ENOMEM);
+            return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
         }
 
         /*
@@ -552,10 +552,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         filter_expression = rpn_compile(input, input_len);
         if (!filter_expression) {
             rpn_destroy(rpn_ctx);
-            fprintf(stderr, "%s: Failed to compile a filter expression: %.*s\n",
-                    __FILE__,
-                    (int)input_len, input);
-            return replyWithSelvaError(ctx, SELVA_RPN_ECOMP);
+            return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
         }
 
         /*
@@ -704,7 +701,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         if (err == 0) {
             SHIFT_ARGS(3);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "order");
         }
     }
 
@@ -717,7 +714,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "offset");
         }
     }
 
@@ -730,7 +727,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "limit");
         }
     }
 
@@ -750,9 +747,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     rpn_token *filter_expression = rpn_compile(filter_str, filter_len);
     if (!filter_expression) {
         rpn_destroy(rpn_ctx);
-        fprintf(stderr, "Hierarchy: Failed to compile a filter expression: %.*s\n",
-                (int)filter_len, filter_str);
-        return replyWithSelvaError(ctx, SELVA_RPN_ECOMP);
+        return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
     }
 
     /*
@@ -859,7 +854,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "subID");
     }
 
     /*
@@ -875,7 +870,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     struct Selva_SubscriptionMarker *marker;
     marker = SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id);
     if (!marker) {
-        return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_EINVAL);
+        return replyWithSelvaErrorf(ctx, SELVA_SUBSCRIPTIONS_EINVAL, "markerID");
     }
 
     /*
@@ -891,7 +886,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         if (err == 0) {
             SHIFT_ARGS(3);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "order");
         }
     }
 
@@ -904,7 +899,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "offset");
         }
     }
 
@@ -917,7 +912,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "limit");
         }
     }
 
