@@ -212,6 +212,36 @@ int SelvaObject_Exists(struct SelvaObject *obj, const RedisModuleString *key_nam
     return 0;
 }
 
+int SelvaObject_GetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double *out) {
+    struct SelvaObjectKey *key;
+
+    assert(obj);
+
+    key = get_key(obj, key_name, 0);
+    if (!key) {
+        return SELVA_ENOENT;
+    }
+
+    *out = key->emb_double_value;
+
+    return 0;
+}
+
+int SelvaObject_GetLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long *out) {
+    struct SelvaObjectKey *key;
+
+    assert(obj);
+
+    key = get_key(obj, key_name, 0);
+    if (!key) {
+        return SELVA_ENOENT;
+    }
+
+    *out = key->emb_ll_value;
+
+    return 0;
+}
+
 int SelvaObject_GetStr(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString **out) {
     struct SelvaObjectKey *key;
 
@@ -360,7 +390,6 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
     struct SelvaObjectKey *key;
-    int err;
 
     const size_t ARGV_KEY = 1;
     const size_t ARGV_OKEY = 2;
