@@ -27,14 +27,20 @@ Redis hash type is 20 % - 25 %. It can potentially offer even greater
 performance improvement, compared to hashes, in use cases where the data
 structure is accessed directly inside a Redis module.
 
-The data type is implemented in [selva_object](../module/selva_object.c).
+`SelvaObject` stores the object keys in a red-black tree. The key can
+store small C-native data types as values directly and have a pointer
+to the value for more complex or storage heavy types. The key itself
+knows the data type of the value.
+
+The `SelvaObject` data type is implemented in
+[selva_object](../module/selva_object.c).
 
 Selva Node
 ----------
 
-A Selva node is built from several parts stored in different ways in Redis and
-therefore also the management and ownership of the data is divided into
-separate C files.
+A Selva node is built of several parts stored in different ways in Redis and
+therefore also the management and ownership of the data is divided into several
+C files.
 
 Regular node fields are generally managed by
 [selva_node.c](../module/selva_node.c), which is used to abstract/wrap all
