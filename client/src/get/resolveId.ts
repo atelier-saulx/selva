@@ -20,7 +20,11 @@ export default async function resolveId(
 
       return props.$id[idx]
     } else {
-      return props.$id
+      const exists = await client.redis.exists(
+        { name: props.$db || 'default' },
+        props.$id
+      )
+      return exists ? props.$id : undefined
     }
   } else if (props.$alias) {
     const alias = Array.isArray(props.$alias) ? props.$alias : [props.$alias]
