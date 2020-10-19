@@ -22,7 +22,6 @@ const addOriginListeners = async (
     let collect = 0
 
     const listener = (_pattern, channel, message) => {
-      console.log('CHAN', channel)
       subsManager.incomingCount++
       collect++
 
@@ -34,8 +33,7 @@ const addOriginListeners = async (
         }
       } else {
         const subId = channel.slice(prefixLength)
-        const subscription =
-          subsManager.subscriptions[`${constants.NEW_SUBSCRIPTION}:${subId}`]
+        const subscription = subsManager.subscriptions[subId]
 
         if (subscription) {
           addUpdate(subsManager, subscription)
@@ -89,7 +87,7 @@ const addOriginListeners = async (
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
     redis.on(selector, 'pmessage', listener)
-    redis.psubscribe(selector, EVENTS + '*')
+    redis.psubscribe(selector, SUBSCRIPTION_UPDATE + '*')
   }
 
   subsManager.originListeners[name].subscriptions.add(subscription)
@@ -110,7 +108,7 @@ const removeOriginListeners = (
       if (name in subsManager.memberMemCache) {
         delete subsManager.memberMemCache[name]
       }
-      redis.punsubscribe({ name }, EVENTS + '*')
+      redis.punsubscribe({ name }, SUBSCRIPTION_UPDATE + '*')
       client.removeListener('reconnect', origin.reconnectListener)
       redis.removeListener({ name }, 'pmessage', origin.listener)
       delete subsManager.originListeners[name]
