@@ -224,7 +224,6 @@ test.serial.skip('refs resolve and get tracked correctly', async t => {
   await client.destroy()
 })
 
-// TODO
 test.serial('basic $inherit when ancestors change', async t => {
   const client = connect({ port })
 
@@ -251,14 +250,14 @@ test.serial('basic $inherit when ancestors change', async t => {
   const observable = client.observe({
     $id: thing,
     id: true,
-    yesh: { $inherit: true }
+    yesh: { $inherit: { $type: ['yeshType', 'root'] } }
   })
 
   let o1counter = 0
   const sub = observable.subscribe(d => {
     if (o1counter === 0) {
       // gets start event
-      t.deepEqualIgnoreOrder(d, { id: thing, yesh: '' })
+      t.deepEqualIgnoreOrder(d, { id: thing })
     } else if (o1counter === 1) {
       // gets update event
       t.deepEqualIgnoreOrder(d, { id: thing, yesh: 'so nice' })
