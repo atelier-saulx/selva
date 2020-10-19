@@ -117,7 +117,11 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
  * Check if field matches to any of the fields specified in the marker.
  */
 static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *marker, const char *field) {
-    return stringlist_search(marker->fields, field);
+    if (!!(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD) && marker->fields) {
+        return stringlist_search(marker->fields, field);
+    }
+
+    return 0;
 }
 
 static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct Selva_SubscriptionMarker *marker) {
@@ -708,6 +712,17 @@ void SelvaSubscriptions_InheritChild(
     }
 }
 
+static int isSubscribedToHierarchyFields(struct Selva_SubscriptionMarker *marker) {
+    int res;
+
+    res = Selva_SubscriptionFieldMatch(marker, "ancestors") ||
+          Selva_SubscriptionFieldMatch(marker, "children") ||
+          Selva_SubscriptionFieldMatch(marker, "descendants") ||
+          Selva_SubscriptionFieldMatch(marker, "parents");
+
+    return res;
+}
+
 static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,
                                    const Selva_NodeId node_id __unused,
                                    const struct Selva_SubscriptionMarkers *sub_markers) {
@@ -725,7 +740,13 @@ static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,
              * E.g. consider subscription marker for children of a node. In this
              * case we need to apply the marker to any new children.
              */
-            if (isHierarchyMarker(marker->marker_flags)) {
+            if (isHierarchyMarker(marker->marker_flags) &&
+                /*
+                 * SELVA_HIERARCHY_TRAVERSAL_NODE doesn't need to send an event
+                 * if there is no subscription to hierarchy fields because the
+                 * marker will never need a refresh.
+                 */
+                (marker->dir != SELVA_HIERARCHY_TRAVERSAL_NODE || isSubscribedToHierarchyFields(marker))) {
                 SVector_InsertFast(&def->subs, marker->sub);
             }
         }
