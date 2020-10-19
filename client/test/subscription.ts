@@ -36,7 +36,7 @@ test.serial.only('basic id based subscriptions', async t => {
     }
   })
 
-  t.plan(2)
+  t.plan(4)
 
   const observable = client.observe({ $id: 'root', yesh: true })
   let o1counter = 0
@@ -54,29 +54,29 @@ test.serial.only('basic id based subscriptions', async t => {
     o1counter++
   })
 
-  // const thing = await client.set({
-  //   type: 'yeshType',
-  //   yesh: 'extra nice'
-  // })
+  const thing = await client.set({
+    type: 'yeshType',
+    yesh: 'extra nice'
+  })
 
-  // let o2counter = 0
-  // const other = client.observe({ $id: thing, $all: true, aliases: false })
-  // const sub2 = other.subscribe(d => {
-  //   if (o2counter === 0) {
-  //     // gets start event
-  //     t.deepEqualIgnoreOrder(d, {
-  //       id: thing,
-  //       type: 'yeshType',
-  //       yesh: 'extra nice'
-  //     })
-  //   } else if (o2counter === 1) {
-  //     // gets delete event
-  //     t.true(d.$isNull)
-  //   } else {
-  //     t.fail
-  //   }
-  //   o2counter++
-  // })
+  let o2counter = 0
+  const other = client.observe({ $id: thing, $all: true, aliases: false })
+  const sub2 = other.subscribe(d => {
+    if (o2counter === 0) {
+      // gets start event
+      t.deepEqualIgnoreOrder(d, {
+        id: thing,
+        type: 'yeshType',
+        yesh: 'extra nice'
+      })
+    } else if (o2counter === 1) {
+      // gets delete event
+      t.true(d.$isNull)
+    } else {
+      t.fail
+    }
+    o2counter++
+  })
 
   await wait(500 * 2)
 
@@ -90,14 +90,14 @@ test.serial.only('basic id based subscriptions', async t => {
     yesh: 'so nice'
   })
 
-  // await client.delete({
-  //   $id: thing
-  // })
+  await client.delete({
+    $id: thing
+  })
 
   await wait(500 * 2)
 
   sub.unsubscribe()
-  // sub2.unsubscribe()
+  sub2.unsubscribe()
 
   await wait(500 * 2)
 
