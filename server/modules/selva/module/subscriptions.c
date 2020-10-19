@@ -505,7 +505,14 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
                     __FILE__,
                     Selva_SubscriptionId2str(str, sub->sub_id), marker->marker_id,
                     getSelvaErrorStr(err));
-            res = err; /* Report the last error */
+
+            /*
+             * Don't report ENOENT errors because subscriptions are valid for
+             * non-existent nodeIds.
+             */
+            if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+                res = err; /* Report the last error */
+            }
         }
     }
 

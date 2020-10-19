@@ -18,9 +18,10 @@ NODE_ID2 | NR_CHILDREN | ...
 HIERARCHY_RDB_EOF
 ```
 
-Deserialization is practically a reverse to what the serialization algorithm
-does. A nodeId is read first but it's kept in memory for now. Then the number of
-children is read, which tells how many values to read as child IDs. The children
-are created first, one by one. Finally once all the child nodes have been
-created the parent node itself can be created and marked as a parent to the new
-children. The algorithm is repeated until `HIERARCHY_RDB_EOF` is reached.
+Deserialization is practically a reverse operation of what the serialization
+algorithm does. A nodeId is read first but it's kept in memory for now. Then the
+number of children is read, which tells how many values to read as child IDs.
+The children are created first, one by one. Finally once all the child nodes
+have been created the parent node itself can be created and marked as a parent
+to the new children. The algorithm is repeated until `HIERARCHY_RDB_EOF` is
+reached.

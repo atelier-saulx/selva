@@ -12,6 +12,7 @@ const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
     [-SELVA_ENOMEM]                     = (const char *)"ERR_SELVA ENOMEM Out of memory",
     [-SELVA_ENOENT]                     = (const char *)"ERR_SELVA ENOENT Not found",
     [-SELVA_EEXIST]                     = (const char *)"ERR_SELVA EEXIST Exist",
+    [-SELVA_ENAMETOOLONG]               = (const char *)"ERR_SELVA ENAMETOOLONG Name too long",
     [-SELVA_MODIFY_HIERARCHY_EGENERAL]  = (const char *)"ERR_HIERARCHY EGENERAL Unknown error",
     [-SELVA_MODIFY_HIERARCHY_ENOTSUP]   = (const char *)"ERR_HIERARCHY ENOTSUP Operation not supported",
     [-SELVA_MODIFY_HIERARCHY_EINVAL]    = (const char *)"ERR_HIERARCHY EINVAL Invalid argument or input value",
