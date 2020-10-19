@@ -20,6 +20,10 @@ export default async function resolveId(
 
       return props.$id[idx]
     } else {
+      if (props.$id === 'root') {
+        return 'root'
+      }
+
       const exists = await client.redis.exists(
         { name: props.$db || 'default' },
         props.$id
