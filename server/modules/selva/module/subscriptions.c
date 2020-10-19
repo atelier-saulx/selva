@@ -117,7 +117,11 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
  * Check if field matches to any of the fields specified in the marker.
  */
 static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *marker, const char *field) {
-    return stringlist_search(marker->fields, field);
+    if (!!(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD) && marker->fields) {
+        return stringlist_search(marker->fields, field);
+    }
+
+    return 0;
 }
 
 static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct Selva_SubscriptionMarker *marker) {
