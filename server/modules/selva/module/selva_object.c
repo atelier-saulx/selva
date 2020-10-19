@@ -218,6 +218,8 @@ static int get_key(struct SelvaObject *obj, const RedisModuleString *key_name, i
         memcpy(key, filter, key_size);
         memset(&key->_entry, 0, sizeof(key->_entry)); /* RFE Might not be necessary. */
         (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
+    } else if (!key) {
+        return SELVA_ENOENT;
     }
 
     *out = key;
@@ -255,10 +257,13 @@ int SelvaObject_GetDouble(struct SelvaObject *obj, const RedisModuleString *key_
     int err;
 
     assert(obj);
+    assert(key_name);
 
     err = get_key(obj, key_name, 0, &key);
     if (err) {
         return err;
+    } else if (key->type != SELVA_OBJECT_DOUBLE) {
+        return SELVA_EINTYPE;
     }
 
     *out = key->emb_double_value;
@@ -271,10 +276,13 @@ int SelvaObject_GetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
     int err;
 
     assert(obj);
+    assert(key_name);
 
     err = get_key(obj, key_name, 0, &key);
     if (err) {
         return err;
+    } else if (key->type != SELVA_OBJECT_LONGLONG) {
+        return SELVA_EINTYPE;
     }
 
     *out = key->emb_ll_value;
@@ -287,11 +295,15 @@ int SelvaObject_GetStr(struct SelvaObject *obj, const RedisModuleString *key_nam
     int err;
 
     assert(obj);
+    assert(key_name);
 
     err = get_key(obj, key_name, 0, &key);
     if (err) {
         return err;
+    } else if (key->type != SELVA_OBJECT_STRING) {
+        return SELVA_EINTYPE;
     }
+    assert(key->value);
 
     *out = key->value;
 
@@ -451,7 +463,8 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     err = get_key(obj, argv[ARGV_OKEY], 0, &key);
     if (err == SELVA_ENOENT) {
         return RedisModule_ReplyWithNull(ctx);
-    } else {
+    } else if (err) {
+        fprintf(stderr, "err %d\n", err);
         return replyWithSelvaErrorf(ctx, err, "get_key");
     }
 
