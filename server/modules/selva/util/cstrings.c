@@ -1,3 +1,4 @@
+#include <string.h>
 #include "cstrings.h"
 
 int stringlist_search(const char *list, const char *str) {
@@ -28,4 +29,21 @@ int stringlist_search(const char *list, const char *str) {
     }
 
     return 0;
+}
+
+size_t substring_count(const char *string, const char *substring) {
+	size_t i, j, l1, l2;
+	size_t count = 0;
+
+	l1 = strlen(string);
+	l2 = strlen(substring);
+
+	for (i = 0; i < l1 - l2; i++) {
+		if (strstr(string + i, substring) == string + i) {
+			count++;
+			i = i + l2 -1;
+		}
+	}
+
+	return count;
 }
