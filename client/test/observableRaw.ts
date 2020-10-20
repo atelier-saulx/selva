@@ -18,6 +18,103 @@ const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
+test.serial('diff observables', async t => {
+  const port = await getPort()
+  const registry = await startRegistry({ port })
+  const connectOpts = { port }
+
+  const origin = await startOrigin({
+    registry: connectOpts,
+    default: true,
+    dir: join(dir, 'diff-origin')
+  })
+
+  // add in a replica
+
+  // one extra to offload registry
+  const subsregistry = await startSubscriptionRegistry({
+    registry: connectOpts
+  })
+
+  // do this later startReplica
+  const subsmanager = await startSubscriptionManager({
+    registry: connectOpts
+  })
+
+  const subsmanager2 = await startSubscriptionManager({
+    registry: connectOpts
+  })
+
+  const client = connect({ port })
+
+  await client.updateSchema({
+    rootType: {
+      fields: {
+        value: { type: 'number' },
+        flurp: {
+          type: 'array',
+          items: { type: 'number' }
+        },
+        nested: {
+          type: 'object',
+          properties: {
+            fun: { type: 'string' }
+          }
+        }
+      }
+    }
+  })
+
+  const obs = client.observe({
+    $id: 'root',
+    value: true,
+    flurp: true
+  })
+
+  obs.subscribe((value, checksum, diff) => {
+    // console.log('on subscription', value, checksum, diff)
+  })
+
+  await wait(500)
+
+  await client.set({
+    $id: 'root',
+    value: 1
+  })
+
+  await wait(500)
+
+  await client.set({
+    $id: 'root',
+    flurp: [1, 2, 3, 4]
+  })
+
+  await wait(500)
+
+  obs.subscribe((value, checksum, diff) => {
+    // console.log('on subscription 2', value, checksum, diff)
+  })
+
+  await wait(500)
+
+  await client.set({
+    $id: 'root',
+    flurp: [1, 3, 2, 4]
+  })
+
+  client.subscribeSchema()
+
+  await wait(2500)
+
+  await client.destroy()
+  await subsmanager.destroy()
+  await subsmanager2.destroy()
+  await subsregistry.destroy()
+  await registry.destroy()
+  await origin.destroy()
+  await t.connectionsAreEmpty()
+})
+
 test.serial('Make some observables and many subs managers', async t => {
   // maybe run all the servers in workers
   const port = await getPort()
@@ -125,7 +222,9 @@ test.serial('Make some observables and many subs managers', async t => {
   await wait(1e3)
 
   // need to test lesst strict we just want these numbers
-  const resultSpread = [1, 2, 1]
+
+  // schema subs as well!
+  const resultSpread = [2, 2, 1]
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map(v => v.length),
@@ -245,7 +344,7 @@ test.serial('Make some observables and many subs managers', async t => {
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
+    5, // one for schema subs
     'after moving to obs5 still has 4 things'
   )
 
@@ -259,7 +358,7 @@ test.serial('Make some observables and many subs managers', async t => {
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
+    5,
     'after removing obs5 still has 4 subs'
   )
 
@@ -274,13 +373,13 @@ test.serial('Make some observables and many subs managers', async t => {
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
+    5,
     'after removing servers still has 4 subs'
   )
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map(v => v.length),
-    [4],
+    [5],
     'Correct spread one 1 server is left'
   )
 
@@ -295,9 +394,11 @@ test.serial('Make some observables and many subs managers', async t => {
   await wait(2000)
 
   t.deepEqual(
-    await getServersSubscriptions(),
-    {},
-    'all subs are removed from subsregistry'
+    Object.values(await getServersSubscriptions()).reduce((a, b) => {
+      return a + b.length
+    }, 0),
+    1,
+    'all subs are removed from subsregistry, except schema subs'
   )
 
   const [, w] = await worker(
@@ -315,7 +416,7 @@ test.serial('Make some observables and many subs managers', async t => {
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map(v => v.length),
-    [1],
+    [2],
     'New sub is added'
   )
 
@@ -324,9 +425,11 @@ test.serial('Make some observables and many subs managers', async t => {
   await wait(5e3)
 
   t.deepEqual(
-    await getServersSubscriptions(),
-    {},
-    'all subs are removed from subsregistry after worker is terminated'
+    Object.values(await getServersSubscriptions()).reduce((a, b) => {
+      return a + b.length
+    }, 0),
+    1,
+    'all subs are removed from subsregistry after worker is terminated, except schema'
   )
 
   await wait(500)
@@ -338,7 +441,7 @@ test.serial('Make some observables and many subs managers', async t => {
   await t.connectionsAreEmpty()
 })
 
-test.only('diff observables', async t => {
+test.serial('Avoid sending the same data', async t => {
   const port = await getPort()
   const registry = await startRegistry({ port })
   const connectOpts = { port }
@@ -349,20 +452,17 @@ test.only('diff observables', async t => {
     dir: join(dir, 'diff-origin')
   })
 
-  // add in a replica
-
-  // one extra to offload registry
   const subsregistry = await startSubscriptionRegistry({
     registry: connectOpts
   })
 
-  // do this later startReplica
   const subsmanager = await startSubscriptionManager({
     registry: connectOpts
   })
 
-  const subsmanager2 = await startSubscriptionManager({
-    registry: connectOpts
+  const replica = await startReplica({
+    registry: connectOpts,
+    default: true
   })
 
   const client = connect({ port })
@@ -385,52 +485,13 @@ test.only('diff observables', async t => {
     }
   })
 
-  const obs = client.observe({
-    $id: 'root',
-    value: true,
-    flurp: true
-  })
-
-  obs.subscribe((value, checksum, diff) => {
-    // console.log('on subscription', value, checksum, diff)
-  })
-
-  await wait(500)
-
-  await client.set({
-    $id: 'root',
-    value: 1
-  })
-
-  await wait(500)
-
-  await client.set({
-    $id: 'root',
-    flurp: [1, 2, 3, 4]
-  })
-
-  await wait(500)
-
-  obs.subscribe((value, checksum, diff) => {
-    // console.log('on subscription 2', value, checksum, diff)
-  })
-
-  await wait(500)
-
-  await client.set({
-    $id: 'root',
-    flurp: [1, 3, 2, 4]
-  })
-
-  client.subscribeSchema()
-
   await wait(2500)
 
   await client.destroy()
   await subsmanager.destroy()
-  await subsmanager2.destroy()
   await subsregistry.destroy()
   await registry.destroy()
   await origin.destroy()
+  await replica.destroy()
   await t.connectionsAreEmpty()
 })
