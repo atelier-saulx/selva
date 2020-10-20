@@ -12,6 +12,7 @@ export type ExecContext = {
   db: string
   subId?: string
   nodeMarkers?: Record<string, Set<string>>
+  hasFindMarkers?: boolean
 }
 export type SubscriptionMarker = {
   type: string // ancestors|descendants|<any other field traversed>
@@ -40,6 +41,12 @@ export async function addMarker(
   ctx: ExecContext,
   marker: SubscriptionMarker
 ): Promise<void> {
+  if (!ctx.subId) {
+    return
+  }
+
+  console.log('adding marker', marker)
+
   const markerId = adler32(marker)
   return client.redis.selva_subscriptions_add(
     { name: ctx.db },
@@ -80,7 +87,7 @@ export function bufferNodeMarker(
 async function addNodeMarkers(
   client: SelvaClient,
   ctx: ExecContext
-): Promise<void> {
+): Promise<number> {
   if (!ctx.nodeMarkers) {
     return
   }
@@ -90,12 +97,6 @@ async function addNodeMarkers(
     await Promise.all(
       Object.entries(ctx.nodeMarkers).map(async ([id, fields]) => {
         count++
-        console.log('adding marker', {
-          type: 'node',
-          id,
-          fields: [...fields.values()]
-        })
-
         return addMarker(client, ctx, {
           type: 'node',
           id,
@@ -104,16 +105,22 @@ async function addNodeMarkers(
       })
     )
 
-    if (count > 0) {
-      await client.redis.selva_subscriptions_refresh(
-        { name: ctx.db },
-        '___selva_hierarchy',
-        ctx.subId
-      )
-    }
+    return count
   } catch (e) {
     console.error(e)
+    return 0
   }
+}
+
+async function refreshMarkers(
+  client: SelvaClient,
+  ctx: ExecContext
+): Promise<void> {
+  await client.redis.selva_subscriptions_refresh(
+    { name: ctx.db },
+    '___selva_hierarchy',
+    ctx.subId
+  )
 }
 
 export const TYPE_CASTS: Record<string, (x: any) => any> = {
@@ -398,7 +405,10 @@ export default async function executeGetOperations(
   })
 
   // add buffered subscription markers
-  await addNodeMarkers(client, ctx)
+  const addedMarkers = await addNodeMarkers(client, ctx)
+  if (addedMarkers || ctx.hasFindMarkers) {
+    await refreshMarkers(client, ctx)
+  }
 
   return o
 }

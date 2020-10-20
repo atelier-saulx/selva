@@ -1,7 +1,7 @@
 import { SelvaClient } from '../../'
 import { GetOperationFind, GetResult } from '../types'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
-import { executeNestedGetOperations, ExecContext } from './'
+import { executeNestedGetOperations, ExecContext, addMarker } from './'
 import { padId, joinIds } from '../utils'
 
 const findHierarchy = async (
@@ -51,6 +51,25 @@ const findHierarchy = async (
     )
     return ids
   } else {
+    const realOpts: any = {}
+    for (const key in op.props) {
+      if (!key.startsWith('$')) {
+        realOpts[key] = true
+      }
+    }
+
+    try {
+      await addMarker(client, ctx, {
+        type: sourceField,
+        id: op.id,
+        fields: Object.keys(realOpts),
+        rpn: args
+      })
+      ctx.hasFindMarkers = true
+    } catch (e) {
+      console.error(e)
+    }
+
     const ids = await client.redis.selva_hierarchy_find(
       {
         name: db
@@ -97,14 +116,15 @@ const executeFindOperation = async (
     }
   }
 
+  const realOpts: any = {}
+  for (const key in op.props) {
+    if (!key.startsWith('$')) {
+      realOpts[key] = op.props[key]
+    }
+  }
+
   const results = await Promise.all(
     ids.map(async id => {
-      const realOpts: any = {}
-      for (const key in op.props) {
-        if (!key.startsWith('$')) {
-          realOpts[key] = op.props[key]
-        }
-      }
       return await executeNestedGetOperations(
         client,
         {
