@@ -759,7 +759,12 @@ void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hiera
     /* Detached markers. */
     defer_hierarchy_events(hierarchy, node_id, &hierarchy->subs.detached_markers);
 
-    /* Markers on the node.  */
+    if (!metadata) {
+        fprintf(stderr, "%s:%d Node metadata missing\n", __FILE__, __LINE__);
+        return;
+    }
+
+    /* Markers on the node. */
     defer_hierarchy_events(hierarchy, node_id, &metadata->sub_markers);
 }
 
@@ -1282,11 +1287,10 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
 
     const int is_sub_id = id_len == SELVA_SUBSCRIPTION_ID_STR_LEN;
     const int is_node_id = id_len <= SELVA_NODE_ID_SIZE;
-    Selva_SubscriptionId sub_id;
-    Selva_NodeId node_id;
     SVector *markers = NULL;
 
     if (is_sub_id) {
+        Selva_SubscriptionId sub_id;
         struct Selva_Subscription *sub;
 
         err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_ID]);
@@ -1302,24 +1306,21 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
 
         markers = &sub->markers;
     } else if (is_node_id) {
-        SelvaModify_Hierarchy *hierarchy;
-        RedisModuleString *hkey_name;
-        struct SelvaModify_HierarchyMetadata *metadata;
+        Selva_NodeId node_id;
 
         Selva_NodeIdCpy(node_id, id_str);
+        if (!memcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+            markers = &hierarchy->subs.detached_markers.vec;
+        } else {
+            struct SelvaModify_HierarchyMetadata *metadata;
 
-        hkey_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-        hierarchy = SelvaModify_OpenHierarchy(ctx, hkey_name, REDISMODULE_READ);
-        if (!hierarchy) {
-            return REDISMODULE_OK;
+            metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, node_id);
+            if (!metadata) {
+                return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOENT);
+            }
+
+            markers = &metadata->sub_markers.vec;
         }
-
-        metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, node_id);
-        if (!metadata) {
-            return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOENT);
-        }
-
-        markers = &metadata->sub_markers.vec;
     } else {
         return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_EINVAL);
     }
