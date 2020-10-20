@@ -15,12 +15,7 @@ import { ServerSelector } from '../types'
 import chalk from 'chalk'
 import { applyPatch } from '@saulx/selva-diff'
 
-// import { unzip as unzipCb } from 'zlib'
-// import { promisify } from 'util'
-
 import { deepCopy } from '@saulx/utils'
-
-// const unzip = promisify(unzipCb)
 
 var observableIds = 0
 
@@ -461,13 +456,14 @@ export class Observable {
         // console.log('Incoming msg for observable', msg)
         const versions = JSON.parse(msg)
         if (versions && versions[0] === this.version) {
-          console.log(
-            'Subs manager send current version (with no update)',
-            this.options,
-            this.uuid,
-            this.version,
-            versions
-          )
+          // prob whats going on is the observable is not removed yet
+          // console.log(
+          //   'Subs manager send current version (with no update)',
+          //   this.options,
+          //   this.uuid,
+          //   this.version,
+          //   versions
+          // )
         } else {
           this.getValue(versions)
         }
