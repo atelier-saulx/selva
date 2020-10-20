@@ -53,7 +53,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscription find', async t => {
+test.serial.only('subscription find', async t => {
   const client = connect({ port })
 
   const matches = []
@@ -92,7 +92,7 @@ test.serial('subscription find', async t => {
   })
 
   await wait(100)
-  const obs = await client.observe({
+  const obs = client.observe({
     items: {
       name: true,
       id: true,
@@ -140,7 +140,7 @@ test.serial('subscription find', async t => {
 
   sub.unsubscribe()
 
-  const obs2 = await client.observe({
+  const obs2 = client.observe({
     $includeMeta: true,
     items: {
       $list: {
@@ -204,7 +204,7 @@ test.serial('subscription find', async t => {
 
   sub2.unsubscribe()
 
-  const obs3 = await client.observe({
+  const obs3 = client.observe({
     $id: matchTeam,
     $includeMeta: true,
     children: {

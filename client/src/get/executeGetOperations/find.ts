@@ -112,7 +112,7 @@ const executeFindOperation = async (
           ...realOpts
         },
         lang,
-        ctx
+        { db: ctx.db }
       )
     })
   )
