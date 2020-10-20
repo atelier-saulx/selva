@@ -58,23 +58,32 @@ static struct SelvaObject *new_selva_object(void) {
     return obj;
 }
 
-static void destroy_key(struct SelvaObjectKey *key) {
-    /* TODO other types */
+static void clear_key_value(struct SelvaObjectKey *key) {
     switch (key->type) {
+    /* TODO Other types */
     case SELVA_OBJECT_NULL:
+        /* NOP */
         break;
     case SELVA_OBJECT_DOUBLE:
         break;
     case SELVA_OBJECT_LONGLONG:
         break;
     case SELVA_OBJECT_STRING:
-        RedisModule_FreeString(NULL, key->value);
+        if (key->value) {
+            RedisModule_FreeString(NULL, key->value);
+        }
+        break;
+    case SELVA_OBJECT_OBJECT:
+        if (key->value) {
+            clear_key_value(key->value); /* recurse */
+            RedisModule_Free(key->value);
+        }
         break;
     default:
-        fprintf(stderr, "%s: Invalid type\n", __FILE__);
+        fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
     }
 
-    RedisModule_Free(key);
+    key->type = SELVA_OBJECT_NULL;
 }
 
 static void destroy_selva_object(struct SelvaObject *obj) {
@@ -84,7 +93,8 @@ static void destroy_selva_object(struct SelvaObject *obj) {
 	for (key = RB_MIN(SelvaObjectKeys, &obj->keys_head); key != NULL; key = next) {
 		next = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
 		RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
-        destroy_key(key);
+        clear_key_value(key);
+        RedisModule_Free(key);
     }
 
     RedisModule_Free(obj);
@@ -299,6 +309,8 @@ int SelvaObject_DelKey(struct SelvaObject *obj, const RedisModuleString *key_nam
     }
 
     RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
+    clear_key_value(key);
+    RedisModule_Free(key);
 
     return 0;
 }
@@ -376,27 +388,6 @@ int SelvaObject_GetStr(struct SelvaObject *obj, const RedisModuleString *key_nam
     return 0;
 }
 
-static void clear_previous_value(struct SelvaObjectKey *key) {
-    switch (key->type) {
-    /* TODO Other types */
-    case SELVA_OBJECT_NULL:
-        /* NOP */
-        break;
-    case SELVA_OBJECT_DOUBLE:
-        break;
-    case SELVA_OBJECT_LONGLONG:
-        break;
-    case SELVA_OBJECT_STRING:
-        RedisModule_FreeString(NULL, key->value);
-        break;
-    case SELVA_OBJECT_OBJECT:
-        fprintf(stderr, "%s: Should remove a nested object here\n", __FILE__);
-        break;
-    default:
-        fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
-    }
-}
-
 int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
@@ -409,7 +400,7 @@ int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_
         return err;
     }
 
-    clear_previous_value(key);
+    clear_key_value(key);
 
     key->type = SELVA_OBJECT_DOUBLE;
     key->emb_double_value = value;
@@ -429,7 +420,7 @@ int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
         return SELVA_ENOMEM;
     }
 
-    clear_previous_value(key);
+    clear_key_value(key);
 
     key->type = SELVA_OBJECT_LONGLONG;
     key->emb_ll_value = value;
@@ -449,7 +440,7 @@ int SelvaObject_SetStr(struct SelvaObject *obj, const RedisModuleString *key_nam
         return SELVA_ENOMEM;
     }
 
-    clear_previous_value(key);
+    clear_key_value(key);
 
     RedisModule_RetainString(NULL, value);
     key->type = SELVA_OBJECT_STRING;
