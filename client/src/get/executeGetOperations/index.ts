@@ -57,7 +57,7 @@ export async function addMarker(
     marker.id,
     'fields',
     marker.fields.join('\n'),
-    ...(marker.rpn ? ['filter', ...marker.rpn] : [])
+    ...(marker.rpn ? marker.rpn : [])
   )
   console.log([
     '___selva_hierarchy',
@@ -67,7 +67,7 @@ export async function addMarker(
     marker.id,
     'fields',
     marker.fields.join('\n'),
-    ...(marker.rpn ? ['filter', ...marker.rpn] : [])
+    ...(marker.rpn ? marker.rpn : [])
   ])
 
   return true
