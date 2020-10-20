@@ -54,7 +54,7 @@ static int SelvaObject_Compare(struct SelvaObjectKey *a, struct SelvaObjectKey *
 
 RB_GENERATE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
-static struct SelvaObject *new_selva_object(void) {
+struct SelvaObject *new_selva_object(void) {
     struct SelvaObject *obj;
 
     obj = RedisModule_Alloc(sizeof(*obj));
@@ -108,6 +108,14 @@ static void destroy_selva_object(struct SelvaObject *obj) {
 
     RedisModule_Free(obj);
 }
+
+/*
+ * Export static functions to create and destroy objects to the unit tests.
+ */
+#if defined(PU_TEST_BUILD)
+struct SelvaObject *(*SelvaObject_New)(void) = new_selva_object;
+void (*SelvaObject_Destroy)(struct SelvaObject *obj) = destroy_selva_object;
+#endif
 
 size_t SelvaObject_MemUsage(const void *value) {
     struct SelvaObject *obj = (struct SelvaObject *)value;
@@ -743,11 +751,11 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         return replyWithSelvaError(ctx, SELVA_ENOENT);
     }
 
-    const char type_null[] = "null";
-    const char type_double[] = "double";
-    const char type_longlong[] = "long long";
-    const char type_string[] = "string";
-    const char type_object[] = "object";
+    static const char type_null[] = "null";
+    static const char type_double[] = "double";
+    static const char type_longlong[] = "long long";
+    static const char type_string[] = "string";
+    static const char type_object[] = "object";
 #define REPLY_WITH_TYPE(str) \
     RedisModule_ReplyWithStringBuffer(ctx, (str), sizeof(str) - 1)
 
