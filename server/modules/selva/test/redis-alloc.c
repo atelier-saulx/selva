@@ -1,6 +1,9 @@
 #include <stdlib.h>
+#include "cdefs.h"
 #include "sds.h"
 
+struct RedisModuleCtx;
+struct RedisModuleString;
 struct redisObjectAccessor {
     uint32_t _meta;
     int refcount;
@@ -23,7 +26,7 @@ void _RedisModule_Free(void *ptr) {
     free(ptr);
 }
 
-struct RedisModuleString *RedisModule_CreateString(struct RedisModuleCtx *ctx __unused, const char *ptr, size_t len) {
+static struct RedisModuleString *_RedisModule_CreateString(struct RedisModuleCtx *ctx __unused, const char *ptr, size_t len) {
 	struct redisObjectAccessor *robj;
 
     robj = calloc(1, sizeof(*robj));
@@ -38,11 +41,12 @@ struct RedisModuleString *RedisModule_CreateString(struct RedisModuleCtx *ctx __
 
     return (struct RedisModuleString *)robj;
 }
+extern struct RedisModuleString *(*RedisModule_CreateString) = _RedisModule_CreateString;
 
 /*
  * Partilally copied from redis-server module.c
  */
-const char *RedisModule_StringPtrLen(struct RedisModuleString *str, size_t *len) {
+static const char *_RedisModule_StringPtrLen(struct RedisModuleString *str, size_t *len) {
     struct redisObjectAccessor *robj = (struct redisObjectAccessor *)str;
 
 	if (!str) {
@@ -61,6 +65,7 @@ const char *RedisModule_StringPtrLen(struct RedisModuleString *str, size_t *len)
 
 	return robj->ptr;
 }
+extern const char *(*RedisModule_StringPtrLen)(struct RedisModuleString *str, size_t *len) = _RedisModule_StringPtrLen;
 
 void * (*RedisModule_Alloc)(size_t size) = _RedisModule_Alloc;
 void* (*RedisModule_Calloc)(size_t nmemb, size_t size) = _RedisModule_Calloc;

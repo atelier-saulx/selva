@@ -10,6 +10,20 @@ RedisModuleIO *io;
 
 Selva_NodeId HIERARCHY_RDB_EOF __nonstring;
 
+/* GCC needs something to be stored in the set. */
+static void init_node_metadata(
+        Selva_NodeId id __unused,
+        struct SelvaModify_HierarchyMetadata *metadata __unused) {
+}
+SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata);
+
+/* GCC needs something to be stored in the set. */
+static void deinit_node_metadata(
+        Selva_NodeId id __unused,
+        struct SelvaModify_HierarchyMetadata *metadata) {
+}
+SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata);
+
 int SelvaNodeId_Compare(const void *a, const void *b) {
 
     return memcmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);

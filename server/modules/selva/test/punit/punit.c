@@ -35,6 +35,7 @@
   */
 
 #include <stdio.h>
+#include "cdefs.h"
 #include "punit.h"
 
 /* Variables below are documented in punit.h */

@@ -1,3 +1,4 @@
+#include "cdefs.h"
 #include "redismodule.h"
 #include "errors.h"
 

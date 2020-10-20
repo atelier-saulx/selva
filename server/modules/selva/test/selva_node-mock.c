@@ -1,3 +1,4 @@
+#include "cdefs.h"
 #include "selva_node.h"
 
 int SelvaNode_Delete(
