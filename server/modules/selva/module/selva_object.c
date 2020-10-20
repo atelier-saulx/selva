@@ -13,6 +13,9 @@
 #define SELVA_OBJECT_ENCODING_VERSION   0
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX
 
+#define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
+#define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
+
 enum SelvaObjectType {
     SELVA_OBJECT_NULL,
     SELVA_OBJECT_DOUBLE,
@@ -42,7 +45,7 @@ struct SelvaObject {
 static RedisModuleType *ObjectType;
 
 static void destroy_selva_object(struct SelvaObject *obj);
-static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, int create, struct SelvaObjectKey **out);
+static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
 static int SelvaObject_Compare(struct SelvaObjectKey *a, struct SelvaObjectKey *b) {
@@ -61,7 +64,6 @@ static struct SelvaObject *new_selva_object(void) {
 }
 
 static int clear_key_value(struct SelvaObjectKey *key) {
-    fprintf(stderr, "Clearing %d\n", (int)key->type); // TODO remove
     switch (key->type) {
     /* TODO Other types */
     case SELVA_OBJECT_NULL:
@@ -77,7 +79,6 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         }
         break;
     case SELVA_OBJECT_OBJECT:
-        fprintf(stderr, "might clear %s\n", key->name);
         if (key->value) {
             struct SelvaObject *obj = (struct SelvaObject *)key->value;
 
@@ -213,12 +214,13 @@ int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
     return 0;
 }
 
-static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, int create, struct SelvaObjectKey **out) {
+static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     const char *sep = ".";
     const size_t nr_parts = substring_count(key_name_str, ".") + 1;
     char buf[key_name_len]; /* We assume that the length has been sanity checked at this point. */
     char *s = buf;
     struct SelvaObjectKey *key;
+    struct SelvaObject *cobj = obj; /* Containing object. */
 
     strncpy(s, key_name_str, key_name_len);
     s[key_name_len] = '\0';
@@ -228,17 +230,20 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         const size_t slen = strlen(s);
         int err;
 
-        key = NULL;
+        cobj = obj;
+        key = NULL; /* This needs to be cleared on every iteration. */
         nr_parts_found++;
         err = get_key(obj, s, slen, 0, &key);
-        if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT)) && create) {
+        if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT)) &&
+            (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
              * but we are allowed to create one here.
              */
             if (!key) {
                 /*
-                 * Create the key if it doesn't exist.
+                 * Only create the key if it didn't exist. Otherwise we can just
+                 * reuse it.
                  */
                 const size_t key_size = sizeof(struct SelvaObjectKey) + slen + 1;
                 key = RedisModule_Alloc(key_size);
@@ -249,17 +254,21 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                 memset(key, 0, key_size);
                 strcpy(key->name, s); /* strok() is safe. */
                 key->name_len = slen;
+            } else {
+                /*
+                 * Clear the old value.
+                 */
+                clear_key_value(key);
             }
             key->type = SELVA_OBJECT_OBJECT;
             key->value = new_selva_object();
             (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
 
             if (!key->value) {
-                /* Partial object might have been created! */
+                /* A partial object might have been created! */
                 key->type = SELVA_OBJECT_NULL;
                 return SELVA_ENOMEM;
             }
-            fprintf(stderr, "New %s\n", s);
 
             obj = key->value;
         } else if (err) {
@@ -268,13 +277,11 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              */
             return err;
         } else if (key->type == SELVA_OBJECT_OBJECT) {
-            fprintf(stderr, "found %s\n", s);
             /*
              * Keep nesting or return an object if this was the last token.
              */
             obj = key->value;
         } else {
-            fprintf(stderr, "final %s\n", s);
             /*
              * Found the final key.
              */
@@ -282,16 +289,30 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         }
     }
 
+    /*
+     * Check that we found what  we were really looking for. Consider the
+     * following:
+     * We have a key: a.b = "hello"
+     * We do a lookup for "a.b.c" but end up to "a.b"
+     * Without the following check we'd happily tell the user that the value of
+     * "a.b.c" == "hello".
+     */
     if (nr_parts_found != nr_parts) {
-        fprintf(stderr, "%zu != %zu\n", nr_parts_found, nr_parts);
         return SELVA_ENOENT;
+    }
+
+    if (flags & SELVA_OBJECT_GETKEY_DELETE) {
+        RB_REMOVE(SelvaObjectKeys, &cobj->keys_head, key);
+        (void)clear_key_value(key);
+        RedisModule_Free(key);
+        key = NULL;
     }
 
     *out = key;
     return 0;
 }
 
-static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, int create, struct SelvaObjectKey **out) {
+static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     struct SelvaObjectKey *filter;
     struct SelvaObjectKey *key;
 
@@ -300,10 +321,8 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
     }
 
     if (strstr(key_name_str, ".")) {
-        fprintf(stderr, "irregular key\n");
-        return get_key_obj(obj, key_name_str, key_name_len, create, out);
+        return get_key_obj(obj, key_name_str, key_name_len, flags, out);
     }
-    fprintf(stderr, "Regular key\n");
 
     const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
     char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey)))); /* RFE This might be dumb */
@@ -314,7 +333,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
     filter->name_len = key_name_len;
 
     key = RB_FIND(SelvaObjectKeys, &obj->keys_head, filter);
-    if (!key && create) {
+    if (!key && (flags & SELVA_OBJECT_GETKEY_CREATE)) {
         key = RedisModule_Alloc(key_size);
         if (!key) {
             return SELVA_ENOMEM;
@@ -327,7 +346,13 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         return SELVA_ENOENT;
     }
 
-    fprintf(stderr, "found key\n"); // TODO remove
+    if (flags & SELVA_OBJECT_GETKEY_DELETE) {
+        RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
+        (void)clear_key_value(key);
+        RedisModule_Free(key);
+        key = NULL;
+    }
+
     *out = key;
     return 0;
 }
@@ -339,14 +364,10 @@ int SelvaObject_DelKey(struct SelvaObject *obj, const RedisModuleString *key_nam
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_DELETE, &key);
     if (err) {
         return err;
     }
-
-    RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
-    (void)clear_key_value(key);
-    RedisModule_Free(key);
 
     return 0;
 }
@@ -431,7 +452,7 @@ int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, 1, &key);
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
     if (err) {
         return err;
     }
@@ -454,7 +475,7 @@ int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, 1, &key);
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
     if (err) {
         return err;
     }
@@ -477,7 +498,7 @@ int SelvaObject_SetStr(struct SelvaObject *obj, const RedisModuleString *key_nam
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, 1, &key);
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
     if (err) {
         return err;
     }
@@ -574,7 +595,6 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     if (err == SELVA_ENOENT) {
         return RedisModule_ReplyWithNull(ctx);
     } else if (err) {
-        fprintf(stderr, "err %d\n", err);
         return replyWithSelvaErrorf(ctx, err, "get_key");
     }
 
@@ -737,7 +757,6 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     if (err == SELVA_ENOENT) {
         return REPLY_WITH_TYPE(type_null);
     } else if (err) {
-        fprintf(stderr, "err %d\n", err);
         return replyWithSelvaErrorf(ctx, err, "get_key");
     }
 
@@ -756,6 +775,7 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         break;
     case SELVA_OBJECT_OBJECT:
         REPLY_WITH_TYPE(type_object);
+        break;
     default:
         fprintf(stderr, "%s: Invalid type %d\n", __FILE__, key->type);
         RedisModule_ReplyWithError(ctx, "type error");
