@@ -25,7 +25,9 @@ struct RedisModuleKey *SelvaNode_Open(
         const Selva_NodeId nodeId,
         unsigned flags);
 
-int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id);
+int SelvaNode_Delete(
+        struct RedisModuleCtx *ctx,
+        struct RedisModuleString *id);
 
 int SelvaNode_ExistField(
         struct RedisModuleCtx *ctx,
