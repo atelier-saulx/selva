@@ -409,6 +409,18 @@
     redis "^2.8.0"
     uuid "^3.3.3"
 
+"@saulx/selva@2.0.11":
+  version "2.0.11"
+  resolved "https://registry.yarnpkg.com/@saulx/selva/-/selva-2.0.11.tgz#6beb2c8740ce8f40b4f05ed16370a502fea8571d"
+  integrity sha512-mWBSfmM4M9nO2d+9N5I/P8LwS/V9rig2fTpTRQyx34b/Aez2f7YUlJH9eAl2sACXrzjI//cJyNH60ZGwEn7/dQ==
+  dependencies:
+    "@saulx/selva-diff" "^1.0.11"
+    "@saulx/utils" "^1.0.6"
+    "@types/uuid" "^3.4.6"
+    chalk "^4.0.0"
+    redis "^2.8.0"
+    uuid "^3.3.3"
+
 "@saulx/utils@^1.0.6":
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/@saulx/utils/-/utils-1.0.6.tgz#80f62c79ad04898ce02518bb7e3d4e1a93dab3d5"
