@@ -132,6 +132,7 @@ async function refreshMarkers(
     return
   }
 
+  console.log('REFRESHING MARKERS', ctx.subId)
   await client.redis.selva_subscriptions_refresh(
     { name: ctx.db },
     '___selva_hierarchy',
