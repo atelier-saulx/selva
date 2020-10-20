@@ -34,6 +34,7 @@ static struct RedisModuleString *_RedisModule_CreateString(struct RedisModuleCtx
         abort();
     }
 
+    robj->refcount = 1;
     robj->ptr = sdsnewlen(ptr, len);
     if (!robj->ptr) {
         abort();
@@ -41,7 +42,6 @@ static struct RedisModuleString *_RedisModule_CreateString(struct RedisModuleCtx
 
     return (struct RedisModuleString *)robj;
 }
-extern struct RedisModuleString *(*RedisModule_CreateString) = _RedisModule_CreateString;
 
 /*
  * Partilally copied from redis-server module.c
@@ -65,9 +65,27 @@ static const char *_RedisModule_StringPtrLen(struct RedisModuleString *str, size
 
 	return robj->ptr;
 }
-extern const char *(*RedisModule_StringPtrLen)(struct RedisModuleString *str, size_t *len) = _RedisModule_StringPtrLen;
 
-void * (*RedisModule_Alloc)(size_t size) = _RedisModule_Alloc;
-void* (*RedisModule_Calloc)(size_t nmemb, size_t size) = _RedisModule_Calloc;
-void * (*RedisModule_Realloc)(void *ptr, size_t size) = _RedisModule_Realloc;
-void (*RedisModule_Free)(void *ptr) = _RedisModule_Free;
+static void _RedisModule_FreeString(struct RedisModuleCtx *ctx __unused, struct RedisModuleString *str) {
+    struct redisObjectAccessor *robj = (struct redisObjectAccessor *)str;
+
+    if (str && --robj->refcount == 0) {
+        sdsfree(robj->ptr);
+        free(robj);
+    }
+}
+
+static void _RedisModule_RetainString(struct RedisModuleCtx *ctx __unused, struct RedisModuleString *str) {
+    struct redisObjectAccessor *robj = (struct redisObjectAccessor *)str;
+
+    robj->refcount++;
+}
+
+extern void * (*RedisModule_Alloc)(size_t size) = _RedisModule_Alloc;
+extern void* (*RedisModule_Calloc)(size_t nmemb, size_t size) = _RedisModule_Calloc;
+extern void * (*RedisModule_Realloc)(void *ptr, size_t size) = _RedisModule_Realloc;
+extern void (*RedisModule_Free)(void *ptr) = _RedisModule_Free;
+extern struct RedisModuleString *(*RedisModule_CreateString) = _RedisModule_CreateString;
+extern const char *(*RedisModule_StringPtrLen)(struct RedisModuleString *str, size_t *len) = _RedisModule_StringPtrLen;
+extern void (*RedisModule_FreeString)(struct RedisModuleCtx *ctx __unused, struct RedisModuleString *str) = _RedisModule_FreeString;
+extern void (*RedisModule_RetainString)(struct RedisModuleCtx *ctx __unused, struct RedisModuleString *str) =  _RedisModule_RetainString;
