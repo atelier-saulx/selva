@@ -123,6 +123,15 @@ test.serial.only('subscription find', async t => {
   await wait(1000)
   t.is(cnt, 1)
 
+  console.log(
+    'DEDE',
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', 'root'),
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      matches[0].$id
+    )
+  )
+
   await client.set({
     $id: matches[0].$id,
     value: 8
