@@ -441,7 +441,8 @@ test.serial('Make some observables and many subs managers', async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('Avoid sending the same data', async t => {
+// try to recreate
+test.only('Avoid sending the same data', async t => {
   const port = await getPort()
   const registry = await startRegistry({ port })
   const connectOpts = { port }
@@ -449,7 +450,7 @@ test.serial('Avoid sending the same data', async t => {
   const origin = await startOrigin({
     registry: connectOpts,
     default: true,
-    dir: join(dir, 'diff-origin')
+    dir: join(dir, 'avoid-same')
   })
 
   const subsregistry = await startSubscriptionRegistry({
