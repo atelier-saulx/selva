@@ -59,6 +59,16 @@ export async function addMarker(
     marker.fields.join('\n'),
     ...(marker.rpn ? ['filter', ...marker.rpn] : [])
   )
+  console.log([
+    '___selva_hierarchy',
+    ctx.subId,
+    markerId,
+    marker.type,
+    marker.id,
+    'fields',
+    marker.fields.join('\n'),
+    ...(marker.rpn ? ['filter', ...marker.rpn] : [])
+  ])
 
   return true
 }

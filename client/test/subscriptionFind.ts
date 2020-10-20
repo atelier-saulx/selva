@@ -139,6 +139,7 @@ test.serial.only('subscription find', async t => {
   t.is(cnt, 3)
 
   sub.unsubscribe()
+  return
 
   const obs2 = client.observe({
     $includeMeta: true,
