@@ -58,16 +58,15 @@ const findHierarchy = async (
       }
     }
 
-    try {
-      await addMarker(client, ctx, {
-        type: sourceField,
-        id: op.id,
-        fields: Object.keys(realOpts),
-        rpn: args
-      })
+    const added = await addMarker(client, ctx, {
+      type: sourceField,
+      id: op.id,
+      fields: Object.keys(realOpts),
+      rpn: args
+    })
+
+    if (added) {
       ctx.hasFindMarkers = true
-    } catch (e) {
-      console.error(e)
     }
 
     const ids = await client.redis.selva_hierarchy_find(
@@ -84,7 +83,7 @@ const findHierarchy = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      op.id,
+      padId(op.id),
       ...args
     )
     return ids

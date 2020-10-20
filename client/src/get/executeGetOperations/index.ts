@@ -40,15 +40,15 @@ export async function addMarker(
   client: SelvaClient,
   ctx: ExecContext,
   marker: SubscriptionMarker
-): Promise<void> {
+): Promise<boolean> {
   if (!ctx.subId) {
-    return
+    return false
   }
 
   console.log('adding marker', marker)
 
   const markerId = adler32(marker)
-  return client.redis.selva_subscriptions_add(
+  await client.redis.selva_subscriptions_add(
     { name: ctx.db },
     '___selva_hierarchy',
     ctx.subId,
@@ -59,6 +59,8 @@ export async function addMarker(
     marker.fields.join('\n'),
     ...(marker.rpn ? ['filter', ...marker.rpn] : [])
   )
+
+  return true
 }
 
 export function bufferNodeMarker(
@@ -116,6 +118,10 @@ async function refreshMarkers(
   client: SelvaClient,
   ctx: ExecContext
 ): Promise<void> {
+  if (!ctx.subId) {
+    return
+  }
+
   await client.redis.selva_subscriptions_refresh(
     { name: ctx.db },
     '___selva_hierarchy',
