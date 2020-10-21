@@ -53,7 +53,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('subscription find', async t => {
+test.serial('subscription find', async t => {
   const client = connect({ port })
 
   const matches = []
