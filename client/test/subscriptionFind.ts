@@ -53,7 +53,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscription find', async t => {
+test.serial.only('subscription find', async t => {
   const client = connect({ port })
 
   const matches = []
@@ -92,7 +92,7 @@ test.serial('subscription find', async t => {
   })
 
   await wait(100)
-  const obs = await client.observe({
+  const obs = client.observe({
     items: {
       name: true,
       id: true,
@@ -123,6 +123,15 @@ test.serial('subscription find', async t => {
   await wait(1000)
   t.is(cnt, 1)
 
+  console.log(
+    'DEDE',
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', 'root'),
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      matches[0].$id
+    )
+  )
+
   await client.set({
     $id: matches[0].$id,
     value: 8
@@ -139,8 +148,9 @@ test.serial('subscription find', async t => {
   t.is(cnt, 3)
 
   sub.unsubscribe()
+  return
 
-  const obs2 = await client.observe({
+  const obs2 = client.observe({
     $includeMeta: true,
     items: {
       $list: {
@@ -204,7 +214,7 @@ test.serial('subscription find', async t => {
 
   sub2.unsubscribe()
 
-  const obs3 = await client.observe({
+  const obs3 = client.observe({
     $id: matchTeam,
     $includeMeta: true,
     children: {

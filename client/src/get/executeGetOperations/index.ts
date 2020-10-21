@@ -12,6 +12,7 @@ export type ExecContext = {
   db: string
   subId?: string
   nodeMarkers?: Record<string, Set<string>>
+  hasFindMarkers?: boolean
 }
 export type SubscriptionMarker = {
   type: string // ancestors|descendants|<any other field traversed>
@@ -39,9 +40,15 @@ export async function addMarker(
   client: SelvaClient,
   ctx: ExecContext,
   marker: SubscriptionMarker
-): Promise<void> {
+): Promise<boolean> {
+  if (!ctx.subId) {
+    return false
+  }
+
+  console.log('adding marker', marker)
+
   const markerId = adler32(marker)
-  return client.redis.selva_subscriptions_add(
+  await client.redis.selva_subscriptions_add(
     { name: ctx.db },
     '___selva_hierarchy',
     ctx.subId,
@@ -50,8 +57,20 @@ export async function addMarker(
     marker.id,
     'fields',
     marker.fields.join('\n'),
-    ...(marker.rpn ? ['filter', ...marker.rpn] : [])
+    ...(marker.rpn ? marker.rpn : [])
   )
+  console.log([
+    '___selva_hierarchy',
+    ctx.subId,
+    markerId,
+    marker.type,
+    marker.id,
+    'fields',
+    marker.fields.join('\n'),
+    ...(marker.rpn ? marker.rpn : [])
+  ])
+
+  return true
 }
 
 export function bufferNodeMarker(
@@ -80,7 +99,7 @@ export function bufferNodeMarker(
 async function addNodeMarkers(
   client: SelvaClient,
   ctx: ExecContext
-): Promise<void> {
+): Promise<number> {
   if (!ctx.nodeMarkers) {
     return
   }
@@ -90,12 +109,6 @@ async function addNodeMarkers(
     await Promise.all(
       Object.entries(ctx.nodeMarkers).map(async ([id, fields]) => {
         count++
-        console.log('adding marker', {
-          type: 'node',
-          id,
-          fields: [...fields.values()]
-        })
-
         return addMarker(client, ctx, {
           type: 'node',
           id,
@@ -104,16 +117,27 @@ async function addNodeMarkers(
       })
     )
 
-    if (count > 0) {
-      await client.redis.selva_subscriptions_refresh(
-        { name: ctx.db },
-        '___selva_hierarchy',
-        ctx.subId
-      )
-    }
+    return count
   } catch (e) {
     console.error(e)
+    return 0
   }
+}
+
+async function refreshMarkers(
+  client: SelvaClient,
+  ctx: ExecContext
+): Promise<void> {
+  if (!ctx.subId) {
+    return
+  }
+
+  console.log('REFRESHING MARKERS', ctx.subId)
+  await client.redis.selva_subscriptions_refresh(
+    { name: ctx.db },
+    '___selva_hierarchy',
+    ctx.subId
+  )
 }
 
 export const TYPE_CASTS: Record<string, (x: any) => any> = {
@@ -316,7 +340,6 @@ export const executeGetOperation = async (
     return inherit(client, op, lang, ctx)
   } else if (op.type === 'db') {
     const { db } = ctx
-    console.log('GET', op)
 
     let r: any
     let fieldSchema
@@ -387,9 +410,6 @@ export default async function executeGetOperations(
   ctx: ExecContext,
   ops: GetOperation[]
 ): Promise<GetResult> {
-  if (ctx.subId) {
-    console.log('YEEEAH SUB ID', ctx)
-  }
   const o: GetResult = {}
   const results = await Promise.all(
     ops.map(op => executeGetOperation(client, lang, ctx, op))
@@ -407,7 +427,10 @@ export default async function executeGetOperations(
   })
 
   // add buffered subscription markers
-  await addNodeMarkers(client, ctx)
+  const addedMarkers = await addNodeMarkers(client, ctx)
+  if (addedMarkers || ctx.hasFindMarkers) {
+    await refreshMarkers(client, ctx)
+  }
 
   return o
 }

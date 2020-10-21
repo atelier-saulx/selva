@@ -124,6 +124,9 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
     return 0;
 }
 
+/**
+ * Match subscription marker with the RPN expression filter.
+ */
 static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct Selva_SubscriptionMarker *marker) {
     struct rpn_ctx *ctx = marker->filter_ctx;
     rpn_token *filter = marker->filter_expression;
@@ -768,6 +771,9 @@ void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hiera
     defer_hierarchy_events(hierarchy, node_id, &metadata->sub_markers);
 }
 
+/**
+ * Check whether the filter matches before changing the value of a node field.
+ */
 static void field_change_precheck(
         const Selva_NodeId node_id,
         const struct Selva_SubscriptionMarkers *sub_markers) {
@@ -821,28 +827,12 @@ static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
         SVECTOR_FOREACH(it, &sub_markers->vec) {
             struct Selva_SubscriptionMarker *marker = *it;
 
-            if (((marker->marker_flags & flags) == flags) &&
-                !inhibitMarkerEvent(node_id, marker) &&
-                Selva_SubscriptionFieldMatch(marker, field)) {
-                const int after = Selva_SubscriptionFilterMatch(node_id, marker);
+            if (((marker->marker_flags & flags) == flags) && !inhibitMarkerEvent(node_id, marker)) {
+                const int expressionMatchBefore = (marker->filter_history.res && !memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE));
+                const int expressionMatchAfter = Selva_SubscriptionFilterMatch(node_id, marker);
+                const int fieldsMatch = Selva_SubscriptionFieldMatch(marker, field);
 
-                /*
-                 * An event should be sent if the filter resolves to true now
-                 * or if its outcome was changed from true to false.
-                 *
-                 * after || (before && !after)
-                 *     0  0  0       0 1    0
-                 *     0  1  1       1 1    0
-                 *     1  1  0       0 0    1
-                 *     1  1  1       0 0    1
-                 *
-                 * which is equivalent to
-                 *
-                 * after || before
-                 */
-                if (after ||
-                    /* before */
-                    (marker->filter_history.res && !memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE))) {
+                if ((expressionMatchBefore && expressionMatchAfter && fieldsMatch) || (expressionMatchBefore ^ expressionMatchAfter)) {
                     SVector_InsertFast(&def->subs, marker->sub);
                 }
             }
