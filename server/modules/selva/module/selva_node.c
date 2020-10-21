@@ -197,7 +197,7 @@ static void delete_node_aliases(RedisModuleCtx *ctx, RedisModuleString *id) {
     }
 }
 
-static void delete_node_hash(RedisModuleCtx *ctx, RedisModuleString *id) {
+static void delete_node_object(RedisModuleCtx *ctx, RedisModuleString *id) {
     RedisModuleKey *key;
 
     /*
@@ -213,14 +213,13 @@ static void delete_node_hash(RedisModuleCtx *ctx, RedisModuleString *id) {
 int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id) {
     delete_selva_sets(ctx, id);
     delete_node_aliases(ctx, id);
-    delete_node_hash(ctx, id);
+    delete_node_object(ctx, id);
 
     return 0;
 }
 
 int SelvaNode_ExistField(RedisModuleCtx *ctx, RedisModuleKey *node_key, const RedisModuleString *field) {
     struct SelvaObject *obj;
-    int exists, err;
 
     SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
 
@@ -239,53 +238,18 @@ int SelvaNode_GetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, const Redi
 
 int SelvaNode_SetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field, RedisModuleString *value) {
     struct SelvaObject *obj;
-    TO_STR(field);
 
     SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
-
-    /*
-     * If the field name contains a dot then the field is an object of some
-     * kind, presumably "object" or "text". In case an object field is found
-     * we need to set a special value for the containing object names so that
-     * when accessing one we know that it's a part of an object. This is
-     * particularly useful for inherit.c
-     *
-     * Example:
-     * title    = "___selva_$object" (SELVA_OBJECT_KEYWORD)
-     * title.en = "New title"
-     */
-    const char *cname = field_str;
-    while ((cname = strstr(cname, "."))) {
-        const size_t len = (uintptr_t)cname++ - (uintptr_t)field_str;
-        RedisModuleString *field_container;
-        RedisModuleString *object_field_identifier;
-
-        field_container = RedisModule_CreateString(ctx, field_str, len);
-        object_field_identifier = RedisModule_CreateString(ctx, SELVA_OBJECT_KEYWORD, sizeof(SELVA_OBJECT_KEYWORD) - 1);
-        SelvaObject_SetStr(obj, field_container, object_field_identifier);
-    }
-
     SelvaObject_SetStr(obj, field, value);
 
     return 0;
 }
 
 int SelvaNode_DelField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field) {
-    TO_STR(field);
+    struct SelvaObject *obj;
 
-    /*
-     * See the comment in SelvaNode_SetField().
-     */
-    const char *cname = field_str;
-    while ((cname = strstr(cname, "."))) {
-        const size_t len = (uintptr_t)cname++ - (uintptr_t)field_str;
-        RedisModuleString *field_container;
-
-        field_container = RedisModule_CreateString(ctx, field_str, len);
-        (void)RedisModule_HashSet(node_key, REDISMODULE_HASH_NONE, field_container, REDISMODULE_HASH_DELETE, NULL);
-    }
-
-    (void)RedisModule_HashSet(node_key, REDISMODULE_HASH_NONE, field, REDISMODULE_HASH_DELETE, NULL);
+    SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
+    SelvaObject_DelKey(obj, field);
 
     return 0;
 }
