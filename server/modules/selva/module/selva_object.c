@@ -607,7 +607,7 @@ static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
                 break;
             }
         default:
-            RedisModule_ReplyWithError(ctx, "type error");
+            (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)key->type);
         }
 
         n += 2;
@@ -675,7 +675,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         replyWithObject(ctx, key->value);
         return REDISMODULE_OK;
     default:
-        return RedisModule_ReplyWithError(ctx, "type error");
+        return replyWithSelvaError(ctx, SELVA_EINTYPE);
     }
 }
 
@@ -781,8 +781,7 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         REPLY_WITH_TYPE(type_object);
         break;
     default:
-        fprintf(stderr, "%s: Invalid type %d\n", __FILE__, key->type);
-        RedisModule_ReplyWithError(ctx, "type error");
+        return replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)key->type);
     }
 
 #undef REPLY_WITH_TYPE
