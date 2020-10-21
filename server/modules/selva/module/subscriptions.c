@@ -504,7 +504,17 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
             .node_arg = marker,
         };
 
-        err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+        /*
+         * TODO This could be implemented with a head callback.
+         */
+        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS || marker->dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
+            err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, SELVA_HIERARCHY_TRAVERSAL_NODE, &cb);
+        } else {
+            err = 0;
+        }
+        if (!err) {
+            err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+        }
         if (err) {
             char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
