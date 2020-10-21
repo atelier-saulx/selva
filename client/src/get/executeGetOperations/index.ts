@@ -213,34 +213,29 @@ const TYPE_TO_SPECIAL_OP: Record<
     field: string,
     lang?: string
   ) => {
-    const all = await client.redis.selva_object_getall(id)
-    const result: any = {}
-    let hasFields = false
-    for (let i = 0; i < all.length; i += 2) {
-      const key = all[i]
-      const val = all[i + 1]
-      if (key.startsWith(field + '.')) {
-        hasFields = true
-        setNestedResult(result, key.slice(field.length + 1), val)
+    if (lang) {
+      const res = await client.redis.selva_object_get(id, `${field}.${lang}`)
+      if (res) {
+        return res;
       }
+    }
+    const allLangs = client.schemas.default.languages
+    const res = await client.redis.selva_object_get(id, field);
+    const texts = {};
+
+    for (let i = 0; i < res.length; i += 2) {
+        texts[res[i]] = res[i + 1];
     }
 
     if (lang) {
-      if (result[lang]) {
-        return result[lang]
-      }
-
-      const allLangs = client.schemas.default.languages
       for (const l of allLangs) {
-        if (result[l]) {
-          return result[l]
+        if (texts[l]) {
+            return texts[l];
         }
       }
     }
 
-    if (hasFields) {
-      return result
-    }
+    return texts;
   },
   object: async (
     client: SelvaClient,
