@@ -33,7 +33,8 @@ function adler32(marker: SubscriptionMarker): number {
     b = (b + a) % MOD_ADLER
   }
 
-  return (b << 16) | a
+  const res = (b << 16) | a
+  return res & 0x7fffffff
 }
 
 export async function addMarker(
