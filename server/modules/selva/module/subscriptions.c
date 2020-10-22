@@ -118,7 +118,25 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
  */
 static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *marker, const char *field) {
     if (!!(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD) && marker->fields) {
-        return stringlist_search(marker->fields, field);
+        const char *p = field;
+
+        p = strstr(field, ".");
+        /*
+         * If the field contains one or more dots so we try for each level;
+         * Otherwise we try to find an exact match.
+         */
+        if (p) {
+            do {
+                size_t len = (ptrdiff_t)p - (ptrdiff_t)field;
+
+                if (stringlist_searchn(marker->fields, field, len)) {
+                    return 1;
+                }
+                p++;
+            } while ((p = strstr(p, ".")));
+        } else {
+            return stringlist_search(marker->fields, field);
+        }
     }
 
     return 0;
