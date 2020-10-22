@@ -15,4 +15,9 @@ int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_
 int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, double value);
 int SelvaObject_SetStr(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value);
 
+/*
+ * Send a SelvaObject as a Redis reply.
+ */
+int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, RedisModuleString *key_name);
+
 #endif /* SELVA_OBJECT */

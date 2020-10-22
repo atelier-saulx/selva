@@ -93,12 +93,19 @@ int update_set(
     RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
+    int err;
     TO_STR(id, field);
     RedisModuleKey *alias_key = NULL;
 
-    /* Add in the hash that it's a set/references field */
+    /* Set in the node key that it's a set/references field */
     RedisModuleString *set_field_identifier = RedisModule_CreateString(ctx, SELVA_SET_KEYWORD, sizeof(SELVA_SET_KEYWORD) - 1);
-    RedisModule_HashSet(id_key, REDISMODULE_HASH_NONE, field, set_field_identifier, NULL);
+    if (!set_field_identifier) {
+        return SELVA_ENOMEM;
+    }
+    err = SelvaNode_SetField(ctx, id_key,field, set_field_identifier);
+    if (err) {
+        return err;
+    }
 
     RedisModuleKey *set_key = SelvaSet_Open(ctx, id_str, id_len, field_str);
     if (!set_key) {

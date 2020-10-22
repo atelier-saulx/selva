@@ -12,6 +12,7 @@
 #include "modify.h"
 #include "rpn.h"
 #include "selva_node.h"
+#include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "subscriptions.h"
@@ -74,7 +75,7 @@ static int send_selva_set(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisM
     return 0;
 }
 
-static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
+static int send_object_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
     int err;
     RedisModuleString *id;
     RedisModuleKey *key;
@@ -90,31 +91,41 @@ static int send_hash_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId,
         return SELVA_ENOENT;
     }
 
-    err = SelvaNode_GetField(ctx, key, field, &value);
+    const int exists = SelvaNode_ExistField(ctx, key, field);
+    if (exists) {
+        err = SelvaNode_GetField(ctx, key, field, &value);
+    }
+    if (exists) {
+        if (err == 0 && value &&
+            !strcmp(RedisModule_StringPtrLen(value, NULL), SELVA_SET_KEYWORD)) {
+            /* Set */
+            err = send_selva_set(ctx, nodeId, field);
+        } else {
+            /* Regular value */
+            struct SelvaObject *obj;
+
+            /* TODO Handle errors */
+            obj = RedisModule_ModuleTypeGetValue(key);
+
+            /*
+             * Start a new array reply:
+             * [node_id, field_name, field_value]
+             */
+            RedisModule_ReplyWithArray(ctx, 3);
+            RedisModule_ReplyWithString(ctx, id);
+            RedisModule_ReplyWithString(ctx, field);
+            //RedisModule_ReplyWithNull(ctx);
+
+            err = SelvaObject_ReplyWithObject(ctx, obj, field);
+            if (err) {
+                TO_STR(field);
+                (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
+            }
+        }
+    }
     RedisModule_CloseKey(key);
 
-    if (err || !value) {
-        return SELVA_ENOENT;
-    }
-
-    TO_STR(value);
-    if (!strcmp(value_str, SELVA_SET_KEYWORD)) {
-        /* Set */
-        return send_selva_set(ctx, nodeId, field);
-    } else {
-        /* Regular value */
-
-        /*
-         * Start a new array reply:
-         * [node_id, field_name, field_value]
-         */
-        RedisModule_ReplyWithArray(ctx, 3);
-        RedisModule_ReplyWithString(ctx, id);
-        RedisModule_ReplyWithString(ctx, field);
-        RedisModule_ReplyWithString(ctx, value);
-    }
-
-    return 0;
+    return err;
 }
 
 /*
@@ -185,7 +196,7 @@ static int send_field_value(
     if (!strcmp(field_str, "aliases")) {
         return send_selva_set(ctx, nodeId, field);
     } else {
-        return send_hash_field_value(ctx, nodeId, field);
+        return send_object_field_value(ctx, nodeId, field);
     }
 }
 

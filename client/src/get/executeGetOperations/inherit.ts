@@ -257,18 +257,14 @@ export default async function inherit(
       prefixes,
       <string>op.sourceField // TODO?
     )
+    let v = res.length ? res[0][2] : null
 
-    const v = res.length ? res[0][2] : null
-
-    if (v === '___selva_$object') {
-      return await getObject(
-        client,
-        ctx,
-        <string>op.sourceField,
-        fs,
-        lang,
-        res[0][0]
-      )
+    if (['text', 'object'].includes(fs.type)) {
+        const o = {}
+        for (let i = 0; i < v.length; i += 2) {
+            o[v[i]] = v[i + 1]
+        }
+        v = o
     }
 
     if (TYPE_CASTS[fs.type]) {
