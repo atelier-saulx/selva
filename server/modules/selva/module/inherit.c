@@ -104,22 +104,23 @@ static int send_object_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeI
             /* Regular value */
             struct SelvaObject *obj;
 
-            /* TODO Handle errors */
+            /* RFE This is not the nicest way to get the obj. */
             obj = RedisModule_ModuleTypeGetValue(key);
+            if (obj) {
+                /*
+                 * Start a new array reply:
+                 * [node_id, field_name, field_value]
+                 */
+                RedisModule_ReplyWithArray(ctx, 3);
+                RedisModule_ReplyWithString(ctx, id);
+                RedisModule_ReplyWithString(ctx, field);
+                //RedisModule_ReplyWithNull(ctx);
 
-            /*
-             * Start a new array reply:
-             * [node_id, field_name, field_value]
-             */
-            RedisModule_ReplyWithArray(ctx, 3);
-            RedisModule_ReplyWithString(ctx, id);
-            RedisModule_ReplyWithString(ctx, field);
-            //RedisModule_ReplyWithNull(ctx);
-
-            err = SelvaObject_ReplyWithObject(ctx, obj, field);
-            if (err) {
-                TO_STR(field);
-                (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
+                err = SelvaObject_ReplyWithObject(ctx, obj, field);
+                if (err) {
+                    TO_STR(field);
+                    (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
+                }
             }
         }
     }

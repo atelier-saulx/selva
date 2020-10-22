@@ -259,6 +259,7 @@ export default async function inherit(
     )
     let v = res.length ? res[0][2] : null
 
+    // TODO inherit nested object is broken
     if (['text', 'object'].includes(fs.type)) {
         const o = {}
         for (let i = 0; i < v.length; i += 2) {
