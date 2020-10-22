@@ -32,7 +32,7 @@ int stringlist_search(const char *list, const char *str) {
 }
 
 size_t substring_count(const char *string, const char *substring) {
-	size_t i, j, l1, l2;
+	size_t i, l1, l2;
 	size_t count = 0;
 
 	l1 = strlen(string);
