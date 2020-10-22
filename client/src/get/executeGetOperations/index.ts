@@ -219,6 +219,7 @@ const TYPE_TO_SPECIAL_OP: Record<
         return res;
       }
     }
+    // TODO add db
     const allLangs = client.schemas.default.languages
     const res = await client.redis.selva_object_get(id, field);
     const texts = {};
