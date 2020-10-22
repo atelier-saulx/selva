@@ -615,26 +615,6 @@ static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
-int SelvaObject_GetAllCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-
-    const size_t ARGV_KEY = 1;
-
-    if (argc != 2) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!obj) {
-        return replyWithSelvaError(ctx, SELVA_ENOENT);
-    }
-
-    replyWithObject(ctx, obj);
-
-    return REDISMODULE_OK;
-}
-
 int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
@@ -644,13 +624,18 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     const size_t ARGV_KEY = 1;
     const size_t ARGV_OKEY = 2;
 
-    if (argc < 3) {
+    if (argc < 2) {
         return RedisModule_WrongArity(ctx);
     }
 
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
         return replyWithSelvaError(ctx, SELVA_ENOENT);
+    }
+
+    if (argc == 2) {
+        replyWithObject(ctx, obj);
+        return REDISMODULE_OK;
     }
 
     for (size_t i = ARGV_OKEY; i < (size_t)argc; i++) {
@@ -976,7 +961,6 @@ static int SelvaObject_OnLoad(RedisModuleCtx *ctx) {
     if (RedisModule_CreateCommand(ctx, "selva.object.del", SelvaObject_DelCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.object.exists", SelvaObject_ExistsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.object.get", SelvaObject_GetCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.getall", SelvaObject_GetAllCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
 #if 0
         RedisModule_CreateCommand(ctx, "selva.object.getrange", SelvaObject_GetRangeCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.object.incrby", SelvaObject_IncrbyCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||

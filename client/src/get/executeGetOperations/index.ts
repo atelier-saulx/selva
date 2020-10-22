@@ -213,30 +213,29 @@ const TYPE_TO_SPECIAL_OP: Record<
     field: string,
     lang?: string
   ) => {
-    if (lang) {
-      const res = await client.redis.selva_object_get(id, `${field}.${lang}`)
-      if (res) {
-        return res;
-      }
-    }
     // TODO add db
-    const allLangs = client.schemas.default.languages
-    const res = await client.redis.selva_object_get(id, field);
-    const texts = {};
-
-    for (let i = 0; i < res.length; i += 2) {
-        texts[res[i]] = res[i + 1];
-    }
-
+    let args = [ id ]
     if (lang) {
-      for (const l of allLangs) {
-        if (texts[l]) {
-            return texts[l];
-        }
+      args.push(`${field}.${lang}`)
+      if (client.schemas.default.languages) {
+          args.push(...client.schemas.default.languages.map((l) => `${field}.${l}`))
       }
+    } else {
+        args.push(field)
     }
-
-    return texts;
+    const res = await client.redis.selva_object_get(...args)
+    if (res === null) {
+      return null
+    }
+    if (lang) {
+      return res
+    } else {
+      const o = {}
+      for (let i = 0; i < res.length; i += 2) {
+        o[res[i]] = res[i + 1]
+      }
+      return o
+    }
   },
   object: async (
     client: SelvaClient,
@@ -244,40 +243,35 @@ const TYPE_TO_SPECIAL_OP: Record<
     field: string,
     _lang?: string
   ) => {
-    const all = await client.redis.selva_object_getall(id)
-    const result: any = {}
-    let hasKeys = false
-    await Promise.all(
-      all.map(async (key, i, arr) => {
-        if ((i & 1) === 1) return
-        let val = arr[i + 1]
-
-        if (key.startsWith(field + '.')) {
-          hasKeys = true
-
-          if (val === '___selva_$set') {
-            const set = await client.redis.zrange(id + '.' + key, 0, -1)
-            if (set) {
-              setNestedResult(result, key.slice(field.length + 1), set)
-            }
-            return
-          } else if (val === '___selva_$object') {
-            return
-          }
-
-          const fieldSchema = getNestedSchema(client.schemas.default, id, key)
-          const typeCast = TYPE_CASTS[fieldSchema.type]
-          if (typeCast) {
-            val = typeCast(val)
-          }
-          setNestedResult(result, key.slice(field.length + 1), val)
-        }
-      })
-    )
-
-    if (hasKeys) {
-      return result
+    const all = await client.redis.selva_object_get(id, field)
+    if (all == null) {
+      return null
     }
+
+    const result: any = {}
+    const parse = (o, field: string, arr: string[]) => Promise.all(arr.map(async (key, i, arr) => {
+      if ((i & 1) === 1) return
+      let val = arr[i + 1]
+
+      if (val === '___selva_$set') {
+        const set = await client.redis.zrange(id + '.' + key, 0, -1)
+        if (set) {
+          o[key] = set
+        }
+      } else if (Array.isArray(val)) {
+        o[key] = {}
+        await parse(o[key], `${field}.${key}`, val)
+      } else {
+        const fieldSchema = getNestedSchema(client.schemas.default, id, `${field}.${key}`)
+        const typeCast = TYPE_CASTS[fieldSchema.type]
+        if (typeCast) {
+          val = typeCast(val)
+        }
+        o[key] = val
+      }
+    }))
+    await parse(result, field, all)
+    return result;
   },
   record: async (
     client: SelvaClient,

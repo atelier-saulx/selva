@@ -121,9 +121,6 @@ redis.add_command('selva.modify')
 redis.add_command('selva.object.get')
 
 // @ts-ignore
-redis.add_command('selva.object.getall')
-
-// @ts-ignore
 redis.add_command('selva.hierarchy.parents')
 
 // @ts-ignore
