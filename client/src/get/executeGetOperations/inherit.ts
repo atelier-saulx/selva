@@ -259,17 +259,59 @@ export default async function inherit(
     )
     let v = res.length ? res[0][2] : null
 
-    // TODO inherit nested object is broken
-    if (['text', 'object'].includes(fs.type)) {
-        const o = {}
-        for (let i = 0; i < v.length; i += 2) {
-            o[v[i]] = v[i + 1]
-        }
-        v = o
-    }
-
     if (TYPE_CASTS[fs.type]) {
       return TYPE_CASTS[fs.type](v)
+    } if (fs.type === 'text') {
+      const result = {};
+
+      for (let i = 0; i < v.length; i += 2) {
+          result[v[i]] = v[i + 1]
+      }
+
+      if  (lang) {
+        v = result[lang] || null
+
+        if (!v && client.schemas.default.languages) {
+          for (const l of client.schemas.default.languages) {
+            const txt = result[l]
+            if (txt)
+              return txt
+          }
+        }
+
+        return v
+      }
+
+      return result
+    } else if (fs.type === 'object') {
+      const [id, field, value] = res[0]
+      const result: any = {}
+      // This is a lousy copy from executeGetOperations/index.ts
+      const parse = (o, field: string, arr: string[]) => Promise.all(arr.map(async (key, i, arr) => {
+        if ((i & 1) === 1) return
+        let val = arr[i + 1]
+
+        if (val === '___selva_$set') {
+          const set = await client.redis.zrange(id + '.' + key, 0, -1)
+          if (set) {
+            o[key] = set
+          }
+        } else if (Array.isArray(val)) {
+          o[key] = {}
+          await parse(o[key], `${field}.${key}`, val)
+        } else {
+          const fieldSchema = getNestedSchema(client.schemas.default, id, `${field}.${key}`)
+          const typeCast = TYPE_CASTS[fieldSchema.type]
+          if (typeCast) {
+            val = typeCast(val)
+          }
+          o[key] = val
+        }
+      }))
+
+      await parse(result, field, value)
+
+      return result
     }
 
     return v
