@@ -20,6 +20,9 @@ export default async function resolveId(
 
       return props.$id[idx]
     } else {
+      if (typeof props.$id !== 'string') {
+          throw new Error('$id must be an array or string');
+      }
       if (props.$id === 'root') {
         return 'root'
       }

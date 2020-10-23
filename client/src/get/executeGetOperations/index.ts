@@ -290,6 +290,7 @@ export const executeNestedGetOperations = async (
   ctx: ExecContext
 ): Promise<GetResult> => {
   const id = await resolveId(client, props)
+  if (!id) throw new Error('Failed to resolve id')
   return await executeGetOperations(
     client,
     props.$language || lang,
