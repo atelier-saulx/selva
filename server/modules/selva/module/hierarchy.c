@@ -1340,19 +1340,25 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
 const char *SelvaModify_HierarchyDir2str(enum SelvaModify_HierarchyTraversal dir) {
     switch (dir) {
     case SELVA_HIERARCHY_TRAVERSAL_NONE:
-        return "none";
+        return (const char *)"none";
     case SELVA_HIERARCHY_TRAVERSAL_NODE:
-        return "node";
+        return (const char *)"node";
+    case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
+        return (const char *)"children";
+    case SELVA_HIERARCHY_TRAVERSAL_PARENTS:
+        return (const char *)"parents";
     case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
-        return "bfs_ancestors";
+        return (const char *)"bfs_ancestors";
     case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
-        return "bfs_descendants";
+        return (const char *)"bfs_descendants";
     case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
-        return "dfs_ancestors";
+        return (const char *)"dfs_ancestors";
     case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
-        return "dfs_descendants";
+        return (const char *)"dfs_descendants";
     case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
-        return "dfs_full";
+        return (const char *)"dfs_full";
+    case SELVA_HIERARCHY_TRAVERSAL_REF:
+        return (const char *)"ref";
     default:
         return "invalid";
     }
@@ -1366,6 +1372,7 @@ static int traverse_adjacent(
     SelvaModify_HierarchyNode **it;
 
     assert(tcb->node_cb);
+
     if (dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
         adjVec = &head->children;
     } else if (dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS) {

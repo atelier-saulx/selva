@@ -1,12 +1,11 @@
 import { GetOperation, GetOptions } from '../types'
-import { padId } from '../utils'
 import find from './find'
 
 const list = (props: GetOptions, id: string, field: string): GetOperation => {
   if (props.$list === true) {
     return {
       type: 'find',
-      id: padId(id),
+      id,
       props,
       field: field.substr(1),
       sourceField: field.substr(1),
@@ -29,7 +28,7 @@ const list = (props: GetOptions, id: string, field: string): GetOperation => {
   } else {
     return {
       type: 'find',
-      id: padId(id),
+      id,
       props,
       field: field.substr(1),
       sourceField: <string>props.$field || field.substr(1),

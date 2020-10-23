@@ -1189,7 +1189,17 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_REF && marker->ref_field) {
         err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, marker->node_id, marker->ref_field, &cb);
     } else {
-        err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+        /*
+         * TODO This could be implemented with a head callback.
+         */
+        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS || marker->dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
+            err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, SELVA_HIERARCHY_TRAVERSAL_NODE, &cb);
+        } else {
+            err = 0;
+        }
+        if (!err) {
+            err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
+        }
     }
     if (err != 0) {
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
