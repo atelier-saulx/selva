@@ -93,34 +93,25 @@ static int send_object_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeI
 
     const int exists = SelvaNode_ExistField(ctx, key, field);
     if (exists) {
-        err = SelvaNode_GetField(ctx, key, field, &value);
-    }
-    if (exists) {
-        if (err == 0 && value &&
-            !strcmp(RedisModule_StringPtrLen(value, NULL), SELVA_SET_KEYWORD)) {
-            /* Set */
-            err = send_selva_set(ctx, nodeId, field);
-        } else {
-            /* Regular value */
-            struct SelvaObject *obj;
+        /* Regular value */
+        struct SelvaObject *obj;
 
-            /* RFE This is not the nicest way to get the obj. */
-            obj = RedisModule_ModuleTypeGetValue(key);
-            if (obj) {
-                /*
-                 * Start a new array reply:
-                 * [node_id, field_name, field_value]
-                 */
-                RedisModule_ReplyWithArray(ctx, 3);
-                RedisModule_ReplyWithString(ctx, id);
-                RedisModule_ReplyWithString(ctx, field);
-                //RedisModule_ReplyWithNull(ctx);
+        /* RFE This is not the nicest way to get the obj. */
+        err = SelvaObject_Key2Obj(key, &obj);
+        if (!err) {
+            /*
+             * Start a new array reply:
+             * [node_id, field_name, field_value]
+             */
+            RedisModule_ReplyWithArray(ctx, 3);
+            RedisModule_ReplyWithString(ctx, id);
+            RedisModule_ReplyWithString(ctx, field);
+            //RedisModule_ReplyWithNull(ctx);
 
-                err = SelvaObject_ReplyWithObject(ctx, obj, field);
-                if (err) {
-                    TO_STR(field);
-                    (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
-                }
+            err = SelvaObject_ReplyWithObject(ctx, obj, field);
+            if (err) {
+                TO_STR(field);
+                (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
             }
         }
     }

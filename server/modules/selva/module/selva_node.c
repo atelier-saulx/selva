@@ -96,78 +96,7 @@ RedisModuleKey *SelvaNode_Open(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hiera
 }
 
 static char *delete_selva_sets(RedisModuleCtx *ctx, RedisModuleString *id) {
-    RedisModuleCallReply * reply;
-    TO_STR(id);
-
-    reply = RedisModule_Call(ctx, "HGETALL", "s", id);
-    if (reply == NULL) {
-        /* FIXME errno handling */
-#if 0
-        switch (errno) {
-        case EINVAL:
-        case EPERM:
-        default:
-        }
-#endif
-        goto out;
-    }
-
-    int replyType = RedisModule_CallReplyType(reply);
-    if (replyType != REDISMODULE_REPLY_ARRAY) {
-        goto out;
-    }
-
-    RedisModuleString *field_name = NULL;
-    RedisModuleString *field_value = NULL;
-    size_t replyLen = RedisModule_CallReplyLength(reply);
-    for (size_t idx = 0; idx < replyLen; idx++) {
-        RedisModuleCallReply *elem;
-        const char * str;
-        size_t len;
-
-        elem = RedisModule_CallReplyArrayElement(reply, idx);
-        if (!elem) {
-            continue;
-        }
-
-        if (RedisModule_CallReplyType(elem) != REDISMODULE_REPLY_STRING) {
-            continue;
-        }
-
-        str = RedisModule_CallReplyStringPtr(elem, &len);
-        if (!str) {
-            continue;
-        }
-
-        if ((idx & 1) == 0) {
-            /* Even indices are field names. */
-            field_name = RedisModule_CreateString(ctx, str, len);
-        } else {
-            /* Odd indices are field values. */
-            field_value = RedisModule_CreateString(ctx, str, len);
-            TO_STR(field_name, field_value);
-
-            /* Look for the magic value. */
-            if (!strcmp(field_value_str, SELVA_SET_KEYWORD)) {
-                RedisModuleKey *key;
-
-                key = SelvaSet_Open(ctx, id_str, id_len, field_name_str);
-                if (key) {
-                    RedisModule_DeleteKey(key);
-                    RedisModule_CloseKey(key);
-                }
-            }
-
-            RedisModule_FreeString(ctx, field_name);
-            RedisModule_FreeString(ctx, field_value);
-        }
-    }
-
-out:
-    if (reply) {
-        RedisModule_FreeCallReply(reply);
-    }
-
+    // TODO Remove sets
     return 0;
 }
 
@@ -241,6 +170,15 @@ int SelvaNode_SetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModul
 
     SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
     SelvaObject_SetStr(obj, field, value);
+
+    return 0;
+}
+
+int SelvaNode_SetFieldSetRef(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field, RedisModuleString *value) {
+    struct SelvaObject *obj;
+
+    SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
+    SelvaObject_SetSetRef(obj, field, value);
 
     return 0;
 }

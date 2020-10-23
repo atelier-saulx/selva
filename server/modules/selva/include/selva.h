@@ -11,7 +11,6 @@
 #define ROOT_NODE_ID            "root\0\0\0\0\0\0"
 
 #define SELVA_ALIASES_KEY       "___selva_aliases"
-#define SELVA_SET_KEYWORD       "___selva_$set"
 
 /**
  * Type for Selva NodeId.

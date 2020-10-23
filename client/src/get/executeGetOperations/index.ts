@@ -249,29 +249,25 @@ const TYPE_TO_SPECIAL_OP: Record<
       return null
     }
 
-    const result: any = {}
-    const parse = (o, field: string, arr: string[]) => Promise.all(arr.map(async (key, i, arr) => {
+     // TODO This could be a TYPE_CAST
+    const result = {};
+    const parse = (o, field: string, arr: string[]) => arr.forEach((key, i, arr) => {
       if ((i & 1) === 1) return
       let val = arr[i + 1]
+      const fieldSchema = getNestedSchema(client.schemas.default, id, `${field}.${key}`)
 
-      if (val === '___selva_$set') {
-        const set = await client.redis.zrange(id + '.' + key, 0, -1)
-        if (set) {
-          o[key] = set
-        }
-      } else if (Array.isArray(val)) {
+      if (['object', 'text'].includes(fieldSchema.type) && Array.isArray(val)) {
         o[key] = {}
-        await parse(o[key], `${field}.${key}`, val)
+        parse(o[key], `${field}.${key}`, val)
       } else {
-        const fieldSchema = getNestedSchema(client.schemas.default, id, `${field}.${key}`)
         const typeCast = TYPE_CASTS[fieldSchema.type]
         if (typeCast) {
           val = typeCast(val)
         }
         o[key] = val
       }
-    }))
-    await parse(result, field, all)
+    })
+    parse(result, field, all)
     return result;
   },
   record: async (
