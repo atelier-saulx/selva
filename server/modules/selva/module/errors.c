@@ -25,6 +25,7 @@ const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
     [-SELVA_SUBSCRIPTIONS_ENOENT]       = (const char *)"ERR_SUBSCRIPTIONS ENOENT Not found",
     [-SELVA_SUBSCRIPTIONS_EEXIST]       = (const char *)"ERR_SUBSCRIPTIONS EEXIST Exist",
     [-SELVA_RPN_ECOMP]                  = (const char *)"ERR_RPN ECOMP Expression compilation failed",
+    [-SELVA_OBJECT_EOBIG]               = (const char *)"ERROR_SELVA_OBJECT Maximum number of keys reached",
     [-SELVA_INVALID_ERROR]              = (const char *)"ERR_SELVA Invalid error code"
 };
 

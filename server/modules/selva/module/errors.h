@@ -82,8 +82,12 @@
  * RPN compilation error.
  */
 #define SELVA_RPN_ECOMP                 (-19)
+/**
+ * Selva object has reached the maximum size.
+ */
+#define SELVA_OBJECT_EOBIG              (-20)
 /* This must be the last error */
-#define SELVA_INVALID_ERROR             (-20)
+#define SELVA_INVALID_ERROR             (-21)
 
 struct RedisModuleCtx;
 
