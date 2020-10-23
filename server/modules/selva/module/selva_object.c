@@ -805,6 +805,10 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     case 's': /* SELVA_OBJECT_STRING */
         err = SelvaObject_SetStr(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
         break;
+    case 'r': /* SELVA_OBJECT_SET_REF */
+        /* This is meant to be used only by AOF and replication. */
+        err = SelvaObject_SetSetRef(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
+        break;
     default:
         err = SELVA_EINTYPE;
     }
@@ -1006,28 +1010,39 @@ void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void 
             {
                 RedisModuleString *v;
                 v = RedisModule_CreateStringPrintf(NULL, "%f", okey->emb_double_value);
-                RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbs",
+                RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbcs",
                     key,
                     okey->name, (size_t)okey->name_len,
+                    "f",
                     v);
                 RedisModule_FreeString(NULL, v);
             }
             break;
         case SELVA_OBJECT_LONGLONG:
-            RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbl",
+            RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbcl",
                 key,
                 okey->name, (size_t)okey->name_len,
+                "i",
                 okey->emb_ll_value);
             break;
         case SELVA_OBJECT_STRING:
-            RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbs",
+            RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbcs",
+                key,
                 okey->name, (size_t)okey->name_len,
+                "s",
                 okey->value);
             break;
         case SELVA_OBJECT_OBJECT:
-            // FIXME
+            /* FIXME Needs a way to pass the full object path */
+            RedisModule_LogIOError(aof, "warning", "Unknown type");
+            break;
         case SELVA_OBJECT_SET_REF:
-            // FIXME
+            RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbcs",
+                key,
+                okey->name, (size_t)okey->name_len,
+                "r",
+                okey->value);
+            break;
         default:
             RedisModule_LogIOError(aof, "warning", "Unknown type");
         }
@@ -1045,9 +1060,7 @@ static int SelvaObject_OnLoad(RedisModuleCtx *ctx) {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
         .rdb_load = SelvaObjectTypeRDBLoad,
         .rdb_save = SelvaObjectTypeRDBSave,
-#if 0
         .aof_rewrite = SelvaObjectTypeAOFRewrite,
-#endif
         .mem_usage = SelvaObject_MemUsage,
         .free = SelvaObjectTypeFree,
     };
