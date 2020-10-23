@@ -76,7 +76,7 @@ static int send_selva_set(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisM
 }
 
 static int send_object_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
-    int err;
+    int err = 0;
     RedisModuleString *id;
     RedisModuleKey *key;
     RedisModuleString *value = NULL;
@@ -114,6 +114,8 @@ static int send_object_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeI
                 (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
             }
         }
+    } else {
+        err = SELVA_ENOENT;
     }
     RedisModule_CloseKey(key);
 
