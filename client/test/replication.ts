@@ -126,20 +126,26 @@ test.serial('modify command is replicated', async t => {
   const keys = await new Promise((resolve, reject) => rclientReplica.keys('*', (err, res) => err ? reject(err) : resolve(res))) as string[]
   t.assert(keys.includes('grphnode_a'))
   t.deepEqual(
-    await new Promise((resolve, reject) => rclientOrigin.send_command('hgetall', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
-    {
-      $id: 'grphnode_a',
-      value: '5',
-      value1: '100',
-    }
+    await new Promise((resolve, reject) => rclientOrigin.send_command('selva.object.get', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
+    [
+      '$id',
+      'grphnode_a',
+      'value',
+      '5',
+      'value1',
+      '100',
+    ]
   )
   t.deepEqual(
-    await new Promise((resolve, reject) => rclientReplica.send_command('hgetall', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
-    {
-      $id: 'grphnode_a',
-      value: '5',
-      value1: '100',
-    }
+    await new Promise((resolve, reject) => rclientReplica.send_command('selva.object.get', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
+    [
+      '$id',
+      'grphnode_a',
+      'value',
+      '5',
+      'value1',
+      '100',
+    ]
   )
 
   // Only one update
@@ -147,20 +153,26 @@ test.serial('modify command is replicated', async t => {
   t.deepEqual(res2, [ 'grphnode_a', 'OK', 'UPDATED' ])
   await wait(200)
   t.deepEqual(
-    await new Promise((resolve, reject) => rclientOrigin.send_command('hgetall', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
-    {
-      $id: 'grphnode_a',
-      value: '5',
-      value1: '2',
-    }
+    await new Promise((resolve, reject) => rclientOrigin.send_command('selva.object.get', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
+    [
+      '$id',
+      'grphnode_a',
+      'value',
+      '5',
+      'value1',
+      '2',
+    ]
   )
   t.deepEqual(
-    await new Promise((resolve, reject) => rclientReplica.send_command('hgetall', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
-    {
-      $id: 'grphnode_a',
-      value: '5',
-      value1: '2',
-    }
+    await new Promise((resolve, reject) => rclientReplica.send_command('selva.object.get', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
+    [
+      '$id',
+      'grphnode_a',
+      'value',
+      '5',
+      'value1',
+      '2',
+    ]
   )
 })
 
@@ -175,17 +187,21 @@ test.serial('modify command is replicated ignoring errors', async t => {
   t.assert(keys.includes('grphnode_a'))
 
   t.deepEqual(
-    await new Promise((resolve, reject) => rclientOrigin.send_command('hgetall', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
-    {
-      $id: 'grphnode_a',
-      value: '5'
-    }
+    await new Promise((resolve, reject) => rclientOrigin.send_command('selva.object.get', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
+    [
+      '$id',
+      'grphnode_a',
+      'value',
+      '5'
+    ]
   )
   t.deepEqual(
-    await new Promise((resolve, reject) => rclientReplica.send_command('hgetall', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
-    {
-      $id: 'grphnode_a',
-      value: '5'
-    }
+    await new Promise((resolve, reject) => rclientReplica.send_command('selva.object.get', ['grphnode_a'], (err, res) => err ? reject(err) : resolve(res))),
+    [
+      '$id',
+      'grphnode_a',
+      'value',
+      '5'
+    ]
   )
 })
