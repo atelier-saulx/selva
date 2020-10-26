@@ -1185,8 +1185,6 @@ test.serial('find - already started', async t => {
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
   })
 
-  console.log(await client.redis.hgetall(match1))
-
   t.deepEqualIgnoreOrder(
     (
       await client.get({
@@ -1410,8 +1408,6 @@ test.serial('find - starting soon', async t => {
     startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 2 hour
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 3 hours
   })
-
-  console.log(await client.redis.hgetall(match1))
 
   t.deepEqualIgnoreOrder(
     (

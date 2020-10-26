@@ -260,7 +260,8 @@ export default async function inherit(
     let v = res.length ? res[0][2] : null
 
     if (TYPE_CASTS[fs.type]) {
-      return TYPE_CASTS[fs.type](v)
+      const field = res[0][1];
+      return TYPE_CASTS[fs.type](v, op.id, field, client.schemas.default)
     } if (fs.type === 'text') {
       const result = {};
 
@@ -285,33 +286,14 @@ export default async function inherit(
       return result
     } else if (fs.type === 'object') {
       const [id, field, value] = res[0]
-      const result: any = {}
-      // This is a lousy copy from executeGetOperations/index.ts
-      const parse = (o, field: string, arr: string[]) => Promise.all(arr.map(async (key, i, arr) => {
-        if ((i & 1) === 1) return
-        let val = arr[i + 1]
+      const fieldSchema = getNestedSchema(schema, id, field)
+      const typeCast = TYPE_CASTS[fieldSchema.type]
 
-        if (val === '___selva_$set') {
-          const set = await client.redis.zrange(id + '.' + key, 0, -1)
-          if (set) {
-            o[key] = set
-          }
-        } else if (Array.isArray(val)) {
-          o[key] = {}
-          await parse(o[key], `${field}.${key}`, val)
-        } else {
-          const fieldSchema = getNestedSchema(client.schemas.default, id, `${field}.${key}`)
-          const typeCast = TYPE_CASTS[fieldSchema.type]
-          if (typeCast) {
-            val = typeCast(val)
-          }
-          o[key] = val
-        }
-      }))
-
-      await parse(result, field, value)
-
-      return result
+      if (typeCast) {
+        v = typeCast(value, id, field, client.schemas.default)
+      } else {
+        v = value;
+      }
     }
 
     return v
@@ -341,18 +323,15 @@ export default async function inherit(
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
     const fs = getNestedSchema(schema, schema.types[op.types[0]].prefix, f)
-
-    if (v === '___selva_$object') {
-      return await getObject(client, ctx, <string>op.sourceField, fs, lang, idx)
-    }
-
     const typeCast = TYPE_CASTS[fs.type]
+
+    const newV = typeCast ? typeCast(v, idx, f, client.schemas.default) : v
 
     if (remapped[f]) {
       f = remapped[f]
     }
 
-    o[f.slice(op.field.length + 1)] = typeCast ? typeCast(v) : v
+    o[f.slice(op.field.length + 1)] = newV
   }
 
   return o

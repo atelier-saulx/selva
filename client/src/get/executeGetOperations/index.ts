@@ -7,6 +7,7 @@ import { GetOptions } from '../'
 import find from './find'
 import inherit from './inherit'
 import { Rpn } from '@saulx/selva-query-ast-parser'
+import {Schema} from '~selva/schema'
 
 export type ExecContext = {
   db: string
@@ -141,13 +142,35 @@ async function refreshMarkers(
   )
 }
 
-export const TYPE_CASTS: Record<string, (x: any) => any> = {
+export const TYPE_CASTS: Record<string, (x: any, id: string, field: string, schema: Schema) => any> = {
   float: Number,
   number: Number,
   int: Number,
   boolean: (x: any) => (x === '0' ? false : true),
   json: (x: any) => JSON.parse(x),
-  array: (x: any) => JSON.parse(x)
+  array: (x: any) => JSON.parse(x),
+  object: (all: any, id: string, field: string, schema) => {
+    const result = {};
+    const parse = (o, field: string, arr: string[]) => arr.forEach((key, i, arr) => {
+      if ((i & 1) === 1) return
+      console.log('duh', o, field, arr);
+      let val = arr[i + 1]
+      const fieldSchema = getNestedSchema(schema, id, `${field}.${key}`)
+
+      if (['object', 'text'].includes(fieldSchema.type) && Array.isArray(val)) {
+        o[key] = {}
+        parse(o[key], `${field}.${key}`, val)
+      } else {
+        const typeCast = TYPE_CASTS[fieldSchema.type]
+        if (typeCast) {
+          val = typeCast(val, id, field, schema)
+        }
+        o[key] = val
+      }
+    })
+    parse(result, field, all)
+    return result;
+  }
 }
 
 const TYPE_TO_SPECIAL_OP: Record<
@@ -249,26 +272,11 @@ const TYPE_TO_SPECIAL_OP: Record<
       return null
     }
 
-     // TODO This could be a TYPE_CAST
-    const result = {};
-    const parse = (o, field: string, arr: string[]) => arr.forEach((key, i, arr) => {
-      if ((i & 1) === 1) return
-      let val = arr[i + 1]
-      const fieldSchema = getNestedSchema(client.schemas.default, id, `${field}.${key}`)
+    const fieldSchema = getNestedSchema(client.schemas.default, id, field)
+    const typeCast = TYPE_CASTS[fieldSchema.type]
+    console.log('halp', id, field, fieldSchema.type, typeCast, all);
 
-      if (['object', 'text'].includes(fieldSchema.type) && Array.isArray(val)) {
-        o[key] = {}
-        parse(o[key], `${field}.${key}`, val)
-      } else {
-        const typeCast = TYPE_CASTS[fieldSchema.type]
-        if (typeCast) {
-          val = typeCast(val)
-        }
-        o[key] = val
-      }
-    })
-    parse(result, field, all)
-    return result;
+    return typeCast ? typeCast(all, id, field, client.schemas.default) : all[2]
   },
   record: async (
     client: SelvaClient,
@@ -380,7 +388,7 @@ export const executeGetOperation = async (
     if (r !== null && r !== undefined) {
       const typeCast = TYPE_CASTS[fieldSchema.type]
       if (typeCast) {
-        return typeCast(r)
+        return typeCast(r, op.id, op.sourceField as string, client.schemas.default)
       }
 
       return r

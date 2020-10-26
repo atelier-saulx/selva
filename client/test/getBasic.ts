@@ -1264,7 +1264,7 @@ test.serial(
   }
 )
 
-test.serial(
+test.serial.only(
   'get - $inherit with object types of nested objects, does shallow merge',
   async t => {
     const client = connect({ port })
