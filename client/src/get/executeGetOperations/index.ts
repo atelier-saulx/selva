@@ -318,7 +318,6 @@ export const executeGetOperation = async (
     return inherit(client, op, lang, ctx)
   } else if (op.type === 'db') {
     const { db } = ctx
-    console.log('db', db)
 
     let r: any
     let fieldSchema
