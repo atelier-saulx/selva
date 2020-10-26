@@ -95,7 +95,7 @@ test.serial('get all', async t => {
   const client = connect({ port })
 
   t.deepEqual(
-    await client.redis.selva_object_getall('maTest0001'),
+    await client.redis.selva_object_get('maTest0001'),
     [
       '$id',
       'maTest0001',

@@ -3248,21 +3248,6 @@ async selva_object_get(opts: any, ...args: args): Promise<any> {
 }
 
 
-async selva_object_getall(opts: ServerSelector, ...args: args): Promise<any>
-async selva_object_getall(...args: args): Promise<any>
-async selva_object_getall(opts: any, ...args: args): Promise<any> {
-  if (typeof opts === 'object') {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_object_getall', args, resolve, reject }, opts)
-    })
-  } else {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_object_getall', args: [opts, ...args], resolve, reject })
-    })
-  }
-}
-
-
 async selva_subscriptions_add(opts: ServerSelector, ...args: args): Promise<any>
 async selva_subscriptions_add(...args: args): Promise<any>
 async selva_subscriptions_add(opts: any, ...args: args): Promise<any> {
