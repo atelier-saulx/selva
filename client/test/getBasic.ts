@@ -819,8 +819,7 @@ test.serial('get - field with empty array', async t => {
       dong: { dingdong: [] },
       type: 'lekkerType',
       dingdongs: [],
-      refs: [],
-      ding: { dong: [] }
+      refs: []
     }
   )
 
@@ -1264,7 +1263,7 @@ test.serial(
   }
 )
 
-test.serial.only(
+test.serial(
   'get - $inherit with object types of nested objects, does shallow merge',
   async t => {
     const client = connect({ port })

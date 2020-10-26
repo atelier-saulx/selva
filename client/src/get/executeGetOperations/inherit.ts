@@ -259,10 +259,14 @@ export default async function inherit(
     )
     let v = res.length ? res[0][2] : null
 
+    if (v === null) {
+      return null
+    }
+
     if (TYPE_CASTS[fs.type]) {
       const field = res[0][1];
       return TYPE_CASTS[fs.type](v, op.id, field, client.schemas.default)
-    } if (fs.type === 'text') {
+    } else if (fs.type === 'text') {
       const result = {};
 
       for (let i = 0; i < v.length; i += 2) {

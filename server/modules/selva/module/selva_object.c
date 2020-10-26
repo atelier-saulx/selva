@@ -632,20 +632,21 @@ static void replyWithSet(RedisModuleCtx *ctx, RedisModuleString *set_key_name) {
     RedisModuleKey *key;
     size_t n = 0;
 
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-
     /* TODO This code is now more or less repeated if a few places */
     key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_READ);
     if (!key) {
-        goto out;
+        RedisModule_ReplyWithNull(ctx);
+        return;
     }
 
     const int keytype = RedisModule_KeyType(key);
     if (keytype != REDISMODULE_KEYTYPE_ZSET && keytype != REDISMODULE_KEYTYPE_EMPTY) {
         RedisModule_CloseKey(key);
-        /* Empty key is an empty set for us. */
-        goto out;
+        RedisModule_ReplyWithNull(ctx);
+        return;
     }
+
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
     RedisModule_ZsetFirstInScoreRange(key, 0, 1, 0, 0);
     while (!RedisModule_ZsetRangeEndReached(key)) {
@@ -662,7 +663,6 @@ static void replyWithSet(RedisModuleCtx *ctx, RedisModuleString *set_key_name) {
     }
     RedisModule_ZsetRangeStop(key);
 
-out:
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 

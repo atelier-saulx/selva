@@ -150,11 +150,16 @@ export const TYPE_CASTS: Record<string, (x: any, id: string, field: string, sche
   json: (x: any) => JSON.parse(x),
   array: (x: any) => JSON.parse(x),
   object: (all: any, id: string, field: string, schema) => {
-    const result = {};
+    const result = {}
+    let fieldCount = 0
     const parse = (o, field: string, arr: string[]) => arr.forEach((key, i, arr) => {
       if ((i & 1) === 1) return
-      console.log('duh', o, field, arr);
       let val = arr[i + 1]
+
+      if (val === null) {
+        return
+      }
+
       const fieldSchema = getNestedSchema(schema, id, `${field}.${key}`)
 
       if (['object', 'text'].includes(fieldSchema.type) && Array.isArray(val)) {
@@ -167,10 +172,15 @@ export const TYPE_CASTS: Record<string, (x: any, id: string, field: string, sche
         }
         o[key] = val
       }
+
+      fieldCount++
     })
     parse(result, field, all)
-    return result;
-  }
+    if (fieldCount) {
+      return result
+    }
+  },
+  record: (all: any, id: string, field: string, schema) => TYPE_CASTS.object(all, id, field, schema)
 }
 
 const TYPE_TO_SPECIAL_OP: Record<
@@ -220,17 +230,6 @@ const TYPE_TO_SPECIAL_OP: Record<
       return client.redis.zrange(id + '.' + field, 0, -1)
     }
   },
-  set: async (
-    client: SelvaClient,
-    id: string,
-    field: string,
-    _lang?: string
-  ) => {
-    const set = await client.redis.zrange(id + '.' + field, 0, -1)
-    if (set && set.length) {
-      return set
-    }
-  },
   text: async (
     client: SelvaClient,
     id: string,
@@ -261,31 +260,6 @@ const TYPE_TO_SPECIAL_OP: Record<
       return o
     }
   },
-  object: async (
-    client: SelvaClient,
-    id: string,
-    field: string,
-    _lang?: string
-  ) => {
-    const all = await client.redis.selva_object_get(id, field)
-    if (all == null) {
-      return null
-    }
-
-    const fieldSchema = getNestedSchema(client.schemas.default, id, field)
-    const typeCast = TYPE_CASTS[fieldSchema.type]
-    console.log('halp', id, field, fieldSchema.type, typeCast, all);
-
-    return typeCast ? typeCast(all, id, field, client.schemas.default) : all[2]
-  },
-  record: async (
-    client: SelvaClient,
-    id: string,
-    field: string,
-    _lang: string
-  ) => {
-    return TYPE_TO_SPECIAL_OP.object(client, id, field, _lang)
-  }
 }
 
 export const executeNestedGetOperations = async (
