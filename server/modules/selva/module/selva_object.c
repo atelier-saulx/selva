@@ -969,10 +969,9 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
         RedisModule_LogIOError(io, "warning", "Failed to create a new SelvaObject");
         return NULL;
     }
+    const size_t obj_size = RedisModule_LoadUnsigned(io);
 
-    int err;
-    int done = 0;
-    while (!done) {
+    for (size_t i = 0; i < obj_size; i++) {
         RedisModuleString *name;
         enum SelvaObjectType type;
 
@@ -981,11 +980,12 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
 
         switch (type) {
         case SELVA_OBJECT_NULL:
-            done = 1;
+            RedisModule_LogIOError(io, "warning", "null keys should not exist in RDB");
             break;
         case SELVA_OBJECT_DOUBLE:
             {
                 double value;
+                int err;
 
                 value = RedisModule_LoadDouble(io);
                 err = SelvaObject_SetDouble(obj, name, value);
@@ -998,6 +998,7 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
         case SELVA_OBJECT_LONGLONG:
             {
                 long long value;
+                int err;
 
                 value = RedisModule_LoadSigned(io);
                 err = SelvaObject_SetLongLong(obj, name, value);
@@ -1010,6 +1011,7 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
         case SELVA_OBJECT_STRING:
             {
                 RedisModuleString *value;
+                int err;
 
                 value = RedisModule_LoadString(io);
                 err = SelvaObject_SetStr(obj, name, value);
@@ -1022,9 +1024,40 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
             }
             break;
         case SELVA_OBJECT_OBJECT:
-            // FIXME
+            {
+                struct SelvaObjectKey *key;
+                TO_STR(name);
+                int err;
+
+                err = get_key(obj, name_str, name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+                if (err) {
+                    RedisModule_LogIOError(io, "warning", "Error while creating an object key");
+                    return NULL;
+                }
+
+                key->value = SelvaObjectTypeRDBLoad(io, encver);
+                if (!key->value) {
+                    RedisModule_LogIOError(io, "warning", "Error while loading an object");
+                    return NULL;
+                }
+                key->type = SELVA_OBJECT_OBJECT;
+            }
+            break;
         case SELVA_OBJECT_SET_REF:
-            // FIXME
+            {
+                RedisModuleString *value;
+                int err;
+
+                value = RedisModule_LoadString(io);
+                err =SelvaObject_SetSetRef(obj, name, value);
+                if (err) {
+                    RedisModule_LogIOError(io, "warning", "Error while loading a set ref");
+                    return NULL;
+                }
+
+                RedisModule_FreeString(NULL, value);
+            }
+            break;
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
         }
