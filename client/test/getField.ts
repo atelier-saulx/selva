@@ -157,7 +157,8 @@ test.serial('get - simple alias', async t => {
   await client.destroy()
 })
 
-test.serial('get - simple alias with variable', async t => {
+// TODO: this will be done differently
+test.serial.skip('get - simple alias with variable', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -197,7 +198,8 @@ test.serial('get - simple alias with variable', async t => {
   await client.destroy()
 })
 
-test.serial('get - alias with nested structure variable', async t => {
+// TODO: this will be done differently
+test.serial.skip('get - alias with nested structure variable', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -237,7 +239,8 @@ test.serial('get - alias with nested structure variable', async t => {
   await client.destroy()
 })
 
-test.serial('get - alias with variables', async t => {
+// TODO: this will be done differently
+test.serial.skip('get - alias with variables', async t => {
   const client = connect({ port })
 
   await client.set({
@@ -347,7 +350,8 @@ test.serial(
   }
 )
 
-test.serial(
+// TODO: this will be done differently
+test.serial.skip(
   'get - $field with multiple options complex. taking the second',
   async t => {
     const client = connect({ port })
@@ -449,7 +453,7 @@ test.serial.skip('get - simple $field with $inherit: true', async t => {
   await client.destroy()
 })
 
-test.serial.skip('get - simple $field with $inherit: $type', async t => {
+test.serial('get - simple $field with $inherit: $type', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -505,60 +509,8 @@ test.serial.skip('get - simple $field with $inherit: $type', async t => {
   await client.destroy()
 })
 
-test.serial.skip('get - more complex $field with $inherit: $name', async t => {
-  const client = connect({ port })
-
-  await client.set({
-    $id: 'cuB',
-    name: 'customB',
-    title: {
-      de: 'Ja, auf Deutsch 2'
-    },
-    image: {
-      thumb: 'parent'
-    }
-  })
-
-  await client.set({
-    $id: 'viL',
-    name: 'lekkerL',
-    title: {
-      de: 'Ja, auf Deutsch'
-    },
-    image: {
-      thumb: 'child'
-    },
-    parents: ['cuB']
-  })
-
-  await client.set({
-    $id: 'viM',
-    title: {
-      en: 'image'
-    },
-    parents: ['viL'],
-    age: 62
-  })
-
-  t.deepEqual(
-    await client.get({
-      $id: 'viM',
-      id: true,
-      thumby: {
-        $field: '${title.en}.thumb',
-        $inherit: { $name: 'customB' }
-      }
-    }),
-    {
-      id: 'viM',
-      thumby: 'parent'
-    }
-  )
-
-  await client.destroy()
-})
-
-test.serial(
+// TODO: this will be done differently
+test.serial.skip(
   'get - query $field with multiple options complex. taking the second',
   async t => {
     const client = connect({ port }, { loglevel: 'info' })
@@ -666,7 +618,8 @@ test.serial('get - $field with object structure', async t => {
   await client.destroy()
 })
 
-test.serial('get - nested query with $field in $id', async t => {
+// FIXME: need this? we have single references
+test.serial.skip('get - nested query with $field in $id', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
