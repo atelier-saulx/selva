@@ -27,8 +27,6 @@ export default async function combineResults(
     return
   }
 
-  // TODO: Pass DB everywhere
-
   await Promise.all(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(

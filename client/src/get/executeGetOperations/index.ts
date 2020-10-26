@@ -7,7 +7,7 @@ import { GetOptions } from '../'
 import find from './find'
 import inherit from './inherit'
 import { Rpn } from '@saulx/selva-query-ast-parser'
-import {Schema} from '~selva/schema'
+import { Schema } from '~selva/schema'
 
 export type ExecContext = {
   db: string
@@ -142,7 +142,10 @@ async function refreshMarkers(
   )
 }
 
-export const TYPE_CASTS: Record<string, (x: any, id: string, field: string, schema: Schema) => any> = {
+export const TYPE_CASTS: Record<
+  string,
+  (x: any, id: string, field: string, schema: Schema) => any
+> = {
   float: Number,
   number: Number,
   int: Number,
@@ -152,35 +155,40 @@ export const TYPE_CASTS: Record<string, (x: any, id: string, field: string, sche
   object: (all: any, id: string, field: string, schema) => {
     const result = {}
     let fieldCount = 0
-    const parse = (o, field: string, arr: string[]) => arr.forEach((key, i, arr) => {
-      if ((i & 1) === 1) return
-      let val = arr[i + 1]
+    const parse = (o, field: string, arr: string[]) =>
+      arr.forEach((key, i, arr) => {
+        if ((i & 1) === 1) return
+        let val = arr[i + 1]
 
-      if (val === null) {
-        return
-      }
-
-      const fieldSchema = getNestedSchema(schema, id, `${field}.${key}`)
-
-      if (['object', 'text'].includes(fieldSchema.type) && Array.isArray(val)) {
-        o[key] = {}
-        parse(o[key], `${field}.${key}`, val)
-      } else {
-        const typeCast = TYPE_CASTS[fieldSchema.type]
-        if (typeCast) {
-          val = typeCast(val, id, field, schema)
+        if (val === null) {
+          return
         }
-        o[key] = val
-      }
 
-      fieldCount++
-    })
+        const fieldSchema = getNestedSchema(schema, id, `${field}.${key}`)
+
+        if (
+          ['object', 'text'].includes(fieldSchema.type) &&
+          Array.isArray(val)
+        ) {
+          o[key] = {}
+          parse(o[key], `${field}.${key}`, val)
+        } else {
+          const typeCast = TYPE_CASTS[fieldSchema.type]
+          if (typeCast) {
+            val = typeCast(val, id, field, schema)
+          }
+          o[key] = val
+        }
+
+        fieldCount++
+      })
     parse(result, field, all)
     if (fieldCount) {
       return result
     }
   },
-  record: (all: any, id: string, field: string, schema) => TYPE_CASTS.object(all, id, field, schema)
+  record: (all: any, id: string, field: string, schema) =>
+    TYPE_CASTS.object(all, id, field, schema)
 }
 
 const TYPE_TO_SPECIAL_OP: Record<
@@ -237,14 +245,14 @@ const TYPE_TO_SPECIAL_OP: Record<
     lang?: string
   ) => {
     // TODO add db
-    let args = [ id ]
+    let args = [id]
     if (lang) {
       args.push(`${field}.${lang}`)
       if (client.schemas.default.languages) {
-          args.push(...client.schemas.default.languages.map((l) => `${field}.${l}`))
+        args.push(...client.schemas.default.languages.map(l => `${field}.${l}`))
       }
     } else {
-        args.push(field)
+      args.push(field)
     }
     const res = await client.redis.selva_object_get(...args)
     if (res === null) {
@@ -259,7 +267,7 @@ const TYPE_TO_SPECIAL_OP: Record<
       }
       return o
     }
-  },
+  }
 }
 
 export const executeNestedGetOperations = async (
@@ -310,12 +318,13 @@ export const executeGetOperation = async (
     return inherit(client, op, lang, ctx)
   } else if (op.type === 'db') {
     const { db } = ctx
+    console.log('db', db)
 
     let r: any
     let fieldSchema
     if (Array.isArray(op.sourceField)) {
       fieldSchema = getNestedSchema(
-        client.schemas.default,
+        client.schemas[db],
         op.id,
         op.sourceField[0]
       )
@@ -341,11 +350,7 @@ export const executeGetOperation = async (
     } else {
       bufferNodeMarker(ctx, op.id, <string>op.sourceField)
 
-      fieldSchema = getNestedSchema(
-        client.schemas.default,
-        op.id,
-        op.sourceField
-      )
+      fieldSchema = getNestedSchema(client.schemas[db], op.id, op.sourceField)
 
       if (!fieldSchema) {
         return null
@@ -355,14 +360,24 @@ export const executeGetOperation = async (
       if (specialOp) {
         r = await specialOp(client, op.id, op.sourceField, lang)
       } else {
-        r = await client.redis.selva_object_get({ name: db }, op.id, op.sourceField)
+        console.log('juuuuu', db)
+        r = await client.redis.selva_object_get(
+          { name: db },
+          op.id,
+          op.sourceField
+        )
       }
     }
 
     if (r !== null && r !== undefined) {
       const typeCast = TYPE_CASTS[fieldSchema.type]
       if (typeCast) {
-        return typeCast(r, op.id, op.sourceField as string, client.schemas.default)
+        return typeCast(
+          r,
+          op.id,
+          op.sourceField as string,
+          client.schemas.default
+        )
       }
 
       return r
