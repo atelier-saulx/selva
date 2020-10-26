@@ -360,7 +360,6 @@ export const executeGetOperation = async (
       if (specialOp) {
         r = await specialOp(client, op.id, op.sourceField, lang)
       } else {
-        console.log('juuuuu', db)
         r = await client.redis.selva_object_get(
           { name: db },
           op.id,
