@@ -79,7 +79,6 @@ static int send_object_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeI
     int err = 0;
     RedisModuleString *id;
     RedisModuleKey *key;
-    RedisModuleString *value = NULL;
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
     if (!id) {
@@ -106,7 +105,6 @@ static int send_object_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeI
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithString(ctx, id);
             RedisModule_ReplyWithString(ctx, field);
-            //RedisModule_ReplyWithNull(ctx);
 
             err = SelvaObject_ReplyWithObject(ctx, obj, field);
             if (err) {

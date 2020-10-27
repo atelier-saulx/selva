@@ -4,11 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "redismodule.h"
-#include "errors.h"
-#include "cstrings.h"
-#include "tree.h"
-#include "selva_onload.h"
 #include "cdefs.h"
+#include "cstrings.h"
+#include "errors.h"
+#include "selva_object.h"
+#include "selva_onload.h"
+#include "tree.h"
 
 #define SELVA_OBJECT_ENCODING_VERSION   0
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX
@@ -17,18 +18,6 @@
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
 
-/*
- * Object key types.
- * DO NOT REORDER the numbers as they are used for in the RDB storage format.
- */
-enum SelvaObjectType {
-    SELVA_OBJECT_NULL = 0,
-    SELVA_OBJECT_DOUBLE = 1,
-    SELVA_OBJECT_LONGLONG = 2,
-    SELVA_OBJECT_STRING = 3,
-    SELVA_OBJECT_OBJECT = 4,
-    SELVA_OBJECT_SET_REF = 5,
-};
 
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
@@ -202,6 +191,10 @@ static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleStri
 
 int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
     struct SelvaObject *obj;
+
+    if (!key) {
+        return SELVA_ENOENT;
+    }
 
     /* Create an empty value object if the key is currently empty. */
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
@@ -571,6 +564,19 @@ int SelvaObject_SetSetRef(struct SelvaObject *obj, const RedisModuleString *key_
     key->value = value;
 
     return 0;
+}
+
+enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const char *key_name, size_t key_name_len) {
+    struct SelvaObjectKey *key;
+    enum SelvaObjectType type = SELVA_OBJECT_NULL;
+    int err;
+
+    err = get_key(obj, key_name, key_name_len, 0, &key);
+    if (!err) {
+        type = key->type;
+    }
+
+    return type;
 }
 
 int SelvaObject_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
