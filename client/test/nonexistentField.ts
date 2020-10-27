@@ -36,7 +36,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.skip('invalid filter should not return result', async t => {
+test.serial('invalid filter should not return result', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({
     $language: 'en',
