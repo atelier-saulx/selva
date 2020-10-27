@@ -26,7 +26,8 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text' }
+          title: { type: 'text' },
+          menu: { type: 'references' }
         }
       }
     }
@@ -72,7 +73,7 @@ test.serial('inherit references $list', async t => {
       menu: {
         title: true,
         $list: {
-          $inherit: true
+          $inherit: { $type: ['sport'] }
         }
       }
     }),

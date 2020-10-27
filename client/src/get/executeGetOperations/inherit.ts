@@ -56,7 +56,7 @@ async function mergeObj(
     op.id,
     ...rpn
   )
-  console.log('___selva_hierarchy', 'bfs', 'ancestors', op.id, rpn);
+  console.log('___selva_hierarchy', 'bfs', 'ancestors', op.id, rpn)
   console.log(ids)
 
   if (!ids || !ids.length) {
@@ -243,11 +243,13 @@ export default async function inherit(
       schema.types[op.types[0]].prefix,
       <string>op.sourceField
     )
+    console.log('FS', fs, schema.types[op.types[0]].prefix)
 
     if (op.merge === true && (fs.type === 'object' || fs.type === 'record')) {
       return mergeObj(client, op, lang, ctx)
     }
 
+    console.log('OP', op)
     const res = await client.redis.selva_inherit(
       {
         name: db
@@ -264,23 +266,22 @@ export default async function inherit(
     }
 
     if (TYPE_CASTS[fs.type]) {
-      const field = res[0][1];
+      const field = res[0][1]
       return TYPE_CASTS[fs.type](v, op.id, field, client.schemas.default)
     } else if (fs.type === 'text') {
-      const result = {};
+      const result = {}
 
       for (let i = 0; i < v.length; i += 2) {
-          result[v[i]] = v[i + 1]
+        result[v[i]] = v[i + 1]
       }
 
-      if  (lang) {
+      if (lang) {
         v = result[lang] || null
 
         if (!v && client.schemas.default.languages) {
           for (const l of client.schemas.default.languages) {
             const txt = result[l]
-            if (txt)
-              return txt
+            if (txt) return txt
           }
         }
 
@@ -296,7 +297,7 @@ export default async function inherit(
       if (typeCast) {
         v = typeCast(value, id, field, client.schemas.default)
       } else {
-        v = value;
+        v = value
       }
     }
 

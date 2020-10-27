@@ -13,7 +13,23 @@ const findHierarchy = async (
   const { db, subId } = ctx
 
   let sourceField: string = <string>op.sourceField
-  if (Array.isArray(op.sourceField)) {
+  if (typeof op.props.$list === 'object' && op.props.$list.$inherit) {
+    const res = await executeNestedGetOperations(
+      client,
+      {
+        $db: ctx.db,
+        $id: op.id,
+        result: {
+          $field: op.sourceField,
+          $inherit: op.props.$list.$inherit
+        }
+      },
+      lang,
+      ctx
+    )
+
+    op.inKeys = res.result
+  } else if (Array.isArray(op.sourceField)) {
     const exists = await Promise.all(
       op.sourceField.map(f => {
         if (
