@@ -30,21 +30,7 @@ const findHierarchy = async (
 
     op.inKeys = res.result
   } else if (Array.isArray(op.sourceField)) {
-    const exists = await Promise.all(
-      op.sourceField.map(f => {
-        if (
-          ['children', 'parents', 'ancestors', 'descendants'].indexOf(f) !== -1
-        ) {
-          return true
-        }
-        return client.redis.hexists({ name: db }, op.id, f)
-      })
-    )
-    const idx = exists.findIndex(x => !!x)
-    if (idx === -1) {
-      return
-    }
-    sourceField = op.sourceField[idx]
+    sourceField = op.sourceField.join('\n')
   }
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
   // TODO: change this if ctx.subId (for markers)
