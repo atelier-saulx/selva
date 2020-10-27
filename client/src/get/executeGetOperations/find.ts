@@ -127,6 +127,7 @@ const executeFindOperation = async (
       return await executeNestedGetOperations(
         client,
         {
+          $db: ctx.db,
           $id: id,
           ...realOpts
         },
