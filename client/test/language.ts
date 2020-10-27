@@ -66,16 +66,10 @@ test.serial('language in all types of objects', async t => {
       $id: 'bl1',
       $language: 'en',
       title: true,
-      randoObject: true,
-      randoArray: true
+      randoObject: true
     }),
     {
       title: 'engTitle',
-      randoArray: [
-        {
-          title: 'randoArray.engTitle'
-        }
-      ],
       randoObject: {
         title: 'randoObject.engTitle'
       }
