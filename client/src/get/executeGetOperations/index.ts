@@ -195,6 +195,7 @@ const TYPE_TO_SPECIAL_OP: Record<
   string,
   (
     client: SelvaClient,
+    db: string,
     id: string,
     field: string,
     _lang?: string
@@ -202,6 +203,7 @@ const TYPE_TO_SPECIAL_OP: Record<
 > = {
   id: async (
     client: SelvaClient,
+    db: string,
     id: string,
     field: string,
     _lang?: string
@@ -210,6 +212,7 @@ const TYPE_TO_SPECIAL_OP: Record<
   },
   references: async (
     client: SelvaClient,
+    db: string,
     id: string,
     field: string,
     _lang?: string
@@ -218,6 +221,7 @@ const TYPE_TO_SPECIAL_OP: Record<
 
     if (field === 'ancestors') {
       return client.redis.selva_hierarchy_find(
+        { name: db },
         '___selva_hierarchy',
         'bfs',
         'ancestors',
@@ -225,21 +229,31 @@ const TYPE_TO_SPECIAL_OP: Record<
       )
     } else if (field === 'descendants') {
       return client.redis.selva_hierarchy_find(
+        { name: db },
         '___selva_hierarchy',
         'bfs',
         'descendants',
         paddedId
       )
     } else if (field === 'parents') {
-      return client.redis.selva_hierarchy_parents('___selva_hierarchy', id)
+      return client.redis.selva_hierarchy_parents(
+        { name: db },
+        '___selva_hierarchy',
+        id
+      )
     } else if (field === 'children') {
-      return client.redis.selva_hierarchy_children('___selva_hierarchy', id)
+      return client.redis.selva_hierarchy_children(
+        { name: db },
+        '___selva_hierarchy',
+        id
+      )
     } else {
-      return client.redis.zrange(id + '.' + field, 0, -1)
+      return client.redis.zrange({ name: db }, id + '.' + field, 0, -1)
     }
   },
   text: async (
     client: SelvaClient,
+    db: string,
     id: string,
     field: string,
     lang?: string
@@ -254,7 +268,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     } else {
       args.push(field)
     }
-    const res = await client.redis.selva_object_get(...args)
+    const res = await client.redis.selva_object_get({ name: db }, ...args)
     if (res === null) {
       return null
     }
@@ -338,7 +352,7 @@ export const executeGetOperation = async (
         op.sourceField.map(async f => {
           bufferNodeMarker(ctx, op.id, f)
           if (specialOp) {
-            return specialOp(client, op.id, f, lang)
+            return specialOp(client, db, op.id, f, lang)
           }
 
           return client.redis.selva_object_get({ name: db }, op.id, f)
@@ -357,7 +371,7 @@ export const executeGetOperation = async (
 
       const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
       if (specialOp) {
-        r = await specialOp(client, op.id, op.sourceField, lang)
+        r = await specialOp(client, db, op.id, op.sourceField, lang)
       } else {
         r = await client.redis.selva_object_get(
           { name: db },

@@ -21,7 +21,7 @@ const findHierarchy = async (
         ) {
           return true
         }
-        return client.redis.hexists(op.id, f)
+        return client.redis.hexists({ name: db }, op.id, f)
       })
     )
     const idx = exists.findIndex(x => !!x)
