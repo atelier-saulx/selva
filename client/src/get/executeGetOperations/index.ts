@@ -144,7 +144,7 @@ async function refreshMarkers(
 
 export const TYPE_CASTS: Record<
   string,
-  (x: any, id: string, field: string, schema: Schema) => any
+  (x: any, id: string, field: string, schema: Schema, lang?: string) => any
 > = {
   float: Number,
   number: Number,
@@ -152,7 +152,7 @@ export const TYPE_CASTS: Record<
   boolean: (x: any) => (x === '0' ? false : true),
   json: (x: any) => JSON.parse(x),
   array: (x: any) => JSON.parse(x),
-  object: (all: any, id: string, field: string, schema) => {
+  object: (all: any, id: string, field: string, schema, lang) => {
     const result = {}
     let fieldCount = 0
     const parse = (o, field: string, arr: string[]) =>
@@ -166,7 +166,20 @@ export const TYPE_CASTS: Record<
 
         const fieldSchema = getNestedSchema(schema, id, `${field}.${key}`)
 
-        if (
+        if (lang && 'text' === fieldSchema.type && Array.isArray(val)) {
+          const txtObj = {}
+          parse(txtObj, `${field}.${key}`, val)
+
+          if (txtObj[lang]) {
+            o[key] = txtObj[lang]
+          } else {
+            for (const l of schema.languages) {
+              if (txtObj[l]) {
+                o[key] = txtObj[l]
+              }
+            }
+          }
+        } else if (
           ['object', 'text'].includes(fieldSchema.type) &&
           Array.isArray(val)
         ) {
@@ -175,7 +188,7 @@ export const TYPE_CASTS: Record<
         } else {
           const typeCast = TYPE_CASTS[fieldSchema.type]
           if (typeCast) {
-            val = typeCast(val, id, field, schema)
+            val = typeCast(val, id, field, schema, lang)
           }
           o[key] = val
         }
@@ -388,7 +401,8 @@ export const executeGetOperation = async (
           r,
           op.id,
           op.sourceField as string,
-          client.schemas.default
+          client.schemas.default,
+          lang
         )
       }
 

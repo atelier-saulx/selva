@@ -23,7 +23,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.skip('language in all types of objects', async t => {
+test.serial('language in all types of objects', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
