@@ -339,55 +339,5 @@ test.serial('get - multi db', async t => {
     }
   })
 
-  const a = await client.get({
-    title: {
-      $field: {
-        value: {
-          $id: 'dictionary',
-          general: {
-            randoText: true
-          }
-        },
-        path: ['general.randoText']
-      }
-    }
-  })
-
-  t.deepEqualIgnoreOrder(a.title, {
-    en: 'funky'
-  })
-
-  const b = await client.get({
-    title: {
-      $field: {
-        value: {
-          $id: 'dictionary',
-          general: {
-            randoText: true
-          }
-        },
-        path: ['general.randoText']
-      }
-    },
-    children: {
-      id: true,
-      $db: 'users',
-      $list: {
-        $find: {
-          $traverse: 'users',
-          $filter: {
-            $value: 'user',
-            $field: 'type',
-            $operator: '='
-          }
-        }
-      }
-    }
-  })
-
-  t.deepEqualIgnoreOrder(b.title, {
-    en: 'funky'
-  })
-
   await client.destroy()
 })
