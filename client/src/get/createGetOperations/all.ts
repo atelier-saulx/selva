@@ -1,7 +1,7 @@
 import { SelvaClient } from '../../'
 import { GetOptions } from '..'
 import { GetOperation } from '../types'
-import { getTypeFromId, getNestedSchema } from '../utils'
+import { getTypeFromId, getNestedSchema, setNestedResult } from '../utils'
 import createGetOperations from './'
 
 export function makeAll(
@@ -25,9 +25,9 @@ export function makeAll(
       if (props[key] === false) {
         // do nothing
       } else if ($field) {
-        o[field + '.' + key] = $field + '.' + key
+        setNestedResult(o, field + '.' + key, $field + '.' + key)
       } else {
-        o[field + '.' + key] = true
+        setNestedResult(o, field + '.' + key, true)
       }
     }
 

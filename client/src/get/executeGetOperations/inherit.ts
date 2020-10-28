@@ -1,9 +1,44 @@
 import { SelvaClient } from '../../'
-import { GetOperationInherit, GetResult, GetOperation, Fork } from '../types'
+import {
+  GetOperationInherit,
+  GetResult,
+  GetOperation,
+  Fork,
+  GetOptions
+} from '../types'
 import { getNestedSchema, getNestedField } from '../utils'
-import executeGetOperations, { TYPE_CASTS, ExecContext } from './'
+import executeGetOperations, {
+  TYPE_CASTS,
+  ExecContext,
+  executeNestedGetOperations
+} from './'
 import { FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
+
+function makeRealKeys(
+  props: GetOptions,
+  field: string,
+  simple?: boolean
+): Record<string, true | string> {
+  if (simple) {
+    return props
+  }
+
+  const p = field + '.'
+
+  let realKeys: Record<string, true | string> = {}
+  for (const prop in props) {
+    if (!prop.startsWith('$')) {
+      if (props[prop].$field) {
+        realKeys[p + prop] = <string>props[prop].$field
+      } else {
+        realKeys[p + prop] = true
+      }
+    }
+  }
+
+  return realKeys
+}
 
 async function mergeObj(
   client: SelvaClient,
@@ -13,10 +48,11 @@ async function mergeObj(
 ): Promise<GetResult> {
   const { db } = ctx
   const remapped: Record<string, string> = {}
-  const fields = Object.keys(op.props).map(f => {
-    if (typeof op.props[f] === 'string') {
-      remapped[<string>op.props[f]] = f
-      return <string>op.props[f]
+  const props = makeRealKeys(op.props, op.field, true)
+  const fields = Object.keys(props).map(f => {
+    if (typeof props[f] === 'string') {
+      remapped[<string>props[f]] = f
+      return <string>props[f]
     }
 
     return f
@@ -104,12 +140,13 @@ async function inheritItem(
 ): Promise<GetResult> {
   const { db } = ctx
 
+  const props = makeRealKeys(op.props, op.field)
   const remapped: Record<string, string> = {}
-  const fields = Object.keys(op.props).map(f => {
+  const fields = Object.keys(props).map(f => {
     f = f.slice(op.field.length + 1)
-    if (typeof op.props[f] === 'string') {
-      remapped[<string>op.props[f]] = f
-      return <string>op.props[f]
+    if (typeof props[f] === 'string') {
+      remapped[<string>props[f]] = f
+      return <string>props[f]
     }
 
     return f
@@ -237,19 +274,34 @@ export default async function inherit(
     return acc
   }, '')
 
-  if (op.single) {
-    const fs = getNestedSchema(
-      schema,
-      schema.types[op.types[0]].prefix,
-      <string>op.sourceField
-    )
-    console.log('FS', fs, schema.types[op.types[0]].prefix)
+  const fs = getNestedSchema(
+    schema,
+    schema.types[op.types[0]].prefix,
+    <string>op.sourceField
+  )
 
+  if (fs && fs.type === 'reference') {
+    const res = await client.redis.selva_inherit(
+      {
+        name: db
+      },
+      '___selva_hierarchy',
+      op.id,
+      prefixes,
+      <string>op.sourceField // TODO?
+    )
+    let v = res.length ? res[0][2] : null
+
+    if (!v) {
+      return null
+    }
+
+    return executeNestedGetOperations(client, op.props, lang, ctx)
+  } else if (op.single) {
     if (op.merge === true && (fs.type === 'object' || fs.type === 'record')) {
       return mergeObj(client, op, lang, ctx)
     }
 
-    console.log('OP', op)
     const res = await client.redis.selva_inherit(
       {
         name: db
@@ -304,11 +356,12 @@ export default async function inherit(
     return v
   }
 
+  const realKeys = makeRealKeys(op.props, op.field)
   const remapped: Record<string, string> = {}
-  const fields = Object.keys(op.props).map(f => {
-    if (typeof op.props[f] === 'string') {
-      remapped[<string>op.props[f]] = f
-      return <string>op.props[f]
+  const fields = Object.keys(realKeys).map(f => {
+    if (typeof realKeys[f] === 'string') {
+      remapped[<string>realKeys[f]] = f
+      return <string>realKeys[f]
     }
 
     return f

@@ -2,6 +2,7 @@ import { GetOptions, Inherit, GetOperation } from '../types'
 import { SelvaClient } from '../..'
 import { Schema, FieldSchema } from '../../schema'
 import { makeAll } from './all'
+import { getNestedSchema, setNestedResult } from '../utils'
 
 function validateTypes(schema: Schema, field: string, types: string[]): void {
   let fst: FieldSchema
@@ -52,16 +53,7 @@ export default function createInheritOperation(
   }
 
   if (inherit.$item) {
-    let realKeys: Record<string, true | string> = {}
-    for (const prop in props) {
-      if (!prop.startsWith('$')) {
-        if (props[prop].$field) {
-          realKeys[field + '.' + prop] = <string>props[prop].$field
-        } else {
-          realKeys[field + '.' + prop] = true
-        }
-      }
-    }
+    let p: GetOptions = props
 
     if (props.$all) {
       const newKeys = makeAll(
@@ -72,7 +64,7 @@ export default function createInheritOperation(
         db,
         props
       )
-      realKeys = newKeys || realKeys
+      p = newKeys || props
     }
 
     ops.push({
@@ -80,7 +72,7 @@ export default function createInheritOperation(
       id,
       field,
       sourceField: props.$field || field,
-      props: realKeys,
+      props: p,
       item: true,
       required: Array.isArray(inherit.$required)
         ? inherit.$required
@@ -100,25 +92,13 @@ export default function createInheritOperation(
   validateTypes(schema, field, types)
 
   let hasKeys = false
-  let realKeys: Record<string, true | string> = {}
-  for (const prop in props) {
-    if (!prop.startsWith('$')) {
-      hasKeys = true
-      if (props[prop].$field) {
-        realKeys[field + '.' + prop] = <string>props[prop].$field
-      } else {
-        realKeys[field + '.' + prop] = true
-      }
-    }
-  }
-
   if (props.$all) {
     const newKeys = makeAll(client, id, field, <string>props.$field, db, props)
     if (newKeys) {
       hasKeys = true
     }
 
-    realKeys = newKeys || realKeys
+    const p = newKeys || props
   }
 
   if (hasKeys) {
@@ -127,7 +107,7 @@ export default function createInheritOperation(
       id,
       field,
       sourceField: props.$field || field,
-      props: realKeys,
+      props,
       types
     })
 
