@@ -177,7 +177,7 @@ export type GetOperation =
       props: GetOptions
       field: string
       id?: string
-      flatten?: string
+      sourceField?: string | string[]
     }
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
   | GetOperationFind

@@ -67,6 +67,24 @@ export default function createGetOperations(
       all(client, props, id, field, db, ops)
     }
   } else if (props.$field) {
+    const fs = getNestedSchema(
+      schema,
+      id,
+      Array.isArray(props.$field) ? props.$field[0] : props.$field
+    )
+
+    if (fs && fs.type === 'reference') {
+      ops.push({
+        type: 'nested_query',
+        field: field.substr(1),
+        props: Object.assign({}, props, { $field: undefined }),
+        id,
+        sourceField: props.$field
+      })
+
+      return
+    }
+
     ops.push({
       type: 'db',
       id,
@@ -85,7 +103,7 @@ export default function createGetOperations(
           field: flattened,
           props,
           id,
-          flatten: field.substr(1)
+          sourceField: field.substr(1)
         })
       } else {
         ops.push({

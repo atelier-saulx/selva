@@ -145,7 +145,7 @@ test.serial('simple singular reference', async t => {
   await client.destroy()
 })
 
-test.serial.only('simple singular reference with $flatten', async t => {
+test.serial('simple singular reference with $flatten', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const club1 = await client.set({
@@ -276,7 +276,7 @@ test.serial('singular reference inherit', async t => {
       title: true,
       specialMatch: {
         title: true,
-        value: { $inherit: true }
+        value: { $inherit: { $type: ['match', 'club'] } }
       }
     }),
     {
@@ -292,7 +292,7 @@ test.serial('singular reference inherit', async t => {
   await client.destroy()
 })
 
-test.serial('singular reference $field', async t => {
+test.serial.only('singular reference $field', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({

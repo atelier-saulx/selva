@@ -327,7 +327,11 @@ export const executeGetOperation = async (
       const id = await client.redis.selva_object_get(
         { name: ctx.db },
         op.id,
-        op.flatten || op.field
+        ...(op.sourceField
+          ? Array.isArray(op.sourceField)
+            ? op.sourceField
+            : [op.sourceField]
+          : [op.field])
       )
 
       if (!id) {
