@@ -43,20 +43,7 @@ export default async (
       )
     )
 
-    const o = {}
-    let j: number
-
-    for (let i = 0; i < r.length; i += 3) {
-      const jf = r[i + 1]
-      const v = r[i + 2]
-
-      const [_, jStr, f] = jf.match(/^(\d*)\.(.*)$/)
-      if (!j) j = Number(jStr)
-
-      o[f] = v
-    }
-
-    arrayResult[j] = o
+    arrayResult = arr
   }
   // nested json special!
   result.push('0', field, JSON.stringify(arrayResult))

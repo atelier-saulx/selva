@@ -1,5 +1,5 @@
 import test from 'ava'
-import { connect, connections, Observable, constants } from '@saulx/selva'
+import { connect, connections, Observable, constants } from '../src/index'
 import {
   startRegistry,
   startOrigin,
