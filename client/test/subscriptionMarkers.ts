@@ -445,12 +445,12 @@ test.serial('FindInSub: simple lookups', async t => {
 
   t.deepEqual(
     await client.redis.selva_hierarchy_findinsub('___selva_hierarchy', subId1, 3),
-    [ 'maTest0011', 'maTest0012', 'maTest0013' ]
+    [ 'maTest0001', 'maTest0011', 'maTest0012', 'maTest0013' ]
   )
 
   t.deepEqual(
     await client.redis.selva_hierarchy_findinsub('___selva_hierarchy', subId1, 4),
-    [ 'maTest0001', 'maTest0002' ]
+    [ 'maTest0011', 'maTest0001', 'maTest0002' ]
   )
 
   t.deepEqual(
