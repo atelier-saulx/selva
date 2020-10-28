@@ -172,7 +172,13 @@ export type GetOperation =
       default?: any
     }
   | { type: 'value'; value: string; field: string }
-  | { type: 'nested_query'; props: GetOptions; field: string }
+  | {
+      type: 'nested_query'
+      props: GetOptions
+      field: string
+      id?: string
+      flatten?: string
+    }
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
   | GetOperationFind
   | GetOperationInherit

@@ -323,7 +323,22 @@ export const executeGetOperation = async (
   if (op.type === 'value') {
     return op.value
   } else if (op.type === 'nested_query') {
-    return executeNestedGetOperations(client, op.props, lang, ctx)
+    if (op.id) {
+      const id = await client.redis.selva_object_get(
+        { name: ctx.db },
+        op.id,
+        op.flatten || op.field
+      )
+
+      if (!id) {
+        return null
+      }
+
+      const props = Object.assign({}, op.props, { $id: id })
+      return executeNestedGetOperations(client, props, lang, ctx)
+    } else {
+      return executeNestedGetOperations(client, op.props, lang, ctx)
+    }
   } else if (op.type === 'array_query') {
     return Promise.all(
       op.props.map(p => {

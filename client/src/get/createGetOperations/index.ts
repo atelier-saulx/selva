@@ -6,6 +6,8 @@ import list from './list'
 import all from './all'
 import createInheritOperation from './inherit'
 
+import { getNestedSchema } from '../utils'
+
 export default function createGetOperations(
   client: SelvaClient,
   props: GetOptions,
@@ -14,6 +16,8 @@ export default function createGetOperations(
   db: string,
   ops: GetOperation[] = []
 ): GetOperation[] {
+  const schema = client.schemas[db]
+
   if (props.$value) {
     ops.push({
       type: 'value',
@@ -70,6 +74,31 @@ export default function createGetOperations(
       sourceField: <string[]>props.$field
     })
   } else if (typeof props === 'object') {
+    const fs = getNestedSchema(schema, id, field.substr(1))
+
+    if (fs && fs.type === 'reference') {
+      if (props.$flatten) {
+        const parts = field.substr(1).split('.')
+        const flattened = parts.slice(0, parts.length - 1).join('.')
+        ops.push({
+          type: 'nested_query',
+          field: flattened,
+          props,
+          id,
+          flatten: field.substr(1)
+        })
+      } else {
+        ops.push({
+          type: 'nested_query',
+          field: field.substr(1),
+          props,
+          id
+        })
+      }
+
+      return
+    }
+
     for (const key in props) {
       if (key.startsWith('$')) {
         continue

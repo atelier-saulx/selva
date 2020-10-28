@@ -145,7 +145,7 @@ test.serial('simple singular reference', async t => {
   await client.destroy()
 })
 
-test.serial('simple singular reference with $flatten', async t => {
+test.serial.only('simple singular reference with $flatten', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const club1 = await client.set({
@@ -166,7 +166,7 @@ test.serial('simple singular reference with $flatten', async t => {
       $id: 'clA',
       $language: 'en',
       id: true,
-      title: true,
+      // title: true,
       specialMatch: {
         $flatten: true,
         title: true,

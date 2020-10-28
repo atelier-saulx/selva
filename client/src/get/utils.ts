@@ -91,7 +91,7 @@ export const setNestedResult = (
   field: string,
   value: any
 ) => {
-  if (!field) {
+  if (field === null || field === undefined) {
     return
   }
 
