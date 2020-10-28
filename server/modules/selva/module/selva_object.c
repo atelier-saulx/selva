@@ -9,6 +9,7 @@
 #include "errors.h"
 #include "selva_object.h"
 #include "selva_onload.h"
+#include "selva_set.h"
 #include "tree.h"
 
 #define SELVA_OBJECT_ENCODING_VERSION   0
@@ -29,6 +30,7 @@ struct SelvaObjectKey {
         void *value;
         double emb_double_value;
         long long emb_ll_value;
+        struct SelvaSet selva_set;
     };
     char name[0];
 };
@@ -84,10 +86,8 @@ static int clear_key_value(struct SelvaObjectKey *key) {
             destroy_selva_object(obj);
         }
         break;
-    case SELVA_OBJECT_SET_REF:
-        if (key->value) {
-            RedisModule_FreeString(NULL, key->value);
-        }
+    case SELVA_OBJECT_SET:
+        SelvaSet_Destroy(&key->selva_set);
         break;
     default:
         fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
@@ -542,28 +542,96 @@ int SelvaObject_SetStr(struct SelvaObject *obj, const RedisModuleString *key_nam
     return 0;
 }
 
-int SelvaObject_SetSetRef(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+int SelvaObject_AddSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
     int err;
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    /*
+     * Do get_key() first without create to avoid clearing a nested SelvaSet.
+     * If we get a SELVA_ENOENT error we can safely create the key.
+     */
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err == SELVA_ENOENT) {
+        err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    }
     if (err) {
         return err;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
+    if (key->type != SELVA_OBJECT_SET) {
+        err = clear_key_value(key);
+        if (err) {
+            return err;
+        }
+
+        SelvaSet_Init(&key->selva_set);
+        key->type = SELVA_OBJECT_SET;
     }
 
+    struct SelvaSetElement *el;
+    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    el->value = value;
+
+    if (SelvaSet_Add(&key->selva_set, el) != NULL) {
+        RedisModule_Free(el);
+        return SELVA_EEXIST;
+    }
     RedisModule_RetainString(NULL, value);
-    key->type = SELVA_OBJECT_SET_REF;
-    key->value = value;
 
     return 0;
+}
+
+int SelvaObject_RemSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    }
+
+    if (key->type != SELVA_OBJECT_SET) {
+        return SELVA_EINVAL;
+    }
+
+    struct SelvaSetElement *el;
+    el = SelvaSet_Find(&key->selva_set, value);
+    if (!el) {
+        return SELVA_ENOENT;
+    }
+
+    /*
+     * Remove from the tree and free the string.
+     */
+    SelvaSet_Remove(&key->selva_set, el);
+    SelvaSet_DestroyElement(el);
+
+    return 0;
+}
+
+struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleString *key_name) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return NULL;
+    }
+
+    if (key->type != SELVA_OBJECT_SET) {
+        return NULL;
+    }
+
+    return &key->selva_set;
 }
 
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const char *key_name, size_t key_name_len) {
@@ -634,40 +702,16 @@ int SelvaObject_ExistsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     return RedisModule_ReplyWithLongLong(ctx, 1);
 }
 
-static void replyWithSet(RedisModuleCtx *ctx, RedisModuleString *set_key_name) {
-    RedisModuleKey *key;
+static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
+    struct SelvaSetElement *el;
     size_t n = 0;
-
-    /* TODO This code is now more or less repeated if a few places */
-    key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_READ);
-    if (!key) {
-        RedisModule_ReplyWithNull(ctx);
-        return;
-    }
-
-    const int keytype = RedisModule_KeyType(key);
-    if (keytype != REDISMODULE_KEYTYPE_ZSET && keytype != REDISMODULE_KEYTYPE_EMPTY) {
-        RedisModule_CloseKey(key);
-        RedisModule_ReplyWithNull(ctx);
-        return;
-    }
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    RedisModule_ZsetFirstInScoreRange(key, 0, 1, 0, 0);
-    while (!RedisModule_ZsetRangeEndReached(key)) {
-        double score;
-        RedisModuleString *ele;
-
-        ele = RedisModule_ZsetRangeCurrentElement(key, &score);
-
-        RedisModule_ReplyWithString(ctx, ele);
-
-        RedisModule_FreeString(ctx, ele);
-        RedisModule_ZsetRangeNext(key);
+    RB_FOREACH(el, SelvaSetHead, &set->head) {
+        RedisModule_ReplyWithString(ctx, el->value);
         n++;
     }
-    RedisModule_ZsetRangeStop(key);
 
     RedisModule_ReplySetArrayLength(ctx, n);
 }
@@ -697,12 +741,8 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
             RedisModule_ReplyWithNull(ctx);
         }
         break;
-    case SELVA_OBJECT_SET_REF:
-        if (key->value) {
-            replyWithSet(ctx, key->value);
-        } else {
-            RedisModule_ReplyWithNull(ctx);
-        }
+    case SELVA_OBJECT_SET:
+        replyWithSelvaSet(ctx, &key->selva_set);
         break;
     default:
         (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)key->type);
@@ -788,8 +828,8 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
 int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    const char *type;
     struct SelvaObject *obj;
+    size_t values_set = 0;
     int err;
 
     const size_t ARGV_KEY = 1;
@@ -797,7 +837,10 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     const size_t ARGV_TYPE = 3;
     const size_t ARGV_OVAL = 4;
 
-    if (argc != 5) {
+    /* TODO parse type & set by type */
+    const char type = RedisModule_StringPtrLen(argv[ARGV_TYPE], NULL)[0];
+
+    if (!(argc == 5 || (type == 'S' && argc >= 5))) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -806,28 +849,32 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         return replyWithSelvaError(ctx, SELVA_ENOENT);
     }
 
-    /* TODO parse type & set by type */
-    type = RedisModule_StringPtrLen(argv[ARGV_TYPE], NULL);
-
-    switch (type[0]) {
+    switch (type) {
     case 'f': /* SELVA_OBJECT_DOUBLE */
         err = SelvaObject_SetDouble(
             obj,
             argv[ARGV_OKEY],
             strtod(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL));
+        values_set++;
         break;
     case 'i': /* SELVA_OBJECT_LONGLONG */
         err = SelvaObject_SetLongLong(
             obj,
             argv[ARGV_OKEY],
             strtoll(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL, 10));
+        values_set++;
         break;
     case 's': /* SELVA_OBJECT_STRING */
         err = SelvaObject_SetStr(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
+        values_set++;
         break;
-    case 'r': /* SELVA_OBJECT_SET_REF */
-        /* This is meant to be used only by AOF and replication. */
-        err = SelvaObject_SetSetRef(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
+    case 'S': /* SELVA_OBJECT_SET */
+        for (int i = ARGV_OVAL; i < argc; i++) {
+            if (SelvaObject_AddSet(obj, argv[ARGV_OKEY], argv[i]) == 0) {
+                values_set++;
+            }
+        }
+        err = 0;
         break;
     default:
         err = SELVA_EINTYPE;
@@ -835,7 +882,7 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     if (err) {
         return replyWithSelvaError(ctx, err);
     }
-    RedisModule_ReplyWithLongLong(ctx, 1);
+    RedisModule_ReplyWithLongLong(ctx, values_set);
 
     return RedisModule_ReplicateVerbatim(ctx);
 }
@@ -868,7 +915,7 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         [SELVA_OBJECT_LONGLONG] = { "long long", 9 },
         [SELVA_OBJECT_STRING] = { "string", 6 },
         [SELVA_OBJECT_OBJECT] = { "object", 6 },
-        [SELVA_OBJECT_SET_REF] = { "set_ref", 7 }
+        [SELVA_OBJECT_SET] = { "selva_set", 9 },
     };
 
     enum SelvaObjectType type = SELVA_OBJECT_NULL;
@@ -928,10 +975,10 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         break;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
+    case SELVA_OBJECT_SET:
         RedisModule_ReplyWithLongLong(ctx, 1);
         break;
     case SELVA_OBJECT_STRING:
-    case SELVA_OBJECT_SET_REF:
         if (key->value) {
             size_t len;
 
@@ -1049,21 +1096,8 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
                 key->type = SELVA_OBJECT_OBJECT;
             }
             break;
-        case SELVA_OBJECT_SET_REF:
-            {
-                RedisModuleString *value;
-                int err;
-
-                value = RedisModule_LoadString(io);
-                err =SelvaObject_SetSetRef(obj, name, value);
-                if (err) {
-                    RedisModule_LogIOError(io, "warning", "Error while loading a set ref");
-                    return NULL;
-                }
-
-                RedisModule_FreeString(NULL, value);
-            }
-            break;
+        case SELVA_OBJECT_SET:
+            /* TODO Support sets */
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
         }
@@ -1112,11 +1146,8 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
                 }
                 SelvaObjectTypeRDBSave(io, key->value);
                 break;
-            case SELVA_OBJECT_SET_REF:
-                if (!key->value) {
-                    RedisModule_LogIOError(io, "warning", "SET_REF value missing");
-                }
-                RedisModule_SaveString(io, key->value);
+            case SELVA_OBJECT_SET:
+
             default:
                 RedisModule_LogIOError(io, "warning", "Unknown type");
             }
@@ -1163,13 +1194,8 @@ void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void 
             /* FIXME Needs a way to pass the full object path */
             RedisModule_LogIOError(aof, "warning", "Unknown type");
             break;
-        case SELVA_OBJECT_SET_REF:
-            RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbcs",
-                key,
-                okey->name, (size_t)okey->name_len,
-                "r",
-                okey->value);
-            break;
+        case SELVA_OBJECT_SET:
+            /* TODO Support SelvaSets */
         default:
             RedisModule_LogIOError(aof, "warning", "Unknown type");
         }

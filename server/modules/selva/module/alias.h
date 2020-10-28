@@ -4,9 +4,10 @@
 
 struct RedisModuleCtx;
 struct RedisModuleKey;
+struct SelvaSet;
 
 struct RedisModuleKey *open_aliases_key(struct RedisModuleCtx *ctx);
-int delete_aliases(struct RedisModuleKey *aliases_key, struct RedisModuleKey *set_key);
+int delete_aliases(struct RedisModuleKey *aliases_key, struct SelvaSet *set);
 void update_alias(struct RedisModuleCtx *ctx, struct RedisModuleKey *alias_key, struct RedisModuleString *id, struct RedisModuleString *ref);
 
 #endif /* SELVA_ALIAS_H */

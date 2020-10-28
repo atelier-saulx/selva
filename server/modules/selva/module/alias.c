@@ -1,6 +1,8 @@
 #include "cdefs.h"
 #include "redismodule.h"
 #include "selva.h"
+#include "selva_object.h"
+#include "selva_set.h"
 #include "alias.h"
 
 RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx) {
@@ -8,47 +10,60 @@ RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx) {
     RedisModuleString *alias_key_name;
 
     alias_key_name = RedisModule_CreateString(ctx, SELVA_ALIASES_KEY, sizeof(SELVA_ALIASES_KEY) - 1);
+    if (!alias_key_name) {
+        fprintf(stderr, "%s: ENOMEM\n", __FILE__);
+        return NULL;
+    }
+
     key = RedisModule_OpenKey(ctx, alias_key_name, REDISMODULE_READ | REDISMODULE_WRITE);
 
     return key;
 }
 
-int delete_aliases(RedisModuleKey *aliases_key, RedisModuleKey *set_key) {
-    if (RedisModule_ZsetFirstInScoreRange(set_key, REDISMODULE_NEGATIVE_INFINITE, REDISMODULE_POSITIVE_INFINITE, 0, 0) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
+int delete_aliases(RedisModuleKey *aliases_key, struct SelvaSet *set) {
+    struct SelvaSetElement *el;
+
+    if (!set) {
+        /* Likely there were no aliases. */
+        return 0;
     }
 
-    while (!RedisModule_ZsetRangeEndReached(set_key)) {
-        RedisModuleString *alias;
+    RB_FOREACH(el, SelvaSetHead, &set->head) {
+        RedisModuleString *alias = el->value;
 
-        alias = RedisModule_ZsetRangeCurrentElement(set_key, NULL);
         RedisModule_HashSet(aliases_key, REDISMODULE_HASH_NONE, alias, REDISMODULE_HASH_DELETE, NULL);
-        RedisModule_ZsetRangeNext(set_key);
     }
-
-    RedisModule_ZsetRangeStop(set_key);
 
     return 0;
 }
 
 void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleString *id, RedisModuleString *ref) {
-    RedisModuleString *orig;
+    RedisModuleString *orig = NULL;
 
     /*
-     * Remove the alias from the previous "ID.aliases" zset.
+     * Remove the alias from the previous node.
      */
     if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_NONE, ref, &orig, NULL)) {
-        TO_STR(orig);
-        RedisModuleString *key_name;
         RedisModuleKey *key;
 
-        key_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", orig_len, orig_str, ".aliases");
-        key = RedisModule_OpenKey(ctx, key_name, REDISMODULE_READ | REDISMODULE_WRITE);
-        if (key) {
-            RedisModule_ZsetRem(key, ref, NULL);
-        }
+        if (orig) {
+            /* TODO Better error handling */
+            key = RedisModule_OpenKey(ctx, orig, REDISMODULE_READ | REDISMODULE_WRITE);
+            if (key) {
+                struct SelvaObject *obj;
 
-         RedisModule_CloseKey(key);
+                if (SelvaObject_Key2Obj(key, &obj) == 0) {
+                    RedisModuleString *field;
+
+                    field = RedisModule_CreateStringPrintf(ctx, "%s", "aliases");
+                    if (field) {
+                        SelvaObject_RemSet(obj, field, field);
+                    }
+                }
+            }
+
+            RedisModule_CloseKey(key);
+        }
     }
 
     RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, id, NULL);

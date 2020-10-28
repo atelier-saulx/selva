@@ -46,15 +46,6 @@ int SelvaNode_SetField(
         struct RedisModuleString *field,
         struct RedisModuleString *value);
 
-/**
- * Set a reference to a Selva Set.
- */
-int SelvaNode_SetFieldSetRef(
-        struct RedisModuleCtx *ctx,
-        struct RedisModuleKey *node_key,
-        struct RedisModuleString *field,
-        struct RedisModuleString *value);
-
 int SelvaNode_DelField(
         struct RedisModuleCtx *ctx,
         struct RedisModuleKey *node_key,
