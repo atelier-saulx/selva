@@ -3,12 +3,49 @@
 #define SELVA_SET
 
 #include "selva.h"
+#include "tree.h"
 
 struct RedisModuleCtx;
 struct RedisModuleKey;
 struct RedisModuleString;
 
-struct RedisModuleKey *SelvaSet_Open(struct RedisModuleCtx *ctx, const char *id_str, size_t id_len, const char *field_str);
-int SelvaSet_Remove(struct RedisModuleKey *set_key, struct RedisModuleKey *alias_key);
+struct SelvaSetElement {
+    struct RedisModuleString *value;
+    RB_ENTRY(SelvaSetElement) _entry;
+};
+
+RB_HEAD(SelvaSetHead, SelvaSetElement);
+
+struct SelvaSet {
+    size_t size;
+    struct SelvaSetHead head;
+};
+
+RB_PROTOTYPE(SelvaSetHead, SelvaSetElement, _entry, SelvaSet_Compare);
+void SelvaSet_DestroyElement(struct SelvaSetElement *el);
+void SelvaSet_Destroy(struct SelvaSet *head);
+struct SelvaSetElement *SelvaSet_Find(struct SelvaSet *set, struct RedisModuleString *v);
+
+static inline void SelvaSet_Init(struct SelvaSet *set) {
+    set->size = 0;
+    RB_INIT(&set->head);
+}
+
+static inline struct SelvaSetElement *SelvaSet_Add(struct SelvaSet *set, struct SelvaSetElement *el) {
+    struct SelvaSetElement *old;
+
+    old = RB_INSERT(SelvaSetHead, &set->head, el);
+    if (!old) {
+        set->size++;
+    }
+
+    return old;
+}
+
+static inline void SelvaSet_Remove(struct SelvaSet *set, struct SelvaSetElement *el) {
+    if (RB_REMOVE(SelvaSetHead, &set->head, el)) {
+        set->size--;
+    }
+}
 
 #endif /* SELVA_SET */

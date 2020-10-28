@@ -36,86 +36,25 @@ struct send_hierarchy_field_data {
     size_t len;
 };
 
-static int send_selva_set(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
-    RedisModuleKey *key;
-    size_t len = 0;
+static int send_object_field_value(RedisModuleCtx *ctx, struct SelvaObject *obj, RedisModuleString *node_id, RedisModuleString *field) {
+    int err = SELVA_ENOENT;
 
-    key = SelvaSet_Open(ctx, nodeId, Selva_NodeIdLen(nodeId),
-                        RedisModule_StringPtrLen(field, NULL));
-    if (!key) {
-        return SELVA_MODIFY_HIERARCHY_EINVAL;
-    }
+    if (!SelvaObject_Exists(obj, field)) {
+        /*
+         * Start a new array reply:
+         * [node_id, field_name, field_value]
+         */
+        RedisModule_ReplyWithArray(ctx, 3);
 
-    /*
-     * Start a new array reply:
-     * [node_id, field_name, [set_value1, set_value2,.. set_valuen]]
-     */
-    RedisModule_ReplyWithArray(ctx, 3);
-    RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    RedisModule_ReplyWithString(ctx, field);
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+        RedisModule_ReplyWithString(ctx, node_id);
+        RedisModule_ReplyWithString(ctx, field);
 
-    RedisModule_ZsetFirstInScoreRange(key, 0, 1, 0, 0);
-    while (!RedisModule_ZsetRangeEndReached(key)) {
-        double score;
-        RedisModuleString *ele;
-
-        ele = RedisModule_ZsetRangeCurrentElement(key, &score);
-
-        RedisModule_ReplyWithString(ctx, ele);
-
-        RedisModule_FreeString(ctx, ele);
-        RedisModule_ZsetRangeNext(key);
-        len++;
-    }
-    RedisModule_ZsetRangeStop(key);
-
-    RedisModule_ReplySetArrayLength(ctx, len);
-
-    return 0;
-}
-
-static int send_object_field_value(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleString *field) {
-    int err = 0;
-    RedisModuleString *id;
-    RedisModuleKey *key;
-
-    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    if (!id) {
-        return SELVA_ENOMEM;
-    }
-
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
-    if (!key) {
-        return SELVA_ENOENT;
-    }
-
-    const int exists = SelvaNode_ExistField(ctx, key, field);
-    if (exists) {
-        /* Regular value */
-        struct SelvaObject *obj;
-
-        /* RFE This is not the nicest way to get the obj. */
-        err = SelvaObject_Key2Obj(key, &obj);
-        if (!err) {
-            /*
-             * Start a new array reply:
-             * [node_id, field_name, field_value]
-             */
-            RedisModule_ReplyWithArray(ctx, 3);
-            RedisModule_ReplyWithString(ctx, id);
-            RedisModule_ReplyWithString(ctx, field);
-
-            err = SelvaObject_ReplyWithObject(ctx, obj, field);
-            if (err) {
-                TO_STR(field);
-                (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
-            }
+        err = SelvaObject_ReplyWithObject(ctx, obj, field);
+        if (err) {
+            TO_STR(field);
+            (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
         }
-    } else {
-        err = SELVA_ENOENT;
     }
-    RedisModule_CloseKey(key);
 
     return err;
 }
@@ -178,18 +117,36 @@ static int send_field_value(
         RedisModuleCtx *ctx,
         const Selva_NodeId nodeId,
         RedisModuleString *field) {
-    TO_STR(field);
+    int err;
+
+    RedisModuleString *id;
+    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
+    if (!id) {
+        return SELVA_ENOMEM;
+    }
+
+    RedisModuleKey *key;
+    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
+    if (!key) {
+        return SELVA_ENOENT;
+    }
+
+    struct SelvaObject *obj;
+    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, id, REDISMODULE_READ), &obj);
+    if (err) {
+        return err;
+    }
 
     /*
      * The response should always start like this: [node_id, field_name, ...]
      * but we don't send the header yet.
      */
 
-    if (!strcmp(field_str, "aliases")) {
-        return send_selva_set(ctx, nodeId, field);
-    } else {
-        return send_object_field_value(ctx, nodeId, field);
-    }
+    err = send_object_field_value(ctx, obj, id, field);
+
+    RedisModule_CloseKey(key);
+
+    return err;
 }
 
 static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
@@ -287,7 +244,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     size_t nr_types;
     const Selva_NodeType *types = (char const (*)[2])RedisModule_StringPtrLen(argv[ARGV_TYPES], &nr_types);
-    nr_types /= 2;
+    nr_types /= SELVA_NODE_TYPE_SIZE;
 
     /*
      * Get field names.
@@ -313,6 +270,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         TO_STR(field_name);
         int err = 1; /* This will help us to know if something matched. */
 
+        /* TODO Should probably check types too */
         if (!strcmp(field_name_str, "ancestors")) {
             err = send_hierarchy_field(ctx, hierarchy, node_id, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
         } else if (!strcmp(field_name_str, "children")) {

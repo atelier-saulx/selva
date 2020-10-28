@@ -5,42 +5,48 @@
 #include "alias.h"
 #include "selva_set.h"
 
-RedisModuleKey *SelvaSet_Open(RedisModuleCtx *ctx, const char *id_str, size_t id_len, const char *field_str) {
-    RedisModuleString *set_key_name;
-    RedisModuleKey *set_key;
+int SelvaSet_Compare(struct SelvaSetElement *a, struct SelvaSetElement *b) {
+    RedisModuleString *ra = a->value;
+    RedisModuleString *rb = b->value;
+    TO_STR(ra, rb);
 
-    set_key_name = RedisModule_CreateStringPrintf(ctx, "%.*s.%s", id_len, id_str, field_str);
-    if (unlikely(!set_key_name)) {
-        return NULL;
+    if (ra_len < rb_len) {
+        return -1;
     }
-
-    set_key = RedisModule_OpenKey(ctx, set_key_name, REDISMODULE_WRITE);
-    if (!set_key) {
-        return NULL;
+    if (ra_len > rb_len) {
+        return 1;
     }
-
-    const int keytype = RedisModule_KeyType(set_key);
-    if (keytype != REDISMODULE_KEYTYPE_ZSET && keytype != REDISMODULE_KEYTYPE_EMPTY) {
-        RedisModule_CloseKey(set_key);
-        return NULL;
-    }
-
-    return set_key;
+    return memcmp(ra_str, rb_str, ra_len);
 }
 
-int SelvaSet_Remove(RedisModuleKey *set_key, RedisModuleKey *alias_key) {
-    if (!set_key) {
-        return SELVA_EINVAL;
+RB_GENERATE(SelvaSetHead, SelvaSetElement, _entry, SelvaSet_Compare);
+
+void SelvaSet_DestroyElement(struct SelvaSetElement *el) {
+    if (!el) {
+        return;
     }
 
-    /*
-     * In case of aliases we need to clear the aliases hash too.
-     */
-    if (alias_key) {
-        delete_aliases(alias_key, set_key);
+    RedisModule_FreeString(NULL, el->value);
+    RedisModule_Free(el);
+}
+
+void SelvaSet_Destroy(struct SelvaSet *set) {
+    struct SelvaSetHead *head = &set->head;
+    struct SelvaSetElement *el;
+    struct SelvaSetElement *next;
+
+	for (el = RB_MIN(SelvaSetHead, head); el != NULL; el = next) {
+		next = RB_NEXT(SelvaSetHead, head, el);
+		RB_REMOVE(SelvaSetHead, head, el);
+        SelvaSet_DestroyElement(el);
     }
+    set->size = 0;
+}
 
-    RedisModule_UnlinkKey(set_key);
+struct SelvaSetElement *SelvaSet_Find(struct SelvaSet *set, struct RedisModuleString *v) {
+    struct SelvaSetElement find = {
+        .value = v,
+    };
 
-    return 0;
+    return RB_FIND(SelvaSetHead, &set->head, &find);
 }

@@ -9,6 +9,7 @@
 #include "hierarchy.h"
 #include "modify.h"
 #include "selva_node.h"
+#include "selva_object.h"
 #include "selva_set.h"
 
 static ssize_t ref2rms(RedisModuleCtx *ctx, struct SelvaModify_OpSet * restrict setOpts, const char *s, RedisModuleString **out) {
@@ -96,21 +97,11 @@ int update_set(
     int err;
     TO_STR(id, field);
     RedisModuleKey *alias_key = NULL;
+    struct SelvaObject *obj;
 
-    /* Set in the node key that it's a set/references field */
-    RedisModuleString *set_field_ref = RedisModule_CreateStringPrintf(ctx, "%.*s.%s", id_len, id_str, field_str);
-    if (!set_field_ref) {
-        return SELVA_ENOMEM;
-    }
-    err = SelvaNode_SetFieldSetRef(ctx, id_key, field, set_field_ref);
+    err = SelvaObject_Key2Obj(id_key, &obj);
     if (err) {
         return err;
-    }
-
-    RedisModuleKey *set_key = SelvaSet_Open(ctx, id_str, id_len, field_str);
-    if (!set_key) {
-        fprintf(stderr, "%s: Unable to open a set key", __FILE__);
-        return SELVA_ENOENT;
     }
 
     if (!strcmp(field_str, "aliases")) {
@@ -122,9 +113,12 @@ int update_set(
     }
 
     if (setOpts->$value_len > 0) {
-        int err = SelvaSet_Remove(set_key, alias_key);
-        if (err) {
-            fprintf(stderr, "%s: Unable to remove a set owned by %s\n", __FILE__, id_str);
+        if (alias_key) {
+            delete_aliases(alias_key, SelvaObject_GetSet(obj, field));
+        }
+        err = SelvaObject_DelKey(obj, field);
+        if (err && err != SELVA_ENOENT) {
+            fprintf(stderr, "%s: Unable to remove a set \"%s:%s\"\n", __FILE__, id_str, field_str);
             return SELVA_ENOENT;
         }
 
@@ -143,7 +137,7 @@ int update_set(
             if (alias_key) {
                 update_alias(ctx, alias_key, id, ref);
             }
-            RedisModule_ZsetAdd(set_key, 0, ref, NULL);
+            (void)SelvaObject_AddSet(obj, field, ref);
 
             // +1 to skip the nullbyte
             const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
@@ -164,7 +158,7 @@ int update_set(
                 if (alias_key) {
                     update_alias(ctx, alias_key, id, ref);
                 }
-                RedisModule_ZsetAdd(set_key, 0, ref, NULL);
+                (void)SelvaObject_AddSet(obj, field, ref);
 
                 // +1 to skip the nullbyte
                 const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
@@ -183,7 +177,7 @@ int update_set(
                     return SELVA_EINVAL;
                 }
 
-                RedisModule_ZsetRem(set_key, ref, NULL);
+                SelvaObject_RemSet(obj, field, ref);
 
                 // +1 to skip the nullbyte
                 const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
@@ -197,7 +191,6 @@ int update_set(
         }
     }
 
-    RedisModule_CloseKey(set_key);
     return 0;
 }
 
@@ -225,10 +218,16 @@ int SelvaModify_ModifySet(
         } else if (!strcmp(field_str, "parents")) {
             err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
         } else {
-            RedisModuleKey *set_key = SelvaSet_Open(ctx, id_str, id_len, field_str);
-            err = SelvaSet_Remove(set_key, NULL);
+            struct SelvaObject *obj;
+
+            err = SelvaObject_Key2Obj(id_key, &obj);
             if (err) {
-                fprintf(stderr, "%s: ERR Unable to open a set key\n", __FILE__);
+                return err;
+            }
+
+            /* FIXME "aliases" field should be probably handled here. */
+            err = SelvaObject_DelKey(obj, field);
+            if (err) {
                 return SELVA_EGENERAL;
             }
         }

@@ -179,7 +179,7 @@ static int parse_dir(
             /* Check if the field_name is a field name. */
 
             type = SelvaObject_GetType(obj, p1, sz);
-            if (type == SELVA_OBJECT_SET_REF) {
+            if (type == SELVA_OBJECT_SET) {
                 RedisModuleString *rms;
 
 #if 0

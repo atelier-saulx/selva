@@ -15,6 +15,7 @@
 #include "modify.h"
 #include "rpn.h"
 #include "selva_node.h"
+#include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "subscriptions.h"
@@ -298,70 +299,6 @@ static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
     SVector_Destroy(&node->parents);
     SVector_Destroy(&node->children);
     RedisModule_Free(node);
-}
-
-static char *get_node_field_names(RedisModuleCtx *ctx, Selva_NodeId id) {
-    RedisModuleCallReply * reply;
-    char *res = NULL;
-    size_t res_len = 0;
-
-    reply = RedisModule_Call(ctx, "HKEYS", "b", id, SELVA_NODE_ID_SIZE);
-    if (reply == NULL) {
-        /* FIXME errno handling */
-#if 0
-        switch (errno) {
-        case EINVAL:
-        case EPERM:
-        default:
-        }
-#endif
-        goto hkeys_err;
-    }
-
-    int replyType = RedisModule_CallReplyType(reply);
-    if (replyType != REDISMODULE_REPLY_ARRAY) {
-        goto hkeys_err;
-    }
-
-    size_t replyLen = RedisModule_CallReplyLength(reply);
-    for (size_t idx = 0; idx < replyLen; idx++) {
-        RedisModuleCallReply *elem;
-        const char * field_str;
-        size_t field_len;
-
-        elem = RedisModule_CallReplyArrayElement(reply, idx);
-        if (!elem) {
-            continue;
-        }
-
-        int elemType = RedisModule_CallReplyType(elem);
-        if (elemType != REDISMODULE_REPLY_STRING) {
-            continue;
-        }
-
-        field_str = RedisModule_CallReplyStringPtr(elem, &field_len);
-        if (!field_str) {
-            continue;
-        }
-
-        /*
-         * Append the res string.
-         */
-        res_len += field_len + 1;
-        res = RedisModule_Realloc(res, res_len);
-        memcpy(res + res_len - field_len - 1, field_str, field_len);
-        res[res_len - 1] = ',';
-    }
-
-hkeys_err:
-    if (reply) {
-        RedisModule_FreeCallReply(reply);
-    }
-    if (res) {
-        res[res_len - 1] = '\0';
-    }
-
-    return res;
 }
 
 static SelvaModify_HierarchyNode *findNode(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
@@ -1396,36 +1333,49 @@ static int traverse_ref(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *head,
-        const char *ref_field,
+        const char *ref_field_str,
         const struct SelvaModify_HierarchyCallback *cb) {
-    RedisModuleKey *key;
+    int err;
 
-    key = SelvaSet_Open(ctx, head->id, Selva_NodeIdLen(head->id), ref_field);
-    if (!key) {
-        return SELVA_MODIFY_HIERARCHY_EINVAL;
+    RedisModuleString *head_id;
+    head_id = RedisModule_CreateString(ctx, head->id, Selva_NodeIdLen(head->id));
+    if (!head_id) {
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    RedisModule_ZsetFirstInScoreRange(key, 0, 1, 0, 0);
-    while (!RedisModule_ZsetRangeEndReached(key)) {
-        double score;
-        RedisModuleString *ele;
+    struct SelvaObject *head_obj;
+    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, head_id, REDISMODULE_READ), &head_obj);
+    if (err) {
+        return err;
+    }
+
+    RedisModuleString *ref_field;
+    ref_field = RedisModule_CreateStringPrintf(ctx, "%s", ref_field_str);
+    if (!ref_field) {
+        return SELVA_MODIFY_HIERARCHY_ENOMEM;
+    }
+
+    struct SelvaSet *ref_set;
+    ref_set = SelvaObject_GetSet(head_obj, ref_field);
+    if (!ref_set) {
+        return SELVA_MODIFY_HIERARCHY_ENOENT;
+    }
+
+    struct SelvaSetElement *el;
+    RB_FOREACH(el, SelvaSetHead, &ref_set->head) {
+        RedisModuleString *value = el->value;
         Selva_NodeId nodeId;
         SelvaModify_HierarchyNode *node;
+        TO_STR(value);
 
-        ele = RedisModule_ZsetRangeCurrentElement(key, &score);
-        TO_STR(ele);
         memset(nodeId, 0, SELVA_NODE_ID_SIZE);
-        memcpy(nodeId, ele_str, min(ele_len, SELVA_NODE_ID_SIZE));
-        RedisModule_FreeString(ctx, ele);
+        memcpy(nodeId, value_str, min(value_len, SELVA_NODE_ID_SIZE));
 
         node = findNode(hierarchy, nodeId);
         if (node) {
             cb->node_cb(nodeId, cb->node_arg, &node->metadata);
         }
-
-        RedisModule_ZsetRangeNext(key);
     }
-    RedisModule_ZsetRangeStop(key);
 
     return 0;
 }
