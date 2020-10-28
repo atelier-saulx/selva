@@ -27,6 +27,7 @@ function makeRealKeys(
   const p = field + '.'
 
   let realKeys: Record<string, true | string> = {}
+
   for (const prop in props) {
     if (!prop.startsWith('$')) {
       if (props[prop].$field) {

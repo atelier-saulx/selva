@@ -25,9 +25,9 @@ export function makeAll(
       if (props[key] === false) {
         // do nothing
       } else if ($field) {
-        setNestedResult(o, field + '.' + key, $field + '.' + key)
+        setNestedResult(o, key, { $field: $field + '.' + key })
       } else {
-        setNestedResult(o, field + '.' + key, true)
+        setNestedResult(o, key, true)
       }
     }
 

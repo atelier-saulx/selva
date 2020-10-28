@@ -92,13 +92,21 @@ export default function createInheritOperation(
   validateTypes(schema, field, types)
 
   let hasKeys = false
+  let p = props
   if (props.$all) {
     const newKeys = makeAll(client, id, field, <string>props.$field, db, props)
     if (newKeys) {
       hasKeys = true
     }
 
-    const p = newKeys || props
+    p = newKeys || props
+  }
+
+  for (const k in props) {
+    if (!k.startsWith('$')) {
+      hasKeys = true
+      break
+    }
   }
 
   if (hasKeys) {
@@ -107,7 +115,7 @@ export default function createInheritOperation(
       id,
       field,
       sourceField: props.$field || field,
-      props,
+      props: p,
       types
     })
 
