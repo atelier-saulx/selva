@@ -24,7 +24,7 @@ static int initialize_node(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModule
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
 
-        SelvaObject_SetStr(obj, RedisModule_CreateString(ctx, "type", 3), type);
+        SelvaObject_SetStr(obj, RedisModule_CreateString(ctx, "type", 4), type);
     }
 
     return 0;

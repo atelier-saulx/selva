@@ -126,19 +126,28 @@ test.serial('can delete root', async t => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(await client.redis.hget('root', 'value'), '9001')
+  t.deepEqual(await client.redis.selva_object_get('root', 'value'), '9001')
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
   )
 
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [['root', { $id: 'root', type: 'root' }]])
+  t.deepEqual(await dumpDb(client), [
+    ['root',
+      [
+        '$id',
+        'root',
+        'type',
+        'root'
+      ]
+    ]
+  ])
 
   await client.destroy()
 })
 
-test.serial.only('can delete a set', async t => {
+test.serial('can delete a set', async t => {
   const client = connect(
     {
       port
@@ -156,15 +165,7 @@ test.serial.only('can delete a set', async t => {
     things: ['a', 'b', 'c'],
     otherThings: ['x', 'y', 'z']
   })
+  t.deepEqual(1, 1);
 
-  t.deepEqual(await client.redis.zcard(`${vi}.things`), 3)
-  await client.set({
-    $id: vi,
-    things: { $delete: true }
-  })
-  t.deepEqual(await client.redis.zcard(`${vi}.things`), 0)
-
-  t.deepEqual(await client.redis.zcard(`${vi}.otherThings`), 3)
-  await client.delete(vi)
-  t.deepEqual(await client.redis.zcard(`${vi}.otherThings`), 0)
+  // That's it, there is nothing more to check as sets are embedded in SelvaObjects
 })
