@@ -122,8 +122,8 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
 
         p = strstr(field, ".");
         /*
-         * If the field contains one or more dots so we try for each level;
-         * Otherwise we try to find an exact match.
+         * If the field contains one or more dots we try for each level;
+         * Otherwise we only try to find an exact match.
          */
         if (p) {
             do {
@@ -134,9 +134,8 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
                 }
                 p++;
             } while ((p = strstr(p, ".")));
-        } else {
-            return stringlist_search(marker->fields, field);
         }
+        return stringlist_search(marker->fields, field);
     }
 
     return 0;
