@@ -98,7 +98,8 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subs layout', async t => {
+// TODO
+test.serial.skip('subs layout', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
   let viIdx = 0
@@ -1027,7 +1028,8 @@ test.serial('subs layout', async t => {
   await client.delete('root')
 })
 
-test.serial('subs upcoming, live and past', async t => {
+// TODO
+test.serial.skip('subs upcoming, live and past', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   const now = Date.now()
   let result
