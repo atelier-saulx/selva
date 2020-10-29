@@ -341,6 +341,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     is_root = !memcmp(id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
 
     removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+    SelvaSubscriptions_DeferHierarchyDeletionEvents(hierarchy, id, &node->metadata);
 
     /*
      * Never delete the root node.
@@ -350,7 +351,8 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
 
         /*
          * The node was now marked as a head but we are going to get rid of it
-         * soon, so there is no reason to make it a tree head.
+         * soon, so there is no reason to make it a tree head. In fact, doing
+         * so would break things.
          */
         rmHead(hierarchy, node);
 
@@ -363,15 +365,6 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
         RedisModuleString *rms_id;
 
         rms_id = RedisModule_CreateString(ctx, id, Selva_NodeIdLen(id));
-        /* TODO We may want a deletion marker support? */
-#if 0
-        char *fields;
-
-        fields = get_node_field_names(ctx, id);
-        SelvaNode_Delete(ctx, rms_id);
-        /* event here */
-        RedisModule_Free(fields);
-#endif
         SelvaNode_Delete(ctx, rms_id);
 
         if (is_root) {

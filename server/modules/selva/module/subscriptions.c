@@ -756,10 +756,10 @@ static int isSubscribedToHierarchyFields(struct Selva_SubscriptionMarker *marker
 static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,
                                    const Selva_NodeId node_id __unused,
                                    const struct Selva_SubscriptionMarkers *sub_markers) {
-    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
-    struct Selva_SubscriptionMarker **it;
-
     if (isHierarchyMarker(sub_markers->flags_filter)) {
+        struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
+        struct Selva_SubscriptionMarker **it;
+
         SVECTOR_FOREACH(it, &sub_markers->vec) {
             struct Selva_SubscriptionMarker *marker = *it;
 
@@ -790,12 +790,50 @@ void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hiera
     defer_hierarchy_events(hierarchy, node_id, &hierarchy->subs.detached_markers);
 
     if (!metadata) {
-        fprintf(stderr, "%s:%d Node metadata missing\n", __FILE__, __LINE__);
+        fprintf(stderr, "%s:%d Node metadata missing %.*s\n",
+                __FILE__, __LINE__, (int)SELVA_NODE_ID_SIZE, node_id);
         return;
     }
 
     /* Markers on the node. */
     defer_hierarchy_events(hierarchy, node_id, &metadata->sub_markers);
+}
+
+static void defer_hierarchy_deletion_events(struct SelvaModify_Hierarchy *hierarchy,
+                                            const Selva_NodeId node_id __unused,
+                                            const struct Selva_SubscriptionMarkers *sub_markers) {
+    if (isHierarchyMarker(sub_markers->flags_filter)) {
+        struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
+        struct Selva_SubscriptionMarker **it;
+
+        SVECTOR_FOREACH(it, &sub_markers->vec) {
+            struct Selva_SubscriptionMarker *marker = *it;
+
+            /*
+             * Deletions are always sent to all hierarchy markers regardless of
+             * field subscriptions or inhibits.
+             */
+            if (isHierarchyMarker(marker->marker_flags)) {
+                SVector_InsertFast(&def->subs, marker->sub);
+            }
+        }
+    }
+}
+
+void SelvaSubscriptions_DeferHierarchyDeletionEvents(struct SelvaModify_Hierarchy *hierarchy,
+                                                     const Selva_NodeId node_id,
+                                                     const struct SelvaModify_HierarchyMetadata *metadata) {
+    /* Detached markers. */
+    defer_hierarchy_deletion_events(hierarchy, node_id, &hierarchy->subs.detached_markers);
+
+    if (!metadata) {
+        fprintf(stderr, "%s:%d Node metadata missing %.*s\n",
+                __FILE__, __LINE__, (int)SELVA_NODE_ID_SIZE, node_id);
+        return;
+    }
+
+    /* Markers on the node. */
+    defer_hierarchy_deletion_events(hierarchy, node_id, &metadata->sub_markers);
 }
 
 /**

@@ -162,6 +162,9 @@ void SelvaSubscriptions_DeferHierarchyEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata);
+void SelvaSubscriptions_DeferHierarchyDeletionEvents(struct SelvaModify_Hierarchy *hierarchy,
+                                                     const Selva_NodeId node_id,
+                                                     const struct SelvaModify_HierarchyMetadata *metadata);
 void SelvaSubscriptions_FieldChangePrecheck(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,

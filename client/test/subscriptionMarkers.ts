@@ -327,6 +327,80 @@ test.serial('Delete a node', async t => {
   client.destroy()
 })
 
+test.serial('Node deletion events on descendants', async t => {
+  const client = connect({ port })
+  const subId1 = '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79fff'
+
+  await client.redis.selva_subscriptions_add('___selva_hierarchy', subId1, '1', 'descendants', 'root')
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' },
+    children: [
+        {
+            $id: 'maTest0002',
+            title: { en: 'ma2' },
+        }
+    ]
+  })
+
+  let msgCount = 0;
+  const subChannel = `___selva_subscription_update:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, '')
+    msgCount++
+  })
+  rclient.subscribe(subChannel)
+
+  await client.delete('maTest0002')
+  await client.delete('maTest0001')
+  await client.delete('root')
+
+  await wait(50)
+  t.deepEqual(msgCount, 3);
+
+  client.destroy()
+})
+
+test.serial('Node deletion events on node sub', async t => {
+  const client = connect({ port })
+  const subId1 = '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79fff'
+
+  await client.redis.selva_subscriptions_add('___selva_hierarchy', subId1, '1', 'node', 'maTest0002')
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' },
+    children: [
+        {
+            $id: 'maTest0002',
+            title: { en: 'ma2' },
+        }
+    ]
+  })
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  let msgCount = 0;
+  const subChannel = `___selva_subscription_update:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, '')
+    msgCount++
+  })
+  rclient.subscribe(subChannel)
+
+  await client.delete('maTest0002')
+  await client.delete('maTest0001')
+
+  await wait(50)
+  t.deepEqual(msgCount, 1);
+
+  await client.delete('root')
+  client.destroy()
+})
+
 test.serial('Add nodes and verify propagation', async t => {
   const client = connect({ port })
   const subId1 = '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b68'
