@@ -33,34 +33,33 @@ int stringlist_search(const char *list, const char *str) {
 }
 
 int stringlist_searchn(const char *list, const char *str, size_t n) {
-    const char *s1 = list;
-    ssize_t i = n;
+	const char *s1 = list;
 
-    while (*s1 != '\0') {
-        const char *s2 = str;
+	while (*s1 != '\0') {
+		ssize_t i = n;
+		const char *s2 = str;
 
-        /* strcmp */
-        while (*s1 == *s2++ && i-- >= 0) {
-            const char c = *s1++;
-            if (c == '\n' || c == '\0') {
-                return 1;
-            }
-        }
-        if (*s1 == '\n' && (*(s2 - 1) == '\0' || i == 0)) {
-            return 1;
-        }
+		while (i-- >= 0 && *s1 && *s2 && *s1++ == *s2++);
+		--s1;
+		--s2;
 
-        /* Skip the rest of the current field */
-        while (*s1 != '\0') {
-            s1++;
-            if (*s1 == '\n') {
-                s1++;
-                break;
-            }
-        }
-    }
+		if (i == (size_t)(-1) &&
+            ((s1[0] == '\n' || s1[0] == '\0') ||
+             (s1[1] == '\0' || s1[1] == '\n'))) {
+			return 1;
+		}
 
-    return 0;
+		/* Skip the rest of the current field */
+		while (*s1 != '\0') {
+			s1++;
+			if (*s1 == '\n') {
+				s1++;
+				break;
+			}
+		}
+	}
+
+	return 0;
 }
 
 size_t substring_count(const char *string, const char *substring) {
