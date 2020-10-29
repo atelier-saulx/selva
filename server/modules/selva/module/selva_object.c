@@ -1098,7 +1098,15 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
             }
             break;
         case SELVA_OBJECT_SET:
-            /* TODO Support sets */
+            {
+                const size_t n = RedisModule_LoadUnsigned(io);
+
+                for (size_t i = 0; i < n; i++) {
+                    RedisModuleString *value = RedisModule_LoadString(io);
+
+                    SelvaObject_AddSet(obj, name, value);
+                }
+            }
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
         }
@@ -1148,7 +1156,15 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
                 SelvaObjectTypeRDBSave(io, key->value);
                 break;
             case SELVA_OBJECT_SET:
+                {
+                    struct SelvaSetElement *el;
 
+                    RedisModule_SaveUnsigned(io, key->selva_set.size);
+
+                    RB_FOREACH(el, SelvaSetHead, &key->selva_set.head) {
+                        RedisModule_SaveString(io, el->value);
+                    }
+                }
             default:
                 RedisModule_LogIOError(io, "warning", "Unknown type");
             }
