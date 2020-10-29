@@ -77,16 +77,20 @@ test.serial('subscription list', async t => {
   const obs = client.observe({
     $id: 'root',
     children: {
-      teams: [
-        {
-          $id: { $field: 'homeTeam' },
-          title: true
-        },
-        {
-          $id: { $field: 'awayTeam' },
-          title: true
-        }
-      ],
+      homeTeam: {
+        title: true
+      },
+      awayTeam: { title: true },
+      // teams: [
+      //   {
+      //     $id: { $field: 'homeTeam' },
+      //     title: true
+      //   },
+      //   {
+      //     $id: { $field: 'awayTeam' },
+      //     title: true
+      //   }
+      // ],
       $list: {
         $limit: 100,
         $find: {
