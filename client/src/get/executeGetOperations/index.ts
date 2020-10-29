@@ -11,6 +11,7 @@ import { Schema } from '~selva/schema'
 
 export type ExecContext = {
   db: string
+  meta: any
   subId?: string
   nodeMarkers?: Record<string, Set<string>>
   hasFindMarkers?: boolean
@@ -47,8 +48,6 @@ export async function addMarker(
     return false
   }
 
-  console.log('adding marker', marker)
-
   const markerId = adler32(marker)
   await client.redis.selva_subscriptions_add(
     { name: ctx.db },
@@ -61,16 +60,6 @@ export async function addMarker(
     marker.fields.join('\n'),
     ...(marker.rpn ? marker.rpn : [])
   )
-  console.log([
-    '___selva_hierarchy',
-    ctx.subId,
-    markerId,
-    marker.type,
-    marker.id,
-    'fields',
-    marker.fields.join('\n'),
-    ...(marker.rpn ? marker.rpn : [])
-  ])
 
   return true
 }
@@ -134,7 +123,6 @@ async function refreshMarkers(
     return
   }
 
-  console.log('REFRESHING MARKERS', ctx.subId)
   await client.redis.selva_subscriptions_refresh(
     { name: ctx.db },
     '___selva_hierarchy',

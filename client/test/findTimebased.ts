@@ -1185,10 +1185,16 @@ test.serial('find - already started', async t => {
     endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
   })
 
+  let sub = ''
+  for (let i = 0; i < 64; i++) {
+    sub += 'x'
+  }
+
   t.deepEqualIgnoreOrder(
     (
       await client.get({
         $includeMeta: true,
+        $subscription: sub,
         $id: 'root',
         items: {
           name: true,
@@ -1216,6 +1222,7 @@ test.serial('find - already started', async t => {
     (
       await client.get({
         $includeMeta: true,
+        $subscription: sub,
         $id: 'root',
         items: {
           name: true,
@@ -1243,7 +1250,7 @@ test.serial('find - already started', async t => {
   await client.destroy()
 })
 
-test.serial('find - already started subscription', async t => {
+test.serial.only('find - already started subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({

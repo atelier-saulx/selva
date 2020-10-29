@@ -107,35 +107,32 @@ async function get(
   }
 
   const lang = newProps.$language
+  let resultMeta: any = {}
 
   const getResult = await executeGetOperations(
     client,
     lang,
-    { db, subId },
+    { db, subId, meta: resultMeta },
     createGetOperations(client, newProps, id, '', db)
   )
 
   // maybe ncie function?
   if (meta || props.$includeMeta) {
     if (!meta) {
-      if (!getResult.$meta) {
-        getResult.$meta = {}
+      if (!resultMeta) {
+        resultMeta = {}
       }
-      meta = { [props.$db || 'default']: getResult.$meta }
-      meta.___refreshAt = getResult.$meta.___refreshAt
+      meta = { [props.$db || 'default']: resultMeta }
+      meta.___refreshAt = resultMeta.___refreshAt
     } else {
-      if (getResult.$meta.___refreshAt) {
-        if (
-          !meta.___refreshAt ||
-          meta.___refreshAt > getResult.$meta.___refreshAt
-        ) {
-          meta.___refreshAt = getResult.$meta.___refreshAt
+      if (resultMeta.___refreshAt) {
+        if (!meta.___refreshAt || meta.___refreshAt > resultMeta.___refreshAt) {
+          meta.___refreshAt = resultMeta.___refreshAt
         }
       }
       deepMerge(meta, {
-        [props.$db || 'default']: getResult.$meta
+        [props.$db || 'default']: resultMeta
       })
-      delete getResult.$meta
     }
   }
 

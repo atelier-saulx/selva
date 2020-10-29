@@ -7,7 +7,7 @@ export function addRefreshMeta(
 ) {
   const tree = subscription.tree
 
-  if (tree && tree.refreshAt) {
+  if (tree && tree.___refreshAt) {
     subscription.refreshAt = tree.___refreshAt
     now.addSubscription(subsmanager, subscription)
   }

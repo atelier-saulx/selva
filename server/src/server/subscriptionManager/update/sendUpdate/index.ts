@@ -76,7 +76,6 @@ const sendUpdate = async (
   }
 
   const newMeta = payload.$meta
-  // console.log('NEW TREE', JSON.stringify(newTree, null, 2))
 
   delete payload.$meta
 
@@ -103,7 +102,8 @@ const sendUpdate = async (
   if (newMeta) {
     const newTreeJson = JSON.stringify(newMeta)
     if (
-      newMeta.refreshAt !== (subscription.tree && subscription.tree.refreshAt)
+      newMeta.___refreshAt !==
+      (subscription.tree && subscription.tree.___refreshAt)
     ) {
       if (subscription.tree && subscription.tree.refreshAt) {
         removeRefreshMeta(subscriptionManager, subscription)
