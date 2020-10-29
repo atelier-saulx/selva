@@ -66,7 +66,6 @@ struct SelvaObject *new_selva_object(void) {
 
 static int clear_key_value(struct SelvaObjectKey *key) {
     switch (key->type) {
-    /* TODO Other types */
     case SELVA_OBJECT_NULL:
         /* NOP */
         break;
@@ -975,7 +974,6 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         break;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
-    case SELVA_OBJECT_SET:
         RedisModule_ReplyWithLongLong(ctx, 1);
         break;
     case SELVA_OBJECT_STRING:
@@ -996,6 +994,9 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         } else {
             RedisModule_ReplyWithLongLong(ctx, 0);
         }
+        break;
+    case SELVA_OBJECT_SET:
+        RedisModule_ReplyWithLongLong(ctx, key->selva_set.size);
         break;
     default:
         (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "key type not supported %d", (int)key->type);
@@ -1097,7 +1098,15 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
             }
             break;
         case SELVA_OBJECT_SET:
-            /* TODO Support sets */
+            {
+                const size_t n = RedisModule_LoadUnsigned(io);
+
+                for (size_t i = 0; i < n; i++) {
+                    RedisModuleString *value = RedisModule_LoadString(io);
+
+                    SelvaObject_AddSet(obj, name, value);
+                }
+            }
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
         }
@@ -1147,7 +1156,15 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
                 SelvaObjectTypeRDBSave(io, key->value);
                 break;
             case SELVA_OBJECT_SET:
+                {
+                    struct SelvaSetElement *el;
 
+                    RedisModule_SaveUnsigned(io, key->selva_set.size);
+
+                    RB_FOREACH(el, SelvaSetHead, &key->selva_set.head) {
+                        RedisModule_SaveString(io, el->value);
+                    }
+                }
             default:
                 RedisModule_LogIOError(io, "warning", "Unknown type");
             }
