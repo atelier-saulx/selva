@@ -1028,8 +1028,7 @@ test.serial.skip('subs layout', async t => {
   await client.delete('root')
 })
 
-// TODO
-test.serial.skip('subs upcoming, live and past', async t => {
+test.serial('subs upcoming, live and past', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   const now = Date.now()
   let result
