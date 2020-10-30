@@ -63,6 +63,7 @@ test.serial('yes', async t => {
       niceSet: true
     })
     .subscribe(res => {
+      console.log('RES', res)
       results.push(deepCopy(res))
     })
 

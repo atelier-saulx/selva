@@ -22,6 +22,15 @@ const deepSort = (a: any, b: any): void => {
     if (typeof a[0] === 'object') {
       const s = (a, b) => {
         if (typeof a === 'object' && typeof b === 'object') {
+          if (a.id && b.id) {
+            if (b.id < a.id) {
+              return -1
+            } else if (b.id > a.id) {
+              return 1
+            } else {
+              return 0
+            }
+          }
           for (let k in a) {
             if (b[k] < a[k]) {
               return -1
@@ -61,16 +70,17 @@ Object.assign(Assertions.prototype, {
       for (let i = 0; i < 60; i++) {
         await wait(1e3)
         if (connections.size === 0) {
-          console.log(chalk.grey('    Connections are empty after ' + (i + 1) + 's'))
+          console.log(
+            chalk.grey('    Connections are empty after ' + (i + 1) + 's')
+          )
           this.pass('Connection are empty after ' + (i + 1) + 's')
           return
         }
       }
     }
-    this.fail("Connection are not empty after 1 min" + connections.size)
+    this.fail('Connection are not empty after 1 min' + connections.size)
   }
 })
-
 
 Object.assign(Assertions.prototype, {
   deepEqualIgnoreOrder(actual, expected, message = '') {
@@ -163,7 +173,7 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
       try {
         console.log('Before exit hook close worker')
         worker.terminate()
-      } catch (_err) { }
+      } catch (_err) {}
     })
 
     worker.on('message', msg => {

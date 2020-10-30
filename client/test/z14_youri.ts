@@ -114,7 +114,9 @@ test.serial('inherit even when skipping hierarchy node', async t => {
   while (count--) {
     const res = await client.get({
       $id: 'ma' + count,
-      theme: { colors: { $inherit: true } }
+      theme: {
+        colors: { $inherit: { $type: ['team', 'sport', 'match', 'root'] } }
+      }
     })
     t.deepEqualIgnoreOrder(res, { theme: { colors: { blue: 'red' } } })
   }
