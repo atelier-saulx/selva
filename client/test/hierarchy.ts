@@ -196,7 +196,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only(
+test.serial.skip(
   'inheriting while excluding league from match through setting match as parent',
   async t => {
     const client = connect({ port }, { loglevel: 'info' })
@@ -388,7 +388,7 @@ test.serial('ancestry has only one season in real world setting', async t => {
   await client.destroy()
 })
 
-test.serial(
+test.serial.skip(
   'inheriting while excluding league from match through setting match as child',
   async t => {
     const client = connect({ port })
@@ -576,73 +576,73 @@ test.serial('more complex hierarchies', async t => {
   // check ancestors
   // families
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(family1 + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', family1),
     ['root']
   )
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(family2 + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', family2),
     ['root']
   )
 
   // players
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(player1 + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', player1),
     ['root', family1]
   )
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(player2 + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', player2),
     ['root', family1, weirdCommercial]
   )
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(player3 + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', player3),
     ['root', family2, weirdCommercial]
   )
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(player + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', player),
     ['root', family2, team2]
   )
 
   // cars
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(porche + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', porche),
     ['root', family1, player1]
   )
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(coownedFerrari + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', coownedFerrari),
     ['root', family1, family2, player2, player3, weirdCommercial]
   )
 
   // league
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(league + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', league),
     ['root']
   )
 
   // season
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(season + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', season),
     ['root', league]
   )
 
   // club
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(club + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', club),
     ['root', weirdCommercial]
   )
 
   // teams
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(team + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', team),
     ['root', season, league, club]
   )
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(team2 + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', team2),
     ['root']
   )
 
   // match
   t.deepEqualIgnoreOrder(
-    await client.redis.zrange(match + '.ancestors', 0, -1),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'ancestors', match),
     [
       'root',
       club,
