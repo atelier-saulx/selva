@@ -54,6 +54,7 @@ test.serial('yes', async t => {
     $id: 'ra1',
     $language: 'en'
   })
+  await wait(500)
   const results = []
 
   client
@@ -102,7 +103,7 @@ test.serial('yes', async t => {
   await wait(500)
 
   t.deepEqualIgnoreOrder(results, [
-    { niceSet: [], aliases: [] },
+    {},
     { niceSet: ['a'], aliases: ['a'] },
     { niceSet: ['b'], aliases: ['b'] },
     { niceSet: ['b', 'c'], aliases: ['b', 'c'] },
