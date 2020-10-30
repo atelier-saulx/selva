@@ -1180,6 +1180,31 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
     }
 }
 
+void set_aof_rewrite(RedisModuleIO *aof, RedisModuleString *key, struct SelvaObjectKey *okey) {
+    RedisModuleString **argv;
+
+    argv = RedisModule_Alloc(okey->selva_set.size);
+    if (!argv) {
+        RedisModule_LogIOError(aof, "warning", "Alloc failed");
+        return;
+    }
+
+    size_t argc = 0;
+    struct SelvaSetElement *el;
+    RB_FOREACH(el, SelvaSetHead, &okey->selva_set.head) {
+        argv[argc++] = el->value;
+    }
+
+    RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbcv",
+            key,
+            okey->name, (size_t)okey->name_len,
+            "S",
+            argv,
+            argc);
+
+    RedisModule_Free(argv);
+}
+
 void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
     struct SelvaObject *obj = (struct SelvaObject *)value;
     struct SelvaObjectKey *okey;
@@ -1220,7 +1245,8 @@ void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void 
             RedisModule_LogIOError(aof, "warning", "Unknown type");
             break;
         case SELVA_OBJECT_SET:
-            /* TODO Support SelvaSets */
+            set_aof_rewrite(aof, key, okey);
+            break;
         default:
             RedisModule_LogIOError(aof, "warning", "Unknown type");
         }
