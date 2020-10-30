@@ -836,8 +836,16 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     const size_t ARGV_TYPE = 3;
     const size_t ARGV_OVAL = 4;
 
-    /* TODO parse type & set by type */
-    const char type = RedisModule_StringPtrLen(argv[ARGV_TYPE], NULL)[0];
+    if (argc <= (int)ARGV_TYPE) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    size_t type_len;
+    const char type = RedisModule_StringPtrLen(argv[ARGV_TYPE], &type_len)[0];
+
+    if (type_len != 1) {
+        return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid or missing type argument");
+    }
 
     if (!(argc == 5 || (type == 'S' && argc >= 5))) {
         return RedisModule_WrongArity(ctx);
