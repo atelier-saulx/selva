@@ -345,8 +345,7 @@ test.serial('singular reference $field', async t => {
   await client.destroy()
 })
 
-// TODO
-test.serial.only('singular reference inherit reference', async t => {
+test.serial('singular reference inherit reference', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({

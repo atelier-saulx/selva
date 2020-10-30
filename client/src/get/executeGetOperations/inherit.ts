@@ -214,25 +214,6 @@ async function inheritItem(
   return o
 }
 
-async function getObject(
-  client: SelvaClient,
-  ctx: ExecContext,
-  field: string,
-  _fieldSchema: FieldSchema,
-  lang: string | undefined,
-  id: string
-): Promise<GetResult> {
-  const op: GetOperation = {
-    type: 'db',
-    id,
-    field: field,
-    sourceField: field
-  }
-
-  const o = await executeGetOperations(client, lang, ctx, [op])
-  return getNestedField(o, field)
-}
-
 export default async function inherit(
   client: SelvaClient,
   op: GetOperationInherit,
@@ -298,7 +279,11 @@ export default async function inherit(
       return null
     }
 
-    return executeNestedGetOperations(client, op.props, lang, ctx)
+    const p = Object.assign({}, op.props, { $id: v })
+    delete p.$inherit
+    delete p.$field
+
+    return executeNestedGetOperations(client, p, lang, ctx)
   } else if (op.single) {
     if (op.merge === true && (fs.type === 'object' || fs.type === 'record')) {
       return mergeObj(client, op, lang, ctx)
