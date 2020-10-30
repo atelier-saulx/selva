@@ -38,10 +38,10 @@ test.serial('inherit references $list', async t => {
     menu: {
       id: true,
       $list: {
-        $inherit: true
+        $inherit: { $type: 'root' }
       }
     }
   })
-  t.deepEqualIgnoreOrder(res, { $isNull: true, menu: [] })
+  t.deepEqualIgnoreOrder(res, { menu: [] })
   await client.destroy()
 })

@@ -31,17 +31,17 @@ export type SearchIndexes = Record<string, SearchSchema>
 
 export type Search =
   | {
-    index?: string
-    type: (
-      | 'EXISTS'
-      | 'TAG'
-      | 'TEXT'
-      | 'NUMERIC'
-      | 'SORTABLE'
-      | 'TEXT-LANGUAGE'
-      | 'TEXT-LANGUAGE-SUG'
-    )[]
-  }
+      index?: string
+      type: (
+        | 'EXISTS'
+        | 'TAG'
+        | 'TEXT'
+        | 'NUMERIC'
+        | 'SORTABLE'
+        | 'TEXT-LANGUAGE'
+        | 'TEXT-LANGUAGE-SUG'
+      )[]
+    }
   | true
 
 export type SearchRaw = {
@@ -107,11 +107,11 @@ export type Fields = Record<string, FieldSchema>
 export type HierarchySchema =
   | false // has to be false but does not work...
   | {
-    [key: string]:
-    | false // has to be false but does not work...
-    | { excludeAncestryWith: string[] }
-    | { includeAncestryWith: string[] }
-  }
+      [key: string]:
+        | false // has to be false but does not work...
+        | { excludeAncestryWith: string[] }
+        | { includeAncestryWith: string[] }
+    }
 
 export type TypeSchema = {
   prefix?: string
@@ -125,7 +125,7 @@ export type Schema = {
   sha?: string
   languages?: string[]
   types: Types
-  rootType: Pick<TypeSchema, 'fields'>
+  rootType: Pick<TypeSchema, 'fields' | 'prefix'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }
@@ -134,7 +134,7 @@ export type SchemaOptions = {
   sha?: string
   languages?: string[]
   types?: Types
-  rootType?: Pick<TypeSchema, 'fields'>
+  rootType: Pick<TypeSchema, 'fields' | 'prefix'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }

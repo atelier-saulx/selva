@@ -12,7 +12,7 @@ async function getSchema(
     languages: [],
     types: {},
     sha: 'default',
-    rootType: { fields: rootDefaultFields },
+    rootType: { fields: rootDefaultFields, prefix: 'ro' },
     idSeedCounter: 0,
     prefixToTypeMapping: {}
   }

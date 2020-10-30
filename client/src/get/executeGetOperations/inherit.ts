@@ -277,7 +277,8 @@ export default async function inherit(
 
   const fs = getNestedSchema(
     schema,
-    schema.types[op.types[0]].prefix,
+    (op.types[0] === 'root' ? schema.rootType : schema.types[op.types[0]])
+      .prefix,
     <string>op.sourceField
   )
 
@@ -381,7 +382,12 @@ export default async function inherit(
   const o: GetResult = {}
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
-    const fs = getNestedSchema(schema, schema.types[op.types[0]].prefix, f)
+    const fs = getNestedSchema(
+      schema,
+      (op.types[0] === 'root' ? schema.rootType : schema.types[op.types[0]])
+        .prefix,
+      f
+    )
     const typeCast = TYPE_CASTS[fs.type]
 
     const newV = typeCast ? typeCast(v, idx, f, client.schemas.default) : v

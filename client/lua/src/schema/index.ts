@@ -27,7 +27,7 @@ export function getSchema(): Schema {
     return {
       idSeedCounter: 0,
       types: {},
-      rootType: { fields: rootDefaultFields },
+      rootType: { fields: rootDefaultFields, prefix: 'ro' },
       languages: [],
       prefixToTypeMapping: {}
     }

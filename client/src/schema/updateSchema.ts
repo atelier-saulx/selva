@@ -26,6 +26,7 @@ export function newSchemaDefinition(
     }
 
     newSchema.rootType = {
+      prefix: 'ro',
       fields: {
         ...rootDefaultFields,
         ...((newSchema.rootType && newSchema.rootType.fields) || {})
@@ -64,7 +65,7 @@ export function newSchemaDefinition(
   }
 
   if (newSchema.rootType) {
-    const typeDef = { fields: {} }
+    const typeDef = { fields: {}, prefix: 'ro' }
     for (const fieldName in oldSchema.rootType.fields) {
       if (newSchema.rootType.fields && newSchema.rootType.fields[fieldName]) {
         typeDef.fields[fieldName] = newFieldDefinition(
@@ -204,14 +205,14 @@ function newFieldDefinition(
   ) {
     throw new Error(
       `Path ${fieldPath} has mismatching types, trying to change collection with type ${
-      oldField.items.type
+        oldField.items.type
       } to type ${(<any>newField).items.type}`
     )
   }
 
   if (!(<any>newField).search) {
     if (oldField.search) {
-      ; (<any>newField).search = oldField.search
+      ;(<any>newField).search = oldField.search
     }
   }
 
