@@ -156,11 +156,7 @@ test.serial('subscription error on subs manager', async t => {
       }
     )
   await wait(1000)
-  t.deepEqual(
-    results,
-    [{ $isNull: true, yizi: {}, title: '' }],
-    'correct isNull on unexisting item'
-  )
+  t.deepEqual(results, [{ $isNull: true }], 'correct isNull on unexisting item')
 
   client
     .observe({
