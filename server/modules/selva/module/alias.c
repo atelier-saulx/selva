@@ -57,7 +57,7 @@ void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleStr
 
                     field = RedisModule_CreateStringPrintf(ctx, "%s", "aliases");
                     if (field) {
-                        SelvaObject_RemSet(obj, field, field);
+                        SelvaObject_RemSet(obj, field, ref);
                     }
                 }
             }
