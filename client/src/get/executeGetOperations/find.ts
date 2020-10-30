@@ -5,6 +5,10 @@ import { executeNestedGetOperations, ExecContext, addMarker } from './'
 import { padId, joinIds } from '../utils'
 
 function findTimebased(ast: Fork): FilterAST[] {
+  if (!ast) {
+    return []
+  }
+
   const parse = (fork: Fork, filters: FilterAST[]) => {
     if (fork.$and) {
       for (const f of fork.$and) {
