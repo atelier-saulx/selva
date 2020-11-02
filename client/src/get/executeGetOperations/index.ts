@@ -291,12 +291,13 @@ export const executeNestedGetOperations = async (
   lang: string | undefined,
   ctx: ExecContext
 ): Promise<GetResult> => {
+  const newCtx = Object.assign({}, ctx, { subId: undefined })
   const id = await resolveId(client, props)
   if (!id) return null
   return await executeGetOperations(
     client,
     props.$language || lang,
-    ctx,
+    newCtx,
     createGetOperations(client, props, id, '', ctx.db)
   )
 }

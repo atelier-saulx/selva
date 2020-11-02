@@ -448,22 +448,30 @@ test.serial.skip('subs layout', async t => {
               $value: 'Live'
             },
             children: {
-              teams: [
-                {
-                  id: true,
-                  $id: {
-                    $field: 'homeTeam'
-                  },
-                  title: true
-                },
-                {
-                  id: true,
-                  $id: {
-                    $field: 'awayTeam'
-                  },
-                  title: true
-                }
-              ],
+              homeTeam: {
+                id: true,
+                title: true
+              },
+              awayTeam: {
+                id: true,
+                title: true
+              },
+              // teams: [
+              //   {
+              //     id: true,
+              //     $id: {
+              //       $field: 'homeTeam'
+              //     },
+              //     title: true
+              //   },
+              //   {
+              //     id: true,
+              //     $id: {
+              //       $field: 'awayTeam'
+              //     },
+              //     title: true
+              //   }
+              // ],
               type: true,
               title: true,
               id: true,
@@ -590,22 +598,30 @@ test.serial.skip('subs layout', async t => {
               $value: 'Live'
             },
             children: {
-              teams: [
-                {
-                  id: true,
-                  $id: {
-                    $field: 'homeTeam'
-                  },
-                  title: true
-                },
-                {
-                  id: true,
-                  $id: {
-                    $field: 'awayTeam'
-                  },
-                  title: true
-                }
-              ],
+              homeTeam: {
+                id: true,
+                title: true
+              },
+              awayTeam: {
+                id: true,
+                title: true
+              },
+              // teams: [
+              //   {
+              //     id: true,
+              //     $id: {
+              //       $field: 'homeTeam'
+              //     },
+              //     title: true
+              //   },
+              //   {
+              //     id: true,
+              //     $id: {
+              //       $field: 'awayTeam'
+              //     },
+              //     title: true
+              //   }
+              // ],
               type: true,
               title: true,
               id: true,
@@ -779,22 +795,30 @@ test.serial.skip('subs layout', async t => {
                   $field: 'date'
                 }
               },
-              teams: [
-                {
-                  id: true,
-                  $id: {
-                    $field: 'homeTeam'
-                  },
-                  title: true
-                },
-                {
-                  id: true,
-                  $id: {
-                    $field: 'awayTeam'
-                  },
-                  title: true
-                }
-              ],
+              homeTeam: {
+                id: true,
+                title: true
+              },
+              awayTeam: {
+                id: true,
+                title: true
+              },
+              // teams: [
+              //   {
+              //     id: true,
+              //     $id: {
+              //       $field: 'homeTeam'
+              //     },
+              //     title: true
+              //   },
+              //   {
+              //     id: true,
+              //     $id: {
+              //       $field: 'awayTeam'
+              //     },
+              //     title: true
+              //   }
+              // ],
               date: true,
               type: true,
               id: true
@@ -808,22 +832,30 @@ test.serial.skip('subs layout', async t => {
               $value: 'Live Now'
             },
             children: {
-              teams: [
-                {
-                  id: true,
-                  $id: {
-                    $field: 'homeTeam'
-                  },
-                  title: true
-                },
-                {
-                  id: true,
-                  $id: {
-                    $field: 'awayTeam'
-                  },
-                  title: true
-                }
-              ],
+              homeTeam: {
+                id: true,
+                title: true
+              },
+              awayTeam: {
+                id: true,
+                title: true
+              },
+              // teams: [
+              //   {
+              //     id: true,
+              //     $id: {
+              //       $field: 'homeTeam'
+              //     },
+              //     title: true
+              //   },
+              //   {
+              //     id: true,
+              //     $id: {
+              //       $field: 'awayTeam'
+              //     },
+              //     title: true
+              //   }
+              // ],
               type: true,
               title: true,
               date: true,
@@ -918,10 +950,12 @@ test.serial.skip('subs layout', async t => {
     {
       id: 'mau1',
       type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
+      homeTeam: { id: 'te1', title: 'team one' },
+      awayTeam: { id: 'te2', title: 'team two' },
+      // teams: [
+      //   { id: 'te1', title: 'team one' },
+      //   { id: 'te2', title: 'team two' }
+      // ],
       title: 'upcoming match 1'
     }
   ])
@@ -930,10 +964,12 @@ test.serial.skip('subs layout', async t => {
     {
       id: 'mau1',
       type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
+      homeTeam: { id: 'te1', title: 'team one' },
+      awayTeam: { id: 'te2', title: 'team two' },
+      // teams: [
+      //   { id: 'te1', title: 'team one' },
+      //   { id: 'te2', title: 'team two' }
+      // ],
       title: 'upcoming match 1'
     }
   ])
@@ -965,10 +1001,12 @@ test.serial.skip('subs layout', async t => {
     {
       id: 'mau2',
       type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
+      homeTeam: { id: 'te1', title: 'team one' },
+      awayTeam: { id: 'te2', title: 'team two' },
+      // teams: [
+      //   { id: 'te1', title: 'team one' },
+      //   { id: 'te2', title: 'team two' }
+      // ],
       title: 'upcoming match 2'
     }
   ])
@@ -977,10 +1015,12 @@ test.serial.skip('subs layout', async t => {
     {
       id: 'mau2',
       type: 'match',
-      teams: [
-        { id: 'te1', title: 'team one' },
-        { id: 'te2', title: 'team two' }
-      ],
+      homeTeam: { id: 'te1', title: 'team one' },
+      awayTeam: { id: 'te2', title: 'team two' },
+      // teams: [
+      //   { id: 'te1', title: 'team one' },
+      //   { id: 'te2', title: 'team two' }
+      // ],
       title: 'upcoming match 2'
     }
   ])
