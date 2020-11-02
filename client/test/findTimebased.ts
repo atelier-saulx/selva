@@ -904,7 +904,7 @@ test.serial.skip('subs layout', async t => {
       console.log('sport layout', r)
     })
 
-  await wait(500)
+  await wait(1000)
   console.log('should be upcoming')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
@@ -1065,7 +1065,9 @@ test.serial.skip('subs layout', async t => {
   t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
   t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
 
-  await client.delete('root')
+  // await client.delete('root')
+  console.log('END')
+  await client.destroy()
 })
 
 test.serial('subs upcoming, live and past', async t => {

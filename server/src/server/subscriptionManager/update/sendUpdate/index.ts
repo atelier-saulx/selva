@@ -66,7 +66,7 @@ const sendUpdate = async (
     if (t > 300) {
       console.log('\n----------------------------------------------------')
       console.log('Get subscription took', t, 'ms')
-      console.dir(getOptions, { depth: 10 })
+      console.dir(getOptions, { depth: 2 })
       console.log('----------------------------------------------------')
     }
   } catch (err) {
