@@ -183,10 +183,8 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
         struct Selva_SubscriptionMarker *marker;
 
         while ((marker = SVector_Shift(&sub->markers))) {
-            if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
-                /*
-                 * TRAVERSAL_NONE (e.g. root) markers are stored as detached.
-                 */
+            if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE ||
+                marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_DETACH) {
                 (void)SVector_Remove(&hierarchy->subs.detached_markers.vec, marker);
             } else {
                 /*
