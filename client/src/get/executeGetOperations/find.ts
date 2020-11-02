@@ -227,11 +227,6 @@ const findHierarchy = async (
           endLen--
         }
         const id = op.id.slice(i, endLen)
-        console.log('this is a knife', {
-          id,
-          fields: Object.keys(realOpts),
-          rpn: args
-        })
 
         const r = await addMarker(client, ctx, {
           type: sourceField,
@@ -242,7 +237,6 @@ const findHierarchy = async (
 
         added = added || r
 
-        console.log('why', id, ctx)
         await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
       }
 
