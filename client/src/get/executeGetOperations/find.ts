@@ -219,15 +219,44 @@ const findHierarchy = async (
       }
     }
 
-    const added = await addMarker(client, ctx, {
-      type: sourceField,
-      id: op.id,
-      fields: Object.keys(realOpts),
-      rpn: args
-    })
+    if (op.nested) {
+      let added = false
+      for (let i = 0; i < op.id.length; i += 10) {
+        let endLen = 10
+        while (op.id[i + endLen - 1] === '\0') {
+          endLen--
+        }
+        const id = op.id.slice(i, endLen)
+        console.log('this is a knife', {
+          id,
+          fields: Object.keys(realOpts),
+          rpn: args
+        })
 
-    if (added) {
-      ctx.hasFindMarkers = true
+        const r = await addMarker(client, ctx, {
+          type: sourceField,
+          id: id,
+          fields: Object.keys(realOpts),
+          rpn: args
+        })
+
+        added = added || r
+      }
+
+      if (added) {
+        ctx.hasFindMarkers = true
+      }
+    } else {
+      const added = await addMarker(client, ctx, {
+        type: sourceField,
+        id: op.id,
+        fields: Object.keys(realOpts),
+        rpn: args
+      })
+
+      if (added) {
+        ctx.hasFindMarkers = true
+      }
     }
 
     const ids = await client.redis.selva_hierarchy_find(

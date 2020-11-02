@@ -9,7 +9,8 @@ const createFindOperation = (
   single: boolean,
   limit: number = single ? 1 : -1,
   offset: number = 0,
-  sort?: Sort | Sort[]
+  sort?: Sort | Sort[],
+  isNested?: boolean
 ): GetOperationFind => {
   const findOperation: GetOperationFind = {
     type: 'find',
@@ -22,7 +23,8 @@ const createFindOperation = (
       limit,
       offset,
       sort: Array.isArray(sort) ? sort[0] : sort || undefined
-    }
+    },
+    isNested
   }
 
   if (find.$traverse) {
@@ -51,7 +53,8 @@ const createFindOperation = (
       single,
       limit,
       offset,
-      find.$find.$find ? undefined : sort
+      find.$find.$find ? undefined : sort,
+      true
     )
   }
 

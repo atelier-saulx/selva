@@ -145,6 +145,7 @@ export type GetOperationFind = {
   inKeys?: string[]
   field: string
   nested?: GetOperationFind
+  isNested?: boolean
   sourceField: string | string[]
   id: string
   options: { limit: number; offset: number; sort?: Sort | undefined }
