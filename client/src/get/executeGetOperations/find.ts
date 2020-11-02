@@ -241,6 +241,9 @@ const findHierarchy = async (
         })
 
         added = added || r
+
+        console.log('why', id, ctx)
+        await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
       }
 
       if (added) {

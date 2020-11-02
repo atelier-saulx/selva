@@ -291,14 +291,14 @@ export const executeNestedGetOperations = async (
   lang: string | undefined,
   ctx: ExecContext
 ): Promise<GetResult> => {
-  const newCtx = Object.assign({}, ctx, { subId: undefined })
   const id = await resolveId(client, props)
   if (!id) return null
   return await executeGetOperations(
     client,
     props.$language || lang,
-    newCtx,
-    createGetOperations(client, props, id, '', ctx.db)
+    ctx,
+    createGetOperations(client, props, id, '', ctx.db),
+    true
   )
 }
 
@@ -307,7 +307,8 @@ export const executeGetOperation = async (
   client: SelvaClient,
   lang: string,
   ctx: ExecContext,
-  op: GetOperation
+  op: GetOperation,
+  nested?: boolean
 ): Promise<any> => {
   if (op.type === 'value') {
     return op.value
@@ -371,7 +372,9 @@ export const executeGetOperation = async (
 
       const nested: GetOperation[] = await Promise.all(
         op.sourceField.map(async f => {
-          bufferNodeMarker(ctx, op.id, f)
+          if (!nested) {
+            bufferNodeMarker(ctx, op.id, f)
+          }
           if (specialOp) {
             return specialOp(client, db, op.id, f, lang)
           }
@@ -382,7 +385,9 @@ export const executeGetOperation = async (
 
       r = nested.find(x => !!x)
     } else {
-      bufferNodeMarker(ctx, op.id, <string>op.sourceField)
+      if (!nested) {
+        bufferNodeMarker(ctx, op.id, <string>op.sourceField)
+      }
 
       fieldSchema = getNestedSchema(client.schemas[db], op.id, op.sourceField)
 
@@ -427,11 +432,12 @@ export default async function executeGetOperations(
   client: SelvaClient,
   lang: string | undefined,
   ctx: ExecContext,
-  ops: GetOperation[]
+  ops: GetOperation[],
+  nested?: boolean
 ): Promise<GetResult> {
   const o: GetResult = {}
   const results = await Promise.all(
-    ops.map(op => executeGetOperation(client, lang, ctx, op))
+    ops.map(op => executeGetOperation(client, lang, ctx, op, nested))
   )
   results.map((r, i) => {
     if (
@@ -446,9 +452,11 @@ export default async function executeGetOperations(
   })
 
   // add buffered subscription markers
-  const addedMarkers = await addNodeMarkers(client, ctx)
-  if (addedMarkers || ctx.hasFindMarkers) {
-    await refreshMarkers(client, ctx)
+  if (!nested) {
+    const addedMarkers = await addNodeMarkers(client, ctx)
+    if (addedMarkers || ctx.hasFindMarkers) {
+      await refreshMarkers(client, ctx)
+    }
   }
 
   return o
