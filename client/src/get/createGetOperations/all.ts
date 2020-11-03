@@ -59,31 +59,24 @@ const all = (
     }
 
     for (const key in typeSchema.fields) {
-      if (
-        key !== 'children' &&
-        key !== 'parents' &&
-        key !== 'ancestors' &&
-        key !== 'descendants'
-      ) {
-        if (props[key] === undefined) {
+      if (props[key] === undefined) {
+        if (
+          key !== 'children' &&
+          key !== 'parents' &&
+          key !== 'ancestors' &&
+          key !== 'descendants'
+        ) {
           ops.push({
             type: 'db',
             id,
             field: key,
             sourceField: key
           })
-        } else if (props[key] === false) {
-          // do nothing
-        } else {
-          createGetOperations(
-            client,
-            props[key],
-            id,
-            field + '.' + key,
-            db,
-            ops
-          )
         }
+      } else if (props[key] === false) {
+        // do nothing
+      } else {
+        createGetOperations(client, props[key], id, field + '.' + key, db, ops)
       }
     }
   } else {

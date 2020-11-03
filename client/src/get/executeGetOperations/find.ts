@@ -231,7 +231,7 @@ const findHierarchy = async (
         const r = await addMarker(client, ctx, {
           type: sourceField,
           id: id,
-          fields: Object.keys(realOpts),
+          fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args
         })
 
@@ -247,7 +247,7 @@ const findHierarchy = async (
       const added = await addMarker(client, ctx, {
         type: sourceField,
         id: op.id,
-        fields: Object.keys(realOpts),
+        fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args
       })
 
@@ -314,7 +314,7 @@ const executeFindOperation = async (
 
   const realOpts: any = {}
   for (const key in op.props) {
-    if (!key.startsWith('$')) {
+    if (key === '$all' || !key.startsWith('$')) {
       realOpts[key] = op.props[key]
     }
   }
