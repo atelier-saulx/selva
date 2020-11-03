@@ -1173,6 +1173,7 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
                         RedisModule_SaveString(io, el->value);
                     }
                 }
+                break;
             default:
                 RedisModule_LogIOError(io, "warning", "Unknown type");
             }
