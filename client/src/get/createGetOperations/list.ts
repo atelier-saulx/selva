@@ -8,7 +8,7 @@ const list = (props: GetOptions, id: string, field: string): GetOperation => {
       id,
       props,
       field: field.substr(1),
-      sourceField: field.substr(1),
+      sourceField: <string>props.$field || field.substr(1),
       options: {
         limit: -1, // no limit
         offset: 0

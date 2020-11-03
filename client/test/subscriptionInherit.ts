@@ -348,7 +348,6 @@ test.serial('inherit object', async t => {
   t.true(true)
 })
 
-// TODO
 test.serial('list inherit subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
@@ -469,7 +468,6 @@ test.serial('list inherit subscription', async t => {
   t.true(true)
 })
 
-// TODO
 test.serial('list inherit + field subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
