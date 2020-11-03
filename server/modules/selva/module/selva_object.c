@@ -1115,6 +1115,7 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
                     SelvaObject_AddSet(obj, name, value);
                 }
             }
+            break;
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
         }
