@@ -98,8 +98,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-// TODO
-test.serial.only('subs layout', async t => {
+test.serial('subs layout', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
   let viIdx = 0

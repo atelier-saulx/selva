@@ -288,7 +288,9 @@ static void reset_marker_filter(struct Selva_SubscriptionMarkers *sub_markers) {
  * Set a marker to a node metadata.
  */
 static int set_node_marker(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+#if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
+#endif
     struct Selva_SubscriptionMarker *marker;
 
     marker = (struct Selva_SubscriptionMarker *)arg;
@@ -928,9 +930,9 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarc
 
     SVECTOR_FOREACH(it, &def->subs) {
         struct Selva_Subscription *sub = *it;
+#if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-#if 0
         fprintf(stderr, "%s: publish %s\n", __FILE__, Selva_SubscriptionId2str(str, sub->sub_id));
 #endif
         SelvaModify_PublishSubscriptionUpdate(sub->sub_id);
