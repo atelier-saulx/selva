@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
@@ -16,6 +17,8 @@
         : ((tvp)->tv_sec cmp (uvp)->tv_sec))
 
 void Trx_Begin(Trx *trx) {
+    assert(trx->tv_sec == 0 && trx->tv_nsec == 0);
+
 #ifdef __MACH__
 	clock_serv_t cclock;
 	mach_timespec_t mts;
@@ -43,4 +46,8 @@ void Trx_Stamp(const Trx *trx, struct timespec *ts) {
 
 int Trx_IsStamped(const Trx *trx, struct timespec *ts) {
     return timespec_cmp(trx, ts, ==);
+}
+
+void Trx_End(Trx *trx) {
+    memset(trx, 0, sizeof(*trx));
 }

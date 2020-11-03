@@ -420,6 +420,7 @@ static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyN
     }
 
     SVector_Destroy(&q);
+    Trx_End(&hierarchy->current_trx);
 }
 #endif
 
@@ -1006,12 +1007,12 @@ static int SelvaModify_DelHierarchyNodeP(
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *node) {
     Selva_NodeId *ids;
-    size_t ids_len;
+    size_t nr_ids;
 
     assert(("hierarchy must be set", hierarchy));
     assert(("node must be set", node));
 
-    ids = getNodeIds(&node->children, &ids_len);
+    ids = getNodeIds(&node->children, &nr_ids);
     if (unlikely(!ids)) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
@@ -1042,7 +1043,7 @@ static int SelvaModify_DelHierarchyNodeP(
         }
 
         /*
-         * Recursively delete children if this node no longer has parents.
+         * Recursively delete the child and its children if its parents are gone.
          */
         if (SVector_Size(&child->parents) == 0) {
             err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
@@ -1141,6 +1142,7 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         SelvaModify_HierarchyNode **itt;
 
         if (node_cb(node, cb->node_arg)) {
+            Trx_End(&hierarchy->current_trx);
             return 0;
         }
 
@@ -1157,6 +1159,7 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         }
     }
 
+    Trx_End(&hierarchy->current_trx);
     return 0;
 }
 
@@ -1198,6 +1201,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
             Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
 
             if (node_cb(node, cb->node_arg)) {
+                Trx_End(&hierarchy->current_trx);
                 return 0;
             }
 
@@ -1215,6 +1219,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         }
     }
 
+    Trx_End(&hierarchy->current_trx);
     return 0;
 }
 
@@ -1248,6 +1253,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
                 Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
 
                 if (node_cb(node, cb->node_arg)) {
+                    Trx_End(&hierarchy->current_trx);
                     return 0;
                 }
 
@@ -1264,6 +1270,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
         }
     }
 
+    Trx_End(&hierarchy->current_trx);
     return 0;
 }
 
