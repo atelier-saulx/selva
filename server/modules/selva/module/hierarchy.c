@@ -591,7 +591,7 @@ static int crossInsert(
     return err;
 }
 
-static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes) {
+static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel, size_t n, const Selva_NodeId *nodes, int pointers) {
     svector_autofree SVector sub_markers;
 
     /*
@@ -610,7 +610,13 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         int pubParents = 0;
 
         for (size_t i = 0; i < n; i++) {
-            SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
+            SelvaModify_HierarchyNode *adjacent;
+
+            if (pointers) {
+                memcpy(&adjacent, nodes[i], sizeof(SelvaModify_HierarchyNode *));
+            } else {
+                adjacent = findNode(hierarchy, nodes[i]);
+            }
 
             if (!adjacent) {
                 /*
@@ -642,7 +648,13 @@ static int crossRemove(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNo
         int pubChildren = 0;
 
         for (size_t i = 0; i < n; i++) {
-            SelvaModify_HierarchyNode *adjacent = findNode(hierarchy, nodes[i]);
+            SelvaModify_HierarchyNode *adjacent;
+
+            if (pointers) {
+                memcpy(&adjacent, nodes[i], sizeof(SelvaModify_HierarchyNode *));
+            } else {
+                adjacent = findNode(hierarchy, nodes[i]);
+            }
 
             if (!adjacent) {
                 /*
@@ -960,8 +972,8 @@ int SelvaModify_DelHierarchy(
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
 
-    err1 = crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents);
-    err2 = crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children);
+    err1 = crossRemove(hierarchy, node, RELATIONSHIP_CHILD, nr_parents, parents, 0);
+    err2 = crossRemove(hierarchy, node, RELATIONSHIP_PARENT, nr_children, children, 0);
 
     return err1 ? err1 : err2;
 }
@@ -1020,7 +1032,7 @@ static int SelvaModify_DelHierarchyNodeP(
     /*
      * Delete orphan children recursively.
      */
-    for (size_t i = 0; i < ids_len; i++) {
+    for (size_t i = 0; i < nr_ids; i++) {
         Selva_NodeId nodeId;
         int err;
 
@@ -1037,7 +1049,13 @@ static int SelvaModify_DelHierarchyNodeP(
             continue;
         }
 
-        err = crossRemove(hierarchy, node, RELATIONSHIP_PARENT, 1, (Selva_NodeId *)child->id);
+        /*
+         * Note that we store a pointer in a Selva_NodeId array to save in
+         * pointless RB_FIND() lookups.
+         */
+        Selva_NodeId arr[1];
+        memcpy(arr, &child, sizeof(SelvaModify_HierarchyNode *));
+        err = crossRemove(hierarchy, node, RELATIONSHIP_PARENT, 1, arr, 1);
         if (err) {
             return err;
         }

@@ -99,7 +99,7 @@ test.after(async t => {
 })
 
 // TODO
-test.serial.skip('subs layout', async t => {
+test.serial.only('subs layout', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
   let viIdx = 0
@@ -1065,7 +1065,7 @@ test.serial.skip('subs layout', async t => {
   t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
   t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
 
-  // await client.delete('root')
+  await client.delete('root')
   console.log('END')
   await client.destroy()
 })

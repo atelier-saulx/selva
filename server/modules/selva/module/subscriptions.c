@@ -292,10 +292,12 @@ static int set_node_marker(Selva_NodeId id, void *arg, struct SelvaModify_Hierar
     struct Selva_SubscriptionMarker *marker;
 
     marker = (struct Selva_SubscriptionMarker *)arg;
+#if 0
     fprintf(stderr, "Set sub %s:%d marker to %.*s\n",
             Selva_SubscriptionId2str(str, marker->sub->sub_id),
             marker->marker_id,
             (int)SELVA_NODE_ID_SIZE, id);
+#endif
     set_marker(&metadata->sub_markers, marker);
 
     return 0;
@@ -306,9 +308,11 @@ static int clear_marker(Selva_NodeId id, void *arg, struct SelvaModify_Hierarchy
     struct Selva_SubscriptionMarker *marker;
 
     marker = (struct Selva_SubscriptionMarker*)arg;
+#if 0
     fprintf(stderr, "Clear sub %s from %.*s (nr_subs: %zd)\n",
             Selva_SubscriptionId2str(str, marker->sub->sub_id), (int)SELVA_NODE_ID_SIZE, id,
             SVector_Size(&metadata->sub_markers.vec));
+#endif
     SVector_Remove(&metadata->sub_markers.vec, marker);
     reset_marker_filter(&metadata->sub_markers);
 
@@ -611,8 +615,10 @@ void SelvaSubscriptions_ClearAllMarkers(
         return;
     }
 
+#if 0
     fprintf(stderr, "Removing %zu subscription markers from %.*s\n",
             nr_markers, (int)SELVA_NODE_ID_SIZE, node_id);
+#endif
 
     if (unlikely(!SVector_Clone(&markers, &metadata->sub_markers.vec, NULL))) {
         fprintf(stderr, "%s: %s ENOMEM\n", __FILE__, __func__);
@@ -924,7 +930,9 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarc
         struct Selva_Subscription *sub = *it;
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
+#if 0
         fprintf(stderr, "%s: publish %s\n", __FILE__, Selva_SubscriptionId2str(str, sub->sub_id));
+#endif
         SelvaModify_PublishSubscriptionUpdate(sub->sub_id);
     }
     SVector_Clear(&def->subs);
