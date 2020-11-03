@@ -51,7 +51,15 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
     return;
 }
 
-void SelvaSubscriptions_DeferHierarchyEvents(struct SelvaModify_Hierarchy *hierarchy __unused,
+void SelvaSubscriptions_DeferHierarchyEvents(
+        struct SelvaModify_Hierarchy *hierarchy __unused,
+        const Selva_NodeId node_id __unused,
+        const struct SelvaModify_HierarchyMetadata *metadata __unused) {
+    return;
+}
+
+void SelvaSubscriptions_DeferHierarchyDeletionEvents(
+        struct SelvaModify_Hierarchy *hierarchy __unused,
         const Selva_NodeId node_id __unused,
         const struct SelvaModify_HierarchyMetadata *metadata __unused) {
     return;

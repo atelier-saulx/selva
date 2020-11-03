@@ -5,6 +5,7 @@ SRC-hierarchy += ../../module/errors.c
 SRC-hierarchy += ../../module/hierarchy.c
 SRC-hierarchy += ../../module/selva_node.c
 SRC-hierarchy += ../../module/selva_object.c
+SRC-hierarchy += ../../module/selva_set.c
 SRC-hierarchy += ../../rmutil/sds.c
 SRC-hierarchy += ../../util/cstrings.c
 SRC-hierarchy += ../../util/svector.c
