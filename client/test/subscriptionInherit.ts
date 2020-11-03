@@ -63,9 +63,9 @@ test.serial('inherit object nested field from root youzi', async t => {
     $id: 'yeA'
   })
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: 'yeA',
-    flapper: { snurk: { $inherit: true } }
+    flapper: { snurk: { $inherit: { $type: ['yeshType', 'root'] } } }
   })
 
   const results = []
@@ -127,9 +127,9 @@ test.serial('inherit object youzi', async t => {
     }
   })
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: 'yeA',
-    flapper: { $inherit: true }
+    flapper: { $inherit: { $type: 'yeshType' } }
   })
 
   const results = []
@@ -212,9 +212,9 @@ test.serial('basic inherit subscription', async t => {
     parents: ['yeA']
   })
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: 'yeB',
-    yesh: { $inherit: true }
+    yesh: { $inherit: { $type: ['yeshType', 'root'] } }
   })
 
   const results = []
@@ -304,7 +304,7 @@ test.serial('inherit object', async t => {
   t.deepEqual(
     await client.get({
       $id: 'yeB',
-      flapper: { $inherit: true }
+      flapper: { $inherit: { $merge: true, $type: ['yeshType', 'root'] } }
     }),
     {
       flapper: {
@@ -314,9 +314,9 @@ test.serial('inherit object', async t => {
     }
   )
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: 'yeB',
-    flapper: { $inherit: true }
+    flapper: { $inherit: { $merge: true, $type: ['yeshType', 'root'] } }
   })
 
   const results = []
@@ -348,6 +348,7 @@ test.serial('inherit object', async t => {
   t.true(true)
 })
 
+// TODO
 test.serial('list inherit subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
@@ -406,11 +407,11 @@ test.serial('list inherit subscription', async t => {
     })
   }
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: 'yeA',
     flapdrol: {
       id: true,
-      yesh: { $inherit: true },
+      yesh: { $inherit: { $type: ['yeshType', 'root'] } },
       $field: 'children',
       $list: true
     }
@@ -468,6 +469,7 @@ test.serial('list inherit subscription', async t => {
   t.true(true)
 })
 
+// TODO
 test.serial('list inherit + field subscription', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
@@ -527,13 +529,13 @@ test.serial('list inherit + field subscription', async t => {
     })
   }
 
-  const observable = await client.observe({
+  const observable = client.observe({
     $id: 'yeA',
     flapdrol: {
       id: true,
       yesh: {
         $field: 'no',
-        $inherit: true
+        $inherit: { $type: ['yeshType', 'root'] }
       },
       $field: 'children',
       $list: true
@@ -565,7 +567,7 @@ test.serial('list inherit + field subscription', async t => {
     id: true,
     yesh: {
       $field: 'no',
-      $inherit: true
+      $inherit: { $type: ['yeshType', 'root'] }
     }
   })
 

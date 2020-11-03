@@ -10,7 +10,9 @@ import { getNestedSchema, getNestedField } from '../utils'
 import executeGetOperations, {
   TYPE_CASTS,
   ExecContext,
-  executeNestedGetOperations
+  executeNestedGetOperations,
+  addMarker,
+  bufferNodeMarker
 } from './'
 import { FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
@@ -82,6 +84,20 @@ async function mergeObj(
   }
 
   const rpn = ast2rpn(fork)
+
+  if (ctx.subId) {
+    bufferNodeMarker(ctx, op.id, ...fields)
+    const added = await addMarker(client, ctx, {
+      type: 'ancestors',
+      id: op.id,
+      fields,
+      rpn
+    })
+
+    if (added) {
+      ctx.hasFindMarkers = true
+    }
+  }
 
   const ids = await client.redis.selva_hierarchy_find(
     {
@@ -184,6 +200,20 @@ async function inheritItem(
 
   const rpn = ast2rpn(fork)
 
+  if (ctx.subId) {
+    bufferNodeMarker(ctx, op.id, ...fields)
+    const added = await addMarker(client, ctx, {
+      type: 'ancestors',
+      id: op.id,
+      fields,
+      rpn
+    })
+
+    if (added) {
+      ctx.hasFindMarkers = true
+    }
+  }
+
   const [id] = await client.redis.selva_hierarchy_find(
     {
       name: db
@@ -264,6 +294,41 @@ export default async function inherit(
   )
 
   if (fs && fs.type === 'reference') {
+    if (ctx.subId) {
+      bufferNodeMarker(ctx, op.id, op.sourceField)
+      const added = await addMarker(client, ctx, {
+        type: 'ancestors',
+        id: op.id,
+        fields: [op.sourceField],
+        rpn: ast2rpn(
+          {
+            isFork: true,
+            $and: [
+              {
+                $operator: 'exists',
+                $field: op.sourceField
+              },
+              {
+                isFork: true,
+                $or: op.types.map(t => {
+                  return {
+                    $operator: '=',
+                    $field: 'type',
+                    $value: t
+                  }
+                })
+              }
+            ]
+          },
+          lang
+        )
+      })
+
+      if (added) {
+        ctx.hasFindMarkers = true
+      }
+    }
+
     const res = await client.redis.selva_inherit(
       {
         name: db
@@ -287,6 +352,41 @@ export default async function inherit(
   } else if (op.single) {
     if (op.merge === true && (fs.type === 'object' || fs.type === 'record')) {
       return mergeObj(client, op, lang, ctx)
+    }
+
+    if (ctx.subId) {
+      bufferNodeMarker(ctx, op.id, op.sourceField)
+      const added = await addMarker(client, ctx, {
+        type: 'ancestors',
+        id: op.id,
+        fields: [op.sourceField],
+        rpn: ast2rpn(
+          {
+            isFork: true,
+            $and: [
+              {
+                $operator: 'exists',
+                $field: op.sourceField
+              },
+              {
+                isFork: true,
+                $or: op.types.map(t => {
+                  return {
+                    $operator: '=',
+                    $field: 'type',
+                    $value: t
+                  }
+                })
+              }
+            ]
+          },
+          lang
+        )
+      })
+
+      if (added) {
+        ctx.hasFindMarkers = true
+      }
     }
 
     const res = await client.redis.selva_inherit(
@@ -353,6 +453,46 @@ export default async function inherit(
 
     return f
   })
+
+  if (ctx.subId) {
+    bufferNodeMarker(ctx, op.id, ...fields)
+    const added = await addMarker(client, ctx, {
+      type: 'ancestors',
+      id: op.id,
+      fields,
+      rpn: ast2rpn(
+        {
+          isFork: true,
+          $and: [
+            {
+              isFork: true,
+              $or: fields.map(f => {
+                return {
+                  $operator: 'exists',
+                  $field: f
+                }
+              })
+            },
+            {
+              isFork: true,
+              $or: op.types.map(t => {
+                return {
+                  $operator: '=',
+                  $field: 'type',
+                  $value: t
+                }
+              })
+            }
+          ]
+        },
+        lang
+      )
+    })
+
+    if (added) {
+      ctx.hasFindMarkers = true
+    }
+  }
 
   const res = await client.redis.selva_inherit(
     {
