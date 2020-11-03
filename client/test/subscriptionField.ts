@@ -417,7 +417,7 @@ test.serial(
     })
 
     const results = []
-    const obs = await client.observe({
+    const obs = client.observe({
       $id: 'viE',
       id: true,
       valueOrAge: { $field: ['value', 'age'] }
@@ -749,86 +749,6 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
     {
       id: 'viK',
       germanTitle: 'Oops, Nederlands!'
-    }
-  ])
-
-  await client.destroy()
-})
-
-// TODO: needs better inherit handling
-test.serial('subscribe - more complex $field with $inherit: $name', async t => {
-  const client = connect({ port })
-
-  await client.set({
-    $id: 'cuB',
-    name: 'customB',
-    title: {
-      de: 'Ja, auf Deutsch 2'
-    },
-    image: {
-      thumb: 'parent'
-    }
-  })
-
-  await client.set({
-    $id: 'viL',
-    name: 'lekkerL',
-    title: {
-      de: 'Ja, auf Deutsch'
-    },
-    image: {
-      thumb: 'child'
-    },
-    parents: ['cuB']
-  })
-
-  await client.set({
-    $id: 'viM',
-    title: {
-      en: 'image'
-    },
-    parents: ['viL'],
-    age: 62
-  })
-
-  const results = []
-  const obs = await client.observe({
-    $id: 'viM',
-    id: true,
-    thumby: {
-      $field: '${title.en}.thumb',
-      $inherit: { $name: 'customB' }
-    }
-  })
-
-  obs.subscribe(res => {
-    results.push(deepCopy(res))
-  })
-
-  await wait(500)
-  t.deepEqual(results, [
-    {
-      id: 'viM',
-      thumby: 'parent'
-    }
-  ])
-
-  await client.set({
-    $id: 'cuB',
-    image: {
-      thumb: 'parent update!'
-    }
-  })
-
-  await wait(500)
-  t.deepEqual(results, [
-    {
-      id: 'viM',
-      thumby: 'parent'
-    },
-    {
-      id: 'viM',
-      thumby: 'parent update!'
     }
   ])
 

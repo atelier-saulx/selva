@@ -370,7 +370,7 @@ export const executeGetOperation = async (
 
       const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
 
-      const nested: GetOperation[] = await Promise.all(
+      const all: GetOperation[] = await Promise.all(
         op.sourceField.map(async f => {
           if (!nested) {
             bufferNodeMarker(ctx, op.id, f)
@@ -383,7 +383,7 @@ export const executeGetOperation = async (
         })
       )
 
-      r = nested.find(x => !!x)
+      r = all.find(x => !!x)
     } else {
       if (!nested) {
         bufferNodeMarker(ctx, op.id, <string>op.sourceField)
