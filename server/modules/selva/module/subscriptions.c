@@ -117,25 +117,33 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
  * Check if field matches to any of the fields specified in the marker.
  */
 static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *marker, const char *field) {
+    int match = 0;
+
     if (!!(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD) && marker->fields) {
         const char *list = marker->fields;
-        const char *sep = ".";
-        int match;
-        char *p;
 
-        match = stringlist_searchn(list, field, strlen(field));
-        if (!match && (p = strstr(field, sep))) {
-            do {
-                const size_t len = (ptrdiff_t)p++ - (ptrdiff_t)field;
+        if (list[0] == '\0') {
+            /* Empty string equals to a wildcard */
+            match = 1;
+        } else {
+            /* Test if field matches to any of the fields in list. */
+            const char *sep = ".";
+            char *p;
 
-                match = stringlist_searchn(list, field, len);
-            } while (!match && p && (p = strstr(p, sep)));
+            match = stringlist_searchn(list, field, strlen(field));
+
+            /* Test for each subfield if there was no exact match. */
+            if (!match && (p = strstr(field, sep))) {
+                do {
+                    const size_t len = (ptrdiff_t)p++ - (ptrdiff_t)field;
+
+                    match = stringlist_searchn(list, field, len);
+                } while (!match && p && (p = strstr(p, sep)));
+            }
         }
-
-        return match;
     }
 
-    return 0;
+    return match;
 }
 
 /**

@@ -758,6 +758,55 @@ test.serial('subscribe to field events', async t => {
   client.destroy()
 })
 
+test.serial('subscribe to field events with a wildcard', async t => {
+  const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b71'
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' },
+    children: [
+      {
+        $id: 'maTest0002',
+        title: { en: 'ma2' }
+      },
+      {
+        $id: 'maTest0003',
+        title: { en: 'ma3' }
+      }
+    ]
+  })
+
+  await client.redis.selva_subscriptions_add('___selva_hierarchy', subId1, '1', 'descendants', 'maTest0001', 'fields', '')
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  let msgCount = 0
+  const subChannel = `___selva_subscription_update:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, '')
+    msgCount++
+  })
+  rclient.subscribe(`___selva_subscription_update:${subId1}`)
+
+  await Promise.all([
+    client.set({
+      $id: 'maTest0001',
+      title: { en: 'test1' },
+    }),
+    client.set({
+      $id: 'maTest0002',
+      title: { en: 'test2' },
+    })
+  ])
+
+  await wait(100)
+  t.assert(msgCount === 2)
+
+  await client.delete('root')
+  client.destroy()
+})
+
 test.serial('subscribe to field events with an expression', async t => {
   const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
   const client = connect({ port })
