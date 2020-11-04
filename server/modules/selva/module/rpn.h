@@ -26,6 +26,7 @@ struct rpn_ctx {
     int nr_reg;
     struct RedisModuleCtx *redis_ctx;
     struct RedisModuleKey *redis_hkey; /*!< Redis hash key of the current node. */
+    struct SelvaObject *obj; /*!< Selva object of the current node. */
     struct RedisModuleString *rms_id;  /*!< This holds the id of redis_hkey. */
     struct RedisModuleString *rms_field;  /*!< This holds the name of the currently accessed field. */
     struct rpn_operand **reg;

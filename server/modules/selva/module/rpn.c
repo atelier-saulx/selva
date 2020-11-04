@@ -10,6 +10,7 @@
 #include "redismodule.h"
 #include "hierarchy.h"
 #include "selva_node.h"
+#include "selva_object.h"
 #include "rpn.h"
 
 #define RPN_ASSERTS         0
@@ -103,6 +104,7 @@ struct rpn_ctx *rpn_init(RedisModuleCtx *redis_ctx, int nr_reg) {
     ctx->depth = 0;
     ctx->redis_ctx = redis_ctx;
     ctx->redis_hkey = NULL;
+    ctx->obj = NULL;
     ctx->rms_id = NULL;
     ctx->rms_field = NULL;
     ctx->nr_reg = nr_reg;
@@ -245,7 +247,7 @@ static double nan_undefined() {
     return nan("1");
 }
 
-static int isnan_undefined(double x) {
+__used static int isnan_undefined(double x) {
     long long i;
 
     if (!isnan(x)) {
@@ -467,37 +469,44 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     return RPN_ERR_OK;
 }
 
-static RedisModuleKey *open_hkey(struct rpn_ctx *ctx) {
-    RedisModuleKey *id_key;
+static struct SelvaObject *open_node_object(struct rpn_ctx *ctx) {
+    struct SelvaObject *obj;
 
-    if (ctx->redis_hkey) {
-        id_key = ctx->redis_hkey;
+    if (ctx->obj) {
+        obj = ctx->obj;
     } else {
+        RedisModuleKey *key;
+
 #if RPN_ASSERTS
         assert(ctx->reg[0]);
         assert(ctx->redis_ctx);
 #endif
 
-        /* Current node_id is stored in reg[0] */
+        /* Current node_id is always stored in reg[0] */
         const char *id_str = OPERAND_GET_S(ctx->reg[0]);
         int err = cpy2rm_str(&ctx->rms_id, id_str, strnlen(id_str, SELVA_NODE_ID_SIZE));
         if (err) {
             return NULL;
         }
 
-        id_key = RedisModule_OpenKey(ctx->redis_ctx, ctx->rms_id, REDISMODULE_READ);
-        if (!id_key) {
+        key = RedisModule_OpenKey(ctx->redis_ctx, ctx->rms_id, REDISMODULE_READ);
+        if (!key) {
             return NULL;
         }
 
-        ctx->redis_hkey = id_key;
+        ctx->redis_hkey = key;
+        err = SelvaObject_Key2Obj(key, &obj);
+        if (err) {
+            return NULL;
+        }
+        ctx->obj = obj;
     }
 
-    return id_key;
+    return obj;
 }
 
 static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field, int type) {
-    RedisModuleKey *id_key;
+    struct SelvaObject *obj;
     RedisModuleString *value = NULL;
     int err;
 
@@ -506,14 +515,14 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         return err;
     }
 
-    id_key = open_hkey(ctx);
-    if (!id_key) {
-        fprintf(stderr, "RPN: Node hash not found for: \"%.*s\"\n",
+    obj = open_node_object(ctx);
+    if (!obj) {
+        fprintf(stderr, "RPN: Node object not found for: \"%.*s\"\n",
                 (int)SELVA_NODE_ID_SIZE, RedisModule_StringPtrLen(ctx->rms_field, NULL));
         return push_empty_value(ctx);
     }
 
-    err = SelvaNode_GetField(ctx->redis_ctx, id_key, ctx->rms_field, &value);
+    err = SelvaObject_GetStr(obj, ctx->rms_field, &value);
     if (err || !value) {
 #if 0
         fprintf(stderr, "RPN: Field \"%s\" not found for node: \"%.*s\"\n",
@@ -669,11 +678,11 @@ static enum rpn_error rpn_op_necess(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_exists(struct rpn_ctx *ctx) {
     int err, exists;
-    RedisModuleKey *id_key;
+    struct SelvaObject *obj;
     OPERAND(ctx, field);
 
-    id_key = open_hkey(ctx);
-    if (!id_key) {
+    obj = open_node_object(ctx);
+    if (!obj) {
         return push_double_result(ctx, 0.0);
     }
 
@@ -682,7 +691,7 @@ static enum rpn_error rpn_op_exists(struct rpn_ctx *ctx) {
         return RPN_ERR_ENOMEM;
     }
 
-    exists = SelvaNode_ExistField(ctx->redis_ctx, id_key, ctx->rms_field);
+    exists = !SelvaObject_Exists(obj, ctx->rms_field);
 
     return push_int_result(ctx, exists);
 }
@@ -998,11 +1007,12 @@ static enum rpn_error rpn(struct rpn_ctx *ctx, const rpn_token *expr) {
     return RPN_ERR_OK;
 }
 
-static void closeHkey(struct rpn_ctx *ctx) {
+static void close_node_key(struct rpn_ctx *ctx) {
     if (ctx->redis_hkey) {
         RedisModule_CloseKey(ctx->redis_hkey);
     }
     ctx->redis_hkey = NULL;
+    ctx->obj = NULL;
 }
 
 enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out) {
@@ -1010,7 +1020,7 @@ enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out) {
     enum rpn_error err;
 
     err = rpn(ctx, expr);
-    closeHkey(ctx);
+    close_node_key(ctx);
     if (err) {
         return err;
     }
@@ -1031,7 +1041,7 @@ enum rpn_error rpn_double(struct rpn_ctx *ctx, const rpn_token *expr, double *ou
     enum rpn_error err;
 
     err = rpn(ctx, expr);
-    closeHkey(ctx);
+    close_node_key(ctx);
     if (err) {
         return err;
     }
@@ -1052,7 +1062,7 @@ enum rpn_error rpn_integer(struct rpn_ctx *ctx, const rpn_token *expr, long long
     enum rpn_error err;
 
     err = rpn(ctx, expr);
-    closeHkey(ctx);
+    close_node_key(ctx);
     if (err) {
         return err;
     }

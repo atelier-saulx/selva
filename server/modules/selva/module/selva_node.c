@@ -146,16 +146,7 @@ int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id) {
 }
 
 /* TODO Get rid of this wrapper */
-int SelvaNode_ExistField(RedisModuleCtx *ctx, RedisModuleKey *node_key, const RedisModuleString *field) {
-    struct SelvaObject *obj;
-
-    SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
-
-    return !SelvaObject_Exists(obj, field);
-}
-
-/* TODO Get rid of this wrapper */
-int SelvaNode_GetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, const RedisModuleString *field, RedisModuleString **out) {
+int SelvaNode_GetField(RedisModuleCtx *ctx __unused, RedisModuleKey *node_key, const RedisModuleString *field, RedisModuleString **out) {
     int err;
     struct SelvaObject *obj;
 
@@ -166,7 +157,7 @@ int SelvaNode_GetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, const Redi
 }
 
 /* TODO Get rid of this wrapper */
-int SelvaNode_SetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field, RedisModuleString *value) {
+int SelvaNode_SetField(RedisModuleCtx *ctx __unused, RedisModuleKey *node_key, RedisModuleString *field, RedisModuleString *value) {
     struct SelvaObject *obj;
 
     SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
@@ -176,7 +167,7 @@ int SelvaNode_SetField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModul
 }
 
 /* TODO Get rid of this wrapper */
-int SelvaNode_DelField(RedisModuleCtx *ctx, RedisModuleKey *node_key, RedisModuleString *field) {
+int SelvaNode_DelField(RedisModuleCtx *ctx __unused, RedisModuleKey *node_key, RedisModuleString *field) {
     struct SelvaObject *obj;
 
     SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
