@@ -301,13 +301,8 @@ int SelvaModify_ModifyDel(
         if (!SelvaModify_DelHierarchyParents(hierarchy, node_id)) {
             err = REDISMODULE_ERR;
         }
-    } else {
-        if (value_str[0] == 'O') { /* Delete an object completely. */
-            fprintf(stderr, "Deleting an object is not implemented here\n");
-            return REDISMODULE_ERR;
-        } else { /* Delete a field. */
-            SelvaObject_DelKey(obj, field);
-        }
+    } else { /* Delete a field. */
+        (void)SelvaObject_DelKey(obj, field);
     }
 
     return err;
