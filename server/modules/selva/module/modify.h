@@ -8,6 +8,7 @@
 #include "async_task.h"
 
 struct SelvaModify_Hierarchy;
+struct SelvaObject;
 
 enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_VALUE = '0', /*!< Value is a string. */
@@ -69,7 +70,7 @@ int SelvaModify_ModifySet(
 
 void SelvaModify_ModifyIncrement(
     RedisModuleCtx *ctx,
-    RedisModuleKey *id_key,
+    struct SelvaObject *obj,
     RedisModuleString *field,
     RedisModuleString *current_value,
     struct SelvaModify_OpIncrement *incrementOpts
@@ -78,7 +79,7 @@ void SelvaModify_ModifyIncrement(
 int SelvaModify_ModifyDel(
     RedisModuleCtx *ctx,
     struct SelvaModify_Hierarchy *hierarchy,
-    RedisModuleKey *id_key,
+    struct SelvaObject *obj,
     RedisModuleString *id,
     RedisModuleString *field,
     const char *value_str

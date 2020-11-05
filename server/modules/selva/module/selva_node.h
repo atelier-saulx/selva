@@ -29,15 +29,4 @@ int SelvaNode_Delete(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *id);
 
-int SelvaNode_SetField(
-        struct RedisModuleCtx *ctx,
-        struct RedisModuleKey *node_key,
-        struct RedisModuleString *field,
-        struct RedisModuleString *value);
-
-int SelvaNode_DelField(
-        struct RedisModuleCtx *ctx,
-        struct RedisModuleKey *node_key,
-        struct RedisModuleString *field);
-
 #endif /* SELVA_NODE */

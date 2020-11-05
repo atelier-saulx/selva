@@ -480,7 +480,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
-            SelvaModify_ModifyIncrement(ctx, id_key, field, current_value, incrementOpts);
+            SelvaModify_ModifyIncrement(ctx, obj, field, current_value, incrementOpts);
         } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
             struct SelvaModify_OpSet *setOpts;
 
@@ -516,7 +516,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * $alias: NOP
              */
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
-            err = SelvaModify_ModifyDel(ctx, hierarchy, id_key, id, field, value_str);
+            err = SelvaModify_ModifyDel(ctx, hierarchy, obj, id, field, value_str);
             if (err) {
                 TO_STR(field);
                 char err_msg[120];
@@ -530,10 +530,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 if (current_value != NULL) {
                     publish = false;
                 } else {
-                    SelvaNode_SetField(ctx, id_key, field, value);
+                    SelvaObject_SetStr(obj, field, value);
                 }
             } else if (type_code == SELVA_MODIFY_ARG_VALUE) {
-                SelvaNode_SetField(ctx, id_key, field, value);
+                SelvaObject_SetStr(obj, field, value);
             } else {
                 char err_msg[80];
 

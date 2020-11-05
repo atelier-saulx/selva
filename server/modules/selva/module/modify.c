@@ -249,7 +249,7 @@ int SelvaModify_ModifySet(
 
 void SelvaModify_ModifyIncrement(
     RedisModuleCtx *ctx,
-    RedisModuleKey *id_key,
+    struct SelvaObject *obj,
     RedisModuleString *field,
     RedisModuleString *current_value,
     struct SelvaModify_OpIncrement *incrementOpts
@@ -268,13 +268,13 @@ void SelvaModify_ModifyIncrement(
 
     sprintf(increment_str, "%d", num);
     increment = RedisModule_CreateString(ctx, increment_str, num_str_size);
-    SelvaNode_SetField(ctx, id_key, field, increment);
+    (void)SelvaObject_SetStr(obj, field, increment);
 }
 
 int SelvaModify_ModifyDel(
-    RedisModuleCtx *ctx,
+    RedisModuleCtx *ctx __unused,
     SelvaModify_Hierarchy *hierarchy,
-    RedisModuleKey *id_key,
+    struct SelvaObject *obj,
     RedisModuleString *id,
     RedisModuleString *field,
     const char *value_str
@@ -303,60 +303,10 @@ int SelvaModify_ModifyDel(
         }
     } else {
         if (value_str[0] == 'O') { /* Delete an object completely. */
-            RedisModuleCallReply * reply;
-
-            reply = RedisModule_Call(ctx, "HKEYS", "s", id);
-            if (reply == NULL) {
-                /* FIXME errno handling */
-                switch (errno) {
-                case EINVAL:
-                case EPERM:
-                default:
-                    err = SELVA_EGENERAL;
-                }
-                goto hkeys_err;
-            }
-
-            int replyType = RedisModule_CallReplyType(reply);
-            if (replyType != REDISMODULE_REPLY_ARRAY) {
-                err = REDISMODULE_ERR;
-                goto hkeys_err;
-            }
-
-            size_t replyLen = RedisModule_CallReplyLength(reply);
-            for (size_t idx = 0; idx < replyLen; idx++) {
-                RedisModuleCallReply *elem;
-                const char * hkey;
-
-                elem = RedisModule_CallReplyArrayElement(reply, idx);
-                if (!elem) {
-                    continue;
-                }
-
-                int elemType = RedisModule_CallReplyType(elem);
-                if (elemType != REDISMODULE_REPLY_STRING) {
-                    continue;
-                }
-
-                size_t hkey_len;
-                hkey = RedisModule_CallReplyStringPtr(elem, &hkey_len);
-                if (!hkey) {
-                    continue;
-                }
-
-                if (!strncmp(hkey, field_str, min(hkey_len, field_len)) && hkey[field_len] == '.') {
-                    RedisModuleString *rm_hkey = RedisModule_CreateString(ctx, hkey, hkey_len);
-
-                    SelvaNode_DelField(ctx, id_key, rm_hkey);
-                }
-            }
-
-hkeys_err:
-            if (reply) {
-                RedisModule_FreeCallReply(reply);
-            }
+            fprintf(stderr, "Deleting an object is not implemented here\n");
+            return REDISMODULE_ERR;
         } else { /* Delete a field. */
-            SelvaNode_DelField(ctx, id_key, field);
+            SelvaObject_DelKey(obj, field);
         }
     }
 
