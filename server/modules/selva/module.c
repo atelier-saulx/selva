@@ -516,7 +516,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * $alias: NOP
              */
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
-            err = SelvaModify_ModifyDel(ctx, hierarchy, obj, id, field, value_str);
+            err = SelvaModify_ModifyDel(ctx, hierarchy, obj, id, field);
             if (err) {
                 TO_STR(field);
                 char err_msg[120];

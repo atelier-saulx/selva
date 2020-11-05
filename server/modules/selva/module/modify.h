@@ -81,8 +81,7 @@ int SelvaModify_ModifyDel(
     struct SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field,
-    const char *value_str
+    RedisModuleString *field
 );
 
 #endif /* SELVA_MODIFY_H */

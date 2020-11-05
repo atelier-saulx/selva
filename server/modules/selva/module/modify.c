@@ -276,8 +276,7 @@ int SelvaModify_ModifyDel(
     SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field,
-    const char *value_str
+    RedisModuleString *field
 ) {
     TO_STR(id, field);
     int err = 0;
