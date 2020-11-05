@@ -146,17 +146,6 @@ int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id) {
 }
 
 /* TODO Get rid of this wrapper */
-int SelvaNode_GetField(RedisModuleCtx *ctx __unused, RedisModuleKey *node_key, const RedisModuleString *field, RedisModuleString **out) {
-    int err;
-    struct SelvaObject *obj;
-
-    SelvaObject_Key2Obj(node_key, &obj); /* TODO Handle errors */
-    err = SelvaObject_GetStr(obj, field, out);
-
-    return err;
-}
-
-/* TODO Get rid of this wrapper */
 int SelvaNode_SetField(RedisModuleCtx *ctx __unused, RedisModuleKey *node_key, RedisModuleString *field, RedisModuleString *value) {
     struct SelvaObject *obj;
 

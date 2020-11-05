@@ -13,6 +13,7 @@
 #include "module/hierarchy.h"
 #include "module/modify.h"
 #include "module/selva_node.h"
+#include "module/selva_object.h"
 #include "module/subscriptions.h"
 
 #define FLAG_NO_ROOT    0x1
@@ -334,6 +335,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     SelvaModify_Hierarchy *hierarchy;
     RedisModuleString *id = NULL;
     RedisModuleKey *id_key = NULL;
+    struct SelvaObject *obj = NULL;
     svector_autofree SVector alias_query;
     int err = REDISMODULE_OK;
 
@@ -408,11 +410,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     id_key = SelvaNode_Open(ctx, hierarchy, id, nodeId, open_flags);
     if (!id_key) {
         TO_STR(id);
-        char err_msg[80];
 
-        snprintf(err_msg, sizeof(err_msg), "ERR Failed to open the key for id: \"%s\"", id_str);
-        RedisModule_ReplyWithError(ctx, err_msg);
-        return REDISMODULE_ERR;
+        replyWithSelvaErrorf(ctx, SELVA_ENOENT, "ERR Failed to open the key for id: \"%s\"", id_str);
+        return REDISMODULE_OK;
+    }
+    err = SelvaObject_Key2Obj(id_key, &obj);
+    if (err) {
+        TO_STR(id);
+
+        replyWithSelvaErrorf(ctx, err, "Failed to open the object for id: \"%s\"", id_str);
     }
 
     struct SelvaModify_HierarchyMetadata *metadata;
@@ -457,7 +463,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char *current_value_str = NULL;
         size_t current_value_len = 0;
 
-        if (!SelvaNode_GetField(ctx, id_key, field, &current_value)) {
+        if (SelvaObject_GetStr(obj, field, &current_value) == 0) {
             current_value_str = RedisModule_StringPtrLen(current_value, &current_value_len);
         }
 

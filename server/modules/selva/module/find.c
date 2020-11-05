@@ -286,21 +286,26 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
     key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
     if (key) {
+        struct SelvaObject *obj;
         RedisModuleString *value = NULL;
         int err;
 
-        err = SelvaNode_GetField(ctx, key, order_field, &value);
-        if (!err && value) {
-            char *end;
+        err = SelvaObject_Key2Obj(key, &obj);
+        if (!err) {
 
-            data = RedisModule_StringPtrLen(value, &data_len);
+            err = SelvaObject_GetStr(obj, order_field, &value);
+            if (!err && value) {
+                char *end;
 
-            /* Check if it's a number. */
-            d = strtod(data, &end);
-            if (end != data) {
-                type = ORDERED_ITEM_TYPE_DOUBLE;
-            } else {
-                type = ORDERED_ITEM_TYPE_TEXT;
+                data = RedisModule_StringPtrLen(value, &data_len);
+
+                /* Check if it's a number. */
+                d = strtod(data, &end);
+                if (end != data) {
+                    type = ORDERED_ITEM_TYPE_DOUBLE;
+                } else {
+                    type = ORDERED_ITEM_TYPE_TEXT;
+                }
             }
         }
 
