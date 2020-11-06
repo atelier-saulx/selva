@@ -4,6 +4,9 @@
 
 #include "selva.h"
 
+struct RedisModuleCtx;
+struct RedisModuleString;
+
 /**
  * Parse an option with key string.
  * TXT INT_VALUE
@@ -12,11 +15,30 @@
  * @param txt a pointer to the key string argument.
  * @param num a pointer to the value string argument.
  */
-int SelvaArgParser_IntOpt(ssize_t *value, const char *name, RedisModuleString *txt, RedisModuleString *num);
+int SelvaArgParser_IntOpt(
+        ssize_t *value, const char *name,
+        struct RedisModuleString *txt,
+        struct RedisModuleString *num);
 
-int SelvaArgParser_StrOpt(const char **value, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val);
-void SelvaArgParser_NodeId(Selva_NodeId node_id, RedisModuleString *arg);
-int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, RedisModuleString *arg);
-int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, RedisModuleString *arg);
+int SelvaArgParser_StrOpt(
+        const char **value,
+        const char *name,
+        struct RedisModuleString *arg_key,
+        struct RedisModuleString *arg_val);
+int SelvaArgsParser_StringList(
+        struct RedisModuleCtx *ctx,
+        struct RedisModuleString ***out,
+        const char *name,
+        struct RedisModuleString *arg_key,
+        struct RedisModuleString *arg_val);
+void SelvaArgParser_NodeId(
+        Selva_NodeId node_id,
+        struct RedisModuleString *arg);
+int SelvaArgParser_SubscriptionId(
+        Selva_SubscriptionId id,
+        struct RedisModuleString *arg);
+int SelvaArgParser_MarkerId(
+        Selva_SubscriptionMarkerId *marker_id,
+        struct RedisModuleString *arg);
 
 #endif /* SELVA_ARG_PARSER */

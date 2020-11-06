@@ -72,7 +72,7 @@ size_t substring_count(const char *string, const char *substring) {
 	for (i = 0; i < l1 - l2; i++) {
 		if (strstr(string + i, substring) == string + i) {
 			count++;
-			i = i + l2 -1;
+			i = i + l2 - 1;
 		}
 	}
 

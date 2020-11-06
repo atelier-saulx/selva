@@ -1060,7 +1060,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         err = SelvaArgParser_StrOpt(&fields, "fields", argv[ARGV_FIELDS], argv[ARGV_FIELD_NAMES]);
         if (err == 0) {
             SHIFT_ARGS(2);
-        } else if (err != SELVA_EINVAL) {
+        } else if (err != SELVA_ENOENT) {
             return replyWithSelvaError(ctx, err);
         }
     }
