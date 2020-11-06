@@ -136,6 +136,7 @@ export const TYPE_CASTS: Record<
 > = {
   float: Number,
   number: Number,
+  timestamp: Number,
   int: Number,
   boolean: (x: any) => (x === '0' ? false : true),
   json: (x: any) => JSON.parse(x),
@@ -249,7 +250,7 @@ const TYPE_TO_SPECIAL_OP: Record<
         id
       )
     } else {
-      return client.redis.zrange({ name: db }, id + '.' + field, 0, -1)
+      return client.redis.selva_object_get({ name: db }, id, field)
     }
   },
   text: async (

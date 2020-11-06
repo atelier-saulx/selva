@@ -3233,6 +3233,36 @@ async selva_modify(opts: any, ...args: args): Promise<any> {
 }
 
 
+async selva_object_del(opts: ServerSelector, ...args: args): Promise<any>
+async selva_object_del(...args: args): Promise<any>
+async selva_object_del(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_del', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_del', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_object_exists(opts: ServerSelector, ...args: args): Promise<any>
+async selva_object_exists(...args: args): Promise<any>
+async selva_object_exists(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_exists', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_exists', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async selva_object_get(opts: ServerSelector, ...args: args): Promise<any>
 async selva_object_get(...args: args): Promise<any>
 async selva_object_get(opts: any, ...args: args): Promise<any> {
@@ -3243,6 +3273,51 @@ async selva_object_get(opts: any, ...args: args): Promise<any> {
   } else {
     return new Promise((resolve, reject) => {
       this.addCommandToQueue({ command: 'selva_object_get', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_object_len(opts: ServerSelector, ...args: args): Promise<any>
+async selva_object_len(...args: args): Promise<any>
+async selva_object_len(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_len', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_len', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_object_set(opts: ServerSelector, ...args: args): Promise<any>
+async selva_object_set(...args: args): Promise<any>
+async selva_object_set(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_set', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_set', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_object_type(opts: ServerSelector, ...args: args): Promise<any>
+async selva_object_type(...args: args): Promise<any>
+async selva_object_type(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_type', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_object_type', args: [opts, ...args], resolve, reject })
     })
   }
 }

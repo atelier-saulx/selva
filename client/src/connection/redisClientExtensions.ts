@@ -118,7 +118,22 @@ redis.add_command('selva.id')
 redis.add_command('selva.modify')
 
 // @ts-ignore
+redis.add_command('selva.object.del')
+
+// @ts-ignore
+redis.add_command('selva.object.exists')
+
+// @ts-ignore
 redis.add_command('selva.object.get')
+
+// @ts-ignore
+redis.add_command('selva.object.len')
+
+// @ts-ignore
+redis.add_command('selva.object.set')
+
+// @ts-ignore
+redis.add_command('selva.object.type')
 
 // @ts-ignore
 redis.add_command('selva.hierarchy.parents')

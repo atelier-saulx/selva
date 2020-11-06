@@ -385,7 +385,7 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, RedisModul
     if (fields[0] == NULL) { /* Empty list is a wildcard. */
         err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
         if (err) {
-            fprintf(stderr, "%s: Failed to send all fields for node_id: \"%.*s\"",
+            fprintf(stderr, "%s: Failed to send all fields for node_id: \"%.*s\"\n",
                     __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     } else {
@@ -404,7 +404,7 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, RedisModul
             if (err) {
                 TO_STR(field);
 
-                fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"",
+                fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
                         __FILE__,
                         field_str,
                         (int)SELVA_NODE_ID_SIZE, nodeId,

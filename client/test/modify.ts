@@ -158,15 +158,13 @@ test.serial('root', async t => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(await client.redis.hget('root', 'value'), '9001')
+  t.deepEqual(await client.redis.selva_object_get('root', 'value'), '9001')
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
   )
 
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [])
-
   await client.destroy()
 })
 
@@ -204,8 +202,6 @@ test.serial('root.children $delete: []', async t => {
   )
 
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [])
-
   await client.destroy()
 })
 
@@ -254,7 +250,7 @@ test.serial('basic', async t => {
   )
 
   t.is(
-    await client.redis.hget(person, 'title.en'),
+    await client.redis.selva_object_get(person, 'title.en'),
     'flurpy man',
     'Title of person is correctly set'
   )
@@ -592,9 +588,6 @@ test.serial('basic', async t => {
 
   // delete root
   await client.delete('root')
-  const d = await dumpDb(client)
-  t.deepEqual(d, [])
-
   await client.destroy()
 })
 
@@ -723,7 +716,7 @@ test.serial('array, json and set', async t => {
             type: 'json',
             properties: {
               hello: {
-                // need to check if you are allready
+                // need to check if you are already
                 // in json or array and then you need to  strip default options etc
                 type: 'array',
                 items: {
@@ -755,7 +748,7 @@ test.serial('array, json and set', async t => {
       }
     ]
   })
-  const r = JSON.parse(await client.redis.hget(id, 'flap'))
+  const r = JSON.parse(await client.redis.selva_object_get(id, 'flap'))
   t.deepEqual(r, [
     {
       gurk: 'hello',
@@ -809,9 +802,6 @@ test.serial('set empty object', async t => {
       }
     }),
     {
-      flurpy: {
-        hello: ''
-      }
     }
   )
 
@@ -848,7 +838,7 @@ test.serial('$increment, $default', async t => {
   })
 
   t.is(
-    await client.redis.hget('viDingDong', 'value'),
+    await client.redis.selva_object_get('viDingDong', 'value'),
     '100',
     'uses default if value does not exist'
   )
@@ -862,7 +852,7 @@ test.serial('$increment, $default', async t => {
   })
 
   t.is(
-    await client.redis.hget('viDingDong', 'value'),
+    await client.redis.selva_object_get('viDingDong', 'value'),
     '110',
     'increment if value exists'
   )
@@ -877,7 +867,7 @@ test.serial('$increment, $default', async t => {
   })
 
   t.is(
-    await client.redis.hget('viDingDong', 'title.en'),
+    await client.redis.selva_object_get('viDingDong', 'title.en'),
     'title',
     'set default'
   )
@@ -892,7 +882,7 @@ test.serial('$increment, $default', async t => {
   })
 
   t.is(
-    await client.redis.hget('viDingDong', 'title.en'),
+    await client.redis.selva_object_get('viDingDong', 'title.en'),
     'title',
     'does not overwrite if value exists'
   )
@@ -918,8 +908,8 @@ test.serial.skip('$merge = false', async t => {
     }
   })
 
-  t.is(await client.redis.hget('arPower', 'title.en'), 'flap')
-  t.is(await client.redis.hget('arPower', 'title.de'), 'flurpels')
+  t.is(await client.redis.selva_object_get('arPower', 'title.en'), 'flap')
+  t.is(await client.redis.selva_object_get('arPower', 'title.de'), 'flurpels')
 
   await client.set({
     $id: 'arPower',
@@ -929,8 +919,8 @@ test.serial.skip('$merge = false', async t => {
     }
   })
 
-  t.is(await client.redis.hget('arPower', 'title.en'), null)
-  t.is(await client.redis.hget('arPower', 'title.de'), 'deutschland')
+  t.is(await client.redis.selva_object_get('arPower', 'title.en'), null)
+  t.is(await client.redis.selva_object_get('arPower', 'title.de'), 'deutschland')
 
   await client.set({
     $id: 'arPower',
@@ -940,8 +930,8 @@ test.serial.skip('$merge = false', async t => {
     }
   })
 
-  t.is(await client.redis.hget('arPower', 'title.nl'), 'nl')
-  t.is(await client.redis.hget('arPower', 'title.de'), null)
+  t.is(await client.redis.selva_object_get('arPower', 'title.nl'), 'nl')
+  t.is(await client.redis.selva_object_get('arPower', 'title.de'), null)
 
   await client.set({
     $id: 'arPower',
@@ -951,7 +941,7 @@ test.serial.skip('$merge = false', async t => {
     }
   })
 
-  t.is(await client.redis.hget('arPower', 'image.thumb'), null)
+  t.is(await client.redis.selva_object_get('arPower', 'image.thumb'), null)
 
   await client.delete('root')
 })
@@ -1000,7 +990,7 @@ test.serial('automatic child creation', async t => {
   const titles = (
     await Promise.all(
       children.map(child => {
-        return client.redis.hget(child, 'title.nl')
+        return client.redis.selva_object_get(child, 'title.nl')
       })
     )
   ).sort()
@@ -1212,7 +1202,7 @@ test.serial('Set empty object', async t => {
   await client.destroy()
 })
 
-test.serial.only('no root in parents when adding nested', async t => {
+test.serial('no root in parents when adding nested', async t => {
   const client = connect({
     port
   })
@@ -1393,7 +1383,7 @@ test.serial('$delete: true', async t => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(await client.redis.hget('root', 'value'), '9001')
+  t.deepEqual(await client.redis.selva_object_get('root', 'value'), '9001')
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
@@ -1404,7 +1394,7 @@ test.serial('$delete: true', async t => {
     value: { $delete: true }
   })
 
-  t.deepEqual(await client.redis.hexists('root', 'value'), 0)
+  t.deepEqual(await client.redis.selva_object_exists('root', 'value'), 0)
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
@@ -1575,7 +1565,6 @@ test.serial('$delete: true', async t => {
       title: {
         en: 'yes title is back!!!'
       },
-      reffyRef: '',
       reffyRefs: ['root'],
       settySet: ['hmmmm']
     }
@@ -1601,8 +1590,6 @@ test.serial('$delete: true', async t => {
       title: {
         en: 'yes title is back!!!'
       },
-      reffyRef: '',
-      reffyRefs: [],
       settySet: ['hmmmm']
     }
   )
@@ -1626,15 +1613,50 @@ test.serial('$delete: true', async t => {
       id: 'maA',
       title: {
         en: 'yes title is back!!!'
-      },
-      reffyRef: '',
-      reffyRefs: [],
-      settySet: []
+      }
     }
   )
 
   await client.delete('root')
-  // t.deepEqual(await dumpDb(client), [])
+  await client.destroy()
+})
 
+test.serial('deleting and object', async t => {
+  const client = connect(
+    {
+      port
+    },
+    { loglevel: 'info' }
+  )
+
+  const match = await client.set({
+    type: 'match',
+    obj: {
+      hello: 'hello',
+      hallo: 'hallo',
+    }
+  })
+
+  t.deepEqual(
+    await client.get({ $id: match, obj: true }),
+    {
+      obj: {
+        hello: 'hello',
+        hallo: 'hallo'
+      }
+    }
+  )
+
+  await client.set({
+    $id: match,
+    obj: { $delete: true }
+  })
+
+  t.deepEqual(
+    await client.get({ $id: match, obj: true }),
+    {}
+  )
+
+  await client.delete('root')
   await client.destroy()
 })
