@@ -859,7 +859,7 @@ out:
 
 /**
  * Find node in set.
- * SELVA.HIERARCHY.findIn REDIS_KEY [order field asc|desc] [offset 1234] [limit 1234] NODE_IDS [filter expression] [args...]
+ * SELVA.HIERARCHY.findIn REDIS_KEY [order field asc|desc] [offset 1234] [limit 1234] [fields field1\nfield2] NODE_IDS [expression] [args...]
  */
 int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -873,6 +873,8 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     size_t ARGV_OFFSET_NUM      = 3;
     size_t ARGV_LIMIT_TXT       = 2;
     size_t ARGV_LIMIT_NUM       = 3;
+    size_t ARGV_FIELDS_TXT      = 2;
+    size_t ARGV_FIELDS_VAL      = 3;
     size_t ARGV_NODE_IDS        = 2;
     size_t ARGV_FILTER_EXPR     = 3;
     size_t ARGV_FILTER_ARGS     = 4;
@@ -881,6 +883,8 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     ARGV_OFFSET_NUM += i; \
     ARGV_LIMIT_TXT += i; \
     ARGV_LIMIT_NUM += i; \
+    ARGV_FIELDS_TXT += i; \
+    ARGV_FIELDS_VAL += i; \
     ARGV_NODE_IDS += i; \
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
@@ -940,6 +944,19 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         }
     }
 
+    /*
+     * Parse fields.
+     */
+    RedisModuleString **fields = NULL;
+    if (argc > (int)ARGV_FIELDS_VAL) {
+        err = SelvaArgsParser_StringList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_ENOENT) {
+            return replyWithSelvaErrorf(ctx, err, "fields");
+        }
+    }
+
     size_t nr_reg = argc - ARGV_FILTER_ARGS + 1;
     struct rpn_ctx *rpn_ctx = rpn_init(ctx, nr_reg);
     if (!rpn_ctx) {
@@ -995,7 +1012,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
-            .fields = NULL,
+            .fields = fields,
             .order_field = order_by_field,
             .order_result = &order_result,
         };
