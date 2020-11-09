@@ -731,7 +731,7 @@ test.serial('array, json and set', async t => {
               type: 'object',
               properties: {
                 gurk: { type: 'string' },
-                flap: { type: 'digest' }
+                //flap: { type: 'digest' }
               }
             }
           }
@@ -744,7 +744,7 @@ test.serial('array, json and set', async t => {
     flap: [
       {
         gurk: 'hello',
-        flap: 'smurpy'
+        //flap: 'smurpy'
       }
     ]
   })
@@ -752,7 +752,7 @@ test.serial('array, json and set', async t => {
   t.deepEqual(r, [
     {
       gurk: 'hello',
-      flap: '6734082360af7f0c5aef4123f43abc44c4fbf19e8b251a316d7b9da95fde448e'
+      //flap: '6734082360af7f0c5aef4123f43abc44c4fbf19e8b251a316d7b9da95fde448e'
     }
   ])
 
