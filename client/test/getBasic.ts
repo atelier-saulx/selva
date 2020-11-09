@@ -805,7 +805,6 @@ test.serial('get - field with empty array', async t => {
     children: [],
     descendants: [],
     dingdongs: [],
-    refs: [],
     dong: { dingdong: [] }
   })
 
@@ -819,7 +818,6 @@ test.serial('get - field with empty array', async t => {
       dong: { dingdong: [] },
       type: 'lekkerType',
       dingdongs: [],
-      refs: []
     }
   )
 
