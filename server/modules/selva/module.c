@@ -424,7 +424,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     struct SelvaModify_HierarchyMetadata *metadata;
 
     /*
-     * TODO Getting the metadata this way might slow us down a bit.
+     * Getting the metadata this way might slows us down a little bit but it's
+     * not terrible because it happens only once. Optimally we'd hold a pointer
+     * to the node all times and avoid lookups from the RB tree. Luckily the RB
+     * tree of the hierarchy nodes is one of the fastest things we have.
      */
     metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
     SelvaSubscriptions_FieldChangePrecheck(hierarchy, nodeId, metadata);
@@ -444,7 +447,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     /*
      * Parse the rest of the arguments and run the modify operations.
-     * TODO Each part of the command will send a separate response back to the client.
+     * Each part of the command will send a separate response back to the client.
      * Each part is also replicated separately.
      */
     RedisModule_ReplyWithArray(ctx, 1 + nr_triplets);

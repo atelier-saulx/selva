@@ -47,7 +47,6 @@ void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleStr
         RedisModuleKey *key;
 
         if (orig) {
-            /* TODO Better error handling */
             key = RedisModule_OpenKey(ctx, orig, REDISMODULE_READ | REDISMODULE_WRITE);
             if (key) {
                 struct SelvaObject *obj;
