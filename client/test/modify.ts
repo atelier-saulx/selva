@@ -1621,7 +1621,7 @@ test.serial('$delete: true', async t => {
   await client.destroy()
 })
 
-test.serial('deleting and object', async t => {
+test.serial('deleting an object', async t => {
   const client = connect(
     {
       port
