@@ -139,8 +139,10 @@ size_t SelvaObject_MemUsage(const void *value) {
             }
             break;
         case SELVA_OBJECT_OBJECT:
-            // FIXME
-            fprintf(stderr, "%s: obj size calc not implemented\n", __FILE__);
+            if (key->value) {
+                size += SelvaObject_MemUsage(key->value);
+            }
+            break;
         default:
             /* 0 */
             break;
@@ -1243,8 +1245,8 @@ void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void 
                 okey->value);
             break;
         case SELVA_OBJECT_OBJECT:
-            /* FIXME Needs a way to pass the full object path */
-            RedisModule_LogIOError(aof, "warning", "Unknown type");
+            /* FIXME Nested obj AOF needs a way to pass the full object path */
+            RedisModule_LogIOError(aof, "warning", "AOF rewrite not supported for nested objects");
             break;
         case SELVA_OBJECT_SET:
             set_aof_rewrite(aof, key, okey);

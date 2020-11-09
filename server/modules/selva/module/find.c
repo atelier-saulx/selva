@@ -321,8 +321,13 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
     item = RedisModule_PoolAlloc(ctx, sizeof(struct FindCommand_OrderedItem) + data_len + 1);
     if (!item) {
-        /* FIXME Handle ENOMEM */
-        abort();
+        /*
+         * Returning NULL in case of ENOMEM here should be fairly ok as we can
+         * assume that Redis will free everything we allocated and opened before
+         * this point. Although it's possible that there is not enough memory to
+         * do the cleanup but there is nothing we could do better neither here.
+         */
+        return NULL;
     }
 
     memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
@@ -342,9 +347,6 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, RedisModul
     RedisModuleString *id;
     int err;
 
-    /*
-     * TODO Recycle the buffer
-     */
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
     if (!id) {
         return SELVA_ENOMEM;
@@ -479,6 +481,12 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
             if (item) {
                 SVector_InsertFast(args->order_result, item);
             } else {
+                /*
+                 * It's not so easy to make the response fail at this point.
+                 * Given that we shouldn't generally even end up here in real
+                 * life, it's fairly ok to just log the error and return what
+                 * we can.
+                 */
                 fprintf(stderr, "%s: Out of memory while creating an ordered result item\n", __FILE__);
             }
         }
@@ -829,10 +837,10 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }
         if (err != 0) {
-            /* FIXME This will make redis crash */
-#if 0
-            return replyWithSelvaError(ctx, err);
-#endif
+            /*
+             * We can't send an error to the client at this point so we'll just log
+             * it and ignore the error.
+             */
             fprintf(stderr, "%s: Find failed for node: \"%.*s\"\n", __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     }
@@ -1180,7 +1188,10 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, marker->node_id, marker->ref_field, &cb);
     } else {
         /*
-         * TODO This could be implemented with a head callback.
+         * This could be implemented with a head callback but it's not
+         * currently implemented for the traverse API. Therefore we do a
+         * separate traverse just for the node itself in some special cases
+         * where it's necessary.
          */
         if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS || marker->dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
             err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, SELVA_HIERARCHY_TRAVERSAL_NODE, &cb);
@@ -1193,10 +1204,10 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     }
     if (err != 0) {
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
-        /* FIXME This will make redis crash */
-#if 0
-        return replyWithSelvaError(ctx, err);
-#endif
+        /*
+         * We can't send an error to the client at this point so we'll just log
+         * it and ignore the error.
+         */
         fprintf(stderr, "%s: FindInSub failed. sub_id: \"%s\" marker_id: %d err: \"%s\"\n",
                 __FILE__, Selva_SubscriptionId2str(str, sub_id), (int)marker_id, selvaStrError[-err]);
     }

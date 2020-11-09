@@ -174,9 +174,15 @@ static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
     sds new = sdscpylen(old, str, len);
     ((struct redisObjectAccessor *)rms)->ptr = new;
 
-
     if (unlikely(!new)) {
-        /* FIXME what to do with the robj, it will leak now!? */
+        /*
+         * Unfortunately we'll leak the robj in this case. There is no safe way
+         * to recover because we are already messing with the internals of the
+         * redis object. We could try to allocate a smaller buffer at this point
+         * and attempt to do a partial recovery but doing such a trickery
+         * doesn't seem too wise to be implemented here, given that we are
+         * already hoping to never end up inside this clause.
+         */
         *rms_p = NULL;
 
         return RPN_ERR_ENOMEM;

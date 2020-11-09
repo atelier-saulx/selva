@@ -1708,7 +1708,6 @@ void HierarchyTypeFree(void *value) {
     SelvaModify_DestroyHierarchy(hierarchy);
 }
 
-/* FIXME Add gets stuck if parents are missing */
 int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     SelvaModify_Hierarchy *hierarchy;
@@ -1856,8 +1855,25 @@ int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString *
             }
 
             if (SVector_Size(&child->parents) == 0) {
-                /* TODO Ignoring errors for now. */
-                (void)SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
+                int err;
+                Selva_NodeId childId;
+
+                /*
+                 * Make a copy of the child's ID just for the sake of
+                 * potentially logging it.
+                 */
+                memcpy(childId, child->id, SELVA_NODE_ID_SIZE);
+
+                err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
+                if (err) {
+                    /*
+                     * We ignore and log any errors.
+                     */
+                    fprintf(stderr, "%s: Failed to delete the child \"%.*s\" of \"%.*s\"\n",
+                            __FILE__,
+                            (int)SELVA_NODE_ID_SIZE, childId,
+                            (int)SELVA_NODE_ID_SIZE, nodeId);
+                }
             }
         }
     } else {

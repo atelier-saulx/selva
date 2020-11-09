@@ -237,7 +237,6 @@ void SelvaSubscriptions_DestroyAll(SelvaModify_Hierarchy *hierarchy) {
 static void init_node_metadata_subs(
         Selva_NodeId id __unused,
         struct SelvaModify_HierarchyMetadata *metadata) {
-    /* TODO Lazy alloc would save some memory. */
     SelvaSubscriptions_InitMarkersStruct(&metadata->sub_markers);
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_subs);
@@ -533,7 +532,10 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
         };
 
         /*
-         * TODO This could be implemented with a head callback.
+         * This could be implemented with a head callback but it's not
+         * currently implemented for the traverse API. Therefore we do a
+         * separate traverse just for the node itself in some special cases
+         * where it's necessary.
          */
         if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS || marker->dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
             err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, SELVA_HIERARCHY_TRAVERSAL_NODE, &cb);

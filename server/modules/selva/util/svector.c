@@ -65,8 +65,11 @@ void SVector_Insert(SVector *vec, void *el) {
         void **new_data = RedisModule_Realloc(vec_data, new_size);
         if (!new_data) {
             fprintf(stderr, "SVector realloc failed\n");
+            /*
+             * TODO We shouldn't abort here but there is absolutely no safe way
+             * to fail as of now.
+             */
             abort(); /* This will cause a core dump. */
-            /* TODO We probably shouldn't abort */
         }
 
         vec->vec_data = new_data;
