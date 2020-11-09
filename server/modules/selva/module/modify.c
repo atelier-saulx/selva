@@ -225,11 +225,23 @@ int SelvaModify_ModifySet(
                 return err;
             }
 
-            /* FIXME "aliases" field should be probably handled here. */
-            err = SelvaObject_DelKey(obj, field);
-            if (err) {
-                return SELVA_EGENERAL;
+            /*
+             * First we need to delete the aliases of this node from the
+             * ___selva_aliases hash.
+             */
+            if (!strcmp(field_str, "aliases")) {
+                RedisModuleKey *alias_key;
+
+                alias_key = open_aliases_key(ctx);
+                if (!alias_key) {
+                    fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+                    return SELVA_ENOENT;
+                }
+
+                delete_aliases(alias_key, SelvaObject_GetSet(obj, field));
             }
+
+            err = SelvaObject_DelKey(obj, field);
         }
 
         if (err) {

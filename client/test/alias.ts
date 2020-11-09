@@ -478,3 +478,60 @@ test.serial('set parent by alias', async t => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('delete all aliases of a node', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    type: 'match',
+    title: { en: 'yesh' },
+    aliases: { $add: ['nice_match', 'nicer_match'] }
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $alias: 'nice_match',
+      id: true,
+      aliases: true
+    }),
+    {
+      id: match1,
+      aliases: ['nice_match', 'nicer_match']
+    }
+  )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $alias: 'nicer_match',
+      id: true,
+      aliases: true
+    }),
+    {
+      id: match1,
+      aliases: ['nice_match', 'nicer_match']
+    }
+  )
+
+  await client.set({
+    $id: match1,
+    aliases: { $delete: true }
+  });
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: match1,
+      id: true,
+      aliases: true
+    }),
+    {
+      id: match1
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.redis.hgetall('___selva_aliases'),
+    null
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})
