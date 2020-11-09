@@ -514,7 +514,7 @@ test.serial('delete all aliases of a node', async t => {
   await client.set({
     $id: match1,
     aliases: { $delete: true }
-  });
+  })
 
   t.deepEqualIgnoreOrder(
     await client.get({
@@ -527,10 +527,7 @@ test.serial('delete all aliases of a node', async t => {
     }
   )
 
-  t.deepEqualIgnoreOrder(
-    await client.redis.hgetall('___selva_aliases'),
-    null
-  )
+  t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), null)
 
   await client.delete('root')
   await client.destroy()
