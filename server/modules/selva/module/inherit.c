@@ -33,6 +33,8 @@ struct send_hierarchy_field_data {
     RedisModuleCtx *ctx;
 
     size_t skip;
+    size_t nr_types;
+    const Selva_NodeType *types;
     size_t len;
 };
 
@@ -64,12 +66,24 @@ static int send_object_field_value(RedisModuleCtx *ctx, struct SelvaObject *obj,
  */
 static int send_hierarchy_field_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
     struct send_hierarchy_field_data *args = (struct send_hierarchy_field_data *)arg;
+    int match = 0;
 
     /*
      * Some traversal modes needs to skip the first entry.
      */
     if (unlikely(args->skip)) {
         args->skip = 0;
+        return 0;
+    }
+
+    for (size_t i = 0; i < args->nr_types; i++) {
+        match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
+    }
+    if (!match) {
+        /*
+         * This node type is not accepted and we don't need to check whether the
+         * is field set.
+         */
         return 0;
     }
 
@@ -83,6 +97,8 @@ static int send_hierarchy_field(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId nodeId,
+        size_t nr_types,
+        const Selva_NodeType *types,
         RedisModuleString *field,
         enum SelvaModify_HierarchyTraversal dir) {
     const size_t skip =
@@ -91,6 +107,8 @@ static int send_hierarchy_field(
     struct send_hierarchy_field_data args = {
         .ctx = ctx,
         .skip = skip,
+        .nr_types = nr_types,
+        .types = types,
         .len = 0,
     };
     const struct SelvaModify_HierarchyCallback cb = {
@@ -163,7 +181,7 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
         }
         if (!match) {
             /*
-             * This node type is not accepted and we don't need to check whether has
+             * This node type is not accepted and we don't need to check whether
              * the field set.
              */
             return 0;
@@ -270,15 +288,14 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         TO_STR(field_name);
         int err = 1; /* This will help us to know if something matched. */
 
-        /* TODO Should probably check types too */
         if (!strcmp(field_name_str, "ancestors")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
+            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
         } else if (!strcmp(field_name_str, "children")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, field_name, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
+            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
         } else if (!strcmp(field_name_str, "descendants")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
+            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
         } else if (!strcmp(field_name_str, "parents")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, field_name, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
+            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
         }
 
         if (err <= 0) { /* Something was traversed. */
@@ -313,7 +330,9 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplySetArrayLength(ctx, args.nr_results);
 
     if (err) {
-        /* TODO What to do with this error? */
+        /*
+         * We can't reply with an error anymore, so we just log it.
+         */
         fprintf(stderr, "%s: %s\n", __FILE__, getSelvaErrorStr(err));
     }
 
