@@ -724,7 +724,6 @@ void SelvaSubscriptions_InheritChild(
     /*
      * Trigger all relevant subscriptions to make sure the subscriptions are
      * propagated properly.
-     * TODO We could skip this if the only parent was root.
      */
     if (node_nr_parents > 0) {
         SelvaSubscriptions_DeferHierarchyEvents(hierarchy, child_id, child_metadata);
