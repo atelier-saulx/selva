@@ -1,8 +1,9 @@
 import { SelvaClient } from '../../'
 import { GetOperationFind, GetResult, GetOperation, GetOptions } from '../types'
+import { TYPE_CASTS } from './'
 import { ast2rpn, Fork, FilterAST, isFork } from '@saulx/selva-query-ast-parser'
 import { executeNestedGetOperations, ExecContext, addMarker } from './'
-import { padId, joinIds } from '../utils'
+import { padId, joinIds, getNestedSchema } from '../utils'
 import { setNestedResult } from '../utils'
 
 function parseGetOpts(
@@ -477,6 +478,26 @@ const executeFindOperation = async (
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> => {
+  const schema = client.schemas[ctx.db]
+
+  if (op.nested) {
+    let nestedOperation = op.nested
+    let ids
+
+    do {
+      ids = await findIds(
+        client,
+        Object.assign({}, nestedOperation, {
+          id: joinIds(ids)
+        }),
+        lang,
+        ctx
+      )
+
+      nestedOperation = nestedOperation.nested
+    } while (nestedOperation.nested)
+  }
+
   let ids = await findIds(client, op, lang, ctx)
 
   if (op.nested) {
@@ -496,35 +517,38 @@ const executeFindOperation = async (
     }
   }
 
-  console.log('FIND FIELDS', await findFields(client, op, lang, ctx))
+  // console.log('FIND FIELDS', await findFields(client, op, lang, ctx))
 
-  const realOpts: any = {}
-  for (const key in op.props) {
-    if (key === '$all' || !key.startsWith('$')) {
-      realOpts[key] = op.props[key]
-    }
-  }
-
-  const results = await Promise.all(
-    ids.map(async id => {
-      return await executeNestedGetOperations(
-        client,
-        {
-          $db: ctx.db,
-          $id: id,
-          ...realOpts
-        },
-        lang,
-        ctx
-      )
-    })
-  )
+  let results: any = await findFields(client, op, lang, ctx)
 
   if (op.single) {
-    return results[0]
+    results = [results[0]]
   }
 
-  return results
+  const result = []
+  for (let entry of results) {
+    const [id, fieldResults] = entry
+    const entryRes = {}
+    for (let i = 0; i < fieldResults.length; i += 2) {
+      const field = fieldResults[i]
+
+      const fs = getNestedSchema(schema, id, field)
+      const typeCast = fs.type && TYPE_CASTS[fs.type]
+      const value = typeCast
+        ? typeCast(fieldResults[i + 1], id, field, schema, lang)
+        : fieldResults[i + 1]
+
+      setNestedResult(entryRes, field, value)
+    }
+
+    result.push(entryRes)
+  }
+
+  if (op.single) {
+    return result[0]
+  }
+
+  return result
 }
 
 export default executeFindOperation
