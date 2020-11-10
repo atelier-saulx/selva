@@ -360,13 +360,11 @@ const findFields = async (
     sourceField = op.sourceField.join('\n')
   }
 
-  // TODO: parse the props into 'fields' arg and "leftover gets"
   const [fieldsOpt, additionalGets] = parseGetOpts(op.props, '')
 
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
   if (op.inKeys) {
     // TODO: additionalGets
-
     const result = await client.redis.selva_hierarchy_findin(
       {
         name: db
@@ -482,26 +480,7 @@ const executeFindOperation = async (
   const schema = client.schemas[ctx.db]
 
   if (op.nested) {
-    let nestedOperation = op.nested
-    let ids
-
-    do {
-      ids = await findIds(
-        client,
-        Object.assign({}, nestedOperation, {
-          id: joinIds(ids)
-        }),
-        lang,
-        ctx
-      )
-
-      nestedOperation = nestedOperation.nested
-    } while (nestedOperation.nested)
-  }
-
-  let ids = await findIds(client, op, lang, ctx)
-
-  if (op.nested) {
+    let ids = await findIds(client, op, lang, ctx)
     let nestedOperation = op.nested
     let prevIds = ids
     while (nestedOperation) {
@@ -516,6 +495,34 @@ const executeFindOperation = async (
       prevIds = ids
       nestedOperation = nestedOperation.nested
     }
+
+    const realOpts: any = {}
+    for (const key in op.props) {
+      if (key === '$all' || !key.startsWith('$')) {
+        realOpts[key] = op.props[key]
+      }
+    }
+
+    const results = await Promise.all(
+      ids.map(async id => {
+        return await executeNestedGetOperations(
+          client,
+          {
+            $db: ctx.db,
+            $id: id,
+            ...realOpts
+          },
+          lang,
+          ctx
+        )
+      })
+    )
+
+    if (op.single) {
+      return results[0]
+    }
+
+    return results
   }
 
   let results: any = await findFields(client, op, lang, ctx)
