@@ -517,8 +517,6 @@ const executeFindOperation = async (
     }
   }
 
-  // console.log('FIND FIELDS', await findFields(client, op, lang, ctx))
-
   let results: any = await findFields(client, op, lang, ctx)
 
   if (op.single) {
