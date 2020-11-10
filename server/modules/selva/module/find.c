@@ -785,7 +785,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      */
     ssize_t nr_nodes = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        enum SelvaModify_HierarchyTraversal dir;
+        enum SelvaModify_HierarchyTraversal dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
         Selva_NodeId nodeId;
         RedisModuleString *ref_field = NULL;
 
