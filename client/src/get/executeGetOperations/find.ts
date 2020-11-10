@@ -298,7 +298,6 @@ const findIds = async (
       }
     }
 
-    console.log('HMM', parseGetOpts(op.props, ''))
     const ids = await client.redis.selva_hierarchy_find(
       {
         name: db
@@ -360,15 +359,13 @@ const findFields = async (
   }
 
   // TODO: parse the props into 'fields' arg and "leftover gets"
-  const fields = {}
-  for (const key in op.props) {
-  }
+  const [fieldsOpt, additionalGets] = parseGetOpts(op.props, '')
 
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
-  // TODO: change this if ctx.subId (for markers)
   if (op.inKeys) {
-    // can make this a bit better....
-    const ids = await client.redis.selva_hierarchy_findin(
+    // TODO: additionalGets
+
+    const result = await client.redis.selva_hierarchy_findin(
       {
         name: db
       },
@@ -380,6 +377,8 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
+      'fields',
+      [...fieldsOpt.values()].join('\n'),
       joinIds(op.inKeys),
       ...args
     )
@@ -393,7 +392,7 @@ const findFields = async (
       lang
     )
 
-    return ids
+    return result
   } else {
     const realOpts: any = {}
     for (const key in op.props) {
@@ -439,7 +438,7 @@ const findFields = async (
       }
     }
 
-    const ids = await client.redis.selva_hierarchy_find(
+    const result = await client.redis.selva_hierarchy_find(
       {
         name: db
       },
@@ -453,6 +452,8 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
+      'fields',
+      [...fieldsOpt.values()].join('\n'),
       padId(op.id),
       ...args
     )
@@ -466,7 +467,7 @@ const findFields = async (
       lang
     )
 
-    return ids
+    return result
   }
 }
 
@@ -494,6 +495,8 @@ const executeFindOperation = async (
       nestedOperation = nestedOperation.nested
     }
   }
+
+  console.log('FIND FIELDS', await findFields(client, op, lang, ctx))
 
   const realOpts: any = {}
   for (const key in op.props) {
