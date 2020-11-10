@@ -19,7 +19,6 @@
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
 
-
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
 struct SelvaObjectKey {
@@ -40,6 +39,11 @@ struct SelvaObject {
     struct SelvaObjectKeys keys_head;
 };
 
+struct so_type_name {
+    const char * const name;
+    size_t len;
+};
+
 static RedisModuleType *ObjectType;
 
 static void destroy_selva_object(struct SelvaObject *obj);
@@ -53,6 +57,15 @@ static int SelvaObject_Compare(struct SelvaObjectKey *a, struct SelvaObjectKey *
 }
 
 RB_GENERATE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
+
+static const struct so_type_name type_names[] = {
+    [SELVA_OBJECT_NULL] = { "null", 4 },
+    [SELVA_OBJECT_DOUBLE] = { "double", 6 },
+    [SELVA_OBJECT_LONGLONG] = { "long long", 9 },
+    [SELVA_OBJECT_STRING] = { "string", 6 },
+    [SELVA_OBJECT_OBJECT] = { "object", 6 },
+    [SELVA_OBJECT_SET] = { "selva_set", 9 },
+};
 
 struct SelvaObject *new_selva_object(void) {
     struct SelvaObject *obj;
@@ -790,7 +803,6 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
     struct SelvaObjectKey *key;
-    int err;
 
     const size_t ARGV_KEY = 1;
     const size_t ARGV_OKEY = 2;
@@ -812,6 +824,8 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     for (size_t i = ARGV_OKEY; i < (size_t)argc; i++) {
         RedisModuleString *okey = argv[i];
         TO_STR(okey);
+        int err;
+
         err = get_key(obj, okey_str, okey_len, 0, &key);
         if (err == SELVA_ENOENT) {
             /* Keep looking. */
@@ -913,19 +927,6 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     if (!obj) {
         return replyWithSelvaError(ctx, SELVA_ENOENT);
     }
-
-    struct so_type_name {
-        const char * const name;
-        size_t len;
-    };
-    static const struct so_type_name type_names[] = {
-        [SELVA_OBJECT_NULL] = { "null", 4 },
-        [SELVA_OBJECT_DOUBLE] = { "double", 6 },
-        [SELVA_OBJECT_LONGLONG] = { "long long", 9 },
-        [SELVA_OBJECT_STRING] = { "string", 6 },
-        [SELVA_OBJECT_OBJECT] = { "object", 6 },
-        [SELVA_OBJECT_SET] = { "selva_set", 9 },
-    };
 
     enum SelvaObjectType type = SELVA_OBJECT_NULL;
     RedisModuleString *okey = argv[ARGV_OKEY];
@@ -1111,7 +1112,7 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
             {
                 const size_t n = RedisModule_LoadUnsigned(io);
 
-                for (size_t i = 0; i < n; i++) {
+                for (size_t j = 0; j < n; j++) {
                     RedisModuleString *value = RedisModule_LoadString(io);
 
                     SelvaObject_AddSet(obj, name, value);

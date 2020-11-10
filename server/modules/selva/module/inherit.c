@@ -170,12 +170,13 @@ static int send_field_value(
 static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     int err;
-    int match = 0;
 
     /*
      * Check that the node is of an accepted type.
      */
     if (likely(!args->first_node)) {
+        int match = 0;
+
         for (size_t i = 0; i < args->nr_types; i++) {
             match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
         }
@@ -286,7 +287,8 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     for (size_t i = 0; i < nr_field_names; i++) {
         RedisModuleString *field_name = field_names[i];
         TO_STR(field_name);
-        int err = 1; /* This will help us to know if something matched. */
+
+        err = 1; /* This value will help us know if something matched. */
 
         if (!strcmp(field_name_str, "ancestors")) {
             err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);

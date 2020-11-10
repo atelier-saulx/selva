@@ -450,6 +450,7 @@ static char * delete_nested_key(void)
     err = SelvaObject_GetStr(root_obj, key_name_1, &value);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
     err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_2, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);

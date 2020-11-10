@@ -44,9 +44,9 @@ void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleStr
      * Remove the alias from the previous node.
      */
     if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_NONE, ref, &orig, NULL)) {
-        RedisModuleKey *key;
-
         if (orig) {
+            RedisModuleKey *key;
+
             key = RedisModule_OpenKey(ctx, orig, REDISMODULE_READ | REDISMODULE_WRITE);
             if (key) {
                 struct SelvaObject *obj;
