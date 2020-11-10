@@ -1,6 +1,6 @@
 import { SelvaClient } from '../../'
 import { GetOperationFind, GetResult, GetOperation, GetOptions } from '../types'
-import { TYPE_CASTS } from './'
+import { typeCast } from './'
 import { ast2rpn, Fork, FilterAST, isFork } from '@saulx/selva-query-ast-parser'
 import { executeNestedGetOperations, ExecContext, addMarker } from './'
 import { padId, joinIds, getNestedSchema } from '../utils'
@@ -531,14 +531,9 @@ const executeFindOperation = async (
     const entryRes = {}
     for (let i = 0; i < fieldResults.length; i += 2) {
       const field = fieldResults[i]
+      const value = fieldResults[i + 1]
 
-      const fs = getNestedSchema(schema, id, field)
-      const typeCast = fs.type && TYPE_CASTS[fs.type]
-      const value = typeCast
-        ? typeCast(fieldResults[i + 1], id, field, schema, lang)
-        : fieldResults[i + 1]
-
-      setNestedResult(entryRes, field, value)
+      setNestedResult(entryRes, field, typeCast(value, id, field, schema, lang))
     }
 
     result.push(entryRes)

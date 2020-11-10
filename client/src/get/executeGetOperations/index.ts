@@ -175,11 +175,7 @@ export const TYPE_CASTS: Record<
           o[key] = {}
           parse(o[key], `${field}.${key}`, val)
         } else {
-          const typeCast = TYPE_CASTS[fieldSchema.type]
-          if (typeCast) {
-            val = typeCast(val, id, field, schema, lang)
-          }
-          o[key] = val
+          o[key] = typeCast(val, id, field, schema, lang)
         }
 
         fieldCount++
@@ -191,6 +187,26 @@ export const TYPE_CASTS: Record<
   },
   record: (all: any, id: string, field: string, schema) =>
     TYPE_CASTS.object(all, id, field, schema)
+}
+
+export function typeCast(
+  x: any,
+  id: string,
+  field: string,
+  schema: Schema,
+  lang?: string
+): any {
+  const fs = getNestedSchema(schema, id, field)
+  if (!fs) {
+    return x
+  }
+
+  const cast = TYPE_CASTS[fs.type]
+  if (!cast) {
+    return x
+  }
+
+  return cast(x, id, field, schema, lang)
 }
 
 const TYPE_TO_SPECIAL_OP: Record<
@@ -409,18 +425,13 @@ export const executeGetOperation = async (
     }
 
     if (r !== null && r !== undefined) {
-      const typeCast = TYPE_CASTS[fieldSchema.type]
-      if (typeCast) {
-        return typeCast(
-          r,
-          op.id,
-          op.sourceField as string,
-          client.schemas.default,
-          lang
-        )
-      }
-
-      return r
+      return typeCast(
+        r,
+        op.id,
+        op.sourceField as string,
+        client.schemas[ctx.db],
+        lang
+      )
     } else if (op.default) {
       return op.default
     }
