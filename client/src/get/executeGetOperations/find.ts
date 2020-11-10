@@ -5,6 +5,7 @@ import { ast2rpn, Fork, FilterAST, isFork } from '@saulx/selva-query-ast-parser'
 import { executeNestedGetOperations, ExecContext, addMarker } from './'
 import { padId, joinIds, getNestedSchema } from '../utils'
 import { setNestedResult } from '../utils'
+import { deepMerge } from '@saulx/utils'
 
 function parseGetOpts(
   props: GetOptions,
@@ -336,7 +337,7 @@ const findFields = async (
   op: GetOperationFind,
   lang: string,
   ctx: ExecContext
-): Promise<string[]> => {
+): Promise<[string[], GetOptions[]]> => {
   const { db, subId } = ctx
 
   let sourceField: string = <string>op.sourceField
@@ -392,7 +393,7 @@ const findFields = async (
       lang
     )
 
-    return result
+    return [result, additionalGets]
   } else {
     const realOpts: any = {}
     for (const key in op.props) {
@@ -467,7 +468,7 @@ const findFields = async (
       lang
     )
 
-    return result
+    return [result, additionalGets]
   }
 }
 
@@ -525,7 +526,12 @@ const executeFindOperation = async (
     return results
   }
 
-  let results: any = await findFields(client, op, lang, ctx)
+  let [results, additionalGets]: [any, GetOptions[]] = await findFields(
+    client,
+    op,
+    lang,
+    ctx
+  )
 
   const result = []
   for (let entry of results) {
@@ -541,6 +547,25 @@ const executeFindOperation = async (
       }
 
       setNestedResult(entryRes, field, typeCast(value, id, field, schema, lang))
+    }
+
+    const additionalResults = await Promise.all(
+      additionalGets.map(g => {
+        return executeNestedGetOperations(
+          client,
+          {
+            $db: ctx.db,
+            $id: id,
+            ...g
+          },
+          lang,
+          ctx
+        )
+      })
+    )
+
+    for (const r of additionalResults) {
+      deepMerge(entryRes, r)
     }
 
     result.push(entryRes)
