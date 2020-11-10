@@ -10,8 +10,12 @@
 static int initialize_node(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleString *key_name, const Selva_NodeId nodeId) {
     const int is_root = !memcmp(nodeId, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
     struct SelvaObject *obj;
+    int err;
 
-    SelvaObject_Key2Obj(key, &obj); /* TODO Handle errors */
+    err = SelvaObject_Key2Obj(key, &obj);
+    if (err) {
+        return err;
+    }
 
     SelvaObject_SetStr(obj, RedisModule_CreateString(ctx, "$id", 3), key_name);
 
