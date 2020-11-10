@@ -527,10 +527,6 @@ const executeFindOperation = async (
 
   let results: any = await findFields(client, op, lang, ctx)
 
-  if (op.single) {
-    results = [results[0]]
-  }
-
   const result = []
   for (let entry of results) {
     const [id, fieldResults] = entry
