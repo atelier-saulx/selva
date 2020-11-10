@@ -530,10 +530,15 @@ const executeFindOperation = async (
   const result = []
   for (let entry of results) {
     const [id, fieldResults] = entry
-    const entryRes = {}
+    const entryRes: any = {}
     for (let i = 0; i < fieldResults.length; i += 2) {
       const field = fieldResults[i]
       const value = fieldResults[i + 1]
+
+      if (field === 'id') {
+        entryRes.id = id
+        continue
+      }
 
       setNestedResult(entryRes, field, typeCast(value, id, field, schema, lang))
     }
