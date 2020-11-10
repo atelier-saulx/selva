@@ -153,7 +153,7 @@ async function checkForNextRefresh(
   )
 }
 
-const findHierarchy = async (
+const findIds = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
@@ -293,13 +293,13 @@ const executeFindOperation = async (
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> => {
-  let ids = await findHierarchy(client, op, lang, ctx)
+  let ids = await findIds(client, op, lang, ctx)
 
   if (op.nested) {
     let nestedOperation = op.nested
     let prevIds = ids
     while (nestedOperation) {
-      ids = await findHierarchy(
+      ids = await findIds(
         client,
         Object.assign({}, nestedOperation, {
           id: joinIds(ids)
