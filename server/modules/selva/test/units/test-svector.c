@@ -557,6 +557,22 @@ static char * test_foreach(void)
     return NULL;
 }
 
+static char * test_get_index(void)
+{
+    struct data el[] = { { 1 }, { 2 }, { 3 } };
+
+    SVector_Init(&vec, 3, compar);
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    pu_assert_ptr_equal("ind 0", SVector_GetIndex(&vec, 0), &el[0]);
+    pu_assert_ptr_equal("ind 1", SVector_GetIndex(&vec, 1), &el[1]);
+    pu_assert_ptr_equal("ind 2", SVector_GetIndex(&vec, 2), &el[2]);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
@@ -582,4 +598,5 @@ void all_tests(void)
     pu_def_test(test_shift, PU_RUN);
     pu_def_test(test_shift_reset, PU_RUN);
     pu_def_test(test_foreach, PU_RUN);
+    pu_def_test(test_get_index, PU_RUN);
 }
