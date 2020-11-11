@@ -22,14 +22,16 @@
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
 struct SelvaObjectKey {
-    enum SelvaObjectType type;
+    enum SelvaObjectType type; /*!< Type of the value. */
+    enum SelvaObjectType subtype; /*!< Subtype of the value. Arrays use this. */
     unsigned short name_len;
     RB_ENTRY(SelvaObjectKey) _entry;
     union {
-        void *value;
-        double emb_double_value;
-        long long emb_ll_value;
-        struct SelvaSet selva_set;
+        void *value; /* The rest of the types use this. */
+        double emb_double_value; /* SELVA_OBJECT_DOUBLE */
+        long long emb_ll_value; /* SELVA_OBJECT_LONGLONG */
+        struct SelvaSet selva_set; /* SELVA_OBJECT_SET */
+        SVector array; /* SELVA_OBJECT_ARRAY */
     };
     char name[0];
 };
@@ -65,6 +67,7 @@ static const struct so_type_name type_names[] = {
     [SELVA_OBJECT_STRING] = { "string", 6 },
     [SELVA_OBJECT_OBJECT] = { "object", 6 },
     [SELVA_OBJECT_SET] = { "selva_set", 9 },
+    [SELVA_OBJECT_ARRAY] = { "array", 7 },
 };
 
 struct SelvaObject *new_selva_object(void) {
@@ -101,6 +104,8 @@ static int clear_key_value(struct SelvaObjectKey *key) {
     case SELVA_OBJECT_SET:
         SelvaSet_Destroy(&key->selva_set);
         break;
+    case SELVA_OBJECT_ARRAY:
+        /* TODO Cear array key */
     default:
         fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
         return SELVA_EINTYPE;
@@ -398,6 +403,27 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
     return 0;
 }
 
+static int get_key_modify(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObjectKey **out) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+    int err;
+
+    /*
+     * Do get_key() first without create to avoid clearing the original value that we want to modify.
+     * If we get a SELVA_ENOENT error we can safely create the key.
+     */
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err == SELVA_ENOENT) {
+        err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    }
+    if (err) {
+        return err;
+    }
+
+    *out = key;
+    return 0;
+}
+
 int SelvaObject_DelKey(struct SelvaObject *obj, const RedisModuleString *key_name) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
@@ -558,24 +584,16 @@ int SelvaObject_SetStr(struct SelvaObject *obj, const RedisModuleString *key_nam
 
 int SelvaObject_AddSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
 
-    /*
-     * Do get_key() first without create to avoid clearing a nested SelvaSet.
-     * If we get a SELVA_ENOENT error we can safely create the key.
-     */
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err == SELVA_ENOENT) {
-        err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-    }
+    err = get_key_modify(obj, key_name, &key);
     if (err) {
         return err;
     }
 
-    if (key->type != SELVA_OBJECT_SET) {
+    if (key->type != type) {
         err = clear_key_value(key);
         if (err) {
             return err;
@@ -646,6 +664,40 @@ struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleSt
     }
 
     return &key->selva_set;
+}
+
+int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+    int err;
+
+    assert(obj);
+
+    err = get_key_modify(obj, key_name, &key);
+    if (err) {
+        return err;
+    }
+
+    if (key->type != type) {
+        err = clear_key_value(key);
+        if (err) {
+            return err;
+        }
+
+        /*
+         * Type must be set before initializing the vector to avoid a situation
+         * where we'd have a key with an unknown value type.
+         */
+        key->type = SELVA_OBJECT_ARRAY;
+
+        if (!SVector_Init(&key->array, 1, NULL)) {
+            return SELVA_ENOMEM;
+        }
+    }
+
+    /* TODO Actual insert. */
+
+    return 0;
 }
 
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const char *key_name, size_t key_name_len) {

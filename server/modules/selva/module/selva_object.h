@@ -13,6 +13,7 @@ enum SelvaObjectType {
     SELVA_OBJECT_STRING = 3,
     SELVA_OBJECT_OBJECT = 4,
     SELVA_OBJECT_SET = 5,
+    SELVA_OBJECT_ARRAY = 6,
 };
 
 struct SelvaObject;
