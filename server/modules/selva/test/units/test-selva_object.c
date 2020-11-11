@@ -6,6 +6,7 @@
 #include "sds.h"
 #include "errors.h"
 #include "selva_object.h"
+#include "svector.h"
 
 static struct SelvaObject *root_obj;
 
@@ -517,6 +518,45 @@ static char * delete_nested_key(void)
     return NULL;
 }
 
+static char *string_array(void)
+{
+    int err;
+    RedisModuleString *key_name = RedisModule_CreateString(NULL, "x", 1);
+    RedisModuleString *e1 = RedisModule_CreateString(NULL, "1", 1);
+    RedisModuleString *e2 = RedisModule_CreateString(NULL, "2", 1);
+    RedisModuleString *e3 = RedisModule_CreateString(NULL, "3", 1);
+    RedisModuleString *e4 = RedisModule_CreateString(NULL, "4", 1);
+
+    err = SelvaObject_AddArray(root_obj, key_name, SELVA_OBJECT_STRING, e1);
+    pu_assert_equal("no error", err, 0);
+    err = SelvaObject_AddArray(root_obj, key_name, SELVA_OBJECT_STRING, e2);
+    pu_assert_equal("no error", err, 0);
+    err = SelvaObject_AddArray(root_obj, key_name, SELVA_OBJECT_STRING, e3);
+    pu_assert_equal("no error", err, 0);
+    err = SelvaObject_AddArray(root_obj, key_name, SELVA_OBJECT_STRING, e4);
+    pu_assert_equal("no error", err, 0);
+
+    enum SelvaObjectType subtype;
+    SVector *arr;
+
+    err = SelvaObject_GetArray(root_obj, key_name, &subtype, &arr);
+    pu_assert_equal("no error", err, 0);
+    pu_assert_equal("correct subtype", subtype, SELVA_OBJECT_STRING);
+    pu_assert("The SVector pointer was set", arr != NULL);
+
+    pu_assert_ptr_equal("e1", SVector_GetIndex(arr, 0), e1);
+    pu_assert_ptr_equal("e2", SVector_GetIndex(arr, 1), e2);
+    pu_assert_ptr_equal("e3", SVector_GetIndex(arr, 2), e3);
+    pu_assert_ptr_equal("e4", SVector_GetIndex(arr, 3), e4);
+
+    RedisModule_FreeString(NULL, key_name);
+    RedisModule_FreeString(NULL, e1);
+    RedisModule_FreeString(NULL, e2);
+    RedisModule_FreeString(NULL, e3);
+    RedisModule_FreeString(NULL, e4);
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(setget_double, PU_RUN);
@@ -529,4 +569,5 @@ void all_tests(void)
     pu_def_test(replace_object_with_string, PU_RUN);
     pu_def_test(delete_object, PU_RUN);
     pu_def_test(delete_nested_key, PU_RUN);
+    pu_def_test(string_array, PU_RUN);
 }

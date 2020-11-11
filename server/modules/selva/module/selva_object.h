@@ -13,6 +13,7 @@ enum SelvaObjectType {
     SELVA_OBJECT_STRING = 3,
     SELVA_OBJECT_OBJECT = 4,
     SELVA_OBJECT_SET = 5,
+    SELVA_OBJECT_ARRAY = 6,
 };
 
 struct SelvaObject;
@@ -28,7 +29,9 @@ int SelvaObject_GetStr(struct SelvaObject *obj, const struct RedisModuleString *
 int SelvaObject_SetDouble(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_SetLongLong(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_SetStr(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
-int SelvaObject_AddSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value);
+int SelvaObject_AddSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
+int SelvaObject_AddArray(struct SelvaObject *obj, const struct RedisModuleString *key_name, enum SelvaObjectType subtype, void *p);
+int SelvaObject_GetArray(struct SelvaObject *obj, const struct RedisModuleString *key_name, enum SelvaObjectType *out_subtype, void **out_p);
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const char *key_name, size_t key_name_len);
 int SelvaObject_RemSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
 struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const struct RedisModuleString *key_name);
