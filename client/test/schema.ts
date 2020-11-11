@@ -196,7 +196,11 @@ test.serial('schemas - basic', async t => {
     data: ['in an array']
   })
 
+  // @ts-ignore
+  schema.rootType.prefix = 'ro'
+
   mangleResults(schema, schemaResult)
+
   t.deepEqual(schemaResult, schema, 'correct schema')
 
   t.deepEqualIgnoreOrder(
