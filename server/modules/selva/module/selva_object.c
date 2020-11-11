@@ -10,6 +10,7 @@
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
+#include "svector.h"
 #include "tree.h"
 
 #define SELVA_OBJECT_ENCODING_VERSION   0
@@ -105,7 +106,23 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         SelvaSet_Destroy(&key->selva_set);
         break;
     case SELVA_OBJECT_ARRAY:
-        /* TODO Cear array key */
+        /* TODO Clear array key */
+        /* There is no foolproof way to know whether an SVector is initialized
+         * but presumably we don't have undefined values in a key, similar to
+         * how we always expect pointers to be either valid or NULL.
+         */
+        if (key->subtype == SELVA_OBJECT_STRING) {
+            RedisModuleString **str_pp;
+
+            SVECTOR_FOREACH(str_pp, &key->array) {
+                RedisModule_FreeString(NULL, *str_pp);
+            }
+        } else {
+            fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
+                    __FILE__, (int)key->subtype);
+        }
+        SVector_Destroy(&key->array);
+        break;
     default:
         fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
         return SELVA_EINTYPE;
@@ -593,7 +610,7 @@ int SelvaObject_AddSet(struct SelvaObject *obj, const RedisModuleString *key_nam
         return err;
     }
 
-    if (key->type != type) {
+    if (key->type != SELVA_OBJECT_SET) {
         err = clear_key_value(key);
         if (err) {
             return err;
@@ -655,11 +672,7 @@ struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleSt
     assert(obj);
 
     err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return NULL;
-    }
-
-    if (key->type != SELVA_OBJECT_SET) {
+    if (err || key->type != SELVA_OBJECT_SET) {
         return NULL;
     }
 
@@ -668,17 +681,21 @@ struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleSt
 
 int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
+
+    if (subtype != SELVA_OBJECT_STRING) {
+        return SELVA_EINTYPE;
+    }
 
     err = get_key_modify(obj, key_name, &key);
     if (err) {
         return err;
     }
 
-    if (key->type != type) {
+    /* TODO Should it fail if the subtype doesn't match? */
+    if (key->type != SELVA_OBJECT_ARRAY || key->subtype != subtype) {
         err = clear_key_value(key);
         if (err) {
             return err;
@@ -689,13 +706,41 @@ int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_n
          * where we'd have a key with an unknown value type.
          */
         key->type = SELVA_OBJECT_ARRAY;
+        key->subtype = subtype;
 
         if (!SVector_Init(&key->array, 1, NULL)) {
             return SELVA_ENOMEM;
         }
     }
 
-    /* TODO Actual insert. */
+    SVector_Insert(&key->array, p);
+    RedisModule_RetainString(NULL, (RedisModuleString *)p);
+
+    return 0;
+}
+
+int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType *out_subtype, void **out_p) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    }
+
+    if (key->type != SELVA_OBJECT_ARRAY) {
+        return SELVA_EINTYPE;
+    }
+
+    if (out_subtype) {
+        *out_subtype = key->subtype;
+    }
+    if (out_p) {
+        *out_p = &key->array;
+    }
 
     return 0;
 }
@@ -782,6 +827,11 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
+static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SVector *array) {
+    /* TODO add selva_object_array reply support */
+    (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Array type not supported");
+}
+
 static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
@@ -810,6 +860,8 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
     case SELVA_OBJECT_SET:
         replyWithSelvaSet(ctx, &key->selva_set);
         break;
+    case SELVA_OBJECT_ARRAY:
+        replyWithArray(ctx, key->subtype, &key->array);
     default:
         (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)key->type);
     }
@@ -1061,6 +1113,8 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     case SELVA_OBJECT_SET:
         RedisModule_ReplyWithLongLong(ctx, key->selva_set.size);
         break;
+    case SELVA_OBJECT_ARRAY:
+        RedisModule_ReplyWithLongLong(ctx, SVector_Size(&key->array));
     default:
         (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "key type not supported %d", (int)key->type);
     }
@@ -1171,6 +1225,10 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
                 }
             }
             break;
+        case SELVA_OBJECT_ARRAY:
+            /* TODO Support arrays */
+            RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
+            break;
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
         }
@@ -1230,6 +1288,10 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
                     }
                 }
                 break;
+        case SELVA_OBJECT_ARRAY:
+            /* TODO Support arrays */
+            RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
+            break;
             default:
                 RedisModule_LogIOError(io, "warning", "Unknown type");
             }
@@ -1303,6 +1365,10 @@ void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void 
             break;
         case SELVA_OBJECT_SET:
             set_aof_rewrite(aof, key, okey);
+            break;
+        case SELVA_OBJECT_ARRAY:
+            /* TODO Support arrays */
+            RedisModule_LogIOError(aof, "warning", "Array not supported in AOF");
             break;
         default:
             RedisModule_LogIOError(aof, "warning", "Unknown type");
