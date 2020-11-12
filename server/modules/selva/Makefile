@@ -49,7 +49,7 @@ util: FORCE
 	$(MAKE) -C util
 
 module.so: $(OBJS)
-	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1g/lib/ $(SHOBJ_LDLIBS)
+	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1h/lib/ $(SHOBJ_LDLIBS)
 
 check:
 	cppcheck --quiet -j 2 --inline-suppr \
