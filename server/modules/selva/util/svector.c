@@ -165,6 +165,16 @@ void *SVector_Search(const SVector * restrict vec, void *key) {
     return !pp ? NULL : *pp;
 }
 
+void *SVector_GetIndex(const SVector * restrict vec, size_t index) {
+    const size_t i = vec->vec_shift_index + index;
+
+    if (i >= vec->vec_last) {
+        return NULL;
+    }
+
+    return vec->vec_data[i];
+}
+
 void *SVector_Remove(SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
 

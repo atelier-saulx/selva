@@ -70,11 +70,12 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
              */
             el = RedisModule_CreateString(ctx, cur, len);
             if (!el) {
+                RedisModule_Free(list);
                 return SELVA_ENOMEM;
             }
 
             /*
-             * Add to the list.
+             * Set to the array.
              */
             list = RedisModule_Realloc(list, ++n * sizeof(RedisModuleString *));
             list[n - 2] = el;
@@ -90,7 +91,6 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
     *out = list;
     return 0;
 }
-
 
 void SelvaArgParser_NodeId(Selva_NodeId node_id, RedisModuleString *arg) {
     size_t len;

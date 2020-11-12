@@ -384,31 +384,6 @@
   version "1.0.0"
   resolved "https://github.com/atelier-saulx/prettier-config#bfbde3d591b3d9c26f68ffa063e7cb2a4bc5f6de"
 
-"@saulx/selva-server@1.12.0":
-  version "1.12.0"
-  resolved "https://registry.yarnpkg.com/@saulx/selva-server/-/selva-server-1.12.0.tgz#7665e76818a0e21594a6adc3c73779f30145e2c0"
-  integrity sha512-T1svvfHM8TZ1x+BX+zV+cmLyaLZ3RANyinlr0LzVz3ei5E5Sy+VA4HEXiQuWgw6znLW3CGg3ro6N/NE+sQM6ZA==
-  dependencies:
-    "@saulx/selva" "1.12.0"
-    aws-sdk "^2.616.0"
-    chalk "^4.0.0"
-    data-record "^0.1.3"
-    dropbox "^4.0.30"
-    get-port "^5.1.1"
-    node-fetch "^2.6.0"
-    pidusage "^2.0.18"
-    redis "^2.8.0"
-
-"@saulx/selva@1.12.0":
-  version "1.12.0"
-  resolved "https://registry.yarnpkg.com/@saulx/selva/-/selva-1.12.0.tgz#aba35221ef98d61956a74c0dece0ec3f2e865c05"
-  integrity sha512-mQePpROCvxDS9Sh/8vwA/t/WMHIwcI/R1OGHVu412kXm6nAWFvurHMQV5WGT8FDHHKN8/qDK+ZrcI2ZgLiF7bw==
-  dependencies:
-    "@types/uuid" "^3.4.6"
-    chalk "^4.0.0"
-    redis "^2.8.0"
-    uuid "^3.3.3"
-
 "@saulx/utils@^1.0.7":
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/@saulx/utils/-/utils-1.0.7.tgz#07ea5d297a7682c77b02658138eebbef92418501"
@@ -1365,11 +1340,6 @@ damerau-levenshtein@^1.0.6:
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/damerau-levenshtein/-/damerau-levenshtein-1.0.6.tgz#143c1641cb3d85c60c32329e26899adea8701791"
   integrity sha512-JVrozIeElnj3QzfUIt8tB8YMluBJom4Vw9qTPpjGYQ9fYlB3D/rb6OordUxf3xeFB35LKWs0xqcO5U6ySvBtug==
-
-data-record@^0.1.3:
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/data-record/-/data-record-0.1.3.tgz#95cc345886823caa64c8366eed0d3bc19bc9b4c9"
-  integrity sha512-9LDCRVORs6/URA8gex6H0o2tZ6s+GFrpPYMUKcyROCauETBvFAWKAZsV+7RMkDEf9DIEGJFXXA3k8Cebu1M66g==
 
 data-record@^0.4.0:
   version "0.4.0"
@@ -3261,7 +3231,7 @@ nice-try@^1.0.4:
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
-node-fetch@^2.6.0, node-fetch@^2.6.1:
+node-fetch@^2.6.1:
   version "2.6.1"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
   integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==

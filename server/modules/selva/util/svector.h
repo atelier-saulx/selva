@@ -18,6 +18,11 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
 void SVector_Insert(SVector *vec, void *el);
 void *SVector_InsertFast(SVector *vec, void *el);
 void *SVector_Search(const SVector * restrict vec, void *key);
+
+/**
+ * Get a pointer value from the vector by index.
+ */
+void *SVector_GetIndex(const SVector * restrict vec, size_t index);
 void *SVector_Remove(SVector * restrict vec, void *key);
 void *SVector_Pop(SVector * restrict vec);
 

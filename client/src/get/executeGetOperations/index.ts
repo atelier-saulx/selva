@@ -188,6 +188,8 @@ export const TYPE_CASTS: Record<
             // TODO do we need to add key here??? did not have this before - does fix stuff
             // TODO: CHECK WITH TONY! - also does not have a test for this...
             val = typeCast(val, id, `${field}.${key}`, schema, lang)
+            // console.log('poopoo pants')
+            // val = typeCast(val, id, field, schema, lang)
           }
           o[key] = val
         }
@@ -203,6 +205,26 @@ export const TYPE_CASTS: Record<
     // this is not a record... we are missing the field in between...
     return TYPE_CASTS.object(all, id, field, schema)
   }
+}
+
+export function typeCast(
+  x: any,
+  id: string,
+  field: string,
+  schema: Schema,
+  lang?: string
+): any {
+  const fs = getNestedSchema(schema, id, field)
+  if (!fs) {
+    return x
+  }
+
+  const cast = TYPE_CASTS[fs.type]
+  if (!cast) {
+    return x
+  }
+
+  return cast(x, id, field, schema, lang)
 }
 
 const TYPE_TO_SPECIAL_OP: Record<
@@ -422,19 +444,13 @@ export const executeGetOperation = async (
     }
 
     if (r !== null && r !== undefined) {
-      const typeCast = TYPE_CASTS[fieldSchema.type]
-
-      if (typeCast) {
-        return typeCast(
-          r,
-          op.id,
-          op.sourceField as string,
-          client.schemas[ctx.db],
-          lang
-        )
-      }
-
-      return r
+      return typeCast(
+        r,
+        op.id,
+        op.sourceField as string,
+        client.schemas[ctx.db],
+        lang
+      )
     } else if (op.default) {
       return op.default
     }
