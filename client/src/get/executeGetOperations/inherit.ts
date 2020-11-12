@@ -406,7 +406,7 @@ export default async function inherit(
 
     if (TYPE_CASTS[fs.type]) {
       const field = res[0][1]
-      return TYPE_CASTS[fs.type](v, op.id, field, client.schemas.default)
+      return TYPE_CASTS[fs.type](v, op.id, field, client.schemas[ctx.db])
     } else if (fs.type === 'text') {
       const result = {}
 

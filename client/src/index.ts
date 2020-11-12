@@ -45,6 +45,7 @@ export * as constants from './constants'
 
 let clientId = 0
 
+
 export class SelvaClient extends EventEmitter {
   public redis: Redis
 

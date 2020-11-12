@@ -155,6 +155,14 @@ export const TYPE_CASTS: Record<
 
         const fieldSchema = getNestedSchema(schema, id, `${field}.${key}`)
 
+        if (!fieldSchema) {
+          throw new Error(
+            'Cannot find field type ' +
+              id +
+              ` ${field}.${key} - getNestedSchema`
+          )
+        }
+
         if (lang && 'text' === fieldSchema.type && Array.isArray(val)) {
           const txtObj = {}
           parse(txtObj, `${field}.${key}`, val)
@@ -177,7 +185,9 @@ export const TYPE_CASTS: Record<
         } else {
           const typeCast = TYPE_CASTS[fieldSchema.type]
           if (typeCast) {
-            val = typeCast(val, id, field, schema, lang)
+            // TODO do we need to add key here??? did not have this before - does fix stuff
+            // TODO: CHECK WITH TONY! - also does not have a test for this...
+            val = typeCast(val, id, `${field}.${key}`, schema, lang)
           }
           o[key] = val
         }
@@ -189,8 +199,10 @@ export const TYPE_CASTS: Record<
       return result
     }
   },
-  record: (all: any, id: string, field: string, schema) =>
-    TYPE_CASTS.object(all, id, field, schema)
+  record: (all: any, id: string, field: string, schema) => {
+    // this is not a record... we are missing the field in between...
+    return TYPE_CASTS.object(all, id, field, schema)
+  }
 }
 
 const TYPE_TO_SPECIAL_OP: Record<
@@ -264,8 +276,8 @@ const TYPE_TO_SPECIAL_OP: Record<
     let args = [id]
     if (lang) {
       args.push(`${field}.${lang}`)
-      if (client.schemas.default.languages) {
-        args.push(...client.schemas.default.languages.map(l => `${field}.${l}`))
+      if (client.schemas[db].languages) {
+        args.push(...client.schemas[db].languages.map(l => `${field}.${l}`))
       }
     } else {
       args.push(field)
@@ -358,6 +370,7 @@ export const executeGetOperation = async (
 
     let r: any
     let fieldSchema
+
     if (Array.isArray(op.sourceField)) {
       fieldSchema = getNestedSchema(
         client.schemas[db],
@@ -410,12 +423,13 @@ export const executeGetOperation = async (
 
     if (r !== null && r !== undefined) {
       const typeCast = TYPE_CASTS[fieldSchema.type]
+
       if (typeCast) {
         return typeCast(
           r,
           op.id,
           op.sourceField as string,
-          client.schemas.default,
+          client.schemas[ctx.db],
           lang
         )
       }
@@ -437,6 +451,7 @@ export default async function executeGetOperations(
   nested?: boolean
 ): Promise<GetResult> {
   const o: GetResult = {}
+
   const results = await Promise.all(
     ops.map(op => executeGetOperation(client, lang, ctx, op, nested))
   )
