@@ -91,8 +91,6 @@ async function get(
   const db = props.$db || 'default'
   const subId = props.$subscription
 
-  console.log('GET DB', db)
-
   await client.initializeSchema({ $db: db })
 
   const extraQueries: ExtraQueries = {}
