@@ -108,6 +108,85 @@ test.serial('basic id based subscriptions', async t => {
   await client.destroy()
 })
 
+test.serial('basic id based nested query subscriptions', async t => {
+  const client = connect({ port })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+    },
+    types: {
+      yeshType: {
+        prefix: 'ye',
+        fields: {
+          yesh: { type: 'string' }
+        }
+      }
+    }
+  })
+
+  t.plan(2)
+
+  const thing = await client.set({
+    type: 'yeshType',
+    yesh: 'extra nice'
+  })
+
+  let o2counter = 0
+  const other = client.observe({
+    $id: 'root',
+    item: { $id: thing, $all: true, aliases: false }
+  })
+  const sub2 = other.subscribe(d => {
+    if (o2counter === 0) {
+      // gets start event
+      t.deepEqualIgnoreOrder(d, {
+        item: {
+          id: thing,
+          type: 'yeshType',
+          yesh: 'extra nice'
+        }
+      })
+    } else if (o2counter === 1) {
+      console.log('DD', d)
+      // gets delete event
+      t.deepEqualIgnoreOrder(d, {})
+    } else {
+      t.fail
+    }
+    o2counter++
+  })
+
+  await wait(500 * 2)
+
+  await client.set({
+    $id: 'root',
+    no: 'no event pls'
+  })
+
+  await client.set({
+    $id: 'root',
+    yesh: 'so nice'
+  })
+
+  await client.delete({
+    $id: thing
+  })
+
+  await wait(500 * 2)
+
+  sub2.unsubscribe()
+
+  await wait(500 * 2)
+
+  await client.delete('root')
+
+  await wait(1000)
+
+  await client.destroy()
+})
+
 test.serial('using $field works', async t => {
   const client = connect({ port })
 

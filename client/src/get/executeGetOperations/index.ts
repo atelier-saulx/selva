@@ -366,7 +366,14 @@ export const executeGetOperation = async (
       const props = Object.assign({}, op.props, { $id: id })
       return executeNestedGetOperations(client, props, lang, ctx)
     } else {
-      return executeNestedGetOperations(client, op.props, lang, ctx)
+      const id = await resolveId(client, op.props)
+      if (!id) return null
+      return await executeGetOperations(
+        client,
+        op.props.$language || lang,
+        ctx,
+        createGetOperations(client, op.props, id, '', ctx.db)
+      )
     }
   } else if (op.type === 'array_query') {
     return Promise.all(
