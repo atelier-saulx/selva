@@ -35,6 +35,7 @@ test.beforeEach(async t => {
         prefix: 'ma',
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
+          description: { type: 'text' },
           value: {
             type: 'number',
             search: { type: ['NUMERIC', 'SORTABLE', 'EXISTS'] }
@@ -236,6 +237,82 @@ test.serial('find - string field only not exists indexed', async t => {
   delete m.$meta
 
   t.deepEqualIgnoreOrder(m, { id: 'root', items: [{ name: 'league 1' }] })
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('find - text exists field', async t => {
+  // simple nested - single query
+  const client = connect({ port: port }, { loglevel: 'info' })
+  await client.set({
+    $language: 'en',
+    type: 'match',
+    description: 'match 1',
+    value: 1
+  })
+
+  await client.set({
+    $language: 'en',
+    type: 'match',
+    name: 'match 2',
+    value: 1
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        description: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'description',
+                $operator: 'exists'
+              }
+            ]
+          }
+        }
+      }
+    }),
+    { id: 'root', items: [{ description: { en: 'match 1' } }] }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: 'root',
+      id: true,
+      items: {
+        description: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match'
+              },
+              {
+                $field: 'description',
+                $operator: 'exists'
+              }
+            ]
+          }
+        }
+      }
+    }),
+    { id: 'root', items: [{ description: 'match 1' }] }
+  )
 
   await client.delete('root')
   await client.destroy()

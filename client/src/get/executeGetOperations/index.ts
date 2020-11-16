@@ -204,6 +204,34 @@ export const TYPE_CASTS: Record<
   record: (all: any, id: string, field: string, schema) => {
     // this is not a record... we are missing the field in between...
     return TYPE_CASTS.object(all, id, field, schema)
+  },
+  text: (all: any, id: string, field: string, schema, lang) => {
+    if (Array.isArray(all)) {
+      const o = {}
+      for (let i = 0; i < all.length; i += 2) {
+        const key = all[i]
+        const val = all[i + 1]
+
+        o[key] = val
+      }
+
+      if (lang && o[lang]) {
+        return o[lang]
+      } else if (lang) {
+        const allLangs = schema.languages
+        for (const l of allLangs) {
+          if (o[l]) {
+            return o[l]
+          }
+        }
+
+        return undefined
+      }
+
+      return o
+    } else {
+      return all
+    }
   }
 }
 
