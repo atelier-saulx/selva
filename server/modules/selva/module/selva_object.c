@@ -862,6 +862,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
         break;
     case SELVA_OBJECT_ARRAY:
         replyWithArray(ctx, key->subtype, &key->array);
+        break;
     default:
         (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)key->type);
     }
@@ -1115,6 +1116,7 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         break;
     case SELVA_OBJECT_ARRAY:
         RedisModule_ReplyWithLongLong(ctx, SVector_Size(&key->array));
+        break;
     default:
         (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "key type not supported %d", (int)key->type);
     }
