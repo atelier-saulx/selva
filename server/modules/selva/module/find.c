@@ -1097,7 +1097,9 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      */
     Selva_SubscriptionMarkerId marker_id;
     err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
-
+    if (err) {
+        return replyWithSelvaErrorf(ctx, err, "markerID");
+    }
 
     /*
      * Find the subscription marker.
