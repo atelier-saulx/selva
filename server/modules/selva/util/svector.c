@@ -78,10 +78,13 @@ static void *rbtree_insert(SVector *vec, void *p) {
     assert(vec->vec_rbmempool);
     assert(p);
 
-    /* TODO handle errors nicer */
     n = mempool_get(vec->vec_rbmempool);
     if (!n) {
-        fprintf(stderr, "%s: ENOMEM\n", __FILE__);
+        /*
+         * TODO We shouldn't abort here but there is currently no safe way
+         * to fail.
+         */
+        fprintf(stderr, "%s: ENOMEM while allocating from a pool\n", __FILE__);
         abort();
     }
 
@@ -128,9 +131,12 @@ static void migrate_arr_to_rbtree(SVector *vec) {
     SVECTOR_FOREACH_ARR(pp, vec) {
         void *p = *pp;
 
-        /* TODO This shouldn't be required */
+        /*
+         * This shouldn't be required but we do it just in case to be
+         * defensive againts anything weird happening.
+         */
         if (p) {
-            rbtree_insert(vec, p);
+            (void)rbtree_insert(vec, p);
         }
     }
 
@@ -164,7 +170,10 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
         SVECTOR_FOREACH_ARR(it, src) {
             void *p = *it;
 
-            /* TODO This shouldn't be required */
+            /*
+             * This shouldn't be required but we do it just in case to be
+             * defensive againts anything weird happening.
+             */
             if (p) {
                 SVector_Insert(dest, p);
             }
@@ -226,8 +235,7 @@ void SVector_Insert(SVector *vec, void *el) {
 
         assert(vec->vec_last <= vec->vec_arr_len);
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
-        /* TODO handle errors */
-        rbtree_insert(vec, el);
+        (void)rbtree_insert(vec, el);
         vec->vec_last++;
     } else {
         abort();
@@ -300,7 +308,6 @@ void *SVector_InsertFast(SVector *vec, void *el) {
 
         assert(vec->vec_last <= vec->vec_arr_len);
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
-        /* TODO handle errors */
         vec->vec_last++;
         return rbtree_insert(vec, el);
     } else {
@@ -388,10 +395,6 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
 
         return el;
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
-        /*
-         * TODO RB_REMOVE() probably doesn't need the actual element but a find key,
-         * so the rbtree_find() here is redundant!
-         */
         struct SVector_rbnode *n = rbtree_find(vec, key);
         void *p;
 
@@ -462,8 +465,8 @@ void *SVector_Shift(SVector * restrict vec) {
 
         first = n->p;
         RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
+        mempool_return(vec->vec_rbmempool, n);
         vec->vec_last--;
-        /* TODO Free n */
     } else {
         abort();
     }
