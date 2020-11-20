@@ -85,9 +85,66 @@ static char * test_gc(void)
     return NULL;
 }
 
+static char * test_allocs(void)
+{
+    const size_t slab_size = 512;
+    const size_t obj_size = 100;
+    struct mempool *pool;
+    char *p;
+
+    pool = mempool_new(slab_size, obj_size);
+    pu_assert("A new pool was created", pool);
+
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+    p = mempool_get(pool);
+    pu_assert("got obj", p);
+
+    mempool_destroy(pool);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_simple_allocs, PU_RUN);
     pu_def_test(test_object_reuse, PU_RUN);
     pu_def_test(test_gc, PU_RUN);
+    pu_def_test(test_allocs, PU_RUN);
 }
