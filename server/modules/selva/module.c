@@ -365,15 +365,17 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModuleKey *alias_key = open_aliases_key(ctx);
 
         if (alias_key && RedisModule_KeyType(alias_key) == REDISMODULE_KEYTYPE_HASH) {
-            char **it;
+            struct SVectorIterator it;
+            char *str;
 
             /*
              * Replace id with the first match from alias_query.
              */
-            SVECTOR_FOREACH(it, &alias_query) {
+            SVector_ForeachBegin(&it, &alias_query);
+            while ((str = SVector_Foreach(&it))) {
                 RedisModuleString *tmp_id;
 
-                if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_CFIELDS, *it, &tmp_id, NULL)) {
+                if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_CFIELDS, str, &tmp_id, NULL)) {
                     Selva_NodeId nodeId;
 
                     RedisModuleString2Selva_NodeId(nodeId, tmp_id);

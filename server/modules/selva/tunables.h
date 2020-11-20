@@ -1,6 +1,21 @@
 #pragma once
-#ifndef SELVA_MODIFY_TUNABLES
-#define SELVA_MODIFY_TUNABLES
+#ifndef SELVA_TUNABLES
+#define SELVA_TUNABLES
+
+/*
+ * SVector tunables.
+ */
+
+/**
+ * Threshold to migrate from an SVECTOR_MODE_ARRAY to SVECTOR_MODE_RBTREE.
+ */
+#define SVECTOR_THRESHOLD 100
+
+/**
+ * How much memory to allocate when more memory is needed in
+ * SVECTOR_MODE_RBTREE mode.
+ */
+#define SVECTOR_SLAB_SIZE 4194304
 
 /*
  * Hierarchy tunables.
@@ -9,7 +24,7 @@
 /**
  * Initial vector lengths for children and parents lists.
  */
-#define HIERARCHY_INITIAL_VECTOR_LEN    100
+#define HIERARCHY_INITIAL_VECTOR_LEN    50
 
 /**
  * Expected average length of a find response.
@@ -85,4 +100,4 @@
  */
 #define ASYNC_TASK_HIREDIS_WORKER_COUNT 4
 
-#endif /* SELVA_MODIFY_TUNABLES */
+#endif /* SELVA_TUNABLES */

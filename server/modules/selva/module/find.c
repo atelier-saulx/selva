@@ -551,7 +551,9 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
 }
 
 static size_t FindCommand_PrintOrderedResult(RedisModuleCtx *ctx, ssize_t offset, ssize_t limit, RedisModuleString **fields, SVector *order_result) {
-    struct FindCommand_OrderedItem **item_pp;
+    struct FindCommand_OrderedItem *item;
+    struct SVectorIterator it;
+    size_t len = 0;
 
     /*
      * First handle the offsetting.
@@ -564,10 +566,8 @@ static size_t FindCommand_PrintOrderedResult(RedisModuleCtx *ctx, ssize_t offset
     /*
      * Then send out node IDs upto the limit.
      */
-    size_t len = 0;
-    SVECTOR_FOREACH(item_pp, order_result) {
-        struct FindCommand_OrderedItem *item = *item_pp;
-
+    SVector_ForeachBegin(&it, order_result);
+    while ((item = SVector_Foreach(&it))) {
         if (limit-- == 0) {
             break;
         }

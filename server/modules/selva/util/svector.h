@@ -3,13 +3,56 @@
 #define _UTIL_SVECTOR_H_
 
 #include "cdefs.h"
+#include "mempool.h"
+#include "tree.h"
+
+enum SVectorMode {
+    SVECTOR_MODE_NONE,
+    SVECTOR_MODE_ARRAY,
+    SVECTOR_MODE_RBTREE,
+};
+
+struct SVector;
+struct SVectorIterator;
+
+struct SVector_rbnode {
+    int (*compar)(const void **a, const void **b);
+    RB_ENTRY(SVector_rbnode) entry;
+    void *p;
+};
+
+RB_HEAD(SVector_rbtree, SVector_rbnode);
+
+struct SVectorIterator {
+    enum SVectorMode mode;
+    union {
+        struct {
+            void **cur;
+            void **end;
+        } arr;
+        struct {
+            struct SVector_rbtree *head;
+            struct SVector_rbnode *n;
+        } rbtree;
+    };
+    void *(*fn)(struct SVectorIterator *it);
+};
 
 typedef struct SVector {
+    enum SVectorMode vec_mode;
     int (*vec_compar)(const void **a, const void **b);
-    size_t vec_len; /*!< Length of the vector array. */
-    size_t vec_shift_index; /*!< Index in the vector array for SVector_Shift(). */
+
+    /* Common to all modes */
     size_t vec_last; /*!< Length of the vector. (Last index + 1) */
-    void **vec_data;
+
+    /* Array mode specific */
+    size_t vec_arr_len; /*!< Length of the vector array. */
+    size_t vec_arr_shift_index; /*!< Index in the vector array for SVector_Shift(). */
+    void **vec_arr;
+
+    /* RB tree mode specific */
+    struct mempool *vec_rbmempool;
+    struct SVector_rbtree vec_rbhead;
 } SVector;
 
 SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b));
@@ -38,14 +81,21 @@ void *SVector_Peek(SVector * restrict vec);
 void SVector_ShiftReset(SVector * restrict vec);
 void SVector_Clear(SVector * restrict vec);
 
+/**
+ * Returns the current length of the vector.
+ */
 static inline size_t SVector_Size(const SVector * restrict vec) {
-    return vec->vec_last - vec->vec_shift_index;
+    return vec->vec_last - vec->vec_arr_shift_index;
 }
 
-#define SVECTOR_FOREACH(var, vec)                                                                            \
-    for (typeof(var) var ## _end = (typeof(var))(vec)->vec_data + (vec)->vec_last, var = (typeof(var))(vec)->vec_data ;  \
-         (void **)var < (void **)var ## _end;                                                               \
-         var++)
+static inline enum SVectorMode SVector_Mode(const SVector * restrict vec) {
+    return vec->vec_mode;
+}
+
+void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *vec);
+static inline void *SVector_Foreach(struct SVectorIterator *it) {
+    return it->fn(it);
+}
 
 #define svector_autofree __attribute__((cleanup(SVector_Destroy)))
 

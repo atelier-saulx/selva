@@ -112,10 +112,12 @@ static int clear_key_value(struct SelvaObjectKey *key) {
          * how we always expect pointers to be either valid or NULL.
          */
         if (key->subtype == SELVA_OBJECT_STRING) {
-            RedisModuleString **str_pp;
+            struct SVectorIterator it;
+            RedisModuleString *str;
 
-            SVECTOR_FOREACH(str_pp, &key->array) {
-                RedisModule_FreeString(NULL, *str_pp);
+            SVector_ForeachBegin(&it, &key->array);
+            while ((str = SVector_Foreach(&it))) {
+                RedisModule_FreeString(NULL, str);
             }
         } else {
             fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
