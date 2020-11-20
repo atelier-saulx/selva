@@ -3,16 +3,30 @@
 #include <sys/mman.h>
 #include "queue.h"
 
+/**
+ * A structure describing the object allocation unit.
+ */
 struct mempool_object {
-    struct mempool_slab *slab;
+    struct mempool_slab *slab; /*!< A pointer back the slab. */
+    /**
+     * A list entry pointing to the next free object if this object is in the
+     * free list.
+     */
     SLIST_ENTRY(mempool_object) next_free;
 };
 
+/**
+ * A structure describing a slab in the pool allocator.
+ */
 struct mempool_slab {
     size_t nr_free;
     SLIST_ENTRY(mempool_slab) next_slab;
 };
 
+
+/**
+ * A structure describing a memory pool.
+ */
 struct mempool {
     size_t slab_size;
     size_t obj_size;
@@ -27,7 +41,7 @@ struct slab_info {
     size_t nr_objects;
 };
 
-static struct slab_info slab_info(struct mempool *mempool) {
+static struct slab_info slab_info(const struct mempool * restrict mempool) {
     const size_t chunk_size = sizeof(struct mempool_object) + mempool->obj_size;
     const size_t nr_total = (mempool->slab_size - sizeof(struct mempool_slab)) / chunk_size;
 
@@ -64,6 +78,11 @@ void mempool_destroy(struct mempool *mempool) {
         return;
     }
 
+    /*
+     * We don't keep track of the slab pointers because we assume the user to
+     * know the slabs and return every single one of them before destroying the
+     * mempool.
+     */
     while (!SLIST_EMPTY(&mempool->slabs)) {
         struct mempool_slab *slab;
 
@@ -75,9 +94,6 @@ void mempool_destroy(struct mempool *mempool) {
     free(mempool);
 }
 
-/*
- * TODO This function could utilize used/unused slab lists for better perf.
- */
 void mempool_gc(struct mempool *mempool) {
     struct slab_info info = slab_info(mempool);
     struct mempool_slab *slab;
@@ -95,6 +111,10 @@ void mempool_gc(struct mempool *mempool) {
              */
             SLIST_FOREACH_SAFE(o, &mempool->free_objects, next_free, o_temp) {
                 if (o->slab == slab) {
+                    /*
+                     * This is O(n), it's a tradeoff between perf and memory
+                     * consumption to use a singly linked list for slabs.
+                     */
                     SLIST_REMOVE(&mempool->free_objects, o, mempool_object, next_free);
                 }
             }
@@ -104,12 +124,10 @@ void mempool_gc(struct mempool *mempool) {
 	}
 }
 
+/**
+ * Allocate a new slab using mmap().
+ */
 static int mempool_new_slab(struct mempool *mempool) {
-    /*
-     * We don't keep track of the slab pointers because we assume the user to
-     * know the slabs and return every single one of them before destroying the
-     * mempool.
-     */
     struct mempool_slab *slab;
 
     slab = mmap(0, mempool->slab_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -164,5 +182,13 @@ void mempool_return(struct mempool *mempool, void *p) {
     SLIST_INSERT_HEAD(&mempool->free_objects, o, next_free);
     o->slab->nr_free++;
 
-    /* TODO when to free a slab? */
+    /*
+     * Not that we never free slabs here. Slabs are only removed when the user
+     * explicitly calls mempool_gc().
+     *
+     * Some fragmentation may occur in the allocator as we are not preferring
+     * partially full slabs when getting new objects. Therefore, we may end up
+     * with a lot of partially full slabs while the optimal utilization would
+     * have mostly full slabs.
+     */
 }
