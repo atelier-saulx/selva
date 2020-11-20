@@ -40,15 +40,15 @@ CFLAGS := $(IDIR) -include tunables.h \
 CC := gcc
 
 
-all: rmutil util module.so
+all: module.so
 
-rmutil: FORCE
+$(RMUTIL_LIBDIR)/librmutil.a: FORCE
 	$(MAKE) -C $(RMUTIL_LIBDIR)
 
-util: FORCE
-	$(MAKE) -C util
+$(UTIL_LIBDIR)/libutil.a: FORCE
+	$(MAKE) -C $(UTIL_LIBDIR)
 
-module.so: $(OBJS)
+module.so: $(OBJS) $(RMUTIL_LIBDIR)/librmutil.a $(UTIL_LIBDIR)/libutil.a
 	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1h/lib/ $(SHOBJ_LDLIBS)
 
 check:
