@@ -62,7 +62,7 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleStrin
 int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
     struct SelvaModify_Hierarchy *hierarchy,
-    RedisModuleKey *id_key,
+    struct SelvaObject *obj,
     RedisModuleString *id,
     RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts

@@ -89,7 +89,7 @@ static int update_hierarchy(
 
 int update_set(
     RedisModuleCtx *ctx,
-    RedisModuleKey *id_key,
+    struct SelvaObject *obj,
     RedisModuleString *id,
     RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
@@ -97,12 +97,6 @@ int update_set(
     int err;
     TO_STR(id, field);
     RedisModuleKey *alias_key = NULL;
-    struct SelvaObject *obj;
-
-    err = SelvaObject_Key2Obj(id_key, &obj);
-    if (err) {
-        return err;
-    }
 
     if (!strcmp(field_str, "aliases")) {
         alias_key = open_aliases_key(ctx);
@@ -197,7 +191,7 @@ int update_set(
 int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
     SelvaModify_Hierarchy *hierarchy,
-    RedisModuleKey *id_key,
+    struct SelvaObject *obj,
     RedisModuleString *id,
     RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
@@ -218,13 +212,6 @@ int SelvaModify_ModifySet(
         } else if (!strcmp(field_str, "parents")) {
             err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
         } else {
-            struct SelvaObject *obj;
-
-            err = SelvaObject_Key2Obj(id_key, &obj);
-            if (err) {
-                return err;
-            }
-
             /*
              * First we need to delete the aliases of this node from the
              * ___selva_aliases hash.
@@ -255,7 +242,7 @@ int SelvaModify_ModifySet(
     if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
         return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
     } else {
-        return update_set(ctx, id_key, id, field, setOpts);
+        return update_set(ctx, obj, id, field, setOpts);
     }
 }
 

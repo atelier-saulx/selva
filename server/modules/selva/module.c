@@ -403,19 +403,31 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     Selva_NodeId nodeId;
     const unsigned flags = parse_flags(argv[2]);
-    const int no_root = FISSET_NO_ROOT(flags);
-    const unsigned open_flags =
-        (no_root ? SELVA_NODE_OPEN_NO_ROOT_FLAG : 0) |
-        SELVA_NODE_OPEN_CREATE_FLAG | SELVA_NODE_OPEN_WRFLD_FLAG;
 
     RedisModuleString2Selva_NodeId(nodeId, id);
-    id_key = SelvaNode_Open(ctx, hierarchy, id, nodeId, open_flags);
-    if (!id_key) {
-        TO_STR(id);
 
-        replyWithSelvaErrorf(ctx, SELVA_ENOENT, "ERR Failed to open the key for id: \"%s\"", id_str);
+    id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!id_key) {
+        replyWithSelvaErrorf(ctx, err, "ERR Failed to open the key for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
         return REDISMODULE_OK;
     }
+
+    if (RedisModule_KeyType(id_key) == REDISMODULE_KEYTYPE_EMPTY) {
+        const size_t nr_parents = FISSET_NO_ROOT(flags) ? 0 : 1;
+
+        err = SelvaNode_Initialize(ctx, id_key, id, nodeId);
+        if (err) {
+            replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
+            return REDISMODULE_OK;
+        }
+
+        err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
+        if (err) {
+            replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node hierarchy for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
+            return REDISMODULE_OK;
+        }
+    }
+
     err = SelvaObject_Key2Obj(id_key, &obj);
     if (err) {
         TO_STR(id);
@@ -505,7 +517,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 publish = false;
             }
 
-            err = SelvaModify_ModifySet(ctx, hierarchy, id_key, id, field, setOpts);
+            err = SelvaModify_ModifySet(ctx, hierarchy, obj, id, field, setOpts);
             if (err) {
                 replyWithSelvaError(ctx, err);
                 continue;
@@ -577,7 +589,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             .$value_len = 0,
         };
 
-        (void)SelvaModify_ModifySet(ctx, hierarchy, id_key, id, field, &opSet);
+        (void)SelvaModify_ModifySet(ctx, hierarchy, obj, id, field, &opSet);
     }
 
     replicateModify(ctx, &repl_set, argv);

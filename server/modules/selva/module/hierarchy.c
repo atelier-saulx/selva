@@ -227,7 +227,7 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModul
 
 static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *node_name;
-    RedisModuleKey *key = NULL;
+    RedisModuleKey *key;
 
     node_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
     if (unlikely(!node_name)) {
@@ -235,14 +235,30 @@ static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     }
 
     /*
-     * Open the key to create the mandatory fields used internally.
+     * Open the redis key.
      */
-    key = SelvaNode_Open(ctx, NULL, node_name, id, SELVA_NODE_OPEN_WRFLD_FLAG);
+    key = RedisModule_OpenKey(ctx, node_name, REDISMODULE_READ | REDISMODULE_WRITE);
     if (!key) {
-        return SELVA_MODIFY_HIERARCHY_ENOMEM;
+        fprintf(stderr, "%s:%d Failed to open key: %.*s\n",
+                __FILE__,
+                __LINE__,
+                (int)SELVA_NODE_ID_SIZE,
+                id);
+        return SELVA_MODIFY_HIERARCHY_ENOMEM; // TODO ??
     }
 
-    /* We don't actually need to access it so just close it immediately. */
+    if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
+        int err;
+
+        err = SelvaNode_Initialize(ctx, key, node_name, id);
+        if (err) {
+            fprintf(stderr, "%s: %s\n", __FILE__, getSelvaErrorStr(err));
+            RedisModule_CloseKey(key);
+            return err;
+        }
+    }
+
+    /* We don't need to access the node for now, so just close it immediately. */
     RedisModule_CloseKey(key);
 
     return 0;

@@ -69,8 +69,8 @@ async function after() {
   await srv.destroy()
 }
 
-const nrVotes = 333333
-const votesPerSecond = 10000
+const nrVotes = 500000
+const votesPerSecond = 5000
 const nrWorkers = 3
 
 let sh = ['sh1', 'sh2']
