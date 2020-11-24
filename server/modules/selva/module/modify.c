@@ -31,11 +31,11 @@ static int update_hierarchy(
     const char *field_str,
     struct SelvaModify_OpSet *setOpts
 ) {
-    RedisModuleString *key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-    hierarchy = SelvaModify_OpenHierarchy(ctx, key_name, REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        fprintf(stderr, "%s: Failed to open hierarchy\n", __FILE__);
-        return 0; /* RFE Not sure if it's ok to return 0 here */
+    RedisModuleString *key_name;
+
+    key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
+    if (!key_name) {
+        return SELVA_ENOMEM;
     }
 
     /*
