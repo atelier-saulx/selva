@@ -3,13 +3,42 @@
 #define _UTIL_MEMPOOL_H_
 
 #include "cdefs.h"
-
-struct mempool;
+#include "queue.h"
 
 /**
- * Allocate a new mempool slab allocator.
+ * A structure describing the object allocation unit.
  */
-struct mempool *mempool_new(size_t slab_size, size_t obj_size);
+struct mempool_object {
+    struct mempool_slab *slab; /*!< A pointer back the slab. */
+    /**
+     * A list entry pointing to the next free object if this object is in the
+     * free list.
+     */
+    LIST_ENTRY(mempool_object) next_free;
+} __attribute__((aligned(8)));
+
+/**
+ * A structure describing a slab in the pool allocator.
+ */
+struct mempool_slab {
+    size_t nr_free;
+    SLIST_ENTRY(mempool_slab) next_slab;
+};
+
+/**
+ * A structure describing a memory pool.
+ */
+struct mempool {
+    size_t slab_size;
+    size_t obj_size;
+    SLIST_HEAD(mempool_slab_list, mempool_slab) slabs;
+    LIST_HEAD(mempool_free_object_list, mempool_object) free_objects;
+};
+
+/**
+ * Initialize a new mempool slab allocator.
+ */
+void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size);
 
 /**
  * Destroy a mempool and free all memory.

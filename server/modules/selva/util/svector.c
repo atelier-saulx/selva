@@ -41,22 +41,21 @@ SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void
         .vec_arr_len = initial_len,
         .vec_arr_shift_index = 0,
         .vec_arr = NULL,
-        .vec_rbmempool = NULL,
     };
 
     if (initial_len > 0) {
         /* RBTREE mode requires compar function */
         if (initial_len < SVECTOR_THRESHOLD || !compar) {
             vec->vec_arr = RedisModule_Alloc(VEC_SIZE(initial_len));
+
+            if (!vec->vec_arr) {
+                return NULL;
+            }
         } else {
             vec->vec_mode = SVECTOR_MODE_RBTREE;
             RB_INIT(&vec->vec_rbhead);
-            vec->vec_rbmempool = mempool_new(SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode));
+            mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode));
         }
-    }
-
-    if (initial_len > 0 && (!vec->vec_arr && !vec->vec_rbmempool)) {
-        return NULL;
     }
 
     return vec;
@@ -66,7 +65,7 @@ void SVector_Destroy(SVector *vec) {
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
         RedisModule_Free(vec->vec_arr);
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
-        mempool_destroy(vec->vec_rbmempool);
+        mempool_destroy(&vec->vec_rbmempool);
     }
 
     memset(vec, 0, sizeof(SVector));
@@ -76,10 +75,9 @@ static void *rbtree_insert(SVector *vec, void *p) {
     struct SVector_rbnode *n;
     struct SVector_rbnode *res;
 
-    assert(vec->vec_rbmempool);
     assert(p);
 
-    n = mempool_get(vec->vec_rbmempool);
+    n = mempool_get(&vec->vec_rbmempool);
     if (!n) {
         /*
          * TODO We shouldn't abort here but there is currently no safe way
@@ -94,7 +92,7 @@ static void *rbtree_insert(SVector *vec, void *p) {
     res = RB_INSERT(SVector_rbtree, &vec->vec_rbhead, n);
 
     if (res) {
-        mempool_return(vec->vec_rbmempool, n);
+        mempool_return(&vec->vec_rbmempool, n);
         return res->p;
     }
 
@@ -118,15 +116,7 @@ static void migrate_arr_to_rbtree(SVector *vec) {
     assert(vec->vec_mode == SVECTOR_MODE_ARRAY);
     assert(vec->vec_compar);
 
-    vec->vec_rbmempool = mempool_new(SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode));
-    if (!vec->vec_rbmempool) {
-        /*
-         * Handle OOM silently.
-         * OOM is not critical here because the vector is already intialized and
-         * it will work fine using an array as well.
-         */
-        return;
-    }
+    mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode));
 
     RB_INIT(&vec->vec_rbhead);
     SVECTOR_FOREACH_ARR(pp, vec) {
@@ -405,7 +395,7 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
 
         p = n->p;
         RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
-        mempool_return(vec->vec_rbmempool, n);
+        mempool_return(&vec->vec_rbmempool, n);
         vec->vec_last--;
 
         return p;
@@ -433,7 +423,7 @@ void *SVector_Pop(SVector * restrict vec) {
 
         last = n->p;
         RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, last);
-        mempool_return(vec->vec_rbmempool, n);
+        mempool_return(&vec->vec_rbmempool, n);
         vec->vec_last--;
     } else {
         abort();
@@ -466,7 +456,7 @@ void *SVector_Shift(SVector * restrict vec) {
 
         first = n->p;
         RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
-        mempool_return(vec->vec_rbmempool, n);
+        mempool_return(&vec->vec_rbmempool, n);
         vec->vec_last--;
     } else {
         abort();
@@ -520,7 +510,7 @@ void SVector_Clear(SVector * restrict vec) {
     vec->vec_last = 0;
 
     if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
-        mempool_destroy(vec->vec_rbmempool);
+        mempool_destroy(&vec->vec_rbmempool);
 
         vec->vec_mode = SVECTOR_MODE_ARRAY;
         /* Some defensive programming */

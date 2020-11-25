@@ -3,6 +3,7 @@
 #define _UTIL_SVECTOR_H_
 
 #include "cdefs.h"
+#include "mempool.h"
 #include "tree.h"
 
 enum SVectorMode {
@@ -13,7 +14,6 @@ enum SVectorMode {
 
 struct SVector;
 struct SVectorIterator;
-struct mempool;
 
 struct SVector_rbnode {
     int (*compar)(const void **a, const void **b);
@@ -51,7 +51,7 @@ typedef struct SVector {
     void **vec_arr;
 
     /* RB tree mode specific */
-    struct mempool *vec_rbmempool;
+    struct mempool vec_rbmempool;
     struct SVector_rbtree vec_rbhead;
 } SVector;
 

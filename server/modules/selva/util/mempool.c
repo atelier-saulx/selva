@@ -1,37 +1,7 @@
 #include <stddef.h>
+#include <string.h>
 #include <sys/mman.h>
-#include "redismodule.h"
-#include "queue.h"
-
-/**
- * A structure describing the object allocation unit.
- */
-struct mempool_object {
-    struct mempool_slab *slab; /*!< A pointer back the slab. */
-    /**
-     * A list entry pointing to the next free object if this object is in the
-     * free list.
-     */
-    LIST_ENTRY(mempool_object) next_free;
-} __attribute__((aligned(8)));
-
-/**
- * A structure describing a slab in the pool allocator.
- */
-struct mempool_slab {
-    size_t nr_free;
-    SLIST_ENTRY(mempool_slab) next_slab;
-};
-
-/**
- * A structure describing a memory pool.
- */
-struct mempool {
-    size_t slab_size;
-    size_t obj_size;
-    SLIST_HEAD(mempool_slab_list, mempool_slab) slabs;
-    LIST_HEAD(mempool_free_object_list, mempool_object) free_objects;
-};
+#include "mempool.h"
 
 struct slab_info {
     size_t total_bytes;
@@ -52,20 +22,11 @@ static struct slab_info slab_info(const struct mempool * restrict mempool) {
     };
 }
 
-struct mempool *mempool_new(size_t slab_size, size_t obj_size) {
-    struct mempool *mempool;
-
-    mempool = RedisModule_Alloc(sizeof(struct mempool));
-    if (!mempool) {
-        return NULL;
-    }
-
+void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size) {
     mempool->slab_size = slab_size;
     mempool->obj_size = obj_size;
     SLIST_INIT(&mempool->slabs);
     LIST_INIT(&mempool->free_objects);
-
-    return mempool;
 }
 
 static void mempool_free_slab(struct mempool *mempool, struct mempool_slab *slab) {
@@ -73,10 +34,6 @@ static void mempool_free_slab(struct mempool *mempool, struct mempool_slab *slab
 }
 
 void mempool_destroy(struct mempool *mempool) {
-    if (!mempool) {
-        return;
-    }
-
     /*
      * We don't keep track of the slab pointers because we assume the user to
      * know the slabs and return every single one of them before destroying the
@@ -90,7 +47,7 @@ void mempool_destroy(struct mempool *mempool) {
         mempool_free_slab(mempool, slab);
     }
 
-    RedisModule_Free(mempool);
+    memset(mempool, 0, sizeof(*mempool));
 }
 
 void mempool_gc(struct mempool *mempool) {
