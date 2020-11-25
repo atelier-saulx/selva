@@ -36,6 +36,7 @@ CFLAGS := $(IDIR) -include tunables.h \
 	-std=gnu99 -fPIC \
 	-Wall -Wextra -Wno-unused-value \
 	-ggdb -O2 \
+	-fno-strict-aliasing \
 	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
 CC := gcc
 

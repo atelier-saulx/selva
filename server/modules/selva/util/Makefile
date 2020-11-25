@@ -1,6 +1,6 @@
 RM_INCLUDE_DIR := ../include
 
-CFLAGS ?= -g -fPIC -O3 -std=gnu99 -Wall -Wno-unused-function -Wno-unused-value
+CFLAGS ?= -g -fPIC -O3 -std=gnu99 -Wall -Wno-unused-function -Wno-unused-value -fno-strict-aliasing
 CFLAGS += -I$(RM_INCLUDE_DIR)
 CC=gcc
 
