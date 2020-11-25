@@ -620,6 +620,15 @@ static char * test_get_index(void)
     return NULL;
 }
 
+static char * test_sizeof_ctrl(void)
+{
+    pu_test_description("Make sure the SVector size doesn't accidentally grow over time");
+
+    pu_assert_equal("sizeof the control struct", sizeof(SVector), 88);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
@@ -647,4 +656,5 @@ void all_tests(void)
     pu_def_test(test_foreach_small, PU_RUN);
     pu_def_test(test_foreach_large, PU_RUN);
     pu_def_test(test_get_index, PU_RUN);
+    pu_def_test(test_sizeof_ctrl, PU_RUN);
 }
