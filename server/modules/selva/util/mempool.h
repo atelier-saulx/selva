@@ -15,7 +15,7 @@ struct mempool_object {
      * free list.
      */
     LIST_ENTRY(mempool_object) next_free;
-} __attribute__((aligned(8)));
+} __attribute__((aligned(sizeof(size_t))));
 
 /**
  * A structure describing a slab in the pool allocator.
@@ -23,7 +23,7 @@ struct mempool_object {
 struct mempool_slab {
     size_t nr_free;
     SLIST_ENTRY(mempool_slab) next_slab;
-};
+} __attribute__((aligned((sizeof(size_t)))));
 
 /**
  * A structure describing a memory pool.

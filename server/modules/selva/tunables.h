@@ -8,6 +8,7 @@
 
 /**
  * Threshold to migrate from an SVECTOR_MODE_ARRAY to SVECTOR_MODE_RBTREE.
+ * Must be smaller than USHRT_MAX.
  */
 #define SVECTOR_THRESHOLD 100
 

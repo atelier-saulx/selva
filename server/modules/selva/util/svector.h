@@ -40,15 +40,18 @@ struct SVectorIterator {
 
 typedef struct SVector {
     enum SVectorMode vec_mode;
-    int (*vec_compar)(const void **a, const void **b);
+
+    /* Array mode specific */
+    unsigned short vec_arr_shift_index; /*!< Index in the vector array for SVector_Shift(). */
 
     /* Common to all modes */
     size_t vec_last; /*!< Length of the vector. (Last index + 1) */
 
     /* Array mode specific */
     size_t vec_arr_len; /*!< Length of the vector array. */
-    size_t vec_arr_shift_index; /*!< Index in the vector array for SVector_Shift(). */
     void **vec_arr;
+
+    int (*vec_compar)(const void **a, const void **b);
 
     /* RB tree mode specific */
     struct mempool vec_rbmempool;

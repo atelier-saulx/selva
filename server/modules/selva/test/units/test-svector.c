@@ -624,7 +624,7 @@ static char * test_sizeof_ctrl(void)
 {
     pu_test_description("Make sure the SVector size doesn't accidentally grow over time");
 
-    pu_assert_equal("sizeof the control struct", sizeof(SVector), 88);
+    pu_assert_equal("sizeof the control struct", sizeof(SVector), 80);
 
     return NULL;
 }
