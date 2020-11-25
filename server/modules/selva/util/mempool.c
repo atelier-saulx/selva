@@ -13,7 +13,7 @@ struct mempool_object {
      * free list.
      */
     LIST_ENTRY(mempool_object) next_free;
-};
+} __attribute__((aligned(8)));
 
 /**
  * A structure describing a slab in the pool allocator.
