@@ -7,6 +7,8 @@
 #include "alias.h"
 #include "async_task.h"
 
+struct RedisModuleCtx;
+struct SelvaModify_Hierarchy;
 struct SelvaModify_Hierarchy;
 struct SelvaObject;
 
@@ -39,7 +41,7 @@ struct SelvaModify_OpSet {
     size_t $value_len;
 };
 
-static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleString *data) {
+static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(struct RedisModuleString *data) {
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
@@ -60,28 +62,28 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleStrin
 }
 
 int SelvaModify_ModifySet(
-    RedisModuleCtx *ctx,
+    struct RedisModuleCtx *ctx,
     struct SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
-    RedisModuleString *id,
-    RedisModuleString *field,
+    struct RedisModuleString *id,
+    struct RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 );
 
 void SelvaModify_ModifyIncrement(
-    RedisModuleCtx *ctx,
+    struct RedisModuleCtx *ctx,
     struct SelvaObject *obj,
-    RedisModuleString *field,
-    RedisModuleString *current_value,
+    struct RedisModuleString *field,
+    struct RedisModuleString *current_value,
     struct SelvaModify_OpIncrement *incrementOpts
 );
 
 int SelvaModify_ModifyDel(
-    RedisModuleCtx *ctx,
+    struct RedisModuleCtx *ctx,
     struct SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
-    RedisModuleString *id,
-    RedisModuleString *field
+    struct RedisModuleString *id,
+    struct RedisModuleString *field
 );
 
 #endif /* SELVA_MODIFY_H */

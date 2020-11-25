@@ -405,7 +405,6 @@ struct {                                                                \
 } while (0)
 
 #define        LIST_INSERT_AFTER(listelm, elm, field) do {                        \
-        QMD_LIST_CHECK_NEXT(listelm, field);                                \
         if ((LIST_NEXT((elm), field) = LIST_NEXT((listelm), field)) != NULL)\
                 LIST_NEXT((listelm), field)->field.le_prev =                \
                     &LIST_NEXT((elm), field);                                \
@@ -414,7 +413,6 @@ struct {                                                                \
 } while (0)
 
 #define        LIST_INSERT_BEFORE(listelm, elm, field) do {                        \
-        QMD_LIST_CHECK_PREV(listelm, field);                                \
         (elm)->field.le_prev = (listelm)->field.le_prev;                \
         LIST_NEXT((elm), field) = (listelm);                                \
         *(listelm)->field.le_prev = (elm);                                \
@@ -422,7 +420,6 @@ struct {                                                                \
 } while (0)
 
 #define        LIST_INSERT_HEAD(head, elm, field) do {                                \
-        QMD_LIST_CHECK_HEAD((head), field);                                \
         if ((LIST_NEXT((elm), field) = LIST_FIRST((head))) != NULL)        \
                 LIST_FIRST((head))->field.le_prev = &LIST_NEXT((elm), field);\
         LIST_FIRST((head)) = (elm);                                        \
@@ -438,8 +435,6 @@ struct {                                                                \
 #define        LIST_REMOVE(elm, field) do {                                        \
         QMD_SAVELINK(oldnext, (elm)->field.le_next);                        \
         QMD_SAVELINK(oldprev, (elm)->field.le_prev);                        \
-        QMD_LIST_CHECK_NEXT(elm, field);                                \
-        QMD_LIST_CHECK_PREV(elm, field);                                \
         if (LIST_NEXT((elm), field) != NULL)                                \
                 LIST_NEXT((elm), field)->field.le_prev =                 \
                     (elm)->field.le_prev;                                \
@@ -543,7 +538,6 @@ struct {                                                                \
 } while (0)
 
 #define        TAILQ_INSERT_AFTER(head, listelm, elm, field) do {                \
-        QMD_TAILQ_CHECK_NEXT(listelm, field);                                \
         if ((TAILQ_NEXT((elm), field) = TAILQ_NEXT((listelm), field)) != NULL)\
                 TAILQ_NEXT((elm), field)->field.tqe_prev =                 \
                     &TAILQ_NEXT((elm), field);                                \
@@ -558,7 +552,6 @@ struct {                                                                \
 } while (0)
 
 #define        TAILQ_INSERT_BEFORE(listelm, elm, field) do {                        \
-        QMD_TAILQ_CHECK_PREV(listelm, field);                                \
         (elm)->field.tqe_prev = (listelm)->field.tqe_prev;                \
         TAILQ_NEXT((elm), field) = (listelm);                                \
         *(listelm)->field.tqe_prev = (elm);                                \
@@ -568,7 +561,6 @@ struct {                                                                \
 } while (0)
 
 #define        TAILQ_INSERT_HEAD(head, elm, field) do {                        \
-        QMD_TAILQ_CHECK_HEAD(head, field);                                \
         if ((TAILQ_NEXT((elm), field) = TAILQ_FIRST((head))) != NULL)        \
                 TAILQ_FIRST((head))->field.tqe_prev =                        \
                     &TAILQ_NEXT((elm), field);                                \
@@ -581,7 +573,6 @@ struct {                                                                \
 } while (0)
 
 #define        TAILQ_INSERT_TAIL(head, elm, field) do {                        \
-        QMD_TAILQ_CHECK_TAIL(head, field);                                \
         TAILQ_NEXT((elm), field) = NULL;                                \
         (elm)->field.tqe_prev = (head)->tqh_last;                        \
         *(head)->tqh_last = (elm);                                        \
@@ -601,8 +592,6 @@ struct {                                                                \
 #define        TAILQ_REMOVE(head, elm, field) do {                                \
         QMD_SAVELINK(oldnext, (elm)->field.tqe_next);                        \
         QMD_SAVELINK(oldprev, (elm)->field.tqe_prev);                        \
-        QMD_TAILQ_CHECK_NEXT(elm, field);                                \
-        QMD_TAILQ_CHECK_PREV(elm, field);                                \
         if ((TAILQ_NEXT((elm), field)) != NULL)                                \
                 TAILQ_NEXT((elm), field)->field.tqe_prev =                 \
                     (elm)->field.tqe_prev;                                \

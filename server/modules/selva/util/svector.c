@@ -5,6 +5,7 @@
 #include <string.h>
 #include "redismodule.h"
 #include "../tunables.h"
+#include "mempool.h"
 #include "svector.h"
 
 #define VEC_SIZE(_len) (sizeof(void *) * (_len))
