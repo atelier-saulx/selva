@@ -427,8 +427,6 @@ static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyN
         SelvaModify_HierarchyNode *child;
         SVector_ForeachBegin(&it, &node->children);
         while ((child = SVector_Foreach(&it))) {
-            SelvaModify_HierarchyNode *child = *child_pp;
-
             if (!Trx_IsStamped(&hierarchy->current_trx, &child->visit_stamp)) {
                 Trx_Stamp(&hierarchy->current_trx, &child->visit_stamp);
                 SVector_Insert(&q, child);

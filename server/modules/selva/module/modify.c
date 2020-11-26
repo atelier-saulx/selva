@@ -94,7 +94,6 @@ int update_set(
     RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
-    int err;
     TO_STR(id, field);
     RedisModuleKey *alias_key = NULL;
 
@@ -107,6 +106,8 @@ int update_set(
     }
 
     if (setOpts->$value_len > 0) {
+        int err;
+
         if (alias_key) {
             delete_aliases(alias_key, SelvaObject_GetSet(obj, field));
         }

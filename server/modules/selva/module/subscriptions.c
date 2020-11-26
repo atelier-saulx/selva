@@ -1058,8 +1058,6 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      */
     const char *fields = NULL;
     if (argc > (int)ARGV_FIELD_NAMES) {
-        int err;
-
         err = SelvaArgParser_StrOpt(&fields, "fields", argv[ARGV_FIELDS], argv[ARGV_FIELD_NAMES]);
         if (err == 0) {
             SHIFT_ARGS(2);
@@ -1165,7 +1163,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 #if 0
         RedisModule_ReplicateVerbatim(ctx);
 #endif
-    } else if (err) {
+    } else { /* Error */
 out:
         if (filter_ctx) {
             rpn_destroy(filter_ctx);
@@ -1338,8 +1336,6 @@ int Selva_SubscriptionsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
  * KEY SUB_ID
  */
 int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    int err;
-
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
     }
@@ -1363,6 +1359,7 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     SVector *markers = NULL;
 
     if (is_sub_id) {
+        int err;
         Selva_SubscriptionId sub_id;
         struct Selva_Subscription *sub;
 
