@@ -12,7 +12,7 @@
 #define VEC_COMPAR(_fn) ((int (*)(const void *, const void *))(_fn))
 
 #define SVECTOR_FOREACH_ARR(var, vec) \
-    for (typeof(var) var ## _end = (typeof(var))(vec)->vec_arr + (vec)->vec_last, var = (typeof(var))(vec)->vec_arr ; \
+    for (typeof(var) var ## _end = (typeof(var))(vec)->vec_arr + (vec)->vec_last, var = (typeof(var))(vec)->vec_arr; \
          (void **)var < (void **)var ## _end; \
          var++)
 
@@ -111,15 +111,20 @@ static struct SVector_rbnode *rbtree_find(const SVector * restrict vec, void *ke
 
 static void migrate_arr_to_rbtree(SVector *vec) {
     const size_t len = SVector_Size(vec);
+    void **vec_arr = vec->vec_arr;
+    size_t vec_last = vec->vec_last;
     void **pp;
 
     assert(vec->vec_mode == SVECTOR_MODE_ARRAY);
     assert(vec->vec_compar);
 
+    SVector_ShiftReset(vec);
+    RB_INIT(&vec->vec_rbhead);
     mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode));
 
-    RB_INIT(&vec->vec_rbhead);
-    SVECTOR_FOREACH_ARR(pp, vec) {
+    for (typeof(pp) pp_end = (typeof(pp))vec_arr + vec_last, pp = (typeof(pp))vec_arr;
+         (void **)pp < (void **)pp_end;
+         pp++) {
         void *p = *pp;
 
         /*
@@ -131,12 +136,10 @@ static void migrate_arr_to_rbtree(SVector *vec) {
         }
     }
 
-    RedisModule_Free(vec->vec_arr);
+    RedisModule_Free(vec_arr);
     vec->vec_mode = SVECTOR_MODE_RBTREE;
     vec->vec_last = len;
-    vec->vec_arr_len = 0;
     vec->vec_arr_shift_index = 0;
-    vec->vec_arr = NULL;
 }
 
 static int migrate_rbtree_to_arr(SVector *vec) {
@@ -145,6 +148,8 @@ static int migrate_rbtree_to_arr(SVector *vec) {
 
 SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const void **a, const void **b)) {
     enum SVectorMode mode = SVector_Mode(src);
+
+    assert(src->vec_arr_shift_index == 0);
 
     if (!SVector_Init(dest, SVector_Size(src), compar)) {
         return NULL;

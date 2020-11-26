@@ -47,15 +47,21 @@ typedef struct SVector {
     /* Common to all modes */
     size_t vec_last; /*!< Length of the vector. (Last index + 1) */
 
-    /* Array mode specific */
-    size_t vec_arr_len; /*!< Length of the vector array. */
-    void **vec_arr;
+    union {
+        struct {
+            /* Array mode specific */
+            size_t vec_arr_len; /*!< Length of the vector array. */
+            void **vec_arr;
+        };
+        struct {
+            /* RB tree mode specific */
+            struct mempool vec_rbmempool;
+            struct SVector_rbtree vec_rbhead;
+        };
+    };
 
     int (*vec_compar)(const void **a, const void **b);
 
-    /* RB tree mode specific */
-    struct mempool vec_rbmempool;
-    struct SVector_rbtree vec_rbhead;
 } SVector;
 
 SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b));

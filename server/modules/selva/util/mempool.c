@@ -23,6 +23,9 @@ static struct slab_info slab_info(const struct mempool * restrict mempool) {
 }
 
 void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size) {
+    assert(slab_size < UINT32_MAX);
+    assert(obj_size < UINT32_MAX);
+
     mempool->slab_size = slab_size;
     mempool->obj_size = obj_size;
     SLIST_INIT(&mempool->slabs);

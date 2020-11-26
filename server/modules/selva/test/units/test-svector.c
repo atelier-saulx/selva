@@ -25,7 +25,9 @@ static void setup(void)
 
 static void teardown(void)
 {
-    free(vec.vec_arr);
+    if (vec.vec_mode == SVECTOR_MODE_ARRAY) {
+        free(vec.vec_arr);
+    }
 }
 
 static char * test_init_works(void)
@@ -238,8 +240,6 @@ static char * test_insertFast_many(void)
 
     pu_assert_equal("last is incremented", vec.vec_last, 333);
 
-    struct data **data = ((struct data **)vec.vec_arr);
-    pu_assert_equal("vec_array is not set", vec.vec_arr, NULL);
     /* TODO Fix asserts */
 #if 0
     pu_assert_equal("el[0] was inserted correctly", data[0]->id, 1);
@@ -624,7 +624,7 @@ static char * test_sizeof_ctrl(void)
 {
     pu_test_description("Make sure the SVector size doesn't accidentally grow over time");
 
-    pu_assert_equal("sizeof the control struct", sizeof(SVector), 80);
+    pu_assert_equal("sizeof the control struct", sizeof(SVector), 56);
 
     return NULL;
 }

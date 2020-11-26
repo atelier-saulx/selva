@@ -2,6 +2,8 @@
 #ifndef _UTIL_MEMPOOL_H_
 #define _UTIL_MEMPOOL_H_
 
+#include <assert.h>
+#include <stdint.h>
 #include "cdefs.h"
 #include "queue.h"
 
@@ -29,8 +31,8 @@ struct mempool_slab {
  * A structure describing a memory pool.
  */
 struct mempool {
-    size_t slab_size;
-    size_t obj_size;
+    uint32_t slab_size;
+    uint32_t obj_size;
     SLIST_HEAD(mempool_slab_list, mempool_slab) slabs;
     LIST_HEAD(mempool_free_object_list, mempool_object) free_objects;
 };
