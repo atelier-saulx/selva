@@ -42,7 +42,7 @@ typedef struct SVector {
     enum SVectorMode vec_mode;
 
     /* Array mode specific */
-    unsigned short vec_arr_shift_index; /*!< Index in the vector array for SVector_Shift(). */
+    size_t vec_arr_shift_index; /*!< Index in the vector array for SVector_Shift(). */
 
     /* Common to all modes */
     size_t vec_last; /*!< Length of the vector. (Last index + 1) */
