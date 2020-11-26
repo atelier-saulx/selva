@@ -1336,12 +1336,12 @@ int Selva_SubscriptionsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
  * KEY SUB_ID
  */
 int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    const size_t ARGV_REDIS_KEY = 1;
+    const size_t ARGV_ID        = 2;
+
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
     }
-
-    const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_ID        = 2;
 
     /*
      * Open the Redis key.
