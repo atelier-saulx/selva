@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "2.0.16",
+  "version": "2.0.17",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
@@ -69,11 +69,11 @@
     "@saulx/selva-server": "2.0.11"
   },
   "dependencies": {
-    "@saulx/selva-diff": "^1.0.14",
+    "@saulx/selva-diff": "^1.0.15",
     "chalk": "^4.0.0",
     "@types/uuid": "^3.4.6",
     "redis": "^2.8.0",
     "uuid": "^3.3.3",
-    "@saulx/utils": "^1.4.8"
+    "@saulx/utils": "^1.4.9"
   }
 }
