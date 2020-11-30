@@ -56,7 +56,7 @@ static int subscription_rb_compare(const struct Selva_Subscription *a, const str
 /**
  * The given marker flags matches to a hierarchy marker of any kind.
  */
-static int isHierarchyMarker(unsigned flags) {
+static int isHierarchyMarker(unsigned short flags) {
     return !!(flags & SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
 }
 
@@ -377,7 +377,7 @@ static int Selva_AddSubscriptionMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
-        unsigned flags,
+        unsigned short flags,
         const char *fmt,
         ...) {
     va_list args;
@@ -857,7 +857,7 @@ void SelvaSubscriptions_DeferHierarchyDeletionEvents(struct SelvaModify_Hierarch
 static void field_change_precheck(
         const Selva_NodeId node_id,
         const struct Selva_SubscriptionMarkers *sub_markers) {
-    const unsigned flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
+    const unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
 
     if ((sub_markers->flags_filter & flags) == flags) {
         struct SVectorIterator it;
@@ -899,7 +899,7 @@ static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
                                       const struct Selva_SubscriptionMarkers *sub_markers,
                                       const char *field) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
-    const unsigned flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
+    const unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
 
     if ((sub_markers->flags_filter & flags) == flags) {
         struct SVectorIterator it;
@@ -1119,7 +1119,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         }
     }
 
-    unsigned marker_flags = 0;
+    unsigned short marker_flags = 0;
 
     if (!memcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
         /*
