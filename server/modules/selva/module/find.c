@@ -58,7 +58,7 @@ enum FindCommand_OrderedItemType {
 
 struct FindCommand_OrderedItem {
     Selva_NodeId id;
-    enum FindCommand_OrderedItemType data_type;
+    enum FindCommand_OrderedItemType type;
     double d;
     size_t data_len;
     char data[];
@@ -238,23 +238,21 @@ static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** re
     const char *aStr = a->data;
     const char *bStr = b->data;
 
-    if (a->data_len && b->data_len) {
-        if (a->data_type == ORDERED_ITEM_TYPE_DOUBLE &&
-            b->data_type == ORDERED_ITEM_TYPE_DOUBLE) {
-            double x = a->d;
-            double y = b->d;
+    if (a->type == ORDERED_ITEM_TYPE_DOUBLE &&
+        b->type == ORDERED_ITEM_TYPE_DOUBLE) {
+        double x = a->d;
+        double y = b->d;
 
-            if (x < y) {
-                return -1;
-            } else if (x > y) {
-                return 1;
-            }
-        } else {
-            /* TODO different langs may have differing order. */
-            const int res = strcmp(aStr, bStr);
-            if (res != 0) {
-                return res;
-            }
+        if (x < y) {
+            return -1;
+        } else if (x > y) {
+            return 1;
+        }
+    } else if (a->data_len && b->data_len) {
+        /* TODO different langs may have differing order. */
+        const int res = strcmp(aStr, bStr);
+        if (res != 0) {
+            return res;
         }
     }
 
@@ -299,19 +297,28 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
         err = SelvaObject_Key2Obj(key, &obj);
         if (!err) {
+            enum SelvaObjectType obj_type;
+            TO_STR(order_field);
 
-            err = SelvaObject_GetStr(obj, order_field, &value);
-            if (!err && value) {
-                char *end;
-
-                data = RedisModule_StringPtrLen(value, &data_len);
-
-                /* Check if it's a number. */
-                d = strtod(data, &end);
-                if (end != data) {
-                    type = ORDERED_ITEM_TYPE_DOUBLE;
-                } else {
+            obj_type = SelvaObject_GetType(obj, order_field_str, order_field_len);
+            if (obj_type == SELVA_OBJECT_STRING) {
+                err = SelvaObject_GetStr(obj, order_field, &value);
+                if (!err && value) {
+                    data = RedisModule_StringPtrLen(value, &data_len);
                     type = ORDERED_ITEM_TYPE_TEXT;
+                }
+            } else if (obj_type == SELVA_OBJECT_DOUBLE) {
+                err = SelvaObject_GetDouble(obj, order_field, &d);
+                if (!err) {
+                    type = ORDERED_ITEM_TYPE_DOUBLE;
+                }
+            } else if (obj_type == SELVA_OBJECT_LONGLONG) {
+                long long v;
+
+                err = SelvaObject_GetLongLong(obj, order_field, &v);
+                if (!err) {
+                    d = (double)v;
+                    type = ORDERED_ITEM_TYPE_DOUBLE;
                 }
             }
         }
@@ -331,11 +338,10 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     }
 
     memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
-    item->data_type = type;
+    item->type = type;
     item->data_len = data_len;
-    if (data_len > 0) {
-        item->d = d;
-
+    item->d = d;
+    if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         memcpy(item->data, data, data_len);
         item->data[data_len] = '\0';
     }
@@ -406,11 +412,13 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, RedisModul
             if (err) {
                 TO_STR(field);
 
+#if 0
                 fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
                         __FILE__,
                         field_str,
                         (int)SELVA_NODE_ID_SIZE, nodeId,
                         getSelvaErrorStr(err));
+#endif
                 RedisModule_ReplyWithNull(ctx);
             }
         }

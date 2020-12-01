@@ -248,27 +248,42 @@ int SelvaModify_ModifySet(
 }
 
 void SelvaModify_ModifyIncrement(
+    struct SelvaObject *obj,
+    RedisModuleString *field,
+    enum SelvaObjectType old_type,
+    struct SelvaModify_OpIncrement *incrementOpts
+) {
+    int64_t new = incrementOpts->$default;
+
+    if (old_type == SELVA_OBJECT_LONGLONG) {
+        long long old;
+
+        if (!SelvaObject_GetLongLong(obj, field, &old)) {
+            new = old + incrementOpts->$increment;
+        }
+    }
+
+    (void)SelvaObject_SetLongLong(obj, field, new);
+}
+
+void SelvaModify_ModifyIncrementDouble(
     RedisModuleCtx *ctx,
     struct SelvaObject *obj,
     RedisModuleString *field,
-    RedisModuleString *current_value,
-    struct SelvaModify_OpIncrement *incrementOpts
+    enum SelvaObjectType old_type,
+    struct SelvaModify_OpIncrementDouble *incrementOpts
 ) {
-    int32_t num = incrementOpts->$default;
+    double new = incrementOpts->$default;
 
-    if (current_value) {
-        TO_STR(current_value);
+    if (old_type == SELVA_OBJECT_DOUBLE) {
+        double old;
 
-        num = strtol(current_value_str, NULL, 10) + incrementOpts->$increment;
+        if (!SelvaObject_GetDouble(obj, field, &old)) {
+            new = old + incrementOpts->$increment;
+        }
     }
 
-    const size_t num_str_size = (int)(log10(num)) + 1;
-    char increment_str[num_str_size];
-    RedisModuleString *increment;
-
-    sprintf(increment_str, "%d", num);
-    increment = RedisModule_CreateString(ctx, increment_str, num_str_size);
-    (void)SelvaObject_SetStr(obj, field, increment);
+    (void)SelvaObject_SetDouble(obj, field, new);
 }
 
 int SelvaModify_ModifyDel(

@@ -1,5 +1,13 @@
 import { compile } from 'data-record'
 
+export const doubleDef = compile([
+  { name: 'd', type: 'double' }
+]);
+
+export const longLongDef = compile([
+  { name: 'd', type: 'uint64' }
+]);
+
 export const setRecordDef = compile([
   { name: 'is_reference', type: 'int8' },
   { name: 'delete_all', type: 'int8' },
@@ -9,7 +17,11 @@ export const setRecordDef = compile([
 ])
 
 export const incrementDef = compile([
-  { name: 'index', type: 'int32' },
-  { name: '$default', type: 'int32' },
-  { name: '$increment', type: 'int32' }
+  { name: '$default', type: 'int64' },
+  { name: '$increment', type: 'int64' }
+])
+
+export const incrementDoubleDef = compile([
+  { name: '$default', type: 'double' },
+  { name: '$increment', type: 'double' }
 ])

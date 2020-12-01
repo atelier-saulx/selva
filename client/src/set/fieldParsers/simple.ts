@@ -3,7 +3,7 @@ import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { TypeSchema, Schema, FieldSchemaOther } from '../../schema'
 import digest from '../../digest'
-import { incrementDef } from '../modifyDataRecords'
+import { incrementDef, incrementDoubleDef, longLongDef, doubleDef } from '../modifyDataRecords'
 
 const isUrlRe = new RegExp(
   '^(?!mailto:)(?:(?:http|https|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$',
@@ -79,13 +79,18 @@ const converters = {
       return payload
     }
   },
-  boolean: (v: boolean) => (v ? '1' : '0')
+  boolean: (v: boolean) => (v ? '1' : '0'),
+  int: (payload: number): Buffer => createRecord(longLongDef, { d: payload }),
+  float: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
+  number: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
 }
 
 const parsers = {}
 
 for (const key in verifiers) {
   const verify = verifiers[key]
+  const valueType: string =
+    key === 'int' ? '3' : key === 'float' || key === 'number' ? 'A' : '0'
   const isNumber = key === 'float' || key === 'number' || key === 'int'
   const noOptions = key === 'type' || key === 'id' || key === 'digest'
   const converter = converters[key]
@@ -100,7 +105,6 @@ for (const key in verifiers) {
     _type: string
   ) => {
     let keyname: string = field
-    let valueType: string = '0'
     let value: string | null = null
 
     if (!noOptions && typeof payload === 'object') {
@@ -122,25 +126,42 @@ for (const key in verifiers) {
           } else {
             if (!verify(payload[k])) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
-            } else if (converter) {
+            } else if (
+                converter &&
+                !['int', 'float', 'number'].includes(key) // createRecord will take care of numbers
+            ) {
               value = converter(payload[k])
             }
 
             if (k !== '$value') {
               //console.log(payload)
-              result.push(
-                '4',
-                field,
-                createRecord(incrementDef, {
-                  index: 0,
-                  $default: isNaN(payload.$default)
-                    ? 0
-                    : Number(payload.$default),
-                  $increment: isNaN(payload.$increment)
-                    ? 0
-                    : Number(payload.$increment)
-                })
-              )
+              if (key == 'int') {
+                result.push(
+                  '4',
+                  field,
+                  createRecord(incrementDef, {
+                    $default: isNaN(payload.$default)
+                      ? 0
+                      : Number(payload.$default),
+                    $increment: isNaN(payload.$increment)
+                      ? 0
+                      : Number(payload.$increment)
+                  })
+                )
+              } else {
+                result.push(
+                  'B',
+                  field,
+                  createRecord(incrementDoubleDef, {
+                    $default: isNaN(payload.$default)
+                      ? 0
+                      : Number(payload.$default),
+                    $increment: isNaN(payload.$increment)
+                      ? 0
+                      : Number(payload.$increment)
+                  })
+                )
+              }
               return
             }
           }

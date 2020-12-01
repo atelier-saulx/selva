@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "alias.h"
 #include "async_task.h"
+#include "selva_object.h"
 
 struct RedisModuleCtx;
 struct SelvaModify_Hierarchy;
@@ -13,18 +14,27 @@ struct SelvaModify_Hierarchy;
 struct SelvaObject;
 
 enum SelvaModify_ArgType {
-    SELVA_MODIFY_ARG_VALUE = '0', /*!< Value is a string. */
-    SELVA_MODIFY_ARG_DEFAULT = '2', /*!< Set a string value if unset. */
-    SELVA_MODIFY_ARG_OP_INCREMENT = '4', /*!< Increment long long. */
-    SELVA_MODIFY_ARG_OP_SET = '5', /*!< Value is a struct SelvaModify_OpSet. */
+    SELVA_MODIFY_ARG_DEFAULT_STRING = '2', /*!< Set a string value if unset. */
+    SELVA_MODIFY_ARG_STRING = '0', /*!< Value is a string. */
     SELVA_MODIFY_ARG_STRING_ARRAY = '6', /*!< Array of C-strings. */
+    SELVA_MODIFY_ARG_DEFAULT_LONGLONG = '8',
+    SELVA_MODIFY_ARG_LONGLONG = '3', /*!< Value is a long long. */
+    SELVA_MODIFY_ARG_DEFAULT_DOUBLE = '9',
+    SELVA_MODIFY_ARG_DOUBLE = 'A', /*!< Value is a double. */
+    SELVA_MODIFY_ARG_OP_INCREMENT = '4', /*!< Increment a long long value. */
+    SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE = 'B', /*!< Increment a double value. */
+    SELVA_MODIFY_ARG_OP_SET = '5', /*!< Value is a struct SelvaModify_OpSet. */
     SELVA_MODIFY_ARG_OP_DEL = '7', /*!< Delete field; value is a modifier. */
 };
 
 struct SelvaModify_OpIncrement {
-    int32_t index;
-    int32_t $default;
-    int32_t $increment;
+    int64_t $default;
+    int64_t $increment;
+};
+
+struct SelvaModify_OpIncrementDouble {
+    double $default;
+    double $increment;
 };
 
 struct SelvaModify_OpSet {
@@ -71,11 +81,18 @@ int SelvaModify_ModifySet(
 );
 
 void SelvaModify_ModifyIncrement(
-    struct RedisModuleCtx *ctx,
     struct SelvaObject *obj,
     struct RedisModuleString *field,
-    struct RedisModuleString *current_value,
+    enum SelvaObjectType old_type,
     struct SelvaModify_OpIncrement *incrementOpts
+);
+
+void SelvaModify_ModifyIncrementDouble(
+    RedisModuleCtx *ctx,
+    struct SelvaObject *obj,
+    RedisModuleString *field,
+    enum SelvaObjectType old_type,
+    struct SelvaModify_OpIncrementDouble *incrementOpts
 );
 
 int SelvaModify_ModifyDel(
