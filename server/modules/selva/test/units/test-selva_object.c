@@ -10,15 +10,8 @@
 
 static struct SelvaObject *root_obj;
 
-extern struct SelvaObject *(*SelvaObject_New)(void);
-extern void (*SelvaObject_Destroy)(struct SelvaObject *obj);
-
 static void setup(void)
 {
-    if (!SelvaObject_New) {
-        abort();
-    }
-
     root_obj = SelvaObject_New();
     if (!root_obj) {
         abort();
