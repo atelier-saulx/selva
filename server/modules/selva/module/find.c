@@ -185,7 +185,7 @@ static int parse_dir(
         } else if (sz > 0) {
             /* Check if the field_name is a field name. */
 
-            type = SelvaObject_GetType(obj, p1, sz);
+            type = SelvaObject_GetTypeStr(obj, p1, sz);
             if (type == SELVA_OBJECT_SET) {
                 RedisModuleString *rms;
 
@@ -298,9 +298,8 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         err = SelvaObject_Key2Obj(key, &obj);
         if (!err) {
             enum SelvaObjectType obj_type;
-            TO_STR(order_field);
 
-            obj_type = SelvaObject_GetType(obj, order_field_str, order_field_len);
+            obj_type = SelvaObject_GetType(obj, (RedisModuleString *)order_field);
             if (obj_type == SELVA_OBJECT_STRING) {
                 err = SelvaObject_GetStr(obj, order_field, &value);
                 if (!err && value) {
@@ -410,9 +409,9 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, RedisModul
             RedisModule_ReplyWithString(ctx, field);
             err = SelvaObject_ReplyWithObject(ctx, obj, field);
             if (err) {
+#if 0
                 TO_STR(field);
 
-#if 0
                 fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
                         __FILE__,
                         field_str,

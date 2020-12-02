@@ -468,7 +468,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         TO_STR(type, field, value);
         const char type_code = type_str[0];
-        const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field_str, field_len);
+        const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
         if ((type_code == SELVA_MODIFY_ARG_STRING ||
              type_code == SELVA_MODIFY_ARG_DEFAULT_STRING)) {

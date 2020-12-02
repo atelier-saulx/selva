@@ -529,28 +529,27 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
     }
 
     if (type == RPN_LVTYPE_NUMBER) {
-        const char *field_str;
-        size_t field_len;
-        enum SelvaObjectType type;
         double dvalue;
 
-        field_str = RedisModule_StringPtrLen(ctx->rms_field, &field_len);
-        if (!field_str) {
-            return RPN_ERR_ENOMEM;
-        }
-
-        err = 1;
-        type = SelvaObject_GetType(obj, field_str, field_len);
-        if (type == SELVA_OBJECT_NULL) {
+        switch (SelvaObject_GetType(obj, ctx->rms_field)) {
+        case SELVA_OBJECT_NULL:
             return push_empty_value(ctx);
-        } else if (type == SELVA_OBJECT_DOUBLE) {
+            break;
+        case SELVA_OBJECT_DOUBLE:
             err = SelvaObject_GetDouble(obj, ctx->rms_field, &dvalue);
-        } else if (type == SELVA_OBJECT_LONGLONG) {
-            long long v;
+            break;
+        case SELVA_OBJECT_LONGLONG:
+            {
+                long long v;
 
-            err = SelvaObject_GetLongLong(obj, ctx->rms_field, &v);
-            dvalue = (double)v;
+                err = SelvaObject_GetLongLong(obj, ctx->rms_field, &v);
+                dvalue = (double)v;
+            }
+            break;
+        default:
+            err = RPN_ERR_NAN;
         }
+
         if (err) {
             fprintf(stderr, "RPN: Field value [%.*s].%.*s is not a number\n",
                     (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]),
@@ -561,6 +560,10 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
 
         return push_double_result(ctx, dvalue);
     } else {
+        /*
+         * RFE We could also support converting numbers to string values
+         * if needed.
+         */
         err = SelvaObject_GetStr(obj, ctx->rms_field, &value);
         if (err || !value) {
 #if 0

@@ -747,7 +747,7 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return 0;
 }
 
-enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const char *key_name, size_t key_name_len) {
+enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name, size_t key_name_len) {
     struct SelvaObjectKey *key;
     enum SelvaObjectType type = SELVA_OBJECT_NULL;
     int err;
@@ -758,6 +758,16 @@ enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const char *ke
     }
 
     return type;
+}
+
+enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, RedisModuleString *key_name) {
+    TO_STR(key_name);
+
+    if (unlikely(!key_name_str)) {
+        return SELVA_OBJECT_NULL;
+    }
+
+    return SelvaObject_GetTypeStr(obj, key_name_str, key_name_len);
 }
 
 int SelvaObject_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
