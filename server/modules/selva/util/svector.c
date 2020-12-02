@@ -142,10 +142,6 @@ static void migrate_arr_to_rbtree(SVector *vec) {
     vec->vec_arr_shift_index = 0;
 }
 
-static int migrate_rbtree_to_arr(SVector *vec) {
-    return -1;
-}
-
 SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const void **a, const void **b)) {
     enum SVectorMode mode = SVector_Mode(src);
 
