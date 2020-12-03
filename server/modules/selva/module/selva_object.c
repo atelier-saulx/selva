@@ -824,7 +824,6 @@ const void *SelvaObject_Foreach(struct SelvaObject *obj, void **iterator, enum S
         *iterator = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
     } while (key->type != type);
 
-    /* TODO Not all types are supported by foreach */
     switch (key->type) {
     case SELVA_OBJECT_NULL:
         return NULL;

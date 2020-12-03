@@ -32,7 +32,7 @@ int SelvaArgsParser_StringList(
         const char *name,
         struct RedisModuleString *arg_key,
         struct RedisModuleString *arg_val);
-int SelvaArgsParser_StringListList(
+int SelvaArgsParser_StringSetList(
         struct RedisModuleCtx *ctx,
         struct SelvaObject **out,
         const char *name,

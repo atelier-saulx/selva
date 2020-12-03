@@ -36,7 +36,7 @@ struct FindCommand_Args {
      * If set the callback should return the value of these fields instead of
      * node IDs.
      */
-    RedisModuleString **fields;
+    struct SelvaObject *fields;
 
     const RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Result of the find. Only used if sorting is requested. */
@@ -348,7 +348,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     return item;
 }
 
-static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, RedisModuleString **fields) {
+static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *fields) {
     RedisModuleString *id;
     int err;
 
@@ -389,45 +389,66 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, RedisModul
 
     RedisModule_ReplyWithArray(ctx, 2);
     RedisModule_ReplyWithString(ctx, id);
-    if (fields[0] == NULL) { /* Empty list is a wildcard. */
+
+    const ssize_t fields_len = SelvaObject_Len(fields, NULL);
+    if (fields_len < 0) {
+        return fields_len;
+    } else if (fields_len == 0) { /* Empty list is a wildcard. */
         err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
         if (err) {
             fprintf(stderr, "%s: Failed to send all fields for node_id: \"%.*s\"\n",
                     __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     } else {
-        size_t n = 0;
+        void *iterator;
+        SVector *vec;
 
-        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+        RedisModule_ReplyWithArray(ctx, 2 * fields_len);
 
-        while (fields[n++]) {
-            RedisModuleString *field = fields[n - 1];
+        iterator = SelvaObject_ForeachBegin(fields);
+        while ((vec = (SVector *)SelvaObject_Foreach(fields, &iterator, SELVA_OBJECT_ARRAY))) {
+            struct SVectorIterator it;
+            RedisModuleString *field;
+
+            SVector_ForeachBegin(&it, vec);
+            while ((field = SVector_Foreach(&it))) {
+                if (SelvaObject_Exists(obj, field)) {
+                    continue;
+                }
+
+                /*
+                 * Send the reply.
+                 */
+                RedisModule_ReplyWithString(ctx, field);
+                err = SelvaObject_ReplyWithObject(ctx, obj, field);
+                if (err) {
+                    TO_STR(field);
+
+                    fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
+                            __FILE__,
+                            field_str,
+                            (int)SELVA_NODE_ID_SIZE, nodeId,
+                            getSelvaErrorStr(err));
+                    RedisModule_ReplyWithNull(ctx);
+                }
+
+                break; /* Only send one of the fields in the list. */
+            }
 
             /*
-             * Send the reply.
+             * Currently the client expects that we send at least something if
+             * none of the fields exists.
              */
-            RedisModule_ReplyWithString(ctx, field);
-            err = SelvaObject_ReplyWithObject(ctx, obj, field);
-            if (err) {
-#if 0
-                TO_STR(field);
+            if (!field) {
+                field = SVector_Peek(vec);
 
-                fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
-                        __FILE__,
-                        field_str,
-                        (int)SELVA_NODE_ID_SIZE, nodeId,
-                        getSelvaErrorStr(err));
-#endif
+                RedisModule_ReplyWithString(ctx, field);
                 RedisModule_ReplyWithNull(ctx);
             }
         }
-        n--;
-
-        RedisModule_ReplySetArrayLength(ctx, 2 * n);
     }
 
     RedisModule_CloseKey(key);
-
     return 0;
 }
 
@@ -557,7 +578,7 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
     return 0;
 }
 
-static size_t FindCommand_PrintOrderedResult(RedisModuleCtx *ctx, ssize_t offset, ssize_t limit, RedisModuleString **fields, SVector *order_result) {
+static size_t FindCommand_PrintOrderedResult(RedisModuleCtx *ctx, ssize_t offset, ssize_t limit, struct SelvaObject *fields, SVector *order_result) {
     struct FindCommand_OrderedItem *item;
     struct SVectorIterator it;
     size_t len = 0;
@@ -726,9 +747,9 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     /*
      * Parse fields.
      */
-    RedisModuleString **fields = NULL;
+    selvaobject_autofree struct SelvaObject *fields = NULL;
     if (argc > (int)ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
@@ -962,9 +983,9 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     /*
      * Parse fields.
      */
-    RedisModuleString **fields = NULL;
+    selvaobject_autofree struct SelvaObject *fields = NULL;
     if (argc > (int)ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {

@@ -99,7 +99,7 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
  * List separator: '|'
  * Enf of sets: '\0'
  */
-int SelvaArgsParser_StringListList(RedisModuleCtx *ctx, struct SelvaObject **out, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val) {
+int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val) {
     struct SelvaObject *obj;
     const char *cur;
     size_t n = 0;
