@@ -5,6 +5,7 @@
 #include "cdefs.h"
 #include "errors.h"
 #include "subscriptions.h"
+#include "selva_object.h"
 
 int SelvaArgParser_IntOpt(ssize_t *value, const char *name, RedisModuleString *txt, RedisModuleString *num) {
     TO_STR(txt, num);
@@ -57,7 +58,7 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
             size_t len;
 
             /*
-             * Find the separator between the current and next field name.
+             * Find the separator between the current and the next string.
              */
             next = cur;
             while (*next != '\0' && *next != '\n') {
@@ -66,7 +67,7 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
             len = (size_t)((ptrdiff_t)next - (ptrdiff_t)cur);
 
             /*
-             * Create the field name string.
+             * Create a string.
              */
             el = RedisModule_CreateString(ctx, cur, len);
             if (!el) {
@@ -89,6 +90,95 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
     }
 
     *out = list;
+    return 0;
+}
+
+/**
+ * Parse a set of lists containing strings.
+ * Set separator: '\n'
+ * List separator: '|'
+ * Enf of sets: '\0'
+ */
+int SelvaArgsParser_StringListList(RedisModuleCtx *ctx, struct SelvaObject **out, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val) {
+    struct SelvaObject *obj;
+    const char *cur;
+    size_t n = 0;
+    int err;
+
+    err = SelvaArgParser_StrOpt(&cur, name, arg_key, arg_val);
+    if (err) {
+        return err;
+    }
+
+    obj = SelvaObject_New();
+    if (!obj) {
+        return SELVA_ENOMEM;
+    }
+
+    if (cur[0] != '\0') {
+        do {
+            RedisModuleString *key;
+            const char *next;
+            size_t len;
+
+            /*
+             * Find the separator between the current and the next field name list.
+             */
+            next = cur;
+            while (*next != '\0' && *next != '\n') {
+                next++;
+            }
+            len = (size_t)((ptrdiff_t)next - (ptrdiff_t)cur);
+
+            /*
+             * Create the strings
+             */
+            key = RedisModule_CreateStringPrintf(ctx, "%zd", n++);
+            if (!key) {
+                SelvaObject_Destroy(obj);
+                return SELVA_ENOMEM;
+            }
+
+            const char *cur_el = cur;
+            do {
+                RedisModuleString *el;
+                const char *next_el;
+                size_t el_len;
+
+                /*
+                 * Find the separator between the current and the next field name.
+                 */
+                next_el = cur_el;
+                while (*next_el != '\0' && *next_el != '|' && *next_el != '\n') {
+                    next_el++;
+                }
+                el_len = (size_t)((ptrdiff_t)next_el - (ptrdiff_t)cur_el);
+
+                el = RedisModule_CreateString(ctx, cur_el, el_len);
+                if (!key || !el) {
+                    SelvaObject_Destroy(obj);
+                    return SELVA_ENOMEM;
+                }
+
+                /*
+                 * Add to the list
+                 */
+                SelvaObject_AddArray(obj, key, SELVA_OBJECT_STRING, el);
+
+                if (*next_el == '\0') {
+                    break;
+                }
+                cur_el = next_el + 1;
+            } while (*cur_el != '\0');
+
+            if (*next == '\0' || *next == '\n') {
+                break;
+            }
+            cur = next + 1;
+        } while (*cur != '\0');
+    }
+
+    *out = obj;
     return 0;
 }
 

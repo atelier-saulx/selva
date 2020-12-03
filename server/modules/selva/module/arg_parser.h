@@ -6,6 +6,7 @@
 
 struct RedisModuleCtx;
 struct RedisModuleString;
+struct SelvaObject;
 
 /**
  * Parse an option with key string.
@@ -28,6 +29,12 @@ int SelvaArgParser_StrOpt(
 int SelvaArgsParser_StringList(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString ***out,
+        const char *name,
+        struct RedisModuleString *arg_key,
+        struct RedisModuleString *arg_val);
+int SelvaArgsParser_StringListList(
+        struct RedisModuleCtx *ctx,
+        struct SelvaObject **out,
         const char *name,
         struct RedisModuleString *arg_key,
         struct RedisModuleString *arg_val);
