@@ -30,7 +30,10 @@ int SelvaArgParser_StrOpt(const char **value, const char *name, RedisModuleStrin
         return SELVA_ENOENT;
     }
 
-    *value = arg_val_str;
+    if (value) {
+        *value = arg_val_str;
+    }
+
     return 0;
 }
 

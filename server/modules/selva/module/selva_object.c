@@ -438,31 +438,28 @@ static int get_key_modify(struct SelvaObject *obj, const RedisModuleString *key_
 int SelvaObject_DelKey(struct SelvaObject *obj, const RedisModuleString *key_name) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
-    int err;
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_DELETE, &key);
-    if (err) {
-        return err;
-    }
-
-    return 0;
+    return get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_DELETE, &key);
 }
 
 int SelvaObject_Exists(struct SelvaObject *obj, const RedisModuleString *key_name) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
-    int err;
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return err;
-    }
+    return get_key(obj, key_name_str, key_name_len, 0, &key);
+}
 
-    return 0;
+int SelvaObject_ExistsTopLevel(struct SelvaObject *obj, const RedisModuleString *key_name) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+
+    assert(obj);
+
+    return get_key(obj, key_name_str, strcspn(key_name_str, "."), 0, &key);
 }
 
 int SelvaObject_GetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double *out) {
@@ -589,6 +586,26 @@ int SelvaObject_SetStr(struct SelvaObject *obj, const RedisModuleString *key_nam
     RedisModule_RetainString(NULL, value);
     key->type = SELVA_OBJECT_STRING;
     key->value = value;
+
+    return 0;
+}
+
+int SelvaObject_GetObject(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObject **out) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    } else if (key->type != SELVA_OBJECT_OBJECT) {
+        return SELVA_EINTYPE;
+    }
+    assert(key->value);
+
+    *out = key->value;
 
     return 0;
 }
@@ -808,15 +825,30 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, RedisModuleString *key_name) {
     }
 }
 
+/* TODO Support nested objects */
 void *SelvaObject_ForeachBegin(struct SelvaObject *obj) {
     return RB_MIN(SelvaObjectKeys, &obj->keys_head);
 }
 
-const void *SelvaObject_Foreach(struct SelvaObject *obj, void **iterator, enum SelvaObjectType type) {
+const char *SelvaObject_ForeachKey(struct SelvaObject *obj, void **iterator) {
     struct SelvaObjectKey *key = *iterator;
     obj; /* This makes the compiler think we are actually using obj. */
 
+    if (!key) {
+        return NULL;
+    }
+
+    *iterator = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
+
+    return key->name;
+}
+
+const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, enum SelvaObjectType type) {
+    struct SelvaObjectKey *key;
+    obj; /* This makes the compiler think we are actually using obj. */
+
     do {
+        key = *iterator;
         if (!key) {
             return NULL;
         }
