@@ -14,7 +14,7 @@ import executeGetOperations, {
   addMarker,
   bufferNodeMarker
 } from './'
-import { FieldSchema } from '../../schema'
+import { FieldSchema, Schema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
 
 function makeRealKeys(
@@ -46,6 +46,7 @@ function makeRealKeys(
 async function mergeObj(
   client: SelvaClient,
   op: GetOperationInherit,
+  schema: Schema,
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> {
@@ -99,54 +100,21 @@ async function mergeObj(
     }
   }
 
-  const ids = await client.redis.selva_hierarchy_find(
+  const o = await client.redis.selva_hierarchy_find(
     {
       name: db
     },
     '___selva_hierarchy',
     'bfs',
     'ancestors',
+    'merge',
+    field,
     op.id,
     ...rpn
   )
-  console.log('___selva_hierarchy', 'bfs', 'ancestors', op.id, rpn)
-  console.log(ids)
+  console.log('___selva_hierarchy', 'bfs', 'ancestors', 'merge', field, op.id, rpn)
 
-  if (!ids || !ids.length) {
-    return null
-  }
-
-  ids.unshift(op.id)
-
-  const objs: GetResult[] = (
-    await Promise.all(
-      ids.map(async idx => {
-        const o = await executeGetOperations(client, lang, ctx, [
-          {
-            id: idx,
-            type: 'db',
-            field,
-            sourceField: field
-          }
-        ])
-
-        return getNestedField(o, field)
-      })
-    )
-  ).filter(x => !!x)
-
-  const o: GetResult = {}
-  for (const obj of objs) {
-    for (const k in obj) {
-      if (o[k]) {
-        continue
-      }
-
-      o[k] = obj[k]
-    }
-  }
-
-  return o
+  return TYPE_CASTS['object'](o, op.id, field, schema, lang)
 }
 
 async function inheritItem(
@@ -351,7 +319,7 @@ export default async function inherit(
     return executeNestedGetOperations(client, p, lang, ctx)
   } else if (op.single) {
     if (op.merge === true && (fs.type === 'object' || fs.type === 'record')) {
-      return mergeObj(client, op, lang, ctx)
+      return mergeObj(client, op, schema, lang, ctx)
     }
 
     if (ctx.subId) {
