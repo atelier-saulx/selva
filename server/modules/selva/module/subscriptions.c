@@ -294,14 +294,11 @@ static void reset_marker_filter(struct Selva_SubscriptionMarkers *sub_markers) {
 /*
  * Set a marker to a node metadata.
  */
-static int set_node_marker(Selva_NodeId id __unused, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int set_node_marker_cb(Selva_NodeId id __unused, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+    struct Selva_SubscriptionMarker *marker = (struct Selva_SubscriptionMarker *)arg;
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
-#endif
-    struct Selva_SubscriptionMarker *marker;
 
-    marker = (struct Selva_SubscriptionMarker *)arg;
-#if 0
     fprintf(stderr, "Set sub %s:%d marker to %.*s\n",
             Selva_SubscriptionId2str(str, marker->sub->sub_id),
             marker->marker_id,
@@ -312,14 +309,11 @@ static int set_node_marker(Selva_NodeId id __unused, void *arg, struct SelvaModi
     return 0;
 }
 
-static int clear_marker(Selva_NodeId id __unused, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int clear_node_marker_cb(Selva_NodeId id __unused, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+    struct Selva_SubscriptionMarker *marker = (struct Selva_SubscriptionMarker*)arg;
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
-#endif
-    struct Selva_SubscriptionMarker *marker;
 
-    marker = (struct Selva_SubscriptionMarker*)arg;
-#if 0
     fprintf(stderr, "Clear sub %s from %.*s (nr_subs: %zd)\n",
             Selva_SubscriptionId2str(str, marker->sub->sub_id), (int)SELVA_NODE_ID_SIZE, id,
             SVector_Size(&metadata->sub_markers.vec));
@@ -528,7 +522,7 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
          * Set subscription markers.
          */
         struct SelvaModify_HierarchyCallback cb = {
-            .node_cb = set_node_marker,
+            .node_cb = set_node_marker_cb,
             .node_arg = marker,
         };
 
@@ -596,7 +590,7 @@ void SelvaSubscriptions_RefreshByMarker(struct SelvaModify_Hierarchy *hierarchy,
  */
 static void clear_sub(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, Selva_NodeId node_id) {
     struct SelvaModify_HierarchyCallback cb = {
-        .node_cb = clear_marker,
+        .node_cb = clear_node_marker_cb,
         .node_arg = marker,
     };
 
@@ -1378,10 +1372,10 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     } else if (is_node_id) {
         Selva_NodeId node_id;
 
-        Selva_NodeIdCpy(node_id, id_str);
-        if (!memcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+        if (!memcmp("detached", id_str, id_len)) {
             markers = &hierarchy->subs.detached_markers.vec;
         } else {
+            Selva_NodeIdCpy(node_id, id_str);
             struct SelvaModify_HierarchyMetadata *metadata;
 
             metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, node_id);
