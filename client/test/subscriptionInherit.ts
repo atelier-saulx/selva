@@ -65,7 +65,7 @@ test.serial('inherit object nested field from root youzi', async t => {
 
   const observable = client.observe({
     $id: 'yeA',
-    flapper: { snurk: { $inherit: { $type: ['yeshType', 'root'] } } }
+    flapper: { snurk: { $inherit: true } }
   })
 
   const results = []

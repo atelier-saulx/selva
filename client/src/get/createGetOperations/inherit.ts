@@ -47,10 +47,18 @@ export default function createInheritOperation(
   ops: GetOperation[]
 ): void {
   if (typeof inherit === 'boolean') {
-    // TODO: make this nice when we have a custom record type in redis
-    throw new Error(
-      '$inherit: true is currently not supported in fastmode, please provide a type'
-    )
+    ops.push({
+      type: 'inherit',
+      id,
+      field,
+      sourceField: field,
+      props: {},
+      item: false,
+      required: undefined,
+      types: []
+    })
+
+    return
   }
 
   if (inherit.$item) {

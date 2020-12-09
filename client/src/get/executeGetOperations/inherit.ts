@@ -254,12 +254,15 @@ export default async function inherit(
     return acc
   }, '')
 
-  const fs = getNestedSchema(
-    schema,
-    (op.types[0] === 'root' ? schema.rootType : schema.types[op.types[0]])
-      .prefix,
-    <string>op.sourceField
-  )
+  let fs;
+  if (op.types && op.types.length > 0) {
+    fs = getNestedSchema(
+      schema,
+      (op.types[0] === 'root' ? schema.rootType : schema.types[op.types[0]])
+        .prefix,
+      <string>op.sourceField
+    )
+  }
 
   if (fs && fs.type === 'reference') {
     if (ctx.subId) {
@@ -422,6 +425,10 @@ export default async function inherit(
     return f
   })
 
+  if (fields.length === 0) {
+      fields.push(op.field);
+  }
+
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
     const added = await addMarker(client, ctx, {
@@ -462,7 +469,16 @@ export default async function inherit(
     }
   }
 
-  const res = await client.redis.selva_inherit(
+  console.log(
+      [
+    '___selva_hierarchy',
+    op.id,
+    prefixes || '',
+    fields
+      ]
+  );
+  let res;
+  res = await client.redis.selva_inherit(
     {
       name: db
     },
@@ -472,12 +488,27 @@ export default async function inherit(
     ...fields
   )
 
+  if (Object.keys(op.props).length === 0) {
+    let [idx, f, v] = res[0]
+    const t = idx === 'root' ? 'root' : idx.substring(0, 2);
+    const fs = getNestedSchema(
+      schema,
+      (t === 'root' ? schema.rootType : schema.types[t])
+        .prefix,
+      f
+    )
+    const typeCast = TYPE_CASTS[fs.type]
+
+    return typeCast ? typeCast(v, idx, f, client.schemas.default) : v
+  }
+
   const o: GetResult = {}
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
+    const t = idx === 'root' ? 'root' : op.types[0];
     const fs = getNestedSchema(
       schema,
-      (op.types[0] === 'root' ? schema.rootType : schema.types[op.types[0]])
+      (t === 'root' ? schema.rootType : schema.types[t])
         .prefix,
       f
     )

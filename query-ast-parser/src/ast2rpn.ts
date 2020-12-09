@@ -181,21 +181,25 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
     }
   }
 
-  function ast2rpnFork(expr: Fork, ignoreLang: boolean = false) {
+ function ast2rpnFork(expr: Fork, ignoreLang: boolean = false) {
     const lop: ' M' | ' N' = expr.$and ? ' M' : ' N'
     const arr = expr.$and || expr.$or || []
 
-    for (let i = 0; i < arr.length; i++) {
-      const el = arr[i]
+    if (arr.length === 0) {
+        out += ' #1'
+    } else {
+      for (let i = 0; i < arr.length; i++) {
+        const el = arr[i]
 
-      if (isFork(el)) {
-        ast2rpnFork(el)
-      } else {
-        ast2rpnFilter(el, ignoreLang)
-      }
+        if (isFork(el)) {
+          ast2rpnFork(el)
+        } else {
+          ast2rpnFilter(el, ignoreLang)
+        }
 
-      if (i > 0) {
-        out += lop
+        if (i > 0) {
+          out += lop
+        }
       }
     }
   }

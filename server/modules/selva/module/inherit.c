@@ -69,7 +69,7 @@ static int send_hierarchy_field_NodeCb(Selva_NodeId nodeId, void *arg, struct Se
     int match = 0;
 
     /*
-     * Some traversal modes needs to skip the first entry.
+     * Some traversal modes must skip the first entry.
      */
     if (unlikely(args->skip)) {
         args->skip = 0;
@@ -79,7 +79,7 @@ static int send_hierarchy_field_NodeCb(Selva_NodeId nodeId, void *arg, struct Se
     for (size_t i = 0; i < args->nr_types; i++) {
         match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
     }
-    if (!match) {
+    if (!match && args->nr_types > 0) {
         /*
          * This node type is not accepted and we don't need to check whether the
          * is field set.
@@ -180,7 +180,7 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
         for (size_t i = 0; i < args->nr_types; i++) {
             match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
         }
-        if (!match) {
+        if (!match && args->nr_types > 0) {
             /*
              * This node type is not accepted and we don't need to check whether
              * the field set.
@@ -225,6 +225,47 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
     }
 
     return 0;
+}
+
+size_t inheritHierarchyFields(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        Selva_NodeId node_id,
+        size_t nr_types,
+        const Selva_NodeType *types,
+        size_t nr_field_names,
+        RedisModuleString **field_names) {
+    size_t nr_presolved = 0;
+    int err;
+
+    for (size_t i = 0; i < nr_field_names; i++) {
+        RedisModuleString *field_name = field_names[i];
+        TO_STR(field_name);
+
+        err = 1; /* This value will help us know if something matched. */
+
+        if (!strcmp(field_name_str, "ancestors")) {
+            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
+        } else if (!strcmp(field_name_str, "children")) {
+            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
+        } else if (!strcmp(field_name_str, "descendants")) {
+            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
+        } else if (!strcmp(field_name_str, "parents")) {
+            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
+        }
+
+        if (err <= 0) { /* Something was traversed. */
+            field_names[i] = NULL; /* This field is now resolved. */
+            nr_presolved++;
+        }
+
+        if (err < 0) {
+            fprintf(stderr, "%s: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
+                    __FILE__, (int)SELVA_NODE_ID_SIZE, node_id, field_name_str, getSelvaErrorStr(err));
+        }
+    }
+
+    return nr_presolved;
 }
 
 /**
@@ -283,33 +324,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * - These fields will always exist in every node so these are always resolved a top level
      * - Hierarchy traversal is not reentrant and calling it inside another traversal will stop the outter iteration
      */
-    size_t nr_presolved = 0;
-    for (size_t i = 0; i < nr_field_names; i++) {
-        RedisModuleString *field_name = field_names[i];
-        TO_STR(field_name);
-
-        err = 1; /* This value will help us know if something matched. */
-
-        if (!strcmp(field_name_str, "ancestors")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
-        } else if (!strcmp(field_name_str, "children")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
-        } else if (!strcmp(field_name_str, "descendants")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
-        } else if (!strcmp(field_name_str, "parents")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
-        }
-
-        if (err <= 0) { /* Something was traversed. */
-            field_names[i] = NULL; /* This field is now resolved. */
-            nr_presolved++;
-        }
-
-        if (err < 0) {
-            fprintf(stderr, "%s: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
-                    __FILE__, (int)SELVA_NODE_ID_SIZE, node_id, field_name_str, getSelvaErrorStr(err));
-        }
-    }
+    size_t nr_presolved = inheritHierarchyFields(ctx, hierarchy, node_id, nr_types, types, nr_field_names, field_names);
 
     /*
      * Execute a traversal to inherit the requested field values.

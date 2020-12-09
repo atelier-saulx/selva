@@ -188,7 +188,6 @@ export const TYPE_CASTS: Record<
             // TODO do we need to add key here??? did not have this before - does fix stuff
             // TODO: CHECK WITH TONY! - also does not have a test for this...
             val = typeCast(val, id, `${field}.${key}`, schema, lang)
-            // console.log('poopoo pants')
             // val = typeCast(val, id, field, schema, lang)
           }
           o[key] = val
