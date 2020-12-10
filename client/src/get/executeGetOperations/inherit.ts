@@ -96,6 +96,7 @@ async function mergeObj(
     })
 
     if (added) {
+      client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
       ctx.hasFindMarkers = true
     }
   }
@@ -178,6 +179,7 @@ async function inheritItem(
     })
 
     if (added) {
+      client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
       ctx.hasFindMarkers = true
     }
   }
@@ -296,6 +298,7 @@ export default async function inherit(
       })
 
       if (added) {
+        client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
         ctx.hasFindMarkers = true
       }
     }
@@ -356,6 +359,7 @@ export default async function inherit(
       })
 
       if (added) {
+        client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
         ctx.hasFindMarkers = true
       }
     }
@@ -465,6 +469,7 @@ export default async function inherit(
     })
 
     if (added) {
+      client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
       ctx.hasFindMarkers = true
     }
   }
