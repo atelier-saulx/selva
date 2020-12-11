@@ -230,8 +230,12 @@ static void destroy_all_sub_markers(SelvaModify_Hierarchy *hierarchy) {
  */
 void SelvaSubscriptions_DestroyAll(SelvaModify_Hierarchy *hierarchy) {
     SelvaSubscriptions_DestroyDeferredEvents(hierarchy);
-    SVector_Destroy(&hierarchy->subs.detached_markers.vec);
     destroy_all_sub_markers(hierarchy);
+    /*
+     * Do this as the last step because destroy_all_sub_markers() will access
+     * the vector.
+     */
+    SVector_Destroy(&hierarchy->subs.detached_markers.vec);
 }
 
 static void init_node_metadata_subs(

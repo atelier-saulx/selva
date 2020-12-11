@@ -50,11 +50,11 @@ test.beforeEach(async t => {
   })
 
   // A small delay is needed after setting the schema
-  await new Promise(r => setTimeout(r, 100))
+  await wait(100)
 
   await client.destroy()
 
-  rclient = redis.createClient(port + 2)
+  rclient = redis.createClient(client.servers.origins.default.port)
 })
 
 test.after(async _t => {

@@ -1391,10 +1391,11 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Run the traverse function.
      */
     ssize_t tmp_limit = -1;
+    size_t skip = get_skip(marker->dir); /* Skip n nodes from the results. */
     struct FindCommand_Args args = {
         .ctx = ctx,
         .nr_nodes = &array_len,
-        .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset : 0,
+        .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
         .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
         .rpn_ctx = marker->filter_ctx,
         .filter = marker->filter_expression,
