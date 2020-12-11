@@ -129,7 +129,7 @@ test.serial('inherit object youzi', async t => {
 
   const observable = client.observe({
     $id: 'yeA',
-    flapper: { $inherit: true }
+    flapper: { $inherit: { $type: 'yeshType' } }
   })
 
   const results = []
@@ -214,7 +214,7 @@ test.serial('basic inherit subscription', async t => {
 
   const observable = client.observe({
     $id: 'yeB',
-    yesh: { $inherit: true }
+    yesh: { $inherit: { $type: ['yeshType', 'root'] } }
   })
 
   const results = []
