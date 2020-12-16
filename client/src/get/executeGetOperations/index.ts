@@ -481,7 +481,7 @@ export const executeGetOperation = async (
       return typeCast(
         r,
         op.id,
-        op.sourceField as string,
+        Array.isArray(op.sourceField) ? op.sourceField[0] : op.sourceField,
         client.schemas[ctx.db],
         lang
       )
