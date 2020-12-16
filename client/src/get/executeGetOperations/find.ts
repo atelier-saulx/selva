@@ -13,8 +13,8 @@ function parseGetOpts(
 ): [Set<string>, GetOptions[]] {
   const pathPrefix = path === '' ? '' : path + '.'
   const fields: Set<string> = new Set()
-
   const gets: GetOptions[] = []
+
   for (const k in props) {
     if (props[k] === true) {
       fields.add(pathPrefix + k)
@@ -22,11 +22,17 @@ function parseGetOpts(
       // ignore
     } else if (typeof props[k] === 'object') {
       const opts = Object.keys(props[k]).filter(p => p.startsWith('$'))
-      if ((path === '' || opts.length === 1) && opts[0] === '$field') {
-        const all = Array.isArray(props[k].$field)
-          ? props[k].$field
-          : [props[k].$field]
-        fields.add(all.join('|'))
+      if ((path === '' || opts.length === 1) && opts.includes('$field')) {
+        if (opts.includes('$inherit')) {
+          const o = {}
+          setNestedResult(o, pathPrefix + k, props[k])
+          gets.push(o);
+        } else {
+          const all = Array.isArray(props[k].$field)
+            ? props[k].$field
+            : [props[k].$field]
+          fields.add(all.join('|'))
+        }
       } else if (path !== '' && opts.length >= 1) {
         const o = {}
         setNestedResult(o, pathPrefix + k, props[k])
@@ -454,7 +460,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      [...fieldsOpt.values()].join('\n'),
+      [...fieldsOpt.values()].join('\n'), // TODO Probably shouldn't pass $ names?
       padId(op.id),
       ...args
     )
