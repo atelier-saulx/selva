@@ -542,7 +542,7 @@ test.serial.skip(
     })
 
     const results = []
-    const obs = await client.observe({
+    const obs = client.observe({
       $id: 'viG',
       id: true,
       complexOr: {
@@ -800,7 +800,7 @@ test.serial.skip(
     })
 
     const results = []
-    const obs = await client.observe({
+    const obs = client.observe({
       $id: 'viG',
       id: true,
       complexThingy: {
