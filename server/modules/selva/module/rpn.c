@@ -530,8 +530,9 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
 
     if (type == RPN_LVTYPE_NUMBER) {
         double dvalue;
+        const enum SelvaObjectType type = SelvaObject_GetType(obj, ctx->rms_field);
 
-        switch (SelvaObject_GetType(obj, ctx->rms_field)) {
+        switch (type) {
         case SELVA_OBJECT_NULL:
             return push_empty_value(ctx);
             break;
@@ -551,9 +552,12 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
         }
 
         if (err) {
-            fprintf(stderr, "RPN: Field value [%.*s].%.*s is not a number\n",
+            const char *type_str = SelvaObject_Type2String(type, NULL);
+
+            fprintf(stderr, "RPN: Field value [%.*s].%.*s is not a number, actual type: \"%s\"\n",
                     (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]),
-                    (int)field->s_size, OPERAND_GET_S(field));
+                    (int)field->s_size, OPERAND_GET_S(field),
+                    type_str ? type_str : "INVALID");
 
             return RPN_ERR_NAN;
         }

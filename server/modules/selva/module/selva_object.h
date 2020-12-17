@@ -53,6 +53,7 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, struct RedisModuleString *key_n
 SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
 const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
 const void *SelvaObject_ForeachValue(struct SelvaObject *obj, SelvaObject_Iterator **iterator, enum SelvaObjectType type);
+const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
 
 /*
  * Send a SelvaObject as a Redis reply.

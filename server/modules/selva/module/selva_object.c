@@ -875,6 +875,19 @@ const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, e
     return NULL;
 }
 
+const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
+    if (type >= 0 && type < num_elem(type_names)) {
+        const struct so_type_name *tn = &type_names[type];
+
+        if (len) {
+            *len = tn->len;
+        }
+        return tn->name;
+    }
+
+    return NULL;
+}
+
 int SelvaObject_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
@@ -1160,7 +1173,7 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         return replyWithSelvaErrorf(ctx, err, "get_key");
     }
 
-    if (type >= 0 && type < sizeof(type_names)) {
+    if (type >= 0 && type < num_elem(type_names)) {
         const struct so_type_name *tn = &type_names[type];
         RedisModule_ReplyWithStringBuffer(ctx, tn->name, tn->len);
     } else {

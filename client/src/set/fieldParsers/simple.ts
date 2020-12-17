@@ -79,7 +79,7 @@ const converters = {
       return payload
     }
   },
-  boolean: (v: boolean) => (v ? '1' : '0'),
+  boolean: (v: boolean): Buffer => createRecord(longLongDef, { d: BigInt(+v) }),
   int: (payload: number): Buffer => createRecord(longLongDef, { d: payload }),
   float: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
   number: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
@@ -90,7 +90,7 @@ const parsers = {}
 for (const key in verifiers) {
   const verify = verifiers[key]
   const valueType: string =
-    key === 'int' ? '3' : key === 'float' || key === 'number' ? 'A' : '0'
+    key === 'int' || key === 'boolean' ? '3' : key === 'float' || key === 'number' ? 'A' : '0'
   const isNumber = key === 'float' || key === 'number' || key === 'int'
   const noOptions = key === 'type' || key === 'id' || key === 'digest'
   const converter = converters[key]
