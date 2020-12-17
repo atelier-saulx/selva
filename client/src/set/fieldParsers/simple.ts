@@ -80,7 +80,7 @@ const converters = {
     }
   },
   boolean: (v: boolean): Buffer => createRecord(longLongDef, { d: BigInt(+v) }),
-  int: (payload: number): Buffer => createRecord(longLongDef, { d: payload }),
+  int: (payload: number): Buffer => createRecord(longLongDef, { d: BigInt(payload) }),
   float: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
   number: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
 }
