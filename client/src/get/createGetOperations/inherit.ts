@@ -51,7 +51,7 @@ export default function createInheritOperation(
       type: 'inherit',
       id,
       field,
-      sourceField: field,
+      sourceField: props.$field || field,
       props: {},
       item: false,
       required: undefined,

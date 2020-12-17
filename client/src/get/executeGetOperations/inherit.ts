@@ -430,7 +430,7 @@ export default async function inherit(
   })
 
   if (fields.length === 0) {
-      fields.push(op.field);
+      fields.push(op.sourceField);
   }
 
   if (ctx.subId) {
@@ -493,7 +493,9 @@ export default async function inherit(
     ...fields
   )
 
-  if (Object.keys(op.props).length === 0) {
+  if (res.length === 0) {
+      return null;
+  } else if (Object.keys(op.props).length === 0) {
     let [idx, f, v] = res[0]
     const t = idx === 'root' ? 'root' : idx.substring(0, 2);
     const fs = getNestedSchema(

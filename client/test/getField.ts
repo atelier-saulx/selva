@@ -396,7 +396,7 @@ test.serial.skip(
   }
 )
 
-test.serial.skip('get - simple $field with $inherit: true', async t => {
+test.serial('get - simple $field with $inherit: true', async t => {
   const client = connect({ port })
 
   await client.set({
