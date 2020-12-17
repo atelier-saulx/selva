@@ -382,16 +382,6 @@ export default async function inherit(
     if (TYPE_CASTS[fs.type]) {
       const field = res[0][1]
       return TYPE_CASTS[fs.type](v, op.id, field, client.schemas[ctx.db], lang)
-    } else if (fs.type === 'object') {
-      const [id, field, value] = res[0]
-      const fieldSchema = getNestedSchema(schema, id, field)
-      const typeCast = TYPE_CASTS[fieldSchema.type]
-
-      if (typeCast) {
-        v = typeCast(value, id, field, client.schemas.default)
-      } else {
-        v = value
-      }
     }
 
     return v
