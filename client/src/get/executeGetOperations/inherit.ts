@@ -381,28 +381,7 @@ export default async function inherit(
 
     if (TYPE_CASTS[fs.type]) {
       const field = res[0][1]
-      return TYPE_CASTS[fs.type](v, op.id, field, client.schemas[ctx.db])
-    } else if (fs.type === 'text') {
-      const result = {}
-
-      for (let i = 0; i < v.length; i += 2) {
-        result[v[i]] = v[i + 1]
-      }
-
-      if (lang) {
-        v = result[lang] || null
-
-        if (!v && client.schemas.default.languages) {
-          for (const l of client.schemas.default.languages) {
-            const txt = result[l]
-            if (txt) return txt
-          }
-        }
-
-        return v
-      }
-
-      return result
+      return TYPE_CASTS[fs.type](v, op.id, field, client.schemas[ctx.db], lang)
     } else if (fs.type === 'object') {
       const [id, field, value] = res[0]
       const fieldSchema = getNestedSchema(schema, id, field)
