@@ -72,13 +72,7 @@ export const verifiers = {
 // also need to make this accessable
 const converters = {
   digest,
-  timestamp: (payload: 'now' | number): number => {
-    if (payload === 'now') {
-      return Date.now()
-    } else {
-      return payload
-    }
-  },
+  timestamp: (payload: 'now' | number): Buffer => createRecord(longLongDef, { d: BigInt(payload === 'now' ? Date.now() : payload) }),
   boolean: (v: boolean): Buffer => createRecord(longLongDef, { d: BigInt(+v) }),
   int: (payload: number): Buffer => createRecord(longLongDef, { d: BigInt(payload) }),
   float: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
@@ -90,7 +84,9 @@ const parsers = {}
 for (const key in verifiers) {
   const verify = verifiers[key]
   const valueType: string =
-    key === 'int' || key === 'boolean' ? '3' : key === 'float' || key === 'number' ? 'A' : '0'
+    ['boolean', 'int', 'timestamp'].includes(key)
+      ? '3'
+      : ['float', 'number'].includes(key) ? 'A' : '0'
   const isNumber = key === 'float' || key === 'number' || key === 'int'
   const noOptions = key === 'type' || key === 'id' || key === 'digest'
   const converter = converters[key]
