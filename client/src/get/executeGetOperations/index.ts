@@ -138,7 +138,7 @@ export const TYPE_CASTS: Record<
   number: Number,
   timestamp: Number,
   int: Number,
-  boolean: (x: any) => { console.log('bol', x); return !!x },
+  boolean: (x: any) => !!Number(x),
   json: (x: any) => JSON.parse(x),
   array: (x: any) => JSON.parse(x),
   object: (all: any, id: string, field: string, schema, lang) => {
