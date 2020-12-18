@@ -120,7 +120,9 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
             Selva_SubscriptionId2str(channel + sizeof(PREFIX) - 1, task->sub_id);
 #undef PREFIX
 
+#if 0
             fprintf(stderr, "Redis publish subscription update: \"%s\"\n", channel);
+#endif
             reply = redisCommand(ctx, "PUBLISH %s %s", channel, "");
             if (reply == NULL) {
                 fprintf(stderr, "Error occurred in publish %s\n", ctx->errstr);
