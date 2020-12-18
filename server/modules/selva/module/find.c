@@ -423,6 +423,7 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct Sel
             SVector_ForeachBegin(&it, vec);
             while ((field = SVector_Foreach(&it))) {
                 if (SelvaObject_Exists(obj, field)) {
+                    /* Field didn't exist in the node. */
                     continue;
                 }
 

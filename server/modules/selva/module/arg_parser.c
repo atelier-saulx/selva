@@ -136,7 +136,7 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
             /*
              * Create the strings
              */
-            key = RedisModule_CreateStringPrintf(ctx, "%zd", n++);
+            key = RedisModule_CreateStringPrintf(ctx, "%zu", n++);
             if (!key) {
                 SelvaObject_Destroy(obj);
                 return SELVA_ENOMEM;
@@ -168,13 +168,13 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
                  */
                 SelvaObject_AddArray(obj, key, SELVA_OBJECT_STRING, el);
 
-                if (*next_el == '\0') {
+                if (*next_el == '\0' || *next_el == '\n') {
                     break;
                 }
                 cur_el = next_el + 1;
             } while (*cur_el != '\0');
 
-            if (*next == '\0' || *next == '\n') {
+            if (*next == '\0') {
                 break;
             }
             cur = next + 1;
