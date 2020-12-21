@@ -27,11 +27,16 @@ test.serial('get - correct order', async t => {
     }),
     startSubscriptionManager({ registry: { port } }),
     startSubscriptionRegistry({ registry: { port } }),
-    startReplica({
-      dir: join(dir, 'replica'),
-      registry: { port },
-      default: true
-    })
+    (async () => {
+        // TODO If there is no delay here the replica crashes because
+        //      it's trying to read an incomplete rdb dump.
+        await wait(1e3)
+        return startReplica({
+          dir: join(dir, 'replica'),
+          registry: { port },
+          default: true
+      })
+    })()
   ])
 
   const client = connect({ port }, { loglevel: 'info' })
@@ -165,6 +170,9 @@ test.serial('get - correct order', async t => {
 
   await wait(3e3)
 
+  console.log(results)
+
+  t.is(results.length, 3)
   t.is(results[0].children.length, 3)
   t.is(results[1].children.length, 2)
   t.is(results[2].children.length, 3)
