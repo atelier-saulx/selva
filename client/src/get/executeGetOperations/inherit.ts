@@ -466,10 +466,9 @@ export default async function inherit(
       return null;
   } else if (Object.keys(op.props).length === 0) {
     let [idx, f, v] = res[0]
-    const t = idx === 'root' ? 'root' : idx.substring(0, 2);
     const fs = getNestedSchema(
       schema,
-      (t === 'root' ? schema.rootType.prefix : t),
+      idx,
       f
     )
     const typeCast = TYPE_CASTS[fs.type]
@@ -480,11 +479,9 @@ export default async function inherit(
   const o: GetResult = {}
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
-    const t = idx === 'root' ? 'root' : idx.substring(0, 2);
     const fs = getNestedSchema(
       schema,
-      (t === 'root' ? schema.rootType.prefix : t)
-        .prefix,
+      idx,
       f
     )
     const typeCast = TYPE_CASTS[fs.type]
