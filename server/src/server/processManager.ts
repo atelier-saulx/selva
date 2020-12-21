@@ -118,7 +118,7 @@ export default class ProcessManager extends EventEmitter {
       this.emit('stderr', d.toString())
     })
 
-    const exitHandler = (code: number) => {
+    const exitHandler = (code: number, signal: string) => {
       this.emit(
         'error',
         new Error(`Child process for ${this.command} exited with code ${code}.`)
@@ -135,7 +135,7 @@ export default class ProcessManager extends EventEmitter {
           chalk.red(
             `Child process for ${
               this.command
-            } exited with code ${code} at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()} pm: ${
+            } exited with ${code === null ? `signal ${signal}` : `code ${code}`} at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()} pm: ${
               this.uuid
             } port: ${this.args[1]}. Attempting restart #${this.restartCount +
               1}`
