@@ -1235,8 +1235,8 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
         RedisModule_LogIOError(io, "warning", "Failed to create a new SelvaObject");
         return NULL;
     }
-    const size_t obj_size = RedisModule_LoadUnsigned(io);
 
+    const size_t obj_size = RedisModule_LoadUnsigned(io);
     for (size_t i = 0; i < obj_size; i++) {
         RedisModuleString *name;
         enum SelvaObjectType type;
