@@ -21,15 +21,14 @@ test.serial('get - correct order', async t => {
   const servers = await Promise.all([
     startRegistry({ port }),
     startOrigin({
-      //dir,
+      dir,
       registry: { port },
       default: true
     }),
     startSubscriptionManager({ registry: { port } }),
     startSubscriptionRegistry({ registry: { port } }),
     startReplica({
-      // TODO The replica tries to load an incomplete RDB file and crashes
-      //dir: join(dir, 'replica'),
+      dir: join(dir, 'replica'),
       registry: { port },
       default: true
     })
