@@ -545,12 +545,14 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
             err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
         }
         if (err) {
+#if 0
             char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
             fprintf(stderr, "%s: Could not fully apply a subscription: %s:%d err: %s\n",
                     __FILE__,
                     Selva_SubscriptionId2str(str, sub->sub_id), marker->marker_id,
                     getSelvaErrorStr(err));
+#endif
 
             /*
              * Don't report ENOENT errors because subscriptions are valid for
