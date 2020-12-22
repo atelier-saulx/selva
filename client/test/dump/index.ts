@@ -41,6 +41,7 @@ const testDataType = async (t, schema, payload) => {
   }
 }
 
+// works
 test.serial('works with number: 1', async t => {
   await testDataType(
     t,
@@ -62,6 +63,7 @@ test.serial('works with number: 1', async t => {
   )
 })
 
+// breaks
 test.serial('works with number: 0', async t => {
   await testDataType(
     t,
@@ -83,6 +85,7 @@ test.serial('works with number: 0', async t => {
   )
 })
 
+// works
 test.serial('works with boolean: true', async t => {
   await testDataType(
     t,
@@ -104,6 +107,7 @@ test.serial('works with boolean: true', async t => {
   )
 })
 
+// breaks
 test.serial('works with boolean: false', async t => {
   await testDataType(
     t,
@@ -125,6 +129,7 @@ test.serial('works with boolean: false', async t => {
   )
 })
 
+// works
 test.serial('works with string: empty', async t => {
   await testDataType(
     t,
