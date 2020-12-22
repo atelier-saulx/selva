@@ -451,8 +451,7 @@ export default async function inherit(
     fields
       ]
   );
-  let res;
-  res = await client.redis.selva_inherit(
+  let res = await client.redis.selva_inherit(
     {
       name: db
     },
