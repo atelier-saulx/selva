@@ -1343,11 +1343,6 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
         RedisModule_SaveStringBuffer(io, key->name, key->name_len);
 
         if (key->type != SELVA_OBJECT_NULL) {
-            if (!key->value) {
-                RedisModule_LogIOError(io, "warning", "Value is NULL");
-                continue;
-            }
-
             RedisModule_SaveUnsigned(io, key->type);
 
             switch (key->type) {
