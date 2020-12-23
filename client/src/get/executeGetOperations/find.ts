@@ -37,6 +37,11 @@ function parseGetOpts(
         const o = {}
         setNestedResult(o, pathPrefix + k, props[k])
         gets.push(o)
+
+        // Even though not necessary, we need to try to get the field here so
+        // the fields list is not left empty, which would mean same as selecting
+        // all fields.
+        fields.add(path)
       } else if (!k.startsWith('$')) {
         const [nestedFields, nestedGets] = parseGetOpts(
           props[k],
