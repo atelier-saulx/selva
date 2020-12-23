@@ -79,7 +79,7 @@ set can-use-hw-watchpoints 0
 
 Quite often after setting a breakpoint you'll endup stepping into a long library
 function that is not relevant for your debugging. You can step out from the
-function by using the `finish` command.
+function by using the `finish` command (or `fini`).
 
 ```gdb
 fini
