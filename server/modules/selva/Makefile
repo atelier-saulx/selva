@@ -27,6 +27,10 @@ ifeq ($(uname_S),Linux)
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
 	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
+else ifeq ($(shell test `sw_vers -productVersion|cut -c1-2` -ge 11; echo $$?),0)
+	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
+	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup -L /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib
+	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
 else
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
