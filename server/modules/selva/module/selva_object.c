@@ -121,6 +121,10 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         SVector_Destroy(&key->array);
         break;
     default:
+        /*
+         * In general default shouldn't be used because it may mask out missing
+         * type handling but it's acceptable here.
+         */
         fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
         return SELVA_EINTYPE;
     }
@@ -994,7 +998,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
         replyWithArray(ctx, key->subtype, &key->array);
         break;
     default:
-        (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)key->type);
+        (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Type not supported %d", (int)key->type);
     }
 }
 
@@ -1378,10 +1382,10 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
                     }
                 }
                 break;
-        case SELVA_OBJECT_ARRAY:
-            /* TODO Support arrays */
-            RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
-            break;
+            case SELVA_OBJECT_ARRAY:
+                /* TODO Support arrays */
+                RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
+                break;
             default:
                 RedisModule_LogIOError(io, "warning", "Unknown type");
             }
