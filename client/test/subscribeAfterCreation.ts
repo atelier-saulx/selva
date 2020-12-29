@@ -1,16 +1,14 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { start, startOrigin } from '@saulx/selva-server'
+import { start } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
-let srv2
 let port: number
 test.before(async t => {
   port = await getPort()
   srv = await start({ port })
-  srv2 = await startOrigin({ name: 'users', registry: { port } })
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de'],
@@ -26,23 +24,7 @@ test.before(async t => {
     }
   })
 
-  await client.updateSchema(
-    {
-      languages: ['en', 'de', 'nl'],
-      types: {
-        user: {
-          prefix: 'us',
-          fields: {
-            title: { type: 'text' }
-          }
-        }
-      }
-    },
-    'users'
-  )
-
   await wait(500)
-
   await client.destroy()
 })
 
@@ -51,7 +33,6 @@ test.after(async t => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
-  await srv2.destroy()
   await t.connectionsAreEmpty()
 })
 
@@ -59,23 +40,11 @@ test.serial('subscribe - should fire after creation', async t => {
   const client = connect({ port }, { loglevel: 'info' })
   const id = 'sh1'
 
-  client
-    .observe({
-      $id: id,
-      id: true,
-      $language: 'de'
-    })
-    .subscribe(r => {
-      console.log('other fires!', r)
-    })
-
-  await wait(5e2)
-
-  await client.set({
-    $id: id,
-    $language: 'de',
-    title: 'IF THIS IS UNCOMMENTED IT WORKS'
-  })
+  // await client.set({
+  //   $id: id,
+  //   $language: 'de',
+  //   title: 'IF THIS IS UNCOMMENTED IT WORKS'
+  // })
 
   let n = 5
   t.plan(n + 1)
