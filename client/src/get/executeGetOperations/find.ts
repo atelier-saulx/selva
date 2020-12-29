@@ -27,7 +27,7 @@ function parseGetOpts(
           const o = {}
           setNestedResult(o, pathPrefix + k, props[k])
           gets.push(o)
-        } else {
+        } else if (props[k].$field) {
           const all = Array.isArray(props[k].$field)
             ? props[k].$field
             : [props[k].$field]
