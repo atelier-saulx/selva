@@ -22,7 +22,7 @@ function parseGetOpts(
       // ignore
     } else if (typeof props[k] === 'object') {
       const opts = Object.keys(props[k]).filter(p => p.startsWith('$'))
-      if ((path === '' || opts.length === 1) && opts.includes('$field')) {
+      if (path === '' || opts.length === 1) {
         if (opts.includes('$inherit')) {
           const o = {}
           setNestedResult(o, pathPrefix + k, props[k])
