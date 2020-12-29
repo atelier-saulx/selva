@@ -26,7 +26,7 @@ function parseGetOpts(
         if (opts.includes('$inherit')) {
           const o = {}
           setNestedResult(o, pathPrefix + k, props[k])
-          gets.push(o);
+          gets.push(o)
         } else {
           const all = Array.isArray(props[k].$field)
             ? props[k].$field
