@@ -113,7 +113,15 @@ async function mergeObj(
     op.id,
     ...rpn
   )
-  console.log('___selva_hierarchy', 'bfs', 'ancestors', 'merge', field, op.id, rpn)
+  console.log(
+    '___selva_hierarchy',
+    'bfs',
+    'ancestors',
+    'merge',
+    field,
+    op.id,
+    rpn
+  )
 
   return TYPE_CASTS['object'](o, op.id, field, schema, lang)
 }
@@ -256,7 +264,7 @@ export default async function inherit(
     return acc
   }, '')
 
-  let fs;
+  let fs
   if (op.types && op.types.length > 0) {
     fs = getNestedSchema(
       schema,
@@ -298,7 +306,10 @@ export default async function inherit(
       })
 
       if (added) {
-        client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
+        client.redis.selva_subscriptions_refresh(
+          '___selva_hierarchy',
+          ctx.subId
+        )
         ctx.hasFindMarkers = true
       }
     }
@@ -359,7 +370,10 @@ export default async function inherit(
       })
 
       if (added) {
-        client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
+        client.redis.selva_subscriptions_refresh(
+          '___selva_hierarchy',
+          ctx.subId
+        )
         ctx.hasFindMarkers = true
       }
     }
@@ -399,7 +413,7 @@ export default async function inherit(
   })
 
   if (fields.length === 0) {
-      fields.push(op.sourceField);
+    fields.push(op.sourceField)
   }
 
   if (ctx.subId) {
@@ -443,14 +457,7 @@ export default async function inherit(
     }
   }
 
-  console.log(
-      [
-    '___selva_hierarchy',
-    op.id,
-    prefixes || '',
-    fields
-      ]
-  );
+  console.log(['___selva_hierarchy', op.id, prefixes || '', fields])
   let res = await client.redis.selva_inherit(
     {
       name: db
@@ -462,14 +469,10 @@ export default async function inherit(
   )
 
   if (res.length === 0) {
-      return null;
+    return null
   } else if (Object.keys(op.props).length === 0) {
     let [idx, f, v] = res[0]
-    const fs = getNestedSchema(
-      schema,
-      idx,
-      f
-    )
+    const fs = getNestedSchema(schema, idx, f)
     const typeCast = TYPE_CASTS[fs.type]
 
     return typeCast ? typeCast(v, idx, f, client.schemas.default) : v
@@ -478,11 +481,7 @@ export default async function inherit(
   const o: GetResult = {}
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
-    const fs = getNestedSchema(
-      schema,
-      idx,
-      f
-    )
+    const fs = getNestedSchema(schema, idx, f)
     const typeCast = TYPE_CASTS[fs.type]
 
     const newV = typeCast ? typeCast(v, idx, f, client.schemas.default) : v
