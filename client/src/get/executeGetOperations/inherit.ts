@@ -209,6 +209,10 @@ async function inheritItem(
     ...rpn
   )
 
+  if (!results) {
+    return null
+  }
+
   const [id, fieldResults] = results
 
   if (!id) {
