@@ -6,9 +6,10 @@ import {
   Fork,
   GetOptions
 } from '../types'
-import { getNestedSchema, getNestedField } from '../utils'
+import { getNestedSchema, getNestedField, setNestedResult } from '../utils'
 import executeGetOperations, {
   TYPE_CASTS,
+  typeCast,
   ExecContext,
   executeNestedGetOperations,
   addMarker,
@@ -133,6 +134,7 @@ async function inheritItem(
   ctx: ExecContext
 ): Promise<GetResult> {
   const { db } = ctx
+  const schema = client.schemas[ctx.db]
 
   const props = makeRealKeys(op.props, op.field)
   const remapped: Record<string, string> = {}
@@ -192,7 +194,7 @@ async function inheritItem(
     }
   }
 
-  const [id] = await client.redis.selva_hierarchy_find(
+  const [results] = await client.redis.selva_hierarchy_find(
     {
       name: db
     },
@@ -201,25 +203,32 @@ async function inheritItem(
     'ancestors',
     'limit',
     1,
+    'fields',
+    fields ? fields.join('\n') : '',
     op.id,
     ...rpn
   )
+
+  const [id, fieldResults] = results
 
   if (!id) {
     return null
   }
 
-  const ops: GetOperation[] = fields.map(f => {
-    return {
-      id,
-      type: 'db',
-      field: f,
-      sourceField: f
-    }
-  })
+  const entryRes: any = {}
+  for (let i = 0; i < fieldResults.length; i += 2) {
+    const field = fieldResults[i]
+    const value = fieldResults[i + 1]
 
-  const o = await executeGetOperations(client, lang, ctx, ops)
-  return o
+    if (field === 'id') {
+      entryRes.id = id
+      continue
+    }
+
+    setNestedResult(entryRes, field, typeCast(value, id, field, schema, lang))
+  }
+
+  return entryRes
 }
 
 export default async function inherit(
