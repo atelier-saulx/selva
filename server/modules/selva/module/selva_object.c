@@ -120,6 +120,10 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         }
         SVector_Destroy(&key->array);
         break;
+    case SELVA_OBJECT_POINTER:
+        /* This is where we could support cleanup. */
+        key->value = NULL; /* Not strictly necessary. */
+        break;
     default:
         /*
          * In general default shouldn't be used because it may mask out missing
@@ -760,6 +764,52 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return 0;
 }
 
+int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    if (err) {
+        return err;
+    }
+
+    err = clear_key_value(key);
+    if (err) {
+        return err;
+    }
+
+    key->type = SELVA_OBJECT_POINTER;
+    key->value = p;
+
+    return 0;
+}
+
+int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p) {
+    struct SelvaObjectKey *key;
+    TO_STR(key_name);
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    }
+
+    if (key->type != SELVA_OBJECT_POINTER) {
+        return SELVA_EINTYPE;
+    }
+
+    if (out_p) {
+        *out_p = key->value;
+    }
+
+    return 0;
+}
+
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
     enum SelvaObjectType type = SELVA_OBJECT_NULL;
@@ -802,6 +852,7 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, RedisModuleString *key_name) {
         return 0;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
+    case SELVA_OBJECT_POINTER:
         return 1;
     case SELVA_OBJECT_STRING:
         if (key->value) {
@@ -824,9 +875,9 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, RedisModuleString *key_name) {
         return key->selva_set.size;
     case SELVA_OBJECT_ARRAY:
         return SVector_Size(&key->array);
-    default:
-        return SELVA_EINTYPE;
     }
+
+    return SELVA_EINTYPE;
 }
 
 /* TODO Support nested objects */
@@ -869,6 +920,7 @@ const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, e
         return &key->emb_ll_value;
     case SELVA_OBJECT_STRING:
     case SELVA_OBJECT_OBJECT:
+    case SELVA_OBJECT_POINTER:
         return key->value;
     case SELVA_OBJECT_SET:
         return &key->selva_set;
