@@ -53,6 +53,7 @@ const removeSubscription = async (
   if (channel in subscriptions) {
     const subscription = subscriptions[channel]
     for (const origin of subscription.origins) {
+      // TODO: sticky selector
       cleanUpQ.push(
         redis.selva_subscriptions_del(
           { name: origin, type: 'replica' },
