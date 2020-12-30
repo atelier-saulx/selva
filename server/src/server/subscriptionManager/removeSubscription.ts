@@ -50,21 +50,17 @@ const removeSubscription = async (
     subsManager
   )
 
-  cleanUpQ.push(redis.hdel(selector, SUBSCRIPTIONS, channel))
-  cleanUpQ.push(redis.del(selector, channel))
-  cleanUpQ.push(
-    redis.hdel(
-      selector,
-      CACHE,
-      channel,
-      channel + '_version',
-      channel + '_tree'
-    )
-  )
-
   if (channel in subscriptions) {
     const subscription = subscriptions[channel]
     for (const origin of subscription.origins) {
+      cleanUpQ.push(
+        redis.selva_subscriptions_del(
+          { name: origin, type: 'replica' },
+          '___selva_hierarchy',
+          channel
+        )
+      )
+
       removeOriginListeners(origin, subsManager, subscription)
     }
     // check if this is ok!
