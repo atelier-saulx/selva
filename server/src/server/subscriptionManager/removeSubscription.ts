@@ -50,6 +50,18 @@ const removeSubscription = async (
     subsManager
   )
 
+  cleanUpQ.push(redis.hdel(selector, SUBSCRIPTIONS, channel))
+  cleanUpQ.push(redis.del(selector, channel))
+  cleanUpQ.push(
+    redis.hdel(
+      selector,
+      CACHE,
+      channel,
+      channel + '_version',
+      channel + '_tree'
+    )
+  )
+
   if (channel in subscriptions) {
     const subscription = subscriptions[channel]
     for (const origin of subscription.origins) {
