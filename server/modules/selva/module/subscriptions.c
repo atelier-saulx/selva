@@ -478,28 +478,27 @@ void Selva_Subscriptions_SetMarker(
         return;
     }
 
-#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough=n"
-#endif
     switch (marker->dir) {
     case SELVA_HIERARCHY_TRAVERSAL_NONE:
         /* NOP */
         break;
     case SELVA_HIERARCHY_TRAVERSAL_NODE:
+        /* fall through */
+        __attribute__((fallthrough));
     case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
+        /* fall through */
+        __attribute__((fallthrough));
     case SELVA_HIERARCHY_TRAVERSAL_PARENTS:
         /* These traversal direction types are only copied/set on the node itself. */
         if (memcmp(marker->node_id, node_id, SELVA_NODE_ID_SIZE) != 0) {
             break;
         }
+        /* fall through */
+        __attribute__((fallthrough));
     default:
         set_marker(sub_markers, marker);
         break;
     }
-#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 }
 
 
