@@ -14,6 +14,7 @@ OBJS := \
 	module/hierarchy.o \
 	module/inherit.o \
 	module/modify.o \
+	module/resolve.o \
 	module/rpn.o \
 	module/selva_node.o \
 	module/selva_object.o \
