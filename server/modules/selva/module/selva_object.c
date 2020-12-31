@@ -1236,7 +1236,6 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         return replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)type);
     }
 
-#undef REPLY_WITH_TYPE
     return REDISMODULE_OK;
 }
 
