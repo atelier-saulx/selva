@@ -157,6 +157,9 @@ redis.add_command('selva.hierarchy.del')
 redis.add_command('selva.inherit')
 
 // @ts-ignore
+redis.add_command('selva.resolve.nodeid')
+
+// @ts-ignore
 redis.add_command('selva.subscriptions.add')
 
 // @ts-ignore

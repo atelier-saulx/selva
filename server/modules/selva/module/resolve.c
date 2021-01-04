@@ -12,7 +12,6 @@ int SelvaResolve_NodeId(
         size_t nr_ids,
         Selva_NodeId node_id) {
     RedisModuleKey *aliases_key;
-    RedisModuleKey *key;
     int res = SELVA_ENOENT;
 
     if (nr_ids == 0) {
@@ -69,15 +68,29 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_KEY = 1;
-    const size_t ARGV_OKEY = 2;
+    const size_t ARGV_REDIS_KEY = 1;
+    const size_t ARGV_IDS = 2;
 
-    if (argc != 3) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
 
-    /* TODO */
-    return replyWithSelvaErrorf(ctx, SELVA_EGENERAL, "NOT IMPL");
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    Selva_NodeId node_id;
+    err = SelvaResolve_NodeId(ctx, hierarchy, argv + ARGV_IDS, argc - ARGV_IDS, node_id);
+    if (err == SELVA_ENOENT) {
+        return RedisModule_ReplyWithNull(ctx);
+    } else if (err) {
+        return replyWithSelvaErrorf(ctx, err, "Resolve failed");
+    }
+    RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
 
     return REDISMODULE_OK;
 }
