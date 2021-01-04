@@ -14,6 +14,7 @@ import validate, {
 
 // move to saulx/utils
 import { deepMerge } from '@saulx/utils'
+import { ServerDescriptor } from '~selva/types'
 
 function getExtraQueriesByField(
   extraQueries: ExtraQueries
@@ -91,6 +92,11 @@ async function get(
   const db = props.$db || 'default'
   const subId = props.$subscription
 
+  let originDescriptors: Record<string, ServerDescriptor> = {}
+  if (subId) {
+    originDescriptors = props.$originDescriptors || {}
+  }
+
   await client.initializeSchema({ $db: db })
 
   const extraQueries: ExtraQueries = {}
@@ -112,7 +118,7 @@ async function get(
   const getResult = await executeGetOperations(
     client,
     lang,
-    { db, subId, meta: resultMeta },
+    { db, subId, meta: resultMeta, originDescriptors },
     createGetOperations(client, newProps, id, '', db)
   )
 

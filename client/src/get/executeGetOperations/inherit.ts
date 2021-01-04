@@ -97,15 +97,17 @@ async function mergeObj(
     })
 
     if (added) {
-      client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
+      client.redis.selva_subscriptions_refresh(
+        ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        '___selva_hierarchy',
+        ctx.subId
+      )
       ctx.hasFindMarkers = true
     }
   }
 
   const o = await client.redis.selva_hierarchy_find(
-    {
-      name: db
-    },
+    ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -189,15 +191,17 @@ async function inheritItem(
     })
 
     if (added) {
-      client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
+      client.redis.selva_subscriptions_refresh(
+        ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        '___selva_hierarchy',
+        ctx.subId
+      )
       ctx.hasFindMarkers = true
     }
   }
 
   const [results] = await client.redis.selva_hierarchy_find(
-    {
-      name: db
-    },
+    ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -320,6 +324,7 @@ export default async function inherit(
 
       if (added) {
         client.redis.selva_subscriptions_refresh(
+          ctx.originDescriptors[ctx.db] || { name: ctx.db },
           '___selva_hierarchy',
           ctx.subId
         )
@@ -328,9 +333,7 @@ export default async function inherit(
     }
 
     const res = await client.redis.selva_inherit(
-      {
-        name: db
-      },
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '___selva_hierarchy',
       op.id,
       prefixes,
@@ -384,6 +387,7 @@ export default async function inherit(
 
       if (added) {
         client.redis.selva_subscriptions_refresh(
+          ctx.originDescriptors[ctx.db] || { name: ctx.db },
           '___selva_hierarchy',
           ctx.subId
         )
@@ -392,9 +396,7 @@ export default async function inherit(
     }
 
     const res = await client.redis.selva_inherit(
-      {
-        name: db
-      },
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '___selva_hierarchy',
       op.id,
       prefixes,
@@ -465,16 +467,18 @@ export default async function inherit(
     })
 
     if (added) {
-      client.redis.selva_subscriptions_refresh('___selva_hierarchy', ctx.subId)
+      client.redis.selva_subscriptions_refresh(
+        ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        '___selva_hierarchy',
+        ctx.subId
+      )
       ctx.hasFindMarkers = true
     }
   }
 
   console.log(['___selva_hierarchy', op.id, prefixes || '', fields])
   let res = await client.redis.selva_inherit(
-    {
-      name: db
-    },
+    ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',
     op.id,
     prefixes,

@@ -101,6 +101,7 @@ const addSubscription = (
   getOptions: GetOptions
 ) => {
   const subscription: Subscription = {
+    originDescriptors: {},
     clients,
     channel,
     get: getOptions,

@@ -15,10 +15,12 @@ const addOriginListeners = async (
   subscription: Subscription
 ) => {
   // we need to use name and unsubscribe as well
+  const selector: ServerSelector = { name }
+  const { client } = subsManager
+  const serverDescriptor = await client.getServer(selector)
+  subscription.originDescriptors[name] = serverDescriptor
 
   if (!subsManager.originListeners[name]) {
-    const selector: ServerSelector = { name }
-
     let collect = 0
 
     const listener = (_pattern, channel, message) => {
@@ -60,7 +62,10 @@ const addOriginListeners = async (
       subscriptions: new Set(),
       listener,
       reconnectListener: descriptor => {
+        subscription.originDescriptors[name] = serverDescriptor
         const { name: dbName } = descriptor
+
+        // TODO: replace descriptor
         console.log(
           'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
           name
@@ -79,15 +84,14 @@ const addOriginListeners = async (
       }
     }
 
-    const { client } = subsManager
     const redis = client.redis
 
     // make this better
     // use this with the global connectorClients
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
 
-    redis.on(selector, 'pmessage', listener)
-    redis.psubscribe(selector, SUBSCRIPTION_UPDATE + '*')
+    redis.on(serverDescriptor, 'pmessage', listener)
+    redis.psubscribe(serverDescriptor, SUBSCRIPTION_UPDATE + '*')
   }
 
   subsManager.originListeners[name].subscriptions.add(subscription)
