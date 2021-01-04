@@ -12,5 +12,5 @@ export default async function resolveId(
   }
 
   const arr = Array.isArray(id) ? id : [id]
-  return await client.redis.selva_resolve_nodeid('___selva_hierarchy', ...arr)
+  return await client.redis.selva_resolve_nodeid({ name: props.$db || 'default' }, '___selva_hierarchy', ...arr)
 }
