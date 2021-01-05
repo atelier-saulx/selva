@@ -29,7 +29,6 @@ const sendUpdate = async (
   const getOptions = subscription.get
   getOptions.$includeMeta = true
   getOptions.$subscription = subscription.channel
-  console.log('ORIGIN DESCRIPTORS', subscription.originDescriptors)
   getOptions.$originDescriptors = subscription.originDescriptors
 
   const startTime = Date.now()
