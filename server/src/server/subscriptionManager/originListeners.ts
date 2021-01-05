@@ -19,11 +19,13 @@ const addOriginListeners = async (
   const { client } = subsManager
   const serverDescriptor = await client.getServer(selector)
   subscription.originDescriptors[name] = serverDescriptor
+  console.log('DESCRIPTOR', serverDescriptor)
 
   if (!subsManager.originListeners[name]) {
     let collect = 0
 
     const listener = (_pattern, channel, message) => {
+      console.log('EVENT', channel, message)
       subsManager.incomingCount++
       collect++
 
@@ -62,7 +64,8 @@ const addOriginListeners = async (
       subscriptions: new Set(),
       listener,
       reconnectListener: descriptor => {
-        subscription.originDescriptors[name] = serverDescriptor
+        subscription.originDescriptors[name] = descriptor
+        console.log('DESCRIPTOR', descriptor)
         const { name: dbName } = descriptor
 
         // TODO: replace descriptor
