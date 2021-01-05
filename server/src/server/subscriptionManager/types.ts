@@ -12,6 +12,7 @@ export type RefreshSubscriptions = {
 
 export type Subscription = {
   clients: Set<string>
+  originDescriptors: Record<string, ServerDescriptor>
   get: GetOptions
   version?: number
   tree?: SubTree

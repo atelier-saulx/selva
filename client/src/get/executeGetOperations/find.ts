@@ -175,9 +175,7 @@ async function checkForNextRefresh(
 
       const args = ast2rpn(newFork, lang)
       const ids = await client.redis.selva_hierarchy_find(
-        {
-          name: ctx.db
-        },
+        ctx.originDescriptors[ctx.db] || { name: ctx.db },
         '___selva_hierarchy',
         'bfs',
         sourceField,
@@ -199,7 +197,11 @@ async function checkForNextRefresh(
       const [id] = ids
 
       const time = Number(
-        await client.redis.selva_object_get({ name: ctx.db }, id, f.$field)
+        await client.redis.selva_object_get(
+          ctx.originDescriptors[ctx.db] || { name: ctx.db },
+          id,
+          f.$field
+        )
       )
 
       if (!ctx.meta.___refreshAt || ctx.meta.___refreshAt > time) {
@@ -242,9 +244,7 @@ const findIds = async (
   if (op.inKeys) {
     // can make this a bit better....
     const ids = await client.redis.selva_hierarchy_findin(
-      {
-        name: db
-      },
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '___selva_hierarchy',
       'order',
       op.options.sort?.$field || '',
@@ -313,9 +313,7 @@ const findIds = async (
     }
 
     const ids = await client.redis.selva_hierarchy_find(
-      {
-        name: db
-      },
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '___selva_hierarchy',
       'bfs',
       sourceField,
@@ -378,9 +376,7 @@ const findFields = async (
   if (op.inKeys) {
     // TODO: additionalGets
     const result = await client.redis.selva_hierarchy_findin(
-      {
-        name: db
-      },
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '___selva_hierarchy',
       'order',
       op.options.sort?.$field || '',
@@ -451,9 +447,7 @@ const findFields = async (
     }
 
     const result = await client.redis.selva_hierarchy_find(
-      {
-        name: db
-      },
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '___selva_hierarchy',
       'bfs',
       sourceField,

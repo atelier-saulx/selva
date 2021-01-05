@@ -69,7 +69,8 @@ const removeSubscription = async (
       if (!channel.includes('schema_update')) {
         cleanUpQ.push(
           redis.selva_subscriptions_del(
-            { name: origin, type: 'replica' },
+            // TODO: this might not always be set?
+            subscription.originDescriptors[origin],
             '___selva_hierarchy',
             channel
           )
