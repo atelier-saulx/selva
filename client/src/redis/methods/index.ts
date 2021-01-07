@@ -3368,6 +3368,21 @@ async selva_subscriptions_addmarkerfields(opts: any, ...args: args): Promise<any
 }
 
 
+async selva_subscriptions_addmissing(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_addmissing(...args: args): Promise<any>
+async selva_subscriptions_addmissing(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_addmissing', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_addmissing', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async selva_subscriptions_debug(opts: ServerSelector, ...args: args): Promise<any>
 async selva_subscriptions_debug(...args: args): Promise<any>
 async selva_subscriptions_debug(opts: any, ...args: args): Promise<any> {
@@ -3408,6 +3423,21 @@ async selva_subscriptions_list(opts: any, ...args: args): Promise<any> {
   } else {
     return new Promise((resolve, reject) => {
       this.addCommandToQueue({ command: 'selva_subscriptions_list', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_subscriptions_listmissing(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_listmissing(...args: args): Promise<any>
+async selva_subscriptions_listmissing(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_listmissing', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_listmissing', args: [opts, ...args], resolve, reject })
     })
   }
 }

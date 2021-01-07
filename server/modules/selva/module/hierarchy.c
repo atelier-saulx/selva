@@ -148,8 +148,15 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
 
     /*
      * Subscriptions.
+     * TODO It might make sense to move these to subscriptions.c
      */
     RB_INIT(&hierarchy->subs.head);
+    hierarchy->subs.missing = SelvaObject_New();
+    if (!hierarchy->subs.missing) {
+        SelvaModify_DestroyHierarchy(hierarchy);
+        hierarchy = NULL;
+        goto fail;
+    }
     if (SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers)) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;

@@ -416,7 +416,7 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct Sel
         RedisModule_ReplyWithArray(ctx, 2 * fields_len);
 
         iterator = SelvaObject_ForeachBegin(fields);
-        while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, SELVA_OBJECT_ARRAY))) {
+        while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
             struct SVectorIterator it;
             RedisModuleString *field;
 
@@ -554,7 +554,7 @@ static ssize_t send_node_object_merge(
         SVector *vec;
 
         iterator = SelvaObject_ForeachBegin(fields);
-        while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, SELVA_OBJECT_ARRAY))) {
+        while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
             struct SVectorIterator it;
             RedisModuleString *field;
 

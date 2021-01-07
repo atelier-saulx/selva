@@ -29,6 +29,7 @@ struct SelvaObject *SelvaObject_New(void);
 void SelvaObject_Destroy(struct SelvaObject *obj);
 void _cleanup_SelvaObject_Destroy(struct SelvaObject **obj);
 int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out);
+int SelvaObject_DelKeyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 int SelvaObject_DelKey(struct SelvaObject *obj, const struct RedisModuleString *key_name);
 int SelvaObject_Exists(struct SelvaObject *obj, const struct RedisModuleString *key_name);
 /**
@@ -52,10 +53,19 @@ enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char 
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, struct RedisModuleString *key_name);
 int SelvaObject_RemSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
 struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const struct RedisModuleString *key_name);
-ssize_t SelvaObject_Len(struct SelvaObject *obj, struct RedisModuleString *key_name);
+ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
+ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct RedisModuleString *key_name);
 SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
 const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
-const void *SelvaObject_ForeachValue(struct SelvaObject *obj, SelvaObject_Iterator **iterator, enum SelvaObjectType type);
+/**
+ * Foreach value in object.
+ * @param name_out is a direct pointer to the name and it will be rendered invalid if the key is deleted.
+ */
+const void *SelvaObject_ForeachValue(
+        struct SelvaObject *obj,
+        SelvaObject_Iterator **iterator,
+        const char **name_out,
+        enum SelvaObjectType type);
 const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
 
 /*

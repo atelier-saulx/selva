@@ -72,6 +72,24 @@ struct SelvaModify_Hierarchy {
         struct hierarchy_subscriptions_tree head;
 
         /**
+         * Subscription markers for missing nodeIds and aliases.
+         *
+         * These are single-shot markers that will be deleted once the
+         * condition is met.
+         *
+         * These are stored only in this object in the following format:
+         * ```
+         * {
+         *   nodeIdOrAlias.subId => struct Selva_Subscription *
+         * }
+         * ```
+         *
+         * When a subscription is removed the markers for missing nodes should
+         * be deleted.
+         */
+        struct SelvaObject *missing;
+
+        /**
          * Special subscription markers.
          * Possible reasons to add a subscription marker to this list are:
          * - the marker is applying to all nodes starting from the root node

@@ -54,9 +54,11 @@ redis.add_command('selva.object.set')
 redis.add_command('selva.object.type')
 redis.add_command('selva.subscriptions.add')
 redis.add_command('selva.subscriptions.addMarkerfields')
+redis.add_command('selva.subscriptions.addMissing')
 redis.add_command('selva.subscriptions.debug')
 redis.add_command('selva.subscriptions.del')
 redis.add_command('selva.subscriptions.list')
+redis.add_command('selva.subscriptions.listMissing')
 redis.add_command('selva.subscriptions.refresh')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {

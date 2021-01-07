@@ -443,13 +443,18 @@ static int get_key_modify(struct SelvaObject *obj, const RedisModuleString *key_
     return 0;
 }
 
-int SelvaObject_DelKey(struct SelvaObject *obj, const RedisModuleString *key_name) {
+int SelvaObject_DelKeyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
 
     assert(obj);
 
     return get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_DELETE, &key);
+}
+
+int SelvaObject_DelKey(struct SelvaObject *obj, const RedisModuleString *key_name) {
+    TO_STR(key_name);
+
+    return SelvaObject_DelKeyStr(obj, key_name_str, key_name_len);
 }
 
 int SelvaObject_Exists(struct SelvaObject *obj, const RedisModuleString *key_name) {
@@ -833,12 +838,11 @@ enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, RedisModuleStr
     return SelvaObject_GetTypeStr(obj, key_name_str, key_name_len);
 }
 
-ssize_t SelvaObject_Len(struct SelvaObject *obj, RedisModuleString *key_name) {
+ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
-    if (!key_name) {
+    if (!key_name_str) {
         return obj->obj_size;
     }
 
@@ -880,6 +884,16 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, RedisModuleString *key_name) {
     return SELVA_EINTYPE;
 }
 
+ssize_t SelvaObject_Len(struct SelvaObject *obj, const RedisModuleString *key_name) {
+    if (!key_name) {
+        return obj->obj_size;
+    }
+
+    TO_STR(key_name);
+
+    return SelvaObject_LenStr(obj, key_name_str, key_name_len);
+}
+
 /* TODO Support nested objects */
 void *SelvaObject_ForeachBegin(struct SelvaObject *obj) {
     return RB_MIN(SelvaObjectKeys, &obj->keys_head);
@@ -898,7 +912,7 @@ const char *SelvaObject_ForeachKey(struct SelvaObject *obj, void **iterator) {
     return key->name;
 }
 
-const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, enum SelvaObjectType type) {
+const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, const char **name_out, enum SelvaObjectType type) {
     struct SelvaObjectKey *key;
     obj; /* This makes the compiler think we are actually using obj. */
 
@@ -910,6 +924,10 @@ const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, e
 
         *iterator = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
     } while (key->type != type);
+
+    if (name_out) {
+        *name_out = key->name;
+    }
 
     switch (key->type) {
     case SELVA_OBJECT_NULL:
@@ -1048,6 +1066,9 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
         break;
     case SELVA_OBJECT_ARRAY:
         replyWithArray(ctx, key->subtype, &key->array);
+        break;
+    case SELVA_OBJECT_POINTER:
+        RedisModule_ReplyWithStringBuffer(ctx, "(pointer)", 9);
         break;
     default:
         (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Type not supported %d", (int)key->type);

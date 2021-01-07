@@ -860,3 +860,41 @@ test.serial('subscribe to field events with an expression', async t => {
   await client.delete('root')
   client.destroy()
 })
+
+test.serial.only('Missing markers', async t => {
+  const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' }
+  })
+
+  await client.redis.selva_subscriptions_addmissing('___selva_hierarchy', subId1, 'maTest0002', 'aliasus')
+
+  // This is not functionally necessary
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  t.deepEqual(await client.redis.selva_subscriptions_list('___selva_hierarchy'),
+    ['fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'])
+
+  t.deepEqual(
+    await client.redis.selva_subscriptions_listmissing('___selva_hierarchy'),
+    [
+      'aliasus',
+      [
+        'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        '(pointer)'
+      ],
+      'maTest0002',
+      [
+        'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        '(pointer)'
+      ]
+    ]
+  )
+
+  // Delete the subscription and verify that all the missing markers were removed completely
+  t.deepEqual(await client.redis.selva_subscriptions_del('___selva_hierarchy', subId1), 1);
+  t.deepEqual(await client.redis.selva_subscriptions_listmissing('___selva_hierarchy'), [])
+});
