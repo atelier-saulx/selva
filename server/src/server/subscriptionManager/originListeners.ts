@@ -81,6 +81,20 @@ const addOriginListeners = async (
             })
           }
         }
+      },
+      serverUpdateListener: payload => {
+        if (payload.event === 'new') {
+          const { server } = payload
+          const current = subscription.originDescriptors[name]
+          if (server.name !== current.name) {
+            return
+          }
+
+          if (current.type === 'origin' && server.type === 'replica') {
+            removeOriginListeners(name, subsManager, subscription)
+            addOriginListeners(name, subsManager, subscription)
+          }
+        }
       }
     }
 
@@ -89,6 +103,14 @@ const addOriginListeners = async (
     // make this better
     // use this with the global connectorClients
     client.on('reconnect', subsManager.originListeners[name].reconnectListener)
+    client.on(
+      'added-servers',
+      subsManager.originListeners[name].serverUpdateListener
+    )
+    client.on(
+      'removed-servers',
+      subsManager.originListeners[name].serverUpdateListener
+    )
 
     redis.on(serverDescriptor, 'pmessage', listener)
     redis.psubscribe(serverDescriptor, SUBSCRIPTION_UPDATE + '*')
@@ -114,6 +136,8 @@ const removeOriginListeners = (
       }
       redis.punsubscribe({ name }, SUBSCRIPTION_UPDATE + '*')
       client.removeListener('reconnect', origin.reconnectListener)
+      client.removeListener('added-servers', origin.serverUpdateListener)
+      client.removeListener('removed-servers', origin.serverUpdateListener)
       redis.removeListener({ name }, 'pmessage', origin.listener)
       delete subsManager.originListeners[name]
     }
