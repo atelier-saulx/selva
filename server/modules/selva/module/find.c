@@ -311,7 +311,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
             obj_type = SelvaObject_GetType(obj, (RedisModuleString *)order_field);
             if (obj_type == SELVA_OBJECT_STRING) {
-                err = SelvaObject_GetStr(obj, order_field, &value);
+                err = SelvaObject_GetString(obj, order_field, &value);
                 if (!err && value) {
                     data = RedisModule_StringPtrLen(value, &data_len);
                     type = ORDERED_ITEM_TYPE_TEXT;

@@ -72,7 +72,7 @@ struct SelvaModify_Hierarchy {
         struct hierarchy_subscriptions_tree head;
 
         /**
-         * Subscription markers for missing nodeIds and aliases.
+         * Subscription markers for missing accessors (nodeIds and aliases).
          *
          * These are single-shot markers that will be deleted once the
          * condition is met.

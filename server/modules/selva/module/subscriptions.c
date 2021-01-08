@@ -203,15 +203,10 @@ static void remove_sub_missing_markers(SelvaModify_Hierarchy *hierarchy, struct 
         SelvaObject_Iterator *it_subs;
         struct Selva_Subscription *sub_p;
 
-        if (!subs) {
-            continue;
-        }
-
+        /* Delete all keys of this subscription stored under id. */
         it_subs = SelvaObject_ForeachBegin(subs);
         while ((sub_p = (struct Selva_Subscription *)SelvaObject_ForeachValue(subs, &it_subs, NULL, SELVA_OBJECT_POINTER))) {
-            if (sub_p == sub) {
-                SelvaObject_DelKey(subs, sub_id);
-            }
+            SelvaObject_DelKey(subs, sub_id);
         }
 
         /* Delete the id key if the object is now empty. */
@@ -817,28 +812,32 @@ static void defer_event(struct SelvaSubscriptions_DeferredEvents *def, struct Se
 }
 
 /**
- * Defer events for missing markers signaling creation of nodes and aliases.
+ * Defer events for missing accessor signaling creation of nodes and aliases.
  * @param id nodeId or alias.
  */
-void SelvaSubscriptions_DeferMissingEvents(struct SelvaModify_Hierarchy *hierarchy, RedisModuleString *id) {
+void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy *hierarchy, const char *id_str, size_t id_len) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct Selva_Subscription *sub;
     SelvaObject_Iterator *it;
-    struct SelvaObject *obj = hierarchy->subs.missing;
+    struct SelvaObject *obj;
+    int err;
 
-    if (SelvaObject_Exists(obj, id)) {
+    if (SelvaObject_ExistsStr(hierarchy->subs.missing, id_str, id_len)) {
         return;
     }
 
+    err = SelvaObject_GetObjectStr(hierarchy->subs.missing, id_str, id_len, &obj);
+    if (err) {
+        fprintf(stderr, "%s: Failed to get missing accessor marker: %s", __FILE__, getSelvaErrorStr(err));
+        return;
+    }
 
     it = SelvaObject_ForeachBegin(obj);
     while ((sub = (struct Selva_Subscription *)SelvaObject_ForeachValue(obj, &it, NULL, SELVA_OBJECT_POINTER))) {
-        if (sub) {
-            defer_event(def, sub);
-        }
+        defer_event(def, sub);
     }
 
-    SelvaObject_DelKey(obj, id);
+    SelvaObject_DelKeyStr(obj, id_str, id_len);
 }
 
 static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,

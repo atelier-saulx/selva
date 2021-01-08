@@ -894,7 +894,7 @@ test.serial.only('Missing markers', async t => {
     ]
   )
 
-  // Delete the subscription and verify that all the missing markers were removed completely
+  // Delete the subscription and verify that all the missing accessor markers were removed completely
   t.deepEqual(await client.redis.selva_subscriptions_del('___selva_hierarchy', subId1), 1);
   t.deepEqual(await client.redis.selva_subscriptions_listmissing('___selva_hierarchy'), [])
 });

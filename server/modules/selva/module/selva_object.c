@@ -457,6 +457,14 @@ int SelvaObject_DelKey(struct SelvaObject *obj, const RedisModuleString *key_nam
     return SelvaObject_DelKeyStr(obj, key_name_str, key_name_len);
 }
 
+int SelvaObject_ExistsStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+    struct SelvaObjectKey *key;
+
+    assert(obj);
+
+    return get_key(obj, key_name_str, key_name_len, 0, &key);
+}
+
 int SelvaObject_Exists(struct SelvaObject *obj, const RedisModuleString *key_name) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
@@ -513,7 +521,7 @@ int SelvaObject_GetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
     return 0;
 }
 
-int SelvaObject_GetStr(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString **out) {
+int SelvaObject_GetString(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString **out) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
     int err;
@@ -579,7 +587,7 @@ int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
     return 0;
 }
 
-int SelvaObject_SetStr(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+int SelvaObject_SetString(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
     int err;
@@ -603,9 +611,8 @@ int SelvaObject_SetStr(struct SelvaObject *obj, const RedisModuleString *key_nam
     return 0;
 }
 
-int SelvaObject_GetObject(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObject **out) {
+int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject **out) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -621,6 +628,12 @@ int SelvaObject_GetObject(struct SelvaObject *obj, const RedisModuleString *key_
     *out = key->value;
 
     return 0;
+}
+
+int SelvaObject_GetObject(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObject **out) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetObjectStr(obj, key_name_str, key_name_len, out);
 }
 
 int SelvaObject_AddSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
@@ -775,6 +788,11 @@ int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleStri
     int err;
 
     assert(obj);
+
+    if (!p) {
+        /* The value must be non-NULL. */
+        return SELVA_EINVAL;
+    }
 
     err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
     if (err) {
@@ -1200,7 +1218,7 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         values_set++;
         break;
     case 's': /* SELVA_OBJECT_STRING */
-        err = SelvaObject_SetStr(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
+        err = SelvaObject_SetString(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
         values_set++;
         break;
     case 'S': /* SELVA_OBJECT_SET */
@@ -1356,7 +1374,7 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
                 int err;
 
                 value = RedisModule_LoadString(io);
-                err = SelvaObject_SetStr(obj, name, value);
+                err = SelvaObject_SetString(obj, name, value);
                 if (err) {
                     RedisModule_LogIOError(io, "warning", "Error while loading a string");
                     return NULL;

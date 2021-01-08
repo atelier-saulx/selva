@@ -826,6 +826,8 @@ int SelvaModify_SetHierarchy(
         if (unlikely(!node)) {
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
+
+        SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, id, SELVA_NODE_ID_SIZE);
         isNewNode = 1;
     }
 
@@ -946,6 +948,8 @@ int SelvaModify_AddHierarchy(
         if (unlikely(!node)) {
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
+
+        SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, id, SELVA_NODE_ID_SIZE);
         isNewNode = 1;
     }
 

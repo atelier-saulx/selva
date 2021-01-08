@@ -17,7 +17,7 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
         return err;
     }
 
-    SelvaObject_SetStr(obj, RedisModule_CreateString(ctx, "$id", 3), key_name);
+    SelvaObject_SetString(obj, RedisModule_CreateString(ctx, "$id", 3), key_name);
 
     /* Set the type for root. */
     if (is_root) {
@@ -28,7 +28,7 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
 
-        SelvaObject_SetStr(obj, RedisModule_CreateString(ctx, "type", 4), type);
+        SelvaObject_SetString(obj, RedisModule_CreateString(ctx, "type", 4), type);
     }
 
     return 0;

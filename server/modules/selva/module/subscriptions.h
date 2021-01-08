@@ -141,7 +141,7 @@ void SelvaSubscriptions_ClearAllMarkers(
         Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *metadata);
 
-
+void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy *hierarchy, const char *id_str, size_t id_len);
 int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 void SelvaSubscriptions_InheritParent(

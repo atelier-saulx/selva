@@ -568,7 +568,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
          * RFE We could also support converting numbers to string values
          * if needed.
          */
-        err = SelvaObject_GetStr(obj, ctx->rms_field, &value);
+        err = SelvaObject_GetString(obj, ctx->rms_field, &value);
         if (err || !value) {
 #if 0
             fprintf(stderr, "RPN: Field \"%s\" not found for node: \"%.*s\"\n",

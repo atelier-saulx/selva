@@ -109,6 +109,22 @@ async function get(
   const id = await resolveId(client, newProps)
 
   if (!id) {
+      if (subId) {
+        const ids = []
+
+        if (newProps.$alias)
+          ids.push(...(Array.isArray(newProps.$alias) ? newProps.$alias : [newProps.$alias]))
+        if (newProps.$id)
+          ids.push(...(Array.isArray(newProps.$id) ? newProps.$id : [newProps.$id]))
+
+        await client.redis.selva_subscriptions_addmissing(
+          { name: db },
+          '___selva_hierarchy',
+          subId,
+          ...ids
+        )
+        // TODO Create a missing sub
+      }
     return { $isNull: true }
   }
 

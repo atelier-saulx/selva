@@ -69,9 +69,9 @@ static char * setget_string(void)
     const char *s2;
     int err;
 
-    err = SelvaObject_SetStr(root_obj, key_name, orig);
+    err = SelvaObject_SetString(root_obj, key_name, orig);
     pu_assert_equal("no error", err, 0);
-    err = SelvaObject_GetStr(root_obj, key_name, &value);
+    err = SelvaObject_GetString(root_obj, key_name, &value);
     pu_assert_equal("no error", err, 0);
 
     s1 = RedisModule_StringPtrLen(orig, NULL);
@@ -117,7 +117,7 @@ static char * delete_key_2(void)
     long long v = 0;
     int err;
 
-    err = SelvaObject_SetStr(root_obj, key_name_1, orig);
+    err = SelvaObject_SetString(root_obj, key_name_1, orig);
     pu_assert_equal("no error", err, 0);
     err = SelvaObject_SetLongLong(root_obj, key_name_2, 2);
     pu_assert_equal("no error", err, 0);
@@ -125,7 +125,7 @@ static char * delete_key_2(void)
     err = SelvaObject_DelKey(root_obj, key_name_1);
     pu_assert_equal("no error", err, 0);
 
-    err = SelvaObject_GetStr(root_obj, key_name_1, &s);
+    err = SelvaObject_GetString(root_obj, key_name_1, &s);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
 
     err = SelvaObject_GetLongLong(root_obj, key_name_2, &v);
@@ -149,18 +149,18 @@ static char * nested_object(void)
     const char *s2;
     int err;
 
-    err = SelvaObject_SetStr(root_obj, key_name, orig);
+    err = SelvaObject_SetString(root_obj, key_name, orig);
     pu_assert_equal("no error", err, 0);
 
-    err = SelvaObject_GetStr(root_obj, key_name, &value);
+    err = SelvaObject_GetString(root_obj, key_name, &value);
     pu_assert_equal("no error", err, 0);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
 
-    err = SelvaObject_GetStr(root_obj, wrong_key_name1, &value);
+    err = SelvaObject_GetString(root_obj, wrong_key_name1, &value);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
 
-    err = SelvaObject_GetStr(root_obj, wrong_key_name2, &value);
+    err = SelvaObject_GetString(root_obj, wrong_key_name2, &value);
     pu_assert_equal("no entry", err, SELVA_EINTYPE);
 
     RedisModule_FreeString(NULL, key_name);
@@ -183,31 +183,31 @@ static char * replace_string_with_object(void)
     const char *s2;
     int err;
 
-    err = SelvaObject_SetStr(root_obj, key_name_1, orig_1);
+    err = SelvaObject_SetString(root_obj, key_name_1, orig_1);
     pu_assert_equal("no error", err, 0);
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_1, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
 
-    err = SelvaObject_SetStr(root_obj, key_name_2, orig_2);
+    err = SelvaObject_SetString(root_obj, key_name_2, orig_2);
     pu_assert_equal("no error", err, 0);
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("type error", err, SELVA_EINTYPE);
-    err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_2, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
 
-    err = SelvaObject_SetStr(root_obj, key_name_3, orig_3);
+    err = SelvaObject_SetString(root_obj, key_name_3, orig_3);
     pu_assert_equal("no error", err, 0);
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("type error", err, SELVA_EINTYPE);
-    err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("type error", err, SELVA_EINTYPE);
-    err = SelvaObject_GetStr(root_obj, key_name_3, &value);
+    err = SelvaObject_GetString(root_obj, key_name_3, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_3, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
@@ -235,40 +235,40 @@ static char * replace_object_with_string(void)
     const char *s2;
     int err;
 
-    err = SelvaObject_SetStr(root_obj, key_name_1, orig_1);
+    err = SelvaObject_SetString(root_obj, key_name_1, orig_1);
     pu_assert_equal("no error", err, 0);
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_1, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
-    err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("type error", err, SELVA_EINTYPE);
-    err = SelvaObject_GetStr(root_obj, key_name_3, &value);
+    err = SelvaObject_GetString(root_obj, key_name_3, &value);
     pu_assert_equal("type error", err, SELVA_EINTYPE);
 
-    err = SelvaObject_SetStr(root_obj, key_name_2, orig_2);
+    err = SelvaObject_SetString(root_obj, key_name_2, orig_2);
     pu_assert_equal("no error", err, 0);
-    err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_2, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("type error", err, SELVA_ENOENT);
-    err = SelvaObject_GetStr(root_obj, key_name_3, &value);
+    err = SelvaObject_GetString(root_obj, key_name_3, &value);
     pu_assert_equal("type error", err, SELVA_EINTYPE);
 
-    err = SelvaObject_SetStr(root_obj, key_name_3, orig_3);
+    err = SelvaObject_SetString(root_obj, key_name_3, orig_3);
     pu_assert_equal("no error", err, 0);
-    err = SelvaObject_GetStr(root_obj, key_name_3, &value);
+    err = SelvaObject_GetString(root_obj, key_name_3, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_3, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("type error", err, SELVA_ENOENT);
-    err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("type error", err, SELVA_ENOENT);
 
     RedisModule_FreeString(NULL, key_name_1);
@@ -321,10 +321,10 @@ static char * delete_object(void)
     const char *s2;
     int err;
 
-    (void)SelvaObject_SetStr(root_obj, key_name_1, orig_1);
-    (void)SelvaObject_SetStr(root_obj, key_name_2, orig_2);
-    (void)SelvaObject_SetStr(root_obj, key_name_3, orig_3);
-    (void)SelvaObject_SetStr(root_obj, key_name_4, orig_4);
+    (void)SelvaObject_SetString(root_obj, key_name_1, orig_1);
+    (void)SelvaObject_SetString(root_obj, key_name_2, orig_2);
+    (void)SelvaObject_SetString(root_obj, key_name_3, orig_3);
+    (void)SelvaObject_SetString(root_obj, key_name_4, orig_4);
 
     /* Delete */
     err = SelvaObject_DelKey(root_obj, key_name_x);
@@ -333,18 +333,18 @@ static char * delete_object(void)
     pu_assert_equal("error on double del", err, SELVA_ENOENT);
 
     /* Assert */
-    err = SelvaObject_GetStr(root_obj, key_name_x, &value);
+    err = SelvaObject_GetString(root_obj, key_name_x, &value);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
-    err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
-    err = SelvaObject_GetStr(root_obj, key_name_3, &value);
+    err = SelvaObject_GetString(root_obj, key_name_3, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_3, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
-    err = SelvaObject_GetStr(root_obj, key_name_4, &value);
+    err = SelvaObject_GetString(root_obj, key_name_4, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_4, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
@@ -429,10 +429,10 @@ static char * delete_nested_key(void)
     const char *s2;
     int err;
 
-    (void)SelvaObject_SetStr(root_obj, key_name_1, orig_1);
-    (void)SelvaObject_SetStr(root_obj, key_name_2, orig_2);
-    (void)SelvaObject_SetStr(root_obj, key_name_3, orig_3);
-    (void)SelvaObject_SetStr(root_obj, key_name_4, orig_4);
+    (void)SelvaObject_SetString(root_obj, key_name_1, orig_1);
+    (void)SelvaObject_SetString(root_obj, key_name_2, orig_2);
+    (void)SelvaObject_SetString(root_obj, key_name_3, orig_3);
+    (void)SelvaObject_SetString(root_obj, key_name_4, orig_4);
 
     /* Delete 1 */
     err = SelvaObject_DelKey(root_obj, key_name_1);
@@ -441,19 +441,19 @@ static char * delete_nested_key(void)
     pu_assert_equal("error on double del", err, SELVA_ENOENT);
 
     /* Assert 1 */
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
-    err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_2, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
-    err = SelvaObject_GetStr(root_obj, key_name_3, &value);
+    err = SelvaObject_GetString(root_obj, key_name_3, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_3, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
-    err = SelvaObject_GetStr(root_obj, key_name_4, &value);
+    err = SelvaObject_GetString(root_obj, key_name_4, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_4, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
@@ -466,16 +466,16 @@ static char * delete_nested_key(void)
     pu_assert_equal("error on double del", err, SELVA_ENOENT);
 
     /* Assert 2 */
-    err = SelvaObject_GetStr(root_obj, key_name_1, &value);
+    err = SelvaObject_GetString(root_obj, key_name_1, &value);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
-    err = SelvaObject_GetStr(root_obj, key_name_2, &value);
+    err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
-    err = SelvaObject_GetStr(root_obj, key_name_3, &value);
+    err = SelvaObject_GetString(root_obj, key_name_3, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_3, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
-    err = SelvaObject_GetStr(root_obj, key_name_4, &value);
+    err = SelvaObject_GetString(root_obj, key_name_4, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_4, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
@@ -488,12 +488,12 @@ static char * delete_nested_key(void)
     pu_assert_equal("error on double del", err, SELVA_ENOENT);
 
     /* Assert 3 */
-    err = SelvaObject_GetStr(root_obj, key_name_3, &value);
+    err = SelvaObject_GetString(root_obj, key_name_3, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_3, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
-    err = SelvaObject_GetStr(root_obj, key_name_4, &value);
+    err = SelvaObject_GetString(root_obj, key_name_4, &value);
     pu_assert_equal("no error", err, 0);
     s1 = RedisModule_StringPtrLen(orig_4, NULL);
     s2 = RedisModule_StringPtrLen(value, NULL);

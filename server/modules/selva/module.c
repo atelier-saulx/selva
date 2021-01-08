@@ -264,6 +264,9 @@ static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, RedisModuleStrin
     memcpy(nodeId, id_str, min(id_len, SELVA_NODE_ID_SIZE));
 }
 
+/*
+ * Tokenize nul-terminated strings from a string with the size of size.
+ */
 static const char *sztok(const char *s, size_t size, size_t * restrict i) {
     const char *r = NULL;
 
@@ -473,7 +476,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         if ((type_code == SELVA_MODIFY_ARG_STRING ||
              type_code == SELVA_MODIFY_ARG_DEFAULT_STRING)) {
             RedisModuleString *old_value;
-            if (!SelvaObject_GetStr(obj, field, &old_value)) {
+            if (!SelvaObject_GetString(obj, field, &old_value)) {
                 TO_STR(old_value);
 
                 if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
@@ -544,10 +547,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
             } else {
-                SelvaObject_SetStr(obj, field, value);
+                SelvaObject_SetString(obj, field, value);
             }
         } else if (type_code == SELVA_MODIFY_ARG_STRING) {
-            SelvaObject_SetStr(obj, field, value);
+            SelvaObject_SetString(obj, field, value);
         } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
             if (old_type != SELVA_OBJECT_NULL) {
                 publish = false;
