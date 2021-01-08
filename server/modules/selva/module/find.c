@@ -1027,7 +1027,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
          * Run BFS/DFS.
          */
         ssize_t tmp_limit = -1;
-        const size_t skip = fields ? 0 : get_skip(dir); /* Skip n nodes from the results. */
+        const size_t skip = get_skip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args args = {
             .ctx = ctx,
             .nr_nodes = &nr_nodes,
