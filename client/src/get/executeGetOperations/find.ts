@@ -22,17 +22,15 @@ function parseGetOpts(
       // ignore
     } else if (typeof props[k] === 'object') {
       const opts = Object.keys(props[k]).filter(p => p.startsWith('$'))
-      if (path === '' || opts.length === 1) {
-        if (opts.includes('$inherit')) {
-          const o = {}
-          setNestedResult(o, pathPrefix + k, props[k])
-          gets.push(o)
-        } else if (props[k].$field) {
-          const all = Array.isArray(props[k].$field)
-            ? props[k].$field
-            : [props[k].$field]
-          fields.add(all.join('|'))
-        }
+      if ((path === '' || opts.length === 1) && opts.includes('$inherit')) {
+        const o = {}
+        setNestedResult(o, pathPrefix + k, props[k])
+        gets.push(o)
+      } else if ((path === '' || opts.length === 1) && props[k].$field) {
+        const all = Array.isArray(props[k].$field)
+          ? props[k].$field
+          : [props[k].$field]
+        fields.add(all.join('|'))
       } else if (path !== '' && opts.length >= 1) {
         const o = {}
         setNestedResult(o, pathPrefix + k, props[k])
