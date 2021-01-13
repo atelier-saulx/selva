@@ -97,7 +97,7 @@ User registers start from index 1, and register number 0 is reserved for the cur
 
 | Operator | Arguments          | Description                       | Example (expr => result)  |
 |----------|--------------------|-----------------------------------|---------------------------|
-| `a`      | `a in b`           | `in` function.                    | `$1 $0 a => 0`            |
+| `a`      | `a in set_field`   | `in` function for SelvaSets.      | `$1 $0 a => 0`            |
 | `b`      | `id`               | Returns the type of a node id.    | `xy123 b => xy`           |
 | `c`      | `!strcmp(s1, s2)`  | Compare strings.                  | `$0 "hello c => 1`        |
 | `d`      | `!cmp(id1, id2)`   | Compare node IDs.                 | `$1 $0 d => 1`            | 

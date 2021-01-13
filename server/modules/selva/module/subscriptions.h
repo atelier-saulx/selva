@@ -34,6 +34,14 @@
 #define SELVA_SUBSCRIPTION_FLAG_CH_FIELD        0x0004
 
 /**
+ * Alias changed.
+ * Alias moved or deleted.
+ * This flag also acts a as modifier and it clears the markers of the
+ * subscription after an event is deferred.
+ */
+#define SELVA_SUBSCRIPTION_FLAG_ALIAS           0x0008
+
+/**
  * Reference subscription.
  * Ignores changes to the root node of the marker and only
  * sends events for changes to referenced nodes. I.e. when
@@ -165,6 +173,10 @@ void SelvaSubscriptions_DeferHierarchyEvents(
 void SelvaSubscriptions_DeferHierarchyDeletionEvents(struct SelvaModify_Hierarchy *hierarchy,
                                                      const Selva_NodeId node_id,
                                                      const struct SelvaModify_HierarchyMetadata *metadata);
+void Selva_Subscriptions_DeferAliasChangeEvents(struct SelvaModify_Hierarchy *hierarchy,
+                                                struct RedisModuleString *alias_name,
+                                                const Selva_NodeId src_id,
+                                                struct SelvaModify_HierarchyMetadata *src_metadata);
 void SelvaSubscriptions_FieldChangePrecheck(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,

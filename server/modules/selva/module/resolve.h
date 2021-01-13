@@ -13,7 +13,7 @@ struct SelvaModify_Hierarchy;
 int SelvaResolve_NodeId(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
-        RedisModuleString **id,
+        RedisModuleString **ids,
         size_t nr_ids,
         Selva_NodeId node_id);
 
