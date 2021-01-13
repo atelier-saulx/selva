@@ -170,13 +170,14 @@ void SelvaSubscriptions_DeferHierarchyEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata);
-void SelvaSubscriptions_DeferHierarchyDeletionEvents(struct SelvaModify_Hierarchy *hierarchy,
-                                                     const Selva_NodeId node_id,
-                                                     const struct SelvaModify_HierarchyMetadata *metadata);
-void Selva_Subscriptions_DeferAliasChangeEvents(struct SelvaModify_Hierarchy *hierarchy,
-                                                struct RedisModuleString *alias_name,
-                                                const Selva_NodeId src_id,
-                                                struct SelvaModify_HierarchyMetadata *src_metadata);
+void SelvaSubscriptions_DeferHierarchyDeletionEvents(
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        const struct SelvaModify_HierarchyMetadata *metadata);
+void Selva_Subscriptions_DeferAliasChangeEvents(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct RedisModuleString *alias_name);
 void SelvaSubscriptions_FieldChangePrecheck(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,

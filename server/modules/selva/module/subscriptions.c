@@ -923,9 +923,10 @@ static void defer_hierarchy_deletion_events(struct SelvaModify_Hierarchy *hierar
     }
 }
 
-void SelvaSubscriptions_DeferHierarchyDeletionEvents(struct SelvaModify_Hierarchy *hierarchy,
-                                                     const Selva_NodeId node_id,
-                                                     const struct SelvaModify_HierarchyMetadata *metadata) {
+void SelvaSubscriptions_DeferHierarchyDeletionEvents(
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        const struct SelvaModify_HierarchyMetadata *metadata) {
     /* Detached markers. */
     defer_hierarchy_deletion_events(hierarchy, node_id, &hierarchy->subs.detached_markers);
 
@@ -941,7 +942,7 @@ void SelvaSubscriptions_DeferHierarchyDeletionEvents(struct SelvaModify_Hierarch
 
 static void defer_alias_change_events(struct SelvaModify_Hierarchy *hierarchy,
                                       const struct Selva_SubscriptionMarkers *sub_markers,
-                                      const Selva_NodeId src_id,
+                                      const Selva_NodeId node_id,
                                       SVector *wipe_subs) {
     if (!isAliasMarker(sub_markers->flags_filter)) {
         /* No alias markers in this structure. */
@@ -956,7 +957,7 @@ static void defer_alias_change_events(struct SelvaModify_Hierarchy *hierarchy,
     while ((marker = SVector_Foreach(&it))) {
         if (isAliasMarker(marker->marker_flags) &&
             /* The filter should contain `in` matcher for the alias. */
-            Selva_SubscriptionFilterMatch(src_id, marker)
+            Selva_SubscriptionFilterMatch(node_id, marker)
             ) {
             defer_event(def, marker->sub);
 
@@ -972,38 +973,37 @@ static void defer_alias_change_events(struct SelvaModify_Hierarchy *hierarchy,
 /**
  * Defer alias events and wipeout markers of the subscriptions hit.
  */
-void Selva_Subscriptions_DeferAliasChangeEvents(struct SelvaModify_Hierarchy *hierarchy,
-                                                RedisModuleString *alias_name,
-                                                const Selva_NodeId src_id,
-                                                struct SelvaModify_HierarchyMetadata *src_metadata) {
-    /* This should happen before using svector_autofree */
-    if (!src_metadata) {
-        fprintf(stderr, "%s:%d src_node (%.*s) metadata missing while defering events for moving alias \"%s\"\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, src_id,
-                RedisModule_StringPtrLen(alias_name, NULL));
-        return;
-    }
-
+void Selva_Subscriptions_DeferAliasChangeEvents(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        RedisModuleString *alias_name) {
     svector_autofree SVector wipe_subs;
+    Selva_NodeId orig_node_id;
+    struct SelvaModify_HierarchyMetadata *orig_metadata;
+    int err;
 
     SVector_Init(&wipe_subs, 0, SelvaSubscription_svector_compare);
 
-    /* Alias markers are never detached. */
-#if 0
-    /* Defer events for detached markers. */
-    defer_alias_change_events(
-            hierarchy,
-            &hierarchy->subs.detached_markers,
-            src_id,
-            &wipe_subs);
-#endif
+    err = SelvaResolve_NodeId(ctx, hierarchy, (RedisModuleString *[]){ alias_name }, 1, orig_node_id);
+    if (err) {
+        return;
+    }
+    orig_metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, orig_node_id);
+    if (!orig_metadata) {
+        fprintf(stderr, "%s: Failed to get metadata for node: \"%.*s\"\n",
+                __FILE__, (int)SELVA_NODE_ID_SIZE, orig_node_id);
+        return;
+    }
+
+    /*
+     * Alias markers are never detached so no need to handle those.
+     */
 
     /* Defer events for markers on the src node. */
     defer_alias_change_events(
             hierarchy,
-            &src_metadata->sub_markers,
-            src_id,
+            &orig_metadata->sub_markers,
+            orig_node_id,
             &wipe_subs);
 
     struct SVectorIterator it;
@@ -1504,7 +1504,7 @@ int Selva_SubscribeAliasCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
         goto out;
     }
 
-    unsigned short marker_flags = SELVA_SUBSCRIPTION_FLAG_ALIAS;
+    const unsigned short marker_flags = SELVA_SUBSCRIPTION_FLAG_ALIAS;
     const enum SelvaModify_HierarchyTraversal sub_dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
     err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "nde",
                                       node_id, sub_dir,

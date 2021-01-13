@@ -87,8 +87,22 @@ static int update_hierarchy(
     return err;
 }
 
-int update_set(
+void selva_set_defer_alias_change_events(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        struct SelvaSet *aliases) {
+    struct SelvaSetElement *el;
+
+    SELVA_SET_FOREACH(el, aliases) {
+        RedisModuleString *alias_name = el->value;
+
+        Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, alias_name);
+    }
+}
+
+static int update_set(
     RedisModuleCtx *ctx,
+    SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
     RedisModuleString *field,
@@ -109,7 +123,12 @@ int update_set(
         int err;
 
         if (alias_key) {
-            delete_aliases(alias_key, SelvaObject_GetSet(obj, field));
+            struct SelvaSet *node_aliases = SelvaObject_GetSet(obj, field);
+
+            if (node_aliases) {
+                selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
+                delete_aliases(alias_key, node_aliases);
+            }
         }
         err = SelvaObject_DelKey(obj, field);
         if (err && err != SELVA_ENOENT) {
@@ -130,6 +149,11 @@ int update_set(
             }
 
             if (alias_key) {
+                Selva_NodeId node_id;
+
+                Selva_NodeIdCpy(node_id, id_str);
+                Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
+
                 update_alias(ctx, alias_key, id, ref);
             }
             (void)SelvaObject_AddSet(obj, field, ref);
@@ -151,6 +175,11 @@ int update_set(
                 }
 
                 if (alias_key) {
+                    Selva_NodeId node_id;
+
+                    Selva_NodeIdCpy(node_id, id_str);
+                    Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
+
                     update_alias(ctx, alias_key, id, ref);
                 }
                 (void)SelvaObject_AddSet(obj, field, ref);
@@ -219,6 +248,7 @@ int SelvaModify_ModifySet(
              */
             if (!strcmp(field_str, "aliases")) {
                 RedisModuleKey *alias_key;
+                struct SelvaSet *node_aliases;
 
                 alias_key = open_aliases_key(ctx);
                 if (!alias_key) {
@@ -226,7 +256,11 @@ int SelvaModify_ModifySet(
                     return SELVA_ENOENT;
                 }
 
-                delete_aliases(alias_key, SelvaObject_GetSet(obj, field));
+                node_aliases = SelvaObject_GetSet(obj, field);
+                if (node_aliases) {
+                    selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
+                    delete_aliases(alias_key, node_aliases);
+                }
             }
 
             err = SelvaObject_DelKey(obj, field);
@@ -243,7 +277,7 @@ int SelvaModify_ModifySet(
     if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
         return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
     } else {
-        return update_set(ctx, obj, id, field, setOpts);
+        return update_set(ctx, hierarchy, obj, id, field, setOpts);
     }
 }
 
