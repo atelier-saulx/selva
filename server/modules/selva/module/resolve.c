@@ -1,9 +1,12 @@
 #include <stddef.h>
 #include "redismodule.h"
 #include "alias.h"
+#include "arg_parser.h"
 #include "errors.h"
 #include "hierarchy.h"
 #include "selva_onload.h"
+#include "subscriptions.h"
+#include "resolve.h"
 
 int SelvaResolve_NodeId(
         RedisModuleCtx *ctx,
@@ -35,12 +38,12 @@ int SelvaResolve_NodeId(
 
             /* We assume that root always exists. */
             if (!memcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
-                res = 0;
+                res = SELVA_RESOLVE_NODE_ID;
                 break;
             }
 
             if (SelvaModify_HierarchyNodeExists(hierarchy, node_id)) {
-                res = 0;
+                res = SELVA_RESOLVE_NODE_ID;
                 break;
             }
         }
@@ -53,7 +56,7 @@ int SelvaResolve_NodeId(
 
                 Selva_NodeIdCpy(node_id, orig_str);
                 if (SelvaModify_HierarchyNodeExists(hierarchy, node_id)) {
-                    res = 0;
+                    res = SELVA_RESOLVE_ALIAS;
                     break;
                 }
             }
@@ -64,14 +67,22 @@ int SelvaResolve_NodeId(
     return res;
 }
 
+static void alias_subscribe(SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id) {
+    /* TODO */
+}
+
+/*
+ * HIERARCHY_KEY SUB_ID IDS...
+ */
 int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
     const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_IDS = 2;
+    const size_t ARGV_SUB_ID = 2;
+    const size_t ARGV_IDS = 3;
 
-    if (argc < 3) {
+    if (argc < (int)ARGV_IDS + 1) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -84,12 +95,28 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     Selva_NodeId node_id;
-    err = SelvaResolve_NodeId(ctx, hierarchy, argv + ARGV_IDS, argc - ARGV_IDS, node_id);
-    if (err == SELVA_ENOENT) {
+    const int resolved = SelvaResolve_NodeId(ctx, hierarchy, argv + ARGV_IDS, argc - ARGV_IDS, node_id);
+    if (resolved == SELVA_ENOENT) {
         return RedisModule_ReplyWithNull(ctx);
-    } else if (err) {
-        return replyWithSelvaErrorf(ctx, err, "Resolve failed");
+    } else if (resolved < 0) {
+        return replyWithSelvaErrorf(ctx, resolved, "Resolve failed");
     }
+
+    RedisModuleString *argv_sub_id = argv[ARGV_SUB_ID];
+    TO_STR(argv_sub_id);
+
+    if (resolved == SELVA_RESOLVE_ALIAS && argv_sub_id_len > 0) {
+        Selva_SubscriptionId sub_id;
+
+        err = SelvaArgParser_SubscriptionId(sub_id, argv_sub_id);
+        if (err) {
+            fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n", __FILE__, __LINE__, argv_sub_id_str);
+            return replyWithSelvaError(ctx, err);
+        }
+
+        alias_subscribe(hierarchy, sub_id);
+    }
+
     RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
 
     return REDISMODULE_OK;

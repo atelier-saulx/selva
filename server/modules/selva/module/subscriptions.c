@@ -501,6 +501,70 @@ static int Selva_AddSubscriptionMarker(
     return 0;
 }
 
+int Selva_AddSubscriptionAliasMarker(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        Selva_SubscriptionId sub_id,
+        Selva_SubscriptionMarkerId marker_id,
+        RedisModuleString *alias_name,
+        Selva_NodeId node_id
+    ) {
+    struct rpn_ctx *filter_ctx;
+    rpn_token *filter_expression;
+    int err = 0;
+
+    if (SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id)) {
+        /* Marker already created. */
+        return SELVA_SUBSCRIPTIONS_EEXIST;
+    }
+
+    filter_ctx = rpn_init(ctx, 3);
+    if (!filter_ctx) {
+        err = SELVA_SUBSCRIPTIONS_ENOMEM;
+        goto out;
+    }
+
+    /*
+     * Compile the filter.
+     * `ALIAS_NAME in aliases`
+     */
+    filter_expression = rpn_compile("$2 $1 a", 7);
+    if (!filter_expression) {
+        fprintf(stderr, "%s: Failed to compile a filter for alias \"%s\"\n",
+                __FILE__, RedisModule_StringPtrLen(alias_name, NULL));
+        err = SELVA_RPN_ECOMP;
+        goto out;
+    }
+
+    /* Set RPN registers */
+    /* TODO Handle errors */
+    (void)rpn_set_reg_rm(filter_ctx, 1, alias_name);
+    (void)rpn_set_reg(filter_ctx, 2, "aliases", 8, 0);
+
+    const unsigned short marker_flags = SELVA_SUBSCRIPTION_FLAG_ALIAS;
+    const enum SelvaModify_HierarchyTraversal sub_dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
+    err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "nde",
+                                      node_id, sub_dir,
+                                      filter_ctx, filter_expression);
+    if (err == SELVA_SUBSCRIPTIONS_EEXIST) {
+        /*
+         * This shouldn't happen as we already verified that the marker
+         * doesn't exist.
+         */
+        err = 0;
+        rpn_destroy(filter_ctx);
+        RedisModule_Free(filter_expression);
+    }
+
+out:
+    if (err && filter_ctx) {
+        rpn_destroy(filter_ctx);
+        RedisModule_Free(filter_expression);
+    }
+
+    return err;
+}
+
 struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,
@@ -985,7 +1049,7 @@ void Selva_Subscriptions_DeferAliasChangeEvents(
     SVector_Init(&wipe_subs, 0, SelvaSubscription_svector_compare);
 
     err = SelvaResolve_NodeId(ctx, hierarchy, (RedisModuleString *[]){ alias_name }, 1, orig_node_id);
-    if (err) {
+    if (err < 0) {
         return;
     }
     orig_metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, orig_node_id);
@@ -1459,76 +1523,29 @@ int Selva_SubscribeAliasCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
         return replyWithSelvaError(ctx, err);
     }
 
-    if (SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id)) {
-        /* Marker already created. */
-        return RedisModule_ReplyWithLongLong(ctx, 1);
-    }
-
     /*
      * Get the alias name.
      */
     RedisModuleString *alias_name = argv[ARGV_ALIAS_NAME];
 
     /*
-     * Compile the filter.
-     */
-    struct rpn_ctx *filter_ctx;
-    rpn_token *filter_expression;
-
-    filter_ctx = rpn_init(ctx, 3);
-    if (!filter_ctx) {
-        err = SELVA_SUBSCRIPTIONS_ENOMEM;
-        goto out;
-    }
-
-    /* ALIAS_NAME in aliases */
-    filter_expression = rpn_compile("$2 $1 a", 7);
-    if (!filter_expression) {
-        fprintf(stderr, "%s: Failed to compile a filter for alias \"%s\"\n",
-                __FILE__, RedisModule_StringPtrLen(alias_name, NULL));
-        err = SELVA_RPN_ECOMP;
-        goto out;
-    }
-
-    /* Set RPN registers */
-    (void)rpn_set_reg_rm(filter_ctx, 1, alias_name);
-    (void)rpn_set_reg(filter_ctx, 2, "aliases", 8, 0);
-
-    /*
      * Resolve the node_id as we want to apply the marker
-     * on th node the alias is pointing to.
+     * on the node the alias is pointing to.
      */
     Selva_NodeId node_id;
     err = SelvaResolve_NodeId(ctx, hierarchy, argv + ARGV_ALIAS_NAME, 1, node_id);
-    if (err) {
-        goto out;
+    if (err < 0) {
+        return replyWithSelvaError(ctx, err);
     }
 
-    const unsigned short marker_flags = SELVA_SUBSCRIPTION_FLAG_ALIAS;
-    const enum SelvaModify_HierarchyTraversal sub_dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
-    err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags, "nde",
-                                      node_id, sub_dir,
-                                      filter_ctx, filter_expression);
-    if (err == 0 || err == SELVA_SUBSCRIPTIONS_EEXIST) {
-        if (err == SELVA_SUBSCRIPTIONS_EEXIST) {
-            /* This shouldn't happen as we check for this already before. */
-            rpn_destroy(filter_ctx);
-            RedisModule_Free(filter_expression);
-
-            return RedisModule_ReplyWithLongLong(ctx, 1);
-        }
-
+    err = Selva_AddSubscriptionAliasMarker(ctx, hierarchy, sub_id, marker_id, alias_name, node_id);
+    if (err) {
+        replyWithSelvaError(ctx, err);
+    } else {
         RedisModule_ReplyWithLongLong(ctx, 1);
 #if 0
         RedisModule_ReplicateVerbatim(ctx);
 #endif
-    } else { /* Error */
-out:
-        if (filter_ctx) {
-            rpn_destroy(filter_ctx);
-            RedisModule_Free(filter_expression);
-        }
-        replyWithSelvaError(ctx, err);
     }
 
     return REDISMODULE_OK;
