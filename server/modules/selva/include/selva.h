@@ -30,6 +30,8 @@ typedef unsigned char Selva_SubscriptionId[SELVA_SUBSCRIPTION_ID_SIZE];
 
 typedef int32_t Selva_SubscriptionMarkerId;
 
+#define SELVA_SUBSCRIPTION_MARKER_ID_MIN INT32_MIN
+
 /**
  * Hierarchy traversal order.
  * Recognized by SelvaModify_TraverseHierarchy().

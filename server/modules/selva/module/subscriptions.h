@@ -136,6 +136,14 @@ void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy);
 int SelvaSubscriptions_Refresh(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
 void SelvaSubscriptions_RefreshByMarker(struct SelvaModify_Hierarchy *hierarchy, struct SVector *markers);
 void SelvaSubscriptions_Delete(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+int Selva_AddSubscriptionAliasMarker(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        Selva_SubscriptionId sub_id,
+        Selva_SubscriptionMarkerId marker_id,
+        struct RedisModuleString *alias_name,
+        Selva_NodeId node_id
+    );
 struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,

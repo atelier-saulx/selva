@@ -1235,7 +1235,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     /*
@@ -1425,7 +1425,7 @@ int Selva_AddSubscriptionMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleStr
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     /*
@@ -1502,7 +1502,7 @@ int Selva_SubscribeAliasCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     /*
@@ -1520,7 +1520,7 @@ int Selva_SubscribeAliasCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     Selva_SubscriptionMarkerId marker_id;
     err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "Marker ID");
     }
 
     /*
@@ -1578,7 +1578,7 @@ int Selva_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     /*
@@ -1637,7 +1637,7 @@ int Selva_RefreshSubscriptionCommand(RedisModuleCtx *ctx, RedisModuleString **ar
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     Selva_SubscriptionId sub_id;
@@ -1680,7 +1680,7 @@ int Selva_SubscriptionsListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     struct Selva_Subscription *sub;
@@ -1714,7 +1714,7 @@ int Selva_SubscriptionsListMissingCommand(RedisModuleCtx *ctx, RedisModuleString
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     err = SelvaObject_ReplyWithObject(ctx, hierarchy->subs.missing, NULL);
@@ -1741,7 +1741,7 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     size_t id_len = 0;
@@ -1832,7 +1832,7 @@ int Selva_UnsubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int 
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     Selva_SubscriptionId sub_id;

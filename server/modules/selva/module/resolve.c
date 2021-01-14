@@ -67,8 +67,15 @@ int SelvaResolve_NodeId(
     return res;
 }
 
-static void alias_subscribe(SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id) {
-    /* TODO */
+static Selva_SubscriptionMarkerId gen_marker_id(const char *s) {
+    /* fnv32 */
+    unsigned hash = 2166136261u;
+
+    for (; *s; s++) {
+        hash = (hash ^ *s) * 0x01000193;
+    }
+
+    return (Selva_SubscriptionMarkerId)(0x80000000 | hash);
 }
 
 /*
@@ -91,7 +98,7 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      */
     SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return REDISMODULE_OK;
+        return replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_ENOENT, "Hierarchy not found");
     }
 
     Selva_NodeId node_id;
@@ -105,16 +112,24 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModuleString *argv_sub_id = argv[ARGV_SUB_ID];
     TO_STR(argv_sub_id);
 
-    if (resolved == SELVA_RESOLVE_ALIAS && argv_sub_id_len > 0) {
+    if ((resolved & SELVA_RESOLVE_ALIAS) && argv_sub_id_len > 0) {
+        RedisModuleString *alias_name = argv[ARGV_IDS + (resolved & ~SELVA_RESOLVE_FLAGS)];
         Selva_SubscriptionId sub_id;
+        const Selva_SubscriptionMarkerId marker_id = gen_marker_id(RedisModule_StringPtrLen(alias_name, NULL));
 
         err = SelvaArgParser_SubscriptionId(sub_id, argv_sub_id);
         if (err) {
-            fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n", __FILE__, __LINE__, argv_sub_id_str);
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "Invalid sub_id \"%s\"\n", argv_sub_id_str);
         }
 
-        alias_subscribe(hierarchy, sub_id);
+        err = Selva_AddSubscriptionAliasMarker(ctx, hierarchy, sub_id, marker_id, alias_name, node_id);
+        if (err) {
+            return replyWithSelvaErrorf(ctx, err, "Failed to subscribe sub_id: \"%s.%d\" alias_name: %s node_id: %.*s\n",
+                    argv_sub_id_str,
+                    (int)marker_id,
+                    RedisModule_StringPtrLen(alias_name, NULL),
+                    (int)SELVA_NODE_ID_SIZE, node_id);
+        }
     }
 
     RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
