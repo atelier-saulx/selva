@@ -17,10 +17,12 @@
 #define RPN_ASSERTS         0
 
 /*
- * Codes for primitive types.
+ * Codes for operand types.
  */
 #define RPN_LVTYPE_NUMBER   0 /*<! Lvalue type code for double. */
 #define RPN_LVTYPE_STRING   1 /*<! Lvalue type code for string. */
+#define RPN_LVTYPE_NSET     2 /*<! Lvalue type code for a set on doubles. */
+#define RPN_LVTYPE_SSET     3 /*<! Lvalue type code for a set of strings. */
 
 /*
  * This type should match the alignment of `typedef struct redisObject` in Redis
@@ -59,7 +61,8 @@ struct rpn_operand {
         unsigned regist : 1; /*!< Register value, do not free. */
         unsigned spused : 1; /*!< The value is a string pointed by sp. */
         unsigned spfree : 1; /*!< Free sp if set when freeing the operand. */
-        unsigned slvset : 1; /*!< set pointer is pointing to a SelvaSet. */
+        unsigned slvset : 1; /*!< Set pointer is pointing to a SelvaSet. */
+        unsigned lvtype : 4: /*!< Lvtype of the operand. */
     } flags;
     struct rpn_operand *next_free; /* Next free in pool. */
     size_t s_size;
