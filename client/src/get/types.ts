@@ -10,6 +10,7 @@ export declare type FilterAST = {
     | '<'
     | '..'
     | '!='
+    | 'has'
     | 'distance'
     | 'exists'
     | 'notExists'
@@ -56,7 +57,7 @@ export type Filter =
   | ExistsFilter
   | GeoFilter
   | {
-      $operator: '=' | '!=' | '>' | '<' | '..' | 'textSearch'
+      $operator: '=' | '!=' | '>' | '<' | '..' | 'has' | 'textSearch'
       $field: string
       $value: string | number | (string | number)[]
       $and?: Filter

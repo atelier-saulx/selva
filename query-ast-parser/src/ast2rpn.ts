@@ -16,7 +16,8 @@ const opMapString = {
   '=': 'c',
   '!=': 'c L',
   exists: 'h',
-  notExists: 'h'
+  notExists: 'h',
+  has: 'a'
 }
 
 const opMapNumber = {
@@ -26,7 +27,8 @@ const opMapNumber = {
   '..': 'i',
   '!=': 'G',
   exists: 'h',
-  notExists: 'h'
+  notExists: 'h',
+  has: 'a'
 }
 
 export default function ast2rpn(f: Fork, language?: string): Rpn {
@@ -181,12 +183,12 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
     }
   }
 
- function ast2rpnFork(expr: Fork, ignoreLang: boolean = false) {
+  function ast2rpnFork(expr: Fork, ignoreLang: boolean = false) {
     const lop: ' M' | ' N' = expr.$and ? ' M' : ' N'
     const arr = expr.$and || expr.$or || []
 
     if (arr.length === 0) {
-        out += ' #1'
+      out += ' #1'
     } else {
       for (let i = 0; i < arr.length; i++) {
         const el = arr[i]

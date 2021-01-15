@@ -62,7 +62,7 @@ test.serial('search user roles', async t => {
             $find: {
               $filter: {
                 $field: 'roles',
-                $operator: '=', // 'in' new operator need to make
+                $operator: 'has',
                 $value: 'club:id1'
               }
             }
@@ -82,7 +82,7 @@ test.serial('search user roles', async t => {
             $find: {
               $filter: {
                 $field: 'roles',
-                $operator: '=',
+                $operator: 'has',
                 $value: 'club:id2'
               }
             }
@@ -102,7 +102,7 @@ test.serial('search user roles', async t => {
             $find: {
               $filter: {
                 $field: 'roles',
-                $operator: '=',
+                $operator: 'has',
                 $value: 'club'
               }
             }
@@ -122,7 +122,7 @@ test.serial('search user roles', async t => {
             $find: {
               $filter: {
                 $field: 'roles',
-                $operator: '=',
+                $operator: 'has',
                 $value: 'rando'
               }
             }
