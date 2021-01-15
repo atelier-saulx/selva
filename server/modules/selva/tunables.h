@@ -48,11 +48,10 @@
 
 /**
  * Operand buffer size.
- * Small operands don't require malloc and are faster to operate with.
- * In general this should be at least 1 byte bigger than the nodeId size to keep
- * expressions operating on nodeIds fast. It should be also larger than the
- * size of a void pointer to make sure that if a pointer is stored in it but
- * the value is used as a string, still nothing extremely bad will happen.
+ * Small operands don't require malloc and are faster to
+ * operate with. In general this should be at least 1 byte
+ * bigger than the nodeId size to keep expressions operating
+ * on nodeIds fast.
  */
 #define RPN_SMALL_OPERAND_SIZE          11
 
