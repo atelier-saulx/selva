@@ -137,6 +137,10 @@ export type GetOptions = GetItem & {
   $rawAncestors?: true
 }
 
+export type ObserveEventOptions = GetItem & {
+  $filter: Fork
+}
+
 export type GetOperationFind = {
   type: 'find'
   props: GetOptions

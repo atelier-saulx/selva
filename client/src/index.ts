@@ -16,7 +16,7 @@ import { getSchema } from './schema/getSchema'
 import conformToSchema from './schema/conformToSchema'
 import initializeSchema from './schema/initializeSchema'
 
-import { GetOptions, GetResult, get } from './get'
+import { GetOptions, ObserveEventOptions, GetResult, get } from './get'
 import { SetOptions, set } from './set'
 import { IdOptions } from 'lua/src/id'
 import id from './id'
@@ -219,6 +219,11 @@ export class SelvaClient extends EventEmitter {
         options: props
       }, this)
     }
+  }
+
+  public observeEvent(event: 'created' | 'deleted' | 'updated', props: ObserveEventOptions): Observable {
+    // TODO
+    return null
   }
 
   public async conformToSchema(props: SetOptions, dbName: string = 'default') {
