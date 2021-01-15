@@ -701,9 +701,8 @@ int SelvaObject_RemSet(struct SelvaObject *obj, const RedisModuleString *key_nam
     return 0;
 }
 
-struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleString *key_name) {
+struct SelvaSet *SelvaObject_GetSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -714,6 +713,12 @@ struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleSt
     }
 
     return &key->selva_set;
+}
+
+struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleString *key_name) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetSetStr(obj, key_name_str, key_name_len);
 }
 
 int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p) {

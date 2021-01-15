@@ -48,4 +48,11 @@ static inline void SelvaSet_Remove(struct SelvaSet *set, struct SelvaSetElement 
     }
 }
 
+static inline int SelvaSet_Has(struct SelvaSet *set, RedisModuleString *v) {
+    return !!SelvaSet_Find(set, v);
+}
+
+#define SELVA_SET_FOREACH(el, set) \
+    RB_FOREACH(el, SelvaSetHead, &(set)->head)
+
 #endif /* SELVA_SET */

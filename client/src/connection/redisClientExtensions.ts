@@ -166,6 +166,9 @@ redis.add_command('selva.subscriptions.add')
 redis.add_command('selva.subscriptions.addmarkerfields')
 
 // @ts-ignore
+redis.add_command('selva.subscriptions.addalias')
+
+// @ts-ignore
 redis.add_command('selva.subscriptions.addmissing')
 
 // @ts-ignore

@@ -34,6 +34,14 @@
 #define SELVA_SUBSCRIPTION_FLAG_CH_FIELD        0x0004
 
 /**
+ * Alias changed.
+ * Alias moved or deleted.
+ * This flag also acts a as modifier and it clears the markers of the
+ * subscription after an event is deferred.
+ */
+#define SELVA_SUBSCRIPTION_FLAG_ALIAS           0x0008
+
+/**
  * Reference subscription.
  * Ignores changes to the root node of the marker and only
  * sends events for changes to referenced nodes. I.e. when
@@ -128,6 +136,14 @@ void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy);
 int SelvaSubscriptions_Refresh(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
 void SelvaSubscriptions_RefreshByMarker(struct SelvaModify_Hierarchy *hierarchy, struct SVector *markers);
 void SelvaSubscriptions_Delete(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+int Selva_AddSubscriptionAliasMarker(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        Selva_SubscriptionId sub_id,
+        Selva_SubscriptionMarkerId marker_id,
+        struct RedisModuleString *alias_name,
+        Selva_NodeId node_id
+    );
 struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,
@@ -162,9 +178,14 @@ void SelvaSubscriptions_DeferHierarchyEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata);
-void SelvaSubscriptions_DeferHierarchyDeletionEvents(struct SelvaModify_Hierarchy *hierarchy,
-                                                     const Selva_NodeId node_id,
-                                                     const struct SelvaModify_HierarchyMetadata *metadata);
+void SelvaSubscriptions_DeferHierarchyDeletionEvents(
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        const struct SelvaModify_HierarchyMetadata *metadata);
+void Selva_Subscriptions_DeferAliasChangeEvents(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct RedisModuleString *alias_name);
 void SelvaSubscriptions_FieldChangePrecheck(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
