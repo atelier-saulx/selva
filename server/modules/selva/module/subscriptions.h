@@ -56,6 +56,12 @@
  */
 #define SELVA_SUBSCRIPTION_FLAG_DETACH          0x0200
 
+/**
+ * Trigger marker.
+ * Send a subscription trigger event.
+ */
+#define SELVA_SUBSCRIPTION_FLAG_TRIGGER         0x0410
+
 #define SELVA_SUBSCRIPTION_MATCHER_FLAGS_MASK   0x00ff
 #define SELVA_SUBSCRIPTION_MODIFIER_FLAGS       0xff00
 
@@ -68,6 +74,12 @@ struct SelvaModify_HierarchyMetadata;
 struct hierarchy_subscriptions_tree;
 struct Selva_Subscription;
 
+enum Selva_SubscriptionTriggerType {
+    SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED = 0,
+    SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED,
+    SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED,
+};
+
 /**
  * Subscription marker.
  */
@@ -75,7 +87,13 @@ struct Selva_SubscriptionMarker {
     Selva_SubscriptionMarkerId marker_id;
     unsigned short marker_flags;
     enum SelvaModify_HierarchyTraversal dir;
-    Selva_NodeId node_id;
+    union {
+        /*
+         * node_id is never used when SELVA_SUBSCRIPTION_FLAG_TRIGGER is set.
+         */
+        Selva_NodeId node_id;
+        enum Selva_SubscriptionTriggerType event_type;
+    };
     const char *ref_field; /*!< Ref field to traverse. */
     struct rpn_ctx *filter_ctx;
     rpn_token *filter_expression;
@@ -122,6 +140,7 @@ struct Selva_SubscriptionMarkers {
  */
 struct SelvaSubscriptions_DeferredEvents {
     SVector updates; /*!< A set of Selva_Subscriptions. */
+    SVector triggers; /*!< A set of Selva_SubscriptionMarkers */
 };
 
 /**
@@ -182,10 +201,6 @@ void SelvaSubscriptions_DeferHierarchyDeletionEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata);
-void Selva_Subscriptions_DeferAliasChangeEvents(
-        struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
-        struct RedisModuleString *alias_name);
 void SelvaSubscriptions_FieldChangePrecheck(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
@@ -195,6 +210,14 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata,
         const char *field);
+void Selva_Subscriptions_DeferAliasChangeEvents(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct RedisModuleString *alias_name);
+void Selva_Subscriptions_DeferTriggerEvents(
+        struct SelvaModify_Hierarchy *hierarchy,
+        Selva_NodeId node_id,
+        enum Selva_SubscriptionTriggerType event_type);
 void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 
 #endif /* SELVA_MODIFY_SUBSCRIPTIONS */

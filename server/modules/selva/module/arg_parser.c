@@ -185,6 +185,20 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
     return 0;
 }
 
+int SelvaArgParser_Enum(const struct SelvaArgParser_EnumType types[], RedisModuleString *arg) {
+    size_t i = 0;
+    TO_STR(arg);
+
+    while (types[i].name) {
+        if (!strcmp(types[i].name, arg_str)) {
+            return i;
+        }
+        i++;
+    }
+
+    return SELVA_ENOENT;
+}
+
 void SelvaArgParser_NodeId(Selva_NodeId node_id, RedisModuleString *arg) {
     size_t len;
     const char *str;

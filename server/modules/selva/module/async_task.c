@@ -14,6 +14,10 @@
 #include "subscriptions.h"
 #include "queue_r.h"
 
+#define CHANNEL_SUB_ID(prefix, sub_id) \
+            char channel[sizeof(prefix) + SELVA_SUBSCRIPTION_ID_STR_LEN] = prefix; \
+            Selva_SubscriptionId2str(channel + sizeof(prefix) - 1, (sub_id));
+
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
@@ -113,17 +117,26 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 #endif
 
         if (task->type == SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE) {
-#define PREFIX "___selva_subscription_update:"
-            char channel[sizeof(PREFIX) + SELVA_SUBSCRIPTION_ID_STR_LEN] = PREFIX;
+            CHANNEL_SUB_ID("___selva_subscription_update:", task->sub_update.sub_id);
             redisReply *reply = NULL;
-
-            Selva_SubscriptionId2str(channel + sizeof(PREFIX) - 1, task->sub_id);
-#undef PREFIX
 
 #if 0
             fprintf(stderr, "Redis publish subscription update: \"%s\"\n", channel);
 #endif
             reply = redisCommand(ctx, "PUBLISH %s %s", channel, "");
+            if (reply == NULL) {
+                fprintf(stderr, "Error occurred in publish %s\n", ctx->errstr);
+            }
+
+            freeReplyObject(reply);
+        } else if (task->type == SELVA_MODIFY_ASYNC_TASK_SUB_TRIGGER) {
+            CHANNEL_SUB_ID("___selva_subscription_trigger:", task->sub_trigger.sub_id);
+            redisReply *reply = NULL;
+
+#if 0
+            fprintf(stderr, "Redis publish subscription trigger: \"%s\"\n", channel);
+#endif
+            reply = redisCommand(ctx, "PUBLISH %s %b", channel, task->sub_trigger.node_id, SELVA_NODE_ID_SIZE);
             if (reply == NULL) {
                 fprintf(stderr, "Error occurred in publish %s\n", ctx->errstr);
             }
@@ -197,7 +210,26 @@ void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
         .type = SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE,
     };
 
-    memcpy(publish_task.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
+    memcpy(publish_task.sub_update.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
+    memcpy(ptr, &total_len, sizeof(int32_t));
+    ptr += sizeof(int32_t);
+    memcpy(ptr, &publish_task, struct_len);
+
+    SelvaModify_SendAsyncTask(payload_str, payload_len);
+}
+
+void SelvaModify_PublishSubscriptionTrigger(const Selva_SubscriptionId sub_id, const Selva_NodeId node_id) {
+    const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
+    const size_t payload_len = sizeof(int32_t) + struct_len;
+    int32_t total_len = payload_len;
+    char payload_str[payload_len];
+    char *ptr = payload_str;
+    struct SelvaModify_AsyncTask publish_task = {
+        .type = SELVA_MODIFY_ASYNC_TASK_SUB_TRIGGER,
+    };
+
+    memcpy(publish_task.sub_trigger.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
+    memcpy(publish_task.sub_trigger.node_id, node_id, SELVA_NODE_ID_SIZE);
     memcpy(ptr, &total_len, sizeof(int32_t));
     ptr += sizeof(int32_t);
     memcpy(ptr, &publish_task, struct_len);

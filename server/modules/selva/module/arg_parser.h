@@ -8,6 +8,11 @@ struct RedisModuleCtx;
 struct RedisModuleString;
 struct SelvaObject;
 
+struct SelvaArgParser_EnumType {
+    char *name;
+    int id;
+};
+
 /**
  * Parse an option with key string.
  * TXT INT_VALUE
@@ -38,6 +43,7 @@ int SelvaArgsParser_StringSetList(
         const char *name,
         struct RedisModuleString *arg_key,
         struct RedisModuleString *arg_val);
+int SelvaArgParser_Enum(const struct SelvaArgParser_EnumType types[], RedisModuleString *arg);
 void SelvaArgParser_NodeId(
         Selva_NodeId node_id,
         struct RedisModuleString *arg);

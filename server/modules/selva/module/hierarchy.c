@@ -393,6 +393,8 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
             createNodeHash(ctx, id);
         }
     }
+
+    Selva_Subscriptions_DeferTriggerEvents(hierarchy, id, SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED);
 }
 
 #if HIERARCHY_SORT_BY_DEPTH
