@@ -17,12 +17,10 @@
 #define RPN_ASSERTS         0
 
 /*
- * Codes for operand types.
+ * Codes for primitive types.
  */
 #define RPN_LVTYPE_NUMBER   0 /*<! Lvalue type code for double. */
 #define RPN_LVTYPE_STRING   1 /*<! Lvalue type code for string. */
-#define RPN_LVTYPE_NSET     2 /*<! Lvalue type code for a set on doubles. */
-#define RPN_LVTYPE_SSET     3 /*<! Lvalue type code for a set of strings. */
 
 /*
  * This type should match the alignment of `typedef struct redisObject` in Redis
@@ -62,7 +60,6 @@ struct rpn_operand {
         unsigned spused : 1; /*!< The value is a string pointed by sp. */
         unsigned spfree : 1; /*!< Free sp if set when freeing the operand. */
         unsigned slvset : 1; /*!< Set pointer is pointing to a SelvaSet. */
-        unsigned lvtype : 4: /*!< Lvtype of the operand. */
     } flags;
     struct rpn_operand *next_free; /* Next free in pool. */
     size_t s_size;
@@ -406,7 +403,7 @@ static int to_bool(struct rpn_operand *v) {
 
     if (isnan(d)) {
         if (v->flags.slvset) {
-            return !!v->set;
+            return v->set && v->set->size > 0;
         }
         return v->s_size > 0 && OPERAND_GET_S(v)[0] != '\0';
     }
@@ -800,14 +797,14 @@ static enum rpn_error rpn_op_range(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
     struct SelvaObject *obj;
     struct SelvaSet *set;
-    OPERAND(ctx, a); /* value */
-    OPERAND(ctx, b); /* set */
+    OPERAND(ctx, s); /* set */
+    OPERAND(ctx, v); /* value */
 
-    if (b->flags.slvset) {
-        /* The operand `b` is a set. */
-        set = b->set;
+    if (s->flags.slvset) {
+        /* The operand `s` is a set. */
+        set = s->set;
     } else {
-        /* The operand `b` is a field_name string. */
+        /* The operand `s` is a field_name string. */
         obj = open_node_object(ctx);
         if (!obj) {
             fprintf(stderr, "RPN: Node object not found for: \"%.*s\"\n",
@@ -815,8 +812,8 @@ static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
             return push_int_result(ctx, 0);
         }
 
-        const char *field_name_str = OPERAND_GET_S(b);
-        const size_t field_name_len = OPERAND_GET_S_LEN(b);
+        const char *field_name_str = OPERAND_GET_S(s);
+        const size_t field_name_len = OPERAND_GET_S_LEN(s);
         set = SelvaObject_GetSetStr(obj, field_name_str, field_name_len);
         if (!set) {
             return push_int_result(ctx, 0);
@@ -827,7 +824,7 @@ static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
      * We use rms_field here because we don't need it for the field_name in this
      * function.
      */
-    if(rpn_operand2rms(&ctx->rms_field, a)) {
+    if(rpn_operand2rms(&ctx->rms_field, v)) {
         return RPN_ERR_ENOMEM;
     }
 
