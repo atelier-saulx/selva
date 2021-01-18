@@ -25,6 +25,12 @@ test.before(async t => {
             items: {
               type: 'string'
             }
+          },
+          numbers: {
+            type: 'set',
+            items: {
+              type: 'number'
+            }
           }
         }
       }
@@ -48,10 +54,11 @@ test.serial('search user roles', async t => {
     roles: ['club', 'club:id1']
   })
 
-  await client.set({
+  const id = await client.set({
     type: 'user',
     roles: ['club', 'club:id2']
   })
+    console.log(await client.get({$id: id, $all: true }));
 
   t.is(
     (
@@ -131,6 +138,47 @@ test.serial('search user roles', async t => {
       })
     ).descendants.length,
     0
+  )
+
+  await client.destroy()
+})
+
+test.serial('search user numbers', async t => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    type: 'user',
+    roles: ['club', 'club:id1'],
+    numbers: [1, 2, 3]
+  })
+
+  const id = await client.set({
+    type: 'user',
+    roles: ['club', 'club:id2'],
+    numbers: [4, 5, 6]
+  })
+
+    console.log(await client.get({$id: id, $all: true }));
+  console.log('check');
+  await wait(1e7);
+  t.is(
+    (
+      await client.get({
+        descendants: {
+          id: true,
+          $list: {
+            $find: {
+              $filter: {
+                $field: 'numbers',
+                $operator: 'has',
+                $value: 1
+              }
+            }
+          }
+        }
+      })
+    ).descendants.length,
+    1
   )
 
   await client.destroy()
