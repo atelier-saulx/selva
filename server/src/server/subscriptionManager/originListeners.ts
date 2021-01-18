@@ -3,9 +3,10 @@ import { constants } from '@saulx/selva'
 import addUpdate from './update/addUpdate'
 import { ServerSelector } from '@saulx/selva/dist/src/types'
 
-const { EVENTS, SUBSCRIPTION_UPDATE } = constants
+const { EVENTS, SUBSCRIPTION_UPDATE, TRIGGER_UPDATE } = constants
 
 const prefixLength = SUBSCRIPTION_UPDATE.length
+const triggerPrefixLength = TRIGGER_UPDATE.length
 const deleteLength = 'delete:'.length
 
 // pass subscription
@@ -23,7 +24,7 @@ const addOriginListeners = async (
   if (!subsManager.originListeners[name]) {
     let collect = 0
 
-    const listener = (_pattern, channel, message) => {
+    const listener = (pattern, channel, message) => {
       subsManager.incomingCount++
       collect++
 
@@ -34,23 +35,16 @@ const addOriginListeners = async (
           addUpdate(subsManager, subscription)
         }
       } else {
-        const subId = channel.slice(prefixLength)
-        const subscription = subsManager.subscriptions[subId]
+        if (pattern.startsWith(SUBSCRIPTION_UPDATE)) {
+          const subId = channel.slice(prefixLength)
+          const subscription = subsManager.subscriptions[subId]
 
-        if (subscription) {
-          addUpdate(subsManager, subscription)
+          if (subscription) {
+            addUpdate(subsManager, subscription)
+          }
+        } else if (pattern.startsWith(TRIGGER_UPDATE)) {
+          // TODO
         }
-
-        // make this batch as well (the check)
-        // if (message === 'update') {
-        //   traverseTree(subsManager, eventName, name)
-        // } else if (message && message.startsWith('delete')) {
-        //   const fields = message.slice(deleteLength).split(',')
-
-        //   fields.forEach((v: string) => {
-        //     traverseTree(subsManager, eventName + '.' + v, name)
-        //   })
-        // }
       }
 
       if (!subsManager.stagedInProgess) {
@@ -114,6 +108,7 @@ const addOriginListeners = async (
 
     redis.on(serverDescriptor, 'pmessage', listener)
     redis.psubscribe(serverDescriptor, SUBSCRIPTION_UPDATE + '*')
+    redis.psubscribe(serverDescriptor, TRIGGER_UPDATE + '*')
   }
 
   subsManager.originListeners[name].subscriptions.add(subscription)
@@ -135,6 +130,7 @@ const removeOriginListeners = (
         delete subsManager.memberMemCache[name]
       }
       redis.punsubscribe({ name }, SUBSCRIPTION_UPDATE + '*')
+      redis.punsubscribe({ name }, TRIGGER_UPDATE + '*')
       client.removeListener('reconnect', origin.reconnectListener)
       client.removeListener('added-servers', origin.serverUpdateListener)
       client.removeListener('removed-servers', origin.serverUpdateListener)
