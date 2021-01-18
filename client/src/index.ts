@@ -222,8 +222,16 @@ export class SelvaClient extends EventEmitter {
   }
 
   public observeEvent(event: 'created' | 'deleted' | 'updated', props: ObserveEventOptions): Observable {
-    // TODO
-    return null
+    const newProps: GetOptions = Object.assign({}, props, { $trigger: { $event: event } })
+    if (props.$filter) {
+      newProps.$trigger.$filter = props.$filter
+    }
+
+    return createObservable({
+      type: 'get',
+      options: props,
+      immutable: true  
+    }, this)
   }
 
   public async conformToSchema(props: SetOptions, dbName: string = 'default') {

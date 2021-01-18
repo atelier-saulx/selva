@@ -197,6 +197,12 @@ export default async function validateTopLevel(
         if (typeof props.$db !== 'string') {
           throw new Error(`${path}.$db ${props.$db} should be a string`)
         }
+      } else if (field === '$trigger') {
+        if (typeof props.$trigger !== 'object') {
+          throw new Error(
+            `${path}.$trigger ${props.$trigger} should be an object with $event and optional $filter`
+          )
+        }
       } else if (field === '$id') {
         if (typeof props.$id !== 'string' && !Array.isArray(props.$id)) {
           if (path !== '' && typeof props.$id === 'object') {

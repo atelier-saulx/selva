@@ -134,6 +134,11 @@ async function get(
     return { $isNull: true }
   }
 
+  if (newProps.$trigger && !newProps.$subscription) {
+    // $trigger only works with subscriptions
+    return { $isNull: true }
+  }
+
   const lang = newProps.$language
   let resultMeta: any = {}
 

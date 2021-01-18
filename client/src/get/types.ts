@@ -130,6 +130,7 @@ export type GetResult = {
 }
 
 export type GetOptions = GetItem & {
+  $trigger?: { $event: 'created' | 'updated' | 'deleted'; $filter?: Fork }
   $id?: Id | Id[]
   $alias?: string | string[]
   $version?: string
