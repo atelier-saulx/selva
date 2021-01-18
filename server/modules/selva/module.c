@@ -547,10 +547,16 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
             } else {
-                SelvaObject_SetString(obj, field, value);
+                err = SelvaObject_SetString(obj, field, value);
+                if (err == 0) {
+                    RedisModule_RetainString(ctx, value);
+                } /* TODO Handle errors */
             }
         } else if (type_code == SELVA_MODIFY_ARG_STRING) {
             SelvaObject_SetString(obj, field, value);
+            if (err == 0) {
+                RedisModule_RetainString(ctx, value);
+            } /* TODO Handle errors */
         } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
             if (old_type != SELVA_OBJECT_NULL) {
                 publish = false;

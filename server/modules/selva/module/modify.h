@@ -25,6 +25,11 @@ enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE = 'B', /*!< Increment a double value. */
     SELVA_MODIFY_ARG_OP_SET = '5', /*!< Value is a struct SelvaModify_OpSet. */
     SELVA_MODIFY_ARG_OP_DEL = '7', /*!< Delete field; value is a modifier. */
+    /* TODO Add support for double and long long sets. */
+#if 0
+    SELVA_MODIFY_ARG_OP_SET_DOUBLE = 'D', /*< Value is a struct SelvaModify_OpSetDouble. */
+    SELVA_MODIFY_ARG_OP_SET_LONGLONG = 'L', /*< Value is a struct SelvaModify_OpSetLongLong. */
+#endif
 };
 
 struct SelvaModify_OpIncrement {

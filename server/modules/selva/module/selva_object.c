@@ -604,7 +604,6 @@ int SelvaObject_SetString(struct SelvaObject *obj, const RedisModuleString *key_
         return err;
     }
 
-    RedisModule_RetainString(NULL, value);
     key->type = SELVA_OBJECT_STRING;
     key->value = value;
 
@@ -636,7 +635,7 @@ int SelvaObject_GetObject(struct SelvaObject *obj, const RedisModuleString *key_
     return SelvaObject_GetObjectStr(obj, key_name_str, key_name_len, out);
 }
 
-int SelvaObject_AddSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+static int get_selva_set_modify(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -653,24 +652,53 @@ int SelvaObject_AddSet(struct SelvaObject *obj, const RedisModuleString *key_nam
             return err;
         }
 
-        SelvaSet_Init(&key->selva_set);
+        SelvaSet_Init(&key->selva_set, type);
         key->type = SELVA_OBJECT_SET;
+    } else if (key->selva_set.type != type) {
+        return SELVA_EINTYPE;
     }
 
-    struct SelvaSetElement *el;
-    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
-    el->value = value;
-
-    if (SelvaSet_Add(&key->selva_set, el) != NULL) {
-        RedisModule_Free(el);
-        return SELVA_EEXIST;
-    }
-    RedisModule_RetainString(NULL, value);
-
+    *set_out = &key->selva_set;
     return 0;
 }
 
-int SelvaObject_RemSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+    struct SelvaSet *selva_set;
+    int err;
+
+    err = get_selva_set_modify(obj, key_name, SELVA_SET_TYPE_DOUBLE, &selva_set);
+    if (err) {
+        return err;
+    }
+
+    return SelvaSet_AddDouble(selva_set, value);
+}
+
+int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+    struct SelvaSet *selva_set;
+    int err;
+
+    err = get_selva_set_modify(obj, key_name, SELVA_SET_TYPE_LONGLONG, &selva_set);
+    if (err) {
+        return err;
+    }
+
+    return SelvaSet_AddLongLong(selva_set, value);
+}
+
+int SelvaObject_AddStringSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+    struct SelvaSet *selva_set;
+    int err;
+
+    err = get_selva_set_modify(obj, key_name, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    if (err) {
+        return err;
+    }
+
+    return SelvaSet_AddRms(selva_set, value);
+}
+
+static int get_selva_set(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
     int err;
@@ -686,17 +714,52 @@ int SelvaObject_RemSet(struct SelvaObject *obj, const RedisModuleString *key_nam
         return SELVA_EINVAL;
     }
 
-    struct SelvaSetElement *el;
-    el = SelvaSet_Find(&key->selva_set, value);
-    if (!el) {
-        return SELVA_ENOENT;
+    if (key->selva_set.type != type) {
+        return SELVA_EINTYPE;
     }
 
-    /*
-     * Remove from the tree and free the string.
-     */
-    SelvaSet_Remove(&key->selva_set, el);
-    SelvaSet_DestroyElement(el);
+    *set_out = &key->selva_set;
+    return 0;
+}
+
+int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+    struct SelvaSet *selva_set;
+    int err;
+
+    err = get_selva_set(obj, key_name, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    if (err) {
+        return err;
+    }
+
+    SelvaSet_RemoveDouble(selva_set, value);
+
+    return 0;
+}
+
+int SelvaObject_RemLongLongSet(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+    struct SelvaSet *selva_set;
+    int err;
+
+    err = get_selva_set(obj, key_name, SELVA_SET_TYPE_LONGLONG, &selva_set);
+    if (err) {
+        return err;
+    }
+
+    SelvaSet_RemoveLongLong(selva_set, value);
+
+    return 0;
+}
+
+int SelvaObject_RemStringSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+    struct SelvaSet *selva_set;
+    int err;
+
+    err = get_selva_set(obj, key_name, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    if (err) {
+        return err;
+    }
+
+    SelvaSet_RemoveRms(selva_set, value);
 
     return 0;
 }
@@ -756,7 +819,6 @@ int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_n
     }
 
     SVector_Insert(&key->array, p);
-    RedisModule_RetainString(NULL, (RedisModuleString *)p);
 
     return 0;
 }
@@ -1046,9 +1108,21 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    RB_FOREACH(el, SelvaSetHead, &set->head) {
-        RedisModule_ReplyWithString(ctx, el->value);
-        n++;
+    if (set->type == SELVA_SET_TYPE_RMSTRING) {
+        SELVA_SET_RMS_FOREACH(el, set) {
+            RedisModule_ReplyWithString(ctx, el->value_rms);
+            n++;
+        }
+    } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
+        SELVA_SET_DOUBLE_FOREACH(el, set) {
+            RedisModule_ReplyWithDouble(ctx, el->value_d);
+            n++;
+        }
+    } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
+        SELVA_SET_LONGLONG_FOREACH(el, set) {
+            RedisModule_ReplyWithLongLong(ctx, el->value_ll);
+            n++;
+        }
     }
 
     RedisModule_ReplySetArrayLength(ctx, n);
@@ -1224,11 +1298,15 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         break;
     case 's': /* SELVA_OBJECT_STRING */
         err = SelvaObject_SetString(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
+        if (err == 0) {
+            RedisModule_RetainString(ctx, argv[ARGV_OVAL]);
+        }
         values_set++;
         break;
     case 'S': /* SELVA_OBJECT_SET */
         for (int i = ARGV_OVAL; i < argc; i++) {
-            if (SelvaObject_AddSet(obj, argv[ARGV_OKEY], argv[i]) == 0) {
+            if (SelvaObject_AddStringSet(obj, argv[ARGV_OKEY], argv[i]) == 0) {
+                RedisModule_RetainString(ctx, argv[i]);
                 values_set++;
             }
         }
@@ -1384,8 +1462,6 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
                     RedisModule_LogIOError(io, "warning", "Error while loading a string");
                     return NULL;
                 }
-
-                RedisModule_FreeString(NULL, value);
             }
             break;
         case SELVA_OBJECT_OBJECT:
@@ -1410,12 +1486,29 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
             break;
         case SELVA_OBJECT_SET:
             {
+                enum SelvaSetType setType = RedisModule_LoadUnsigned(io);
                 const size_t n = RedisModule_LoadUnsigned(io);
 
-                for (size_t j = 0; j < n; j++) {
-                    RedisModuleString *value = RedisModule_LoadString(io);
+                if (setType == SELVA_SET_TYPE_RMSTRING) {
+                    for (size_t j = 0; j < n; j++) {
+                        RedisModuleString *value = RedisModule_LoadString(io);
 
-                    SelvaObject_AddSet(obj, name, value);
+                        SelvaObject_AddStringSet(obj, name, value);
+                    }
+                } else if (setType == SELVA_SET_TYPE_DOUBLE) {
+                    for (size_t j = 0; j < n; j++) {
+                        double value = RedisModule_LoadDouble(io);
+
+                        SelvaObject_AddDoubleSet(obj, name, value);
+                    }
+                } else if (setType == SELVA_SET_TYPE_LONGLONG) {
+                    for (size_t j = 0; j < n; j++) {
+                        long long value = RedisModule_LoadSigned(io);
+
+                        SelvaObject_AddLongLongSet(obj, name, value);
+                    }
+                } else {
+                    RedisModule_LogIOError(io, "warning", "Unknown set type");
                 }
             }
             break;
@@ -1468,12 +1561,24 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
                 break;
             case SELVA_OBJECT_SET:
                 {
+                    struct SelvaSet *selva_set = &key->selva_set;
                     struct SelvaSetElement *el;
 
-                    RedisModule_SaveUnsigned(io, key->selva_set.size);
+                    RedisModule_SaveUnsigned(io, selva_set->type);
+                    RedisModule_SaveUnsigned(io, selva_set->size);
 
-                    RB_FOREACH(el, SelvaSetHead, &key->selva_set.head) {
-                        RedisModule_SaveString(io, el->value);
+                    if (selva_set->type == SELVA_SET_TYPE_RMSTRING) {
+                        SELVA_SET_RMS_FOREACH(el, &key->selva_set) {
+                            RedisModule_SaveString(io, el->value_rms);
+                        }
+                    } else if (selva_set->type == SELVA_SET_TYPE_DOUBLE) {
+                        SELVA_SET_DOUBLE_FOREACH(el, &key->selva_set) {
+                            RedisModule_SaveDouble(io, el->value_d);
+                        }
+                    } else if (selva_set->type == SELVA_SET_TYPE_LONGLONG) {
+                        SELVA_SET_LONGLONG_FOREACH(el, &key->selva_set) {
+                            RedisModule_SaveSigned(io, el->value_ll);
+                        }
                     }
                 }
                 break;
@@ -1498,9 +1603,17 @@ void set_aof_rewrite(RedisModuleIO *aof, RedisModuleString *key, struct SelvaObj
     }
 
     size_t argc = 0;
+    struct SelvaSet *selva_set = &okey->selva_set;
     struct SelvaSetElement *el;
-    RB_FOREACH(el, SelvaSetHead, &okey->selva_set.head) {
-        argv[argc++] = el->value;
+
+    if (selva_set->type == SELVA_SET_TYPE_RMSTRING) {
+        SELVA_SET_RMS_FOREACH(el, &okey->selva_set) {
+            argv[argc++] = el->value_rms;
+        }
+    } else if (selva_set->type == SELVA_SET_TYPE_DOUBLE) {
+        /* TODO */
+    } else if (selva_set->type == SELVA_SET_TYPE_LONGLONG) {
+        /* TODO */
     }
 
     RedisModule_EmitAOF(aof, "SELVA.OBJECT.SET", "sbcv",

@@ -157,14 +157,14 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
                 }
                 el_len = (size_t)((ptrdiff_t)next_el - (ptrdiff_t)cur_el);
 
-                el = RedisModule_CreateString(ctx, cur_el, el_len);
+                el = RedisModule_CreateString(NULL, cur_el, el_len);
                 if (!key || !el) {
                     SelvaObject_Destroy(obj);
                     return SELVA_ENOMEM;
                 }
 
                 /*
-                 * Add to the list
+                 * Add to the list.
                  */
                 SelvaObject_AddArray(obj, key, SELVA_OBJECT_STRING, el);
 

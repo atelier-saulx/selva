@@ -58,7 +58,6 @@ test.serial('search user roles', async t => {
     type: 'user',
     roles: ['club', 'club:id2']
   })
-    console.log(await client.get({$id: id, $all: true }));
 
   t.is(
     (
@@ -158,9 +157,6 @@ test.serial('search user numbers', async t => {
     numbers: [4, 5, 6]
   })
 
-    console.log(await client.get({$id: id, $all: true }));
-  console.log('check');
-  await wait(1e7);
   t.is(
     (
       await client.get({

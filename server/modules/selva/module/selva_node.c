@@ -17,18 +17,22 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
         return err;
     }
 
+    /* TODO Handle errors */
     SelvaObject_SetString(obj, RedisModule_CreateString(ctx, "$id", 3), key_name);
+    RedisModule_RetainString(ctx, key_name);
 
     /* Set the type for root. */
     if (is_root) {
         RedisModuleString *type;
 
-        type = RedisModule_CreateStringPrintf(ctx, "root");
+        type = RedisModule_CreateStringPrintf(NULL, "root");
         if (unlikely(!type)) {
             return SELVA_MODIFY_HIERARCHY_ENOMEM;
         }
 
+        /* TODO Handle errors */
         SelvaObject_SetString(obj, RedisModule_CreateString(ctx, "type", 4), type);
+        RedisModule_RetainString(ctx, type);
     }
 
     return 0;
