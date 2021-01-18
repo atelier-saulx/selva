@@ -24,7 +24,7 @@ export type Filter =
   | ExistsFilter
   | GeoFilter
   | {
-      $operator: '=' | '!=' | '>' | '<' | '..' | 'textSearch'
+      $operator: '=' | '!=' | '>' | '<' | '..' | 'has' | 'textSearch'
       $field: string
       $value: string | number | (string | number)[]
       $and?: Filter
@@ -39,6 +39,7 @@ export type FilterAST = {
     | '<'
     | '..'
     | '!='
+    | 'has'
     | 'distance'
     | 'exists'
     | 'notExists'
@@ -57,7 +58,7 @@ export type Fork = {
 
 export type FieldSubscription = {
   $value: (string | number)[]
-  $operator: '=' | '>' | '<' | '..' | '!='
+  $operator: '=' | '>' | '<' | '..' | 'has' | '!='
 }
 
 export type WithRequired<T, K extends keyof T> = Omit<T, K> &
