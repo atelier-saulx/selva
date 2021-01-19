@@ -43,7 +43,10 @@ const addOriginListeners = async (
             addUpdate(subsManager, subscription)
           }
         } else if (pattern.startsWith(TRIGGER_UPDATE)) {
-          // TODO
+          const subId = channel.slice(triggerPrefixLength)
+          const nodeId = message
+
+          // TODO: update
         }
       }
 
@@ -59,7 +62,6 @@ const addOriginListeners = async (
         subscription.originDescriptors[name] = descriptor
         const { name: dbName } = descriptor
 
-        // TODO: replace descriptor
         console.log(
           'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
           name
