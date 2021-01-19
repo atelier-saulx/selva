@@ -23,13 +23,13 @@ RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx) {
 int delete_aliases(RedisModuleKey *aliases_key, struct SelvaSet *set) {
     struct SelvaSetElement *el;
 
-    if (!set) {
+    if (!set || set->type != SELVA_SET_TYPE_RMSTRING) {
         /* Likely there were no aliases. */
         return 0;
     }
 
-    RB_FOREACH(el, SelvaSetHead, &set->head) {
-        RedisModuleString *alias = el->value;
+    SELVA_SET_RMS_FOREACH(el, set) {
+        RedisModuleString *alias = el->value_rms;
 
         RedisModule_HashSet(aliases_key, REDISMODULE_HASH_NONE, alias, REDISMODULE_HASH_DELETE, NULL);
     }
@@ -37,6 +37,9 @@ int delete_aliases(RedisModuleKey *aliases_key, struct SelvaSet *set) {
     return 0;
 }
 
+/*
+ * Caller must set the alias to the new node.
+ */
 void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleString *id, RedisModuleString *ref) {
     RedisModuleString *orig = NULL;
 
@@ -56,7 +59,7 @@ void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleStr
 
                     field = RedisModule_CreateStringPrintf(ctx, "%s", "aliases");
                     if (field) {
-                        SelvaObject_RemSet(obj, field, ref);
+                        SelvaObject_RemStringSet(obj, field, ref);
                     }
                 }
             }

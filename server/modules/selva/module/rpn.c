@@ -593,6 +593,8 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, struct rpn_operand *field,
             return push_empty_value(ctx);
         }
 
+        /* TODO We should validate the subtype */
+
         return push_selva_set_result(ctx, set);
     } else { /* Primitive type */
         if (type == RPN_LVTYPE_NUMBER) {
@@ -794,7 +796,7 @@ static enum rpn_error rpn_op_range(struct rpn_ctx *ctx) {
     return push_int_result(ctx, a->d <= b->d && b->d <= c->d);
 }
 
-static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_has(struct rpn_ctx *ctx) {
     struct SelvaObject *obj;
     struct SelvaSet *set;
     OPERAND(ctx, s); /* set */
@@ -828,7 +830,8 @@ static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
         return RPN_ERR_ENOMEM;
     }
 
-    return push_int_result(ctx, SelvaSet_Has(set, ctx->rms_field));
+    /* TODO support numbers */
+    return push_int_result(ctx, SelvaSet_HasRms(set, ctx->rms_field));
 }
 
 static enum rpn_error rpn_op_typeof(struct rpn_ctx *ctx) {
@@ -943,7 +946,7 @@ static rpn_fp funcs[] = {
     rpn_op_abo,     /* N/A */
     rpn_op_abo,     /* N/A */
     rpn_op_abo,     /* N/A */
-    rpn_op_in,      /* a */
+    rpn_op_has,     /* a */
     rpn_op_typeof,  /* b */
     rpn_op_strcmp,  /* c */
     rpn_op_idcmp,   /* d */

@@ -39,7 +39,7 @@ else
 endif
 CFLAGS := $(IDIR) -include tunables.h \
 	-std=gnu99 -fPIC \
-	-Wall -Wextra -Wno-unused-value \
+	-Wall -Wextra -Wextra-semi -Wno-unused-value -Wno-zero-length-array -Wno-c11-extensions \
 	-ggdb -O2 \
 	-fno-strict-aliasing \
 	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
@@ -58,12 +58,20 @@ module.so: $(OBJS) $(RMUTIL_LIBDIR)/librmutil.a $(UTIL_LIBDIR)/libutil.a
 	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1h/lib/ $(SHOBJ_LDLIBS)
 
 check:
-	cppcheck --quiet -j 2 --inline-suppr \
-		--language=c --std=c99 --platform=unix64 \
-		--enable=all --addon=threadsafety.py --addon=cert.py \
+ifeq ($(uname_S),Linux)
+	cppcheck --quiet --inline-suppr \
+		--language=c --std=c99 --platform=unix64 --enable=all \
+		-addon=threadsafety.py --addon=cert.py \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
 		-i $(RMUTIL_LIBDIR) $(IDIR) .
+else # Assume macOs
+	cppcheck --quiet --inline-suppr \
+		--language=c --std=c99 --platform=unix64 --enable=all \
+		--suppressions-list=cppcheck_suppressions.txt \
+		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
+		-i $(RMUTIL_LIBDIR) $(IDIR) .
+endif
 
 test:
 	$(MAKE) -C test

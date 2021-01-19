@@ -1416,10 +1416,13 @@ static int traverse_ref(
     if (!ref_set) {
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
+    if (ref_set->type != SELVA_SET_TYPE_RMSTRING) {
+        return SELVA_EINTYPE;
+    }
 
     struct SelvaSetElement *el;
-    RB_FOREACH(el, SelvaSetHead, &ref_set->head) {
-        RedisModuleString *value = el->value;
+    SELVA_SET_RMS_FOREACH(el, ref_set) {
+        RedisModuleString *value = el->value_rms;
         Selva_NodeId nodeId;
         SelvaModify_HierarchyNode *node;
         TO_STR(value);
