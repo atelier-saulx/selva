@@ -139,7 +139,18 @@ async function get(
   } else if (newProps.$trigger && newProps.$id) {
     delete newProps.$trigger
   } else if (newProps.$trigger) {
-    // TODO: add marker here
+    // await client.redis.selva_subscriptions_addtrigger(
+    //   ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    //   '___selva_hierarchy',
+    //   ctx.subId,
+    //   markerId,
+    //   marker.type,
+    //   marker.id,
+    //   eventType, // huom. ero
+    //   'fields',
+    //   marker.fields.join('\n'),
+    //   ...(marker.rpn ? marker.rpn : [])
+    // )
     return { $isNull: true }
   }
 
