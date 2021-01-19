@@ -129,7 +129,6 @@ async function get(
         subId,
         ...ids
       )
-      // TODO Create a missing sub
     }
     return { $isNull: true }
   }
