@@ -16,11 +16,7 @@ function parseGetOpts(
   const gets: GetOptions[] = []
 
   for (const k in props) {
-    if (k.startsWith('$')) {
-      continue
-    }
-
-    if (props[k] === true) {
+    if (!k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
     } else if (props[k] === false) {
       // ignore
