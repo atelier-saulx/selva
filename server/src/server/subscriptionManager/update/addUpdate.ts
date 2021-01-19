@@ -4,7 +4,7 @@ import chalk from 'chalk'
 
 var delayCount = 0
 
-export const sendUpdates = (subscriptionManager: SubscriptionManager) => {
+const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   // seeing a double subscriptions no good
   let cnt = 0
   subscriptionManager.stagedForUpdates.forEach(subscription => {
