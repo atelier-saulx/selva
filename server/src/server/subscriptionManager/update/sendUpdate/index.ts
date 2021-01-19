@@ -32,9 +32,8 @@ const sendUpdate = async (
   getOptions.$subscription = subscription.channel
   getOptions.$originDescriptors = subscription.originDescriptors
 
-  if (nodeId && getOptions.$trigger) {
+  if (nodeId) {
     getOptions.$id = nodeId
-    delete getOptions.$trigger
   }
 
   const startTime = Date.now()
