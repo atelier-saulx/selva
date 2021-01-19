@@ -144,7 +144,6 @@ async function get(
     //   '___selva_hierarchy',
     //   ctx.subId,
     //   markerId,
-    //   marker.type,
     //   marker.id,
     //   eventType, // huom. ero
     //   'fields',
