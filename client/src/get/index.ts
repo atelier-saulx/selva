@@ -136,6 +136,11 @@ async function get(
   if (newProps.$trigger && !newProps.$subscription) {
     // $trigger only works with subscriptions
     return { $isNull: true }
+  } else if (newProps.$trigger && newProps.$id) {
+    delete newProps.$trigger
+  } else if (newProps.$trigger) {
+    // TODO: add marker here
+    return { $isNull: true }
   }
 
   const lang = newProps.$language
