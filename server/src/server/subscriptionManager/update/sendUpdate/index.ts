@@ -13,7 +13,8 @@ const { CACHE } = constants
 
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
-  subscription: Subscription
+  subscription: Subscription,
+  nodeId?: string
 ) => {
   const channel = subscription.channel
   const { client, selector } = subscriptionManager
@@ -26,10 +27,15 @@ const sendUpdate = async (
 
   subscriptionManager.inProgressCount++
   subscription.beingProcessed = true
-  const getOptions = subscription.get
+  const getOptions = Object.assign({}, subscription.get)
   getOptions.$includeMeta = true
   getOptions.$subscription = subscription.channel
   getOptions.$originDescriptors = subscription.originDescriptors
+
+  if (nodeId && getOptions.$trigger) {
+    getOptions.$id = nodeId
+    delete getOptions.$trigger
+  }
 
   const startTime = Date.now()
 

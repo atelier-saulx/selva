@@ -1,6 +1,7 @@
 import { SubscriptionManager, Subscription } from './types'
 import { constants } from '@saulx/selva'
 import addUpdate from './update/addUpdate'
+import sendUpdate from './update/sendUpdate'
 import { ServerSelector } from '@saulx/selva/dist/src/types'
 
 const { EVENTS, SUBSCRIPTION_UPDATE, TRIGGER_UPDATE } = constants
@@ -44,9 +45,11 @@ const addOriginListeners = async (
           }
         } else if (pattern.startsWith(TRIGGER_UPDATE)) {
           const subId = channel.slice(triggerPrefixLength)
+          const subscription = subsManager.subscriptions[subId]
           const nodeId = message
 
-          // TODO: update
+          // TODO: maybe do some staging for updates stuff if nodeId is also the same?
+          sendUpdate(subsManager, subscription, nodeId)
         }
       }
 
