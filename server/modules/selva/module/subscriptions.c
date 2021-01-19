@@ -528,7 +528,7 @@ int Selva_AddSubscriptionAliasMarker(
      * Compile the filter.
      * `ALIAS_NAME in aliases`
      */
-    filter_expression = rpn_compile("$2 $1 a", 7);
+    filter_expression = rpn_compile("$1 $2 a", 7);
     if (!filter_expression) {
         fprintf(stderr, "%s: Failed to compile a filter for alias \"%s\"\n",
                 __FILE__, RedisModule_StringPtrLen(alias_name, NULL));
