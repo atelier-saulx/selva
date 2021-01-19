@@ -11,6 +11,8 @@ const gzip = promisify(zipCb)
 
 const { CACHE } = constants
 
+const inProgressTriggers = new Set()
+
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
   subscription: Subscription,
@@ -33,6 +35,11 @@ const sendUpdate = async (
   getOptions.$originDescriptors = subscription.originDescriptors
 
   if (nodeId) {
+    if (inProgressTriggers.has(subscription.channel + ':' + nodeId)) {
+      return
+    }
+
+    inProgressTriggers.add(subscription.channel + ':' + nodeId)
     getOptions.$id = nodeId
   }
 
@@ -101,6 +108,7 @@ const sendUpdate = async (
   ) {
     clearTimeout(time)
     subscriptionManager.inProgressCount--
+    inProgressTriggers.delete(subscription.channel + ':' + nodeId)
     subscription.beingProcessed = false
     return
   }
@@ -124,6 +132,7 @@ const sendUpdate = async (
   if (currentVersion === newVersion) {
     clearTimeout(time)
     subscriptionManager.inProgressCount--
+    inProgressTriggers.delete(subscription.channel + ':' + nodeId)
     if (subscription.processNext) {
       await wait(100)
       subscription.processNext = false
@@ -190,6 +199,7 @@ const sendUpdate = async (
   clearTimeout(time)
 
   subscriptionManager.inProgressCount--
+  inProgressTriggers.delete(subscription.channel + ':' + nodeId)
   if (subscription.processNext) {
     await wait(100)
     subscription.processNext = false
