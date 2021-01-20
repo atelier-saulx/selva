@@ -270,7 +270,7 @@ int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     const char *sep = ".";
     const size_t nr_parts = substring_count(key_name_str, ".") + 1;
-    char buf[key_name_len]; /* We assume that the length has been sanity checked at this point. */
+    char buf[key_name_len + 1]; /* We assume that the length has been sanity checked at this point. */
     char *s = buf;
     struct SelvaObjectKey *key;
     struct SelvaObject *cobj = obj; /* Containing object. */
@@ -388,7 +388,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
 
     filter = (struct SelvaObjectKey *)buf;
     memset(filter, 0, key_size);
-    memcpy(filter->name, key_name_str, key_name_len + 1);
+    memcpy(filter->name, key_name_str, key_name_len);
     filter->name_len = key_name_len;
 
     key = RB_FIND(SelvaObjectKeys, &obj->keys_head, filter);
@@ -587,9 +587,8 @@ int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
     return 0;
 }
 
-int SelvaObject_SetString(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString *value) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -608,6 +607,12 @@ int SelvaObject_SetString(struct SelvaObject *obj, const RedisModuleString *key_
     key->value = value;
 
     return 0;
+}
+
+int SelvaObject_SetString(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+    TO_STR(key_name);
+
+    return SelvaObject_SetStringStr(obj, key_name_str, key_name_len, value);
 }
 
 int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject **out) {
