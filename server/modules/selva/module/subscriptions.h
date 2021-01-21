@@ -121,7 +121,7 @@ struct Selva_SubscriptionMarkers {
  * A structure for deferring subscription events.
  */
 struct SelvaSubscriptions_DeferredEvents {
-    SVector subs;
+    SVector updates; /*!< A set of Selva_Subscriptions. */
 };
 
 /**

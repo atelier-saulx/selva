@@ -771,7 +771,7 @@ void SelvaSubscriptions_ClearAllMarkers(
 int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
-    if (unlikely(!SVector_Init(&def->subs, 2, SelvaSubscription_svector_compare))) {
+    if (unlikely(!SVector_Init(&def->updates, 2, SelvaSubscription_svector_compare))) {
         return SELVA_SUBSCRIPTIONS_ENOMEM;
     }
 
@@ -784,7 +784,7 @@ void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hier
         return;
     }
 
-    SVector_Destroy(&def->subs);
+    SVector_Destroy(&def->updates);
 }
 
 void SelvaSubscriptions_InheritParent(
@@ -886,7 +886,7 @@ static int isSubscribedToHierarchyFields(struct Selva_SubscriptionMarker *marker
 }
 
 static void defer_update_event(struct SelvaSubscriptions_DeferredEvents *def, struct Selva_Subscription *sub) {
-    SVector_InsertFast(&def->subs, sub);
+    SVector_InsertFast(&def->updates, sub);
 }
 
 /**
@@ -1171,7 +1171,7 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarc
     struct SVectorIterator it;
     struct Selva_Subscription *sub;
 
-    SVector_ForeachBegin(&it, &def->subs);
+    SVector_ForeachBegin(&it, &def->updates);
     while ((sub = SVector_Foreach(&it))) {
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
@@ -1180,7 +1180,7 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarc
 #endif
         SelvaModify_PublishSubscriptionUpdate(sub->sub_id);
     }
-    SVector_Clear(&def->subs);
+    SVector_Clear(&def->updates);
 }
 
 static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, RedisModuleString *arg) {
