@@ -210,14 +210,14 @@ int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll) {
 }
 
 void SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s) {
-    struct SelvaSetElement *el;
     struct SelvaSetElement find = {
         .value_rms = s,
     };
 
     if (likely(set->type == SELVA_SET_TYPE_RMSTRING)) {
-        el = RB_FIND(SelvaSetRms, &set->head_rms, &find);
+        struct SelvaSetElement *el;
 
+        el = RB_FIND(SelvaSetRms, &set->head_rms, &find);
         if (el && RB_REMOVE(SelvaSetRms, &set->head_rms, el)) {
             set->size--;
         }
@@ -225,14 +225,14 @@ void SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s) {
 }
 
 void SelvaSet_RemoveDouble(struct SelvaSet *set, double d) {
-    struct SelvaSetElement *el;
     struct SelvaSetElement find = {
         .value_d = d,
     };
 
     if (likely(set->type == SELVA_SET_TYPE_DOUBLE)) {
-        el = RB_FIND(SelvaSetDouble, &set->head_d, &find);
+        struct SelvaSetElement *el;
 
+        el = RB_FIND(SelvaSetDouble, &set->head_d, &find);
         if (el && RB_REMOVE(SelvaSetDouble, &set->head_d, el)) {
             set->size--;
         }
@@ -240,14 +240,14 @@ void SelvaSet_RemoveDouble(struct SelvaSet *set, double d) {
 }
 
 void SelvaSet_RemoveLongLong(struct SelvaSet *set, long long ll) {
-    struct SelvaSetElement *el;
     struct SelvaSetElement find = {
         .value_ll = ll,
     };
 
     if (likely(set->type == SELVA_SET_TYPE_LONGLONG)) {
-        el = RB_FIND(SelvaSetLongLong, &set->head_ll, &find);
+        struct SelvaSetElement *el;
 
+        el = RB_FIND(SelvaSetLongLong, &set->head_ll, &find);
         if (el && RB_REMOVE(SelvaSetLongLong, &set->head_ll, el)) {
             set->size--;
         }

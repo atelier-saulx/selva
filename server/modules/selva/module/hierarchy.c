@@ -381,7 +381,6 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
 
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(node);
-        node = NULL;
     }
 
     if (likely(ctx)) {
