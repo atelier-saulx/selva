@@ -520,6 +520,10 @@ void SVector_Clear(SVector * restrict vec) {
     }
 }
 
+void *SVector_EmptyForeach(struct SVectorIterator *it) {
+    return NULL;
+}
+
 void *SVector_ArrayForeach(struct SVectorIterator *it) {
     if (it->arr.cur < it->arr.end) {
         void **p;
@@ -532,13 +536,13 @@ void *SVector_ArrayForeach(struct SVectorIterator *it) {
 }
 
 void *SVector_RbTreeForeach(struct SVectorIterator *it) {
-    struct SVector_rbnode *cur = it->rbtree.n;
+    struct SVector_rbnode *cur = it->rbtree.next;
 
     if (!cur) {
         return NULL;
     }
 
-    it->rbtree.n = RB_NEXT(SVector_rbtree, it->rbtree.head, cur);
+    it->rbtree.next = RB_NEXT(SVector_rbtree, it->rbtree.head, cur);
 
     return cur->p;
 }
@@ -547,12 +551,18 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *v
     it->mode = vec->vec_mode;
 
     if (it->mode == SVECTOR_MODE_ARRAY) {
-        it->arr.cur = vec->vec_arr + vec->vec_arr_shift_index;
-        it->arr.end = vec->vec_arr + vec->vec_last;
-        it->fn = SVector_ArrayForeach;
+        if (vec->vec_arr) {
+            it->arr.cur = vec->vec_arr + vec->vec_arr_shift_index;
+            it->arr.end = vec->vec_arr + vec->vec_last;
+            it->fn = SVector_ArrayForeach;
+        } else {
+            it->arr.cur = NULL;
+            it->arr.end = NULL;
+            it->fn = SVector_EmptyForeach;
+        }
     } else if (it->mode == SVECTOR_MODE_RBTREE) {
         it->rbtree.head = (struct SVector_rbtree *)&vec->vec_rbhead;
-        it->rbtree.n = RB_MIN(SVector_rbtree, it->rbtree.head);
+        it->rbtree.next = RB_MIN(SVector_rbtree, it->rbtree.head);
         it->fn = SVector_RbTreeForeach;
     } else {
         abort();
