@@ -1597,7 +1597,6 @@ int Selva_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     for (int i = ARGV_IDS; i < argc; i++) {
         char sub_id_str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
         RedisModuleString *missing;
-        int err;
 
         missing = RedisModule_CreateStringPrintf(
             ctx, "%s.%.*s",
