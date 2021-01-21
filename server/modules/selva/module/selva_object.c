@@ -272,7 +272,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     const size_t nr_parts = substring_count(key_name_str, ".") + 1;
     char buf[key_name_len + 1]; /* We assume that the length has been sanity checked at this point. */
     char *s = buf;
-    struct SelvaObjectKey *key;
+    struct SelvaObjectKey *key = NULL;
     struct SelvaObject *cobj = obj; /* Containing object. */
 
     strncpy(s, key_name_str, key_name_len);
@@ -355,7 +355,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
      * Without the following check we'd happily tell the user that the value of
      * "a.b.c" == "hello".
      */
-    if (nr_parts_found != nr_parts) {
+    if (nr_parts_found != nr_parts || !key) {
         return SELVA_ENOENT;
     }
 
@@ -1535,6 +1535,11 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
     struct SelvaObject *obj = (struct SelvaObject *)value;
     struct SelvaObjectKey *key;
 
+    if (unlikely(!obj)) {
+        RedisModule_LogIOError(io, "warning", "value can't be NULL");
+        return;
+    }
+
     RedisModule_SaveUnsigned(io, obj->obj_size);
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
         RedisModule_SaveStringBuffer(io, key->name, key->name_len);
@@ -1555,12 +1560,14 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
             case SELVA_OBJECT_STRING:
                 if (!key->value) {
                     RedisModule_LogIOError(io, "warning", "STRING value missing");
+                    break;
                 }
                 RedisModule_SaveString(io, key->value);
                 break;
             case SELVA_OBJECT_OBJECT:
                 if (!key->value) {
                     RedisModule_LogIOError(io, "warning", "OBJECT value missing");
+                    break;
                 }
                 SelvaObjectTypeRDBSave(io, key->value);
                 break;

@@ -867,8 +867,6 @@ static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
                            !strncmp(OPERAND_GET_S(a),
                                     OPERAND_GET_S(b),
                                     size_min(a_size, b_size)));
-
-    return RPN_ERR_OK;
 }
 
 static enum rpn_error rpn_op_idcmp(struct rpn_ctx *ctx) {

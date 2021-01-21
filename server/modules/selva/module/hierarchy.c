@@ -1855,7 +1855,7 @@ int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString *
 
     SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
     if (!node) {
-        RedisModule_ReplyWithLongLong(ctx, 0);
+        return RedisModule_ReplyWithLongLong(ctx, 0);
     }
 
     const char *op = RedisModule_StringPtrLen(argv[3], NULL);
