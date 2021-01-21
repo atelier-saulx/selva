@@ -207,21 +207,18 @@ static int rpn_operand2rms(RedisModuleString **rms, struct rpn_operand *o) {
     return cpy2rm_str(rms, str, len);
 }
 
-static struct rpn_operand *alloc_rpn_operand(size_t slen) {
+static struct rpn_operand *alloc_rpn_operand(size_t s_size) {
     struct rpn_operand *v;
 
-    if (slen <= RPN_SMALL_OPERAND_SIZE && small_operand_pool_next) {
+    if (s_size <= RPN_SMALL_OPERAND_SIZE && small_operand_pool_next) {
         v = small_operand_pool_next;
         small_operand_pool_next = v->next_free;
 
         memset(v, 0, sizeof(struct rpn_operand));
         v->flags.pooled = 1;
     } else {
-        const size_t size = sizeof(struct rpn_operand) + (slen - SELVA_NODE_ID_SIZE);
+        const size_t size = sizeof(struct rpn_operand) - RPN_SMALL_OPERAND_SIZE + s_size;
 
-#if RPN_ASSERTS
-        assert(size > slen);
-#endif
         v = RedisModule_Calloc(1, size);
     }
 
