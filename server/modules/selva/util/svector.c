@@ -551,19 +551,27 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *v
     it->mode = vec->vec_mode;
 
     if (it->mode == SVECTOR_MODE_ARRAY) {
-        if (vec->vec_arr) {
-            it->arr.cur = vec->vec_arr + vec->vec_arr_shift_index;
-            it->arr.end = vec->vec_arr + vec->vec_last;
-            it->fn = SVector_ArrayForeach;
-        } else {
+        if (!vec->vec_arr) {
             it->arr.cur = NULL;
             it->arr.end = NULL;
             it->fn = SVector_EmptyForeach;
+        } else {
+            it->arr.cur = vec->vec_arr + vec->vec_arr_shift_index;
+            it->arr.end = vec->vec_arr + vec->vec_last;
+            it->fn = SVector_ArrayForeach;
         }
     } else if (it->mode == SVECTOR_MODE_RBTREE) {
-        it->rbtree.head = (struct SVector_rbtree *)&vec->vec_rbhead;
-        it->rbtree.next = RB_MIN(SVector_rbtree, it->rbtree.head);
-        it->fn = SVector_RbTreeForeach;
+        struct SVector_rbtree *head = (struct SVector_rbtree *)&vec->vec_rbhead;
+
+        if (RB_EMPTY(head)) {
+            it->arr.cur = NULL;
+            it->arr.end = NULL;
+            it->fn = SVector_EmptyForeach;
+        } else {
+            it->rbtree.head = head;
+            it->rbtree.next = RB_MIN(SVector_rbtree, head);
+            it->fn = SVector_RbTreeForeach;
+        }
     } else {
         abort();
     }
