@@ -854,9 +854,8 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return 0;
 }
 
-int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p) {
+int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -880,6 +879,12 @@ int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleStri
     key->value = p;
 
     return 0;
+}
+
+int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p) {
+    TO_STR(key_name);
+
+    return SelvaObject_SetPointerStr(obj, key_name_str, key_name_len, p);
 }
 
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p) {
