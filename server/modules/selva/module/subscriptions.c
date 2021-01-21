@@ -51,6 +51,9 @@ static int subscription_rb_compare(const struct Selva_Subscription *a, const str
     return memcmp(a->sub_id, b->sub_id, sizeof(Selva_SubscriptionId));
 }
 
+RB_PROTOTYPE_STATIC(hierarchy_subscriptions_tree, Selva_Subscription, _sub_index_entry, subscription_rb_compare)
+RB_GENERATE_STATIC(hierarchy_subscriptions_tree, Selva_Subscription, _sub_index_entry, subscription_rb_compare)
+
 /**
  * The given marker flags matches to a hierarchy marker of any kind.
  */
@@ -79,8 +82,6 @@ static int inhibitMarkerEvent(const Selva_NodeId node_id, const struct Selva_Sub
     return 0;
 }
 
-RB_PROTOTYPE_STATIC(hierarchy_subscriptions_tree, Selva_Subscription, _sub_index_entry, subscription_rb_compare)
-RB_GENERATE_STATIC(hierarchy_subscriptions_tree, Selva_Subscription, _sub_index_entry, subscription_rb_compare)
 
 /*
  * SHA256 to hex string.
@@ -1209,7 +1210,7 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
 /*
  * KEY SUB_ID MARKER_ID node|ancestors|descendants|ref_field_name NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
  */
-int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
@@ -1253,7 +1254,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     Selva_SubscriptionMarkerId marker_id;
     err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "Marker ID");
     }
 
     if (SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id)) {
@@ -1268,7 +1269,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     const char *ref_field = NULL;
     err = parse_subscription_type(&sub_dir, argv[ARGV_MARKER_TYPE]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "Traversal argument");
     }
     if (sub_dir == SELVA_HIERARCHY_TRAVERSAL_REF) {
         /* The arg is a field name. */
@@ -1291,7 +1292,7 @@ int Selva_SubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaError(ctx, err);
+            return replyWithSelvaErrorf(ctx, err, "Fields");
         }
     }
 
@@ -1434,7 +1435,7 @@ int Selva_AddSubscriptionMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleStr
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "Subscription ID");
     }
 
     /*
@@ -1443,7 +1444,7 @@ int Selva_AddSubscriptionMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleStr
     Selva_SubscriptionMarkerId marker_id;
     err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "Marker ID");
     }
 
     /*
@@ -1569,8 +1570,7 @@ int Selva_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n", __FILE__, __LINE__, RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
-        return replyWithSelvaError(ctx, err);
+        return replyWithSelvaErrorf(ctx, err, "Invalid Subscription ID");
     }
 
     /*
@@ -1862,7 +1862,7 @@ static int Hierarchy_Subscriptions_OnLoad(RedisModuleCtx *ctx) {
      * observed or serialized key values in any way. This is important
      * because we need to be able to create markers on readonly replicas.
      */
-    if (RedisModule_CreateCommand(ctx, "selva.subscriptions.add", Selva_SubscribeCommand, "readonly deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
+    if (RedisModule_CreateCommand(ctx, "selva.subscriptions.add", Selva_AddMarkerCommand, "readonly deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.addMarkerFields", Selva_AddSubscriptionMarkerFieldsCommand, "readonly deny-oom", 1, 1 ,1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.addAlias", Selva_SubscribeAliasCommand, "readonly deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.addMissing", Selva_AddMissingCommand, "readonly deny-oom", 1, 1 ,1) == REDISMODULE_ERR ||
