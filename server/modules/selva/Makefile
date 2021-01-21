@@ -39,7 +39,7 @@ else
 endif
 CFLAGS := $(IDIR) -include tunables.h \
 	-std=gnu99 -fPIC \
-	-Wall -Wextra -Wextra-semi -Wno-unused-value -Wno-zero-length-array -Wno-c11-extensions \
+	-Wall -Wextra -Wno-unused-value -Wno-zero-length-array -Wno-c11-extensions \
 	-ggdb -O2 \
 	-fno-strict-aliasing \
 	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
