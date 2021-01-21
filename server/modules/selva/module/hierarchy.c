@@ -75,9 +75,9 @@ typedef struct TraversalCallback {
 } TraversalCallback;
 
 /* Node metadata constructors. */
-SET_DECLARE(selva_HMCtor, SelvaModify_HierarchyMetadataHook);
+SET_DECLARE(selva_HMCtor, SelvaModify_HierarchyMetadataHook)
 /* Node metadata destructors. */
-SET_DECLARE(selva_HMDtor, SelvaModify_HierarchyMetadataHook);
+SET_DECLARE(selva_HMDtor, SelvaModify_HierarchyMetadataHook)
 
 __nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
 static RedisModuleType *HierarchyType;

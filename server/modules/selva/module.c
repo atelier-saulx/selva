@@ -27,7 +27,7 @@
 #endif
 typedef unsigned __int128 replset_t;
 
-SET_DECLARE(selva_onload, Selva_Onload);
+SET_DECLARE(selva_onload, Selva_Onload)
 
 /*
  * Technically a nodeId is always 10 bytes but sometimes a printable
