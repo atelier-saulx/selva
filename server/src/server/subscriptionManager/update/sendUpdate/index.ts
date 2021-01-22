@@ -88,6 +88,14 @@ const sendUpdate = async (
     }
   }
 
+  if (payload.$ignore === true) {
+    clearTimeout(time)
+    subscriptionManager.inProgressCount--
+    inProgressTriggers.delete(subscription.channel + ':' + nodeId)
+    subscription.beingProcessed = false
+    return
+  }
+
   const newMeta = payload.$meta
 
   delete payload.$meta
