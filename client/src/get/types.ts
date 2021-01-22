@@ -131,7 +131,7 @@ export type GetResult = {
 }
 
 export type GetOptions = GetItem & {
-  $trigger?: { $event: 'created' | 'updated' | 'deleted'; $filter?: Fork }
+  $trigger?: { $event: 'created' | 'updated' | 'deleted'; $filter?: Filter }
   $id?: Id | Id[]
   $alias?: string | string[]
   $version?: string
@@ -140,7 +140,7 @@ export type GetOptions = GetItem & {
 }
 
 export type ObserveEventOptions = GetItem & {
-  $filter: Fork
+  $filter: Filter
 }
 
 export type GetOperationFind = {
