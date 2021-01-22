@@ -279,11 +279,8 @@ int SelvaModify_ModifySet(
             err = SelvaObject_DelKey(obj, field);
         }
 
-        if (err) {
-            char err_msg[80];
-
-            snprintf(err_msg, sizeof(err_msg), "ERR Failed to delete the set: \"%s\"", field_str);
-            return SELVA_EGENERAL;
+        if (err != SELVA_ENOENT) {
+            return err;
         }
     }
 
