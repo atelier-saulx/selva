@@ -25,7 +25,7 @@ export type SubscriptionMarker = {
   rpn?: Rpn
 }
 
-function adler32(marker: SubscriptionMarker): number {
+export function adler32(marker: SubscriptionMarker): number {
   const MOD_ADLER = 65521
 
   const str: string = JSON.stringify(marker)

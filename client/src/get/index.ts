@@ -1,9 +1,10 @@
 import { SelvaClient } from '..'
 import { GetResult, GetOptions, ObserveEventOptions } from './types'
 import createGetOperations from './createGetOperations'
-import executeGetOperations from './executeGetOperations'
+import executeGetOperations, { adler32 } from './executeGetOperations'
 import resolveId from './resolveId'
 import combineResults from './combineResults'
+import { createRpn } from '@saulx/selva-query-ast-parser'
 
 // add this later!
 import validate, {
@@ -134,22 +135,23 @@ async function get(
   }
 
   if (newProps.$trigger && !newProps.$subscription) {
+    console.log('trigger without subscription')
     // $trigger only works with subscriptions
     return { $isNull: true }
   } else if (newProps.$trigger && newProps.$id) {
+    console.log('trigger with id, evaluate get!')
     delete newProps.$trigger
   } else if (newProps.$trigger) {
-    // await client.redis.selva_subscriptions_addtrigger(
-    //   ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    //   '___selva_hierarchy',
-    //   ctx.subId,
-    //   markerId,
-    //   marker.id,
-    //   eventType, // huom. ero
-    //   'fields',
-    //   marker.fields.join('\n'),
-    //   ...(marker.rpn ? marker.rpn : [])
-    // )
+    console.log('trigger without id and with sub, make make marker marker!!!')
+    const rpn = createRpn(newProps.$trigger.$filter) || []
+    const r = await client.redis.selva_subscriptions_addtrigger(
+      originDescriptors[db] || { name: db },
+      '___selva_hierarchy',
+      subId,
+      adler32({ type: 'trigger', fields: [], id: 'root', rpn }),
+      newProps.$trigger.$event,
+      ...rpn
+    )
     return { $isNull: true }
   }
 
