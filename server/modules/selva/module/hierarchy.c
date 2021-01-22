@@ -1763,7 +1763,8 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
 
     hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
+        /* Do not send redis messages here. */
+        return REDISMODULE_OK;
     }
 
     /*
