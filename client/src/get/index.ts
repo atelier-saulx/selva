@@ -135,16 +135,13 @@ async function get(
   }
 
   if (newProps.$trigger && !newProps.$subscription) {
-    console.log('trigger without subscription')
     // $trigger only works with subscriptions
     return { $isNull: true }
   } else if (newProps.$trigger && newProps.$id) {
-    console.log('trigger with id, evaluate get!')
     delete newProps.$trigger
     delete newProps.$subscription
     subId = null
   } else if (newProps.$trigger) {
-    console.log('trigger without id and with sub, make make marker marker!!!')
     const rpn = newProps.$trigger.$filter
       ? createRpn(newProps.$trigger.$filter) || []
       : []
