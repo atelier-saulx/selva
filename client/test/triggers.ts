@@ -42,7 +42,7 @@ test.serial('basic trigger subscriptions', async t => {
     }
   })
 
-  t.plan(2)
+  t.plan(1)
 
   let o2counter = 0
   const other = client.observeEvent('created', {
@@ -63,9 +63,6 @@ test.serial('basic trigger subscriptions', async t => {
         type: 'yeshType',
         yesh: 'extra nice'
       })
-    } else if (o2counter === 1) {
-      // gets delete event
-      t.true(d.$isNull)
     } else {
       t.fail
     }
