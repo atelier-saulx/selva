@@ -91,7 +91,7 @@ async function get(
   // TODO: need to intialize for each db!
 
   const db = props.$db || 'default'
-  const subId = props.$subscription
+  let subId = props.$subscription
 
   let originDescriptors: Record<string, ServerDescriptor> = {}
   if (subId) {
@@ -141,6 +141,8 @@ async function get(
   } else if (newProps.$trigger && newProps.$id) {
     console.log('trigger with id, evaluate get!')
     delete newProps.$trigger
+    delete newProps.$subscription
+    subId = null
   } else if (newProps.$trigger) {
     console.log('trigger without id and with sub, make make marker marker!!!')
     const rpn = createRpn(newProps.$trigger.$filter) || []
@@ -152,7 +154,7 @@ async function get(
       newProps.$trigger.$event,
       ...rpn
     )
-    return { $isNull: true }
+    return { $ignore: true }
   }
 
   const lang = newProps.$language
