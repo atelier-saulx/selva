@@ -927,6 +927,39 @@ test.serial('Trigger: created', async t => {
   t.assert(msgCount === 1)
 })
 
+test.serial('Trigger: created filter', async t => {
+  const subId1 = 'fc35a5a4782b114c01c1ed601475532641423b1bf5bf26a6645637e989f79b72'
+  const client = connect({ port })
+
+  // Make sure ___selva_hierarchy exists
+  await client.set({ $id: 'root' })
+
+  await client.redis.selva_subscriptions_addtrigger('___selva_hierarchy', subId1, '1', 'created', '$2 $1 f c', 'title.en', 'yolo')
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  let msgCount = 0
+  const subChannel = `___selva_subscription_trigger:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, 'maTest0001')
+    msgCount++
+  })
+  rclient.subscribe(subChannel)
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'yolo' }
+  })
+
+  await client.set({
+    $id: 'maTest0002',
+    title: { en: 'not-yolo' }
+  })
+
+  await wait(500)
+  t.assert(msgCount === 1)
+})
+
 test.serial('Trigger: updated', async t => {
   const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf1bf26a6645637e989f79b72'
   const client = connect({ port })
