@@ -174,7 +174,7 @@ int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
 
         if (worker_idx == first_worker_idx) {
             missed_publishes++;
-            printf("MISSED PUBLISH: %lli / %lli \n", (long long)missed_publishes, (long long)total_publishes);
+            fprintf(stderr, "MISSED PUBLISH: %lli / %lli \n", (long long)missed_publishes, (long long)total_publishes);
             return 1;
         }
     }
