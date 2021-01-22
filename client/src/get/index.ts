@@ -154,6 +154,13 @@ async function get(
       newProps.$trigger.$event,
       ...rpn
     )
+
+    await client.redis.selva_subscriptions_refresh(
+      originDescriptors[db] || { name: db },
+      '___selva_hierarchy',
+      subId
+    )
+
     return { $ignore: true }
   }
 

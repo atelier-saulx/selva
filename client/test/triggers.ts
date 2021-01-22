@@ -54,6 +54,7 @@ test.serial('basic trigger subscriptions', async t => {
     $all: true,
     aliases: false
   })
+
   const sub2 = other.subscribe(d => {
     if (o2counter === 0) {
       // gets start event
@@ -71,14 +72,21 @@ test.serial('basic trigger subscriptions', async t => {
     o2counter++
   })
 
+  await wait(500)
+
   const thing = await client.set({
     type: 'yeshType',
     yesh: 'extra nice'
   })
 
   try {
+    const subs = await client.redis.selva_subscriptions_list(
+      '___selva_hierarchy'
+    )
+
+    const sub = subs[0]
     console.log(
-      await client.redis.selva_subscriptions_list('___selva_hierarchy')
+      await client.redis.selva_subscriptions_debug('___selva_hierarchy', sub)
     )
   } catch (e) {
     console.log('wtf', e)
