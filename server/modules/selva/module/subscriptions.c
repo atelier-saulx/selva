@@ -1237,9 +1237,11 @@ static void send_trigger_events(struct SelvaModify_Hierarchy *hierarchy) {
 
     SVector_ForeachBegin(&it, &def->triggers);
     while ((marker = SVector_Foreach(&it))) {
+#if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
         fprintf(stderr, "%s: publish trigger event %s\n", __FILE__, Selva_SubscriptionId2str(str, marker->sub->sub_id));
+#endif
 
         SelvaModify_PublishSubscriptionTrigger(marker->sub->sub_id, marker->filter_history.node_id);
     }
