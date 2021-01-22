@@ -301,9 +301,10 @@ static void destroy_all_sub_markers(SelvaModify_Hierarchy *hierarchy) {
  * Destroy all subscriptions and markers in a hierarchy.
  */
 void SelvaSubscriptions_DestroyAll(SelvaModify_Hierarchy *hierarchy) {
-    SelvaObject_Destroy(hierarchy->subs.missing);
     SelvaSubscriptions_DestroyDeferredEvents(hierarchy);
     destroy_all_sub_markers(hierarchy);
+    SelvaObject_Destroy(hierarchy->subs.missing);
+
     /*
      * Do this as the last step because destroy_all_sub_markers() will access
      * the vector.
