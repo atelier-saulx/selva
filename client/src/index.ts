@@ -225,11 +225,12 @@ export class SelvaClient extends EventEmitter {
     const newProps: GetOptions = Object.assign({}, props, { $trigger: { $event: event } })
     if (props.$filter) {
       newProps.$trigger.$filter = props.$filter
+      delete newProps.$filter
     }
 
     return createObservable({
       type: 'get',
-      options: props,
+      options: newProps,
       immutable: true  
     }, this)
   }
