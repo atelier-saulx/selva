@@ -1712,12 +1712,7 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     /*
      * Open the Redis key.
      */
-    /*
-     * FIXME
-     * RFE Can't have REDISMODULE_WRITE here because it could cause defering
-     * events while initializing the structures.
-     */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
         /* Do not send redis messages here. */
         return REDISMODULE_OK;

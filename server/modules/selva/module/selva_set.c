@@ -180,7 +180,6 @@ int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s) {
     if (unlikely(set->type != SELVA_SET_TYPE_RMSTRING)) {
         return 0;
     }
-    fprintf(stderr, "has or has no: %d\n", !!RB_FIND(SelvaSetRms, &set->head_rms, &find));
 
     return !!RB_FIND(SelvaSetRms, &set->head_rms, &find);
 }
