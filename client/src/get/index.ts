@@ -144,7 +144,7 @@ async function get(
   } else if (newProps.$trigger) {
     console.log('trigger without id and with sub, make make marker marker!!!')
     const rpn = createRpn(newProps.$trigger.$filter) || []
-    const r = await client.redis.selva_subscriptions_addtrigger(
+    await client.redis.selva_subscriptions_addtrigger(
       originDescriptors[db] || { name: db },
       '___selva_hierarchy',
       subId,
