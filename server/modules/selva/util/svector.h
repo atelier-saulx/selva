@@ -32,7 +32,7 @@ struct SVectorIterator {
         } arr;
         struct {
             struct SVector_rbtree *head;
-            struct SVector_rbnode *n;
+            struct SVector_rbnode *next;
         } rbtree;
     };
     void *(*fn)(struct SVectorIterator *it);

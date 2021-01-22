@@ -861,7 +861,7 @@ test.serial('subscribe to field events with an expression', async t => {
   client.destroy()
 })
 
-test.serial.only('Missing markers', async t => {
+test.serial('Missing markers', async t => {
   const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
   const client = connect({ port })
 
@@ -898,3 +898,88 @@ test.serial.only('Missing markers', async t => {
   t.deepEqual(await client.redis.selva_subscriptions_del('___selva_hierarchy', subId1), 1);
   t.deepEqual(await client.redis.selva_subscriptions_listmissing('___selva_hierarchy'), [])
 });
+
+test.serial('Trigger: created', async t => {
+  const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
+  const client = connect({ port })
+
+  // Make sure ___selva_hierarchy exists
+  await client.set({ $id: 'root' })
+
+  await client.redis.selva_subscriptions_addtrigger('___selva_hierarchy', subId1, '1', 'created')
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  let msgCount = 0
+  const subChannel = `___selva_subscription_trigger:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, 'maTest0001')
+    msgCount++
+  })
+  rclient.subscribe(subChannel)
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' }
+  })
+
+  await wait(500)
+  t.assert(msgCount === 1)
+})
+
+test.serial('Trigger: updated', async t => {
+  const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
+  const client = connect({ port })
+
+  const id = await client.set({
+    type: 'match',
+    title: { en: 'lollers' }
+  })
+
+  await client.redis.selva_subscriptions_addtrigger('___selva_hierarchy', subId1, '1', 'updated')
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  let msgCount = 0
+  const subChannel = `___selva_subscription_trigger:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, id)
+    msgCount++
+  })
+  rclient.subscribe(subChannel)
+
+  await client.set({
+    $id: id,
+    title: { en: 'rollers' }
+  })
+
+  await wait(500)
+  t.assert(msgCount === 1)
+})
+
+test.serial('Trigger: deleted', async t => {
+  const subId1 = 'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
+  const client = connect({ port })
+
+  const id = await client.set({
+    type: 'match',
+    title: { en: 'lollers' }
+  })
+
+  await client.redis.selva_subscriptions_addtrigger('___selva_hierarchy', subId1, '1', 'deleted')
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  let msgCount = 0
+  const subChannel = `___selva_subscription_trigger:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, id)
+    msgCount++
+  })
+  rclient.subscribe(subChannel)
+
+  await client.delete(id)
+
+  await wait(500)
+  t.assert(msgCount === 1)
+})

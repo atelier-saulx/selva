@@ -172,6 +172,9 @@ redis.add_command('selva.subscriptions.addalias')
 redis.add_command('selva.subscriptions.addmissing')
 
 // @ts-ignore
+redis.add_command('selva.subscriptions.addtrigger')
+
+// @ts-ignore
 redis.add_command('selva.subscriptions.debug')
 
 // @ts-ignore

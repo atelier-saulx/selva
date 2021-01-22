@@ -340,8 +340,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleKey *id_key = NULL;
     struct SelvaObject *obj = NULL;
     svector_autofree SVector alias_query;
+    int trigger_created = 0; /* Will be set to 1 if the node was created during this command. */
     int err = REDISMODULE_OK;
 
+    /*
+     * The comparator must be NULL to ensure that the vector is always stored
+     * as an array as that is required later on for the modify op.
+     */
     SVector_Init(&alias_query, 5, NULL);
 
     if (argc < 3 || (argc - 3) % 3) {
@@ -429,6 +434,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node hierarchy for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
             return REDISMODULE_OK;
         }
+
+        Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
+        trigger_created = 1;
     }
 
     err = SelvaObject_Key2Obj(id_key, &obj);
@@ -547,10 +555,16 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
             } else {
-                SelvaObject_SetString(obj, field, value);
+                err = SelvaObject_SetString(obj, field, value);
+                if (err == 0) {
+                    RedisModule_RetainString(ctx, value);
+                } /* TODO Handle errors */
             }
         } else if (type_code == SELVA_MODIFY_ARG_STRING) {
             SelvaObject_SetString(obj, field, value);
+            if (err == 0) {
+                RedisModule_RetainString(ctx, value);
+            } /* TODO Handle errors */
         } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
             if (old_type != SELVA_OBJECT_NULL) {
                 publish = false;
@@ -648,7 +662,17 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         (void)SelvaModify_ModifySet(ctx, hierarchy, obj, id, field, &opSet);
     }
 
-    replicateModify(ctx, &repl_set, argv);
+    if (repl_set) {
+        replicateModify(ctx, &repl_set, argv);
+
+        if (!trigger_created) {
+            /*
+             * It's justifiable to expect that an actual update only occurred if
+             * something needs to be replicated.
+             */
+            Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
+        }
+    }
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
     RedisModule_CloseKey(id_key);
 

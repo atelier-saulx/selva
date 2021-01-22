@@ -103,7 +103,7 @@ struct SelvaModify_Hierarchy {
         /**
          * Deferred subscription events.
          * The events are deduplicated by subscription ID and the events will
-         * be sent out when * SelvaSubscriptions_SendDeferredEvents() is called.
+         * be sent out when SelvaSubscriptions_SendDeferredEvents() is called.
          *
          * The intended type in this list is struct Selva_Subscription.
          */

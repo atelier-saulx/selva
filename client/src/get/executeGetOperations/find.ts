@@ -16,7 +16,7 @@ function parseGetOpts(
   const gets: GetOptions[] = []
 
   for (const k in props) {
-    if (props[k] === true) {
+    if (!k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
     } else if (props[k] === false) {
       // ignore
@@ -371,6 +371,7 @@ const findFields = async (
   const [fieldsOpt, additionalGets] = parseGetOpts(op.props, '')
 
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
+  console.log('ARGS', args)
   if (op.inKeys) {
     // TODO: additionalGets
     const result = await client.redis.selva_hierarchy_findin(

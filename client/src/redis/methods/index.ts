@@ -3398,6 +3398,21 @@ async selva_subscriptions_addmissing(opts: any, ...args: args): Promise<any> {
 }
 
 
+async selva_subscriptions_addtrigger(opts: ServerSelector, ...args: args): Promise<any>
+async selva_subscriptions_addtrigger(...args: args): Promise<any>
+async selva_subscriptions_addtrigger(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_addtrigger', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_subscriptions_addtrigger', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async selva_subscriptions_debug(opts: ServerSelector, ...args: args): Promise<any>
 async selva_subscriptions_debug(...args: args): Promise<any>
 async selva_subscriptions_debug(opts: any, ...args: args): Promise<any> {

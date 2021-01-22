@@ -9,50 +9,74 @@ struct RedisModuleCtx;
 struct RedisModuleKey;
 struct RedisModuleString;
 
+enum SelvaSetType {
+    SELVA_SET_TYPE_RMSTRING = 0,
+    SELVA_SET_TYPE_DOUBLE = 1,
+    SELVA_SET_TYPE_LONGLONG = 2,
+};
+
+struct SelvaObject;
+
 struct SelvaSetElement {
-    struct RedisModuleString *value;
+    union {
+        struct RedisModuleString *value_rms;
+        double value_d;
+        long long value_ll;
+    };
     RB_ENTRY(SelvaSetElement) _entry;
 };
 
-RB_HEAD(SelvaSetHead, SelvaSetElement);
+RB_HEAD(SelvaSetRms, SelvaSetElement);
+RB_HEAD(SelvaSetDouble, SelvaSetElement);
+RB_HEAD(SelvaSetLongLong, SelvaSetElement);
 
 struct SelvaSet {
+    enum SelvaSetType type;
     size_t size;
-    struct SelvaSetHead head;
+    union {
+        struct SelvaSetRms head_rms;
+        struct SelvaSetDouble head_d;
+        struct SelvaSetLongLong head_ll;
+    };
 };
 
-RB_PROTOTYPE(SelvaSetHead, SelvaSetElement, _entry, SelvaSet_Compare);
-void SelvaSet_DestroyElement(struct SelvaSetElement *el);
+RB_PROTOTYPE(SelvaSetRms, SelvaSetElement, _entry, SelvaSet_CompareRms)
+RB_PROTOTYPE(SelvaSetDouble, SelvaSetElement, _entry, SelvaSet_CompareDouble)
+RB_PROTOTYPE(SelvaSetLongLong, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
 void SelvaSet_Destroy(struct SelvaSet *head);
-struct SelvaSetElement *SelvaSet_Find(struct SelvaSet *set, struct RedisModuleString *v);
 
-static inline void SelvaSet_Init(struct SelvaSet *set) {
+static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
+    set->type = type;
     set->size = 0;
-    RB_INIT(&set->head);
-}
 
-static inline struct SelvaSetElement *SelvaSet_Add(struct SelvaSet *set, struct SelvaSetElement *el) {
-    struct SelvaSetElement *old;
-
-    old = RB_INSERT(SelvaSetHead, &set->head, el);
-    if (!old) {
-        set->size++;
-    }
-
-    return old;
-}
-
-static inline void SelvaSet_Remove(struct SelvaSet *set, struct SelvaSetElement *el) {
-    if (RB_REMOVE(SelvaSetHead, &set->head, el)) {
-        set->size--;
+    if (type == SELVA_SET_TYPE_RMSTRING) {
+        RB_INIT(&set->head_rms);
+    } else if (type == SELVA_SET_TYPE_DOUBLE) {
+        RB_INIT(&set->head_d);
+    } else if (type == SELVA_SET_TYPE_LONGLONG) {
+        RB_INIT(&set->head_ll);
+    } else {
+        /* TODO What to do if type is invalid */
     }
 }
 
-static inline int SelvaSet_Has(struct SelvaSet *set, RedisModuleString *v) {
-    return !!SelvaSet_Find(set, v);
-}
+int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s);
+int SelvaSet_AddDouble(struct SelvaSet *set, double d);
+int SelvaSet_AddLongLong(struct SelvaSet *set, long long l);
+int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s);
+int SelvaSet_HasDouble(struct SelvaSet *set, double d);
+int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll);
+void SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s);
+void SelvaSet_RemoveDouble(struct SelvaSet *set, double d);
+void SelvaSet_RemoveLongLong(struct SelvaSet *set, long long ll);
 
-#define SELVA_SET_FOREACH(el, set) \
-    RB_FOREACH(el, SelvaSetHead, &(set)->head)
+#define SELVA_SET_RMS_FOREACH(el, set) \
+    RB_FOREACH(el, SelvaSetRms, &(set)->head_rms)
+
+#define SELVA_SET_DOUBLE_FOREACH(el, set) \
+    RB_FOREACH(el, SelvaSetDouble, &(set)->head_d)
+
+#define SELVA_SET_LONGLONG_FOREACH(el, set) \
+    RB_FOREACH(el, SelvaSetLongLong, &(set)->head_ll)
 
 #endif /* SELVA_SET */

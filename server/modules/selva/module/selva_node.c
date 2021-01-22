@@ -17,35 +17,31 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
         return err;
     }
 
-    SelvaObject_SetString(obj, RedisModule_CreateString(ctx, "$id", 3), key_name);
+    /* TODO Handle errors */
+    SelvaObject_SetStringStr(obj, "$id", 3, key_name);
+    RedisModule_RetainString(ctx, key_name);
 
     /* Set the type for root. */
     if (is_root) {
         RedisModuleString *type;
 
-        type = RedisModule_CreateStringPrintf(ctx, "root");
+        type = RedisModule_CreateStringPrintf(NULL, "root");
         if (unlikely(!type)) {
-            return SELVA_MODIFY_HIERARCHY_ENOMEM;
+            return SELVA_ENOMEM;
         }
 
-        SelvaObject_SetString(obj, RedisModule_CreateString(ctx, "type", 4), type);
+        /* TODO Handle errors */
+        SelvaObject_SetStringStr(obj, "type", 4, type);
+        RedisModule_RetainString(ctx, type);
     }
 
     return 0;
 }
 
-static void delete_node_aliases(RedisModuleCtx *ctx, struct SelvaObject *obj, RedisModuleString *id) {
+static void delete_node_aliases(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     struct SelvaSet *node_aliases_set;
-    RedisModuleString *afield_name;
 
-    afield_name = RedisModule_CreateStringPrintf(ctx, "aliases");
-    if (unlikely(!afield_name)) {
-        TO_STR(id);
-
-        fprintf(stderr, "%s: OOM; Unable to remove aliases of the node: \"%s\"", __FILE__, id_str);
-    }
-
-    node_aliases_set = SelvaObject_GetSet(obj, afield_name);
+    node_aliases_set = SelvaObject_GetSetStr(obj, "aliases", 7);
     if (node_aliases_set) {
         RedisModuleKey *aliases_key;
 
@@ -72,7 +68,7 @@ int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id) {
             return err;
         }
 
-        delete_node_aliases(ctx, obj, id);
+        delete_node_aliases(ctx, obj);
         RedisModule_DeleteKey(key);
         RedisModule_CloseKey(key);
     }

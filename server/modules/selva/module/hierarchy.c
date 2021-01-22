@@ -134,7 +134,7 @@ static inline void RMString2NodeId(Selva_NodeId nodeId, RedisModuleString *rmStr
 }
 
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
-    SelvaModify_Hierarchy *hierarchy = RedisModule_Calloc(1, sizeof(SelvaModify_HierarchyNode));
+    SelvaModify_Hierarchy *hierarchy = RedisModule_Calloc(1, sizeof(SelvaModify_Hierarchy));
     if (unlikely(!hierarchy)) {
         goto fail;
     }
@@ -381,7 +381,6 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
 
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(node);
-        node = NULL;
     }
 
     if (likely(ctx)) {
@@ -394,6 +393,8 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
             createNodeHash(ctx, id);
         }
     }
+
+    Selva_Subscriptions_DeferTriggerEvents(hierarchy, id, SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED);
 }
 
 #if HIERARCHY_SORT_BY_DEPTH
@@ -1416,10 +1417,13 @@ static int traverse_ref(
     if (!ref_set) {
         return SELVA_MODIFY_HIERARCHY_ENOENT;
     }
+    if (ref_set->type != SELVA_SET_TYPE_RMSTRING) {
+        return SELVA_EINTYPE;
+    }
 
     struct SelvaSetElement *el;
-    RB_FOREACH(el, SelvaSetHead, &ref_set->head) {
-        RedisModuleString *value = el->value;
+    SELVA_SET_RMS_FOREACH(el, ref_set) {
+        RedisModuleString *value = el->value_rms;
         Selva_NodeId nodeId;
         SelvaModify_HierarchyNode *node;
         TO_STR(value);
@@ -1759,7 +1763,8 @@ int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
 
     hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
+        /* Do not send redis messages here. */
+        return REDISMODULE_OK;
     }
 
     /*
@@ -1852,7 +1857,7 @@ int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString *
 
     SelvaModify_HierarchyNode *node = findNode(hierarchy, nodeId);
     if (!node) {
-        RedisModule_ReplyWithLongLong(ctx, 0);
+        return RedisModule_ReplyWithLongLong(ctx, 0);
     }
 
     const char *op = RedisModule_StringPtrLen(argv[3], NULL);

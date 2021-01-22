@@ -37,6 +37,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
       o === '<' ||
       o === '..' ||
       o === '!=' ||
+      o === 'has' ||
       o === 'distance' ||
       o === 'exists' ||
       o === 'notExists' ||

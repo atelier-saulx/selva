@@ -78,7 +78,9 @@ Object.assign(Assertions.prototype, {
         }
       }
     }
-    this.fail('Connection are not empty after 1 min' + connections.size)
+    this.fail(
+      'Connection are not empty after 1 min, remaining: ' + connections.size
+    )
   }
 })
 

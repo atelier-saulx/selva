@@ -64,6 +64,7 @@ export default function validateFilter(
     filter.$operator !== '>' &&
     filter.$operator !== '<' &&
     filter.$operator !== '..' &&
+    filter.$operator !== 'has' &&
     filter.$operator !== 'distance' &&
     filter.$operator !== 'exists' &&
     filter.$operator !== 'notExists' &&
