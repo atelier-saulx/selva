@@ -134,7 +134,7 @@ static inline void RMString2NodeId(Selva_NodeId nodeId, RedisModuleString *rmStr
 }
 
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
-    SelvaModify_Hierarchy *hierarchy = RedisModule_Calloc(1, sizeof(SelvaModify_HierarchyNode));
+    SelvaModify_Hierarchy *hierarchy = RedisModule_Calloc(1, sizeof(SelvaModify_Hierarchy));
     if (unlikely(!hierarchy)) {
         goto fail;
     }

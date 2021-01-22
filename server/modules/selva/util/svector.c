@@ -34,6 +34,10 @@ static int svector_rbtree_compar_wrap(struct SVector_rbnode *a, struct SVector_r
 RB_GENERATE_STATIC(SVector_rbtree, SVector_rbnode, entry, svector_rbtree_compar_wrap)
 
 SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b)) {
+    if (unlikely(!vec)) {
+        return NULL;
+    }
+
     *vec = (SVector){
         .vec_mode = SVECTOR_MODE_ARRAY,
         .vec_compar = compar,
