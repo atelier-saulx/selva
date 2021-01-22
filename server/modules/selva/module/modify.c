@@ -159,7 +159,7 @@ static int update_set(
             err = SelvaObject_AddStringSet(obj, field, ref);
             if (err == 0) {
                 RedisModule_RetainString(ctx, ref);
-            } else if (err && err != SELVA_EEXIST) {
+            } else if (err != SELVA_EEXIST) {
                 /* TODO Handle alias error */
                 fprintf(stderr, "%s: Alias updated failed partially\n", __FILE__);
             }
