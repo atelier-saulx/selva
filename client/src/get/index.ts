@@ -145,12 +145,19 @@ async function get(
     subId = null
   } else if (newProps.$trigger) {
     console.log('trigger without id and with sub, make make marker marker!!!')
-    const rpn = createRpn(newProps.$trigger.$filter) || []
+    const rpn = newProps.$trigger.$filter
+      ? createRpn(newProps.$trigger.$filter) || []
+      : []
     await client.redis.selva_subscriptions_addtrigger(
       originDescriptors[db] || { name: db },
       '___selva_hierarchy',
       subId,
-      adler32({ type: 'trigger', fields: [], id: 'root', rpn }),
+      adler32({
+        type: 'trigger-' + newProps.$trigger.$event,
+        fields: [],
+        id: 'root',
+        rpn
+      }),
       newProps.$trigger.$event,
       ...rpn
     )

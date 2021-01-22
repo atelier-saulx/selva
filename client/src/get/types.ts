@@ -140,7 +140,7 @@ export type GetOptions = GetItem & {
 }
 
 export type ObserveEventOptions = GetItem & {
-  $filter: Filter
+  $filter?: Filter
 }
 
 export type GetOperationFind = {

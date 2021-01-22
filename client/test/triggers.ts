@@ -42,6 +42,8 @@ test.serial('basic trigger subscriptions', async t => {
     }
   })
 
+  await client.set({ $id: 'root' })
+
   t.plan(1)
 
   let o2counter = 0
