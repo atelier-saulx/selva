@@ -435,7 +435,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             return REDISMODULE_OK;
         }
 
-        Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
         trigger_created = 1;
     }
 
@@ -665,7 +664,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (repl_set) {
         replicateModify(ctx, &repl_set, argv);
 
-        if (!trigger_created) {
+        if (trigger_created) {
+            Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
+        } else {
             /*
              * It's justifiable to expect that an actual update only occurred if
              * something needs to be replicated.
