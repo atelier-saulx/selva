@@ -44,7 +44,7 @@ test.serial('basic trigger created subscriptions', async t => {
 
   await client.set({ $id: 'root' })
 
-  t.plan(1)
+  t.plan(2)
 
   let o2counter = 0
   const other = client.observeEvent('created', {
@@ -65,6 +65,13 @@ test.serial('basic trigger created subscriptions', async t => {
         type: 'yeshType',
         yesh: 'extra nice'
       })
+    } else if (o2counter === 1) {
+      // gets start event
+      t.deepEqualIgnoreOrder(d, {
+        id: thing2,
+        type: 'yeshType',
+        yesh: 'extra extra nice'
+      })
     } else {
       t.fail
     }
@@ -77,6 +84,15 @@ test.serial('basic trigger created subscriptions', async t => {
     type: 'yeshType',
     yesh: 'extra nice'
   })
+
+  await wait(500)
+
+  const thing2 = await client.set({
+    type: 'yeshType',
+    yesh: 'extra extra nice'
+  })
+
+  await wait(500)
 
   try {
     const subs = await client.redis.selva_subscriptions_list(
@@ -101,6 +117,16 @@ test.serial('basic trigger created subscriptions', async t => {
   await client.set({
     $id: 'noNoNoNo',
     no: 'no event again'
+  })
+
+  await client.set({
+    $id: thing,
+    yesh: 'woot no event'
+  })
+
+  await client.set({
+    $id: thing2,
+    yesh: 'woot no event'
   })
 
   // no event
