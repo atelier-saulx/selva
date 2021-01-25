@@ -643,6 +643,8 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
     struct Selva_SubscriptionMarker *marker;
     int res = 0;
 
+    assert(sub);
+
     SVector_ForeachBegin(&it, &sub->markers);
     while ((marker = SVector_Foreach(&it))) {
         int err;
@@ -738,6 +740,7 @@ static void clear_sub(struct SelvaModify_Hierarchy *hierarchy, struct Selva_Subs
     /*
      * Remove subscription markers.
      */
+    (void)SelvaModify_TraverseHierarchy(hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_NODE, &cb);
     (void)SelvaModify_TraverseHierarchy(hierarchy, node_id, marker->dir, &cb);
 }
 
@@ -2042,7 +2045,7 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
 /*
  * KEY SUB_ID
  */
-int Selva_UnsubscribeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int Selva_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;
 
     if (argc != 3) {
@@ -2097,7 +2100,7 @@ static int Hierarchy_Subscriptions_OnLoad(RedisModuleCtx *ctx) {
         RedisModule_CreateCommand(ctx, "selva.subscriptions.list", Selva_SubscriptionsListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.listMissing", Selva_SubscriptionsListMissingCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.debug", Selva_SubscriptionDebugCommand, "readonly deny-script", 1, 1, 1) ||
-        RedisModule_CreateCommand(ctx, "selva.subscriptions.del", Selva_UnsubscribeCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.del", Selva_DelCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
