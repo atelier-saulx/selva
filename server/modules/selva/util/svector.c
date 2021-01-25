@@ -151,7 +151,8 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
 
     assert(src->vec_arr_shift_index == 0);
 
-    if (!SVector_Init(dest, SVector_Size(src), compar)) {
+    if ((mode != SVECTOR_MODE_ARRAY && mode != SVECTOR_MODE_RBTREE) ||
+        !SVector_Init(dest, SVector_Size(src), compar)) {
         return NULL;
     }
 
@@ -170,7 +171,7 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
              * This shouldn't be required but we do it just in case to be
              * defensive againts anything weird happening.
              */
-            if (p) {
+            if (likely(p)) {
                 SVector_Insert(dest, p);
             }
         }
@@ -180,8 +181,6 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
         RB_FOREACH(n, SVector_rbtree, (struct SVector_rbtree *)&src->vec_rbhead) {
             SVector_Insert(dest, n->p);
         }
-    } else {
-        return NULL;
     }
 
     return dest;
@@ -524,11 +523,11 @@ void SVector_Clear(SVector * restrict vec) {
     }
 }
 
-void *SVector_EmptyForeach(struct SVectorIterator *it) {
+static void *SVector_EmptyForeach(struct SVectorIterator *it) {
     return NULL;
 }
 
-void *SVector_ArrayForeach(struct SVectorIterator *it) {
+static void *SVector_ArrayForeach(struct SVectorIterator *it) {
     if (it->arr.cur < it->arr.end) {
         void **p;
 
@@ -539,7 +538,7 @@ void *SVector_ArrayForeach(struct SVectorIterator *it) {
     return NULL;
 }
 
-void *SVector_RbTreeForeach(struct SVectorIterator *it) {
+static void *SVector_RbTreeForeach(struct SVectorIterator *it) {
     struct SVector_rbnode *cur = it->rbtree.next;
 
     if (!cur) {
@@ -552,6 +551,9 @@ void *SVector_RbTreeForeach(struct SVectorIterator *it) {
 }
 
 void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *vec) {
+    assert(it);
+    assert(vec);
+
     it->mode = vec->vec_mode;
 
     if (it->mode == SVECTOR_MODE_ARRAY) {
