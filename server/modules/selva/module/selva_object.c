@@ -828,9 +828,8 @@ int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return 0;
 }
 
-int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType *out_subtype, void **out_p) {
+int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType *out_subtype, void **out_p) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -852,6 +851,12 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_n
     }
 
     return 0;
+}
+
+int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType *out_subtype, void **out_p) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, out_subtype, out_p);
 }
 
 int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p) {
