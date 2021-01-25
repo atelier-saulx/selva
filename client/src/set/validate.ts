@@ -80,12 +80,12 @@ export default async function parseSetObject(
 
   const schema = type === 'root' ? schemas.rootType : schemas.types[type]
   if (!schema) {
-  console.log('fef', type, schemas);
+    console.log('fef', type, schemas)
     throw new Error(
       `Cannot find type ${type ||
         `from prefix ${payload.$id.substring(
-         0,
-         2
+          0,
+          2
         )}`} from set-object ${JSON.stringify(payload, null, 2)}`
     )
   }
@@ -114,7 +114,7 @@ export default async function parseSetObject(
           throw new Error('Wrong type for $operation ' + payload[key])
         }
 
-        result[1] += 'O' + (val === 'upsert' ? 0 : val === 'insert' ? 1 : 2)
+        result[0] += 'O' + (val === 'upsert' ? 0 : val === 'insert' ? 1 : 2)
       } else if (key === '$source') {
         if (
           typeof payload[key] !== 'string' &&
