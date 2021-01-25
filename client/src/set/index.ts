@@ -43,7 +43,7 @@ export async function _set(
       ...asAny.$extraQueries
     ])
 
-    return all[0][0]
+    return !all[0] ? undefined : all[0][0]
   } catch (err) {
     console.error(err)
     throw err

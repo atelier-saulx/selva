@@ -114,7 +114,11 @@ export default async function parseSetObject(
           throw new Error('Wrong type for $operation ' + payload[key])
         }
 
-        result[0] += 'O' + (val === 'upsert' ? 0 : val === 'insert' ? 1 : 2)
+        if (val === 'insert') {
+          result[0] += 'C'
+        } else if (val === 'update') {
+          result[0] += 'U'
+        }
       } else if (key === '$source') {
         if (
           typeof payload[key] !== 'string' &&

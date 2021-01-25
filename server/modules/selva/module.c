@@ -18,9 +18,13 @@
 
 #define FLAG_NO_ROOT    0x1
 #define FLAG_NO_MERGE   0x2
+#define FLAG_CREATE     0x3
+#define FLAG_UPDATE     0x4
 
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
+#define FISSET_CREATE(m) (((m) & FLAG_CREATE) == FLAG_CREATE)
+#define FISSET_UPDATE(m) (((m) & FLAG_UPDATE) == FLAG_UPDATE)
 
 #if __SIZEOF_INT128__ != 16
 #error The compiler and architecture must have Tetra-Integer support
@@ -285,6 +289,8 @@ static int parse_flags(RedisModuleString *arg) {
     for (size_t i = 0; i < arg_len; i++) {
         flags |= arg_str[i] == 'N' ? FLAG_NO_ROOT : 0;
         flags |= arg_str[i] == 'M' ? FLAG_NO_MERGE : 0;
+        flags |= arg_str[i] == 'C' ? FLAG_CREATE : 0;
+        flags |= arg_str[i] == 'U' ? FLAG_UPDATE : 0;
     }
 
     return flags;
@@ -421,6 +427,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     if (RedisModule_KeyType(id_key) == REDISMODULE_KEYTYPE_EMPTY) {
+        if (FISSET_UPDATE(flags)) {
+            // if the specified id doesn't exist but $operation: 'update' specified
+            RedisModule_ReplyWithNull(ctx);
+            return REDISMODULE_OK;
+        }
+
         const size_t nr_parents = FISSET_NO_ROOT(flags) ? 0 : 1;
 
         err = SelvaNode_Initialize(ctx, id_key, id, nodeId);
@@ -436,6 +448,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
 
         trigger_created = 1;
+    } else if (FISSET_CREATE(flags)) {
+        // if the specified id exists but $operation: 'insert' specified
+        RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
     }
 
     err = SelvaObject_Key2Obj(id_key, &obj);
