@@ -363,6 +363,8 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     memcpy(id, node->id, SELVA_NODE_ID_SIZE);
     is_root = !memcmp(id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
 
+    Selva_Subscriptions_DeferTriggerEvents(hierarchy, id, SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED);
+
     removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
     SelvaSubscriptions_DeferHierarchyDeletionEvents(hierarchy, id, &node->metadata);
 
@@ -393,8 +395,6 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
             createNodeHash(ctx, id);
         }
     }
-
-    Selva_Subscriptions_DeferTriggerEvents(hierarchy, id, SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED);
 }
 
 #if HIERARCHY_SORT_BY_DEPTH

@@ -325,16 +325,16 @@ test.serial('basic trigger deleted subscriptions', async t => {
 
   let o2counter = 0
   const other = client.observeEvent('deleted', {
-    // $filter: {
-    //   $operator: '=',
-    //   $field: 'type',
-    //   $value: 'yeshType',
-    //   $or: {
-    //     $operator: '=',
-    //     $field: 'type',
-    //     $value: 'noType'
-    //   }
-    // },
+    $filter: {
+      $operator: '=',
+      $field: 'type',
+      $value: 'yeshType',
+      $or: {
+        $operator: '=',
+        $field: 'type',
+        $value: 'noType'
+      }
+    },
     $all: true,
     aliases: false
   })
