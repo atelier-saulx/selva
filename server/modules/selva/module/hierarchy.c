@@ -1507,7 +1507,7 @@ int SelvaModify_TraverseHierarchy(
         err = full_dfs(hierarchy, &tcb);
         break;
      default:
-        fprintf(stderr, "%s: Invalid traversal requested\n", __FILE__);
+        fprintf(stderr, "%s: Invalid traversal requested (%d)\n", __FILE__, (int)dir);
         err = SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
