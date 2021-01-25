@@ -238,6 +238,7 @@ test.serial('basic trigger updated subscriptions', async t => {
     yesh: 'extra nice'
   })
 
+  await wait(100)
   await client.set({
     $id: thing2,
     no: 'hmm'
