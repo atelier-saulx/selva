@@ -133,7 +133,7 @@ static int update_set(
         err = SelvaObject_DelKey(obj, field);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s: Unable to remove a set \"%s:%s\"\n", __FILE__, id_str, field_str);
-            return SELVA_ENOENT;
+            return SELVA_ENOENT; /* TODO is this the right error. */
         }
 
         /*
@@ -148,6 +148,7 @@ static int update_set(
                 return SELVA_EINVAL;
             }
 
+            /* Add to the global aliases hash. */
             if (alias_key) {
                 Selva_NodeId node_id;
 
@@ -156,15 +157,17 @@ static int update_set(
 
                 update_alias(ctx, alias_key, id, ref);
             }
+
+            /* Add to the node object. */
             err = SelvaObject_AddStringSet(obj, field, ref);
             if (err == 0) {
                 RedisModule_RetainString(ctx, ref);
             } else if (err != SELVA_EEXIST) {
                 /* TODO Handle alias error */
-                fprintf(stderr, "%s: Alias updated failed partially\n", __FILE__);
+                fprintf(stderr, "%s: Alias update failed partially\n", __FILE__);
             }
 
-            // +1 to skip the nullbyte
+            /* +1 to skip the nullbyte */
             const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
             ptr += skip_off;
             i += skip_off;
@@ -181,6 +184,7 @@ static int update_set(
                     return SELVA_EINVAL;
                 }
 
+                /* Add to the global aliases hash. */
                 if (alias_key) {
                     Selva_NodeId node_id;
 
@@ -189,15 +193,17 @@ static int update_set(
 
                     update_alias(ctx, alias_key, id, ref);
                 }
+
+                /* Add to the node object. */
                 err = SelvaObject_AddStringSet(obj, field, ref);
                 if (err == 0) {
                     RedisModule_RetainString(ctx, ref);
                 } else if (err && err != SELVA_EEXIST) {
                     /* TODO Handle alias error */
-                    fprintf(stderr, "%s: Alias updated failed partially\n", __FILE__);
+                    fprintf(stderr, "%s: Alias update failed partially\n", __FILE__);
                 }
 
-                // +1 to skip the nullbyte
+                /* +1 to skip the nullbyte */
                 const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
                 ptr += skip_off;
                 i += skip_off;
@@ -214,16 +220,18 @@ static int update_set(
                     return SELVA_EINVAL;
                 }
 
+                /* Remove from the node object. */
                 SelvaObject_RemStringSet(obj, field, ref);
 
-                // +1 to skip the nullbyte
-                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
-                ptr += skip_off;
-                i += skip_off;
-
+                /* Remove from the global aliases hash. */
                 if (alias_key) {
                     RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, REDISMODULE_HASH_DELETE, NULL);
                 }
+
+                /* +1 to skip the nullbyte */
+                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
+                ptr += skip_off;
+                i += skip_off;
             }
         }
     }
