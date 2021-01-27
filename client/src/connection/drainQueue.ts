@@ -40,6 +40,20 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
                 }
               }
             })
+          } else if (command === 'xgroup') {
+            connection.publisher['xgroup'](...args, (err, data) => {
+              if (err || !data) {
+                if (reject) {
+                  reject(err || new Error('no data'))
+                } else if (resolve) {
+                  resolve('')
+                }
+              } else {
+                if (resolve) {
+                  resolve(data)
+                }
+              }
+            })
           } else {
             if (command.toLowerCase() === 'evalsha') {
               const script = args[0]
