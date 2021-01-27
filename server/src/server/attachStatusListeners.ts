@@ -3,13 +3,23 @@ import { ServerDescriptor } from '@saulx/selva'
 import { ServerOptions, Stats } from '../types'
 import { SelvaServer } from './'
 
-const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
-  const info: ServerDescriptor = {
-    name: opts.name,
-    type: server.type,
-    port: opts.port,
-    host: opts.host
+const initHierarchy = (
+  server: SelvaServer,
+  info: ServerDescriptor
+): Promise<void> => {
+  if (info.type === 'origin') {
+    console.log('Trying to initialize empty hierarchy', info)
+    return server.selvaClient.redis
+      .selva_modify(info, 'root', 'R', '0', 'type', 'root')
+      .then(res => {
+        console.log('Empty hierarchy initialized', res)
+      })
   }
+
+  return Promise.resolve()
+}
+
+const attachListener = (server: SelvaServer, info: ServerDescriptor) => {
   server.on('stats', rawStats => {
     // if (server.type === 'replica') {
     // only want this if it is not registred before
@@ -25,6 +35,7 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
         opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
         timestamp: rawStats.runtimeInfo.timestamp
       }
+
       updateRegistry(
         server,
         Object.assign(
@@ -36,6 +47,21 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
       )
     }
   })
+}
+
+const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
+  const info: ServerDescriptor = {
+    name: opts.name,
+    type: server.type,
+    port: opts.port,
+    host: opts.host
+  }
+
+  initHierarchy(server, info)
+    .catch(e => console.error('ERROR initializing hierarchy', e))
+    .finally(() => {
+      attachListener(server, info)
+    })
 }
 
 export default attachStatusListeners

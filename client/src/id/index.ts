@@ -17,4 +17,3 @@ export default function genId(client: SelvaClient, idOpts: IdOptions): string {
   const prefix = getIdPrefix(client, idOpts)
   return prefix + uuid().substring(0, 8)
 }
-
