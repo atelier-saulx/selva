@@ -1368,7 +1368,28 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
 
     if (type >= 0 && type < num_elem(type_names)) {
         const struct so_type_name *tn = &type_names[type];
+
+        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
         RedisModule_ReplyWithStringBuffer(ctx, tn->name, tn->len);
+
+        if (type == SELVA_OBJECT_ARRAY) {
+            enum SelvaObjectType subtype = key->subtype;
+
+            if (subtype >= 0 && subtype < num_elem(type_names)) {
+                const struct so_type_name *sub_tn = &type_names[subtype];
+
+                RedisModule_ReplyWithStringBuffer(ctx, sub_tn->name, sub_tn->len);
+            } else {
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key subtype %d", (int)subtype);
+            }
+
+            RedisModule_ReplySetArrayLength(ctx, 2);
+        } else if (type == SELVA_OBJECT_SET) {
+            RedisModule_ReplyWithLongLong(ctx, key->selva_set.type); /* TODO Type as a string */
+            RedisModule_ReplySetArrayLength(ctx, 2);
+        } else {
+            RedisModule_ReplySetArrayLength(ctx, 1);
+        }
     } else {
         return replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)type);
     }

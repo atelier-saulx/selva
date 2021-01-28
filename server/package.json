@@ -64,7 +64,7 @@
     "body-parser": "^1.19.0",
     "before-exit": "^1.0.0",
     "chalk": "^4.0.0",
-    "data-record": "^0.4.0",
+    "data-record": "^0.5.2",
     "rimraf": "^3.0.2",
     "dropbox": "^4.0.30",
     "flexsearch": "^0.6.32",

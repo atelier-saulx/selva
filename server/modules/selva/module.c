@@ -665,7 +665,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (SVector_Size(&alias_query) > 0) {
         RedisModuleString *field = RedisModule_CreateString(ctx, "aliases", 7);
         struct SelvaModify_OpSet opSet = {
-            .is_reference = 0,
+            .op_set_type = SELVA_MODIFY_OP_SET_TYPE_REFERENCE,
             .$add = SVector_Peek(&alias_query),
             .$add_len = SVector_Size(&alias_query),
             .$delete = NULL,

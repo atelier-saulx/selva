@@ -5,7 +5,7 @@ import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
 import parseSetObject from '../validate'
 import { verifiers } from './simple'
-import { setRecordDef } from '../modifyDataRecords'
+import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
 
 const id = verifiers.id
 
@@ -229,8 +229,8 @@ export default async (
       result.push(
         '5',
         field,
-        createRecord(setRecordDef, {
-          is_reference: 1,
+        createRecord(setRecordDefCstring, {
+          op_set_type: OPT_SET_TYPE.reference,
           delete_all:
             r.delete_all || (!r.$add && !r.$delete && isEmpty(r.$value)),
           $add: await toCArr(
@@ -275,8 +275,8 @@ export default async (
     result.push(
       '5',
       field,
-      createRecord(setRecordDef, {
-        is_reference: 1,
+      createRecord(setRecordDefCstring, {
+        op_set_type: OPT_SET_TYPE.reference,
         delete_all: isEmpty($value),
         $add: '',
         $delete: '',

@@ -31,6 +31,18 @@ test.before(async t => {
             items: {
               type: 'number'
             }
+          },
+          sinks: {
+            type: 'set',
+            items: {
+              type: 'float'
+            }
+          },
+          ints: {
+            type: 'set',
+            items: {
+              type: 'int'
+            }
           }
         }
       }
@@ -145,16 +157,11 @@ test.serial('search user roles', async t => {
 test.serial('search user numbers', async t => {
   const client = connect({ port }, { loglevel: 'info' })
 
-  await client.set({
-    type: 'user',
-    roles: ['club', 'club:id1'],
-    numbers: [1, 2, 3]
-  })
-
   const id = await client.set({
     type: 'user',
-    roles: ['club', 'club:id2'],
-    numbers: [4, 5, 6]
+    numbers: [1, 2.4, 3, 4],
+    sinks: [1, 7.0, 4.5, 8.25],
+    ints: [57082, 0x01234567, 16435934]
   })
 
   t.is(
@@ -168,6 +175,46 @@ test.serial('search user numbers', async t => {
                 $field: 'numbers',
                 $operator: 'has',
                 $value: 1
+              }
+            }
+          }
+        }
+      })
+    ).descendants.length,
+    1
+  )
+
+  t.is(
+    (
+      await client.get({
+        descendants: {
+          id: true,
+          $list: {
+            $find: {
+              $filter: {
+                $field: 'sinks',
+                $operator: 'has',
+                $value: 7.0
+              }
+            }
+          }
+        }
+      })
+    ).descendants.length,
+    1
+  )
+
+  t.is(
+    (
+      await client.get({
+        descendants: {
+          id: true,
+          $list: {
+            $find: {
+              $filter: {
+                $field: 'ints',
+                $operator: 'has',
+                $value: 16435934
               }
             }
           }

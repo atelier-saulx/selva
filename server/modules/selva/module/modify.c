@@ -12,15 +12,27 @@
 #include "selva_object.h"
 #include "selva_set.h"
 
-static ssize_t ref2rms(RedisModuleCtx *ctx, struct SelvaModify_OpSet * restrict setOpts, const char *s, RedisModuleString **out) {
-    size_t len = setOpts->is_reference ? strnlen(s, SELVA_NODE_ID_SIZE) : strlen(s);
-    RedisModuleString *rms = RedisModule_CreateString(ctx, s, len);
+static ssize_t ref2rms(RedisModuleCtx *ctx, int8_t type, const char *s, RedisModuleString **out) {
+    size_t len;
+    RedisModuleString *rms;
 
+    switch (type) {
+    case SELVA_MODIFY_OP_SET_TYPE_CHAR:
+        len = strlen(s);
+        break;
+    case SELVA_MODIFY_OP_SET_TYPE_REFERENCE:
+        len = strnlen(s, SELVA_NODE_ID_SIZE);
+        break;
+    default:
+        return SELVA_EINTYPE;
+    }
+
+    rms = RedisModule_CreateString(ctx, s, len);
     if (!rms) {
         return SELVA_ENOMEM;
     }
-    *out = rms;
 
+    *out = rms;
     return len;
 }
 
@@ -87,7 +99,7 @@ static int update_hierarchy(
     return err;
 }
 
-void selva_set_defer_alias_change_events(
+static void selva_set_defer_alias_change_events(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         struct SelvaSet *aliases) {
@@ -98,6 +110,176 @@ void selva_set_defer_alias_change_events(
 
         Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, alias_name);
     }
+}
+
+/**
+ * Add all values from value_ptr to the set in obj.field.
+ */
+static int add_set_values(
+    RedisModuleCtx *ctx,
+    SelvaModify_Hierarchy *hierarchy,
+    RedisModuleKey *alias_key,
+    struct SelvaObject *obj,
+    RedisModuleString *id,
+    RedisModuleString *field,
+    char *value_ptr,
+    size_t value_len,
+    int8_t type
+) {
+    char *ptr = value_ptr;
+
+    if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
+        type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+        for (size_t i = 0; i < value_len; ) {
+            int err;
+            RedisModuleString *ref;
+            const ssize_t part_len = ref2rms(ctx, type, ptr, &ref);
+
+            if (part_len < 0) {
+                return SELVA_EINVAL;
+            }
+
+            /* Add to the global aliases hash. */
+            if (alias_key) {
+                Selva_NodeId node_id;
+                TO_STR(id);
+
+                Selva_NodeIdCpy(node_id, id_str);
+                Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
+
+                update_alias(ctx, alias_key, id, ref);
+            }
+
+            /* Add to the node object. */
+            err = SelvaObject_AddStringSet(obj, field, ref);
+            if (err == 0) {
+                RedisModule_RetainString(ctx, ref);
+            } else if (err != SELVA_EEXIST) {
+                /* TODO Handle error */
+                if (alias_key) {
+                    fprintf(stderr, "%s: Alias update failed partially\n", __FILE__);
+                } else {
+                    fprintf(stderr, "%s: String set field update failed\n", __FILE__);
+                }
+            }
+
+            /* +1 to skip the NUL if cstring */
+            const size_t skip_off = (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
+            ptr += skip_off;
+            i += skip_off;
+        }
+    } else if (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE ||
+               type == SELVA_MODIFY_OP_SET_TYPE_LONG_LONG) {
+        for (size_t i = 0; i < value_len; ) {
+            int err;
+            size_t part_len;
+
+            /*
+             * We want to be absolutely sure that we don't hit alignment aborts
+             * on any architecture even if the received data is unaligned, hence
+             * we use memcpy here.
+             */
+            if (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE) {
+                double v;
+
+                part_len = sizeof(double);
+                memcpy(&v, ptr, part_len);
+                err = SelvaObject_AddDoubleSet(obj, field, v);
+            } else {
+                long long v;
+
+                part_len = sizeof(long long);
+                memcpy(&v, ptr, part_len);
+                err = SelvaObject_AddLongLongSet(obj, field, v);
+            }
+            if (err && err != SELVA_EEXIST) {
+                /* TODO Handle error */
+                fprintf(stderr, "%s: Double set field update failed\n", __FILE__);
+            }
+
+            const size_t skip_off = part_len;
+            ptr += skip_off;
+            i += skip_off;
+        }
+    } else {
+        return SELVA_EINTYPE;
+    }
+
+    return 0;
+}
+
+static int del_set_values(
+    RedisModuleCtx *ctx,
+    RedisModuleKey *alias_key,
+    struct SelvaObject *obj,
+    RedisModuleString *field,
+    char *value_ptr,
+    size_t value_len,
+    int8_t type
+) {
+    char *ptr = value_ptr;
+
+    if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
+        type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+        for (size_t i = 0; i < value_len; ) {
+            RedisModuleString *ref;
+            const ssize_t part_len = ref2rms(ctx, type, ptr, &ref);
+
+            if (part_len < 0) {
+                return SELVA_EINVAL;
+            }
+
+            /* Remove from the node object. */
+            SelvaObject_RemStringSet(obj, field, ref);
+
+            /* Remove from the global aliases hash. */
+            if (alias_key) {
+                RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, REDISMODULE_HASH_DELETE, NULL);
+            }
+
+            /* +1 to skip the NUL if cstring */
+            const size_t skip_off = (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
+            ptr += skip_off;
+            i += skip_off;
+        }
+    } else if (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE ||
+               type == SELVA_MODIFY_OP_SET_TYPE_LONG_LONG) {
+        for (size_t i = 0; i < value_len; ) {
+            int err;
+            size_t part_len;
+
+            /*
+             * We want to be absolutely sure that we don't hit alignment aborts
+             * on any architecture even if the received data is unaligned, hence
+             * we use memcpy here.
+             */
+            if (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE) {
+                double v;
+
+                part_len = sizeof(double);
+                memcpy(&v, ptr, part_len);
+                err = SelvaObject_RemDoubleSet(obj, field, v);
+            } else {
+                long long v;
+
+                part_len = sizeof(long long);
+                memcpy(&v, ptr, part_len);
+                err = SelvaObject_RemLongLongSet(obj, field, v);
+            }
+            if (err && err != SELVA_EEXIST) {
+                /* TODO Handle error */
+                fprintf(stderr, "%s: Double set field update failed\n", __FILE__);
+            }
+
+            const size_t skip_off = part_len;
+            ptr += skip_off;
+            i += skip_off;
+        }
+    } else {
+        return SELVA_EINTYPE;
+    }
+
+    return 0;
 }
 
 static int update_set(
@@ -139,99 +321,26 @@ static int update_set(
         /*
          * Set new values.
          */
-        char *ptr = setOpts->$value;
-        for (size_t i = 0; i < setOpts->$value_len; ) {
-            RedisModuleString *ref;
-            const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
-
-            if (part_len < 0) {
-                return SELVA_EINVAL;
-            }
-
-            /* Add to the global aliases hash. */
-            if (alias_key) {
-                Selva_NodeId node_id;
-
-                Selva_NodeIdCpy(node_id, id_str);
-                Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
-
-                update_alias(ctx, alias_key, id, ref);
-            }
-
-            /* Add to the node object. */
-            err = SelvaObject_AddStringSet(obj, field, ref);
-            if (err == 0) {
-                RedisModule_RetainString(ctx, ref);
-            } else if (err != SELVA_EEXIST) {
-                /* TODO Handle alias error */
-                fprintf(stderr, "%s: Alias update failed partially\n", __FILE__);
-            }
-
-            /* +1 to skip the nullbyte */
-            const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
-            ptr += skip_off;
-            i += skip_off;
+        err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$value, setOpts->$value_len, setOpts->op_set_type);
+        if (err) {
+            return err;
         }
     } else {
         if (setOpts->$add_len > 0) {
-            char *ptr = setOpts->$add;
-            for (size_t i = 0; i < setOpts->$add_len; ) {
-                int err;
-                RedisModuleString *ref;
-                const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
+            int err;
 
-                if (part_len < 0) {
-                    return SELVA_EINVAL;
-                }
-
-                /* Add to the global aliases hash. */
-                if (alias_key) {
-                    Selva_NodeId node_id;
-
-                    Selva_NodeIdCpy(node_id, id_str);
-                    Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
-
-                    update_alias(ctx, alias_key, id, ref);
-                }
-
-                /* Add to the node object. */
-                err = SelvaObject_AddStringSet(obj, field, ref);
-                if (err == 0) {
-                    RedisModule_RetainString(ctx, ref);
-                } else if (err && err != SELVA_EEXIST) {
-                    /* TODO Handle alias error */
-                    fprintf(stderr, "%s: Alias update failed partially\n", __FILE__);
-                }
-
-                /* +1 to skip the nullbyte */
-                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
-                ptr += skip_off;
-                i += skip_off;
+            err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$add, setOpts->$add_len, setOpts->op_set_type);
+            if (err) {
+                return err;
             }
         }
 
         if (setOpts->$delete_len > 0) {
-            char *ptr = setOpts->$delete;
-            for (size_t i = 0; i < setOpts->$delete_len; ) {
-                RedisModuleString *ref;
-                const ssize_t part_len = ref2rms(ctx, setOpts, ptr, &ref);
+            int err;
 
-                if (part_len < 0) {
-                    return SELVA_EINVAL;
-                }
-
-                /* Remove from the node object. */
-                SelvaObject_RemStringSet(obj, field, ref);
-
-                /* Remove from the global aliases hash. */
-                if (alias_key) {
-                    RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, REDISMODULE_HASH_DELETE, NULL);
-                }
-
-                /* +1 to skip the nullbyte */
-                const size_t skip_off = setOpts->is_reference ? SELVA_NODE_ID_SIZE : (size_t)part_len + 1;
-                ptr += skip_off;
-                i += skip_off;
+            err = del_set_values(ctx, alias_key, obj, field, setOpts->$delete,setOpts->$delete_len, setOpts->op_set_type);
+            if (err) {
+                return err;
             }
         }
     }
@@ -247,20 +356,21 @@ int SelvaModify_ModifySet(
     RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
+    const int is_reference = setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE;
     TO_STR(id, field);
-    Selva_NodeId node_id;
-
-    if (setOpts->is_reference) {
-        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
-        memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
-    }
 
     if (setOpts->delete_all) {
         int err;
 
-        if (!strcmp(field_str, "children")) {
+        if (is_reference && !strcmp(field_str, "children")) {
+            Selva_NodeId node_id;
+
+            Selva_NodeIdCpy(node_id, id_str);
             err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
         } else if (!strcmp(field_str, "parents")) {
+            Selva_NodeId node_id;
+
+            Selva_NodeIdCpy(node_id, id_str);
             err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
         } else {
             /*
@@ -292,7 +402,11 @@ int SelvaModify_ModifySet(
         }
     }
 
-    if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
+    if (setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE &&
+        (!strcmp(field_str, "children") || !strcmp(field_str, "parents"))) {
+        Selva_NodeId node_id;
+
+        Selva_NodeIdCpy(node_id, id_str);
         return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
     } else {
         return update_set(ctx, hierarchy, obj, id, field, setOpts);

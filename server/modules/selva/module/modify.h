@@ -25,11 +25,6 @@ enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE = 'B', /*!< Increment a double value. */
     SELVA_MODIFY_ARG_OP_SET = '5', /*!< Value is a struct SelvaModify_OpSet. */
     SELVA_MODIFY_ARG_OP_DEL = '7', /*!< Delete field; value is a modifier. */
-    /* TODO Add support for double and long long sets. */
-#if 0
-    SELVA_MODIFY_ARG_OP_SET_DOUBLE = 'D', /*< Value is a struct SelvaModify_OpSetDouble. */
-    SELVA_MODIFY_ARG_OP_SET_LONGLONG = 'L', /*< Value is a struct SelvaModify_OpSetLongLong. */
-#endif
 };
 
 struct SelvaModify_OpIncrement {
@@ -42,8 +37,13 @@ struct SelvaModify_OpIncrementDouble {
     double $increment;
 };
 
+#define SELVA_MODIFY_OP_SET_TYPE_CHAR       0
+#define SELVA_MODIFY_OP_SET_TYPE_REFERENCE  1 /*!< Items are of size SELVA_NODE_ID_SIZE. */
+#define SELVA_MODIFY_OP_SET_TYPE_DOUBLE     2
+#define SELVA_MODIFY_OP_SET_TYPE_LONG_LONG  3
+
 struct SelvaModify_OpSet {
-    int8_t is_reference; /*!< If set then the arrays are of len SELVA_NODE_ID_SIZE. */
+    int8_t op_set_type; /*!< Set type. One of the SELVA_MODIFY_OP_SET_TYPE_xxx defines. */
     int8_t delete_all; /*!< Delete all intems from the set. */
 
     char *$add;
@@ -60,18 +60,20 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(struct RedisModu
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
-    if (data_len < sizeof(struct SelvaModify_OpSet)) {
+    if (!data_str && data_len < sizeof(struct SelvaModify_OpSet)) {
         return NULL;
     }
 
     op = (struct SelvaModify_OpSet *)data_str;
-    if (data_len < sizeof(struct SelvaModify_OpSet) + op->$add_len + op->$delete_len + op->$value_len) {
+    op->$add    = op->$add    ? (char *)((char *)op + (ptrdiff_t)op->$add)    : NULL;
+    op->$delete = op->$delete ? (char *)((char *)op + (ptrdiff_t)op->$delete) : NULL;
+    op->$value  = op->$value  ? (char *)((char *)op + (ptrdiff_t)op->$value)  : NULL;
+
+    if ((ptrdiff_t)op->$add + op->$add_len > (ptrdiff_t)op + data_len ||
+        (ptrdiff_t)op->$delete + op->$delete_len > (ptrdiff_t)op + data_len ||
+        (ptrdiff_t)op->$value + op->$value_len > (ptrdiff_t)op + data_len) {
         return NULL;
     }
-
-    op->$add = op->$add ? (char *)((char *)op + sizeof(*op)) : NULL;
-    op->$delete = op->$delete ? (char *)((char *)op + sizeof(*op) + op->$add_len) : NULL;
-    op->$value = op->$value ? (char *)((char *)op + sizeof(*op) + op->$add_len + op->$delete_len) : NULL;
 
     return op;
 }

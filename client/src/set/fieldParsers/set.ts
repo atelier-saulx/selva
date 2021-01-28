@@ -1,10 +1,13 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
-import { setRecordDef } from '../modifyDataRecords'
+import { OPT_SET_TYPE, setRecordDefCstring, setRecordDefDouble, setRecordDefInt64 } from '../modifyDataRecords'
 import { SetOptions } from '../types'
-import { Schema, FieldSchemaArrayLike } from '../../schema'
+import { Schema, FieldSchemaArrayLike, FieldType } from '../../schema'
 import parseSetObject from '../validate'
 import parsers from './simple'
+
+const doubleTypes: FieldType[] = ['number', 'float'];
+const intTypes: FieldType[] = ['int', 'timestamp'];
 
 const verifySimple = async (
   payload: SetOptions,
@@ -27,9 +30,6 @@ const parseObjectArray = async (
   }
 }
 
-const toCArr = (arr: string[] | undefined | null) =>
-  arr ? arr.map(s => `${s}\0`).join('') : ''
-
 export default async (
   client: SelvaClient,
   schema: Schema,
@@ -43,6 +43,18 @@ export default async (
   if (!typeSchema) {
     throw new Error('Cannot find type schema ' + type)
   }
+
+  // 'string' is just a guess here if we don't know the type but it's probably the right one
+  // @ts-ignore
+  const elementType = typeSchema.fields[field]?.items?.type || 'string'
+  // @ts-ignore
+  const [setRecordDef, opSetType, toCArr] = doubleTypes.includes(elementType)
+    ? [setRecordDefDouble, OPT_SET_TYPE.double, (arr: any) => arr]
+    // @ts-ignore
+    : intTypes.includes(elementType)
+      ? [setRecordDefInt64, OPT_SET_TYPE.long_long, (arr: number[] | undefined | null) => arr ? arr.map(BigInt) : arr]
+      : [setRecordDefCstring, OPT_SET_TYPE.char, (arr: string[] | undefined | null) => arr ? arr.map(s => `${s}\0`).join('') : '']
+
 
   if (!fields || !fields.items) {
     throw new Error(`Cannot find field ${field} on ${type}`)
@@ -92,11 +104,11 @@ export default async (
       '5',
       field,
       createRecord(setRecordDef, {
-        is_reference: 0,
+        op_set_type: opSetType,
         delete_all: r.delete_all,
         $add: toCArr(r.$add),
         $delete: toCArr(r.$delete),
-        $value: ''
+        $value: null
       })
     )
   } else {
@@ -104,14 +116,11 @@ export default async (
       '5',
       field,
       createRecord(setRecordDef, {
-        is_reference: 0,
-        $add: '',
-        $delete: '',
-        $value: toCArr(
-          (await parseObjectArray(client, payload, schema)) ||
-            (await verifySimple(payload, verify))
-        )
-      }).toString()
+        op_set_type: opSetType,
+        $add: null,
+        $delete: null,
+        $value: toCArr(opSetType === OPT_SET_TYPE.char ? (await parseObjectArray(client, payload, schema)) || (await verifySimple(payload, verify)) : payload)
+      })
     )
   }
 }
