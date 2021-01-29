@@ -1259,7 +1259,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        array_len = FindCommand_PrintOrderedResult(ctx, offset, limit, MERGE_STRATEGY_NONE, NULL, NULL, &order_result, NULL);
+        array_len = FindCommand_PrintOrderedResult(ctx, offset, limit, MERGE_STRATEGY_NONE, NULL, fields, &order_result, NULL);
     }
 
     RedisModule_ReplySetArrayLength(ctx, array_len);
