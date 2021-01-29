@@ -403,7 +403,7 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct Sel
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
         return fields_len;
-    } else if (fields_len == 1 && SelvaObject_ExistsStr(fields, "*", 1) == SELVA_ENOENT) { /* '*' is a wildcard */
+    } else if (fields_len == 1 && !SelvaObject_ExistsStr(fields, "*", 1)) { /* '*' is a wildcard */
         err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
         if (err) {
             fprintf(stderr, "%s: Failed to send all fields for node_id: \"%.*s\"\n",
