@@ -18,7 +18,7 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
     }
 
     /* TODO Handle errors */
-    SelvaObject_SetStringStr(obj, "$id", 3, key_name);
+    SelvaObject_SetStringStr(obj, "id", 2, key_name);
     RedisModule_RetainString(ctx, key_name);
 
     /* Set the type for root. */
