@@ -22,6 +22,9 @@ static ssize_t ref2rms(RedisModuleCtx *ctx, int8_t type, const char *s, RedisMod
         break;
     case SELVA_MODIFY_OP_SET_TYPE_REFERENCE:
         len = strnlen(s, SELVA_NODE_ID_SIZE);
+        if (len == 0) {
+            return SELVA_EINVAL;
+        }
         break;
     default:
         return SELVA_EINTYPE;
@@ -165,6 +168,10 @@ static int add_set_values(
 
             /* +1 to skip the NUL if cstring */
             const size_t skip_off = (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
+            if (skip_off == 0) {
+                return SELVA_EINVAL;
+            }
+
             ptr += skip_off;
             i += skip_off;
         }
@@ -198,6 +205,10 @@ static int add_set_values(
             }
 
             const size_t skip_off = part_len;
+            if (skip_off == 0) {
+                return SELVA_EINVAL;
+            }
+
             ptr += skip_off;
             i += skip_off;
         }
