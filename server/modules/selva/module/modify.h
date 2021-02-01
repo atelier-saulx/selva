@@ -10,7 +10,6 @@
 
 struct RedisModuleCtx;
 struct SelvaModify_Hierarchy;
-struct SelvaModify_Hierarchy;
 struct SelvaObject;
 
 enum SelvaModify_ArgType {
