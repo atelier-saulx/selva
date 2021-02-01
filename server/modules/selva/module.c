@@ -409,7 +409,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 }
             }
         } else {
+#if 0
+            /* This is probably ok and it's a sign that there are no aliases in the DB yet. */
             fprintf(stderr, "%s: Unable open aliases key or its type is invalid\n", __FILE__);
+#endif
         }
 
         RedisModule_CloseKey(alias_key);
@@ -428,7 +431,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     if (RedisModule_KeyType(id_key) == REDISMODULE_KEYTYPE_EMPTY) {
         if (FISSET_UPDATE(flags)) {
-            // if the specified id doesn't exist but $operation: 'update' specified
+            /* if the specified id doesn't exist but $operation: 'update' specified */
             RedisModule_ReplyWithNull(ctx);
             return REDISMODULE_OK;
         }
