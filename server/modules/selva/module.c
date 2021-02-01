@@ -1,4 +1,5 @@
 #include <math.h>
+#include <time.h>
 
 #include "cdefs.h"
 #include "redismodule.h"
@@ -16,15 +17,19 @@
 #include "module/selva_object.h"
 #include "module/subscriptions.h"
 
-#define FLAG_NO_ROOT    0x1
-#define FLAG_NO_MERGE   0x2
-#define FLAG_CREATE     0x3
-#define FLAG_UPDATE     0x4
+#define FLAG_NO_ROOT    0x01
+#define FLAG_NO_MERGE   0x02
+#define FLAG_CREATE     0x03
+#define FLAG_UPDATE     0x04
+#define FLAG_CREATED_AT 0x08
+#define FLAG_UPDATED_AT 0x10
 
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
 #define FISSET_CREATE(m) (((m) & FLAG_CREATE) == FLAG_CREATE)
 #define FISSET_UPDATE(m) (((m) & FLAG_UPDATE) == FLAG_UPDATE)
+#define FISSET_CREATED_AT(m) (((m) & FLAG_CREATED_AT) == FLAG_CREATED_AT)
+#define FISSET_UPDATED_AT(m) (((m) & FLAG_UPDATED_AT) == FLAG_UPDATED_AT)
 
 #if __SIZEOF_INT128__ != 16
 #error The compiler and architecture must have Tetra-Integer support
@@ -291,6 +296,8 @@ static int parse_flags(RedisModuleString *arg) {
         flags |= arg_str[i] == 'M' ? FLAG_NO_MERGE : 0;
         flags |= arg_str[i] == 'C' ? FLAG_CREATE : 0;
         flags |= arg_str[i] == 'U' ? FLAG_UPDATE : 0;
+        flags |= arg_str[i] == 'c' ? FLAG_CREATED_AT : 0;
+        flags |= arg_str[i] == 'u' ? FLAG_UPDATED_AT : 0;
     }
 
     return flags;
@@ -680,15 +687,43 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         (void)SelvaModify_ModifySet(ctx, hierarchy, obj, id, field, &opSet);
     }
 
+    /*
+     * If there is anything set in repl_set it means that something was changed for nodeId.
+     */
     if (repl_set) {
+        struct timespec ts;
+
+        clock_gettime(CLOCK_REALTIME, &ts);
+        const long long now = (long long)ts.tv_sec * 1000 + (long long)ts.tv_nsec / 1000000;
+
         replicateModify(ctx, &repl_set, argv);
 
+        /*
+         * In case this DB node is a replica:
+         * Here we are in a hope that even though replicas won't actually
+         * replicate anything any further, we should still end up into this
+         * `if` branch and thus we should be able to do two things:
+         * 1) set `createdAt` and `updatedAt` fields;
+         * 2) publish events for any active subscriptions.
+         *
+         * Thref're, curs'd is the one who is't optimizes out the replication
+         * code in the case the hest is running on a replica.
+         */
+
+        if (FISSET_UPDATED_AT(flags)) {
+            /* `updatedAt` is always updated on change. */
+            SelvaObject_SetLongLongStr(obj, "updatedAt", 9, now);
+        }
+
         if (trigger_created) {
+            if (FISSET_CREATED_AT(flags)) {
+                SelvaObject_SetLongLongStr(obj, "createdAt", 9, now);
+            }
             Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
         } else {
             /*
-             * It's justifiable to expect that an actual update only occurred if
-             * something needs to be replicated.
+             * If nodeId wasn't created by this command call then it was an
+             * update.
              */
             Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
         }
@@ -705,13 +740,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
-    if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) ==
-            REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
-    if (RedisModule_CreateCommand(ctx, "selva.flurpypants", SelvaCommand_Flurpy, "readonly", 1, 1,
-                                                                1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.flurpypants", SelvaCommand_Flurpy, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

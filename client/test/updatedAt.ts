@@ -134,6 +134,8 @@ test.serial('updatedAt only changes when actually changed', async t => {
     }
 
     lastUpdatedAt = updatedAt
+
+    await wait(1)
   }
 
   await client.delete('root')

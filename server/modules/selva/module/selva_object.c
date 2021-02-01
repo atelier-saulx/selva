@@ -564,9 +564,8 @@ int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_
     return 0;
 }
 
-int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -585,6 +584,12 @@ int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
     key->emb_ll_value = value;
 
     return 0;
+}
+
+int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+    TO_STR(key_name);
+
+    return SelvaObject_SetLongLongStr(obj, key_name_str, key_name_len, value);
 }
 
 int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString *value) {

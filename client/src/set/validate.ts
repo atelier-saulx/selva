@@ -40,7 +40,7 @@ export default async function parseSetObject(
   $lang?: string
 ): Promise<string[]> {
   // id, R|N, field enum, fieldName, value
-  const result: string[] = ['R']
+  const result: string[] = ['']
 
   if (!payload.$id && !payload.$alias) {
     payload.$id = await client.id({
@@ -61,7 +61,7 @@ export default async function parseSetObject(
   ;(<any>result).$extraQueries = []
 
   if (payload.parents && (<any>payload.parents).$noRoot) {
-    result[0] = 'N'
+    result[0] += 'N'
   }
 
   if (!payload.type && schemas.prefixToTypeMapping && payload.$id) {
@@ -80,7 +80,6 @@ export default async function parseSetObject(
 
   const schema = type === 'root' ? schemas.rootType : schemas.types[type]
   if (!schema) {
-    console.log('fef', type, schemas)
     throw new Error(
       `Cannot find type ${type ||
         `from prefix ${payload.$id.substring(
@@ -91,6 +90,14 @@ export default async function parseSetObject(
   }
 
   let fields = schema.fields
+
+  if (fields.updatedAt?.type === 'timestamp') {
+    result[0] += 'u'
+  }
+  if (fields.createdAt?.type === 'timestamp') {
+    result[0] += 'c'
+  }
+
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
