@@ -112,6 +112,7 @@ const addOriginListeners = async (
     )
 
     redis.on(serverDescriptor, 'pmessage', listener)
+    redis.psubscribe(serverDescriptor, '___selva_events:*')
     redis.psubscribe(serverDescriptor, SUBSCRIPTION_UPDATE + '*')
     redis.psubscribe(serverDescriptor, TRIGGER_UPDATE + '*')
   }
@@ -136,6 +137,7 @@ const removeOriginListeners = (
       }
       redis.punsubscribe({ name }, SUBSCRIPTION_UPDATE + '*')
       redis.punsubscribe({ name }, TRIGGER_UPDATE + '*')
+      redis.punsubscribe({ name }, '___selva_events:*')
       client.removeListener('reconnect', origin.reconnectListener)
       client.removeListener('added-servers', origin.serverUpdateListener)
       client.removeListener('removed-servers', origin.serverUpdateListener)
