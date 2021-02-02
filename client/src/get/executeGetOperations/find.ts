@@ -33,6 +33,12 @@ function parseGetOpts(
         fields.add(all.join('|'))
       } else if (path !== '' && opts.length >= 1) {
         const o = {}
+        for (const key in props) {
+          if (key.startsWith('$')) {
+            continue
+          }
+          setNestedResult(o, pathPrefix + key, props[key])
+        }
         setNestedResult(o, pathPrefix + k, props[k])
         gets.push(o)
 
