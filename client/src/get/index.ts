@@ -98,14 +98,14 @@ async function get(
     originDescriptors = props.$originDescriptors || {}
   }
 
-  await client.initializeSchema({ $db: db })
-
   const extraQueries: ExtraQueries = {}
   await validate(extraQueries, client, props)
   const newProps = makeNewGetOptions(
     getExtraQueriesByField(extraQueries),
     props
   )
+
+  await client.initializeSchema({ $db: db })
 
   const id = await resolveId(client, newProps)
 
