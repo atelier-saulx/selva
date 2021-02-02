@@ -1753,49 +1753,6 @@ void HierarchyTypeFree(void *value) {
     SelvaModify_DestroyHierarchy(hierarchy);
 }
 
-int SelvaModify_Hierarchy_AddNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    SelvaModify_Hierarchy *hierarchy;
-
-    if (argc < 4) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
-
-    /*
-     * Insert the new element.
-     */
-    Selva_NodeId nodeId;
-    Selva_NodeId *parents = NULL;
-    const size_t nr_parents = argc - 3;
-
-    RMString2NodeId(nodeId, argv[2]);
-    parents = RedisModule_PoolAlloc(ctx, nr_parents * sizeof(Selva_NodeId));
-    if (!parents) {
-        return REDISMODULE_ERR;
-    }
-
-    for (size_t i = 0; i < nr_parents; i++) {
-        RMString2NodeId(parents[i], argv[3 + i]);
-    }
-
-    int err = SelvaModify_AddHierarchy(ctx, hierarchy, nodeId, nr_parents, parents, 0, NULL);
-    if (err) {
-        return replyWithSelvaError(ctx, err);
-    }
-
-    RedisModule_ReplyWithLongLong(ctx, 1);
-    RedisModule_ReplicateVerbatim(ctx);
-    SelvaSubscriptions_SendDeferredEvents(hierarchy);
-
-    return REDISMODULE_OK;
-}
-
 /*
  * SELVA.HIERARCHY.DEL HIERARCHY_KEY [NODE_ID1[, NODE_ID2, ...]]
  * If no NODE_IDs are given then nothing will be deleted.
@@ -2041,8 +1998,7 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
      */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.add", SelvaModify_Hierarchy_AddNodeCommand,     "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.del", SelvaModify_Hierarchy_DelNodeCommand,     "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.del", SelvaModify_Hierarchy_DelNodeCommand,     "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.delref", SelvaModify_Hierarchy_DelRefCommand,   "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.parents", SelvaModify_Hierarchy_ParentsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaModify_Hierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR) {
