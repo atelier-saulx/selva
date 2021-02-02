@@ -362,6 +362,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     SVector_Init(&alias_query, 5, NULL);
 
+    /* We expect two fixed arguments and a number of [type, field, value] triplets. */
     if (argc < 3 || (argc - 3) % 3) {
         return RedisModule_WrongArity(ctx);
     }
