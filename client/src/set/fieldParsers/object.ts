@@ -17,28 +17,29 @@ export default async (
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
 
-  let hasKeys = false
+  if (payload.$delete) {
+    result.push('7', field, 'O')
+    return
+  }
+  if (payload.$merge === false) {
+    result.push('7', field, 'O')
+  }
+
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
-        // TODO
-        // if (!(payload[key] === true || payload[key] === false)) {
-        //   throw new Error(`$merge needs to be a a boolean `)
-        // }
-        // r[key] = payload[key]
+        // NOP
       } else if (key === '$ref') {
         result.push('0', field, payload[key])
         return
       } else if (key === '$delete') {
-        result.push('7', field, 'O')
-        return
+        // NOP - dead branch
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }
     } else if (!fields.properties[key]) {
       throw new Error(`Cannot find field ${key} in ${type} for object`)
     } else {
-      hasKeys = true
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
 

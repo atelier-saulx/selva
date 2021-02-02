@@ -80,8 +80,11 @@ export default async (
 
   const push = (o, hname: string) => {
     if (o.$delete) {
-        result.push('7', hname, 'O')
-        return
+      result.push('7', hname, '')
+      return
+    }
+    if (o.$merge == false) {
+      result.push('7', hname, '')
     }
     for (const k in o) {
       if (typeof o[k] === 'string') {

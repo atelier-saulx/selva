@@ -26,6 +26,7 @@ typedef void SelvaObject_Iterator; /* Opaque type. */
 #define selvaobject_autofree __attribute__((cleanup(_cleanup_SelvaObject_Destroy)))
 
 struct SelvaObject *SelvaObject_New(void);
+void SelvaObject_Clear(struct SelvaObject *obj);
 void SelvaObject_Destroy(struct SelvaObject *obj);
 void _cleanup_SelvaObject_Destroy(struct SelvaObject **obj);
 int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out);
@@ -38,9 +39,13 @@ int SelvaObject_Exists(struct SelvaObject *obj, const struct RedisModuleString *
  * The part after the first dot doesn't need to exist.
  */
 int SelvaObject_ExistsTopLevel(struct SelvaObject *obj, const struct RedisModuleString *key_name);
+int SelvaObject_GetDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double *out);
 int SelvaObject_GetDouble(struct SelvaObject *obj, const struct RedisModuleString *key_name, double *out);
+int SelvaObject_GetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long *out);
 int SelvaObject_GetLongLong(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long *out);
+int SelvaObject_GetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString **out);
 int SelvaObject_GetString(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString **out);
+int SelvaObject_SetDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);
 int SelvaObject_SetDouble(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
 int SelvaObject_SetLongLong(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);

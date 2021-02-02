@@ -138,7 +138,7 @@ static int clear_key_value(struct SelvaObjectKey *key) {
     return 0;
 }
 
-void SelvaObject_Destroy(struct SelvaObject *obj) {
+void SelvaObject_Clear(struct SelvaObject *obj) {
     struct SelvaObjectKey *key;
     struct SelvaObjectKey *next;
 
@@ -146,12 +146,18 @@ void SelvaObject_Destroy(struct SelvaObject *obj) {
 		next = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
 		RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
         obj->obj_size--;
+
+        /* Clear and free the key. */
         (void)clear_key_value(key);
         RedisModule_Free(key);
     }
+}
 
+void SelvaObject_Destroy(struct SelvaObject *obj) {
+    SelvaObject_Clear(obj);
     RedisModule_Free(obj);
 }
+
 void _cleanup_SelvaObject_Destroy(struct SelvaObject **obj) {
     if (*obj) {
         SelvaObject_Destroy(*obj);
@@ -483,9 +489,8 @@ int SelvaObject_ExistsTopLevel(struct SelvaObject *obj, const RedisModuleString 
     return get_key(obj, key_name_str, strcspn(key_name_str, "."), 0, &key);
 }
 
-int SelvaObject_GetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double *out) {
+int SelvaObject_GetDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double *out) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -502,9 +507,14 @@ int SelvaObject_GetDouble(struct SelvaObject *obj, const RedisModuleString *key_
     return 0;
 }
 
-int SelvaObject_GetLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long *out) {
-    struct SelvaObjectKey *key;
+int SelvaObject_GetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double *out) {
     TO_STR(key_name);
+
+    return SelvaObject_GetDoubleStr(obj, key_name_str, key_name_len, out);
+}
+
+int SelvaObject_GetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long *out) {
+    struct SelvaObjectKey *key;
     int err;
 
     assert(obj);
@@ -521,9 +531,14 @@ int SelvaObject_GetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
     return 0;
 }
 
-int SelvaObject_GetString(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString **out) {
-    struct SelvaObjectKey *key;
+int SelvaObject_GetLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long *out) {
     TO_STR(key_name);
+
+    return SelvaObject_GetLongLongStr(obj, key_name_str, key_name_len, out);
+}
+
+int SelvaObject_GetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString **out) {
+    struct SelvaObjectKey *key;
     int err;
 
     assert(obj);
@@ -541,9 +556,14 @@ int SelvaObject_GetString(struct SelvaObject *obj, const RedisModuleString *key_
     return 0;
 }
 
-int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
-    struct SelvaObjectKey *key;
+int SelvaObject_GetString(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString **out) {
     TO_STR(key_name);
+
+    return SelvaObject_GetStringStr(obj, key_name_str, key_name_len, out);
+}
+
+int SelvaObject_SetDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
+    struct SelvaObjectKey *key;
     int err;
 
     assert(obj);
@@ -562,6 +582,12 @@ int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_
     key->emb_double_value = value;
 
     return 0;
+}
+
+int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+    TO_STR(key_name);
+
+    return SelvaObject_SetDoubleStr(obj, key_name_str, key_name_len, value);
 }
 
 int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {

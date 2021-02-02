@@ -18,4 +18,6 @@ int SelvaNode_Delete(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *id);
 
+int SelvaNode_ClearFields(struct RedisModuleCtx *ctx, struct SelvaObject *obj);
+
 #endif /* SELVA_NODE */

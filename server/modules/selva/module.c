@@ -477,6 +477,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
     SelvaSubscriptions_FieldChangePrecheck(hierarchy, nodeId, metadata);
 
+    if (!trigger_created && FISSET_NO_MERGE(flags)) {
+        fprintf(stderr, "Clear fields\n");
+        SelvaNode_ClearFields(ctx, obj);
+    }
+
     /*
      * Replication bitmap.
      *
@@ -504,6 +509,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModuleString *value = argv[i + 2];
 
         TO_STR(type, field, value);
+        /* [0] always points to a valid char in RM_String. */
         const char type_code = type_str[0];
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
@@ -556,13 +562,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
         } else if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY) {
             /*
-             * $merge:
-             */
-            if (FISSET_NO_MERGE(flags) && !strcmp(field_str, "$merge")) {
-                /* TODO Implement $merge */
-            }
-            /*
-             * TODO Might want to check that it was really this.
+             * Currently $alias is the only field using string arrays.
              * $alias: NOP
              */
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
@@ -713,12 +713,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         if (FISSET_UPDATED_AT(flags)) {
             /* `updatedAt` is always updated on change. */
-            SelvaObject_SetLongLongStr(obj, "updatedAt", 9, now);
+            SelvaObject_SetLongLongStr(obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, now);
         }
 
         if (trigger_created) {
             if (FISSET_CREATED_AT(flags)) {
-                SelvaObject_SetLongLongStr(obj, "createdAt", 9, now);
+                SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, now);
             }
             Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
         } else {

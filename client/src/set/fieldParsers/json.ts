@@ -15,10 +15,14 @@ export default async (
 ): Promise<void> => {
   if (payload.$delete) {
     result.push('7', field, '')
+    return
   } else if (payload.$ref) {
     // TODO: verify that it references a json field
     result.push('0', `${field}`, `___selva_$ref:${payload.$ref}`)
     return
+  }
+  if (payload.$merge) {
+    result.push('7', field, '')
   }
 
   if (fields.properties) {

@@ -891,7 +891,7 @@ test.serial('$increment, $default', async t => {
   await client.destroy()
 })
 
-test.serial.skip('$merge = false', async t => {
+test.serial('$merge = false', async t => {
   const client = connect({
     port
   })
@@ -918,6 +918,7 @@ test.serial.skip('$merge = false', async t => {
     }
   })
 
+  t.is(await client.redis.selva_object_get('arPower', 'id'), 'arPower')
   t.is(await client.redis.selva_object_get('arPower', 'title.en'), null)
   t.is(
     await client.redis.selva_object_get('arPower', 'title.de'),

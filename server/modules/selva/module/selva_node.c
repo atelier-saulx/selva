@@ -18,7 +18,7 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
     }
 
     /* TODO Handle errors */
-    SelvaObject_SetStringStr(obj, "id", 2, key_name);
+    SelvaObject_SetStringStr(obj, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1, key_name);
     RedisModule_RetainString(ctx, key_name);
 
     /* Set the type for root. */
@@ -71,6 +71,42 @@ int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id) {
         delete_node_aliases(ctx, obj);
         RedisModule_DeleteKey(key);
         RedisModule_CloseKey(key);
+    }
+
+    return 0;
+}
+
+int SelvaNode_ClearFields(RedisModuleCtx *ctx, struct SelvaObject *obj) {
+    RedisModuleString *id;
+    long long createdAt;
+    int createdAtSet;
+    int err;
+
+    /* Preserve the id string. */
+    err = SelvaObject_GetStringStr(obj, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1, &id);
+    if (err) {
+        return err;
+    }
+    RedisModule_RetainString(ctx, id);
+
+    /* Preserve the createdAt field value. */
+    createdAtSet = !SelvaObject_GetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, &createdAt);
+
+    /* Clear all the keys in the object. */
+    SelvaObject_Clear(obj);
+
+    /* Restore the id. */
+    err = SelvaObject_SetStringStr(obj, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1, id);
+    if (err) {
+        return err;
+    }
+
+    /* Restore createdAt if it was set before this op. */
+    if (createdAtSet) {
+        err = SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, createdAt);
+        if (err) {
+            return err;
+        }
     }
 
     return 0;

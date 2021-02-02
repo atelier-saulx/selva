@@ -20,26 +20,27 @@ export default async (
 
   const fn = fieldParsers[fields.values.type]
 
-  let hasKeys = false
+  if (payload.$delete) {
+    r.push('7', field, '')
+    return
+  }
+  if (payload.$merge === false) {
+    r.push('7', field, '')
+  }
+
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
-        // TODO
-        // if (!(payload[key] === true || payload[key] === false)) {
-        //   throw new Error(`$merge needs to be a a boolean `)
-        // }
-        // r[key] = payload[key]
+        // NOP
       } else if (key === '$ref') {
         r.push('0', field + '.' + key, payload[key])
         return
       } else if (key === '$delete') {
-        r.push('7', field + '.' + key, '')
-        return
+          // NOP - dead branch
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }
     } else {
-      hasKeys = true
       await fn(
         client,
         schema,
