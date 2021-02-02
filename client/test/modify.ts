@@ -730,7 +730,7 @@ test.serial('array, json and set', async t => {
             items: {
               type: 'object',
               properties: {
-                gurk: { type: 'string' },
+                gurk: { type: 'string' }
                 //flap: { type: 'digest' }
               }
             }
@@ -743,7 +743,7 @@ test.serial('array, json and set', async t => {
     type: 'flurp',
     flap: [
       {
-        gurk: 'hello',
+        gurk: 'hello'
         //flap: 'smurpy'
       }
     ]
@@ -751,7 +751,7 @@ test.serial('array, json and set', async t => {
   const r = JSON.parse(await client.redis.selva_object_get(id, 'flap'))
   t.deepEqual(r, [
     {
-      gurk: 'hello',
+      gurk: 'hello'
       //flap: '6734082360af7f0c5aef4123f43abc44c4fbf19e8b251a316d7b9da95fde448e'
     }
   ])
@@ -801,8 +801,7 @@ test.serial('set empty object', async t => {
         hello: true
       }
     }),
-    {
-    }
+    {}
   )
 
   await client.set({
@@ -920,7 +919,10 @@ test.serial.skip('$merge = false', async t => {
   })
 
   t.is(await client.redis.selva_object_get('arPower', 'title.en'), null)
-  t.is(await client.redis.selva_object_get('arPower', 'title.de'), 'deutschland')
+  t.is(
+    await client.redis.selva_object_get('arPower', 'title.de'),
+    'deutschland'
+  )
 
   await client.set({
     $id: 'arPower',
@@ -1146,7 +1148,7 @@ test.serial('createdAt not set if not timestamp type', async t => {
 })
 
 // TODO Not implement yet
-test.serial.skip('createdAt not set if provided in modify props', async t => {
+test.serial('createdAt not set if provided in modify props', async t => {
   const client = connect({
     port
   })
@@ -1634,29 +1636,23 @@ test.serial('deleting an object', async t => {
     type: 'match',
     obj: {
       hello: 'hello',
-      hallo: 'hallo',
+      hallo: 'hallo'
     }
   })
 
-  t.deepEqual(
-    await client.get({ $id: match, obj: true }),
-    {
-      obj: {
-        hello: 'hello',
-        hallo: 'hallo'
-      }
+  t.deepEqual(await client.get({ $id: match, obj: true }), {
+    obj: {
+      hello: 'hello',
+      hallo: 'hallo'
     }
-  )
+  })
 
   await client.set({
     $id: match,
     obj: { $delete: true }
   })
 
-  t.deepEqual(
-    await client.get({ $id: match, obj: true }),
-    {}
-  )
+  t.deepEqual(await client.get({ $id: match, obj: true }), {})
 
   await client.delete('root')
   await client.destroy()
