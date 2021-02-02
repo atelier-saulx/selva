@@ -97,7 +97,7 @@ test.serial('get all', async t => {
   t.deepEqual(
     await client.redis.selva_object_get('maTest0001'),
     [
-      '$id',
+      'id',
       'maTest0001',
       'title',
       [ 'en', 'ma1' ],
