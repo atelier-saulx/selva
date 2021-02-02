@@ -1147,7 +1147,6 @@ test.serial('createdAt not set if not timestamp type', async t => {
   await client.destroy()
 })
 
-// TODO Not implement yet
 test.serial('createdAt not set if provided in modify props', async t => {
   const client = connect({
     port
