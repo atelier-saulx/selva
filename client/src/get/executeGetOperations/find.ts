@@ -12,11 +12,14 @@ function parseGetOpts(
   path: string
 ): [Set<string>, GetOptions[]] {
   const pathPrefix = path === '' ? '' : path + '.'
-  const fields: Set<string> = new Set()
+  let fields: Set<string> = new Set()
   const gets: GetOptions[] = []
 
   for (const k in props) {
-    if (!k.startsWith('$') && props[k] === true) {
+    if (k === '$all') {
+      fields = new Set(['*'])
+      return [fields, gets]
+    } else if (!k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
     } else if (props[k] === false) {
       // ignore
