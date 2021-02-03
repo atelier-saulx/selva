@@ -45,6 +45,21 @@ struct FindCommand_Args {
      * Field names.
      * If set the callback should return the value of these fields instead of
      * node IDs.
+     *
+     * fields selected in cmd args:
+     * ```
+     * {
+     *   '0': ['field1', 'field2'],
+     *   '1': ['field3', 'field4'],
+     * }
+     * ```
+     *
+     * merge && no fields selected in cmd args:
+     * {
+     * }
+     *
+     * and the final callback will use this as a scratch space to mark which
+     * fields have been already sent.
      */
     struct SelvaObject *fields;
 
@@ -358,6 +373,28 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     return item;
 }
 
+static int fields_contains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len) {
+    void *iterator;
+    SVector *vec;
+
+    iterator = SelvaObject_ForeachBegin(fields);
+    while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
+        struct SVectorIterator it;
+        RedisModuleString *s;
+
+        SVector_ForeachBegin(&it, vec);
+        while ((s = SVector_Foreach(&it))) {
+            TO_STR(s);
+
+            if (s_len == field_name_len && !strcmp(s_str, field_name_str)) {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *fields) {
     RedisModuleString *id;
     int err;
@@ -402,8 +439,10 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct Sel
 
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
+        RedisModule_CloseKey(key);
+
         return fields_len;
-    } else if (fields_len == 1 && !SelvaObject_ExistsStr(fields, "*", 1)) { /* '*' is a wildcard */
+    } else if (fields_len == 1 && fields_contains(fields, "*", 1)) { /* '*' is a wildcard */
         err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
         if (err) {
             fprintf(stderr, "%s: Failed to send all fields for node_id: \"%.*s\"\n",
@@ -472,7 +511,6 @@ static ssize_t send_node_object_merge(
         size_t *nr_fields_out) {
     RedisModuleString *id;
     int err;
-    ssize_t nr_fields = 0;
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
     if (!id) {
@@ -518,6 +556,10 @@ static ssize_t send_node_object_merge(
         void *iterator;
         const char *key_name_str;
 
+        /*
+         * Note that the `fields` object is empty in the beginning of the
+         * following loop.
+         */
         iterator = SelvaObject_ForeachBegin(obj);
         while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
             struct RedisModuleString *key_name;
@@ -552,9 +594,10 @@ static ssize_t send_node_object_merge(
     } else { /* Send named keys from the nested object. */
         void *iterator;
         SVector *vec;
+        const char *field_index;
 
         iterator = SelvaObject_ForeachBegin(fields);
-        while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
+        while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, &field_index, SELVA_OBJECT_ARRAY))) {
             struct SVectorIterator it;
             RedisModuleString *field;
 
@@ -583,15 +626,14 @@ static ssize_t send_node_object_merge(
                     RedisModule_ReplyWithNull(ctx);
                 }
 
-                SelvaObject_DelKey(fields, field); /* Remove the field from the list */
-                nr_fields++;
+                SelvaObject_DelKeyStr(fields, field_index, strlen(field_index)); /* Remove the field from the list */
                 break; /* Only send the first existing field from the fields list. */
             }
         }
     }
 
     RedisModule_CloseKey(key);
-    return nr_fields;
+    return 0;
 }
 
 static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
@@ -795,18 +837,18 @@ static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
 
 /**
  * Find node ancestors/descendants.
- * SELVA.HIERARCHY.find REDIS_KEY dfs|bfs descendants|ancestors [order field asc|desc] [offset 1234] [limit 1234] [merge] [fields field_names] NODE_IDS [expression] [args...]
- *                                |       |                     |                      |             |            |       |                    |        |            |
- * Traversal method/algo --------/        |                     |                      |             |            |       |                    |        |            |
- * Traversal direction ------------------/                      |                      |             |            |       |                    |        |            |
- * Sort order of the results ----------------------------------/                       |             |            |       |                    |        |            |
- * Skip the first 1234 - 1 results ---------------------------------------------------/              |            |       |                    |        |            |
- * Limit the number of results (Optional) ----------------------------------------------------------/             |       |                    |        |            |
- * Merge fields. fields option must be set. ---------------------------------------------------------------------/        |                    |        |            |
- * Return field values instead of node names ----------------------------------------------------------------------------/                     |        |            |
- * One or more node IDs concatenated (10 chars per ID) ---------------------------------------------------------------------------------------/         |            |
- * RPN filter expression ------------------------------------------------------------------------------------------------------------------------------/             |
- * Register arguments for the RPN filter ---------------------------------------------------------------------------------------------------------------------------/
+ * SELVA.HIERARCHY.find REDIS_KEY dfs|bfs descendants|ancestors [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
+ *                                |       |                     |                      |             |            |            |                    |        |            |
+ * Traversal method/algo --------/        |                     |                      |             |            |            |                    |        |            |
+ * Traversal direction ------------------/                      |                      |             |            |            |                    |        |            |
+ * Sort order of the results ----------------------------------/                       |             |            |            |                    |        |            |
+ * Skip the first 1234 - 1 results ---------------------------------------------------/              |            |            |                    |        |            |
+ * Limit the number of results (Optional) ----------------------------------------------------------/             |            |                    |        |            |
+ * Merge fields. fields option must be set. ---------------------------------------------------------------------/             |                    |        |            |
+ * Return field values instead of node names ---------------------------------------------------------------------------------/                     |        |            |
+ * One or more node IDs concatenated (10 chars per ID) --------------------------------------------------------------------------------------------/         |            |
+ * RPN filter expression -----------------------------------------------------------------------------------------------------------------------------------/             |
+ * Register arguments for the RPN filter --------------------------------------------------------------------------------------------------------------------------------/
  */
 int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -942,8 +984,11 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
             return replyWithSelvaErrorf(ctx, err, "fields");
         }
     }
-    if (merge_strategy != MERGE_STRATEGY_NONE && !fields) {
-        /* Merge needs a fields object anyway. */
+    if (merge_strategy != MERGE_STRATEGY_NONE && (!fields || fields_contains(fields, "*", 1))) {
+        if (fields) {
+            SelvaObject_Destroy(fields);
+        }
+        /* Merge needs a fields object anyway but it must be empty. */
         fields = SelvaObject_New();
     }
 
