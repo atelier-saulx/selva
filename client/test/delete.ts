@@ -133,16 +133,7 @@ test.serial('can delete root', async t => {
   )
 
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [
-    ['root',
-      [
-        '$id',
-        'root',
-        'type',
-        'root'
-      ]
-    ]
-  ])
+  t.deepEqual(await dumpDb(client), [['root', ['id', 'root', 'type', 'root']]])
 
   await client.destroy()
 })
@@ -165,7 +156,7 @@ test.serial('can delete a set', async t => {
     things: ['a', 'b', 'c'],
     otherThings: ['x', 'y', 'z']
   })
-  t.deepEqual(1, 1);
+  t.deepEqual(1, 1)
 
   // That's it, there is nothing more to check as sets are embedded in SelvaObjects
 })
