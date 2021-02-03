@@ -18,7 +18,6 @@ const backups = require('../../lib/backups')
 
   const server = start({
     port: 6061,
-    modules: ['redisearch'],
     developmentLogging: true,
     backups: {
       loadBackup: true,

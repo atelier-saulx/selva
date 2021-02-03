@@ -15,7 +15,6 @@ mkDropbox(
 ).then(async backupFn => {
   const server = start({
     port: 6061,
-    modules: ['redisearch'],
     developmentLogging: true
   })
 
