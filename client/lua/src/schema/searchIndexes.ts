@@ -149,7 +149,7 @@ export default function updateSearchIndexes(
   schema: Schema
 ): void {
   const languages = schema.languages || ['en']
-  for (const index in changedSearchIndexes) {
-    updateIndex(index, indexes[index], languages)
-  }
+  // for (const index in changedSearchIndexes) {
+  //   updateIndex(index, indexes[index], languages)
+  // }
 }
