@@ -3,7 +3,7 @@ import { start } from '../src/index'
 import redis from 'redis'
 
 test.cb('create a server', t => {
-  start({ port: 6061, modules: ['redisearch'] }).then(server => {
+  start({ port: 6061 }).then(server => {
     setTimeout(() => {
       const sub = redis.createClient({ port: 6061 })
       const pub = redis.createClient({ port: 6061 })

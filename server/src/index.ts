@@ -63,7 +63,7 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   return parsedOpts
 }
 
-const defaultModules = ['redisearch', 'selva']
+const defaultModules = ['selva']
 
 const validate = (
   opts: ServerOptions,
