@@ -167,7 +167,7 @@ static int add_set_values(
             }
 
             /* +1 to skip the NUL if cstring */
-            const size_t skip_off = (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
+            const size_t skip_off = type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE ? SELVA_NODE_ID_SIZE : (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
             if (skip_off == 0) {
                 return SELVA_EINVAL;
             }
@@ -249,7 +249,11 @@ static int del_set_values(
             }
 
             /* +1 to skip the NUL if cstring */
-            const size_t skip_off = (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
+            const size_t skip_off = type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE ? SELVA_NODE_ID_SIZE : (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
+            if (skip_off == 0) {
+                return SELVA_EINVAL;
+            }
+
             ptr += skip_off;
             i += skip_off;
         }

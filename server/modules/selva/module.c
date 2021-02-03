@@ -544,7 +544,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             setOpts = SelvaModify_OpSet_align(value);
             if (!setOpts) {
-                replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid argument at: %d", i);
+                replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid OpSet");
                 continue;
             }
 
