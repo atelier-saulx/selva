@@ -515,8 +515,11 @@ test.serial('$field +  multiple options + inherit from root', async t => {
   await client.destroy()
 })
 
-test.serial.skip('$field + inherit from root + query root', async t => {
-  const client = connect({ port: port }, { loglevel: 'info' })
+test.serial('$field + inherit from root + query root', async t => {
+  const p = await getPort()
+  const srv = await start({ port: p })
+
+  const client = connect({ port: p }, { loglevel: 'info' })
   const types = ['match', 'region', 'root', 'default']
 
   const layout = {
@@ -603,4 +606,6 @@ test.serial.skip('$field + inherit from root + query root', async t => {
   t.is(x.layout.components[0].component.$value, 'bye')
 
   await client.destroy()
+
+  await srv.destroy()
 })
