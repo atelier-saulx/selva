@@ -77,6 +77,10 @@ static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(struct RedisModu
     return op;
 }
 
+/**
+ * Modify a set.
+ * @returns >= 0 number of changes; or < 0 Selva error
+ */
 int SelvaModify_ModifySet(
     struct RedisModuleCtx *ctx,
     struct SelvaModify_Hierarchy *hierarchy,

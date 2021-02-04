@@ -61,7 +61,11 @@ static int update_hierarchy(
 
     int err = 0;
     if (setOpts->$value_len > 0) {
-        size_t nr_nodes = setOpts->$value_len / SELVA_NODE_ID_SIZE;
+        const size_t nr_nodes = setOpts->$value_len / SELVA_NODE_ID_SIZE;
+
+        if (setOpts->$value_len % SELVA_NODE_ID_SIZE) {
+            return SELVA_EINVAL;
+        }
 
         if (isFieldParents) { /* parents */
             err = SelvaModify_SetHierarchyParents(ctx, hierarchy, node_id,
@@ -71,8 +75,13 @@ static int update_hierarchy(
                     nr_nodes, (const Selva_NodeId *)setOpts->$value);
         }
     } else {
+        if (setOpts->$add_len % SELVA_NODE_ID_SIZE ||
+            setOpts->$delete_len % SELVA_NODE_ID_SIZE) {
+            return SELVA_EINVAL;
+        }
+
         if (setOpts->$add_len > 0) {
-            size_t nr_nodes = setOpts->$add_len / SELVA_NODE_ID_SIZE;
+            const size_t nr_nodes = setOpts->$add_len / SELVA_NODE_ID_SIZE;
 
             if (isFieldParents) { /* parents */
               err = SelvaModify_AddHierarchy(ctx, hierarchy, node_id,
@@ -85,7 +94,7 @@ static int update_hierarchy(
             }
         }
         if (setOpts->$delete_len > 0) {
-            size_t nr_nodes = setOpts->$delete_len / SELVA_NODE_ID_SIZE;
+            const size_t nr_nodes = setOpts->$delete_len / SELVA_NODE_ID_SIZE;
 
             if (isFieldParents) { /* parents */
                 err = SelvaModify_DelHierarchy(hierarchy, node_id,
@@ -375,6 +384,7 @@ int SelvaModify_ModifySet(
 ) {
     const int is_reference = setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE;
     TO_STR(id, field);
+    int res = 0; /* TODO This should always reflect the number of changes made. */
 
     if (setOpts->delete_all) {
         int err;
@@ -408,6 +418,7 @@ int SelvaModify_ModifySet(
                 if (node_aliases) {
                     selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
                     (void)delete_aliases(alias_key, node_aliases);
+                    res = 1; /* TODO Number of deletions would be nicer but this is fine too. */
                 }
             }
 
@@ -422,12 +433,19 @@ int SelvaModify_ModifySet(
     if (setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE &&
         (!strcmp(field_str, "children") || !strcmp(field_str, "parents"))) {
         Selva_NodeId node_id;
+        int err;
 
         Selva_NodeIdCpy(node_id, id_str);
-        return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
+        err = update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
+        res = err < 0 ? err : 1;
     } else {
-        return update_set(ctx, hierarchy, obj, id, field, setOpts);
+        int err;
+
+        err = update_set(ctx, hierarchy, obj, id, field, setOpts);
+        res = err < 0 ? err : 1;
     }
+
+    return res;
 }
 
 void SelvaModify_ModifyIncrement(

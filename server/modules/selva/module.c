@@ -538,7 +538,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
 
             err = SelvaModify_ModifySet(ctx, hierarchy, obj, id, field, setOpts);
-            if (err) {
+            if (err == 0) {
+                publish = false;
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+                continue;
+            } else if (err < 0) {
                 replyWithSelvaError(ctx, err);
                 continue;
             }
@@ -664,7 +668,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * address of the first alias to have access to the whole array.
      */
     if (SVector_Size(&alias_query) > 0) {
-        RedisModuleString *field = RedisModule_CreateString(ctx, "aliases", 7);
+        RedisModuleString *aliases_field = RedisModule_CreateString(ctx, "aliases", 7);
         struct SelvaModify_OpSet opSet = {
             .op_set_type = SELVA_MODIFY_OP_SET_TYPE_REFERENCE,
             .$add = SVector_Peek(&alias_query),
@@ -675,7 +679,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             .$value_len = 0,
         };
 
-        (void)SelvaModify_ModifySet(ctx, hierarchy, obj, id, field, &opSet);
+        /* TODO Handle error */
+        SelvaModify_ModifySet(ctx, hierarchy, obj, id, aliases_field, &opSet);
     }
 
     /*
