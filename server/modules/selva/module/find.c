@@ -451,8 +451,9 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct Sel
     } else {
         void *iterator;
         SVector *vec;
+        size_t nr_fields = 0;
 
-        RedisModule_ReplyWithArray(ctx, 2 * fields_len);
+        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
         iterator = SelvaObject_ForeachBegin(fields);
         while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
@@ -482,20 +483,12 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct Sel
                     RedisModule_ReplyWithNull(ctx);
                 }
 
+                nr_fields++;
                 break; /* Only send one of the fields in the list. */
             }
-
-            /*
-             * Currently the client expects that we send at least something if
-             * none of the fields exists.
-             */
-            if (!field) {
-                field = SVector_Peek(vec);
-
-                RedisModule_ReplyWithString(ctx, field);
-                RedisModule_ReplyWithNull(ctx);
-            }
         }
+
+        RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);
     }
 
     RedisModule_CloseKey(key);
