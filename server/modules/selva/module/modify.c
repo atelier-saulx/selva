@@ -317,7 +317,7 @@ static int update_set(
     TO_STR(id, field);
     RedisModuleKey *alias_key = NULL;
 
-    if (!strcmp(field_str, "aliases")) {
+    if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
         alias_key = open_aliases_key(ctx);
         if (!alias_key) {
             fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
@@ -404,7 +404,7 @@ int SelvaModify_ModifySet(
              * First we need to delete the aliases of this node from the
              * ___selva_aliases hash.
              */
-            if (!strcmp(field_str, "aliases")) {
+            if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
                 RedisModuleKey *alias_key;
                 struct SelvaSet *node_aliases;
 

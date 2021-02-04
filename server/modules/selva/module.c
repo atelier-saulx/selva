@@ -668,7 +668,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * address of the first alias to have access to the whole array.
      */
     if (SVector_Size(&alias_query) > 0) {
-        RedisModuleString *aliases_field = RedisModule_CreateString(ctx, "aliases", 7);
+        RedisModuleString *aliases_field = RedisModule_CreateString(ctx, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD) - 1);
         struct SelvaModify_OpSet opSet = {
             .op_set_type = SELVA_MODIFY_OP_SET_TYPE_REFERENCE,
             .$add = SVector_Peek(&alias_query),

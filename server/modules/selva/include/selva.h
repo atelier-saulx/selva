@@ -13,6 +13,7 @@
 #define SELVA_ALIASES_KEY       "___selva_aliases"
 
 #define SELVA_ID_FIELD         "id"
+#define SELVA_ALIASES_FIELD    "aliases"
 #define SELVA_CREATED_AT_FIELD "createdAt"
 #define SELVA_UPDATED_AT_FIELD "updatedAt"
 

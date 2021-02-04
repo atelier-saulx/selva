@@ -568,7 +568,7 @@ int Selva_AddSubscriptionAliasMarker(
     /* Set RPN registers */
     /* TODO Handle errors */
     (void)rpn_set_reg_rm(filter_ctx, 1, alias_name);
-    (void)rpn_set_reg(filter_ctx, 2, "aliases", 8, 0);
+    (void)rpn_set_reg(filter_ctx, 2, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD), 0);
 
     const unsigned short marker_flags = SELVA_SUBSCRIPTION_FLAG_ALIAS;
     const enum SelvaModify_HierarchyTraversal sub_dir = SELVA_HIERARCHY_TRAVERSAL_NODE;

@@ -41,7 +41,7 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
 static void delete_node_aliases(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     struct SelvaSet *node_aliases_set;
 
-    node_aliases_set = SelvaObject_GetSetStr(obj, "aliases", 7);
+    node_aliases_set = SelvaObject_GetSetStr(obj, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD) - 1);
     if (node_aliases_set) {
         RedisModuleKey *aliases_key;
 
