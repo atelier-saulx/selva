@@ -214,7 +214,7 @@ test.serial('basic inherit subscription', async t => {
 
   const observable = client.observe({
     $id: 'yeB',
-    yesh: { $inherit: { $type: ['yeshType', 'root'] } }
+    yesh: { $inherit: true }
   })
 
   const results = []
@@ -304,6 +304,7 @@ test.serial('inherit object', async t => {
   t.deepEqual(
     await client.get({
       $id: 'yeB',
+      // TODO: should work without $type
       flapper: { $inherit: { $merge: true, $type: ['yeshType', 'root'] } }
     }),
     {
@@ -316,6 +317,7 @@ test.serial('inherit object', async t => {
 
   const observable = client.observe({
     $id: 'yeB',
+    // TODO: should work without $type
     flapper: { $inherit: { $merge: true, $type: ['yeshType', 'root'] } }
   })
 
@@ -410,7 +412,7 @@ test.serial('list inherit subscription', async t => {
     $id: 'yeA',
     flapdrol: {
       id: true,
-      yesh: { $inherit: { $type: ['yeshType', 'root'] } },
+      yesh: { $inherit: true },
       $field: 'children',
       $list: true
     }
@@ -533,7 +535,7 @@ test.serial('list inherit + field subscription', async t => {
       id: true,
       yesh: {
         $field: 'no',
-        $inherit: { $type: ['yeshType', 'root'] }
+        $inherit: true
       },
       $field: 'children',
       $list: true
@@ -565,7 +567,7 @@ test.serial('list inherit + field subscription', async t => {
     id: true,
     yesh: {
       $field: 'no',
-      $inherit: { $type: ['yeshType', 'root'] }
+      $inherit: true
     }
   })
 

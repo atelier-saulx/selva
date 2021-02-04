@@ -276,7 +276,8 @@ test.serial('singular reference inherit', async t => {
       title: true,
       specialMatch: {
         title: true,
-        value: { $inherit: { $type: ['match', 'club'] } }
+        // value: { $inherit: { $type: ['match', 'club'] } }
+        value: { $inherit: true }
       }
     }),
     {
@@ -400,7 +401,8 @@ test.serial('singular reference inherit reference', async t => {
         $field: 'specialMatch',
         $inherit: { $type: ['club', 'match'] },
         title: true,
-        value: { $inherit: { $type: ['club', 'match'] } }
+        // value: { $inherit: { $type: ['club', 'match'] } }
+        value: { $inherit: true }
       }
     }),
     {
