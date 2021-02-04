@@ -322,9 +322,11 @@ static int update_set(
         if (alias_key) {
             struct SelvaSet *node_aliases = SelvaObject_GetSet(obj, field);
 
-            if (node_aliases && node_aliases->type == SELVA_SET_TYPE_RMSTRING) {
+            err = delete_aliases(alias_key, node_aliases);
+            if (!err) {
                 selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
-                delete_aliases(alias_key, node_aliases);
+            } else if (err && err != SELVA_ENOENT) {
+                return err;
             }
         }
         err = SelvaObject_DelKey(obj, field);
@@ -405,7 +407,7 @@ int SelvaModify_ModifySet(
                 node_aliases = SelvaObject_GetSet(obj, field);
                 if (node_aliases) {
                     selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
-                    delete_aliases(alias_key, node_aliases);
+                    (void)delete_aliases(alias_key, node_aliases);
                 }
             }
 
