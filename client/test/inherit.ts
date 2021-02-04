@@ -84,8 +84,7 @@ test.serial('simple', async t => {
 
   const result = await client.get({
     $id: 'moSoylentG',
-    // icon: { $inherit: true } // TODO
-    icon: { $inherit: { $type: 'genre' } }
+    icon: { $inherit: true }
   })
 
   t.true(result.icon === 'scifi.png')
@@ -111,10 +110,8 @@ test.serial('simple with circular', async t => {
 
   const result = await client.get({
     $id: 'moSoylentG',
-    // icon: { $inherit: true },
-    icon: { $inherit: { $type: ['genre'] } },
-    // imaginary: { $inherit: true } // should not follow circular references to find this
-    imaginary: { $inherit: { $type: ['imaginary'] } }
+    icon: { $inherit: true },
+    imaginary: { $inherit: true }
   })
 
   t.true(result.icon === 'scifi.png')
