@@ -375,7 +375,8 @@ test.serial('$field +  multiple options', async t => {
     $alias: 'maA',
     id: true,
     layout: {
-      $inherit: { $type: ['match', 'region', 'root'] },
+      // $inherit: { $type: ['match', 'region', 'root'] },
+      $inherit: true,
       $field: ['layout.match', 'layout.default']
     }
   }
@@ -388,7 +389,8 @@ test.serial('$field +  multiple options', async t => {
     $alias: 'reB',
     id: true,
     layout: {
-      $inherit: { $type: ['match', 'region', 'root'] },
+      // $inherit: { $type: ['match', 'region', 'root'] },
+      $inherit: true,
       $field: ['layout.region', 'layout.default']
     }
   })
@@ -595,7 +597,8 @@ test.serial('$field + inherit from root + query root', async t => {
     $id: 'root',
     id: true,
     layout: {
-      $inherit: { $type: ['match', 'region', 'root'] },
+      // $inherit: { $type: ['match', 'region', 'root'] },
+      $inherit: true,
       $field: ['layout.match', 'layout.default']
     }
   })
