@@ -1,5 +1,6 @@
 #include "cdefs.h"
 #include "redismodule.h"
+#include "errors.h"
 #include "selva.h"
 #include "selva_object.h"
 #include "selva_set.h"
@@ -25,7 +26,7 @@ int delete_aliases(RedisModuleKey *aliases_key, struct SelvaSet *set) {
 
     if (!set || set->type != SELVA_SET_TYPE_RMSTRING) {
         /* Likely there were no aliases. */
-        return 0;
+        return SELVA_ENOENT;
     }
 
     SELVA_SET_RMS_FOREACH(el, set) {
