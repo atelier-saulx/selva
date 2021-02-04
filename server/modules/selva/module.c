@@ -513,24 +513,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char type_code = type_str[0];
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
-        if ((type_code == SELVA_MODIFY_ARG_STRING ||
-             type_code == SELVA_MODIFY_ARG_DEFAULT_STRING)) {
-            RedisModuleString *old_value;
-            if (!SelvaObject_GetString(obj, field, &old_value)) {
-                TO_STR(old_value);
-
-                if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
-
-#if 0
-                    printf("Current value is equal to the specified value for key %s and value %s\n",
-                           field_str, value_str);
-#endif
-                    RedisModule_ReplyWithSimpleString(ctx, "OK");
-                    continue;
-                }
-            }
-        }
-
         if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
 
@@ -575,80 +557,88 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 RedisModule_ReplyWithError(ctx, err_msg);
                 continue;
             }
-        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
-            if (old_type != SELVA_OBJECT_NULL) {
+        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
+                   type_code == SELVA_MODIFY_ARG_STRING) {
+            if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
                 publish = false;
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
-            } else {
-                err = SelvaObject_SetString(obj, field, value);
-                if (err == 0) {
-                    RedisModule_RetainString(ctx, value);
-                } /* TODO Handle errors */
             }
-        } else if (type_code == SELVA_MODIFY_ARG_STRING) {
-            SelvaObject_SetString(obj, field, value);
-            if (err == 0) {
+
+            RedisModuleString *old_value;
+            if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetString(obj, field, &old_value)) {
+                TO_STR(old_value);
+
+                if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                    continue;
+                }
+            }
+
+            err = SelvaObject_SetString(obj, field, value);
+            if (!err) {
                 RedisModule_RetainString(ctx, value);
             } /* TODO Handle errors */
-        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
-            if (old_type != SELVA_OBJECT_NULL) {
+        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
+                   type_code == SELVA_MODIFY_ARG_LONGLONG) {
+            if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG && old_type != SELVA_OBJECT_NULL) {
                 publish = false;
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
-            } else {
-                TO_STR(value);
-
-                union {
-                    char s[sizeof(long long)];
-                    long long d;
-                } v = {
-                    .d = 0,
-                };
-                memcpy(v.s, value_str, min(sizeof(v.d), value_len));
-
-                SelvaObject_SetLongLong(obj, field, v.d);
             }
-        } else if (type_code == SELVA_MODIFY_ARG_LONGLONG) {
-            TO_STR(value);
 
+            if (value_len != sizeof(long long)) {
+                replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid length for long long");
+                continue;
+            }
+
+            TO_STR(value);
             union {
                 char s[sizeof(long long)];
-                long long d;
+                long long ll;
             } v = {
-                .d = 0,
+                .ll = 0,
             };
-            memcpy(v.s, value_str, min(sizeof(v.d), value_len));
+            memcpy(v.s, value_str, sizeof(v.ll));
 
-            SelvaObject_SetLongLong(obj, field, v.d);
-        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
-            if (old_type != SELVA_OBJECT_NULL) {
+            long long old_value;
+            if (old_type == SELVA_OBJECT_LONGLONG && !SelvaObject_GetLongLong(obj, field, &old_value)) {
+                if (old_value == v.ll) {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                    continue;
+                }
+            }
+
+            SelvaObject_SetLongLong(obj, field, v.ll);
+        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
+                   type_code == SELVA_MODIFY_ARG_DOUBLE) {
+            if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE && old_type != SELVA_OBJECT_NULL) {
                 publish = false;
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
-            } else {
-                TO_STR(value);
-
-                union {
-                    char s[sizeof(double)];
-                    double d;
-                } v = {
-                    .d = 0.0,
-                };
-                memcpy(v.s, value_str, min(sizeof(v.d), value_len));
-
-                SelvaObject_SetDouble(obj, field, v.d);
             }
-        } else if (type_code == SELVA_MODIFY_ARG_DOUBLE) {
-            TO_STR(value);
 
+            if (value_len != sizeof(double)) {
+                replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid length for double");
+                continue;
+            }
+
+            TO_STR(value);
             union {
                 char s[sizeof(double)];
                 double d;
             } v = {
                 .d = 0.0,
             };
-            memcpy(v.s, value_str, min(sizeof(v.d), value_len));
+            memcpy(v.s, value_str, sizeof(v.d));
+
+            double old_value;
+            if (old_type == SELVA_OBJECT_DOUBLE && !SelvaObject_GetDouble(obj, field, &old_value)) {
+                if (old_value == v.d) {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                    continue;
+                }
+            }
 
             SelvaObject_SetDouble(obj, field, v.d);
         } else {
