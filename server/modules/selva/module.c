@@ -478,7 +478,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     SelvaSubscriptions_FieldChangePrecheck(hierarchy, nodeId, metadata);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
-        fprintf(stderr, "Clear fields\n");
         SelvaNode_ClearFields(ctx, obj);
     }
 

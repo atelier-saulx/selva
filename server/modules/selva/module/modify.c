@@ -12,7 +12,7 @@
 #include "selva_object.h"
 #include "selva_set.h"
 
-static ssize_t ref2rms(RedisModuleCtx *ctx, int8_t type, const char *s, RedisModuleString **out) {
+static ssize_t string2rms(RedisModuleCtx *ctx, int8_t type, const char *s, RedisModuleString **out) {
     size_t len;
     RedisModuleString *rms;
 
@@ -126,6 +126,7 @@ static void selva_set_defer_alias_change_events(
 
 /**
  * Add all values from value_ptr to the set in obj.field.
+ * @returns The number of items added; Otherwise a negative Selva error code is returned.
  */
 static int add_set_values(
     RedisModuleCtx *ctx,
@@ -139,33 +140,40 @@ static int add_set_values(
     int8_t type
 ) {
     char *ptr = value_ptr;
+    int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
         type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+        if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) {
+            return SELVA_EINVAL;
+        }
+
         for (size_t i = 0; i < value_len; ) {
             int err;
             RedisModuleString *ref;
-            const ssize_t part_len = ref2rms(ctx, type, ptr, &ref);
+            const ssize_t part_len = string2rms(ctx, type, ptr, &ref);
 
             if (part_len < 0) {
                 return SELVA_EINVAL;
-            }
-
-            /* Add to the global aliases hash. */
-            if (alias_key) {
-                Selva_NodeId node_id;
-                TO_STR(id);
-
-                Selva_NodeIdCpy(node_id, id_str);
-                Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
-
-                update_alias(ctx, alias_key, id, ref);
             }
 
             /* Add to the node object. */
             err = SelvaObject_AddStringSet(obj, field, ref);
             if (err == 0) {
                 RedisModule_RetainString(ctx, ref);
+
+                /* Add to the global aliases hash. */
+                if (alias_key) {
+                    Selva_NodeId node_id;
+                    TO_STR(id);
+
+                    Selva_NodeIdCpy(node_id, id_str);
+                    Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
+
+                    update_alias(ctx, alias_key, id, ref);
+                }
+
+                res++;
             } else if (err != SELVA_EEXIST) {
                 /* TODO Handle error */
                 if (alias_key) {
@@ -208,7 +216,9 @@ static int add_set_values(
                 memcpy(&v, ptr, part_len);
                 err = SelvaObject_AddLongLongSet(obj, field, v);
             }
-            if (err && err != SELVA_EEXIST) {
+            if (err == 0) {
+                res++;
+            } else if (err != SELVA_EEXIST) {
                 /* TODO Handle error */
                 fprintf(stderr, "%s: Double set field update failed\n", __FILE__);
             }
@@ -225,7 +235,7 @@ static int add_set_values(
         return SELVA_EINTYPE;
     }
 
-    return 0;
+    return res;
 }
 
 static int del_set_values(
@@ -241,9 +251,13 @@ static int del_set_values(
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
         type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+        if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) {
+            return SELVA_EINVAL;
+        }
+
         for (size_t i = 0; i < value_len; ) {
             RedisModuleString *ref;
-            const ssize_t part_len = ref2rms(ctx, type, ptr, &ref);
+            const ssize_t part_len = string2rms(ctx, type, ptr, &ref);
 
             if (part_len < 0) {
                 return SELVA_EINVAL;
@@ -306,6 +320,9 @@ static int del_set_values(
     return 0;
 }
 
+/*
+ * @returns The "rough" absolute number of changes made; Otherise a negative Selva error code is returned.
+ */
 static int update_set(
     RedisModuleCtx *ctx,
     SelvaModify_Hierarchy *hierarchy,
@@ -316,6 +333,7 @@ static int update_set(
 ) {
     TO_STR(id, field);
     RedisModuleKey *alias_key = NULL;
+    int res = 0;
 
     if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
         alias_key = open_aliases_key(ctx);
@@ -332,32 +350,40 @@ static int update_set(
             struct SelvaSet *node_aliases = SelvaObject_GetSet(obj, field);
 
             err = delete_aliases(alias_key, node_aliases);
-            if (!err) {
-                selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
-            } else if (err && err != SELVA_ENOENT) {
+            if (err && err != SELVA_ENOENT) {
                 return err;
             }
+
+            selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
         }
+
+        /*
+         * Delete the original set.
+         */
         err = SelvaObject_DelKey(obj, field);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s: Unable to remove a set \"%s:%s\"\n", __FILE__, id_str, field_str);
-            return SELVA_ENOENT; /* TODO is this the right error. */
+            return SELVA_ENOENT; /* TODO is this the right error? */
         }
 
         /*
          * Set new values.
          */
         err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$value, setOpts->$value_len, setOpts->op_set_type);
-        if (err) {
+        if (err < 0) {
             return err;
+        } else {
+            res += err;
         }
     } else {
         if (setOpts->$add_len > 0) {
             int err;
 
             err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$add, setOpts->$add_len, setOpts->op_set_type);
-            if (err) {
+            if (err < 0) {
                 return err;
+            } else {
+                res += err;
             }
         }
 
@@ -368,10 +394,11 @@ static int update_set(
             if (err) {
                 return err;
             }
+            res += 1; /* TODO This should reflect the number of actual adds. */
         }
     }
 
-    return 0;
+    return res;
 }
 
 int SelvaModify_ModifySet(
@@ -439,10 +466,7 @@ int SelvaModify_ModifySet(
         err = update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
         res = err < 0 ? err : 1;
     } else {
-        int err;
-
-        err = update_set(ctx, hierarchy, obj, id, field, setOpts);
-        res = err < 0 ? err : 1;
+        res = update_set(ctx, hierarchy, obj, id, field, setOpts);
     }
 
     return res;

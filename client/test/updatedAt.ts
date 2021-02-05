@@ -51,6 +51,18 @@ test.before(async t => {
               }
             }
           },
+          authors: {
+            type: 'set',
+            items: { type: 'string' }
+          },
+          floats: {
+            type: 'set',
+            items: { type: 'float' }
+          },
+          integers: {
+            type: 'set',
+            items: { type: 'int' }
+          },
           updatedAt: {
             type: 'timestamp'
           }
@@ -102,6 +114,7 @@ test.serial('updatedAt only changes when actually changed', async t => {
   let lastUpdatedAt
 
   while (n--) {
+    console.log('set')
     await client.set({
       type: 'match',
       $alias: 'snurkle',
@@ -120,6 +133,9 @@ test.serial('updatedAt only changes when actually changed', async t => {
           mp4: 'https://example.com'
         }
       },
+      authors: ['leif', 'rolf'],
+      floats: [1.5, 2.5],
+      integers: [1, 2],
       parents: {
         $add: [team1, team2, competition]
       }
