@@ -663,23 +663,27 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * If the size of alias_query is greater than zero it means that no match
      * was found for $alias and we need to create all the aliases listed in the
      * query.
-     * We know that the aliases are in an array so it's enough to get the
-     * address of the first alias to have access to the whole array.
      */
     if (SVector_Size(&alias_query) > 0) {
         RedisModuleString *aliases_field = RedisModule_CreateString(ctx, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD) - 1);
-        struct SelvaModify_OpSet opSet = {
-            .op_set_type = SELVA_MODIFY_OP_SET_TYPE_REFERENCE,
-            .$add = SVector_Peek(&alias_query),
-            .$add_len = SVector_Size(&alias_query),
-            .$delete = NULL,
-            .$delete_len = 0,
-            .$value = NULL,
-            .$value_len = 0,
-        };
+        struct SVectorIterator it;
+        char *alias;
 
-        /* TODO Handle error */
-        SelvaModify_ModifySet(ctx, hierarchy, obj, id, aliases_field, &opSet);
+        SVector_ForeachBegin(&it, &alias_query);
+        while ((alias = SVector_Foreach(&it))) {
+            struct SelvaModify_OpSet opSet = {
+                .op_set_type = SELVA_MODIFY_OP_SET_TYPE_CHAR,
+                .$add = alias,
+                .$add_len = strlen(alias) + 1,
+                .$delete = NULL,
+                .$delete_len = 0,
+                .$value = NULL,
+                .$value_len = 0,
+            };
+
+            /* TODO Handle error */
+            SelvaModify_ModifySet(ctx, hierarchy, obj, id, aliases_field, &opSet);
+        }
     }
 
     /*

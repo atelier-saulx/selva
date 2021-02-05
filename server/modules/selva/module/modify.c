@@ -416,13 +416,21 @@ int SelvaModify_ModifySet(
     if (setOpts->delete_all) {
         int err;
 
-        if (is_reference && !strcmp(field_str, "children")) {
+        if (!strcmp(field_str, "children")) {
             Selva_NodeId node_id;
+
+            if (!is_reference) {
+                return SELVA_EINTYPE;
+            }
 
             Selva_NodeIdCpy(node_id, id_str);
             err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
         } else if (!strcmp(field_str, "parents")) {
             Selva_NodeId node_id;
+
+            if (!is_reference) {
+                return SELVA_EINTYPE;
+            }
 
             Selva_NodeIdCpy(node_id, id_str);
             err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
