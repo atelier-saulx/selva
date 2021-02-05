@@ -350,11 +350,11 @@ static int update_set(
             struct SelvaSet *node_aliases = SelvaObject_GetSet(obj, field);
 
             err = delete_aliases(alias_key, node_aliases);
-            if (err && err != SELVA_ENOENT) {
+            if (!err) {
+                selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
+            } else if (err && err != SELVA_ENOENT) {
                 return err;
             }
-
-            selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
         }
 
         /*
