@@ -80,7 +80,13 @@ struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long 
 #define SELVA_SET_DOUBLE_FOREACH(el, set) \
     RB_FOREACH(el, SelvaSetDouble, &(set)->head_d)
 
+#define SELVA_SET_DOUBLE_FOREACH_SAFE(el, set, tmp) \
+    RB_FOREACH_SAFE(el, SelvaSetDouble, &(set)->head_d, tmp)
+
 #define SELVA_SET_LONGLONG_FOREACH(el, set) \
     RB_FOREACH(el, SelvaSetLongLong, &(set)->head_ll)
+
+#define SELVA_SET_LONGLONG_FOREACH_SAFE(el, set, tmp) \
+    RB_FOREACH_SAFE(el, SelvaSetLongLong, &(set)->head_ll, tmp)
 
 #endif /* SELVA_SET */

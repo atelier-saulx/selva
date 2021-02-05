@@ -11,6 +11,7 @@
 #include "selva_node.h"
 #include "selva_object.h"
 #include "selva_set.h"
+#include "comparator.h"
 
 static ssize_t string2rms(RedisModuleCtx *ctx, int8_t type, const char *s, RedisModuleString **out) {
     size_t len;
@@ -137,28 +138,49 @@ static int add_set_values(
     RedisModuleString *field,
     char *value_ptr,
     size_t value_len,
-    int8_t type
+    int8_t type,
+    int remove_diff
 ) {
     char *ptr = value_ptr;
     int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
         type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+        SVector new_set;
+
         if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) {
             return SELVA_EINVAL;
         }
 
+        if (remove_diff) {
+            if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+                SVector_Init(&new_set, value_len / SELVA_NODE_ID_SIZE, SelvaSVectorComparator_NodeId);
+            } else {
+                SVector_Init(&new_set, 1, SelvaSVectorComparator_RMS);
+            }
+        } else {
+            /* If it's empty the destroy function will just skip over. */
+            memset(&new_set, 0, sizeof(new_set));
+        }
+
+        /*
+         * Add missing elements to the set.
+         */
         for (size_t i = 0; i < value_len; ) {
             int err;
             RedisModuleString *ref;
             const ssize_t part_len = string2rms(ctx, type, ptr, &ref);
 
             if (part_len < 0) {
-                return SELVA_EINVAL;
+                res = SELVA_EINVAL;
+                goto string_err;
             }
 
             /* Add to the node object. */
             err = SelvaObject_AddStringSet(obj, field, ref);
+            if (remove_diff && (err == 0 || err == SELVA_EEXIST)) {
+                SVector_InsertFast(&new_set, ref);
+            }
             if (err == 0) {
                 RedisModule_RetainString(ctx, ref);
 
@@ -186,14 +208,50 @@ static int add_set_values(
             /* +1 to skip the NUL if cstring */
             const size_t skip_off = type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE ? SELVA_NODE_ID_SIZE : (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
             if (skip_off == 0) {
-                return SELVA_EINVAL;
+                res = SELVA_EINVAL;
+                goto string_err;
             }
 
             ptr += skip_off;
             i += skip_off;
         }
+
+        /*
+         * Remove elements that are not in new_set.
+         * This makes the set in obj.field equal to the set defined by value_str.
+         */
+        if (remove_diff) {
+            struct SelvaSetElement *set_el;
+            struct SelvaSetElement *tmp;
+            struct SelvaSet *objSet = SelvaObject_GetSet(obj, field);
+
+            assert(objSet);
+            SELVA_SET_RMS_FOREACH_SAFE(set_el, objSet, tmp) {
+                RedisModuleString *el = set_el->value_rms;
+
+                if (!SVector_Search(&new_set, (void *)el)) {
+                    /* el doesn't exist in new_set, therefore it should be removed. */
+                    /* TODO We could avoid this lookup if there was a function for element removal. */
+                    SelvaSet_DestroyElement(SelvaSet_RemoveRms(objSet, el));
+
+                    if (alias_key) {
+                        /* TODO This could be its own function in the future. */
+                        Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, el);
+                        RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, el, REDISMODULE_HASH_DELETE, NULL);
+                    }
+
+                    RedisModule_FreeString(ctx, el);
+                    res++; /* This too is a change to the set! */
+                }
+            }
+        }
+string_err:
+        SVector_Destroy(&new_set);
     } else if (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE ||
                type == SELVA_MODIFY_OP_SET_TYPE_LONG_LONG) {
+        /*
+         * Add missing elements to the set.
+         */
         for (size_t i = 0; i < value_len; ) {
             int err;
             size_t part_len;
@@ -230,6 +288,61 @@ static int add_set_values(
 
             ptr += skip_off;
             i += skip_off;
+        }
+
+        /*
+         * Remove elements that are not in new_set.
+         * This makes the set in obj.field equal to the set defined by value_str.
+         */
+        if (remove_diff) {
+            struct SelvaSetElement *set_el;
+            struct SelvaSetElement *tmp;
+            struct SelvaSet *objSet = SelvaObject_GetSet(obj, field);
+
+            assert(objSet);
+            if (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE && objSet->type == SELVA_SET_TYPE_DOUBLE) {
+                SELVA_SET_DOUBLE_FOREACH_SAFE(set_el, objSet, tmp) {
+                    int found = 0;
+                    const double a = set_el->value_d;
+
+                    /* This is probably faster than any data structure we could use. */
+                    for (size_t i = 0; i < value_len / sizeof(double); i++) {
+                        const double b = ((double *)value_ptr)[i]; /* RFE Might bork on ARM */
+
+                        if (a == b) {
+                            found = 1;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        SelvaSet_DestroyElement(SelvaSet_RemoveDouble(objSet, a));
+                        res++;
+                    }
+                }
+            } else if (type == SELVA_MODIFY_OP_SET_TYPE_LONG_LONG && objSet->type == SELVA_SET_TYPE_LONGLONG) {
+                SELVA_SET_LONGLONG_FOREACH_SAFE(set_el, objSet, tmp) {
+                    int found = 0;
+                    const long long a = set_el->value_ll;
+
+                    /* This is probably faster than any data structure we could use. */
+                    for (size_t i = 0; i < value_len / sizeof(double); i++) {
+                        const long long b = ((long long *)value_ptr)[i]; /* RFE Might bork on ARM */
+
+                        if (a == b) {
+                            found = 1;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        SelvaSet_DestroyElement(SelvaSet_RemoveLongLong(objSet, a));
+                        res++;
+                    }
+                }
+            } else {
+                abort(); /* Never reached. */
+            }
         }
     } else {
         return SELVA_EINTYPE;
@@ -331,7 +444,7 @@ static int update_set(
     RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
-    TO_STR(id, field);
+    TO_STR(field);
     RedisModuleKey *alias_key = NULL;
     int res = 0;
 
@@ -346,30 +459,10 @@ static int update_set(
     if (setOpts->$value_len > 0) {
         int err;
 
-        if (alias_key) {
-            struct SelvaSet *node_aliases = SelvaObject_GetSet(obj, field);
-
-            err = delete_aliases(alias_key, node_aliases);
-            if (!err) {
-                selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
-            } else if (err && err != SELVA_ENOENT) {
-                return err;
-            }
-        }
-
-        /*
-         * Delete the original set.
-         */
-        err = SelvaObject_DelKey(obj, field);
-        if (err && err != SELVA_ENOENT) {
-            fprintf(stderr, "%s: Unable to remove a set \"%s:%s\"\n", __FILE__, id_str, field_str);
-            return SELVA_ENOENT; /* TODO is this the right error? */
-        }
-
         /*
          * Set new values.
          */
-        err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$value, setOpts->$value_len, setOpts->op_set_type);
+        err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$value, setOpts->$value_len, setOpts->op_set_type, 1);
         if (err < 0) {
             return err;
         } else {
@@ -379,7 +472,7 @@ static int update_set(
         if (setOpts->$add_len > 0) {
             int err;
 
-            err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$add, setOpts->$add_len, setOpts->op_set_type);
+            err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$add, setOpts->$add_len, setOpts->op_set_type, 0);
             if (err < 0) {
                 return err;
             } else {
@@ -394,7 +487,7 @@ static int update_set(
             if (err) {
                 return err;
             }
-            res += 1; /* TODO This should reflect the number of actual adds. */
+            res += 1; /* TODO This should reflect the number of actual deletions. */
         }
     }
 

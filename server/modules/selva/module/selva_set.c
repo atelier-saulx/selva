@@ -37,76 +37,76 @@ RB_GENERATE(SelvaSetRms, SelvaSetElement, _entry, SelvaSet_CompareRms)
 RB_GENERATE(SelvaSetDouble, SelvaSetElement, _entry, SelvaSet_CompareDouble)
 RB_GENERATE(SelvaSetLongLong, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
 
-static inline int SelvaSet_Add(struct SelvaSet *set, void *v) {
-    enum SelvaSetType type = set->type;
+int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s) {
+    struct SelvaSetElement *el;
 
-    if (type == SELVA_SET_TYPE_RMSTRING) {
-        RedisModuleString *s = (RedisModuleString *)v;
-        struct SelvaSetElement *el;
-
-        if (SelvaSet_HasRms(set, s)) {
-            return SELVA_EEXIST;
-        }
-
-        el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
-        if (!el) {
-            return SELVA_ENOMEM;
-        }
-
-        el->value_rms = s;
-
-        (void)RB_INSERT(SelvaSetRms, &set->head_rms, el);
-    } else if (type == SELVA_SET_TYPE_DOUBLE) {
-        double d = *(double *)v;
-        struct SelvaSetElement *el;
-
-        if (SelvaSet_HasDouble(set, d)) {
-            return SELVA_EEXIST;
-        }
-
-        el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
-        if (!el) {
-            return SELVA_ENOMEM;
-        }
-
-        el->value_d = d;
-
-        (void)RB_INSERT(SelvaSetDouble, &set->head_d, el);
-    } else if (type == SELVA_SET_TYPE_LONGLONG) {
-        double ll = *(long long *)v;
-        struct SelvaSetElement *el;
-
-        if (SelvaSet_HasLongLong(set, ll)) {
-            return SELVA_EEXIST;
-        }
-
-        el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
-        if (!el) {
-            return SELVA_ENOMEM;
-        }
-
-        el->value_ll = ll;
-
-        (void)RB_INSERT(SelvaSetDouble, &set->head_d, el);
-    } else {
+    if (set->type != SELVA_SET_TYPE_RMSTRING) {
         return SELVA_EINTYPE;
     }
 
+    if (SelvaSet_HasRms(set, s)) {
+        return SELVA_EEXIST;
+    }
+
+    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    if (!el) {
+        return SELVA_ENOMEM;
+    }
+
+    el->value_rms = s;
+
+    (void)RB_INSERT(SelvaSetRms, &set->head_rms, el);
     set->size++;
 
     return 0;
 }
 
-int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s) {
-    return SelvaSet_Add(set, s);
-}
-
 int SelvaSet_AddDouble(struct SelvaSet *set, double d) {
-    return SelvaSet_Add(set, &d);
+    struct SelvaSetElement *el;
+
+    if (set->type != SELVA_SET_TYPE_DOUBLE) {
+        return SELVA_EINTYPE;
+    }
+
+    if (SelvaSet_HasDouble(set, d)) {
+        return SELVA_EEXIST;
+    }
+
+    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    if (!el) {
+        return SELVA_ENOMEM;
+    }
+
+    el->value_d = d;
+
+    (void)RB_INSERT(SelvaSetDouble, &set->head_d, el);
+    set->size++;
+
+    return 0;
 }
 
 int SelvaSet_AddLongLong(struct SelvaSet *set, long long ll) {
-    return SelvaSet_Add(set, &ll);
+    struct SelvaSetElement *el;
+
+    if (set->type != SELVA_SET_TYPE_LONGLONG) {
+        return SELVA_EINTYPE;
+    }
+
+    if (SelvaSet_HasLongLong(set, ll)) {
+        return SELVA_EEXIST;
+    }
+
+    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    if (!el) {
+        return SELVA_ENOMEM;
+    }
+
+    el->value_ll = ll;
+
+    (void)RB_INSERT(SelvaSetLongLong, &set->head_ll, el);
+    set->size++;
+
+    return 0;
 }
 
 void SelvaSet_DestroyElement(struct SelvaSetElement *el) {
