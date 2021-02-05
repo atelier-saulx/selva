@@ -44,6 +44,7 @@ RB_PROTOTYPE(SelvaSetRms, SelvaSetElement, _entry, SelvaSet_CompareRms)
 RB_PROTOTYPE(SelvaSetDouble, SelvaSetElement, _entry, SelvaSet_CompareDouble)
 RB_PROTOTYPE(SelvaSetLongLong, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
 void SelvaSet_Destroy(struct SelvaSet *head);
+void SelvaSet_DestroyElement(struct SelvaSetElement *el);
 
 static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
     set->type = type;
@@ -66,12 +67,15 @@ int SelvaSet_AddLongLong(struct SelvaSet *set, long long l);
 int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s);
 int SelvaSet_HasDouble(struct SelvaSet *set, double d);
 int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll);
-void SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s);
-void SelvaSet_RemoveDouble(struct SelvaSet *set, double d);
-void SelvaSet_RemoveLongLong(struct SelvaSet *set, long long ll);
+struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s);
+struct SelvaSetElement *SelvaSet_RemoveDouble(struct SelvaSet *set, double d);
+struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long ll);
 
 #define SELVA_SET_RMS_FOREACH(el, set) \
     RB_FOREACH(el, SelvaSetRms, &(set)->head_rms)
+
+#define SELVA_SET_RMS_FOREACH_SAFE(el, set, tmp) \
+    RB_FOREACH_SAFE(el, SelvaSetRms, &(set)->head_rms, tmp)
 
 #define SELVA_SET_DOUBLE_FOREACH(el, set) \
     RB_FOREACH(el, SelvaSetDouble, &(set)->head_d)

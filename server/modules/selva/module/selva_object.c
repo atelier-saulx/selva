@@ -767,7 +767,8 @@ int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *k
         return err;
     }
 
-    SelvaSet_RemoveDouble(selva_set, value);
+    /* TODO Should we return SELVA_EINVAL if the element was not found? */
+    SelvaSet_DestroyElement(SelvaSet_RemoveDouble(selva_set, value));
 
     return 0;
 }
@@ -781,13 +782,15 @@ int SelvaObject_RemLongLongSet(struct SelvaObject *obj, const RedisModuleString 
         return err;
     }
 
-    SelvaSet_RemoveLongLong(selva_set, value);
+    /* TODO Should we return SELVA_EINVAL if the element was not found? */
+    SelvaSet_DestroyElement(SelvaSet_RemoveLongLong(selva_set, value));
 
     return 0;
 }
 
 int SelvaObject_RemStringSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
     struct SelvaSet *selva_set;
+    struct SelvaSetElement *el;
     int err;
 
     err = get_selva_set(obj, key_name, SELVA_SET_TYPE_RMSTRING, &selva_set);
@@ -795,7 +798,12 @@ int SelvaObject_RemStringSet(struct SelvaObject *obj, const RedisModuleString *k
         return err;
     }
 
-    SelvaSet_RemoveRms(selva_set, value);
+    el = SelvaSet_RemoveRms(selva_set, value);
+    if (!el) {
+        return 0; /* TODO Should we return SELVA_EINVAL? */
+    }
+    RedisModule_FreeString(NULL, el->value_rms);
+    SelvaSet_DestroyElement(el);
 
     return 0;
 }
