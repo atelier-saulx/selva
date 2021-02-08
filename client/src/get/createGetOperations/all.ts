@@ -79,6 +79,12 @@ const all = (
         createGetOperations(client, props[key], id, field + '.' + key, db, ops)
       }
     }
+
+    for (const key in props) {
+      if (!typeSchema.fields[key]) {
+        createGetOperations(client, props[key], id, field + '.' + key, db, ops)
+      }
+    }
   } else {
     const fieldSchema = getNestedSchema(schema, id, field.slice(1))
     if (!fieldSchema) {

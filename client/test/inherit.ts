@@ -609,3 +609,46 @@ test.serial('$field + inherit from root + query root', async t => {
 
   await srv.destroy()
 })
+
+test.serial('$all + object', async t => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  const genre = await client.set({
+    $id: 'geC',
+    fields: {
+      name: 'hello'
+    }
+  })
+
+  const genre2 = await client.set({
+    $id: 'geD',
+    parents: ['geC']
+  })
+
+  const result1 = await client.get({
+    $id: 'geC',
+    flaprdol: {
+      name: { $field: 'fields.name' },
+      $inherit: { $type: 'genre' }
+    }
+  })
+
+  t.deepEqual(result1, { flaprdol: { name: 'hello' } }, 'get')
+
+  const result = await client.get({
+    $id: 'geD',
+    $all: true,
+    flaprdol: {
+      name: { $field: 'fields.name' },
+      $inherit: { $type: 'genre' }
+    }
+  })
+
+  t.deepEqual(
+    result,
+    { id: 'geD', type: 'genre', flaprdol: { name: 'hello' } },
+    'inherit'
+  )
+
+  await client.destroy()
+})
