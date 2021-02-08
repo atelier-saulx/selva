@@ -18,9 +18,9 @@ const sendUpdate = async (
   subscription: Subscription,
   nodeId?: string
 ) => {
-  if (!subscription) {
-    return
-  }
+  // if (!subscription) {
+  //   return
+  // }
 
   const channel = subscription.channel
   const { client, selector } = subscriptionManager
