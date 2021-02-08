@@ -31,7 +31,11 @@ export function makeAll(
       }
     }
 
-    return o
+    for (const key in props) {
+      if (!fieldSchema.properties[key]) {
+        setNestedResult(o, key, props[key])
+      }
+    }
   } else if (fieldSchema.type === 'record' || fieldSchema.type === 'text') {
     // basically this is the same as: `field: true`
     return null

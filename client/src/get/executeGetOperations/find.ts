@@ -15,14 +15,16 @@ function parseGetOpts(
   let fields: Set<string> = new Set()
   const gets: GetOptions[] = []
 
+  let hasAll = false
+
   for (const k in props) {
-    if (k === '$all') {
-      fields = new Set(['*'])
-      return [fields, gets]
-    } else if (!k.startsWith('$') && props[k] === true) {
+    if (!hasAll && !k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
     } else if (props[k] === false) {
       // ignore
+    } else if (k === '$all') {
+      fields = new Set(['*'])
+      hasAll = true
     } else if (typeof props[k] === 'object') {
       const opts = Object.keys(props[k]).filter(p => p.startsWith('$'))
       if ((path === '' || opts.length === 1) && opts.includes('$inherit')) {
@@ -37,7 +39,7 @@ function parseGetOpts(
       } else if (path !== '' && opts.length >= 1) {
         const o = {}
         for (const key in props) {
-          if (key.startsWith('$')) {
+          if (key.startsWith('$') || key.endsWith('$all')) {
             continue
           }
           setNestedResult(o, pathPrefix + key, props[key])
