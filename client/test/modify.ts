@@ -30,6 +30,7 @@ test.beforeEach(async t => {
   )
 
   await client.redis.flushall()
+  await wait(100)
   await client.updateSchema({
     languages: ['en', 'nl', 'de'],
     rootType: {
@@ -128,6 +129,7 @@ test.beforeEach(async t => {
       }
     }
   })
+  await wait(100)
 
   await client.destroy()
 })
