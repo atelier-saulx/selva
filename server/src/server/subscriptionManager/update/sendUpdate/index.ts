@@ -18,6 +18,10 @@ const sendUpdate = async (
   subscription: Subscription,
   nodeId?: string
 ) => {
+  if (!subscription) {
+    return
+  }
+
   const channel = subscription.channel
   const { client, selector } = subscriptionManager
   const redis = client.redis
