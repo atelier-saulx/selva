@@ -8,7 +8,7 @@ async function deleteItem(
   const db = typeof payload === 'string' ? 'default' : payload.$db || 'default'
 
   return client.redis.selva_hierarchy_del(
-    { name: db },
+    { name: db, type: 'origin' },
     '___selva_hierarchy',
     typeof payload === 'string' ? payload : payload.$id
   )
