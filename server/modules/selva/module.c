@@ -230,6 +230,12 @@ static int parse_flags(RedisModuleString *arg) {
     return flags;
 }
 
+static int in_mem_range(const void *p, const void *start, size_t size) {
+    const ptrdiff_t end = (ptrdiff_t)start + size;
+
+    return (ptrdiff_t)p >= (ptrdiff_t)start && (ptrdiff_t)p <= end;
+}
+
 static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, struct RedisModuleString *data) {
     TO_STR(data);
     struct SelvaModify_OpSet *op;
@@ -248,9 +254,10 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, st
     op->$delete = op->$delete ? (char *)((char *)op + (ptrdiff_t)op->$delete) : NULL;
     op->$value  = op->$value  ? (char *)((char *)op + (ptrdiff_t)op->$value)  : NULL;
 
-    if ((ptrdiff_t)op->$add + op->$add_len > (ptrdiff_t)op + data_len ||
-        (ptrdiff_t)op->$delete + op->$delete_len > (ptrdiff_t)op + data_len ||
-        (ptrdiff_t)op->$value + op->$value_len > (ptrdiff_t)op + data_len) {
+    if (!(((!op->$add    && op->$add_len == 0)    || (in_mem_range(op->$add,    op, data_len) && in_mem_range(op->$add    + op->$add_len,    op, data_len))) &&
+          ((!op->$delete && op->$delete_len == 0) || (in_mem_range(op->$delete, op, data_len) && in_mem_range(op->$delete + op->$delete_len, op, data_len))) &&
+          ((!op->$value  && op->$value_len == 0)  || (in_mem_range(op->$value,  op, data_len) && in_mem_range(op->$value  + op->$value_len,  op, data_len)))
+       )) {
         return NULL;
     }
 
