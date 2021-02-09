@@ -55,28 +55,6 @@ struct SelvaModify_OpSet {
     size_t $value_len;
 };
 
-static inline struct SelvaModify_OpSet *SelvaModify_OpSet_align(struct RedisModuleString *data) {
-    TO_STR(data);
-    struct SelvaModify_OpSet *op;
-
-    if (!data_str && data_len < sizeof(struct SelvaModify_OpSet)) {
-        return NULL;
-    }
-
-    op = (struct SelvaModify_OpSet *)data_str;
-    op->$add    = op->$add    ? (char *)((char *)op + (ptrdiff_t)op->$add)    : NULL;
-    op->$delete = op->$delete ? (char *)((char *)op + (ptrdiff_t)op->$delete) : NULL;
-    op->$value  = op->$value  ? (char *)((char *)op + (ptrdiff_t)op->$value)  : NULL;
-
-    if ((ptrdiff_t)op->$add + op->$add_len > (ptrdiff_t)op + data_len ||
-        (ptrdiff_t)op->$delete + op->$delete_len > (ptrdiff_t)op + data_len ||
-        (ptrdiff_t)op->$value + op->$value_len > (ptrdiff_t)op + data_len) {
-        return NULL;
-    }
-
-    return op;
-}
-
 /**
  * Modify a set.
  * @returns >= 0 number of changes; or < 0 Selva error

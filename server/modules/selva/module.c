@@ -70,6 +70,14 @@ static inline int get_replset(const replset_t *r, int i) {
  */
 void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString **orig_argv) {
     /*
+     * REDISMODULE_CTX_FLAGS_REPLICATED would be more approriate here but it's
+     * unclear whether it's available only in newer server versions.
+     */
+    if (RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE) {
+        return; /* Skip. */
+    }
+
+    /*
      * Redis doesn't have an external API to call commands nor replication the
      * same way as it delivers them. Also the API is quite horrible because it
      * only provides variadic function for replication. Therefore, we need to
@@ -79,27 +87,28 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
     const int max_argc = 128; /* This size depends on the size of replset_t */
     int argc = 0;
     RedisModuleString **argv;
-    char fmt[leading_args + max_argc + 1];
+    char fmt[1 + leading_args + max_argc + 1];
 
     argv = RedisModule_PoolAlloc(ctx, max_argc * sizeof(RedisModuleString *));
     if (!argv) {
         fprintf(stderr, "%s: Replication: %s\n", __FILE__, getSelvaErrorStr(SELVA_ENOMEM));
+        return;
     }
 
-    fmt[0] = 's';
-    fmt[1] = 's';
+    fmt[0] = 'A'; /* Supress the AOF channel */
+    fmt[1] = 's'; /* nodeId */
+    fmt[2] = 's'; /* Flags */
 
-    char *fmt_p = fmt + leading_args;
-    int i_arg_type = 3;
+    char *fmt_p = fmt + 1 + leading_args;
+    int i_arg_type = 1 + leading_args;
     for (int i = 0; i < max_argc; i++) {
         if (get_replset(r, i)) {
-            argv[argc] = orig_argv[i_arg_type];
-            argv[argc + 1] = orig_argv[i_arg_type + 1];
-            argv[argc + 2] = orig_argv[i_arg_type + 2];
+            argv[argc++] = orig_argv[i_arg_type];
+            argv[argc++] = orig_argv[i_arg_type + 1];
+            argv[argc++] = orig_argv[i_arg_type + 2];
             *fmt_p++ = 's';
             *fmt_p++ = 's';
             *fmt_p++ = 's';
-            argc += 3;
         }
         i_arg_type += 3;
     }
@@ -111,136 +120,54 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
     }
 
     /* This call must have max_argc argv arguments. */
-    RedisModule_Replicate(ctx, RedisModule_StringPtrLen(orig_argv[0], NULL), fmt,
-                          orig_argv[1], orig_argv[2],
-                          argv[0],
-                          argv[1],
-                          argv[2],
-                          argv[3],
-                          argv[4],
-                          argv[5],
-                          argv[6],
-                          argv[7],
-                          argv[8],
-                          argv[9],
-                          argv[10],
-                          argv[11],
-                          argv[12],
-                          argv[13],
-                          argv[14],
-                          argv[15],
-                          argv[16],
-                          argv[17],
-                          argv[18],
-                          argv[19],
-                          argv[20],
-                          argv[21],
-                          argv[22],
-                          argv[23],
-                          argv[24],
-                          argv[25],
-                          argv[26],
-                          argv[27],
-                          argv[28],
-                          argv[29],
-                          argv[30],
-                          argv[31],
-                          argv[32],
-                          argv[33],
-                          argv[34],
-                          argv[35],
-                          argv[36],
-                          argv[37],
-                          argv[38],
-                          argv[39],
-                          argv[40],
-                          argv[41],
-                          argv[42],
-                          argv[43],
-                          argv[44],
-                          argv[45],
-                          argv[46],
-                          argv[47],
-                          argv[48],
-                          argv[49],
-                          argv[50],
-                          argv[51],
-                          argv[52],
-                          argv[53],
-                          argv[54],
-                          argv[55],
-                          argv[56],
-                          argv[57],
-                          argv[58],
-                          argv[59],
-                          argv[60],
-                          argv[61],
-                          argv[62],
-                          argv[63],
-                          argv[64],
-                          argv[65],
-                          argv[66],
-                          argv[67],
-                          argv[68],
-                          argv[69],
-                          argv[70],
-                          argv[71],
-                          argv[72],
-                          argv[73],
-                          argv[74],
-                          argv[75],
-                          argv[76],
-                          argv[77],
-                          argv[78],
-                          argv[79],
-                          argv[80],
-                          argv[81],
-                          argv[82],
-                          argv[83],
-                          argv[84],
-                          argv[85],
-                          argv[86],
-                          argv[87],
-                          argv[88],
-                          argv[89],
-                          argv[90],
-                          argv[91],
-                          argv[92],
-                          argv[93],
-                          argv[94],
-                          argv[95],
-                          argv[96],
-                          argv[97],
-                          argv[98],
-                          argv[99],
-                          argv[100],
-                          argv[101],
-                          argv[102],
-                          argv[103],
-                          argv[104],
-                          argv[105],
-                          argv[106],
-                          argv[107],
-                          argv[108],
-                          argv[109],
-                          argv[110],
-                          argv[111],
-                          argv[112],
-                          argv[113],
-                          argv[114],
-                          argv[115],
-                          argv[116],
-                          argv[117],
-                          argv[118],
-                          argv[119],
-                          argv[120],
-                          argv[121],
-                          argv[122],
-                          argv[123],
-                          argv[124],
-                          argv[125],
-                          argv[126],
-                          argv[127]);
+    const int err = RedisModule_Replicate(ctx, RedisModule_StringPtrLen(orig_argv[0], NULL), fmt,
+                                          orig_argv[1], orig_argv[2],
+                                          argv[0], argv[1], argv[2],
+                                          argv[3], argv[4], argv[5],
+                                          argv[6], argv[7], argv[8],
+                                          argv[9], argv[10], argv[11],
+                                          argv[12], argv[13], argv[14],
+                                          argv[15], argv[16], argv[17],
+                                          argv[18], argv[19], argv[20],
+                                          argv[21], argv[22], argv[23],
+                                          argv[24], argv[25], argv[26],
+                                          argv[27], argv[28], argv[29],
+                                          argv[30], argv[31], argv[32],
+                                          argv[33], argv[34], argv[35],
+                                          argv[36], argv[37], argv[38],
+                                          argv[39], argv[40], argv[41],
+                                          argv[42], argv[43], argv[44],
+                                          argv[45], argv[46], argv[47],
+                                          argv[48], argv[49], argv[50],
+                                          argv[51], argv[52], argv[53],
+                                          argv[54], argv[55], argv[56],
+                                          argv[57], argv[58], argv[59],
+                                          argv[60], argv[61], argv[62],
+                                          argv[63], argv[64], argv[65],
+                                          argv[66], argv[67], argv[68],
+                                          argv[69], argv[70], argv[71],
+                                          argv[72], argv[73], argv[74],
+                                          argv[75], argv[76], argv[77],
+                                          argv[78], argv[79], argv[80],
+                                          argv[81], argv[82], argv[83],
+                                          argv[84], argv[85], argv[86],
+                                          argv[87], argv[88], argv[89],
+                                          argv[90], argv[91], argv[92],
+                                          argv[93], argv[94], argv[95],
+                                          argv[96], argv[97], argv[98],
+                                          argv[99], argv[100], argv[101],
+                                          argv[102], argv[103], argv[104],
+                                          argv[105], argv[106], argv[107],
+                                          argv[108], argv[109], argv[110],
+                                          argv[111], argv[112], argv[113],
+                                          argv[114], argv[115], argv[116],
+                                          argv[117], argv[118], argv[119],
+                                          argv[120], argv[121], argv[122],
+                                          argv[123], argv[124], argv[125],
+                                          argv[126], argv[127]);
+    if (err) {
+        fprintf(stderr, "%s: Replication failed: %d\n", __FILE__, err);
+    }
 }
 
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -301,6 +228,33 @@ static int parse_flags(RedisModuleString *arg) {
     }
 
     return flags;
+}
+
+static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, struct RedisModuleString *data) {
+    TO_STR(data);
+    struct SelvaModify_OpSet *op;
+
+    if (!data_str && data_len < sizeof(struct SelvaModify_OpSet)) {
+        return NULL;
+    }
+
+    op = RedisModule_PoolAlloc(ctx, data_len);
+    if (!op) {
+        return NULL;
+    }
+
+    memcpy(op, data_str, data_len);
+    op->$add    = op->$add    ? (char *)((char *)op + (ptrdiff_t)op->$add)    : NULL;
+    op->$delete = op->$delete ? (char *)((char *)op + (ptrdiff_t)op->$delete) : NULL;
+    op->$value  = op->$value  ? (char *)((char *)op + (ptrdiff_t)op->$value)  : NULL;
+
+    if ((ptrdiff_t)op->$add + op->$add_len > (ptrdiff_t)op + data_len ||
+        (ptrdiff_t)op->$delete + op->$delete_len > (ptrdiff_t)op + data_len ||
+        (ptrdiff_t)op->$value + op->$value_len > (ptrdiff_t)op + data_len) {
+        return NULL;
+    }
+
+    return op;
 }
 
 /**
@@ -523,7 +477,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
             struct SelvaModify_OpSet *setOpts;
 
-            setOpts = SelvaModify_OpSet_align(value);
+            setOpts = SelvaModify_OpSet_align(ctx, value);
             if (!setOpts) {
                 replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid OpSet");
                 continue;

@@ -58,7 +58,7 @@ static int update_hierarchy(
      * If the field starts with 'p' we assume "parents"; Otherwise "children".
      * No other field can modify the hierarchy.
      */
-    int isFieldParents = field_str[0] == 'p';
+    const int isFieldParents = field_str[0] == 'p';
 
     int err = 0;
     if (setOpts->$value_len > 0) {
