@@ -23,6 +23,8 @@ test.before(async t => {
     registry: { port },
     default: true
   })
+  replica.on('stderr', (b) => console.log(b.toString()))
+  replica.on('stdout', (b) => console.log(b.toString()))
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
@@ -203,5 +205,57 @@ test.serial('modify command is replicated ignoring errors', async t => {
       'value',
       '5'
     ]
+  )
+})
+
+test.serial('replicate hierarchy parents with modify', async t => {
+  await wait(5000)
+  const client = connect({ port }, { loglevel: 'info' })
+  await client.set({
+    $language: 'en',
+    $id: 'ma1',
+    title: 'match 1'
+  })
+
+  //client.observe({
+  //  $language: 'en',
+  //  children: { title: true, $list: true }
+  //}).subscribe((s) => console.log('s1', s))
+  //client.observe({
+  //  $id: 'ma1',
+  //  $language: 'en',
+  //  children: { title: true, $list: true }
+  //}).subscribe((s) => console.log('s2', s))
+  //await wait(100)
+
+  await client.set({
+    $language: 'en',
+    $id: 'ma2',
+    title: 'match 2',
+    parents: ['ma1']
+  })
+  await client.set({
+    $language: 'en',
+    $id: 'ma3',
+    title: 'match 3',
+    parents: ['ma1']
+  })
+  await client.set({
+    $language: 'en',
+    $id: 'ma3',
+    title: 'match 3',
+    parents: ['ma1']
+  })
+
+  client.destroy();
+  await wait(500)
+
+  t.deepEqual(
+    await new Promise((resolve, reject) => rclientOrigin.send_command('selva.hierarchy.children', ['___selva_hierarchy', 'root'], (err, res) => err ? reject(err) : resolve(res))),
+    ['ma1']
+  )
+  t.deepEqual(
+    await new Promise((resolve, reject) => rclientReplica.send_command('selva.hierarchy.children', ['___selva_hierarchy', 'root'], (err, res) => err ? reject(err) : resolve(res))),
+    ['ma1']
   )
 })
