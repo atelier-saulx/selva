@@ -13,7 +13,8 @@ import executeGetOperations, {
   ExecContext,
   executeNestedGetOperations,
   addMarker,
-  bufferNodeMarker
+  bufferNodeMarker,
+  executeGetOperation
 } from './'
 import { FieldSchema, Schema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
@@ -126,7 +127,21 @@ async function mergeObj(
     rpn
   )
 
-  return TYPE_CASTS['object'](o, op.id, field, schema, lang)
+  const result = TYPE_CASTS['object'](o, op.id, field, schema, lang)
+  const self = await executeGetOperation(
+    client,
+    lang,
+    ctx,
+    {
+      type: 'db',
+      id: op.id,
+      field: op.field,
+      sourceField: op.sourceField
+    },
+    false
+  )
+
+  return Object.assign(result, self)
 }
 
 async function inheritItem(
