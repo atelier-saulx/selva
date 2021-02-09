@@ -36,7 +36,7 @@ function parseGetOpts(
           ? props[k].$field
           : [props[k].$field]
         fields.add(all.join('|'))
-      } else if (path !== '' && opts.length >= 1) {
+      } else if (opts.length >= 1 && !props[k].$find) {
         const o = {}
         for (const key in props) {
           if (key.startsWith('$') || key.endsWith('$all')) {
