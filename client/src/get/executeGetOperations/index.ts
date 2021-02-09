@@ -202,9 +202,9 @@ export const TYPE_CASTS: Record<
       return result
     }
   },
-  record: (all: any, id: string, field: string, schema) => {
+  record: (all: any, id: string, field: string, schema, lang?: string) => {
     // this is not a record... we are missing the field in between...
-    return TYPE_CASTS.object(all, id, field, schema)
+    return TYPE_CASTS.object(all, id, field, schema, lang)
   },
   text: (all: any, id: string, field: string, schema, lang) => {
     if (Array.isArray(all)) {

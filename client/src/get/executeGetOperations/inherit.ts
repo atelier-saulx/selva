@@ -492,7 +492,7 @@ export default async function inherit(
     const fs = getNestedSchema(schema, idx, f)
     const typeCast = TYPE_CASTS[fs.type]
 
-    return typeCast ? typeCast(v, idx, f, client.schemas.default) : v
+    return typeCast ? typeCast(v, idx, f, client.schemas.default, lang) : v
   }
 
   const o: GetResult = {}
@@ -501,7 +501,9 @@ export default async function inherit(
     const fs = getNestedSchema(schema, idx, f)
     const typeCast = TYPE_CASTS[fs.type]
 
-    const newV = typeCast ? typeCast(v, idx, f, client.schemas.default) : v
+    const newV = typeCast
+      ? typeCast(v, idx, f, client.schemas.default, lang)
+      : v
 
     if (remapped[f]) {
       f = remapped[f]

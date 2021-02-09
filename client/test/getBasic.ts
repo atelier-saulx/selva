@@ -42,6 +42,12 @@ test.beforeEach(async t => {
               type: 'string'
             }
           },
+          textRec: {
+            type: 'record',
+            values: {
+              type: 'text'
+            }
+          },
           objRec: {
             type: 'record',
             values: {
@@ -817,7 +823,7 @@ test.serial('get - field with empty array', async t => {
       id,
       dong: { dingdong: [] },
       type: 'lekkerType',
-      dingdongs: [],
+      dingdongs: []
     }
   )
 
@@ -1637,6 +1643,99 @@ test.serial('get - record', async t => {
         obj2: {
           hello: 'ffp'
         }
+      }
+    }
+  )
+
+  await client.delete('root')
+
+  await client.destroy()
+})
+
+test.serial('get - text record', async t => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!'
+    },
+    textRec: {
+      hello: { en: 'hallo' },
+      world: { en: 'hmm' }
+    }
+  })
+
+  await client.set({
+    $id: 'viB',
+    title: {
+      en: 'nice!'
+    },
+    textRec: {
+      yes: { en: 'yes have it' }
+    }
+  })
+
+  await client.set({
+    $id: 'viC',
+    title: {
+      en: 'nice!'
+    },
+    parents: ['viB']
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      textRec: true
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      textRec: {
+        hello: 'hallo',
+        world: 'hmm'
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      textRec: {
+        world: true
+      }
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      textRec: {
+        world: 'hmm'
+      }
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viC',
+      $language: 'en',
+      id: true,
+      title: true,
+      textRec: {
+        $inherit: true
+      }
+    }),
+    {
+      id: 'viC',
+      title: 'nice!',
+      textRec: {
+        yes: 'yes have it'
       }
     }
   )
