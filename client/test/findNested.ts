@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   const client = connect({ port }, { loglevel: 'info' })
@@ -19,28 +19,28 @@ test.before(async t => {
     types: {
       league: {
         prefix: 'le',
-        fields: {}
+        fields: {},
       },
       team: {
         prefix: 'te',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
-      }
-    }
+          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -48,7 +48,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get nested results', async t => {
+test.serial('get nested results', async (t) => {
   const client = connect({ port })
 
   const matches = []
@@ -58,7 +58,7 @@ test.serial('get nested results', async t => {
     teams.push({
       $id: await client.id({ type: 'team' }),
       name: 'team ' + i,
-      type: 'team'
+      type: 'team',
     })
   }
 
@@ -70,19 +70,19 @@ test.serial('get nested results', async t => {
       parents: {
         $add: [
           teams[~~(Math.random() * teams.length)].$id,
-          teams[~~(Math.random() * teams.length)].$id
-        ]
+          teams[~~(Math.random() * teams.length)].$id,
+        ],
       },
-      status: i < 5 ? 100 : 300
+      status: i < 5 ? 100 : 300,
     })
   }
 
-  await Promise.all(teams.map(t => client.set(t)))
+  await Promise.all(teams.map((t) => client.set(t)))
 
   await client.set({
     type: 'league',
     name: 'league 1',
-    children: matches
+    children: matches,
   })
 
   const result = await client.get({
@@ -101,16 +101,16 @@ test.serial('get nested results', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'team'
+                $value: 'team',
               },
               {
                 $field: 'value',
                 $operator: '!=',
-                $value: 2
-              }
-            ]
-          }
-        }
+                $value: 2,
+              },
+            ],
+          },
+        },
       },
       $list: {
         $find: {
@@ -119,12 +119,12 @@ test.serial('get nested results', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
-            }
-          ]
-        }
-      }
-    }
+              $value: 'match',
+            },
+          ],
+        },
+      },
+    },
   })
 
   t.is(result.items.length, 10, 'items length')
@@ -141,7 +141,7 @@ test.serial('get nested results', async t => {
   t.true(true)
 })
 
-test.serial('get nested results with $all', async t => {
+test.serial('get nested results with $all', async (t) => {
   const client = connect({ port })
 
   const matches = []
@@ -151,7 +151,7 @@ test.serial('get nested results with $all', async t => {
     teams.push({
       $id: await client.id({ type: 'team' }),
       name: 'team ' + i,
-      type: 'team'
+      type: 'team',
     })
   }
 
@@ -163,19 +163,19 @@ test.serial('get nested results with $all', async t => {
       parents: {
         $add: [
           teams[~~(Math.random() * teams.length)].$id,
-          teams[~~(Math.random() * teams.length)].$id
-        ]
+          teams[~~(Math.random() * teams.length)].$id,
+        ],
       },
-      status: i < 5 ? 100 : 300
+      status: i < 5 ? 100 : 300,
     })
   }
 
-  await Promise.all(teams.map(t => client.set(t)))
+  await Promise.all(teams.map((t) => client.set(t)))
 
   await client.set({
     type: 'league',
     name: 'league 1',
-    children: matches
+    children: matches,
   })
 
   const result = await client.get({
@@ -190,16 +190,16 @@ test.serial('get nested results with $all', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'team'
+                $value: 'team',
               },
               {
                 $field: 'value',
                 $operator: '!=',
-                $value: 2
-              }
-            ]
-          }
-        }
+                $value: 2,
+              },
+            ],
+          },
+        },
       },
       $list: {
         $find: {
@@ -208,12 +208,12 @@ test.serial('get nested results with $all', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
-            }
-          ]
-        }
-      }
-    }
+              $value: 'match',
+            },
+          ],
+        },
+      },
+    },
   })
 
   t.is(result.items.length, 10, 'items length')
@@ -228,7 +228,7 @@ test.serial('get nested results with $all', async t => {
   t.true(true)
 })
 
-test.serial.skip('get nested results as ids', async t => {
+test.serial.skip('get nested results as ids', async (t) => {
   const client = connect({ port })
 
   const matches = []
@@ -238,7 +238,7 @@ test.serial.skip('get nested results as ids', async t => {
     teams.push({
       $id: await client.id({ type: 'team' }),
       name: 'team ' + i,
-      type: 'team'
+      type: 'team',
     })
   }
 
@@ -250,19 +250,19 @@ test.serial.skip('get nested results as ids', async t => {
       parents: {
         $add: [
           teams[~~(Math.random() * teams.length)].$id,
-          teams[~~(Math.random() * teams.length)].$id
-        ]
+          teams[~~(Math.random() * teams.length)].$id,
+        ],
       },
-      status: i < 5 ? 100 : 300
+      status: i < 5 ? 100 : 300,
     })
   }
 
-  await Promise.all(teams.map(t => client.set(t)))
+  await Promise.all(teams.map((t) => client.set(t)))
 
   await client.set({
     type: 'league',
     name: 'league 1',
-    children: matches
+    children: matches,
   })
 
   const result = await client.get({
@@ -276,12 +276,12 @@ test.serial.skip('get nested results as ids', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
-            }
-          ]
-        }
-      }
-    }
+              $value: 'match',
+            },
+          ],
+        },
+      },
+    },
   })
 
   console.log('RESULT', result)
@@ -298,7 +298,7 @@ test.serial.skip('get nested results as ids', async t => {
   t.true(true)
 })
 
-test.serial('get nested results without find', async t => {
+test.serial('get nested results without find', async (t) => {
   const client = connect({ port })
 
   const matches = []
@@ -308,7 +308,7 @@ test.serial('get nested results without find', async t => {
     teams.push({
       $id: await client.id({ type: 'team' }),
       name: 'team ' + i,
-      type: 'team'
+      type: 'team',
     })
   }
 
@@ -320,19 +320,19 @@ test.serial('get nested results without find', async t => {
       parents: {
         $add: [
           teams[~~(Math.random() * teams.length)].$id,
-          teams[~~(Math.random() * teams.length)].$id
-        ]
+          teams[~~(Math.random() * teams.length)].$id,
+        ],
       },
-      status: i < 5 ? 100 : 300
+      status: i < 5 ? 100 : 300,
     })
   }
 
-  await Promise.all(teams.map(t => client.set(t)))
+  await Promise.all(teams.map((t) => client.set(t)))
 
   const le = await client.set({
     type: 'league',
     name: 'league 1',
-    children: matches
+    children: matches,
   })
 
   const result = await client.get({
@@ -345,13 +345,13 @@ test.serial('get nested results without find', async t => {
         id: true,
         name: true,
         // $list: { $find: { $traverse: 'children' } }
-        $list: true
+        $list: true,
       },
-      $list: true
-    }
+      $list: true,
+    },
   })
 
-  const child = result.children.find(c => c.children.length)
+  const child = result.children.find((c) => c.children.length)
 
   t.is(child.children.length, 10, 'has teams')
 
