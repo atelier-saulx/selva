@@ -7,17 +7,17 @@ import getPort from 'get-port'
 let srv
 let port: number
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -27,10 +27,10 @@ test.beforeEach(async t => {
         nested: {
           type: 'object',
           properties: {
-            fun: { type: 'string' }
-          }
-        }
-      }
+            fun: { type: 'string' },
+          },
+        },
+      },
     },
     types: {
       lekkerType: {
@@ -39,14 +39,14 @@ test.beforeEach(async t => {
           strRec: {
             type: 'record',
             values: {
-              type: 'string'
-            }
+              type: 'string',
+            },
           },
           textRec: {
             type: 'record',
             values: {
-              type: 'text'
-            }
+              type: 'text',
+            },
           },
           objRec: {
             type: 'record',
@@ -54,13 +54,13 @@ test.beforeEach(async t => {
               type: 'object',
               properties: {
                 hello: {
-                  type: 'string'
+                  type: 'string',
                 },
                 value: {
-                  type: 'number'
-                }
-              }
-            }
+                  type: 'number',
+                },
+              },
+            },
           },
           thing: { type: 'set', items: { type: 'string' } },
           ding: {
@@ -72,17 +72,17 @@ test.beforeEach(async t => {
                 type: 'object',
                 properties: {
                   dung: { type: 'number' },
-                  dunk: { type: 'string' }
-                }
+                  dunk: { type: 'string' },
+                },
               },
               dunk: {
                 type: 'object',
                 properties: {
                   ding: { type: 'number' },
-                  dong: { type: 'number' }
-                }
-              }
-            }
+                  dong: { type: 'number' },
+                },
+              },
+            },
           },
           dong: { type: 'json' },
           dingdongs: { type: 'array', items: { type: 'string' } },
@@ -90,7 +90,7 @@ test.beforeEach(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -98,10 +98,10 @@ test.beforeEach(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       custom: {
         prefix: 'cu',
@@ -109,7 +109,7 @@ test.beforeEach(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -117,10 +117,10 @@ test.beforeEach(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       club: {
         prefix: 'cl',
@@ -128,7 +128,7 @@ test.beforeEach(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -136,36 +136,36 @@ test.beforeEach(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
           value: { type: 'number' },
-          description: { type: 'text' }
-        }
+          description: { type: 'text' },
+        },
       },
       yesno: {
         prefix: 'yn',
         fields: {
           bolYes: { type: 'boolean' },
-          bolNo: { type: 'boolean' }
-        }
-      }
-    }
+          bolNo: { type: 'boolean' },
+        },
+      },
+    },
   })
 
   // A small delay is needed after setting the schema
-  await new Promise(r => setTimeout(r, 100))
+  await new Promise((r) => setTimeout(r, 100))
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -173,12 +173,12 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('get $value', async t => {
+test.serial('get $value', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'maTest',
-    title: { en: 'hello' }
+    title: { en: 'hello' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -190,10 +190,10 @@ test.serial.only('get $value', async t => {
       objectField: {
         $value: {
           something: {
-            complex: true
-          }
-        }
-      }
+            complex: true,
+          },
+        },
+      },
     }),
     {
       id: 'maTest',
@@ -201,9 +201,9 @@ test.serial.only('get $value', async t => {
       title: 'overwrite title as string',
       objectField: {
         something: {
-          complex: true
-        }
-      }
+          complex: true,
+        },
+      },
     }
   )
 
@@ -211,19 +211,19 @@ test.serial.only('get $value', async t => {
   await client.destroy()
 })
 
-test.serial('get nested queries', async t => {
+test.serial('get nested queries', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'maTest',
     value: 11,
-    title: { en: 'hello' }
+    title: { en: 'hello' },
   })
 
   await client.set({
     $id: 'maTest2',
     value: 12,
-    title: { en: 'halloumi' }
+    title: { en: 'halloumi' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -233,43 +233,43 @@ test.serial('get nested queries', async t => {
       someItem: {
         $id: 'maTest2',
         title: true,
-        nestedThing: { $id: 'maTest', value: true }
+        nestedThing: { $id: 'maTest', value: true },
       },
       values: [
         {
           $id: 'maTest',
           id: true,
-          value: true
+          value: true,
         },
         {
           $id: 'maTest2',
           id: true,
-          value: true
-        }
+          value: true,
+        },
       ],
-      title: true
+      title: true,
     }),
     {
       id: 'maTest',
       title: { en: 'hello' },
       someItem: {
         title: {
-          en: 'halloumi'
+          en: 'halloumi',
         },
         nestedThing: {
-          value: 11
-        }
+          value: 11,
+        },
       },
       values: [
         {
           id: 'maTest',
-          value: 11
+          value: 11,
         },
         {
           id: 'maTest2',
-          value: 12
-        }
-      ]
+          value: 12,
+        },
+      ],
     }
   )
 
@@ -277,13 +277,13 @@ test.serial('get nested queries', async t => {
   await client.destroy()
 })
 
-test.serial('get boolean value', async t => {
+test.serial('get boolean value', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'ynTest',
     bolYes: true,
-    bolNo: false
+    bolNo: false,
   })
 
   t.deepEqualIgnoreOrder(
@@ -291,12 +291,12 @@ test.serial('get boolean value', async t => {
       $id: 'ynTest',
       id: true,
       bolYes: true,
-      bolNo: true
+      bolNo: true,
     }),
     {
       id: 'ynTest',
       bolYes: true,
-      bolNo: false
+      bolNo: false,
     }
   )
 
@@ -304,13 +304,13 @@ test.serial('get boolean value', async t => {
   await client.destroy()
 })
 
-test.serial('get complex with $value and array syntax', async t => {
+test.serial('get complex with $value and array syntax', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'maTest',
     title: { en: 'hello' },
-    description: { en: 'yesh' }
+    description: { en: 'yesh' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -320,33 +320,33 @@ test.serial('get complex with $value and array syntax', async t => {
         {
           id: true,
           parents: true,
-          ancestors: true
+          ancestors: true,
         },
         {
           name: true,
-          somethingNice: { $value: 'yesh' }
+          somethingNice: { $value: 'yesh' },
         },
         {
           title: true,
-          description: true
-        }
-      ]
+          description: true,
+        },
+      ],
     }),
     {
       allMyThings: [
         {
           id: 'maTest',
           parents: ['root'],
-          ancestors: ['root']
+          ancestors: ['root'],
         },
         {
-          somethingNice: 'yesh'
+          somethingNice: 'yesh',
         },
         {
           title: { en: 'hello' },
-          description: { en: 'yesh' }
-        }
-      ]
+          description: { en: 'yesh' },
+        },
+      ],
     }
   )
 
@@ -354,16 +354,16 @@ test.serial('get complex with $value and array syntax', async t => {
   await client.destroy()
 })
 
-test.serial('get - root', async t => {
+test.serial('get - root', async (t) => {
   const client = connect({ port })
 
   const match = await client.set({
-    $id: 'maTest'
+    $id: 'maTest',
   })
 
   await client.set({
     $id: 'root',
-    value: 2555
+    value: 2555,
   })
 
   t.deepEqual(
@@ -371,12 +371,12 @@ test.serial('get - root', async t => {
       $id: 'root',
       id: true,
       value: true,
-      children: true
+      children: true,
     }),
     {
       id: 'root',
       value: 2555,
-      children: [match]
+      children: [match],
     }
   )
 
@@ -384,29 +384,29 @@ test.serial('get - root', async t => {
     await client.get({
       id: true,
       value: true,
-      children: true
+      children: true,
     }),
     {
       id: 'root',
       value: 2555,
-      children: [match]
+      children: [match],
     }
   )
 
   await client.set({
     $id: 'root',
-    nested: { fun: 'yes fun' }
+    nested: { fun: 'yes fun' },
   })
 
   t.deepEqual(
     await client.get({
       $id: 'root',
       id: true,
-      nested: { $all: true }
+      nested: { $all: true },
     }),
     {
       id: 'root',
-      nested: { fun: 'yes fun' }
+      nested: { fun: 'yes fun' },
     }
   )
 
@@ -415,22 +415,22 @@ test.serial('get - root', async t => {
   await client.destroy()
 })
 
-test.serial('get - basic', async t => {
+test.serial('get - basic', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     value: 25,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   t.deepEqual(
@@ -438,22 +438,22 @@ test.serial('get - basic', async t => {
       $id: 'viA',
       id: true,
       title: true,
-      value: true
+      value: true,
     }),
     {
       id: 'viA',
       title: { en: 'nice!' },
-      value: 25
+      value: 25,
     }
   )
 
   t.deepEqual(
     await client.get({
       $id: 'viA',
-      auth: true
+      auth: true,
     }),
     {
-      auth: { role: { id: ['root'], type: 'admin' } }
+      auth: { role: { id: ['root'], type: 'admin' } },
     },
     'get role'
   )
@@ -475,34 +475,34 @@ test.serial('get - basic', async t => {
   await client.destroy()
 })
 
-test.serial('get - $all simple', async t => {
+test.serial('get - $all simple', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'maA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     description: {
-      en: 'yesh'
-    }
+      en: 'yesh',
+    },
   })
 
   t.deepEqual(
     await client.get({
       $id: 'maA',
       $all: true,
-      aliases: false
+      aliases: false,
     }),
     {
       id: 'maA',
       type: 'match',
       title: {
-        en: 'nice!'
+        en: 'nice!',
       },
       description: {
-        en: 'yesh'
-      }
+        en: 'yesh',
+      },
     }
   )
 
@@ -511,90 +511,44 @@ test.serial('get - $all simple', async t => {
   await client.destroy()
 })
 
-test.serial('get - $all root level whitelist + $all', async t => {
+test.serial('get - $all root level whitelist + $all', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'clA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     description: {
-      en: 'yesh'
+      en: 'yesh',
     },
     image: {
       thumb: 'thumb',
-      poster: 'poster'
-    }
+      poster: 'poster',
+    },
   })
 
   t.deepEqual(
     await client.get({
       $id: 'clA',
       image: {
-        thumb: true
-      },
-      $all: true,
-      aliases: false
-    }),
-    {
-      id: 'clA',
-      type: 'club',
-      title: {
-        en: 'nice!'
-      },
-      description: {
-        en: 'yesh'
-      },
-      image: {
-        thumb: 'thumb'
-      }
-    }
-  )
-
-  await client.delete('root')
-
-  await client.destroy()
-})
-
-test.serial('get - $all root level whitelist + blacklists + $all', async t => {
-  const client = connect({ port })
-
-  await client.set({
-    $id: 'clA',
-    title: {
-      en: 'nice!'
-    },
-    description: {
-      en: 'yesh'
-    },
-    image: {
-      thumb: 'thumb',
-      poster: 'poster'
-    }
-  })
-
-  t.deepEqual(
-    await client.get({
-      $id: 'clA',
-      image: {
-        $all: true,
         thumb: true,
-        poster: false
       },
-      description: false,
       $all: true,
-      aliases: false
+      aliases: false,
     }),
     {
       id: 'clA',
       type: 'club',
       title: {
-        en: 'nice!'
+        en: 'nice!',
+      },
+      description: {
+        en: 'yesh',
       },
       image: {
-        thumb: 'thumb'
-      }
+        thumb: 'thumb',
+      },
     }
   )
 
@@ -603,17 +557,66 @@ test.serial('get - $all root level whitelist + blacklists + $all', async t => {
   await client.destroy()
 })
 
-test.serial('get - $all nested', async t => {
+test.serial(
+  'get - $all root level whitelist + blacklists + $all',
+  async (t) => {
+    const client = connect({ port })
+
+    await client.set({
+      $id: 'clA',
+      title: {
+        en: 'nice!',
+      },
+      description: {
+        en: 'yesh',
+      },
+      image: {
+        thumb: 'thumb',
+        poster: 'poster',
+      },
+    })
+
+    t.deepEqual(
+      await client.get({
+        $id: 'clA',
+        image: {
+          $all: true,
+          thumb: true,
+          poster: false,
+        },
+        description: false,
+        $all: true,
+        aliases: false,
+      }),
+      {
+        id: 'clA',
+        type: 'club',
+        title: {
+          en: 'nice!',
+        },
+        image: {
+          thumb: 'thumb',
+        },
+      }
+    )
+
+    await client.delete('root')
+
+    await client.destroy()
+  }
+)
+
+test.serial('get - $all nested', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'maA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     description: {
-      en: 'yesh'
-    }
+      en: 'yesh',
+    },
   })
 
   t.deepEqual(
@@ -621,20 +624,20 @@ test.serial('get - $all nested', async t => {
       $id: 'maA',
       id: true,
       title: {
-        $all: true
+        $all: true,
       },
       description: {
-        $all: true
-      }
+        $all: true,
+      },
     }),
     {
       id: 'maA',
       title: {
-        en: 'nice!'
+        en: 'nice!',
       },
       description: {
-        en: 'yesh'
-      }
+        en: 'yesh',
+      },
     }
   )
 
@@ -643,20 +646,20 @@ test.serial('get - $all nested', async t => {
   await client.destroy()
 })
 
-test.serial('get - $all deeply nested', async t => {
+test.serial('get - $all deeply nested', async (t) => {
   const client = connect({ port })
 
   const entry = await client.set({
     type: 'lekkerType',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     ding: {
       dang: {
         dung: 115,
-        dunk: ''
-      }
-    }
+        dunk: '',
+      },
+    },
   })
 
   t.deepEqual(
@@ -664,21 +667,21 @@ test.serial('get - $all deeply nested', async t => {
       $id: entry,
       id: true,
       title: {
-        en: true
+        en: true,
       },
-      ding: { $all: true }
+      ding: { $all: true },
     }),
     {
       id: entry,
       title: {
-        en: 'nice!'
+        en: 'nice!',
       },
       ding: {
         dang: {
           dung: 115,
-          dunk: ''
-        }
-      }
+          dunk: '',
+        },
+      },
     }
   )
 
@@ -687,21 +690,21 @@ test.serial('get - $all deeply nested', async t => {
       $id: entry,
       id: true,
       title: {
-        en: true
+        en: true,
       },
-      ding: { dang: { $all: true } }
+      ding: { dang: { $all: true } },
     }),
     {
       id: entry,
       title: {
-        en: 'nice!'
+        en: 'nice!',
       },
       ding: {
         dang: {
           dung: 115,
-          dunk: ''
-        }
-      }
+          dunk: '',
+        },
+      },
     }
   )
 
@@ -710,18 +713,18 @@ test.serial('get - $all deeply nested', async t => {
   await client.destroy()
 })
 
-test.serial('get - $default', async t => {
+test.serial('get - $default', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viflap',
-    title: { en: 'flap' }
+    title: { en: 'flap' },
   })
 
   t.deepEqual(
     await client.get({
       $id: 'viflap',
-      age: { $default: 100 }
+      age: { $default: 100 },
     }),
     { age: 100 }
   )
@@ -731,11 +734,11 @@ test.serial('get - $default', async t => {
       $id: 'viflap',
       title: {
         en: { $default: 'untitled' },
-        nl: { $default: 'naamloos' }
-      }
+        nl: { $default: 'naamloos' },
+      },
     }),
     {
-      title: { en: 'flap', nl: 'naamloos' }
+      title: { en: 'flap', nl: 'naamloos' },
     }
   )
 
@@ -744,12 +747,12 @@ test.serial('get - $default', async t => {
   client.destroy()
 })
 
-test.serial('get - $language', async t => {
+test.serial('get - $language', async (t) => {
   const client = connect({ port })
   await client.set({
     $id: 'viflap',
     title: { en: 'flap', nl: 'flurp' },
-    description: { en: 'yes', nl: 'ja' }
+    description: { en: 'yes', nl: 'ja' },
   })
 
   t.deepEqual(
@@ -757,24 +760,24 @@ test.serial('get - $language', async t => {
       $id: 'viflap',
       title: true,
       description: true,
-      $language: 'nl'
+      $language: 'nl',
     }),
     {
       title: 'flurp',
-      description: 'ja'
+      description: 'ja',
     }
   )
 
   await client.set({
     $id: 'viflurx',
-    title: { en: 'flap', nl: 'flurp' }
+    title: { en: 'flap', nl: 'flurp' },
   })
 
   t.deepEqual(
     await client.get({
       $id: 'viflurx',
       $language: 'nl',
-      description: { $default: 'flurpy' }
+      description: { $default: 'flurpy' },
     }),
     { description: 'flurpy' }
   )
@@ -784,7 +787,7 @@ test.serial('get - $language', async t => {
   client.destroy()
 })
 
-test.serial('get - field with empty array', async t => {
+test.serial('get - field with empty array', async (t) => {
   const client = connect({ port })
 
   const id = await client.set({
@@ -793,7 +796,7 @@ test.serial('get - field with empty array', async t => {
     dong: { dingdong: [] },
     ding: { dong: [] },
     dingdongs: [],
-    refs: []
+    refs: [],
   })
 
   const result = await client.get({
@@ -804,70 +807,70 @@ test.serial('get - field with empty array', async t => {
     dingdongs: true,
     children: true,
     descendants: true,
-    refs: true
+    refs: true,
   })
 
   t.deepEqual(result, {
     children: [],
     descendants: [],
     dingdongs: [],
-    dong: { dingdong: [] }
+    dong: { dingdong: [] },
   })
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: id,
-      $all: true
+      $all: true,
     }),
     {
       id,
       dong: { dingdong: [] },
       type: 'lekkerType',
-      dingdongs: []
+      dingdongs: [],
     }
   )
 
   client.destroy()
 })
 
-test.serial('get - set with some items', async t => {
+test.serial('get - set with some items', async (t) => {
   const client = connect({ port })
 
   const id = await client.set({
     type: 'lekkerType',
-    thing: ['a', 'b']
+    thing: ['a', 'b'],
   })
 
   const result = await client.get({
     $id: id,
-    thing: true
+    thing: true,
   })
 
   t.deepEqual(result, {
-    thing: ['a', 'b']
+    thing: ['a', 'b'],
   })
 
   client.destroy()
 })
 
-test.serial('get - hierarchy', async t => {
+test.serial('get - hierarchy', async (t) => {
   const client = connect({ port })
 
   await Promise.all([
     await client.set({
-      $id: 'viflo'
+      $id: 'viflo',
     }),
     await client.set({
-      $id: 'maflux'
-    })
+      $id: 'maflux',
+    }),
   ])
   await client.set({
     $id: 'vifla',
-    children: ['viflo', 'maflux']
+    children: ['viflo', 'maflux'],
   })
   await client.set({
     $id: 'viflapx',
-    children: ['vifla', 'viflo']
+    children: ['vifla', 'viflo'],
   })
 
   t.deepEqualIgnoreOrder(
@@ -875,22 +878,22 @@ test.serial('get - hierarchy', async t => {
       $id: 'viflapx',
       descendants: true,
       children: true,
-      parents: true
+      parents: true,
     }),
     {
       descendants: ['viflo', 'vifla', 'maflux'],
       children: ['viflo', 'vifla'],
-      parents: ['root']
+      parents: ['root'],
     }
   )
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'maflux',
-      ancestors: true
+      ancestors: true,
     }),
     {
-      ancestors: ['root', 'vifla', 'viflapx']
+      ancestors: ['root', 'vifla', 'viflapx'],
     }
   )
 
@@ -899,7 +902,7 @@ test.serial('get - hierarchy', async t => {
   await client.destroy()
 })
 
-test.serial('get - $inherit', async t => {
+test.serial('get - $inherit', async (t) => {
   const client = connect({ port })
   /*
     root
@@ -947,53 +950,53 @@ test.serial('get - $inherit', async t => {
     client.set({
       $id: 'cuA',
       image: {
-        thumb: 'flurp.jpg'
+        thumb: 'flurp.jpg',
       },
       title: { en: 'snurf' },
-      children: ['cuB', 'cuC']
+      children: ['cuB', 'cuC'],
     }),
     client.set({
       $id: 'cuB',
-      children: ['cuC', 'cuD']
+      children: ['cuC', 'cuD'],
     }),
     client.set({
       $id: 'cuX',
-      children: ['cuC']
+      children: ['cuC'],
     }),
     client.set({
       $id: 'clClub',
       image: {
-        thumb: 'bla.jpg'
+        thumb: 'bla.jpg',
       },
-      children: ['cuB']
+      children: ['cuB'],
     }),
     client.set({
       $id: 'cuDfp',
       name: 'dfp',
       image: {
-        thumb: 'dfp.jpg'
+        thumb: 'dfp.jpg',
       },
-      children: ['cuD']
+      children: ['cuD'],
     }),
     client.set({
       $id: 'cuMrsnurfels',
       name: 'MrSnurfels',
       image: {
-        thumb: 'snurfels.jpg'
+        thumb: 'snurfels.jpg',
       },
-      children: ['cuD']
-    })
+      children: ['cuD'],
+    }),
   ])
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'cuD',
-      title: { $inherit: { $type: ['custom', 'club'] } }
+      title: { $inherit: { $type: ['custom', 'club'] } },
     }),
     {
       title: {
-        en: 'snurf'
-      }
+        en: 'snurf',
+      },
     }
   )
 
@@ -1001,10 +1004,10 @@ test.serial('get - $inherit', async t => {
     await client.get({
       $id: 'cuC',
       $language: 'nl',
-      title: { $inherit: { $type: ['custom', 'club'] } }
+      title: { $inherit: { $type: ['custom', 'club'] } },
     }),
     {
-      title: 'snurf'
+      title: 'snurf',
     }
   )
 
@@ -1014,14 +1017,14 @@ test.serial('get - $inherit', async t => {
       club: {
         $inherit: { $item: 'club' },
         image: true,
-        id: true
-      }
+        id: true,
+      },
     }),
     {
       club: {
         image: { thumb: 'bla.jpg' },
-        id: 'clClub'
-      }
+        id: 'clClub',
+      },
     }
   )
 
@@ -1031,14 +1034,14 @@ test.serial('get - $inherit', async t => {
       flapdrol: {
         $inherit: { $item: ['custom', 'club'] },
         image: true,
-        id: true
-      }
+        id: true,
+      },
     }),
     {
       flapdrol: {
         image: { thumb: 'flurp.jpg' },
-        id: 'cuA'
-      }
+        id: 'cuA',
+      },
     }
   )
 
@@ -1048,14 +1051,14 @@ test.serial('get - $inherit', async t => {
       flapdrol: {
         $inherit: { $item: ['custom', 'club'], $required: ['image'] },
         image: true,
-        id: true
-      }
+        id: true,
+      },
     }),
     {
       flapdrol: {
         image: { thumb: 'flurp.jpg' },
-        id: 'cuA'
-      }
+        id: 'cuA',
+      },
     }
   )
 
@@ -1065,8 +1068,8 @@ test.serial('get - $inherit', async t => {
       flapdrol: {
         $inherit: { $item: ['region', 'federation'] },
         image: true,
-        id: true
-      }
+        id: true,
+      },
     }),
     {
       // flapdrol: {}
@@ -1077,11 +1080,11 @@ test.serial('get - $inherit', async t => {
     await client.get({
       $id: 'cuC',
       image: {
-        $inherit: { $type: ['custom', 'club'] }
-      }
+        $inherit: { $type: ['custom', 'club'] },
+      },
     }),
     {
-      image: { thumb: 'flurp.jpg' }
+      image: { thumb: 'flurp.jpg' },
     }
   )
 
@@ -1092,11 +1095,11 @@ test.serial('get - $inherit', async t => {
       flapdrol: {
         $inherit: { $item: ['custom', 'club'], $required: ['image.icon'] },
         image: true,
-        id: true
-      }
+        id: true,
+      },
     }),
     {
-      id: 'cuC'
+      id: 'cuC',
       // flapdrol: {}
     }
   )
@@ -1119,126 +1122,129 @@ test.serial('get - $inherit', async t => {
   await client.destroy()
 })
 
-test.serial('get - $inherit with object types does shallow merge', async t => {
-  const client = connect({ port })
+test.serial(
+  'get - $inherit with object types does shallow merge',
+  async (t) => {
+    const client = connect({ port })
 
-  const parentOfParent = await client.set({
-    $id: 'vipofp',
-    type: 'lekkerType',
-    title: {
-      en: 'nice!',
-      de: 'dont want to inherit this'
-    },
-    ding: {
-      dang: {
-        dung: 9000,
-        dunk: 'helloooo should not be there'
-      },
-      dong: ['hello', 'yesh'],
-      dung: 123
-    }
-  })
-
-  const parentEntry = await client.set({
-    $id: 'vip',
-    type: 'lekkerType',
-    title: {
-      en: 'nice!',
-      de: 'dont want to inherit this'
-    },
-    parents: {
-      $add: [parentOfParent]
-    },
-    ding: {
-      dang: {
-        dung: 115
-      }
-    }
-  })
-
-  const entry = await client.set({
-    $id: 'vie',
-    type: 'lekkerType',
-    parents: {
-      $add: [parentEntry]
-    },
-    title: {
-      en: 'nice!'
-    }
-  })
-
-  t.deepEqualIgnoreOrder(
-    await client.get({
-      $id: entry,
-      id: true,
-      title: { $inherit: { $type: 'lekkerType', $merge: true } }, // TODO: throw, not allowed probably
-      ding: { $inherit: { $type: 'lekkerType', $merge: true } }
-    }),
-    {
-      id: entry,
+    const parentOfParent = await client.set({
+      $id: 'vipofp',
+      type: 'lekkerType',
       title: {
-        en: 'nice!'
+        en: 'nice!',
+        de: 'dont want to inherit this',
       },
       ding: {
-        dong: ['hello', 'yesh'],
         dang: {
-          dung: 115
+          dung: 9000,
+          dunk: 'helloooo should not be there',
         },
-        dung: 123
+        dong: ['hello', 'yesh'],
+        dung: 123,
+      },
+    })
+
+    const parentEntry = await client.set({
+      $id: 'vip',
+      type: 'lekkerType',
+      title: {
+        en: 'nice!',
+        de: 'dont want to inherit this',
+      },
+      parents: {
+        $add: [parentOfParent],
+      },
+      ding: {
+        dang: {
+          dung: 115,
+        },
+      },
+    })
+
+    const entry = await client.set({
+      $id: 'vie',
+      type: 'lekkerType',
+      parents: {
+        $add: [parentEntry],
+      },
+      title: {
+        en: 'nice!',
+      },
+    })
+
+    t.deepEqualIgnoreOrder(
+      await client.get({
+        $id: entry,
+        id: true,
+        title: { $inherit: { $type: 'lekkerType', $merge: true } }, // TODO: throw, not allowed probably
+        ding: { $inherit: { $type: 'lekkerType', $merge: true } },
+      }),
+      {
+        id: entry,
+        title: {
+          en: 'nice!',
+        },
+        ding: {
+          dong: ['hello', 'yesh'],
+          dang: {
+            dung: 115,
+          },
+          dung: 123,
+        },
       }
-    }
-  )
+    )
 
-  await client.delete('root')
+    await client.delete('root')
 
-  client.destroy()
-})
+    client.destroy()
+  }
+)
 
 test.serial(
   'get - $inherit with object types shallow merge is by default disabled',
-  async t => {
+  async (t) => {
     const client = connect({ port })
 
     const parentOfParent = await client.set({
       type: 'lekkerType',
       title: {
         en: 'nice!',
-        de: 'dont want to inherit this'
+        de: 'dont want to inherit this',
       },
       ding: {
         dang: {
           dung: 9000,
-          dunk: 'helloooo should not be there'
+          dunk: 'helloooo should not be there',
         },
         dong: ['hello', 'yesh'],
-        dung: 123
-      }
+        dung: 123,
+      },
     })
 
     const parentEntry = await client.set({
       type: 'lekkerType',
       title: {
         en: 'nice!',
-        de: 'dont want to inherit this'
+        de: 'dont want to inherit this',
       },
       parents: {
-        $add: [parentOfParent]
+        $add: [parentOfParent],
       },
       ding: {
         dang: {
-          dung: 115
-        }
-      }
+          dung: 115,
+        },
+      },
     })
 
     const entry = await client.set({
       type: 'lekkerType',
       parents: {
-        $add: [parentEntry]
+        $add: [parentEntry],
       },
       title: {
-        en: 'nice!'
-      }
+        en: 'nice!',
+      },
     })
 
     t.deepEqualIgnoreOrder(
@@ -1246,18 +1252,18 @@ test.serial(
         $id: entry,
         id: true,
         title: { $inherit: { $type: 'lekkerType' } },
-        ding: { $inherit: { $type: ['lekkerType'] } }
+        ding: { $inherit: { $type: ['lekkerType'] } },
       }),
       {
         id: entry,
         title: {
-          en: 'nice!'
+          en: 'nice!',
         },
         ding: {
           dang: {
-            dung: 115
-          }
-        }
+            dung: 115,
+          },
+        },
       }
     )
 
@@ -1269,58 +1275,58 @@ test.serial(
 
 test.serial(
   'get - $inherit with object types of nested objects, does shallow merge',
-  async t => {
+  async (t) => {
     const client = connect({ port })
 
     const parentOfParent = await client.set({
       type: 'lekkerType',
       title: {
         en: 'nice!',
-        de: 'dont want to inherit this'
+        de: 'dont want to inherit this',
       },
       ding: {
         dang: {
           dung: 9000,
-          dunk: 'yesh'
+          dunk: 'yesh',
         },
         dunk: {
           ding: 9000,
-          dong: 9000
+          dong: 9000,
         },
-        dung: 123
-      }
+        dung: 123,
+      },
     })
 
     const parentEntry = await client.set({
       type: 'lekkerType',
       title: {
         en: 'nice!',
-        de: 'dont want to inherit this'
+        de: 'dont want to inherit this',
       },
       parents: {
-        $add: [parentOfParent]
+        $add: [parentOfParent],
       },
       ding: {
         dang: {
-          dung: 115
+          dung: 115,
         },
         dunk: {
-          ding: 123
-        }
-      }
+          ding: 123,
+        },
+      },
     })
 
     const entry = await client.set({
       type: 'lekkerType',
       parents: {
-        $add: [parentEntry]
+        $add: [parentEntry],
       },
       title: {
-        en: 'nice!'
+        en: 'nice!',
       },
       ding: {
-        dung: 1
-      }
+        dung: 1,
+      },
     })
 
     t.deepEqualIgnoreOrder(
@@ -1331,25 +1337,25 @@ test.serial(
         ding: {
           dang: { $inherit: { $type: 'lekkerType', $merge: true } },
           dunk: { $inherit: { $type: 'lekkerType', $merge: true } },
-          dung: { $inherit: { $type: 'lekkerType' } }
-        }
+          dung: { $inherit: { $type: 'lekkerType' } },
+        },
       }),
       {
         id: entry,
         title: {
-          en: 'nice!'
+          en: 'nice!',
         },
         ding: {
           dang: {
             dung: 115,
-            dunk: 'yesh'
+            dunk: 'yesh',
           },
           dunk: {
             ding: 123,
-            dong: 9000
+            dong: 9000,
           },
-          dung: 1
-        }
+          dung: 1,
+        },
       }
     )
 
@@ -1359,22 +1365,22 @@ test.serial(
   }
 )
 
-test.serial('get - basic with many ids', async t => {
+test.serial('get - basic with many ids', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     value: 25,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   t.deepEqual(
@@ -1382,47 +1388,47 @@ test.serial('get - basic with many ids', async t => {
       $id: ['viZ', 'viA'],
       id: true,
       title: true,
-      value: true
+      value: true,
     }),
     {
       id: 'viA',
       title: { en: 'nice!' },
-      value: 25
+      value: 25,
     }
   )
 
   t.deepEqual(
     await client.get({
       $id: ['viA', 'viZ'],
-      value: true
+      value: true,
     }),
     {
-      value: 25
+      value: 25,
     }
   )
 
   t.deepEqual(
     await client.get({
       $alias: ['abba', 'viA'],
-      value: true
+      value: true,
     }),
     {
-      value: 25
+      value: 25,
     }
   )
 
   await client.set({
     $id: 'viA',
-    aliases: { $add: 'abba' }
+    aliases: { $add: 'abba' },
   })
 
   t.deepEqual(
     await client.get({
       $alias: ['abba', 'viZ'],
-      value: true
+      value: true,
     }),
     {
-      value: 25
+      value: 25,
     }
   )
 
@@ -1431,10 +1437,10 @@ test.serial('get - basic with many ids', async t => {
       $id: ['viZ', 'viY'],
       $language: 'en',
       id: true,
-      title: true
+      title: true,
     }),
     {
-      $isNull: true
+      $isNull: true,
     }
   )
 
@@ -1443,22 +1449,22 @@ test.serial('get - basic with many ids', async t => {
   await client.destroy()
 })
 
-test.serial('get - basic with non-priority language', async t => {
+test.serial('get - basic with non-priority language', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viA',
     title: {
-      de: 'nice de!'
+      de: 'nice de!',
     },
     value: 25,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   t.deepEqual(
@@ -1467,12 +1473,12 @@ test.serial('get - basic with non-priority language', async t => {
       $id: ['viZ', 'viA'],
       id: true,
       title: true,
-      value: true
+      value: true,
     }),
     {
       id: 'viA',
       title: 'nice de!',
-      value: 25
+      value: 25,
     }
   )
 
@@ -1482,20 +1488,20 @@ test.serial('get - basic with non-priority language', async t => {
       $id: ['viZ', 'viA'],
       id: true,
       title: true,
-      value: true
+      value: true,
     }),
     {
       id: 'viA',
       title: 'nice de!',
-      value: 25
+      value: 25,
     }
   )
 
   await client.set({
     $id: 'viA',
     title: {
-      nl: 'nice nl!'
-    }
+      nl: 'nice nl!',
+    },
   })
 
   t.deepEqual(
@@ -1504,12 +1510,12 @@ test.serial('get - basic with non-priority language', async t => {
       $id: ['viZ', 'viA'],
       id: true,
       title: true,
-      value: true
+      value: true,
     }),
     {
       id: 'viA',
       title: 'nice de!',
-      value: 25
+      value: 25,
     }
   )
 
@@ -1519,12 +1525,12 @@ test.serial('get - basic with non-priority language', async t => {
       $id: ['viZ', 'viA'],
       id: true,
       title: true,
-      value: true
+      value: true,
     }),
     {
       id: 'viA',
       title: 'nice nl!',
-      value: 25
+      value: 25,
     }
   )
 
@@ -1533,28 +1539,28 @@ test.serial('get - basic with non-priority language', async t => {
   await client.destroy()
 })
 
-test.serial('get - record', async t => {
+test.serial('get - record', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     strRec: {
       hello: 'hallo',
-      world: 'hmm'
+      world: 'hmm',
     },
     objRec: {
       myObj1: {
         hello: 'pff',
-        value: 12
+        value: 12,
       },
       obj2: {
         hello: 'ffp',
-        value: 12
-      }
-    }
+        value: 12,
+      },
+    },
   })
 
   t.deepEqual(
@@ -1563,15 +1569,15 @@ test.serial('get - record', async t => {
       $language: 'en',
       id: true,
       title: true,
-      strRec: true
+      strRec: true,
     }),
     {
       id: 'viA',
       title: 'nice!',
       strRec: {
         hello: 'hallo',
-        world: 'hmm'
-      }
+        world: 'hmm',
+      },
     }
   )
 
@@ -1582,15 +1588,15 @@ test.serial('get - record', async t => {
       id: true,
       title: true,
       strRec: {
-        world: true
-      }
+        world: true,
+      },
     }),
     {
       id: 'viA',
       title: 'nice!',
       strRec: {
-        world: 'hmm'
-      }
+        world: 'hmm',
+      },
     }
   )
 
@@ -1600,7 +1606,7 @@ test.serial('get - record', async t => {
       $language: 'en',
       id: true,
       title: true,
-      objRec: true
+      objRec: true,
     }),
     {
       id: 'viA',
@@ -1608,13 +1614,13 @@ test.serial('get - record', async t => {
       objRec: {
         myObj1: {
           hello: 'pff',
-          value: 12
+          value: 12,
         },
         obj2: {
           hello: 'ffp',
-          value: 12
-        }
-      }
+          value: 12,
+        },
+      },
     }
   )
 
@@ -1626,24 +1632,24 @@ test.serial('get - record', async t => {
       title: true,
       objRec: {
         myObj1: {
-          value: true
+          value: true,
         },
         obj2: {
-          hello: true
-        }
-      }
+          hello: true,
+        },
+      },
     }),
     {
       id: 'viA',
       title: 'nice!',
       objRec: {
         myObj1: {
-          value: 12
+          value: 12,
         },
         obj2: {
-          hello: 'ffp'
-        }
-      }
+          hello: 'ffp',
+        },
+      },
     }
   )
 
@@ -1652,36 +1658,36 @@ test.serial('get - record', async t => {
   await client.destroy()
 })
 
-test.serial('get - text record', async t => {
+test.serial('get - text record', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     textRec: {
       hello: { en: 'hallo' },
-      world: { en: 'hmm' }
-    }
+      world: { en: 'hmm' },
+    },
   })
 
   await client.set({
     $id: 'viB',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     textRec: {
-      yes: { en: 'yes have it' }
-    }
+      yes: { en: 'yes have it' },
+    },
   })
 
   await client.set({
     $id: 'viC',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
-    parents: ['viB']
+    parents: ['viB'],
   })
 
   t.deepEqual(
@@ -1690,15 +1696,15 @@ test.serial('get - text record', async t => {
       $language: 'en',
       id: true,
       title: true,
-      textRec: true
+      textRec: true,
     }),
     {
       id: 'viA',
       title: 'nice!',
       textRec: {
         hello: 'hallo',
-        world: 'hmm'
-      }
+        world: 'hmm',
+      },
     }
   )
 
@@ -1709,15 +1715,15 @@ test.serial('get - text record', async t => {
       id: true,
       title: true,
       textRec: {
-        world: true
-      }
+        world: true,
+      },
     }),
     {
       id: 'viA',
       title: 'nice!',
       textRec: {
-        world: 'hmm'
-      }
+        world: 'hmm',
+      },
     }
   )
 
@@ -1728,15 +1734,15 @@ test.serial('get - text record', async t => {
       id: true,
       title: true,
       textRec: {
-        $inherit: true
-      }
+        $inherit: true,
+      },
     }),
     {
       id: 'viC',
       title: 'nice!',
       textRec: {
-        yes: 'yes have it'
-      }
+        yes: 'yes have it',
+      },
     }
   )
 
