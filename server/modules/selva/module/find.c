@@ -29,6 +29,7 @@ enum SelvaModify_Hierarchy_Algo {
 
 struct FindCommand_Args {
     RedisModuleCtx *ctx;
+    SelvaModify_Hierarchy *hierarchy;
 
     ssize_t *nr_nodes; /*!< Number of nodes in the result. */
     ssize_t offset; /*!< Start from nth node. */
@@ -395,7 +396,7 @@ static int fields_contains(struct SelvaObject *fields, const char *field_name_st
     return 0;
 }
 
-static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *fields) {
+static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selva_NodeId nodeId, struct SelvaObject *fields) {
     RedisModuleString *id;
     int err;
 
@@ -462,6 +463,36 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct Sel
 
             SVector_ForeachBegin(&it, vec);
             while ((field = SVector_Foreach(&it))) {
+                TO_STR(field);
+
+                if (!strcmp(field_str, "ancestors")) {
+                    RedisModule_ReplyWithString(ctx, field);
+                    /* Ancestors is forbidden because we only supportone traversal at time. */
+                    replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_EINVAL, "Forbidden field");
+
+                    nr_fields++;
+                    break;
+                } else if (!strcmp(field_str, "children")) {
+                    RedisModule_ReplyWithString(ctx, field);
+                    err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
+
+                    nr_fields++;
+                    break;
+                } else if (!strcmp(field_str, "descendants")) {
+                    RedisModule_ReplyWithString(ctx, field);
+                    /* Descencants is forbidden because we only supportone traversal at time. */
+                    replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_EINVAL, "Forbidden field");
+
+                    nr_fields++;
+                    break;
+                } else if (!strcmp(field_str, "parents")) {
+                    RedisModule_ReplyWithString(ctx, field);
+                    err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
+
+                    nr_fields++;
+                    break;
+                }
+
                 if (SelvaObject_Exists(obj, field)) {
                     /* Field didn't exist in the node. */
                     continue;
@@ -473,8 +504,6 @@ static int send_node_fields(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct Sel
                 RedisModule_ReplyWithString(ctx, field);
                 err = SelvaObject_ReplyWithObject(ctx, obj, field);
                 if (err) {
-                    TO_STR(field);
-
                     fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
                             __FILE__,
                             field_str,
@@ -664,7 +693,7 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
             if (args->merge_strategy != MERGE_STRATEGY_NONE) {
                 err = send_node_object_merge(args->ctx, nodeId, args->merge_strategy, args->merge_path, args->fields, args->merge_nr_fields);
             } else if (args->fields) {
-                err = send_node_fields(args->ctx, nodeId, args->fields);
+                err = send_node_fields(args->ctx, args->hierarchy, nodeId, args->fields);
             } else {
                 RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
                 err = 0;
@@ -762,6 +791,7 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
  */
 static size_t FindCommand_PrintOrderedResult(
         RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
         ssize_t offset,
         ssize_t limit,
         enum merge_strategy merge_strategy,
@@ -794,7 +824,7 @@ static size_t FindCommand_PrintOrderedResult(
         if (merge_strategy != MERGE_STRATEGY_NONE) {
             err = send_node_object_merge(ctx, item->id, merge_strategy, merge_path, fields, nr_fields_out);
         } else if (fields) {
-            err = send_node_fields(ctx, item->id, fields);
+            err = send_node_fields(ctx, hierarchy, item->id, fields);
         } else {
             RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
             err = 0;
@@ -1023,10 +1053,16 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         }
     }
 
+    svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
+
+    if (argc <= ARGV_NODE_IDS) {
+        replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_EINVAL);
+        goto out;
+    }
+
     RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
-    svector_autofree SVector order_result = { 0 }; /*!< for ordered result. */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
         if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
@@ -1068,6 +1104,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         const size_t skip = get_skip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args args = {
             .ctx = ctx,
+            .hierarchy = hierarchy,
             .nr_nodes = &nr_nodes,
             .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
@@ -1110,7 +1147,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        nr_nodes = FindCommand_PrintOrderedResult(ctx, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
+        nr_nodes = FindCommand_PrintOrderedResult(ctx, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
     }
 
     RedisModule_ReplySetArrayLength(ctx, (merge_strategy == MERGE_STRATEGY_NONE) ? nr_nodes : 2 * merge_nr_fields);
@@ -1275,6 +1312,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         ssize_t tmp_limit = -1;
         struct FindCommand_Args args = {
             .ctx = ctx,
+            .hierarchy = hierarchy,
             .nr_nodes = &array_len,
             .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset : 0,
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
@@ -1297,7 +1335,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        array_len = FindCommand_PrintOrderedResult(ctx, offset, limit, MERGE_STRATEGY_NONE, NULL, fields, &order_result, NULL);
+        array_len = FindCommand_PrintOrderedResult(ctx, hierarchy, offset, limit, MERGE_STRATEGY_NONE, NULL, fields, &order_result, NULL);
     }
 
     RedisModule_ReplySetArrayLength(ctx, array_len);
@@ -1433,6 +1471,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     size_t skip = get_skip(marker->dir); /* Skip n nodes from the results. */
     struct FindCommand_Args args = {
         .ctx = ctx,
+        .hierarchy = hierarchy,
         .nr_nodes = &array_len,
         .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
         .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
@@ -1485,7 +1524,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        array_len = FindCommand_PrintOrderedResult(ctx, offset, limit, MERGE_STRATEGY_NONE, NULL, NULL, &order_result, NULL);
+        array_len = FindCommand_PrintOrderedResult(ctx, hierarchy, offset, limit, MERGE_STRATEGY_NONE, NULL, NULL, &order_result, NULL);
     }
 
     RedisModule_ReplySetArrayLength(ctx, array_len);

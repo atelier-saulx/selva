@@ -29,15 +29,6 @@ struct InheritCommand_Args {
     ssize_t nr_results; /*!< Number of results sent. */
 };
 
-struct send_hierarchy_field_data {
-    RedisModuleCtx *ctx;
-
-    size_t skip;
-    size_t nr_types;
-    const Selva_NodeType *types;
-    size_t len;
-};
-
 static int send_object_field_value(RedisModuleCtx *ctx, struct SelvaObject *obj, RedisModuleString *node_id, RedisModuleString *field) {
     int err = SELVA_ENOENT;
 
@@ -57,76 +48,6 @@ static int send_object_field_value(RedisModuleCtx *ctx, struct SelvaObject *obj,
             (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
         }
     }
-
-    return err;
-}
-
-/*
- * Used for ancestors, children, descendants, parents
- */
-static int send_hierarchy_field_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
-    struct send_hierarchy_field_data *args = (struct send_hierarchy_field_data *)arg;
-    int match = 0;
-
-    /*
-     * Some traversal modes must skip the first entry.
-     */
-    if (unlikely(args->skip)) {
-        args->skip = 0;
-        return 0;
-    }
-
-    for (size_t i = 0; i < args->nr_types; i++) {
-        match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
-    }
-    if (!match && args->nr_types > 0) {
-        /*
-         * This node type is not accepted and we don't need to check whether the
-         * is field set.
-         */
-        return 0;
-    }
-
-    RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
-    args->len++;
-
-    return 0;
-}
-
-static int send_hierarchy_field(
-        RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
-        const Selva_NodeId nodeId,
-        size_t nr_types,
-        const Selva_NodeType *types,
-        RedisModuleString *field,
-        enum SelvaModify_HierarchyTraversal dir) {
-    const size_t skip =
-        dir == SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS ||
-        dir == SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS;
-    struct send_hierarchy_field_data args = {
-        .ctx = ctx,
-        .skip = skip,
-        .nr_types = nr_types,
-        .types = types,
-        .len = 0,
-    };
-    const struct SelvaModify_HierarchyCallback cb = {
-        .node_cb = send_hierarchy_field_NodeCb,
-        .node_arg = &args,
-    };
-    int err;
-
-    /*
-     * Start a new array reply:
-     * [node_id, field_name, [nodeId1, nodeId2,.. nodeIdn]]
-     */
-    RedisModule_ReplyWithArray(ctx, 3);
-    RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    RedisModule_ReplyWithString(ctx, field);
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
-    RedisModule_ReplySetArrayLength(ctx, args.len);
 
     return err;
 }
@@ -244,14 +165,30 @@ size_t inheritHierarchyFields(
 
         err = 1; /* This value will help us know if something matched. */
 
+        /*
+         * If the field_name is a hierarchy field the reply format is:
+         * [node_id, field_name, [nodeId1, nodeId2,.. nodeIdn]]
+         */
         if (!strcmp(field_name_str, "ancestors")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
+            RedisModule_ReplyWithArray(ctx, 3);
+            RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
+            RedisModule_ReplyWithString(ctx, field_name);
+            err = HierarchyReply_WithTraversal(ctx, hierarchy, node_id, nr_types, types, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
         } else if (!strcmp(field_name_str, "children")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
+            RedisModule_ReplyWithArray(ctx, 3);
+            RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
+            RedisModule_ReplyWithString(ctx, field_name);
+            err = HierarchyReply_WithTraversal(ctx, hierarchy, node_id, nr_types, types, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
         } else if (!strcmp(field_name_str, "descendants")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
+            RedisModule_ReplyWithArray(ctx, 3);
+            RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
+            RedisModule_ReplyWithString(ctx, field_name);
+            err = HierarchyReply_WithTraversal(ctx, hierarchy, node_id, nr_types, types, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
         } else if (!strcmp(field_name_str, "parents")) {
-            err = send_hierarchy_field(ctx, hierarchy, node_id, nr_types, types, field_name, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
+            RedisModule_ReplyWithArray(ctx, 3);
+            RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
+            RedisModule_ReplyWithString(ctx, field_name);
+            err = HierarchyReply_WithTraversal(ctx, hierarchy, node_id, nr_types, types, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
         }
 
         if (err <= 0) { /* Something was traversed. */

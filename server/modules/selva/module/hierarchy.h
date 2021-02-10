@@ -265,4 +265,20 @@ int SelvaModify_TraverseHierarchyRef(
         const char *ref_field,
         const struct SelvaModify_HierarchyCallback *cb);
 
+/*
+ * hierarchy_reply.c
+ */
+
+/**
+ * Reply with a hierarchy traversal.
+ * [nodeId1, nodeId2,.. nodeIdn]
+ */
+int HierarchyReply_WithTraversal(
+        struct RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId nodeId,
+        size_t nr_types,
+        const Selva_NodeType *types,
+        enum SelvaModify_HierarchyTraversal dir);
+
 #endif /* SELVA_MODIFY_HIERARCHY */

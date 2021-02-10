@@ -13,6 +13,7 @@ OBJS := \
 	module/errors.o \
 	module/find.o \
 	module/hierarchy.o \
+	module/hierarchy_reply.o \
 	module/inherit.o \
 	module/modify.o \
 	module/resolve.o \
