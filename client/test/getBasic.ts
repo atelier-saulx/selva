@@ -173,7 +173,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get $value', async t => {
+test.serial.only('get $value', async t => {
   const client = connect({ port })
 
   await client.set({

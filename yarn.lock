@@ -2935,7 +2935,7 @@ resolve-from@^5.0.0:
   resolved "https://registry.yarnpkg.com/resolve-from/-/resolve-from-5.0.0.tgz#c35225843df8f776df21c57557bc087e9dfdfc69"
   integrity sha512-qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw==
 
-resolve@^1.10.0, resolve@^1.10.1, resolve@^1.13.1, resolve@^1.15.1, resolve@^1.17.0, resolve@^1.18.1:
+resolve@^1.10.0, resolve@^1.10.1, resolve@^1.13.1, resolve@^1.17.0, resolve@^1.18.1:
   version "1.19.0"
   resolved "https://registry.yarnpkg.com/resolve/-/resolve-1.19.0.tgz#1af5bf630409734a067cae29318aac7fa29a267c"
   integrity sha512-rArEXAgsBG4UgRGcynxWIWKFvh/XZCcS8UJdHhwy91zwAvCZIbcs+vAbflgBnNjYMs/i/i+/Ux6IZhML1yPvxg==
@@ -3425,16 +3425,21 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript-to-lua@^0.37.1:
-  version "0.37.1"
-  resolved "https://registry.yarnpkg.com/typescript-to-lua/-/typescript-to-lua-0.37.1.tgz#8d759596140250577344c75d98e3b1821c9f53ec"
-  integrity sha512-kzN26fIIdYVLxwd2AJZB2VwxaO8P6GaHrl1uASP5gEo0oSU87xxJ/s/OVfpWCKNGxQnbd/VLmW2fFIneK7SoRg==
+typescript-to-lua@^0.30.1:
+  version "0.30.1"
+  resolved "https://registry.yarnpkg.com/typescript-to-lua/-/typescript-to-lua-0.30.1.tgz#907d89f956a968cad647d06f8a75edcd10313099"
+  integrity sha512-4Bs147/8Si7mfLEbKnjaiqZZFYntry9ii7s8v5UCB0/A+4qxe/X45DDfozezQwh4Ic6h/QFArNoS4d0itF+ceg==
   dependencies:
-    resolve "^1.15.1"
+    resolve "^1.13.1"
     source-map "^0.7.3"
-    typescript ">=4.0.2"
+    typescript "^3.7.3"
 
-typescript@>=4.0.2, typescript@^4.1.3, typescript@^4.1.4:
+typescript@^3.7.3:
+  version "3.9.8"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.8.tgz#7d937ba4e4044af7fa83d127b982f8f61ca816a4"
+  integrity sha512-nDbnFkUZZjkQ92qwKX+C+jtk4OGfU8H9toSEs3uAsl8cxLjG2sqQm6leF/pLWvm9FAEJ6KHkYMAbHYaY2ITeVg==
+
+typescript@^4.1.3, typescript@^4.1.4:
   version "4.1.4"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.1.4.tgz#f058636e2f4f83f94ddaae07b20fd5e14598432f"
   integrity sha512-+Uru0t8qIRgjuCpiSPpfGuhHecMllk5Zsazj5LZvVsEStEjmIRRBZe+jHjGQvsgS7M1wONy2PQXd67EMyV6acg==

@@ -42,7 +42,6 @@
       "!test/performance"
     ],
     "concurrency": 1,
-    "compileEnhancements": false,
     "extensions": [
       "ts"
     ],
@@ -66,7 +65,7 @@
     "node-fetch": "^2.6.1",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.4",
-    "typescript-to-lua": "^0.37.1"
+    "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
     "@saulx/selva-diff": "^1.0.15",
