@@ -72,7 +72,7 @@
     "@saulx/selva-query-ast-parser": "^1.0.0",
     "@types/uuid": "^8.3.0",
     "chalk": "^4.1.0",
-    "redis": "^3.0.2",
+    "redis": "^2.8.0",
     "uuid": "^8.3.2",
     "@saulx/utils": "^1.6.6"
   }
