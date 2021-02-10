@@ -553,9 +553,7 @@ int SelvaModify_ModifySet(
             err = SelvaObject_DelKey(obj, field);
         }
 
-        if (err != SELVA_ENOENT) {
-            return err;
-        }
+        return err == SELVA_ENOENT ? 0 : err;
     }
 
     if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
