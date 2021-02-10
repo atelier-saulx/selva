@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
@@ -51,30 +51,30 @@
     ]
   },
   "devDependencies": {
-    "@saulx/selva-server": "3.1.0",
+    "@saulx/selva-server": "3.1.1",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",
-    "@types/redis": "^2.8.14",
+    "@types/redis": "^2.8.28",
     "async-sema": "^3.1.0",
-    "ava": "2.4.0",
-    "cli-spinners": "^2.3.0",
+    "ava": "3.15.0",
+    "cli-spinners": "^2.5.0",
     "rimraf": "^3.0.2",
     "get-port": "^5.1.1",
-    "husky": "^3.0.8",
-    "lint-staged": "^9.4.2",
+    "husky": "^5.0.9",
+    "lint-staged": "^10.5.4",
     "node-fetch": "^2.6.1",
-    "ts-node": "^8.5.4",
-    "typescript": "^3.7.3",
-    "typescript-to-lua": "^0.30.1"
+    "ts-node": "^9.1.1",
+    "typescript": "^4.1.4",
+    "typescript-to-lua": "^0.37.1"
   },
   "dependencies": {
-    "@saulx/selva-diff": "^1.0.11",
+    "@saulx/selva-diff": "^1.0.15",
     "@saulx/selva-query-ast-parser": "^1.0.0",
-    "@types/uuid": "^3.4.6",
-    "chalk": "^4.0.0",
-    "redis": "^2.8.0",
-    "uuid": "^3.3.3",
-    "@saulx/utils": "^1.0.7"
+    "@types/uuid": "^8.3.0",
+    "chalk": "^4.1.0",
+    "redis": "^3.0.2",
+    "uuid": "^8.3.2",
+    "@saulx/utils": "^1.6.6"
   }
 }

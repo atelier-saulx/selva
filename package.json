@@ -26,7 +26,8 @@
     "buildApi": "cd api && yarn build",
     "watchServer": "cd server && yarn watch",
     "watchClientTests": "cd client && yarn watch",
-    "watch": "watch"
+    "watch": "watch",
+    "ncu": "cd api && ncu -u && cd ../api-server && ncu -u && cd ../client && ncu -u && cd ../diff && ncu -u && cd ../query-ast-parser && ncu -u && cd ../server && ncu -u && cd ../tools && ncu -u"
   },
   "lint-staged": {
     "{js,json}": [
@@ -43,9 +44,9 @@
     "extends": "@saulx/eslint-config"
   },
   "devDependencies": {
-    "eslint": "^6.5.1",
-    "prettier": "^1.18.2",
-    "@saulx/eslint-config": "https://github.com/atelier-saulx/eslint-config",
-    "@saulx/prettier-config": "https://github.com/atelier-saulx/prettier-config"
+    "eslint": "^7.19.0",
+    "prettier": "^2.2.1",
+    "@saulx/eslint-config": "^1.1.0",
+    "@saulx/prettier-config": "^1.0.0"
   }
 }
