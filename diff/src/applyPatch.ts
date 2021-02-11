@@ -1,6 +1,10 @@
 import { deepCopy } from '@saulx/utils'
 
-const nestedApplyPatch = (value: object, key: string, patch): void | null => {
+const nestedApplyPatch = (
+  value: Object | Array<any>,
+  key: string,
+  patch
+): void | null => {
   if (patch.constructor === Array) {
     const type = patch[0]
     // 0 - insert
@@ -18,6 +22,14 @@ const nestedApplyPatch = (value: object, key: string, patch): void | null => {
       value[key] = r
     }
   } else {
+    if (patch.___$toObject && value[key] && value[key].constructor === Array) {
+      const v = {}
+      for (let i = 0; i < value[key].length; i++) {
+        v[i] = value[key][i]
+      }
+      value[key] = v
+    }
+
     if (value[key] === undefined) {
       console.warn(
         'Diff apply patch: Cannot find key in original object',
@@ -27,8 +39,11 @@ const nestedApplyPatch = (value: object, key: string, patch): void | null => {
       return null
       // lets throw
     } else {
-      for (let nkey in patch) {
-        if (nestedApplyPatch(value[key], nkey, patch[nkey]) === null) {
+      for (const nkey in patch) {
+        if (
+          nkey !== '___$toObject' &&
+          nestedApplyPatch(value[key], nkey, patch[nkey]) === null
+        ) {
           return null
         }
       }
@@ -121,10 +136,19 @@ const applyPatch = (value, patch): any | null => {
         return applyArrayPatch(value, patch[1])
       }
     } else {
-      for (let key in patch) {
-        const r = nestedApplyPatch(value, key, patch[key])
-        if (r === null) {
-          return null
+      if (patch.___$toObject && value && value.constructor === Array) {
+        const v = {}
+        for (let i = 0; i < value.length; i++) {
+          v[i] = value[i]
+        }
+        value = v
+      }
+      for (const key in patch) {
+        if (key !== '___$toObject') {
+          const r = nestedApplyPatch(value, key, patch[key])
+          if (r === null) {
+            return null
+          }
         }
       }
       return value

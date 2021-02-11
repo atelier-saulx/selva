@@ -13,11 +13,11 @@ test('Weird problem in diffing in sstv cms', async t => {
 
   const patch = diff(a, b)
 
-  console.dir(patch, { depth: 10 })
+  // console.dir(patch, { depth: 10 })
 
   const x = applyPatch(a, patch)
 
-  console.dir(x, { depth: 10 })
+  // console.dir(x, { depth: 10 })
 
   t.pass()
 })

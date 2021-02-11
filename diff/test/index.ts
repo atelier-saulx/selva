@@ -11,8 +11,10 @@ test('Object to Array', async t => {
   }
   const b = [0, 1, 2, 3, 4]
   const patch = diff(a, b)
-
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
+  const b2 = [0, 1, 2]
+  const patch2 = diff(a, b2)
+  t.deepEqual(applyPatch(a, patch2), b2, 'is equal')
 })
 
 test('Array to Object', async t => {
@@ -24,6 +26,22 @@ test('Array to Object', async t => {
     3: 3
   }
   const patch = diff(a, b)
+  t.deepEqual(applyPatch(a, patch), b, 'is equal')
+})
+
+test('Array to Object Nested', async t => {
+  const a = { x: [0, 1, 2, 3, 4] }
+  const b = {
+    x: {
+      flap: 0,
+      1: 1,
+      2: 2,
+      3: 3
+    }
+  }
+  const patch = diff(a, b)
+
+  console.log(patch)
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
