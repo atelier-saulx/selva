@@ -50,6 +50,7 @@ test.serial('inherit object nested field from root youzi', async t => {
       }
     }
   })
+  await wait(100);
 
   await client.set({
     $id: 'root',
@@ -118,6 +119,7 @@ test.serial('inherit object youzi', async t => {
       }
     }
   })
+  await wait(100);
 
   await client.set({
     $id: 'yeA',
@@ -195,6 +197,7 @@ test.serial('basic inherit subscription', async t => {
       }
     }
   })
+  await wait(100);
 
   await client.set({
     $id: 'root',
@@ -283,6 +286,7 @@ test.serial('inherit object', async t => {
       }
     }
   })
+  await wait(100);
 
   await client.set({
     $id: 'root',
@@ -384,6 +388,7 @@ test.serial('list inherit subscription', async t => {
       }
     }
   })
+  await wait(100);
 
   await client.set({
     $id: 'root',
@@ -505,6 +510,7 @@ test.serial('list inherit + field subscription', async t => {
       }
     }
   })
+  await wait(100);
 
   await client.set({
     $id: 'root',

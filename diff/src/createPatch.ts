@@ -29,7 +29,7 @@ export const arrayDiff = (a, b) => {
   const bLen = b.length
 
   const resultA = {}
-  let aCalced: any[] = new Array(aLen)
+  const aCalced: any[] = new Array(aLen)
 
   // can optmize this a little bit more
   for (let j = 0; j < aLen; j++) {
@@ -45,10 +45,8 @@ export const arrayDiff = (a, b) => {
   let rIndex = 0
   r[0] = bLen
   for (let i = 0; i < bLen; i++) {
-    let av: any, bv: any
-
-    av = aCalced[i]
-    bv = parseValue(b[i])
+    const av = aCalced[i]
+    const bv = parseValue(b[i])
 
     const current = r[rIndex]
     const type = r[rIndex] && r[rIndex][0]
@@ -135,7 +133,7 @@ export const arrayDiff = (a, b) => {
   }
 
   if (
-    r.length == 2 &&
+    r.length === 2 &&
     r[1][0] === 1 &&
     r[1][1] === r[0] &&
     r[1][2] === 0 &&
@@ -153,6 +151,7 @@ export const arrayDiff = (a, b) => {
 // 2 array
 const compareNode = (a, b, result, key: string) => {
   const type = typeof b
+  // eslint-disable-next-line
   if (type !== typeof a) {
     result[key] = [0, b]
   } else if (type === 'object') {
@@ -163,7 +162,7 @@ const compareNode = (a, b, result, key: string) => {
       if (b.constructor === Array) {
         if (b.length === 0) {
           if (a && a.constructor === Array && a.length === 0) {
-            // is allready etmpyy
+            // is allready empty
           } else {
             r = [0, []]
             result[key] = r
@@ -183,6 +182,9 @@ const compareNode = (a, b, result, key: string) => {
         }
       } else {
         r = {}
+        if (a && a.constructor === Array && a.length) {
+          r.___$toObject = true
+        }
         for (const key in b) {
           if (!(key in a)) {
             r[key] = [0, b[key]]
@@ -232,15 +234,18 @@ export const createPatch = (a: any, b: any) => {
           const isDiff = arrayDiff(a, b)
           if (isDiff && isDiff.length > 1) {
             return [2, arrayDiff(a, b)]
-          } else {
-            return
           }
         } else {
           return [0, b]
         }
       } else {
         // make this result undefined
-        const result = {}
+        const result: { [key: string]: any } = {}
+
+        if (a.constructor === Array) {
+          result.___$toObject = true
+        }
+
         for (const key in b) {
           if (!(key in a)) {
             result[key] = [0, b[key]]
@@ -257,7 +262,6 @@ export const createPatch = (a: any, b: any) => {
         for (let _x in result) {
           return result
         }
-
         // else return undefined
       }
     }
