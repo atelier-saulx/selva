@@ -15,7 +15,7 @@ function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
   let hasAll = false
 
   for (const k in props) {
-    if (k === '$list' && pathPrefix === '') {
+    if ((k === '$list' || k === '$find') && pathPrefix === '') {
       // ignore
     } else if (!hasAll && !k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
@@ -547,6 +547,10 @@ const executeFindOperation = async (
       )
 
       allResults.push(fieldResults)
+    }
+
+    if (op.single) {
+      return allResults[0]
     }
 
     return allResults
