@@ -8,16 +8,16 @@ import getPort from 'get-port'
 let srv
 let port: number
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   await wait(500)
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port })
 
   await client.redis.flushall()
@@ -27,20 +27,20 @@ test.beforeEach(async t => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       club: {
         prefix: 'cl',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       team: {
         prefix: 'te',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       match: {
         prefix: 'ma',
@@ -49,8 +49,8 @@ test.beforeEach(async t => {
           date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           // need to warn if you change this!!!
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
+          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
       },
       video: {
         prefix: 'vi',
@@ -58,10 +58,10 @@ test.beforeEach(async t => {
           title: { type: 'text' },
           date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           // making it different here should tell you something or at least take it over
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
-      }
-    }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
+      },
+    },
   })
 
   const team1 = await client.id({ type: 'team' })
@@ -76,13 +76,13 @@ test.beforeEach(async t => {
           flupriflu: 'true',
           name: 'match' + i,
           status: i === 0 ? 2 : i > 1000 ? 100 : 300,
-          parents: { $add: team1 }
+          parents: { $add: team1 },
         })
       } else {
         ch.push({
           type: 'match',
           name: 'match' + i,
-          status: 100
+          status: 100,
         })
       }
     }
@@ -97,7 +97,7 @@ test.beforeEach(async t => {
         name: 'video',
         title: { en: 'flap' },
         date: Date.now() + i + (i > 5 ? 1000000 : -100000),
-        value: i
+        value: i,
       })
     }
     return ch
@@ -113,23 +113,23 @@ test.beforeEach(async t => {
           $id: team1,
           name: 'team 1',
           children: {
-            $add: genVideos()
-          }
-        }
-      ]
+            $add: genVideos(),
+          },
+        },
+      ],
     }),
     client.set({
       type: 'league',
       name: 'league 1',
       // @ts-ignore
-      children: genMatches()
+      children: genMatches(),
     }),
     client.set({
       type: 'league',
       name: 'league 2',
       // @ts-ignore
-      children: genMatches(amount)
-    })
+      children: genMatches(amount),
+    }),
   ])
   console.log(
     `Set ${Math.floor((amount * 2 + vids) / 100) / 10}k nested`,
@@ -150,7 +150,7 @@ test.beforeEach(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -158,7 +158,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find - descendants', async t => {
+test.serial('find - descendants', async (t) => {
   // simple nested - single query
 
   try {
@@ -189,7 +189,7 @@ test.serial('find - descendants', async t => {
                 $and: {
                   $operator: '=',
                   $field: 'status',
-                  $value: [300, 2]
+                  $value: [300, 2],
                 },
                 $or: {
                   $operator: '=',
@@ -210,29 +210,29 @@ test.serial('find - descendants', async t => {
                         $and: {
                           $operator: '>',
                           $field: 'date',
-                          $value: 'now'
-                        }
-                      }
-                    }
-                  }
-                }
+                          $value: 'now',
+                        },
+                      },
+                    },
+                  },
+                },
               },
               {
                 $operator: '!=',
                 $field: 'name',
-                $value: ['match1', 'match2', 'match3']
-              }
-            ]
-          }
-        }
-      }
+                $value: ['match1', 'match2', 'match3'],
+              },
+            ],
+          },
+        },
+      },
     })
 
     console.log('Executing query (1100 resuls)', Date.now() - d, 'ms')
 
-    const matches = results.filter(v => v.type === 'match')
-    const videos = results.filter(v => v.type === 'video')
-    const league = results.filter(v => v.type === 'league')
+    const matches = results.filter((v) => v.type === 'match')
+    const videos = results.filter((v) => v.type === 'video')
+    const league = results.filter((v) => v.type === 'league')
 
     // t.is(matches.length, 997, 'query result matches')
     // t.is(videos.length, 3, 'query result videos')
@@ -248,11 +248,11 @@ test.serial('find - descendants', async t => {
               $filter: {
                 $field: 'type',
                 $operator: '=',
-                $value: 'team'
-              }
-            }
-          }
-        }
+                $value: 'team',
+              },
+            },
+          },
+        },
       })
     ).items
 
@@ -268,11 +268,11 @@ test.serial('find - descendants', async t => {
             $filter: {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
-            }
-          }
-        }
-      }
+              $value: 'match',
+            },
+          },
+        },
+      },
     })
 
     t.is(teamMatches.length, 1000)
@@ -288,11 +288,11 @@ test.serial('find - descendants', async t => {
             $filter: {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
-            }
-          }
-        }
-      }
+              $value: 'match',
+            },
+          },
+        },
+      },
     })
 
     t.is(teamMatchesRange.length, 5)
@@ -308,15 +308,15 @@ test.serial('find - descendants', async t => {
             $filter: {
               $field: 'type',
               $operator: '=',
-              $value: 'video'
-            }
-          }
-        }
-      }
+              $value: 'video',
+            },
+          },
+        },
+      },
     })
 
     t.deepEqual(
-      videosSorted.map(v => v.value),
+      videosSorted.map((v) => v.value),
       [99, 98, 97, 96, 95]
     )
 
@@ -332,20 +332,20 @@ test.serial('find - descendants', async t => {
             $filter: {
               $field: 'type',
               $operator: '=',
-              $value: 'video'
-            }
-          }
-        }
-      }
+              $value: 'video',
+            },
+          },
+        },
+      },
     })
 
     console.log(
       'hello nice',
-      nextVideosSorted.map(v => v.value)
+      nextVideosSorted.map((v) => v.value)
     )
 
     t.deepEqual(
-      nextVideosSorted.map(v => v.value),
+      nextVideosSorted.map((v) => v.value),
       [94, 93, 92, 91, 90]
     )
 
@@ -359,17 +359,17 @@ test.serial('find - descendants', async t => {
               {
                 $operator: '=',
                 $field: 'name',
-                $value: 'gurk'
+                $value: 'gurk',
               },
               {
                 $operator: '=',
                 $field: 'name',
-                $value: ['flap', 'gurk']
-              }
-            ]
-          }
-        }
-      }
+                $value: ['flap', 'gurk'],
+              },
+            ],
+          },
+        },
+      },
     })
 
     await wait(2000)
@@ -391,11 +391,11 @@ test.serial('find - descendants', async t => {
             $filter: {
               $field: 'title',
               $operator: '=',
-              $value: 'flap'
-            }
-          }
-        }
-      }
+              $value: 'flap',
+            },
+          },
+        },
+      },
     })
 
     console.info('videos text make it nice nice', videosText)
@@ -405,7 +405,7 @@ test.serial('find - descendants', async t => {
       { value: 98 },
       { value: 97 },
       { value: 96 },
-      { value: 95 }
+      { value: 95 },
     ])
 
     await client.destroy()
