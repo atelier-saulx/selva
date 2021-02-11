@@ -41,7 +41,6 @@ test('Array to Object Nested', async t => {
   }
   const patch = diff(a, b)
 
-  console.log(patch)
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
