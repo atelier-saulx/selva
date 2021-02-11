@@ -2,6 +2,31 @@ import test from 'ava'
 import diff, { applyPatch } from '@saulx/selva-diff'
 import region from './examples/region.json'
 
+test('Object to Array', async t => {
+  const a = {
+    0: 0,
+    1: 1,
+    2: 2,
+    3: 3
+  }
+  const b = [0, 1, 2, 3, 4]
+  const patch = diff(a, b)
+
+  t.deepEqual(applyPatch(a, patch), b, 'is equal')
+})
+
+test('Array to Object', async t => {
+  const a = [0, 1, 2, 3, 4]
+  const b = {
+    0: 0,
+    1: 1,
+    2: 2,
+    3: 3
+  }
+  const patch = diff(a, b)
+  t.deepEqual(applyPatch(a, patch), b, 'is equal')
+})
+
 test('Array', async t => {
   const a = ['a', 'b', 'c', 'd']
   const b = ['x', 'x', 'a', 'b', 'z', 'c', 'd']
