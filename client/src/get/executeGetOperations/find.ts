@@ -7,10 +7,7 @@ import { padId, joinIds, getNestedSchema } from '../utils'
 import { setNestedResult } from '../utils'
 import { deepMerge } from '@saulx/utils'
 
-function parseGetOpts(
-  props: GetOptions,
-  path: string
-): [Set<string>, GetOptions[]] {
+function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
   const pathPrefix = path === '' ? '' : path + '.'
   let fields: Set<string> = new Set()
   const gets: GetOptions[] = []
@@ -18,55 +15,38 @@ function parseGetOpts(
   let hasAll = false
 
   for (const k in props) {
-    if (!hasAll && !k.startsWith('$') && props[k] === true) {
+    if ((k === '$list' || k === '$find') && pathPrefix === '') {
+      // ignore
+    } else if (!hasAll && !k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
     } else if (props[k] === false) {
       // ignore
+    } else if (k === '$field') {
+      const $field = props[k]
+      if (Array.isArray($field)) {
+        fields.add($field.join('|'))
+      } else {
+        fields.add($field)
+      }
     } else if (k === '$all') {
       fields = new Set(['*'])
       hasAll = true
+    } else if (k.startsWith('$')) {
+      return [fields, true]
     } else if (typeof props[k] === 'object') {
-      const opts = Object.keys(props[k]).filter(p => p.startsWith('$'))
-      if ((path === '' || opts.length === 1) && opts.includes('$inherit')) {
-        const o = {}
-        setNestedResult(o, pathPrefix + k, props[k])
-        gets.push(o)
-      } else if ((path === '' || opts.length === 1) && props[k].$field) {
-        const all = Array.isArray(props[k].$field)
-          ? props[k].$field
-          : [props[k].$field]
-        fields.add(all.join('|'))
-      } else if (opts.length >= 1 && !props[k].$find) {
-        const o = {}
-        for (const key in props) {
-          if (key.startsWith('$') || key.endsWith('$all')) {
-            continue
-          }
-          setNestedResult(o, pathPrefix + key, props[key])
-        }
-        setNestedResult(o, pathPrefix + k, props[k])
-        gets.push(o)
+      const [nestedFields, hasSpecial] = parseGetOpts(props[k], pathPrefix + k)
 
-        // Even though not necessary, we need to try to get the field here so
-        // the fields list is not left empty, which would mean same as selecting
-        // all fields.
-        fields.add(path)
-      } else if (!k.startsWith('$')) {
-        const [nestedFields, nestedGets] = parseGetOpts(
-          props[k],
-          pathPrefix + k
-        )
+      if (hasSpecial) {
+        return [fields, true]
+      }
 
-        for (const f of nestedFields.values()) {
-          fields.add(f)
-        }
-
-        gets.push(...nestedGets)
+      for (const f of nestedFields.values()) {
+        fields.add(f)
       }
     }
   }
 
-  return [fields, gets]
+  return [fields, false]
 }
 
 function findTimebased(ast: Fork): FilterAST[] {
@@ -154,7 +134,7 @@ async function checkForNextRefresh(
   }
 
   const uniq = new Set()
-  const timebased = findTimebased(ast).filter(f => {
+  const timebased = findTimebased(ast).filter((f) => {
     if (uniq.has(f.$field)) {
       return false
     }
@@ -169,13 +149,13 @@ async function checkForNextRefresh(
 
   const withoutTimebased = excludeTimebased(ast)
   await Promise.all(
-    timebased.map(async f => {
+    timebased.map(async (f) => {
       const newFilter = Object.assign({}, f)
       newFilter.$operator = '>'
 
       let newFork: Fork = {
         isFork: true,
-        $and: [withoutTimebased, newFilter]
+        $and: [withoutTimebased, newFilter],
       }
 
       if (!withoutTimebased) {
@@ -237,8 +217,8 @@ const findIds = async (
         $id: op.id,
         result: {
           $field: op.sourceField,
-          $inherit: op.props.$list.$inherit
-        }
+          $inherit: op.props.$list.$inherit,
+        },
       },
       lang,
       ctx
@@ -297,7 +277,7 @@ const findIds = async (
           type: sourceField,
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
-          rpn: args
+          rpn: args,
         })
 
         added = added || r
@@ -313,7 +293,7 @@ const findIds = async (
         type: sourceField,
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
-        rpn: args
+        rpn: args,
       })
 
       if (added) {
@@ -354,8 +334,9 @@ const findFields = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
-  ctx: ExecContext
-): Promise<[string[], GetOptions[]]> => {
+  ctx: ExecContext,
+  fieldsOpt
+): Promise<string[]> => {
   const { db, subId } = ctx
 
   let sourceField: string = <string>op.sourceField
@@ -367,8 +348,8 @@ const findFields = async (
         $id: op.id,
         result: {
           $field: op.sourceField,
-          $inherit: op.props.$list.$inherit
-        }
+          $inherit: op.props.$list.$inherit,
+        },
       },
       lang,
       ctx
@@ -379,12 +360,9 @@ const findFields = async (
     sourceField = op.sourceField.join('\n')
   }
 
-  const [fieldsOpt, additionalGets] = parseGetOpts(op.props, '')
-
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
   console.log('ARGS', args)
   if (op.inKeys) {
-    // TODO: additionalGets
     const result = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '___selva_hierarchy',
@@ -410,7 +388,7 @@ const findFields = async (
       lang
     )
 
-    return [result, additionalGets]
+    return result
   } else {
     const realOpts: any = {}
     for (const key in op.props) {
@@ -432,7 +410,7 @@ const findFields = async (
           type: sourceField,
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
-          rpn: args
+          rpn: args,
         })
 
         added = added || r
@@ -448,7 +426,7 @@ const findFields = async (
         type: sourceField,
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
-        rpn: args
+        rpn: args,
       })
 
       if (added) {
@@ -483,7 +461,7 @@ const findFields = async (
       lang
     )
 
-    return [result, additionalGets]
+    return result
   }
 }
 
@@ -503,7 +481,7 @@ const executeFindOperation = async (
       ids = await findIds(
         client,
         Object.assign({}, nestedOperation, {
-          id: joinIds(ids)
+          id: joinIds(ids),
         }),
         lang,
         ctx
@@ -520,13 +498,13 @@ const executeFindOperation = async (
     }
 
     const results = await Promise.all(
-      ids.map(async id => {
+      ids.map(async (id) => {
         return await executeNestedGetOperations(
           client,
           {
             $db: ctx.db,
             $id: id,
-            ...realOpts
+            ...realOpts,
           },
           lang,
           ctx
@@ -541,12 +519,44 @@ const executeFindOperation = async (
     return results
   }
 
-  let [results, additionalGets]: [any, GetOptions[]] = await findFields(
-    client,
-    op,
-    lang,
-    ctx
-  )
+  const [fieldOpts, additionalGets] = parseGetOpts(op.props, '')
+
+  if (additionalGets) {
+    let ids = await findIds(client, op, lang, ctx)
+    const allResults = []
+    for (const id of ids) {
+      const props = op.props
+
+      const realOpts: any = {}
+      for (const key in op.props) {
+        if (key === '$all' || !key.startsWith('$')) {
+          realOpts[key] = op.props[key]
+        }
+      }
+
+      const entryRes: any = {}
+      const fieldResults = await executeNestedGetOperations(
+        client,
+        {
+          $db: ctx.db,
+          $id: id,
+          ...realOpts,
+        },
+        lang,
+        ctx
+      )
+
+      allResults.push(fieldResults)
+    }
+
+    if (op.single) {
+      return allResults[0]
+    }
+
+    return allResults
+  }
+
+  let results: any[] = await findFields(client, op, lang, ctx, fieldOpts)
 
   const result = []
   for (let entry of results) {
@@ -562,25 +572,6 @@ const executeFindOperation = async (
       }
 
       setNestedResult(entryRes, field, typeCast(value, id, field, schema, lang))
-    }
-
-    const additionalResults = await Promise.all(
-      additionalGets.map(g => {
-        return executeNestedGetOperations(
-          client,
-          {
-            $db: ctx.db,
-            $id: id,
-            ...g
-          },
-          lang,
-          ctx
-        )
-      })
-    )
-
-    for (const r of additionalResults) {
-      deepMerge(entryRes, r)
     }
 
     result.push(entryRes)
