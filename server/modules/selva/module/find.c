@@ -770,13 +770,7 @@ static ssize_t send_node_object_merge(
             }
         }
     } else if (merge_strategy == MERGE_STRATEGY_DEEP) {
-        RedisModuleString *path = RedisModule_CreateStringPrintf(ctx, "");
-
-        if (!path) {
-            return SELVA_ENOMEM;
-        }
-
-        return send_deep_merge(ctx, nodeId, fields, obj, path, nr_fields_out);
+        return send_deep_merge(ctx, nodeId, fields, obj, obj_path, nr_fields_out);
     } else {
         return replyWithSelvaErrorf(ctx, SELVA_ENOTSUP, "Merge strategy not supported: %d\n", (int)merge_strategy);
     }
