@@ -86,7 +86,6 @@ const applyArrayPatch = (value: any[], arrayPatch): any[] | null => {
       const range = operation.length - 2 + piv
       for (let j = piv; j < range; j++) {
         const op = [++aI, j, operation[j - piv + 2]]
-        // used[j] = true
         patches.push(op)
       }
     }
