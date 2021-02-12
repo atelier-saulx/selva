@@ -198,6 +198,7 @@ const compareNode = (a, b, result, key: string) => {
           }
         }
         // check if not empty
+        // eslint-disable-next-line
         for (let _x in r) {
           result[key] = r
           break
@@ -259,6 +260,8 @@ export const createPatch = (a: any, b: any) => {
             result[key] = [1]
           }
         }
+        // check if not empty
+        // eslint-disable-next-line
         for (let _x in result) {
           return result
         }

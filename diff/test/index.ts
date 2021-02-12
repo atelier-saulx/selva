@@ -1,6 +1,22 @@
 import test from 'ava'
 import diff, { applyPatch } from '@saulx/selva-diff'
 import region from './examples/region.json'
+import { a, b } from './examples/complex'
+
+test('Weird double complex', async (t) => {
+  const cp = (x) => JSON.parse(JSON.stringify(x))
+
+  const a1 = cp(a)
+  const b1 = cp(b)
+
+  const patch = diff(a1, b1)
+
+  t.deepEqual(applyPatch(cp(a1), patch), b, 'is equal')
+
+  const patch2 = diff(b1, a1)
+
+  t.deepEqual(applyPatch(cp(b1), patch2), a1, 'is equal')
+})
 
 test('Object to Array', async (t) => {
   const a = {
@@ -59,9 +75,9 @@ test('Array', async (t) => {
     largeArr2.push(i)
   }
   largeArr2.splice(5000, 0, 'flap')
-  var d = Date.now()
+  const d = Date.now()
   const largePatch = diff(largeArr, largeArr2)
-  console.log('Time to calculate large patch (10k)', Date.now() - d, 'ms')
+  console.info('Time to calculate large patch (10k)', Date.now() - d, 'ms')
   t.deepEqual(
     applyPatch(largeArr, largePatch),
     largeArr2,
@@ -603,295 +619,6 @@ test('Weird array 3 register copy', async (t) => {
   const patch = diff(a, b)
 
   // console.dir(patch, { depth: 10 })
-
-  const x = applyPatch(a, patch)
-
-  // console.dir(x, { depth: 10 })
-
-  t.deepEqual(x, b, 'is equal')
-})
-
-test.only('Big object', async (t) => {
-  const a = {
-    $id: 'ptwelcome',
-    $language: 'en',
-    name: 'Welcome Screen',
-    components: {
-      0: {
-        component: 'Text',
-        name: 'Random Text',
-        text: 'Voting round 1?',
-        color: '#0750C6',
-      },
-      1: {
-        component: 'Image',
-        image:
-          'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
-      },
-      2: {
-        component: 'List',
-        items: {
-          0: {
-            title: {
-              text: 'Efendi',
-            },
-            image:
-              'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
-          },
-        },
-      },
-      3: {
-        component: 'Button',
-        text: 'Go to that page!',
-      },
-    },
-    config: {
-      action: 'modal',
-      props: {
-        header: {
-          title: '{{data.name}}',
-          icon: 'welcomeScreen',
-          framed: true,
-        },
-      },
-      content: {
-        component: 'group',
-        direction: 'column',
-        children: [
-          {
-            component: 'Title',
-            children: 'General',
-          },
-          {
-            component: 'group',
-            direction: 'row',
-            alignItems: 'center',
-            children: [
-              {
-                component: 'text',
-                weight: 'semibold',
-                children: 'Title',
-              },
-              {
-                component: 'input',
-                value: '{{data.components.0.text}}',
-                onChange: {
-                  action: 'api',
-                  endpoint: 'based',
-                  method: '@based/set',
-                },
-              },
-            ],
-          },
-          {
-            component: 'group',
-            direction: 'row',
-            alignItems: 'center',
-            children: [
-              {
-                component: 'text',
-                weight: 'semibold',
-                children: 'Body Text',
-              },
-              {
-                component: 'input',
-                value: '{{data.components.0.text}}',
-                onChange: {
-                  action: 'api',
-                  endpoint: 'based',
-                  method: '@based/set',
-                },
-              },
-            ],
-          },
-          {
-            component: 'group',
-            direction: 'row',
-            alignItems: 'center',
-            children: [
-              {
-                component: 'text',
-                weight: 'semibold',
-                children: 'Image!!!?????111111111111..........',
-              },
-              {
-                component: 'input',
-                value: '{{data.components.0.text}}',
-                onChange: {
-                  action: 'api',
-                  endpoint: 'based',
-                  method: '@based/set',
-                },
-              },
-            ],
-          },
-          {
-            component: 'group',
-            direction: 'row',
-            alignItems: 'center',
-            children: [
-              {
-                component: 'text',
-                weight: 'semibold',
-                children: 'Image!!!?????111111111111..........',
-              },
-              {
-                component: 'input',
-                value: '{{data.components.0.text}}',
-                onChange: {
-                  action: 'api',
-                  endpoint: 'based',
-                  method: '@based/set',
-                },
-              },
-            ],
-          },
-        ],
-      },
-    },
-  }
-  const b = {
-    $id: 'ptwelcome',
-    $language: 'en',
-    name: 'Welcome Screen',
-    components: {
-      0: {
-        component: 'Text',
-        name: 'Random Text',
-        text: 'Voting round 1?',
-        color: '#0750C6',
-      },
-      1: {
-        component: 'Image',
-        image:
-          'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
-      },
-      2: {
-        component: 'List',
-        items: {
-          0: {
-            title: {
-              text: 'Efendi',
-            },
-            image:
-              'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
-          },
-        },
-      },
-      3: {
-        component: 'Button',
-        text: 'Go to that page!',
-      },
-    },
-    config: {
-      action: 'modal',
-      props: {
-        header: {
-          title: '{{data.name}}',
-          icon: 'welcomeScreen',
-          framed: true,
-        },
-      },
-      content: {
-        component: 'group',
-        direction: 'column',
-        children: [
-          {
-            component: 'Title',
-            children: 'General',
-          },
-          {
-            component: 'group',
-            direction: 'row',
-            alignItems: 'center',
-            children: [
-              {
-                component: 'text',
-                weight: 'semibold',
-                children: 'Title',
-              },
-              {
-                component: 'input',
-                value: '{{data.components.0.text}}',
-                onChange: {
-                  action: 'api',
-                  endpoint: 'based',
-                  method: '@based/set',
-                },
-              },
-            ],
-          },
-          {
-            component: 'group',
-            direction: 'row',
-            alignItems: 'center',
-            children: [
-              {
-                component: 'text',
-                weight: 'semibold',
-                children: 'Body Text',
-              },
-              {
-                component: 'input',
-                value: '{{data.components.0.text}}',
-                onChange: {
-                  action: 'api',
-                  endpoint: 'based',
-                  method: '@based/set',
-                },
-              },
-            ],
-          },
-          {
-            component: 'group',
-            direction: 'row',
-            alignItems: 'center',
-            children: [
-              {
-                component: 'text',
-                weight: 'semibold',
-                children: 'power puff',
-              },
-              {
-                component: 'input',
-                value: '{{data.components.0.text}}',
-                onChange: {
-                  action: 'api',
-                  endpoint: 'based',
-                  method: '@based/set',
-                },
-              },
-            ],
-          },
-          {
-            component: 'group',
-            direction: 'row',
-            alignItems: 'center',
-            children: [
-              {
-                component: 'text',
-                weight: 'semibold',
-                children: 'Image!!!?????111111111111..........',
-              },
-              {
-                component: 'input',
-                value: '{{data.components.0.text}}',
-                onChange: {
-                  action: 'api',
-                  endpoint: 'based',
-                  method: '@based/set',
-                },
-              },
-            ],
-          },
-        ],
-      },
-    },
-  }
-
-  const patch = diff(a, b)
-
-  console.dir(patch, { depth: null })
 
   const x = applyPatch(a, patch)
 
