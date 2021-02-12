@@ -72,7 +72,6 @@ const applyArrayPatch = (value: any[], arrayPatch): any[] | null => {
     } else if (type === 1) {
       const piv = operation[2]
       const range = operation[1] + piv
-
       for (let j = piv; j < range; j++) {
         if (j in used) {
           const copy = deepCopy(value[j])
