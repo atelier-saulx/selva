@@ -625,7 +625,7 @@ test('Weird array 3 register copy', async (t) => {
 
   const patch = diff(a, b)
 
-  console.dir(patch, { depth: 10 })
+  // console.dir(patch, { depth: 10 })
 
   const x = applyPatch(a, patch)
 
