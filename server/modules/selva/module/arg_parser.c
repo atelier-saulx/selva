@@ -195,7 +195,7 @@ int SelvaArgParser_Enum(const struct SelvaArgParser_EnumType types[], RedisModul
 
     while (types[i].name) {
         if (!strcmp(types[i].name, arg_str)) {
-            return i;
+            return types[i].id;
         }
         i++;
     }
