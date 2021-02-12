@@ -56,8 +56,8 @@ const applyArrayPatch = (value: any[], arrayPatch): any[] | null => {
   const newArray = new Array(arrayPatch[0])
   let aI = -1
 
-  const copied = []
   const patches = []
+  const used = {}
 
   for (let i = 1; i < patchLength; i++) {
     // 0 - insert, value
@@ -73,52 +73,39 @@ const applyArrayPatch = (value: any[], arrayPatch): any[] | null => {
       const piv = operation[2]
       const range = operation[1] + piv
 
-      copied.push(operation)
-
       for (let j = piv; j < range; j++) {
-        newArray[++aI] = value[j]
+        if (j in used) {
+          const copy = deepCopy(value[j])
+          newArray[++aI] = copy
+        } else {
+          used[j] = true
+          newArray[++aI] = value[j]
+        }
       }
     } else if (type === 2) {
-      // nested diff
-      // generate the hash in the create patch
       const piv = operation[1]
       const range = operation.length - 2 + piv
       for (let j = piv; j < range; j++) {
-        ++aI
-        patches.push([aI, j, operation[j - piv + 2]])
+        const op = [++aI, j, operation[j - piv + 2]]
+        used[j] = true
+        patches.push(op)
       }
     }
   }
 
   const len = patches.length
+
   for (let i = 0; i < len; i++) {
     const [aI, j, patch] = patches[i]
-    let needsCopy = false
-    for (let k = 0; k < copied.length; k++) {
-      const [_, a, b] = copied[k]
-      if (j >= b && j < b + a) {
-        needsCopy = true
-        break
-      }
+    const x = j in used ? deepCopy(value[j]) : value[j]
+    const newObject = applyPatch(x, patch)
+    if (newObject === null) {
+      return null
     }
-    if (needsCopy) {
-      const copy = deepCopy(value[j])
-      const newObject = applyPatch(copy, patch)
-      if (newObject === null) {
-        return null
-      }
-      newArray[aI] = newObject
-    } else {
-      const newObject = applyPatch(value[j], patch)
-      if (newObject === null) {
-        return null
-      }
-      newArray[aI] = newObject
-    }
+    newArray[aI] = newObject
   }
 
   return newArray
-  // can also be nested
 }
 
 const applyPatch = (value, patch): any | null => {

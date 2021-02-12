@@ -47,7 +47,6 @@ export const arrayDiff = (a, b) => {
   for (let i = 0; i < bLen; i++) {
     const av = aCalced[i]
     const bv = parseValue(b[i])
-
     const current = r[rIndex]
     const type = r[rIndex] && r[rIndex][0]
     if (av === bv) {
@@ -69,7 +68,6 @@ export const arrayDiff = (a, b) => {
         if (type === 1) {
           current[2] = current[2][0]
         }
-
         rIndex++
         r[rIndex] = [1, 1, [i]]
       }
@@ -107,7 +105,6 @@ export const arrayDiff = (a, b) => {
       if (type === 1) {
         current[2] = current[2][0]
       }
-      // we need more places for patches probably
       if (typeof a[i] === 'object' && typeof b[i] === 'object') {
         const patchTime = createPatch(a[i], b[i])
         if (type === 2) {

@@ -6,16 +6,23 @@ import { a, b } from './examples/complex'
 test('Weird double complex', async (t) => {
   const cp = (x) => JSON.parse(JSON.stringify(x))
 
-  const a1 = cp(a)
-  const b1 = cp(b)
+  const a1 = cp(b)
+  const b1 = cp(a)
 
   const patch = diff(a1, b1)
 
-  t.deepEqual(applyPatch(cp(a1), patch), b, 'is equal')
+  const r = cp(a1)
+
+  // this patch applies a re-used thing
+  t.deepEqual(applyPatch(r, patch), a, '1 is equal')
+  // console.log(JSON.stringify(patch, null, 2))
+
+  // console.log('----------------')
 
   const patch2 = diff(b1, a1)
-
-  t.deepEqual(applyPatch(cp(b1), patch2), a1, 'is equal')
+  // // console.log(JSON.stringify(patch2, null, 2))
+  // // dont copy! if copy its fine
+  t.deepEqual(applyPatch(r, patch2), cp(a1), '2 is equal')
 })
 
 test('Object to Array', async (t) => {
@@ -331,13 +338,13 @@ test('Real life', async (t) => {
   b.components[3].children.shift()
   b.components[3].children.shift()
 
-  var d = Date.now()
+  let d = Date.now()
   const patch2 = diff(a, b)
-  console.log('Make sstv patch', Date.now() - d, 'ms')
+  console.info('Make sstv patch', Date.now() - d, 'ms')
 
-  var d = Date.now()
+  d = Date.now()
   const x = applyPatch(a, patch2)
-  console.log('Apply sstv patch', Date.now() - d, 'ms')
+  console.info('Apply sstv patch', Date.now() - d, 'ms')
 
   t.deepEqual(x, b, 'is equal after games put to live')
 })
@@ -348,13 +355,13 @@ test('Real life - theme', async (t) => {
 
   b.theme.colors.backgroundPastel = 'rgb(255,0,0)'
 
-  var d = Date.now()
+  let d = Date.now()
   const patch2 = diff(a, b)
-  console.log('Make sstv patch (theme)', Date.now() - d, 'ms')
+  console.info('Make sstv patch (theme)', Date.now() - d, 'ms')
 
-  var d = Date.now()
+  d = Date.now()
   const x = applyPatch(a, patch2)
-  console.log('Apply sstv patch (theme)', Date.now() - d, 'ms')
+  console.info('Apply sstv patch (theme)', Date.now() - d, 'ms')
 
   t.deepEqual(x, b, 'is equal after games put to live')
 })
@@ -618,7 +625,7 @@ test('Weird array 3 register copy', async (t) => {
 
   const patch = diff(a, b)
 
-  // console.dir(patch, { depth: 10 })
+  console.dir(patch, { depth: 10 })
 
   const x = applyPatch(a, patch)
 
