@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva-diff",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
