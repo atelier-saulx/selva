@@ -11,83 +11,87 @@
  */
 #define SELVA_EGENERAL                  (-1)
 /**
+ * Operation not supported.
+ */
+#define SELVA_ENOTSUP                   (-2)
+/**
  * Invalid argument/input value.
  */
-#define SELVA_EINVAL                    (-2)
+#define SELVA_EINVAL                    (-3)
 /**
  * Invalid type.
  */
-#define SELVA_EINTYPE                   (-3)
+#define SELVA_EINTYPE                   (-4)
 /**
  * Name too long.
  */
-#define SELVA_ENAMETOOLONG              (-4)
+#define SELVA_ENAMETOOLONG              (-5)
 /**
  * Out of memory.
  */
-#define SELVA_ENOMEM                    (-5)
+#define SELVA_ENOMEM                    (-6)
 /**
  * Node or entity not found.
  */
-#define SELVA_ENOENT                    (-6)
+#define SELVA_ENOENT                    (-7)
 /**
  * Node or entity already exist.
  */
-#define SELVA_EEXIST                    (-7)
+#define SELVA_EEXIST                    (-8)
 /**
  * General error.
  */
-#define SELVA_MODIFY_HIERARCHY_EGENERAL (-8)
+#define SELVA_MODIFY_HIERARCHY_EGENERAL (-9)
 /**
  * Operation not supported.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOTSUP  (-9)
+#define SELVA_MODIFY_HIERARCHY_ENOTSUP  (-10)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_MODIFY_HIERARCHY_EINVAL   (-10)
+#define SELVA_MODIFY_HIERARCHY_EINVAL   (-11)
 /**
  * Out of memory.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-11)
+#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-12)
 /**
  * Node or entity not found.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOENT   (-12)
+#define SELVA_MODIFY_HIERARCHY_ENOENT   (-13)
 /**
  * Node or entity already exist.
  */
-#define SELVA_MODIFY_HIERARCHY_EEXIST   (-13)
+#define SELVA_MODIFY_HIERARCHY_EEXIST   (-14)
 /**
  * General error.
  */
-#define SELVA_SUBSCRIPTIONS_EGENERAL    (-14)
+#define SELVA_SUBSCRIPTIONS_EGENERAL    (-15)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_SUBSCRIPTIONS_EINVAL      (-15)
+#define SELVA_SUBSCRIPTIONS_EINVAL      (-16)
 /**
  * Out of memory.
  */
-#define SELVA_SUBSCRIPTIONS_ENOMEM      (-16)
+#define SELVA_SUBSCRIPTIONS_ENOMEM      (-17)
 /**
  * Node or entity not found.
  */
-#define SELVA_SUBSCRIPTIONS_ENOENT      (-17)
+#define SELVA_SUBSCRIPTIONS_ENOENT      (-18)
 /**
  * Node or entity already exist.
  */
-#define SELVA_SUBSCRIPTIONS_EEXIST      (-18)
+#define SELVA_SUBSCRIPTIONS_EEXIST      (-19)
 /**
  * RPN compilation error.
  */
-#define SELVA_RPN_ECOMP                 (-19)
+#define SELVA_RPN_ECOMP                 (-20)
 /**
  * Selva object has reached the maximum size.
  */
-#define SELVA_OBJECT_EOBIG              (-20)
+#define SELVA_OBJECT_EOBIG              (-21)
 /* This must be the last error */
-#define SELVA_INVALID_ERROR             (-21)
+#define SELVA_INVALID_ERROR             (-22)
 
 struct RedisModuleCtx;
 
