@@ -586,7 +586,12 @@ static ssize_t send_deep_merge(
                 return err;
             }
 
-            return send_deep_merge(ctx, nodeId, fields, next_obj, next_path, nr_fields_out);
+            err = send_deep_merge(ctx, nodeId, fields, next_obj, next_path, nr_fields_out);
+            if (err < 0) {
+                fprintf(stderr, "%s:%d: Deep merge failed %s\n",
+                        __FILE__, __LINE__,
+                        getSelvaErrorStr(err));
+            }
         } else {
             int err;
 
