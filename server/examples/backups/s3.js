@@ -12,7 +12,7 @@ const mkS3 = require('../../lib/backup-plugins/s3').default
 
 const backups = require('../../lib/backups')
 
-;(async backupFns => {
+;(async (backupFns) => {
   // force to load backup
   await fs.unlink(path.join(process.cwd(), 'dump.rdb'))
 
@@ -26,10 +26,10 @@ const backups = require('../../lib/backups')
         bucketName: BUCKET, // TODO: pass database name etc. to automate
         config: {
           accessKeyId: ACCESS_KEY_ID,
-          secretAccessKey: SECRET_ACCESS_KEY
-        }
-      })
-    }
+          secretAccessKey: SECRET_ACCESS_KEY,
+        },
+      }),
+    },
     // TODO: accept backupFn as a promise, awaited in server.start()
   })
 
@@ -39,15 +39,15 @@ const backups = require('../../lib/backups')
       .then(() => {
         console.log(`Backed up successfully`)
       })
-      .catch(e => {
+      .catch((e) => {
         console.error(`Failed to back up ${e}`)
       })
       .finally(() => {
         setTimeout(() => {
-          server.destroy().catch(e => {
+          server.destroy().catch((e) => {
             console.error(e)
           })
         }, 1000)
       })
   }, 500)
-})().catch(e => console.error(e))
+})().catch((e) => console.error(e))

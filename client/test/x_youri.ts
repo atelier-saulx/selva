@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -19,29 +19,29 @@ test.before(async t => {
       sport: {
         prefix: 'sp',
         fields: {
-          title: { type: 'text' }
-        }
+          title: { type: 'text' },
+        },
       },
       team: {
         prefix: 'te',
         fields: {
-          title: { type: 'text' }
-        }
+          title: { type: 'text' },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
           homeTeam: { type: 'string' },
-          awayTeam: { type: 'string' }
-        }
-      }
-    }
+          awayTeam: { type: 'string' },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
@@ -50,12 +50,12 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscription list', async t => {
+test.serial('subscription list', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({
     $language: 'en',
     type: 'sport',
-    title: 'football'
+    title: 'football',
   })
 
   await client.set({
@@ -65,20 +65,20 @@ test.serial('subscription list', async t => {
     homeTeam: await client.set({
       $language: 'en',
       type: 'team',
-      title: 'home team'
+      title: 'home team',
     }),
     awayTeam: await client.set({
       $language: 'en',
       type: 'team',
-      title: 'away team'
-    })
+      title: 'away team',
+    }),
   })
 
   const obs = client.observe({
     $id: 'root',
     children: {
       homeTeam: {
-        title: true
+        title: true,
       },
       awayTeam: { title: true },
       // teams: [
@@ -98,15 +98,15 @@ test.serial('subscription list', async t => {
           $filter: {
             $field: 'type',
             $operator: '=',
-            $value: 'sport'
-          }
-        }
-      }
-    }
+            $value: 'sport',
+          },
+        },
+      },
+    },
   })
 
   t.plan(1)
-  obs.subscribe(res => {
+  obs.subscribe((res) => {
     t.pass('should still fire even though sport does not have teams')
   })
 

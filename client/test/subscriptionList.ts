@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -23,15 +23,15 @@ test.before(async t => {
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
-      }
-    }
+          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -39,7 +39,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscription list', async t => {
+test.serial('subscription list', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const matches = []
@@ -52,11 +52,11 @@ test.serial('subscription list', async t => {
       name: 'match ' + i,
       type: 'match',
       value: i,
-      status: i < 5 ? 100 : 300
+      status: i < 5 ? 100 : 300,
     })
   }
 
-  await Promise.all(matches.map(v => client.set(v)))
+  await Promise.all(matches.map((v) => client.set(v)))
 
   await wait(500)
 
@@ -66,8 +66,8 @@ test.serial('subscription list', async t => {
     children: {
       name: true,
       id: true,
-      $list: {}
-    }
+      $list: {},
+    },
   })
 
   const ff = await client.get({
@@ -80,11 +80,11 @@ test.serial('subscription list', async t => {
           $filter: {
             $field: 'type',
             $operator: '=',
-            $value: 'match' // bit nicer error habndling if you do something weird here
-          }
-        }
-      }
-    }
+            $value: 'match', // bit nicer error habndling if you do something weird here
+          },
+        },
+      },
+    },
   })
 
   await wait()
@@ -93,11 +93,11 @@ test.serial('subscription list', async t => {
     children: {
       name: true,
       id: true,
-      $list: {}
-    }
+      $list: {},
+    },
   })
   let cnt = 0
-  const sub = obs.subscribe(d => {
+  const sub = obs.subscribe((d) => {
     cnt++
   })
 
@@ -106,7 +106,7 @@ test.serial('subscription list', async t => {
 
   client.set({
     $id: matches[0].$id,
-    name: 'FLURP!'
+    name: 'FLURP!',
   })
 
   await wait(1000)
@@ -120,8 +120,8 @@ test.serial('subscription list', async t => {
       name: true,
       title: true,
       type: true,
-      $list: {}
-    }
+      $list: {},
+    },
   })
 
   const obs3 = await client.observe({
@@ -133,19 +133,19 @@ test.serial('subscription list', async t => {
       type: true,
       $list: {
         $find: {
-          $traverse: 'children'
-        }
-      }
-    }
+          $traverse: 'children',
+        },
+      },
+    },
   })
 
   let cnt2 = 0
   let cnt3 = 0
-  const sub2 = obs2.subscribe(d => {
+  const sub2 = obs2.subscribe((d) => {
     cnt2++
   })
 
-  const sub3 = obs3.subscribe(d => {
+  const sub3 = obs3.subscribe((d) => {
     cnt3++
   })
 
@@ -153,7 +153,7 @@ test.serial('subscription list', async t => {
 
   client.set({
     $id: matches[0].$id,
-    title: { en: 'Flapdrol' }
+    title: { en: 'Flapdrol' },
   })
 
   await wait(2000)

@@ -7,39 +7,39 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de'],
     types: {
       sport: {
-        prefix: 'sp'
+        prefix: 'sp',
       },
       club: {
-        prefix: 'cl'
+        prefix: 'cl',
       },
       competition: {
-        prefix: 'co'
+        prefix: 'co',
       },
       team: {
         prefix: 'te',
         hierarchy: {
           club: {
-            excludeAncestryWith: ['sport']
-          }
-        }
+            excludeAncestryWith: ['sport'],
+          },
+        },
       },
       match: {
         prefix: 'ma',
         hierarchy: {
           team: {
             // this messes it up!
-            excludeAncestryWith: ['competition']
-          }
+            excludeAncestryWith: ['competition'],
+          },
         },
         fields: {
           video: {
@@ -49,29 +49,29 @@ test.before(async t => {
               type: 'object',
               properties: {
                 mp4: {
-                  type: 'url'
+                  type: 'url',
                 },
                 streamId: {
-                  type: 'string'
+                  type: 'string',
                 },
                 hls: {
                   type: 'url',
                   meta: {
-                    upload: 'video'
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                    upload: 'video',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -79,35 +79,35 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.skip('correct hierachy rules', async t => {
+test.serial.skip('correct hierachy rules', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const football = await client.set({
-    type: 'sport'
+    type: 'sport',
   })
 
   const bball = await client.set({
-    type: 'sport'
+    type: 'sport',
   })
 
   const eredivisie2020 = await client.set({
     type: 'competition',
-    parents: [football]
+    parents: [football],
   })
 
   const ajax = await client.set({
     type: 'club',
-    parents: [football, bball]
+    parents: [football, bball],
   })
 
   const ajax1 = await client.set({
     type: 'team',
-    parents: [ajax, eredivisie2020]
+    parents: [ajax, eredivisie2020],
   })
 
   const ajax2 = await client.set({
     type: 'team',
-    parents: [ajax, eredivisie2020]
+    parents: [ajax, eredivisie2020],
   })
 
   const match = await client.set({
@@ -116,14 +116,14 @@ test.serial.skip('correct hierachy rules', async t => {
     video: {
       default: {
         // hls: 'https://google.com',
-        mp4: 'https://google.com'
+        mp4: 'https://google.com',
       },
-      pano: {}
-    }
+      pano: {},
+    },
   })
 
   t.deepEqualIgnoreOrder(await client.get({ $id: match, ancestors: true }), {
-    ancestors: ['root', football, eredivisie2020, ajax1, ajax2, ajax]
+    ancestors: ['root', football, eredivisie2020, ajax1, ajax2, ajax],
   })
 
   try {
@@ -137,13 +137,13 @@ test.serial.skip('correct hierachy rules', async t => {
               {
                 $value: 'match',
                 $field: 'type',
-                $operator: '='
-              }
-            ]
-          }
+                $operator: '=',
+              },
+            ],
+          },
         },
-        video: true
-      }
+        video: true,
+      },
     })
 
     t.pass()

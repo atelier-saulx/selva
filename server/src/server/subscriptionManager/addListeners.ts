@@ -8,7 +8,7 @@ const {
   CLIENTS,
   REMOVE_SUBSCRIPTION,
   NEW_SUBSCRIPTION,
-  STOP_HEARTBEAT
+  STOP_HEARTBEAT,
 } = constants
 
 const addListeners = async (
@@ -19,7 +19,7 @@ const addListeners = async (
   redis.on(selector, 'message', (channel, message) => {
     if (channel === STOP_HEARTBEAT) {
       if (message in subsManager.clients) {
-        subsManager.clients[message].subscriptions.forEach(channel => {
+        subsManager.clients[message].subscriptions.forEach((channel) => {
           removeClientSubscription(subsManager, message, channel)
         })
         delete subsManager.clients[message]

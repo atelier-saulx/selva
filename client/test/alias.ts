@@ -7,17 +7,17 @@ import getPort from 'get-port'
 let srv
 let port: number
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.redis.flushall()
@@ -37,17 +37,17 @@ test.beforeEach(async t => {
                 type: 'object',
                 properties: {
                   dung: { type: 'number' },
-                  dunk: { type: 'string' }
-                }
+                  dunk: { type: 'string' },
+                },
               },
               dunk: {
                 type: 'object',
                 properties: {
                   ding: { type: 'number' },
-                  dong: { type: 'number' }
-                }
-              }
-            }
+                  dong: { type: 'number' },
+                },
+              },
+            },
           },
           dong: { type: 'json' },
           dingdongs: { type: 'array', items: { type: 'string' } },
@@ -55,7 +55,7 @@ test.beforeEach(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -63,10 +63,10 @@ test.beforeEach(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       custom: {
         prefix: 'cu',
@@ -74,7 +74,7 @@ test.beforeEach(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -82,10 +82,10 @@ test.beforeEach(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       club: {
         prefix: 'cl',
@@ -93,7 +93,7 @@ test.beforeEach(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -101,28 +101,28 @@ test.beforeEach(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
-          description: { type: 'text' }
-        }
-      }
-    }
+          description: { type: 'text' },
+        },
+      },
+    },
   })
 
   // A small delay is needed after setting the schema
-  await new Promise(r => setTimeout(r, 100))
+  await new Promise((r) => setTimeout(r, 100))
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -130,7 +130,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get non-existing by $alias', async t => {
+test.serial('get non-existing by $alias', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   t.deepEqualIgnoreOrder(
@@ -139,10 +139,10 @@ test.serial('get non-existing by $alias', async t => {
       $alias: 'does_not_exists',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
-      $isNull: true
+      $isNull: true,
     }
   )
 
@@ -150,13 +150,13 @@ test.serial('get non-existing by $alias', async t => {
   client.destroy()
 })
 
-test.serial('set alias and get by $alias', async t => {
+test.serial('set alias and get by $alias', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     aliases: 'nice_match',
     type: 'match',
-    title: { en: 'yesh' }
+    title: { en: 'yesh' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -165,17 +165,17 @@ test.serial('set alias and get by $alias', async t => {
       $alias: 'nice_match',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match1,
       title: 'yesh',
-      aliases: ['nice_match']
+      aliases: ['nice_match'],
     }
   )
 
   t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), {
-    nice_match: match1
+    nice_match: match1,
   })
 
   t.deepEqualIgnoreOrder(
@@ -186,7 +186,7 @@ test.serial('set alias and get by $alias', async t => {
   const match2 = await client.set({
     aliases: ['nice_match', 'very_nice_match'],
     type: 'match',
-    title: { en: 'yesh2' }
+    title: { en: 'yesh2' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -195,12 +195,12 @@ test.serial('set alias and get by $alias', async t => {
       $alias: 'nice_match',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match2,
       title: 'yesh2',
-      aliases: ['nice_match', 'very_nice_match']
+      aliases: ['nice_match', 'very_nice_match'],
     }
   )
 
@@ -209,17 +209,17 @@ test.serial('set alias and get by $alias', async t => {
       $language: 'en',
       $alias: 'very_nice_match',
       id: true,
-      title: true
+      title: true,
     }),
     {
       id: match2,
-      title: 'yesh2'
+      title: 'yesh2',
     }
   )
 
   t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), {
     nice_match: match2,
-    very_nice_match: match2
+    very_nice_match: match2,
   })
 
   t.deepEqualIgnoreOrder(
@@ -234,12 +234,12 @@ test.serial('set alias and get by $alias', async t => {
 
   await client.set({
     $id: match1,
-    aliases: { $add: ['ok_match'] }
+    aliases: { $add: ['ok_match'] },
   })
 
   await client.set({
     $id: match2,
-    aliases: { $delete: ['very_nice_match'] }
+    aliases: { $delete: ['very_nice_match'] },
   })
 
   t.deepEqualIgnoreOrder(
@@ -248,12 +248,12 @@ test.serial('set alias and get by $alias', async t => {
       $alias: 'nice_match',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match2,
       title: 'yesh2',
-      aliases: ['nice_match']
+      aliases: ['nice_match'],
     }
   )
 
@@ -263,18 +263,18 @@ test.serial('set alias and get by $alias', async t => {
       $alias: 'ok_match',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match1,
       title: 'yesh',
-      aliases: ['ok_match']
+      aliases: ['ok_match'],
     }
   )
 
   t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), {
     ok_match: match1,
-    nice_match: match2
+    nice_match: match2,
   })
 
   t.deepEqualIgnoreOrder(
@@ -291,13 +291,13 @@ test.serial('set alias and get by $alias', async t => {
   await client.destroy()
 })
 
-test.serial('set new entry with alias', async t => {
+test.serial('set new entry with alias', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     $alias: 'nice_match',
     type: 'match',
-    title: { en: 'yesh' }
+    title: { en: 'yesh' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -306,17 +306,17 @@ test.serial('set new entry with alias', async t => {
       $alias: 'nice_match',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match1,
       title: 'yesh',
-      aliases: ['nice_match']
+      aliases: ['nice_match'],
     }
   )
 
   t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), {
-    nice_match: match1
+    nice_match: match1,
   })
 
   t.deepEqualIgnoreOrder(
@@ -328,13 +328,13 @@ test.serial('set new entry with alias', async t => {
   await client.destroy()
 })
 
-test.serial('set existing entry with alias', async t => {
+test.serial('set existing entry with alias', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     $alias: 'nice_match',
     type: 'match',
-    title: { en: 'yesh' }
+    title: { en: 'yesh' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -343,19 +343,19 @@ test.serial('set existing entry with alias', async t => {
       $alias: 'nice_match',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match1,
       title: 'yesh',
-      aliases: ['nice_match']
+      aliases: ['nice_match'],
     }
   )
 
   await client.set({
     $alias: ['not_so_nice_match', 'nice_match'], // second one exists
     type: 'match',
-    title: { en: 'yesh yesh' }
+    title: { en: 'yesh yesh' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -364,12 +364,12 @@ test.serial('set existing entry with alias', async t => {
       $alias: 'nice_match',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match1,
       title: 'yesh yesh',
-      aliases: ['nice_match']
+      aliases: ['nice_match'],
     }
   )
 
@@ -379,12 +379,12 @@ test.serial('set existing entry with alias', async t => {
       $alias: 'nice_match',
       id: true,
       title: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match1,
       title: 'yesh yesh',
-      aliases: ['nice_match']
+      aliases: ['nice_match'],
     }
   )
 
@@ -392,12 +392,12 @@ test.serial('set existing entry with alias', async t => {
   await client.destroy()
 })
 
-test.serial('set and get by $alias as id', async t => {
+test.serial('set and get by $alias as id', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     type: 'match',
-    title: { en: 'yesh' }
+    title: { en: 'yesh' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -405,11 +405,11 @@ test.serial('set and get by $alias as id', async t => {
       $language: 'en',
       $alias: match1,
       id: true,
-      title: true
+      title: true,
     }),
     {
       id: match1,
-      title: 'yesh'
+      title: 'yesh',
     }
   )
 
@@ -417,20 +417,20 @@ test.serial('set and get by $alias as id', async t => {
   await client.destroy()
 })
 
-test.serial('set parent by alias', async t => {
+test.serial('set parent by alias', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     type: 'match',
     title: { en: 'yesh' },
     aliases: {
-      $add: 'match-1'
-    }
+      $add: 'match-1',
+    },
   })
 
   const matchX = await client.set({
     type: 'match',
-    title: { en: 'yeshX' }
+    title: { en: 'yeshX' },
   })
 
   const match2 = await client.set({
@@ -441,23 +441,23 @@ test.serial('set parent by alias', async t => {
       $add: [
         {
           $alias: 'match-1',
-          type: 'match'
+          type: 'match',
         },
         {
-          $id: matchX
+          $id: matchX,
         },
         {
           $alias: 'non-existent',
-          type: 'match'
-        }
-      ]
-    }
+          type: 'match',
+        },
+      ],
+    },
   })
 
   const stub = await client.get({
     $alias: 'non-existent',
     id: true,
-    parents: true
+    parents: true,
   })
 
   t.deepEqualIgnoreOrder(stub.parents, [])
@@ -467,11 +467,11 @@ test.serial('set parent by alias', async t => {
       $language: 'en',
       $id: match2,
       title: true,
-      parents: true
+      parents: true,
     }),
     {
       title: 'yesh-yesh',
-      parents: [match1, matchX, stub.id]
+      parents: [match1, matchX, stub.id],
     }
   )
 
@@ -479,51 +479,51 @@ test.serial('set parent by alias', async t => {
   await client.destroy()
 })
 
-test.serial('delete all aliases of a node', async t => {
+test.serial('delete all aliases of a node', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     type: 'match',
     title: { en: 'yesh' },
-    aliases: { $add: ['nice_match', 'nicer_match'] }
+    aliases: { $add: ['nice_match', 'nicer_match'] },
   })
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $alias: 'nice_match',
       id: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match1,
-      aliases: ['nice_match', 'nicer_match']
+      aliases: ['nice_match', 'nicer_match'],
     }
   )
   t.deepEqualIgnoreOrder(
     await client.get({
       $alias: 'nicer_match',
       id: true,
-      aliases: true
+      aliases: true,
     }),
     {
       id: match1,
-      aliases: ['nice_match', 'nicer_match']
+      aliases: ['nice_match', 'nicer_match'],
     }
   )
 
   await client.set({
     $id: match1,
-    aliases: { $delete: true }
+    aliases: { $delete: true },
   })
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: match1,
       id: true,
-      aliases: true
+      aliases: true,
     }),
     {
-      id: match1
+      id: match1,
     }
   )
 

@@ -8,16 +8,16 @@ import getPort from 'get-port'
 let srv
 let port
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   await wait(500)
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   await client.redis.flushall()
@@ -28,8 +28,8 @@ test.beforeEach(async t => {
         prefix: 'le',
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
-          thing: { type: 'string', search: { type: ['EXISTS'] } }
-        }
+          thing: { type: 'string', search: { type: ['EXISTS'] } },
+        },
       },
       match: {
         prefix: 'ma',
@@ -38,21 +38,21 @@ test.beforeEach(async t => {
           description: { type: 'text' },
           value: {
             type: 'number',
-            search: { type: ['NUMERIC', 'SORTABLE', 'EXISTS'] }
+            search: { type: ['NUMERIC', 'SORTABLE', 'EXISTS'] },
           },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
-        }
-      }
-    }
+          status: { type: 'number', search: { type: ['NUMERIC'] } },
+        },
+      },
+    },
   })
 
   // A small delay is needed after setting the schema
-  await new Promise(r => setTimeout(r, 100))
+  await new Promise((r) => setTimeout(r, 100))
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port: port })
   await client.delete('root')
   await client.destroy()
@@ -60,18 +60,18 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find - numeric exists field', async t => {
+test.serial('find - numeric exists field', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
     type: 'match',
     name: 'match 1',
-    value: 1
+    value: 1,
   })
 
   await client.set({
     type: 'match',
-    name: 'match 2'
+    name: 'match 2',
   })
 
   t.deepEqualIgnoreOrder(
@@ -87,16 +87,16 @@ test.serial('find - numeric exists field', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'match'
+                $value: 'match',
               },
               {
                 $field: 'value',
-                $operator: 'exists'
-              }
-            ]
-          }
-        }
-      }
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
     }),
     { id: 'root', items: [{ name: 'match 1' }] }
   )
@@ -105,18 +105,18 @@ test.serial('find - numeric exists field', async t => {
   await client.destroy()
 })
 
-test.serial('find - string field only exists indexed', async t => {
+test.serial('find - string field only exists indexed', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
     type: 'league',
-    name: 'league 1'
+    name: 'league 1',
   })
 
   await client.set({
     type: 'league',
     name: 'league 2',
-    thing: 'yes some value here'
+    thing: 'yes some value here',
   })
 
   t.deepEqualIgnoreOrder(
@@ -132,16 +132,16 @@ test.serial('find - string field only exists indexed', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'league'
+                $value: 'league',
               },
               {
                 $field: 'thing',
-                $operator: 'exists'
-              }
-            ]
-          }
-        }
-      }
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
     }),
     { id: 'root', items: [{ name: 'league 2' }] }
   )
@@ -150,18 +150,18 @@ test.serial('find - string field only exists indexed', async t => {
   await client.destroy()
 })
 
-test.serial('find - numeric not exists field', async t => {
+test.serial('find - numeric not exists field', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
     type: 'match',
     name: 'match 1',
-    value: 1
+    value: 1,
   })
 
   await client.set({
     type: 'match',
-    name: 'match 2'
+    name: 'match 2',
   })
 
   t.deepEqualIgnoreOrder(
@@ -177,16 +177,16 @@ test.serial('find - numeric not exists field', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'match'
+                $value: 'match',
               },
               {
                 $field: 'value',
-                $operator: 'notExists'
-              }
-            ]
-          }
-        }
-      }
+                $operator: 'notExists',
+              },
+            ],
+          },
+        },
+      },
     }),
     { id: 'root', items: [{ name: 'match 2' }] }
   )
@@ -195,18 +195,18 @@ test.serial('find - numeric not exists field', async t => {
   await client.destroy()
 })
 
-test.serial('find - string field only not exists indexed', async t => {
+test.serial('find - string field only not exists indexed', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
     type: 'league',
-    name: 'league 1'
+    name: 'league 1',
   })
 
   await client.set({
     type: 'league',
     name: 'league 2',
-    thing: 'yes some value here'
+    thing: 'yes some value here',
   })
 
   const m = await client.get({
@@ -222,16 +222,16 @@ test.serial('find - string field only not exists indexed', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'league'
+              $value: 'league',
             },
             {
               $field: 'thing',
-              $operator: 'notExists'
-            }
-          ]
-        }
-      }
-    }
+              $operator: 'notExists',
+            },
+          ],
+        },
+      },
+    },
   })
 
   delete m.$meta
@@ -242,21 +242,21 @@ test.serial('find - string field only not exists indexed', async t => {
   await client.destroy()
 })
 
-test.serial('find - text exists field', async t => {
+test.serial('find - text exists field', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
     $language: 'en',
     type: 'match',
     description: 'match 1',
-    value: 1
+    value: 1,
   })
 
   await client.set({
     $language: 'en',
     type: 'match',
     name: 'match 2',
-    value: 1
+    value: 1,
   })
 
   t.deepEqualIgnoreOrder(
@@ -272,16 +272,16 @@ test.serial('find - text exists field', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'match'
+                $value: 'match',
               },
               {
                 $field: 'description',
-                $operator: 'exists'
-              }
-            ]
-          }
-        }
-      }
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
     }),
     { id: 'root', items: [{ description: { en: 'match 1' } }] }
   )
@@ -300,16 +300,16 @@ test.serial('find - text exists field', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'match'
+                $value: 'match',
               },
               {
                 $field: 'description',
-                $operator: 'exists'
-              }
-            ]
-          }
-        }
-      }
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
     }),
     { id: 'root', items: [{ description: 'match 1' }] }
   )

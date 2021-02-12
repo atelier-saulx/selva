@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   const theme = {
@@ -19,18 +19,18 @@ test.before(async t => {
       colors: {
         type: 'object',
         properties: {
-          blue: { type: 'string' }
-        }
-      }
-    }
+          blue: { type: 'string' },
+        },
+      },
+    },
   }
 
   await client.updateSchema({
     rootType: {
       fields: {
         // @ts-ignore
-        theme
-      }
+        theme,
+      },
     },
 
     types: {
@@ -38,40 +38,40 @@ test.before(async t => {
         prefix: 'sp',
         fields: {
           // @ts-ignore
-          theme
-        }
+          theme,
+        },
       },
 
       team: {
         prefix: 'te',
         fields: {
           // @ts-ignore
-          theme
-        }
+          theme,
+        },
       },
 
       match: {
         prefix: 'ma',
         hierarchy: {
           team: {
-            excludeAncestryWith: ['sport']
-          }
+            excludeAncestryWith: ['sport'],
+          },
         },
         // hierarchy: {
         //   team: false
         // },
         fields: {
           // @ts-ignore
-          theme
-        }
-      }
-    }
+          theme,
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.delete('root')
   await client.destroy()
@@ -79,34 +79,34 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('inherit even when skipping hierarchy node', async t => {
+test.serial('inherit even when skipping hierarchy node', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'root',
     theme: {
       colors: {
-        blue: 'red'
-      }
-    }
+        blue: 'red',
+      },
+    },
   })
 
   let count = 10000
   let match
   while (count--) {
     const sport = await client.set({
-      type: 'sport'
+      type: 'sport',
     })
 
     const team = await client.set({
       type: 'team',
-      parents: [sport]
+      parents: [sport],
     })
 
     match = await client.set({
       $id: 'ma' + count,
       type: 'match',
-      parents: [team]
+      parents: [team],
     })
   }
 
@@ -115,8 +115,8 @@ test.serial('inherit even when skipping hierarchy node', async t => {
     const res = await client.get({
       $id: 'ma' + count,
       theme: {
-        colors: { $inherit: true }
-      }
+        colors: { $inherit: true },
+      },
     })
     t.deepEqualIgnoreOrder(res, { theme: { colors: { blue: 'red' } } })
   }

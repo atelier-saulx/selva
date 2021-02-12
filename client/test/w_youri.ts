@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -19,18 +19,18 @@ test.before(async t => {
       sport: {
         prefix: 'sp',
         fields: {
-          rando: { type: 'string' }
-        }
+          rando: { type: 'string' },
+        },
       },
       match: {
-        prefix: 'ma'
-      }
-    }
+        prefix: 'ma',
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -38,7 +38,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscription list', async t => {
+test.serial('subscription list', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -46,16 +46,16 @@ test.serial('subscription list', async t => {
     rando: 'rando!',
     children: [
       {
-        type: 'match'
-      }
-    ]
+        type: 'match',
+      },
+    ],
   })
 
   const a = await client.get({
     $id: 'root',
     children: {
       rando: {
-        $inherit: { $type: 'sport' }
+        $inherit: { $type: 'sport' },
       },
       $list: {
         $limit: 100,
@@ -64,11 +64,11 @@ test.serial('subscription list', async t => {
           $filter: {
             $field: 'type',
             $operator: '=',
-            $value: 'match'
-          }
-        }
-      }
-    }
+            $value: 'match',
+          },
+        },
+      },
+    },
   })
 
   // const b = await client.get({

@@ -149,7 +149,7 @@ function parseJson(
   res: ServerResponse,
   next: MiddlewareNext
 ): void {
-  jsonParser(req, res, err => {
+  jsonParser(req, res, (err) => {
     if (err) {
       console.error('Error parsing request body', err)
       res.statusCode = 400
@@ -188,7 +188,7 @@ function applyMiddleware(
 
 const defaultMiddleware: Middleware[] = [checkPost, parseJson]
 
-export default function(
+export default function (
   connectOptions: ConnectOptions,
   middlewares?: Middleware[]
 ): {
@@ -210,12 +210,12 @@ export default function(
         const body: any = (<any>req).body
         client
           .get(body)
-          .then(result => {
+          .then((result) => {
             res.statusCode = 200
             res.setHeader('content-type', 'application/json')
             res.end(JSON.stringify(result))
           })
-          .catch(e => {
+          .catch((e) => {
             console.error('Error getting get response', e)
             return sendError(res, e)
           })
@@ -229,7 +229,7 @@ export default function(
         if (!body.$source) {
           body.$source = {
             $name: 'api',
-            $overwrite: true
+            $overwrite: true,
           }
         }
 
@@ -240,7 +240,7 @@ export default function(
         const fakeGetBody: GetOptions = constructGuard(body)
         client
           .get(fakeGetBody)
-          .then(result => {
+          .then((result) => {
             let needsChanges = true
             try {
               const r = !result.id ? false : noHasGuard(body, result)
@@ -256,7 +256,7 @@ export default function(
             // only this needs to be the "entrypoint" to the promise chain... later at least
             return client.set(body)
           })
-          .then(result => {
+          .then((result) => {
             if (!result) {
               console.error('Nothing was created')
               res.statusCode = 400
@@ -267,7 +267,7 @@ export default function(
             res.setHeader('content-type', 'application/json')
             res.end(JSON.stringify({ id: result }))
           })
-          .catch(e => {
+          .catch((e) => {
             console.error('Error getting get response', e)
             return sendError(res, e)
           })
@@ -281,12 +281,12 @@ export default function(
 
         client
           .delete(body)
-          .then(isRemoved => {
+          .then((isRemoved) => {
             res.statusCode = 200
             res.setHeader('content-type', 'application/json')
             res.end(JSON.stringify({ isRemoved: !!isRemoved }))
           })
-          .catch(e => {
+          .catch((e) => {
             console.error('Error deleting', e)
             return sendError(res, e)
           })
@@ -309,11 +309,11 @@ export default function(
             res.setHeader('content-type', 'application/json')
             res.end(JSON.stringify(client.schemas[dbName]))
           })
-          .catch(e => {
+          .catch((e) => {
             console.error('Error setting schema', e)
             return sendError(res, e)
           })
       }
-    )
+    ),
   }
 }

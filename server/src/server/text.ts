@@ -7,7 +7,7 @@ import Flexsearch, { Index } from 'flexsearch'
 Flexsearch.registerMatcher({
   ä: 'a',
   ö: 'o',
-  ü: 'u'
+  ü: 'u',
 })
 
 const searchIndices: Record<string, Index<string>> = {}
@@ -31,7 +31,7 @@ export class TextServer {
         const url = _url.parse(req.url)
         const { pathname } = url
 
-        jsonParser(req, res, err => {
+        jsonParser(req, res, (err) => {
           if (err) {
             console.error('Error parsing request body', err)
             res.statusCode = 400
@@ -79,7 +79,7 @@ export class TextServer {
               return
             }
 
-            idx.search({ query: $searchString }, results => {
+            idx.search({ query: $searchString }, (results) => {
               if (!results) {
                 results = []
               }

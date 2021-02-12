@@ -2,18 +2,18 @@ import test from 'ava'
 import { createAst, printAst, createRpn } from '../src'
 import { Filter, GeoFilter } from '../../client/src/get/types'
 
-test('basic filter', async t => {
+test('basic filter', async (t) => {
   const filter: Filter[] = [
     {
       $field: 'type',
       $operator: '=',
-      $value: 'team'
+      $value: 'team',
     },
     {
       $field: 'value',
       $operator: '!=',
-      $value: 2
-    }
+      $value: 2,
+    },
   ]
 
   const ast = createAst(filter)
@@ -22,8 +22,8 @@ test('basic filter', async t => {
     isFork: true,
     $and: [
       { $value: 'team', $operator: '=', $field: 'type' },
-      { $value: 2, $operator: '!=', $field: 'value' }
-    ]
+      { $value: 2, $operator: '!=', $field: 'value' },
+    ],
   })
 
   const rpn = createRpn(filter)
@@ -33,37 +33,37 @@ test('basic filter', async t => {
   t.deepEqual(rpn, [' $2 $1 f c @4 $3 g G M', 'type', 'team', 'value', '2'])
 })
 
-test('complex filter', async t => {
+test('complex filter', async (t) => {
   const filter: Filter[] = [
     {
       $field: 'type',
       $operator: '=',
-      $value: 'team'
+      $value: 'team',
     },
     {
       $field: 'value',
       $operator: '!=',
-      $value: 2
+      $value: 2,
     },
     {
       $field: 'value',
       $operator: '=',
-      $value: 3
+      $value: 3,
     },
     {
       $field: 'flapdrol',
       $operator: '>',
-      $value: 10
+      $value: 10,
     },
     {
       $field: 'flapdrol',
       $operator: '>',
-      $value: 100
+      $value: 100,
     },
     {
       $field: 'x',
       $operator: '>',
-      $value: 10
+      $value: 10,
     },
     {
       $field: 'x',
@@ -76,10 +76,10 @@ test('complex filter', async t => {
         $and: {
           $field: 'z',
           $operator: '=',
-          $value: 'snurkypants'
-        }
-      }
-    }
+          $value: 'snurkypants',
+        },
+      },
+    },
   ]
 
   const ast = createAst(filter)
@@ -101,18 +101,18 @@ test('complex filter', async t => {
               {
                 $value: 'flapperdrol',
                 $operator: '=',
-                $field: 'y'
+                $field: 'y',
               },
               {
                 $value: 'snurkypants',
                 $operator: '=',
-                $field: 'z'
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                $field: 'z',
+              },
+            ],
+          },
+        ],
+      },
+    ],
   })
 
   const rpn = createRpn(filter)
@@ -134,20 +134,20 @@ test('complex filter', async t => {
     'y',
     'flapperdrol',
     'z',
-    'snurkypants'
+    'snurkypants',
   ])
 })
 
-test('exists & not exist', async t => {
+test('exists & not exist', async (t) => {
   const filter: Filter[] = [
     {
       $field: 'type',
-      $operator: 'exists'
+      $operator: 'exists',
     },
     {
       $field: 'flurp',
-      $operator: 'notExists'
-    }
+      $operator: 'notExists',
+    },
   ]
 
   const ast = createAst(filter)
@@ -157,21 +157,21 @@ test('exists & not exist', async t => {
     isFork: true,
     $and: [
       { $operator: 'exists', $field: 'type' },
-      { $operator: 'notExists', $field: 'flurp' }
-    ]
+      { $operator: 'notExists', $field: 'flurp' },
+    ],
   })
 })
 
-test('reduce exists', async t => {
+test('reduce exists', async (t) => {
   const filter: Filter[] = [
     {
       $field: 'type',
       $operator: '=',
-      $value: 'team'
+      $value: 'team',
     },
     {
       $field: 'type',
-      $operator: 'exists'
+      $operator: 'exists',
     },
     {
       $field: 'flap',
@@ -183,10 +183,10 @@ test('reduce exists', async t => {
         $and: {
           $field: 'snurf',
           $operator: '<',
-          $value: 10
-        }
-      }
-    }
+          $value: 10,
+        },
+      },
+    },
   ]
 
   const ast = createAst(filter)
@@ -201,26 +201,26 @@ test('reduce exists', async t => {
           { $operator: '>', $field: 'flap', $value: 1 },
           {
             isFork: true,
-            $and: [{ $operator: '<', $field: 'snurf', $value: 10 }]
-          }
-        ]
-      }
-    ]
+            $and: [{ $operator: '<', $field: 'snurf', $value: 10 }],
+          },
+        ],
+      },
+    ],
   })
 
   printAst(ast)
 })
 
-test('perf test', async t => {
+test('perf test', async (t) => {
   const filter: Filter[] = [
     {
       $field: 'type',
       $operator: '=',
-      $value: 'team'
+      $value: 'team',
     },
     {
       $field: 'type',
-      $operator: 'exists'
+      $operator: 'exists',
     },
     {
       $field: 'flap',
@@ -232,17 +232,17 @@ test('perf test', async t => {
         $and: {
           $field: 'snurf',
           $operator: '<',
-          $value: 10
-        }
-      }
-    }
+          $value: 10,
+        },
+      },
+    },
   ]
 
   for (let i = 0; i < 1000; i++) {
     filter.push({
       $field: 'flap',
       $operator: '<',
-      $value: ~~(Math.random() * 1000)
+      $value: ~~(Math.random() * 1000),
     })
   }
 

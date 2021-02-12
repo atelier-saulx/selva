@@ -6,10 +6,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   const client = connect({ port })
@@ -26,18 +26,18 @@ test.before(async t => {
               a: { type: 'string' },
               b: { type: 'string' },
               c: { type: 'string' },
-              d: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              d: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -45,7 +45,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get - correct order', async t => {
+test.serial('get - correct order', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -53,37 +53,37 @@ test.serial('get - correct order', async t => {
     f: {
       d: 'a',
       b: 'b',
-      c: 'c'
-    }
+      c: 'c',
+    },
   })
 
   const x = await client.get({
     $id: 'flA',
-    f: true
+    f: true,
   })
 
   await client.set({
     $id: 'flA',
     f: {
       d: 'xxxx',
-      a: 'x'
-    }
+      a: 'x',
+    },
   })
 
   const y = await client.get({
     $id: 'flA',
-    f: true
+    f: true,
   })
 
   for (let i = 0; i < 1; i++) {
     await client.set({
       $id: 'flA',
-      x: i + ''
+      x: i + '',
     })
 
     const z = await client.get({
       $id: 'flA',
-      f: true
+      f: true,
     })
     t.deepEqual(z, y)
   }

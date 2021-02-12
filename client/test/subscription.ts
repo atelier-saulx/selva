@@ -9,38 +9,38 @@ let port: number
 test.before(async () => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   await srv.destroy()
   await t.connectionsAreEmpty()
 })
 
-test.serial('basic id based subscriptions', async t => {
+test.serial('basic id based subscriptions', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
     },
     types: {
       yeshType: {
         prefix: 'ye',
         fields: {
-          yesh: { type: 'string' }
-        }
-      }
-    }
+          yesh: { type: 'string' },
+        },
+      },
+    },
   })
 
   t.plan(4)
 
   const observable = client.observe({ $id: 'root', yesh: true })
   let o1counter = 0
-  const sub = observable.subscribe(d => {
+  const sub = observable.subscribe((d) => {
     if (o1counter === 0) {
       // gets start event
       t.is(d.yesh, undefined)
@@ -56,18 +56,18 @@ test.serial('basic id based subscriptions', async t => {
 
   const thing = await client.set({
     type: 'yeshType',
-    yesh: 'extra nice'
+    yesh: 'extra nice',
   })
 
   let o2counter = 0
   const other = client.observe({ $id: thing, $all: true, aliases: false })
-  const sub2 = other.subscribe(d => {
+  const sub2 = other.subscribe((d) => {
     if (o2counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
         id: thing,
         type: 'yeshType',
-        yesh: 'extra nice'
+        yesh: 'extra nice',
       })
     } else if (o2counter === 1) {
       // gets delete event
@@ -82,16 +82,16 @@ test.serial('basic id based subscriptions', async t => {
 
   await client.set({
     $id: 'root',
-    no: 'no event pls'
+    no: 'no event pls',
   })
 
   await client.set({
     $id: 'root',
-    yesh: 'so nice'
+    yesh: 'so nice',
   })
 
   await client.delete({
-    $id: thing
+    $id: thing,
   })
 
   await wait(500 * 2)
@@ -108,45 +108,45 @@ test.serial('basic id based subscriptions', async t => {
   await client.destroy()
 })
 
-test.serial('basic id based nested query subscriptions', async t => {
+test.serial('basic id based nested query subscriptions', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
     },
     types: {
       yeshType: {
         prefix: 'ye',
         fields: {
-          yesh: { type: 'string' }
-        }
-      }
-    }
+          yesh: { type: 'string' },
+        },
+      },
+    },
   })
 
   t.plan(2)
 
   const thing = await client.set({
     type: 'yeshType',
-    yesh: 'extra nice'
+    yesh: 'extra nice',
   })
 
   let o2counter = 0
   const other = client.observe({
     $id: 'root',
-    item: { $id: thing, $all: true, aliases: false }
+    item: { $id: thing, $all: true, aliases: false },
   })
-  const sub2 = other.subscribe(d => {
+  const sub2 = other.subscribe((d) => {
     if (o2counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
         item: {
           id: thing,
           type: 'yeshType',
-          yesh: 'extra nice'
-        }
+          yesh: 'extra nice',
+        },
       })
     } else if (o2counter === 1) {
       console.log('DD', d)
@@ -162,16 +162,16 @@ test.serial('basic id based nested query subscriptions', async t => {
 
   await client.set({
     $id: 'root',
-    no: 'no event pls'
+    no: 'no event pls',
   })
 
   await client.set({
     $id: 'root',
-    yesh: 'so nice'
+    yesh: 'so nice',
   })
 
   await client.delete({
-    $id: thing
+    $id: thing,
   })
 
   await wait(500 * 2)
@@ -187,21 +187,21 @@ test.serial('basic id based nested query subscriptions', async t => {
   await client.destroy()
 })
 
-test.serial('using $field works', async t => {
+test.serial('using $field works', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' } }
+      fields: { yesh: { type: 'string' } },
     },
     types: {
       yeshType: {
         fields: {
-          yesh: { type: 'string' }
-        }
-      }
-    }
+          yesh: { type: 'string' },
+        },
+      },
+    },
   })
 
   t.plan(2)
@@ -209,11 +209,11 @@ test.serial('using $field works', async t => {
   const observable = client.observe({
     $id: 'root',
     id: true,
-    aliasedField: { $field: 'yesh' }
+    aliasedField: { $field: 'yesh' },
   })
 
   let o1counter = 0
-  const sub = observable.subscribe(d => {
+  const sub = observable.subscribe((d) => {
     if (o1counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, { id: 'root' })
@@ -231,7 +231,7 @@ test.serial('using $field works', async t => {
 
   await client.set({
     $id: 'root',
-    yesh: 'so nice'
+    yesh: 'so nice',
   })
 
   await wait(1000 * 1)
@@ -243,7 +243,7 @@ test.serial('using $field works', async t => {
   await client.destroy()
 })
 
-test.serial.skip('refs resolve and get tracked correctly', async t => {
+test.serial.skip('refs resolve and get tracked correctly', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
@@ -252,17 +252,17 @@ test.serial.skip('refs resolve and get tracked correctly', async t => {
       yeshType: {
         fields: {
           yesh: { type: 'string' },
-          yeeesh: { type: 'string' }
-        }
-      }
-    }
+          yeeesh: { type: 'string' },
+        },
+      },
+    },
   })
 
   t.plan(2)
 
   const yesh = await client.set({
     type: 'yeshType',
-    yesh: { $ref: 'yeeesh' }
+    yesh: { $ref: 'yeeesh' },
   })
 
   await wait(1000 * 1)
@@ -270,11 +270,11 @@ test.serial.skip('refs resolve and get tracked correctly', async t => {
   const observable = client.observe({
     $id: yesh,
     id: true,
-    yesh: true
+    yesh: true,
   })
 
   let o1counter = 0
-  const sub = observable.subscribe(d => {
+  const sub = observable.subscribe((d) => {
     if (o1counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, { id: yesh })
@@ -292,7 +292,7 @@ test.serial.skip('refs resolve and get tracked correctly', async t => {
 
   await client.set({
     $id: yesh,
-    yeeesh: 'siiick'
+    yeeesh: 'siiick',
   })
 
   await wait(1000 * 1)
@@ -303,37 +303,37 @@ test.serial.skip('refs resolve and get tracked correctly', async t => {
   await client.destroy()
 })
 
-test.serial('basic $inherit when ancestors change', async t => {
+test.serial('basic $inherit when ancestors change', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' } }
+      fields: { yesh: { type: 'string' } },
     },
     types: {
       yeshType: {
         fields: {
-          yesh: { type: 'string' }
-        }
-      }
-    }
+          yesh: { type: 'string' },
+        },
+      },
+    },
   })
 
   t.plan(2)
 
   const thing = await client.set({
-    type: 'yeshType'
+    type: 'yeshType',
   })
 
   const observable = client.observe({
     $id: thing,
     id: true,
-    yesh: { $inherit: { $type: ['yeshType', 'root'] } }
+    yesh: { $inherit: { $type: ['yeshType', 'root'] } },
   })
 
   let o1counter = 0
-  const sub = observable.subscribe(d => {
+  const sub = observable.subscribe((d) => {
     if (o1counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, { id: thing })
@@ -352,7 +352,7 @@ test.serial('basic $inherit when ancestors change', async t => {
   await client.set({
     type: 'yeshType',
     yesh: 'so nice',
-    children: [thing]
+    children: [thing],
   })
 
   await wait(1000 * 1)
@@ -365,10 +365,10 @@ test.serial('basic $inherit when ancestors change', async t => {
 
 test.serial(
   'subscription client side reconnection test -- no event if no changes',
-  async t => {
+  async (t) => {
     const port = await getPort()
     const server = await start({
-      port
+      port,
     })
 
     const client = connect({ port })
@@ -376,22 +376,22 @@ test.serial(
     await client.updateSchema({
       languages: ['en', 'de', 'nl'],
       rootType: {
-        fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+        fields: { yesh: { type: 'string' }, no: { type: 'string' } },
       },
       types: {
         yeshType: {
           fields: {
-            yesh: { type: 'string' }
-          }
-        }
-      }
+            yesh: { type: 'string' },
+          },
+        },
+      },
     })
 
     t.plan(3)
 
     const observable = client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
-    const sub = observable.subscribe(d => {
+    const sub = observable.subscribe((d) => {
       if (o1counter === 0) {
         // gets start event
         t.deepEqualIgnoreOrder(d, {})
@@ -416,14 +416,14 @@ test.serial(
 
     await client.set({
       $id: 'root',
-      yesh: 'so nice'
+      yesh: 'so nice',
     })
 
     await wait(1000 * 1)
 
     await client.set({
       $id: 'root',
-      yesh: 'so nice!!!'
+      yesh: 'so nice!!!',
     })
 
     await wait(1000 * 1)
@@ -438,33 +438,33 @@ test.serial(
 // still have to fix this
 test.serial(
   'subscription client side reconnection test -- event if pending changes',
-  async t => {
+  async (t) => {
     const port = await getPort()
     const client = connect({ port })
 
     const server = await start({
-      port
+      port,
     })
 
     await client.updateSchema({
       languages: ['en', 'de', 'nl'],
       rootType: {
-        fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+        fields: { yesh: { type: 'string' }, no: { type: 'string' } },
       },
       types: {
         yeshType: {
           fields: {
-            yesh: { type: 'string' }
-          }
-        }
-      }
+            yesh: { type: 'string' },
+          },
+        },
+      },
     })
 
     t.plan(3)
 
     const observable = client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
-    const sub = observable.subscribe(d => {
+    const sub = observable.subscribe((d) => {
       if (o1counter === 0) {
         // gets start event
         t.deepEqualIgnoreOrder(d, {})
@@ -489,7 +489,7 @@ test.serial(
 
     await client.set({
       $id: 'root',
-      yesh: 'so nice'
+      yesh: 'so nice',
     })
 
     await wait(1000 * 5)
@@ -498,7 +498,7 @@ test.serial(
 
     await client.set({
       $id: 'root',
-      yesh: 'so nice!!!'
+      yesh: 'so nice!!!',
     })
 
     await wait(1000 * 5)
@@ -516,26 +516,26 @@ test.serial(
 // skip for now
 test.serial.skip(
   'subscription server side reconnection test -- event if pending changes',
-  async t => {
+  async (t) => {
     const port = await getPort()
     const client = connect({ port })
 
     const server = await start({
-      port
+      port,
     })
 
     await client.updateSchema({
       languages: ['en', 'de', 'nl'],
       rootType: {
-        fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+        fields: { yesh: { type: 'string' }, no: { type: 'string' } },
       },
       types: {
         yeshType: {
           fields: {
-            yesh: { type: 'string' }
-          }
-        }
-      }
+            yesh: { type: 'string' },
+          },
+        },
+      },
     })
 
     t.plan(2)
@@ -543,7 +543,7 @@ test.serial.skip(
     const observable = client.observe({ $id: 'root', yesh: true })
     let o1counter = 0
 
-    const sub = observable.subscribe(d => {
+    const sub = observable.subscribe((d) => {
       if (o1counter === 0) {
         // gets start event
         t.deepEqualIgnoreOrder(d, { yesh: '' })
@@ -565,14 +565,14 @@ test.serial.skip(
 
     await client.set({
       $id: 'root',
-      yesh: 'so nice'
+      yesh: 'so nice',
     })
 
     await wait(1000 * 1)
 
     await client.set({
       $id: 'root',
-      yesh: 'so nice!!!'
+      yesh: 'so nice!!!',
     })
 
     await wait(1000 * 1)

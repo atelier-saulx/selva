@@ -18,7 +18,7 @@ async function cleanUpOldBackups(
   retentionInDays: number
 ): Promise<void> {
   const objects = await s3.listObjects(bucketName)
-  const oldBackups = objects.filter(object => {
+  const oldBackups = objects.filter((object) => {
     const validSince = new Date(
       Date.now() - 1000 * 60 * 60 * 12 * retentionInDays
     )
@@ -26,7 +26,7 @@ async function cleanUpOldBackups(
   })
 
   await Promise.all(
-    oldBackups.map(object => {
+    oldBackups.map((object) => {
       console.log(`Deleting object ${object.Key}`)
       // return s3.deleteObject(bucketName, object.Key)
     })
@@ -63,6 +63,6 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
         const body: Buffer = <Buffer>await s3.getObject(bucketName, latest.Key)
         await fs.writeFile(rdbFilePath, body)
       }
-    }
+    },
   }
 }

@@ -1,5 +1,4 @@
-Hierarchy Serialization
-=======================
+# Hierarchy Serialization
 
 Hierarchy trees are serialized starting from each head towards descendants using
 DFS algorithm.

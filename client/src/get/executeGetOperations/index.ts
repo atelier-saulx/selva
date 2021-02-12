@@ -84,7 +84,7 @@ export function bufferNodeMarker(
     current = new Set()
   }
 
-  fields.forEach(f => current.add(f))
+  fields.forEach((f) => current.add(f))
 
   ctx.nodeMarkers[id] = current
 }
@@ -105,7 +105,7 @@ async function addNodeMarkers(
         return addMarker(client, ctx, {
           type: 'node',
           id,
-          fields: [...fields.values()]
+          fields: [...fields.values()],
         })
       })
     )
@@ -233,7 +233,7 @@ export const TYPE_CASTS: Record<
     } else {
       return all
     }
-  }
+  },
 }
 
 export function typeCast(
@@ -334,7 +334,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     if (lang) {
       args.push(`${field}.${lang}`)
       if (client.schemas[db].languages) {
-        args.push(...client.schemas[db].languages.map(l => `${field}.${l}`))
+        args.push(...client.schemas[db].languages.map((l) => `${field}.${l}`))
       }
     } else {
       args.push(field)
@@ -355,7 +355,7 @@ const TYPE_TO_SPECIAL_OP: Record<
       }
       return o
     }
-  }
+  },
 }
 
 export const executeNestedGetOperations = async (
@@ -415,7 +415,7 @@ export const executeGetOperation = async (
     }
   } else if (op.type === 'array_query') {
     return Promise.all(
-      op.props.map(p => {
+      op.props.map((p) => {
         if (p.$id) {
           return executeNestedGetOperations(client, p, lang, ctx)
         } else {
@@ -452,7 +452,7 @@ export const executeGetOperation = async (
       const specialOp = TYPE_TO_SPECIAL_OP[fieldSchema.type]
 
       const all: GetOperation[] = await Promise.all(
-        op.sourceField.map(async f => {
+        op.sourceField.map(async (f) => {
           if (!nested) {
             bufferNodeMarker(ctx, op.id, f)
           }
@@ -468,7 +468,7 @@ export const executeGetOperation = async (
         })
       )
 
-      r = all.find(x => !!x)
+      r = all.find((x) => !!x)
     } else {
       if (!nested) {
         bufferNodeMarker(ctx, op.id, <string>op.sourceField)
@@ -518,7 +518,7 @@ export default async function executeGetOperations(
   const o: GetResult = {}
 
   const results = await Promise.all(
-    ops.map(op => executeGetOperation(client, lang, ctx, op, nested))
+    ops.map((op) => executeGetOperation(client, lang, ctx, op, nested))
   )
   results.map((r, i) => {
     if (

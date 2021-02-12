@@ -11,7 +11,7 @@ if (!filename) {
 }
 
 fs.readFile(path.join(CWD, filename), 'utf8')
-  .then(content => {
+  .then((content) => {
     const moduleTableLocation = content.indexOf('____modules = {\n')
     const withoutRequireShim = content.substring(
       moduleTableLocation,
@@ -37,7 +37,7 @@ fs.readFile(path.join(CWD, filename), 'utf8')
       newRequireOverride + withoutRequireShim
     )
   })
-  .catch(e => {
+  .catch((e) => {
     console.error(e)
     process.exit(1)
   })

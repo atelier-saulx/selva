@@ -14,7 +14,7 @@ async function getSchema(
     sha: 'default',
     rootType: { fields: rootDefaultFields, prefix: 'ro' },
     idSeedCounter: 0,
-    prefixToTypeMapping: {}
+    prefixToTypeMapping: {},
   }
 
   let searchIndexes: SearchIndexes = {}

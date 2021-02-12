@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   const theme = {
@@ -19,10 +19,10 @@ test.before(async t => {
       colors: {
         type: 'object',
         properties: {
-          blue: { type: 'string' }
-        }
-      }
-    }
+          blue: { type: 'string' },
+        },
+      },
+    },
   }
 
   const components: any = {
@@ -49,27 +49,27 @@ test.before(async t => {
               title: {
                 type: 'object',
                 properties: {
-                  text: { type: 'text' }
-                }
+                  text: { type: 'text' },
+                },
               },
               subtitle: {
                 type: 'object',
                 properties: {
-                  text: { type: 'text' }
-                }
+                  text: { type: 'text' },
+                },
               },
               info: {
                 type: 'object',
                 properties: {
                   text: { type: 'text' },
-                  to: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  to: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   }
 
   await client.updateSchema({
@@ -77,16 +77,16 @@ test.before(async t => {
     rootType: {
       fields: {
         // @ts-ignore
-        theme
-      }
+        theme,
+      },
     },
     types: {
       pageTemplate: {
         prefix: 'pt',
         fields: {
           name: { type: 'string' }, // of you want a custom name
-          components
-        }
+          components,
+        },
       },
 
       page: {
@@ -96,17 +96,17 @@ test.before(async t => {
           index: { type: 'int' },
           components,
           next: {
-            type: 'reference'
-          }
-        }
-      }
-    }
+            type: 'reference',
+          },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.delete('root')
   await client.destroy()
@@ -114,7 +114,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('inherit merge works for records', async t => {
+test.serial('inherit merge works for records', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -126,26 +126,26 @@ test.serial('inherit merge works for records', async t => {
         component: 'Text',
         name: 'Random Text',
         text: 'Voting round 1?',
-        color: '#0750C6'
+        color: '#0750C6',
       },
       1: {
         component: 'Image',
         image:
-          'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1'
+          'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
       },
       2: {
         component: 'List',
         items: {
           0: {
             title: {
-              text: 'Efendi'
+              text: 'Efendi',
             },
             image:
-              'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1'
-          }
-        }
-      }
-    }
+              'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
+          },
+        },
+      },
+    },
   })
 
   await client.set({
@@ -157,9 +157,9 @@ test.serial('inherit merge works for records', async t => {
     components: {
       0: {
         text: 'YAY',
-        color: 'red'
-      }
-    }
+        color: 'red',
+      },
+    },
   })
 
   const res = await client.get({
@@ -167,9 +167,9 @@ test.serial('inherit merge works for records', async t => {
     $language: 'en',
     id: true,
     components: {
-      $inherit: { $type: ['page', 'pageTemplate'], $merge: true }
+      $inherit: { $type: ['page', 'pageTemplate'], $merge: true },
     },
-    next: true
+    next: true,
   })
   console.log('res', res)
 

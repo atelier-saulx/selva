@@ -8,7 +8,7 @@ export async function removeFromRegistry(client: SelvaClient) {
 
   await Promise.all([
     redis.srem({ type: 'registry' }, 'servers', id),
-    redis.del({ type: 'registry' }, id)
+    redis.del({ type: 'registry' }, id),
   ])
 
   await redis.publish(
@@ -16,7 +16,7 @@ export async function removeFromRegistry(client: SelvaClient) {
     constants.REGISTRY_UPDATE,
     JSON.stringify({
       event: 'remove',
-      server: client.server
+      server: client.server,
     })
   )
 }
@@ -67,7 +67,7 @@ export default async function updateRegistry(
     client.redis.sadd({ type: 'registry' }, 'servers', id),
 
     // remove subs here
-    client.redis.hmset({ type: 'registry' }, id, ...args)
+    client.redis.hmset({ type: 'registry' }, id, ...args),
   ])
 
   if (block(server)) {
@@ -94,8 +94,8 @@ export default async function updateRegistry(
           port: info.port,
           name: info.name,
           host: info.host,
-          type: info.type
-        }
+          type: info.type,
+        },
       })
     )
   }

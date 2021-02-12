@@ -104,14 +104,14 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
 
         if (modify) {
           const orig = modify
-          modify.resolve = results => {
+          modify.resolve = (results) => {
             for (let i = 0; i < modifyResolvers.length; i++) {
               if (modifyResolvers[i]) {
                 modifyResolvers[i](results[i])
               }
             }
           }
-          modify.reject = err => {
+          modify.reject = (err) => {
             if (err.stack.includes('NOSCRIPT')) {
               loadScripts(connection, () => {
                 orig.args[0] = getScriptSha('modify')
@@ -119,7 +119,7 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
               })
               return
             }
-            modifyRejects.forEach(reject => {
+            modifyRejects.forEach((reject) => {
               if (reject) {
                 reject(err)
               }
@@ -154,7 +154,7 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
               .then(() => {
                 queueDone()
               })
-              .catch(err => {
+              .catch((err) => {
                 // do clear it else the connection never gets removed!
                 connection.removeActive()
                 console.log(

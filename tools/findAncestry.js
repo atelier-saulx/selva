@@ -54,6 +54,6 @@ async function run() {
   }
 }
 
-run().catch(e => {
+run().catch((e) => {
   console.error(e)
 })

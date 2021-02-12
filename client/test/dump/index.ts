@@ -8,7 +8,7 @@ import { join } from 'path'
 
 const dbName = 'testit'
 const clean = async () => {
-  await fs.promises.unlink(join(__dirname, 'dump.rdb')).catch(e => {})
+  await fs.promises.unlink(join(__dirname, 'dump.rdb')).catch((e) => {})
 }
 
 test.before(clean)
@@ -22,13 +22,13 @@ const testDataType = async (t, schema, payload) => {
   while (n--) {
     const port = await getPort()
     const registry = await start({
-      port
+      port,
     })
     const server = await startOrigin({
       name: dbName,
       save: true,
       dir: __dirname,
-      registry: { port }
+      registry: { port },
     })
     const client = connect({ port }, { loglevel: 'info' })
 
@@ -42,7 +42,7 @@ const testDataType = async (t, schema, payload) => {
 }
 
 // works
-test.serial('works with number: 1', async t => {
+test.serial('works with number: 1', async (t) => {
   await testDataType(
     t,
     {
@@ -50,21 +50,21 @@ test.serial('works with number: 1', async t => {
         sport: {
           prefix: 'sp',
           fields: {
-            number: { type: 'number' }
-          }
-        }
-      }
+            number: { type: 'number' },
+          },
+        },
+      },
     },
     {
       $db: dbName,
       $id: 'sp1',
-      number: 1
+      number: 1,
     }
   )
 })
 
 // breaks
-test.serial('works with number: 0', async t => {
+test.serial('works with number: 0', async (t) => {
   await testDataType(
     t,
     {
@@ -72,21 +72,21 @@ test.serial('works with number: 0', async t => {
         sport: {
           prefix: 'sp',
           fields: {
-            number: { type: 'number' }
-          }
-        }
-      }
+            number: { type: 'number' },
+          },
+        },
+      },
     },
     {
       $db: dbName,
       $id: 'sp0',
-      number: 0
+      number: 0,
     }
   )
 })
 
 // works
-test.serial('works with boolean: true', async t => {
+test.serial('works with boolean: true', async (t) => {
   await testDataType(
     t,
     {
@@ -94,21 +94,21 @@ test.serial('works with boolean: true', async t => {
         sport: {
           prefix: 'sp',
           fields: {
-            bool: { type: 'boolean' }
-          }
-        }
-      }
+            bool: { type: 'boolean' },
+          },
+        },
+      },
     },
     {
       $db: dbName,
       $id: 'spTrue',
-      bool: true
+      bool: true,
     }
   )
 })
 
 // breaks
-test.serial('works with boolean: false', async t => {
+test.serial('works with boolean: false', async (t) => {
   await testDataType(
     t,
     {
@@ -116,21 +116,21 @@ test.serial('works with boolean: false', async t => {
         sport: {
           prefix: 'sp',
           fields: {
-            bool: { type: 'boolean' }
-          }
-        }
-      }
+            bool: { type: 'boolean' },
+          },
+        },
+      },
     },
     {
       $db: dbName,
       $id: 'spFalse',
-      bool: false
+      bool: false,
     }
   )
 })
 
 // works
-test.serial('works with string: empty', async t => {
+test.serial('works with string: empty', async (t) => {
   await testDataType(
     t,
     {
@@ -138,15 +138,15 @@ test.serial('works with string: empty', async t => {
         sport: {
           prefix: 'sp',
           fields: {
-            str: { type: 'string' }
-          }
-        }
-      }
+            str: { type: 'string' },
+          },
+        },
+      },
     },
     {
       $db: dbName,
       $id: 'spEmpty',
-      str: ''
+      str: '',
     }
   )
 })

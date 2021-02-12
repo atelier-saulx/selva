@@ -11,14 +11,14 @@ const { RateLimit } = require('async-sema')
 let srv
 let port: number
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port })
 
   await client.redis.flushall()
@@ -29,20 +29,20 @@ test.beforeEach(async t => {
         prefix: 'sh',
         fields: {
           title: { type: 'text' },
-          votes: { type: 'number' }
-        }
+          votes: { type: 'number' },
+        },
       },
       vote: {
         prefix: 'vo',
         fields: {
-          uid: { type: 'string' }
-        }
-      }
-    }
+          uid: { type: 'string' },
+        },
+      },
+    },
   })
 })
 
-test.after(async _t => {
+test.after(async (_t) => {
   const client = connect({ port })
   const d = Date.now()
   //await client.delete('root')
@@ -51,7 +51,7 @@ test.after(async _t => {
   await srv.destroy()
 })
 
-test.serial('voting w/parsers', async t => {
+test.serial('voting w/parsers', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const sh = await Promise.all([
@@ -59,31 +59,31 @@ test.serial('voting w/parsers', async t => {
       $language: 'en',
       type: 'show',
       title: 'LOL',
-      votes: 0
+      votes: 0,
     }),
     client.set({
       $language: 'en',
       type: 'show',
       title: 'ROFL',
-      votes: 0
-    })
+      votes: 0,
+    }),
   ])
 
   const nrVotes = 100000
   const votesPerSecond = 10000
-  const votes: SetOptions[] = Array.from(Array(nrVotes).keys()).map(v => ({
+  const votes: SetOptions[] = Array.from(Array(nrVotes).keys()).map((v) => ({
     $id: sh[v & 1],
     votes: { $increment: 1 },
     children: {
-      $add: [{ type: 'vote', uid: `user${v}` }]
-    }
+      $add: [{ type: 'vote', uid: `user${v}` }],
+    },
   }))
 
   const lim = RateLimit(votesPerSecond, { timeUnit: 1000 })
 
   const start = performance.now()
   await Promise.all(
-    votes.map(async vote => {
+    votes.map(async (vote) => {
       await lim()
       await client.set(vote)
     })

@@ -7,17 +7,17 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port })
 
   await client.redis.flushall()
@@ -27,18 +27,18 @@ test.beforeEach(async t => {
       sport: {
         prefix: 'sp',
         fields: {
-          rando: { type: 'string' }
-        }
+          rando: { type: 'string' },
+        },
       },
       match: {
-        prefix: 'ma'
-      }
-    }
+        prefix: 'ma',
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -46,19 +46,19 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('insert works only if object is not defined', async t => {
+test.serial('insert works only if object is not defined', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const thing = await client.set({
     $operation: 'insert',
     type: 'sport',
-    rando: 'rando!'
+    rando: 'rando!',
   })
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: thing,
-      rando: true
+      rando: true,
     }),
     { rando: 'rando!' }
   )
@@ -67,14 +67,14 @@ test.serial('insert works only if object is not defined', async t => {
     $id: thing,
     $operation: 'insert',
     type: 'sport',
-    rando: 'rando!!!'
+    rando: 'rando!!!',
   })
 
   t.is(retVal, undefined)
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: thing,
-      rando: true
+      rando: true,
     }),
     { rando: 'rando!' }
   )
@@ -83,14 +83,14 @@ test.serial('insert works only if object is not defined', async t => {
   await client.destroy()
 })
 
-test.serial('update works only if object is defined', async t => {
+test.serial('update works only if object is defined', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   let retVal = await client.set({
     $id: 'spRando',
     $operation: 'update',
     type: 'sport',
-    rando: 'rando!'
+    rando: 'rando!',
   })
 
   t.is(retVal, undefined)
@@ -99,13 +99,13 @@ test.serial('update works only if object is defined', async t => {
     $id: 'spRando',
     $operation: 'insert',
     type: 'sport',
-    rando: 'rando!'
+    rando: 'rando!',
   })
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'spRando',
-      rando: true
+      rando: true,
     }),
     { rando: 'rando!' }
   )
@@ -114,14 +114,14 @@ test.serial('update works only if object is defined', async t => {
     $id: 'spRando',
     $operation: 'update',
     type: 'sport',
-    rando: 'rando!!!'
+    rando: 'rando!!!',
   })
 
   t.is(retVal, 'spRando')
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'spRando',
-      rando: true
+      rando: true,
     }),
     { rando: 'rando!!!' }
   )

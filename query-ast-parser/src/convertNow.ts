@@ -3,7 +3,7 @@ export default function convertNow(x: string): number {
     s: true,
     m: true,
     h: true,
-    d: true
+    d: true,
   }
 
   if (!x.startsWith('now')) {

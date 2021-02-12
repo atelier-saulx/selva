@@ -5,10 +5,10 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
 
-test.serial('schemas - sport', async t => {
+test.serial('schemas - sport', async (t) => {
   const port = await getPort()
   const server = await start({
-    port
+    port,
   })
   const client = connect({ port })
 
@@ -34,22 +34,22 @@ test.serial('schemas - sport', async t => {
     'show',
     'sport',
     'team',
-    'video'
+    'video',
   ]
 
   const defaultFields: Fields = {
     createdAt: {
-      type: 'timestamp'
+      type: 'timestamp',
       // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
     },
     updatedAt: {
-      type: 'timestamp'
+      type: 'timestamp',
       // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
     },
     title: {
       type: 'text',
-      search: { type: ['TEXT'] }
-    }
+      search: { type: ['TEXT'] },
+    },
   }
 
   const price: FieldSchema = {
@@ -57,28 +57,28 @@ test.serial('schemas - sport', async t => {
     properties: types.reduce((properties, type) => {
       properties[type] = { type: 'int' }
       return properties
-    }, {})
+    }, {}),
   }
 
   const contentFields: Fields = {
     ...defaultFields,
     price,
     description: {
-      type: 'text'
+      type: 'text',
     },
     published: {
       type: 'boolean',
-      search: { type: ['TAG'] }
+      search: { type: ['TAG'] },
     },
     rating: {
       type: 'int',
-      search: { type: ['NUMERIC', 'SORTABLE'] }
+      search: { type: ['NUMERIC', 'SORTABLE'] },
     },
     overlay: {
-      type: 'string'
+      type: 'string',
     },
     article: {
-      type: 'string'
+      type: 'string',
     },
     // uuid: {
     //   type: 'object',
@@ -105,53 +105,53 @@ test.serial('schemas - sport', async t => {
       type: 'object',
       properties: {
         logo: {
-          type: 'url'
+          type: 'url',
         },
         cover: {
-          type: 'url'
+          type: 'url',
         },
         thumb: {
-          type: 'url'
-        }
-      }
+          type: 'url',
+        },
+      },
     },
     allowGeo: {
       type: 'set',
       items: {
-        type: 'string'
-      }
-    }
+        type: 'string',
+      },
+    },
   }
 
   const startTime: FieldSchema = {
     type: 'timestamp',
-    search: { type: ['NUMERIC'] }
+    search: { type: ['NUMERIC'] },
   }
 
   const endTime: FieldSchema = {
     type: 'timestamp',
-    search: { type: ['NUMERIC'] }
+    search: { type: ['NUMERIC'] },
   }
 
   const gender: FieldSchema = {
-    type: 'string'
+    type: 'string',
   }
 
   const status: FieldSchema = {
     type: 'string',
-    search: { type: ['TAG'] }
+    search: { type: ['TAG'] },
   }
 
   const contact: FieldSchema = {
     // maybe fixed props?
-    type: 'json'
+    type: 'json',
   }
 
   const videoFields: Fields = {
     ...contentFields,
     date: {
       type: 'timestamp',
-      search: { type: ['NUMERIC', 'SORTABLE'] }
+      search: { type: ['NUMERIC', 'SORTABLE'] },
     },
     startTime,
     endTime,
@@ -164,45 +164,45 @@ test.serial('schemas - sport', async t => {
           type: 'object',
           properties: {
             mp4: {
-              type: 'url'
+              type: 'url',
             },
             hls: {
-              type: 'url'
-            }
-          }
+              type: 'url',
+            },
+          },
         },
         pano: {
           type: 'object',
           properties: {
             mp4: {
-              type: 'url'
+              type: 'url',
             },
             hls: {
-              type: 'url'
-            }
-          }
+              type: 'url',
+            },
+          },
         },
         live: {
           type: 'object',
           properties: {
             mp4: {
-              type: 'url'
+              type: 'url',
             },
             hls: {
-              type: 'url'
-            }
-          }
-        }
-      }
-    }
+              type: 'url',
+            },
+          },
+        },
+      },
+    },
   }
 
   const schema: SchemaOptions = {
     languages: ['nl', 'en'],
     rootType: {
       fields: {
-        ...contentFields
-      }
+        ...contentFields,
+      },
     },
     types: {
       match: {
@@ -221,24 +221,24 @@ test.serial('schemas - sport', async t => {
                 durationMs: { type: 'number' },
                 duration: { type: 'string' },
                 startMs: { type: 'number' },
-                start: { type: 'string' }
-              }
-            }
-          }
-        }
+                start: { type: 'string' },
+              },
+            },
+          },
+        },
       },
       video: {
         prefix: 'vi',
         fields: {
-          ...videoFields
-        }
+          ...videoFields,
+        },
       },
       club: {
         prefix: 'cl',
         fields: {
           ...contentFields,
           cameras: {
-            type: 'boolean'
+            type: 'boolean',
           },
           discountCodes: {
             type: 'array',
@@ -246,78 +246,78 @@ test.serial('schemas - sport', async t => {
               type: 'object',
               properties: {
                 code: {
-                  type: 'string'
+                  type: 'string',
                 },
                 amount: {
-                  type: 'number'
-                }
-              }
-            }
+                  type: 'number',
+                },
+              },
+            },
           },
-          contact
-        }
+          contact,
+        },
       },
       team: {
         prefix: 'te',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       season: {
         prefix: 'se',
         fields: {
           ...contentFields,
           startTime,
-          endTime
-        }
+          endTime,
+        },
       },
       league: {
         prefix: 'le',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       show: {
         prefix: 'sh',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       custom: {
         prefix: 'cu',
         fields: {
-          ...videoFields
-        }
+          ...videoFields,
+        },
       },
       sport: {
         prefix: 'sp',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       event: {
         prefix: 'ev',
         fields: {
-          ...videoFields
-        }
+          ...videoFields,
+        },
       },
       federation: {
         prefix: 'fe',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       product: {
         prefix: 'pr',
         fields: {
           ...defaultFields,
           value: {
-            type: 'number'
+            type: 'number',
           },
           price,
           startTime,
-          endTime
-        }
+          endTime,
+        },
       },
       ad: {
         prefix: 'ad',
@@ -326,46 +326,46 @@ test.serial('schemas - sport', async t => {
           startTime,
           endTime,
           user: {
-            type: 'string'
+            type: 'string',
           },
           seller: {
-            type: 'string'
+            type: 'string',
           },
           thirdParty: {
-            type: 'boolean'
+            type: 'boolean',
           },
           status,
           paymentData: {
-            type: 'json'
+            type: 'json',
           },
-          contact
-        }
+          contact,
+        },
       },
       series: {
         prefix: 'sr',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       category: {
         prefix: 'ct',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       class: {
         prefix: 'cs',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       article: {
         prefix: 'ar',
         fields: {
-          ...contentFields
-        }
-      }
-    }
+          ...contentFields,
+        },
+      },
+    },
   }
 
   await client.updateSchema(schema)

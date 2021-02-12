@@ -52,7 +52,7 @@ export default async (
     } else if (!payload.$id && payload.type) {
       const id = await client.id({
         db: (<any>result).$db || 'default',
-        type: payload.type
+        type: payload.type,
       })
 
       const obj = { ...payload, $id: id }

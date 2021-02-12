@@ -11,8 +11,8 @@ const list = (props: GetOptions, id: string, field: string): GetOperation => {
       sourceField: <string>props.$field || field.substr(1),
       options: {
         limit: -1, // no limit
-        offset: 0
-      }
+        offset: 0,
+      },
     }
   } else if (props.$list.$find) {
     return find(
@@ -37,8 +37,8 @@ const list = (props: GetOptions, id: string, field: string): GetOperation => {
         offset: props.$list.$offset || 0,
         sort: Array.isArray(props.$list.$sort)
           ? props.$list.$sort[0]
-          : props.$list.$sort || undefined
-      }
+          : props.$list.$sort || undefined,
+      },
     }
   }
 }

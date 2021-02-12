@@ -9,37 +9,37 @@ let port: number
 test.before(async () => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   await srv.destroy()
   await t.connectionsAreEmpty()
 })
 
-test.serial('basic trigger created subscriptions', async t => {
+test.serial('basic trigger created subscriptions', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
     },
     types: {
       yeshType: {
         prefix: 'ye',
         fields: {
-          yesh: { type: 'string' }
-        }
+          yesh: { type: 'string' },
+        },
       },
       noType: {
         prefix: 'no',
         fields: {
-          no: { type: 'string' }
-        }
-      }
-    }
+          no: { type: 'string' },
+        },
+      },
+    },
   })
 
   await client.set({ $id: 'root' })
@@ -51,26 +51,26 @@ test.serial('basic trigger created subscriptions', async t => {
     $filter: {
       $operator: '=',
       $field: 'type',
-      $value: 'yeshType'
+      $value: 'yeshType',
     },
     $all: true,
-    aliases: false
+    aliases: false,
   })
 
-  const sub2 = other.subscribe(d => {
+  const sub2 = other.subscribe((d) => {
     if (o2counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
         id: thing,
         type: 'yeshType',
-        yesh: 'extra nice'
+        yesh: 'extra nice',
       })
     } else if (o2counter === 1) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
         id: thing2,
         type: 'yeshType',
-        yesh: 'extra extra nice'
+        yesh: 'extra extra nice',
       })
     } else {
       t.fail
@@ -82,14 +82,14 @@ test.serial('basic trigger created subscriptions', async t => {
 
   const thing = await client.set({
     type: 'yeshType',
-    yesh: 'extra nice'
+    yesh: 'extra nice',
   })
 
   await wait(500)
 
   const thing2 = await client.set({
     type: 'yeshType',
-    yesh: 'extra extra nice'
+    yesh: 'extra extra nice',
   })
 
   await wait(500)
@@ -111,27 +111,27 @@ test.serial('basic trigger created subscriptions', async t => {
 
   await client.set({
     $id: 'root',
-    no: 'no event pls'
+    no: 'no event pls',
   })
 
   await client.set({
     $id: 'noNoNoNo',
-    no: 'no event again'
+    no: 'no event again',
   })
 
   await client.set({
     $id: thing,
-    yesh: 'woot no event'
+    yesh: 'woot no event',
   })
 
   await client.set({
     $id: thing2,
-    yesh: 'woot no event'
+    yesh: 'woot no event',
   })
 
   // no event
   await client.delete({
-    $id: thing
+    $id: thing,
   })
 
   await wait(500 * 2)
@@ -147,39 +147,39 @@ test.serial('basic trigger created subscriptions', async t => {
   await client.destroy()
 })
 
-test.serial('basic trigger updated subscriptions', async t => {
+test.serial('basic trigger updated subscriptions', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
     },
     types: {
       yeshType: {
         prefix: 'ye',
         fields: {
-          yesh: { type: 'string' }
-        }
+          yesh: { type: 'string' },
+        },
       },
       noType: {
         prefix: 'no',
         fields: {
-          no: { type: 'string' }
-        }
-      }
-    }
+          no: { type: 'string' },
+        },
+      },
+    },
   })
 
   await client.set({ $id: 'root' })
   const thing = await client.set({
     type: 'yeshType',
-    yesh: 'nice'
+    yesh: 'nice',
   })
 
   const thing2 = await client.set({
     type: 'noType',
-    no: 'initial value'
+    no: 'initial value',
   })
 
   t.plan(2)
@@ -193,27 +193,27 @@ test.serial('basic trigger updated subscriptions', async t => {
       $or: {
         $operator: '=',
         $field: 'type',
-        $value: 'noType'
-      }
+        $value: 'noType',
+      },
     },
     $all: true,
-    aliases: false
+    aliases: false,
   })
 
-  const sub2 = other.subscribe(d => {
+  const sub2 = other.subscribe((d) => {
     if (o2counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
         id: thing,
         type: 'yeshType',
-        yesh: 'extra nice'
+        yesh: 'extra nice',
       })
     } else if (o2counter === 1) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
         id: thing2,
         type: 'noType',
-        no: 'hmm'
+        no: 'hmm',
       })
     } else {
       t.fail
@@ -225,23 +225,23 @@ test.serial('basic trigger updated subscriptions', async t => {
 
   await client.set({
     type: 'yeshType',
-    yesh: 'new node, no event'
+    yesh: 'new node, no event',
   })
 
   await client.set({
     type: 'noType',
-    no: 'new node, no event'
+    no: 'new node, no event',
   })
 
   await client.set({
     $id: thing,
-    yesh: 'extra nice'
+    yesh: 'extra nice',
   })
 
   await wait(100)
   await client.set({
     $id: thing2,
-    no: 'hmm'
+    no: 'hmm',
   })
 
   try {
@@ -261,17 +261,17 @@ test.serial('basic trigger updated subscriptions', async t => {
 
   await client.set({
     $id: 'root',
-    no: 'no event pls'
+    no: 'no event pls',
   })
 
   await client.set({
     $id: 'noNoNoNo',
-    no: 'no event again'
+    no: 'no event again',
   })
 
   // no event
   await client.delete({
-    $id: thing
+    $id: thing,
   })
 
   await wait(500 * 2)
@@ -287,39 +287,39 @@ test.serial('basic trigger updated subscriptions', async t => {
   await client.destroy()
 })
 
-test.serial('basic trigger deleted subscriptions', async t => {
+test.serial('basic trigger deleted subscriptions', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
     },
     types: {
       yeshType: {
         prefix: 'ye',
         fields: {
-          yesh: { type: 'string' }
-        }
+          yesh: { type: 'string' },
+        },
       },
       noType: {
         prefix: 'no',
         fields: {
-          no: { type: 'string' }
-        }
-      }
-    }
+          no: { type: 'string' },
+        },
+      },
+    },
   })
 
   await client.set({ $id: 'root' })
   const thing = await client.set({
     type: 'yeshType',
-    yesh: 'nice'
+    yesh: 'nice',
   })
 
   const thing2 = await client.set({
     type: 'noType',
-    no: 'initial value'
+    no: 'initial value',
   })
 
   t.plan(1)
@@ -333,14 +333,14 @@ test.serial('basic trigger deleted subscriptions', async t => {
       $or: {
         $operator: '=',
         $field: 'type',
-        $value: 'noType'
-      }
+        $value: 'noType',
+      },
     },
     $all: true,
-    aliases: false
+    aliases: false,
   })
 
-  const sub2 = other.subscribe(d => {
+  const sub2 = other.subscribe((d) => {
     if (o2counter === 0) {
       // yes
       console.log('d', d)
@@ -355,22 +355,22 @@ test.serial('basic trigger deleted subscriptions', async t => {
 
   await client.set({
     type: 'yeshType',
-    yesh: 'new node, no event'
+    yesh: 'new node, no event',
   })
 
   await client.set({
     type: 'noType',
-    no: 'new node, no event'
+    no: 'new node, no event',
   })
 
   await client.set({
     $id: thing,
-    yesh: 'extra nice'
+    yesh: 'extra nice',
   })
 
   await client.set({
     $id: thing2,
-    no: 'hmm'
+    no: 'hmm',
   })
 
   try {
@@ -390,17 +390,17 @@ test.serial('basic trigger deleted subscriptions', async t => {
 
   await client.set({
     $id: 'root',
-    no: 'no event pls'
+    no: 'no event pls',
   })
 
   await client.set({
     $id: 'noNoNoNo',
-    no: 'no event again'
+    no: 'no event again',
   })
 
   // no event
   await client.delete({
-    $id: thing
+    $id: thing,
   })
 
   await wait(500 * 2)

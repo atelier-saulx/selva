@@ -1,8 +1,6 @@
-Debugging
-=========
+# Debugging
 
-Dumping a Hierarchy Using redis-cli
------------------------------------
+## Dumping a Hierarchy Using redis-cli
 
 **hiearachy-dot-dump.js**
 
@@ -44,9 +42,7 @@ Render a png of a hierarchy:
 node --max-old-space-size=4000 ./hiearachy-dot-dump.js test 300 | dot -Tpng > dump.png
 ```
 
-
-GDB
----
+## GDB
 
 The `.gdbinit` file in the module directory will load some useful helpers from
 `./gdb` for the debugging session.
@@ -87,9 +83,7 @@ fini
 
 - [Continuing and Stepping](https://sourceware.org/gdb/current/onlinedocs/gdb/Continuing-and-Stepping.html#Continuing-and-Stepping)
 
-
-Valgrind
---------
+## Valgrind
 
 **Profiling with Valgrind**
 
@@ -112,9 +106,7 @@ callgrind_annotate --auto=yes callgrind.out.1953257
 
 There are also a number of GUI tools for parsing callgrind files.
 
-
-Intel VTune
------------
+## Intel VTune
 
 [Download](https://software.intel.com/content/www/us/en/develop/tools/vtune-profiler.html)
 Intel VTune from here. The software requires a per user license that can be registered for free.

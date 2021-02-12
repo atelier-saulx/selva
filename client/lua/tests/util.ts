@@ -3,7 +3,7 @@ import {
   isArray,
   joinString,
   splitString,
-  ensureArray
+  ensureArray,
 } from '../src/util'
 
 export function test_arrayIsEqual() {

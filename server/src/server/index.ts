@@ -2,7 +2,7 @@ import {
   ServerType,
   connect,
   SelvaClient,
-  ServerDescriptor
+  ServerDescriptor,
 } from '@saulx/selva'
 import { ServerOptions } from '../types'
 import { EventEmitter } from 'events'
@@ -16,13 +16,13 @@ import beforeExit from 'before-exit'
 import {
   startSubscriptionManager,
   stopSubscriptionManager,
-  SubscriptionManagerState
+  SubscriptionManagerState,
 } from './subscriptionManager'
 import {
   BackupFns,
   saveAndBackUp,
   scheduleBackups,
-  loadBackup
+  loadBackup,
 } from '../backups'
 import { registryManager } from './registryManager'
 import heartbeat from './heartbeat'
@@ -50,7 +50,7 @@ export class SelvaServer extends EventEmitter {
     this.setMaxListeners(10000)
     this.type = type
 
-    this.on('error', err => {
+    this.on('error', (err) => {
       // console.error(err)
     })
 
@@ -87,7 +87,7 @@ export class SelvaServer extends EventEmitter {
       name: opts.name,
       port: opts.port,
       host: opts.host,
-      type: this.type
+      type: this.type,
     }
 
     if (opts.backups && opts.backups.loadBackup) {
@@ -98,7 +98,7 @@ export class SelvaServer extends EventEmitter {
       const initReplica = async () => {
         const origin = await this.selvaClient.getServer({
           name: opts.name,
-          type: 'origin'
+          type: 'origin',
         })
         if (!this.origin) {
           this.origin = origin
@@ -139,7 +139,8 @@ export class SelvaServer extends EventEmitter {
 
     if (this.type === 'subscriptionRegistry') {
       subscriptionRegistry(this)
-    } if (this.type === 'subscriptionManager') {
+    }
+    if (this.type === 'subscriptionManager') {
       this.subscriptionManager = await startSubscriptionManager(opts)
     } else if (this.type === 'registry') {
       registryManager(this)
@@ -151,10 +152,15 @@ export class SelvaServer extends EventEmitter {
     clearTimeout(this.serverHeartbeatTimeout)
     if (this.type !== 'registry') {
       // timeout of 1 sec if the registry is allready gone
-      const x = await Promise.race([removeFromRegistry(this.selvaClient), (async () => {
-        await wait(1e3)
-        return new Error(`Cannot remove server from registry within 1s, registry might be removed itself, ${this.type}, ${this.name}, ${this.port}`)
-      })()])
+      const x = await Promise.race([
+        removeFromRegistry(this.selvaClient),
+        (async () => {
+          await wait(1e3)
+          return new Error(
+            `Cannot remove server from registry within 1s, registry might be removed itself, ${this.type}, ${this.name}, ${this.port}`
+          )
+        })(),
+      ])
       if (x instanceof Error) {
         console.warn(chalk.yellow(x.message))
       }

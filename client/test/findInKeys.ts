@@ -8,10 +8,10 @@ import chalk from 'chalk'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   const client = connect({ port }, { loglevel: 'info' })
@@ -22,16 +22,16 @@ test.before(async t => {
         prefix: 'gl',
         fields: {
           levelCnt: { type: 'number' },
-          title: { type: 'string' }
-        }
-      }
-    }
+          title: { type: 'string' },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -39,7 +39,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get in keys result', async t => {
+test.serial('get in keys result', async (t) => {
   const client = connect({ port })
 
   await client.set({
@@ -48,24 +48,24 @@ test.serial('get in keys result', async t => {
       {
         type: 'glurp',
         $id: 'gl0',
-        title: 'cookie'
+        title: 'cookie',
       },
       {
         type: 'glurp',
         $id: 'gl1',
-        title: 'glurpie pants'
+        title: 'glurpie pants',
       },
       {
         type: 'glurp',
         $id: 'gl2',
-        title: 'glurpie pants 2'
+        title: 'glurpie pants 2',
       },
       {
         type: 'glurp',
         $id: 'gl3',
-        title: 'cookie'
-      }
-    ]
+        title: 'cookie',
+      },
+    ],
   })
 
   const gimme = await client.get({
@@ -78,11 +78,11 @@ test.serial('get in keys result', async t => {
           $filter: {
             $field: 'title',
             $operator: '=',
-            $value: 'cookie'
-          }
-        }
-      }
-    }
+            $value: 'cookie',
+          },
+        },
+      },
+    },
   })
 
   console.log({ gimme })

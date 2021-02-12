@@ -6,10 +6,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -19,16 +19,16 @@ test.before(async t => {
         prefix: 'us',
         fields: {
           name: {
-            type: 'string'
-          }
-        }
-      }
-    }
+            type: 'string',
+          },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -36,12 +36,12 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('invalid filter should not return result', async t => {
+test.serial('invalid filter should not return result', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({
     $language: 'en',
     type: 'user',
-    name: 'Me me meeee'
+    name: 'Me me meeee',
   })
 
   const result = await client.get({
@@ -56,17 +56,17 @@ test.serial('invalid filter should not return result', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'user'
+              $value: 'user',
             },
             {
               $field: 'nonexistent',
               $operator: '=',
-              $value: 'something'
-            }
-          ]
-        }
-      }
-    }
+              $value: 'something',
+            },
+          ],
+        },
+      },
+    },
   })
   t.is(result.users.length, 0)
   await client.destroy()

@@ -15,7 +15,7 @@ export default class RedisManager extends ProcessManager {
       port,
       selvaClient,
       type,
-      name
+      name,
     }: {
       host: string
       port: number
@@ -26,7 +26,7 @@ export default class RedisManager extends ProcessManager {
   ) {
     super('redis-server', {
       args,
-      env: { REDIS_PORT: port.toString(), SERVER_TYPE: type }
+      env: { REDIS_PORT: port.toString(), SERVER_TYPE: type },
     })
 
     this.redisHost = host
@@ -54,9 +54,9 @@ export default class RedisManager extends ProcessManager {
           port: this.redisPort,
           host: this.redisHost,
           type: this.type,
-          name: this.name
+          name: this.name,
         }),
-        wait()
+        wait(),
       ])
 
       clearTimeout(timeout)
@@ -76,7 +76,7 @@ export default class RedisManager extends ProcessManager {
 
           return {
             ...acc,
-            [key]: val
+            [key]: val,
           }
         }, {})
 
@@ -90,7 +90,7 @@ export default class RedisManager extends ProcessManager {
         redisInfo: {},
         runtimeInfo,
         err: err.message,
-        isBusy: true
+        isBusy: true,
       }
     }
   }

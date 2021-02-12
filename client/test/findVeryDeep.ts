@@ -8,10 +8,10 @@ import chalk from 'chalk'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   const client = connect({ port }, { loglevel: 'info' })
@@ -22,16 +22,16 @@ test.before(async t => {
         prefix: 'gl',
         fields: {
           levelCnt: { type: 'number' },
-          title: { type: 'string' }
-        }
-      }
-    }
+          title: { type: 'string' },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -39,7 +39,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get very deep results', async t => {
+test.serial('get very deep results', async (t) => {
   const client = connect({ port })
 
   const q: any = {}
@@ -55,8 +55,8 @@ test.serial('get very deep results', async t => {
       $filter: {
         $field: 'type',
         $operator: '=',
-        $value: 'glurp'
-      }
+        $value: 'glurp',
+      },
     }
     s = s.$find
   }
@@ -76,7 +76,7 @@ test.serial('get very deep results', async t => {
         let n: any = {
           type: 'glurp',
           levelCnt: levelMap[myLevel],
-          title: `Level ${myLevel} child ${j} level count -> ${levelMap[myLevel]}`
+          title: `Level ${myLevel} child ${j} level count -> ${levelMap[myLevel]}`,
         }
         x.children.push(n)
         recurse(n, nextI)
@@ -99,9 +99,9 @@ test.serial('get very deep results', async t => {
       //   id: true,
       levelCnt: true,
       $list: {
-        $find: q.$find
-      }
-    }
+        $find: q.$find,
+      },
+    },
   }
 
   //   console.dir(myQuery, { depth: 100 })
@@ -110,8 +110,9 @@ test.serial('get very deep results', async t => {
   const ultraResults = await client.get(myQuery)
   console.log(
     chalk.gray(
-      `    Get ${amount}^${levels +
-        1} things using nested queries in ${Date.now() - d} ms`
+      `    Get ${amount}^${levels + 1} things using nested queries in ${
+        Date.now() - d
+      } ms`
     )
   )
 
@@ -121,15 +122,16 @@ test.serial('get very deep results', async t => {
 
   for (let i = 0; i < levelMap[levels - 1]; i++) {
     r.push({
-      levelCnt: i + 1
+      levelCnt: i + 1,
     })
   }
 
   t.deepEqualIgnoreOrder(
     ultraResults.x,
     r,
-    `has correct amount of result (${levelMap[levels - 1]}) for ${levels +
-      1} deep`
+    `has correct amount of result (${levelMap[levels - 1]}) for ${
+      levels + 1
+    } deep`
   )
 
   d = Date.now()
@@ -143,11 +145,11 @@ test.serial('get very deep results', async t => {
           $filter: {
             $operator: '=',
             $field: 'type',
-            $value: 'glurp'
-          }
-        }
-      }
-    }
+            $value: 'glurp',
+          },
+        },
+      },
+    },
   })
 
   console.log(
@@ -176,17 +178,17 @@ test.serial('get very deep results', async t => {
                     {
                       $operator: '=',
                       $field: 'type',
-                      $value: 'glurp'
+                      $value: 'glurp',
                     },
                     {
                       $operator: '>',
                       $field: 'levelCnt',
-                      $value: 1
-                    }
-                  ]
-                }
-              }
-            }
+                      $value: 1,
+                    },
+                  ],
+                },
+              },
+            },
           })
 
           return { ms: Date.now() - d, amount: x.x.length }
@@ -212,14 +214,15 @@ test.serial('get very deep results', async t => {
 
   console.log(
     chalk.gray(
-      `    Get all desc using descendants x${workerAmount} in ${Date.now() -
-        d} ms`
+      `    Get all desc using descendants x${workerAmount} in ${
+        Date.now() - d
+      } ms`
     )
   )
 
   const q2 = {
     levelCnt: true,
-    $find: q.$find
+    $find: q.$find,
   }
 
   const justOne = await client.get(q2)

@@ -9,7 +9,7 @@ import getPort from 'get-port'
 let srv
 let port
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   await wait(500)
@@ -25,8 +25,8 @@ test.before(async t => {
             type: 'object',
             properties: {
               name: { type: 'string' },
-              something: { type: 'string' }
-            }
+              something: { type: 'string' },
+            },
           },
           theme: {
             type: 'object',
@@ -35,31 +35,31 @@ test.before(async t => {
                 type: 'object',
                 properties: {
                   color1: { type: 'string' },
-                  color2: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
+                  color2: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
       },
       movie: {
         prefix: 'mo',
         fields: {
-          title: { type: 'string' }
-        }
+          title: { type: 'string' },
+        },
       },
       imaginary: {
         prefix: 'im',
         fields: {
-          imaginary: { type: 'string' }
-        }
-      }
-    }
+          imaginary: { type: 'string' },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -67,24 +67,24 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('simple', async t => {
+test.serial('simple', async (t) => {
   const client = connect({ port: port })
 
   const genre = await client.set({
     $id: 'geScifi',
     name: 'Sci-fi',
-    icon: 'scifi.png'
+    icon: 'scifi.png',
   })
 
   await client.set({
     $id: 'moSoylentG',
     title: 'Soylent Green',
-    parents: [genre]
+    parents: [genre],
   })
 
   const result = await client.get({
     $id: 'moSoylentG',
-    icon: { $inherit: true }
+    icon: { $inherit: true },
   })
 
   t.true(result.icon === 'scifi.png')
@@ -92,26 +92,26 @@ test.serial('simple', async t => {
   await client.destroy()
 })
 
-test.serial('simple with circular', async t => {
+test.serial('simple with circular', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
     $id: 'geScifi',
     name: 'Sci-fi',
     icon: 'scifi.png',
-    parents: ['moSoylentGreen']
+    parents: ['moSoylentGreen'],
   })
 
   await client.set({
     $id: 'moSoylentG',
     title: 'Soylent Green',
-    parents: [genre]
+    parents: [genre],
   })
 
   const result = await client.get({
     $id: 'moSoylentG',
     icon: { $inherit: true },
-    imaginary: { $inherit: true }
+    imaginary: { $inherit: true },
   })
 
   t.true(result.icon === 'scifi.png')
@@ -119,27 +119,27 @@ test.serial('simple with circular', async t => {
   await client.destroy()
 })
 
-test.serial('$all', async t => {
+test.serial('$all', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
     $id: 'geA',
     fields: {
-      name: 'hello'
-    }
+      name: 'hello',
+    },
   })
 
   const genre2 = await client.set({
     $id: 'geB',
-    parents: ['geA']
+    parents: ['geA'],
   })
 
   const result1 = await client.get({
     $id: 'geA',
     fields: {
       $all: true,
-      $inherit: { $type: 'genre' }
-    }
+      $inherit: { $type: 'genre' },
+    },
   })
 
   t.deepEqual(result1.fields, { name: 'hello' }, 'from field')
@@ -148,8 +148,8 @@ test.serial('$all', async t => {
     $id: 'geB',
     fields: {
       $all: true,
-      $inherit: { $type: 'genre' }
-    }
+      $inherit: { $type: 'genre' },
+    },
   })
 
   t.deepEqual(result.fields, { name: 'hello' }, 'inherit')
@@ -157,27 +157,27 @@ test.serial('$all', async t => {
   await client.destroy()
 })
 
-test.serial('$field + object', async t => {
+test.serial('$field + object', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
     $id: 'geC',
     fields: {
-      name: 'hello'
-    }
+      name: 'hello',
+    },
   })
 
   const genre2 = await client.set({
     $id: 'geD',
-    parents: ['geC']
+    parents: ['geC'],
   })
 
   const result1 = await client.get({
     $id: 'geC',
     flaprdol: {
       name: { $field: 'fields.name' },
-      $inherit: { $type: 'genre' }
-    }
+      $inherit: { $type: 'genre' },
+    },
   })
 
   t.deepEqual(result1, { flaprdol: { name: 'hello' } }, 'get')
@@ -186,8 +186,8 @@ test.serial('$field + object', async t => {
     $id: 'geD',
     flaprdol: {
       name: { $field: 'fields.name' },
-      $inherit: { $type: 'genre' }
-    }
+      $inherit: { $type: 'genre' },
+    },
   })
 
   t.deepEqual(result, { flaprdol: { name: 'hello' } }, 'inherit')
@@ -195,19 +195,19 @@ test.serial('$field + object', async t => {
   await client.destroy()
 })
 
-test.serial('$field + object + all', async t => {
+test.serial('$field + object + all', async (t) => {
   const client = connect({ port: port })
 
   const genre = await client.set({
     $id: 'geC',
     fields: {
-      name: 'hello'
-    }
+      name: 'hello',
+    },
   })
 
   const genre2 = await client.set({
     $id: 'geD',
-    parents: ['geC']
+    parents: ['geC'],
   })
 
   const result1 = await client.get({
@@ -215,8 +215,8 @@ test.serial('$field + object + all', async t => {
     flaprdol: {
       $all: true,
       $field: 'fields',
-      $inherit: { $type: ['genre'] }
-    }
+      $inherit: { $type: ['genre'] },
+    },
   })
 
   t.deepEqual(result1, { flaprdol: { name: 'hello' } }, 'get')
@@ -226,8 +226,8 @@ test.serial('$field + object + all', async t => {
     flaprdol: {
       $all: true,
       $field: 'fields',
-      $inherit: { $type: 'genre' }
-    }
+      $inherit: { $type: 'genre' },
+    },
   })
 
   t.deepEqual(result, { flaprdol: { name: 'hello' } }, 'inherit')
@@ -235,7 +235,7 @@ test.serial('$field + object + all', async t => {
   await client.destroy()
 })
 
-test.serial('$field + object + all + nested', async t => {
+test.serial('$field + object + all + nested', async (t) => {
   const client = connect({ port: port })
 
   const genre = await client.set({
@@ -243,14 +243,14 @@ test.serial('$field + object + all + nested', async t => {
     theme: {
       colors: {
         color1: '1',
-        color2: '2'
-      }
-    }
+        color2: '2',
+      },
+    },
   })
 
   const genre2 = await client.set({
     $id: 'geY',
-    parents: ['geX']
+    parents: ['geX'],
   })
 
   const result1 = await client.get({
@@ -258,8 +258,8 @@ test.serial('$field + object + all + nested', async t => {
     myTheme: {
       $field: 'theme',
       $inherit: { $type: 'genre' },
-      $all: true
-    }
+      $all: true,
+    },
   })
 
   t.deepEqual(
@@ -268,9 +268,9 @@ test.serial('$field + object + all + nested', async t => {
       myTheme: {
         colors: {
           color1: '1',
-          color2: '2'
-        }
-      }
+          color2: '2',
+        },
+      },
     },
     'get'
   )
@@ -280,8 +280,8 @@ test.serial('$field + object + all + nested', async t => {
     myTheme: {
       $field: 'theme',
       $inherit: { $type: 'genre' },
-      $all: true
-    }
+      $all: true,
+    },
   })
 
   t.deepEqual(
@@ -290,9 +290,9 @@ test.serial('$field + object + all + nested', async t => {
       myTheme: {
         colors: {
           color1: '1',
-          color2: '2'
-        }
-      }
+          color2: '2',
+        },
+      },
     },
     'inherit'
   )
@@ -300,7 +300,7 @@ test.serial('$field + object + all + nested', async t => {
   await client.destroy()
 })
 
-test.serial('$field +  multiple options', async t => {
+test.serial('$field +  multiple options', async (t) => {
   const client = connect({ port: port })
 
   const types = ['match', 'region']
@@ -309,10 +309,10 @@ test.serial('$field +  multiple options', async t => {
     type: 'object',
     properties: [...types, 'default'].reduce((properties, type) => {
       properties[type] = {
-        type: 'json'
+        type: 'json',
       }
       return properties
-    }, {})
+    }, {}),
   }
 
   await client.updateSchema({
@@ -321,17 +321,17 @@ test.serial('$field +  multiple options', async t => {
         prefix: 'ma',
         fields: {
           //@ts-ignore
-          layout
-        }
+          layout,
+        },
       },
       region: {
         prefix: 're',
         fields: {
           //@ts-ignore
-          layout
-        }
-      }
-    }
+          layout,
+        },
+      },
+    },
   })
 
   await client.set({
@@ -340,33 +340,33 @@ test.serial('$field +  multiple options', async t => {
       default: {
         components: {
           c1: {
-            component: { $value: 'bye' }
-          }
-        }
+            component: { $value: 'bye' },
+          },
+        },
       },
       region: {
         components: {
           c1: {
-            component: { $value: 'hello' }
-          }
-        }
-      }
-    }
+            component: { $value: 'hello' },
+          },
+        },
+      },
+    },
   })
 
   await client.set({
     $id: 'maA',
-    parents: ['reA']
+    parents: ['reA'],
   })
 
   await client.set({
     $id: 'reB',
-    parents: ['reA']
+    parents: ['reA'],
   })
 
   const g = await client.get({
     $id: 'reA',
-    $all: true
+    $all: true,
   })
 
   t.is(g.layout.default.components.c1.component.$value, 'bye')
@@ -377,8 +377,8 @@ test.serial('$field +  multiple options', async t => {
     layout: {
       // $inherit: { $type: ['match', 'region', 'root'] },
       $inherit: true,
-      $field: ['layout.match', 'layout.default']
-    }
+      $field: ['layout.match', 'layout.default'],
+    },
   }
 
   const x = await client.get(query)
@@ -391,8 +391,8 @@ test.serial('$field +  multiple options', async t => {
     layout: {
       // $inherit: { $type: ['match', 'region', 'root'] },
       $inherit: true,
-      $field: ['layout.region', 'layout.default']
-    }
+      $field: ['layout.region', 'layout.default'],
+    },
   })
 
   t.is(y.layout.components.c1.component.$value, 'hello')
@@ -402,7 +402,7 @@ test.serial('$field +  multiple options', async t => {
   await client.destroy()
 })
 
-test.serial('$field +  multiple options + inherit from root', async t => {
+test.serial('$field +  multiple options + inherit from root', async (t) => {
   const client = connect({ port: port })
 
   // adding extra field to schema as well
@@ -413,10 +413,10 @@ test.serial('$field +  multiple options + inherit from root', async t => {
     type: 'object',
     properties: types.reduce((properties, type) => {
       properties[type] = {
-        type: 'json'
+        type: 'json',
       }
       return properties
-    }, {})
+    }, {}),
   }
 
   try {
@@ -424,25 +424,25 @@ test.serial('$field +  multiple options + inherit from root', async t => {
       rootType: {
         fields: {
           //@ts-ignore
-          layout
-        }
+          layout,
+        },
       },
       types: {
         match: {
           prefix: 'ma',
           fields: {
             //@ts-ignore
-            layout
-          }
+            layout,
+          },
         },
         region: {
           prefix: 're',
           fields: {
             //@ts-ignore
-            layout
-          }
-        }
-      }
+            layout,
+          },
+        },
+      },
     })
   } catch (err) {
     t.fail('should be able to update layout fields root ' + err.message)
@@ -454,33 +454,33 @@ test.serial('$field +  multiple options + inherit from root', async t => {
       default: {
         components: {
           c1: {
-            component: { $value: 'bye' }
-          }
-        }
+            component: { $value: 'bye' },
+          },
+        },
       },
       region: {
         components: {
           c1: {
-            component: { $value: 'hello' }
-          }
-        }
-      }
-    }
+            component: { $value: 'hello' },
+          },
+        },
+      },
+    },
   })
 
   await client.set({
     $id: 'maA',
-    parents: ['root']
+    parents: ['root'],
   })
 
   await client.set({
     $id: 'reB',
-    parents: ['root']
+    parents: ['root'],
   })
 
   const g = await client.get({
     $id: 'root',
-    $all: true
+    $all: true,
   })
 
   t.is(g.layout.default.components.c1.component.$value, 'bye')
@@ -490,8 +490,8 @@ test.serial('$field +  multiple options + inherit from root', async t => {
     id: true,
     layout: {
       $inherit: { $type: ['match', 'region', 'root'] },
-      $field: ['layout.match', 'layout.default']
-    }
+      $field: ['layout.match', 'layout.default'],
+    },
   }
 
   const x = await client.get(query)
@@ -503,8 +503,8 @@ test.serial('$field +  multiple options + inherit from root', async t => {
     id: true,
     layout: {
       $inherit: { $type: ['match', 'region', 'root'] },
-      $field: ['layout.region', 'layout.default']
-    }
+      $field: ['layout.region', 'layout.default'],
+    },
   })
 
   t.is(y.layout.components.c1.component.$value, 'hello')
@@ -514,7 +514,7 @@ test.serial('$field +  multiple options + inherit from root', async t => {
   await client.destroy()
 })
 
-test.serial('$field + inherit from root + query root', async t => {
+test.serial('$field + inherit from root + query root', async (t) => {
   const p = await getPort()
   const srv = await start({ port: p })
 
@@ -533,21 +533,21 @@ test.serial('$field + inherit from root + query root', async t => {
             type: 'array',
             items: {
               meta: { type: 'query' },
-              type: 'json'
-            }
+              type: 'json',
+            },
           },
           userComponents: {
             meta: { expand: true },
             type: 'array',
             items: {
               meta: { type: 'query' },
-              type: 'json'
-            }
-          }
-        }
+              type: 'json',
+            },
+          },
+        },
       }
       return properties
-    }, {})
+    }, {}),
   }
 
   try {
@@ -555,25 +555,25 @@ test.serial('$field + inherit from root + query root', async t => {
       rootType: {
         fields: {
           //@ts-ignore
-          layout
-        }
+          layout,
+        },
       },
       types: {
         match: {
           prefix: 'ma',
           fields: {
             //@ts-ignore
-            layout
-          }
+            layout,
+          },
         },
         region: {
           prefix: 're',
           fields: {
             //@ts-ignore
-            layout
-          }
-        }
-      }
+            layout,
+          },
+        },
+      },
     })
   } catch (err) {
     t.fail('should be able to update layout fields root ' + err.message)
@@ -585,12 +585,12 @@ test.serial('$field + inherit from root + query root', async t => {
       default: {
         components: [
           {
-            component: { $value: 'bye' }
-          }
+            component: { $value: 'bye' },
+          },
         ],
-        userComponents: []
-      }
-    }
+        userComponents: [],
+      },
+    },
   })
 
   const x = await client.get({
@@ -599,8 +599,8 @@ test.serial('$field + inherit from root + query root', async t => {
     layout: {
       // $inherit: { $type: ['match', 'region', 'root'] },
       $inherit: true,
-      $field: ['layout.match', 'layout.default']
-    }
+      $field: ['layout.match', 'layout.default'],
+    },
   })
 
   t.is(x.layout.components[0].component.$value, 'bye')
@@ -610,27 +610,27 @@ test.serial('$field + inherit from root + query root', async t => {
   await srv.destroy()
 })
 
-test.serial('$all + object', async t => {
+test.serial('$all + object', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   const genre = await client.set({
     $id: 'geC',
     fields: {
-      name: 'hello'
-    }
+      name: 'hello',
+    },
   })
 
   const genre2 = await client.set({
     $id: 'geD',
-    parents: ['geC']
+    parents: ['geC'],
   })
 
   const result1 = await client.get({
     $id: 'geC',
     flaprdol: {
       name: { $field: 'fields.name' },
-      $inherit: { $type: 'genre' }
-    }
+      $inherit: { $type: 'genre' },
+    },
   })
 
   t.deepEqual(result1, { flaprdol: { name: 'hello' } }, 'get')
@@ -640,8 +640,8 @@ test.serial('$all + object', async t => {
     $all: true,
     flaprdol: {
       name: { $field: 'fields.name' },
-      $inherit: { $type: 'genre' }
-    }
+      $inherit: { $type: 'genre' },
+    },
   })
 
   t.deepEqual(

@@ -10,7 +10,7 @@ import { createRpn } from '@saulx/selva-query-ast-parser'
 import validate, {
   ExtraQueries,
   ExtraQuery,
-  PostGetExtraQuery
+  PostGetExtraQuery,
 } from './validate'
 
 // move to saulx/utils
@@ -153,7 +153,7 @@ async function get(
         type: 'trigger-' + newProps.$trigger.$event,
         fields: [],
         id: 'root',
-        rpn
+        rpn,
       }),
       newProps.$trigger.$event,
       ...rpn
@@ -193,7 +193,7 @@ async function get(
         }
       }
       deepMerge(meta, {
-        [props.$db || 'default']: resultMeta
+        [props.$db || 'default']: resultMeta,
       })
     }
   }

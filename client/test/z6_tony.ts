@@ -7,14 +7,14 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -22,7 +22,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('yes', async t => {
+test.serial('yes', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -31,21 +31,21 @@ test.serial('yes', async t => {
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text' }
-        }
-      }
-    }
+          title: { type: 'text' },
+        },
+      },
+    },
   })
 
   await client.set({
     $id: 'ma1',
-    aliases: { $add: 'thingy' }
+    aliases: { $add: 'thingy' },
   })
 
   const x = await client.set({
     $alias: 'thingy',
     title: 'yesh',
-    $language: 'en'
+    $language: 'en',
   })
 
   t.deepEqualIgnoreOrder(x, 'ma1')
@@ -54,10 +54,10 @@ test.serial('yes', async t => {
     await client.get({
       $language: 'en',
       $alias: 'thingy',
-      title: true
+      title: true,
     }),
     {
-      title: 'yesh'
+      title: 'yesh',
     }
   )
 

@@ -31,12 +31,12 @@ export default (selvaClient: SelvaClient, connection: Connection) => {
       } else {
         getServer(
           selvaClient,
-          serverDescriptor => {
+          (serverDescriptor) => {
             gotNewConnection(createConnection(serverDescriptor))
           },
           {
             type: serverDescriptor.type,
-            name: serverDescriptor.name
+            name: serverDescriptor.name,
           }
         )
       }

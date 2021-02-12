@@ -42,13 +42,13 @@ export default class ProcessManager extends EventEmitter {
     this.errorLog = []
 
     this.on('error', () => {})
-    this.on('stderr', data => {
+    this.on('stderr', (data) => {
       this.errorLog.unshift(data)
       if (this.errorLog.length === 30) {
         this.errorLog.pop()
       }
     })
-    this.on('stdout', data => {
+    this.on('stdout', (data) => {
       this.errorLog.unshift(data)
       if (this.errorLog.length === 30) {
         this.errorLog.pop()
@@ -68,14 +68,14 @@ export default class ProcessManager extends EventEmitter {
     this.loadMeasurementsTimeout = setTimeout(
       () => {
         this.collect()
-          .then(data => {
+          .then((data) => {
             if (data.isBusy) {
               this.emit('busy', data)
             } else {
               this.emit('stats', data)
             }
           })
-          .catch(e => {
+          .catch((e) => {
             // console.error(
             //   `Error collecting load measurements from ${this.command}`,
             //   e
@@ -105,16 +105,16 @@ export default class ProcessManager extends EventEmitter {
     }
 
     this.childProcess = spawn(this.command, this.args, {
-      env: { ...process.env, ...this.env }
+      env: { ...process.env, ...this.env },
     })
 
     this.pid = this.childProcess.pid
 
-    this.childProcess.stdout.on('data', d => {
+    this.childProcess.stdout.on('data', (d) => {
       this.emit('stdout', d.toString())
     })
 
-    this.childProcess.stderr.on('data', d => {
+    this.childProcess.stderr.on('data', (d) => {
       this.emit('stderr', d.toString())
     })
 
@@ -133,12 +133,13 @@ export default class ProcessManager extends EventEmitter {
       this.restartTimer = setTimeout(() => {
         console.error(
           chalk.red(
-            `Child process for ${
-              this.command
-            } exited with ${code === null ? `signal ${signal}` : `code ${code}`} at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()} pm: ${
+            `Child process for ${this.command} exited with ${
+              code === null ? `signal ${signal}` : `code ${code}`
+            } at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()} pm: ${
               this.uuid
-            } port: ${this.args[1]}. Attempting restart #${this.restartCount +
-              1}`
+            } port: ${this.args[1]}. Attempting restart #${
+              this.restartCount + 1
+            }`
           )
         )
 

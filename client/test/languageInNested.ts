@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -22,17 +22,17 @@ test.before(async t => {
           words: {
             type: 'object',
             properties: {
-              rando: { type: 'text' }
-            }
-          }
-        }
-      }
-    }
+              rando: { type: 'text' },
+            },
+          },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -40,21 +40,21 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('$language should be applied in nested text', async t => {
+test.serial('$language should be applied in nested text', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const dictionary = await client.set({
     $language: 'en',
     type: 'dictionary',
     words: {
-      rando: 'my word'
-    }
+      rando: 'my word',
+    },
   })
 
   t.deepEqual(
     await client.get({
       $id: dictionary,
       $language: 'en',
-      words: true
+      words: true,
     }),
     { words: { rando: 'my word' } }
   )

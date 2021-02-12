@@ -6,7 +6,7 @@ const options = {
   '-p': 'port',
   '--port': 'port',
   '-r': 'replica',
-  '-replica': 'replica'
+  '-replica': 'replica',
 }
 const opts = {}
 

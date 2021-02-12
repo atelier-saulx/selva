@@ -28,7 +28,7 @@ const client = selva.connect(() => getService('name-of-db'))
 
 // client.redis.hget()
 
-client.set('myId', { myShine: true }).then(result => console.log(result)) // logs OK
+client.set('myId', { myShine: true }).then((result) => console.log(result)) // logs OK
 ```
 
 ```js
@@ -38,7 +38,7 @@ const client = selva.connect({
   retryStrategy() {
     // optional
     return 5e3
-  }
+  },
 })
 ```
 
@@ -66,7 +66,7 @@ const client = selva.connect(async () => {
     host: 'whatever',
     retryStrategy() {
       return 5e3
-    }
+    },
   }
 })
 ```
@@ -91,7 +91,7 @@ await client.set({
   $merge: false, // defaults to true
   $version: 'mySpecialversion', // optional
   id: 'myNewId',
-  foo: true
+  foo: true,
 })
 ```
 
@@ -104,8 +104,8 @@ await client.set({
   foo: true,
   children: {
     $add: 'smukytown',
-    $delete: 'myblarf'
-  }
+    $delete: 'myblarf',
+  },
 })
 ```
 
@@ -117,8 +117,8 @@ await client.set({
     // ---- :(
     $hierarchy: false, // defaults to true
     $add: 'smukytown',
-    $delete: ['myblarf', 'xxx']
-  }
+    $delete: ['myblarf', 'xxx'],
+  },
 })
 ```
 
@@ -128,8 +128,8 @@ await client.set({
   children: {
     // ---- :(
     $hierarchy: false, // defaults to true
-    $value: ['root']
-  }
+    $value: ['root'],
+  },
 })
 ```
 
@@ -150,15 +150,15 @@ await client.set({
   title: 'flowers',
   externalId: {
     $merge: false,
-    $value: 'myflower.de'
-  }
+    $value: 'myflower.de',
+  },
 })
 ```
 
 ```js
 await client.set({
   type: 'tag',
-  title: { de: 'blümen' }
+  title: { de: 'blümen' },
 })
 ```
 
@@ -171,14 +171,14 @@ await client.set({
     title: 'blurf',
     nestedCount: {
       $default: 100,
-      $inc: { $value: 1 }
+      $inc: { $value: 1 },
     },
     access: {
       $default: {
-        flurpiepants: 'my pants'
-      }
-    }
-  }
+        flurpiepants: 'my pants',
+      },
+    },
+  },
 })
 ```
 
@@ -206,9 +206,9 @@ myId#mySpecialversion
 ```js
 const obj = {
   foo: {
-    bar: true
+    bar: true,
   },
-  haha: true
+  haha: true,
 }
 ```
 
@@ -232,7 +232,7 @@ foo: true
 const result = await client.subscribe(
   {
     id: 'myId',
-    version: 'mySpecialversion' // optional
+    version: 'mySpecialversion', // optional
   },
   (id, msg) => {
     console.log(`Fired for ${id} with message: ${msg}`)
@@ -247,7 +247,7 @@ const result = await client.subscribe(
   {
     id: 'myId',
     date: 123123123,
-    version: 'mySpecialversion' // optional
+    version: 'mySpecialversion', // optional
   },
   (id, msg) => {
     console.log(`Fired for ${id} with message: ${msg}`)
@@ -261,7 +261,7 @@ or with an array for ids
 const result = await client.subscribe(
   {
     id: ['myId', 'myOtherId'],
-    version: 'mySpecialversion' // optional
+    version: 'mySpecialversion', // optional
   },
   (id, msg) => {
     console.log(`Fired for ${id} with message: ${msg}`)
@@ -275,7 +275,7 @@ const result = await client.subscribe(
 const result = await client.unsubscribe(
   {
     id: 'myId',
-    version: 'mySpecialversion' // optional
+    version: 'mySpecialversion', // optional
   },
   myCallback // if omitted will remove all listeners
 )

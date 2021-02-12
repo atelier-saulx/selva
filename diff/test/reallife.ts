@@ -5,7 +5,7 @@ import cmsJsonResult from './examples/cmsResult.json'
 
 import { deepCopy } from '@saulx/utils'
 
-test('Weird problem in diffing in sstv cms', async t => {
+test('Weird problem in diffing in sstv cms', async (t) => {
   // foqj71G5W
   // foqj71G5W < has to be changed
   const a = deepCopy(cmsJson)

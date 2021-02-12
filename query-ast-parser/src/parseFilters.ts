@@ -49,7 +49,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
 
   const filter: FilterAST = {
     $operator: o,
-    $field: filterOpt.$field
+    $field: filterOpt.$field,
   }
 
   if (o !== 'notExists' && o !== 'exists') {
@@ -103,7 +103,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
     }
     const fork: WithRequired<Fork, '$or'> = {
       isFork: true,
-      $or: [filter]
+      $or: [filter],
     }
     if (nestedFork.$and) {
       fork.$or[fork.$or.length] = nestedFork
@@ -120,7 +120,7 @@ const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
     }
     const fork: WithRequired<Fork, '$and'> = {
       isFork: true,
-      $and: [filter]
+      $and: [filter],
     }
     if (nestedFork.$and) {
       addToOption(fork.$and, nestedFork.$and)

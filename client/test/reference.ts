@@ -8,14 +8,14 @@ import { wait } from './assertions/util'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.redis.flushall()
@@ -23,8 +23,8 @@ test.beforeEach(async t => {
     languages: ['en', 'en_us', 'en_uk', 'de', 'nl'],
     rootType: {
       fields: {
-        value: { type: 'number' }
-      }
+        value: { type: 'number' },
+      },
     },
     types: {
       club: {
@@ -34,13 +34,13 @@ test.beforeEach(async t => {
           nested: {
             type: 'object',
             properties: {
-              specialMatch: { type: 'reference' }
-            }
+              specialMatch: { type: 'reference' },
+            },
           },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -48,20 +48,20 @@ test.beforeEach(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           value: { type: 'number' },
           title: { type: 'text' },
-          description: { type: 'text' }
-        }
-      }
-    }
+          description: { type: 'text' },
+        },
+      },
+    },
   })
 
   await wait(500)
@@ -70,7 +70,7 @@ test.beforeEach(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -78,7 +78,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('simple singular reference', async t => {
+test.serial('simple singular reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   // const match1 = await client.set({
@@ -99,14 +99,14 @@ test.serial('simple singular reference', async t => {
   const club1 = await client.set({
     $id: 'clA',
     title: {
-      en: 'yesh club'
+      en: 'yesh club',
     },
     specialMatch: {
       $id: 'maA',
       title: {
-        en: 'yesh match'
-      }
-    }
+        en: 'yesh match',
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -114,11 +114,11 @@ test.serial('simple singular reference', async t => {
       $id: 'clA',
       $language: 'en',
       title: true,
-      specialMatch: true
+      specialMatch: true,
     }),
     {
       title: 'yesh club',
-      specialMatch: 'maA'
+      specialMatch: 'maA',
     }
   )
 
@@ -129,15 +129,15 @@ test.serial('simple singular reference', async t => {
       title: true,
       specialMatch: {
         title: true,
-        description: { $default: 'no description' }
-      }
+        description: { $default: 'no description' },
+      },
     }),
     {
       title: 'yesh club',
       specialMatch: {
         title: 'yesh match',
-        description: 'no description'
-      }
+        description: 'no description',
+      },
     }
   )
 
@@ -145,20 +145,20 @@ test.serial('simple singular reference', async t => {
   await client.destroy()
 })
 
-test.serial('simple singular reference with $flatten', async t => {
+test.serial('simple singular reference with $flatten', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const club1 = await client.set({
     $id: 'clA',
     title: {
-      en: 'yesh club'
+      en: 'yesh club',
     },
     specialMatch: {
       $id: 'maA',
       title: {
-        en: 'yesh match'
-      }
-    }
+        en: 'yesh match',
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -170,13 +170,13 @@ test.serial('simple singular reference with $flatten', async t => {
       specialMatch: {
         $flatten: true,
         title: true,
-        description: { $default: 'no description' }
-      }
+        description: { $default: 'no description' },
+      },
     }),
     {
       id: 'clA',
       title: 'yesh match',
-      description: 'no description'
+      description: 'no description',
     }
   )
 
@@ -184,22 +184,22 @@ test.serial('simple singular reference with $flatten', async t => {
   await client.destroy()
 })
 
-test.serial('nested singular reference with $flatten', async t => {
+test.serial('nested singular reference with $flatten', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const club1 = await client.set({
     $id: 'clA',
     title: {
-      en: 'yesh club'
+      en: 'yesh club',
     },
     nested: {
       specialMatch: {
         $id: 'maA',
         title: {
-          en: 'yesh match'
-        }
-      }
-    }
+          en: 'yesh match',
+        },
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -212,17 +212,17 @@ test.serial('nested singular reference with $flatten', async t => {
         specialMatch: {
           $flatten: true,
           title: true,
-          description: { $default: 'no description' }
-        }
-      }
+          description: { $default: 'no description' },
+        },
+      },
     }),
     {
       id: 'clA',
       title: 'yesh club',
       nested: {
         title: 'yesh match',
-        description: 'no description'
-      }
+        description: 'no description',
+      },
     }
   )
 
@@ -230,30 +230,30 @@ test.serial('nested singular reference with $flatten', async t => {
   await client.destroy()
 })
 
-test.serial('singular reference inherit', async t => {
+test.serial('singular reference inherit', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'maB',
-    value: 112
+    value: 112,
   })
 
   const match1 = await client.set({
     $id: 'maA',
     title: {
-      en: 'yesh match'
+      en: 'yesh match',
     },
     parents: {
-      $add: 'maB'
-    }
+      $add: 'maB',
+    },
   })
 
   const club1 = await client.set({
     $id: 'clA',
     title: {
-      en: 'yesh club'
+      en: 'yesh club',
     },
-    specialMatch: match1
+    specialMatch: match1,
   })
 
   // const club1 = await client.set({
@@ -277,15 +277,15 @@ test.serial('singular reference inherit', async t => {
       specialMatch: {
         title: true,
         // value: { $inherit: { $type: ['match', 'club'] } }
-        value: { $inherit: true }
-      }
+        value: { $inherit: true },
+      },
     }),
     {
       title: 'yesh club',
       specialMatch: {
         title: 'yesh match',
-        value: 112
-      }
+        value: 112,
+      },
     }
   )
 
@@ -293,22 +293,22 @@ test.serial('singular reference inherit', async t => {
   await client.destroy()
 })
 
-test.serial('singular reference $field', async t => {
+test.serial('singular reference $field', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     $id: 'maA',
     title: {
-      en: 'yesh match'
-    }
+      en: 'yesh match',
+    },
   })
 
   const club1 = await client.set({
     $id: 'clA',
     title: {
-      en: 'yesh club'
+      en: 'yesh club',
     },
-    specialMatch: match1
+    specialMatch: match1,
   })
 
   // const club1 = await client.set({
@@ -331,14 +331,14 @@ test.serial('singular reference $field', async t => {
       title: true,
       match: {
         $field: 'specialMatch',
-        title: true
-      }
+        title: true,
+      },
     }),
     {
       title: 'yesh club',
       match: {
-        title: 'yesh match'
-      }
+        title: 'yesh match',
+      },
     }
   )
 
@@ -346,37 +346,37 @@ test.serial('singular reference $field', async t => {
   await client.destroy()
 })
 
-test.serial('singular reference inherit reference', async t => {
+test.serial('singular reference inherit reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'clB',
-    specialMatch: 'maA'
+    specialMatch: 'maA',
   })
 
   await client.set({
     $id: 'maB',
-    value: 9001
+    value: 9001,
   })
 
   const match1 = await client.set({
     $id: 'maA',
     title: {
-      en: 'yesh match'
+      en: 'yesh match',
     },
     parents: {
-      $add: 'maB'
-    }
+      $add: 'maB',
+    },
   })
 
   const club1 = await client.set({
     $id: 'clA',
     title: {
-      en: 'yesh club'
+      en: 'yesh club',
     },
     parents: {
-      $add: 'clB'
-    }
+      $add: 'clB',
+    },
   })
 
   // const club1 = await client.set({
@@ -402,15 +402,15 @@ test.serial('singular reference inherit reference', async t => {
         $inherit: { $type: ['club', 'match'] },
         title: true,
         // value: { $inherit: { $type: ['club', 'match'] } }
-        value: { $inherit: true }
-      }
+        value: { $inherit: true },
+      },
     }),
     {
       title: 'yesh club',
       special: {
         title: 'yesh match',
-        value: 9001
-      }
+        value: 9001,
+      },
     }
   )
 

@@ -10,10 +10,10 @@ import fetch from 'node-fetch'
 let srv
 let port: number
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
@@ -28,10 +28,10 @@ test.before(async t => {
         nested: {
           type: 'object',
           properties: {
-            fun: { type: 'string' }
-          }
-        }
-      }
+            fun: { type: 'string' },
+          },
+        },
+      },
     },
     types: {
       lekkerType: {
@@ -47,17 +47,17 @@ test.before(async t => {
                 type: 'object',
                 properties: {
                   dung: { type: 'number' },
-                  dunk: { type: 'string' }
-                }
+                  dunk: { type: 'string' },
+                },
               },
               dunk: {
                 type: 'object',
                 properties: {
                   ding: { type: 'number' },
-                  dong: { type: 'number' }
-                }
-              }
-            }
+                  dong: { type: 'number' },
+                },
+              },
+            },
           },
           dong: { type: 'json' },
           dingdongs: { type: 'array', items: { type: 'string' } },
@@ -65,7 +65,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -73,10 +73,10 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       custom: {
         prefix: 'cu',
@@ -84,7 +84,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -92,10 +92,10 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       club: {
         prefix: 'cl',
@@ -103,7 +103,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -111,10 +111,10 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       match: {
         prefix: 'ma',
@@ -129,9 +129,9 @@ test.before(async t => {
               type: 'object',
               properties: {
                 a: { type: 'string' },
-                b: { type: 'string' }
-              }
-            }
+                b: { type: 'string' },
+              },
+            },
           },
           date: { type: 'timestamp' },
           start: { type: 'timestamp' },
@@ -143,8 +143,8 @@ test.before(async t => {
           image: {
             type: 'object',
             properties: {
-              thumb: { type: 'string' }
-            }
+              thumb: { type: 'string' },
+            },
           },
           video: {
             type: 'record',
@@ -152,39 +152,39 @@ test.before(async t => {
               type: 'object',
               properties: {
                 hls: { type: 'string' },
-                mp4: { type: 'string' }
-              }
-            }
-          }
-        }
+                mp4: { type: 'string' },
+              },
+            },
+          },
+        },
       },
       yesno: {
         prefix: 'yn',
         fields: {
           bolYes: { type: 'boolean' },
-          bolNo: { type: 'boolean' }
-        }
-      }
-    }
+          bolNo: { type: 'boolean' },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async (_t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
 })
 
-test.serial('test api ping/pong', async t => {
+test.serial('test api ping/pong', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   const res = await fetch(`http://localhost:${srvPort}/ping`, {
     method: 'POST',
-    body: 'hellooo'
+    body: 'hellooo',
   })
 
   const body = await res.text()
@@ -193,149 +193,149 @@ test.serial('test api ping/pong', async t => {
   cleanup()
 })
 
-test.serial('get $value through api', async t => {
+test.serial('get $value through api', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   const res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
-      yesh: { $value: 'hello' }
-    })
+      yesh: { $value: 'hello' },
+    }),
   })
 
   const body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     $isNull: true,
-    yesh: 'hello'
+    yesh: 'hello',
   })
 
   cleanup()
 })
 
-test.serial('set and get simple through api', async t => {
+test.serial('set and get simple through api', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   await fetch(`http://localhost:${srvPort}/set`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       title: {
         en: 'yes en',
-        de: 'ja de'
-      }
-    })
+        de: 'ja de',
+      },
+    }),
   })
 
   const res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       $language: 'de',
       id: true,
-      title: true
-    })
+      title: true,
+    }),
   })
 
   const body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     id: 'maMatch1',
-    title: 'ja de'
+    title: 'ja de',
   })
 
   cleanup()
 })
 
-test.serial('delete simple through api', async t => {
+test.serial('delete simple through api', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   let res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       $language: 'de',
       id: true,
-      title: true
-    })
+      title: true,
+    }),
   })
 
   let body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     id: 'maMatch1',
-    title: 'ja de'
+    title: 'ja de',
   })
 
   res = await fetch(`http://localhost:${srvPort}/delete`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
-      $id: 'maMatch1'
-    })
+      $id: 'maMatch1',
+    }),
   })
 
   body = await res.json()
   t.deepEqualIgnoreOrder(body, {
-    isRemoved: true
+    isRemoved: true,
   })
 
   res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       $language: 'de',
       id: true,
-      title: true
-    })
+      title: true,
+    }),
   })
 
   body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     id: 'maMatch1',
     $isNull: true,
-    title: ''
+    title: '',
   })
 
   cleanup()
 })
 
-test.serial('new schema and entry through api', async t => {
+test.serial('new schema and entry through api', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       types: {
         yeshyeshyesh: {
           prefix: 'ye',
           fields: {
-            hello: { type: 'string' }
-          }
-        }
-      }
-    })
+            hello: { type: 'string' },
+          },
+        },
+      },
+    }),
   })
 
   console.log('res', await res.json())
@@ -343,54 +343,54 @@ test.serial('new schema and entry through api', async t => {
   await fetch(`http://localhost:${srvPort}/set`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'ye1',
-      hello: 'friend'
-    })
+      hello: 'friend',
+    }),
   })
 
   res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'ye1',
       id: true,
-      hello: true
-    })
+      hello: true,
+    }),
   })
 
   const body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     id: 'ye1',
-    hello: 'friend'
+    hello: 'friend',
   })
 
   cleanup()
 })
 
-test.serial('non-post throws', async t => {
+test.serial('non-post throws', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
     method: 'PUT',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       types: {
         yeshyeshyesh: {
           prefix: 'ye',
           fields: {
-            hello: { type: 'string' }
-          }
-        }
-      }
-    })
+            hello: { type: 'string' },
+          },
+        },
+      },
+    }),
   })
 
   t.is(res.status, 400)
@@ -398,7 +398,7 @@ test.serial('non-post throws', async t => {
   cleanup()
 })
 
-test.serial('test funky middleware', async t => {
+test.serial('test funky middleware', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart(
     { port },
@@ -407,7 +407,7 @@ test.serial('test funky middleware', async t => {
         res.statusCode = 418
         res.end("I'm a teapot")
         next(false)
-      }
+      },
     ],
     srvPort
   )
@@ -415,18 +415,18 @@ test.serial('test funky middleware', async t => {
   let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       types: {
         yeshyeshyesh: {
           prefix: 'ye',
           fields: {
-            hello: { type: 'string' }
-          }
-        }
-      }
-    })
+            hello: { type: 'string' },
+          },
+        },
+      },
+    }),
   })
 
   t.is(res.status, 418)
@@ -435,7 +435,7 @@ test.serial('test funky middleware', async t => {
   cleanup()
 })
 
-test.serial('test funky passing funky middleware', async t => {
+test.serial('test funky passing funky middleware', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart(
     { port },
@@ -443,7 +443,7 @@ test.serial('test funky passing funky middleware', async t => {
       (_client, _req, res, next) => {
         res.setHeader('x-my-special-header', 'flurpy')
         next(true)
-      }
+      },
     ],
     srvPort
   )
@@ -453,18 +453,18 @@ test.serial('test funky passing funky middleware', async t => {
     {
       method: 'POST',
       headers: {
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
         types: {
           yeshyeshyesh: {
             prefix: 'ye',
             fields: {
-              hello: { type: 'string' }
-            }
-          }
-        }
-      })
+              hello: { type: 'string' },
+            },
+          },
+        },
+      }),
     }
   )
 
@@ -473,16 +473,16 @@ test.serial('test funky passing funky middleware', async t => {
   cleanup()
 })
 
-test.serial('test Guardy Guard', async t => {
+test.serial('test Guardy Guard', async (t) => {
   const simple = {
     $alias: 'hello',
-    myString: 'hmmhmm'
+    myString: 'hmmhmm',
   }
 
   t.deepEqual(constructGuard(simple), {
     $alias: 'hello',
     id: true,
-    myString: true
+    myString: true,
   })
   t.deepEqual(true, noHasGuard(simple, { id: 'maYes', myString: 'hmmhmm' }))
   t.deepEqual(false, noHasGuard(simple, { id: 'maYes', myString: 'mmyes' }))
@@ -490,21 +490,21 @@ test.serial('test Guardy Guard', async t => {
   const settingAliases = {
     $alias: 'hello',
     myString: 'hmmhmm',
-    aliases: ['a', 'b', 'abba']
+    aliases: ['a', 'b', 'abba'],
   }
 
   t.deepEqual(constructGuard(settingAliases), {
     $alias: 'hello',
     id: true,
     myString: true,
-    aliases: true
+    aliases: true,
   })
   t.deepEqual(
     true,
     noHasGuard(settingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['a', 'b', 'abba']
+      aliases: ['a', 'b', 'abba'],
     })
   )
   t.deepEqual(
@@ -512,7 +512,7 @@ test.serial('test Guardy Guard', async t => {
     noHasGuard(settingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['a', 'b']
+      aliases: ['a', 'b'],
     })
   )
   t.deepEqual(
@@ -520,28 +520,28 @@ test.serial('test Guardy Guard', async t => {
     noHasGuard(settingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['a', 'abba']
+      aliases: ['a', 'abba'],
     })
   )
 
   const valueAliases = {
     $alias: 'hello',
     myString: 'hmmhmm',
-    aliases: { $value: ['a', 'b', 'abba'] }
+    aliases: { $value: ['a', 'b', 'abba'] },
   }
 
   t.deepEqual(constructGuard(valueAliases), {
     $alias: 'hello',
     id: true,
     myString: true,
-    aliases: true
+    aliases: true,
   })
   t.deepEqual(
     true,
     noHasGuard(valueAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['a', 'b', 'abba']
+      aliases: ['a', 'b', 'abba'],
     })
   )
   t.deepEqual(
@@ -549,7 +549,7 @@ test.serial('test Guardy Guard', async t => {
     noHasGuard(valueAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['a', 'b']
+      aliases: ['a', 'b'],
     })
   )
   t.deepEqual(
@@ -557,28 +557,28 @@ test.serial('test Guardy Guard', async t => {
     noHasGuard(valueAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['a', 'abba']
+      aliases: ['a', 'abba'],
     })
   )
 
   const addingAliases = {
     $alias: 'hello',
     myString: 'hmmhmm',
-    aliases: { $add: ['a', 'b'] }
+    aliases: { $add: ['a', 'b'] },
   }
 
   t.deepEqual(constructGuard(addingAliases), {
     $alias: 'hello',
     id: true,
     myString: true,
-    aliases: true
+    aliases: true,
   })
   t.deepEqual(
     true,
     noHasGuard(addingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['a', 'b', 'abba']
+      aliases: ['a', 'b', 'abba'],
     })
   )
   t.deepEqual(
@@ -586,7 +586,7 @@ test.serial('test Guardy Guard', async t => {
     noHasGuard(addingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['abba', 'b']
+      aliases: ['abba', 'b'],
     })
   )
   t.deepEqual(
@@ -594,28 +594,28 @@ test.serial('test Guardy Guard', async t => {
     noHasGuard(addingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['b', 'abba']
+      aliases: ['b', 'abba'],
     })
   )
 
   const removingAliases = {
     $alias: 'hello',
     myString: 'hmmhmm',
-    aliases: { $delete: ['a', 'b'] }
+    aliases: { $delete: ['a', 'b'] },
   }
 
   t.deepEqual(constructGuard(removingAliases), {
     $alias: 'hello',
     id: true,
     myString: true,
-    aliases: true
+    aliases: true,
   })
   t.deepEqual(
     true,
     noHasGuard(removingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['abba']
+      aliases: ['abba'],
     })
   )
   t.deepEqual(
@@ -623,7 +623,7 @@ test.serial('test Guardy Guard', async t => {
     noHasGuard(removingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['abba', 'b']
+      aliases: ['abba', 'b'],
     })
   )
   t.deepEqual(
@@ -631,19 +631,19 @@ test.serial('test Guardy Guard', async t => {
     noHasGuard(removingAliases, {
       id: 'maYes',
       myString: 'hmmhmm',
-      aliases: ['b', 'abba']
+      aliases: ['b', 'abba'],
     })
   )
 })
 
-test.serial.only('things', async t => {
+test.serial.only('things', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   await fetch(`http://localhost:${srvPort}/set`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $alias: 'sas-ed52926f-9c23-45a7-a28a-10b00f38b34b',
@@ -663,20 +663,20 @@ test.serial.only('things', async t => {
           hls:
             'https://dsmzkf3ry8xyv.cloudfront.net/out/v1/50e7271d570343498dc53b203c446659/index.m3u8',
           mp4:
-            'https://download.sporttotal.tv/volleyball/germany/2020/10/5d1a2a13-d4f2-988b-9172-f52116af6d18/primary_vod.000000.ts'
+            'https://download.sporttotal.tv/volleyball/germany/2020/10/5d1a2a13-d4f2-988b-9172-f52116af6d18/primary_vod.000000.ts',
         },
-        pano: {}
+        pano: {},
       },
       parents: {
-        $add: ['tebd06dfa1', 'teb1d47e94', 'coc70084e6']
-      }
-    })
+        $add: ['tebd06dfa1', 'teb1d47e94', 'coc70084e6'],
+      },
+    }),
   })
 
   await fetch(`http://localhost:${srvPort}/set`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $alias: 'sas-ed52926f-9c23-45a7-a28a-10b00f38b34b',
@@ -696,27 +696,27 @@ test.serial.only('things', async t => {
           hls:
             'https://dsmzkf3ry8xyv.cloudfront.net/out/v1/50e7271d570343498dc53b203c446659/index.m3u8',
           mp4:
-            'https://download.sporttotal.tv/volleyball/germany/2020/10/5d1a2a13-d4f2-988b-9172-f52116af6d18/primary_vod.000000.ts'
+            'https://download.sporttotal.tv/volleyball/germany/2020/10/5d1a2a13-d4f2-988b-9172-f52116af6d18/primary_vod.000000.ts',
         },
-        pano: {}
+        pano: {},
       },
       parents: {
-        $add: ['tebd06dfa1', 'teb1d47e94', 'coc70084e6']
-      }
-    })
+        $add: ['tebd06dfa1', 'teb1d47e94', 'coc70084e6'],
+      },
+    }),
   })
 
   const res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       $language: 'en',
       id: true,
-      title: true
-    })
+      title: true,
+    }),
   })
 
   // const body = await res.json()

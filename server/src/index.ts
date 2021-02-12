@@ -5,7 +5,7 @@ import chalk from 'chalk'
 import os from 'os'
 import { join } from 'path'
 import fs from 'fs'
-import {TextServer} from './server/text'
+import { TextServer } from './server/text'
 import mkdirp from 'mkdirp'
 
 export * as s3Backups from './backup-plugins/s3'
@@ -26,7 +26,7 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
     let ip
     for (let key in network) {
       const r = network[key].find(
-        v => v.family === 'IPv4' && v.internal === false
+        (v) => v.family === 'IPv4' && v.internal === false
       )
       if (r) {
         ip = r
@@ -48,7 +48,7 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   if (parsedOpts.modules) {
     if (Array.isArray(parsedOpts.modules)) {
       parsedOpts.modules = [
-        ...new Set([...defaultModules, ...parsedOpts.modules])
+        ...new Set([...defaultModules, ...parsedOpts.modules]),
       ]
     }
   } else {
@@ -57,7 +57,6 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
 
   if (parsedOpts.default) {
     parsedOpts.name = 'default'
-
   }
 
   return parsedOpts
@@ -172,7 +171,7 @@ export async function startTextServer(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
 
   const server = new TextServer()
-  server.start(parsedOpts) 
+  server.start(parsedOpts)
   return server
 }
 
@@ -209,27 +208,27 @@ export async function start(opts: Options) {
 
   const registry = await startServer('registry', {
     ...parsedOpts,
-    name: 'registry'
+    name: 'registry',
   })
   const origin = await startOrigin({
     name: 'default',
     registry,
     // @ts-ignore
-    dir: opts.dir
+    dir: opts.dir,
   })
 
   const subs = await startSubscriptionManager({
     registry: {
       port: parsedOpts.port,
-      host: parsedOpts.host
-    }
+      host: parsedOpts.host,
+    },
   })
 
   const subsRegistry = await startSubscriptionRegistry({
     registry: {
       port: parsedOpts.port,
-      host: parsedOpts.host
-    }
+      host: parsedOpts.host,
+    },
   })
 
   registry.on('close', async () => {

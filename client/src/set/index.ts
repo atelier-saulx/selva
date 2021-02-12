@@ -40,7 +40,7 @@ export async function _set(
         asAny.$id,
         ...payload
       ),
-      ...asAny.$extraQueries
+      ...asAny.$extraQueries,
     ])
 
     return !all[0] ? undefined : all[0][0]

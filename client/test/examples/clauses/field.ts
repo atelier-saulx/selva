@@ -12,7 +12,7 @@ import { setDataSet } from '../_dataSet'
 let srv
 let port
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   await wait(500)
@@ -21,7 +21,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -29,7 +29,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('$field', async t => {
+test.serial('$field', async (t) => {
   const client = connect({ port: port })
 
   await setDataSet(client)
@@ -37,7 +37,7 @@ test.serial('$field', async t => {
   t.deepEqual(
     await client.get({
       $id: 'mo2001ASpaceOdyssey',
-      directedBy: { $field: 'director' }
+      directedBy: { $field: 'director' },
     }),
     { directedBy: 'Stanley Kubrick' }
   )
@@ -45,7 +45,7 @@ test.serial('$field', async t => {
   t.deepEqual(
     await client.get({
       $id: 'mo2001ASpaceOdyssey',
-      ratio: { $field: 'technicalData.aspectRatio' }
+      ratio: { $field: 'technicalData.aspectRatio' },
     }),
     { ratio: '2.20:1' }
   )
@@ -53,7 +53,7 @@ test.serial('$field', async t => {
   t.deepEqual(
     await client.get({
       $id: 'mo2001ASpaceOdyssey',
-      englishTitle: { $field: 'title.en' }
+      englishTitle: { $field: 'title.en' },
     }),
     { englishTitle: '2001: A Space Odyssey' }
   )
@@ -61,7 +61,7 @@ test.serial('$field', async t => {
   await client.destroy()
 })
 
-test.serial('$field:Array<string>', async t => {
+test.serial('$field:Array<string>', async (t) => {
   const client = connect({ port: port })
 
   await setDataSet(client)
@@ -69,7 +69,7 @@ test.serial('$field:Array<string>', async t => {
   t.deepEqual(
     await client.get({
       $id: 'mo2001ASpaceOdyssey',
-      by: { $field: ['producer', 'director'] }
+      by: { $field: ['producer', 'director'] },
     }),
     { by: 'Stanley Kubrick' }
   )

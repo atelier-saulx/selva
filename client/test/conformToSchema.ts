@@ -5,12 +5,12 @@ import { start } from '@saulx/selva-server'
 import getPort from 'get-port'
 import { wait } from './assertions'
 
-test('can strip all non-schema fields from body', async t => {
+test('can strip all non-schema fields from body', async (t) => {
   const port = await getPort()
   const server = await start({ port })
 
   const client = connect({
-    port
+    port,
   })
 
   await client.updateSchema({
@@ -19,7 +19,7 @@ test('can strip all non-schema fields from body', async t => {
         prefix: 'ma',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           value: { type: 'number' },
           ary: {
@@ -27,9 +27,9 @@ test('can strip all non-schema fields from body', async t => {
             items: {
               type: 'object',
               properties: {
-                keyA: { type: 'string' }
-              }
-            }
+                keyA: { type: 'string' },
+              },
+            },
           },
           obj: {
             type: 'object',
@@ -39,20 +39,20 @@ test('can strip all non-schema fields from body', async t => {
               keyC: {
                 type: 'object',
                 properties: {
-                  keyA: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  keyA: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   const payload1 = await client.conformToSchema({
     $id: 'maTest',
     value: 1234,
-    somethingOdd: 'yes this should be gone'
+    somethingOdd: 'yes this should be gone',
   })
 
   t.deepEqual(payload1, { $id: 'maTest', type: 'match', value: 1234 })
@@ -67,9 +67,9 @@ test('can strip all non-schema fields from body', async t => {
       keyY: 'no',
       keyC: {
         keyA: 'yes',
-        keyZ: 'no'
-      }
-    }
+        keyZ: 'no',
+      },
+    },
   })
 
   t.deepEqual(payload2, {
@@ -78,8 +78,8 @@ test('can strip all non-schema fields from body', async t => {
     value: 1234,
     obj: {
       keyA: 'yes',
-      keyC: { keyA: 'yes' }
-    }
+      keyC: { keyA: 'yes' },
+    },
   })
 
   const payload3 = await client.conformToSchema({
@@ -87,16 +87,16 @@ test('can strip all non-schema fields from body', async t => {
     ary: [
       {
         keyA: 'yes',
-        keyB: 'no'
+        keyB: 'no',
       },
       { keyX: 'no' },
-      { keyX: 'no', keyA: 'yes' }
-    ]
+      { keyX: 'no', keyA: 'yes' },
+    ],
   })
 
   t.deepEqualIgnoreOrder(payload3, {
     type: 'match',
-    ary: [{ keyA: 'yes' }, {}, { keyA: 'yes' }]
+    ary: [{ keyA: 'yes' }, {}, { keyA: 'yes' }],
   })
 
   await wait(100)

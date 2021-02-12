@@ -9,38 +9,38 @@ let port: number
 test.before(async () => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   await srv.destroy()
   await t.connectionsAreEmpty()
 })
 
-test.serial('unsubscribe removes subscriptions from redis', async t => {
+test.serial('unsubscribe removes subscriptions from redis', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
     },
     types: {
       yeshType: {
         prefix: 'ye',
         fields: {
-          yesh: { type: 'string' }
-        }
-      }
-    }
+          yesh: { type: 'string' },
+        },
+      },
+    },
   })
 
   t.plan(5)
 
   const observable = client.observe({ $id: 'root', yesh: true })
   let o1counter = 0
-  const sub = observable.subscribe(d => {
+  const sub = observable.subscribe((d) => {
     if (o1counter === 0) {
       // gets start event
       t.is(d.yesh, undefined)
@@ -56,18 +56,18 @@ test.serial('unsubscribe removes subscriptions from redis', async t => {
 
   const thing = await client.set({
     type: 'yeshType',
-    yesh: 'extra nice'
+    yesh: 'extra nice',
   })
 
   let o2counter = 0
   const other = client.observe({ $id: thing, $all: true, aliases: false })
-  const sub2 = other.subscribe(d => {
+  const sub2 = other.subscribe((d) => {
     if (o2counter === 0) {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
         id: thing,
         type: 'yeshType',
-        yesh: 'extra nice'
+        yesh: 'extra nice',
       })
     } else if (o2counter === 1) {
       // gets delete event
@@ -82,16 +82,16 @@ test.serial('unsubscribe removes subscriptions from redis', async t => {
 
   await client.set({
     $id: 'root',
-    no: 'no event pls'
+    no: 'no event pls',
   })
 
   await client.set({
     $id: 'root',
-    yesh: 'so nice'
+    yesh: 'so nice',
   })
 
   await client.delete({
-    $id: thing
+    $id: thing,
   })
 
   await wait(500 * 2)

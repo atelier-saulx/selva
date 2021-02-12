@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -21,38 +21,38 @@ test.before(async t => {
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
-          }
-        }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
+          },
+        },
       },
       category: {
         prefix: 'ca',
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
-          }
-        }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
+          },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
           published: {
             type: 'boolean',
-            search: { type: ['TAG'] }
-          }
-        }
-      }
-    }
+            search: { type: ['TAG'] },
+          },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -60,7 +60,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('real world highlights', async t => {
+test.serial('real world highlights', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -76,21 +76,21 @@ test.serial('real world highlights', async t => {
           {
             $id: 'ma1',
             title: 'match 1',
-            published: true
+            published: true,
           },
           {
             $id: 'ma2',
             title: 'match 2',
-            published: true
+            published: true,
           },
           {
             $id: 'ma3',
             title: 'match 3',
-            published: false
-          }
-        ]
-      }
-    ]
+            published: false,
+          },
+        ],
+      },
+    ],
   })
 
   t.deepEqualIgnoreOrder(
@@ -98,7 +98,7 @@ test.serial('real world highlights', async t => {
       $id: 'sp1',
       $language: 'en',
       component: {
-        $value: 'Highlights'
+        $value: 'Highlights',
       },
       children: {
         type: true,
@@ -113,39 +113,39 @@ test.serial('real world highlights', async t => {
                 {
                   $field: 'published',
                   $operator: '=',
-                  $value: true
-                }
-              ]
+                  $value: true,
+                },
+              ],
             },
             $filter: [
               {
                 $value: 'category',
                 $field: 'type',
-                $operator: '='
+                $operator: '=',
               },
               {
                 $value: 'highlights',
                 $field: 'name',
-                $operator: '='
-              }
-            ]
+                $operator: '=',
+              },
+            ],
           },
-          $limit: 3
+          $limit: 3,
         },
         date: true,
-        video: true
+        video: true,
       },
       title: {
-        $value: 'Bla bla'
-      }
+        $value: 'Bla bla',
+      },
     }),
     {
       component: 'Highlights',
       title: 'Bla bla',
       children: [
         { id: 'ma1', type: 'match', title: 'match 1' },
-        { id: 'ma2', type: 'match', title: 'match 2' }
-      ]
+        { id: 'ma2', type: 'match', title: 'match 2' },
+      ],
     }
   )
   t.pass()

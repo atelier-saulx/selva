@@ -9,10 +9,10 @@ import fetch from 'node-fetch'
 let srv
 let port: number
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
@@ -27,10 +27,10 @@ test.before(async t => {
         nested: {
           type: 'object',
           properties: {
-            fun: { type: 'string' }
-          }
-        }
-      }
+            fun: { type: 'string' },
+          },
+        },
+      },
     },
     types: {
       lekkerType: {
@@ -46,17 +46,17 @@ test.before(async t => {
                 type: 'object',
                 properties: {
                   dung: { type: 'number' },
-                  dunk: { type: 'string' }
-                }
+                  dunk: { type: 'string' },
+                },
               },
               dunk: {
                 type: 'object',
                 properties: {
                   ding: { type: 'number' },
-                  dong: { type: 'number' }
-                }
-              }
-            }
+                  dong: { type: 'number' },
+                },
+              },
+            },
           },
           dong: { type: 'json' },
           dingdongs: { type: 'array', items: { type: 'string' } },
@@ -64,7 +64,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -72,10 +72,10 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       custom: {
         prefix: 'cu',
@@ -83,7 +83,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -91,10 +91,10 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       club: {
         prefix: 'cl',
@@ -102,7 +102,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -110,46 +110,46 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
           value: { type: 'number' },
-          description: { type: 'text' }
-        }
+          description: { type: 'text' },
+        },
       },
       yesno: {
         prefix: 'yn',
         fields: {
           bolYes: { type: 'boolean' },
-          bolNo: { type: 'boolean' }
-        }
-      }
-    }
+          bolNo: { type: 'boolean' },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async _t => {
+test.after(async (_t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
 })
 
-test.serial('test api ping/pong', async t => {
+test.serial('test api ping/pong', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   const res = await fetch(`http://localhost:${srvPort}/ping`, {
     method: 'POST',
-    body: 'hellooo'
+    body: 'hellooo',
   })
 
   const body = await res.text()
@@ -158,149 +158,149 @@ test.serial('test api ping/pong', async t => {
   cleanup()
 })
 
-test.serial('get $value through api', async t => {
+test.serial('get $value through api', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   const res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
-      yesh: { $value: 'hello' }
-    })
+      yesh: { $value: 'hello' },
+    }),
   })
 
   const body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     $isNull: true,
-    yesh: 'hello'
+    yesh: 'hello',
   })
 
   cleanup()
 })
 
-test.serial('set and get simple through api', async t => {
+test.serial('set and get simple through api', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   await fetch(`http://localhost:${srvPort}/set`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       title: {
         en: 'yes en',
-        de: 'ja de'
-      }
-    })
+        de: 'ja de',
+      },
+    }),
   })
 
   const res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       $language: 'de',
       id: true,
-      title: true
-    })
+      title: true,
+    }),
   })
 
   const body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     id: 'maMatch1',
-    title: 'ja de'
+    title: 'ja de',
   })
 
   cleanup()
 })
 
-test.serial('delete simple through api', async t => {
+test.serial('delete simple through api', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   let res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       $language: 'de',
       id: true,
-      title: true
-    })
+      title: true,
+    }),
   })
 
   let body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     id: 'maMatch1',
-    title: 'ja de'
+    title: 'ja de',
   })
 
   res = await fetch(`http://localhost:${srvPort}/delete`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
-      $id: 'maMatch1'
-    })
+      $id: 'maMatch1',
+    }),
   })
 
   body = await res.json()
   t.deepEqualIgnoreOrder(body, {
-    isRemoved: true
+    isRemoved: true,
   })
 
   res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'maMatch1',
       $language: 'de',
       id: true,
-      title: true
-    })
+      title: true,
+    }),
   })
 
   body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     id: 'maMatch1',
     $isNull: true,
-    title: ''
+    title: '',
   })
 
   cleanup()
 })
 
-test.serial('new schema and entry through api', async t => {
+test.serial('new schema and entry through api', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       types: {
         yeshyeshyesh: {
           prefix: 'ye',
           fields: {
-            hello: { type: 'string' }
-          }
-        }
-      }
-    })
+            hello: { type: 'string' },
+          },
+        },
+      },
+    }),
   })
 
   console.log('res', await res.json())
@@ -308,54 +308,54 @@ test.serial('new schema and entry through api', async t => {
   await fetch(`http://localhost:${srvPort}/set`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'ye1',
-      hello: 'friend'
-    })
+      hello: 'friend',
+    }),
   })
 
   res = await fetch(`http://localhost:${srvPort}/get`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       $id: 'ye1',
       id: true,
-      hello: true
-    })
+      hello: true,
+    }),
   })
 
   const body = await res.json()
   t.deepEqualIgnoreOrder(body, {
     id: 'ye1',
-    hello: 'friend'
+    hello: 'friend',
   })
 
   cleanup()
 })
 
-test.serial('non-post throws', async t => {
+test.serial('non-post throws', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart({ port }, [], srvPort)
 
   let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
     method: 'PUT',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       types: {
         yeshyeshyesh: {
           prefix: 'ye',
           fields: {
-            hello: { type: 'string' }
-          }
-        }
-      }
-    })
+            hello: { type: 'string' },
+          },
+        },
+      },
+    }),
   })
 
   t.is(res.status, 400)
@@ -363,7 +363,7 @@ test.serial('non-post throws', async t => {
   cleanup()
 })
 
-test.serial('test funky middleware', async t => {
+test.serial('test funky middleware', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart(
     { port },
@@ -372,7 +372,7 @@ test.serial('test funky middleware', async t => {
         res.statusCode = 418
         res.end("I'm a teapot")
         next(false)
-      }
+      },
     ],
     srvPort
   )
@@ -380,18 +380,18 @@ test.serial('test funky middleware', async t => {
   let res = await fetch(`http://localhost:${srvPort}/update_schema`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     },
     body: JSON.stringify({
       types: {
         yeshyeshyesh: {
           prefix: 'ye',
           fields: {
-            hello: { type: 'string' }
-          }
-        }
-      }
-    })
+            hello: { type: 'string' },
+          },
+        },
+      },
+    }),
   })
 
   t.is(res.status, 418)
@@ -400,7 +400,7 @@ test.serial('test funky middleware', async t => {
   cleanup()
 })
 
-test.serial('test funky passing funky middleware', async t => {
+test.serial('test funky passing funky middleware', async (t) => {
   const srvPort = await getPort()
   const cleanup = apiStart(
     { port },
@@ -408,7 +408,7 @@ test.serial('test funky passing funky middleware', async t => {
       (_client, _req, res, next) => {
         res.setHeader('x-my-special-header', 'flurpy')
         next(true)
-      }
+      },
     ],
     srvPort
   )
@@ -418,18 +418,18 @@ test.serial('test funky passing funky middleware', async t => {
     {
       method: 'POST',
       headers: {
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
         types: {
           yeshyeshyesh: {
             prefix: 'ye',
             fields: {
-              hello: { type: 'string' }
-            }
-          }
-        }
-      })
+              hello: { type: 'string' },
+            },
+          },
+        },
+      }),
     }
   )
 

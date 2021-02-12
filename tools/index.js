@@ -11,7 +11,7 @@ function update() {
   }
 }
 
-const files = process.argv.slice(2).map(f => {
+const files = process.argv.slice(2).map((f) => {
   const parts = f.split(path.sep)
   let first = parts[0]
   if (first === '.') {
@@ -48,7 +48,7 @@ function attachChokidarHandlers(watcher) {
 
 console.log('yarn', ['watchClientTests'].concat(files))
 const ava = cp.spawn('yarn', ['watchClientTests'].concat(files))
-ava.stdout.on('data', d => {
+ava.stdout.on('data', (d) => {
   const str = d.toString()
   if (str.includes('and press enter to rerun tests')) {
     currentlyBuilding = false
@@ -57,13 +57,13 @@ ava.stdout.on('data', d => {
   console.log('[ava]', str)
 })
 
-ava.stderr.on('data', d => {
+ava.stderr.on('data', (d) => {
   console.error('[ava]', d.toString())
 })
 
 const server = cp.spawn('yarn', ['watchServer', '--preserveWatchOutput'])
 
-server.stdout.on('data', d => {
+server.stdout.on('data', (d) => {
   const str = d.toString()
   console.log('[tsc]', str)
 
@@ -72,7 +72,7 @@ server.stdout.on('data', d => {
   }
 })
 
-server.stderr.on('data', d => {
+server.stderr.on('data', (d) => {
   console.error('[tsc]', d.toString())
 })
 

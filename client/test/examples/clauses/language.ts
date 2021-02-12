@@ -12,7 +12,7 @@ import { setDataSet } from '../_dataSet'
 let srv
 let port
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   await wait(500)
@@ -21,7 +21,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -29,7 +29,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('$language', async t => {
+test.serial('$language', async (t) => {
   const client = connect({ port: port })
 
   await setDataSet(client)
@@ -38,7 +38,7 @@ test.serial('$language', async t => {
     await client.get({
       $language: 'en',
       $id: 'mo2001ASpaceOdyssey',
-      title: true
+      title: true,
     }),
     { title: '2001: A Space Odyssey' }
   )
@@ -47,7 +47,7 @@ test.serial('$language', async t => {
     await client.get({
       $language: 'nl',
       $id: 'mo2001ASpaceOdyssey',
-      title: true
+      title: true,
     }),
     { title: '2001: Een zwerftocht in de ruimte' }
   )

@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -20,18 +20,18 @@ test.before(async t => {
           published: {
             type: 'boolean',
             search: {
-              type: ['TAG']
-            }
-          }
-        }
-      }
-    }
+              type: ['TAG'],
+            },
+          },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -39,12 +39,12 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('correct validation for booleans', async t => {
+test.serial('correct validation for booleans', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     type: 'match',
-    published: true
+    published: true,
   })
 
   try {
@@ -56,15 +56,15 @@ test.serial('correct validation for booleans', async t => {
             $filter: {
               $field: 'published',
               $operator: '!=',
-              $value: false
-            }
-          }
-        }
-      }
+              $value: false,
+            },
+          },
+        },
+      },
     })
 
     t.deepEqualIgnoreOrder(res, {
-      descendants: [{ type: 'match' }]
+      descendants: [{ type: 'match' }],
     })
   } catch (e) {
     console.error(e)

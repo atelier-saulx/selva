@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   await wait(500)
@@ -20,43 +20,43 @@ test.before(async t => {
     languages: ['en', 'de', 'fr', 'it', 'nl'],
     rootType: {
       fields: {
-        title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } }
-      }
+        title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+      },
     },
     types: {
       folder: {
         prefix: 'fo',
         fields: {
           name: { type: 'string' },
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } }
-        }
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+        },
       },
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
       },
       team: {
         prefix: 'te',
         fields: {
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } }
-        }
+          published: { type: 'boolean', search: { type: ['TAG'] } },
+        },
       },
       video: {
         prefix: 'vi',
         fields: {
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } }
-        }
+          published: { type: 'boolean', search: { type: ['TAG'] } },
+        },
       },
       sport: {
         prefix: 'sp',
         fields: {
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } }
-        }
+          published: { type: 'boolean', search: { type: ['TAG'] } },
+        },
       },
       match: {
         prefix: 'ma',
@@ -67,29 +67,29 @@ test.before(async t => {
           awayTeam: { type: 'reference' },
           startTime: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] }
+            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           endTime: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] }
+            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           date: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] }
+            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           fun: { type: 'set', items: { type: 'string' } },
           related: { type: 'references', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
-        }
-      }
-    }
+          status: { type: 'number', search: { type: ['NUMERIC'] } },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
@@ -98,7 +98,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subs layout', async t => {
+test.serial('subs layout', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
   let viIdx = 0
@@ -106,8 +106,8 @@ test.serial('subs layout', async t => {
   await client.set({
     $id: 'root',
     title: {
-      en: 'root'
-    }
+      en: 'root',
+    },
   })
 
   await client.set({
@@ -115,8 +115,8 @@ test.serial('subs layout', async t => {
     published: true,
     title: {
       en: 'team one',
-      de: 'team ein'
-    }
+      de: 'team ein',
+    },
   })
 
   await client.set({
@@ -124,24 +124,24 @@ test.serial('subs layout', async t => {
     published: true,
     title: {
       en: 'team two',
-      de: 'team zwei'
-    }
+      de: 'team zwei',
+    },
   })
 
   await client.set({
     $id: 'sp1',
     title: { en: 'sport one', de: 'sport ein' },
     published: true,
-    children: ['te1', 'te2']
+    children: ['te1', 'te2'],
   })
 
   const highlights = await client.set({
     $id: 'fo1',
     title: {
-      en: 'Highlights'
+      en: 'Highlights',
     },
     name: 'Highlights',
-    parents: ['sp1']
+    parents: ['sp1'],
   })
 
   client
@@ -158,21 +158,21 @@ test.serial('subs layout', async t => {
                 {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'match'
+                  $value: 'match',
                 },
                 {
                   $field: 'published',
                   $operator: '=',
-                  $value: true
-                }
-              ]
-            }
-          }
-        }
+                  $value: true,
+                },
+              ],
+            },
+          },
+        },
       },
       { immutable: true }
     )
-    .subscribe(r => console.log(r))
+    .subscribe((r) => console.log(r))
   client
     .observe(
       {
@@ -187,21 +187,21 @@ test.serial('subs layout', async t => {
                 {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'match'
+                  $value: 'match',
                 },
                 {
                   $field: 'published',
                   $operator: '=',
-                  $value: true
-                }
-              ]
-            }
-          }
-        }
+                  $value: true,
+                },
+              ],
+            },
+          },
+        },
       },
       { immutable: true }
     )
-    .subscribe(r => console.log(r))
+    .subscribe((r) => console.log(r))
 
   const past = []
   let pastPublishedIds = []
@@ -222,14 +222,14 @@ test.serial('subs layout', async t => {
         title: {
           en: 'past match ' + i,
           de: 'vorbei match ' + i,
-          nl: 'verleden match ' + 1
+          nl: 'verleden match ' + 1,
         },
         name: 'past match',
         date: now - 1000 * 60 - i - 1,
         startTime: now - 1000 * 60 - i - 1,
         endTime: now - (1000 * 60 - i - 1),
         parents: [team, highlights],
-        children: [{ $id: 'vi' + viIdx++, published: true }]
+        children: [{ $id: 'vi' + viIdx++, published: true }],
       })
     )
 
@@ -260,13 +260,13 @@ test.serial('subs layout', async t => {
         title: {
           en: 'gen upcoming match ' + i,
           de: 'gen kommend match ' + i,
-          nl: 'gen aanstaande match ' + i
+          nl: 'gen aanstaande match ' + i,
         },
         date: now + 1000 * 60 + i,
         startTime: now + 1000 * 60 + i,
         endTime: now + (1000 * 60 + i + 1),
         parents: [team, highlights],
-        children: [{ $id: 'vi' + viIdx++, published: true }]
+        children: [{ $id: 'vi' + viIdx++, published: true }],
       })
     )
 
@@ -290,7 +290,7 @@ test.serial('subs layout', async t => {
       title: {
         en: 'upcoming match 1',
         de: 'kommend match 1',
-        nl: 'aanstaande match 1'
+        nl: 'aanstaande match 1',
       },
       name: 'upcoming match',
       date: now + 2000,
@@ -299,8 +299,8 @@ test.serial('subs layout', async t => {
       endTime: now + 5000, // 5 sec from now
       children: [
         { $id: 'vi' + viIdx++, published: true },
-        { $id: 'vi' + viIdx++, published: true }
-      ]
+        { $id: 'vi' + viIdx++, published: true },
+      ],
     }),
     client.set({
       type: 'match',
@@ -310,7 +310,7 @@ test.serial('subs layout', async t => {
       title: {
         en: 'upcoming match 2',
         de: 'kommend match 2',
-        nl: 'aanstaande match 2'
+        nl: 'aanstaande match 2',
       },
       published: true,
       parents: ['te2'],
@@ -320,9 +320,9 @@ test.serial('subs layout', async t => {
       endTime: now + 7000, // 7 sec from now
       children: [
         { $id: 'vi' + viIdx++, published: true },
-        { $id: 'vi' + viIdx++, published: true }
-      ]
-    })
+        { $id: 'vi' + viIdx++, published: true },
+      ],
+    }),
   ])
 
   let result
@@ -334,7 +334,7 @@ test.serial('subs layout', async t => {
           $list: {
             $sort: {
               $field: 'date',
-              $order: 'desc'
+              $order: 'desc',
             },
             $limit: 10,
             $find: {
@@ -343,28 +343,28 @@ test.serial('subs layout', async t => {
                 {
                   $operator: '=',
                   $value: 'match',
-                  $field: 'type'
+                  $field: 'type',
                 },
                 {
                   $operator: '=',
                   $value: true,
-                  $field: 'published'
+                  $field: 'published',
                 },
                 {
                   $value: 'now',
                   $field: 'endTime',
-                  $operator: '<'
-                }
-              ]
-            }
-          }
+                  $operator: '<',
+                },
+              ],
+            },
+          },
         },
         live: {
           id: true,
           $list: {
             $sort: {
               $field: 'date',
-              $order: 'asc'
+              $order: 'asc',
             },
             $limit: 10,
             $find: {
@@ -373,33 +373,33 @@ test.serial('subs layout', async t => {
                 {
                   $operator: '=',
                   $value: 'match',
-                  $field: 'type'
+                  $field: 'type',
                 },
                 {
                   $operator: '=',
                   $value: true,
-                  $field: 'published'
+                  $field: 'published',
                 },
                 {
                   $value: 'now',
                   $field: 'startTime',
-                  $operator: '<'
+                  $operator: '<',
                 },
                 {
                   $value: 'now',
                   $field: 'endTime',
-                  $operator: '>'
-                }
-              ]
-            }
-          }
+                  $operator: '>',
+                },
+              ],
+            },
+          },
         },
         upcoming: {
           id: true,
           $list: {
             $sort: {
               $field: 'date',
-              $order: 'asc'
+              $order: 'asc',
             },
             $limit: 10,
             $find: {
@@ -408,26 +408,26 @@ test.serial('subs layout', async t => {
                 {
                   $operator: '=',
                   $value: true,
-                  $field: 'published'
+                  $field: 'published',
                 },
                 {
                   $operator: '=',
                   $value: 'match',
-                  $field: 'type'
+                  $field: 'type',
                 },
                 {
                   $value: 'now',
                   $field: 'startTime',
-                  $operator: '>'
-                }
-              ]
-            }
-          }
-        }
+                  $operator: '>',
+                },
+              ],
+            },
+          },
+        },
       },
       { immutable: true }
     )
-    .subscribe(r => {
+    .subscribe((r) => {
       result = r
       console.log('-->', result)
     })
@@ -441,19 +441,19 @@ test.serial('subs layout', async t => {
         components: [
           {
             component: {
-              $value: 'Table'
+              $value: 'Table',
             },
             title: {
-              $value: 'Live'
+              $value: 'Live',
             },
             children: {
               homeTeam: {
                 id: true,
-                title: true
+                title: true,
               },
               awayTeam: {
                 id: true,
-                title: true
+                title: true,
               },
               // teams: [
               //   {
@@ -481,13 +481,13 @@ test.serial('subs layout', async t => {
                     {
                       $field: 'type',
                       $operator: '=',
-                      $value: 'sport'
+                      $value: 'sport',
                     },
                     {
                       $field: 'published',
                       $operator: '=',
-                      $value: true
-                    }
+                      $value: true,
+                    },
                   ],
                   $find: {
                     $traverse: 'descendants',
@@ -495,40 +495,40 @@ test.serial('subs layout', async t => {
                       {
                         $field: 'type',
                         $operator: '=',
-                        $value: 'match'
+                        $value: 'match',
                       },
                       {
                         $field: 'published',
                         $operator: '=',
-                        $value: true
+                        $value: true,
                       },
                       {
                         $operator: '<',
                         $value: 'now',
-                        $field: 'startTime'
+                        $field: 'startTime',
                       },
                       {
                         $operator: '>',
                         $value: 'now',
-                        $field: 'endTime'
-                      }
-                    ]
+                        $field: 'endTime',
+                      },
+                    ],
                   },
-                  $traverse: 'ancestors'
+                  $traverse: 'ancestors',
                 },
                 $sort: {
                   $order: 'desc',
-                  $field: 'date'
-                }
-              }
-            }
+                  $field: 'date',
+                },
+              },
+            },
           },
           {
             component: {
-              $value: 'GridLarge'
+              $value: 'GridLarge',
             },
             title: {
-              $value: 'Team Videos'
+              $value: 'Team Videos',
             },
             children: {
               type: true,
@@ -540,13 +540,13 @@ test.serial('subs layout', async t => {
                     {
                       $field: 'type',
                       $operator: '=',
-                      $value: 'team'
+                      $value: 'team',
                     },
                     {
                       $field: 'published',
                       $operator: '=',
-                      $value: true
-                    }
+                      $value: true,
+                    },
                   ],
                   $find: {
                     $traverse: 'descendants',
@@ -554,30 +554,30 @@ test.serial('subs layout', async t => {
                       {
                         $field: 'type',
                         $operator: '=',
-                        $value: 'video'
+                        $value: 'video',
                       },
                       {
                         $field: 'published',
                         $operator: '=',
-                        $value: true
-                      }
-                    ]
+                        $value: true,
+                      },
+                    ],
                   },
-                  $traverse: 'ancestors'
+                  $traverse: 'ancestors',
                 },
                 $sort: {
                   $order: 'desc',
-                  $field: 'date'
-                }
+                  $field: 'date',
+                },
               },
-              id: true
-            }
-          }
-        ]
+              id: true,
+            },
+          },
+        ],
       },
       { immutable: true }
     )
-    .subscribe(r => {
+    .subscribe((r) => {
       otherResult1 = r
       console.log('match layout 1', r)
     })
@@ -591,19 +591,19 @@ test.serial('subs layout', async t => {
         components: [
           {
             component: {
-              $value: 'Table'
+              $value: 'Table',
             },
             title: {
-              $value: 'Live'
+              $value: 'Live',
             },
             children: {
               homeTeam: {
                 id: true,
-                title: true
+                title: true,
               },
               awayTeam: {
                 id: true,
-                title: true
+                title: true,
               },
               // teams: [
               //   {
@@ -631,13 +631,13 @@ test.serial('subs layout', async t => {
                     {
                       $field: 'type',
                       $operator: '=',
-                      $value: 'sport'
+                      $value: 'sport',
                     },
                     {
                       $field: 'published',
                       $operator: '=',
-                      $value: true
-                    }
+                      $value: true,
+                    },
                   ],
                   $find: {
                     $traverse: 'descendants',
@@ -645,40 +645,40 @@ test.serial('subs layout', async t => {
                       {
                         $field: 'type',
                         $operator: '=',
-                        $value: 'match'
+                        $value: 'match',
                       },
                       {
                         $field: 'published',
                         $operator: '=',
-                        $value: true
+                        $value: true,
                       },
                       {
                         $operator: '<',
                         $value: 'now',
-                        $field: 'startTime'
+                        $field: 'startTime',
                       },
                       {
                         $operator: '>',
                         $value: 'now',
-                        $field: 'endTime'
-                      }
-                    ]
+                        $field: 'endTime',
+                      },
+                    ],
                   },
-                  $traverse: 'ancestors'
+                  $traverse: 'ancestors',
                 },
                 $sort: {
                   $order: 'desc',
-                  $field: 'date'
-                }
-              }
-            }
+                  $field: 'date',
+                },
+              },
+            },
           },
           {
             component: {
-              $value: 'GridLarge'
+              $value: 'GridLarge',
             },
             title: {
-              $value: 'Team Videos'
+              $value: 'Team Videos',
             },
             children: {
               type: true,
@@ -690,13 +690,13 @@ test.serial('subs layout', async t => {
                     {
                       $field: 'type',
                       $operator: '=',
-                      $value: 'team'
+                      $value: 'team',
                     },
                     {
                       $field: 'published',
                       $operator: '=',
-                      $value: true
-                    }
+                      $value: true,
+                    },
                   ],
                   $find: {
                     $traverse: 'descendants',
@@ -704,30 +704,30 @@ test.serial('subs layout', async t => {
                       {
                         $field: 'type',
                         $operator: '=',
-                        $value: 'video'
+                        $value: 'video',
                       },
                       {
                         $field: 'published',
                         $operator: '=',
-                        $value: true
-                      }
-                    ]
+                        $value: true,
+                      },
+                    ],
                   },
-                  $traverse: 'ancestors'
+                  $traverse: 'ancestors',
                 },
                 $sort: {
                   $order: 'desc',
-                  $field: 'date'
-                }
+                  $field: 'date',
+                },
               },
-              id: true
-            }
-          }
-        ]
+              id: true,
+            },
+          },
+        ],
       },
       { immutable: true }
     )
-    .subscribe(r => {
+    .subscribe((r) => {
       otherResult2 = r
       console.log('match layout 2', r)
     })
@@ -744,21 +744,21 @@ test.serial('subs layout', async t => {
         general: {
           $id: 'root',
           title: {
-            $field: 'title'
-          }
+            $field: 'title',
+          },
         },
         meta: {
           title: {
-            $field: 'title'
-          }
+            $field: 'title',
+          },
         },
         components: [
           {
             component: {
-              $value: 'Highlights'
+              $value: 'Highlights',
             },
             title: {
-              $value: 'Highlights'
+              $value: 'Highlights',
             },
             children: {
               title: true,
@@ -769,13 +769,13 @@ test.serial('subs layout', async t => {
                     {
                       $operator: '=',
                       $value: 'folder',
-                      $field: 'type'
+                      $field: 'type',
                     },
                     {
                       $operator: '=',
                       $value: 'Highlights',
-                      $field: 'name'
-                    }
+                      $field: 'name',
+                    },
                   ],
                   $find: {
                     $traverse: 'descendants',
@@ -783,24 +783,24 @@ test.serial('subs layout', async t => {
                       {
                         $operator: '=',
                         $value: true,
-                        $field: 'published'
-                      }
-                    ]
+                        $field: 'published',
+                      },
+                    ],
                   },
-                  $traverse: 'descendants'
+                  $traverse: 'descendants',
                 },
                 $sort: {
                   $order: 'desc',
-                  $field: 'date'
-                }
+                  $field: 'date',
+                },
               },
               homeTeam: {
                 id: true,
-                title: true
+                title: true,
               },
               awayTeam: {
                 id: true,
-                title: true
+                title: true,
               },
               // teams: [
               //   {
@@ -820,24 +820,24 @@ test.serial('subs layout', async t => {
               // ],
               date: true,
               type: true,
-              id: true
-            }
+              id: true,
+            },
           },
           {
             component: {
-              $value: 'Table'
+              $value: 'Table',
             },
             title: {
-              $value: 'Live Now'
+              $value: 'Live Now',
             },
             children: {
               homeTeam: {
                 id: true,
-                title: true
+                title: true,
               },
               awayTeam: {
                 id: true,
-                title: true
+                title: true,
               },
               // teams: [
               //   {
@@ -868,37 +868,37 @@ test.serial('subs layout', async t => {
                     {
                       $value: 'match',
                       $field: 'type',
-                      $operator: '='
+                      $operator: '=',
                     },
                     {
                       $value: true,
                       $field: 'published',
-                      $operator: '='
+                      $operator: '=',
                     },
                     {
                       $field: 'startTime',
                       $operator: '<',
-                      $value: 'now'
+                      $value: 'now',
                     },
                     {
                       $field: 'endTime',
                       $operator: '>',
-                      $value: 'now'
-                    }
-                  ]
+                      $value: 'now',
+                    },
+                  ],
                 },
                 $sort: {
                   $order: 'desc',
-                  $field: 'date'
-                }
-              }
-            }
-          }
-        ]
+                  $field: 'date',
+                },
+              },
+            },
+          },
+        ],
       },
       { immutable: true }
     )
-    .subscribe(r => {
+    .subscribe((r) => {
       otherResult3 = r
       console.log('sport layout', r)
     })
@@ -910,7 +910,7 @@ test.serial('subs layout', async t => {
       upcomingPublishedIds.slice(0, 8)
     ),
     past: pastPublishedIds.slice(0, 10),
-    live: []
+    live: [],
   })
   t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
   t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
@@ -921,18 +921,18 @@ test.serial('subs layout', async t => {
     type,
     ancestors,
     general,
-    meta
+    meta,
   })
   t.deepEqualIgnoreOrder(pick(otherResult3), {
     id: 'sp1',
     type: 'sport',
     ancestors: ['root'],
     general: {
-      title: 'root'
+      title: 'root',
     },
     meta: {
-      title: 'sport one'
-    }
+      title: 'sport one',
+    },
   })
   t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
   t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
@@ -943,7 +943,7 @@ test.serial('subs layout', async t => {
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'mau2' }].concat(upcomingPublishedIds.slice(0, 9)),
     past: pastPublishedIds.slice(0, 10),
-    live: [{ id: 'mau1' }]
+    live: [{ id: 'mau1' }],
   })
   t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
     {
@@ -955,8 +955,8 @@ test.serial('subs layout', async t => {
       //   { id: 'te1', title: 'team one' },
       //   { id: 'te2', title: 'team two' }
       // ],
-      title: 'upcoming match 1'
-    }
+      title: 'upcoming match 1',
+    },
   ])
   t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
   t.deepEqualIgnoreOrder(otherResult2.components[0].children, [
@@ -969,8 +969,8 @@ test.serial('subs layout', async t => {
       //   { id: 'te1', title: 'team one' },
       //   { id: 'te2', title: 'team two' }
       // ],
-      title: 'upcoming match 1'
-    }
+      title: 'upcoming match 1',
+    },
   ])
   t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
   t.deepEqualIgnoreOrder(pick(otherResult3), {
@@ -978,11 +978,11 @@ test.serial('subs layout', async t => {
     type: 'sport',
     ancestors: ['root'],
     general: {
-      title: 'root'
+      title: 'root',
     },
     meta: {
-      title: 'sport one'
-    }
+      title: 'sport one',
+    },
   })
   t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
   t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 1)
@@ -994,7 +994,7 @@ test.serial('subs layout', async t => {
   t.deepEqualIgnoreOrder(result, {
     upcoming: upcomingPublishedIds.slice(0, 10),
     past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
-    live: [{ id: 'mau2' }]
+    live: [{ id: 'mau2' }],
   })
   t.deepEqualIgnoreOrder(otherResult1.components[0].children, [
     {
@@ -1006,8 +1006,8 @@ test.serial('subs layout', async t => {
       //   { id: 'te1', title: 'team one' },
       //   { id: 'te2', title: 'team two' }
       // ],
-      title: 'upcoming match 2'
-    }
+      title: 'upcoming match 2',
+    },
   ])
   t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
   t.deepEqualIgnoreOrder(otherResult2.components[0].children, [
@@ -1020,8 +1020,8 @@ test.serial('subs layout', async t => {
       //   { id: 'te1', title: 'team one' },
       //   { id: 'te2', title: 'team two' }
       // ],
-      title: 'upcoming match 2'
-    }
+      title: 'upcoming match 2',
+    },
   ])
   t.deepEqualIgnoreOrder(otherResult2.components[1].children.length, 10)
   t.deepEqualIgnoreOrder(pick(otherResult3), {
@@ -1029,11 +1029,11 @@ test.serial('subs layout', async t => {
     type: 'sport',
     ancestors: ['root'],
     general: {
-      title: 'root'
+      title: 'root',
     },
     meta: {
-      title: 'sport one'
-    }
+      title: 'sport one',
+    },
   })
   t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
   t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 1)
@@ -1044,7 +1044,7 @@ test.serial('subs layout', async t => {
   t.deepEqualIgnoreOrder(result, {
     upcoming: upcomingPublishedIds.slice(0, 10),
     past: [{ id: 'mau1' }, { id: 'mau2' }].concat(pastPublishedIds.slice(0, 8)),
-    live: []
+    live: [],
   })
   t.deepEqualIgnoreOrder(otherResult1.components[0].children, [])
   t.deepEqualIgnoreOrder(otherResult1.components[1].children.length, 10)
@@ -1055,11 +1055,11 @@ test.serial('subs layout', async t => {
     type: 'sport',
     ancestors: ['root'],
     general: {
-      title: 'root'
+      title: 'root',
     },
     meta: {
-      title: 'sport one'
-    }
+      title: 'sport one',
+    },
   })
   t.deepEqualIgnoreOrder(otherResult3.components[0].children.length, 100)
   t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
@@ -1069,7 +1069,7 @@ test.serial('subs layout', async t => {
   await client.destroy()
 })
 
-test.serial('subs upcoming, live and past', async t => {
+test.serial('subs upcoming, live and past', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const now = Date.now()
   let result
@@ -1079,7 +1079,7 @@ test.serial('subs upcoming, live and past', async t => {
     $id: 'ma1',
     name: 'upcoming match',
     startTime: now + 2000, // 2 sec from now
-    endTime: now + 5000 // 5 sec from now
+    endTime: now + 5000, // 5 sec from now
   })
 
   client
@@ -1095,16 +1095,16 @@ test.serial('subs upcoming, live and past', async t => {
                 {
                   $operator: '=',
                   $value: 'match',
-                  $field: 'type'
+                  $field: 'type',
                 },
                 {
                   $value: 'now',
                   $field: 'endTime',
-                  $operator: '<'
-                }
-              ]
-            }
-          }
+                  $operator: '<',
+                },
+              ],
+            },
+          },
         },
         live: {
           id: true,
@@ -1116,21 +1116,21 @@ test.serial('subs upcoming, live and past', async t => {
                 {
                   $operator: '=',
                   $value: 'match',
-                  $field: 'type'
+                  $field: 'type',
                 },
                 {
                   $value: 'now',
                   $field: 'startTime',
-                  $operator: '<'
+                  $operator: '<',
                 },
                 {
                   $value: 'now',
                   $field: 'endTime',
-                  $operator: '>'
-                }
-              ]
-            }
-          }
+                  $operator: '>',
+                },
+              ],
+            },
+          },
         },
         upcoming: {
           id: true,
@@ -1142,21 +1142,21 @@ test.serial('subs upcoming, live and past', async t => {
                 {
                   $operator: '=',
                   $value: 'match',
-                  $field: 'type'
+                  $field: 'type',
                 },
                 {
                   $value: 'now',
                   $field: 'startTime',
-                  $operator: '>'
-                }
-              ]
-            }
-          }
-        }
+                  $operator: '>',
+                },
+              ],
+            },
+          },
+        },
       },
       { immutable: true }
     )
-    .subscribe(r => {
+    .subscribe((r) => {
       result = r
       console.log('-->', result)
     })
@@ -1166,48 +1166,48 @@ test.serial('subs upcoming, live and past', async t => {
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'ma1' }],
     past: [],
-    live: []
+    live: [],
   })
   await wait(3000)
   console.log('should be live')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [],
-    live: [{ id: 'ma1' }]
+    live: [{ id: 'ma1' }],
   })
   await wait(3000)
   console.log('should be past')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [{ id: 'ma1' }],
-    live: []
+    live: [],
   })
 
   await client.delete('root')
 })
 
-test.serial('find - already started', async t => {
+test.serial('find - already started', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     type: 'match',
     name: 'started 5m ago',
     startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+    endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
   })
 
   await client.set({
     type: 'match',
     name: 'started 2m ago',
     startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+    endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
   })
 
   await client.set({
     type: 'match',
     name: 'started 2h ago',
     startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
-    endTime: Date.now() - 60 * 60 * 1000 // ended 1 hour ago
+    endTime: Date.now() - 60 * 60 * 1000, // ended 1 hour ago
   })
 
   const nextRefresh = Date.now() + 1 * 60 * 60 * 1000
@@ -1216,7 +1216,7 @@ test.serial('find - already started', async t => {
     type: 'match',
     name: 'starts in 1h',
     startTime: nextRefresh, // starts in 1 hour
-    endTime: Date.now() + 2 * 60 * 60 * 1000 // ends in 2 hours
+    endTime: Date.now() + 2 * 60 * 60 * 1000, // ends in 2 hours
   })
 
   await client.set({
@@ -1224,7 +1224,7 @@ test.serial('find - already started', async t => {
     type: 'match',
     name: 'starts in 2h',
     startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 1 hour
-    endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
+    endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 2 hours
   })
 
   let sub = ''
@@ -1249,12 +1249,12 @@ test.serial('find - already started', async t => {
                 {
                   $field: 'startTime',
                   $operator: '<',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
+                  $value: 'now',
+                },
+              ],
+            },
+          },
+        },
       })
     ).$meta.___refreshAt,
     nextRefresh
@@ -1277,14 +1277,14 @@ test.serial('find - already started', async t => {
                 {
                   $field: 'startTime',
                   $operator: '<',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
+                  $value: 'now',
+                },
+              ],
+            },
+          },
+        },
       })
-    ).items.map(i => i.name),
+    ).items.map((i) => i.name),
     ['started 2h ago', 'started 5m ago', 'started 2m ago']
   )
 
@@ -1292,28 +1292,28 @@ test.serial('find - already started', async t => {
   await client.destroy()
 })
 
-test.serial('find - already started subscription', async t => {
+test.serial('find - already started subscription', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     type: 'match',
     name: 'started 5m ago',
     startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+    endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
   })
 
   await client.set({
     type: 'match',
     name: 'started 2m ago',
     startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+    endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
   })
 
   await client.set({
     type: 'match',
     name: 'started 2h ago',
     startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
-    endTime: Date.now() - 60 * 60 * 1000 // ended 1 hour ago
+    endTime: Date.now() - 60 * 60 * 1000, // ended 1 hour ago
   })
 
   const nextRefresh = Date.now() + 5 * 1000
@@ -1334,12 +1334,12 @@ test.serial('find - already started subscription', async t => {
                 {
                   $field: 'endTime',
                   $operator: '<',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
+                  $value: 'now',
+                },
+              ],
+            },
+          },
+        },
       },
       { immutable: true }
     )
@@ -1353,7 +1353,7 @@ test.serial('find - already started subscription', async t => {
     type: 'match',
     name: 'starts in 5s',
     startTime: nextRefresh,
-    endTime: Date.now() + 2 * 60 * 60 * 1000 // ends in 2 hours
+    endTime: Date.now() + 2 * 60 * 60 * 1000, // ends in 2 hours
   })
 
   await client.set({
@@ -1361,7 +1361,7 @@ test.serial('find - already started subscription', async t => {
     type: 'match',
     name: 'starts in 7s',
     startTime: nextNextRefresh,
-    endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 2 hours
+    endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 2 hours
   })
 
   t.plan(5)
@@ -1381,18 +1381,18 @@ test.serial('find - already started subscription', async t => {
               {
                 $field: 'startTime',
                 $operator: '<',
-                $value: 'now'
-              }
-            ]
-          }
-        }
-      }
+                $value: 'now',
+              },
+            ],
+          },
+        },
+      },
     },
     { immutable: true }
   )
 
   let o1counter = 0
-  const sub = observable.subscribe(d => {
+  const sub = observable.subscribe((d) => {
     console.log('odata', d)
     if (o1counter === 0) {
       // gets start event
@@ -1400,10 +1400,10 @@ test.serial('find - already started subscription', async t => {
     } else if (o1counter === 1) {
       // gets update event
       t.true(d.items.length === 4)
-      t.true(d.items.map(i => i.name).includes('starts in 5s'))
+      t.true(d.items.map((i) => i.name).includes('starts in 5s'))
     } else if (o1counter === 2) {
       t.true(d.items.length === 5)
-      t.true(d.items.map(i => i.name).includes('starts in 7s'))
+      t.true(d.items.map((i) => i.name).includes('starts in 7s'))
     } else {
       // doesn't get any more events
       t.fail()
@@ -1417,28 +1417,28 @@ test.serial('find - already started subscription', async t => {
   await client.delete('root')
 })
 
-test.serial('find - starting soon', async t => {
+test.serial('find - starting soon', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const match1 = await client.set({
     type: 'match',
     name: 'started 5m ago',
     startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+    endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
   })
 
   await client.set({
     type: 'match',
     name: 'started 2m ago',
     startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
-    endTime: Date.now() + 60 * 60 * 1000 // ends in 1 hour
+    endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
   })
 
   await client.set({
     type: 'match',
     name: 'started 2h ago',
     startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
-    endTime: Date.now() - 60 * 60 * 1000 // ended 1 hour ago
+    endTime: Date.now() - 60 * 60 * 1000, // ended 1 hour ago
   })
 
   const nextRefresh = Date.now() + 1 * 60 * 60 * 1000
@@ -1447,7 +1447,7 @@ test.serial('find - starting soon', async t => {
     type: 'match',
     name: 'starts in 1h',
     startTime: nextRefresh, // starts in 1 hour
-    endTime: Date.now() + 2 * 60 * 60 * 1000 // ends in 2 hours
+    endTime: Date.now() + 2 * 60 * 60 * 1000, // ends in 2 hours
   })
 
   await client.set({
@@ -1455,7 +1455,7 @@ test.serial('find - starting soon', async t => {
     type: 'match',
     name: 'starts in 2h',
     startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 2 hour
-    endTime: Date.now() + 3 * 60 * 60 * 1000 // ends in 3 hours
+    endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 3 hours
   })
 
   t.deepEqualIgnoreOrder(
@@ -1474,19 +1474,19 @@ test.serial('find - starting soon', async t => {
                 {
                   $field: 'startTime',
                   $operator: '>',
-                  $value: 'now+1h'
+                  $value: 'now+1h',
                 },
                 {
                   $field: 'startTime',
                   $operator: '<',
-                  $value: 'now+3h'
-                }
-              ]
-            }
-          }
-        }
+                  $value: 'now+3h',
+                },
+              ],
+            },
+          },
+        },
       })
-    ).items.map(i => i.name),
+    ).items.map((i) => i.name),
     ['starts in 2h']
   )
 
@@ -1506,14 +1506,14 @@ test.serial('find - starting soon', async t => {
                 {
                   $field: 'startTime',
                   $operator: '..',
-                  $value: ['now+1h', 'now+3h']
-                }
-              ]
-            }
-          }
-        }
+                  $value: ['now+1h', 'now+3h'],
+                },
+              ],
+            },
+          },
+        },
       })
-    ).items.map(i => i.name),
+    ).items.map((i) => i.name),
     ['starts in 2h']
   )
 
@@ -1533,19 +1533,19 @@ test.serial('find - starting soon', async t => {
                 {
                   $field: 'startTime',
                   $operator: '>',
-                  $value: 'now-6m'
+                  $value: 'now-6m',
                 },
                 {
                   $field: 'startTime',
                   $operator: '<',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
+                  $value: 'now',
+                },
+              ],
+            },
+          },
+        },
       })
-    ).items.map(i => i.name),
+    ).items.map((i) => i.name),
     ['started 5m ago', 'started 2m ago']
   )
 

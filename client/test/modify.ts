@@ -11,10 +11,10 @@ const DEFAULT_HIERARCHY = '___selva_hierarchy'
 let srv
 let port: number
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
@@ -22,7 +22,7 @@ test.before(async t => {
 
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
@@ -31,21 +31,21 @@ test.before(async t => {
   await client.updateSchema({
     languages: ['en', 'nl', 'de'],
     rootType: {
-      fields: { value: { type: 'number' } }
+      fields: { value: { type: 'number' } },
     },
     types: {
       match: {
         prefix: 'ma',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           obj: {
             type: 'object',
             properties: {
               hello: { type: 'string' },
-              hallo: { type: 'string' }
-            }
+              hallo: { type: 'string' },
+            },
           },
           nestedObj: {
             type: 'object',
@@ -53,84 +53,84 @@ test.before(async t => {
               a: {
                 type: 'object',
                 properties: {
-                  value: { type: 'string' }
-                }
+                  value: { type: 'string' },
+                },
               },
               b: {
                 type: 'object',
                 properties: {
-                  value: { type: 'string' }
-                }
-              }
-            }
+                  value: { type: 'string' },
+                },
+              },
+            },
           },
           settySet: {
             type: 'set',
             items: {
-              type: 'string'
-            }
+              type: 'string',
+            },
           },
           reffyRefs: {
-            type: 'references'
+            type: 'references',
           },
           reffyRef: {
-            type: 'reference'
+            type: 'reference',
           },
-          createdAt: { type: 'timestamp' }
-        }
+          createdAt: { type: 'timestamp' },
+        },
       },
       league: {
         prefix: 'cu',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
-          createdAt: { type: 'number' }
-        }
+          createdAt: { type: 'number' },
+        },
       },
       person: {
         prefix: 'pe',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           createdAt: { type: 'timestamp' },
-          updatedAt: { type: 'timestamp' }
-        }
+          updatedAt: { type: 'timestamp' },
+        },
       },
       someTestThing: {
         prefix: 'vi',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           value: {
-            type: 'number'
-          }
-        }
+            type: 'number',
+          },
+        },
       },
       otherTestThing: {
         prefix: 'ar',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           image: {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -138,21 +138,21 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('root', async t => {
+test.serial('root', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
 
   const match = await client.set({
-    type: 'match'
+    type: 'match',
   })
 
   const root = await client.set({
     $id: 'root',
-    value: 9001
+    value: 9001,
   })
 
   t.deepEqual(root, 'root')
@@ -166,21 +166,21 @@ test.serial('root', async t => {
   await client.destroy()
 })
 
-test.serial('root.children $delete: []', async t => {
+test.serial('root.children $delete: []', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
 
   const match = await client.set({
-    type: 'match'
+    type: 'match',
   })
 
   const root = await client.set({
     $id: 'root',
-    children: [match]
+    children: [match],
   })
 
   t.deepEqual(root, 'root')
@@ -191,7 +191,7 @@ test.serial('root.children $delete: []', async t => {
 
   await client.set({
     $id: 'root',
-    children: { $delete: [] }
+    children: { $delete: [] },
   })
 
   t.deepEqual(
@@ -203,28 +203,28 @@ test.serial('root.children $delete: []', async t => {
   await client.destroy()
 })
 
-test.serial('basic', async t => {
+test.serial('basic', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     {
-      loglevel: 'info'
+      loglevel: 'info',
     }
   )
 
   const match = await client.set({
-    type: 'match'
+    type: 'match',
   })
 
   const league = await client.set({
-    type: 'league'
+    type: 'league',
   })
 
   const person = await client.set({
     type: 'person',
     parents: [match],
-    title: { en: 'flurpy man' }
+    title: { en: 'flurpy man' },
   })
 
   t.deepEqual(
@@ -276,7 +276,7 @@ test.serial('basic', async t => {
   // // move person from match to league
   await client.set({
     $id: person,
-    parents: [league]
+    parents: [league],
   })
 
   t.deepEqual(
@@ -305,8 +305,8 @@ test.serial('basic', async t => {
   await client.set({
     $id: person,
     parents: {
-      $add: match
-    }
+      $add: match,
+    },
   })
 
   t.deepEqual(
@@ -337,8 +337,8 @@ test.serial('basic', async t => {
   await client.set({
     $id: person,
     parents: {
-      $delete: league
-    }
+      $delete: league,
+    },
   })
 
   t.deepEqual(
@@ -367,16 +367,16 @@ test.serial('basic', async t => {
   await client.set({
     $id: person,
     parents: {
-      $add: league
-    }
+      $add: league,
+    },
   })
 
   // double add
   await client.set({
     $id: person,
     parents: {
-      $add: league
-    }
+      $add: league,
+    },
   })
 
   t.deepEqual(
@@ -406,7 +406,7 @@ test.serial('basic', async t => {
   // reset children
   await client.set({
     $id: match,
-    children: []
+    children: [],
   })
 
   t.deepEqual(
@@ -418,7 +418,7 @@ test.serial('basic', async t => {
   // add no children
   await client.set({
     $id: match,
-    children: { $add: [] }
+    children: { $add: [] },
   })
 
   t.deepEqual(
@@ -431,7 +431,7 @@ test.serial('basic', async t => {
   await t.throwsAsync(
     client.set({
       $id: match,
-      children: null
+      children: null,
     })
   )
 
@@ -460,7 +460,7 @@ test.serial('basic', async t => {
   // add person to match using children
   await client.set({
     $id: match,
-    children: [person]
+    children: [person],
   })
 
   t.deepEqual(
@@ -490,7 +490,7 @@ test.serial('basic', async t => {
   // add match to league using $add
   await client.set({
     $id: league,
-    children: { $add: match }
+    children: { $add: match },
   })
 
   t.deepEqual(
@@ -532,7 +532,7 @@ test.serial('basic', async t => {
   // delete match from league
   await client.set({
     $id: league,
-    children: { $delete: match }
+    children: { $delete: match },
   })
 
   t.deepEqual(
@@ -589,29 +589,29 @@ test.serial('basic', async t => {
   await client.destroy()
 })
 
-test.serial('deep hierarchy manipulation', async t => {
+test.serial('deep hierarchy manipulation', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   await client.set({
     $id: 'cuX',
-    children: ['cuA']
+    children: ['cuA'],
   })
 
   await client.set({
     $id: 'cuA',
-    children: ['cuB', 'cuC', 'cuD']
+    children: ['cuB', 'cuC', 'cuD'],
   })
 
   await client.set({
     $id: 'cuE',
-    parents: ['cuD']
+    parents: ['cuD'],
   })
 
   await client.set({
     $id: 'cuD',
-    parents: { $add: 'root' }
+    parents: { $add: 'root' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -665,7 +665,7 @@ test.serial('deep hierarchy manipulation', async t => {
   )
   await client.set({
     $id: 'cuD',
-    parents: { $delete: 'cuA' }
+    parents: { $delete: 'cuA' },
   })
 
   console.log(
@@ -700,9 +700,9 @@ test.serial('deep hierarchy manipulation', async t => {
   await client.destroy()
 })
 
-test.serial('array, json and set', async t => {
+test.serial('array, json and set', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   await client.updateSchema({
@@ -718,48 +718,48 @@ test.serial('array, json and set', async t => {
                 // in json or array and then you need to  strip default options etc
                 type: 'array',
                 items: {
-                  type: 'string'
-                }
-              }
-            }
+                  type: 'string',
+                },
+              },
+            },
           },
           flap: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                gurk: { type: 'string' }
+                gurk: { type: 'string' },
                 //flap: { type: 'digest' }
-              }
-            }
-          }
-        }
-      }
-    }
+              },
+            },
+          },
+        },
+      },
+    },
   })
   const id = await client.set({
     type: 'flurp',
     flap: [
       {
-        gurk: 'hello'
+        gurk: 'hello',
         //flap: 'smurpy'
-      }
-    ]
+      },
+    ],
   })
   const r = JSON.parse(await client.redis.selva_object_get(id, 'flap'))
   t.deepEqual(r, [
     {
-      gurk: 'hello'
+      gurk: 'hello',
       //flap: '6734082360af7f0c5aef4123f43abc44c4fbf19e8b251a316d7b9da95fde448e'
-    }
+    },
   ])
 
   await client.destroy()
 })
 
-test.serial('set empty object', async t => {
+test.serial('set empty object', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   await client.updateSchema({
@@ -771,23 +771,23 @@ test.serial('set empty object', async t => {
             type: 'object',
             properties: {
               hello: {
-                type: 'string'
-              }
-            }
-          }
-        }
-      }
-    }
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    },
   })
   const id = await client.set({
     type: 'hmmhmm',
-    flurpy: {}
+    flurpy: {},
   })
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: id,
-      flurpy: true
+      flurpy: true,
     }),
     {}
   )
@@ -796,42 +796,42 @@ test.serial('set empty object', async t => {
     await client.get({
       $id: id,
       flurpy: {
-        hello: true
-      }
+        hello: true,
+      },
     }),
     {}
   )
 
   await client.set({
     $id: id,
-    flurpy: { hello: 'yes' }
+    flurpy: { hello: 'yes' },
   })
 
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: id,
-      flurpy: true
+      flurpy: true,
     }),
     {
       flurpy: {
-        hello: 'yes'
-      }
+        hello: 'yes',
+      },
     }
   )
 
   await client.destroy()
 })
 
-test.serial('$increment, $default', async t => {
+test.serial('$increment, $default', async (t) => {
   const client = connect({
-    port
+    port,
   })
   await client.set({
     $id: 'viDingDong',
     value: {
       $default: 100,
-      $increment: 10
-    }
+      $increment: 10,
+    },
   })
 
   t.is(
@@ -844,8 +844,8 @@ test.serial('$increment, $default', async t => {
     $id: 'viDingDong',
     value: {
       $default: 100,
-      $increment: 10
-    }
+      $increment: 10,
+    },
   })
 
   t.is(
@@ -858,9 +858,9 @@ test.serial('$increment, $default', async t => {
     $id: 'viDingDong',
     title: {
       en: {
-        $default: 'title'
-      }
-    }
+        $default: 'title',
+      },
+    },
   })
 
   t.is(
@@ -873,9 +873,9 @@ test.serial('$increment, $default', async t => {
     $id: 'viDingDong',
     title: {
       en: {
-        $default: 'flurp'
-      }
-    }
+        $default: 'flurp',
+      },
+    },
   })
 
   t.is(
@@ -889,20 +889,20 @@ test.serial('$increment, $default', async t => {
   await client.destroy()
 })
 
-test.serial('$merge = false', async t => {
+test.serial('$merge = false', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   await client.set({
     $id: 'arPower',
     title: {
       en: 'flap',
-      de: 'flurpels'
+      de: 'flurpels',
     },
     image: {
-      thumb: 'x'
-    }
+      thumb: 'x',
+    },
   })
 
   t.is(await client.redis.selva_object_get('arPower', 'title.en'), 'flap')
@@ -912,8 +912,8 @@ test.serial('$merge = false', async t => {
     $id: 'arPower',
     $merge: false,
     title: {
-      de: 'deutschland'
-    }
+      de: 'deutschland',
+    },
   })
 
   t.is(await client.redis.selva_object_get('arPower', 'id'), 'arPower')
@@ -927,8 +927,8 @@ test.serial('$merge = false', async t => {
     $id: 'arPower',
     title: {
       $merge: false,
-      nl: 'nl'
-    }
+      nl: 'nl',
+    },
   })
 
   t.is(await client.redis.selva_object_get('arPower', 'title.nl'), 'nl')
@@ -938,8 +938,8 @@ test.serial('$merge = false', async t => {
     $id: 'arPower',
     image: {
       $merge: false,
-      poster: 'x'
-    }
+      poster: 'x',
+    },
   })
 
   t.is(await client.redis.selva_object_get('arPower', 'image.thumb'), null)
@@ -947,10 +947,10 @@ test.serial('$merge = false', async t => {
   await client.delete('root')
 })
 
-test.serial('automatic child creation', async t => {
+test.serial('automatic child creation', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
@@ -958,28 +958,28 @@ test.serial('automatic child creation', async t => {
   const parent = await client.set({
     $id: 'viParent',
     title: {
-      nl: 'nl'
+      nl: 'nl',
     },
     children: [
       {
         type: 'match',
         title: {
-          nl: 'child1'
-        }
+          nl: 'child1',
+        },
       },
       {
         type: 'match',
         title: {
-          nl: 'child2'
-        }
+          nl: 'child2',
+        },
       },
       {
         type: 'match',
         title: {
-          nl: 'child3'
-        }
-      }
-    ]
+          nl: 'child3',
+        },
+      },
+    ],
   })
 
   const children = await client.redis.selva_hierarchy_children(
@@ -990,7 +990,7 @@ test.serial('automatic child creation', async t => {
 
   const titles = (
     await Promise.all(
-      children.map(child => {
+      children.map((child) => {
         return client.redis.selva_object_get(child, 'title.nl')
       })
     )
@@ -1006,11 +1006,11 @@ test.serial('automatic child creation', async t => {
         {
           $id: 'maTestWithId',
           title: {
-            nl: 'yes with id'
-          }
-        }
-      ]
-    }
+            nl: 'yes with id',
+          },
+        },
+      ],
+    },
   })
 
   await client.set({
@@ -1022,11 +1022,11 @@ test.serial('automatic child creation', async t => {
           type: 'match',
           $alias: 'maTestWithAlias',
           title: {
-            nl: 'yes with alias'
-          }
-        }
-      ]
-    }
+            nl: 'yes with alias',
+          },
+        },
+      ],
+    },
   })
 
   const newChildren = await client.redis.selva_hierarchy_children(
@@ -1038,16 +1038,16 @@ test.serial('automatic child creation', async t => {
   await client.destroy()
 })
 
-test.serial('createdAt set if defined as timestamp', async t => {
+test.serial('createdAt set if defined as timestamp', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   const before = Date.now()
   const match = await client.set({
     $language: 'en',
     type: 'match',
-    title: 'yesh'
+    title: 'yesh',
   })
   const after = Date.now()
 
@@ -1057,7 +1057,7 @@ test.serial('createdAt set if defined as timestamp', async t => {
     id: true,
     title: true,
     createdAt: true,
-    updatedAt: true
+    updatedAt: true,
   })
 
   const createdAt = result.createdAt
@@ -1065,7 +1065,7 @@ test.serial('createdAt set if defined as timestamp', async t => {
 
   t.deepEqual(result, {
     id: match,
-    title: 'yesh'
+    title: 'yesh',
   })
 
   t.true(
@@ -1076,16 +1076,16 @@ test.serial('createdAt set if defined as timestamp', async t => {
   await client.destroy()
 })
 
-test.serial('createdAt+updatedAt set if defined as timestamp', async t => {
+test.serial('createdAt+updatedAt set if defined as timestamp', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   const before = Date.now()
   const person = await client.set({
     $language: 'en',
     type: 'person',
-    title: 'yesh'
+    title: 'yesh',
   })
   const after = Date.now()
 
@@ -1095,7 +1095,7 @@ test.serial('createdAt+updatedAt set if defined as timestamp', async t => {
     id: true,
     title: true,
     createdAt: true,
-    updatedAt: true
+    updatedAt: true,
   })
 
   const createdAt = result.createdAt
@@ -1105,7 +1105,7 @@ test.serial('createdAt+updatedAt set if defined as timestamp', async t => {
 
   t.deepEqual(result, {
     id: person,
-    title: 'yesh'
+    title: 'yesh',
   })
 
   t.true(
@@ -1118,15 +1118,15 @@ test.serial('createdAt+updatedAt set if defined as timestamp', async t => {
   await client.destroy()
 })
 
-test.serial('createdAt not set if not timestamp type', async t => {
+test.serial('createdAt not set if not timestamp type', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   const league = await client.set({
     $language: 'en',
     type: 'league',
-    title: 'yesh'
+    title: 'yesh',
   })
 
   const result = await client.get({
@@ -1134,28 +1134,28 @@ test.serial('createdAt not set if not timestamp type', async t => {
     $id: league,
     id: true,
     title: true,
-    createdAt: true
+    createdAt: true,
   })
 
   t.deepEqual(result, {
     id: league,
-    title: 'yesh'
+    title: 'yesh',
   })
 
   await client.delete('root')
   await client.destroy()
 })
 
-test.serial('createdAt not set if provided in modify props', async t => {
+test.serial('createdAt not set if provided in modify props', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   const match = await client.set({
     $language: 'en',
     type: 'match',
     title: 'yesh',
-    createdAt: 12345
+    createdAt: 12345,
   })
 
   const result = await client.get({
@@ -1163,35 +1163,35 @@ test.serial('createdAt not set if provided in modify props', async t => {
     $id: match,
     id: true,
     title: true,
-    createdAt: true
+    createdAt: true,
   })
 
   t.deepEqual(result, {
     id: match,
     title: 'yesh',
-    createdAt: 12345
+    createdAt: 12345,
   })
 
   await client.delete('root')
   await client.destroy()
 })
 
-test.serial('Set empty object', async t => {
+test.serial('Set empty object', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   const id = await client.set({
     $id: 'maEmpty',
     nestedObj: {
       a: {},
-      b: {}
-    }
+      b: {},
+    },
   })
   try {
     const result = await client.get({
       $id: id,
-      $all: true
+      $all: true,
     })
 
     t.pass()
@@ -1203,9 +1203,9 @@ test.serial('Set empty object', async t => {
   await client.destroy()
 })
 
-test.serial('no root in parents when adding nested', async t => {
+test.serial('no root in parents when adding nested', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   await client.set({
@@ -1216,16 +1216,16 @@ test.serial('no root in parents when adding nested', async t => {
         {
           $alias: 'hello',
           type: 'match',
-          title: 'hello1'
+          title: 'hello1',
         },
         {
           $alias: 'hello2',
           type: 'match',
           title: 'hello2',
-          parents: ['root', 'ma1']
-        }
-      ]
-    }
+          parents: ['root', 'ma1'],
+        },
+      ],
+    },
   })
 
   // await new Promise(res => setTimeout(res, 1e8))
@@ -1234,11 +1234,11 @@ test.serial('no root in parents when adding nested', async t => {
       $language: 'en',
       $alias: 'hello',
       parents: true,
-      title: true
+      title: true,
     }),
     {
       parents: ['ma1'],
-      title: 'hello1'
+      title: 'hello1',
     }
   )
 
@@ -1247,11 +1247,11 @@ test.serial('no root in parents when adding nested', async t => {
       $language: 'en',
       $alias: 'hello2',
       parents: true,
-      title: true
+      title: true,
     }),
     {
       parents: ['root', 'ma1'],
-      title: 'hello2'
+      title: 'hello2',
     }
   )
 
@@ -1259,13 +1259,13 @@ test.serial('no root in parents when adding nested', async t => {
   await client.destroy()
 })
 
-test.serial('can disable autoadding of root', async t => {
+test.serial('can disable autoadding of root', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   const m1 = await client.set({
-    type: 'match'
+    type: 'match',
   })
 
   t.deepEqualIgnoreOrder(
@@ -1275,7 +1275,7 @@ test.serial('can disable autoadding of root', async t => {
 
   const m2 = await client.set({
     type: 'match',
-    parents: { $noRoot: true }
+    parents: { $noRoot: true },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1285,7 +1285,7 @@ test.serial('can disable autoadding of root', async t => {
 
   const m3 = await client.set({
     type: 'match',
-    children: { $value: 'maMatch3', $noRoot: true }
+    children: { $value: 'maMatch3', $noRoot: true },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1297,16 +1297,16 @@ test.serial('can disable autoadding of root', async t => {
   await client.destroy()
 })
 
-test.serial('createdAt not set if nothing changed', async t => {
+test.serial('createdAt not set if nothing changed', async (t) => {
   const client = connect({
-    port
+    port,
   })
 
   const before = Date.now()
   const person = await client.set({
     $language: 'en',
     type: 'person',
-    title: 'yesh'
+    title: 'yesh',
   })
   const after = Date.now()
 
@@ -1316,7 +1316,7 @@ test.serial('createdAt not set if nothing changed', async t => {
     id: true,
     title: true,
     createdAt: true,
-    updatedAt: true
+    updatedAt: true,
   })
 
   let createdAt = result.createdAt
@@ -1326,7 +1326,7 @@ test.serial('createdAt not set if nothing changed', async t => {
 
   t.deepEqual(result, {
     id: person,
-    title: 'yesh'
+    title: 'yesh',
   })
 
   t.true(
@@ -1339,7 +1339,7 @@ test.serial('createdAt not set if nothing changed', async t => {
     $language: 'en',
     type: 'person',
     title: 'yesh',
-    children: []
+    children: [],
   })
 
   result = await client.get({
@@ -1348,7 +1348,7 @@ test.serial('createdAt not set if nothing changed', async t => {
     id: true,
     title: true,
     createdAt: true,
-    updatedAt: true
+    updatedAt: true,
   })
 
   createdAt = result.createdAt
@@ -1366,21 +1366,21 @@ test.serial('createdAt not set if nothing changed', async t => {
   await client.destroy()
 })
 
-test.serial('$delete: true', async t => {
+test.serial('$delete: true', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
 
   const match = await client.set({
-    type: 'match'
+    type: 'match',
   })
 
   const root = await client.set({
     $id: 'root',
-    value: 9001
+    value: 9001,
   })
 
   t.deepEqual(root, 'root')
@@ -1392,7 +1392,7 @@ test.serial('$delete: true', async t => {
 
   await client.set({
     $id: 'root',
-    value: { $delete: true }
+    value: { $delete: true },
   })
 
   t.deepEqual(await client.redis.selva_object_exists('root', 'value'), 0)
@@ -1406,11 +1406,11 @@ test.serial('$delete: true', async t => {
     type: 'match',
     title: { en: 'yesh extra nice', de: 'ja extra nice' },
     obj: {
-      hello: 'yes hello'
+      hello: 'yes hello',
     },
     reffyRef: 'root',
     reffyRefs: ['root'],
-    settySet: { $add: 'hmmmm' }
+    settySet: { $add: 'hmmmm' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1421,26 +1421,26 @@ test.serial('$delete: true', async t => {
       obj: true,
       reffyRef: true,
       reffyRefs: true,
-      settySet: true
+      settySet: true,
     }),
     {
       id: 'maA',
       title: {
         en: 'yesh extra nice',
-        de: 'ja extra nice'
+        de: 'ja extra nice',
       },
       obj: {
-        hello: 'yes hello'
+        hello: 'yes hello',
       },
       reffyRef: 'root',
       reffyRefs: ['root'],
-      settySet: ['hmmmm']
+      settySet: ['hmmmm'],
     }
   )
 
   await client.set({
     $id: 'maA',
-    title: { de: { $delete: true } }
+    title: { de: { $delete: true } },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1451,25 +1451,25 @@ test.serial('$delete: true', async t => {
       obj: true,
       reffyRef: true,
       reffyRefs: true,
-      settySet: true
+      settySet: true,
     }),
     {
       id: 'maA',
       title: {
-        en: 'yesh extra nice'
+        en: 'yesh extra nice',
       },
       obj: {
-        hello: 'yes hello'
+        hello: 'yes hello',
       },
       reffyRef: 'root',
       reffyRefs: ['root'],
-      settySet: ['hmmmm']
+      settySet: ['hmmmm'],
     }
   )
 
   await client.set({
     $id: 'maA',
-    obj: { hello: { $delete: true }, hallo: 'mmmmh' }
+    obj: { hello: { $delete: true }, hallo: 'mmmmh' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1480,25 +1480,25 @@ test.serial('$delete: true', async t => {
       obj: true,
       reffyRef: true,
       reffyRefs: true,
-      settySet: true
+      settySet: true,
     }),
     {
       id: 'maA',
       title: {
-        en: 'yesh extra nice'
+        en: 'yesh extra nice',
       },
       obj: {
-        hallo: 'mmmmh'
+        hallo: 'mmmmh',
       },
       reffyRef: 'root',
       reffyRefs: ['root'],
-      settySet: ['hmmmm']
+      settySet: ['hmmmm'],
     }
   )
 
   await client.set({
     $id: 'maA',
-    obj: { $delete: true }
+    obj: { $delete: true },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1509,22 +1509,22 @@ test.serial('$delete: true', async t => {
       obj: true,
       reffyRef: true,
       reffyRefs: true,
-      settySet: true
+      settySet: true,
     }),
     {
       id: 'maA',
       title: {
-        en: 'yesh extra nice'
+        en: 'yesh extra nice',
       },
       reffyRef: 'root',
       reffyRefs: ['root'],
-      settySet: ['hmmmm']
+      settySet: ['hmmmm'],
     }
   )
 
   await client.set({
     $id: 'maA',
-    title: { $delete: true }
+    title: { $delete: true },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1535,20 +1535,20 @@ test.serial('$delete: true', async t => {
       obj: true,
       reffyRef: true,
       reffyRefs: true,
-      settySet: true
+      settySet: true,
     }),
     {
       id: 'maA',
       reffyRef: 'root',
       reffyRefs: ['root'],
-      settySet: ['hmmmm']
+      settySet: ['hmmmm'],
     }
   )
 
   await client.set({
     $id: 'maA',
     reffyRef: { $delete: true },
-    title: { en: 'yes title is back!!!' }
+    title: { en: 'yes title is back!!!' },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1559,21 +1559,21 @@ test.serial('$delete: true', async t => {
       obj: true,
       reffyRef: true,
       reffyRefs: true,
-      settySet: true
+      settySet: true,
     }),
     {
       id: 'maA',
       title: {
-        en: 'yes title is back!!!'
+        en: 'yes title is back!!!',
       },
       reffyRefs: ['root'],
-      settySet: ['hmmmm']
+      settySet: ['hmmmm'],
     }
   )
 
   await client.set({
     $id: 'maA',
-    reffyRefs: { $delete: true }
+    reffyRefs: { $delete: true },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1584,20 +1584,20 @@ test.serial('$delete: true', async t => {
       obj: true,
       reffyRef: true,
       reffyRefs: true,
-      settySet: true
+      settySet: true,
     }),
     {
       id: 'maA',
       title: {
-        en: 'yes title is back!!!'
+        en: 'yes title is back!!!',
       },
-      settySet: ['hmmmm']
+      settySet: ['hmmmm'],
     }
   )
 
   await client.set({
     $id: 'maA',
-    settySet: { $delete: true }
+    settySet: { $delete: true },
   })
 
   t.deepEqualIgnoreOrder(
@@ -1608,13 +1608,13 @@ test.serial('$delete: true', async t => {
       obj: true,
       reffyRef: true,
       reffyRefs: true,
-      settySet: true
+      settySet: true,
     }),
     {
       id: 'maA',
       title: {
-        en: 'yes title is back!!!'
-      }
+        en: 'yes title is back!!!',
+      },
     }
   )
 
@@ -1622,10 +1622,10 @@ test.serial('$delete: true', async t => {
   await client.destroy()
 })
 
-test.serial('deleting an object', async t => {
+test.serial('deleting an object', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
@@ -1634,20 +1634,20 @@ test.serial('deleting an object', async t => {
     type: 'match',
     obj: {
       hello: 'hello',
-      hallo: 'hallo'
-    }
+      hallo: 'hallo',
+    },
   })
 
   t.deepEqual(await client.get({ $id: match, obj: true }), {
     obj: {
       hello: 'hello',
-      hallo: 'hallo'
-    }
+      hallo: 'hallo',
+    },
   })
 
   await client.set({
     $id: match,
-    obj: { $delete: true }
+    obj: { $delete: true },
   })
 
   t.deepEqual(await client.get({ $id: match, obj: true }), {})

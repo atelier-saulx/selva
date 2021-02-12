@@ -5,9 +5,9 @@ import './assertions'
 import { wait } from './assertions'
 
 let srv
-test.before(async t => {
+test.before(async (t) => {
   srv = await start({
-    port: 6099
+    port: 6099,
   })
 
   await wait(500)
@@ -20,8 +20,8 @@ test.before(async t => {
         prefix: 'le',
         fields: {
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       match: {
         prefix: 'ma',
@@ -31,16 +31,16 @@ test.before(async t => {
           related: { type: 'references', search: { type: ['TAG'] } },
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
-        }
-      }
-    }
+          status: { type: 'number', search: { type: ['NUMERIC'] } },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port: 6099 })
   await client.delete('root')
   await client.destroy()
@@ -48,7 +48,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find - geo', async t => {
+test.serial('find - geo', async (t) => {
   // simple nested - single query
   const client = connect({ port: 6099 }, { loglevel: 'info' })
   await client.set({
@@ -56,8 +56,8 @@ test.serial('find - geo', async t => {
     name: 'match 1',
     location: {
       lat: 60.12,
-      lon: 120.67
-    }
+      lon: 120.67,
+    },
   })
 
   await client.set({
@@ -65,8 +65,8 @@ test.serial('find - geo', async t => {
     name: 'match 2',
     location: {
       lat: 61.12,
-      lon: 122.67
-    }
+      lon: 122.67,
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -82,7 +82,7 @@ test.serial('find - geo', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'match'
+                $value: 'match',
               },
               {
                 $field: 'location',
@@ -90,13 +90,13 @@ test.serial('find - geo', async t => {
                 $value: {
                   $lon: 120,
                   $lat: 60,
-                  $radius: 100000
-                }
-              }
-            ]
-          }
-        }
-      }
+                  $radius: 100000,
+                },
+              },
+            ],
+          },
+        },
+      },
     }),
     { id: 'root', items: [{ name: 'match 1' }] }
   )
@@ -115,7 +115,7 @@ test.serial('find - geo', async t => {
                 {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'match'
+                  $value: 'match',
                 },
                 {
                   $field: 'location',
@@ -123,15 +123,15 @@ test.serial('find - geo', async t => {
                   $value: {
                     $lon: 120,
                     $lat: 60,
-                    $radius: 1000000
-                  }
-                }
-              ]
-            }
-          }
-        }
+                    $radius: 1000000,
+                  },
+                },
+              ],
+            },
+          },
+        },
       })
-    ).items.map(x => x.name),
+    ).items.map((x) => x.name),
     ['match 1', 'match 2']
   )
 

@@ -23,7 +23,7 @@ export default function execBatch(
             .then(() => {
               resolve()
             })
-            .catch(err => reject(err))
+            .catch((err) => reject(err))
         }
       }, 5e3)
     } else {
@@ -100,7 +100,7 @@ export default function execBatch(
               .then(() => {
                 resolve()
               })
-              .catch(err => reject(err))
+              .catch((err) => reject(err))
           } else {
             connection.serverIsBusy = false
             if (queue.length > 1e3) {

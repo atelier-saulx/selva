@@ -52,12 +52,12 @@ const getServer = (
               selectionOptions.subscription
             )
           }
-          getSubInprogress[selectionOptions.subscription].then(serverId => {
+          getSubInprogress[selectionOptions.subscription].then((serverId) => {
             if (!isCanceled) {
               if (serverId) {
                 let [host, port] = serverId.split(':')
                 port = Number(port)
-                const server = selvaClient.servers.subsManagers.find(s => {
+                const server = selvaClient.servers.subsManagers.find((s) => {
                   if (s.host === host && s.port === port) {
                     return true
                   }

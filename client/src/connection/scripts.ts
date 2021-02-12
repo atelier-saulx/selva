@@ -15,8 +15,8 @@ try {
         content: readFileSync(
           pathJoin(distPath, 'lua', `${scriptName}.lua`),
           'utf8'
-        )
-      }
+        ),
+      },
     })
   }, {})
 } catch (err) {
@@ -30,12 +30,12 @@ export function loadScripts(connection: Connection, cb?: () => void): void {
     connection.command({
       command: 'SCRIPT',
       args: ['LOAD', SCRIPTS[scriptName].content],
-      resolve: sha => {
+      resolve: (sha) => {
         SCRIPTS[scriptName].sha = sha
         if (cb) {
           cb()
         }
-      }
+      },
     })
   }
 }

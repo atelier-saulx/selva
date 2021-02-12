@@ -26,7 +26,7 @@ export default (
   ) {
     getServer(
       selvaClient,
-      server => {
+      (server) => {
         if (selvaClient.isDestroyed) {
           return
         }
@@ -42,7 +42,7 @@ export default (
   } else {
     getServer(
       selvaClient,
-      server => {
+      (server) => {
         if (selvaClient.isDestroyed) {
           return
         }

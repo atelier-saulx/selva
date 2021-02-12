@@ -1,13 +1,13 @@
 # _Delete_ Method Query Reference
 
-  - [**$id**](#id--string)
-  - [**&lt;any field name&gt;**](#any-field-name--boolean)
+- [**\$id**](#id--string)
+- [**&lt;any field name&gt;**](#any-field-name--boolean)
 
 ## `$id` : _string_
 
 ```javascript
 const result = await client.delete({
-  $id: 'maASxsd3'
+  $id: 'maASxsd3',
 }) // or simply client.delete('maASxsd3')
 ```
 
@@ -15,19 +15,19 @@ If no fields are specified, the whole record is completely deleted. If the recor
 
 ```javascript
 const result = await client.delete({
-  $id: 'root'
+  $id: 'root',
 }) // or simply client.delete('root')
 ```
 
 ## &lt;any field name&gt; : _boolean_
 
-When fields are specified, a `boolean` value may be provided with it. A `true` value marks the field to be deleted. 
+When fields are specified, a `boolean` value may be provided with it. A `true` value marks the field to be deleted.
 
 ```javascript
 const result = await client.delete({
   $id: 'maASxsd3',
   title: true,
-  value: true
+  value: true,
 })
 ```
 
@@ -38,7 +38,7 @@ Instead of providing `true`, `false` can be used to indicate that all values exc
 ```javascript
 const result = await client.delete({
   $id: 'maASxsd3',
-  value: true
+  value: true,
 })
 ```
 
@@ -50,7 +50,7 @@ The `true` and `false` values are resolved for each nested level. Thus the follo
 const result = await client.delete({
   $id: 'maASxsd3',
   title: {
-    en: false
-  }
+    en: false,
+  },
 })
 ```

@@ -45,7 +45,7 @@ const removeSubscription = async (
     subsManager.client,
     {
       ...subsManager.selector,
-      subscriptions: { [channel]: 'removed' }
+      subscriptions: { [channel]: 'removed' },
     },
     subsManager
   )
@@ -72,7 +72,7 @@ const removeSubscription = async (
             // TODO: this might not always be set?
             subscription.originDescriptors[origin] || {
               name: origin,
-              type: 'origin'
+              type: 'origin',
             },
             '___selva_hierarchy',
             channel

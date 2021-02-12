@@ -25,17 +25,17 @@ async function run() {
                 {
                   $operator: '=',
                   $field: 'type',
-                  $value: 'match'
+                  $value: 'match',
                 },
                 {
                   $operator: '>',
                   $field: 'startTime',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
+                  $value: 'now',
+                },
+              ],
+            },
+          },
+        },
         //components: [
         //  {
         //    component: { $value: 'GridSmall' },
@@ -63,7 +63,7 @@ async function run() {
         //     image: true
         //   }
         // ]
-      }
+      },
       // {
       //   component: { $value: 'gridLarge' },
       //   showall: { $value: true },
@@ -115,7 +115,7 @@ async function run() {
       //     }
       //   }
       // }
-    ]
+    ],
   })
 
   console.log(JSON.stringify(result, false, 2))
@@ -338,6 +338,6 @@ async function run() {
   await client.destroy()
 }
 
-run().catch(e => {
+run().catch((e) => {
   console.error(e)
 })

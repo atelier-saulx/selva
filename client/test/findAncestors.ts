@@ -8,16 +8,16 @@ import getPort from 'get-port'
 let srv
 let port: number
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   await wait(500)
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port })
 
   await client.redis.flushall()
@@ -28,53 +28,53 @@ test.beforeEach(async t => {
         prefix: 're',
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
       },
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
       },
       club: {
         prefix: 'cl',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       season: {
         prefix: 'se',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       team: {
         prefix: 'te',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       match: {
         hierarchy: {
-          team: { excludeAncestryWith: ['league'] }
+          team: { excludeAncestryWith: ['league'] },
         },
         prefix: 'ma',
         fields: {
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
-        }
-      }
-    }
+          status: { type: 'number', search: { type: ['NUMERIC'] } },
+        },
+      },
+    },
   })
 
   // A small delay is needed after setting the schema
-  await new Promise(r => setTimeout(r, 100))
+  await new Promise((r) => setTimeout(r, 100))
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -82,7 +82,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find - ancestors', async t => {
+test.serial('find - ancestors', async (t) => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
 
@@ -91,7 +91,7 @@ test.serial('find - ancestors', async t => {
     teams.push({
       $id: await client.id({ type: 'team' }),
       type: 'team',
-      name: 'team' + i
+      name: 'team' + i,
     })
   }
 
@@ -104,7 +104,7 @@ test.serial('find - ancestors', async t => {
         $id: await client.id({ type: 'match' }),
         type: 'match',
         name: 'match' + j,
-        parents: { $add: [teams[i].$id, teams[i + 1].$id] }
+        parents: { $add: [teams[i].$id, teams[i + 1].$id] },
       }
       matches.push(match)
       globMatches.push(match)
@@ -117,13 +117,13 @@ test.serial('find - ancestors', async t => {
         {
           type: 'season',
           name: 'season1-' + i,
-          children: [...teams, ...matches]
-        }
-      ]
+          children: [...teams, ...matches],
+        },
+      ],
     })
   }
 
-  await Promise.all([...teams, ...leagues].map(v => client.set(v)))
+  await Promise.all([...teams, ...leagues].map((v) => client.set(v)))
 
   // needs an array
   t.deepEqualIgnoreOrder(
@@ -140,14 +140,14 @@ test.serial('find - ancestors', async t => {
                 {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'league'
-                }
-              ]
-            }
-          }
-        }
+                  $value: 'league',
+                },
+              ],
+            },
+          },
+        },
       })
-    ).items.map(v => v.name),
+    ).items.map((v) => v.name),
     [
       { name: 'league1' },
       { name: 'league7' },
@@ -158,8 +158,8 @@ test.serial('find - ancestors', async t => {
       { name: 'league5' },
       { name: 'league2' },
       { name: 'league3' },
-      { name: 'league8' }
-    ].map(v => v.name),
+      { name: 'league8' },
+    ].map((v) => v.name),
     'find ancestors without redis search TYPE'
   )
 
@@ -176,20 +176,20 @@ test.serial('find - ancestors', async t => {
                 {
                   $field: 'type',
                   $operator: '=',
-                  $value: ['season', 'team', 'league']
-                }
-              ]
-            }
-          }
-        }
+                  $value: ['season', 'team', 'league'],
+                },
+              ],
+            },
+          },
+        },
       })
-    ).items.map(v => v.name),
+    ).items.map((v) => v.name),
     [
       { name: 'league0' },
       { name: 'season1-0' },
       { name: 'team0' },
-      { name: 'team1' }
-    ].map(v => v.name),
+      { name: 'team1' },
+    ].map((v) => v.name),
     'find ancestors without redis search TYPE or'
   )
 
@@ -202,12 +202,12 @@ test.serial('find - ancestors', async t => {
           id: true,
           $list: {
             $find: {
-              $traverse: 'ancestors'
-            }
-          }
-        }
+              $traverse: 'ancestors',
+            },
+          },
+        },
       })
-    ).items.map(v => v.name || v.id),
+    ).items.map((v) => v.name || v.id),
     ['league0', 'season1-0', 'team0', 'team1', 'root'],
     'find ancestors without redis search and without filters'
   )
@@ -223,21 +223,21 @@ test.serial('find - ancestors', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'league'
+              $value: 'league',
             },
             {
               $field: 'value',
               $operator: '..',
-              $value: [2, 4]
-            }
-          ]
-        }
-      }
-    }
+              $value: [2, 4],
+            },
+          ],
+        },
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(
-    r.items.map(v => v.name),
+    r.items.map((v) => v.name),
     ['league2', 'league3', 'league4'],
     'find ancestors redis search'
   )
@@ -245,19 +245,19 @@ test.serial('find - ancestors', async t => {
   await client.destroy()
 })
 
-test.serial.skip('find - ancestors - regions', async t => {
+test.serial.skip('find - ancestors - regions', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const teams = []
 
   const regions = await Promise.all([
     client.set({
       type: 'region',
-      name: 'REGION De'
+      name: 'REGION De',
     }),
     client.set({
       type: 'region',
-      name: 'REGION Nl'
-    })
+      name: 'REGION Nl',
+    }),
   ])
 
   for (let i = 0; i < 11; i++) {
@@ -265,8 +265,8 @@ test.serial.skip('find - ancestors - regions', async t => {
       type: 'team',
       name: 'team region ' + i,
       parents: {
-        $add: i < 6 ? regions[0] : regions[1]
-      }
+        $add: i < 6 ? regions[0] : regions[1],
+      },
     })
   }
 
@@ -280,17 +280,17 @@ test.serial.skip('find - ancestors - regions', async t => {
             {
               $field: 'ancestors',
               $operator: '=',
-              $value: regions[0]
+              $value: regions[0],
             },
             {
               $field: 'type',
               $operator: '=',
-              $value: 'team'
-            }
-          ]
-        }
-      }
-    }
+              $value: 'team',
+            },
+          ],
+        },
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -302,8 +302,8 @@ test.serial.skip('find - ancestors - regions', async t => {
         { name: 'team region 3' },
         { name: 'team region 2' },
         { name: 'team region 1' },
-        { name: 'team region 0' }
-      ]
+        { name: 'team region 0' },
+      ],
     },
     'dutch teams'
   )
@@ -311,19 +311,19 @@ test.serial.skip('find - ancestors - regions', async t => {
   await client.destroy()
 })
 
-test.serial.skip('find - ancestors - regions - no wrapping', async t => {
+test.serial.skip('find - ancestors - regions - no wrapping', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const teams = []
 
   const regions = await Promise.all([
     client.set({
       type: 'region',
-      name: 'REGION De'
+      name: 'REGION De',
     }),
     client.set({
       type: 'region',
-      name: 'REGION Nl'
-    })
+      name: 'REGION Nl',
+    }),
   ])
 
   for (let i = 0; i < 11; i++) {
@@ -331,8 +331,8 @@ test.serial.skip('find - ancestors - regions - no wrapping', async t => {
       type: 'team',
       name: 'team region ' + i,
       parents: {
-        $add: i < 6 ? regions[0] : regions[1]
-      }
+        $add: i < 6 ? regions[0] : regions[1],
+      },
     })
   }
 
@@ -345,16 +345,16 @@ test.serial.skip('find - ancestors - regions - no wrapping', async t => {
           {
             $field: 'ancestors',
             $operator: '=',
-            $value: regions[0]
+            $value: regions[0],
           },
           {
             $field: 'type',
             $operator: '=',
-            $value: 'team'
-          }
-        ]
-      }
-    }
+            $value: 'team',
+          },
+        ],
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -365,7 +365,7 @@ test.serial.skip('find - ancestors - regions - no wrapping', async t => {
       { name: 'team region 3' },
       { name: 'team region 2' },
       { name: 'team region 1' },
-      { name: 'team region 0' }
+      { name: 'team region 0' },
     ],
     'dutch teams'
   )

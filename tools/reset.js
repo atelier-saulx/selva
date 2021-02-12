@@ -98,7 +98,7 @@ function makeSetPayload(db, typeSchema, entry) {
         db,
         { fields: typeSchema.fields[key].properties },
         {
-          item: val
+          item: val,
         }
       )
 
@@ -110,7 +110,7 @@ function makeSetPayload(db, typeSchema, entry) {
       }
 
       const newVal = makeSetPayload(db, fakeSchema, {
-        item: val
+        item: val,
       })
 
       val = newVal
@@ -202,7 +202,7 @@ main()
     console.log('DONE')
     process.exit(0)
   })
-  .catch(e => {
+  .catch((e) => {
     console.error(e)
     process.exit(1)
   })

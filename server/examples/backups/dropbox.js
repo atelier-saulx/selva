@@ -9,13 +9,13 @@ const backups = require('../../lib/backups')
 
 mkDropbox(
   {
-    ACCESS_TOKEN: ACCESS_TOKEN
+    ACCESS_TOKEN: ACCESS_TOKEN,
   },
   'backup.rdb'
-).then(async backupFn => {
+).then(async (backupFn) => {
   const server = start({
     port: 6061,
-    developmentLogging: true
+    developmentLogging: true,
   })
 
   setTimeout(() => {
@@ -24,12 +24,12 @@ mkDropbox(
       .then(() => {
         console.log(`Backed up successfully`)
       })
-      .catch(e => {
+      .catch((e) => {
         console.error('Failed to back up', e)
       })
       .finally(() => {
         setTimeout(() => {
-          server.destroy().catch(e => {
+          server.destroy().catch((e) => {
             console.error(e)
           })
         }, 1000)

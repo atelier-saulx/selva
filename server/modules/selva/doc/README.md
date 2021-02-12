@@ -1,8 +1,6 @@
-Selva Redis Module
-==================
+# Selva Redis Module
 
-Hierarchy
----------
+## Hierarchy
 
 Hierarchy is an acyclic graph data structure used for storing the
 hierarchical relationships between the nodes in Selva.
@@ -16,8 +14,7 @@ operations against the fields.
 The serialization format of `hierarchy` is documented separately in
 [Serialization](hierarchy/serialization.md).
 
-Selva Object
-------------
+## Selva Object
 
 `SelvaObject` is a new Redis data type for storing object-like data in
 compute-efficient manner. It can currently store strings, integers, and
@@ -35,8 +32,7 @@ knows the data type of the value.
 The `SelvaObject` data type is implemented in
 [selva_object](../module/selva_object.c).
 
-Selva Node
-----------
+## Selva Node
 
 A Selva node is built of several parts stored in different ways in Redis and
 therefore also the management and ownership of the data is divided into several
@@ -59,8 +55,7 @@ Hierarchy fields `ancestors`, `children`, `descendants`, and `parents` are
 owned, managed, and traversed by the functions in
 [hierarchy.c](../module/hierarchy.c).
 
-Commands
---------
+## Commands
 
 ### Find Commands
 

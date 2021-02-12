@@ -26,15 +26,14 @@ Here are some of its features:
 
 - Versioning system for the data allows branches of data to be merged and revised into the master data, allowing content creators to try changes before data is published to a live system
 
-
 ## Documentation
 
 Selva is composed of two main modules - @saulx/selva client and @saulx/selva-server.
 Documentation for its API as well as the two main concepts: the schemas and its query DSL can be viewed in the links below.
 
-  - [API](docs/api.md)
-  - [Schema definition](docs/schemas.md)
-  - [Query language](docs/query.md)
+- [API](docs/api.md)
+- [Schema definition](docs/schemas.md)
+- [Query language](docs/query.md)
 
 ## Usage
 
@@ -43,7 +42,7 @@ First setup a Selva server.
 ```js
 import { start } from '@saulx/selva-server'
 
-const server = await start({ port:8080 })
+const server = await start({ port: 8080 })
 ```
 
 Setup the client and load the [schema](docs/schemas.md)
@@ -59,8 +58,8 @@ await client.updateSchema({
       prefix: 'ge',
       fields: {
         name: { type: 'text' },
-        icon: { type: 'string' }
-      }
+        icon: { type: 'string' },
+      },
     },
     movie: {
       prefix: 'mo',
@@ -74,72 +73,70 @@ await client.updateSchema({
           properties: {
             runtime: { type: 'int' },
             color: { type: 'string' },
-            aspectRatio: { type: 'string' }
-          }
-        }
-      }
+            aspectRatio: { type: 'string' },
+          },
+        },
+      },
     },
     person: {
       prefix: 'pe',
       fields: {
         name: { type: 'string' },
         born: { type: 'int' },
-        died: { type: 'int' }
-      }
-    }
-  }
+        died: { type: 'int' },
+      },
+    },
+  },
 })
 ```
 
 Set some data.
 
 ```js
-await Promise.all([
-  {
-    $id: 'mo2001ASpaceOdyssey',
-    title: {
-      en: '2001: A Space Odyssey',
-      nl: '2001: Een zwerftocht in de ruimte'
+await Promise.all(
+  [
+    {
+      $id: 'mo2001ASpaceOdyssey',
+      title: {
+        en: '2001: A Space Odyssey',
+        nl: '2001: Een zwerftocht in de ruimte',
+      },
+      year: 1968,
+      director: 'Stanley Kubrick',
+      technicalData: {
+        runtime: 149,
+        color: 'true',
+        aspectRatio: '2.20:1',
+      },
     },
-    year: 1968,
-    director: 'Stanley Kubrick',
-    technicalData: {
-      runtime: 149,
-      color: 'true',
-      aspectRatio: '2.20:1'
+    {
+      $id: 'moSoylentGreen',
+      title: {
+        en: 'Soylent Green',
+        nl: 'Groen Rantsoen',
+      },
+      year: 1973,
+      director: 'Richard Fleischer',
+      technicalData: {
+        runtime: 97,
+        color: 'true',
+        aspectRatio: '2.35:1',
+      },
+      children: ['peCharltonHeston', 'peLeighTaylorYoung', 'peChuckConnors'],
     },
-  },
-  {
-    $id: 'moSoylentGreen',
-    title: {
-      en: 'Soylent Green',
-      nl: 'Groen Rantsoen'
+    {
+      $id: 'moMetropolis',
+      title: { en: 'Metropolis' },
+      year: 1927,
+      director: 'Fritz Lang',
+      technicalData: {
+        runtime: 153,
+        color: 'false',
+        aspectRatio: '1.33:1',
+      },
     },
-    year: 1973,
-    director: 'Richard Fleischer',
-    technicalData: {
-      runtime: 97,
-      color: 'true',
-      aspectRatio: '2.35:1'
-    },
-    children: [
-      'peCharltonHeston',
-      'peLeighTaylorYoung',
-      'peChuckConnors'
-    ],
-  },
-  {
-    $id: 'moMetropolis',
-    title: { en: 'Metropolis' },
-    year: 1927,
-    director: 'Fritz Lang',
-    technicalData: {
-      runtime: 153,
-      color: 'false',
-      aspectRatio: '1.33:1'
-    },
-  }
-].map(movie => client.set(movie)))
+  ].map((movie) => client.set(movie))
+)
 ```
 
 Query the data
@@ -150,7 +147,7 @@ const result = await client.get({
   $language: 'en',
   title: true,
   year: true,
-  director: true
+  director: true,
 })
 ```
 
@@ -162,7 +159,7 @@ const obs = client.subscribe({
   $language: 'en',
   title: true,
   year: true,
-  director: true
+  director: true,
 })
 
 const sub = obs.subscribe((data) => {

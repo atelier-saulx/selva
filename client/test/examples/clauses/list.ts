@@ -12,7 +12,7 @@ import { setDataSet } from '../_dataSet'
 let srv: SelvaServer
 let port
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   await wait(500)
@@ -21,7 +21,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -29,7 +29,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('$list', async t => {
+test.serial('$list', async (t) => {
   const client = connect({ port: port })
 
   await setDataSet(client)
@@ -39,8 +39,8 @@ test.serial('$list', async t => {
     $language: 'en',
     children: {
       title: true,
-      $list: {}
-    }
+      $list: {},
+    },
   })
 
   t.deepEqual(result.children.length, 3)
@@ -48,30 +48,7 @@ test.serial('$list', async t => {
   await client.destroy()
 })
 
-test.serial('$order', async t => {
-  const client = connect({ port: port })
-
-  await setDataSet(client)
-
-  const result = await client.get({
-    $id: 'geScifi',
-    $language: 'en',
-    children: {
-      title: true,
-      year: true,
-      $list: {
-        $sort: { $field: 'year', $order: 'asc' }
-      }
-    }
-  })
-
-  t.deepEqual(result.children[0].title, 'Metropolis')
-
-  await client.destroy()
-})
-
-// TODO: Unskip this test when $range is fixed
-test.serial.skip('$range', async t => {
+test.serial('$order', async (t) => {
   const client = connect({ port: port })
 
   await setDataSet(client)
@@ -84,9 +61,32 @@ test.serial.skip('$range', async t => {
       year: true,
       $list: {
         $sort: { $field: 'year', $order: 'asc' },
-        $range: { $offset: 0, $limit: 2 }
-      }
-    }
+      },
+    },
+  })
+
+  t.deepEqual(result.children[0].title, 'Metropolis')
+
+  await client.destroy()
+})
+
+// TODO: Unskip this test when $range is fixed
+test.serial.skip('$range', async (t) => {
+  const client = connect({ port: port })
+
+  await setDataSet(client)
+
+  const result = await client.get({
+    $id: 'geScifi',
+    $language: 'en',
+    children: {
+      title: true,
+      year: true,
+      $list: {
+        $sort: { $field: 'year', $order: 'asc' },
+        $range: { $offset: 0, $limit: 2 },
+      },
+    },
   })
 
   t.deepEqual(result.children.length, 2)

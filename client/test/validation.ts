@@ -7,23 +7,23 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
     rootType: {
       fields: {
-        menu: { type: 'references' }
-      }
-    }
+        menu: { type: 'references' },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -31,11 +31,11 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('correct validation #1', async t => {
+test.serial('correct validation #1', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   try {
     const res = await client.get({
-      pollId: 'RandomPollName'
+      pollId: 'RandomPollName',
     })
   } catch (e) {
     t.assert(
@@ -46,7 +46,7 @@ test.serial('correct validation #1', async t => {
   await client.destroy()
 })
 
-test.serial('correct validation #2', async t => {
+test.serial('correct validation #2', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   try {
     const res = await client.set({ $alias: 'RandomPollName', children: [] })

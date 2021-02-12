@@ -5,7 +5,7 @@ import {
   startSubscriptionRegistry,
   startReplica,
   startOrigin,
-  startRegistry
+  startRegistry,
 } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
@@ -16,22 +16,22 @@ const dir = join(process.cwd(), 'tmp', 'subscribe-nested-find-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-test.serial('get - correct order', async t => {
+test.serial('get - correct order', async (t) => {
   const port = await getPort()
   const servers = await Promise.all([
     startRegistry({ port }),
     startOrigin({
       dir,
       registry: { port },
-      default: true
+      default: true,
     }),
     startSubscriptionManager({ registry: { port } }),
     startSubscriptionRegistry({ registry: { port } }),
     startReplica({
       dir: join(dir, 'replica'),
       registry: { port },
-      default: true
-    })
+      default: true,
+    }),
   ])
 
   const client = connect({ port }, { loglevel: 'info' })
@@ -42,24 +42,24 @@ test.serial('get - correct order', async t => {
         prefix: 'fl',
         fields: {
           published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true }
-        }
+          title: { type: 'text', search: true },
+        },
       },
       region: {
         prefix: 're',
         fields: {
           published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true }
-        }
+          title: { type: 'text', search: true },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true }
-        }
-      }
-    }
+          title: { type: 'text', search: true },
+        },
+      },
+    },
   })
 
   await client.set({
@@ -73,24 +73,24 @@ test.serial('get - correct order', async t => {
           {
             $id: 'ma1',
             title: 'match 1',
-            published: true
+            published: true,
           },
           {
             $id: 'ma2',
             title: 'match 2',
-            published: true
+            published: true,
           },
           {
             $id: 'ma3',
             title: 'match 3',
-            published: true
+            published: true,
           },
           {
             $id: 'ma4',
             title: 'match 4',
-            published: false
-          }
-        ]
+            published: false,
+          },
+        ],
       },
       {
         type: 'region',
@@ -102,11 +102,11 @@ test.serial('get - correct order', async t => {
             type: 'folder',
             name: 'Highlights',
             published: true,
-            children: ['ma1', 'ma2', 'ma3', 'ma4']
-          }
-        ]
-      }
-    ]
+            children: ['ma1', 'ma2', 'ma3', 'ma4'],
+          },
+        ],
+      },
+    ],
   })
 
   const obs = {
@@ -121,13 +121,13 @@ test.serial('get - correct order', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'folder'
+              $value: 'folder',
             },
             {
               $field: 'name',
               $operator: '=',
-              $value: 'Highlights'
-            }
+              $value: 'Highlights',
+            },
           ],
           $find: {
             $traverse: 'children',
@@ -135,14 +135,14 @@ test.serial('get - correct order', async t => {
               {
                 $field: 'published',
                 $operator: '=',
-                $value: true
-              }
-            ]
-          }
+                $value: true,
+              },
+            ],
+          },
         },
-        $limit: 8
-      }
-    }
+        $limit: 8,
+      },
+    },
   }
 
   // const x = await client.get({ ...obs, $includeMeta: true })
@@ -151,7 +151,7 @@ test.serial('get - correct order', async t => {
 
   const results = []
 
-  client.observe(obs, { immutable: true }).subscribe(v => {
+  client.observe(obs, { immutable: true }).subscribe((v) => {
     results.push(v)
   })
 
@@ -171,7 +171,7 @@ test.serial('get - correct order', async t => {
   t.is(results[2].children.length, 3)
 
   await client.destroy()
-  await Promise.all(servers.map(s => s.destroy()))
+  await Promise.all(servers.map((s) => s.destroy()))
   await t.connectionsAreEmpty()
 
   t.pass()

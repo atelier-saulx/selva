@@ -4,7 +4,7 @@ import { start } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
-test('Connect and re-connect', async t => {
+test('Connect and re-connect', async (t) => {
   let current = await getPort()
   const client = connect(async () => {
     await wait(100)
@@ -13,9 +13,9 @@ test('Connect and re-connect', async t => {
 
   client
     .observe({
-      name: true
+      name: true,
     })
-    .subscribe(x => {})
+    .subscribe((x) => {})
 
   const server = await start({ port: current })
 
@@ -28,7 +28,7 @@ test('Connect and re-connect', async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -36,25 +36,25 @@ test('Connect and re-connect', async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   await client.set({
     $id: 'cuflap',
     title: {
-      en: 'lurkert'
-    }
+      en: 'lurkert',
+    },
   })
 
   t.deepEqual(
     await client.get({
       $id: 'cuflap',
-      title: true
+      title: true,
     }),
     { title: { en: 'lurkert' } }
   )
@@ -80,7 +80,7 @@ test('Connect and re-connect', async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -88,18 +88,18 @@ test('Connect and re-connect', async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   t.deepEqual(
     await client.get({
       $id: 'cuflap',
-      title: true
+      title: true,
     }),
     { $isNull: true }
   )
@@ -113,15 +113,15 @@ test('Connect and re-connect', async t => {
         flurp: {
           prefix: 'fl',
           fields: {
-            snurk: { type: 'string' }
-          }
-        }
-      }
+            snurk: { type: 'string' },
+          },
+        },
+      },
     })
-    .then(v => {
+    .then((v) => {
       client.set({
         $id: 'flap',
-        snurk: 'snurk it 1'
+        snurk: 'snurk it 1',
       })
     })
 

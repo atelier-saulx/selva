@@ -7,14 +7,14 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
@@ -23,27 +23,27 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('yes', async t => {
+test.serial('yes', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
     languages: ['en'],
     rootType: {
       fields: {
-        title: { type: 'text' }
-      }
-    }
+        title: { type: 'text' },
+      },
+    },
   })
 
   await wait(500)
   let cnt = 0
-  client.subscribeSchema().subscribe(schema => {
+  client.subscribeSchema().subscribe((schema) => {
     cnt++
   })
 
   await wait(500)
 
-  client.subscribeSchema().subscribe(schema => {
+  client.subscribeSchema().subscribe((schema) => {
     cnt++
   })
 

@@ -81,14 +81,14 @@ Object.assign(Assertions.prototype, {
     this.fail(
       'Connection are not empty after 1 min, remaining: ' + connections.size
     )
-  }
+  },
 })
 
 Object.assign(Assertions.prototype, {
   deepEqualIgnoreOrder(actual, expected, message = '') {
     deepSort(actual, expected)
     this.deepEqual(actual, expected, message)
-  }
+  },
 })
 
 const tmp = join(__dirname, '../../tmp')
@@ -178,11 +178,11 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
       } catch (_err) {}
     })
 
-    worker.on('message', msg => {
+    worker.on('message', (msg) => {
       resolve([msg, worker])
     })
 
-    worker.on('error', err => {
+    worker.on('error', (err) => {
       reject(err)
     })
   })
@@ -190,7 +190,7 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
 const removeDump = (dir: string) => {
   return async () => {
     if (fs.existsSync(dir)) {
-      rimraf(dir, err => {
+      rimraf(dir, (err) => {
         if (err) {
           console.log('cannot remove dump')
         }

@@ -2,7 +2,7 @@ import test from 'ava'
 import { SelvaClient } from '../../src/index'
 
 export const wait = (timeMs: number = 500): Promise<void> =>
-  new Promise(r => setTimeout(r, timeMs))
+  new Promise((r) => setTimeout(r, timeMs))
 
 export const idExists = async (
   client: SelvaClient,
@@ -36,7 +36,7 @@ export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
   const ids = await client.redis.keys('*')
   return (
     await Promise.all(
-      ids.map(id => {
+      ids.map((id) => {
         if (id.startsWith('___')) {
           return null
         }
@@ -64,7 +64,7 @@ export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
     .map((v, i) => {
       return [ids[i], v]
     })
-    .filter(x => !!x[1])
+    .filter((x) => !!x[1])
 }
 
 export const logDb = async (client: SelvaClient) => {

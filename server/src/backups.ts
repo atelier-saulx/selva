@@ -71,7 +71,7 @@ export function scheduleBackups(
         .then(() => {
           console.log('Backup successfully created')
         })
-        .catch(e => {
+        .catch((e) => {
           console.log('error', e)
         })
         .finally(() => {

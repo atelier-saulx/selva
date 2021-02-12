@@ -34,7 +34,7 @@ export function modify(): string[] {
 
   resultAry[totalLength] = cjson.encode({
     PING: pong,
-    hash: hashObj
+    hash: hashObj,
   })
   totalLength++
 

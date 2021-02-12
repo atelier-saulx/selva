@@ -45,7 +45,7 @@ export default async function parseSetObject(
   if (!payload.$id && !payload.$alias) {
     payload.$id = await client.id({
       db: payload.$db || 'default',
-      type: payload.type
+      type: payload.type,
     })
   }
 
@@ -81,11 +81,9 @@ export default async function parseSetObject(
   const schema = type === 'root' ? schemas.rootType : schemas.types[type]
   if (!schema) {
     throw new Error(
-      `Cannot find type ${type ||
-        `from prefix ${payload.$id.substring(
-          0,
-          2
-        )}`} from set-object ${JSON.stringify(payload, null, 2)}`
+      `Cannot find type ${
+        type || `from prefix ${payload.$id.substring(0, 2)}`
+      } from set-object ${JSON.stringify(payload, null, 2)}`
     )
   }
 
@@ -144,7 +142,7 @@ export default async function parseSetObject(
         }
 
         const arr = aliasIsArray ? payload[key] : [payload[key]]
-        const toCArr = (a: string[]) => a.map(s => `${s}\0`).join('')
+        const toCArr = (a: string[]) => a.map((s) => `${s}\0`).join('')
 
         result.push('6', key, toCArr(arr))
       } else if (key === '$language') {

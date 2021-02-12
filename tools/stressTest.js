@@ -12,7 +12,7 @@ let port
 async function before() {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   const client = connect({ port })
@@ -24,16 +24,16 @@ async function before() {
         prefix: 'sh',
         fields: {
           title: { type: 'text' },
-          votes: { type: 'number' }
-        }
+          votes: { type: 'number' },
+        },
       },
       vote: {
         prefix: 'vo',
         fields: {
-          uid: { type: 'string' }
-        }
-      }
-    }
+          uid: { type: 'string' },
+        },
+      },
+    },
   })
 
   await Promise.all([
@@ -42,15 +42,15 @@ async function before() {
       $language: 'en',
       type: 'show',
       title: 'LOL',
-      votes: 0
+      votes: 0,
     }),
     client.set({
       $id: 'sh2',
       $language: 'en',
       type: 'show',
       title: 'ROFL',
-      votes: 0
-    })
+      votes: 0,
+    }),
   ])
 }
 
@@ -63,19 +63,19 @@ let sh = ['sh1', 'sh2']
 async function runWorker() {
   const client = connect({ port: workerData.port }, { loglevel: 'info' })
 
-  let i = 0;
+  let i = 0
   while (true) {
-    const votes = Array.from(Array(nrVotes).keys()).map(v => ({
+    const votes = Array.from(Array(nrVotes).keys()).map((v) => ({
       $id: sh[v & 1],
       votes: { $increment: 1 },
       children: {
-        $add: [{ type: 'vote', uid: `user${v}` }]
-      }
+        $add: [{ type: 'vote', uid: `user${v}` }],
+      },
     }))
 
     const lim = RateLimit(votesPerSecond, { timeUnit: 1000 })
     await Promise.all(
-      votes.map(async vote => {
+      votes.map(async (vote) => {
         await lim()
         return client.set(vote)
       })
@@ -99,12 +99,12 @@ async function runWorker() {
                 $and: {
                   $operator: '=',
                   $field: 'uid',
-                  $value: uid
-                }
+                  $value: uid,
+                },
               },
-            }
-          }
-        }
+            },
+          },
+        },
       })
       await Promise.all(rmVotes.map(({ id }) => client.delete(id)))
     }
@@ -112,11 +112,11 @@ async function runWorker() {
     if (c % 100 === 0 || c % 201 === 0) {
       const $id = sh[c & 1]
       console.log(`deleting children of ${$id}`)
-      const { children: ids } = await client.get({ $id, children: true });
+      const { children: ids } = await client.get({ $id, children: true })
       await Promise.all(ids.map((id) => client.delete(id)))
       await client.set({
         $id,
-        votes: 0
+        votes: 0,
       })
     }
     i++
@@ -133,11 +133,11 @@ async function run() {
       workers.push(
         new Promise((resolve, reject) => {
           const worker = new Worker(__filename, {
-            workerData: { port }
+            workerData: { port },
           })
           worker.on('message', resolve)
           worker.on('error', reject)
-          worker.on('exit', code => {
+          worker.on('exit', (code) => {
             if (code !== 0) {
               return reject(new Error(`Worker exited with code ${code}`))
             }
@@ -168,7 +168,7 @@ run()
     console.log('End!')
     process.exit(0)
   })
-  .catch(e => {
+  .catch((e) => {
     console.error(e)
     process.exit(1)
   })

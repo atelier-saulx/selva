@@ -84,14 +84,14 @@ the command implementation checks for this special call using the
 `RedisModule_IsKeysPositionRequest()` API and uses this function in
 order to report keys, like in the following example:
 
- if (`RedisModule_IsKeysPositionRequest(ctx))` {
-     `RedisModule_KeyAtPos(ctx`,1);
-     `RedisModule_KeyAtPos(ctx`,2);
- }
+if (`RedisModule_IsKeysPositionRequest(ctx))` {
+`RedisModule_KeyAtPos(ctx`,1);
+`RedisModule_KeyAtPos(ctx`,2);
+}
 
- Note: in the example below the get keys API would not be needed since
- keys are at fixed positions. This interface is only used for commands
- with a more complex structure.
+Note: in the example below the get keys API would not be needed since
+keys are at fixed positions. This interface is only used for commands
+with a more complex structure.
 
 ## `RM_CreateCommand`
 
@@ -117,38 +117,38 @@ The set of flags 'strflags' specify the behavior of the command, and should
 be passed as a C string compoesd of space separated words, like for
 example "write deny-oom". The set of flags are:
 
-* **"write"**:     The command may modify the data set (it may also read
-                   from it).
-* **"readonly"**:  The command returns data from keys but never writes.
-* **"admin"**:     The command is an administrative command (may change
-                   replication or perform similar tasks).
-* **"deny-oom"**:  The command may use additional memory and should be
-                   denied during out of memory conditions.
-* **"deny-script"**:   Don't allow this command in Lua scripts.
-* **"allow-loading"**: Allow this command while the server is loading data.
-                       Only commands not interacting with the data set
-                       should be allowed to run in this mode. If not sure
-                       don't use this flag.
-* **"pubsub"**:    The command publishes things on Pub/Sub channels.
-* **"random"**:    The command may have different outputs even starting
-                   from the same input arguments and key values.
-* **"allow-stale"**: The command is allowed to run on slaves that don't
-                     serve stale data. Don't use if you don't know what
-                     this means.
-* **"no-monitor"**: Don't propoagate the command on monitor. Use this if
-                    the command has sensible data among the arguments.
-* **"fast"**:      The command time complexity is not greater
-                   than O(log(N)) where N is the size of the collection or
-                   anything else representing the normal scalability
-                   issue with the command.
-* **"getkeys-api"**: The command implements the interface to return
-                     the arguments that are keys. Used when start/stop/step
-                     is not enough because of the command syntax.
-* **"no-cluster"**: The command should not register in Redis Cluster
-                    since is not designed to work with it because, for
-                    example, is unable to report the position of the
-                    keys, programmatically creates key names, or any
-                    other reason.
+- **"write"**: The command may modify the data set (it may also read
+  from it).
+- **"readonly"**: The command returns data from keys but never writes.
+- **"admin"**: The command is an administrative command (may change
+  replication or perform similar tasks).
+- **"deny-oom"**: The command may use additional memory and should be
+  denied during out of memory conditions.
+- **"deny-script"**: Don't allow this command in Lua scripts.
+- **"allow-loading"**: Allow this command while the server is loading data.
+  Only commands not interacting with the data set
+  should be allowed to run in this mode. If not sure
+  don't use this flag.
+- **"pubsub"**: The command publishes things on Pub/Sub channels.
+- **"random"**: The command may have different outputs even starting
+  from the same input arguments and key values.
+- **"allow-stale"**: The command is allowed to run on slaves that don't
+  serve stale data. Don't use if you don't know what
+  this means.
+- **"no-monitor"**: Don't propoagate the command on monitor. Use this if
+  the command has sensible data among the arguments.
+- **"fast"**: The command time complexity is not greater
+  than O(log(N)) where N is the size of the collection or
+  anything else representing the normal scalability
+  issue with the command.
+- **"getkeys-api"**: The command implements the interface to return
+  the arguments that are keys. Used when start/stop/step
+  is not enough because of the command syntax.
+- **"no-cluster"**: The command should not register in Redis Cluster
+  since is not designed to work with it because, for
+  example, is unable to report the position of the
+  keys, programmatically creates key names, or any
+  other reason.
 
 ## `RM_SetModuleAttribs`
 
@@ -238,9 +238,9 @@ enabling modules automatic memory management counts for one
 Normally you want to call this function when, at the same time
 the following conditions are true:
 
-1) You have automatic memory management enabled.
-2) You want to create string objects.
-3) Those string objects you create need to live *after* the callback
+1. You have automatic memory management enabled.
+2. You want to create string objects.
+3. Those string objects you create need to live _after_ the callback
    function(for example a command implementation) creating them returns.
 
 Usually you want this in order to store the created string object
@@ -302,7 +302,7 @@ citing the command name in the error message.
 
 Example:
 
- if (argc != 3) return `RedisModule_WrongArity(ctx)`;
+if (argc != 3) return `RedisModule_WrongArity(ctx)`;
 
 ## `RM_ReplyWithLongLong`
 
@@ -321,11 +321,11 @@ Note that 'err' must contain all the error, including
 the initial error code. The function only provides the initial "-", so
 the usage is, for example:
 
- `RM_ReplyWithError(ctx`,"ERR Wrong Type");
+`RM_ReplyWithError(ctx`,"ERR Wrong Type");
 
 and not just:
 
- `RM_ReplyWithError(ctx`,"Wrong Type");
+`RM_ReplyWithError(ctx`,"Wrong Type");
 
 The function always returns `REDISMODULE_OK`.
 
@@ -371,14 +371,14 @@ that was created in a postponed way.
 For example in order to output an array like [1,[10,20,30]] we
 could write:
 
- `RedisModule_ReplyWithArray(ctx`,`REDISMODULE_POSTPONED_ARRAY_LEN`);
- `RedisModule_ReplyWithLongLong(ctx`,1);
- `RedisModule_ReplyWithArray(ctx`,`REDISMODULE_POSTPONED_ARRAY_LEN`);
- `RedisModule_ReplyWithLongLong(ctx`,10);
- `RedisModule_ReplyWithLongLong(ctx`,20);
- `RedisModule_ReplyWithLongLong(ctx`,30);
- `RedisModule_ReplySetArrayLength(ctx`,3); // Set len of 10,20,30 array.
- `RedisModule_ReplySetArrayLength(ctx`,2); // Set len of top array
+`RedisModule_ReplyWithArray(ctx`,`REDISMODULE_POSTPONED_ARRAY_LEN`);
+`RedisModule_ReplyWithLongLong(ctx`,1);
+`RedisModule_ReplyWithArray(ctx`,`REDISMODULE_POSTPONED_ARRAY_LEN`);
+`RedisModule_ReplyWithLongLong(ctx`,10);
+`RedisModule_ReplyWithLongLong(ctx`,20);
+`RedisModule_ReplyWithLongLong(ctx`,30);
+`RedisModule_ReplySetArrayLength(ctx`,3); // Set len of 10,20,30 array.
+`RedisModule_ReplySetArrayLength(ctx`,2); // Set len of top array
 
 Note that in the above example there is no reason to postpone the array
 length, since we produce a fixed number of elements, but in the practice
@@ -406,7 +406,7 @@ The function always returns `REDISMODULE_OK`.
     int RM_ReplyWithNull(RedisModuleCtx *ctx);
 
 Reply to the client with a NULL. In the RESP protocol a NULL is encoded
-as the string "$-1\r\n".
+as the string "\$-1\r\n".
 
 The function always returns `REDISMODULE_OK`.
 
@@ -612,17 +612,17 @@ On error (wrong type) NULL is returned.
 DMA access rules:
 
 1. No other key writing function should be called since the moment
-the pointer is obtained, for all the time we want to use DMA access
-to read or modify the string.
+   the pointer is obtained, for all the time we want to use DMA access
+   to read or modify the string.
 
 2. Each time `RM_StringTruncate()` is called, to continue with the DMA
-access, `RM_StringDMA()` should be called again to re-obtain
-a new pointer and length.
+   access, `RM_StringDMA()` should be called again to re-obtain
+   a new pointer and length.
 
 3. If the returned pointer is not NULL, but the length is zero, no
-byte can be touched (the string is empty, or the key itself is empty)
-so a `RM_StringTruncate()` call should be used if there is to enlarge
-the string, and later call StringDMA() again to get the pointer.
+   byte can be touched (the string is empty, or the key itself is empty)
+   so a `RM_StringTruncate()` call should be used if there is to enlarge
+   the string, and later call StringDMA() again to get the pointer.
 
 ## `RM_StringTruncate`
 
@@ -658,9 +658,10 @@ Pop an element from the list, and returns it as a module string object
 that the user should be free with `RM_FreeString()` or by enabling
 automatic memory. 'where' specifies if the element should be popped from
 head or tail. The command returns NULL if:
-1) The list is empty.
-2) The key was not open for writing.
-3) The key is not a list.
+
+1. The list is empty.
+2. The key was not open for writing.
+3. The key is not a list.
 
 ## `RM_ZsetAddFlagsToCoreFlags`
 
@@ -703,9 +704,9 @@ The output flags are:
 On success the function returns `REDISMODULE_OK`. On the following errors
 `REDISMODULE_ERR` is returned:
 
-* The key was not opened for writing.
-* The key is of the wrong type.
-* 'score' double value is not a number (NaN).
+- The key was not opened for writing.
+- The key is of the wrong type.
+- 'score' double value is not a number (NaN).
 
 ## `RM_ZsetIncrby`
 
@@ -733,8 +734,8 @@ Remove the specified element from the sorted set.
 The function returns `REDISMODULE_OK` on success, and `REDISMODULE_ERR`
 on one of the following conditions:
 
-* The key was not opened for writing.
-* The key is of the wrong type.
+- The key was not opened for writing.
+- The key is of the wrong type.
 
 The return value does NOT indicate the fact the element was really
 removed (since it existed) or not, just if the function was executed
@@ -756,9 +757,9 @@ On success retrieve the double score associated at the sorted set element
 'ele' and returns `REDISMODULE_OK`. Otherwise `REDISMODULE_ERR` is returned
 to signal one of the following conditions:
 
-* There is no such element 'ele' in the sorted set.
-* The key is not a sorted set.
-* The key is an open empty key.
+- There is no such element 'ele' in the sorted set.
+- The key is not a sorted set.
+- The key is an open empty key.
 
 ## `RM_ZsetRangeStop`
 
@@ -861,25 +862,25 @@ CFIELD option is set, see later).
 
 Example to set the hash argv[1] to the value argv[2]:
 
- `RedisModule_HashSet(key`,`REDISMODULE_HASH_NONE`,argv[1],argv[2],NULL);
+`RedisModule_HashSet(key`,`REDISMODULE_HASH_NONE`,argv[1],argv[2],NULL);
 
 The function can also be used in order to delete fields (if they exist)
 by setting them to the specified value of `REDISMODULE_HASH_DELETE`:
 
- `RedisModule_HashSet(key`,`REDISMODULE_HASH_NONE`,argv[1],
-                     `REDISMODULE_HASH_DELETE`,NULL);
+`RedisModule_HashSet(key`,`REDISMODULE_HASH_NONE`,argv[1],
+`REDISMODULE_HASH_DELETE`,NULL);
 
 The behavior of the command changes with the specified flags, that can be
 set to `REDISMODULE_HASH_NONE` if no special behavior is needed.
 
 `REDISMODULE_HASH_NX`: The operation is performed only if the field was not
-                    already existing in the hash.
+already existing in the hash.
 `REDISMODULE_HASH_XX`: The operation is performed only if the field was
-                    already existing, so that a new value could be
-                    associated to an existing filed, but no new fields
-                    are created.
+already existing, so that a new value could be
+associated to an existing filed, but no new fields
+are created.
 `REDISMODULE_HASH_CFIELDS`: The field names passed are null terminated C
-                         strings instead of RedisModuleString objects.
+strings instead of RedisModuleString objects.
 
 Unless NX is specified, the command overwrites the old field value with
 the new one.
@@ -888,8 +889,8 @@ When using `REDISMODULE_HASH_CFIELDS`, field names are reported using
 normal C strings, so for example to delete the field "foo" the following
 code can be used:
 
- `RedisModule_HashSet(key`,`REDISMODULE_HASH_CFIELDS`,"foo",
-                     `REDISMODULE_HASH_DELETE`,NULL);
+`RedisModule_HashSet(key`,`REDISMODULE_HASH_CFIELDS`,"foo",
+`REDISMODULE_HASH_DELETE`,NULL);
 
 Return value:
 
@@ -898,8 +899,8 @@ specified because of the XX or NX options).
 
 In the following case the return value is always zero:
 
-* The key was not open for writing.
-* The key was associated with a non Hash value.
+- The key was not open for writing.
+- The key was associated with a non Hash value.
 
 ## `RM_HashGet`
 
@@ -1008,7 +1009,7 @@ On success a RedisModuleCallReply object is returned, otherwise
 NULL is returned and errno is set to the following values:
 
 EINVAL: command non existing, wrong arity, wrong format specifier.
-EPERM:  operation in Cluster instance with key in non local slot.
+EPERM: operation in Cluster instance with key in non local slot.
 
 ## `RM_CallReplyProto`
 
@@ -1025,13 +1026,13 @@ Register a new data type exported by the module. The parameters are the
 following. Please for in depth documentation check the modules API
 documentation, especially the TYPES.md file.
 
-* **name**: A 9 characters data type name that MUST be unique in the Redis
+- **name**: A 9 characters data type name that MUST be unique in the Redis
   Modules ecosystem. Be creative... and there will be no collisions. Use
-  the charset A-Z a-z 9-0, plus the two "-_" characters. A good
+  the charset A-Z a-z 9-0, plus the two "-\_" characters. A good
   idea is to use, for example `<typename>-<vendor>`. For example
   "tree-AntZ" may mean "Tree data structure by @antirez". To use both
   lower case and upper case letters helps in order to prevent collisions.
-* **encver**: Encoding version, which is, the version of the serialization
+- **encver**: Encoding version, which is, the version of the serialization
   that a module used in order to persist data. As long as the "name"
   matches, the RDB loading will be dispatched to the type callbacks
   whatever 'encver' is used, however the module can understand if
@@ -1042,29 +1043,30 @@ documentation, especially the TYPES.md file.
   still load old data produced by an older version if the rdb_load
   callback is able to check the encver value and act accordingly.
   The encver must be a positive value between 0 and 1023.
-* **typemethods_ptr** is a pointer to a RedisModuleTypeMethods structure
+- **typemethods_ptr** is a pointer to a RedisModuleTypeMethods structure
   that should be populated with the methods callbacks and structure
   version, like in the following example:
 
-     RedisModuleTypeMethods tm = {
-         .version = `REDISMODULE_TYPE_METHOD_VERSION`,
-         .rdb_load = myType_RDBLoadCallBack,
-         .rdb_save = myType_RDBSaveCallBack,
-         .aof_rewrite = myType_AOFRewriteCallBack,
-         .free = myType_FreeCallBack,
+  RedisModuleTypeMethods tm = {
+  .version = `REDISMODULE_TYPE_METHOD_VERSION`,
+  .rdb_load = myType_RDBLoadCallBack,
+  .rdb_save = myType_RDBSaveCallBack,
+  .aof_rewrite = myType_AOFRewriteCallBack,
+  .free = myType_FreeCallBack,
 
          // Optional fields
          .digest = myType_DigestCallBack,
          .mem_usage = myType_MemUsageCallBack,
-     }
 
-* **rdb_load**: A callback function pointer that loads data from RDB files.
-* **rdb_save**: A callback function pointer that saves data to RDB files.
-* **aof_rewrite**: A callback function pointer that rewrites data as commands.
-* **digest**: A callback function pointer that is used for `DEBUG DIGEST`.
-* **free**: A callback function pointer that can free a type value.
+  }
 
-The **digest* and **mem_usage** methods should currently be omitted since
+- **rdb_load**: A callback function pointer that loads data from RDB files.
+- **rdb_save**: A callback function pointer that saves data to RDB files.
+- **aof_rewrite**: A callback function pointer that rewrites data as commands.
+- **digest**: A callback function pointer that is used for `DEBUG DIGEST`.
+- **free**: A callback function pointer that can free a type value.
+
+The **digest\* and **mem_usage\*\* methods should currently be omitted since
 they are not yet implemented inside the Redis modules core.
 
 Note: the module name "AAAAAAAAA" is reserved and produces an error, it
@@ -1183,7 +1185,7 @@ Like `RedisModule_LoadString()` but returns an heap allocated string that
 was allocated with `RedisModule_Alloc()`, and can be resized or freed with
 `RedisModule_Realloc()` or `RedisModule_Free()`.
 
-The size of the string is stored at '*lenptr' if not NULL.
+The size of the string is stored at '\*lenptr' if not NULL.
 The returned string is not automatically NULL termianted, it is loaded
 exactly as it was stored inisde the RDB file.
 
@@ -1206,7 +1208,7 @@ double value saved by `RedisModule_SaveDouble()`.
 
     void RM_SaveFloat(RedisModuleIO *io, float value);
 
-In the context of the rdb_save method of a module data type, saves a float 
+In the context of the rdb_save method of a module data type, saves a float
 value to the RDB file. The float can be a valid number, a NaN or infinity.
 It is possible to load back the value with `RedisModule_LoadFloat()`.
 
@@ -1233,22 +1235,22 @@ handling is performed by Redis itself.
 
 This is the low level function implementing both:
 
- `RM_Log()`
- `RM_LogIOError()`
+`RM_Log()`
+`RM_LogIOError()`
 
 ## `RM_Log`
 
     void RM_Log(RedisModuleCtx *ctx, const char *levelstr, const char *fmt, ...);
 
-/*
+/\*
 Produces a log message to the standard Redis log, the format accepts
 printf-alike specifiers, while level is a string describing the log
 level to use when emitting the log, and must be one of the following:
 
-* "debug"
-* "verbose"
-* "notice"
-* "warning"
+- "debug"
+- "verbose"
+- "notice"
+- "warning"
 
 If the specified log level is invalid, verbose is used by default.
 There is a fixed limit to the length of the log line this function is able
@@ -1276,18 +1278,18 @@ and a timeout after which the client is unblocked.
 
 The callbacks are called in the following contexts:
 
-reply_callback:  called after a successful `RedisModule_UnblockClient()` call
-                 in order to reply to the client and unblock it.
-reply_timeout:   called when the timeout is reached in order to send an
-                 error to the client.
-free_privdata:   called in order to free the privata data that is passed
-                 by `RedisModule_UnblockClient()` call.
+reply_callback: called after a successful `RedisModule_UnblockClient()` call
+in order to reply to the client and unblock it.
+reply_timeout: called when the timeout is reached in order to send an
+error to the client.
+free_privdata: called in order to free the privata data that is passed
+by `RedisModule_UnblockClient()` call.
 
 ## `RM_UnblockClient`
 
     int RM_UnblockClient(RedisModuleBlockedClient *bc, void *privdata);
 
-Unblock a client blocked by ``RedisModule_BlockedClient``. This will trigger
+Unblock a client blocked by `RedisModule_BlockedClient`. This will trigger
 the reply callbacks to be called in order to reply to the client.
 The 'privdata' argument will be accessible by the reply callback, so
 the caller of this function can pass any value that is needed in order to
@@ -1325,4 +1327,3 @@ reply for a blocked client that timed out.
     void *RM_GetBlockedClientPrivateData(RedisModuleCtx *ctx);
 
 Get the privata data set by `RedisModule_UnblockClient()`
-

@@ -86,7 +86,7 @@ const connectRegistry = (
         type: 'registry',
         name: 'registry',
         port,
-        host
+        host,
       }
       const registryConnection = createConnection(descriptor)
 
@@ -124,7 +124,7 @@ const connectRegistry = (
           origins: {},
           subsManagers: [],
           replicas: {},
-          subRegisters: {}
+          subRegisters: {},
         }
         selvaClient.emit('removed-servers', { event: '*' })
       }

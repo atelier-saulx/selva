@@ -5,12 +5,12 @@ import './assertions'
 
 import getPort from 'get-port'
 
-test('generates a unique id from type', async t => {
+test('generates a unique id from type', async (t) => {
   const port = await getPort()
   const server = await start({ port })
 
   const client = connect({
-    port
+    port,
   })
 
   await client.updateSchema({
@@ -19,11 +19,11 @@ test('generates a unique id from type', async t => {
         prefix: 'ma',
         fields: {
           title: {
-            type: 'text'
-          }
-        }
-      }
-    }
+            type: 'text',
+          },
+        },
+      },
+    },
   })
 
   const id1 = await client.id({ type: 'match' })

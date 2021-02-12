@@ -7,27 +7,27 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
     },
     types: {
       thing: {
-        prefix: 'th'
-      }
-    }
+        prefix: 'th',
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -35,23 +35,23 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscription $rawAncestors', async t => {
+test.serial('subscription $rawAncestors', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
 
   let setObj: Record<string, any> = {
     type: 'thing',
-    $id: 'th0'
+    $id: 'th0',
   }
   let nested = setObj
   for (let i = 1; i < 20; i++) {
     const newChild = {
       type: 'thing',
-      $id: 'th' + i
+      $id: 'th' + i,
     }
     nested.children = [newChild]
     nested = newChild
@@ -61,7 +61,7 @@ test.serial('subscription $rawAncestors', async t => {
 
   const item = await client.get({
     $id: 'th0',
-    children: true
+    children: true,
   })
 
   t.deepEqualIgnoreOrder(item.children, ['th1'])

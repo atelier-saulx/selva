@@ -26,7 +26,7 @@ export default (selvaClient: SelvaClient, move: Move) => {
       )
     }
   }
-  sortNames.forEach(name =>
+  sortNames.forEach((name) =>
     selvaClient.servers.replicas[name].sort((a, b) => a.index - b.index)
   )
 }

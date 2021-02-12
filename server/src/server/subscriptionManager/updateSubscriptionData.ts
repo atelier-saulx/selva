@@ -13,12 +13,12 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
   //  [channel]: 'created'
   const info = {
     ...subsManager.selector,
-    subscriptions: {}
+    subscriptions: {},
   }
 
   let [subscriptions, clients] = await Promise.all([
     redis.hgetall(selector, SUBSCRIPTIONS),
-    redis.hgetall(selector, CLIENTS)
+    redis.hgetall(selector, CLIENTS),
   ])
 
   if (!subscriptions) {
@@ -42,7 +42,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
         // no client add it
         subsManager.clients[client] = {
           subscriptions: new Set(),
-          lastTs: ts
+          lastTs: ts,
         }
       }
     } else {
@@ -57,7 +57,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
   }
 
   await Promise.all(
-    Object.keys(subscriptions).map(async channel => {
+    Object.keys(subscriptions).map(async (channel) => {
       const subscriptionClients = await redis.smembers(selector, channel)
       if (channel in subsManager.subscriptions) {
         for (let i = subscriptionClients.length - 1; i >= 0; i--) {

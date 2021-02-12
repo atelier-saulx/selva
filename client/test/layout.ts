@@ -7,7 +7,7 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   await wait(500)
@@ -20,44 +20,44 @@ test.before(async t => {
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
           title: { type: 'text', search: true },
-          description: { type: 'text', search: true }
-        }
+          description: { type: 'text', search: true },
+        },
       },
       sport: {
         prefix: 'sp',
         fields: {
           title: { type: 'text', search: true },
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       club: {
         prefix: 'cl',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       team: {
         prefix: 'te',
         fields: {
           title: { type: 'text', search: true },
-          name: { type: 'string', search: { type: ['TAG'] } }
-        }
+          name: { type: 'string', search: { type: ['TAG'] } },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           title: { type: 'text', search: true },
           end: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          start: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
-      }
-    }
+          start: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -65,7 +65,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('layout query', async t => {
+test.serial('layout query', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   // add theme and ads
@@ -86,18 +86,18 @@ test.serial('layout query', async t => {
             name: 'match time',
             title: '🌊 MATCH 🌊',
             start: Date.now() - 10000,
-            end: Date.now() + 60 * 60 * 1000 * 2
-          }
-        ]
-      }
-    ]
+            end: Date.now() + 60 * 60 * 1000 * 2,
+          },
+        ],
+      },
+    ],
   })
 
   await client.set({
     $id: 'spfootball',
     $language: 'en',
     title: 'flurp football',
-    children: ['league1']
+    children: ['league1'],
   })
 
   const result = await client.get({
@@ -110,11 +110,11 @@ test.serial('layout query', async t => {
       {
         component: { $value: 'description' },
         title: {
-          $field: 'title'
+          $field: 'title',
         },
         description: {
-          $field: 'description'
-        }
+          $field: 'description',
+        },
       },
       {
         component: { $value: 'gridLarge' },
@@ -129,12 +129,12 @@ test.serial('layout query', async t => {
                 {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'team'
-                }
-              ]
-            }
-          }
-        }
+                  $value: 'team',
+                },
+              ],
+            },
+          },
+        },
       },
       {
         component: { $value: 'list' },
@@ -150,24 +150,24 @@ test.serial('layout query', async t => {
                 {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'match'
+                  $value: 'match',
                 },
                 {
                   $field: 'start',
                   $operator: '<',
-                  $value: 'now'
+                  $value: 'now',
                 },
                 {
                   $field: 'end',
                   $operator: '>',
-                  $value: 'now'
-                }
-              ]
-            }
-          }
-        }
-      }
-    ]
+                  $value: 'now',
+                },
+              ],
+            },
+          },
+        },
+      },
+    ],
   })
 
   t.deepEqualIgnoreOrder(result, {
@@ -176,18 +176,20 @@ test.serial('layout query', async t => {
       {
         component: 'description',
         title: '🌊 mr flurpels 🌊',
-        description: 'I like fancy 🌊'
+        description: 'I like fancy 🌊',
       },
       {
         component: 'gridLarge',
         showall: true,
-        children: [{ title: '🌊 TEAM 🌊' }]
+        children: [{ title: '🌊 TEAM 🌊' }],
       },
       {
         component: 'list',
-        children: [{ sport: { title: 'flurp football' }, title: '🌊 MATCH 🌊' }]
-      }
-    ]
+        children: [
+          { sport: { title: 'flurp football' }, title: '🌊 MATCH 🌊' },
+        ],
+      },
+    ],
   })
 
   await client.destroy()

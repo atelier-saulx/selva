@@ -20,11 +20,11 @@ export const startSubscriptionManager = (
   opts: ServerOptions,
   state: SubscriptionManagerState = {}
 ): Promise<SubscriptionManagerState> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const worker = new Worker(path.join(__dirname, '/worker.js'))
     state = { worker }
     worker.once('connect', () => resolve(state))
-    worker.on('message', message => {
+    worker.on('message', (message) => {
       try {
         const obj = JSON.parse(message)
         if (obj.event) {
@@ -39,7 +39,7 @@ export const startSubscriptionManager = (
 export const stopSubscriptionManager = (
   state: SubscriptionManagerState
 ): Promise<void> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     state.worker.once('destroyComplete', async () => {
       state.worker.removeAllListeners()
       delete state.worker

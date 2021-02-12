@@ -1,19 +1,19 @@
 # Selva API Documentation
 
-  - Server
-    - **[start()](#startoptions)**
-    - **[_server_.destroy()](#serverdestroy)**
-    - **[_server_.backup()](#serverbackup)**
-  - Client
-    - **[connect()](#connectoptions)**
-    - **[set()](#clientsetpayload)**
-    - **[get()](#clientgetquery)**
-    - **[observe()](#clientobservequery)**
-    - **[id()](#clientidoptions)**
-    - **[getSchema()](#clientgetschema)**
-    - **[updateSchema()](#clientupdateschemaschema)**
-    - **[getTypeFromId()](#clientgettypefromidid)**
-    - **[delete()](#clientdeleteid)**
+- Server
+  - **[start()](#startoptions)**
+  - **[_server_.destroy()](#serverdestroy)**
+  - **[_server_.backup()](#serverbackup)**
+- Client
+  - **[connect()](#connectoptions)**
+  - **[set()](#clientsetpayload)**
+  - **[get()](#clientgetquery)**
+  - **[observe()](#clientobservequery)**
+  - **[id()](#clientidoptions)**
+  - **[getSchema()](#clientgetschema)**
+  - **[updateSchema()](#clientupdateschemaschema)**
+  - **[getTypeFromId()](#clientgettypefromidid)**
+  - **[delete()](#clientdeleteid)**
 
 ## Server
 
@@ -101,7 +101,7 @@ Promise resolving to the server instance.
 
 ```javascript
 const server = await start({
-  port: 123456
+  port: 123456,
 })
 ```
 
@@ -176,7 +176,6 @@ Results are automatically cached and optimized.
   </tr>
 </table>
 
-
 #### Example
 
 ```js
@@ -186,7 +185,7 @@ const client = selva.connect(() => getService('name-of-db'))
 
 // client.redis.hget()
 
-client.set('myId', { myShine: true }).then(result => console.log(result)) // logs OK
+client.set('myId', { myShine: true }).then((result) => console.log(result)) // logs OK
 ```
 
 ```js
@@ -196,7 +195,7 @@ const client = selva.connect({
   retryStrategy() {
     // optional
     return 5e3
-  }
+  },
 })
 ```
 
@@ -224,7 +223,7 @@ const client = selva.connect(async () => {
     host: 'whatever',
     retryStrategy() {
       return 5e3
-    }
+    },
   }
 })
 ```
@@ -325,7 +324,7 @@ await client.set({
   $merge: false, // defaults to true
   $version: 'mySpecialversion', // optional
   id: 'myNewId',
-  foo: true
+  foo: true,
 })
 ```
 
@@ -338,8 +337,8 @@ await client.set({
   foo: true,
   children: {
     $add: 'smukytown',
-    $delete: 'myblarf'
-  }
+    $delete: 'myblarf',
+  },
 })
 ```
 
@@ -351,8 +350,8 @@ await client.set({
     // ---- :(
     $hierarchy: false, // defaults to true
     $add: 'smukytown',
-    $delete: ['myblarf', 'xxx']
-  }
+    $delete: ['myblarf', 'xxx'],
+  },
 })
 ```
 
@@ -362,8 +361,8 @@ await client.set({
   children: {
     // ---- :(
     $hierarchy: false, // defaults to true
-    $value: ['root']
-  }
+    $value: ['root'],
+  },
 })
 ```
 
@@ -384,15 +383,15 @@ await client.set({
   title: 'flowers',
   externalId: {
     $merge: false,
-    $value: 'myflower.de'
-  }
+    $value: 'myflower.de',
+  },
 })
 ```
 
 ```js
 await client.set({
   type: 'tag',
-  title: { de: 'blümen' }
+  title: { de: 'blümen' },
 })
 ```
 
@@ -405,14 +404,14 @@ await client.set({
     title: 'blurf',
     nestedCount: {
       $default: 100,
-      $inc: { $value: 1 }
+      $inc: { $value: 1 },
     },
     access: {
       $default: {
-        flurpiepants: 'my pants'
-      }
-    }
-  }
+        flurpiepants: 'my pants',
+      },
+    },
+  },
 })
 ```
 
@@ -440,9 +439,9 @@ myId#mySpecialversion
 ```js
 const obj = {
   foo: {
-    bar: true
+    bar: true,
   },
-  haha: true
+  haha: true,
 }
 ```
 
@@ -507,13 +506,15 @@ _Observable_ that can be subscribed to for changes. The first event is always th
 #### Examples
 
 ```js
-const sub = client.observe({
-  $id: 'myId',
-  $language: 'en',
-  $title: true
-}).subscribe(d => {
-  console.log('result data', d)
-})
+const sub = client
+  .observe({
+    $id: 'myId',
+    $language: 'en',
+    $title: true,
+  })
+  .subscribe((d) => {
+    console.log('result data', d)
+  })
 
 setTimeout(() => {
   sub.unsubscribe()
@@ -581,7 +582,6 @@ Promise resolving to the generated id.
 const id = await client.id({ type: 'flurpy', externalId: 'smurkysmurk' })
 // flgurk
 ```
-
 
 ### _client_.getSchema()
 

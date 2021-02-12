@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -20,23 +20,23 @@ test.before(async t => {
         prefix: 'sp',
         fields: {
           title: { type: 'text' },
-          menu: { type: 'references' }
-        }
+          menu: { type: 'references' },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
-          menu: { type: 'references' }
-        }
-      }
-    }
+          menu: { type: 'references' },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -44,26 +44,26 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('inherit references $list', async t => {
+test.serial('inherit references $list', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const menuItem = await client.set({
     $language: 'en',
     type: 'match',
-    title: 'menu item'
+    title: 'menu item',
   })
 
   const sport = await client.set({
     $language: 'en',
     type: 'sport',
     title: 'football',
-    menu: [menuItem]
+    menu: [menuItem],
   })
 
   const child = await client.set({
     $language: 'en',
     type: 'match',
     title: 'football match',
-    parents: [sport]
+    parents: [sport],
   })
 
   t.deepEqual(
@@ -73,16 +73,16 @@ test.serial('inherit references $list', async t => {
       menu: {
         title: true,
         $list: {
-          $inherit: { $type: ['sport'] }
-        }
-      }
+          $inherit: { $type: ['sport'] },
+        },
+      },
     }),
     {
       menu: [
         {
-          title: 'menu item'
-        }
-      ]
+          title: 'menu item',
+        },
+      ],
     }
   )
   await client.destroy()

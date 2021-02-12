@@ -6,7 +6,7 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   const client = connect({ port })
@@ -17,18 +17,18 @@ test.before(async t => {
         prefix: 'sh',
         fields: {
           title: {
-            type: 'text'
-          }
-        }
-      }
-    }
+            type: 'text',
+          },
+        },
+      },
+    },
   })
 
   await wait(500)
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -36,7 +36,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscribe - should fire after creation', async t => {
+test.serial('subscribe - should fire after creation', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const id = 'sh1'
 
@@ -53,9 +53,9 @@ test.serial('subscribe - should fire after creation', async t => {
     .observe({
       $id: id,
       title: true,
-      $language: 'de'
+      $language: 'de',
     })
-    .subscribe(r => {
+    .subscribe((r) => {
       console.log('fires!', r)
       t.pass()
     })
@@ -67,7 +67,7 @@ test.serial('subscribe - should fire after creation', async t => {
     await client.set({
       $id: id,
       $language: 'de',
-      title: 'test ' + n
+      title: 'test ' + n,
     })
     await wait(2e3)
   }

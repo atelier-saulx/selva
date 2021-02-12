@@ -7,7 +7,7 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
 
@@ -21,7 +21,7 @@ test.before(async t => {
           value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -29,18 +29,18 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -48,7 +48,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get - simple $list with id $traverse', async t => {
+test.serial('get - simple $list with id $traverse', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const children = []
@@ -58,7 +58,7 @@ test.serial('get - simple $list with id $traverse', async t => {
       $id: 'cu' + i,
       type: 'custom',
       value: i,
-      name: 'flurp' + i
+      name: 'flurp' + i,
     })
   }
 
@@ -66,11 +66,11 @@ test.serial('get - simple $list with id $traverse', async t => {
     client.set({
       $id: 'cuA',
       image: {
-        thumb: 'flurp.jpg'
+        thumb: 'flurp.jpg',
       },
       title: { en: 'snurf' },
-      children
-    })
+      children,
+    }),
   ])
 
   const c = await client.get({
@@ -81,18 +81,18 @@ test.serial('get - simple $list with id $traverse', async t => {
       $list: {
         $sort: { $field: 'value', $order: 'asc' },
         $find: {
-          $traverse: ['cu1', 'cu2', 'cu3']
-        }
-      }
-    }
+          $traverse: ['cu1', 'cu2', 'cu3'],
+        },
+      },
+    },
   })
 
   t.deepEqual(c, {
     items: [
       { value: 1, name: 'flurp1' },
       { value: 2, name: 'flurp2' },
-      { value: 3, name: 'flurp3' }
-    ]
+      { value: 3, name: 'flurp3' },
+    ],
   })
 
   await client.destroy()

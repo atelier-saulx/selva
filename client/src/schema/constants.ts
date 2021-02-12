@@ -2,48 +2,48 @@ import { FieldSchema } from './types'
 
 export const defaultFields: Record<string, FieldSchema> = {
   id: {
-    type: 'id'
+    type: 'id',
     // never indexes these - uses in keys
     // search: { index: 'default', type: ['TAG'] }
   },
   type: {
     search: { index: 'default', type: ['TAG'] },
-    type: 'type'
+    type: 'type',
   },
   name: {
     search: { index: 'default', type: ['TAG'] },
-    type: 'string'
+    type: 'string',
   },
   children: {
-    type: 'references'
+    type: 'references',
   },
   parents: {
-    type: 'references'
+    type: 'references',
   },
   ancestors: {
     type: 'references',
-    search: { index: 'default', type: ['TAG'] }
+    search: { index: 'default', type: ['TAG'] },
   },
   descendants: {
-    type: 'references'
+    type: 'references',
   },
   aliases: {
     type: 'set',
-    items: { type: 'string' }
-  }
+    items: { type: 'string' },
+  },
 }
 
 export const rootDefaultFields: Record<string, FieldSchema> = {
   id: {
-    type: 'id'
+    type: 'id',
   },
   type: {
-    type: 'type'
+    type: 'type',
   },
   children: {
-    type: 'references'
+    type: 'references',
   },
   descendants: {
-    type: 'references'
-  }
+    type: 'references',
+  },
 }

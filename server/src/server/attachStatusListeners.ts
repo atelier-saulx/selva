@@ -11,7 +11,7 @@ const initHierarchy = (
     console.log('Trying to initialize empty hierarchy', info)
     return server.selvaClient.redis
       .selva_modify(info, 'root', 'R', '0', 'type', 'root')
-      .then(res => {
+      .then((res) => {
         console.log('Empty hierarchy initialized', res)
       })
   }
@@ -20,7 +20,7 @@ const initHierarchy = (
 }
 
 const attachListener = (server: SelvaServer, info: ServerDescriptor) => {
-  server.on('stats', rawStats => {
+  server.on('stats', (rawStats) => {
     // if (server.type === 'replica') {
     // only want this if it is not registred before
     // if (rawStats.redisInfo.master_sync_in_progress !== '0') {
@@ -33,14 +33,14 @@ const attachListener = (server: SelvaServer, info: ServerDescriptor) => {
         cpu: rawStats.runtimeInfo.cpu,
         activeChannels: Number(rawStats.redisInfo.pubsub_channels),
         opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
-        timestamp: rawStats.runtimeInfo.timestamp
+        timestamp: rawStats.runtimeInfo.timestamp,
       }
 
       updateRegistry(
         server,
         Object.assign(
           {
-            stats
+            stats,
           },
           info
         )
@@ -54,11 +54,11 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
     name: opts.name,
     type: server.type,
     port: opts.port,
-    host: opts.host
+    host: opts.host,
   }
 
   initHierarchy(server, info)
-    .catch(e => console.error('ERROR initializing hierarchy', e))
+    .catch((e) => console.error('ERROR initializing hierarchy', e))
     .finally(() => {
       attachListener(server, info)
     })

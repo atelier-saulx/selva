@@ -45,5 +45,5 @@ Object.assign(Assertions.prototype, {
   deepEqualIgnoreOrder(actual, expected, message = '') {
     deepSort(actual, expected)
     this.deepEqual(actual, expected, message)
-  }
+  },
 })

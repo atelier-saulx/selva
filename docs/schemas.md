@@ -3,31 +3,29 @@
 Schemas define the data structure to be used.  
 They allow for data to be automatically validated and the right type of index to be used for searching.
 
-  - [_root_ object](#root-object)
-  - [Types](#types)
-    - [`Object` type](#object-type)
-  - [Type Fields](#type-fields)
-    - [Field index types](#field-indexes-types)
-    - [Field data types](#field-data-types)
+- [_root_ object](#root-object)
+- [Types](#types)
+  - [`Object` type](#object-type)
+- [Type Fields](#type-fields)
+  - [Field index types](#field-indexes-types)
+  - [Field data types](#field-data-types)
 
 ### Default fields
 
 These fields are added automatically as part of each type.
 
- - `name`: _string_
- - `children`: _references_
- - `parents`: _references_
-
+- `name`: _string_
+- `children`: _references_
+- `parents`: _references_
 
 ### _root_ object
 
 #### Properties
 
-| Name | type | atributes | description |
-| ---  | ---  | ---       | ---         |
-| `languages` | Array | optional | Sets the available languages in the data |
-| `types` | Object | | Defines the [types](#types). Each object key is the type name and it's value the type definition. |
-
+| Name        | type   | atributes | description                                                                                       |
+| ----------- | ------ | --------- | ------------------------------------------------------------------------------------------------- |
+| `languages` | Array  | optional  | Sets the available languages in the data                                                          |
+| `types`     | Object |           | Defines the [types](#types). Each object key is the type name and it's value the type definition. |
 
 ### Types
 
@@ -37,7 +35,7 @@ These fields are added automatically as part of each type.
   types: {
     league: { // type name
       prefix: 'le', // type prefix
-      fields: { 
+      fields: {
         name: { type: 'string', search: { type: ['TAG'] } }
       }
     }
@@ -47,10 +45,10 @@ These fields are added automatically as part of each type.
 
 #### Properties
 
-| Name | type | atributes | description |
-| ---  | ---  | ---       | ---         |
-| `prefix` | string | optional | Two character string that identifies the type. Used as a prefix for each object/id |
-| `fields` | Object | | Defines the [fields](#typefields) for the type. Each object key is a field name and its value the field difinition. |
+| Name     | type   | atributes | description                                                                                                         |
+| -------- | ------ | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `prefix` | string | optional  | Two character string that identifies the type. Used as a prefix for each object/id                                  |
+| `fields` | Object |           | Defines the [fields](#typefields) for the type. Each object key is a field name and its value the field difinition. |
 
 ### Type Fields
 
@@ -58,11 +56,11 @@ Defines the fields available to each type.
 
 #### Properties
 
-| Name | type | atributes | description |
-| ---  | ---  | ---       | ---         |
-| `type` | string | | Two character string that identifies the type. Used as a prefix for each object/id |
-| `fields` | Object | | [Data type](#fielddatatypes) for the field.
-| `search` | Object | optional | [Index](#field-indexes) type for the field.
+| Name     | type   | atributes | description                                                                        |
+| -------- | ------ | --------- | ---------------------------------------------------------------------------------- |
+| `type`   | string |           | Two character string that identifies the type. Used as a prefix for each object/id |
+| `fields` | Object |           | [Data type](#fielddatatypes) for the field.                                        |
+| `search` | Object | optional  | [Index](#field-indexes) type for the field.                                        |
 
 #### `Object` type
 
@@ -109,16 +107,16 @@ See [index types](#fieldindextypes) below for more information.
 For the fields to be searchable, it needs an index.
 There are several types of indexes avaliable. One field may have multiple index types.
 
-
-  - [`EXISTS`](#exists)
-  - [`TAG`](#tag)
-  - [`NUMERIC`](#numeric)
-  - [`SORTABLE`](#sortable)
-  - [`TEXT-LANGUAGE`](#text-language)
-  - [`GEO`](#geo)
-  - [`TEXT-LANGUAGE-SUG`](#text-language-sug)
+- [`EXISTS`](#exists)
+- [`TAG`](#tag)
+- [`NUMERIC`](#numeric)
+- [`SORTABLE`](#sortable)
+- [`TEXT-LANGUAGE`](#text-language)
+- [`GEO`](#geo)
+- [`TEXT-LANGUAGE-SUG`](#text-language-sug)
 
 The following combinations are supported:
+
 - `['TAG']`
 - `['TAG', 'EXISTS']`
 - `['NUMERIC']`
@@ -160,7 +158,6 @@ When indexed as `TAG`, the field becomes queryable with [`$filter`](./get_query.
 - `$operator: '!='`
 
 The filter will match the field values as an exact match of the values.
-
 
 ##### NUMERIC
 
@@ -204,10 +201,11 @@ The `TEXT-LANGUAGE` index type can be applied to the `text` type only.
 
 When indexed as `TEXT-LANGUAGE`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
 
-- `$operator: '='` 
-- `$operator: '!='` 
+- `$operator: '='`
+- `$operator: '!='`
 
 The text match will be a text search approximate string match, including preprocessing such as:
+
 - Removing special characters
 - Word stemming
 - Excluding most common words if they don't affect the search results
@@ -232,8 +230,8 @@ The `TEXT-LANGUAGE-SUG` index type can be applied to the `text` type only.
 
 When indexed as `TEXT-LANGUAGE-SUG`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
 
-- `$operator: '='` 
-- `$operator: '!='` 
+- `$operator: '='`
+- `$operator: '!='`
 
 Matching with `TEXT-LANGUAGE-SUG` works much the same way as with `TEXT-LANGUAGE`, however, the `$value` property is first passed through a search autocomplete index. It is mostly used for things such as implementing the search bar for movie titles.
 
@@ -258,23 +256,23 @@ The `EXISTS` index type can be applied to any type. When other indexing is enabl
 
 #### Field data types
 
-  - `float`
-  - `boolean`
-  - `number`
-  - `int`
-  - `references`
-  - `string`
-  - `text`
-  - `id`
-  - `digest`
-  - `url`
-  - `email`
-  - `phone`
-  - `geo`
-  - `timestamp`
-  - `set`
-  - `array`
-  - [`object`](#object-type)
-  - `json`
+- `float`
+- `boolean`
+- `number`
+- `int`
+- `references`
+- `string`
+- `text`
+- `id`
+- `digest`
+- `url`
+- `email`
+- `phone`
+- `geo`
+- `timestamp`
+- `set`
+- `array`
+- [`object`](#object-type)
+- `json`
 
 For more information on what kind of values are stored in each of these types, you can visit the [set query](./set_query.md#any-field-name) documentation.

@@ -26,7 +26,7 @@ export default (server: SelvaServer, opts: ServerOptions) => {
     }
   }
 
-  modules.forEach(m => {
+  modules.forEach((m) => {
     const platform = process.platform + '_' + process.arch
     const p =
       // if it contains ".so"" then don't do this
@@ -61,12 +61,12 @@ export default (server: SelvaServer, opts: ServerOptions) => {
     host,
     name: server.name,
     type: server.type,
-    selvaClient: server.selvaClient
+    selvaClient: server.selvaClient,
   })
 
   server.pm.start()
-  server.pm.on('error', err => server.emit('error', err))
-  server.pm.on('stdout', s => server.emit('stdout', s))
-  server.pm.on('stderr', s => server.emit('stderr', s))
-  server.pm.on('stats', o => server.emit('stats', o))
+  server.pm.on('error', (err) => server.emit('error', err))
+  server.pm.on('stdout', (s) => server.emit('stdout', s))
+  server.pm.on('stderr', (s) => server.emit('stderr', s))
+  server.pm.on('stats', (o) => server.emit('stats', o))
 }

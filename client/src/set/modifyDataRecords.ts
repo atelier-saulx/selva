@@ -1,18 +1,14 @@
 import { compile } from 'data-record'
 
-export const doubleDef = compile([
-  { name: 'd', type: 'double' }
-])
+export const doubleDef = compile([{ name: 'd', type: 'double' }])
 
-export const longLongDef = compile([
-  { name: 'd', type: 'uint64' }
-])
+export const longLongDef = compile([{ name: 'd', type: 'uint64' }])
 
 export const OPT_SET_TYPE = {
-    'char': 0,
-    'reference': 1,
-    'double': 2,
-    'long_long': 3
+  char: 0,
+  reference: 1,
+  double: 2,
+  long_long: 3,
 }
 
 export const setRecordDefCstring = compile([
@@ -41,10 +37,10 @@ export const setRecordDefInt64 = compile([
 
 export const incrementDef = compile([
   { name: '$default', type: 'int64' },
-  { name: '$increment', type: 'int64' }
+  { name: '$increment', type: 'int64' },
 ])
 
 export const incrementDoubleDef = compile([
   { name: '$default', type: 'double' },
-  { name: '$increment', type: 'double' }
+  { name: '$increment', type: 'double' },
 ])

@@ -33,4 +33,3 @@ export default async function validateField(
     `Unsupported type in operator $field for ${path}.$field. Required type string, array of strings or object { path: string | string[]; value: GetOptions }`
   )
 }
-

@@ -12,7 +12,7 @@ import { setDataSet } from '../_dataSet'
 let srv: SelvaServer
 let port
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   await wait(500)
@@ -21,7 +21,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -29,14 +29,14 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('$value', async t => {
+test.serial('$value', async (t) => {
   const client = connect({ port: port })
 
   await setDataSet(client)
 
   const result = await client.get({
     $id: 'mo2001ASpaceOdyssey',
-    title: { $value: '2001' }
+    title: { $value: '2001' },
   })
 
   t.true(result.title === '2001')

@@ -13,7 +13,7 @@ export const addRemoteListener = (
 ) => {
   getServer(
     selvaClient,
-    server => {
+    (server) => {
       const connection = createConnection(server)
       connection.attachClient(selvaClient)
       connection.addRemoteListener(
@@ -35,7 +35,7 @@ export const removeRemoteListener = (
 ) => {
   getServer(
     selvaClient,
-    server => {
+    (server) => {
       const connection = createConnection(server)
       connection.attachClient(selvaClient)
       connection.removeRemoteListener(

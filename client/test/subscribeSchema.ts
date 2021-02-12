@@ -10,27 +10,27 @@ let port: number
 test.before(async () => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   srv2 = await startOrigin({
     registry: { port },
-    name: 'snurk'
+    name: 'snurk',
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   await srv2.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
 })
 
-test.serial('basic schema based subscriptions', async t => {
+test.serial('basic schema based subscriptions', async (t) => {
   const client = connect({ port })
 
   const obssnurk = client.subscribeSchema('snurk')
 
   let snurkCnt = 0
-  obssnurk.subscribe(x => {
+  obssnurk.subscribe((x) => {
     snurkCnt++
     if (snurkCnt === 2) {
       if (!x.rootType.fields.snurk) {
@@ -44,15 +44,15 @@ test.serial('basic schema based subscriptions', async t => {
     {
       languages: ['en', 'de', 'nl'],
       rootType: {
-        fields: { snurk: { type: 'string' } }
-      }
+        fields: { snurk: { type: 'string' } },
+      },
     },
     'snurk'
   )
 
   const observable = client.subscribeSchema()
   let o1counter = 0
-  const sub = observable.subscribe(d => {
+  const sub = observable.subscribe((d) => {
     o1counter++
   })
 
@@ -61,8 +61,8 @@ test.serial('basic schema based subscriptions', async t => {
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
-    }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
+    },
   })
 
   await wait(500)
@@ -70,15 +70,15 @@ test.serial('basic schema based subscriptions', async t => {
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } }
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
     },
     types: {
       yeshType: {
         fields: {
-          yesh: { type: 'string' }
-        }
-      }
-    }
+          yesh: { type: 'string' },
+        },
+      },
+    },
   })
 
   await wait(500)
@@ -90,7 +90,7 @@ test.serial('basic schema based subscriptions', async t => {
   t.is(o1counter, 3)
   const observable2 = client.subscribeSchema()
   var cnt = 0
-  const sub2 = observable2.subscribe(d => {
+  const sub2 = observable2.subscribe((d) => {
     cnt++
   })
 

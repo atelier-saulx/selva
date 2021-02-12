@@ -42,9 +42,9 @@ const createSubscriptionManager = (
     tree: {},
     selector: {
       port: opts.port,
-      host: opts.host
+      host: opts.host,
     },
-    originListeners: {}
+    originListeners: {},
   }
 
   client.on('connect', () => {
@@ -54,7 +54,7 @@ const createSubscriptionManager = (
 
     parentPort.postMessage(
       JSON.stringify({
-        event: 'connect'
+        event: 'connect',
       })
     )
   })
@@ -71,7 +71,7 @@ const destroy = (subsManager: SubscriptionManager) => {
   clear(subsManager)
   parentPort.postMessage(
     JSON.stringify({
-      event: 'destroyComplete'
+      event: 'destroyComplete',
     })
   )
 }

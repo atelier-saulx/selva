@@ -12,14 +12,14 @@ const mkS3 = require('../../dist/backup-plugins/s3').default
 
 const backups = require('../../dist/backups')
 
-;(async backupFns => {
+;(async (backupFns) => {
   // force to load backup
   try {
     await fs.unlink(path.join(process.cwd(), 'dump.rdb'))
   } catch (e) {}
 
   const registry = srv.startRegistry({
-    port: 6060
+    port: 6060,
   })
 
   const server = srv.startOrigin({
@@ -35,10 +35,10 @@ const backups = require('../../dist/backups')
         bucketName: BUCKET, // TODO: pass database name etc. to automate
         config: {
           accessKeyId: ACCESS_KEY_ID,
-          secretAccessKey: SECRET_ACCESS_KEY
-        }
-      })
-    }
+          secretAccessKey: SECRET_ACCESS_KEY,
+        },
+      }),
+    },
   })
 
   // setTimeout(() => {
@@ -46,4 +46,4 @@ const backups = require('../../dist/backups')
   //     console.error(e)
   //   })
   // }, 1000 * 60 * 5)
-})().catch(e => console.error(e))
+})().catch((e) => console.error(e))

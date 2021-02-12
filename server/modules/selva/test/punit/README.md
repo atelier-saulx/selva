@@ -1,13 +1,11 @@
-PUnit   {#mainpage}
-=====
+# PUnit {#mainpage}
 
 PUnit, a portable unit testing framework for C.
 Inspired by: http://www.jera.com/techinfo/jtns/jtn002.html
 
 Complete documentation: http://ninjaware.github.com/punit/
 
-Setting up the directory tree
------------------------------
+## Setting up the directory tree
 
     .
     |-example_prj_target1   (Your test suite)
@@ -18,9 +16,7 @@ Setting up the directory tree
     |---obj
     |-punit                 (PUnit)
 
-
-How to implement a new test suite
----------------------------------
+## How to implement a new test suite
 
 1. `cp -R example_prj name_of_your_project`
 2. Update Makefile in your new project directory according to instructions in
@@ -33,31 +29,27 @@ How to implement a new test suite
    and build all needed source modules, build the tests and finally run the
    tests.
 
+## Assertions
 
-Assertions
-----------
-
-+ `pu_assert(message, test)` - Checks if boolean value of test is true
-+ `pu_assert_equal(message, left, right)` - Checks if `left == right` is true
-+ `pu_assert_ptr_equal(message, left, right)` - Checks if left and right
+- `pu_assert(message, test)` - Checks if boolean value of test is true
+- `pu_assert_equal(message, left, right)` - Checks if `left == right` is true
+- `pu_assert_ptr_equal(message, left, right)` - Checks if left and right
   pointers are equal
-+ `pu_assert_str_equal(message, left, right)` - Checks if left and right
+- `pu_assert_str_equal(message, left, right)` - Checks if left and right
   strings are equal (strcmp)
-+ `pu_assert_double_equal(message, left, right, delta)` - Checks if left and
+- `pu_assert_double_equal(message, left, right, delta)` - Checks if left and
   right doubles are appoximately equal
-+ `pu_assert_array_equal(message, left, right, size)` - Asserts that each
+- `pu_assert_array_equal(message, left, right, size)` - Asserts that each
   integer element i of two arrays are equal (strcmp).
-+ `pu_assert_str_array_equal(message, left, right, size)` - Asserts that each
+- `pu_assert_str_array_equal(message, left, right, size)` - Asserts that each
   string element i of two arrays are equal (==).
-+ `pu_assert_null(message, ptr)` - Asserts that a pointer is null.
-+ `pu_assert_not_null(message, ptr)` - Asserts that a pointer isn't null.
-+ `pu_assert_fail(message)` - Always fails
+- `pu_assert_null(message, ptr)` - Asserts that a pointer is null.
+- `pu_assert_not_null(message, ptr)` - Asserts that a pointer isn't null.
+- `pu_assert_fail(message)` - Always fails
 
 See examples in: `examples/example_prj`
 
-
-Mock functions
---------------
+## Mock functions
 
 Mock functions can be quite useful especially when testing some OS modules or
 embedded software.
@@ -71,9 +63,7 @@ embedded software.
 
 Note: Do not build func.c i.e. do not add it to the name of the test module.
 
-
-License 
--------
+## License
 
 Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
 Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
@@ -98,4 +88,3 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-

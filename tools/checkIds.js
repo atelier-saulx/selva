@@ -4,7 +4,7 @@ const os = require('os')
 const path = require('path')
 const _ = require('lodash')
 
-const clean = data => {
+const clean = (data) => {
   const blacklist = new Set()
   const checkBad = (item, blacklist) => {
     if (blacklist.has(item.id)) {
@@ -28,7 +28,7 @@ const clean = data => {
       }
       if (!keep) {
         try {
-          keep = JSON.parse(item.children).find(id => {
+          keep = JSON.parse(item.children).find((id) => {
             const bad = checkBad(data[id], blacklist)
             return !bad
           })
@@ -55,12 +55,12 @@ const clean = data => {
     const item = data[id]
     try {
       item.parents = JSON.stringify(
-        JSON.parse(item.parents).filter(id => !blacklist.has(id))
+        JSON.parse(item.parents).filter((id) => !blacklist.has(id))
       )
     } catch (e) {}
     try {
       item.children = JSON.stringify(
-        JSON.parse(item.children).filter(id => !blacklist.has(id))
+        JSON.parse(item.children).filter((id) => !blacklist.has(id))
       )
     } catch (e) {}
   }
@@ -115,7 +115,7 @@ migrate()
   .then(() => {
     process.exit(0)
   })
-  .catch(e => {
+  .catch((e) => {
     console.error(e)
     process.exit(1)
   })

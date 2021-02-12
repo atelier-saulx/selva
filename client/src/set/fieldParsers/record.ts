@@ -36,7 +36,7 @@ export default async (
         r.push('0', field + '.' + key, payload[key])
         return
       } else if (key === '$delete') {
-          // NOP - dead branch
+        // NOP - dead branch
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }

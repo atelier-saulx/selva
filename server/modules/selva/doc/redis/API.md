@@ -1,12 +1,11 @@
-Redis Modules: an introduction to the API
-===
+# Redis Modules: an introduction to the API
 
 The modules documentation is composed of the following files:
 
-* `INTRO.md` (this file). An overview about Redis Modules system and API. It's a good idea to start your reading here.
-* `API.md` is generated from module.c top comments of RedisMoule functions. It is a good reference in order to understand how each function works.
-* `TYPES.md` covers the implementation of native data types into modules.
-* `BLOCK.md` shows how to write blocking commands that will not reply immediately, but will block the client, without blocking the Redis server, and will provide a reply whenever will be possible.
+- `INTRO.md` (this file). An overview about Redis Modules system and API. It's a good idea to start your reading here.
+- `API.md` is generated from module.c top comments of RedisMoule functions. It is a good reference in order to understand how each function works.
+- `TYPES.md` covers the implementation of native data types into modules.
+- `BLOCK.md` shows how to write blocking commands that will not reply immediately, but will block the client, without blocking the Redis server, and will provide a reply whenever will be possible.
 
 Redis modules make possible to extend Redis functionality using external
 modules, implementing new Redis commands at a speed and with features
@@ -127,7 +126,6 @@ calling it, to the command and client executing a given command, and so forth.
 To create a new command, the above function needs the context, the command
 name, and the function pointer of the function implementing the command,
 which must have the following prototype:
-
 
     int mycommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 
@@ -282,12 +280,12 @@ terminated C string.
 
 This is the full list of format specifiers:
 
-* **c** -- Null terminated C string pointer.
-* **b** -- C buffer, two arguments needed: C string pointer and `size_t` length.
-* **s** -- RedisModuleString as received in `argv` or by other Redis module APIs returning a RedisModuleString object.
-* **l** -- Long long integer.
-* **v** -- Array of RedisModuleString objects.
-* **!** -- This modifier just tells the function to replicate the command to slaves and AOF. It is ignored from the point of view of arguments parsing.
+- **c** -- Null terminated C string pointer.
+- **b** -- C buffer, two arguments needed: C string pointer and `size_t` length.
+- **s** -- RedisModuleString as received in `argv` or by other Redis module APIs returning a RedisModuleString object.
+- **l** -- Long long integer.
+- **v** -- Array of RedisModuleString objects.
+- **!** -- This modifier just tells the function to replicate the command to slaves and AOF. It is ignored from the point of view of arguments parsing.
 
 The function returns a `RedisModuleCallReply` object on success, on
 error NULL is returned.
@@ -314,11 +312,11 @@ is used:
 
 Valid reply types are:
 
-* `REDISMODULE_REPLY_STRING` Bulk string or status replies.
-* `REDISMODULE_REPLY_ERROR` Errors.
-* `REDISMODULE_REPLY_INTEGER` Signed 64 bit integers.
-* `REDISMODULE_REPLY_ARRAY` Array of replies.
-* `REDISMODULE_REPLY_NULL` NULL reply.
+- `REDISMODULE_REPLY_STRING` Bulk string or status replies.
+- `REDISMODULE_REPLY_ERROR` Errors.
+- `REDISMODULE_REPLY_INTEGER` Signed 64 bit integers.
+- `REDISMODULE_REPLY_ARRAY` Array of replies.
+- `REDISMODULE_REPLY_NULL` NULL reply.
 
 Strings, errors and arrays have an associated length. For strings and errors
 the length corresponds to the length of the string. For arrays the length
@@ -518,8 +516,8 @@ associated value.
 Because the API is meant to be very fast, it cannot do too many run-time
 checks, so the user must be aware of certain rules to follow:
 
-* Opening the same key multiple times where at least one instance is opened for writing, is undefined and may lead to crashes.
-* While a key is open, it should only be accessed via the low level key API. For example opening a key, then calling DEL on the same key using the `RedisModule_Call()` API will result into a crash. However it is safe to open a key, perform some operation with the low level API, closing it, then using other APIs to manage the same key, and later opening it again to do some more work.
+- Opening the same key multiple times where at least one instance is opened for writing, is undefined and may lead to crashes.
+- While a key is open, it should only be accessed via the low level key API. For example opening a key, then calling DEL on the same key using the `RedisModule_Call()` API will result into a crash. However it is safe to open a key, perform some operation with the low level API, closing it, then using other APIs to manage the same key, and later opening it again to do some more work.
 
 In order to open a key the `RedisModule_OpenKey` function is used. It returns
 a key pointer, that we'll use with all the next calls to access and modify
@@ -697,30 +695,30 @@ Work in progress.
 Documentation missing, please refer to the top comments inside `module.c`
 for the following functions:
 
-* `RedisModule_ZsetAdd`
-* `RedisModule_ZsetIncrby`
-* `RedisModule_ZsetScore`
-* `RedisModule_ZsetRem`
+- `RedisModule_ZsetAdd`
+- `RedisModule_ZsetIncrby`
+- `RedisModule_ZsetScore`
+- `RedisModule_ZsetRem`
 
 And for the sorted set iterator:
 
-* `RedisModule_ZsetRangeStop`
-* `RedisModule_ZsetFirstInScoreRange`
-* `RedisModule_ZsetLastInScoreRange`
-* `RedisModule_ZsetFirstInLexRange`
-* `RedisModule_ZsetLastInLexRange`
-* `RedisModule_ZsetRangeCurrentElement`
-* `RedisModule_ZsetRangeNext`
-* `RedisModule_ZsetRangePrev`
-* `RedisModule_ZsetRangeEndReached`
+- `RedisModule_ZsetRangeStop`
+- `RedisModule_ZsetFirstInScoreRange`
+- `RedisModule_ZsetLastInScoreRange`
+- `RedisModule_ZsetFirstInLexRange`
+- `RedisModule_ZsetLastInLexRange`
+- `RedisModule_ZsetRangeCurrentElement`
+- `RedisModule_ZsetRangeNext`
+- `RedisModule_ZsetRangePrev`
+- `RedisModule_ZsetRangeEndReached`
 
 ## Hash type API
 
 Documentation missing, please refer to the top comments inside `module.c`
 for the following functions:
 
-* `RedisModule_HashSet`
-* `RedisModule_HashGet`
+- `RedisModule_HashSet`
+- `RedisModule_HashGet`
 
 ## Iterating aggregated values
 

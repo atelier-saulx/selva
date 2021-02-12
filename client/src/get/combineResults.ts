@@ -20,7 +20,7 @@ export default async function combineResults(
 
   if (Object.keys(getResult).length === 1 && getResult.listResult) {
     await Promise.all(
-      getResult.listResult.map(res => {
+      getResult.listResult.map((res) => {
         return combineResults(client, extraQueries, $language, res, meta)
       })
     )
@@ -30,7 +30,7 @@ export default async function combineResults(
   await Promise.all(
     Object.entries(extraQueries).map(async ([db, query]) => {
       await Promise.all(
-        query.map(async q => {
+        query.map(async (q) => {
           if (q.type === 'traverse' || q.type === 'text_search') {
             // these are processed before the main query
             if (meta) {
@@ -54,11 +54,11 @@ export default async function combineResults(
                 type: q.type,
                 getOpts: q.getOpts,
                 path: '.' + parts.slice(i + 1).join('.'),
-                placeholder: q.placeholder
+                placeholder: q.placeholder,
               }
 
               return Promise.all(
-                g[part].map(r => {
+                g[part].map((r) => {
                   return combineResults(
                     client,
                     { [db]: [newQuery] },
@@ -85,7 +85,7 @@ export default async function combineResults(
                 $id: g[parts[parts.length - 1]],
                 $db: db,
                 $includeMeta: !!meta,
-                ...q.getOpts
+                ...q.getOpts,
               },
               meta,
               true
@@ -109,10 +109,10 @@ export default async function combineResults(
                         ...(gopts.$list === true
                           ? {}
                           : gopts.$list.$find || {}),
-                        $traverse: g[parts[parts.length - 1]]
-                      }
-                    }
-                  }
+                        $traverse: g[parts[parts.length - 1]],
+                      },
+                    },
+                  },
                 },
                 meta,
                 true
@@ -143,10 +143,10 @@ export default async function combineResults(
                       $list: {
                         $find: {
                           ...fopts,
-                          $traverse: [...findIds]
-                        }
-                      }
-                    }
+                          $traverse: [...findIds],
+                        },
+                      },
+                    },
                   },
                   meta,
                   true
@@ -168,9 +168,9 @@ export default async function combineResults(
                     ...gopts,
                     $find: {
                       ...gopts.$find,
-                      $traverse: g[parts[parts.length - 1]]
-                    }
-                  }
+                      $traverse: g[parts[parts.length - 1]],
+                    },
+                  },
                 },
                 meta,
                 true
@@ -184,7 +184,7 @@ export default async function combineResults(
                 $language,
                 $includeMeta: !!meta,
                 $db: db, // if not db ofc
-                ...q.getOpts
+                ...q.getOpts,
               },
               meta,
               true

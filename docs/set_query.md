@@ -1,20 +1,20 @@
 # _Set_ Method Query Reference
 
-  - [**$id**](#id-string)
-  - [**$alias**](#alias-string---string)
-  - [**$merge**](#merge-boolean)
-  - [**$language**](#language-string)
-  - [**operation**](#operation-string)
-  - [**&lt;any field name&gt;**](#any-field-name)
-    - [Field operators](#field-operators)
+- [**\$id**](#id-string)
+- [**\$alias**](#alias-string---string)
+- [**\$merge**](#merge-boolean)
+- [**\$language**](#language-string)
+- [**operation**](#operation-string)
+- [**&lt;any field name&gt;**](#any-field-name)
+  - [Field operators](#field-operators)
 
-## `$id`: _string_ 
+## `$id`: _string_
 
 Id of the object to set. If set, it has precedence over `$alias`. Used to look up the record to be operated on. By default (_upsert_) the record is created if nothing exists with the provided `$id`. This behaviour can be changed by providing [`$operation`](#oepration-string).
 
-## `$alias`: _string_  | _string[]_
+## `$alias`: _string_ | _string[]_
 
-When no `$id` is provided, `$alias` can be used to reference user-provided alternative names to records, such as human readable identifiers, or url paths and the like. 
+When no `$id` is provided, `$alias` can be used to reference user-provided alternative names to records, such as human readable identifiers, or url paths and the like.
 
 ```javascript
 const result = await client.set({
@@ -22,15 +22,14 @@ const result = await client.set({
   type: 'match',
   $id: 'muASxsd3',
   title: {
-    en: 'hello'
-  }
+    en: 'hello',
+  },
 })
 ```
 
 When `type` is provided, such as it is above, if the provided `$alias` option doesn't resolve to an existing id, a new record will be created, and the provided `$alias` created for it automatically. This behaviour can be controlled with `$operation` also.
 
 One can provide a list of aliases instead of a single alias. In this case all the aliases will be checked before failure or creating a new record if `type` is provided and the `$operation` allows for it.
-
 
 ```javascript
 const result = await client.set({
@@ -62,8 +61,8 @@ const result = await client.set({
   $operation: 'upsert', // optional to provide $operation
   $id: 'muASxsd3',
   title: {
-    en: 'hello'
-  }
+    en: 'hello',
+  },
 })
 ```
 
@@ -73,14 +72,13 @@ Upsert acts both as _create_ and _update_.
 
 Create mode fails if a record already exists and returns undefined instead of the id of the created entry. If no entry exists with the specified `$id` or `$alias`.
 
-
 ```javascript
 const result = await client.set({
   $operation: 'create',
   $id: 'maASxsd3',
   title: {
-    en: 'hello'
-  }
+    en: 'hello',
+  },
 })
 
 /*
@@ -96,8 +94,8 @@ const result = await client.set({
   $operation: 'create',
   $alias: 'myAlias',
   title: {
-    en: 'hello'
-  }
+    en: 'hello',
+  },
 })
 
 /*
@@ -113,8 +111,8 @@ const result = await client.set({
   $operation: 'create',
   type: 'match',
   title: {
-    en: 'hello'
-  }
+    en: 'hello',
+  },
 })
 
 /*
@@ -134,14 +132,13 @@ Resulting record in database:
 
 Update mode is the opposite of _create_, in that it fails if the record being updated does not exist. The API signature is the same both for `$id` and `$alias`, and if neither is provided the operation fails.
 
-
 ```javascript
 let result = await client.set({
   $operation: 'create',
   type: 'match',
   title: {
-    en: 'hello'
-  }
+    en: 'hello',
+  },
 })
 
 /*
@@ -153,8 +150,8 @@ result = await client.set({
   $operation: 'create',
   $id: 'maASxsd3',
   title: {
-    en: 'hello'
-  }
+    en: 'hello',
+  },
 })
 
 /*
@@ -169,7 +166,6 @@ Default value: `true`
 
 The `$merge` operator can be used to specify whether any fields specified in the `.set()` should overwrite everything that exists in the database for that record currently (if it is updated), or whether any fields specified will be added or overwritten only if provided.
 
-
 ```javascript
 /*
 Let's assume the following record in database:
@@ -181,16 +177,16 @@ Let's assume the following record in database:
     en: 'yes'
   }
 }
-*/ 
+*/
 
 const result = await client.set({
   $merge: true, // optional, defaults to true
   type: 'match',
   title: {
     en: 'hello',
-    de: 'hallo'
+    de: 'hallo',
   },
-  name: 'match'
+  name: 'match',
 })
 
 /*
@@ -221,14 +217,14 @@ Let's assume the following record in database:
     en: 'yes'
   }
 }
-*/ 
+*/
 
 const result = await client.set({
   $merge: false,
   title: {
-    de: 'hallo'
+    de: 'hallo',
   },
-  name: 'match'
+  name: 'match',
 })
 
 /*
@@ -254,24 +250,24 @@ See [here](#text-type) for more details in the field type documentation.
 
 Any and all field names can be set that exist in the schema of the provided type of record. Some operators exist that are specific to the type of field being set. Accepted values and operators for each field type are outlined below.
 
-  - [**digest**](#digest-type)
-  - [**timestamp**](#timestamp-type)
-  - [**url**](#url-type)
-  - [**email**](#email-type)
-  - [**phone**](#phone-type)
-  - [**type**](#type-type)
-  - [**string**](#string-type)
-  - [**int**](#int-type)
-  - [**float**](#float-type)
-  - [**number**](#number-type)
-  - [**boolean**](#boolean-type)
-  - [**text**](#text-type)
-  - [**array**](#array-type)
-  - [**json**](#json-type)
-  - [**geo**](#geo-type)
-  - [**set**](#set-type)
-  - [**references**](#references-type)
-  - [**object**](#object-type)
+- [**digest**](#digest-type)
+- [**timestamp**](#timestamp-type)
+- [**url**](#url-type)
+- [**email**](#email-type)
+- [**phone**](#phone-type)
+- [**type**](#type-type)
+- [**string**](#string-type)
+- [**int**](#int-type)
+- [**float**](#float-type)
+- [**number**](#number-type)
+- [**boolean**](#boolean-type)
+- [**text**](#text-type)
+- [**array**](#array-type)
+- [**json**](#json-type)
+- [**geo**](#geo-type)
+- [**set**](#set-type)
+- [**references**](#references-type)
+- [**object**](#object-type)
 
 For more information, please refer to the [schema documentation](./schemas.md).
 
@@ -283,8 +279,8 @@ The type property is normally only provided when creating a new record with the 
 const result = await client.set({
   type: 'match',
   title: {
-    en: 'hello'
-  }
+    en: 'hello',
+  },
 })
 ```
 
@@ -298,7 +294,7 @@ Only values of type `string` are accepted for the _digest_ type. Any value provi
 const result = await client.set({
   $id: 'usASxsd3',
   type: 'user',
-  password: 'top_secret_password' // field with type 'digest'
+  password: 'top_secret_password', // field with type 'digest'
 })
 
 /*
@@ -310,10 +306,10 @@ Resulting record in database:
   password: '4bc838fb5a7160b6433be6c4e188ed1fee0cc08337789bd5d6c77994ad6b50c8' // using default secret 'selva-client'
 }
 */
-
 ```
 
 The following operators are available with the _digest_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 
@@ -322,6 +318,7 @@ The following operators are available with the _digest_ type:
 Field type _timestamp_ accepts positive numeric values after the epoch (in milliseconds). In addition, it also accepts one string value: `'now'`. When `'now'` is provided, it is automatically converted to the current time in milliseconds since epoch.
 
 The following operators are available with the _timestamp_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -331,6 +328,7 @@ The following operators are available with the _timestamp_ type:
 The _url_ field type accepts any `string` values that are valid URLs.
 
 The following operators are available with the _url_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -340,6 +338,7 @@ The following operators are available with the _url_ type:
 The _email_ field type accepts any `string` values that are valid email addresses.
 
 The following operators are available with the _email_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -349,6 +348,7 @@ The following operators are available with the _email_ type:
 The _phone_ field type accepts any `string` values that are valid phone numbers.
 
 The following operators are available with the _phone_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -358,6 +358,7 @@ The following operators are available with the _phone_ type:
 The _string_ type accepts any `string` values.
 
 The following operators are available with the _string_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -367,6 +368,7 @@ The following operators are available with the _string_ type:
 The _int_ type accepts any `number` values that are representable as an integer.
 
 The following operators are available with the _int_ type:
+
 - [`$increment`](#increment---number)
 - [`$default`](#default---any)
 - [`$value`](#value---any)
@@ -377,6 +379,7 @@ The following operators are available with the _int_ type:
 The _float_ type accepts any `number` values that are representable as floating point numbers.
 
 The following operators are available with the _float_ type:
+
 - [`$increment`](#increment---number)
 - [`$default`](#default---any)
 - [`$value`](#value---any)
@@ -387,6 +390,7 @@ The following operators are available with the _float_ type:
 The _number_ type accepts any `number` values.
 
 The following operators are available with the _number_ type:
+
 - [`$increment`](#increment---number)
 - [`$default`](#default---any)
 - [`$value`](#value---any)
@@ -397,6 +401,7 @@ The following operators are available with the _number_ type:
 The _boolean_ type accepts a `boolean` value, `true` or `false`.
 
 The following operators are available with the _boolean_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -412,7 +417,7 @@ const result = await client.set({
   $language: 'en',
   $id: 'maASxsd3',
   type: 'match',
-  title: 'the super bowl 2020' 
+  title: 'the super bowl 2020',
 })
 ```
 
@@ -424,22 +429,24 @@ const result = await client.set({
   $id: 'maASxsd3',
   type: 'match',
   title: {
-    en: 'the super bowl 2020' ,
-    de: 'das super schüssel 2020'
-  }
+    en: 'the super bowl 2020',
+    de: 'das super schüssel 2020',
+  },
 })
 ```
 
 The following operators are supported both on the _text_ field itself, as well as all the language keys:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
 
 ### _array_ type
 
-Fields with _array_ type accept javascript array values where all entries correspond to the item type specified in the schema. 
+Fields with _array_ type accept javascript array values where all entries correspond to the item type specified in the schema.
 
 The following operators are available with the _array_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 
@@ -448,6 +455,7 @@ The following operators are available with the _array_ type:
 The _json_ type allows any javascript values, unless `properties` has been defined for it in the schema. In that case, an `object` type value must be provided that contains only values that contain properties set in that schema definition.
 
 The following operators are available with the _json_ type:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 
@@ -462,7 +470,7 @@ const result = await client.set({
   geoField: {
     lat: 60, // latitude, has to be a number (required field)
     lon: 0.2, // longitude, has to be a number (required field)
-  }
+  },
 })
 ```
 
@@ -473,6 +481,7 @@ No operators exist for field of the _geo_ type.
 Fields with _set_ type accept javascript array values where all entries correspond to the item type specified in the schema. They also accept a single item of the item type to set a list of one item. Any value set will reset the currently stored values of the _set_.
 
 To add and remove items from the set, the following operators are supported:
+
 - [`$default`](#default---any)
 - [`$value`](#value---any)
 - [`$ref`](#ref---string)
@@ -513,7 +522,7 @@ Number fields support the `$increment` operator, which itself takes a number val
 const result = await client.set({
   $id: 'maASxsd3',
   type: 'match',
-  value: { $increment: 10 } // can be applied to int, float, number fields
+  value: { $increment: 10 }, // can be applied to int, float, number fields
 })
 ```
 
@@ -531,11 +540,11 @@ Let's assume the following record in database:
     en: 'yes'
   }
 }
-*/ 
+*/
 
 let result = await client.set({
   id: 'maASxsd3',
-  value: { $default: 10 }
+  value: { $default: 10 },
 })
 
 /*
@@ -554,7 +563,7 @@ Resulting record in database:
 
 result = await client.set({
   id: 'maASxsd3',
-  value: { $default: 11 }
+  value: { $default: 11 },
 })
 
 /*
@@ -580,7 +589,7 @@ Using the `$value` operator is practically always allowed instead of passing the
 const result = await client.set({
   $id: 'maASxsd3',
   type: 'match',
-  value: { $value: 10 } // same as value: 10
+  value: { $value: 10 }, // same as value: 10
 })
 ```
 
@@ -593,7 +602,7 @@ const result = await client.set({
   $id: 'maASxsd3',
   type: 'match',
   value: { $ref: 'otherValue' },
-  otherValue: 10
+  otherValue: 10,
 })
 ```
 
@@ -604,7 +613,7 @@ const result = await client.set({
   $id: 'maASxsd3',
   type: 'match',
   value: { $default: { $ref: 'otherValue' } }, // the reference is established only if `.value` is not set
-  otherValue: 10
+  otherValue: 10,
 })
 ```
 
@@ -612,12 +621,11 @@ const result = await client.set({
 
 Default value: `true`
 
-The `$merge` option operates exactly the same way as the top-level set [`$merge` operator](#merge-boolean), but in the context of the fields of the object type. When an object is set with `$merge: false`, only the set fields will remain in the database. 
+The `$merge` option operates exactly the same way as the top-level set [`$merge` operator](#merge-boolean), but in the context of the fields of the object type. When an object is set with `$merge: false`, only the set fields will remain in the database.
 
 ### `$add` - _any_
 
 The `$add` operator can be used to add one or more entries to a _set_ or _references_ type field. A single item type value or an array of item type values may be specified to `$add`. All the existing values in the set will remain, but no duplicates are allowed.
-
 
 ```javascript
 /*
@@ -627,11 +635,11 @@ Let's assume the following record in database:
   type: 'match',
   availableSeats: ['a2', 'a3', 'b5']
 }
-*/ 
+*/
 
 let result = await client.set({
   id: 'maASxsd3',
-  availableSeats: { $add: 'b12' }
+  availableSeats: { $add: 'b12' },
 })
 
 /*
@@ -646,7 +654,7 @@ Resulting record in database:
 
 result = await client.set({
   id: 'maASxsd3',
-  availableSeats: { $add: ['b13', 'b14'] }
+  availableSeats: { $add: ['b13', 'b14'] },
 })
 
 /*
@@ -664,7 +672,6 @@ Resulting record in database:
 
 The `$delete` operator can be used to remove one or more entries to a _set_ or _references_ type field. A single item type value or an array of item type values may be specified to `$delete`.
 
-
 ```javascript
 /*
 Let's assume the following record in database:
@@ -673,11 +680,11 @@ Let's assume the following record in database:
   type: 'match',
   availableSeats: ['a2', 'a3', 'b5', 'b12', 'b13', 'b14']
 }
-*/ 
+*/
 
 let result = await client.set({
   id: 'maASxsd3',
-  availableSeats: { $delete: ['b13', 'b14'] }
+  availableSeats: { $delete: ['b13', 'b14'] },
 })
 
 /*
@@ -692,7 +699,7 @@ Resulting record in database:
 
 result = await client.set({
   id: 'maASxsd3',
-  availableSeats: { $delete: 'b12' }
+  availableSeats: { $delete: 'b12' },
 })
 
 /*

@@ -61,7 +61,7 @@ const addOriginListeners = async (
     subsManager.originListeners[name] = {
       subscriptions: new Set(),
       listener,
-      reconnectListener: descriptor => {
+      reconnectListener: (descriptor) => {
         subscription.originDescriptors[name] = descriptor
         const { name: dbName } = descriptor
 
@@ -75,13 +75,13 @@ const addOriginListeners = async (
           // need to resend subs if it dc'ed
           const origin = subsManager.originListeners[name]
           if (origin && origin.subscriptions) {
-            origin.subscriptions.forEach(subscription => {
+            origin.subscriptions.forEach((subscription) => {
               addUpdate(subsManager, subscription)
             })
           }
         }
       },
-      serverUpdateListener: payload => {
+      serverUpdateListener: (payload) => {
         if (payload.event === 'new') {
           const { server } = payload
           const current = subscription.originDescriptors[name]
@@ -94,7 +94,7 @@ const addOriginListeners = async (
             addOriginListeners(name, subsManager, subscription)
           }
         }
-      }
+      },
     }
 
     const redis = client.redis

@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -19,8 +19,8 @@ test.before(async t => {
       sport: {
         prefix: 'sp',
         fields: {
-          title: { type: 'text' }
-        }
+          title: { type: 'text' },
+        },
       },
       match: {
         prefix: 'ma',
@@ -28,16 +28,16 @@ test.before(async t => {
           title: { type: 'text' },
           published: {
             type: 'boolean',
-            search: { type: ['TAG'] }
-          }
-        }
-      }
-    }
+            search: { type: ['TAG'] },
+          },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -45,12 +45,12 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscription list', async t => {
+test.serial('subscription list', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const sport = await client.set({
     $language: 'en',
     type: 'sport',
-    title: 'football'
+    title: 'football',
   })
 
   const match = await client.set({
@@ -58,7 +58,7 @@ test.serial('subscription list', async t => {
     type: 'match',
     title: 'football match',
     published: true,
-    parents: [sport]
+    parents: [sport],
   })
 
   const obs = client.observe({
@@ -73,7 +73,7 @@ test.serial('subscription list', async t => {
           $filter: {
             $field: 'type',
             $operator: '=',
-            $value: 'sport'
+            $value: 'sport',
           },
           $find: {
             $traverse: 'descendants',
@@ -81,22 +81,22 @@ test.serial('subscription list', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'match'
+                $value: 'match',
               },
               {
                 $field: 'published',
                 $operator: '=',
-                $value: true
-              }
-            ]
-          }
-        }
-      }
-    }
+                $value: true,
+              },
+            ],
+          },
+        },
+      },
+    },
   })
 
   t.plan(1)
-  obs.subscribe(res => {
+  obs.subscribe((res) => {
     t.deepEqual(res.items, [{ title: 'football match' }])
   })
 

@@ -27,13 +27,13 @@ async function evaluateTextSearch(
           const resp = await fetch('http://localhost:33333/get', {
             method: 'POST',
             headers: {
-              'content-type': 'application/json'
+              'content-type': 'application/json',
             },
             body: JSON.stringify({
               $searchString: f.$value,
               $field: f.$field,
-              $language: language // FIXME
-            })
+              $language: language, // FIXME
+            }),
           })
 
           const ids = await resp.json()
@@ -43,7 +43,7 @@ async function evaluateTextSearch(
         }
       })
     )
-  ).filter(ids => !!ids)
+  ).filter((ids) => !!ids)
 
   if (textSearches.length) {
     const results: string[][] = await Promise.all(
@@ -54,13 +54,13 @@ async function evaluateTextSearch(
           const resp = await fetch('http://localhost:33333/get', {
             method: 'POST',
             headers: {
-              'content-type': 'application/json'
+              'content-type': 'application/json',
             },
             body: JSON.stringify({
               $searchString: f.$value,
               $field: f.$field,
-              $language: language // FIXME
-            })
+              $language: language, // FIXME
+            }),
           })
 
           const ids = await resp.json()
@@ -150,8 +150,8 @@ export default async function validateFind(
         $db: traverse.$db,
         $id: traverse.$id,
         traverse: {
-          $field: traverse.$field
-        }
+          $field: traverse.$field,
+        },
       })
       const meta = result.$meta
       delete result.$meta
@@ -161,7 +161,7 @@ export default async function validateFind(
         type: 'traverse',
         meta: meta,
         value: result.traverse,
-        path: path + '.$find.$traverse'
+        path: path + '.$find.$traverse',
       })
     } else if (
       typeof find.$traverse !== 'string' &&
@@ -183,7 +183,7 @@ export default async function validateFind(
     if (find.$find.$db) {
       parentProp.__$find = {
         opts: { $value: find.$find },
-        ids: { $field: find.$find.$traverse }
+        ids: { $field: find.$find.$traverse },
       }
       delete find.$find
     }
@@ -218,7 +218,7 @@ export default async function validateFind(
         $db: 'default', // TODO: fix this
         meta: null,
         path: path + '.$find.$traverse',
-        value: textSearchIds
+        value: textSearchIds,
       })
     }
   }

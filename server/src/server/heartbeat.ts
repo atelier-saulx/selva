@@ -8,7 +8,7 @@ const startServerHeartbeat = (server: SelvaServer) => {
         host: server.host,
         port: server.port,
         type: server.type,
-        name: server.name
+        name: server.name,
       },
       constants.SERVER_HEARTBEAT,
       ''

@@ -409,7 +409,7 @@ Schema example
 const schema = {
   match: {
     hierarchy: {
-      team: { ignoreAncestoryWith: ['league'] }
+      team: { ignoreAncestoryWith: ['league'] },
     },
     fields: [
       'start',
@@ -418,9 +418,9 @@ const schema = {
       'image',
       'title',
       'description',
-      { field: 'value', type: 'number' }
-    ]
-  }
+      { field: 'value', type: 'number' },
+    ],
+  },
 }
 
 // client.getSchema()
@@ -432,7 +432,7 @@ These schemas are stored on the db itself and when ancestors get updated , or in
 client.setSchema({
   flurp: {
     fields: ['value'],
-    hierarchy: false
-  }
+    hierarchy: false,
+  },
 })
 ```

@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -20,16 +20,16 @@ test.before(async t => {
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
-          }
-        }
-      }
-    }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
+          },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -37,11 +37,11 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('handle empty objects for text', async t => {
+test.serial('handle empty objects for text', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const id = await client.set({
     type: 'match',
-    title: {}
+    title: {},
   })
 
   try {

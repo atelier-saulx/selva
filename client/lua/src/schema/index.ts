@@ -5,7 +5,7 @@ import {
   SearchIndexes,
   SearchRaw,
   defaultFields,
-  rootDefaultFields
+  rootDefaultFields,
 } from '../../../src/schema/index'
 import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
@@ -29,7 +29,7 @@ export function getSchema(): Schema {
       types: {},
       rootType: { fields: rootDefaultFields, prefix: 'ro' },
       languages: [],
-      prefixToTypeMapping: {}
+      prefixToTypeMapping: {},
     }
   }
 
@@ -527,7 +527,7 @@ export function updateSchema(
   if (oldSchema.sha && newSchema.sha !== oldSchema.sha) {
     return [
       null,
-      'SHA mismatch: trying to update an older schema version, please re-fetch and try again'
+      'SHA mismatch: trying to update an older schema version, please re-fetch and try again',
     ]
   }
 

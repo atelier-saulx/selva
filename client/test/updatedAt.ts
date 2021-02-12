@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -21,7 +21,7 @@ test.before(async t => {
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
           published: { type: 'boolean', search: { type: ['TAG'] } },
           awayTeam: { type: 'reference' },
@@ -30,12 +30,12 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: {
-                type: 'url'
+                type: 'url',
               },
               cover: {
-                type: 'url'
-              }
-            }
+                type: 'url',
+              },
+            },
           },
           video: {
             type: 'record',
@@ -43,43 +43,43 @@ test.before(async t => {
               type: 'object',
               properties: {
                 hls: {
-                  type: 'url'
+                  type: 'url',
                 },
                 mp4: {
-                  type: 'url'
-                }
-              }
-            }
+                  type: 'url',
+                },
+              },
+            },
           },
           authors: {
             type: 'set',
-            items: { type: 'string' }
+            items: { type: 'string' },
           },
           floats: {
             type: 'set',
-            items: { type: 'float' }
+            items: { type: 'float' },
           },
           integers: {
             type: 'set',
-            items: { type: 'int' }
+            items: { type: 'int' },
           },
           updatedAt: {
-            type: 'timestamp'
-          }
-        }
+            type: 'timestamp',
+          },
+        },
       },
       team: {
-        prefix: 'te'
+        prefix: 'te',
       },
       competition: {
-        prefix: 'co'
-      }
-    }
+        prefix: 'co',
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
@@ -89,25 +89,25 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('updatedAt only changes when actually changed', async t => {
+test.serial('updatedAt only changes when actually changed', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const team1 = await client.set({
     type: 'team',
     $alias: 'myteam1',
-    name: 'team1'
+    name: 'team1',
   })
 
   const team2 = await client.set({
     type: 'team',
     $alias: 'myteam2',
-    name: 'team2'
+    name: 'team2',
   })
 
   const competition = await client.set({
     type: 'competition',
     $alias: 'mycompetition',
-    name: 'competition'
+    name: 'competition',
   })
 
   let n = 2
@@ -125,24 +125,24 @@ test.serial('updatedAt only changes when actually changed', async t => {
       awayTeam: team2,
       image: {
         thumb: 'https://example.com',
-        cover: 'https://example.com'
+        cover: 'https://example.com',
       },
       video: {
         default: {
           hls: 'https://example.com',
-          mp4: 'https://example.com'
-        }
+          mp4: 'https://example.com',
+        },
       },
       authors: ['leif', 'rolf'],
       floats: [1.5, 2.5],
       integers: [1, 2],
       parents: {
-        $add: [team1, team2, competition]
-      }
+        $add: [team1, team2, competition],
+      },
     })
     const { updatedAt } = await client.get({
       $alias: 'snurkle',
-      updatedAt: true
+      updatedAt: true,
     })
 
     if (lastUpdatedAt) {

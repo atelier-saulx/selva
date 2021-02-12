@@ -18,7 +18,7 @@ const addClientSubscription = async (
   if (!subsManager.subscriptions[channel]) {
     const [getOptions, clients] = await Promise.all([
       redis.hget(selector, SUBSCRIPTIONS, channel),
-      redis.smembers(selector, channel)
+      redis.smembers(selector, channel),
     ])
     if (getOptions && clients.length) {
       if (subsManager.subscriptions[channel]) {
@@ -105,7 +105,7 @@ const addSubscription = (
     clients,
     channel,
     get: getOptions,
-    origins: [...parseOrigins(channel, getOptions).values()]
+    origins: [...parseOrigins(channel, getOptions).values()],
   }
 
   subsManager.subscriptions[channel] = subscription
@@ -118,7 +118,7 @@ const addSubscription = (
     subsManager.client,
     {
       ...subsManager.selector,
-      subscriptions: { [channel]: 'created' }
+      subscriptions: { [channel]: 'created' },
     },
     subsManager
   )

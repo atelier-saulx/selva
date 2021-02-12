@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -20,37 +20,37 @@ test.before(async t => {
           roles: {
             type: 'set',
             search: {
-              type: ['TAG']
+              type: ['TAG'],
             },
             items: {
-              type: 'string'
-            }
+              type: 'string',
+            },
           },
           numbers: {
             type: 'set',
             items: {
-              type: 'number'
-            }
+              type: 'number',
+            },
           },
           sinks: {
             type: 'set',
             items: {
-              type: 'float'
-            }
+              type: 'float',
+            },
           },
           ints: {
             type: 'set',
             items: {
-              type: 'int'
-            }
-          }
-        }
-      }
-    }
+              type: 'int',
+            },
+          },
+        },
+      },
+    },
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -58,17 +58,17 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('search user roles', async t => {
+test.serial('search user roles', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     type: 'user',
-    roles: ['club', 'club:id1']
+    roles: ['club', 'club:id1'],
   })
 
   const id = await client.set({
     type: 'user',
-    roles: ['club', 'club:id2']
+    roles: ['club', 'club:id2'],
   })
 
   t.is(
@@ -81,11 +81,11 @@ test.serial('search user roles', async t => {
               $filter: {
                 $field: 'roles',
                 $operator: 'has',
-                $value: 'club:id1'
-              }
-            }
-          }
-        }
+                $value: 'club:id1',
+              },
+            },
+          },
+        },
       })
     ).descendants.length,
     1
@@ -101,11 +101,11 @@ test.serial('search user roles', async t => {
               $filter: {
                 $field: 'roles',
                 $operator: 'has',
-                $value: 'club:id2'
-              }
-            }
-          }
-        }
+                $value: 'club:id2',
+              },
+            },
+          },
+        },
       })
     ).descendants.length,
     1
@@ -121,11 +121,11 @@ test.serial('search user roles', async t => {
               $filter: {
                 $field: 'roles',
                 $operator: 'has',
-                $value: 'club'
-              }
-            }
-          }
-        }
+                $value: 'club',
+              },
+            },
+          },
+        },
       })
     ).descendants.length,
     2
@@ -141,11 +141,11 @@ test.serial('search user roles', async t => {
               $filter: {
                 $field: 'roles',
                 $operator: 'has',
-                $value: 'rando'
-              }
-            }
-          }
-        }
+                $value: 'rando',
+              },
+            },
+          },
+        },
       })
     ).descendants.length,
     0
@@ -154,14 +154,14 @@ test.serial('search user roles', async t => {
   await client.destroy()
 })
 
-test.serial('search user numbers', async t => {
+test.serial('search user numbers', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const id = await client.set({
     type: 'user',
     numbers: [1, 2.4, 3, 4],
     sinks: [1, 7.0, 4.5, 8.25],
-    ints: [57082, 0x01234567, 16435934]
+    ints: [57082, 0x01234567, 16435934],
   })
 
   t.is(
@@ -174,11 +174,11 @@ test.serial('search user numbers', async t => {
               $filter: {
                 $field: 'numbers',
                 $operator: 'has',
-                $value: 1
-              }
-            }
-          }
-        }
+                $value: 1,
+              },
+            },
+          },
+        },
       })
     ).descendants.length,
     1
@@ -194,11 +194,11 @@ test.serial('search user numbers', async t => {
               $filter: {
                 $field: 'sinks',
                 $operator: 'has',
-                $value: 7.0
-              }
-            }
-          }
-        }
+                $value: 7.0,
+              },
+            },
+          },
+        },
       })
     ).descendants.length,
     1
@@ -214,11 +214,11 @@ test.serial('search user numbers', async t => {
               $filter: {
                 $field: 'ints',
                 $operator: 'has',
-                $value: 16435934
-              }
-            }
-          }
-        }
+                $value: 16435934,
+              },
+            },
+          },
+        },
       })
     ).descendants.length,
     1

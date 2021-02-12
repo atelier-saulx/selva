@@ -79,7 +79,7 @@ const isNotEqualAndIsEqual = (
   if (a.$value === b.$value) {
     return [
       false,
-      `Cannot have something equal and inequal @${a.$field} (${a.$operator}${a.$value}) and (${b.$operator}${b.$value})`
+      `Cannot have something equal and inequal @${a.$field} (${a.$operator}${a.$value}) and (${b.$operator}${b.$value})`,
     ]
   }
   return [false, null]
@@ -110,7 +110,7 @@ const isRangeAndLargerOrSmaller = (
     if (otherVal > rangeVal) {
       return [
         false,
-        `Out of bounds range filter ${other.$value} < ${range.$value}`
+        `Out of bounds range filter ${other.$value} < ${range.$value}`,
       ]
     }
   }
@@ -123,7 +123,7 @@ const isRangeAndLargerOrSmaller = (
     if (otherVal > rangeVal) {
       return [
         false,
-        `Out of bounds range filter ${other.$value} > ${range.$value}`
+        `Out of bounds range filter ${other.$value} > ${range.$value}`,
       ]
     }
   }

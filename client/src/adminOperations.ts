@@ -31,19 +31,19 @@ export async function deleteType(
             {
               $operator: '=',
               $field: 'type',
-              $value: name
-            }
-          ]
-        }
-      }
-    }
+              $value: name,
+            },
+          ],
+        },
+      },
+    },
   })
 
   await Promise.all(
     allItems.items.map(({ id }) => {
       return client.delete({
         $db: selector.name,
-        $id: id
+        $id: id,
       })
     })
   )
@@ -107,12 +107,12 @@ export async function deleteField(
             {
               $operator: '=',
               $field: 'type',
-              $value: type
-            }
-          ]
-        }
-      }
-    }
+              $value: type,
+            },
+          ],
+        },
+      },
+    },
   })
 
   await Promise.all(
@@ -120,7 +120,7 @@ export async function deleteField(
       return client.delete({
         $db: selector.name,
         $id: id,
-        ...fieldPart
+        ...fieldPart,
       })
     })
   )

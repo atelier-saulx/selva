@@ -74,7 +74,7 @@ const all = (
             type: 'db',
             id,
             field: key,
-            sourceField: key
+            sourceField: key,
           })
         }
       } else if (props[key] === false) {
@@ -102,7 +102,7 @@ const all = (
             type: 'db',
             id,
             field: field.slice(1) + '.' + key,
-            sourceField: field.slice(1) + '.' + key
+            sourceField: field.slice(1) + '.' + key,
           })
         } else if (props[key] === false) {
           // do nothing
@@ -123,7 +123,7 @@ const all = (
         type: 'db',
         id,
         field: field.slice(1),
-        sourceField: field.slice(1)
+        sourceField: field.slice(1),
       })
     }
   }

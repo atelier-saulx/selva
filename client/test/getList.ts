@@ -7,13 +7,13 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   await wait(500)
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -21,7 +21,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get - simple $list', async t => {
+test.serial('get - simple $list', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -33,7 +33,7 @@ test.serial('get - simple $list', async t => {
           value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -41,12 +41,12 @@ test.serial('get - simple $list', async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   const children = []
@@ -55,7 +55,7 @@ test.serial('get - simple $list', async t => {
     children.push({
       type: 'custom',
       value: i,
-      name: 'flurp' + i
+      name: 'flurp' + i,
     })
   }
 
@@ -63,11 +63,11 @@ test.serial('get - simple $list', async t => {
     client.set({
       $id: 'cuA',
       image: {
-        thumb: 'flurp.jpg'
+        thumb: 'flurp.jpg',
       },
       title: { en: 'snurf' },
-      children
-    })
+      children,
+    }),
   ])
 
   const c = await client.get({
@@ -77,9 +77,9 @@ test.serial('get - simple $list', async t => {
       value: true,
       $list: {
         $sort: { $field: 'value', $order: 'asc' },
-        $limit: 10
-      }
-    }
+        $limit: 10,
+      },
+    },
   })
 
   t.deepEqual(
@@ -95,8 +95,8 @@ test.serial('get - simple $list', async t => {
         { value: 6, name: 'flurp6' },
         { value: 7, name: 'flurp7' },
         { value: 8, name: 'flurp8' },
-        { value: 9, name: 'flurp9' }
-      ]
+        { value: 9, name: 'flurp9' },
+      ],
     },
     'non redis search sort'
   )
@@ -107,9 +107,9 @@ test.serial('get - simple $list', async t => {
       name: true,
       value: true,
       $list: {
-        $limit: 10
-      }
-    }
+        $limit: 10,
+      },
+    },
   })
 
   t.is(rangeResult.length, 10, 'non redis search range')
@@ -132,7 +132,7 @@ test.serial('get - simple $list', async t => {
   await client.destroy()
 })
 
-test.serial('get - simple $list with $field of one field', async t => {
+test.serial('get - simple $list with $field of one field', async (t) => {
   const client = connect({ port })
 
   await client.updateSchema({
@@ -145,7 +145,7 @@ test.serial('get - simple $list with $field of one field', async t => {
           value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -153,12 +153,12 @@ test.serial('get - simple $list with $field of one field', async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   const children = []
@@ -167,7 +167,7 @@ test.serial('get - simple $list with $field of one field', async t => {
     children.push({
       type: 'custom',
       value: i,
-      name: 'flurp' + i
+      name: 'flurp' + i,
     })
   }
 
@@ -175,11 +175,11 @@ test.serial('get - simple $list with $field of one field', async t => {
     client.set({
       $id: 'cuA',
       image: {
-        thumb: 'flurp.jpg'
+        thumb: 'flurp.jpg',
       },
       title: { en: 'snurf' },
-      children
-    })
+      children,
+    }),
   ])
 
   const c = await client.get({
@@ -190,9 +190,9 @@ test.serial('get - simple $list with $field of one field', async t => {
       $field: 'children',
       $list: {
         $sort: { $field: 'value', $order: 'asc' },
-        $limit: 10
-      }
-    }
+        $limit: 10,
+      },
+    },
   })
 
   t.deepEqual(
@@ -208,8 +208,8 @@ test.serial('get - simple $list with $field of one field', async t => {
         { value: 6, name: 'flurp6' },
         { value: 7, name: 'flurp7' },
         { value: 8, name: 'flurp8' },
-        { value: 9, name: 'flurp9' }
-      ]
+        { value: 9, name: 'flurp9' },
+      ],
     },
     'non redis search sort'
   )
@@ -217,94 +217,97 @@ test.serial('get - simple $list with $field of one field', async t => {
   await client.destroy()
 })
 
-test.serial('get - simple $list with $field of two field entries', async t => {
-  const client = connect({ port })
+test.serial(
+  'get - simple $list with $field of two field entries',
+  async (t) => {
+    const client = connect({ port })
 
-  await client.updateSchema({
-    languages: ['en', 'de', 'nl'],
-    types: {
-      custom: {
-        prefix: 'cu',
-        fields: {
-          name: { type: 'string' },
-          value: { type: 'number', search: true },
-          age: { type: 'number' },
-          auth: {
-            type: 'json'
+    await client.updateSchema({
+      languages: ['en', 'de', 'nl'],
+      types: {
+        custom: {
+          prefix: 'cu',
+          fields: {
+            name: { type: 'string' },
+            value: { type: 'number', search: true },
+            age: { type: 'number' },
+            auth: {
+              type: 'json',
+            },
+            related: { type: 'references' },
+            title: { type: 'text' },
+            description: { type: 'text' },
+            image: {
+              type: 'object',
+              properties: {
+                thumb: { type: 'string' },
+                poster: { type: 'string' },
+              },
+            },
           },
-          related: { type: 'references' },
-          title: { type: 'text' },
-          description: { type: 'text' },
-          image: {
-            type: 'object',
-            properties: {
-              thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
-  })
-
-  const children = []
-
-  for (let i = 0; i < 100; i++) {
-    children.push({
-      type: 'custom',
-      value: i,
-      name: 'flurp' + i
-    })
-  }
-
-  await Promise.all([
-    client.set({
-      $id: 'cuA',
-      image: {
-        thumb: 'flurp.jpg'
+        },
       },
-      title: { en: 'snurf' },
-      children
     })
-  ])
 
-  const c = await client.get({
-    $id: 'cuA',
-    otherName: {
-      name: true,
-      value: true,
-      $field: ['related', 'children'],
-      $list: {
-        $sort: { $field: 'value', $order: 'asc' },
-        $limit: 10
-      }
+    const children = []
+
+    for (let i = 0; i < 100; i++) {
+      children.push({
+        type: 'custom',
+        value: i,
+        name: 'flurp' + i,
+      })
     }
-  })
 
-  t.deepEqual(
-    c,
-    {
-      otherName: [
-        { value: 0, name: 'flurp0' },
-        { value: 1, name: 'flurp1' },
-        { value: 2, name: 'flurp2' },
-        { value: 3, name: 'flurp3' },
-        { value: 4, name: 'flurp4' },
-        { value: 5, name: 'flurp5' },
-        { value: 6, name: 'flurp6' },
-        { value: 7, name: 'flurp7' },
-        { value: 8, name: 'flurp8' },
-        { value: 9, name: 'flurp9' }
-      ]
-    },
-    'non redis search sort'
-  )
-})
+    await Promise.all([
+      client.set({
+        $id: 'cuA',
+        image: {
+          thumb: 'flurp.jpg',
+        },
+        title: { en: 'snurf' },
+        children,
+      }),
+    ])
+
+    const c = await client.get({
+      $id: 'cuA',
+      otherName: {
+        name: true,
+        value: true,
+        $field: ['related', 'children'],
+        $list: {
+          $sort: { $field: 'value', $order: 'asc' },
+          $limit: 10,
+        },
+      },
+    })
+
+    t.deepEqual(
+      c,
+      {
+        otherName: [
+          { value: 0, name: 'flurp0' },
+          { value: 1, name: 'flurp1' },
+          { value: 2, name: 'flurp2' },
+          { value: 3, name: 'flurp3' },
+          { value: 4, name: 'flurp4' },
+          { value: 5, name: 'flurp5' },
+          { value: 6, name: 'flurp6' },
+          { value: 7, name: 'flurp7' },
+          { value: 8, name: 'flurp8' },
+          { value: 9, name: 'flurp9' },
+        ],
+      },
+      'non redis search sort'
+    )
+  }
+)
 
 // FIXME: yes?
 test.serial.skip(
   'get - simple $list with query $field of one field',
-  async t => {
+  async (t) => {
     const client = connect({ port }, { loglevel: 'info' })
 
     await client.updateSchema({
@@ -317,7 +320,7 @@ test.serial.skip(
             value: { type: 'number', search: true },
             age: { type: 'number' },
             auth: {
-              type: 'json'
+              type: 'json',
             },
             title: { type: 'text' },
             description: { type: 'text' },
@@ -325,12 +328,12 @@ test.serial.skip(
               type: 'object',
               properties: {
                 thumb: { type: 'string' },
-                poster: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+                poster: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
     })
 
     const children = []
@@ -339,7 +342,7 @@ test.serial.skip(
       children.push({
         type: 'custom',
         value: i,
-        name: 'flurp' + i
+        name: 'flurp' + i,
       })
     }
 
@@ -347,11 +350,11 @@ test.serial.skip(
       client.set({
         $id: 'cuA',
         image: {
-          thumb: 'flurp.jpg'
+          thumb: 'flurp.jpg',
         },
         title: { en: 'snurf' },
-        children
-      })
+        children,
+      }),
     ])
 
     const c = await client.get({
@@ -362,9 +365,9 @@ test.serial.skip(
         $field: { path: 'children', value: { $id: 'cuA', children: true } },
         $list: {
           $sort: { $field: 'value', $order: 'asc' },
-          $limit: 10
-        }
-      }
+          $limit: 10,
+        },
+      },
     })
 
     t.deepEqual(
@@ -381,8 +384,8 @@ test.serial.skip(
           { value: 6, name: 'flurp6' },
           { value: 7, name: 'flurp7' },
           { value: 8, name: 'flurp8' },
-          { value: 9, name: 'flurp9' }
-        ]
+          { value: 9, name: 'flurp9' },
+        ],
       },
       'non redis search sort'
     )
@@ -393,8 +396,8 @@ test.serial.skip(
         name: true,
         value: true,
         $field: { path: 'children', value: { $id: 'cuA', children: true } },
-        $list: true
-      }
+        $list: true,
+      },
     })
 
     t.is(c2.otherName.length, 100, 'list true')
@@ -402,7 +405,7 @@ test.serial.skip(
   }
 )
 
-test.serial('get - simple $list nested query structure', async t => {
+test.serial('get - simple $list nested query structure', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -414,7 +417,7 @@ test.serial('get - simple $list nested query structure', async t => {
           value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -422,12 +425,12 @@ test.serial('get - simple $list nested query structure', async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   const children = []
@@ -436,7 +439,7 @@ test.serial('get - simple $list nested query structure', async t => {
     children.push({
       type: 'custom',
       value: i,
-      name: 'flurp' + i
+      name: 'flurp' + i,
     })
   }
 
@@ -444,11 +447,11 @@ test.serial('get - simple $list nested query structure', async t => {
     client.set({
       $id: 'cuA',
       image: {
-        thumb: 'flurp.jpg'
+        thumb: 'flurp.jpg',
       },
       title: { en: 'snurf' },
-      children
-    })
+      children,
+    }),
   ])
 
   let c = await client.get({
@@ -461,11 +464,11 @@ test.serial('get - simple $list nested query structure', async t => {
           value: true,
           $list: {
             $sort: { $field: 'value', $order: 'asc' },
-            $limit: 10
-          }
-        }
-      }
-    }
+            $limit: 10,
+          },
+        },
+      },
+    },
   })
 
   t.deepEqual(
@@ -483,10 +486,10 @@ test.serial('get - simple $list nested query structure', async t => {
             { value: 6, name: 'flurp6' },
             { value: 7, name: 'flurp7' },
             { value: 8, name: 'flurp8' },
-            { value: 9, name: 'flurp9' }
-          ]
-        }
-      }
+            { value: 9, name: 'flurp9' },
+          ],
+        },
+      },
     },
     'non redis search sort'
   )
@@ -502,11 +505,11 @@ test.serial('get - simple $list nested query structure', async t => {
           $list: {
             $sort: { $field: 'value', $order: 'asc' },
             $limit: 10,
-            $offset: 10
-          }
-        }
-      }
-    }
+            $offset: 10,
+          },
+        },
+      },
+    },
   })
 
   t.deepEqual(
@@ -524,10 +527,10 @@ test.serial('get - simple $list nested query structure', async t => {
             { value: 16, name: 'flurp16' },
             { value: 17, name: 'flurp17' },
             { value: 18, name: 'flurp18' },
-            { value: 19, name: 'flurp19' }
-          ]
-        }
-      }
+            { value: 19, name: 'flurp19' },
+          ],
+        },
+      },
     },
     'non redis search sort'
   )
@@ -538,9 +541,9 @@ test.serial('get - simple $list nested query structure', async t => {
       name: true,
       value: true,
       $list: {
-        $limit: 10
-      }
-    }
+        $limit: 10,
+      },
+    },
   })
 
   t.is(rangeResult.length, 10, 'non redis search range')
@@ -563,7 +566,7 @@ test.serial('get - simple $list nested query structure', async t => {
   await client.destroy()
 })
 
-test.serial('get - default sorting in $list with references', async t => {
+test.serial('get - default sorting in $list with references', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -575,7 +578,7 @@ test.serial('get - default sorting in $list with references', async t => {
           value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -583,12 +586,12 @@ test.serial('get - default sorting in $list with references', async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   const children = []
@@ -598,7 +601,7 @@ test.serial('get - default sorting in $list with references', async t => {
       $id: 'cu' + String(i).padStart(3, '0'),
       type: 'custom',
       value: i,
-      name: 'flurp' + i
+      name: 'flurp' + i,
     })
   }
 
@@ -606,11 +609,11 @@ test.serial('get - default sorting in $list with references', async t => {
     client.set({
       $id: 'cuA',
       image: {
-        thumb: 'flurp.jpg'
+        thumb: 'flurp.jpg',
       },
       title: { en: 'snurf' },
-      children
-    })
+      children,
+    }),
   ])
 
   let c = await client.get({
@@ -619,9 +622,9 @@ test.serial('get - default sorting in $list with references', async t => {
       name: true,
       value: true,
       $list: {
-        $limit: 10
-      }
-    }
+        $limit: 10,
+      },
+    },
   })
 
   t.deepEqual(
@@ -637,8 +640,8 @@ test.serial('get - default sorting in $list with references', async t => {
         { value: 6, name: 'flurp6' },
         { value: 7, name: 'flurp7' },
         { value: 8, name: 'flurp8' },
-        { value: 9, name: 'flurp9' }
-      ]
+        { value: 9, name: 'flurp9' },
+      ],
     },
     'non redis search sort'
   )
@@ -652,9 +655,9 @@ test.serial('get - default sorting in $list with references', async t => {
       $list: {
         $offset: 10,
         $sort: { $field: 'value', $order: 'asc' },
-        $limit: 10
-      }
-    }
+        $limit: 10,
+      },
+    },
   })
 
   t.deepEqual(
@@ -670,8 +673,8 @@ test.serial('get - default sorting in $list with references', async t => {
         { value: 16, name: 'flurp16' },
         { value: 17, name: 'flurp17' },
         { value: 18, name: 'flurp18' },
-        { value: 19, name: 'flurp19' }
-      ]
+        { value: 19, name: 'flurp19' },
+      ],
     },
     'non redis search sort'
   )

@@ -58,7 +58,7 @@ async function transformDb(
       getOpts: props,
       path,
       placeholder: { $value: {} },
-      type: 'nested_query'
+      type: 'nested_query',
     })
   } else {
     let val: GetOptions | true = true
@@ -93,7 +93,7 @@ async function transformDb(
       getOpts: props,
       path,
       placeholder: val,
-      type: props.$list || props.$find ? 'references' : 'reference'
+      type: props.$list || props.$find ? 'references' : 'reference',
     })
   }
 }
@@ -165,9 +165,9 @@ async function validateNested(
         }
       } else {
         throw new Error(
-          `Operator ${field} is not supported in nested fields for ${path +
-            '.' +
-            field}`
+          `Operator ${field} is not supported in nested fields for ${
+            path + '.' + field
+          }`
         )
       }
     }

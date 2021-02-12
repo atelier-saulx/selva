@@ -8,7 +8,7 @@ import getPort from 'get-port'
 let srv
 let srv2
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
 
@@ -19,8 +19,8 @@ test.before(async t => {
     languages: ['en', 'de', 'nl'],
     rootType: {
       fields: {
-        users: { type: 'references' }
-      }
+        users: { type: 'references' },
+      },
     },
     types: {
       dictionary: {
@@ -29,10 +29,10 @@ test.before(async t => {
           general: {
             type: 'record',
             values: {
-              type: 'text'
-            }
-          }
-        }
+              type: 'text',
+            },
+          },
+        },
       },
       custom: {
         prefix: 'cu',
@@ -40,7 +40,7 @@ test.before(async t => {
           value: { type: 'number', search: true },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -48,12 +48,12 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   await client.updateSchema(
@@ -66,7 +66,7 @@ test.before(async t => {
             value: { type: 'number', search: true },
             age: { type: 'number' },
             auth: {
-              type: 'json'
+              type: 'json',
             },
             title: { type: 'text' },
             description: { type: 'text' },
@@ -74,12 +74,12 @@ test.before(async t => {
               type: 'object',
               properties: {
                 thumb: { type: 'string' },
-                poster: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+                poster: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
     },
     'users'
   )
@@ -89,7 +89,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -98,7 +98,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('get - multi db', async t => {
+test.serial('get - multi db', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -107,9 +107,9 @@ test.serial('get - multi db', async t => {
     children: [
       {
         $id: 'cu1',
-        title: { en: 'some event' }
-      }
-    ]
+        title: { en: 'some event' },
+      },
+    ],
   })
 
   await client.set({
@@ -119,17 +119,17 @@ test.serial('get - multi db', async t => {
       {
         $id: 'us1',
         name: 'mr ball',
-        title: { en: 'ballzman' }
-      }
-    ]
+        title: { en: 'ballzman' },
+      },
+    ],
   })
 
   const x = {
     component: {
-      $value: 'List'
+      $value: 'List',
     },
     title: {
-      $value: 'Players'
+      $value: 'Players',
     },
     $db: 'users',
     $id: 'root',
@@ -141,14 +141,14 @@ test.serial('get - multi db', async t => {
           $filter: {
             $value: 'user',
             $field: 'type',
-            $operator: '='
-          }
-        }
+            $operator: '=',
+          },
+        },
       },
       title: {
-        $field: 'name'
-      }
-    }
+        $field: 'name',
+      },
+    },
   }
 
   const y = await client.get(x)
@@ -157,10 +157,10 @@ test.serial('get - multi db', async t => {
 
   const x2 = {
     component: {
-      $value: 'List'
+      $value: 'List',
     },
     title: {
-      $value: 'Players'
+      $value: 'Players',
     },
     $db: 'users',
     children: {
@@ -171,14 +171,14 @@ test.serial('get - multi db', async t => {
           $filter: {
             $value: 'user',
             $field: 'type',
-            $operator: '='
-          }
-        }
+            $operator: '=',
+          },
+        },
       },
       title: {
-        $field: 'name'
-      }
-    }
+        $field: 'name',
+      },
+    },
   }
 
   const y2 = await client.get(x2)
@@ -220,10 +220,10 @@ test.serial('get - multi db', async t => {
     components: [
       {
         component: {
-          $value: 'List'
+          $value: 'List',
         },
         title: {
-          $value: 'Players'
+          $value: 'Players',
         },
         // have to be able to omit id here
         $db: 'users',
@@ -236,16 +236,16 @@ test.serial('get - multi db', async t => {
               $filter: {
                 $value: 'user',
                 $field: 'type',
-                $operator: '='
-              }
-            }
+                $operator: '=',
+              },
+            },
           },
           title: {
-            $field: 'name'
-          }
-        }
-      }
-    ]
+            $field: 'name',
+          },
+        },
+      },
+    ],
   }
 
   const y3 = await client.get(x3)
@@ -256,10 +256,10 @@ test.serial('get - multi db', async t => {
     components: [
       {
         component: {
-          $value: 'List'
+          $value: 'List',
         },
         title: {
-          $value: 'Players'
+          $value: 'Players',
         },
         // have to be able to omit id here
         $db: 'users',
@@ -271,16 +271,16 @@ test.serial('get - multi db', async t => {
               $filter: {
                 $value: 'user',
                 $field: 'type',
-                $operator: '='
-              }
-            }
+                $operator: '=',
+              },
+            },
           },
           title: {
-            $field: 'name'
-          }
-        }
-      }
-    ]
+            $field: 'name',
+          },
+        },
+      },
+    ],
   }
 
   const y4 = await client.get(x3)
@@ -334,9 +334,9 @@ test.serial('get - multi db', async t => {
     type: 'dictionary',
     general: {
       randoText: {
-        en: 'funky'
-      }
-    }
+        en: 'funky',
+      },
+    },
   })
 
   await client.destroy()

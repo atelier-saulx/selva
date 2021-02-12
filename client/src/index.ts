@@ -9,7 +9,13 @@ import {
 import digest from './digest'
 import Redis from './redis'
 
-import { GetSchemaResult, SchemaOptions, Id, Schema, FieldSchema } from './schema'
+import {
+  GetSchemaResult,
+  SchemaOptions,
+  Id,
+  Schema,
+  FieldSchema,
+} from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
@@ -45,7 +51,6 @@ export * as constants from './constants'
 
 let clientId = 0
 
-
 export class SelvaClient extends EventEmitter {
   public redis: Redis
 
@@ -74,12 +79,12 @@ export class SelvaClient extends EventEmitter {
 
     subRegisters: { [key: string]: ServerDescriptor }
   } = {
-      ids: new Set(),
-      origins: {},
-      subsManagers: [],
-      replicas: {},
-      subRegisters: {}
-    }
+    ids: new Set(),
+    origins: {},
+    subsManagers: [],
+    replicas: {},
+    subRegisters: {},
+  }
 
   public registryConnection?: Connection
 
@@ -91,20 +96,30 @@ export class SelvaClient extends EventEmitter {
   }
 
   public admin: {
-    deleteType(name: string, dbName?: string): Promise<void>,
-    deleteField(type: string, name: string, dbName?: string): Promise<void>,
-    castField(type: string, name: string, newType: FieldSchema, dbName?: string): Promise<void>
+    deleteType(name: string, dbName?: string): Promise<void>
+    deleteField(type: string, name: string, dbName?: string): Promise<void>
+    castField(
+      type: string,
+      name: string,
+      newType: FieldSchema,
+      dbName?: string
+    ): Promise<void>
   } = {
-      deleteType: (name: string, dbName: string = 'default') => {
-        return deleteType(this, name, { name: dbName })
-      },
-      deleteField: (type: string, name: string, dbName: string = 'default') => {
-        return deleteField(this, type, name, { name: dbName })
-      },
-      castField: (type: string, name: string, newType: FieldSchema, dbName: string = 'default') => {
-        return castField(this, type, name, newType, { name: dbName })
-      }
-    }
+    deleteType: (name: string, dbName: string = 'default') => {
+      return deleteType(this, name, { name: dbName })
+    },
+    deleteField: (type: string, name: string, dbName: string = 'default') => {
+      return deleteField(this, type, name, { name: dbName })
+    },
+    castField: (
+      type: string,
+      name: string,
+      newType: FieldSchema,
+      dbName: string = 'default'
+    ) => {
+      return castField(this, type, name, newType, { name: dbName })
+    },
+  }
 
   constructor(opts: ConnectOptions) {
     super()
@@ -141,7 +156,6 @@ export class SelvaClient extends EventEmitter {
   async get(getOpts: GetOptions): Promise<GetResult> {
     return get(this, getOpts)
   }
-
 
   async set(setOpts: SetOptions): Promise<Id | undefined> {
     await this.initializeSchema(setOpts)
@@ -183,17 +197,16 @@ export class SelvaClient extends EventEmitter {
   //   return observeSchema(this, name)
   // }
 
-
-  public subscribeSchema (name: string = 'default'): Observable {
+  public subscribeSchema(name: string = 'default'): Observable {
     const props: ObservableOptions = {
       type: 'schema',
-      db: name
+      db: name,
     }
 
     if (!this.schemaObservables.get(name)) {
       const obs = createObservable(props, this)
       this.schemaObservables.set(name, obs)
-      obs.subscribe(d => {
+      obs.subscribe((d) => {
         // console.log('incoming schema', d)
         this.schemas[name] = d
       })
@@ -203,36 +216,53 @@ export class SelvaClient extends EventEmitter {
     }
   }
 
-  public observe(props: ObservableOptions | GetOptions, opts?: ObsSettings): Observable {
+  public observe(
+    props: ObservableOptions | GetOptions,
+    opts?: ObsSettings
+  ): Observable {
     if (props.type === 'get' || props.type === 'schema') {
       return createObservable(<ObservableOptions>props, this)
-    } 
+    }
     if (opts) {
-      return createObservable({
-        type: 'get',
-        options: props,
-        ...opts
-      }, this)
+      return createObservable(
+        {
+          type: 'get',
+          options: props,
+          ...opts,
+        },
+        this
+      )
     } else {
-      return createObservable({
-        type: 'get',
-        options: props
-      }, this)
+      return createObservable(
+        {
+          type: 'get',
+          options: props,
+        },
+        this
+      )
     }
   }
 
-  public observeEvent(event: 'created' | 'deleted' | 'updated', props: ObserveEventOptions): Observable {
-    const newProps: GetOptions = Object.assign({}, props, { $trigger: { $event: event } })
+  public observeEvent(
+    event: 'created' | 'deleted' | 'updated',
+    props: ObserveEventOptions
+  ): Observable {
+    const newProps: GetOptions = Object.assign({}, props, {
+      $trigger: { $event: event },
+    })
     if (props.$filter) {
       newProps.$trigger.$filter = props.$filter
       delete newProps.$filter
     }
 
-    return createObservable({
-      type: 'get',
-      options: newProps,
-      immutable: true  
-    }, this)
+    return createObservable(
+      {
+        type: 'get',
+        options: newProps,
+        immutable: true,
+      },
+      this
+    )
   }
 
   public async conformToSchema(props: SetOptions, dbName: string = 'default') {
@@ -240,8 +270,11 @@ export class SelvaClient extends EventEmitter {
     return conformToSchema(this, props, dbName)
   }
 
-  public getServer(opts: ServerSelector, selectOptions?: ServerSelectOptions): Promise<ServerDescriptor> {
-    return new Promise(r => {
+  public getServer(
+    opts: ServerSelector,
+    selectOptions?: ServerSelectOptions
+  ): Promise<ServerDescriptor> {
+    return new Promise((r) => {
       getServer(this, r, opts, selectOptions)
     })
   }
@@ -252,7 +285,8 @@ export class SelvaClient extends EventEmitter {
 }
 
 export function connect(
-  opts: ConnectOptions, specialOpts?: { loglevel?: string }
+  opts: ConnectOptions,
+  specialOpts?: { loglevel?: string }
 ): SelvaClient {
   const client = new SelvaClient(opts)
   if (specialOpts && specialOpts.loglevel) {
@@ -274,5 +308,5 @@ export {
   RedisCommand,
   Connection,
   Observable,
-  moduleId
+  moduleId,
 }

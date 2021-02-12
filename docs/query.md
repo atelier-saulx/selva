@@ -1,4 +1,3 @@
-
 # Selva Query DSL Documentation
 
 ## Fields and Operators
@@ -9,6 +8,6 @@ _Operators_ do not show as fields but have a special meaning to Selva and manipu
 
 ## Reference
 
-  - [_Get_ Method Queries](./get_query.md)
-  - [_Set_ Method Queries](./set_query.md)
-  - [_Delete_ Method Queries](./delete_query.md)
+- [_Get_ Method Queries](./get_query.md)
+- [_Set_ Method Queries](./set_query.md)
+- [_Delete_ Method Queries](./delete_query.md)

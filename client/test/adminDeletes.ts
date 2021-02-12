@@ -9,10 +9,10 @@ import { FieldSchemaArrayLike } from '../src/schema'
 let srv1
 let srv2
 let port1: number
-test.before(async t => {
+test.before(async (t) => {
   port1 = await getPort()
   srv1 = await start({
-    port: port1
+    port: port1,
   })
   const client = connect({ port: port1 })
   await client.updateSchema({
@@ -21,15 +21,15 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text' }
-        }
-      }
-    }
+          title: { type: 'text' },
+        },
+      },
+    },
   })
 
   srv2 = await startOrigin({
     name: 'users',
-    registry: { port: port1 }
+    registry: { port: port1 },
   })
 
   await client.updateSchema(
@@ -40,8 +40,8 @@ test.before(async t => {
           prefix: 'wa',
           fields: {
             item: { type: 'reference' },
-            time: { type: 'number' }
-          }
+            time: { type: 'number' },
+          },
         },
         user: {
           prefix: 'us',
@@ -51,12 +51,12 @@ test.before(async t => {
             testObject: {
               type: 'object',
               properties: {
-                testProp: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+                testProp: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
     },
     'users'
   )
@@ -64,7 +64,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   let client = connect({ port: port1 })
   await client.delete('root')
   await srv1.destroy()
@@ -75,7 +75,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('admin deletes', async t => {
+test.serial('admin deletes', async (t) => {
   const client = connect({ port: port1 }, { loglevel: 'info' })
 
   await client.set({
@@ -85,17 +85,17 @@ test.serial('admin deletes', async t => {
         {
           $id: 'ma1',
           title: {
-            en: 'yesh match 1'
-          }
+            en: 'yesh match 1',
+          },
         },
         {
           $id: 'ma2',
           title: {
-            en: 'yesh match 2'
-          }
-        }
-      ]
-    }
+            en: 'yesh match 2',
+          },
+        },
+      ],
+    },
   })
 
   await client.set({
@@ -106,42 +106,42 @@ test.serial('admin deletes', async t => {
         {
           $id: 'wa1',
           item: 'ma1',
-          time: 1
+          time: 1,
         },
         {
           $id: 'wa2',
           item: 'ma2',
-          time: 12
+          time: 12,
         },
         {
           $id: 'wa3',
           item: 'ma1',
-          time: 77
-        }
-      ]
-    }
+          time: 77,
+        },
+      ],
+    },
   })
 
   await client.set({
     $db: 'users',
     $id: 'us1',
     favorites: {
-      $add: 'ma1'
+      $add: 'ma1',
     },
     watching: {
-      $add: ['wa1', 'wa2']
-    }
+      $add: ['wa1', 'wa2'],
+    },
   })
 
   await client.set({
     $db: 'users',
     $id: 'us2',
     favorites: {
-      $add: ['ma1', 'ma2']
+      $add: ['ma1', 'ma2'],
     },
     watching: {
-      $add: ['wa3']
-    }
+      $add: ['wa3'],
+    },
   })
 
   let firstSchema = await client.getSchema()

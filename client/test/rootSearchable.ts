@@ -7,14 +7,14 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -22,7 +22,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('root is searchable', async t => {
+test.serial('root is searchable', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -31,9 +31,9 @@ test.serial('root is searchable', async t => {
       fields: {
         title: {
           type: 'text',
-          search: { type: ['TEXT-LANGUAGE-SUG'] }
-        }
-      }
+          search: { type: ['TEXT-LANGUAGE-SUG'] },
+        },
+      },
     },
     types: {
       sport: {
@@ -41,24 +41,24 @@ test.serial('root is searchable', async t => {
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
-          }
-        }
-      }
-    }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
+          },
+        },
+      },
+    },
   })
 
   await client.set({
     $language: 'en',
     $id: 'root',
-    title: 'yesh'
+    title: 'yesh',
   })
 
   await client.set({
     $language: 'en',
     type: 'sport',
     $id: 'sp1',
-    title: 'yesh'
+    title: 'yesh',
   })
 
   await client.set({
@@ -66,7 +66,7 @@ test.serial('root is searchable', async t => {
     type: 'sport',
     $id: 'sp2',
     title: 'yesh',
-    parents: ['sp1']
+    parents: ['sp1'],
   })
 
   t.deepEqualIgnoreOrder(
@@ -82,26 +82,26 @@ test.serial('root is searchable', async t => {
               {
                 $field: 'title',
                 $operator: '=',
-                $value: 'yesh'
-              }
+                $value: 'yesh',
+              },
             ],
-            $traverse: 'ancestors'
-          }
-        }
-      }
+            $traverse: 'ancestors',
+          },
+        },
+      },
     }),
     {
       results: [
         { id: 'sp1', title: 'yesh' },
-        { id: 'root', title: 'yesh' }
-      ]
+        { id: 'root', title: 'yesh' },
+      ],
     }
   )
 
   await client.destroy()
 })
 
-test.serial('root is searchable 2', async t => {
+test.serial('root is searchable 2', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -113,12 +113,12 @@ test.serial('root is searchable 2', async t => {
           default: {
             type: 'object',
             properties: {
-              rando: { type: 'text' }
-            }
-          }
-        }
-      }
-    }
+              rando: { type: 'text' },
+            },
+          },
+        },
+      },
+    },
   })
 
   try {
@@ -126,9 +126,9 @@ test.serial('root is searchable 2', async t => {
       $id: 'sp1',
       default: {
         rando: {
-          en: 'jonko'
-        }
-      }
+          en: 'jonko',
+        },
+      },
     })
     t.pass()
   } catch (e) {

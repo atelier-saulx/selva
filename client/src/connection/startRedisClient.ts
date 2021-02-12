@@ -64,7 +64,7 @@ const startClient = (
   const client = new RedisClient({
     host: connection.serverDescriptor.host,
     port: connection.serverDescriptor.port,
-    retry_strategy: retryStrategy
+    retry_strategy: retryStrategy,
   })
 
   client.on('ready', () => {
@@ -82,7 +82,7 @@ const startClient = (
     connection.emit('connect')
 
     if (isReconnect) {
-      connection.clients.forEach(c => {
+      connection.clients.forEach((c) => {
         if (c instanceof SelvaClient) {
           c.emit('reconnect', connection.serverDescriptor)
         }
@@ -92,7 +92,7 @@ const startClient = (
     isReconnect = true
   })
 
-  client.on('error', err => {
+  client.on('error', (err) => {
     console.error('Error from node-redis', err.message)
   })
 
@@ -147,7 +147,7 @@ export default (connection: Connection) => {
 
   connection.subscriber.subscribe(SERVER_HEARTBEAT)
 
-  connection.subscriber.on('message', channel => {
+  connection.subscriber.on('message', (channel) => {
     if (channel === SERVER_HEARTBEAT) {
       serverHeartbeat()
     }

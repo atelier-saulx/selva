@@ -55,7 +55,7 @@ export default function createInheritOperation(
       props: {},
       item: false,
       required: undefined,
-      types: []
+      types: [],
     })
 
     return
@@ -86,7 +86,7 @@ export default function createInheritOperation(
       required: Array.isArray(inherit.$required)
         ? inherit.$required
         : (inherit.$required && [inherit.$required]) || undefined,
-      types: Array.isArray(inherit.$item) ? inherit.$item : [inherit.$item]
+      types: Array.isArray(inherit.$item) ? inherit.$item : [inherit.$item],
     })
 
     return
@@ -125,7 +125,7 @@ export default function createInheritOperation(
       field,
       sourceField: props.$field || field,
       props: p,
-      types
+      types,
     })
 
     return
@@ -139,7 +139,7 @@ export default function createInheritOperation(
     props: { [field]: true },
     types,
     single: true,
-    merge: inherit.$merge
+    merge: inherit.$merge,
   })
 
   return

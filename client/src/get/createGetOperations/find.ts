@@ -22,9 +22,9 @@ const createFindOperation = (
     options: {
       limit,
       offset,
-      sort: Array.isArray(sort) ? sort[0] : sort || undefined
+      sort: Array.isArray(sort) ? sort[0] : sort || undefined,
     },
-    isNested
+    isNested,
   }
 
   if (find.$traverse) {

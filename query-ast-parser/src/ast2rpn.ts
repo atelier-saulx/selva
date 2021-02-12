@@ -17,7 +17,7 @@ const opMapString = {
   '!=': 'c L',
   exists: 'h',
   notExists: 'h',
-  has: 'a'
+  has: 'a',
 }
 
 const opMapNumber = {
@@ -28,7 +28,7 @@ const opMapNumber = {
   '!=': 'G',
   exists: 'h',
   notExists: 'h',
-  has: 'a'
+  has: 'a',
 }
 
 export default function ast2rpn(f: Fork, language?: string): Rpn {
@@ -77,14 +77,14 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
             {
               $operator: f.$operator,
               $field: f.$field,
-              $value: f.$value
+              $value: f.$value,
             },
             {
               $operator: f.$operator,
               $field: f.$field + '.' + language,
-              $value: f.$value
-            }
-          ]
+              $value: f.$value,
+            },
+          ],
         },
         true
       )
@@ -150,7 +150,7 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
       out += ` @${valueId2} $${fieldId} g @${valueId1} i`
     } else if (vType === 'object') {
       const fork: Fork = {
-        isFork: true
+        isFork: true,
       }
       if (f.$operator === '!=') {
         fork.$and = []
@@ -160,7 +160,7 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
           fork.$and[i] = {
             $field: f.$field,
             $operator: f.$operator,
-            $value: arr[i]
+            $value: arr[i],
           }
         }
       } else {
@@ -171,7 +171,7 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
           fork.$or[i] = {
             $field: f.$field,
             $operator: f.$operator,
-            $value: arr[i]
+            $value: arr[i],
           }
         }
       }

@@ -24,10 +24,10 @@ const redisSearchCommands = [
   'DICTDEL',
   'DICTDUMP',
   'TAGVALS',
-  'CONFIG'
+  'CONFIG',
 ]
 
-redis.RedisClient.prototype.on_info_cmd = function(err, res) {
+redis.RedisClient.prototype.on_info_cmd = function (err, res) {
   if (err) {
     if (err.message.includes('BUSY')) {
       this.on_ready()
@@ -62,7 +62,7 @@ redis.RedisClient.prototype.on_info_cmd = function(err, res) {
     err.message = 'Ready check failed: ' + err.message
     console.log(err)
     setTimeout(
-      function(self) {
+      function (self) {
         self.ready_check()
       },
       1e3,
@@ -97,7 +97,7 @@ redis.RedisClient.prototype.on_info_cmd = function(err, res) {
   }
 
   setTimeout(
-    function(self) {
+    function (self) {
       self.ready_check()
     },
     retry_time,
@@ -105,7 +105,7 @@ redis.RedisClient.prototype.on_info_cmd = function(err, res) {
   )
 }
 
-redisSearchCommands.forEach(cmd => {
+redisSearchCommands.forEach((cmd) => {
   // type definition is wrong its not on the client
   // @ts-ignore
   redis.add_command(`FT.${cmd}`)

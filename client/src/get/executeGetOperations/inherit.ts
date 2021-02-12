@@ -4,7 +4,7 @@ import {
   GetResult,
   GetOperation,
   Fork,
-  GetOptions
+  GetOptions,
 } from '../types'
 import { getNestedSchema, getNestedField, setNestedResult } from '../utils'
 import executeGetOperations, {
@@ -14,7 +14,7 @@ import executeGetOperations, {
   executeNestedGetOperations,
   addMarker,
   bufferNodeMarker,
-  executeGetOperation
+  executeGetOperation,
 } from './'
 import { FieldSchema, Schema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
@@ -55,7 +55,7 @@ async function mergeObj(
   const { db } = ctx
   const remapped: Record<string, string> = {}
   const props = makeRealKeys(op.props, op.field, true)
-  const fields = Object.keys(props).map(f => {
+  const fields = Object.keys(props).map((f) => {
     if (typeof props[f] === 'string') {
       remapped[<string>props[f]] = f
       return <string>props[f]
@@ -71,19 +71,19 @@ async function mergeObj(
     $and: [
       {
         $operator: 'exists',
-        $field: field
+        $field: field,
       },
       {
         isFork: true,
-        $or: op.types.map(t => {
+        $or: op.types.map((t) => {
           return {
             $operator: '=',
             $field: 'type',
-            $value: t
+            $value: t,
           }
-        })
-      }
-    ]
+        }),
+      },
+    ],
   }
 
   const rpn = ast2rpn(fork)
@@ -94,7 +94,7 @@ async function mergeObj(
       type: 'ancestors',
       id: op.id,
       fields,
-      rpn
+      rpn,
     })
 
     if (added) {
@@ -136,7 +136,7 @@ async function mergeObj(
       type: 'db',
       id: op.id,
       field: op.field,
-      sourceField: op.sourceField
+      sourceField: op.sourceField,
     },
     false
   )
@@ -155,7 +155,7 @@ async function inheritItem(
 
   const props = makeRealKeys(op.props, op.field)
   const remapped: Record<string, string> = {}
-  const fields = Object.keys(props).map(f => {
+  const fields = Object.keys(props).map((f) => {
     f = f.slice(op.field.length + 1)
     if (typeof props[f] === 'string') {
       remapped[<string>props[f]] = f
@@ -167,13 +167,13 @@ async function inheritItem(
 
   let fork: Fork = {
     isFork: true,
-    $or: op.types.map(t => {
+    $or: op.types.map((t) => {
       return {
         $operator: '=',
         $field: 'type',
-        $value: t
+        $value: t,
       }
-    })
+    }),
   }
 
   if (op.required) {
@@ -182,15 +182,15 @@ async function inheritItem(
       $and: [
         {
           isFork: true,
-          $and: op.required.map(f => {
+          $and: op.required.map((f) => {
             return {
               $operator: 'exists',
-              $field: f
+              $field: f,
             }
-          })
+          }),
         },
-        fork
-      ]
+        fork,
+      ],
     }
   }
 
@@ -202,7 +202,7 @@ async function inheritItem(
       type: 'ancestors',
       id: op.id,
       fields,
-      rpn
+      rpn,
     })
 
     if (added) {
@@ -319,22 +319,22 @@ export default async function inherit(
             $and: [
               {
                 $operator: 'exists',
-                $field: op.sourceField
+                $field: op.sourceField,
               },
               {
                 isFork: true,
-                $or: op.types.map(t => {
+                $or: op.types.map((t) => {
                   return {
                     $operator: '=',
                     $field: 'type',
-                    $value: t
+                    $value: t,
                   }
-                })
-              }
-            ]
+                }),
+              },
+            ],
           },
           lang
-        )
+        ),
       })
 
       if (added) {
@@ -382,22 +382,22 @@ export default async function inherit(
             $and: [
               {
                 $operator: 'exists',
-                $field: op.sourceField
+                $field: op.sourceField,
               },
               {
                 isFork: true,
-                $or: op.types.map(t => {
+                $or: op.types.map((t) => {
                   return {
                     $operator: '=',
                     $field: 'type',
-                    $value: t
+                    $value: t,
                   }
-                })
-              }
-            ]
+                }),
+              },
+            ],
           },
           lang
-        )
+        ),
       })
 
       if (added) {
@@ -433,7 +433,7 @@ export default async function inherit(
 
   const realKeys = makeRealKeys(op.props, op.field)
   const remapped: Record<string, string> = {}
-  const fields = Object.keys(realKeys).map(f => {
+  const fields = Object.keys(realKeys).map((f) => {
     if (typeof realKeys[f] === 'string') {
       remapped[<string>realKeys[f]] = f
       return <string>realKeys[f]
@@ -458,27 +458,27 @@ export default async function inherit(
           $and: [
             {
               isFork: true,
-              $or: fields.map(f => {
+              $or: fields.map((f) => {
                 return {
                   $operator: 'exists',
-                  $field: f
+                  $field: f,
                 }
-              })
+              }),
             },
             {
               isFork: true,
-              $or: op.types.map(t => {
+              $or: op.types.map((t) => {
                 return {
                   $operator: '=',
                   $field: 'type',
-                  $value: t
+                  $value: t,
                 }
-              })
-            }
-          ]
+              }),
+            },
+          ],
         },
         lang
-      )
+      ),
     })
 
     if (added) {

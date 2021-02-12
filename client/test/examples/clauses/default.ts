@@ -12,7 +12,7 @@ import { setDataSet } from '../_dataSet'
 let srv
 let port
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({ port })
   await wait(500)
@@ -21,7 +21,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -29,7 +29,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('$default', async t => {
+test.serial('$default', async (t) => {
   const client = connect({ port: port })
 
   await setDataSet(client)
@@ -37,7 +37,7 @@ test.serial('$default', async t => {
   t.deepEqual(
     await client.get({
       $id: 'peCharltonHeston',
-      died: { $default: '---' }
+      died: { $default: '---' },
     }),
     { died: 2008 }
   )
@@ -45,7 +45,7 @@ test.serial('$default', async t => {
   t.deepEqual(
     await client.get({
       $id: 'peLeighTaylorYoung',
-      died: { $default: '---' }
+      died: { $default: '---' },
     }),
     { died: '---' }
   )

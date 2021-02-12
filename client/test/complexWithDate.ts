@@ -7,18 +7,18 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     rootType: {
       fields: {
-        title: { type: 'text' }
-      }
+        title: { type: 'text' },
+      },
     },
     types: {
       league: {
@@ -27,55 +27,55 @@ test.before(async t => {
           title: {
             type: 'text',
             meta: { type: 'title' },
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
-          }
-        }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
+          },
+        },
       },
       match: {
         prefix: 'ma',
         hierarchy: {
           team: {
-            excludeAncestryWith: ['league']
-          }
+            excludeAncestryWith: ['league'],
+          },
         },
         fields: {
           title: {
             type: 'text',
             meta: { type: 'title' },
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
           date: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] }
+            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           published: {
             type: 'boolean',
             search: { type: ['TAG'] },
-            meta: { type: 'enabled' }
-          }
-        }
+            meta: { type: 'enabled' },
+          },
+        },
       },
       team: {
         prefix: 'te',
         hierarchy: {
           team: {
-            excludeAncestryWith: ['league']
-          }
+            excludeAncestryWith: ['league'],
+          },
         },
         fields: {
           title: {
             type: 'text',
             meta: { type: 'title' },
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
-          }
-        }
-      }
-    }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
+          },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -83,13 +83,13 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('yes', async t => {
+test.serial('yes', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({
     type: 'league',
     $id: 'le1',
     $language: 'en',
-    title: 'League 1'
+    title: 'League 1',
   })
 
   await client.set({
@@ -97,7 +97,7 @@ test.serial('yes', async t => {
     $id: 'te1',
     $language: 'en',
     title: 'Team 1',
-    parents: ['le1']
+    parents: ['le1'],
   })
 
   await client.set({
@@ -107,7 +107,7 @@ test.serial('yes', async t => {
     title: 'Match 1',
     date: 1578039984000,
     published: true,
-    parents: ['te1', 'root']
+    parents: ['te1', 'root'],
   })
 
   await wait(500)
@@ -128,11 +128,11 @@ test.serial('yes', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'team'
-              }
-            ]
-          }
-        }
+                $value: 'team',
+              },
+            ],
+          },
+        },
       },
       team: {
         id: true,
@@ -143,10 +143,10 @@ test.serial('yes', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'team'
-            }
-          ]
-        }
+              $value: 'team',
+            },
+          ],
+        },
       },
       $list: {
         $offset: 0,
@@ -157,27 +157,27 @@ test.serial('yes', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
+              $value: 'match',
             },
             {
               $field: 'published',
               $operator: '=',
-              $value: true
+              $value: true,
             },
             {
               $field: 'date',
               $operator: '>',
-              $value: 1577883600000
+              $value: 1577883600000,
             },
             {
               $field: 'date',
               $operator: '<',
-              $value: 1580515199000
-            }
-          ]
-        }
-      }
-    }
+              $value: 1580515199000,
+            },
+          ],
+        },
+      },
+    },
   })
 
   t.truthy(result.matches && result.matches.length)

@@ -69,11 +69,11 @@ let docs = []
 for (let i = 0; i < 10000; i++) {
   const doc1 = {
     arr: [],
-    title: ~~(Math.random() * 100) + 'aaaa'
+    title: ~~(Math.random() * 100) + 'aaaa',
   }
   const doc2 = {
     arr: [],
-    title: ~~(Math.random() * 100) + 'aaaa'
+    title: ~~(Math.random() * 100) + 'aaaa',
   }
 
   for (let i = 0; i < ~~(Math.random() * 10000); i++) {

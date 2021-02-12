@@ -10,19 +10,19 @@ const DEFAULT_HIERARCHY = '___selva_hierarchy'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
 })
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
@@ -31,76 +31,76 @@ test.beforeEach(async t => {
   await client.updateSchema({
     languages: ['en', 'nl', 'de'],
     rootType: {
-      fields: { value: { type: 'number' }, title: { type: 'text' } }
+      fields: { value: { type: 'number' }, title: { type: 'text' } },
     },
     types: {
       match: {
         prefix: 'ma',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           createdAt: { type: 'timestamp' },
-          value: { type: 'number' }
-        }
+          value: { type: 'number' },
+        },
       },
       league: {
         prefix: 'cu',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
-          createdAt: { type: 'number' }
-        }
+          createdAt: { type: 'number' },
+        },
       },
       person: {
         prefix: 'pe',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           createdAt: { type: 'timestamp' },
-          updatedAt: { type: 'timestamp' }
-        }
+          updatedAt: { type: 'timestamp' },
+        },
       },
       someTestThing: {
         prefix: 'vi',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           value: {
-            type: 'number'
+            type: 'number',
           },
           things: { type: 'set', items: { type: 'string' } },
-          otherThings: { type: 'set', items: { type: 'string' } }
-        }
+          otherThings: { type: 'set', items: { type: 'string' } },
+        },
       },
       otherTestThing: {
         prefix: 'ar',
         fields: {
           title: {
-            type: 'text'
+            type: 'text',
           },
           image: {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
 
   // A small delay is needed after setting the schema
-  await new Promise(r => setTimeout(r, 100))
+  await new Promise((r) => setTimeout(r, 100))
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -108,21 +108,21 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('can delete root', async t => {
+test.serial('can delete root', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
 
   const match = await client.set({
-    type: 'match'
+    type: 'match',
   })
 
   const root = await client.set({
     $id: 'root',
-    value: 9001
+    value: 9001,
   })
 
   t.deepEqual(root, 'root')
@@ -138,10 +138,10 @@ test.serial('can delete root', async t => {
   await client.destroy()
 })
 
-test.serial('can delete a set', async t => {
+test.serial('can delete a set', async (t) => {
   const client = connect(
     {
-      port
+      port,
     },
     { loglevel: 'info' }
   )
@@ -150,11 +150,11 @@ test.serial('can delete a set', async t => {
     type: 'someTestThing',
     title: {
       en: 'yes text',
-      de: 'ja text'
+      de: 'ja text',
     },
     value: 5,
     things: ['a', 'b', 'c'],
-    otherThings: ['x', 'y', 'z']
+    otherThings: ['x', 'y', 'z'],
   })
   t.deepEqual(1, 1)
 

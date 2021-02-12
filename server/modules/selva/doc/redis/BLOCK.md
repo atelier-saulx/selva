@@ -1,5 +1,4 @@
-Blocking commands in Redis modules
-===
+# Blocking commands in Redis modules
 
 Redis has a few blocking commands among the built-in set of commands.
 One of the most used is `BLPOP` (or the symmetric `BRPOP`) which blocks
@@ -16,8 +15,7 @@ Redis modules have the ability to implement blocking commands as well,
 this documentation shows how the API works and describes a few patterns
 that can be used in order to model blocking commands.
 
-How blocking and resuming works.
----
+## How blocking and resuming works.
 
 _Note: You may want to check the `helloblock.c` example in the Redis source tree
 inside the `src/modules` directory, for a simple to understand example
@@ -36,11 +34,11 @@ The function returns a `RedisModuleBlockedClient` object, which is later
 used in order to unblock the client. The arguments have the following
 meaning:
 
-* `ctx` is the command execution context as usually in the rest of the API.
-* `reply_callback` is the callback, having the same prototype of a normal command function, that is called when the client is unblocked in order to return a reply to the client.
-* `timeout_callback` is the callback, having the same prototype of a normal command function that is called when the client reached the `ms` timeout.
-* `free_privdata` is the callback that is called in order to free the private data. Private data is a pointer to some data that is passed between the API used to unblock the client, to the callback that will send the reply to the client. We'll see how this mechanism works later in this document.
-* `ms` is the timeout in milliseconds. When the timeout is reached, the timeout callback is called and the client is automatically aborted.
+- `ctx` is the command execution context as usually in the rest of the API.
+- `reply_callback` is the callback, having the same prototype of a normal command function, that is called when the client is unblocked in order to return a reply to the client.
+- `timeout_callback` is the callback, having the same prototype of a normal command function that is called when the client reached the `ms` timeout.
+- `free_privdata` is the callback that is called in order to free the private data. Private data is a pointer to some data that is passed between the API used to unblock the client, to the callback that will send the reply to the client. We'll see how this mechanism works later in this document.
+- `ms` is the timeout in milliseconds. When the timeout is reached, the timeout callback is called and the client is automatically aborted.
 
 Once a client is blocked, it can be unblocked with the following API:
 
@@ -111,8 +109,7 @@ client is unblocked from the thread.
 The timeout command returns `NULL`, as it often happens with actual
 Redis blocking commands timing out.
 
-Passing reply data when unblocking
----
+## Passing reply data when unblocking
 
 The above example is simple to understand but lacks an important
 real world aspect of an actual blocking command implementation: often
@@ -168,8 +165,7 @@ if the client disconnects or timeout.
 Also note that the private data is also accessible from the timeout
 callback, always using the `GetBlockedClientPrivateData()` API.
 
-Aborting the blocking of a client
----
+## Aborting the blocking of a client
 
 One problem that sometimes arises is that we need to allocate resources
 in order to implement the non blocking command. So we block the client,
@@ -201,8 +197,7 @@ Practically this is how to use it:
 
 The client will be unblocked but the reply callback will not be called.
 
-Implementing the command, reply and timeout callback using a single function
----
+## Implementing the command, reply and timeout callback using a single function
 
 The following functions can be used in order to implement the reply and
 callback with the same function that implements the primary command
@@ -240,8 +235,7 @@ Functionally is the same but there are people that will prefer the less
 verbose implementation that concentrates most of the command logic in a
 single function.
 
-Working on copies of data inside a thread
----
+## Working on copies of data inside a thread
 
 An interesting pattern in order to work with threads implementing the
 slow part of a command, is to work with a copy of the data, so that
@@ -254,8 +248,7 @@ An example of this approach is the
 where neural networks are trained in different threads while the
 user can still execute and inspect their older versions.
 
-Future work
----
+## Future work
 
 An API is work in progress right now in order to allow Redis modules APIs
 to be called in a safe way from threads, so that the threaded command

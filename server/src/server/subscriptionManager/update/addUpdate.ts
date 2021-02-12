@@ -7,7 +7,7 @@ var delayCount = 0
 const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   // seeing a double subscriptions no good
   let cnt = 0
-  subscriptionManager.stagedForUpdates.forEach(subscription => {
+  subscriptionManager.stagedForUpdates.forEach((subscription) => {
     subscription.inProgress = false
     subscriptionManager.stagedForUpdates.delete(subscription)
     if (subscription.beingProcessed) {
@@ -16,10 +16,10 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
     } else {
       cnt++
       sendUpdate(subscriptionManager, subscription)
-        .then(_v => {
+        .then((_v) => {
           // console.log('SEND UPDATE FOR', subscription.channel)
         })
-        .catch(err => {
+        .catch((err) => {
           console.error(chalk.red(`Error in send update ${err.message}`))
           subscriptionManager.inProgressCount--
           subscription.beingProcessed = false

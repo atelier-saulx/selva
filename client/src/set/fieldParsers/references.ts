@@ -9,9 +9,9 @@ import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
 
 const id = verifiers.id
 
-const verifySimple = payload => {
+const verifySimple = (payload) => {
   if (Array.isArray(payload)) {
-    if (payload.find(v => !id(v))) {
+    if (payload.find((v) => !id(v))) {
       throw new Error(`Wrong payload for references ${JSON.stringify(payload)}`)
     }
     return payload
@@ -33,7 +33,7 @@ const addParent = (
     if (!obj.parents) {
       obj.parents = {
         $value: [],
-        $noRoot: true
+        $noRoot: true,
       }
     } else if (noRoot) {
       if (typeof obj.parents === 'string') {
@@ -259,7 +259,7 @@ export default async (
             r.$value,
             noRoot,
             $lang
-          )
+          ),
         })
       )
     }
@@ -280,7 +280,7 @@ export default async (
         delete_all: isEmpty($value),
         $add: '',
         $delete: '',
-        $value
+        $value,
       })
     )
   }

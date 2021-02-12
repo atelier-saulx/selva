@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   await wait(500)
@@ -22,8 +22,8 @@ test.before(async t => {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
       },
       match: {
         prefix: 'ma',
@@ -31,16 +31,16 @@ test.before(async t => {
           fun: { type: 'set', items: { type: 'string' } },
           related: { type: 'references', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
-        }
-      }
-    }
+          status: { type: 'number', search: { type: ['NUMERIC'] } },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -48,7 +48,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find - references', async t => {
+test.serial('find - references', async (t) => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
   const globMatches = []
@@ -61,7 +61,7 @@ test.serial('find - references', async t => {
         type: 'match',
         name: 'match' + j,
         value: Number(i + '.' + j),
-        related: globMatches.map(v => v.$id)
+        related: globMatches.map((v) => v.$id),
       }
       matches.push(match)
       globMatches.push(match)
@@ -70,10 +70,10 @@ test.serial('find - references', async t => {
       type: 'league',
       name: 'league' + i,
       value: i,
-      children: matches
+      children: matches,
     })
   }
-  await Promise.all(leaguesSet.map(v => client.set(v)))
+  await Promise.all(leaguesSet.map((v) => client.set(v)))
 
   const { items: leagues } = await client.get({
     items: {
@@ -87,11 +87,11 @@ test.serial('find - references', async t => {
           $filter: {
             $field: 'type',
             $operator: '=',
-            $value: 'league'
-          }
-        }
-      }
-    }
+            $value: 'league',
+          },
+        },
+      },
+    },
   })
 
   const league = leagues[0].id
@@ -110,17 +110,17 @@ test.serial('find - references', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
+              $value: 'match',
             },
             {
               $field: 'value',
               $operator: '..',
-              $value: [5, 10]
-            }
-          ]
-        }
-      }
-    }
+              $value: [5, 10],
+            },
+          ],
+        },
+      },
+    },
   })
 
   const { items: relatedMatches } = await client.get({
@@ -136,22 +136,22 @@ test.serial('find - references', async t => {
             {
               $field: 'value',
               $operator: '<',
-              $value: 4
+              $value: 4,
             },
             {
               $field: 'value',
               $operator: '<',
-              $value: 'now'
+              $value: 'now',
             },
             {
               $field: 'value',
               $operator: '>',
-              $value: 2
-            }
-          ]
-        }
-      }
-    }
+              $value: 2,
+            },
+          ],
+        },
+      },
+    },
   })
 
   t.deepEqual(relatedMatches, [
@@ -175,7 +175,7 @@ test.serial('find - references', async t => {
     { value: 2.3, name: 'match3' },
     { value: 2.2, name: 'match2' },
     { value: 2.1, name: 'match1' },
-    { value: 2, name: 'match0' }
+    { value: 2, name: 'match0' },
   ])
 
   const { items: relatedMatchesLeagues } = await client.get({
@@ -190,7 +190,7 @@ test.serial('find - references', async t => {
           $filter: {
             $field: 'type',
             $operator: '=',
-            $value: 'match'
+            $value: 'match',
           },
           $find: {
             $traverse: 'ancestors',
@@ -198,18 +198,18 @@ test.serial('find - references', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'league'
+                $value: 'league',
               },
               {
                 $field: 'value',
                 $operator: '<',
-                $value: 10
-              }
-            ]
-          }
-        }
-      }
-    }
+                $value: 10,
+              },
+            ],
+          },
+        },
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -224,7 +224,7 @@ test.serial('find - references', async t => {
       { value: 6, name: 'league6' },
       { value: 7, name: 'league7' },
       { value: 8, name: 'league8' },
-      { value: 9, name: 'league9' }
+      { value: 9, name: 'league9' },
     ],
     'Nested query'
   )
@@ -245,18 +245,18 @@ test.serial('find - references', async t => {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'league'
+                $value: 'league',
               },
               {
                 $field: 'value',
                 $operator: '<',
-                $value: 10
-              }
-            ]
-          }
-        }
-      }
-    }
+                $value: 10,
+              },
+            ],
+          },
+        },
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -271,7 +271,7 @@ test.serial('find - references', async t => {
       { value: 6, name: 'league6' },
       { value: 7, name: 'league7' },
       { value: 8, name: 'league8' },
-      { value: 9, name: 'league9' }
+      { value: 9, name: 'league9' },
     ],
     'Nested query'
   )

@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -23,15 +23,15 @@ test.before(async t => {
           name: { type: 'string', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
           status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
-      }
-    }
+          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
@@ -41,12 +41,12 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscription validation error', async t => {
+test.serial('subscription validation error', async (t) => {
   const client = connect({ port })
   var errorCnt = 0
   client
     .observe({
-      $db: {}
+      $db: {},
     })
     .subscribe(
       () => {},
@@ -56,19 +56,19 @@ test.serial('subscription validation error', async t => {
       }
     )
   client.observe({
-    $db: {}
+    $db: {},
   })
   client.observe({
-    $db: {}
+    $db: {},
   })
   await wait(2e3)
   t.is(errorCnt, 1)
   client.observe({
-    $db: {}
+    $db: {},
   })
   client
     .observe({
-      $db: {}
+      $db: {},
     })
     .subscribe(
       () => {},
@@ -83,21 +83,21 @@ test.serial('subscription validation error', async t => {
 
 test.serial(
   'subscription initialization with multiple subscribers',
-  async t => {
+  async (t) => {
     const client = connect({ port })
     var errorCnt = 0
     var cnt = 0
     const id = await client.set({
       type: 'match',
-      title: { en: 'snurfels' }
+      title: { en: 'snurfels' },
     })
     client
       .observe({
         $id: id,
-        title: true
+        title: true,
       })
       .subscribe(
-        v => {
+        (v) => {
           cnt++
         },
         () => {
@@ -108,10 +108,10 @@ test.serial(
     client
       .observe({
         $id: id,
-        title: true
+        title: true,
       })
       .subscribe(
-        v => {
+        (v) => {
           cnt++
         },
         () => {
@@ -122,7 +122,7 @@ test.serial(
     t.is(cnt, 2)
     await client.set({
       $id: id,
-      title: { en: 'snurfels22' }
+      title: { en: 'snurfels22' },
     })
     await wait(1000)
     t.is(cnt, 4)
@@ -130,7 +130,7 @@ test.serial(
   }
 )
 
-test.serial('subscription error on subs manager', async t => {
+test.serial('subscription error on subs manager', async (t) => {
   const client = connect({ port })
   var errorCnt = 0
   const results = []
@@ -141,16 +141,16 @@ test.serial('subscription error on subs manager', async t => {
       yizi: {
         title: true,
         $inherit: {
-          $item: 'club'
-        }
+          $item: 'club',
+        },
       },
-      title: true
+      title: true,
     })
     .subscribe(
-      v => {
+      (v) => {
         results.push(v)
       },
-      err => {
+      (err) => {
         console.error(err)
         errorCnt++
       }

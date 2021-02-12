@@ -11,11 +11,11 @@ let port: number
 test.before(async () => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -23,7 +23,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('language in all types of objects', async t => {
+test.serial('language in all types of objects', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -36,21 +36,21 @@ test.serial('language in all types of objects', async t => {
           randoObject: {
             type: 'object',
             properties: {
-              title: { type: 'text' }
-            }
+              title: { type: 'text' },
+            },
           },
           randoArray: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                title: { type: 'text' }
-              }
-            }
-          }
-        }
-      }
-    }
+                title: { type: 'text' },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   await client.set({
@@ -58,7 +58,7 @@ test.serial('language in all types of objects', async t => {
     $language: 'en',
     title: 'engTitle',
     randoObject: { title: 'randoObject.engTitle' },
-    randoArray: [{ title: 'randoArray.engTitle' }]
+    randoArray: [{ title: 'randoArray.engTitle' }],
   })
 
   t.deepEqualIgnoreOrder(
@@ -66,13 +66,13 @@ test.serial('language in all types of objects', async t => {
       $id: 'bl1',
       $language: 'en',
       title: true,
-      randoObject: true
+      randoObject: true,
     }),
     {
       title: 'engTitle',
       randoObject: {
-        title: 'randoObject.engTitle'
-      }
+        title: 'randoObject.engTitle',
+      },
     }
   )
 

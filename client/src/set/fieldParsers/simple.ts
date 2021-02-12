@@ -3,7 +3,12 @@ import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { TypeSchema, Schema, FieldSchemaOther } from '../../schema'
 import digest from '../../digest'
-import { incrementDef, incrementDoubleDef, longLongDef, doubleDef } from '../modifyDataRecords'
+import {
+  incrementDef,
+  incrementDoubleDef,
+  longLongDef,
+  doubleDef,
+} from '../modifyDataRecords'
 
 const isUrlRe = new RegExp(
   '^(?!mailto:)(?:(?:http|https|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$',
@@ -66,15 +71,19 @@ export const verifiers = {
   },
   id: (payload: string) => {
     return typeof payload === 'string' && payload.length < 20
-  }
+  },
 }
 
 // also need to make this accessable
 const converters = {
   digest,
-  timestamp: (payload: 'now' | number): Buffer => createRecord(longLongDef, { d: BigInt(payload === 'now' ? Date.now() : payload) }),
+  timestamp: (payload: 'now' | number): Buffer =>
+    createRecord(longLongDef, {
+      d: BigInt(payload === 'now' ? Date.now() : payload),
+    }),
   boolean: (v: boolean): Buffer => createRecord(longLongDef, { d: BigInt(+v) }),
-  int: (payload: number): Buffer => createRecord(longLongDef, { d: BigInt(payload) }),
+  int: (payload: number): Buffer =>
+    createRecord(longLongDef, { d: BigInt(payload) }),
   float: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
   number: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
 }
@@ -83,10 +92,11 @@ const parsers = {}
 
 for (const key in verifiers) {
   const verify = verifiers[key]
-  const valueType: string =
-    ['boolean', 'int', 'timestamp'].includes(key)
-      ? '3'
-      : ['float', 'number'].includes(key) ? 'A' : '0'
+  const valueType: string = ['boolean', 'int', 'timestamp'].includes(key)
+    ? '3'
+    : ['float', 'number'].includes(key)
+    ? 'A'
+    : '0'
   const isNumber = key === 'float' || key === 'number' || key === 'int'
   const noOptions = key === 'type' || key === 'id' || key === 'digest'
   const converter = converters[key]
@@ -123,8 +133,8 @@ for (const key in verifiers) {
             if (!verify(payload[k])) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (
-                converter &&
-                !['int', 'float', 'number'].includes(key) // createRecord will take care of numbers
+              converter &&
+              !['int', 'float', 'number'].includes(key) // createRecord will take care of numbers
             ) {
               value = converter(payload[k])
             }
@@ -141,7 +151,7 @@ for (const key in verifiers) {
                       : Number(payload.$default),
                     $increment: isNaN(payload.$increment)
                       ? 0
-                      : Number(payload.$increment)
+                      : Number(payload.$increment),
                   })
                 )
               } else {
@@ -154,7 +164,7 @@ for (const key in verifiers) {
                       : Number(payload.$default),
                     $increment: isNaN(payload.$increment)
                       ? 0
-                      : Number(payload.$increment)
+                      : Number(payload.$increment),
                   })
                 )
               }

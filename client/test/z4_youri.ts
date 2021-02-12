@@ -8,18 +8,18 @@ import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
     rootType: {
       fields: {
-        title: { type: 'text' }
-      }
+        title: { type: 'text' },
+      },
     },
     types: {
       rando: {
@@ -29,17 +29,17 @@ test.before(async t => {
           niceSet: {
             type: 'set',
             items: {
-              type: 'string'
-            }
-          }
-        }
-      }
-    }
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -47,12 +47,12 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('yes', async t => {
+test.serial('yes', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.set({
     type: 'rando',
     $id: 'ra1',
-    $language: 'en'
+    $language: 'en',
   })
   await wait(500)
   const results = []
@@ -61,9 +61,9 @@ test.serial('yes', async t => {
     .observe({
       $id: 'ra1',
       aliases: true,
-      niceSet: true
+      niceSet: true,
     })
-    .subscribe(res => {
+    .subscribe((res) => {
       console.log('RES', res)
       results.push(deepCopy(res))
     })
@@ -73,7 +73,7 @@ test.serial('yes', async t => {
   await client.set({
     $id: 'ra1',
     aliases: ['a'],
-    niceSet: ['a']
+    niceSet: ['a'],
   })
 
   await wait(500)
@@ -81,7 +81,7 @@ test.serial('yes', async t => {
   await client.set({
     $id: 'ra1',
     aliases: ['b'],
-    niceSet: ['b']
+    niceSet: ['b'],
   })
 
   await wait(500)
@@ -89,7 +89,7 @@ test.serial('yes', async t => {
   await client.set({
     $id: 'ra1',
     aliases: { $add: ['c'] },
-    niceSet: { $add: ['c'] }
+    niceSet: { $add: ['c'] },
   })
 
   await wait(500)
@@ -97,7 +97,7 @@ test.serial('yes', async t => {
   await client.set({
     $id: 'ra1',
     aliases: { $delete: ['c'] },
-    niceSet: { $delete: ['c'] }
+    niceSet: { $delete: ['c'] },
   })
 
   await wait(500)
@@ -107,7 +107,7 @@ test.serial('yes', async t => {
     { niceSet: ['a'], aliases: ['a'] },
     { niceSet: ['b'], aliases: ['b'] },
     { niceSet: ['b', 'c'], aliases: ['b', 'c'] },
-    { niceSet: ['b'], aliases: ['b'] }
+    { niceSet: ['b'], aliases: ['b'] },
   ])
 
   await client.destroy()

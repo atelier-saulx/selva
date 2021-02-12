@@ -19,16 +19,16 @@ const timeQuery = {
           {
             $operator: '=',
             $value: 'match',
-            $field: 'type'
+            $field: 'type',
           },
           {
             $value: 'now',
             $field: 'endTime',
-            $operator: '<'
-          }
-        ]
-      }
-    }
+            $operator: '<',
+          },
+        ],
+      },
+    },
   },
   live: {
     id: true,
@@ -40,21 +40,21 @@ const timeQuery = {
           {
             $operator: '=',
             $value: 'match',
-            $field: 'type'
+            $field: 'type',
           },
           {
             $value: 'now',
             $field: 'startTime',
-            $operator: '<'
+            $operator: '<',
           },
           {
             $value: 'now',
             $field: 'endTime',
-            $operator: '>'
-          }
-        ]
-      }
-    }
+            $operator: '>',
+          },
+        ],
+      },
+    },
   },
   upcoming: {
     id: true,
@@ -66,23 +66,23 @@ const timeQuery = {
           {
             $operator: '=',
             $value: 'match',
-            $field: 'type'
+            $field: 'type',
           },
           {
             $value: 'now',
             $field: 'startTime',
-            $operator: '>'
-          }
-        ]
-      }
-    }
-  }
+            $operator: '>',
+          },
+        ],
+      },
+    },
+  },
 }
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   await wait(500)
@@ -94,29 +94,29 @@ test.before(async t => {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } }
-        }
+          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+        },
       },
       team: {
         prefix: 'te',
         fields: {
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } }
-        }
+          published: { type: 'boolean', search: { type: ['TAG'] } },
+        },
       },
       video: {
         prefix: 'vi',
         fields: {
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } }
-        }
+          published: { type: 'boolean', search: { type: ['TAG'] } },
+        },
       },
       sport: {
         prefix: 'sp',
         fields: {
           title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } }
-        }
+          published: { type: 'boolean', search: { type: ['TAG'] } },
+        },
       },
       match: {
         prefix: 'ma',
@@ -127,29 +127,29 @@ test.before(async t => {
           awayTeam: { type: 'reference' },
           startTime: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] }
+            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           endTime: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] }
+            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           date: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] }
+            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           fun: { type: 'set', items: { type: 'string' } },
           related: { type: 'references', search: { type: ['TAG'] } },
           value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } }
-        }
-      }
-    }
+          status: { type: 'number', search: { type: ['NUMERIC'] } },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -157,7 +157,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('one client', async t => {
+test.serial('one client', async (t) => {
   const client = connect(
     async () => {
       await wait(10)
@@ -171,9 +171,9 @@ test.serial('one client', async t => {
   client
     .observe({
       $id: 'maTest',
-      title: true
+      title: true,
     })
-    .subscribe(r => {
+    .subscribe((r) => {
       // console.log('result:', r)
     })
 
@@ -182,8 +182,8 @@ test.serial('one client', async t => {
   client.set({
     $id: 'maTest',
     title: {
-      de: 'Gutentag'
-    }
+      de: 'Gutentag',
+    },
   })
 
   await wait(500)
@@ -193,7 +193,7 @@ test.serial('one client', async t => {
   t.true(true)
 })
 
-test.serial('many async clients - timebased query', async t => {
+test.serial('many async clients - timebased query', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const now = Date.now()
 
@@ -202,7 +202,7 @@ test.serial('many async clients - timebased query', async t => {
     $id: 'ma1',
     name: 'upcoming match',
     startTime: now + 2000, // 2 sec from now
-    endTime: now + 5000 // 5 sec from now
+    endTime: now + 5000, // 5 sec from now
   })
 
   let k = 10
@@ -213,7 +213,7 @@ test.serial('many async clients - timebased query', async t => {
       return { port }
     })
 
-    client.observe(timeQuery).subscribe(r => {
+    client.observe(timeQuery).subscribe((r) => {
       // console.log('time:', r)
       result = r
     })
@@ -223,19 +223,19 @@ test.serial('many async clients - timebased query', async t => {
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'ma1' }],
     past: [],
-    live: []
+    live: [],
   })
   await wait(3000)
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [],
-    live: [{ id: 'ma1' }]
+    live: [{ id: 'ma1' }],
   })
   await wait(3000)
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [{ id: 'ma1' }],
-    live: []
+    live: [],
   })
   await wait(10000)
   await client.delete('root')

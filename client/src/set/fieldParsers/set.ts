@@ -1,20 +1,25 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
-import { OPT_SET_TYPE, setRecordDefCstring, setRecordDefDouble, setRecordDefInt64 } from '../modifyDataRecords'
+import {
+  OPT_SET_TYPE,
+  setRecordDefCstring,
+  setRecordDefDouble,
+  setRecordDefInt64,
+} from '../modifyDataRecords'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike, FieldType } from '../../schema'
 import parseSetObject from '../validate'
 import parsers from './simple'
 
-const doubleTypes: FieldType[] = ['number', 'float'];
-const intTypes: FieldType[] = ['int', 'timestamp'];
+const doubleTypes: FieldType[] = ['number', 'float']
+const intTypes: FieldType[] = ['int', 'timestamp']
 
 const verifySimple = async (
   payload: SetOptions,
   verify: (p: SetOptions) => Promise<any>
 ) => {
   if (Array.isArray(payload)) {
-    return Promise.all(payload.map(v => verify(v)))
+    return Promise.all(payload.map((v) => verify(v)))
   } else {
     return [await verify(payload)]
   }
@@ -26,7 +31,9 @@ const parseObjectArray = async (
   schema: Schema
 ) => {
   if (Array.isArray(payload) && typeof payload[0] === 'object') {
-    return Promise.all(payload.map(ref => parseSetObject(client, ref, schema)))
+    return Promise.all(
+      payload.map((ref) => parseSetObject(client, ref, schema))
+    )
   }
 }
 
@@ -50,11 +57,19 @@ export default async (
   // @ts-ignore
   const [setRecordDef, opSetType, toCArr] = doubleTypes.includes(elementType)
     ? [setRecordDefDouble, OPT_SET_TYPE.double, (arr: any) => arr]
-    // @ts-ignore
-    : intTypes.includes(elementType)
-      ? [setRecordDefInt64, OPT_SET_TYPE.long_long, (arr: number[] | undefined | null) => arr ? arr.map(BigInt) : arr]
-      : [setRecordDefCstring, OPT_SET_TYPE.char, (arr: string[] | undefined | null) => arr ? arr.map(s => `${s}\0`).join('') : '']
-
+    : // @ts-ignore
+    intTypes.includes(elementType)
+    ? [
+        setRecordDefInt64,
+        OPT_SET_TYPE.long_long,
+        (arr: number[] | undefined | null) => (arr ? arr.map(BigInt) : arr),
+      ]
+    : [
+        setRecordDefCstring,
+        OPT_SET_TYPE.char,
+        (arr: string[] | undefined | null) =>
+          arr ? arr.map((s) => `${s}\0`).join('') : '',
+      ]
 
   if (!fields || !fields.items) {
     throw new Error(`Cannot find field ${field} on ${type}`)
@@ -108,7 +123,7 @@ export default async (
         delete_all: r.delete_all,
         $add: toCArr(r.$add),
         $delete: toCArr(r.$delete),
-        $value: null
+        $value: null,
       })
     )
   } else {
@@ -119,7 +134,12 @@ export default async (
         op_set_type: opSetType,
         $add: null,
         $delete: null,
-        $value: toCArr(opSetType === OPT_SET_TYPE.char ? (await parseObjectArray(client, payload, schema)) || (await verifySimple(payload, verify)) : payload)
+        $value: toCArr(
+          opSetType === OPT_SET_TYPE.char
+            ? (await parseObjectArray(client, payload, schema)) ||
+                (await verifySimple(payload, verify))
+            : payload
+        ),
       })
     )
   }

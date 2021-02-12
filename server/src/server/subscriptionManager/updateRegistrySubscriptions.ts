@@ -27,7 +27,7 @@ const handleAddPrev = async (
 
       if (
         client.servers.subsManagers.find(
-          s => s.port === port && s.host === host
+          (s) => s.port === port && s.host === host
         )
       ) {
         // if the server is unregistered this will be useless to add to a quuee

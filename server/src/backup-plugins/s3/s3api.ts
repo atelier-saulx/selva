@@ -53,7 +53,7 @@ export function createApi(
     },
     async ensureBucket(bucketName, acl) {
       const buckets = await api.getBuckets()
-      const found = buckets.find(bucket => {
+      const found = buckets.find((bucket) => {
         return bucket.Name === bucketName
       })
 
@@ -110,7 +110,7 @@ export function createApi(
           }
         )
       })
-    }
+    },
   }
 
   return api

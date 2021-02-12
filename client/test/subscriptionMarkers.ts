@@ -10,17 +10,17 @@ let srv
 let port: number
 let rclient: RedisClient | null = null
 
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   await new Promise((resolve, _reject) => {
     setTimeout(resolve, 100)
   })
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.redis.flushall()
@@ -32,10 +32,10 @@ test.beforeEach(async t => {
         nested: {
           type: 'object',
           properties: {
-            fun: { type: 'string' }
-          }
-        }
-      }
+            fun: { type: 'string' },
+          },
+        },
+      },
     },
     types: {
       match: {
@@ -43,10 +43,10 @@ test.beforeEach(async t => {
         fields: {
           title: { type: 'text' },
           value: { type: 'number' },
-          description: { type: 'text' }
-        }
-      }
-    }
+          description: { type: 'text' },
+        },
+      },
+    },
   })
 
   // A small delay is needed after setting the schema
@@ -57,7 +57,7 @@ test.beforeEach(async t => {
   rclient = redis.createClient(client.servers.origins.default.port)
 })
 
-test.after(async _t => {
+test.after(async (_t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -71,7 +71,7 @@ test.afterEach(async () => {
   }
 })
 
-test.serial('create a node marker', async t => {
+test.serial('create a node marker', async (t) => {
   const client = connect({ port })
 
   await client.set({
@@ -80,9 +80,9 @@ test.serial('create a node marker', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
-      }
-    ]
+        title: { en: 'ma2' },
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -136,7 +136,7 @@ test.serial('create a node marker', async t => {
   client.destroy()
 })
 
-test.serial('create two node markers', async t => {
+test.serial('create two node markers', async (t) => {
   const client = connect({ port })
 
   await client.set({
@@ -145,9 +145,9 @@ test.serial('create two node markers', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
-      }
-    ]
+        title: { en: 'ma2' },
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -224,7 +224,7 @@ test.serial('create two node markers', async t => {
   client.destroy()
 })
 
-test.serial('create two subscriptions', async t => {
+test.serial('create two subscriptions', async (t) => {
   const client = connect({ port })
   const subId1 =
     '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b63'
@@ -237,9 +237,9 @@ test.serial('create two subscriptions', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
-      }
-    ]
+        title: { en: 'ma2' },
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -314,7 +314,7 @@ test.serial('create two subscriptions', async t => {
   client.destroy()
 })
 
-test.serial('Delete a subscription', async t => {
+test.serial('Delete a subscription', async (t) => {
   const client = connect({ port })
   const subId1 =
     '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b65'
@@ -327,9 +327,9 @@ test.serial('Delete a subscription', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
-      }
-    ]
+        title: { en: 'ma2' },
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -388,7 +388,7 @@ test.serial('Delete a subscription', async t => {
   client.destroy()
 })
 
-test.serial('Delete a node', async t => {
+test.serial('Delete a node', async (t) => {
   const client = connect({ port })
   const subId1 =
     '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b67'
@@ -399,9 +399,9 @@ test.serial('Delete a node', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
-      }
-    ]
+        title: { en: 'ma2' },
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -437,7 +437,7 @@ test.serial('Delete a node', async t => {
   client.destroy()
 })
 
-test.serial('Node deletion events on descendants', async t => {
+test.serial('Node deletion events on descendants', async (t) => {
   const client = connect({ port })
   const subId1 =
     '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79fff'
@@ -457,9 +457,9 @@ test.serial('Node deletion events on descendants', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
-      }
-    ]
+        title: { en: 'ma2' },
+      },
+    ],
   })
 
   let msgCount = 0
@@ -481,7 +481,7 @@ test.serial('Node deletion events on descendants', async t => {
   client.destroy()
 })
 
-test.serial('Node deletion events on node sub', async t => {
+test.serial('Node deletion events on node sub', async (t) => {
   const client = connect({ port })
   const subId1 =
     '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79fff'
@@ -500,9 +500,9 @@ test.serial('Node deletion events on node sub', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
-      }
-    ]
+        title: { en: 'ma2' },
+      },
+    ],
   })
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
 
@@ -525,7 +525,7 @@ test.serial('Node deletion events on node sub', async t => {
   client.destroy()
 })
 
-test.serial('Add nodes and verify propagation', async t => {
+test.serial('Add nodes and verify propagation', async (t) => {
   const client = connect({ port })
   const subId1 =
     '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b68'
@@ -536,9 +536,9 @@ test.serial('Add nodes and verify propagation', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
-      }
-    ]
+        title: { en: 'ma2' },
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -553,12 +553,12 @@ test.serial('Add nodes and verify propagation', async t => {
   await client.set({
     $id: 'maTest0003',
     title: { en: 'ma3' },
-    parents: ['maTest0001']
+    parents: ['maTest0001'],
   })
   await client.set({
     $id: 'maTest0004',
     title: { en: 'ma4' },
-    parents: ['maTest0002']
+    parents: ['maTest0002'],
   })
 
   // The marker should propagate to the new nodes without refreshing the
@@ -588,7 +588,7 @@ test.serial('Add nodes and verify propagation', async t => {
   client.destroy()
 })
 
-test.serial('FindInSub: simple lookups', async t => {
+test.serial('FindInSub: simple lookups', async (t) => {
   const client = connect({ port })
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b69'
@@ -603,19 +603,19 @@ test.serial('FindInSub: simple lookups', async t => {
         children: [
           {
             $id: 'maTest0021',
-            title: { en: 'ma21' }
-          }
+            title: { en: 'ma21' },
+          },
         ],
         parents: [
           {
             $id: 'maTest0002', // Additional parent
-            title: { en: 'ma02' }
-          }
-        ]
+            title: { en: 'ma02' },
+          },
+        ],
       },
       {
         $id: 'maTest0012', // child of the first level
-        title: { en: 'ma12' }
+        title: { en: 'ma12' },
       },
       {
         $id: 'maTest0013', // child of the first level
@@ -627,13 +627,13 @@ test.serial('FindInSub: simple lookups', async t => {
             children: [
               {
                 $id: 'maTest0031',
-                title: { en: 'ma31' }
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                title: { en: 'ma31' },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -733,7 +733,7 @@ test.serial('FindInSub: simple lookups', async t => {
   client.destroy()
 })
 
-test.serial('FindInSub: expression filter', async t => {
+test.serial('FindInSub: expression filter', async (t) => {
   const client = connect({ port })
   const subId1 =
     '1c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b69'
@@ -748,13 +748,13 @@ test.serial('FindInSub: expression filter', async t => {
         children: [
           {
             $id: 'maTest0021',
-            title: { en: 'test' }
-          }
-        ]
+            title: { en: 'test' },
+          },
+        ],
       },
       {
         $id: 'maTest0012',
-        title: { en: 'ma12' }
+        title: { en: 'ma12' },
       },
       {
         $id: 'maTest0013',
@@ -766,13 +766,13 @@ test.serial('FindInSub: expression filter', async t => {
             children: [
               {
                 $id: 'maTest0031',
-                title: { en: 'ma31' }
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                title: { en: 'ma31' },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -812,14 +812,14 @@ test.serial('FindInSub: expression filter', async t => {
   client.destroy()
 })
 
-test.serial('subscribe to hierarchy events', async t => {
+test.serial('subscribe to hierarchy events', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b70'
   const client = connect({ port })
 
   await client.set({
     $id: 'maTest0001',
-    title: { en: 'ma1' }
+    title: { en: 'ma1' },
   })
 
   await client.redis.selva_subscriptions_add(
@@ -845,7 +845,7 @@ test.serial('subscribe to hierarchy events', async t => {
   await client.set({
     $id: 'maTest0002',
     title: { en: 'ma2' },
-    parents: ['maTest0001']
+    parents: ['maTest0001'],
   })
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
   await client.set({
@@ -853,9 +853,9 @@ test.serial('subscribe to hierarchy events', async t => {
     children: [
       {
         $id: 'maTest0003',
-        title: { en: 'ma3' }
-      }
-    ]
+        title: { en: 'ma3' },
+      },
+    ],
   })
 
   await wait(100)
@@ -865,7 +865,7 @@ test.serial('subscribe to hierarchy events', async t => {
   client.destroy()
 })
 
-test.serial('FindInSub: expression filter and sort', async t => {
+test.serial('FindInSub: expression filter and sort', async (t) => {
   const client = connect({ port })
   const subId1 =
     '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b69'
@@ -880,13 +880,13 @@ test.serial('FindInSub: expression filter and sort', async t => {
         children: [
           {
             $id: 'maTest0021',
-            title: { en: 'test' }
-          }
-        ]
+            title: { en: 'test' },
+          },
+        ],
       },
       {
         $id: 'maTest0012',
-        title: { en: 'o' }
+        title: { en: 'o' },
       },
       {
         $id: 'maTest0013',
@@ -898,13 +898,13 @@ test.serial('FindInSub: expression filter and sort', async t => {
             children: [
               {
                 $id: 'maTest0031',
-                title: { en: 'a' }
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                title: { en: 'a' },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -952,7 +952,7 @@ test.serial('FindInSub: expression filter and sort', async t => {
   client.destroy()
 })
 
-test.serial('subscribe to field events', async t => {
+test.serial('subscribe to field events', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b71'
   const client = connect({ port })
@@ -963,13 +963,13 @@ test.serial('subscribe to field events', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
+        title: { en: 'ma2' },
       },
       {
         $id: 'maTest0003',
-        title: { en: 'ma3' }
-      }
-    ]
+        title: { en: 'ma3' },
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -995,12 +995,12 @@ test.serial('subscribe to field events', async t => {
   await Promise.all([
     client.set({
       $id: 'maTest0001',
-      title: { en: 'test1' }
+      title: { en: 'test1' },
     }),
     client.set({
       $id: 'maTest0002',
-      title: { en: 'test2' }
-    })
+      title: { en: 'test2' },
+    }),
   ])
 
   await wait(100)
@@ -1010,7 +1010,7 @@ test.serial('subscribe to field events', async t => {
   client.destroy()
 })
 
-test.serial('subscribe to field events with a wildcard', async t => {
+test.serial('subscribe to field events with a wildcard', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b71'
   const client = connect({ port })
@@ -1021,13 +1021,13 @@ test.serial('subscribe to field events with a wildcard', async t => {
     children: [
       {
         $id: 'maTest0002',
-        title: { en: 'ma2' }
+        title: { en: 'ma2' },
       },
       {
         $id: 'maTest0003',
-        title: { en: 'ma3' }
-      }
-    ]
+        title: { en: 'ma3' },
+      },
+    ],
   })
 
   await client.redis.selva_subscriptions_add(
@@ -1053,12 +1053,12 @@ test.serial('subscribe to field events with a wildcard', async t => {
   await Promise.all([
     client.set({
       $id: 'maTest0001',
-      title: { en: 'test1' }
+      title: { en: 'test1' },
     }),
     client.set({
       $id: 'maTest0002',
-      title: { en: 'test2' }
-    })
+      title: { en: 'test2' },
+    }),
   ])
 
   await wait(100)
@@ -1068,14 +1068,14 @@ test.serial('subscribe to field events with a wildcard', async t => {
   client.destroy()
 })
 
-test.serial('subscribe to field events with an expression', async t => {
+test.serial('subscribe to field events with an expression', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
   const client = connect({ port })
 
   await client.set({
     $id: 'maTest0001',
-    title: { en: 'ma1' }
+    title: { en: 'ma1' },
   })
 
   await client.redis.selva_subscriptions_add(
@@ -1103,27 +1103,27 @@ test.serial('subscribe to field events with an expression', async t => {
   // expression match: 0 -> 1 => event
   client.set({
     $id: 'maTest0001',
-    title: { en: 'abc' }
+    title: { en: 'abc' },
   })
   // expression match: 1 -> 1 => no event
   client.set({
     $id: 'maTest0001',
-    title: { en: 'abc' }
+    title: { en: 'abc' },
   })
   // expression match: 1 -> 0 => event
   client.set({
     $id: 'maTest0001',
-    title: { en: 'cba' }
+    title: { en: 'cba' },
   })
   // expression match: 0 -> 0 => no event
   client.set({
     $id: 'maTest0001',
-    title: { en: 'xyz' }
+    title: { en: 'xyz' },
   })
   // expression match: 0 -> 1 => event
   client.set({
     $id: 'maTest0001',
-    title: { en: 'abc' }
+    title: { en: 'abc' },
   })
 
   await wait(100)
@@ -1133,14 +1133,14 @@ test.serial('subscribe to field events with an expression', async t => {
   client.destroy()
 })
 
-test.serial('Missing markers', async t => {
+test.serial('Missing markers', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
   const client = connect({ port })
 
   await client.set({
     $id: 'maTest0001',
-    title: { en: 'ma1' }
+    title: { en: 'ma1' },
   })
 
   await client.redis.selva_subscriptions_addmissing(
@@ -1164,13 +1164,13 @@ test.serial('Missing markers', async t => {
       'aliasus',
       [
         'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
-        '(pointer)'
+        '(pointer)',
       ],
       'maTest0002',
       [
         'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
-        '(pointer)'
-      ]
+        '(pointer)',
+      ],
     ]
   )
 
@@ -1185,7 +1185,7 @@ test.serial('Missing markers', async t => {
   )
 })
 
-test.serial('Trigger: created', async t => {
+test.serial('Trigger: created', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed601475532641423b1bf5bf26a6645637e989f79b72'
   const client = connect({ port })
@@ -1212,14 +1212,14 @@ test.serial('Trigger: created', async t => {
 
   await client.set({
     $id: 'maTest0001',
-    title: { en: 'ma1' }
+    title: { en: 'ma1' },
   })
 
   await wait(500)
   t.assert(msgCount === 1)
 })
 
-test.serial('Trigger: created filter', async t => {
+test.serial('Trigger: created filter', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed601475532641423b1bf5bf26a6645637e989f79b72'
   const client = connect({ port })
@@ -1249,26 +1249,26 @@ test.serial('Trigger: created filter', async t => {
 
   await client.set({
     $id: 'maTest0001',
-    title: { en: 'yolo' }
+    title: { en: 'yolo' },
   })
 
   await client.set({
     $id: 'maTest0002',
-    title: { en: 'not-yolo' }
+    title: { en: 'not-yolo' },
   })
 
   await wait(500)
   t.assert(msgCount === 1)
 })
 
-test.serial('Trigger: updated', async t => {
+test.serial('Trigger: updated', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf1bf26a6645637e989f79b72'
   const client = connect({ port })
 
   const id = await client.set({
     type: 'match',
-    title: { en: 'lollers' }
+    title: { en: 'lollers' },
   })
 
   await client.redis.selva_subscriptions_addtrigger(
@@ -1290,21 +1290,21 @@ test.serial('Trigger: updated', async t => {
 
   await client.set({
     $id: id,
-    title: { en: 'rollers' }
+    title: { en: 'rollers' },
   })
 
   await wait(500)
   t.assert(msgCount === 1)
 })
 
-test.serial('Trigger: deleted', async t => {
+test.serial('Trigger: deleted', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf5bf23a6645637e989f79b70'
   const client = connect({ port })
 
   const id = await client.set({
     type: 'match',
-    title: { en: 'lollers' }
+    title: { en: 'lollers' },
   })
 
   await client.redis.selva_subscriptions_addtrigger(

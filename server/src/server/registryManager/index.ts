@@ -64,13 +64,13 @@ const orderServers = (
     q.push(
       redis.publish(
         {
-          type: 'registry'
+          type: 'registry',
         },
         REGISTRY_UPDATE,
         JSON.stringify({
           event: 'update-index',
           type,
-          move
+          move,
         })
       )
     )
@@ -172,7 +172,7 @@ export const registryManager = (server: SelvaServer) => {
     }
 
     await Promise.all(
-      [...server.selvaClient.servers.ids].map(async id => {
+      [...server.selvaClient.servers.ids].map(async (id) => {
         try {
           const result = await redis.hmget(
             { type: 'registry' },
@@ -202,7 +202,7 @@ export const registryManager = (server: SelvaServer) => {
                 id,
                 'stats',
                 JSON.stringify({
-                  timestamp: Date.now()
+                  timestamp: Date.now(),
                 })
               )
               return
@@ -215,12 +215,13 @@ export const registryManager = (server: SelvaServer) => {
             if (now - ts > 8e3) {
               await Promise.all([
                 redis.srem({ type: 'registry' }, 'servers', id),
-                redis.del({ type: 'registry' }, id)
+                redis.del({ type: 'registry' }, id),
               ])
               console.warn(
                 chalk.red(
-                  `Server timed out last heartbeat ${Date.now() -
-                    ts}ms ago ${id}, ${type}, ${name}`
+                  `Server timed out last heartbeat ${
+                    Date.now() - ts
+                  }ms ago ${id}, ${type}, ${name}`
                 )
               )
               // also store this - somewhere can be just in mem
@@ -247,7 +248,7 @@ export const registryManager = (server: SelvaServer) => {
                 host,
                 name,
                 type,
-                index
+                index,
               })
               // ok you want to store last timeoud event maybe an array (max 10)
               // this is the metric we are going to use to
@@ -262,8 +263,8 @@ export const registryManager = (server: SelvaServer) => {
                     name,
                     host,
                     port,
-                    type
-                  }
+                    type,
+                  },
                 })
               )
             } else if (type === 'replica') {
@@ -279,8 +280,9 @@ export const registryManager = (server: SelvaServer) => {
               } else if (Date.now() - ts > 5e3 || stats.cpu === undefined) {
                 console.warn(
                   chalk.yellow(
-                    `Connection to replica is slow ${Date.now() -
-                      ts}ms since last timestamp, emulate a weight of 100 ${type} ${id}`
+                    `Connection to replica is slow ${
+                      Date.now() - ts
+                    }ms since last timestamp, emulate a weight of 100 ${type} ${id}`
                   )
                 )
                 weight = 100
@@ -291,7 +293,7 @@ export const registryManager = (server: SelvaServer) => {
                 weight,
                 id,
                 name,
-                index: index === null ? -1 : Number(index) // original index
+                index: index === null ? -1 : Number(index), // original index
               }
               insert(replicas, target)
             } else if (type === 'subscriptionManager') {
@@ -299,7 +301,7 @@ export const registryManager = (server: SelvaServer) => {
                 weight: Number(subs),
                 id,
                 name,
-                index: index === null ? -1 : Number(index) // original index
+                index: index === null ? -1 : Number(index), // original index
               }
               insert(subsManagers, target)
             }

@@ -10,11 +10,11 @@ let port: number
 test.before(async () => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -22,7 +22,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('exec big batch', async t => {
+test.serial('exec big batch', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -31,10 +31,10 @@ test.serial('exec big batch', async t => {
       blurf: {
         prefix: 'bl',
         fields: {
-          rando: { type: 'string' }
-        }
-      }
-    }
+          rando: { type: 'string' },
+        },
+      },
+    },
   })
 
   let cnt = 50000

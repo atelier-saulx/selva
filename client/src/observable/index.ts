@@ -8,7 +8,7 @@ import {
   SUBSCRIPTIONS,
   REMOVE_SUBSCRIPTION,
   REGISTRY_MOVE_SUBSCRIPTION,
-  CACHE
+  CACHE,
 } from '../constants'
 import parseError from './parseError'
 import { ServerSelector } from '../types'
@@ -133,21 +133,21 @@ export class Observable {
 
   public emitUpdate(value: any, checksum?: number, diff?: any) {
     if (this.options.immutable) {
-      this.listeners.forEach(fn => fn(deepCopy(value), checksum, diff))
+      this.listeners.forEach((fn) => fn(deepCopy(value), checksum, diff))
     } else {
-      this.listeners.forEach(fn => fn(value, checksum, diff))
+      this.listeners.forEach((fn) => fn(value, checksum, diff))
     }
   }
 
   public emitError(err: Error) {
     if (this.errorListeners) {
-      this.errorListeners.forEach(fn => fn(err))
+      this.errorListeners.forEach((fn) => fn(err))
     }
   }
 
   public emitComplete(x?: any) {
     if (this.completeListeners) {
-      this.completeListeners.forEach(fn => fn(x))
+      this.completeListeners.forEach((fn) => fn(x))
     }
   }
 
@@ -253,7 +253,7 @@ export class Observable {
             // onNext(data)
           }
         },
-        reject: onError
+        reject: onError,
       })
     }
   }
@@ -331,7 +331,7 @@ export class Observable {
               this.getValue()
             }
           },
-          reject: err => this.emitError(err)
+          reject: (err) => this.emitError(err),
         })
       } else {
         this.connection.command({
@@ -361,7 +361,7 @@ export class Observable {
               // this.emitUpdate(data, version)
             }
           },
-          reject: err => this.emitError(err)
+          reject: (err) => this.emitError(err),
         })
       }
     }
@@ -410,7 +410,7 @@ export class Observable {
     // await wait(~~(Math.random() * 1000))
     const server = await this.selvaClient.getServer(
       selector || {
-        type: 'subscriptionManager'
+        type: 'subscriptionManager',
       },
       { subscription: channel }
     )
@@ -423,20 +423,20 @@ export class Observable {
       args: getOptions
         ? [SUBSCRIPTIONS, channel, JSON.stringify(getOptions)]
         : [SUBSCRIPTIONS, channel, '{}'],
-      id
+      id,
     })
     connection.command({
       command: 'sadd',
       args: [channel, this.selvaClient.uuid],
-      id
+      id,
     })
     connection.command({
       command: 'publish',
       args: [
         NEW_SUBSCRIPTION,
-        JSON.stringify({ client: this.selvaClient.uuid, channel })
+        JSON.stringify({ client: this.selvaClient.uuid, channel }),
       ],
-      id
+      id,
     })
 
     connection.addRemoteListener('message', (incomingChannel, msg) => {
@@ -452,7 +452,7 @@ export class Observable {
           this.moveToServer({
             type: 'subscriptionManager',
             host,
-            port: Number(port)
+            port: Number(port),
           })
         }
       } else if (channel === incomingChannel) {
@@ -521,15 +521,15 @@ export class Observable {
       connection.command({
         command: 'srem',
         args: [channel, this.selvaClient.uuid],
-        id: selvaClientId
+        id: selvaClientId,
       })
       connection.command({
         command: 'publish',
         args: [
           REMOVE_SUBSCRIPTION,
-          JSON.stringify({ client: this.selvaClient.uuid, channel })
+          JSON.stringify({ client: this.selvaClient.uuid, channel }),
         ],
-        id: selvaClientId
+        id: selvaClientId,
       })
 
       delete this.connection

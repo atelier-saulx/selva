@@ -5,7 +5,7 @@ import {
   TypeSchema,
   FieldSchema,
   rootDefaultFields,
-  SchemaOptions
+  SchemaOptions,
 } from '.'
 import { ServerSelector } from '../types'
 import { wait } from '../util'
@@ -29,8 +29,8 @@ export function newSchemaDefinition(
       prefix: 'ro',
       fields: {
         ...rootDefaultFields,
-        ...((newSchema.rootType && newSchema.rootType.fields) || {})
-      }
+        ...((newSchema.rootType && newSchema.rootType.fields) || {}),
+      },
     }
 
     return newSchema
@@ -43,7 +43,7 @@ export function newSchemaDefinition(
       oldSchema.languages || [],
       newSchema.languages || []
     ),
-    types: {}
+    types: {},
   }
 
   for (const typeName in oldSchema.types) {
@@ -117,7 +117,7 @@ function newTypeDefinition(
   const typeDef: TypeSchema = {
     fields: {},
     prefix: (oldType && oldType.prefix) || (newType && newType.prefix),
-    hierarchy: (newType && newType.hierarchy) || (oldType && oldType.hierarchy)
+    hierarchy: (newType && newType.hierarchy) || (oldType && oldType.hierarchy),
   }
 
   if (!oldType) {
@@ -189,7 +189,7 @@ function newFieldDefinition(
 
     const result = <any>{
       type: newField.type,
-      properties: props
+      properties: props,
     }
 
     if (newField.meta) {

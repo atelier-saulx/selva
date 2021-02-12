@@ -5,7 +5,7 @@ import {
   startSubscriptionRegistry,
   startReplica,
   startOrigin,
-  startRegistry
+  startRegistry,
 } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
@@ -16,32 +16,32 @@ const dir = join(process.cwd(), 'tmp', 'subscribe-nested-find-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-test.serial('get with multiple replicas', async t => {
+test.serial('get with multiple replicas', async (t) => {
   const port = await getPort()
   const servers = await Promise.all([
     startRegistry({ port }),
     startOrigin({
       dir,
       registry: { port },
-      default: true
+      default: true,
     }),
     startSubscriptionManager({ registry: { port } }),
     startSubscriptionRegistry({ registry: { port } }),
     startReplica({
       dir: join(dir, 'replica'),
       registry: { port },
-      default: true
+      default: true,
     }),
     startReplica({
       dir: join(dir, 'replica'),
       registry: { port },
-      default: true
+      default: true,
     }),
     startReplica({
       dir: join(dir, 'replica'),
       registry: { port },
-      default: true
-    })
+      default: true,
+    }),
   ])
 
   const client = connect({ port }, { loglevel: 'info' })
@@ -52,24 +52,24 @@ test.serial('get with multiple replicas', async t => {
         prefix: 'fl',
         fields: {
           published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true }
-        }
+          title: { type: 'text', search: true },
+        },
       },
       region: {
         prefix: 're',
         fields: {
           published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true }
-        }
+          title: { type: 'text', search: true },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true }
-        }
-      }
-    }
+          title: { type: 'text', search: true },
+        },
+      },
+    },
   })
 
   await client.set({
@@ -83,26 +83,26 @@ test.serial('get with multiple replicas', async t => {
           {
             $id: 'ma1',
             title: 'match 1',
-            published: true
+            published: true,
           },
           {
             $id: 'ma2',
             title: 'match 2',
-            published: true
+            published: true,
           },
           {
             $id: 'ma3',
             title: 'match 3',
-            published: true
+            published: true,
           },
           {
             $id: 'ma4',
             title: 'match 4',
-            published: false
-          }
-        ]
-      }
-    ]
+            published: false,
+          },
+        ],
+      },
+    ],
   })
 
   const obs = {
@@ -117,16 +117,16 @@ test.serial('get with multiple replicas', async t => {
           $filter: {
             $field: 'published',
             $operator: '=',
-            $value: true
-          }
-        }
-      }
-    }
+            $value: true,
+          },
+        },
+      },
+    },
   }
 
   const results = []
 
-  client.observe(obs, { immutable: true }).subscribe(v => {
+  client.observe(obs, { immutable: true }).subscribe((v) => {
     results.push(v)
     console.log('RESULTS', results)
   })
@@ -144,7 +144,7 @@ test.serial('get with multiple replicas', async t => {
   t.is(results.length, 3)
 
   await client.destroy()
-  await Promise.all(servers.map(s => s.destroy()))
+  await Promise.all(servers.map((s) => s.destroy()))
   await t.connectionsAreEmpty()
 
   t.pass()

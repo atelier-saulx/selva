@@ -7,7 +7,7 @@ const SPECIAL_CHARS = {
   182: 'o', // ö
   164: 'a', // ä
   188: 'u', // ü
-  159: 'ss' // ß
+  159: 'ss', // ß
 }
 
 function transformSupportedSpecialChars(str: string): string {

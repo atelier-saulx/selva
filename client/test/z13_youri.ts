@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   const theme = {
@@ -19,45 +19,45 @@ test.before(async t => {
       colors: {
         type: 'object',
         properties: {
-          blue: { type: 'string' }
-        }
-      }
-    }
+          blue: { type: 'string' },
+        },
+      },
+    },
   }
 
   await client.updateSchema({
     rootType: {
       fields: {
         // @ts-ignore
-        theme
-      }
+        theme,
+      },
     },
     types: {
       team: {
         prefix: 'te',
         fields: {
           // @ts-ignore
-          theme
-        }
+          theme,
+        },
       },
 
       match: {
         prefix: 'ma',
         hierarchy: {
-          team: false
+          team: false,
         },
         fields: {
           // @ts-ignore
-          theme
-        }
-      }
-    }
+          theme,
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await client.delete('root')
   await client.destroy()
@@ -65,30 +65,30 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('inherit even when skipping hierarchy node', async t => {
+test.serial('inherit even when skipping hierarchy node', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'root',
     theme: {
       colors: {
-        blue: 'red'
-      }
-    }
+        blue: 'red',
+      },
+    },
   })
 
   const team = await client.set({
-    type: 'team'
+    type: 'team',
   })
 
   const match = await client.set({
     type: 'match',
-    parents: [team]
+    parents: [team],
   })
 
   const res = await client.get({
     $id: match,
-    theme: { colors: { $inherit: true } }
+    theme: { colors: { $inherit: true } },
   })
 
   t.deepEqualIgnoreOrder(res, { theme: { colors: { blue: 'red' } } })

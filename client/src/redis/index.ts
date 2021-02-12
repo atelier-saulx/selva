@@ -4,7 +4,7 @@ import RedisMethods from './methods'
 import { SelvaClient } from '..'
 import {
   addRemoteListener,
-  removeRemoteListener
+  removeRemoteListener,
 } from '../updateRemoteListeners'
 import addRemoteCommand from '../addRemoteCommand'
 

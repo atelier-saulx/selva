@@ -7,23 +7,23 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
     rootType: {
       fields: {
-        menu: { type: 'references' }
-      }
-    }
+        menu: { type: 'references' },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -31,16 +31,16 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('inherit references $list', async t => {
+test.serial('inherit references $list', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const res = await client.get({
     $id: 'root',
     menu: {
       id: true,
       $list: {
-        $inherit: { $type: 'root' }
-      }
-    }
+        $inherit: { $type: 'root' },
+      },
+    },
   })
   t.deepEqualIgnoreOrder(res, { menu: [] })
   await client.destroy()

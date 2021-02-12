@@ -8,10 +8,10 @@ import getPort from 'get-port'
 let srv1
 let srv2
 let port1: number
-test.before(async t => {
+test.before(async (t) => {
   port1 = await getPort()
   srv1 = await start({
-    port: port1
+    port: port1,
   })
   const client = connect({ port: port1 })
   await client.updateSchema({
@@ -20,21 +20,21 @@ test.before(async t => {
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE'] } }
-        }
+          title: { type: 'text', search: { type: ['TEXT-LANGUAGE'] } },
+        },
       },
       club: {
-        prefix: 'cl'
+        prefix: 'cl',
       },
       league: {
-        prefix: 'le'
-      }
-    }
+        prefix: 'le',
+      },
+    },
   })
 
   srv2 = await startOrigin({
     name: 'users',
-    registry: { port: port1 }
+    registry: { port: port1 },
   })
 
   await client.updateSchema(
@@ -45,17 +45,17 @@ test.before(async t => {
           prefix: 'wa',
           fields: {
             item: { type: 'reference' },
-            time: { type: 'number' }
-          }
+            time: { type: 'number' },
+          },
         },
         user: {
           prefix: 'us',
           fields: {
             watching: { type: 'references' },
-            favorites: { type: 'references' }
-          }
-        }
-      }
+            favorites: { type: 'references' },
+          },
+        },
+      },
     },
     'users'
   )
@@ -63,7 +63,7 @@ test.before(async t => {
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port: port1 })
   await client.delete('root')
   await client.delete({ $id: 'root', $db: 'users' })
@@ -73,7 +73,7 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('make it nice with users', async t => {
+test.serial('make it nice with users', async (t) => {
   const client = connect({ port: port1 }, { loglevel: 'info' })
 
   await client.set({
@@ -83,23 +83,23 @@ test.serial('make it nice with users', async t => {
         {
           $id: 'ma1',
           title: {
-            en: 'yesh match 1'
+            en: 'yesh match 1',
           },
           parents: {
-            $add: 'le1'
-          }
+            $add: 'le1',
+          },
         },
         {
           $id: 'ma2',
           title: {
-            en: 'yesh match 2'
+            en: 'yesh match 2',
           },
           parents: {
-            $add: 'le1'
-          }
-        }
-      ]
-    }
+            $add: 'le1',
+          },
+        },
+      ],
+    },
   })
 
   await client.set({
@@ -110,48 +110,48 @@ test.serial('make it nice with users', async t => {
         {
           $id: 'wa1',
           item: 'ma1',
-          time: 1
+          time: 1,
         },
         {
           $id: 'wa2',
           item: 'ma2',
-          time: 12
+          time: 12,
         },
         {
           $id: 'wa3',
           item: 'ma1',
-          time: 77
-        }
-      ]
-    }
+          time: 77,
+        },
+      ],
+    },
   })
 
   await client.set({
     $db: 'users',
     $id: 'us1',
     favorites: {
-      $add: 'ma1'
+      $add: 'ma1',
     },
     watching: {
-      $add: ['wa1', 'wa2']
-    }
+      $add: ['wa1', 'wa2'],
+    },
   })
 
   await client.set({
     $db: 'users',
     $id: 'us2',
     favorites: {
-      $add: ['ma1', 'ma2']
+      $add: ['ma1', 'ma2'],
     },
     watching: {
-      $add: ['wa3']
-    }
+      $add: ['wa3'],
+    },
   })
 
   await client.set({
     $db: 'users',
     $id: 'us3',
-    favorites: []
+    favorites: [],
   })
 
   try {
@@ -172,26 +172,26 @@ test.serial('make it nice with users', async t => {
                 $traverse: {
                   $db: 'users',
                   $id: 'us3',
-                  $field: 'favorites'
+                  $field: 'favorites',
                 },
                 $filter: {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'clubs'
+                  $value: 'clubs',
                 },
                 $find: {
                   $traverse: 'descendants',
                   $filter: {
                     $field: 'type',
                     $operator: '=',
-                    $value: 'match'
-                  }
-                }
-              }
-            }
-          }
-        }
-      ]
+                    $value: 'match',
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
     })
   } catch (e) {
     console.error(e)
@@ -210,8 +210,8 @@ test.serial('make it nice with users', async t => {
             $db: 'default',
             id: true,
             title: true,
-            $list: true
-          }
+            $list: true,
+          },
         },
         {
           component: { $value: 'watching' },
@@ -222,10 +222,10 @@ test.serial('make it nice with users', async t => {
             item: {
               $db: 'default',
               id: true,
-              title: true
+              title: true,
             },
-            $list: true
-          }
+            $list: true,
+          },
         },
         {
           component: { $value: 'matches' },
@@ -239,12 +239,12 @@ test.serial('make it nice with users', async t => {
                   {
                     $operator: '=',
                     $field: 'type',
-                    $value: 'match'
-                  }
-                ]
-              }
-            }
-          }
+                    $value: 'match',
+                  },
+                ],
+              },
+            },
+          },
         },
         {
           component: { $value: 'lolol' },
@@ -256,18 +256,18 @@ test.serial('make it nice with users', async t => {
                 $traverse: {
                   $db: 'users',
                   $id: 'us2',
-                  $field: 'favorites'
+                  $field: 'favorites',
                 },
                 $filter: [
                   {
                     $operator: '=',
                     $field: 'title',
-                    $value: 'match 2'
-                  }
-                ]
-              }
-            }
-          }
+                    $value: 'match 2',
+                  },
+                ],
+              },
+            },
+          },
         },
         {
           component: { $value: 'hmmhmm' },
@@ -279,18 +279,18 @@ test.serial('make it nice with users', async t => {
                 $traverse: {
                   $db: 'users',
                   $id: 'us3',
-                  $field: 'favorites'
+                  $field: 'favorites',
                 },
                 $filter: [
                   {
                     $operator: '=',
                     $field: 'title',
-                    $value: 'match 2'
-                  }
-                ]
-              }
-            }
-          }
+                    $value: 'match 2',
+                  },
+                ],
+              },
+            },
+          },
         },
         {
           component: { $value: 'GridLarge' },
@@ -305,24 +305,24 @@ test.serial('make it nice with users', async t => {
                 $traverse: {
                   $db: 'users',
                   $id: 'us3',
-                  $field: 'favorites'
+                  $field: 'favorites',
                 },
                 $filter: {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'league'
+                  $value: 'league',
                 },
                 $find: {
                   $traverse: 'descendants',
                   $filter: {
                     $field: 'type',
                     $operator: '=',
-                    $value: 'match'
-                  }
-                }
-              }
-            }
-          }
+                    $value: 'match',
+                  },
+                },
+              },
+            },
+          },
         },
         {
           component: { $value: 'GridLarge' },
@@ -337,43 +337,43 @@ test.serial('make it nice with users', async t => {
                 $traverse: {
                   $db: 'users',
                   $id: 'us4',
-                  $field: 'favorites'
+                  $field: 'favorites',
                 },
                 $filter: {
                   $field: 'type',
                   $operator: '=',
-                  $value: 'clubs'
+                  $value: 'clubs',
                 },
                 $find: {
                   $traverse: 'descendants',
                   $filter: {
                     $field: 'type',
                     $operator: '=',
-                    $value: 'match'
-                  }
-                }
-              }
-            }
-          }
-        }
-      ]
+                    $value: 'match',
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
     })
-    .subscribe(yesh => {})
+    .subscribe((yesh) => {})
 
   await wait(5e3)
 
   await client.set({
     $id: 'ma3',
     $language: 'en',
-    title: 'hmm match 2'
+    title: 'hmm match 2',
   })
 
   await client.set({
     $db: 'users',
     $id: 'us2',
     favorites: {
-      $add: 'ma3'
-    }
+      $add: 'ma3',
+    },
   })
 
   await wait(5e3)

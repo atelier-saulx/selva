@@ -7,10 +7,10 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
   const client = connect({ port })
   await client.updateSchema({
@@ -21,28 +21,28 @@ test.before(async t => {
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
           published: { type: 'boolean', search: { type: ['TAG'] } },
           awayTeam: { type: 'reference' },
-          homeTeam: { type: 'reference' }
-        }
+          homeTeam: { type: 'reference' },
+        },
       },
       team: {
         prefix: 'te',
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] }
-          }
-        }
-      }
-    }
+            search: { type: ['TEXT-LANGUAGE-SUG'] },
+          },
+        },
+      },
+    },
   })
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -51,7 +51,7 @@ test.after(async t => {
 })
 
 // FIXME: ?? we already have single reference
-test.serial.skip('$field in $id should work', async t => {
+test.serial.skip('$field in $id should work', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
@@ -64,13 +64,13 @@ test.serial.skip('$field in $id should work', async t => {
     children: [
       {
         $id: 'team3',
-        title: 'team three'
+        title: 'team three',
       },
       {
         $id: 'team4',
-        title: 'team four'
-      }
-    ]
+        title: 'team four',
+      },
+    ],
   })
 
   await client.set({
@@ -83,13 +83,13 @@ test.serial.skip('$field in $id should work', async t => {
     children: [
       {
         $id: 'team1',
-        title: 'team one'
+        title: 'team one',
       },
       {
         $id: 'team2',
-        title: 'team two'
-      }
-    ]
+        title: 'team two',
+      },
+    ],
   })
 
   const result = await client.get({
@@ -101,15 +101,15 @@ test.serial.skip('$field in $id should work', async t => {
         {
           id: true,
           $id: {
-            $field: 'homeTeam'
-          }
+            $field: 'homeTeam',
+          },
         },
         {
           id: true,
           $id: {
-            $field: 'awayTeam'
-          }
-        }
+            $field: 'awayTeam',
+          },
+        },
       ],
       id: true,
       $list: {
@@ -120,17 +120,17 @@ test.serial.skip('$field in $id should work', async t => {
             {
               $field: 'type',
               $operator: '=',
-              $value: 'match'
+              $value: 'match',
             },
             {
               $field: 'published',
               $operator: '=',
-              $value: true
-            }
-          ]
-        }
-      }
-    }
+              $value: true,
+            },
+          ],
+        },
+      },
+    },
   })
 
   t.deepEqualIgnoreOrder(result, {
@@ -140,28 +140,28 @@ test.serial.skip('$field in $id should work', async t => {
         awayTeam: 'team1',
         teams: [
           {
-            id: 'team2'
+            id: 'team2',
           },
           {
-            id: 'team1'
-          }
+            id: 'team1',
+          },
         ],
-        homeTeam: 'team2'
+        homeTeam: 'team2',
       },
       {
         id: 'match1',
         awayTeam: 'team3',
         teams: [
           {
-            id: 'team3'
+            id: 'team3',
           },
           {
-            id: 'team4'
-          }
+            id: 'team4',
+          },
         ],
-        homeTeam: 'team4'
-      }
-    ]
+        homeTeam: 'team4',
+      },
+    ],
   })
 
   await client.delete('root')

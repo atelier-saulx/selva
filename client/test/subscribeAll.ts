@@ -5,7 +5,7 @@ import {
   startSubscriptionRegistry,
   startReplica,
   startOrigin,
-  startRegistry
+  startRegistry,
 } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
@@ -16,22 +16,22 @@ const dir = join(process.cwd(), 'tmp', 'subscribe-all-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-test.serial('no json parsing', async t => {
+test.serial('no json parsing', async (t) => {
   const port = await getPort()
   const servers = await Promise.all([
     startRegistry({ port }),
     startOrigin({
       dir,
       registry: { port },
-      default: true
+      default: true,
     }),
     startSubscriptionManager({ registry: { port } }),
     startSubscriptionRegistry({ registry: { port } }),
     startReplica({
       dir: join(dir, 'replica'),
       registry: { port },
-      default: true
-    })
+      default: true,
+    }),
   ])
 
   const client = connect({ port }, { loglevel: 'info' })
@@ -40,21 +40,21 @@ test.serial('no json parsing', async t => {
     types: {
       folder: {
         prefix: 'fo',
-        fields: { title: { type: 'text' } }
+        fields: { title: { type: 'text' } },
       },
       match: {
         prefix: 'ma',
         fields: {
           published: { type: 'boolean', search: true },
-          buttonText: { type: 'text', search: true }
-        }
-      }
-    }
+          buttonText: { type: 'text', search: true },
+        },
+      },
+    },
   })
 
   await client.set({
     $language: 'en',
-    $id: 'fo1'
+    $id: 'fo1',
   })
 
   const get = {
@@ -63,12 +63,12 @@ test.serial('no json parsing', async t => {
     $language: 'en',
     children: {
       $list: true,
-      $all: true
-    }
+      $all: true,
+    },
   }
 
   const obs = client.observe(get, {
-    immutable: true
+    immutable: true,
   })
 
   const results = []
@@ -85,9 +85,9 @@ test.serial('no json parsing', async t => {
     children: [
       {
         $id: 'ma1',
-        buttonText: 'my ballz'
-      }
-    ]
+        buttonText: 'my ballz',
+      },
+    ],
   })
 
   await wait(100)
@@ -95,7 +95,7 @@ test.serial('no json parsing', async t => {
   client.set({
     $id: 'ma1',
     $language: 'en',
-    buttonText: 'my ball'
+    buttonText: 'my ball',
   })
 
   await wait(100)
@@ -103,7 +103,7 @@ test.serial('no json parsing', async t => {
   client.set({
     $id: 'ma1',
     $language: 'en',
-    buttonText: 'my ba'
+    buttonText: 'my ba',
   })
 
   await wait(100)
@@ -111,7 +111,7 @@ test.serial('no json parsing', async t => {
   client.set({
     $id: 'ma1',
     $language: 'en',
-    buttonText: 'my bal'
+    buttonText: 'my bal',
   })
 
   await wait(100)
@@ -119,7 +119,7 @@ test.serial('no json parsing', async t => {
   client.set({
     $id: 'ma1',
     $language: 'en',
-    buttonText: 'my ballz'
+    buttonText: 'my ballz',
   })
 
   await wait(100)
@@ -127,7 +127,7 @@ test.serial('no json parsing', async t => {
   client.set({
     $id: 'ma1',
     $language: 'en',
-    buttonText: 'my ballzzzz'
+    buttonText: 'my ballzzzz',
   })
 
   await wait(100)
@@ -138,10 +138,10 @@ test.serial('no json parsing', async t => {
     'my ba',
     'my bal',
     'my ballz',
-    'my ballzzzz'
+    'my ballzzzz',
   ])
 
   await client.destroy()
-  await Promise.all(servers.map(s => s.destroy()))
+  await Promise.all(servers.map((s) => s.destroy()))
   await t.connectionsAreEmpty()
 })

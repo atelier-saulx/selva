@@ -9,7 +9,7 @@ const IGNORE_UNTIL = null
 
 const REMAPPED_FIELDS = {
   streamStart: 'start',
-  streamEnd: 'end'
+  streamEnd: 'end',
 }
 
 function remapField(field) {
@@ -39,22 +39,22 @@ async function makeSchema(client) {
     'show',
     'sport',
     'team',
-    'video'
+    'video',
   ]
 
   const defaultFields = {
     createdAt: {
-      type: 'timestamp'
+      type: 'timestamp',
       // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
     },
     updatedAt: {
-      type: 'timestamp'
+      type: 'timestamp',
       // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
     },
     title: {
       type: 'text',
-      search: { type: ['TEXT-LANGUAGE-SUG'] }
-    }
+      search: { type: ['TEXT-LANGUAGE-SUG'] },
+    },
   }
 
   const price = {
@@ -62,80 +62,80 @@ async function makeSchema(client) {
     properties: types.reduce((properties, type) => {
       properties[type] = { type: 'int' }
       return properties
-    }, {})
+    }, {}),
   }
 
   const contentFields = {
     ...defaultFields,
     price,
     description: {
-      type: 'text'
+      type: 'text',
     },
     published: {
       type: 'boolean',
-      search: { type: ['TAG'] }
+      search: { type: ['TAG'] },
     },
     rating: {
       type: 'int',
-      search: { type: ['NUMERIC', 'SORTABLE'] }
+      search: { type: ['NUMERIC', 'SORTABLE'] },
     },
     overlay: {
-      type: 'string'
+      type: 'string',
     },
     article: {
-      type: 'text'
+      type: 'text',
     },
     image: {
       type: 'object',
       properties: {
         logo: {
-          type: 'url'
+          type: 'url',
         },
         cover: {
-          type: 'url'
+          type: 'url',
         },
         thumb: {
-          type: 'url'
-        }
-      }
+          type: 'url',
+        },
+      },
     },
     allowGeo: {
       type: 'set',
       items: {
-        type: 'string'
-      }
-    }
+        type: 'string',
+      },
+    },
   }
 
   const start = {
     type: 'timestamp',
-    search: { type: ['NUMERIC', 'SORTABLE'] }
+    search: { type: ['NUMERIC', 'SORTABLE'] },
   }
 
   const end = {
     type: 'timestamp',
-    search: { type: ['NUMERIC', 'SORTABLE'] }
+    search: { type: ['NUMERIC', 'SORTABLE'] },
   }
 
   const gender = {
-    type: 'string'
+    type: 'string',
   }
 
   const status = {
     type: 'string',
-    search: { type: ['TAG'] }
+    search: { type: ['TAG'] },
   }
 
   const contact = {
     // maybe fixed props?
-    type: 'json'
+    type: 'json',
   }
 
   const videoFields = {
     ...contentFields,
     date: {
       type: 'timestamp',
-      search: { type: ['NUMERIC', 'SORTABLE'] }
+      search: { type: ['NUMERIC', 'SORTABLE'] },
     },
     start,
     end,
@@ -148,37 +148,37 @@ async function makeSchema(client) {
           type: 'object',
           properties: {
             mp4: {
-              type: 'url'
+              type: 'url',
             },
             hls: {
-              type: 'url'
-            }
-          }
+              type: 'url',
+            },
+          },
         },
         pano: {
           type: 'object',
           properties: {
             mp4: {
-              type: 'url'
+              type: 'url',
             },
             hls: {
-              type: 'url'
-            }
-          }
+              type: 'url',
+            },
+          },
         },
         live: {
           type: 'object',
           properties: {
             mp4: {
-              type: 'url'
+              type: 'url',
             },
             hls: {
-              type: 'url'
-            }
-          }
-        }
-      }
-    }
+              type: 'url',
+            },
+          },
+        },
+      },
+    },
   }
 
   const schema = {
@@ -189,10 +189,10 @@ async function makeSchema(client) {
         aliases: {
           type: 'set',
           items: {
-            type: 'string'
-          }
-        }
-      }
+            type: 'string',
+          },
+        },
+      },
     },
     types: {
       match: {
@@ -200,8 +200,8 @@ async function makeSchema(client) {
 
         hierarchy: {
           team: {
-            excludeAncestryWith: ['league']
-          }
+            excludeAncestryWith: ['league'],
+          },
         },
 
         fields: {
@@ -217,30 +217,30 @@ async function makeSchema(client) {
                 durationMs: { type: 'number' },
                 duration: { type: 'string' },
                 startMs: { type: 'number' },
-                start: { type: 'string' }
-              }
-            }
-          }
-        }
+                start: { type: 'string' },
+              },
+            },
+          },
+        },
       },
       video: {
         prefix: 'vi',
         fields: {
-          ...videoFields
-        }
+          ...videoFields,
+        },
       },
       region: {
         prefix: 're',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       club: {
         prefix: 'cl',
         fields: {
           ...contentFields,
           cameras: {
-            type: 'boolean'
+            type: 'boolean',
           },
           discountCodes: {
             type: 'array',
@@ -248,85 +248,85 @@ async function makeSchema(client) {
               type: 'object',
               properties: {
                 code: {
-                  type: 'string'
+                  type: 'string',
                 },
                 amount: {
-                  type: 'number'
-                }
-              }
-            }
+                  type: 'number',
+                },
+              },
+            },
           },
-          contact
-        }
+          contact,
+        },
       },
       team: {
         prefix: 'te',
 
         hierarchy: {
           team: {
-            excludeAncestryWith: ['league']
-          }
+            excludeAncestryWith: ['league'],
+          },
         },
 
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       season: {
         prefix: 'se',
         fields: {
           ...contentFields,
           start,
-          end
-        }
+          end,
+        },
       },
       league: {
         prefix: 'le',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       show: {
         prefix: 'sh',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       custom: {
         prefix: 'cu',
         fields: {
-          ...videoFields
-        }
+          ...videoFields,
+        },
       },
       sport: {
         prefix: 'sp',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       event: {
         prefix: 'ev',
         fields: {
-          ...videoFields
-        }
+          ...videoFields,
+        },
       },
       federation: {
         prefix: 'fe',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       product: {
         prefix: 'pr',
         fields: {
           ...defaultFields,
           value: {
-            type: 'number'
+            type: 'number',
           },
           price,
           start,
-          end
-        }
+          end,
+        },
       },
       ad: {
         prefix: 'ad',
@@ -335,46 +335,46 @@ async function makeSchema(client) {
           start,
           end,
           user: {
-            type: 'string'
+            type: 'string',
           },
           seller: {
-            type: 'string'
+            type: 'string',
           },
           thirdParty: {
-            type: 'boolean'
+            type: 'boolean',
           },
           status,
           paymentData: {
-            type: 'json'
+            type: 'json',
           },
-          contact
-        }
+          contact,
+        },
       },
       series: {
         prefix: 'sr',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       category: {
         prefix: 'ct',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       class: {
         prefix: 'cs',
         fields: {
-          ...contentFields
-        }
+          ...contentFields,
+        },
       },
       article: {
         prefix: 'ar',
         fields: {
-          ...contentFields
-        }
-      }
-    }
+          ...contentFields,
+        },
+      },
+    },
   }
 
   await client.updateSchema(schema)
@@ -430,7 +430,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
               } else {
                 const newSchema = {
                   type: 'object',
-                  fields: typeSchema.fields[remapField(itemKey)].properties
+                  fields: typeSchema.fields[remapField(itemKey)].properties,
                 }
                 props[remapField(itemKey)] = constructSetProps(
                   id,
@@ -460,7 +460,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
             ) {
               const newSchema = {
                 type: 'object',
-                fields: typeSchema.fields[remapField(itemKey)].items.properties
+                fields: typeSchema.fields[remapField(itemKey)].items.properties,
               }
 
               const ary = JSON.parse(item[itemKey])
@@ -468,7 +468,7 @@ function constructSetProps(id, prefixToTypeMapping, typeSchema, item) {
                 continue
               }
 
-              props[remapField(itemKey)] = ary.map(x => {
+              props[remapField(itemKey)] = ary.map((x) => {
                 return constructSetProps(id, prefixToTypeMapping, newSchema, x)
               })
               continue
@@ -557,7 +557,7 @@ async function migrate() {
 
   const schema = await client.getSchema()
 
-  const clean = data => {
+  const clean = (data) => {
     const blacklist = new Set()
     const checkBad = (item, blacklist) => {
       if (blacklist.has(item.id)) {
@@ -581,7 +581,7 @@ async function migrate() {
         }
         if (!keep) {
           try {
-            keep = JSON.parse(item.children).find(id => {
+            keep = JSON.parse(item.children).find((id) => {
               const bad = checkBad(data[id], blacklist)
               return !bad
             })
@@ -612,12 +612,12 @@ async function migrate() {
       const item = data[id]
       try {
         item.parents = JSON.stringify(
-          JSON.parse(item.parents).filter(id => !blacklist.has(id))
+          JSON.parse(item.parents).filter((id) => !blacklist.has(id))
         )
       } catch (e) {}
       try {
         item.children = JSON.stringify(
-          JSON.parse(item.children).filter(id => !blacklist.has(id))
+          JSON.parse(item.children).filter((id) => !blacklist.has(id))
         )
       } catch (e) {}
     }
@@ -675,7 +675,7 @@ async function migrate() {
 
         const initialPayload = {
           $id: key,
-          ...props
+          ...props,
         }
 
         const newPayload = await client.conformToSchema(initialPayload)
@@ -739,7 +739,7 @@ migrate()
   .then(() => {
     process.exit(0)
   })
-  .catch(e => {
+  .catch((e) => {
     console.error(e)
     process.exit(1)
   })

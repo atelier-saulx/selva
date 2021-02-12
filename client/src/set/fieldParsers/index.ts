@@ -33,7 +33,7 @@ const fieldParsers: {
   json,
   object,
   array,
-  record
+  record,
 }
 
 export default fieldParsers

@@ -12,7 +12,7 @@ let port
 async function before() {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   const client = connect({ port })
@@ -25,16 +25,16 @@ async function before() {
         prefix: 'sh',
         fields: {
           title: { type: 'text' },
-          votes: { type: 'number' }
-        }
+          votes: { type: 'number' },
+        },
       },
       vote: {
         prefix: 'vo',
         fields: {
-          uid: { type: 'string' }
-        }
-      }
-    }
+          uid: { type: 'string' },
+        },
+      },
+    },
   })
 
   await client.set({
@@ -45,19 +45,26 @@ async function before() {
         $language: 'en',
         type: 'show',
         title: 'LOL',
-        votes: 0
+        votes: 0,
       },
       {
         $id: 'sh2',
         $language: 'en',
         type: 'show',
         title: 'ROFL',
-        votes: 0
-      }
-    ]
+        votes: 0,
+      },
+    ],
   })
 
-  await client.redis.selva_subscriptions_add('___selva_hierarchy', 'aa35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b93', 1, 'children', 'fields', 'votes')
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    'aa35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b93',
+    1,
+    'children',
+    'fields',
+    'votes'
+  )
 }
 
 async function after() {
@@ -78,17 +85,17 @@ let sh = ['sh1', 'sh2']
 async function runWorker() {
   const client = connect({ port: workerData.port }, { loglevel: 'info' })
 
-  const votes = Array.from(Array(nrVotes).keys()).map(v => ({
+  const votes = Array.from(Array(nrVotes).keys()).map((v) => ({
     $id: sh[v & 1],
     votes: { $increment: 1 },
     children: {
-      $add: [{ type: 'vote', uid: `user${v}` }]
-    }
+      $add: [{ type: 'vote', uid: `user${v}` }],
+    },
   }))
 
   const lim = RateLimit(votesPerSecond, { timeUnit: 1000 })
   await Promise.all(
-    votes.map(async vote => {
+    votes.map(async (vote) => {
       await lim()
       return client.set(vote)
     })
@@ -106,11 +113,11 @@ async function run() {
       workers.push(
         new Promise((resolve, reject) => {
           const worker = new Worker(__filename, {
-            workerData: { port }
+            workerData: { port },
           })
           worker.on('message', resolve)
           worker.on('error', reject)
-          worker.on('exit', code => {
+          worker.on('exit', (code) => {
             if (code !== 0) {
               return reject(new Error(`Worker exited with code ${code}`))
             }
@@ -146,12 +153,12 @@ async function getStats() {
               {
                 $field: 'type',
                 $operator: '=',
-                $value: 'show'
-              }
-            ]
-          }
-        }
-      }
+                $value: 'show',
+              },
+            ],
+          },
+        },
+      },
     })
   )
 }
@@ -162,7 +169,7 @@ run()
       process.exit(0)
     }
   })
-  .then(() => new Promise(r => setTimeout(r, 1e3)))
+  .then(() => new Promise((r) => setTimeout(r, 1e3)))
   .then(() => {
     return getStats()
   })
@@ -170,7 +177,7 @@ run()
     console.log('Success!')
     process.exit(0)
   })
-  .catch(e => {
+  .catch((e) => {
     console.error(e)
     process.exit(1)
   })

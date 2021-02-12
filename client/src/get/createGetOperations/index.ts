@@ -22,20 +22,20 @@ export default function createGetOperations(
     ops.push({
       type: 'value',
       field: field.substr(1),
-      value: props.$value
+      value: props.$value,
     })
   } else if (props.$id && field) {
     ops.push({
       type: 'nested_query',
       field: field.substr(1),
-      props
+      props,
     })
   } else if (Array.isArray(props)) {
     ops.push({
       type: 'array_query',
       id,
       field: field.substr(1),
-      props
+      props,
     })
   } else if (props.$list) {
     ops.push(list(props, id, field))
@@ -47,7 +47,7 @@ export default function createGetOperations(
       id,
       field: field.substr(1),
       sourceField: props.$field || field.substr(1),
-      default: props.$default
+      default: props.$default,
     })
   } else if (props.$inherit) {
     createInheritOperation(
@@ -79,7 +79,7 @@ export default function createGetOperations(
         field: field.substr(1),
         props: Object.assign({}, props, { $field: undefined }),
         id,
-        sourceField: props.$field
+        sourceField: props.$field,
       })
 
       return
@@ -89,7 +89,7 @@ export default function createGetOperations(
       type: 'db',
       id,
       field: field.substr(1),
-      sourceField: <string[]>props.$field
+      sourceField: <string[]>props.$field,
     })
   } else if (typeof props === 'object') {
     const fs = getNestedSchema(schema, id, field.substr(1))
@@ -103,14 +103,14 @@ export default function createGetOperations(
           field: flattened,
           props,
           id,
-          sourceField: field.substr(1)
+          sourceField: field.substr(1),
         })
       } else {
         ops.push({
           type: 'nested_query',
           field: field.substr(1),
           props,
-          id
+          id,
         })
       }
 
@@ -128,7 +128,7 @@ export default function createGetOperations(
       type: 'db',
       id,
       field: field.substr(1),
-      sourceField: field.substr(1)
+      sourceField: field.substr(1),
     })
   }
   return ops

@@ -1,27 +1,26 @@
 # _Get_ Method Query Reference
 
-
-  - [**$id**](#id-string---string)
-  - [**$alias**](#alias-string---string)
-  - [**&lt;any field name&gt;**](#any-field-name-boolean-object)
-    - [**$value**](#value-any)
-    - [**$default**](#default-any)
-    - [**$inherit**](#inherit-boolean)
-      - [**$type**](#type-string-arraystring)
-      - [**item**](#item-string-arraystring)
-      - [**required**](#required-string-arraystring)
-    - [**$field**](#field-string-arraystring)
-    - [**$list**](#list-boolean-object)
-      - [**$sort**](#sort-object)
-      - [**$offset**](#offset-integer)
-      - [**$limit**](#limit-integer)
-  - [**$all**](#all-boolean)
-  - [**$language**](#language-string)
-  - [**$find**](#find-object)
-    - [**$traverse**](#traverse-string)
-    - [**$filter**](#filter-object-array)
-      - [**$or**](#or-object)
-      - [**$and**](#and-object)
+- [**\$id**](#id-string---string)
+- [**\$alias**](#alias-string---string)
+- [**&lt;any field name&gt;**](#any-field-name-boolean-object)
+  - [**\$value**](#value-any)
+  - [**\$default**](#default-any)
+  - [**\$inherit**](#inherit-boolean)
+    - [**\$type**](#type-string-arraystring)
+    - [**item**](#item-string-arraystring)
+    - [**required**](#required-string-arraystring)
+  - [**\$field**](#field-string-arraystring)
+  - [**\$list**](#list-boolean-object)
+    - [**\$sort**](#sort-object)
+    - [**\$offset**](#offset-integer)
+    - [**\$limit**](#limit-integer)
+- [**\$all**](#all-boolean)
+- [**\$language**](#language-string)
+- [**\$find**](#find-object)
+  - [**\$traverse**](#traverse-string)
+  - [**\$filter**](#filter-object-array)
+    - [**\$or**](#or-object)
+    - [**\$and**](#and-object)
 
 ## Query structure
 
@@ -29,18 +28,20 @@ Queries are objects that hold the data structure to be returned, as well as the 
 
 ```javascript
 const result = await get({
-  $language: 'en',      // operator that sets the language to return in text fields
-  $id: 'muASxsd3',      // operator that sets the id of the document to return
+  $language: 'en', // operator that sets the language to return in text fields
+  $id: 'muASxsd3', // operator that sets the id of the document to return
 
-  title: true,          // includes the document fields title and
-  year: true,           // year to the results
+  title: true, // includes the document fields title and
+  year: true, // year to the results
 
-  technicalData: {      // adds the field technicalData which is
-    runtime: true,      // a object data type with nested properties.
-    camera: {           // Only `runtime` and `camera.lens` properties are
-      lens: true        // included in the result
-    }
-  }
+  technicalData: {
+    // adds the field technicalData which is
+    runtime: true, // a object data type with nested properties.
+    camera: {
+      // Only `runtime` and `camera.lens` properties are
+      lens: true, // included in the result
+    },
+  },
 })
 
 // returns:
@@ -64,8 +65,8 @@ const result = await get({
   $id: 'muASxsd3',
   title: true,
   icon: { $inherit: true }, // icon is not part of the movie type
-                            // but inherited from the parent document with
-                            // type "genre"
+  // but inherited from the parent document with
+  // type "genre"
 })
 
 // returns:
@@ -83,9 +84,9 @@ const result = await get({
   $id: 'muASxsd3',
   title: true,
   otherMovie: {
-    $id: 'muFDedx2',    // adds another query
-    title: true         // as the value of `otherMovie` field
-  }
+    $id: 'muFDedx2', // adds another query
+    title: true, // as the value of `otherMovie` field
+  },
 })
 
 // returns:
@@ -104,19 +105,19 @@ const result = await get({
   $language: 'en',
   $id: 'muASxsd3',
   title: true,
-  type: true,             // default field type that holds the documetn type
+  type: true, // default field type that holds the documetn type
   extraFields: [
     {
       $id: 'muFDedx2',
       title: true,
-      type: true
+      type: true,
     },
     {
       $id: 'geGhfr4D',
       title: true,
-      type: true
-    }
-  ]
+      type: true,
+    },
+  ],
 })
 
 // returns:
@@ -135,25 +136,26 @@ const result = await get({
 //   ]
 // }
 ```
-## `$id`: _string_  | _string[]_
+
+## `$id`: _string_ | _string[]_
 
 Id of the object to get. If it is an array, the first existing record is used for the query.
 If omited, the _root_ object id is assumed. Can only be used at the top level of a query object.
 
 ```javascript
 const result = await get({
-  $id: 'muASxsd3'
+  $id: 'muASxsd3',
 })
 ```
 
-## `$alias`: _string_  | _string[]_
+## `$alias`: _string_ | _string[]_
 
 Alias of the object to get. If it is an array, the first existing record is used for the query.
-An id can also be passed as $alias. If the specified alias does not exist, the value is tried as an id lookup also before moving to the next entry if an array is specified.
+An id can also be passed as \$alias. If the specified alias does not exist, the value is tried as an id lookup also before moving to the next entry if an array is specified.
 
 ```javascript
 const result = await get({
-  $id: 'muASxsd3'
+  $id: 'muASxsd3',
 })
 ```
 
@@ -170,8 +172,8 @@ const result = await get({
   technicalData: {
     runtime: true,
     color: true,
-    aspectRatio: true
-  }
+    aspectRatio: true,
+  },
 })
 ```
 
@@ -185,6 +187,7 @@ const result = await get({
   title: { $value'Amazing movie' }
 })
 ```
+
 [See test](../client/test/examples/clauses/value.ts)
 
 ### `$default`: _any_
@@ -194,13 +197,12 @@ Default value to be returned in case the field has no value set.
 ```javascript
 const result = await get({
   $id: 'moASxsd3',
-  director: { $default: 'Unknown director' }
+  director: { $default: 'Unknown director' },
 })
 ```
 
 [See test](../client/test/examples/clauses/default.ts)
 
- 
 ### `$inherit`: _boolean_
 
 If the value for the field is not set in the document, search for the field in the ancestors.
@@ -213,6 +215,7 @@ const result = await client.get({
   icon: { $inherit: true },
 })
 ```
+
 [See test](../client/test/examples/clauses/inherit.ts)
 
 #### `$type`: _string_, _array&lt;string&gt;_
@@ -225,8 +228,8 @@ Limits inheritance to a type or array of types.
 const result = await client.get({
   $id: 'moSoylentGreen',
   icon: {
-    $inherit: { $type: ['genre', 'collection'] }    // fron ancestors of type genre or collection
-  }                                                // whichever comes first.
+    $inherit: { $type: ['genre', 'collection'] }, // fron ancestors of type genre or collection
+  }, // whichever comes first.
 })
 ```
 
@@ -243,10 +246,10 @@ const result = await client.get({
   title: true,
   parentImage: {
     title: true,
-    image: true,                                    // image does not exist in genre but
-    icon: true,                                     // icon exists so fields from genre
-    $inherit: { $type: ['genre', 'collection'] }    // are included.
-  }
+    image: true, // image does not exist in genre but
+    icon: true, // icon exists so fields from genre
+    $inherit: { $type: ['genre', 'collection'] }, // are included.
+  },
 })
 
 // returns:
@@ -275,10 +278,10 @@ const result = await client.get({
     image: true,
     icon: true,
     $inherit: {
-      $type: ['genre', 'collection'],   // even though genre is an ancestor closer to the
-      $required: ['image']              // target document, it does not have image. So
-     }                                  // fields from the type collection are
-   }                                    // returned instead.
+      $type: ['genre', 'collection'], // even though genre is an ancestor closer to the
+      $required: ['image'], // target document, it does not have image. So
+    }, // fields from the type collection are
+  }, // returned instead.
 })
 
 // returns:
@@ -299,23 +302,25 @@ The `$field` operator is used to create a field that fetches its results from an
 ```javascript
 const result = await client.get({
   $id: 'mo2001ASpaceOdyssey',
-  directedBy: { $field: 'director' }
+  directedBy: { $field: 'director' },
 })
 ```
 
 Dot notation can be used to create a path and alias a nested field or even specific data inside a _JSON datatype_.
+
 ```javascript
 const result = await client.get({
   $id: 'mo2001ASpaceOdyssey',
-  ratio: { $field: 'technicalData.aspectRatio' }
+  ratio: { $field: 'technicalData.aspectRatio' },
 })
 ```
 
 Because _text datatype_ fields interanlly are a simple nested object, the `$field` operator can be used to get a specific language from a text field.
+
 ```javascript
 const result = await client.get({
   $id: 'mo2001ASpaceOdyssey',
-  englishTitle: { $field: 'title.en' }
+  englishTitle: { $field: 'title.en' },
 })
 ```
 
@@ -329,7 +334,7 @@ const = await client.get({
 ```
 
 The path for the `$field` operator can have variable expansion with the `${path_for_field}` syntax.
-In the example below, the `$field` operator path gets the language from the __value__ of a field called `preferedLanguage`.
+In the example below, the `$field` operator path gets the language from the **value** of a field called `preferedLanguage`.
 
 ```javascript
 const = await client.get({
@@ -337,6 +342,7 @@ const = await client.get({
   titleInPreferedLanguage: { $field: 'title.${preferedLanguage}' }
 })
 ```
+
 The field the path points to can exist in the same document or through `$inherit` and `$find` be part of another document.
 
 [See test](../client/test/examples/clauses/field.ts)
@@ -353,8 +359,8 @@ Needs a [`$find`](#find-object) operator to gather the items to return in the li
 Property of `$list` operator.  
 Sorts the `$list` results according to the following properties:
 
-  - `$field`: _string_ - Name of the field to sort by.
-  - `$order`: _['asc', 'desc']_ - Sort in ascending or descending order.
+- `$field`: _string_ - Name of the field to sort by.
+- `$order`: _['asc', 'desc']_ - Sort in ascending or descending order.
 
 ```javascript
 const result = await client.get({
@@ -364,9 +370,9 @@ const result = await client.get({
     title: true,
     year: true,
     $list: {
-      $sort: { $field: 'year', $order: 'asc' }
-    }
-  }
+      $sort: { $field: 'year', $order: 'asc' },
+    },
+  },
 })
 ```
 
@@ -388,8 +394,8 @@ const result = await client.get({
       $sort: { $field: 'year', $order: 'asc' },
       $offset: 0,
       $limit: 2,
-    }
-  }
+    },
+  },
 })
 ```
 
@@ -400,9 +406,6 @@ Limits the `$list` amount of items returned in a `$list`.
 
 [See test](../client/test/examples/clauses/list.ts)
 
-
-
-
 ## `$all`: _boolean_
 
 Includes all the fields in the document.
@@ -410,18 +413,20 @@ Includes all the fields in the document.
 ```javascript
 const result = await get({
   $id: 'peASxsd3',
-  $all: true
+  $all: true,
 })
 ```
 
 Fields can be excluded if a false is set to specific fields.
+
 ```javascript
 const result = await get({
   $id: 'peASxsd3',
   $all: true,
-  died: false
+  died: false,
 })
 ```
+
 [See test](../client/test/examples/clauses/all.ts)
 
 ## `$language`: _string_
@@ -432,9 +437,10 @@ Filters document data to a set language on fields that support it.
 const result = await client.get({
   $language: 'en',
   $id: 'mo2001ASpaceOdyssey',
-  title: true // value of `title` becomes the value of `title.en`
+  title: true, // value of `title` becomes the value of `title.en`
 })
 ```
+
 [See test](../client/test/examples/clauses/language.ts)
 
 ## `$find`: _object_
@@ -455,9 +461,9 @@ Property of `$find`.
 Sets a search term for the `$find` operator.
 Has the following properties:
 
-  - `$operator`: _string_ - Operator to use in the comparisson.
-  - `$field`: _string_ - Field name to compare the value to.
-  - `$value`: _string_ - Value to compare the field to.
+- `$operator`: _string_ - Operator to use in the comparisson.
+- `$field`: _string_ - Field name to compare the value to.
+- `$value`: _string_ - Value to compare the field to.
 
 Find operations depend on indexes for comparison. See [Field Indexes](schemas.md#field-indexes) for a description of the available index types and compatible comparison operators.
 
@@ -477,11 +483,11 @@ const result = await client.get({
         $filter: {
           $field: 'type',
           $operator: '=',
-          $value: 'genre'
-        }
-      }
-    }
-  }
+          $value: 'genre',
+        },
+      },
+    },
+  },
 })
 ```
 
@@ -514,12 +520,11 @@ const result = await client.get({
           $and: {
             $field: 'technicalData.runtime',
             $operator: '>',
-            $value: 100
-          }
-        }
-      }
-    }
-  }
+            $value: 100,
+          },
+        },
+      },
+    },
+  },
 })
 ```
-

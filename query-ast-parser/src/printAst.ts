@@ -8,13 +8,13 @@ const colors =
         red: '\u001b[31m',
         white: '\u001b[37;1m',
         blue: '\u001b[34m',
-        reset: '\u001b[0m'
+        reset: '\u001b[0m',
       }
     : {
         red: '',
         white: '',
         blue: '',
-        reset: ''
+        reset: '',
       }
 
 const addIndent = (number: number, last?: boolean): string => {
@@ -82,7 +82,7 @@ const forkLogger = (fork: Fork, indent: number = 0, last?: boolean) => {
   }
 }
 
-export default function(fork: Fork | void, ...args: any[]) {
+export default function (fork: Fork | void, ...args: any[]) {
   if (args.length) {
     console.info(...args)
   }

@@ -11,7 +11,7 @@ export function updateTimeout(subsManager: SubscriptionManager) {
   if (!subsManager.refreshSubscriptions) {
     subsManager.refreshSubscriptions = {
       nextRefresh: MAX_TIMEOUT,
-      subscriptions: []
+      subscriptions: [],
     }
   }
 
@@ -41,7 +41,7 @@ export function updateTimeout(subsManager: SubscriptionManager) {
     }
 
     Promise.all(updates)
-      .catch(e => {
+      .catch((e) => {
         console.error('Failed to update now queries', e)
       })
       .finally(() => {
@@ -80,7 +80,7 @@ export function addSubscription(
   if (!subsManager.refreshSubscriptions) {
     subsManager.refreshSubscriptions = {
       nextRefresh,
-      subscriptions: [subscription]
+      subscriptions: [subscription],
     }
   } else {
     if (subsManager.refreshSubscriptions.nextRefresh > nextRefresh) {

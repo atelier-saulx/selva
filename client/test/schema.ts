@@ -23,10 +23,10 @@ const mangleResults = (
   delete schemaResult.prefixToTypeMapping
 }
 
-test.serial('schemas - basic', async t => {
+test.serial('schemas - basic', async (t) => {
   const port = await getPort()
   const server = await start({
-    port
+    port,
   })
   const client = connect({ port })
 
@@ -36,41 +36,41 @@ test.serial('schemas - basic', async t => {
 
   const defaultFields: Fields = {
     id: {
-      type: 'id'
+      type: 'id',
     },
     type: {
       type: 'type',
       search: {
         index: 'default',
-        type: ['TAG']
-      }
+        type: ['TAG'],
+      },
     },
     title: {
-      type: 'text'
+      type: 'text',
     },
     parents: {
-      type: 'references'
+      type: 'references',
     },
     children: {
-      type: 'references'
+      type: 'references',
     },
     ancestors: {
-      type: 'references'
+      type: 'references',
     },
     descendants: {
-      type: 'references'
+      type: 'references',
     },
     aliases: {
       type: 'set',
-      items: { type: 'string' }
+      items: { type: 'string' },
     },
     name: {
       type: 'string',
       search: {
         index: 'default',
-        type: ['TAG']
-      }
-    }
+        type: ['TAG'],
+      },
+    },
   }
 
   const schema: SchemaOptions = {
@@ -81,34 +81,34 @@ test.serial('schemas - basic', async t => {
         descendants: { type: 'references' },
         id: { type: 'id' },
         type: { type: 'type' },
-        value: { type: 'number' }
-      }
+        value: { type: 'number' },
+      },
     },
     types: {
       league: {
         fields: {
-          ...defaultFields
-        }
+          ...defaultFields,
+        },
       },
       person: {
         fields: {
-          ...defaultFields
-        }
+          ...defaultFields,
+        },
       },
       video: {
         fields: {
-          ...defaultFields
-        }
+          ...defaultFields,
+        },
       },
       vehicle: {
         fields: {
-          ...defaultFields
-        }
+          ...defaultFields,
+        },
       },
       family: {
         fields: {
-          ...defaultFields
-        }
+          ...defaultFields,
+        },
       },
       match: {
         prefix: 'ma',
@@ -116,14 +116,14 @@ test.serial('schemas - basic', async t => {
           team: { excludeAncestryWith: ['league'] },
           video: false,
           person: { includeAncestryWith: ['family'] },
-          $default: { excludeAncestryWith: ['vehicle'] }
+          $default: { excludeAncestryWith: ['vehicle'] },
         },
         fields: {
           ...defaultFields,
           smurky: {
             meta: {
               yesh: 'a meta value',
-              data: ['in an array']
+              data: ['in an array'],
             },
             type: 'set',
             items: {
@@ -132,37 +132,37 @@ test.serial('schemas - basic', async t => {
                 interval: {
                   type: 'array',
                   items: {
-                    type: 'timestamp'
-                  }
+                    type: 'timestamp',
+                  },
                 },
-                url: { type: 'url' }
-              }
-            }
+                url: { type: 'url' },
+              },
+            },
           },
           flurpy: {
             type: 'object',
             properties: {
               snurkels: {
                 type: 'string',
-                search: { type: ['TAG'] }
-              }
-            }
+                search: { type: ['TAG'] },
+              },
+            },
           },
           flapperdrol: {
-            type: 'json'
+            type: 'json',
           },
           video: {
             type: 'object',
             properties: {
               mp4: {
-                type: 'url'
+                type: 'url',
               },
               hls: {
                 type: 'url',
-                search: { index: 'hls', type: ['TEXT'] }
+                search: { index: 'hls', type: ['TEXT'] },
               },
               pano: {
-                type: 'url'
+                type: 'url',
               },
               overlays: {
                 type: 'array',
@@ -172,18 +172,18 @@ test.serial('schemas - basic', async t => {
                     interval: {
                       type: 'array',
                       items: {
-                        type: 'timestamp'
-                      }
+                        type: 'timestamp',
+                      },
                     },
-                    url: { type: 'url' }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                    url: { type: 'url' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   }
 
   await client.updateSchema(schema)
@@ -193,7 +193,7 @@ test.serial('schemas - basic', async t => {
   // make sure meta is accessible
   t.deepEqual(schemaResult.types.match.fields.smurky.meta, {
     yesh: 'a meta value',
-    data: ['in an array']
+    data: ['in an array'],
   })
 
   // @ts-ignore
@@ -213,7 +213,7 @@ test.serial('schemas - basic', async t => {
     searchIndexes,
     {
       default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'], name: ['TAG'] },
-      hls: { 'video.hls': ['TEXT'] }
+      hls: { 'video.hls': ['TEXT'] },
     },
     'searchIndexes are equal'
   )
@@ -241,16 +241,16 @@ test.serial('schemas - basic', async t => {
                 interval: {
                   type: 'array',
                   items: {
-                    type: 'timestamp'
-                  }
+                    type: 'timestamp',
+                  },
                 },
-                url: { type: 'url' }
-              }
-            }
-          }
-        }
-      }
-    }
+                url: { type: 'url' },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   let newResult = (await client.getSchema()).schema
@@ -275,16 +275,16 @@ test.serial('schemas - basic', async t => {
                 interval: {
                   type: 'array',
                   items: {
-                    type: 'timestamp'
-                  }
+                    type: 'timestamp',
+                  },
                 },
-                url: { type: 'url' }
-              }
-            }
-          }
-        }
-      }
-    }
+                url: { type: 'url' },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   newResult = (await client.getSchema()).schema
@@ -306,13 +306,13 @@ test.serial('schemas - basic', async t => {
               properties: {
                 snurkels: {
                   type: 'string',
-                  search: { type: ['TEXT'] }
-                }
-              }
-            }
-          }
-        }
-      }
+                  search: { type: ['TEXT'] },
+                },
+              },
+            },
+          },
+        },
+      },
     })
   )
 
@@ -335,7 +335,7 @@ test.serial('schemas - basic', async t => {
     [
       ['type', 'type', 'TAG', 'SEPARATOR', ','],
       ['name', 'type', 'TAG', 'SEPARATOR', ','],
-      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ',']
+      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
     ],
     'change fields in the index - does not drop index yet so stays the same!'
   )
@@ -349,13 +349,13 @@ test.serial('schemas - basic', async t => {
             properties: {
               snurpie: {
                 type: 'string',
-                search: { type: ['TEXT'] }
-              }
-            }
-          }
-        }
-      }
-    }
+                search: { type: ['TEXT'] },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   const info = await client.redis.command(
@@ -371,7 +371,7 @@ test.serial('schemas - basic', async t => {
       ['type', 'type', 'TAG', 'SEPARATOR', ','],
       ['name', 'type', 'TAG', 'SEPARATOR', ','],
       ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
-      ['flurpy.snurpie', 'type', 'TEXT', 'WEIGHT', '1']
+      ['flurpy.snurpie', 'type', 'TEXT', 'WEIGHT', '1'],
     ],
     'add fields to the index'
   )
@@ -384,16 +384,16 @@ test.serial('schemas - basic', async t => {
         snurkels: {
           type: 'string',
           search: {
-            type: ['TAG']
-          }
+            type: ['TAG'],
+          },
         },
         snurpie: {
           type: 'string',
           search: {
-            type: ['TEXT']
-          }
-        }
-      }
+            type: ['TEXT'],
+          },
+        },
+      },
     },
     'added field to object schema'
   )
@@ -405,10 +405,10 @@ test.serial('schemas - basic', async t => {
         hierarchy: {
           team: { excludeAncestryWith: ['league'] },
           video: false,
-          $default: { excludeAncestryWith: ['vehicle'] }
-        }
-      }
-    }
+          $default: { excludeAncestryWith: ['vehicle'] },
+        },
+      },
+    },
   })
 
   t.deepEqual(
@@ -416,7 +416,7 @@ test.serial('schemas - basic', async t => {
     {
       team: { excludeAncestryWith: ['league'] },
       video: false,
-      $default: { excludeAncestryWith: ['vehicle'] }
+      $default: { excludeAncestryWith: ['vehicle'] },
     },
     'updated hierarchy schema'
   )
@@ -426,34 +426,34 @@ test.serial('schemas - basic', async t => {
       match: {
         fields: {
           flurpbird: { type: 'digest' },
-          date: { type: 'timestamp' }
-        }
-      }
-    }
+          date: { type: 'timestamp' },
+        },
+      },
+    },
   })
 
   await client.set({
     type: 'match',
     video: {
-      mp4: 'https://flappie.com/clowns.mp4'
+      mp4: 'https://flappie.com/clowns.mp4',
     },
     flurpbird: 'hello',
     date: 100000,
     title: {
-      en: 'best match'
+      en: 'best match',
     },
     children: [
       {
         type: 'person',
-        parents: { $add: 'root' }
-      }
+        parents: { $add: 'root' },
+      },
     ],
-    flapperdrol: { smurky: true }
+    flapperdrol: { smurky: true },
   })
 
   await client.set({
     $id: 'root',
-    value: 9001
+    value: 9001,
   })
 
   // add some tests for it

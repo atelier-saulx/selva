@@ -7,10 +7,10 @@ import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 
   const client = connect({ port })
@@ -27,20 +27,20 @@ test.before(async t => {
               ecin: { type: 'string' },
               complexNice: {
                 type: 'object',
-                properties: { lekkerType: { type: 'json' } }
-              }
-            }
+                properties: { lekkerType: { type: 'json' } },
+              },
+            },
           },
           lekkerType: {
             type: 'object',
-            properties: { thingydingy: { type: 'string' } }
+            properties: { thingydingy: { type: 'string' } },
           },
           thing: { type: 'set', items: { type: 'string' } },
           ding: {
             type: 'object',
             properties: {
-              dong: { type: 'set', items: { type: 'string' } }
-            }
+              dong: { type: 'set', items: { type: 'string' } },
+            },
           },
           dong: { type: 'json' },
           dingdongs: { type: 'array', items: { type: 'string' } },
@@ -48,7 +48,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -56,10 +56,10 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       custom: {
         prefix: 'cu',
@@ -68,7 +68,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -76,10 +76,10 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       club: {
         prefix: 'cl',
@@ -87,7 +87,7 @@ test.before(async t => {
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {
-            type: 'json'
+            type: 'json',
           },
           title: { type: 'text' },
           description: { type: 'text' },
@@ -95,25 +95,25 @@ test.before(async t => {
             type: 'object',
             properties: {
               thumb: { type: 'string' },
-              poster: { type: 'string' }
-            }
-          }
-        }
+              poster: { type: 'string' },
+            },
+          },
+        },
       },
       match: {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
-          description: { type: 'text' }
-        }
-      }
-    }
+          description: { type: 'text' },
+        },
+      },
+    },
   })
 
   await client.destroy()
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -121,35 +121,35 @@ test.after(async t => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('subscribe - simple alias', async t => {
+test.serial('subscribe - simple alias', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     value: 25,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   const obs = await client.observe({
     $id: 'viA',
     id: true,
     enTitle: {
-      $field: 'title.en'
+      $field: 'title.en',
     },
-    value: true
+    value: true,
   })
 
   const results = []
-  obs.subscribe(res => {
+  obs.subscribe((res) => {
     results.push(deepCopy(res))
   })
 
@@ -158,15 +158,15 @@ test.serial('subscribe - simple alias', async t => {
     {
       id: 'viA',
       enTitle: 'nice!',
-      value: 25
-    }
+      value: 25,
+    },
   ])
 
   await client.set({
     $id: 'viA',
     title: {
-      en: 'better!'
-    }
+      en: 'better!',
+    },
   })
 
   await wait(500)
@@ -174,38 +174,38 @@ test.serial('subscribe - simple alias', async t => {
     {
       id: 'viA',
       enTitle: 'nice!',
-      value: 25
+      value: 25,
     },
     {
       id: 'viA',
       enTitle: 'better!',
-      value: 25
-    }
+      value: 25,
+    },
   ])
 
   await client.destroy()
 })
 
 // FIXME: later
-test.serial.skip('subscribe - simple alias with variable', async t => {
+test.serial.skip('subscribe - simple alias with variable', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viB',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     lekkerType: {
-      thingydingy: 'Thing-y Ding-y'
+      thingydingy: 'Thing-y Ding-y',
     },
     value: 25,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   const results = []
@@ -213,12 +213,12 @@ test.serial.skip('subscribe - simple alias with variable', async t => {
     $id: 'viB',
     id: true,
     somethingWithVariable: {
-      $field: '${type}.thingydingy'
+      $field: '${type}.thingydingy',
     },
-    value: true
+    value: true,
   })
 
-  const sub = obs.subscribe(res => {
+  const sub = obs.subscribe((res) => {
     results.push(deepCopy(res))
   })
 
@@ -227,15 +227,15 @@ test.serial.skip('subscribe - simple alias with variable', async t => {
     {
       id: 'viB',
       somethingWithVariable: 'Thing-y Ding-y',
-      value: 25
-    }
+      value: 25,
+    },
   ])
 
   await client.set({
     $id: 'viB',
     lekkerType: {
-      thingydingy: 'Thing-y Ding-y Wingy Slingslong'
-    }
+      thingydingy: 'Thing-y Ding-y Wingy Slingslong',
+    },
   })
 
   await wait(500)
@@ -243,13 +243,13 @@ test.serial.skip('subscribe - simple alias with variable', async t => {
     {
       id: 'viB',
       somethingWithVariable: 'Thing-y Ding-y',
-      value: 25
+      value: 25,
     },
     {
       id: 'viB',
       somethingWithVariable: 'Thing-y Ding-y Wingy Slingslong',
-      value: 25
-    }
+      value: 25,
+    },
   ])
 
   sub.unsubscribe()
@@ -257,25 +257,25 @@ test.serial.skip('subscribe - simple alias with variable', async t => {
   await client.destroy()
 })
 
-test.serial('subscribe - alias with nested structure variable', async t => {
+test.serial('subscribe - alias with nested structure variable', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viC',
     title: {
-      en: 'nice'
+      en: 'nice',
     },
     nice: {
-      ecin: 'lekker man, het werkt'
+      ecin: 'lekker man, het werkt',
     },
     value: 25,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   const results = []
@@ -283,12 +283,12 @@ test.serial('subscribe - alias with nested structure variable', async t => {
     $id: 'viC',
     id: true,
     nestedFun: {
-      $field: 'nice.ecin'
+      $field: 'nice.ecin',
     },
-    value: true
+    value: true,
   })
 
-  obs.subscribe(res => {
+  obs.subscribe((res) => {
     results.push(deepCopy(res))
   })
 
@@ -297,15 +297,15 @@ test.serial('subscribe - alias with nested structure variable', async t => {
     {
       id: 'viC',
       nestedFun: 'lekker man, het werkt',
-      value: 25
-    }
+      value: 25,
+    },
   ])
 
   await client.set({
     $id: 'viC',
     nice: {
-      ecin: 'lekker man, het werkt nog beter!'
-    }
+      ecin: 'lekker man, het werkt nog beter!',
+    },
   })
 
   await wait(500)
@@ -313,39 +313,39 @@ test.serial('subscribe - alias with nested structure variable', async t => {
     {
       id: 'viC',
       nestedFun: 'lekker man, het werkt',
-      value: 25
+      value: 25,
     },
     {
       id: 'viC',
       nestedFun: 'lekker man, het werkt nog beter!',
-      value: 25
-    }
+      value: 25,
+    },
   ])
   await client.destroy()
 })
 
 // for later if you're bored
-test.serial.skip('subscribe - alias with variables', async t => {
+test.serial.skip('subscribe - alias with variables', async (t) => {
   const client = connect({ port })
 
   // this will never work
   await client.set({
     $id: 'viD',
     title: {
-      en: 'nice'
+      en: 'nice',
     },
     nice: {
       ecin: 'lekker man, het werkt',
-      complexNice: { lekkerType: { superSecret: 'yesh!' } }
+      complexNice: { lekkerType: { superSecret: 'yesh!' } },
     },
     value: 25,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   const results = []
@@ -354,12 +354,12 @@ test.serial.skip('subscribe - alias with variables', async t => {
     id: true,
     niceFromJson: {
       // sad boy
-      $field: '${title.en}.complexNice.${type}.superSecret'
+      $field: '${title.en}.complexNice.${type}.superSecret',
     },
-    value: true
+    value: true,
   })
 
-  obs.subscribe(res => {
+  obs.subscribe((res) => {
     results.push(deepCopy(res))
   })
 
@@ -368,16 +368,16 @@ test.serial.skip('subscribe - alias with variables', async t => {
     {
       id: 'viD',
       niceFromJson: 'yesh!',
-      value: 25
-    }
+      value: 25,
+    },
   ])
 
   // this will not fire scince its in json
   await client.set({
     $id: 'viD',
     nice: {
-      complexNice: { lekkerType: { superSecret: 'wow!' } }
-    }
+      complexNice: { lekkerType: { superSecret: 'wow!' } },
+    },
   })
 
   await wait(500)
@@ -385,45 +385,45 @@ test.serial.skip('subscribe - alias with variables', async t => {
     {
       id: 'viD',
       niceFromJson: 'yesh!',
-      value: 25
+      value: 25,
     },
     {
       id: 'viD',
       niceFromJson: 'wow!',
-      value: 25
-    }
+      value: 25,
+    },
   ])
   await client.destroy()
 })
 
 test.serial(
   'subscribe - $field with multiple options, taking the first',
-  async t => {
+  async (t) => {
     const client = connect({ port })
 
     await client.set({
       $id: 'viE',
       title: {
-        en: 'nice'
+        en: 'nice',
       },
       value: 25,
       auth: {
         // role needs to be different , different roles per scope should be possible
         role: {
           id: ['root'],
-          type: 'admin'
-        }
-      }
+          type: 'admin',
+        },
+      },
     })
 
     const results = []
     const obs = client.observe({
       $id: 'viE',
       id: true,
-      valueOrAge: { $field: ['value', 'age'] }
+      valueOrAge: { $field: ['value', 'age'] },
     })
 
-    obs.subscribe(res => {
+    obs.subscribe((res) => {
       results.push(deepCopy(res))
     })
 
@@ -431,25 +431,25 @@ test.serial(
     t.deepEqual(results, [
       {
         id: 'viE',
-        valueOrAge: 25
-      }
+        valueOrAge: 25,
+      },
     ])
 
     await client.set({
       $id: 'viE',
-      value: 32
+      value: 32,
     })
 
     await wait(500)
     t.deepEqual(results, [
       {
         id: 'viE',
-        valueOrAge: 25
+        valueOrAge: 25,
       },
       {
         id: 'viE',
-        valueOrAge: 32
-      }
+        valueOrAge: 32,
+      },
     ])
 
     await client.destroy()
@@ -458,32 +458,32 @@ test.serial(
 
 test.serial(
   'subscribe - $field with multiple options, taking the second',
-  async t => {
+  async (t) => {
     const client = connect({ port })
 
     await client.set({
       $id: 'viF',
       title: {
-        en: 'nice'
+        en: 'nice',
       },
       age: 62,
       auth: {
         // role needs to be different , different roles per scope should be possible
         role: {
           id: ['root'],
-          type: 'admin'
-        }
-      }
+          type: 'admin',
+        },
+      },
     })
 
     const results = []
     const obs = await client.observe({
       $id: 'viF',
       id: true,
-      valueOrAge: { $field: ['value', 'age'] }
+      valueOrAge: { $field: ['value', 'age'] },
     })
 
-    obs.subscribe(res => {
+    obs.subscribe((res) => {
       results.push(deepCopy(res))
     })
 
@@ -491,25 +491,25 @@ test.serial(
     t.deepEqual(results, [
       {
         id: 'viF',
-        valueOrAge: 62
-      }
+        valueOrAge: 62,
+      },
     ])
 
     await client.set({
       $id: 'viF',
-      value: 32
+      value: 32,
     })
 
     await wait(500)
     t.deepEqual(results, [
       {
         id: 'viF',
-        valueOrAge: 62
+        valueOrAge: 62,
       },
       {
         id: 'viF',
-        valueOrAge: 32
-      }
+        valueOrAge: 32,
+      },
     ])
 
     await client.destroy()
@@ -519,26 +519,26 @@ test.serial(
 // FIXME: later
 test.serial.skip(
   'subscribe - $field with multiple options complex. taking the second',
-  async t => {
+  async (t) => {
     const client = connect({ port })
 
     await client.set({
       $id: 'viG',
       title: {
-        en: 'nice'
+        en: 'nice',
       },
       nice: { complexNice: {} },
       lekkerType: {
-        thingydingy: 'Thing-y Ding-y'
+        thingydingy: 'Thing-y Ding-y',
       },
       age: 62,
       auth: {
         // role needs to be different , different roles per scope should be possible
         role: {
           id: ['root'],
-          type: 'admin'
-        }
-      }
+          type: 'admin',
+        },
+      },
     })
 
     const results = []
@@ -548,12 +548,12 @@ test.serial.skip(
       complexOr: {
         $field: [
           '${title.en}.complexNice.${type}.superSecret',
-          '${type}.thingydingy'
-        ]
-      }
+          '${type}.thingydingy',
+        ],
+      },
     })
 
-    obs.subscribe(res => {
+    obs.subscribe((res) => {
       results.push(deepCopy(res))
     })
 
@@ -561,27 +561,27 @@ test.serial.skip(
     t.deepEqual(results, [
       {
         id: 'viG',
-        complexOr: 'Thing-y Ding-y'
-      }
+        complexOr: 'Thing-y Ding-y',
+      },
     ])
 
     await client.set({
       $id: 'viG',
       lekkerType: {
-        thingydingy: 'Thing-y Ding-y Wing Ding Dong'
-      }
+        thingydingy: 'Thing-y Ding-y Wing Ding Dong',
+      },
     })
 
     await wait(500)
     t.deepEqual(results, [
       {
         id: 'viG',
-        complexOr: 'Thing-y Ding-y'
+        complexOr: 'Thing-y Ding-y',
       },
       {
         id: 'viG',
-        complexOr: 'Thing-y Ding-y Wing Ding Dong'
-      }
+        complexOr: 'Thing-y Ding-y Wing Ding Dong',
+      },
     ])
 
     await client.destroy()
@@ -589,33 +589,33 @@ test.serial.skip(
 )
 
 // TODO: needs better inherit handling
-test.serial('get - simple $field with $inherit', async t => {
+test.serial('get - simple $field with $inherit', async (t) => {
   const client = connect({ port })
 
   await client.set({
     $id: 'viH',
     title: {
       en: 'extranice',
-      de: 'Ja, auf Deutsch'
+      de: 'Ja, auf Deutsch',
     },
     nice: { complexNice: {} },
     lekkerType: {
-      thingydingy: 'Thing-y Ding-y'
+      thingydingy: 'Thing-y Ding-y',
     },
     age: 62,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   await client.set({
     $id: 'viI',
     title: {
-      en: 'nice'
+      en: 'nice',
     },
     parents: ['viH'],
     age: 62,
@@ -623,9 +623,9 @@ test.serial('get - simple $field with $inherit', async t => {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   const results = []
@@ -634,11 +634,11 @@ test.serial('get - simple $field with $inherit', async t => {
     id: true,
     germanTitle: {
       $field: 'title.de',
-      $inherit: { $type: 'lekkerType' }
-    }
+      $inherit: { $type: 'lekkerType' },
+    },
   })
 
-  obs.subscribe(res => {
+  obs.subscribe((res) => {
     results.push(deepCopy(res))
   })
 
@@ -646,34 +646,34 @@ test.serial('get - simple $field with $inherit', async t => {
   t.deepEqual(results, [
     {
       id: 'viI',
-      germanTitle: 'Ja, auf Deutsch'
-    }
+      germanTitle: 'Ja, auf Deutsch',
+    },
   ])
 
   await client.set({
     $id: 'viH',
     title: {
-      de: 'Oops, Nederlands'
-    }
+      de: 'Oops, Nederlands',
+    },
   })
 
   await wait(500)
   t.deepEqual(results, [
     {
       id: 'viI',
-      germanTitle: 'Ja, auf Deutsch'
+      germanTitle: 'Ja, auf Deutsch',
     },
     {
       id: 'viI',
-      germanTitle: 'Oops, Nederlands'
-    }
+      germanTitle: 'Oops, Nederlands',
+    },
   ])
 
   await client.destroy()
 })
 
 // TODO: needs better inherit handling
-test.serial('subscribe - simple $field with $inherit: $type', async t => {
+test.serial('subscribe - simple $field with $inherit: $type', async (t) => {
   const client = connect({ port })
 
   await client.set({
@@ -681,8 +681,8 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
     name: 'customA',
     title: {
       en: 'extraextranice',
-      de: 'Ja, auf Deutsch 2'
-    }
+      de: 'Ja, auf Deutsch 2',
+    },
   })
 
   await client.set({
@@ -690,15 +690,15 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
     name: 'lekkerJ',
     title: {
       en: 'extranice',
-      de: 'Ja, auf Deutsch'
+      de: 'Ja, auf Deutsch',
     },
-    parents: ['cuA']
+    parents: ['cuA'],
   })
 
   await client.set({
     $id: 'viK',
     title: {
-      en: 'nice'
+      en: 'nice',
     },
     parents: ['viJ'],
     age: 62,
@@ -706,9 +706,9 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   const results = []
@@ -717,11 +717,11 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
     id: true,
     germanTitle: {
       $field: 'title.de',
-      $inherit: { $type: 'custom' }
-    }
+      $inherit: { $type: 'custom' },
+    },
   })
 
-  obs.subscribe(res => {
+  obs.subscribe((res) => {
     results.push(deepCopy(res))
   })
 
@@ -729,27 +729,27 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
   t.deepEqual(results, [
     {
       id: 'viK',
-      germanTitle: 'Ja, auf Deutsch 2'
-    }
+      germanTitle: 'Ja, auf Deutsch 2',
+    },
   ])
 
   await client.set({
     $id: 'cuA',
     title: {
-      de: 'Oops, Nederlands!'
-    }
+      de: 'Oops, Nederlands!',
+    },
   })
 
   await wait(500)
   t.deepEqual(results, [
     {
       id: 'viK',
-      germanTitle: 'Ja, auf Deutsch 2'
+      germanTitle: 'Ja, auf Deutsch 2',
     },
     {
       id: 'viK',
-      germanTitle: 'Oops, Nederlands!'
-    }
+      germanTitle: 'Oops, Nederlands!',
+    },
   ])
 
   await client.destroy()
@@ -758,45 +758,45 @@ test.serial('subscribe - simple $field with $inherit: $type', async t => {
 // FIXME: later
 test.serial.skip(
   'subscribe - query $field with multiple options complex. taking the second',
-  async t => {
+  async (t) => {
     const client = connect({ port }, { loglevel: 'info' })
 
     await client.set({
       $id: 'viG',
       title: {
-        en: 'nice'
+        en: 'nice',
       },
       nice: { complexNice: {} },
       lekkerType: {
-        thingydingy: 'title.en'
+        thingydingy: 'title.en',
       },
       age: 62,
       auth: {
         // role needs to be different , different roles per scope should be possible
         role: {
           id: ['root'],
-          type: 'admin'
-        }
-      }
+          type: 'admin',
+        },
+      },
     })
 
     await client.set({
       $id: 'viZ',
       title: {
-        en: 'best'
+        en: 'best',
       },
       nice: { complexNice: {} },
       lekkerType: {
-        thingydingy: 'Thing-y Ding-y'
+        thingydingy: 'Thing-y Ding-y',
       },
       age: 62,
       auth: {
         // role needs to be different , different roles per scope should be possible
         role: {
           id: ['root'],
-          type: 'admin'
-        }
-      }
+          type: 'admin',
+        },
+      },
     })
 
     const results = []
@@ -809,15 +809,15 @@ test.serial.skip(
           value: {
             $id: 'viZ',
             title: {
-              en: true
+              en: true,
             },
-            somethingElse: { $value: 'yes' }
-          }
-        }
-      }
+            somethingElse: { $value: 'yes' },
+          },
+        },
+      },
     })
 
-    obs.subscribe(res => {
+    obs.subscribe((res) => {
       results.push(deepCopy(res))
     })
 
@@ -825,49 +825,49 @@ test.serial.skip(
     t.deepEqual(results, [
       {
         id: 'viG',
-        complexThingy: 'best'
-      }
+        complexThingy: 'best',
+      },
     ])
 
     await client.set({
       $id: 'viZ',
       title: {
-        en: 'even better'
-      }
+        en: 'even better',
+      },
     })
 
     await wait(500)
     t.deepEqual(results, [
       {
         id: 'viG',
-        complexThingy: 'best'
+        complexThingy: 'best',
       },
       {
         id: 'viG',
-        complexThingy: 'even better'
-      }
+        complexThingy: 'even better',
+      },
     ])
 
     await client.destroy()
   }
 )
 
-test.serial('subscribe - $field with object structure', async t => {
+test.serial('subscribe - $field with object structure', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
     $id: 'viA',
     title: {
-      en: 'nice!'
+      en: 'nice!',
     },
     value: 25,
     auth: {
       // role needs to be different , different roles per scope should be possible
       role: {
         id: ['root'],
-        type: 'admin'
-      }
-    }
+        type: 'admin',
+      },
+    },
   })
 
   const results = []
@@ -876,13 +876,13 @@ test.serial('subscribe - $field with object structure', async t => {
     id: true,
     wrappingObject: {
       de: {
-        $field: 'title.en'
-      }
+        $field: 'title.en',
+      },
     },
-    value: true
+    value: true,
   })
 
-  obs.subscribe(res => {
+  obs.subscribe((res) => {
     results.push(deepCopy(res))
   })
 
@@ -891,17 +891,17 @@ test.serial('subscribe - $field with object structure', async t => {
     {
       id: 'viA',
       wrappingObject: {
-        de: 'nice!'
+        de: 'nice!',
       },
-      value: 25
-    }
+      value: 25,
+    },
   ])
 
   await client.set({
     $id: 'viA',
     title: {
-      en: 'better!'
-    }
+      en: 'better!',
+    },
   })
 
   await wait(500)
@@ -909,17 +909,17 @@ test.serial('subscribe - $field with object structure', async t => {
     {
       id: 'viA',
       wrappingObject: {
-        de: 'nice!'
+        de: 'nice!',
       },
-      value: 25
+      value: 25,
     },
     {
       id: 'viA',
       wrappingObject: {
-        de: 'better!'
+        de: 'better!',
       },
-      value: 25
-    }
+      value: 25,
+    },
   ])
 
   await client.destroy()

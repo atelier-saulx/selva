@@ -5,7 +5,7 @@ import {
   startOrigin,
   startReplica,
   startSubscriptionManager,
-  startSubscriptionRegistry
+  startSubscriptionRegistry,
 } from '../../server/dist'
 import './assertions'
 import { wait, worker, removeDump } from './assertions'
@@ -18,7 +18,7 @@ const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-test.serial('Make some observables and many subs managers', async t => {
+test.serial('Make some observables and many subs managers', async (t) => {
   // maybe run all the servers in workers
   const port = await getPort()
   const registry = await startRegistry({ port })
@@ -26,25 +26,25 @@ test.serial('Make some observables and many subs managers', async t => {
 
   const origin = await startOrigin({
     registry: connectOpts,
-    default: true
+    default: true,
   })
 
   // one extra to offload registry
   const subsregistry = await startSubscriptionRegistry({
-    registry: connectOpts
+    registry: connectOpts,
   })
 
   // do this later startReplica
   const subsmanager = await startSubscriptionManager({
-    registry: connectOpts
+    registry: connectOpts,
   })
 
   const subsmanager2 = await startSubscriptionManager({
-    registry: connectOpts
+    registry: connectOpts,
   })
 
   const subsmanager3 = await startSubscriptionManager({
-    registry: connectOpts
+    registry: connectOpts,
   })
 
   const client = connect({ port })
@@ -71,16 +71,16 @@ test.serial('Make some observables and many subs managers', async t => {
         nested: {
           type: 'object',
           properties: {
-            fun: { type: 'string' }
-          }
-        }
-      }
-    }
+            fun: { type: 'string' },
+          },
+        },
+      },
+    },
   })
 
   await client.set({
     $id: 'root',
-    value: 1
+    value: 1,
   })
 
   const x = await client.get({ $id: 'root', value: true })
@@ -89,12 +89,12 @@ test.serial('Make some observables and many subs managers', async t => {
 
   const obs = client.observe({
     $id: 'root',
-    value: true
+    value: true,
   })
 
   const obs2 = client.observe({
     $id: 'root',
-    nest: true
+    nest: true,
   })
 
   obs2.subscribe(() => {})
@@ -104,7 +104,7 @@ test.serial('Make some observables and many subs managers', async t => {
   const obs3 = client.observe({
     $id: 'root',
     nest: true,
-    value: true
+    value: true,
   })
 
   obs3.subscribe(() => {})
@@ -115,9 +115,9 @@ test.serial('Make some observables and many subs managers', async t => {
   const obs4 = client.observe({
     $id: 'root',
     nest: {
-      fun: true
+      fun: true,
     },
-    value: true
+    value: true,
   })
 
   obs4.subscribe(() => {})
@@ -128,7 +128,7 @@ test.serial('Make some observables and many subs managers', async t => {
   const resultSpread = [1, 2, 1]
 
   t.deepEqualIgnoreOrder(
-    Object.values(await getServersSubscriptions()).map(v => v.length),
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
     resultSpread,
     'Correct spread of subscriptions on subs managers'
   )
@@ -142,23 +142,23 @@ test.serial('Make some observables and many subs managers', async t => {
       client
         .observe({
           $id: 'root',
-          value: true
+          value: true,
         })
         .subscribe(() => {})
       client
         .observe({
           $id: 'root',
           nest: {
-            fun: true
+            fun: true,
           },
-          value: true
+          value: true,
         })
         .subscribe(() => {})
       client
         .observe({
           $id: 'root',
           nest: true,
-          value: true
+          value: true,
         })
         .subscribe(() => {})
 
@@ -170,7 +170,7 @@ test.serial('Make some observables and many subs managers', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    Object.values(await getServersSubscriptions()).map(v => v.length),
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
     resultSpread,
     'Correct spread after worker tries the same subscriptions'
   )
@@ -187,10 +187,10 @@ test.serial('Make some observables and many subs managers', async t => {
       options: {
         $id: 'root',
         nest: {
-          fun: true
+          fun: true,
         },
-        value: true
-      }
+        value: true,
+      },
     },
     newClient
   )
@@ -198,11 +198,11 @@ test.serial('Make some observables and many subs managers', async t => {
   const uuid = obs5.uuid
 
   const serverSelector: ServerSelector = {
-    type: 'subscriptionManager'
+    type: 'subscriptionManager',
   }
 
   for (const id in servers) {
-    const f = servers[id].find(u => u === uuid)
+    const f = servers[id].find((u) => u === uuid)
     if (!f) {
       const [host, port] = id.split(':')
       serverSelector.host = host
@@ -279,7 +279,7 @@ test.serial('Make some observables and many subs managers', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    Object.values(await getServersSubscriptions()).map(v => v.length),
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
     [4],
     'Correct spread one 1 server is left'
   )
@@ -305,7 +305,7 @@ test.serial('Make some observables and many subs managers', async t => {
       const client = connect({ port })
       const obs = client.observe({
         $id: 'root',
-        value: true
+        value: true,
       })
       obs.subscribe(() => {})
       await wait(1e3)
@@ -314,7 +314,7 @@ test.serial('Make some observables and many subs managers', async t => {
   )
 
   t.deepEqualIgnoreOrder(
-    Object.values(await getServersSubscriptions()).map(v => v.length),
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
     [1],
     'New sub is added'
   )
@@ -338,7 +338,7 @@ test.serial('Make some observables and many subs managers', async t => {
   await t.connectionsAreEmpty()
 })
 
-test.only('diff observables', async t => {
+test.only('diff observables', async (t) => {
   const port = await getPort()
   const registry = await startRegistry({ port })
   const connectOpts = { port }
@@ -346,23 +346,23 @@ test.only('diff observables', async t => {
   const origin = await startOrigin({
     registry: connectOpts,
     default: true,
-    dir: join(dir, 'diff-origin')
+    dir: join(dir, 'diff-origin'),
   })
 
   // add in a replica
 
   // one extra to offload registry
   const subsregistry = await startSubscriptionRegistry({
-    registry: connectOpts
+    registry: connectOpts,
   })
 
   // do this later startReplica
   const subsmanager = await startSubscriptionManager({
-    registry: connectOpts
+    registry: connectOpts,
   })
 
   const subsmanager2 = await startSubscriptionManager({
-    registry: connectOpts
+    registry: connectOpts,
   })
 
   const client = connect({ port })
@@ -373,22 +373,22 @@ test.only('diff observables', async t => {
         value: { type: 'number' },
         flurp: {
           type: 'array',
-          items: { type: 'number' }
+          items: { type: 'number' },
         },
         nested: {
           type: 'object',
           properties: {
-            fun: { type: 'string' }
-          }
-        }
-      }
-    }
+            fun: { type: 'string' },
+          },
+        },
+      },
+    },
   })
 
   const obs = client.observe({
     $id: 'root',
     value: true,
-    flurp: true
+    flurp: true,
   })
 
   obs.subscribe((value, checksum, diff) => {
@@ -399,14 +399,14 @@ test.only('diff observables', async t => {
 
   await client.set({
     $id: 'root',
-    value: 1
+    value: 1,
   })
 
   await wait(500)
 
   await client.set({
     $id: 'root',
-    flurp: [1, 2, 3, 4]
+    flurp: [1, 2, 3, 4],
   })
 
   await wait(500)
@@ -419,7 +419,7 @@ test.only('diff observables', async t => {
 
   await client.set({
     $id: 'root',
-    flurp: [1, 3, 2, 4]
+    flurp: [1, 3, 2, 4],
   })
 
   client.subscribeSchema()

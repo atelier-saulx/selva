@@ -21,7 +21,7 @@ const drainQueue = (subsManager: SubscriptionManager) => {
       const command = q[i]
       const field = fieldsInQueue[i]
       // making a batch fn is nice for optmizations (for later!)
-      command.command.resolve = m => {
+      command.command.resolve = (m) => {
         cnt--
         if (!m) m = []
 
@@ -34,14 +34,14 @@ const drainQueue = (subsManager: SubscriptionManager) => {
         }
 
         const members = (memberMemCache[command.context.db][field] = {})
-        m.forEach(v => (members[v] = true))
+        m.forEach((v) => (members[v] = true))
         const listeners = fieldsInProgressNow[field]
 
         for (let i = 0; i < listeners.length - 1; i += 2) {
           const v = listeners[i + 1]
           if (members[v]) {
             const s = listeners[i]
-            s.forEach(subs => {
+            s.forEach((subs) => {
               addUpdate(subsManager, subs)
             })
           }
@@ -75,9 +75,9 @@ const addAncestorsToBatch = (
     queue.push({
       command: {
         command: 'selva.hierarchy.find',
-        args: ['___selva_hierarchy', 'dfs', 'ancestors', context.id]
+        args: ['___selva_hierarchy', 'dfs', 'ancestors', context.id],
       },
-      context
+      context,
     })
     fieldsInQueue.push(field)
 
@@ -102,9 +102,9 @@ const addMembersToBatch = (
     queue.push({
       command: {
         command: 'selva.hierarchy.parents',
-        args: ['___selva_hierarchy', context.id]
+        args: ['___selva_hierarchy', context.id],
       },
-      context
+      context,
     })
     fieldsInQueue.push(field)
     fieldsProgress[field] = [subscriptions, v]
@@ -186,7 +186,7 @@ const contains = (
 
     if (memberCheck) {
       if (membersContainsId(subManager, context, <Contains>memberCheck, subs)) {
-        subs.forEach(s => {
+        subs.forEach((s) => {
           addUpdate(subManager, s)
         })
       }

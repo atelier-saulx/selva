@@ -56,7 +56,7 @@ class Connection {
     if (!this.isDestroyed) {
       this.emit('hard-disconnect')
       if (!this.isDestroyed) {
-        this.clients.forEach(s => {
+        this.clients.forEach((s) => {
           s.hardDisconnect(this)
         })
         this.destroy()
@@ -117,7 +117,7 @@ class Connection {
 
   public clientsConnected: { subscriber: boolean; publisher: boolean } = {
     subscriber: false,
-    publisher: false
+    publisher: false,
   }
 
   // dont add this to state keep it simple
@@ -138,12 +138,12 @@ class Connection {
         this.command({
           id: id,
           command: 'hdel',
-          args: [CLIENTS, uuid]
+          args: [CLIENTS, uuid],
         })
         this.command({
           command: 'publish',
           id: id,
-          args: [STOP_HEARTBEAT, uuid]
+          args: [STOP_HEARTBEAT, uuid],
         })
       }
     }
@@ -162,7 +162,7 @@ class Connection {
         this.command({
           id: id,
           command: 'hset',
-          args: [CLIENTS, uuid, Date.now()]
+          args: [CLIENTS, uuid, Date.now()],
         })
         this.command({
           command: 'publish',
@@ -171,9 +171,9 @@ class Connection {
             HEARTBEAT,
             JSON.stringify({
               client: uuid,
-              ts: Date.now()
-            })
-          ]
+              ts: Date.now(),
+            }),
+          ],
         })
       }
       this.clientHb[uuid].timer = setTimeout(
@@ -271,7 +271,7 @@ class Connection {
           }
         }
       } else {
-        listeners[event][id].forEach(cb => {
+        listeners[event][id].forEach((cb) => {
           this.subscriber.removeListener(event, cb)
         })
         delete listeners[event][id]
@@ -286,7 +286,7 @@ class Connection {
     const listeners = this.listeners[event]
     if (listeners) {
       for (let id in listeners) {
-        listeners[id].forEach(cb => {
+        listeners[id].forEach((cb) => {
           cb(payload)
         })
       }
@@ -457,7 +457,7 @@ class Connection {
       subscribes: [],
       listeners: [],
       connectionListeners: [],
-      selvaSubscriptions: []
+      selvaSubscriptions: [],
     }
 
     // and do this also
@@ -481,7 +481,7 @@ class Connection {
 
       for (const event in this.redisListeners) {
         if (id in this.redisListeners[event]) {
-          this.redisListeners[event][id].forEach(cb => {
+          this.redisListeners[event][id].forEach((cb) => {
             state.isEmpty = false
             state.listeners.push([event, cb])
           })
@@ -490,7 +490,7 @@ class Connection {
 
       for (const event in this.listeners) {
         if (id in this.listeners[event]) {
-          this.listeners[event][id].forEach(cb => {
+          this.listeners[event][id].forEach((cb) => {
             state.isEmpty = false
             state.connectionListeners.push([event, cb])
           })
@@ -498,7 +498,7 @@ class Connection {
       }
 
       if (this.queueBeingDrained) {
-        const q = this.queueBeingDrained.filter(command => command.id === id)
+        const q = this.queueBeingDrained.filter((command) => command.id === id)
         if (q.length) {
           state.isEmpty = false
           state.queue = q
@@ -506,7 +506,7 @@ class Connection {
       }
 
       if (this.queue) {
-        const q = this.queue.filter(command => command.id === id)
+        const q = this.queue.filter((command) => command.id === id)
         if (q.length) {
           state.isEmpty = false
           state.queue = [...state.queue, ...q]

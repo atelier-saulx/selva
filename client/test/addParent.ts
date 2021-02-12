@@ -7,14 +7,14 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-test.before(async t => {
+test.before(async (t) => {
   port = await getPort()
   srv = await start({
-    port
+    port,
   })
 })
 
-test.after(async t => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
@@ -24,27 +24,27 @@ test.after(async t => {
 
 test.serial(
   'when using parents.$add empty, root should still be added in ancestors (low prio)',
-  async t => {
+  async (t) => {
     const client = connect({ port }, { loglevel: 'info' })
 
     await client.updateSchema({
       types: {
         sport: {
-          prefix: 'sp'
-        }
-      }
+          prefix: 'sp',
+        },
+      },
     })
 
     await client.set({
       type: 'sport',
       $id: 'sp11',
       parents: {
-        $add: []
-      }
+        $add: [],
+      },
     })
 
     t.deepEqualIgnoreOrder(await client.get({ $id: 'sp11', ancestors: true }), {
-      ancestors: ['root']
+      ancestors: ['root'],
     })
 
     await client.destroy()
