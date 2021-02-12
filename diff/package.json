@@ -27,7 +27,6 @@
       "test/**/*.ts",
       "!test/examples"
     ],
-    "compileEnhancements": false,
     "extensions": [
       "ts"
     ],

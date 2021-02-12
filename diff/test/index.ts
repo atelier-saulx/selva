@@ -2,12 +2,12 @@ import test from 'ava'
 import diff, { applyPatch } from '@saulx/selva-diff'
 import region from './examples/region.json'
 
-test('Object to Array', async t => {
+test('Object to Array', async (t) => {
   const a = {
     0: 0,
     1: 1,
     2: 2,
-    3: 3
+    3: 3,
   }
   const b = [0, 1, 2, 3, 4]
   const patch = diff(a, b)
@@ -17,34 +17,34 @@ test('Object to Array', async t => {
   t.deepEqual(applyPatch(a, patch2), b2, 'is equal')
 })
 
-test('Array to Object', async t => {
+test('Array to Object', async (t) => {
   const a = [0, 1, 2, 3, 4]
   const b = {
     0: 0,
     1: 1,
     2: 2,
-    3: 3
+    3: 3,
   }
   const patch = diff(a, b)
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test('Array to Object Nested', async t => {
+test('Array to Object Nested', async (t) => {
   const a = { x: [0, 1, 2, 3, 4] }
   const b = {
     x: {
       flap: 0,
       1: 1,
       2: 2,
-      3: 3
-    }
+      3: 3,
+    },
   }
   const patch = diff(a, b)
 
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test('Array', async t => {
+test('Array', async (t) => {
   const a = ['a', 'b', 'c', 'd']
   const b = ['x', 'x', 'a', 'b', 'z', 'c', 'd']
   const patch = diff(a, b)
@@ -76,15 +76,15 @@ test('Array', async t => {
   )
 })
 
-test('Object', async t => {
+test('Object', async (t) => {
   const a = {
     a: 'hello',
     b: 'shurf',
     c: 'snurx',
     d: {
-      e: 'x'
+      e: 'x',
     },
-    f: [1, 2, 3, 4, 5]
+    f: [1, 2, 3, 4, 5],
   }
   const b = {
     a: 'BLARF',
@@ -92,20 +92,20 @@ test('Object', async t => {
     f: [6, 1, 2, 8, 9, 4, 5],
     snurkypants: {
       a: true,
-      b: false
+      b: false,
     },
     d: {
       e: {
-        x: true
-      }
-    }
+        x: true,
+      },
+    },
   }
   const patch = diff(a, b)
 
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test('Array + nested object lots the same', async t => {
+test('Array + nested object lots the same', async (t) => {
   const obj = {
     x: true,
     y: true,
@@ -116,18 +116,18 @@ test('Array + nested object lots the same', async t => {
         g: {
           x: true,
           flurpypants: 'x',
-          myText: 'fdwefjwef ewofihewfoihwef weoifh'
-        }
-      }
-    }
+          myText: 'fdwefjwef ewofihewfoihwef weoifh',
+        },
+      },
+    },
   }
 
   const a = {
-    f: []
+    f: [],
   }
 
   const b = {
-    f: []
+    f: [],
   }
 
   for (let i = 0; i < 1000; i++) {
@@ -149,10 +149,10 @@ test('Array + nested object lots the same', async t => {
       x: false,
       y: {
         g: {
-          myText: 'yuzi pants'
-        }
-      }
-    }
+          myText: 'yuzi pants',
+        },
+      },
+    },
   })
 
   var d = Date.now()
@@ -172,75 +172,75 @@ test('Array + nested object lots the same', async t => {
   // t.pass()
 })
 
-test('Array + nested object', async t => {
+test('Array + nested object', async (t) => {
   const a = {
     a: 'hello',
     f: [
       {
         x: true,
         bla: {
-          flap: true
-        }
+          flap: true,
+        },
       },
       {
         x: true,
         bla: {
-          flap: true
-        }
+          flap: true,
+        },
       },
       {
         y: true,
         flurp: {
-          flurp: 'x'
-        }
+          flurp: 'x',
+        },
       },
       {
         z: true,
-        j: true
-      }
-    ]
+        j: true,
+      },
+    ],
   }
   const b = {
     f: [
       {
         x: true,
         bla: {
-          flap: true
-        }
+          flap: true,
+        },
       },
       {
         // this will yield some strange results for sure...
         x: true,
         bla: {
-          flap: true
-        }
+          flap: true,
+        },
       },
       {
         y: true,
         flurp: {
           flurp: {
-            flurpypants: [1, 2, 3]
-          }
-        }
+            flurpypants: [1, 2, 3],
+          },
+        },
       },
       {
         z: true,
-        j: true
+        j: true,
       },
       {
-        id: 10
+        id: 10,
       },
       {
-        id: 20
-      }
-    ]
+        id: 20,
+      },
+    ],
   }
   const patch = diff(a, b)
 
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test('Deep in array', async t => {
+test('Deep in array', async (t) => {
   const obj = {
     x: true,
     y: true,
@@ -251,14 +251,14 @@ test('Deep in array', async t => {
         g: {
           x: true,
           flurpypants: 'x',
-          myText: 'fdwefjwef ewofihewfoihwef weoifh'
-        }
-      }
-    }
+          myText: 'fdwefjwef ewofihewfoihwef weoifh',
+        },
+      },
+    },
   }
 
   const a = {
-    f: [obj]
+    f: [obj],
   }
 
   const b = {
@@ -268,12 +268,12 @@ test('Deep in array', async t => {
           x: false,
           y: {
             g: {
-              myText: 'yuzi pants'
-            }
-          }
-        }
-      }
-    ]
+              myText: 'yuzi pants',
+            },
+          },
+        },
+      },
+    ],
   }
 
   // can add optimization techniques to not send the diff is the
@@ -284,7 +284,7 @@ test('Deep in array', async t => {
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test('Real life only components', async t => {
+test('Real life only components', async (t) => {
   const a = JSON.parse(JSON.stringify(region.components.slice(0, 1)))
   const b = JSON.parse(JSON.stringify(a))
   b[0].children.shift()
@@ -295,7 +295,7 @@ test('Real life only components', async t => {
   t.deepEqual(x, b, 'is equal after games put to live')
 })
 
-test('Real life', async t => {
+test('Real life', async (t) => {
   const a = JSON.parse(JSON.stringify(region))
   const b = JSON.parse(JSON.stringify(a))
   // can add optimization techniques to not send the diff is the
@@ -308,7 +308,7 @@ test('Real life', async t => {
   b.components[1].children = [
     JSON.parse(JSON.stringify(b.components[3].children[0])),
     JSON.parse(JSON.stringify(b.components[3].children[1])),
-    JSON.parse(JSON.stringify(b.components[3].children[2]))
+    JSON.parse(JSON.stringify(b.components[3].children[2])),
   ]
 
   b.components[3].children.shift()
@@ -326,7 +326,7 @@ test('Real life', async t => {
   t.deepEqual(x, b, 'is equal after games put to live')
 })
 
-test('Real life - theme', async t => {
+test('Real life - theme', async (t) => {
   const a = JSON.parse(JSON.stringify(region))
   const b = JSON.parse(JSON.stringify(a))
 
@@ -343,14 +343,14 @@ test('Real life - theme', async t => {
   t.deepEqual(x, b, 'is equal after games put to live')
 })
 
-test('Remove', async t => {
+test('Remove', async (t) => {
   const comp = [
     { a: 1 },
     { b: 1 },
     { c: 1 },
     { d: 1 },
     { e: 1 },
-    { snurkels: 'blurf' }
+    { snurkels: 'blurf' },
   ]
 
   const a = comp
@@ -366,22 +366,22 @@ test('Remove', async t => {
   t.deepEqual(applyPatch(a, patch), b, 'is equal')
 })
 
-test('Remove nested array', async t => {
+test('Remove nested array', async (t) => {
   const comp = {
     a: [
       { a: 1 },
       {
         x: 1,
-        children: []
+        children: [],
       },
       {
         b: 1,
-        children: [{ x: true }, { y: true }, { z: true }, { glur: true }]
+        children: [{ x: true }, { y: true }, { z: true }, { glur: true }],
       },
       { c: 1, children: [{ cx: true }, { cy: true }, { ca: true }] },
       { e: 1, children: [{ cx: true }, { cy: true }, { ca: true }] },
-      { snurkels: 'blurf' }
-    ]
+      { snurkels: 'blurf' },
+    ],
   }
 
   const a = comp
@@ -405,7 +405,7 @@ test('Remove nested array', async t => {
   t.deepEqual(x, b, 'is equal')
 })
 
-test('Remove deep', async t => {
+test('Remove deep', async (t) => {
   const ax = JSON.parse(JSON.stringify(region))
 
   const comp = ax.components[3].children
@@ -424,15 +424,15 @@ test('Remove deep', async t => {
   t.deepEqual(x, b, 'is equal')
 })
 
-test('Flip', async t => {
+test('Flip', async (t) => {
   const a = {
     $id: 'root',
-    flurp: [1, 2, 3, 4]
+    flurp: [1, 2, 3, 4],
   }
 
   const b = {
     $id: 'root',
-    flurp: [1, 3, 2, 4]
+    flurp: [1, 3, 2, 4],
   }
 
   const patch = diff(a, b)
@@ -441,7 +441,7 @@ test('Flip', async t => {
   t.deepEqual(x, b, 'is equal')
 })
 
-test('Weird array', async t => {
+test('Weird array', async (t) => {
   const a = {
     upcoming: [
       { id: 'maug8' },
@@ -453,7 +453,7 @@ test('Weird array', async t => {
       { id: 'maug10' },
       { id: 'maug1' },
       { id: 'mau2' },
-      { id: 'mau1' }
+      { id: 'mau1' },
     ],
     past: [
       { id: 'map8' },
@@ -465,9 +465,9 @@ test('Weird array', async t => {
       { id: 'map13' },
       { id: 'map11' },
       { id: 'map10' },
-      { id: 'map1' }
+      { id: 'map1' },
     ],
-    live: []
+    live: [],
   }
 
   const b = {
@@ -481,7 +481,7 @@ test('Weird array', async t => {
       { id: 'maug8' },
       { id: 'maug10' },
       { id: 'maug11' },
-      { id: 'maug13' }
+      { id: 'maug13' },
     ],
     past: [
       { id: 'map1' },
@@ -493,9 +493,9 @@ test('Weird array', async t => {
       { id: 'map10' },
       { id: 'map11' },
       { id: 'map13' },
-      { id: 'map14' }
+      { id: 'map14' },
     ],
-    live: [{ id: 'mau1' }]
+    live: [{ id: 'mau1' }],
   }
 
   const patch = diff(a, b)
@@ -505,7 +505,7 @@ test('Weird array', async t => {
   t.deepEqual(x, b, 'is equal')
 })
 
-test('Weird array 2 register copy', async t => {
+test('Weird array 2 register copy', async (t) => {
   const a = {
     upcoming: [
       { id: 'mau1' },
@@ -517,7 +517,7 @@ test('Weird array 2 register copy', async t => {
       { id: 'maug7' },
       { id: 'maug8' },
       { id: 'maug10' },
-      { id: 'maug11' }
+      { id: 'maug11' },
     ],
     past: [
       { id: 'map1' },
@@ -529,9 +529,9 @@ test('Weird array 2 register copy', async t => {
       { id: 'map10' },
       { id: 'map11' },
       { id: 'map13' },
-      { id: 'map14' }
+      { id: 'map14' },
     ],
-    live: []
+    live: [],
   }
 
   const b = {
@@ -545,7 +545,7 @@ test('Weird array 2 register copy', async t => {
       { id: 'maug8' },
       { id: 'maug10' },
       { id: 'maug11' }, // re-uses this
-      { id: 'maug13' }
+      { id: 'maug13' },
     ],
     past: [
       { id: 'map1' },
@@ -557,9 +557,9 @@ test('Weird array 2 register copy', async t => {
       { id: 'map10' },
       { id: 'map11' },
       { id: 'map13' },
-      { id: 'map14' }
+      { id: 'map14' },
     ],
-    live: [{ id: 'mau1' }]
+    live: [{ id: 'mau1' }],
   }
 
   const patch = diff(a, b)
@@ -569,7 +569,7 @@ test('Weird array 2 register copy', async t => {
   t.deepEqual(x, b, 'is equal')
 })
 
-test('Weird array 3 register copy', async t => {
+test('Weird array 3 register copy', async (t) => {
   const a = {
     past: [
       { id: 'map1' },
@@ -581,8 +581,8 @@ test('Weird array 3 register copy', async t => {
       { id: 'map10' },
       { id: 'map11' },
       { id: 'map13' },
-      { id: 'map14' }
-    ]
+      { id: 'map14' },
+    ],
   }
 
   const b = {
@@ -596,13 +596,302 @@ test('Weird array 3 register copy', async t => {
       { id: 'map8' },
       { id: 'map10' },
       { id: 'map11' },
-      { id: 'map13' }
-    ]
+      { id: 'map13' },
+    ],
   }
 
   const patch = diff(a, b)
 
   // console.dir(patch, { depth: 10 })
+
+  const x = applyPatch(a, patch)
+
+  // console.dir(x, { depth: 10 })
+
+  t.deepEqual(x, b, 'is equal')
+})
+
+test.only('Big object', async (t) => {
+  const a = {
+    $id: 'ptwelcome',
+    $language: 'en',
+    name: 'Welcome Screen',
+    components: {
+      0: {
+        component: 'Text',
+        name: 'Random Text',
+        text: 'Voting round 1?',
+        color: '#0750C6',
+      },
+      1: {
+        component: 'Image',
+        image:
+          'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
+      },
+      2: {
+        component: 'List',
+        items: {
+          0: {
+            title: {
+              text: 'Efendi',
+            },
+            image:
+              'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
+          },
+        },
+      },
+      3: {
+        component: 'Button',
+        text: 'Go to that page!',
+      },
+    },
+    config: {
+      action: 'modal',
+      props: {
+        header: {
+          title: '{{data.name}}',
+          icon: 'welcomeScreen',
+          framed: true,
+        },
+      },
+      content: {
+        component: 'group',
+        direction: 'column',
+        children: [
+          {
+            component: 'Title',
+            children: 'General',
+          },
+          {
+            component: 'group',
+            direction: 'row',
+            alignItems: 'center',
+            children: [
+              {
+                component: 'text',
+                weight: 'semibold',
+                children: 'Title',
+              },
+              {
+                component: 'input',
+                value: '{{data.components.0.text}}',
+                onChange: {
+                  action: 'api',
+                  endpoint: 'based',
+                  method: '@based/set',
+                },
+              },
+            ],
+          },
+          {
+            component: 'group',
+            direction: 'row',
+            alignItems: 'center',
+            children: [
+              {
+                component: 'text',
+                weight: 'semibold',
+                children: 'Body Text',
+              },
+              {
+                component: 'input',
+                value: '{{data.components.0.text}}',
+                onChange: {
+                  action: 'api',
+                  endpoint: 'based',
+                  method: '@based/set',
+                },
+              },
+            ],
+          },
+          {
+            component: 'group',
+            direction: 'row',
+            alignItems: 'center',
+            children: [
+              {
+                component: 'text',
+                weight: 'semibold',
+                children: 'Image!!!?????111111111111..........',
+              },
+              {
+                component: 'input',
+                value: '{{data.components.0.text}}',
+                onChange: {
+                  action: 'api',
+                  endpoint: 'based',
+                  method: '@based/set',
+                },
+              },
+            ],
+          },
+          {
+            component: 'group',
+            direction: 'row',
+            alignItems: 'center',
+            children: [
+              {
+                component: 'text',
+                weight: 'semibold',
+                children: 'Image!!!?????111111111111..........',
+              },
+              {
+                component: 'input',
+                value: '{{data.components.0.text}}',
+                onChange: {
+                  action: 'api',
+                  endpoint: 'based',
+                  method: '@based/set',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  }
+  const b = {
+    $id: 'ptwelcome',
+    $language: 'en',
+    name: 'Welcome Screen',
+    components: {
+      0: {
+        component: 'Text',
+        name: 'Random Text',
+        text: 'Voting round 1?',
+        color: '#0750C6',
+      },
+      1: {
+        component: 'Image',
+        image:
+          'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
+      },
+      2: {
+        component: 'List',
+        items: {
+          0: {
+            title: {
+              text: 'Efendi',
+            },
+            image:
+              'https://i1.wp.com/psych2go.net/wp-content/uploads/2014/08/91df642880432da28c563dfc45fa57f5.jpg?fit=640%2C400&ssl=1',
+          },
+        },
+      },
+      3: {
+        component: 'Button',
+        text: 'Go to that page!',
+      },
+    },
+    config: {
+      action: 'modal',
+      props: {
+        header: {
+          title: '{{data.name}}',
+          icon: 'welcomeScreen',
+          framed: true,
+        },
+      },
+      content: {
+        component: 'group',
+        direction: 'column',
+        children: [
+          {
+            component: 'Title',
+            children: 'General',
+          },
+          {
+            component: 'group',
+            direction: 'row',
+            alignItems: 'center',
+            children: [
+              {
+                component: 'text',
+                weight: 'semibold',
+                children: 'Title',
+              },
+              {
+                component: 'input',
+                value: '{{data.components.0.text}}',
+                onChange: {
+                  action: 'api',
+                  endpoint: 'based',
+                  method: '@based/set',
+                },
+              },
+            ],
+          },
+          {
+            component: 'group',
+            direction: 'row',
+            alignItems: 'center',
+            children: [
+              {
+                component: 'text',
+                weight: 'semibold',
+                children: 'Body Text',
+              },
+              {
+                component: 'input',
+                value: '{{data.components.0.text}}',
+                onChange: {
+                  action: 'api',
+                  endpoint: 'based',
+                  method: '@based/set',
+                },
+              },
+            ],
+          },
+          {
+            component: 'group',
+            direction: 'row',
+            alignItems: 'center',
+            children: [
+              {
+                component: 'text',
+                weight: 'semibold',
+                children: 'power puff',
+              },
+              {
+                component: 'input',
+                value: '{{data.components.0.text}}',
+                onChange: {
+                  action: 'api',
+                  endpoint: 'based',
+                  method: '@based/set',
+                },
+              },
+            ],
+          },
+          {
+            component: 'group',
+            direction: 'row',
+            alignItems: 'center',
+            children: [
+              {
+                component: 'text',
+                weight: 'semibold',
+                children: 'Image!!!?????111111111111..........',
+              },
+              {
+                component: 'input',
+                value: '{{data.components.0.text}}',
+                onChange: {
+                  action: 'api',
+                  endpoint: 'based',
+                  method: '@based/set',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  }
+
+  const patch = diff(a, b)
+
+  console.dir(patch, { depth: null })
 
   const x = applyPatch(a, patch)
 

@@ -88,7 +88,7 @@ const sendUpdate = async (
     }
   } catch (err) {
     payload = {
-      ___$error___: err.message
+      ___$error___: err.message,
     }
   }
 
@@ -105,13 +105,14 @@ const sendUpdate = async (
   delete payload.$meta
 
   // TODO: lua is unstable with object tmp fix
-
+  console.log('----------incoming-----------')
+  console.dir(payload, { depth: null })
   const newVersion = hashObjectIgnoreKeyOrder(payload)
 
   const resultStr = JSON.stringify({ type: 'update', payload })
 
   const currentVersion = subscription.version
-
+  console.log({ currentVersion, newVersion })
   const q = []
 
   // if sub is removed
