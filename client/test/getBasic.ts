@@ -59,6 +59,9 @@ test.beforeEach(async (t) => {
                 value: {
                   type: 'number',
                 },
+                stringValue: {
+                  type: 'string',
+                },
               },
             },
           },
@@ -1831,6 +1834,115 @@ test.serial('get - $inherit with object types does deep merge', async (t) => {
         dunk: {
           ding: 99,
           dong: 1212,
+        },
+      },
+    }
+  )
+
+  await client.delete('root')
+
+  client.destroy()
+})
+
+test.serial('get - $inherit with record types does deep merge', async (t) => {
+  const client = connect({ port })
+
+  const parentOfParent = await client.set({
+    $id: 'vipofp',
+    type: 'lekkerType',
+    title: {
+      en: 'nice!',
+      de: 'dont want to inherit this',
+    },
+    objRec: {
+      a: {
+        hello: 'not this one either',
+        stringValue: 'yes string value',
+      },
+      b: {
+        stringValue: 'inherit please',
+      },
+      c: {
+        hello: 'yes hello from parentOfParent',
+      },
+      0: {
+        hello: 'no',
+        stringValue: 'also no',
+        value: 99,
+      },
+    },
+  })
+
+  const parentEntry = await client.set({
+    $id: 'vip',
+    type: 'lekkerType',
+    title: {
+      en: 'nice!',
+      de: 'dont want to inherit this',
+    },
+    parents: {
+      $add: [parentOfParent],
+    },
+    objRec: {
+      a: {
+        hello: 'not this one',
+        stringValue: 'this should be there',
+      },
+      b: {
+        hello: 'yes hello from parent',
+        value: 10,
+      },
+    },
+  })
+
+  const entry = await client.set({
+    $id: 'vie',
+    type: 'lekkerType',
+    parents: {
+      $add: [parentEntry],
+    },
+    title: {
+      en: 'nice!',
+    },
+    objRec: {
+      0: {
+        hello: 'this is where it starts',
+        stringValue: 'in the entry itself',
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: entry,
+      id: true,
+      title: { $inherit: { $type: 'lekkerType', $deepMerge: true } }, // TODO: throw, not allowed probably
+      objRec: { $inherit: { $type: 'lekkerType', $deepMerge: true } },
+      // title: { $inherit: { $type: 'lekkerType', $merge: true } }, // TODO: throw, not allowed probably
+      // objRec: { $inherit: { $type: 'lekkerType', $merge: true } },
+    }),
+    {
+      id: entry,
+      title: {
+        en: 'nice!',
+      },
+      objRec: {
+        0: {
+          hello: 'this is where it starts',
+          stringValue: 'in the entry itself',
+          value: 99,
+        },
+        a: {
+          hello: 'not this one',
+          stringValue: 'this should be there',
+        },
+        b: {
+          hello: 'yes hello from parent',
+          value: 10,
+          stringValue: 'inherit please',
+        },
+        c: {
+          hello: 'yes hello from parentOfParent',
         },
       },
     }
