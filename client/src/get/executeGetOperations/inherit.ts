@@ -18,6 +18,7 @@ import executeGetOperations, {
 } from './'
 import { FieldSchema, Schema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
+import { deepMerge } from '@saulx/utils'
 
 function makeRealKeys(
   props: GetOptions,
@@ -142,6 +143,106 @@ async function mergeObj(
   )
 
   return Object.assign(result, self)
+}
+
+async function deepMergeObj(
+  client: SelvaClient,
+  op: GetOperationInherit,
+  schema: Schema,
+  lang: string,
+  ctx: ExecContext
+): Promise<GetResult> {
+  const { db } = ctx
+  const remapped: Record<string, string> = {}
+  const props = makeRealKeys(op.props, op.field, true)
+  const fields = Object.keys(props).map((f) => {
+    if (typeof props[f] === 'string') {
+      remapped[<string>props[f]] = f
+      return <string>props[f]
+    }
+
+    return f
+  })
+
+  const field = fields[0]
+
+  const fork: Fork = {
+    isFork: true,
+    $and: [
+      {
+        $operator: 'exists',
+        $field: field,
+      },
+      {
+        isFork: true,
+        $or: op.types.map((t) => {
+          return {
+            $operator: '=',
+            $field: 'type',
+            $value: t,
+          }
+        }),
+      },
+    ],
+  }
+
+  const rpn = ast2rpn(fork)
+
+  if (ctx.subId) {
+    bufferNodeMarker(ctx, op.id, ...fields)
+    const added = await addMarker(client, ctx, {
+      type: 'ancestors',
+      id: op.id,
+      fields,
+      rpn,
+    })
+
+    if (added) {
+      client.redis.selva_subscriptions_refresh(
+        ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        '___selva_hierarchy',
+        ctx.subId
+      )
+      ctx.hasFindMarkers = true
+    }
+  }
+
+  const o = await client.redis.selva_hierarchy_find(
+    ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    '___selva_hierarchy',
+    'bfs',
+    'ancestors',
+    'deepMerge',
+    field,
+    op.id,
+    ...rpn
+  )
+  console.log(
+    '___selva_hierarchy',
+    'bfs',
+    'ancestors',
+    'deepMerge',
+    field,
+    op.id,
+    rpn
+  )
+
+  const result = TYPE_CASTS['object'](o, op.id, field, schema, lang)
+  const self = await executeGetOperation(
+    client,
+    lang,
+    ctx,
+    {
+      type: 'db',
+      id: op.id,
+      field: op.field,
+      sourceField: op.sourceField,
+    },
+    false
+  )
+
+  const total = deepMerge(result, self)
+  return total
 }
 
 async function inheritItem(
@@ -368,6 +469,13 @@ export default async function inherit(
   } else if (op.single) {
     if (op.merge === true && (fs.type === 'object' || fs.type === 'record')) {
       return mergeObj(client, op, schema, lang, ctx)
+    }
+
+    if (
+      op.deepMerge === true &&
+      (fs.type === 'object' || fs.type === 'record')
+    ) {
+      return deepMergeObj(client, op, schema, lang, ctx)
     }
 
     if (ctx.subId) {

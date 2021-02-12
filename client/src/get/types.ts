@@ -29,7 +29,8 @@ export type Inherit =
   | {
       $type?: string | string[]
       $item?: Id | Id[]
-      $merge: boolean
+      $merge?: boolean
+      $deepMerge?: boolean
       $required?: Id | Id[]
     }
 
@@ -168,6 +169,7 @@ export type GetOperationInherit = {
   item?: boolean
   required?: string[]
   merge?: boolean
+  deepMerge?: boolean
 }
 
 export type GetOperation =

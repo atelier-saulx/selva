@@ -23,6 +23,7 @@ export default function validateInherit(
         {
           $type: string | string[] (optional)
           $merge: boolean (optional)
+          $deepMerge: boolean (optional)
         }
     `
     )
@@ -37,12 +38,23 @@ export default function validateInherit(
       err(`$merge should be boolean`)
     }
 
+    if (inherit.$deepMerge && typeof inherit.$deepMerge !== 'boolean') {
+      err(`$deepMerge should be boolean`)
+    }
+
+    if (inherit.$deepMerge && inherit.$merge) {
+      err(`You can only provide one of $merge or $deepMerge in $inherit`)
+    }
+
     if (inherit.$type) {
       if (!Array.isArray(inherit.$type) && typeof inherit.$type !== 'string') {
         err(`Inherit by $type must target a specific type or array of types`)
       }
 
-      const allowed = checkAllowed(inherit, new Set(['$type', '$merge']))
+      const allowed = checkAllowed(
+        inherit,
+        new Set(['$type', '$merge', '$deepMerge'])
+      )
       if (allowed !== true) {
         err(`Field or operator ${allowed} not allowed in inherit with $type`)
       }
@@ -51,7 +63,7 @@ export default function validateInherit(
     } else if (inherit.$item) {
       const allowed = checkAllowed(
         inherit,
-        new Set(['$item', '$required', '$merge'])
+        new Set(['$item', '$required', '$merge', '$deepMerge'])
       )
       if (allowed !== true) {
         err(`Field or operator ${allowed} not allowed in inherit with $type`)
@@ -76,7 +88,16 @@ export default function validateInherit(
       const allowed = checkAllowed(inherit, new Set(['$merge']))
       if (allowed !== true) {
         err(
-          `Field or operator ${allowed} not allowed, only $merge is allowed when no $type, $name or $item specified`
+          `Field or operator ${allowed} not allowed, only $merge or $deepMerge is allowed when no $type, $name or $item specified`
+        )
+      }
+
+      return
+    } else if (inherit.$deepMerge !== undefined) {
+      const allowed = checkAllowed(inherit, new Set(['$deepMerge']))
+      if (allowed !== true) {
+        err(
+          `Field or operator ${allowed} not allowed, only $deepMerge or $merge is allowed when no $type, $name or $item specified`
         )
       }
 

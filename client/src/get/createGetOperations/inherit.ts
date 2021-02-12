@@ -140,6 +140,7 @@ export default function createInheritOperation(
     types,
     single: true,
     merge: inherit.$merge,
+    deepMerge: inherit.$deepMerge,
   })
 
   return
