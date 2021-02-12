@@ -19,6 +19,7 @@ import executeGetOperations, {
 import { FieldSchema, Schema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
 import { deepMerge } from '@saulx/utils'
+import { buildResultFromIdFieldAndValue } from './util'
 
 function makeRealKeys(
   props: GetOptions,
@@ -108,7 +109,7 @@ async function mergeObj(
     }
   }
 
-  const o = await client.redis.selva_hierarchy_find(
+  const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',
     'bfs',
@@ -128,7 +129,15 @@ async function mergeObj(
     rpn
   )
 
-  const result = TYPE_CASTS['object'](o, op.id, field, schema, lang)
+  const o = buildResultFromIdFieldAndValue(
+    ctx,
+    client,
+    remapped,
+    field,
+    res,
+    lang
+  )
+
   const self = await executeGetOperation(
     client,
     lang,
@@ -142,7 +151,7 @@ async function mergeObj(
     false
   )
 
-  return Object.assign(result, self)
+  return Object.assign(o, self)
 }
 
 async function deepMergeObj(
@@ -207,7 +216,7 @@ async function deepMergeObj(
     }
   }
 
-  const o = await client.redis.selva_hierarchy_find(
+  const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',
     'bfs',
@@ -227,7 +236,8 @@ async function deepMergeObj(
     rpn
   )
 
-  const result = TYPE_CASTS['object'](o, op.id, field, schema, lang)
+  const o = buildResultFromIdFieldAndValue(ctx, client, remapped, field, res)
+
   const self = await executeGetOperation(
     client,
     lang,
@@ -241,7 +251,7 @@ async function deepMergeObj(
     false
   )
 
-  const total = deepMerge(result, self)
+  const total = deepMerge(o, self)
   return total
 }
 
@@ -618,22 +628,6 @@ export default async function inherit(
     return typeCast ? typeCast(v, idx, f, client.schemas.default, lang) : v
   }
 
-  const o: GetResult = {}
-  for (let i = 0; i < res.length; i++) {
-    let [idx, f, v] = res[i]
-    const fs = getNestedSchema(schema, idx, f)
-    const typeCast = TYPE_CASTS[fs.type]
-
-    const newV = typeCast
-      ? typeCast(v, idx, f, client.schemas.default, lang)
-      : v
-
-    if (remapped[f]) {
-      f = remapped[f]
-    }
-
-    o[f.slice(op.field.length + 1)] = newV
-  }
-
+  const o = buildResultFromIdFieldAndValue(ctx, client, remapped, op.field, res)
   return o
 }
