@@ -20,6 +20,7 @@ enum merge_strategy {
     MERGE_STRATEGY_NONE = 0, /* No merge. */
     MERGE_STRATEGY_ALL,
     MERGE_STRATEGY_NAMED,
+    MERGE_STRATEGY_DEEP,
 };
 
 enum SelvaModify_Hierarchy_Algo {
@@ -524,6 +525,70 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
     return 0;
 }
 
+static ssize_t send_deep_merge(
+        RedisModuleCtx *ctx,
+        Selva_NodeId nodeId,
+        struct SelvaObject *fields,
+        struct SelvaObject *obj,
+        RedisModuleString *obj_path,
+        size_t *nr_fields_out) {
+    void *iterator;
+    const char *key_name_str;
+
+    /*
+     * Note that the `fields` object is empty in the beginning of the
+     * following loop.
+     */
+    iterator = SelvaObject_ForeachBegin(obj);
+    while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
+        RedisModuleString *key_name;
+        const size_t key_name_len = strlen(key_name_str);
+        RedisModuleString *next_path;
+        enum SelvaObjectType type;
+
+        next_path = RedisModule_CreateStringPrintf(ctx, "%s.%s", obj_path, key_name_str);
+        if (!next_path) {
+            return SELVA_ENOMEM;
+        }
+
+        type = SelvaObject_GetTypeStr(obj, key_name_str, key_name_len);
+        if (type == SELVA_OBJECT_OBJECT) {
+            return send_deep_merge(ctx, nodeId, fields, obj, next_path, nr_fields_out);
+        } else {
+            int err;
+
+            if (!SelvaObject_Exists(fields, next_path)) {
+                continue;
+            }
+
+            key_name = RedisModule_CreateString(ctx, key_name_str, key_name_len);
+            if (!key_name) {
+                return SELVA_ENOMEM;
+            }
+
+            /* Send this key + value. */
+            ++*nr_fields_out;
+            RedisModule_ReplyWithString(ctx, next_path);
+            err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
+            if (err) {
+                TO_STR(obj_path);
+
+                fprintf(stderr, "%s: Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
+                        __FILE__,
+                        obj_path_str,
+                        key_name_str,
+                        (int)SELVA_NODE_ID_SIZE, nodeId);
+                continue;
+            }
+
+            /* Mark the key as sent. */
+            (void)SelvaObject_SetLongLong(fields, next_path, 1);
+        }
+    }
+
+    return 0;
+}
+
 static ssize_t send_node_object_merge(
         RedisModuleCtx *ctx,
         Selva_NodeId nodeId,
@@ -584,15 +649,16 @@ static ssize_t send_node_object_merge(
          */
         iterator = SelvaObject_ForeachBegin(obj);
         while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
-            struct RedisModuleString *key_name;
+            RedisModuleString *key_name;
+            const size_t key_name_len = strlen(key_name_str);
 
-            key_name = RedisModule_CreateStringPrintf(ctx, "%s", key_name_str);
-            if (!key_name) {
-                return SELVA_ENOMEM;
+            if (!SelvaObject_ExistsStr(fields, key_name_str, strlen(key_name_str))) {
+                continue;
             }
 
-            if (!SelvaObject_Exists(fields, key_name)) {
-                continue;
+            key_name = RedisModule_CreateString(ctx, key_name_str, key_name_len);
+            if (!key_name) {
+                return SELVA_ENOMEM;
             }
 
             /* Send this key + value. */
@@ -613,6 +679,14 @@ static ssize_t send_node_object_merge(
             /* Mark the key as sent. */
             (void)SelvaObject_SetLongLong(fields, key_name, 1);
         }
+    } else if (merge_strategy == MERGE_STRATEGY_DEEP) {
+        RedisModuleString *path = RedisModule_CreateString(ctx, "", 0);
+
+        if (!path) {
+            return SELVA_ENOMEM;
+        }
+
+        return send_deep_merge(ctx, nodeId, fields, obj, path, nr_fields_out);
     } else { /* Send named keys from the nested object. */
         void *iterator;
         SVector *vec;
@@ -700,8 +774,10 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
             }
             if (err) {
                 RedisModule_ReplyWithNull(args->ctx);
-                fprintf(stderr, "%s: Failed to handle field(s) of the node: \"%.*s\"",
-                        __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId);
+                fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, nodeId,
+                        getSelvaErrorStr(err));
             }
 
             *nr_nodes = *nr_nodes + 1;
@@ -831,8 +907,10 @@ static size_t FindCommand_PrintOrderedResult(
         }
         if (err) {
             RedisModule_ReplyWithNull(ctx);
-            fprintf(stderr, "%s: Failed to handle field(s) of the node: \"%.*s\"",
-                    __FILE__, (int)SELVA_NODE_ID_SIZE, item->id);
+            fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, item->id,
+                    getSelvaErrorStr(err));
         }
 
         len++;
@@ -977,6 +1055,9 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     enum merge_strategy merge_strategy = MERGE_STRATEGY_NONE;
     RedisModuleString *merge_path = NULL;
     if (argc > (int)ARGV_MERGE_VAL) {
+        /*
+         * Merge all and merge named.
+         */
         err = SelvaArgParser_StrOpt(NULL, "merge", argv[ARGV_MERGE_TXT], argv[ARGV_MERGE_VAL]);
         if (err == 0) {
             if (limit != -1) {
@@ -985,6 +1066,22 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
             merge_path = argv[ARGV_MERGE_VAL];
             merge_strategy = MERGE_STRATEGY_ALL;
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_ENOENT) {
+            return replyWithSelvaErrorf(ctx, err, "merge");
+        }
+
+        /*
+         * Deep merge.
+         */
+        err = SelvaArgParser_StrOpt(NULL, "deepMerge", argv[ARGV_MERGE_TXT], argv[ARGV_MERGE_VAL]);
+        if (err == 0) {
+            if (limit != -1) {
+                return replyWithSelvaErrorf(ctx, err, "merge is not supported with limit");
+            }
+
+            merge_path = argv[ARGV_MERGE_VAL];
+            merge_strategy = MERGE_STRATEGY_DEEP;
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
             return replyWithSelvaErrorf(ctx, err, "merge");
@@ -998,9 +1095,11 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     if (argc > (int)ARGV_FIELDS_VAL) {
 		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
-            if (merge_strategy != MERGE_STRATEGY_NONE) {
-                /* Having fields set turns merge into named merge. */
+            if (merge_strategy == MERGE_STRATEGY_ALL) {
+                /* Having fields set turns a regular merge into a named merge. */
                 merge_strategy = MERGE_STRATEGY_NAMED;
+            } else if (merge_strategy != MERGE_STRATEGY_NONE) {
+                return replyWithSelvaErrorf(ctx, err, "only the regular merge can be used with fields");
             }
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
@@ -1089,8 +1188,8 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
          */
         err = parse_dir(ctx, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
         if (err) {
-            fprintf(stderr, "%s: Error \"%s\" while selecting the field/dir for the node \"%.*s\", skipping\n",
-                    __FILE__,
+            fprintf(stderr, "%s:%d: Error \"%s\" while selecting the field/dir for the node \"%.*s\", skipping\n",
+                    __FILE__, __LINE__,
                     getSelvaErrorStr(err),
                     (int)SELVA_NODE_ID_SIZE, nodeId);
             /* Skip this node */
