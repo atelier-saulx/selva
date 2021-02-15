@@ -1125,7 +1125,7 @@ test.serial('get - $inherit', async (t) => {
   await client.destroy()
 })
 
-test.serial(
+test.serial.only(
   'get - $inherit with object types does shallow merge',
   async (t) => {
     const client = connect({ port })
@@ -1844,65 +1844,85 @@ test.serial('get - $inherit with object types does deep merge', async (t) => {
   client.destroy()
 })
 
-test.serial.only(
-  'get - $inherit with record types does deep merge',
-  async (t) => {
-    const client = connect({ port })
+test.serial('get - $inherit with record types does deep merge', async (t) => {
+  const client = connect({ port })
 
-    const parentOfParent = await client.set({
-      $id: 'vipofp',
-      type: 'lekkerType',
-      title: {
-        en: 'nice!',
-        de: 'dont want to inherit this',
+  const parentOfParent = await client.set({
+    $id: 'vipofp',
+    type: 'lekkerType',
+    title: {
+      en: 'nice!',
+      de: 'dont want to inherit this',
+    },
+    objRec: {
+      a: {
+        hello: 'not this one either',
+        stringValue: 'yes string value',
       },
-      objRec: {
-        a: {
-          hello: 'not this one either',
-          stringValue: 'yes string value',
-        },
-        b: {
-          stringValue: 'inherit please',
-        },
-        c: {
-          hello: 'yes hello from parentOfParent',
-        },
-        0: {
-          hello: 'no',
-          stringValue: 'also no',
-          value: 99,
-        },
+      b: {
+        stringValue: 'inherit please',
       },
-    })
+      c: {
+        hello: 'yes hello from parentOfParent',
+      },
+      0: {
+        hello: 'no',
+        stringValue: 'also no',
+        value: 99,
+      },
+    },
+  })
 
-    const parentEntry = await client.set({
-      $id: 'vip',
-      type: 'lekkerType',
-      title: {
-        en: 'nice!',
-        de: 'dont want to inherit this',
+  const parentEntry = await client.set({
+    $id: 'vip',
+    type: 'lekkerType',
+    title: {
+      en: 'nice!',
+      de: 'dont want to inherit this',
+    },
+    parents: {
+      $add: [parentOfParent],
+    },
+    objRec: {
+      a: {
+        hello: 'not this one',
+        stringValue: 'this should be there',
       },
-      parents: {
-        $add: [parentOfParent],
+      b: {
+        hello: 'yes hello from parent',
+        value: 10,
       },
-      objRec: {
-        a: {
-          hello: 'not this one',
-          stringValue: 'this should be there',
-        },
-        b: {
-          hello: 'yes hello from parent',
-          value: 10,
-        },
-      },
-    })
+    },
+  })
 
-    const entry = await client.set({
-      $id: 'vie',
-      type: 'lekkerType',
-      parents: {
-        $add: [parentEntry],
+  const entry = await client.set({
+    $id: 'vie',
+    type: 'lekkerType',
+    parents: {
+      $add: [parentEntry],
+    },
+    title: {
+      en: 'nice!',
+    },
+    objRec: {
+      0: {
+        hello: 'this is where it starts',
+        stringValue: 'in the entry itself',
       },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: entry,
+      id: true,
+      title: { $inherit: { $type: 'lekkerType', $deepMerge: true } }, // TODO: throw, not allowed probably
+      objRec: { $inherit: { $type: 'lekkerType', $deepMerge: true } },
+      // title: { $inherit: { $type: 'lekkerType', $merge: true } }, // TODO: throw, not allowed probably
+      // objRec: { $inherit: { $type: 'lekkerType', $merge: true } },
+    }),
+    {
+      id: entry,
       title: {
         en: 'nice!',
       },
@@ -1910,48 +1930,25 @@ test.serial.only(
         0: {
           hello: 'this is where it starts',
           stringValue: 'in the entry itself',
+          value: 99,
+        },
+        a: {
+          hello: 'not this one',
+          stringValue: 'this should be there',
+        },
+        b: {
+          hello: 'yes hello from parent',
+          value: 10,
+          stringValue: 'inherit please',
+        },
+        c: {
+          hello: 'yes hello from parentOfParent',
         },
       },
-    })
+    }
+  )
 
-    t.deepEqualIgnoreOrder(
-      await client.get({
-        $id: entry,
-        id: true,
-        title: { $inherit: { $type: 'lekkerType', $deepMerge: true } }, // TODO: throw, not allowed probably
-        objRec: { $inherit: { $type: 'lekkerType', $deepMerge: true } },
-        // title: { $inherit: { $type: 'lekkerType', $merge: true } }, // TODO: throw, not allowed probably
-        // objRec: { $inherit: { $type: 'lekkerType', $merge: true } },
-      }),
-      {
-        id: entry,
-        title: {
-          en: 'nice!',
-        },
-        objRec: {
-          0: {
-            hello: 'this is where it starts',
-            stringValue: 'in the entry itself',
-            value: 99,
-          },
-          a: {
-            hello: 'not this one',
-            stringValue: 'this should be there',
-          },
-          b: {
-            hello: 'yes hello from parent',
-            value: 10,
-            stringValue: 'inherit please',
-          },
-          c: {
-            hello: 'yes hello from parentOfParent',
-          },
-        },
-      }
-    )
+  await client.delete('root')
 
-    await client.delete('root')
-
-    client.destroy()
-  }
-)
+  client.destroy()
+})
