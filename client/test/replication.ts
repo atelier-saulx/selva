@@ -93,13 +93,13 @@ test.serial('verify basic replication', async (t) => {
     rclientReplica.info((err, res) => (err ? reject(err) : resolve(res)))
   )
 
-  // @ts-ignore
   t.assert(
+  // @ts-ignore
     infoOrigin.includes('role:master'),
     'Origin has the correct Redis role'
   )
-  // @ts-ignore
   t.assert(
+  // @ts-ignore
     infoReplica.includes('role:slave'),
     'Replica has the correct Redis role'
   )
