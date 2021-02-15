@@ -545,6 +545,22 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
     return 0;
 }
 
+/**
+ * @param path_str is the prefix.
+ * @param key_name_str is the key name in the current object.
+ */
+static RedisModuleString *format_full_field_path(RedisModuleCtx *ctx, const char *path_str, const char *key_name_str) {
+    RedisModuleString *res;
+
+    if (path_str && path_str[0]) {
+        res = RedisModule_CreateStringPrintf(ctx, "%s.%s", path_str, key_name_str);
+    } else {
+        res = RedisModule_CreateStringPrintf(ctx, "%s", key_name_str);
+    }
+
+    return res;
+}
+
 static ssize_t send_deep_merge(
         RedisModuleCtx *ctx,
         Selva_NodeId nodeId,
@@ -567,11 +583,7 @@ static ssize_t send_deep_merge(
         enum SelvaObjectType type;
         TO_STR(obj_path);
 
-        if (obj_path_str[0]) {
-            next_path = RedisModule_CreateStringPrintf(ctx, "%s.%s", obj_path_str, key_name_str);
-        } else {
-            next_path = RedisModule_CreateStringPrintf(ctx, "%s", key_name_str);
-        }
+        next_path = format_full_field_path(ctx, obj_path_str, key_name_str);
         if (!next_path) {
             return SELVA_ENOMEM;
         }
@@ -642,6 +654,7 @@ static ssize_t send_node_object_merge(
         struct SelvaObject *fields,
         size_t *nr_fields_out) {
     RedisModuleString *id;
+    TO_STR(obj_path);
     int err;
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
@@ -694,14 +707,13 @@ static ssize_t send_node_object_merge(
          */
         iterator = SelvaObject_ForeachBegin(obj);
         while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
-            RedisModuleString *key_name;
             const size_t key_name_len = strlen(key_name_str);
-
 
             if (!SelvaObject_ExistsStr(fields, key_name_str, strlen(key_name_str))) {
                 continue;
             }
 
+            RedisModuleString *key_name;
             key_name = RedisModule_CreateString(ctx, key_name_str, key_name_len);
             if (!key_name) {
                 return SELVA_ENOMEM;
@@ -709,13 +721,21 @@ static ssize_t send_node_object_merge(
 
             ++*nr_fields_out;
 
+            RedisModuleString *full_field_path;
+            full_field_path = format_full_field_path(ctx, obj_path_str, key_name_str);
+            if (!full_field_path) {
+                fprintf(stderr, "%s:%d: Out of memory\n", __FILE__, __LINE__);
+                replyWithSelvaError(ctx, SELVA_ENOMEM);
+                continue;
+            }
+
             /*
              * Start a new array reply:
              * [node_id, field_name, field_value]
              */
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
-            RedisModule_ReplyWithString(ctx, key_name);
+            RedisModule_ReplyWithString(ctx, full_field_path);
             err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
             if (err) {
                 TO_STR(obj_path);
@@ -749,13 +769,21 @@ static ssize_t send_node_object_merge(
 
                 ++*nr_fields_out;
 
+                RedisModuleString *full_field_path;
+                full_field_path = format_full_field_path(ctx, obj_path_str, RedisModule_StringPtrLen(field, NULL));
+                if (!full_field_path) {
+                    fprintf(stderr, "%s:%d: Out of memory\n", __FILE__, __LINE__);
+                    replyWithSelvaError(ctx, SELVA_ENOMEM);
+                    continue;
+                }
+
                 /*
                  * Start a new array reply:
                  * [node_id, field_name, field_value]
                  */
                 RedisModule_ReplyWithArray(ctx, 3);
                 RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
-                RedisModule_ReplyWithString(ctx, field);
+                RedisModule_ReplyWithString(ctx, full_field_path);
                 err = SelvaObject_ReplyWithObject(ctx, obj, field);
                 if (err) {
                     TO_STR(field);
