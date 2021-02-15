@@ -746,7 +746,7 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(rpn_ctx, args->filter, &take);
+        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
         if (err) {
             fprintf(stderr, "%s: Expression failed (node: \"%.*s\"): \"%s\"\n",
                     __FILE__,
@@ -824,7 +824,7 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(rpn_ctx, args->filter, &take);
+        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
         if (err) {
             fprintf(stderr, "%s: Expression failed (node: \"%.*s\"): \"%s\"\n",
                     __FILE__,
@@ -1124,7 +1124,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         const char *input;
         size_t input_len;
 
-        rpn_ctx = rpn_init(ctx, nr_reg);
+        rpn_ctx = rpn_init(nr_reg);
         if (!rpn_ctx) {
             return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
         }
@@ -1365,7 +1365,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     }
 
     size_t nr_reg = argc - ARGV_FILTER_ARGS + 1;
-    struct rpn_ctx *rpn_ctx = rpn_init(ctx, nr_reg);
+    struct rpn_ctx *rpn_ctx = rpn_init(nr_reg);
     if (!rpn_ctx) {
         return replyWithSelvaError(ctx, SELVA_ENOMEM);
     }

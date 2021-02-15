@@ -436,7 +436,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     struct SelvaModify_HierarchyMetadata *metadata;
 
     metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
-    SelvaSubscriptions_FieldChangePrecheck(hierarchy, nodeId, metadata);
+    SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, nodeId, metadata);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
         SelvaNode_ClearFields(ctx, obj);
@@ -540,9 +540,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
 
             err = SelvaObject_SetString(obj, field, value);
-            if (!err) {
-                RedisModule_RetainString(ctx, value);
-            } /* TODO Handle errors */
+            if (err) {
+                replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                continue;
+            }
+            RedisModule_RetainString(ctx, value);
         } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
                    type_code == SELVA_MODIFY_ARG_LONGLONG) {
             if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG && old_type != SELVA_OBJECT_NULL) {
@@ -614,7 +616,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         set_replset(&repl_set, i / 3 - 1);
 
         if (publish) {
-            SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, nodeId, metadata, field_str);
+            SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, nodeId, metadata, field_str);
         }
 
         RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
@@ -679,13 +681,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             if (FISSET_CREATED_AT(flags)) {
                 SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, now);
             }
-            Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
+            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
         } else {
             /*
              * If nodeId wasn't created by this command call then it was an
              * update.
              */
-            Selva_Subscriptions_DeferTriggerEvents(hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
+            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
         }
     }
     SelvaSubscriptions_SendDeferredEvents(hierarchy);

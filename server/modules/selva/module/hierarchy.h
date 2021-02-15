@@ -222,6 +222,7 @@ int SelvaModify_AddHierarchy(
  *                  the listed children.
  */
 int SelvaModify_DelHierarchy(
+        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,

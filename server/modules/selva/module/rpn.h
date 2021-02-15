@@ -25,7 +25,6 @@ struct RedisModuleString;
 struct rpn_ctx {
     int depth;
     int nr_reg;
-    struct RedisModuleCtx *redis_ctx;
     struct RedisModuleKey *redis_hkey; /*!< Redis hash key of the current node. */
     struct SelvaObject *obj; /*!< Selva object of the current node. */
     struct RedisModuleString *rms_id;  /*!< This holds the id of redis_hkey. */
@@ -43,13 +42,13 @@ typedef char rpn_token[RPN_MAX_TOKEN_SIZE];
 
 extern const char *rpn_str_error[11];
 
-struct rpn_ctx *rpn_init(struct RedisModuleCtx *redis_ctx, int nr_reg);
+struct rpn_ctx *rpn_init(int nr_reg);
 void rpn_destroy(struct rpn_ctx *ctx);
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags);
 enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
 rpn_token *rpn_compile(const char *input, size_t len);
-enum rpn_error rpn_bool(struct rpn_ctx *ctx, const rpn_token *expr, int *out);
-enum rpn_error rpn_double(struct rpn_ctx *ctx, const rpn_token *expr, double *out);
-enum rpn_error rpn_integer(struct rpn_ctx *ctx, const rpn_token *expr, long long *out);
+enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, int *out);
+enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, double *out);
+enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, long long *out);
 
 #endif /* _MODIFY_RPN_H_ */
