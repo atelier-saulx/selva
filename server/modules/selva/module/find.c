@@ -1253,6 +1253,9 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
 out:
     if (rpn_ctx) {
+#if MEM_DEBUG
+        memset(filter_expression, 0, sizeof(*filter_expression));
+#endif
         RedisModule_Free(filter_expression);
         rpn_destroy(rpn_ctx);
     }
@@ -1441,6 +1444,9 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
 out:
     rpn_destroy(rpn_ctx);
+#if MEM_DEBUG
+    memset(filter_expression, 0, sizeof(*filter_expression));
+#endif
     RedisModule_Free(filter_expression);
 
     return REDISMODULE_OK;

@@ -3,6 +3,17 @@
 #define SELVA_TUNABLES
 
 /*
+ * Generic tunables.
+ */
+
+/**
+ * Debug memory usage.
+ * 0 or undefined = Nothing
+ * 1 = Clear memory areas before freeing
+ */
+#define MEM_DEBUG 1
+
+/*
  * SVector tunables.
  */
 

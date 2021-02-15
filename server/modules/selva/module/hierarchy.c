@@ -134,13 +134,18 @@ static inline void RMString2NodeId(Selva_NodeId nodeId, RedisModuleString *rmStr
 }
 
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
-    SelvaModify_Hierarchy *hierarchy = RedisModule_Calloc(1, sizeof(SelvaModify_Hierarchy));
+    SelvaModify_Hierarchy *hierarchy;
+
+    hierarchy = RedisModule_Calloc(1, sizeof(*hierarchy));
     if (unlikely(!hierarchy)) {
         goto fail;
     }
 
     RB_INIT(&hierarchy->index_head);
     if (unlikely(!SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare))) {
+#if MEM_DEBUG
+        memset(hierarchy, 0, sizeof(*hierarchy));
+#endif
         RedisModule_Free(hierarchy);
         hierarchy = NULL;
         goto fail;
@@ -191,6 +196,9 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
     SelvaSubscriptions_DestroyAll(hierarchy);
 
     SVector_Destroy(&hierarchy->heads);
+#if MEM_DEBUG
+    memset(hierarchy, 0, sizeof(*hierarchy));
+#endif
     RedisModule_Free(hierarchy);
 }
 
@@ -321,6 +329,9 @@ static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
 
     SVector_Destroy(&node->parents);
     SVector_Destroy(&node->children);
+#if MEM_DEBUG
+    memset(node, 0, sizeof(*node));
+#endif
     RedisModule_Free(node);
 }
 

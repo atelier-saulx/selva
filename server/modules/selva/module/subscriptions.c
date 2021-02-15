@@ -204,6 +204,17 @@ static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct Selv
  */
 static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
     rpn_destroy(marker->filter_ctx);
+#if MEM_DEBUG
+    if (marker->filter_expression) {
+        memset(marker->filter_expression, 0, sizeof(*marker->filter_expression));
+    }
+    if (marker->fields) {
+        memset(marker->fields, 0, sizeof(*marker->fields));
+    }
+    if (marker) {
+        memset(marker, 0, sizeof(*marker));
+    }
+#endif
     RedisModule_Free(marker->filter_expression);
     RedisModule_Free(marker->fields);
     RedisModule_Free(marker);
@@ -280,6 +291,9 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
 
     RB_REMOVE(hierarchy_subscriptions_tree, &hierarchy->subs.head, sub);
     SVector_Destroy(&sub->markers);
+#if MEM_DEBUG
+    memset(sub, 0, sizeof(*sub));
+#endif
     RedisModule_Free(sub);
 }
 
