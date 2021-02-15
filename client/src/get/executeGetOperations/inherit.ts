@@ -119,6 +119,7 @@ async function mergeObj(
     op.id,
     ...rpn
   )
+  console.log('RESSS', res)
   console.log(
     '___selva_hierarchy',
     'bfs',

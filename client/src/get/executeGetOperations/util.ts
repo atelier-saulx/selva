@@ -11,21 +11,19 @@ export function buildResultFromIdFieldAndValue(
   res: string[],
   lang?: string
 ): GetResult {
-  console.log('HMM RES', res)
   const o: GetResult = {}
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
-    console.log('HMM DOING', idx, f, v)
 
+    console.log('HMM', idx, f, v, res[i])
     const newV = typeCast(v, idx, f, client.schemas[ctx.db], lang)
 
     if (remapped[f]) {
       f = remapped[f]
     }
 
-    setNestedResult(o, f, newV)
+    setNestedResult(o, f.slice(field.length + 1), newV)
   }
 
-  console.log('O', o)
   return o
 }
