@@ -1125,7 +1125,7 @@ test.serial('get - $inherit', async (t) => {
   await client.destroy()
 })
 
-test.serial.only(
+test.serial(
   'get - $inherit with object types does shallow merge',
   async (t) => {
     const client = connect({ port })
