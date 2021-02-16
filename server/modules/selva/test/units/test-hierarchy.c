@@ -756,7 +756,7 @@ static char * test_del_1(void)
     pu_assert_equal("depth of e is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_e"), 0);
 #endif
 
-    SelvaModify_DelHierarchy(hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_DelHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
 
     /* descendants of b */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_b" }), &findRes);
@@ -820,7 +820,7 @@ static char * test_del_2(void)
     pu_assert_equal("depth of e is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_e"), 0);
 #endif
 
-    SelvaModify_DelHierarchy(hierarchy, "grphnode_a", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_c" }));
+    SelvaModify_DelHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_c" }));
 
     /* ancestors of c */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);

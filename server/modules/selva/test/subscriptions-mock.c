@@ -48,6 +48,7 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy 
 }
 
 void SelvaSubscriptions_DeferFieldChangeEvents(
+        struct RedisModuleCtx *redis_ctx __unused,
         struct SelvaModify_Hierarchy *hierarchy __unused,
         const Selva_NodeId node_id __unused,
         const struct SelvaModify_HierarchyMetadata *metadata __unused,
@@ -69,7 +70,11 @@ void SelvaSubscriptions_DeferHierarchyDeletionEvents(
     return;
 }
 
-void Selva_Subscriptions_DeferTriggerEvents(struct SelvaModify_Hierarchy *hierarchy, Selva_NodeId node_id, enum Selva_SubscriptionTriggerType event_type) {
+void Selva_Subscriptions_DeferTriggerEvents(
+        struct RedisModuleCtx *redis_ctx __unused,
+        struct SelvaModify_Hierarchy *hierarchy,
+        Selva_NodeId node_id,
+        enum Selva_SubscriptionTriggerType event_type) {
     return;
 }
 

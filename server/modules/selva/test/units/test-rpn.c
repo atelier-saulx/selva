@@ -12,7 +12,7 @@ const int nr_reg = 10;
 static void setup(void)
 {
     reg = RedisModule_Calloc(nr_reg, sizeof(char *));
-    ctx = rpn_init(NULL, nr_reg);
+    ctx = rpn_init( nr_reg);
 }
 
 static void teardown(void)
@@ -38,7 +38,7 @@ static char * test_add(void)
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
 
-    err = rpn_integer(ctx, expr, &res);
+    err = rpn_integer(NULL, ctx, expr, &res);
 
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 + 1", res, 2);
@@ -56,7 +56,7 @@ static char * test_add_double(void)
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
 
-    err = rpn_double(ctx, expr, &res);
+    err = rpn_double(NULL, ctx, expr, &res);
 
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1.5 + 0.4", res, 1.9);
@@ -74,7 +74,7 @@ static char * test_rem(void)
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
 
-    err = rpn_integer(ctx, expr, &res);
+    err = rpn_integer(NULL, ctx, expr, &res);
 
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("42 % 8", res, 2);
@@ -94,13 +94,13 @@ static char * test_necessarily(void)
 
     err = rpn_set_reg(ctx, 1, "0", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
-    err = rpn_integer(ctx, expr, &res);
+    err = rpn_integer(NULL, ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("necess(0) || 1 == false", res, 0);
 
     err = rpn_set_reg(ctx, 1, "1", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
-    err = rpn_integer(ctx, expr, &res);
+    err = rpn_integer(NULL, ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("necess(1) || 1 == true", res, 1);
 
@@ -119,25 +119,25 @@ static char * test_range(void)
 
     err = rpn_set_reg(ctx, 1, "0", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
-    err = rpn_integer(ctx, expr, &res);
+    err = rpn_integer(NULL, ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 <= 0 <= 10 == false", res, 0);
 
     err = rpn_set_reg(ctx, 1, "1", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
-    err = rpn_integer(ctx, expr, &res);
+    err = rpn_integer(NULL, ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 <= 1 <= 10 == true", res, 1);
 
     err = rpn_set_reg(ctx, 1, "10", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
-    err = rpn_integer(ctx, expr, &res);
+    err = rpn_integer(NULL, ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 <= 10 <= 10 == true", res, 1);
 
     err = rpn_set_reg(ctx, 1, "11", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
-    err = rpn_integer(ctx, expr, &res);
+    err = rpn_integer(NULL, ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("1 <= 11 <= 10 == false", res, 0);
 
