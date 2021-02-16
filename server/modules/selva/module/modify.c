@@ -187,7 +187,7 @@ static int add_set_values(
                 /* Add to the global aliases hash. */
                 if (alias_key) {
                     Selva_NodeId node_id;
-                    TO_STR(id);
+                    TO_STR(id)
 
                     Selva_NodeIdCpy(node_id, id_str);
                     Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
@@ -444,7 +444,7 @@ static int update_set(
     RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
-    TO_STR(field);
+    TO_STR(field)
     RedisModuleKey *alias_key = NULL;
     int res = 0;
 
@@ -503,7 +503,7 @@ int SelvaModify_ModifySet(
     struct SelvaModify_OpSet *setOpts
 ) {
     const int is_reference = setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE;
-    TO_STR(id, field);
+    TO_STR(id, field)
     int res = 0; /* TODO This should always reflect the number of changes made. */
 
     if (setOpts->delete_all) {
@@ -620,7 +620,7 @@ int SelvaModify_ModifyDel(
     RedisModuleString *id,
     RedisModuleString *field
 ) {
-    TO_STR(id, field);
+    TO_STR(id, field)
     int err = 0;
 
     if (!strcmp(field_str, "children")) {

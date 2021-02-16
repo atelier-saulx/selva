@@ -21,8 +21,7 @@ int SelvaSVectorComparator_NodeId(const void ** restrict ap, const void ** restr
 int SelvaSVectorComparator_RMS(const void ** restrict ap, const void ** restrict bp) {
     const RedisModuleString *a = *(RedisModuleString **)ap;
     const RedisModuleString *b = *(RedisModuleString **)bp;
-    TO_STR(a);
-    TO_STR(b);
+    TO_STR(a, b)
 
     const ssize_t len_diff = a_len - b_len;
     if (len_diff != 0) {

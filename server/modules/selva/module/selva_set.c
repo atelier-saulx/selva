@@ -8,7 +8,7 @@
 int SelvaSet_CompareRms(struct SelvaSetElement *a, struct SelvaSetElement *b) {
     RedisModuleString *ra = a->value_rms;
     RedisModuleString *rb = b->value_rms;
-    TO_STR(ra, rb);
+    TO_STR(ra, rb)
 
     if (ra_len < rb_len) {
         return -1;

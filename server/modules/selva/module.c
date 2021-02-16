@@ -193,7 +193,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, RedisModuleString *id) {
-    TO_STR(id);
+    TO_STR(id)
 
     id_str = RedisModule_StringPtrLen(id, &id_len);
     memset(nodeId, '\0', SELVA_NODE_ID_SIZE);
@@ -215,7 +215,7 @@ static const char *sztok(const char *s, size_t size, size_t * restrict i) {
 }
 
 static int parse_flags(RedisModuleString *arg) {
-    TO_STR(arg);
+    TO_STR(arg)
     int flags = 0;
 
     for (size_t i = 0; i < arg_len; i++) {
@@ -237,7 +237,7 @@ static int in_mem_range(const void *p, const void *start, size_t size) {
 }
 
 static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, struct RedisModuleString *data) {
-    TO_STR(data);
+    TO_STR(data)
     struct SelvaModify_OpSet *op;
 
     if (!data_str && data_len < sizeof(struct SelvaModify_OpSet)) {
@@ -275,7 +275,7 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
         RedisModuleString *field = argv[i + 1];
         RedisModuleString *value = argv[i + 2];
 
-        TO_STR(type, field, value);
+        TO_STR(type, field, value)
         char type_code = type_str[0];
 
         if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY && !strcmp(field_str, "$alias")) {
@@ -428,7 +428,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     err = SelvaObject_Key2Obj(id_key, &obj);
     if (err) {
-        TO_STR(id);
+        TO_STR(id)
 
         replyWithSelvaErrorf(ctx, err, "Failed to open the object for id: \"%s\"", id_str);
     }
@@ -468,7 +468,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModuleString *field = argv[i + 1];
         RedisModuleString *value = argv[i + 2];
 
-        TO_STR(type, field, value);
+        TO_STR(type, field, value)
         /* [0] always points to a valid char in RM_String. */
         const char type_code = type_str[0];
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
@@ -514,7 +514,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
             err = SelvaModify_ModifyDel(ctx, hierarchy, obj, id, field);
             if (err) {
-                TO_STR(field);
+                TO_STR(field)
                 char err_msg[120];
 
                 snprintf(err_msg, sizeof(err_msg), "%s; Failed to delete the field: \"%s\"", getSelvaErrorStr(err), field_str);
@@ -531,7 +531,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             RedisModuleString *old_value;
             if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetString(obj, field, &old_value)) {
-                TO_STR(old_value);
+                TO_STR(old_value)
 
                 if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
                     RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -558,7 +558,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
 
-            TO_STR(value);
+            TO_STR(value)
             union {
                 char s[sizeof(long long)];
                 long long ll;
@@ -589,7 +589,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
 
-            TO_STR(value);
+            TO_STR(value)
             union {
                 char s[sizeof(double)];
                 double d;

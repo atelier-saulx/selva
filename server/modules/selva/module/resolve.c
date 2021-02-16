@@ -30,7 +30,7 @@ int SelvaResolve_NodeId(
 
     for (size_t i = 0; i < nr_ids; i++) {
         RedisModuleString *id = ids[i];
-        TO_STR(id);
+        TO_STR(id)
 
         /* First check if it's a nodeId. */
         if (id_len <= SELVA_NODE_ID_SIZE) {
@@ -52,7 +52,7 @@ int SelvaResolve_NodeId(
         RedisModuleString *orig = NULL;
         if (!RedisModule_HashGet(aliases_key, REDISMODULE_HASH_NONE, id, &orig, NULL)) {
             if (orig) {
-                TO_STR(orig);
+                TO_STR(orig)
 
                 Selva_NodeIdCpy(node_id, orig_str);
                 if (SelvaModify_HierarchyNodeExists(hierarchy, node_id)) {
@@ -110,7 +110,7 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     RedisModuleString *argv_sub_id = argv[ARGV_SUB_ID];
-    TO_STR(argv_sub_id);
+    TO_STR(argv_sub_id)
 
     if ((resolved & SELVA_RESOLVE_ALIAS) && argv_sub_id_len > 0) {
         RedisModuleString *alias_name = argv[ARGV_IDS + (resolved & ~SELVA_RESOLVE_FLAGS)];

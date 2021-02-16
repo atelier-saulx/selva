@@ -8,7 +8,7 @@
 #include "selva_object.h"
 
 int SelvaArgParser_IntOpt(ssize_t *value, const char *name, RedisModuleString *txt, RedisModuleString *num) {
-    TO_STR(txt, num);
+    TO_STR(txt, num)
     char *end = NULL;
 
     if (strcmp(name, txt_str)) {
@@ -24,7 +24,7 @@ int SelvaArgParser_IntOpt(ssize_t *value, const char *name, RedisModuleString *t
 }
 
 int SelvaArgParser_StrOpt(const char **value, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val) {
-    TO_STR(arg_key, arg_val);
+    TO_STR(arg_key, arg_val)
 
     if(strcmp(name, arg_key_str)) {
         return SELVA_ENOENT;
@@ -191,7 +191,7 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
 
 int SelvaArgParser_Enum(const struct SelvaArgParser_EnumType types[], RedisModuleString *arg) {
     size_t i = 0;
-    TO_STR(arg);
+    TO_STR(arg)
 
     while (types[i].name) {
         if (!strcmp(types[i].name, arg_str)) {
@@ -213,7 +213,7 @@ void SelvaArgParser_NodeId(Selva_NodeId node_id, RedisModuleString *arg) {
 }
 
 int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, RedisModuleString *arg) {
-    TO_STR(arg);
+    TO_STR(arg)
 
     if (arg_len != SELVA_SUBSCRIPTION_ID_STR_LEN) {
         return SELVA_SUBSCRIPTIONS_EINVAL;

@@ -1283,7 +1283,7 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarc
 }
 
 static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, RedisModuleString *arg) {
-    TO_STR(arg);
+    TO_STR(arg)
 
     if (!strcmp("none", arg_str)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_NONE;

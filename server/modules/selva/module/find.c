@@ -124,7 +124,7 @@ static int parse_order(
         RedisModuleString *txt,
         RedisModuleString *fld,
         RedisModuleString *ord) {
-    TO_STR(txt, fld, ord);
+    TO_STR(txt, fld, ord)
     enum hierarchy_result_order tmpOrder;
 
     if (strcmp("order", txt_str)) {
@@ -406,7 +406,7 @@ static int fields_contains(struct SelvaObject *fields, const char *field_name_st
 
         SVector_ForeachBegin(&it, vec);
         while ((s = SVector_Foreach(&it))) {
-            TO_STR(s);
+            TO_STR(s)
 
             if (s_len == field_name_len && !strcmp(s_str, field_name_str)) {
                 return 1;
@@ -484,7 +484,7 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
 
             SVector_ForeachBegin(&it, vec);
             while ((field = SVector_Foreach(&it))) {
-                TO_STR(field);
+                TO_STR(field)
 
                 if (!strcmp(field_str, "ancestors")) {
                     RedisModule_ReplyWithString(ctx, field);
@@ -581,7 +581,7 @@ static ssize_t send_deep_merge(
         const size_t key_name_len = strlen(key_name_str);
         RedisModuleString *next_path;
         enum SelvaObjectType type;
-        TO_STR(obj_path);
+        TO_STR(obj_path)
 
         next_path = format_full_field_path(ctx, obj_path_str, key_name_str);
         if (!next_path) {
@@ -628,7 +628,7 @@ static ssize_t send_deep_merge(
             RedisModule_ReplyWithString(ctx, next_path);
             err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
             if (err) {
-                TO_STR(obj_path);
+                TO_STR(obj_path)
 
                 fprintf(stderr, "%s: Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
                         __FILE__,
@@ -654,7 +654,7 @@ static ssize_t send_node_object_merge(
         struct SelvaObject *fields,
         size_t *nr_fields_out) {
     RedisModuleString *id;
-    TO_STR(obj_path);
+    TO_STR(obj_path)
     int err;
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
@@ -738,7 +738,7 @@ static ssize_t send_node_object_merge(
             RedisModule_ReplyWithString(ctx, full_field_path);
             err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
             if (err) {
-                TO_STR(obj_path);
+                TO_STR(obj_path)
 
                 fprintf(stderr, "%s: Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
                         __FILE__,
@@ -786,7 +786,7 @@ static ssize_t send_node_object_merge(
                 RedisModule_ReplyWithString(ctx, full_field_path);
                 err = SelvaObject_ReplyWithObject(ctx, obj, field);
                 if (err) {
-                    TO_STR(field);
+                    TO_STR(field)
 
                     fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
                             __FILE__,
@@ -1223,7 +1223,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     RedisModuleString *ids = argv[ARGV_NODE_IDS];
-    TO_STR(ids);
+    TO_STR(ids)
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
         if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
@@ -1289,7 +1289,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         }
 
         if (dir == SELVA_HIERARCHY_TRAVERSAL_REF && ref_field) {
-            TO_STR(ref_field);
+            TO_STR(ref_field)
 
             err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, &cb);
         } else {
@@ -1435,7 +1435,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
     RedisModuleString *ids = argv[ARGV_NODE_IDS];
     RedisModuleString *filter = argv[ARGV_FILTER_EXPR];
-    TO_STR(ids, filter);
+    TO_STR(ids, filter)
 
     /*
      * Compile the filter expression.

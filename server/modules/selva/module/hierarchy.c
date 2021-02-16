@@ -1457,7 +1457,7 @@ static int traverse_ref(
         RedisModuleString *value = el->value_rms;
         Selva_NodeId nodeId;
         SelvaModify_HierarchyNode *node;
-        TO_STR(value);
+        TO_STR(value)
 
         memset(nodeId, 0, SELVA_NODE_ID_SIZE);
         memcpy(nodeId, value_str, min(value_len, SELVA_NODE_ID_SIZE));

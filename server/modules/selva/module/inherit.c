@@ -44,7 +44,8 @@ static int send_object_field_value(RedisModuleCtx *ctx, struct SelvaObject *obj,
 
         err = SelvaObject_ReplyWithObject(ctx, obj, field);
         if (err) {
-            TO_STR(field);
+            TO_STR(field)
+
             (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
         }
     }
@@ -161,7 +162,7 @@ size_t inheritHierarchyFields(
 
     for (size_t i = 0; i < nr_field_names; i++) {
         RedisModuleString *field_name = field_names[i];
-        TO_STR(field_name);
+        TO_STR(field_name)
 
         err = 1; /* This value will help us know if something matched. */
 
