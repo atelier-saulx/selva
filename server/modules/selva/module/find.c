@@ -1141,25 +1141,13 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
                 return replyWithSelvaErrorf(ctx, err, "invalid merge argument");
             }
 
-            merge_strategy = err;
-            merge_path = argv[ARGV_MERGE_VAL];
-            SHIFT_ARGS(2);
-        }
-
-        /*
-         * Deep merge.
-         */
-        err = SelvaArgParser_StrOpt(NULL, "deepMerge", argv[ARGV_MERGE_TXT], argv[ARGV_MERGE_VAL]);
-        if (err == 0) {
             if (limit != -1) {
                 return replyWithSelvaErrorf(ctx, err, "merge is not supported with limit");
             }
 
+            merge_strategy = err;
             merge_path = argv[ARGV_MERGE_VAL];
-            merge_strategy = MERGE_STRATEGY_DEEP;
             SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "merge");
         }
     }
 
