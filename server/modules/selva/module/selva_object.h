@@ -92,6 +92,6 @@ const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
 /*
  * Send a SelvaObject as a Redis reply.
  */
-int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, RedisModuleString *key_name);
+int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, const RedisModuleString *key_name);
 
 #endif /* SELVA_OBJECT */

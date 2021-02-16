@@ -1257,7 +1257,7 @@ static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
-int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, RedisModuleString *key_name) {
+int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, const RedisModuleString *key_name) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1476,10 +1476,14 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     ssize_t len;
 
     len = SelvaObject_Len(obj, argv[ARGV_OKEY]);
-    if (len == SELVA_EINTYPE) {
-        return replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "key type not supported");
-    } else if (len < 0) {
-        return replyWithSelvaError(ctx, len);
+    if (len < 0) {
+        int err = (int)len;
+
+        if (err == SELVA_EINTYPE) {
+            return replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "key type not supported");
+        } else {
+            return replyWithSelvaError(ctx, err);
+        }
     }
 
     return REDISMODULE_OK;
