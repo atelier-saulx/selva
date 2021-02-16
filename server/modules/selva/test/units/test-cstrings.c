@@ -163,6 +163,18 @@ static char * test_broken_list2(void)
     return NULL;
 }
 
+static char * test_empty_field(void)
+{
+    const char *list = "abc\ntitle\ndef";
+    const char *field = "";
+    int match;
+
+    match = field_matcher(list, field);
+    pu_assert_equal("no match", match, 0);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_simple_match, PU_RUN);
@@ -176,4 +188,5 @@ void all_tests(void)
     pu_def_test(test_sub_list_no_match_inverse2, PU_RUN);
     pu_def_test(test_broken_list1, PU_RUN);
     pu_def_test(test_broken_list2, PU_SKIP); /* TODO This is currently failing but it's not a big deal */
+    pu_def_test(test_empty_field, PU_RUN);
 }

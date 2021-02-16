@@ -35,6 +35,10 @@ int stringlist_search(const char *list, const char *str) {
 int stringlist_searchn(const char *list, const char *str, size_t n) {
 	const char *s1 = list;
 
+    if (!str || str[0] == '\0' || n == 0) {
+        return 0;
+    }
+
 	while (*s1 != '\0') {
 		ssize_t i = n;
 		const char *s2 = str;
