@@ -982,7 +982,7 @@ enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char 
     return type;
 }
 
-enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, RedisModuleString *key_name) {
+enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const RedisModuleString *key_name) {
     TO_STR(key_name)
 
     if (unlikely(!key_name_str)) {
@@ -1300,7 +1300,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     }
 
     for (size_t i = ARGV_OKEY; i < (size_t)argc; i++) {
-        RedisModuleString *okey = argv[i];
+        const RedisModuleString *okey = argv[i];
         TO_STR(okey)
         int err;
 
@@ -1411,8 +1411,9 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     }
 
     enum SelvaObjectType type = SELVA_OBJECT_NULL;
-    RedisModuleString *okey = argv[ARGV_OKEY];
+    const RedisModuleString *okey = argv[ARGV_OKEY];
     TO_STR(okey)
+
     err = get_key(obj, okey_str, okey_len, 0, &key);
     if (!err) {
         type = key->type;
@@ -1505,11 +1506,8 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
 
     const size_t obj_size = RedisModule_LoadUnsigned(io);
     for (size_t i = 0; i < obj_size; i++) {
-        RedisModuleString *name;
-        enum SelvaObjectType type;
-
-        name = RedisModule_LoadString(io);
-        type = RedisModule_LoadUnsigned(io);
+        RedisModuleString *name = RedisModule_LoadString(io);
+        const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
 
         switch (type) {
         case SELVA_OBJECT_NULL:
@@ -1543,10 +1541,9 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
             break;
         case SELVA_OBJECT_STRING:
             {
-                RedisModuleString *value;
+                RedisModuleString *value = RedisModule_LoadString(io);
                 int err;
 
-                value = RedisModule_LoadString(io);
                 err = SelvaObject_SetString(obj, name, value);
                 if (err) {
                     RedisModule_LogIOError(io, "warning", "Error while loading a string");

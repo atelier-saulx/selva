@@ -68,7 +68,7 @@ int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str,
 int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p);
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p);
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
-enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, struct RedisModuleString *key_name);
+enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct RedisModuleString *key_name);
 int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *key_name, double value);
 int SelvaObject_RemLongLongSet(struct SelvaObject *obj, const RedisModuleString *key_name, long long value);
 int SelvaObject_RemStringSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
