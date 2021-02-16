@@ -98,11 +98,11 @@ static int update_hierarchy(
             const size_t nr_nodes = setOpts->$delete_len / SELVA_NODE_ID_SIZE;
 
             if (isFieldParents) { /* parents */
-                err = SelvaModify_DelHierarchy(hierarchy, node_id,
+                err = SelvaModify_DelHierarchy(ctx, hierarchy, node_id,
                         nr_nodes, (const Selva_NodeId *)setOpts->$delete,
                         0, NULL);
             } else { /* children */
-                err = SelvaModify_DelHierarchy(hierarchy, node_id,
+                err = SelvaModify_DelHierarchy(ctx, hierarchy, node_id,
                         0, NULL,
                         nr_nodes, (const Selva_NodeId *)setOpts->$delete);
             }

@@ -826,7 +826,7 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(rpn_ctx, args->filter, &take);
+        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
         if (err) {
             fprintf(stderr, "%s: Expression failed (node: \"%.*s\"): \"%s\"\n",
                     __FILE__,
@@ -904,7 +904,7 @@ static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaM
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(rpn_ctx, args->filter, &take);
+        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
         if (err) {
             fprintf(stderr, "%s: Expression failed (node: \"%.*s\"): \"%s\"\n",
                     __FILE__,
@@ -1145,6 +1145,22 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
             merge_path = argv[ARGV_MERGE_VAL];
             SHIFT_ARGS(2);
         }
+
+        /*
+         * Deep merge.
+         */
+        err = SelvaArgParser_StrOpt(NULL, "deepMerge", argv[ARGV_MERGE_TXT], argv[ARGV_MERGE_VAL]);
+        if (err == 0) {
+            if (limit != -1) {
+                return replyWithSelvaErrorf(ctx, err, "merge is not supported with limit");
+            }
+
+            merge_path = argv[ARGV_MERGE_VAL];
+            merge_strategy = MERGE_STRATEGY_DEEP;
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_ENOENT) {
+            return replyWithSelvaErrorf(ctx, err, "merge");
+        }
     }
 
     /*
@@ -1183,7 +1199,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         const char *input;
         size_t input_len;
 
-        rpn_ctx = rpn_init(ctx, nr_reg);
+        rpn_ctx = rpn_init(nr_reg);
         if (!rpn_ctx) {
             return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
         }
@@ -1312,6 +1328,9 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
 out:
     if (rpn_ctx) {
+#if MEM_DEBUG
+        memset(filter_expression, 0, sizeof(*filter_expression));
+#endif
         RedisModule_Free(filter_expression);
         rpn_destroy(rpn_ctx);
     }
@@ -1421,7 +1440,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     }
 
     size_t nr_reg = argc - ARGV_FILTER_ARGS + 1;
-    struct rpn_ctx *rpn_ctx = rpn_init(ctx, nr_reg);
+    struct rpn_ctx *rpn_ctx = rpn_init(nr_reg);
     if (!rpn_ctx) {
         return replyWithSelvaError(ctx, SELVA_ENOMEM);
     }
@@ -1500,6 +1519,9 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
 out:
     rpn_destroy(rpn_ctx);
+#if MEM_DEBUG
+    memset(filter_expression, 0, sizeof(*filter_expression));
+#endif
     RedisModule_Free(filter_expression);
 
     return REDISMODULE_OK;

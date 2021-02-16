@@ -175,19 +175,18 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
 /**
  * Match subscription marker with the RPN expression filter.
  */
-static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct Selva_SubscriptionMarker *marker) {
-    struct rpn_ctx *ctx = marker->filter_ctx;
-    rpn_token *filter = marker->filter_expression;
+static int Selva_SubscriptionFilterMatch(RedisModuleCtx *ctx, const Selva_NodeId node_id, struct Selva_SubscriptionMarker *marker) {
+    struct rpn_ctx *filter_ctx = marker->filter_ctx;
     int res = 0;
     int err;
 
     /* When no filter is set the result should be true. */
-    if (!ctx) {
+    if (!filter_ctx) {
         return 1;
     }
 
-    rpn_set_reg(ctx, 0, node_id, SELVA_NODE_ID_SIZE, 0);
-    err = rpn_bool(ctx, filter, &res);
+    rpn_set_reg(filter_ctx, 0, node_id, SELVA_NODE_ID_SIZE, 0);
+    err = rpn_bool(ctx, filter_ctx, marker->filter_expression, &res);
     if (err) {
         fprintf(stderr, "%s: Expression failed (node: \"%.*s\"): \"%s\"\n",
                 __FILE__,
@@ -204,6 +203,17 @@ static int Selva_SubscriptionFilterMatch(const Selva_NodeId node_id, struct Selv
  */
 static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
     rpn_destroy(marker->filter_ctx);
+#if MEM_DEBUG
+    if (marker->filter_expression) {
+        memset(marker->filter_expression, 0, sizeof(*marker->filter_expression));
+    }
+    if (marker->fields) {
+        memset(marker->fields, 0, sizeof(*marker->fields));
+    }
+    if (marker) {
+        memset(marker, 0, sizeof(*marker));
+    }
+#endif
     RedisModule_Free(marker->filter_expression);
     RedisModule_Free(marker->fields);
     RedisModule_Free(marker);
@@ -280,6 +290,9 @@ static void destroy_sub(SelvaModify_Hierarchy *hierarchy, struct Selva_Subscript
 
     RB_REMOVE(hierarchy_subscriptions_tree, &hierarchy->subs.head, sub);
     SVector_Destroy(&sub->markers);
+#if MEM_DEBUG
+    memset(sub, 0, sizeof(*sub));
+#endif
     RedisModule_Free(sub);
 }
 
@@ -531,7 +544,6 @@ static int Selva_AddSubscriptionMarker(
 }
 
 int Selva_AddSubscriptionAliasMarker(
-        RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
@@ -547,7 +559,7 @@ int Selva_AddSubscriptionAliasMarker(
         return SELVA_SUBSCRIPTIONS_EEXIST;
     }
 
-    filter_ctx = rpn_init(ctx, 3);
+    filter_ctx = rpn_init(3);
     if (!filter_ctx) {
         err = SELVA_SUBSCRIPTIONS_ENOMEM;
         goto out;
@@ -1029,10 +1041,12 @@ void SelvaSubscriptions_DeferHierarchyDeletionEvents(
     defer_hierarchy_deletion_events(hierarchy, node_id, &metadata->sub_markers);
 }
 
-static void defer_alias_change_events(struct SelvaModify_Hierarchy *hierarchy,
-                                      const struct Selva_SubscriptionMarkers *sub_markers,
-                                      const Selva_NodeId node_id,
-                                      SVector *wipe_subs) {
+static void defer_alias_change_events(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        const struct Selva_SubscriptionMarkers *sub_markers,
+        const Selva_NodeId node_id,
+        SVector *wipe_subs) {
     if (!isAliasMarker(sub_markers->flags_filter)) {
         /* No alias markers in this structure. */
         return;
@@ -1046,7 +1060,7 @@ static void defer_alias_change_events(struct SelvaModify_Hierarchy *hierarchy,
     while ((marker = SVector_Foreach(&it))) {
         if (isAliasMarker(marker->marker_flags) &&
             /* The filter should contain `in` matcher for the alias. */
-            Selva_SubscriptionFilterMatch(node_id, marker)
+            Selva_SubscriptionFilterMatch(ctx, node_id, marker)
             ) {
             defer_update_event(def, marker->sub);
 
@@ -1063,6 +1077,7 @@ static void defer_alias_change_events(struct SelvaModify_Hierarchy *hierarchy,
  * Check whether the filter matches before changing the value of a node field.
  */
 static void field_change_precheck(
+        RedisModuleCtx *ctx,
         const Selva_NodeId node_id,
         const struct Selva_SubscriptionMarkers *sub_markers) {
     const unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
@@ -1080,18 +1095,19 @@ static void field_change_precheck(
                  * is called before this function is called for another node.
                  */
                 memcpy(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE);
-                marker->filter_history.res = Selva_SubscriptionFilterMatch(node_id, marker);
+                marker->filter_history.res = Selva_SubscriptionFilterMatch(ctx, node_id, marker);
             }
         }
     }
 }
 
 void SelvaSubscriptions_FieldChangePrecheck(
+        RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata) {
     /* Detached markers. */
-    field_change_precheck(node_id, &hierarchy->subs.detached_markers);
+    field_change_precheck(ctx, node_id, &hierarchy->subs.detached_markers);
 
     if (!metadata) {
         fprintf(stderr, "%s:%d Node metadata missing\n", __FILE__, __LINE__);
@@ -1099,13 +1115,15 @@ void SelvaSubscriptions_FieldChangePrecheck(
     }
 
     /* Markers on the node. */
-    field_change_precheck(node_id, &metadata->sub_markers);
+    field_change_precheck(ctx, node_id, &metadata->sub_markers);
 }
 
-static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
-                                      const Selva_NodeId node_id,
-                                      const struct Selva_SubscriptionMarkers *sub_markers,
-                                      const char *field) {
+static void defer_field_change_events(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        const struct Selva_SubscriptionMarkers *sub_markers,
+        const char *field) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     const unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
 
@@ -1117,7 +1135,7 @@ static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
         while ((marker = SVector_Foreach(&it))) {
             if (((marker->marker_flags & flags) == flags) && !inhibitMarkerEvent(node_id, marker)) {
                 const int expressionMatchBefore = (marker->filter_history.res && !memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE));
-                const int expressionMatchAfter = Selva_SubscriptionFilterMatch(node_id, marker);
+                const int expressionMatchAfter = Selva_SubscriptionFilterMatch(ctx, node_id, marker);
                 const int fieldsMatch = Selva_SubscriptionFieldMatch(marker, field);
 
                 if ((expressionMatchBefore && expressionMatchAfter && fieldsMatch) || (expressionMatchBefore ^ expressionMatchAfter)) {
@@ -1128,12 +1146,14 @@ static void defer_field_change_events(struct SelvaModify_Hierarchy *hierarchy,
     }
 }
 
-void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaModify_Hierarchy *hierarchy,
+void SelvaSubscriptions_DeferFieldChangeEvents(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata,
         const char *field) {
     /* Detached markers. */
-    defer_field_change_events(hierarchy, node_id, &hierarchy->subs.detached_markers, field);
+    defer_field_change_events(ctx, hierarchy, node_id, &hierarchy->subs.detached_markers, field);
 
     if (!metadata) {
         fprintf(stderr, "%s:%d Node metadata missing\n", __FILE__, __LINE__);
@@ -1141,7 +1161,7 @@ void SelvaSubscriptions_DeferFieldChangeEvents(struct SelvaModify_Hierarchy *hie
     }
 
     /* Markers on the node. */
-    defer_field_change_events(hierarchy, node_id, &metadata->sub_markers, field);
+    defer_field_change_events(ctx, hierarchy, node_id, &metadata->sub_markers, field);
 }
 
 /**
@@ -1175,6 +1195,7 @@ void Selva_Subscriptions_DeferAliasChangeEvents(
 
     /* Defer events for markers on the src node. */
     defer_alias_change_events(
+            ctx,
             hierarchy,
             &orig_metadata->sub_markers,
             orig_node_id,
@@ -1190,7 +1211,11 @@ void Selva_Subscriptions_DeferAliasChangeEvents(
     }
 }
 
-void Selva_Subscriptions_DeferTriggerEvents(struct SelvaModify_Hierarchy *hierarchy, Selva_NodeId node_id, enum Selva_SubscriptionTriggerType event_type) {
+void Selva_Subscriptions_DeferTriggerEvents(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        Selva_NodeId node_id,
+        enum Selva_SubscriptionTriggerType event_type) {
     /* Trigger markers are always detached and have no node_id. */
     const struct Selva_SubscriptionMarkers *sub_markers = &hierarchy->subs.detached_markers;
 
@@ -1203,7 +1228,7 @@ void Selva_Subscriptions_DeferTriggerEvents(struct SelvaModify_Hierarchy *hierar
         while ((marker = SVector_Foreach(&it))) {
             if (isTriggerMarker(marker->marker_flags) &&
                 marker->event_type == event_type &&
-                Selva_SubscriptionFilterMatch(node_id, marker)) {
+                Selva_SubscriptionFilterMatch(ctx, node_id, marker)) {
                 /*
                  * The node_id might be there already if the marker has a filter
                  * but trigger events will need the node_id there regardless of if
@@ -1382,7 +1407,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         const char *input;
         size_t input_len;
 
-        filter_ctx = rpn_init(ctx, nr_reg);
+        filter_ctx = rpn_init(nr_reg);
         if (!filter_ctx) {
             err = SELVA_SUBSCRIPTIONS_ENOMEM;
             goto out;
@@ -1616,7 +1641,7 @@ int Selva_SubscribeAliasCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
         return replyWithSelvaError(ctx, err);
     }
 
-    err = Selva_AddSubscriptionAliasMarker(ctx, hierarchy, sub_id, marker_id, alias_name, node_id);
+    err = Selva_AddSubscriptionAliasMarker(hierarchy, sub_id, marker_id, alias_name, node_id);
     if (err) {
         replyWithSelvaError(ctx, err);
     } else {
@@ -1765,7 +1790,7 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         const char *input;
         size_t input_len;
 
-        filter_ctx = rpn_init(ctx, nr_reg);
+        filter_ctx = rpn_init(nr_reg);
         if (!filter_ctx) {
             err = SELVA_SUBSCRIPTIONS_ENOMEM;
             goto out;

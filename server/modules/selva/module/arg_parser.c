@@ -48,7 +48,8 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
         return err;
     }
 
-    list = RedisModule_Realloc(list, n * sizeof(RedisModuleString *));
+    const size_t list_size = n * sizeof(RedisModuleString *);
+    list = RedisModule_Realloc(list, list_size);
     if (!list) {
         return SELVA_ENOMEM;
     }
@@ -74,6 +75,9 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
              */
             el = RedisModule_CreateString(ctx, cur, len);
             if (!el) {
+#if MEM_DEBUG
+                memset(list, 0, list_size);
+#endif
                 RedisModule_Free(list);
                 return SELVA_ENOMEM;
             }

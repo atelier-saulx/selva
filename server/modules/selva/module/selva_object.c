@@ -149,12 +149,20 @@ void SelvaObject_Clear(struct SelvaObject *obj) {
 
         /* Clear and free the key. */
         (void)clear_key_value(key);
+#if MEM_DEBUG
+        memset(key, 0, sizeof(*key));
+#endif
         RedisModule_Free(key);
     }
 }
 
 void SelvaObject_Destroy(struct SelvaObject *obj) {
     SelvaObject_Clear(obj);
+#if MEM_DEBUG
+    if (obj) {
+        memset(obj, 0, sizeof(*obj));
+    }
+#endif
     RedisModule_Free(obj);
 }
 
@@ -369,6 +377,9 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         RB_REMOVE(SelvaObjectKeys, &cobj->keys_head, key);
         obj->obj_size--;
         (void)clear_key_value(key);
+#if MEM_DEBUG
+        memset(key, 0, sizeof(*key));
+#endif
         RedisModule_Free(key);
         key = NULL;
     }
@@ -420,6 +431,11 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
         obj->obj_size--;
         (void)clear_key_value(key);
+#if MEM_DEBUG
+        if (key) {
+            memset(key, 0, sizeof(*key));
+        }
+#endif
         RedisModule_Free(key);
         key = NULL;
     }
@@ -1705,6 +1721,9 @@ void set_aof_rewrite(RedisModuleIO *aof, RedisModuleString *key, struct SelvaObj
             argv,
             argc);
 
+#if MEM_DEBUG
+    memset(argv, 0, okey->selva_set.size);
+#endif
     RedisModule_Free(argv);
 }
 
