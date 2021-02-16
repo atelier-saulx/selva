@@ -54,7 +54,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key);
 static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj);
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
-static int SelvaObject_Compare(struct SelvaObjectKey *a, struct SelvaObjectKey *b) {
+static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
     return strcmp(a->name, b->name);
 }
 
@@ -139,10 +139,9 @@ static int clear_key_value(struct SelvaObjectKey *key) {
 }
 
 void SelvaObject_Clear(struct SelvaObject *obj) {
-    struct SelvaObjectKey *key;
     struct SelvaObjectKey *next;
 
-	for (key = RB_MIN(SelvaObjectKeys, &obj->keys_head); key != NULL; key = next) {
+	for (struct SelvaObjectKey *key = RB_MIN(SelvaObjectKeys, &obj->keys_head); key != NULL; key = next) {
 		next = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
 		RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
         obj->obj_size--;
