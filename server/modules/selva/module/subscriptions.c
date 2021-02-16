@@ -176,16 +176,17 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
  * Match subscription marker with the RPN expression filter.
  */
 static int Selva_SubscriptionFilterMatch(RedisModuleCtx *ctx, const Selva_NodeId node_id, struct Selva_SubscriptionMarker *marker) {
+    struct rpn_ctx *filter_ctx = marker->filter_ctx;
     int res = 0;
     int err;
 
     /* When no filter is set the result should be true. */
-    if (!ctx) {
+    if (!filter_ctx) {
         return 1;
     }
 
-    rpn_set_reg(marker->filter_ctx, 0, node_id, SELVA_NODE_ID_SIZE, 0);
-    err = rpn_bool(ctx, marker->filter_ctx, marker->filter_expression, &res);
+    rpn_set_reg(filter_ctx, 0, node_id, SELVA_NODE_ID_SIZE, 0);
+    err = rpn_bool(ctx, filter_ctx, marker->filter_expression, &res);
     if (err) {
         fprintf(stderr, "%s: Expression failed (node: \"%.*s\"): \"%s\"\n",
                 __FILE__,
