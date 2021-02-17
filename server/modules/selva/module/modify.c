@@ -594,7 +594,7 @@ void SelvaModify_ModifyIncrement(
 }
 
 void SelvaModify_ModifyIncrementDouble(
-    RedisModuleCtx *ctx,
+    RedisModuleCtx *ctx __unused,
     struct SelvaObject *obj,
     RedisModuleString *field,
     enum SelvaObjectType old_type,
