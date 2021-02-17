@@ -65,7 +65,7 @@ const addOriginListeners = async (
         subscription.originDescriptors[name] = descriptor
         const { name: dbName } = descriptor
 
-        console.log(
+        console.info(
           'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
           name
         )

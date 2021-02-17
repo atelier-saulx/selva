@@ -181,6 +181,11 @@ class Connection {
         CLIENT_HEARTBEAT_TIMER
       )
     }
+    this.command({
+      id: id,
+      command: 'hset',
+      args: [CLIENTS, uuid, Date.now()],
+    })
     setHeartbeat()
   }
 

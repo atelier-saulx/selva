@@ -38,7 +38,7 @@ const handleAddPrev = async (
         )
       } else {
         // this is a bit hard if it is not synced yet something can go wrong here
-        console.log(
+        console.info(
           chalk.yellow(
             `Cannot find previous server to move subscription ${prev} has to move to ${id}`
           )
@@ -72,7 +72,7 @@ export default async function updateRegistry(
   info: Subscriptions,
   subsManager: SubscriptionManager
 ) {
-  for (let key in info.subscriptions) {
+  for (const key in info.subscriptions) {
     subscriptions[key] = info.subscriptions[key]
   }
 
@@ -83,7 +83,7 @@ export default async function updateRegistry(
       const id = info.host + ':' + info.port
       const size = Object.keys(subsManager.subscriptions).length
       q.push(client.redis.hset({ type: 'registry' }, id, 'subs', size))
-      for (let channel in subscriptions) {
+      for (const channel in subscriptions) {
         // make this efficient wiht a q
         const type = subscriptions[channel]
         if (type === 'created') {

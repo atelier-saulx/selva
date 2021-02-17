@@ -16,10 +16,16 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
     subscriptions: {},
   }
 
+  // if it just restarted clients did not resubscribe themselves
+
   let [subscriptions, clients] = await Promise.all([
     redis.hgetall(selector, SUBSCRIPTIONS),
     redis.hgetall(selector, CLIENTS),
   ])
+
+  if (!clients && subscriptions) {
+    console.info('NO CLIENT BUT SUBS')
+  }
 
   if (!subscriptions) {
     subscriptions = {}
@@ -47,7 +53,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
       }
     } else {
       // this should get removed...
-      console.log('Client is timedout from server', client)
+      console.info('Client is timedout from server', client)
       cleanUpQ.push(redis.hdel(selector, CLIENTS, client))
       if (client in subsManager.clients) {
         // need to remove client
@@ -66,7 +72,6 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
             subscriptionClients.splice(i, 1)
             subsManager.subscriptions[channel].clients.delete(client)
             cleanUpQ.push(redis.srem(selector, channel, client))
-          } else {
           }
         }
 
@@ -101,7 +106,7 @@ const updateSubscriptionData = async (subsManager: SubscriptionManager) => {
 
   if (cleanUpQ.length) {
     await Promise.all(cleanUpQ)
-    console.log('Cleaned up clients / subscriptions', cleanUpQ.length)
+    console.info('Cleaned up clients / subscriptions', cleanUpQ.length)
   }
 
   if (Object.keys(info.subscriptions).length) {

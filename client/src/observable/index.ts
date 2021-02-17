@@ -8,6 +8,7 @@ import {
   SUBSCRIPTIONS,
   REMOVE_SUBSCRIPTION,
   REGISTRY_MOVE_SUBSCRIPTION,
+  CLIENTS,
   CACHE,
 } from '../constants'
 import parseError from './parseError'
@@ -18,11 +19,11 @@ import { applyPatch } from '@saulx/selva-diff'
 // import { unzip as unzipCb } from 'zlib'
 // import { promisify } from 'util'
 
-import { deepCopy } from '@saulx/utils'
+import { deepCopy, wait } from '@saulx/utils'
 
 // const unzip = promisify(unzipCb)
 
-var observableIds = 0
+let observableIds = 0
 
 type UpdateCallback = (value: any, checksum?: number, diff?: any) => void
 
@@ -108,13 +109,14 @@ export class Observable {
     this.isStarted = false
     const prevServer = `${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
     delete this.connection
-    console.log(
+    console.info(
       chalk.yellow(
         `Hard disconnection event on observable ${this.uuid} ${prevServer}`
       )
     )
+
     await this.start()
-    console.log(
+    console.info(
       chalk.gray(
         `Successfully restarted observable ${this.uuid} after hard disconnect connect to ${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
       )
@@ -223,7 +225,6 @@ export class Observable {
     onError?: (err: Error) => void
   ) {
     if (this.useCache && this.version) {
-      console.log('get it from cache!')
       if (this.options.immutable) {
         onNext(deepCopy(this.cache), this.version)
       } else {
@@ -298,14 +299,11 @@ export class Observable {
                 this.cache
               ) {
                 if (this.monitor) {
-                  console.log('--------------------------------')
+                  console.info('--------------------------------')
                   console.dir(this.cache, { depth: 10 })
                   console.dir(diff, { depth: 10 })
-                  // console.dir(data, { depth: 10 })
-                  console.log('--------------------------------')
-                } else {
+                  console.info('--------------------------------')
                 }
-
                 const data = applyPatch(this.cache, patch)
 
                 if (data === null) {
@@ -319,7 +317,7 @@ export class Observable {
                 }
                 this.emitUpdate(data, version, patch)
               } else {
-                console.log(
+                console.error(
                   'Mismatching versions from diff!',
                   this.version,
                   fromVersion,
@@ -417,7 +415,17 @@ export class Observable {
     const connection = (this.connection = createConnection(server))
     const id = this.selvaId
 
+    // maybe wait for this boy
     connection.attachClient(this)
+
+    connection.startClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
+
+    connection.command({
+      command: 'sadd',
+      args: [channel, this.selvaClient.uuid],
+      id,
+    })
+
     connection.command({
       command: 'hsetnx',
       args: getOptions
@@ -425,11 +433,7 @@ export class Observable {
         : [SUBSCRIPTIONS, channel, '{}'],
       id,
     })
-    connection.command({
-      command: 'sadd',
-      args: [channel, this.selvaClient.uuid],
-      id,
-    })
+
     connection.command({
       command: 'publish',
       args: [
@@ -476,8 +480,6 @@ export class Observable {
 
     connection.subscribe(channel, id)
     connection.subscribe(REGISTRY_MOVE_SUBSCRIPTION, id)
-
-    connection.startClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
 
     // has to be a bit different!
     this.getValue()
