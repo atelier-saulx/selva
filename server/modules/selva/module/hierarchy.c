@@ -1804,7 +1804,7 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     }
 
     long long nr_deleted = 0;
-    for (size_t i = 2; i < (size_t)argc; i++) {
+    for (int i = 2; i < argc; i++) {
         Selva_NodeId nodeId;
 
         RMString2NodeId(nodeId, argv[i]);

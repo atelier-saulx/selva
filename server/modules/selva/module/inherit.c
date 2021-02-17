@@ -214,12 +214,12 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY     = 1;
-    const size_t ARGV_NODE_ID       = 2;
-    const size_t ARGV_TYPES         = 3;
-    const size_t ARGV_FIELD_NAMES   = 4;
+    const int ARGV_REDIS_KEY     = 1;
+    const int ARGV_NODE_ID       = 2;
+    const int ARGV_TYPES         = 3;
+    const int ARGV_FIELD_NAMES   = 4;
 
-    if (argc < (int)(ARGV_FIELD_NAMES + 1)) {
+    if (argc < ARGV_FIELD_NAMES + 1) {
         return RedisModule_WrongArity(ctx);
     }
 

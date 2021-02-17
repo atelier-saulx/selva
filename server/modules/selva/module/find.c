@@ -1035,23 +1035,23 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_ALGO      = 2;
-    const size_t ARGV_DIRECTION = 3;
-    const size_t ARGV_ORDER_TXT = 4;
-    const size_t ARGV_ORDER_FLD = 5;
-    const size_t ARGV_ORDER_ORD = 6;
-    size_t ARGV_OFFSET_TXT      = 4;
-    size_t ARGV_OFFSET_NUM      = 5;
-    size_t ARGV_LIMIT_TXT       = 4;
-    size_t ARGV_LIMIT_NUM       = 5;
-    size_t ARGV_MERGE_TXT       = 4;
-    size_t ARGV_MERGE_VAL       = 5;
-    size_t ARGV_FIELDS_TXT      = 4;
-    size_t ARGV_FIELDS_VAL      = 5;
-    size_t ARGV_NODE_IDS        = 4;
-    size_t ARGV_FILTER_EXPR     = 5;
-    size_t ARGV_FILTER_ARGS     = 6;
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_ALGO      = 2;
+    const int ARGV_DIRECTION = 3;
+    const int ARGV_ORDER_TXT = 4;
+    const int ARGV_ORDER_FLD = 5;
+    const int ARGV_ORDER_ORD = 6;
+    int ARGV_OFFSET_TXT      = 4;
+    int ARGV_OFFSET_NUM      = 5;
+    int ARGV_LIMIT_TXT       = 4;
+    int ARGV_LIMIT_NUM       = 5;
+    int ARGV_MERGE_TXT       = 4;
+    int ARGV_MERGE_VAL       = 5;
+    int ARGV_FIELDS_TXT      = 4;
+    int ARGV_FIELDS_VAL      = 5;
+    int ARGV_NODE_IDS        = 4;
+    int ARGV_FILTER_EXPR     = 5;
+    int ARGV_FILTER_ARGS     = 6;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
@@ -1091,7 +1091,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
-    if (argc > (int)ARGV_ORDER_ORD) {
+    if (argc > ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
@@ -1107,7 +1107,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      * Parse the offset arg.
      */
     ssize_t offset = 0;
-    if (argc > (int)ARGV_OFFSET_NUM) {
+    if (argc > ARGV_OFFSET_NUM) {
         err = SelvaArgParser_IntOpt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
@@ -1120,7 +1120,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      * Parse the limit arg. -1 = inf
      */
     ssize_t limit = -1;
-    if (argc > (int)ARGV_LIMIT_NUM) {
+    if (argc > ARGV_LIMIT_NUM) {
         err = SelvaArgParser_IntOpt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
@@ -1134,7 +1134,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      */
     enum merge_strategy merge_strategy = MERGE_STRATEGY_NONE;
     RedisModuleString *merge_path = NULL;
-    if (argc > (int)ARGV_MERGE_VAL) {
+    if (argc > ARGV_MERGE_VAL) {
         err = SelvaArgParser_Enum(merge_types, argv[ARGV_MERGE_TXT]);
         if (err != SELVA_ENOENT) {
             if (err < 0) {
@@ -1155,7 +1155,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      * Parse fields.
      */
     selvaobject_autofree struct SelvaObject *fields = NULL;
-    if (argc > (int)ARGV_FIELDS_VAL) {
+    if (argc > ARGV_FIELDS_VAL) {
 		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             if (merge_strategy == MERGE_STRATEGY_ALL) {
@@ -1182,7 +1182,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      */
     struct rpn_ctx *rpn_ctx = NULL;
     rpn_token *filter_expression = NULL;
-    if (argc >= (int)ARGV_FILTER_EXPR + 1) {
+    if (argc >= ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
         const char *input;
         size_t input_len;
@@ -1205,7 +1205,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         /*
          * Get the filter expression arguments and set them to the registers.
          */
-        for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
+        for (int i = ARGV_FILTER_ARGS; i < argc; i++) {
             /* reg[0] is reserved for the current nodeId */
             const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
             size_t str_len;
@@ -1335,19 +1335,19 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_ORDER_TXT = 2;
-    const size_t ARGV_ORDER_FLD = 3;
-    const size_t ARGV_ORDER_ORD = 4;
-    size_t ARGV_OFFSET_TXT      = 2;
-    size_t ARGV_OFFSET_NUM      = 3;
-    size_t ARGV_LIMIT_TXT       = 2;
-    size_t ARGV_LIMIT_NUM       = 3;
-    size_t ARGV_FIELDS_TXT      = 2;
-    size_t ARGV_FIELDS_VAL      = 3;
-    size_t ARGV_NODE_IDS        = 2;
-    size_t ARGV_FILTER_EXPR     = 3;
-    size_t ARGV_FILTER_ARGS     = 4;
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_ORDER_TXT = 2;
+    const int ARGV_ORDER_FLD = 3;
+    const int ARGV_ORDER_ORD = 4;
+    int ARGV_OFFSET_TXT      = 2;
+    int ARGV_OFFSET_NUM      = 3;
+    int ARGV_LIMIT_TXT       = 2;
+    int ARGV_LIMIT_NUM       = 3;
+    int ARGV_FIELDS_TXT      = 2;
+    int ARGV_FIELDS_VAL      = 3;
+    int ARGV_NODE_IDS        = 2;
+    int ARGV_FILTER_EXPR     = 3;
+    int ARGV_FILTER_ARGS     = 4;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
@@ -1376,7 +1376,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
-    if (argc > (int)ARGV_ORDER_ORD) {
+    if (argc > ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
@@ -1392,7 +1392,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Parse the offset arg.
      */
     ssize_t offset = 0;
-    if (argc > (int)ARGV_OFFSET_NUM) {
+    if (argc > ARGV_OFFSET_NUM) {
         err = SelvaArgParser_IntOpt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
@@ -1405,7 +1405,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Parse the limit arg. -1 = inf
      */
     ssize_t limit = -1;
-    if (argc > (int)ARGV_LIMIT_NUM) {
+    if (argc > ARGV_LIMIT_NUM) {
         err = SelvaArgParser_IntOpt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
@@ -1418,7 +1418,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Parse fields.
      */
     selvaobject_autofree struct SelvaObject *fields = NULL;
-    if (argc > (int)ARGV_FIELDS_VAL) {
+    if (argc > ARGV_FIELDS_VAL) {
         err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             SHIFT_ARGS(2);
@@ -1449,7 +1449,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     /*
      * Get the filter expression arguments and set them to the registers.
      */
-    for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
+    for (int i = ARGV_FILTER_ARGS; i < argc; i++) {
         /* reg[0] is reserved for the current nodeId */
         const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
         size_t str_len;
@@ -1524,16 +1524,16 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_SUB_ID    = 2;
-    const size_t ARGV_MARKER_ID = 3;
-    const size_t ARGV_ORDER_TXT = 4;
-    const size_t ARGV_ORDER_FLD = 5;
-    const size_t ARGV_ORDER_ORD = 6;
-    size_t ARGV_OFFSET_TXT      = 4;
-    size_t ARGV_OFFSET_NUM      = 5;
-    size_t ARGV_LIMIT_TXT       = 4;
-    size_t ARGV_LIMIT_NUM       = 5;
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_SUB_ID    = 2;
+    const int ARGV_MARKER_ID = 3;
+    const int ARGV_ORDER_TXT = 4;
+    const int ARGV_ORDER_FLD = 5;
+    const int ARGV_ORDER_ORD = 6;
+    int ARGV_OFFSET_TXT      = 4;
+    int ARGV_OFFSET_NUM      = 5;
+    int ARGV_LIMIT_TXT       = 4;
+    int ARGV_LIMIT_NUM       = 5;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
@@ -1584,7 +1584,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      */
     enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
-    if (argc > (int)ARGV_ORDER_ORD) {
+    if (argc > ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
@@ -1600,7 +1600,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Parse the offset arg.
      */
     ssize_t offset = 0;
-    if (argc > (int)ARGV_OFFSET_NUM) {
+    if (argc > ARGV_OFFSET_NUM) {
         err = SelvaArgParser_IntOpt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);
@@ -1613,7 +1613,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Parse the limit arg. -1 = inf
      */
     ssize_t limit = -1;
-    if (argc > (int)ARGV_LIMIT_NUM) {
+    if (argc > ARGV_LIMIT_NUM) {
         err = SelvaArgParser_IntOpt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
         if (err == 0) {
             SHIFT_ARGS(2);

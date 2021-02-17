@@ -1313,20 +1313,20 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY     = 1;
-    const size_t ARGV_SUB_ID        = 2;
-    const size_t ARGV_MARKER_ID     = 3;
-    const size_t ARGV_MARKER_TYPE   = 4;
-    const size_t ARGV_NODE_ID       = 5;
-    const size_t ARGV_FIELDS        = 6;
-    const size_t ARGV_FIELD_NAMES   = 7;
-    size_t ARGV_FILTER_EXPR         = 6;
-    size_t ARGV_FILTER_ARGS         = 7;
+    const int ARGV_REDIS_KEY     = 1;
+    const int ARGV_SUB_ID        = 2;
+    const int ARGV_MARKER_ID     = 3;
+    const int ARGV_MARKER_TYPE   = 4;
+    const int ARGV_NODE_ID       = 5;
+    const int ARGV_FIELDS        = 6;
+    const int ARGV_FIELD_NAMES   = 7;
+    int ARGV_FILTER_EXPR         = 6;
+    int ARGV_FILTER_ARGS         = 7;
 #define SHIFT_ARGS(i) \
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < (int)(ARGV_NODE_ID + 1)) {
+    if (argc < ARGV_NODE_ID + 1) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -1387,7 +1387,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      * Optional.
      */
     const char *fields = NULL;
-    if (argc > (int)ARGV_FIELD_NAMES) {
+    if (argc > ARGV_FIELD_NAMES) {
         err = SelvaArgParser_StrOpt(&fields, "fields", argv[ARGV_FIELDS], argv[ARGV_FIELD_NAMES]);
         if (err == 0) {
             SHIFT_ARGS(2);
@@ -1402,7 +1402,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      */
     struct rpn_ctx *filter_ctx = NULL;
     rpn_token *filter_expression = NULL;
-    if (argc >= (int)ARGV_FILTER_EXPR + 1) {
+    if (argc >= ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
         const char *input;
         size_t input_len;
@@ -1429,7 +1429,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         /*
          * Get the filter expression arguments and set them to the registers.
          */
-        for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
+        for (int i = ARGV_FILTER_ARGS; i < argc; i++) {
             /* reg[0] is reserved for the current nodeId */
             const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
             size_t str_len;
@@ -1516,10 +1516,10 @@ int Selva_AddSubscriptionMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleStr
         return RedisModule_WrongArity(ctx);
     }
 
-    const size_t ARGV_REDIS_KEY     = 1;
-    const size_t ARGV_SUB_ID        = 2;
-    const size_t ARGV_MARKER_ID     = 3;
-    const size_t ARGV_FIELD_NAMES   = 4;
+    const int ARGV_REDIS_KEY     = 1;
+    const int ARGV_SUB_ID        = 2;
+    const int ARGV_MARKER_ID     = 3;
+    const int ARGV_FIELD_NAMES   = 4;
 
     /*
      * Open the Redis key.
@@ -1590,12 +1590,12 @@ int Selva_SubscribeAliasCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY     = 1;
-    const size_t ARGV_SUB_ID        = 2;
-    const size_t ARGV_MARKER_ID     = 3;
-    const size_t ARGV_ALIAS_NAME    = 4;
+    const int ARGV_REDIS_KEY     = 1;
+    const int ARGV_SUB_ID        = 2;
+    const int ARGV_MARKER_ID     = 3;
+    const int ARGV_ALIAS_NAME    = 4;
 
-    if (argc < (int)(ARGV_ALIAS_NAME + 1)) {
+    if (argc < ARGV_ALIAS_NAME + 1) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -1665,9 +1665,9 @@ int Selva_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         return RedisModule_WrongArity(ctx);
     }
 
-    const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_SUB_ID    = 2;
-    const size_t ARGV_IDS       = 3;
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_SUB_ID    = 2;
+    const int ARGV_IDS       = 3;
 
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
@@ -1729,14 +1729,14 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const size_t ARGV_REDIS_KEY     = 1;
-    const size_t ARGV_SUB_ID        = 2;
-    const size_t ARGV_MARKER_ID     = 3;
-    const size_t ARGV_EVENT_TYPE    = 4;
-    size_t ARGV_FILTER_EXPR         = 5;
-    size_t ARGV_FILTER_ARGS         = 6;
+    const int ARGV_REDIS_KEY     = 1;
+    const int ARGV_SUB_ID        = 2;
+    const int ARGV_MARKER_ID     = 3;
+    const int ARGV_EVENT_TYPE    = 4;
+    int ARGV_FILTER_EXPR         = 5;
+    int ARGV_FILTER_ARGS         = 6;
 
-    if (argc < (int)(ARGV_EVENT_TYPE + 1)) {
+    if (argc < ARGV_EVENT_TYPE + 1) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -1785,7 +1785,7 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
      */
     struct rpn_ctx *filter_ctx = NULL;
     rpn_token *filter_expression = NULL;
-    if (argc >= (int)ARGV_FILTER_EXPR + 1) {
+    if (argc >= ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
         const char *input;
         size_t input_len;
@@ -1812,7 +1812,7 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         /*
          * Get the filter expression arguments and set them to the registers.
          */
-        for (size_t i = ARGV_FILTER_ARGS; i < (size_t)argc; i++) {
+        for (int i = ARGV_FILTER_ARGS; i < argc; i++) {
             /* reg[0] is reserved for the current nodeId */
             const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
             size_t str_len;
@@ -1916,7 +1916,7 @@ int Selva_SubscriptionsListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         return RedisModule_WrongArity(ctx);
     }
 
-    const size_t ARGV_REDIS_KEY = 1;
+    const int ARGV_REDIS_KEY = 1;
 
     /*
      * Open the Redis key.
@@ -1951,7 +1951,7 @@ int Selva_SubscriptionsListMissingCommand(RedisModuleCtx *ctx, RedisModuleString
         return RedisModule_WrongArity(ctx);
     }
 
-    const size_t ARGV_REDIS_KEY = 1;
+    const int ARGV_REDIS_KEY = 1;
 
     /*
      * Open the Redis key.
@@ -1974,8 +1974,8 @@ int Selva_SubscriptionsListMissingCommand(RedisModuleCtx *ctx, RedisModuleString
  * KEY SUB_ID
  */
 int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_ID        = 2;
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_ID        = 2;
 
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
@@ -2077,8 +2077,8 @@ int Selva_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return RedisModule_WrongArity(ctx);
     }
 
-    const size_t ARGV_REDIS_KEY = 1;
-    const size_t ARGV_SUB_ID    = 2;
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_SUB_ID    = 2;
 
     /*
      * Open the Redis key.

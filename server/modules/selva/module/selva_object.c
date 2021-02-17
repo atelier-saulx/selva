@@ -1121,8 +1121,8 @@ int SelvaObject_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     struct SelvaObject *obj;
     int err;
 
-    const size_t ARGV_KEY = 1;
-    const size_t ARGV_OKEY = 2;
+    const int ARGV_KEY = 1;
+    const int ARGV_OKEY = 2;
 
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
@@ -1150,8 +1150,8 @@ int SelvaObject_ExistsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     struct SelvaObject *obj;
     int err;
 
-    const size_t ARGV_KEY = 1;
-    const size_t ARGV_OKEY = 2;
+    const int ARGV_KEY = 1;
+    const int ARGV_OKEY = 2;
 
     if (argc < 3) {
         return RedisModule_WrongArity(ctx);
@@ -1282,8 +1282,8 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     struct SelvaObject *obj;
     struct SelvaObjectKey *key;
 
-    const size_t ARGV_KEY = 1;
-    const size_t ARGV_OKEY = 2;
+    const int ARGV_KEY = 1;
+    const int ARGV_OKEY = 2;
 
     if (argc < 2) {
         return RedisModule_WrongArity(ctx);
@@ -1299,7 +1299,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         return REDISMODULE_OK;
     }
 
-    for (size_t i = ARGV_OKEY; i < (size_t)argc; i++) {
+    for (int i = ARGV_OKEY; i < argc; i++) {
         const RedisModuleString *okey = argv[i];
         TO_STR(okey)
         int err;
@@ -1325,12 +1325,12 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     size_t values_set = 0;
     int err;
 
-    const size_t ARGV_KEY = 1;
-    const size_t ARGV_OKEY = 2;
-    const size_t ARGV_TYPE = 3;
-    const size_t ARGV_OVAL = 4;
+    const int ARGV_KEY = 1;
+    const int ARGV_OKEY = 2;
+    const int ARGV_TYPE = 3;
+    const int ARGV_OVAL = 4;
 
-    if (argc <= (int)ARGV_TYPE) {
+    if (argc <= ARGV_TYPE) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -1398,8 +1398,8 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     struct SelvaObjectKey *key;
     int err;
 
-    const size_t ARGV_KEY = 1;
-    const size_t ARGV_OKEY = 2;
+    const int ARGV_KEY = 1;
+    const int ARGV_OKEY = 2;
 
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
@@ -1456,8 +1456,8 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
 
-    const size_t ARGV_KEY = 1;
-    const size_t ARGV_OKEY = 2;
+    const int ARGV_KEY = 1;
+    const int ARGV_OKEY = 2;
 
     if (argc != 2 && argc != 3) {
         return RedisModule_WrongArity(ctx);
