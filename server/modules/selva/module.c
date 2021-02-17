@@ -634,6 +634,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         SVector_ForeachBegin(&it, &alias_query);
         while ((alias = SVector_Foreach(&it))) {
+            int err;
+
             struct SelvaModify_OpSet opSet = {
                 .op_set_type = SELVA_MODIFY_OP_SET_TYPE_CHAR,
                 .$add = alias,
@@ -644,8 +646,17 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 .$value_len = 0,
             };
 
-            /* TODO Handle error */
-            SelvaModify_ModifySet(ctx, hierarchy, obj, id, aliases_field, &opSet);
+            err = SelvaModify_ModifySet(ctx, hierarchy, obj, id, aliases_field, &opSet);
+            if (err < 0) {
+                TO_STR(id)
+
+                /* Since we are already at the end of the command, it's next to
+                 * impossible to rollback the command, so we'll just log any
+                 * errors received here.
+                 */
+                fprintf(stderr, "%s:%d: An error occurred while setting an alias \"%s\" -> %s: %s\n",
+                        __FILE__, __LINE__, alias, id_str, getSelvaErrorStr(err));
+            }
         }
     }
 
