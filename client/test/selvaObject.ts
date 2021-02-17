@@ -103,3 +103,38 @@ test.serial('get all', async (t) => {
     'match',
   ])
 })
+
+test.serial('obj len', async (t) => {
+  const client = connect({ port })
+
+  t.deepEqual(
+    await client.redis.selva_object_len('maTest0001'),
+    3
+  )
+})
+
+test.serial('string len', async (t) => {
+  const client = connect({ port })
+
+  t.deepEqual(
+    await client.redis.selva_object_len('maTest0001', 'title.en'),
+    3
+  )
+})
+
+test.serial('meta', async (t) => {
+  const client = connect({ port })
+
+  t.deepEqual(
+    await client.redis.selva_object_getmeta('maTest0001', 'title'),
+    0
+  )
+  t.deepEqual(
+    await client.redis.selva_object_setmeta('maTest0001', 'title', Buffer.from(Uint32Array.from([0xBADDCAFE]).buffer)),
+    1
+  )
+  t.deepEqual(
+    await client.redis.selva_object_getmeta('maTest0001', 'title'),
+    0xbaddcafe
+  )
+})

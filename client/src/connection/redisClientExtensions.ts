@@ -136,6 +136,12 @@ redis.add_command('selva.object.set')
 redis.add_command('selva.object.type')
 
 // @ts-ignore
+redis.add_command('selva.object.getmeta')
+
+// @ts-ignore
+redis.add_command('selva.object.setmeta')
+
+// @ts-ignore
 redis.add_command('selva.hierarchy.parents')
 
 // @ts-ignore
