@@ -197,12 +197,13 @@ static int add_set_values(
 
                 res++;
             } else if (err != SELVA_EEXIST) {
-                /* TODO Handle error */
                 if (alias_key) {
-                    fprintf(stderr, "%s: Alias update failed partially\n", __FILE__);
+                    fprintf(stderr, "%s:%d: Alias update failed\n", __FILE__, __LINE__);
                 } else {
-                    fprintf(stderr, "%s: String set field update failed\n", __FILE__);
+                    fprintf(stderr, "%s:%d: String set field update failed\n", __FILE__, __LINE__);
                 }
+                res = err;
+                goto string_err;
             }
 
             /* +1 to skip the NUL if cstring */
@@ -231,7 +232,6 @@ static int add_set_values(
 
                 if (!SVector_Search(&new_set, (void *)el)) {
                     /* el doesn't exist in new_set, therefore it should be removed. */
-                    /* TODO We could avoid this lookup if there was a function for element removal. */
                     SelvaSet_DestroyElement(SelvaSet_RemoveRms(objSet, el));
 
                     if (alias_key) {
@@ -277,8 +277,8 @@ string_err:
             if (err == 0) {
                 res++;
             } else if (err != SELVA_EEXIST) {
-                /* TODO Handle error */
-                fprintf(stderr, "%s: Double set field update failed\n", __FILE__);
+                fprintf(stderr, "%s:%d: Double set field update failed\n", __FILE__, __LINE__);
+                return err;
             }
 
             const size_t skip_off = part_len;
@@ -418,8 +418,8 @@ static int del_set_values(
                 err = SelvaObject_RemLongLongSet(obj, field, v);
             }
             if (err && err != SELVA_EEXIST) {
-                /* TODO Handle error */
-                fprintf(stderr, "%s: Double set field update failed\n", __FILE__);
+                fprintf(stderr, "%s:%d: Double set field update failed\n", __FILE__, __LINE__);
+                return err;
             }
 
             const size_t skip_off = part_len;
