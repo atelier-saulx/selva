@@ -125,16 +125,17 @@ test.serial('string len', async (t) => {
 test.serial('meta', async (t) => {
   const client = connect({ port })
 
+  await client.redis.selva_object_set('x', 'a', 's', 'abc')
   t.deepEqual(
-    await client.redis.selva_object_getmeta('maTest0001', 'title'),
+    await client.redis.selva_object_getmeta('x', 'a'),
     0
   )
   t.deepEqual(
-    await client.redis.selva_object_setmeta('maTest0001', 'title', Buffer.from(Uint32Array.from([0xBADDCAFE]).buffer)),
+    await client.redis.selva_object_setmeta('x', 'a', Buffer.from(Uint32Array.from([0xBADDCAFE]).buffer)),
     1
   )
   t.deepEqual(
-    await client.redis.selva_object_getmeta('maTest0001', 'title'),
+    await client.redis.selva_object_getmeta('x', 'a'),
     0xbaddcafe
   )
 })

@@ -684,7 +684,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
   t.deepEqual(s1[3][1], 'marker_id: 4')
   t.deepEqual(s1[4][1], 'marker_id: 5')
 
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_findinsub(
       '___selva_hierarchy',
       subId1,
@@ -693,7 +693,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
     ['maTest0021', 'maTest0013', 'maTest0001', 'root']
   )
 
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_findinsub(
       '___selva_hierarchy',
       subId1,
@@ -702,7 +702,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
     ['maTest0011', 'maTest0012', 'maTest0013', 'maTest0021', 'maTest0031']
   )
 
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_findinsub(
       '___selva_hierarchy',
       subId1,
@@ -711,7 +711,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
     ['maTest0001', 'maTest0011', 'maTest0012', 'maTest0013']
   )
 
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_findinsub(
       '___selva_hierarchy',
       subId1,
