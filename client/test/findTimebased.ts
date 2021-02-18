@@ -1681,7 +1681,7 @@ test.serial(
   }
 )
 
-test.serial.only(
+test.serial(
   'find - with concrete time and missing field without exists filter',
   async (t) => {
     const client = connect({ port }, { loglevel: 'info' })
