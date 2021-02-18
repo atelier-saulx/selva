@@ -524,8 +524,10 @@ static struct SelvaObject *open_node_object(struct RedisModuleCtx *redis_ctx, st
 
 #if RPN_ASSERTS
         assert(redis_ctx);
-        assert(ctx->reg[0]);
 #endif
+        if (!ctx->reg[0]) {
+            return NULL;
+        }
 
         /* Current node_id is always stored in reg[0] */
         const char *id_str = OPERAND_GET_S(ctx->reg[0]);
@@ -564,13 +566,13 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
     if (!obj) {
         fprintf(stderr, "RPN: Node object not found for: \"%.*s\"\n",
                 (int)SELVA_NODE_ID_SIZE, RedisModule_StringPtrLen(ctx->rms_field, NULL));
-        return push_empty_value(ctx);
+        return RPN_ERR_NPE;
     }
 
     /* TODO RMS wouldn't be necessary here */
     const enum SelvaObjectType field_type = SelvaObject_GetType(obj, ctx->rms_field);
     if (field_type == SELVA_OBJECT_NULL) {
-        return push_empty_value(ctx);
+        return (type == RPN_LVTYPE_NUMBER) ? push_double_result(ctx, nan_undefined()) : push_empty_value(ctx);
     } else if (field_type == SELVA_OBJECT_SET) {
         const char *field_name_str = OPERAND_GET_S(field);
         const size_t field_name_len = OPERAND_GET_S_LEN(field);
@@ -625,6 +627,7 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
 
             return push_double_result(ctx, dvalue);
         } else { /* Assume SELVA_OBJECT_STRING && RPN_LVTYPE_STRING */
+            /* This will fail if the field type is not a string. */
             err = SelvaObject_GetString(obj, ctx->rms_field, &value);
             if (err || !value) {
 #if 0
