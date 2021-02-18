@@ -242,10 +242,10 @@ function reduceAnd(fork: WithRequired<Fork, '$and'>): string | null {
           let fn: undefined | ((a: any, b: any) => [boolean, string | null])
 
           if (
-            ($a === 'exists' && $b !== 'exists') ||
+            ($a === 'exists' && $b === 'exists') ||
             ($a === 'notExists' && $b === 'notExists') ||
             ($a === 'exists' && $b === 'notExists') ||
-            ($a === 'exists' && $b === 'notExists')
+            ($a === 'notExists' && $b === 'exists')
           ) {
             fn = hasExists
           } else if ($a === '=' && $b === '=') {
