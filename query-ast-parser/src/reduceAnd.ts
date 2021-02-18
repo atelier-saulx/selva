@@ -160,6 +160,8 @@ const hasExists = (a: FilterAST, b: FilterAST): [boolean, null | string] => {
 
     return [false, null]
   }
+
+  return [true, null]
 }
 
 const isLargerThenAndSmallerThen = (
@@ -241,7 +243,9 @@ function reduceAnd(fork: WithRequired<Fork, '$and'>): string | null {
 
           if (
             ($a === 'exists' && $b !== 'exists') ||
-            ($a !== 'exists' && $b === 'exists')
+            ($a === 'notExists' && $b === 'notExists') ||
+            ($a === 'exists' && $b === 'notExists') ||
+            ($a === 'exists' && $b === 'notExists')
           ) {
             fn = hasExists
           } else if ($a === '=' && $b === '=') {
