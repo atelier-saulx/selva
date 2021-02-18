@@ -100,4 +100,8 @@ export default async (
   }
 
   push(payload, field)
+
+  const content = new Uint32Array([2])
+  const buf = Buffer.from(content.buffer)
+  result.push('C', field, buf)
 }

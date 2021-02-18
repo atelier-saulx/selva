@@ -54,4 +54,8 @@ export default async (
       result.push(...r)
     }
   }
+
+  const content = new Uint32Array([1])
+  const buf = Buffer.from(content.buffer)
+  result.push('C', field, buf)
 }
