@@ -1,15 +1,27 @@
 #include "cdefs.h"
 #include "selva.h"
+#include "errors.h"
+#include "hierarchy.h"
 #include "subscriptions.h"
 
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 
 int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy __unused) {
-    return 0;
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
+
+    return !SVector_Init(&def->updates, 2, NULL) ||
+           !SVector_Init(&def->triggers, 3, NULL)
+           ? SELVA_SUBSCRIPTIONS_ENOMEM : 0;
 }
 
-int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers __unused) {
+int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
+    if (!SVector_Init(&markers->vec, 0, NULL)) {
+        return SELVA_SUBSCRIPTIONS_ENOMEM;
+    }
+
+    markers->flags_filter = 0;
+
     return 0;
 }
 

@@ -651,9 +651,11 @@ static int crossRemove(
      * Backup the subscription markers so we can refresh them after the
      * operation.
      */
+#ifndef PU_TEST_BUILD
     if (unlikely(!SVector_Clone(&sub_markers, &node->metadata.sub_markers.vec, NULL))) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
+#endif
 
     SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
     SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
@@ -775,10 +777,12 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
      * Backup the subscription markers so we can refresh them after the
      * operation.
      */
+#ifndef PU_TEST_BUILD
     if (unlikely(!SVector_Clone(&sub_markers, &node->metadata.sub_markers.vec, NULL))) {
-        fprintf(stderr, "%s: %s ENOMEM\n", __FILE__, __func__);
+        fprintf(stderr, "%s:%d: ENOMEM\n", __FILE__, __LINE__);
         return;
     }
+#endif
 
     SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
     SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
