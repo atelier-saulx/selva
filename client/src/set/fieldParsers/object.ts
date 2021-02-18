@@ -25,6 +25,7 @@ export default async (
     result.push('7', field, 'O')
   }
 
+  let addedFields = 0
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
@@ -40,6 +41,7 @@ export default async (
     } else if (!fields.properties[key]) {
       throw new Error(`Cannot find field ${key} in ${type} for object`)
     } else {
+      addedFields++
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
 
@@ -56,7 +58,9 @@ export default async (
     }
   }
 
-  const content = new Uint32Array([0])
-  const buf = Buffer.from(content.buffer)
-  result.push('C', field, buf)
+  if (addedFields) {
+    const content = new Uint32Array([0])
+    const buf = Buffer.from(content.buffer)
+    result.push('C', field, buf)
+  }
 }

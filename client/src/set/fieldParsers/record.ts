@@ -28,6 +28,7 @@ export default async (
     r.push('7', field, '')
   }
 
+  let addedFields = 0
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
@@ -41,6 +42,7 @@ export default async (
         throw new Error(`Wrong option on object ${key}`)
       }
     } else {
+      addedFields++
       await fn(
         client,
         schema,
@@ -55,7 +57,9 @@ export default async (
     }
   }
 
-  const content = new Uint32Array([1])
-  const buf = Buffer.from(content.buffer)
-  result.push('C', field, buf)
+  if (addedFields) {
+    const content = new Uint32Array([1])
+    const buf = Buffer.from(content.buffer)
+    result.push('C', field, buf)
+  }
 }
