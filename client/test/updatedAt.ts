@@ -74,7 +74,10 @@ test.before(async (t) => {
       competition: {
         prefix: 'co',
       },
-    },
+      camera: {
+        prefix: 'ca',
+      }
+    }
   })
   await client.destroy()
 })
@@ -110,11 +113,15 @@ test.serial('updatedAt only changes when actually changed', async (t) => {
     name: 'competition',
   })
 
+  const cam1 = await client.set({
+    type: 'camera',
+  })
+
   let n = 2
   let lastUpdatedAt
 
   while (n--) {
-    console.log('set')
+    console.log('stonk start')
     await client.set({
       type: 'match',
       $alias: 'snurkle',
@@ -139,7 +146,11 @@ test.serial('updatedAt only changes when actually changed', async (t) => {
       parents: {
         $add: [team1, team2, competition],
       },
+      children: {
+        $value: [cam1],
+      },
     })
+    console.log('stonk end')
     const { updatedAt } = await client.get({
       $alias: 'snurkle',
       updatedAt: true,
