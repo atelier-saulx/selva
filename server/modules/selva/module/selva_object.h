@@ -17,6 +17,8 @@ enum SelvaObjectType {
     SELVA_OBJECT_POINTER = 7,
 };
 
+typedef uint32_t SelvaObjectMeta_t;
+
 struct SelvaObject;
 struct SelvaSet;
 struct RedisModuleString;
@@ -76,6 +78,10 @@ struct SelvaSet *SelvaObject_GetSetStr(struct SelvaObject *obj, const char *key_
 struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const struct RedisModuleString *key_name);
 ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct RedisModuleString *key_name);
+int SelvaObjet_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta);
+int SelvaObjet_GetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t *meta);
+int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta);
+int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta);
 SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
 const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
 /**

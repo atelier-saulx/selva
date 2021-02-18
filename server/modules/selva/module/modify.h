@@ -24,6 +24,7 @@ enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE = 'B', /*!< Increment a double value. */
     SELVA_MODIFY_ARG_OP_SET = '5', /*!< Value is a struct SelvaModify_OpSet. */
     SELVA_MODIFY_ARG_OP_DEL = '7', /*!< Delete field; value is a modifier. */
+    SELVA_MODIFY_ARG_OP_OBJ_META = 'C', /*!< Set object user metadata. */
 };
 
 struct SelvaModify_OpIncrement {

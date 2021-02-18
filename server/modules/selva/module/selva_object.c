@@ -23,12 +23,10 @@
 
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
-typedef uint32_t meta_t;
-
 struct SelvaObjectKey {
     enum SelvaObjectType type; /*!< Type of the value. */
     enum SelvaObjectType subtype; /*!< Subtype of the value. Arrays use this. */
-    meta_t user_meta; /*!< User defined metadata. */
+    SelvaObjectMeta_t user_meta; /*!< User defined metadata. */
     unsigned short name_len;
     RB_ENTRY(SelvaObjectKey) _entry;
     union {
@@ -1055,10 +1053,9 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, const RedisModuleString *key_na
     return SelvaObject_LenStr(obj, key_name_str, key_name_len);
 }
 
-int SelvaObjet_GetUserMeta(struct SelvaObject *obj, RedisModuleString *key_name, meta_t *meta) {
+int SelvaObjet_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta) {
     int err;
     struct SelvaObjectKey *key;
-    TO_STR(key_name)
 
     err = get_key(obj, key_name_str, key_name_len, 0, &key);
     if (err) {
@@ -1069,10 +1066,15 @@ int SelvaObjet_GetUserMeta(struct SelvaObject *obj, RedisModuleString *key_name,
     return 0;
 }
 
-int SelvaObject_SetUserMeta(struct SelvaObject *obj, RedisModuleString *key_name, meta_t meta) {
+int SelvaObjet_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t *meta) {
+    TO_STR(key_name)
+
+    return SelvaObjet_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
+}
+
+int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta) {
     int err;
     struct SelvaObjectKey *key;
-    TO_STR(key_name)
 
     err = get_key(obj, key_name_str, key_name_len, 0, &key);
     if (err) {
@@ -1081,6 +1083,12 @@ int SelvaObject_SetUserMeta(struct SelvaObject *obj, RedisModuleString *key_name
 
     key->user_meta = meta;
     return 0;
+}
+
+int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta) {
+    TO_STR(key_name)
+
+    return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta);
 }
 
 /* TODO Support nested objects */
@@ -1539,7 +1547,7 @@ int SelvaObject_GetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return REDISMODULE_OK;
     }
 
-    meta_t user_meta;
+    SelvaObjectMeta_t user_meta;
     err = SelvaObjet_GetUserMeta(obj, argv[ARGV_OKEY], &user_meta);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "Failed to get key metadata");
@@ -1551,7 +1559,7 @@ int SelvaObject_GetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
-    meta_t user_meta;
+    SelvaObjectMeta_t user_meta;
     int err;
 
     const int ARGV_KEY = 1;
@@ -1565,7 +1573,7 @@ int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModuleString *mval = argv[ARGV_MVAL];
     TO_STR(mval)
 
-    if (mval_len < sizeof(meta_t)) {
+    if (mval_len < sizeof(SelvaObjectMeta_t)) {
         return replyWithSelvaErrorf(ctx, SELVA_EINTYPE,"Expected: %s", typeof_str(user_meta));
     }
 
@@ -1574,7 +1582,7 @@ int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return REDISMODULE_OK;
     }
 
-    memcpy(&user_meta, mval_str, sizeof(meta_t));
+    memcpy(&user_meta, mval_str, sizeof(SelvaObjectMeta_t));
     err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
@@ -1676,7 +1684,7 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
     for (size_t i = 0; i < obj_size; i++) {
         RedisModuleString *name = RedisModule_LoadString(io);
         const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
-        const meta_t user_meta = RedisModule_LoadUnsigned(io);
+        const SelvaObjectMeta_t user_meta = RedisModule_LoadUnsigned(io);
 
         switch (type) {
         case SELVA_OBJECT_NULL:
@@ -1833,7 +1841,7 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
     }
 }
 
-void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
+void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key __unused, void *value __unused) {
     RedisModule_LogIOError(aof, "warning", "AOF rewrite not supported");
 }
 

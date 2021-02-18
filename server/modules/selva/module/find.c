@@ -561,6 +561,18 @@ static RedisModuleString *format_full_field_path(RedisModuleCtx *ctx, const char
     return res;
 }
 
+static int is_text_field(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+    SelvaObjectMeta_t meta;
+    int err;
+
+    err = SelvaObjet_GetUserMetaStr(obj, key_name_str, key_name_len, &meta);
+    if (err) {
+        return 0;
+    }
+
+    return meta == 2; /* TODO Define this somewhere */
+}
+
 static ssize_t send_deep_merge(
         RedisModuleCtx *ctx,
         Selva_NodeId nodeId,
@@ -573,7 +585,7 @@ static ssize_t send_deep_merge(
 
     /*
      * Note that the `fields` object is empty in the beginning of the
-     * following loop.
+     * following loop when send_deep_merge() is called for the first time.
      */
     iterator = SelvaObject_ForeachBegin(obj);
     while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
@@ -586,6 +598,11 @@ static ssize_t send_deep_merge(
         next_path = format_full_field_path(ctx, obj_path_str, key_name_str);
         if (!next_path) {
             return SELVA_ENOMEM;
+        }
+
+        /* Skip fields marked as sent. */
+        if (SelvaObject_GetType(fields, next_path) == SELVA_OBJECT_LONGLONG) {
+            continue;
         }
 
         type = SelvaObject_GetTypeStr(obj, key_name_str, key_name_len);
@@ -604,12 +621,13 @@ static ssize_t send_deep_merge(
                         __FILE__, __LINE__,
                         getSelvaErrorStr(err));
             }
+
+            /* Mark the text field as sent. */
+            if (is_text_field(obj, key_name_str, key_name_len)) {
+                (void)SelvaObject_SetLongLong(fields, next_path, 1);
+            }
         } else {
             int err;
-
-            if (!SelvaObject_Exists(fields, next_path)) {
-                continue;
-            }
 
             key_name = RedisModule_CreateString(ctx, key_name_str, key_name_len);
             if (!key_name) {
@@ -703,7 +721,8 @@ static ssize_t send_node_object_merge(
 
         /*
          * Note that the `fields` object is empty in the beginning of the
-         * following loop.
+         * following loop when the send_node_object_merge() function is called for
+         * the first time.
          */
         iterator = SelvaObject_ForeachBegin(obj);
         while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {

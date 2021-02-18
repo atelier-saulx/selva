@@ -3,6 +3,7 @@
 
 #include "cdefs.h"
 #include "redismodule.h"
+#include "typestr.h"
 #include "rmutil/util.h"
 #include "rmutil/strings.h"
 #include "rmutil/test_util.h"
@@ -558,7 +559,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
 
-            TO_STR(value)
             union {
                 char s[sizeof(long long)];
                 long long ll;
@@ -589,7 +589,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
 
-            TO_STR(value)
             union {
                 char s[sizeof(double)];
                 double d;
@@ -607,6 +606,20 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
 
             SelvaObject_SetDouble(obj, field, v.d);
+        } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
+            SelvaObjectMeta_t user_meta;
+
+            if (value_len < sizeof(SelvaObjectMeta_t)) {
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE,"Expected: %s", typeof_str(user_meta));
+                continue;
+            }
+
+            memcpy(&user_meta, value_str, sizeof(SelvaObjectMeta_t));
+            err = SelvaObject_SetUserMeta(obj, field, user_meta);
+            if (err) {
+                replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
+                continue;
+            }
         } else {
             replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
             continue;
