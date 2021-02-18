@@ -1554,3 +1554,129 @@ test.serial('find - starting soon', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial(
+  'find - with concrete time and missing field with exists filter',
+  async (t) => {
+    const client = connect({ port }, { loglevel: 'info' })
+
+    const match1 = await client.set({
+      type: 'match',
+      name: 'started 5m ago',
+      // startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
+      endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
+    })
+
+    await client.set({
+      type: 'match',
+      name: 'started 2m ago',
+      startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
+      endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
+    })
+
+    await client.set({
+      type: 'match',
+      name: 'started 2h ago',
+      startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
+      endTime: Date.now() - 60 * 60 * 1000, // ended 1 hour ago
+    })
+
+    const nextRefresh = Date.now() + 1 * 60 * 60 * 1000
+    await client.set({
+      $id: 'maFuture',
+      type: 'match',
+      name: 'starts in 1h',
+      startTime: nextRefresh, // starts in 1 hour
+      endTime: Date.now() + 2 * 60 * 60 * 1000, // ends in 2 hours
+    })
+
+    await client.set({
+      $id: 'maLaterFut',
+      type: 'match',
+      name: 'starts in 2h',
+      startTime: Date.now() + 2 * 60 * 60 * 1000, // starts in 1 hour
+      endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 2 hours
+    })
+
+    let sub = ''
+    for (let i = 0; i < 64; i++) {
+      sub += 'x'
+    }
+
+    t.deepEqual(
+      (
+        await client.get({
+          $includeMeta: true,
+          $subscription: sub,
+          $id: 'root',
+          items: {
+            name: true,
+            value: true,
+            $list: {
+              $sort: { $field: 'startTime', $order: 'asc' },
+              $find: {
+                $traverse: 'children',
+                $filter: [
+                  {
+                    $field: 'startTime',
+                    $operator: '<',
+                    $value: Date.now(),
+                  },
+                  {
+                    $field: 'startTime',
+                    $operator: 'exists',
+                  },
+                ],
+              },
+            },
+          },
+        })
+      ).items.map((i) => i.name),
+      ['started 2h ago', 'started 2m ago']
+    )
+
+    t.plan(2)
+    const observable = client
+      .observe(
+        {
+          $includeMeta: true,
+          $id: 'root',
+          items: {
+            name: true,
+            value: true,
+            $list: {
+              $sort: { $field: 'startTime', $order: 'asc' },
+              $find: {
+                $traverse: 'children',
+                $filter: [
+                  {
+                    $field: 'startTime',
+                    $operator: '<',
+                    $value: Date.now(),
+                  },
+
+                  {
+                    $field: 'startTime',
+                    $operator: 'exists',
+                  },
+                ],
+              },
+            },
+          },
+        },
+        { immutable: true }
+      )
+      .subscribe((d) => {
+        console.log('d', d)
+        t.deepEqualIgnoreOrder(
+          d.items.map((i) => i.name),
+          ['started 2h ago', 'started 2m ago']
+        )
+      })
+
+    await wait(2e3)
+
+    await client.delete('root')
+    await client.destroy()
+  }
+)
