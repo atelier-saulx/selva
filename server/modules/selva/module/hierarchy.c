@@ -505,7 +505,6 @@ static int cross_insert_children(
         SelvaModify_HierarchyNode *node,
         size_t n,
         const Selva_NodeId *nodes) {
-    const size_t initialNodeParentsSize = SVector_Size(&node->parents);
     int err = 0;
 
     if (n == 0) {
@@ -582,15 +581,16 @@ static int cross_insert_parents(
         SelvaModify_HierarchyNode *node,
         size_t n,
         const Selva_NodeId *nodes) {
-    const size_t initialNodeParentsSize = SVector_Size(&node->parents);
     int err = 0;
 
     if (n == 0) {
         return 0; /* No changes. */
     }
 
-    /* The node is no longer an orphan */
-    rmHead(hierarchy, node);
+    if (SVector_Size(&node->parents) == 0) {
+        /* The node is no longer an orphan */
+        rmHead(hierarchy, node);
+    }
 
     SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
 
