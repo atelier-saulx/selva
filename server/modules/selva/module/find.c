@@ -573,6 +573,137 @@ static int is_text_field(struct SelvaObject *obj, const char *key_name_str, size
     return meta == 2; /* TODO Define this somewhere */
 }
 
+static ssize_t send_merge_all(
+        RedisModuleCtx *ctx,
+        Selva_NodeId nodeId,
+        struct SelvaObject *fields,
+        struct SelvaObject *obj,
+        RedisModuleString *obj_path,
+        size_t *nr_fields_out) {
+    void *iterator;
+    const char *key_name_str;
+    TO_STR(obj_path);
+
+    /*
+     * Note that the `fields` object is empty in the beginning of the
+     * following loop when the send_node_object_merge() function is called for
+     * the first time.
+     */
+    iterator = SelvaObject_ForeachBegin(obj);
+    while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
+        const size_t key_name_len = strlen(key_name_str);
+        int err;
+
+        if (!SelvaObject_ExistsStr(fields, key_name_str, strlen(key_name_str))) {
+            continue;
+        }
+
+        RedisModuleString *key_name;
+        key_name = RedisModule_CreateString(ctx, key_name_str, key_name_len);
+        if (!key_name) {
+            return SELVA_ENOMEM;
+        }
+
+        ++*nr_fields_out;
+
+        RedisModuleString *full_field_path;
+        full_field_path = format_full_field_path(ctx, obj_path_str, key_name_str);
+        if (!full_field_path) {
+            fprintf(stderr, "%s:%d: Out of memory\n", __FILE__, __LINE__);
+            replyWithSelvaError(ctx, SELVA_ENOMEM);
+            continue;
+        }
+
+        /*
+         * Start a new array reply:
+         * [node_id, field_name, field_value]
+         */
+        RedisModule_ReplyWithArray(ctx, 3);
+        RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
+        RedisModule_ReplyWithString(ctx, full_field_path);
+        err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
+        if (err) {
+            TO_STR(obj_path);
+
+            fprintf(stderr, "%s:%d: Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
+                    __FILE__, __LINE__,
+                    obj_path_str,
+                    key_name_str,
+                    (int)SELVA_NODE_ID_SIZE, nodeId);
+            continue;
+        }
+
+        /* Mark the key as sent. */
+        (void)SelvaObject_SetLongLong(fields, key_name, 1);
+    }
+
+    return 0;
+}
+
+static ssize_t send_named_merge(
+        RedisModuleCtx *ctx,
+        Selva_NodeId nodeId,
+        struct SelvaObject *fields,
+        struct SelvaObject *obj,
+        RedisModuleString *obj_path,
+        size_t *nr_fields_out) {
+    void *iterator;
+    SVector *vec;
+    const char *field_index;
+    TO_STR(obj_path);
+
+    iterator = SelvaObject_ForeachBegin(fields);
+    while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, &field_index, SELVA_OBJECT_ARRAY))) {
+        struct SVectorIterator it;
+        RedisModuleString *field;
+
+        SVector_ForeachBegin(&it, vec);
+        while ((field = SVector_Foreach(&it))) {
+            int err;
+
+            if (SelvaObject_Exists(obj, field)) {
+                continue;
+            }
+
+            ++*nr_fields_out;
+
+            RedisModuleString *full_field_path;
+            full_field_path = format_full_field_path(ctx, obj_path_str, RedisModule_StringPtrLen(field, NULL));
+            if (!full_field_path) {
+                fprintf(stderr, "%s:%d: Out of memory\n", __FILE__, __LINE__);
+                replyWithSelvaError(ctx, SELVA_ENOMEM);
+                continue;
+            }
+
+            /*
+             * Start a new array reply:
+             * [node_id, field_name, field_value]
+             */
+            RedisModule_ReplyWithArray(ctx, 3);
+            RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
+            RedisModule_ReplyWithString(ctx, full_field_path);
+            err = SelvaObject_ReplyWithObject(ctx, obj, field);
+            if (err) {
+                TO_STR(field);
+
+                fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
+                        __FILE__,
+                        field_str,
+                        (int)SELVA_NODE_ID_SIZE, nodeId,
+                        getSelvaErrorStr(err));
+
+                /* Reply with null to fill the gap. */
+                RedisModule_ReplyWithNull(ctx);
+            }
+
+            SelvaObject_DelKeyStr(fields, field_index, strlen(field_index)); /* Remove the field from the list */
+            break; /* Only send the first existing field from the fields list. */
+        }
+    }
+
+    return 0;
+}
+
 static ssize_t send_deep_merge(
         RedisModuleCtx *ctx,
         Selva_NodeId nodeId,
@@ -686,18 +817,24 @@ static ssize_t send_node_object_merge(
         return SELVA_ENOENT;
     }
 
-    struct SelvaObject *obj;
-    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, id, REDISMODULE_READ), &obj);
+    struct SelvaObject *node_obj;
+    err = SelvaObject_Key2Obj(key, &node_obj);
     if (err) {
         return err;
     }
+
     /* Get the nested object by given path. */
-    err = SelvaObject_GetObject(obj, obj_path, &obj);
-    if (err == SELVA_ENOENT || err == SELVA_EINTYPE) {
-        /* Skip this node if the object doesn't exist. */
-        return 0;
-    } else if (err) {
-        return err;
+    struct SelvaObject *obj;
+    if (obj_path_len != 0) {
+    err = SelvaObject_GetObject(node_obj, obj_path, &obj);
+        if (err == SELVA_ENOENT || err == SELVA_EINTYPE) {
+            /* Skip this node if the object doesn't exist. */
+            return 0;
+        } else if (err) {
+            return err;
+        }
+    } else {
+        obj = node_obj;
     }
 
     /*
@@ -715,120 +852,54 @@ static ssize_t send_node_object_merge(
      * ```
      */
 
-    if (merge_strategy == MERGE_STRATEGY_ALL) { /* Send all keys from the nested object. */
-        void *iterator;
-        const char *key_name_str;
-
+    ssize_t res;
+    if ((merge_strategy == MERGE_STRATEGY_ALL || merge_strategy == MERGE_STRATEGY_DEEP) &&
+        is_text_field(node_obj, obj_path_str, obj_path_len)) {
         /*
-         * Note that the `fields` object is empty in the beginning of the
-         * following loop when the send_node_object_merge() function is called for
-         * the first time.
+         * If obj is a text field we can just send it directly and skip the rest of
+         * the processing.
          */
-        iterator = SelvaObject_ForeachBegin(obj);
-        while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
-            const size_t key_name_len = strlen(key_name_str);
-
-            if (!SelvaObject_ExistsStr(fields, key_name_str, strlen(key_name_str))) {
-                continue;
-            }
-
-            RedisModuleString *key_name;
-            key_name = RedisModule_CreateString(ctx, key_name_str, key_name_len);
-            if (!key_name) {
-                return SELVA_ENOMEM;
-            }
-
+        if (SelvaObject_GetType(fields, obj_path) != SELVA_OBJECT_LONGLONG) {
             ++*nr_fields_out;
-
-            RedisModuleString *full_field_path;
-            full_field_path = format_full_field_path(ctx, obj_path_str, key_name_str);
-            if (!full_field_path) {
-                fprintf(stderr, "%s:%d: Out of memory\n", __FILE__, __LINE__);
-                replyWithSelvaError(ctx, SELVA_ENOMEM);
-                continue;
-            }
 
             /*
              * Start a new array reply:
              * [node_id, field_name, field_value]
              */
             RedisModule_ReplyWithArray(ctx, 3);
+
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
-            RedisModule_ReplyWithString(ctx, full_field_path);
-            err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
+            RedisModule_ReplyWithString(ctx, obj_path);
+            err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
             if (err) {
                 TO_STR(obj_path);
 
-                fprintf(stderr, "%s: Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
+                fprintf(stderr, "%s: Failed to send \"%s\" (text) of node_id: \"%.*s\"\n",
                         __FILE__,
                         obj_path_str,
-                        key_name_str,
                         (int)SELVA_NODE_ID_SIZE, nodeId);
-                continue;
-            }
-
-            /* Mark the key as sent. */
-            (void)SelvaObject_SetLongLong(fields, key_name, 1);
-        }
-    } else if (merge_strategy == MERGE_STRATEGY_NAMED) { /* Send named keys from the nested object. */
-        void *iterator;
-        SVector *vec;
-        const char *field_index;
-
-        iterator = SelvaObject_ForeachBegin(fields);
-        while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, &field_index, SELVA_OBJECT_ARRAY))) {
-            struct SVectorIterator it;
-            RedisModuleString *field;
-
-            SVector_ForeachBegin(&it, vec);
-            while ((field = SVector_Foreach(&it))) {
-                if (SelvaObject_Exists(obj, field)) {
-                    continue;
-                }
-
-                ++*nr_fields_out;
-
-                RedisModuleString *full_field_path;
-                full_field_path = format_full_field_path(ctx, obj_path_str, RedisModule_StringPtrLen(field, NULL));
-                if (!full_field_path) {
-                    fprintf(stderr, "%s:%d: Out of memory\n", __FILE__, __LINE__);
-                    replyWithSelvaError(ctx, SELVA_ENOMEM);
-                    continue;
-                }
-
-                /*
-                 * Start a new array reply:
-                 * [node_id, field_name, field_value]
-                 */
-                RedisModule_ReplyWithArray(ctx, 3);
-                RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
-                RedisModule_ReplyWithString(ctx, full_field_path);
-                err = SelvaObject_ReplyWithObject(ctx, obj, field);
-                if (err) {
-                    TO_STR(field);
-
-                    fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
-                            __FILE__,
-                            field_str,
-                            (int)SELVA_NODE_ID_SIZE, nodeId,
-                            getSelvaErrorStr(err));
-
-                    /* Reply with null to fill the gap. */
-                    RedisModule_ReplyWithNull(ctx);
-                }
-
-                SelvaObject_DelKeyStr(fields, field_index, strlen(field_index)); /* Remove the field from the list */
-                break; /* Only send the first existing field from the fields list. */
+            } else {
+                /* Mark the key as sent. */
+                (void)SelvaObject_SetLongLong(fields, obj_path, 1);
             }
         }
+
+        res = 0;
+    } else if (merge_strategy == MERGE_STRATEGY_ALL) {
+        /* Send all keys from the nested object. */
+        res = send_merge_all(ctx, nodeId, fields, obj, obj_path, nr_fields_out);
+    } else if (merge_strategy == MERGE_STRATEGY_NAMED) {
+        /* Send named keys from the nested object. */
+        res = send_named_merge(ctx, nodeId, fields, obj, obj_path, nr_fields_out);
     } else if (merge_strategy == MERGE_STRATEGY_DEEP) {
-        return send_deep_merge(ctx, nodeId, fields, obj, obj_path, nr_fields_out);
+        /* Deep merge all keys and nested objects. */
+        res = send_deep_merge(ctx, nodeId, fields, obj, obj_path, nr_fields_out);
     } else {
-        return replyWithSelvaErrorf(ctx, SELVA_ENOTSUP, "Merge strategy not supported: %d\n", (int)merge_strategy);
+        res = replyWithSelvaErrorf(ctx, SELVA_ENOTSUP, "Merge strategy not supported: %d\n", (int)merge_strategy);
     }
 
     RedisModule_CloseKey(key);
-    return 0;
+    return res;
 }
 
 static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
@@ -1132,6 +1203,9 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
             return replyWithSelvaErrorf(ctx, err, "offset");
+        }
+        if (offset < -1) {
+            return replyWithSelvaErrorf(ctx, err, "offset < -1");
         }
     }
 

@@ -94,11 +94,15 @@ export default function createInheritOperation(
 
   const types: string[] = Array.isArray(inherit.$type)
     ? inherit.$type
+    : !inherit.$type
+    ? []
     : [inherit.$type]
 
   const schema = client.schemas[db]
 
-  validateTypes(schema, field, types)
+  if (types && types.length) {
+    validateTypes(schema, field, types)
+  }
 
   let hasKeys = false
   let p = props

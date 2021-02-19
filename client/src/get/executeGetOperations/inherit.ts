@@ -75,17 +75,20 @@ async function mergeObj(
         $operator: 'exists',
         $field: field,
       },
-      {
-        isFork: true,
-        $or: op.types.map((t) => {
-          return {
-            $operator: '=',
-            $field: 'type',
-            $value: t,
-          }
-        }),
-      },
     ],
+  }
+
+  if (op.types) {
+    fork.$and.push({
+      isFork: true,
+      $or: op.types.map((t) => {
+        return {
+          $operator: '=',
+          $field: 'type',
+          $value: t,
+        }
+      }),
+    })
   }
 
   const rpn = ast2rpn(fork)
@@ -114,6 +117,8 @@ async function mergeObj(
     '___selva_hierarchy',
     'bfs',
     'ancestors',
+    'offset',
+    -1,
     'merge',
     field,
     op.id,
@@ -123,6 +128,8 @@ async function mergeObj(
   console.log(
     '___selva_hierarchy',
     'bfs',
+    'offset',
+    -1,
     'ancestors',
     'merge',
     field,
@@ -139,20 +146,7 @@ async function mergeObj(
     lang
   )
 
-  const self = await executeGetOperation(
-    client,
-    lang,
-    ctx,
-    {
-      type: 'db',
-      id: op.id,
-      field: op.field,
-      sourceField: op.sourceField,
-    },
-    false
-  )
-
-  return Object.assign(o, self)
+  return o
 }
 
 async function deepMergeObj(
@@ -183,17 +177,20 @@ async function deepMergeObj(
         $operator: 'exists',
         $field: field,
       },
-      {
-        isFork: true,
-        $or: op.types.map((t) => {
-          return {
-            $operator: '=',
-            $field: 'type',
-            $value: t,
-          }
-        }),
-      },
     ],
+  }
+
+  if (op.types) {
+    fork.$and.push({
+      isFork: true,
+      $or: op.types.map((t) => {
+        return {
+          $operator: '=',
+          $field: 'type',
+          $value: t,
+        }
+      }),
+    })
   }
 
   const rpn = ast2rpn(fork)
@@ -222,6 +219,8 @@ async function deepMergeObj(
     '___selva_hierarchy',
     'bfs',
     'ancestors',
+    'offset',
+    -1,
     'deepMerge',
     field,
     op.id,
@@ -231,6 +230,8 @@ async function deepMergeObj(
     '___selva_hierarchy',
     'bfs',
     'ancestors',
+    'offset',
+    -1,
     'deepMerge',
     field,
     op.id,
@@ -238,22 +239,7 @@ async function deepMergeObj(
   )
 
   const o = buildResultFromIdFieldAndValue(ctx, client, remapped, field, res)
-
-  const self = await executeGetOperation(
-    client,
-    lang,
-    ctx,
-    {
-      type: 'db',
-      id: op.id,
-      field: op.field,
-      sourceField: op.sourceField,
-    },
-    false
-  )
-
-  const total = deepMerge(o, self)
-  return total
+  return o
 }
 
 async function inheritItem(
@@ -478,13 +464,16 @@ export default async function inherit(
 
     return executeNestedGetOperations(client, p, lang, ctx)
   } else if (op.single) {
-    if (op.merge === true && (fs.type === 'object' || fs.type === 'record')) {
+    if (
+      op.merge === true &&
+      (!fs || fs.type === 'object' || fs.type === 'record')
+    ) {
       return mergeObj(client, op, schema, lang, ctx)
     }
 
     if (
       op.deepMerge === true &&
-      (fs.type === 'object' || fs.type === 'record')
+      (!fs || fs.type === 'object' || fs.type === 'record')
     ) {
       return deepMergeObj(client, op, schema, lang, ctx)
     }

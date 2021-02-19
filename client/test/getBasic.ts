@@ -70,6 +70,7 @@ test.beforeEach(async (t) => {
             type: 'object',
             properties: {
               dong: { type: 'set', items: { type: 'string' } },
+              texty: { type: 'text' },
               dung: { type: 'number' },
               dang: {
                 type: 'object',
@@ -1179,8 +1180,8 @@ test.serial(
       await client.get({
         $id: entry,
         id: true,
-        title: { $inherit: { $type: 'lekkerType', $merge: true } }, // TODO: throw, not allowed probably
-        ding: { $inherit: { $type: 'lekkerType', $merge: true } },
+        title: { $inherit: { $merge: true } },
+        ding: { $inherit: { $merge: true } },
       }),
       {
         id: entry,
@@ -1785,6 +1786,7 @@ test.serial('get - $inherit with object types does deep merge', async (t) => {
       $add: [parentOfParent],
     },
     ding: {
+      texty: { de: 'hallo' },
       dang: {
         dung: 115,
       },
@@ -1804,6 +1806,7 @@ test.serial('get - $inherit with object types does deep merge', async (t) => {
       en: 'nice!',
     },
     ding: {
+      texty: { en: 'hello' },
       dunk: {
         ding: 99,
       },
@@ -1814,8 +1817,8 @@ test.serial('get - $inherit with object types does deep merge', async (t) => {
     await client.get({
       $id: entry,
       id: true,
-      title: { $inherit: { $type: 'lekkerType', $deepMerge: true } }, // TODO: throw, not allowed probably
-      ding: { $inherit: { $type: 'lekkerType', $deepMerge: true } },
+      title: { $inherit: { $deepMerge: true } },
+      ding: { $inherit: { $deepMerge: true } },
       // title: { $inherit: { $type: 'lekkerType', $merge: true } }, // TODO: throw, not allowed probably
       // ding: { $inherit: { $type: 'lekkerType', $merge: true } },
     }),
@@ -1825,6 +1828,7 @@ test.serial('get - $inherit with object types does deep merge', async (t) => {
         en: 'nice!',
       },
       ding: {
+        texty: { en: 'hello' },
         dong: ['hello', 'yesh'],
         dang: {
           dung: 115,
