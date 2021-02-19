@@ -454,6 +454,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     replset_t repl_set;
     clear_replset(&repl_set);
     const int nr_triplets = (argc - 3) / 3;
+    bool updated = false;
 
     /*
      * Parse the rest of the arguments and run the modify operations.
@@ -512,6 +513,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * Currently $alias is the only field using string arrays.
              * $alias: NOP
              */
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+
+            /* This triplet needs to be replicated. */
+            set_replset(&repl_set, i / 3 - 1);
+
+            continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
             err = SelvaModify_ModifyDel(ctx, hierarchy, obj, id, field);
             if (err) {
@@ -620,6 +627,17 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
                 continue;
             }
+
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+
+            /* This triplet needs to be replicated. */
+            set_replset(&repl_set, i / 3 - 1);
+
+            /*
+             * We don't count this as a modification as we assume that the
+             * value was modified too.
+             */
+            continue;
         } else {
             replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
             continue;
@@ -632,7 +650,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, nodeId, metadata, field_str);
         }
 
+#if 0
+        fprintf(stderr, "%s: Updated %.*s %s\n", __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId, field_str);
+#endif
+
         RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
+        updated = true;
     }
 
     /*
@@ -673,28 +696,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
     }
 
-    /*
-     * If there is anything set in repl_set it means that something was changed for nodeId.
-     */
-    if (repl_set) {
+    if (updated) {
         struct timespec ts;
 
         clock_gettime(CLOCK_REALTIME, &ts);
         const long long now = (long long)ts.tv_sec * 1000 + (long long)ts.tv_nsec / 1000000;
-
-        replicateModify(ctx, &repl_set, argv);
-
-        /*
-         * In case this DB node is a replica:
-         * Here we are in a hope that even though replicas won't actually
-         * replicate anything any further, we should still end up into this
-         * `if` branch and thus we should be able to do two things:
-         * 1) set `createdAt` and `updatedAt` fields;
-         * 2) publish events for any active subscriptions.
-         *
-         * Thref're, curs'd is the one who is't optimizes out the replication
-         * code in the case the hest is running on a replica.
-         */
 
         if (FISSET_UPDATED_AT(flags)) {
             /* `updatedAt` is always updated on change. */
@@ -713,6 +719,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              */
             Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
         }
+    }
+
+    /*
+     * If there is anything set in repl_set it means that something was changed for nodeId.
+     */
+    if (repl_set) {
+        replicateModify(ctx, &repl_set, argv);
     }
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
     RedisModule_CloseKey(id_key);
