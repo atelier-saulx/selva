@@ -7,7 +7,7 @@ import validateFilter from './filter'
 import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
 
-import fetch from 'node-fetch'
+// import fetch from 'node-fetch'
 
 // TODO: more concurrency for fetching
 async function evaluateTextSearch(
@@ -24,20 +24,21 @@ async function evaluateTextSearch(
         } else if ((!nested && f.$or) || (i && f.$or)) {
           return evaluateTextSearch([f, f.$or], language, 'or', true)
         } else if (f.$operator === 'textSearch') {
-          const resp = await fetch('http://localhost:33333/get', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify({
-              $searchString: f.$value,
-              $field: f.$field,
-              $language: language, // FIXME
-            }),
-          })
+          // const resp = await fetch('http://localhost:33333/get', {
+          //   method: 'POST',
+          //   headers: {
+          //     'content-type': 'application/json',
+          //   },
+          //   body: JSON.stringify({
+          //     $searchString: f.$value,
+          //     $field: f.$field,
+          //     $language: language, // FIXME
+          //   }),
+          // })
 
-          const ids = await resp.json()
-          return ids
+          // const ids = await resp.json()
+          // return ids
+          return []
         } else {
           return null
         }
