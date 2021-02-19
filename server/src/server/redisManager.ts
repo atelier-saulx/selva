@@ -26,7 +26,15 @@ export default class RedisManager extends ProcessManager {
   ) {
     super('redis-server', {
       args,
-      env: { REDIS_PORT: port.toString(), SERVER_TYPE: type },
+      env:
+        process.platform === 'linux'
+          ? {
+              REDIS_PORT: port.toString(),
+              SERVER_TYPE: type,
+              // TODO: this is a hack for DO droplet, pls remove
+              LD_LIBRARY_PATH: '/usr/local/lib',
+            }
+          : { REDIS_PORT: port.toString(), SERVER_TYPE: type },
     })
 
     this.redisHost = host
