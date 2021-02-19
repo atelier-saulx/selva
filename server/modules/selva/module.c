@@ -36,6 +36,7 @@
 #error The compiler and architecture must have Tetra-Integer support
 #endif
 typedef unsigned __int128 replset_t;
+#define REPLSET_BITS 128
 
 SET_DECLARE(selva_onload, Selva_Onload);
 
@@ -58,11 +59,13 @@ static inline void clear_replset(replset_t *r) {
 }
 
 static inline void set_replset(replset_t *r, int i) {
-    *r |= (replset_t)1 << i;
+    if (i < REPLSET_BITS) {
+        *r |= (replset_t)1 << i;
+    }
 }
 
 static inline int get_replset(const replset_t *r, int i) {
-    return (int)((*r >> i) & 1);
+    return i < REPLSET_BITS ? (int)((*r >> i) & 1) : 0;
 }
 
 /*
@@ -71,7 +74,7 @@ static inline int get_replset(const replset_t *r, int i) {
  */
 void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString **orig_argv) {
     /*
-     * REDISMODULE_CTX_FLAGS_REPLICATED would be more approriate here but it's
+     * REDISMODULE_CTX_FLAGS_REPLICATED would be more appropriate here but it's
      * unclear whether it's available only in newer server versions.
      */
     if (RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE) {
@@ -85,24 +88,23 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
      * do a little hack here make dynamic arguments work.
      */
     const int leading_args = 2;
-    const int max_argc = 128; /* This size depends on the size of replset_t */
     int argc = 0;
     RedisModuleString **argv;
-    char fmt[1 + leading_args + max_argc + 1];
+    char fmt[1 + leading_args + REPLSET_BITS + 1];
 
-    argv = RedisModule_PoolAlloc(ctx, max_argc * sizeof(RedisModuleString *));
+    argv = RedisModule_PoolAlloc(ctx, REPLSET_BITS * sizeof(RedisModuleString *));
     if (!argv) {
         fprintf(stderr, "%s: Replication: %s\n", __FILE__, getSelvaErrorStr(SELVA_ENOMEM));
         return;
     }
 
-    fmt[0] = 'A'; /* Supress the AOF channel */
+    fmt[0] = 'A'; /* Suppress the AOF channel */
     fmt[1] = 's'; /* nodeId */
     fmt[2] = 's'; /* Flags */
 
     char *fmt_p = fmt + 1 + leading_args;
     int i_arg_type = 1 + leading_args;
-    for (int i = 0; i < max_argc; i++) {
+    for (int i = 0; i < REPLSET_BITS; i++) {
         if (get_replset(r, i)) {
             argv[argc++] = orig_argv[i_arg_type];
             argv[argc++] = orig_argv[i_arg_type + 1];
@@ -120,7 +122,11 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
         return;
     }
 
-    /* This call must have max_argc argv arguments. */
+    /*
+     * This call must have max_trip argv arguments.
+     * the C Standard 5.2.4.1 max: 127 arguments in one function call
+     * However, gcc/clang seems to have higher limits.
+     */
     const int err = RedisModule_Replicate(ctx, RedisModule_StringPtrLen(orig_argv[0], NULL), fmt,
                                           orig_argv[1], orig_argv[2],
                                           argv[0], argv[1], argv[2],
@@ -324,8 +330,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     SVector_Init(&alias_query, 5, NULL);
 
-    /* We expect two fixed arguments and a number of [type, field, value] triplets. */
-    if (argc < 3 || (argc - 3) % 3) {
+    /*
+     * We expect two fixed arguments and a number of [type, field, value] triplets.
+     * Technically we can mark REPLSET_BITS number of changes in the replset_t
+     * but we only support 128 changes in the replication function.
+     */
+    if (argc < 3 || (argc - 3) % 3 || argc - 3 > REPLSET_BITS) {
         return RedisModule_WrongArity(ctx);
     }
 
