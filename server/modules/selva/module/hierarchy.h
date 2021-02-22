@@ -200,6 +200,7 @@ int SelvaModify_SetHierarchyChildren(
  * Add new relationships relative to other existing nodes.
  * Previously existing connections to and from other nodes are be preserved.
  * If a node with id doesn't exist it will be created.
+ * @param ctx If NULL then no events are sent.
  * @param parents   Sets these nodes as parents to this node,
  *                  while keeping the existing parents.
  * @param children  Sets these nodes as children to this node,
