@@ -121,6 +121,7 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
     }
 
     /* This call must have max_argc argv arguments. */
+    /*
     const int err = RedisModule_Replicate(ctx, RedisModule_StringPtrLen(orig_argv[0], NULL), fmt,
                                           orig_argv[1], orig_argv[2],
                                           argv[0], argv[1], argv[2],
@@ -169,6 +170,7 @@ void replicateModify(RedisModuleCtx *ctx, const replset_t *r, RedisModuleString 
     if (err) {
         fprintf(stderr, "%s: Replication failed: %d\n", __FILE__, err);
     }
+    */
 }
 
 int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -725,7 +727,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * If there is anything set in repl_set it means that something was changed for nodeId.
      */
     if (repl_set) {
-        replicateModify(ctx, &repl_set, argv);
+        // replicateModify(ctx, &repl_set, argv);
     }
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
     RedisModule_CloseKey(id_key);

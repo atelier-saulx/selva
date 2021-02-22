@@ -53,9 +53,10 @@ export default async (
         type,
         $lang
       )
-      result.push(...r)
     }
   }
+
+  result.push(...r)
 
   if (addedFields) {
     const content = new Uint32Array([1])
