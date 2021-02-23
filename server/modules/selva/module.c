@@ -677,7 +677,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             struct SelvaModify_OpSet opSet = {
                 .op_set_type = SELVA_MODIFY_OP_SET_TYPE_CHAR,
                 .$add = alias,
-                .$add_len = strlen(alias) + 1,
+                .$add_len = strlen(alias) + 1, /* This is safe because the ultimate source is a RedisModuleString. */
                 .$delete = NULL,
                 .$delete_len = 0,
                 .$value = NULL,
