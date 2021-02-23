@@ -34,7 +34,7 @@ export default class RedisManager extends ProcessManager {
               REDIS_PORT: port.toString(),
               SERVER_TYPE: type,
               // TODO: this is a hack for DO droplet, pls remove
-              LD_LIBRARY_PATH: '/usr/local/lib',
+              LD_LIBRARY_PATH: `${__dirname}/../../modules/binaries/linux_x64/redis-server-selva:/usr/local/lib`,
             }
           : { REDIS_PORT: port.toString(), SERVER_TYPE: type },
     })
