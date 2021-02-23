@@ -3,10 +3,11 @@
 #include <string.h>
 #include "cdefs.h"
 #include "redismodule.h"
-#include "sds.h"
 #include "errors.h"
 #include "selva_object.h"
 #include "svector.h"
+
+/* TODO FIX frees in this test mod. */
 
 static struct SelvaObject *root_obj;
 
@@ -39,7 +40,9 @@ static char * setget_double(void)
 
     pu_assert_equal("output value is as expected", v, 1.0);
 
+#if 0
     RedisModule_FreeString(NULL, key_name);
+#endif
     return NULL;
 }
 
@@ -56,7 +59,9 @@ static char * setget_longlong(void)
 
     pu_assert_equal("output value is as expected", v, 1);
 
+#if 0
     RedisModule_FreeString(NULL, key_name);
+#endif
     return NULL;
 }
 
@@ -78,8 +83,10 @@ static char * setget_string(void)
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
 
+#if 0
     RedisModule_FreeString(NULL, key_name);
     RedisModule_FreeString(NULL, orig);
+#endif
     return NULL;
 }
 
@@ -100,7 +107,9 @@ static char * delete_key_1(void)
     err = SelvaObject_GetLongLong(root_obj, key_name, &v);
     pu_assert_equal("no entry", err, SELVA_ENOENT);
 
+#if 0
     RedisModule_FreeString(NULL, key_name);
+#endif
     return NULL;
 }
 
@@ -132,9 +141,11 @@ static char * delete_key_2(void)
     pu_assert_equal("no error", err, 0);
     pu_assert_equal("value is as expected", v, 2);
 
+#if 0
     RedisModule_FreeString(NULL, key_name_1);
     RedisModule_FreeString(NULL, key_name_2);
     RedisModule_FreeString(NULL, orig);
+#endif
     return NULL;
 }
 
@@ -163,10 +174,12 @@ static char * nested_object(void)
     err = SelvaObject_GetString(root_obj, wrong_key_name2, &value);
     pu_assert_equal("no entry", err, SELVA_EINTYPE);
 
+#if 0
     RedisModule_FreeString(NULL, key_name);
     RedisModule_FreeString(NULL, wrong_key_name1);
     RedisModule_FreeString(NULL, wrong_key_name2);
     RedisModule_FreeString(NULL, orig);
+#endif
     return NULL;
 }
 
@@ -213,12 +226,14 @@ static char * replace_string_with_object(void)
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
 
+#if 0
     RedisModule_FreeString(NULL, key_name_1);
     RedisModule_FreeString(NULL, key_name_2);
     RedisModule_FreeString(NULL, key_name_3);
     RedisModule_FreeString(NULL, orig_1);
     RedisModule_FreeString(NULL, orig_2);
     RedisModule_FreeString(NULL, orig_3);
+#endif
     return NULL;
 }
 
@@ -271,12 +286,14 @@ static char * replace_object_with_string(void)
     err = SelvaObject_GetString(root_obj, key_name_2, &value);
     pu_assert_equal("type error", err, SELVA_ENOENT);
 
+#if 0
     RedisModule_FreeString(NULL, key_name_1);
     RedisModule_FreeString(NULL, key_name_2);
     RedisModule_FreeString(NULL, key_name_3);
     RedisModule_FreeString(NULL, orig_1);
     RedisModule_FreeString(NULL, orig_2);
     RedisModule_FreeString(NULL, orig_3);
+#endif
     return NULL;
 }
 
@@ -350,6 +367,7 @@ static char * delete_object(void)
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
 
+#if 0
     RedisModule_FreeString(NULL, key_name_x);
     RedisModule_FreeString(NULL, key_name_1);
     RedisModule_FreeString(NULL, key_name_2);
@@ -359,6 +377,7 @@ static char * delete_object(void)
     RedisModule_FreeString(NULL, orig_2);
     RedisModule_FreeString(NULL, orig_3);
     RedisModule_FreeString(NULL, orig_4);
+#endif
     return NULL;
 }
 
@@ -499,6 +518,7 @@ static char * delete_nested_key(void)
     s2 = RedisModule_StringPtrLen(value, NULL);
     pu_assert_str_equal("output value is as expected", s1, s2);
 
+#if 0
     RedisModule_FreeString(NULL, key_name_x);
     RedisModule_FreeString(NULL, key_name_1);
     RedisModule_FreeString(NULL, key_name_2);
@@ -508,6 +528,7 @@ static char * delete_nested_key(void)
     RedisModule_FreeString(NULL, orig_2);
     RedisModule_FreeString(NULL, orig_3);
     RedisModule_FreeString(NULL, orig_4);
+#endif
     return NULL;
 }
 
@@ -542,11 +563,13 @@ static char *string_array(void)
     pu_assert_ptr_equal("e3", SVector_GetIndex(arr, 2), e3);
     pu_assert_ptr_equal("e4", SVector_GetIndex(arr, 3), e4);
 
+#if 0
     RedisModule_FreeString(NULL, key_name);
     RedisModule_FreeString(NULL, e1);
     RedisModule_FreeString(NULL, e2);
     RedisModule_FreeString(NULL, e3);
     RedisModule_FreeString(NULL, e4);
+#endif
     return NULL;
 }
 

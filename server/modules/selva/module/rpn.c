@@ -172,7 +172,7 @@ static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
     /*
      * The sds string pointer might change so we need to update the
      * redis object every time. This is not how the RM API nor robj
-     * was meant to be used but * we know enough about the internals
+     * was meant to be used but we know enough about the internals
      * to be confident with this.
      *
      * There is a huge performance benefit in doing all this mangling
