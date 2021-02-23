@@ -56,4 +56,6 @@ test.serial('set all', async (t) => {
     title: { en: 'ma1' },
     ...[...Array(200)].map((_, i) => ([`value${i}`, i])).reduce((acc, [a, b]) => (acc[a] = b, acc), {})
   })
+
+  t.assert(true)
 })
