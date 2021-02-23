@@ -1098,7 +1098,7 @@ void *SelvaObject_ForeachBegin(struct SelvaObject *obj) {
 
 const char *SelvaObject_ForeachKey(struct SelvaObject *obj, void **iterator) {
     struct SelvaObjectKey *key = *iterator;
-    obj; /* This makes the compiler think we are actually using obj. */
+    (void)obj; /* This makes the compiler think we are actually using obj. */
 
     if (!key) {
         return NULL;
@@ -1111,7 +1111,7 @@ const char *SelvaObject_ForeachKey(struct SelvaObject *obj, void **iterator) {
 
 const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, const char **name_out, enum SelvaObjectType type) {
     struct SelvaObjectKey *key;
-    obj; /* This makes the compiler think we are actually using obj. */
+    (void)obj; /* This makes the compiler think we are actually using obj. */
 
     do {
         key = *iterator;
