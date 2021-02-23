@@ -24,7 +24,9 @@ export default class RedisManager extends ProcessManager {
       type: ServerType
     }
   ) {
-    super('redis-server', {
+    const platform = process.platform === 'linux' ? 'linux_x64' : 'darwin_x64'
+    const command = `${__dirname}/../../modules/binaries/${platform}/redis-server-selva`
+    super(command, {
       args,
       env:
         process.platform === 'linux'
