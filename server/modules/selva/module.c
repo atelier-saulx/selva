@@ -382,14 +382,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * 1    replicate the second triplet
      * ...  ...
      */
-    struct bitmap *replset = RedisModule_PoolAlloc(ctx, argc - 3);
+    const int nr_triplets = (argc - 3) / 3;
+    struct bitmap *replset = RedisModule_PoolAlloc(ctx, nr_triplets);
 
     if (!replset) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to allocate memory for replication");
     }
+    replset->nbits = nr_triplets;
     bitmap_erase(replset);
 
-    const int nr_triplets = (argc - 3) / 3;
     bool updated = false;
 
     /*
