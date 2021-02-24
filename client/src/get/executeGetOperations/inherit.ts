@@ -79,7 +79,7 @@ async function mergeObj(
     ],
   }
 
-  if (op.types) {
+  if (op.types && op.types.length) {
     const $or: FilterAST[] = op.types.map((t) => {
       return {
         $operator: '=',
@@ -190,7 +190,7 @@ async function deepMergeObj(
     ],
   }
 
-  if (op.types) {
+  if (op.types && op.types.length) {
     const $or: FilterAST[] = op.types.map((t) => {
       return {
         $operator: '=',
