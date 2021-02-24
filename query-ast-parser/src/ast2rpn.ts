@@ -32,7 +32,6 @@ const opMapNumber = {
 }
 
 export default function ast2rpn(f: Fork, language?: string): Rpn {
-  let findIn: string[] | undefined = undefined
   let out = ''
   let reg: string[] = []
   let regIndex = 1
@@ -45,12 +44,6 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
 
     if (f.$field === 'ancestors') {
       out += ' #1'
-      return
-    }
-
-    if (f.$field === 'id') {
-      out += ' #1'
-      findIn = <string[]>f.$value
       return
     }
 

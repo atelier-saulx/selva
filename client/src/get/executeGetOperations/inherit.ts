@@ -5,6 +5,7 @@ import {
   GetOperation,
   Fork,
   GetOptions,
+  FilterAST,
 } from '../types'
 import { getNestedSchema, getNestedField, setNestedResult } from '../utils'
 import executeGetOperations, {
@@ -79,21 +80,30 @@ async function mergeObj(
   }
 
   if (op.types) {
+    const $or: FilterAST[] = op.types.map((t) => {
+      return {
+        $operator: '=',
+        $field: 'type',
+        $value: t,
+      }
+    })
+
+    $or.push({
+      $operator: '=',
+      $field: 'id',
+      $value: op.id,
+    })
+
     fork.$and.push({
       isFork: true,
-      $or: op.types.map((t) => {
-        return {
-          $operator: '=',
-          $field: 'type',
-          $value: t,
-        }
-      }),
+      $or,
     })
   }
 
   const rpn = ast2rpn(fork)
 
   if (ctx.subId) {
+    console.log('MARKER', ctx, op.id, ...fields)
     bufferNodeMarker(ctx, op.id, ...fields)
     const added = await addMarker(client, ctx, {
       type: 'ancestors',
@@ -181,15 +191,23 @@ async function deepMergeObj(
   }
 
   if (op.types) {
+    const $or: FilterAST[] = op.types.map((t) => {
+      return {
+        $operator: '=',
+        $field: 'type',
+        $value: t,
+      }
+    })
+
+    $or.push({
+      $operator: '=',
+      $field: 'id',
+      $value: op.id,
+    })
+
     fork.$and.push({
       isFork: true,
-      $or: op.types.map((t) => {
-        return {
-          $operator: '=',
-          $field: 'type',
-          $value: t,
-        }
-      }),
+      $or,
     })
   }
 

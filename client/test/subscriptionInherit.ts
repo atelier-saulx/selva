@@ -364,7 +364,7 @@ test.serial('inherit object', async (t) => {
   t.true(true)
 })
 
-test.serial.only('inherit record', async (t) => {
+test.serial('inherit record', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.updateSchema({
