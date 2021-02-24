@@ -60,22 +60,50 @@ static int update_hierarchy(
      */
     const int isFieldParents = field_str[0] == 'p';
 
-    int err = 0;
     if (setOpts->$value_len > 0) {
         const size_t nr_nodes = setOpts->$value_len / SELVA_NODE_ID_SIZE;
+        int err = 0;
 
         if (setOpts->$value_len % SELVA_NODE_ID_SIZE) {
             return SELVA_EINVAL;
         }
 
         if (isFieldParents) { /* parents */
+#if 0
+            fprintf(stderr, "%s:%d: Set parents of %.*s nr_nodes: %zu ",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, node_id,
+                    nr_nodes);
+            for (size_t i = 0; i < nr_nodes; i++) {
+                fprintf(stderr, "%.*s, ", (int)SELVA_NODE_ID_SIZE, ((const Selva_NodeId *)setOpts->$value)[i]);
+
+            }
+            fprintf(stderr, "\n");
+#endif
+
             err = SelvaModify_SetHierarchyParents(ctx, hierarchy, node_id,
                     nr_nodes, (const Selva_NodeId *)setOpts->$value);
         } else { /* children */
+#if 0
+            fprintf(stderr, "%s:%d: Set children of %.*s nr_nodes: %zu\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, node_id,
+                    nr_nodes);
+            for (size_t i = 0; i < nr_nodes; i++) {
+                fprintf(stderr, "%.*s, ", (int)SELVA_NODE_ID_SIZE, ((const Selva_NodeId *)setOpts->$value)[i]);
+
+            }
+            fprintf(stderr, "\n");
+#endif
+
             err = SelvaModify_SetHierarchyChildren(ctx, hierarchy, node_id,
                     nr_nodes, (const Selva_NodeId *)setOpts->$value);
         }
+
+        return err;
     } else {
+        int err, res = 0;
+
         if (setOpts->$add_len % SELVA_NODE_ID_SIZE ||
             setOpts->$delete_len % SELVA_NODE_ID_SIZE) {
             return SELVA_EINVAL;
@@ -85,17 +113,36 @@ static int update_hierarchy(
             const size_t nr_nodes = setOpts->$add_len / SELVA_NODE_ID_SIZE;
 
             if (isFieldParents) { /* parents */
-              err = SelvaModify_AddHierarchy(ctx, hierarchy, node_id,
-                      nr_nodes, (const Selva_NodeId *)setOpts->$add,
-                      0, NULL);
+#if 0
+                fprintf(stderr, "%s:%d: Add to parents of %.*s nr_nodes: %zu\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, node_id,
+                        nr_nodes);
+#endif
+
+                err = SelvaModify_AddHierarchy(ctx, hierarchy, node_id,
+                        nr_nodes, (const Selva_NodeId *)setOpts->$add,
+                        0, NULL);
             } else { /* children */
-              err = SelvaModify_AddHierarchy(ctx, hierarchy, node_id,
-                      0, NULL,
-                      nr_nodes, (const Selva_NodeId *)setOpts->$add);
+#if 0
+                fprintf(stderr, "%s:%d: Add to children of %.*s nr_nodes: %zu\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, node_id,
+                        nr_nodes);
+#endif
+
+                err = SelvaModify_AddHierarchy(ctx, hierarchy, node_id,
+                        0, NULL,
+                        nr_nodes, (const Selva_NodeId *)setOpts->$add);
             }
+            if (err < 0) {
+                return err;
+            }
+            res += err;
         }
         if (setOpts->$delete_len > 0) {
             const size_t nr_nodes = setOpts->$delete_len / SELVA_NODE_ID_SIZE;
+            int res = 0;
 
             if (isFieldParents) { /* parents */
                 err = SelvaModify_DelHierarchy(ctx, hierarchy, node_id,
@@ -106,10 +153,14 @@ static int update_hierarchy(
                         0, NULL,
                         nr_nodes, (const Selva_NodeId *)setOpts->$delete);
             }
+            if (err < 0) {
+                return err;
+            }
+            res += 1; // TODO err;
         }
-    }
 
-    return err;
+        return res;
+    }
 }
 
 static void selva_set_defer_alias_change_events(
@@ -566,7 +617,6 @@ int SelvaModify_ModifySet(
 
         Selva_NodeIdCpy(node_id, id_str);
         err = update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
-        res = err < 0 ? err : 1;
     } else {
         res = update_set(ctx, hierarchy, obj, id, field, setOpts);
     }

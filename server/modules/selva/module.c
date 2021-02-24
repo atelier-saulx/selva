@@ -346,7 +346,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
 
         err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
-        if (err) {
+        if (err < 0) {
             replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node hierarchy for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
             return REDISMODULE_OK;
         }

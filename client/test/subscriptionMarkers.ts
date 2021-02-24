@@ -690,7 +690,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
       subId1,
       1
     ),
-    ['maTest0021', 'maTest0013', 'maTest0001', 'root']
+    ['maTest0021', 'maTest0011', 'maTest0013', 'maTest0001', 'maTest0002', 'root']
   )
 
   t.deepEqualIgnoreOrder(

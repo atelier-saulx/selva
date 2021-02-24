@@ -25,7 +25,7 @@ static char * test_insert_one(void)
     const Selva_NodeId id = "abc1";
     const int res = SelvaModify_SetHierarchy(NULL, hierarchy, id, 0, NULL, 0, NULL);
 
-    pu_assert_equal("a node was inserted", res, 0);
+    pu_assert_equal("a node was inserted", res, 1);
 
     return NULL;
 }
@@ -36,7 +36,7 @@ static char * test_insert_many(void)
 
     for (size_t i = 0; i < num_elem(ids); i++) {
         const int res = SelvaModify_SetHierarchy(NULL, hierarchy, ids[i], 0, NULL, 0, NULL);
-        pu_assert_equal("a node was inserted", res, 0);
+        pu_assert_equal("a node was inserted", res, 1);
     }
 
     return NULL;
@@ -48,10 +48,10 @@ static char * test_set_nonexisting_parent(void)
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
 
     err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 1);
 
     err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[2], 1, &ids[1], 0, NULL);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 2);
 
     return NULL;
 }
@@ -62,10 +62,10 @@ static char * test_set_nonexisting_child(void)
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
 
     err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 1);
 
     err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[1], 0, NULL, 1, &ids[2]);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 2);
 
     return NULL;
 }
@@ -78,10 +78,10 @@ static char * test_add_twice(void)
         int res;
 
         res = SelvaModify_AddHierarchy(NULL, hierarchy, ids[i], 0, NULL, 0, NULL);
-        pu_assert_equal("a node was inserted", res, 0);
+        pu_assert_equal("a node was inserted", res, 1);
 
         res = SelvaModify_AddHierarchy(NULL, hierarchy, ids[i], 0, NULL, 0, NULL);
-        pu_assert_equal("a node was inserted", res, 0);
+        pu_assert_equal("the node was not inserted", res, 0);
     }
 
     return NULL;
@@ -93,10 +93,10 @@ static char * test_add_nonexisting_parent_1(void)
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
 
     err = SelvaModify_AddHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 1);
 
     err = SelvaModify_AddHierarchy(NULL, hierarchy, ids[2], 1, &ids[1], 0, NULL);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 2);
 
     return NULL;
 }
@@ -107,10 +107,10 @@ static char * test_add_nonexisting_parent_2(void)
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
 
     err = SelvaModify_AddHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 1);
 
     err = SelvaModify_AddHierarchy(NULL, hierarchy, ids[0], 1, &ids[1], 0, NULL);
-    pu_assert_equal("no error even if the parent didn't exist", err, 0);
+    pu_assert_equal("no error even if the parent didn't exist", err, 1);
 
     return NULL;
 }
@@ -121,10 +121,10 @@ static char * test_add_nonexisting_child_1(void)
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
 
     err = SelvaModify_AddHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 1);
 
     err = SelvaModify_AddHierarchy(NULL, hierarchy, ids[1], 0, NULL, 1, &ids[2]);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 2);
 
     return NULL;
 }
@@ -135,10 +135,10 @@ static char * test_add_nonexisting_child_2(void)
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
 
     err = SelvaModify_AddHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
-    pu_assert_equal("a node was inserted", err, 0);
+    pu_assert_equal("a node was inserted", err, 1);
 
     err = SelvaModify_AddHierarchy(NULL, hierarchy, ids[0], 0, NULL, 1, &ids[2]);
-    pu_assert_equal("no error even if the child didn't exist", err, 0);
+    pu_assert_equal("no error even if the child didn't exist", err, 1);
 
     return NULL;
 }
