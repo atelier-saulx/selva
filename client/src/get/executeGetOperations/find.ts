@@ -17,6 +17,8 @@ function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
   for (const k in props) {
     if ((k === '$list' || k === '$find') && pathPrefix === '') {
       // ignore
+    } else if (props.$list && k === '$field' && pathPrefix === '') {
+      // ignore
     } else if (!hasAll && !k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
     } else if (props[k] === false) {
