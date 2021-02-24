@@ -54,6 +54,7 @@ include $(wildcard *.mk)
 
 CC ?= gcc
 CCFLAGS += --coverage -Wall -MMD -DPU_TEST_BUILD
+CCFLAGS += -march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
 # Link math?
 ifeq ($(PU_LMATH),1)
 	CCFLAGS += -lm -DPU_LMATH

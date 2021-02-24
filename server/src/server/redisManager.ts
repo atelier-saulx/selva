@@ -24,7 +24,9 @@ export default class RedisManager extends ProcessManager {
       type: ServerType
     }
   ) {
-    super('redis-server', {
+    const platform = process.platform === 'linux' ? 'linux_x64' : 'darwin_x64'
+    const command = `${__dirname}/../../modules/binaries/${platform}/redis-server-selva`
+    super(command, {
       args,
       env:
         process.platform === 'linux'
@@ -32,7 +34,7 @@ export default class RedisManager extends ProcessManager {
               REDIS_PORT: port.toString(),
               SERVER_TYPE: type,
               // TODO: this is a hack for DO droplet, pls remove
-              LD_LIBRARY_PATH: '/usr/local/lib',
+              LD_LIBRARY_PATH: `${__dirname}/../../modules/binaries/linux_x64:/usr/local/lib`,
             }
           : { REDIS_PORT: port.toString(), SERVER_TYPE: type },
     })

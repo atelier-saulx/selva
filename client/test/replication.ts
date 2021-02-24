@@ -120,7 +120,11 @@ test.serial('verify basic replication', async (t) => {
   )
 })
 
-test.serial('hierarchy replication', async (t) => {
+test.serial.only('hierarchy replication', async (t) => {
+  //console.log('ergergeg');
+  //await new Promise((resolve, _reject) => {
+  //  setTimeout(resolve, 30000)
+  //})
   await Promise.all([
     new Promise((resolve, reject) =>
       rclientOrigin.send_command(
