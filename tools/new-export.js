@@ -23,7 +23,7 @@ async function migrate() {
     for (const key in schema) {
       schema[key] = JSON.parse(schema[key])
     }
-    results.___selva_scema = schema
+    results.___selva_schema = schema
 
     const keys = Object.keys(db)
     for (const key of keys) {
