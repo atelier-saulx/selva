@@ -9,8 +9,8 @@ async function migrate() {
     )
   }
 
-  const srv = await start({ port: 6061 })
-  const client = connect({ port: 6061 } /*, { loglevel: 'info' }*/)
+  // const srv = await start({ port: 6061 })
+  const client = connect({ port: 4006 } /*, { loglevel: 'info' }*/)
 
   const dump = require(path.join(process.cwd(), process.argv[2]))
 
@@ -52,7 +52,7 @@ async function migrate() {
   })
 
   await client.destroy()
-  await srv.destroy()
+  // await srv.destroy()
 }
 
 migrate()
