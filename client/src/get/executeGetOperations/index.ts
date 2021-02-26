@@ -7,7 +7,7 @@ import { GetOptions } from '../'
 import find from './find'
 import inherit from './inherit'
 import { Rpn } from '@saulx/selva-query-ast-parser'
-import { Schema } from '~selva/schema'
+import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
 
 export type ExecContext = {
@@ -143,6 +143,20 @@ export const TYPE_CASTS: Record<
   boolean: (x: any) => !!Number(x),
   json: (x: any) => JSON.parse(x),
   array: (x: any) => JSON.parse(x),
+  set: (all: any, id: string, field: string, schema, lang) => {
+    const fieldSchema = <FieldSchemaArrayLike>getNestedSchema(schema, id, field)
+    if (!fieldSchema || !fieldSchema.items) {
+      return all
+    }
+
+    if (
+      ['number', 'int', 'float', 'timestamp'].includes(fieldSchema.items.type)
+    ) {
+      return all.map((x) => Number(x))
+    }
+
+    return all
+  },
   object: (all: any, id: string, field: string, schema, lang) => {
     const result = {}
     let fieldCount = 0
