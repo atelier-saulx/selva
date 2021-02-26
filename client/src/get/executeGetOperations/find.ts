@@ -160,7 +160,7 @@ async function checkForNextRefresh(
     timebased.map(async (f) => {
       const newFilter: FilterAST = {
         $operator: '>',
-        $value: 'now',
+        $value: (<string>f.$value).startsWith('now+') ? 'now' : f.$value,
         $field: f.$field,
       }
 
