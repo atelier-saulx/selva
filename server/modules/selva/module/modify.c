@@ -328,7 +328,10 @@ string_err:
             if (err == 0) {
                 res++;
             } else if (err != SELVA_EEXIST) {
-                fprintf(stderr, "%s:%d: Double set field update failed\n", __FILE__, __LINE__);
+                fprintf(stderr, "%s:%d: Set (%s) field update failed: %s\n",
+                        __FILE__, __LINE__,
+                        (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE) ? "double" : "long long",
+                        getSelvaErrorStr(err));
                 return err;
             }
 

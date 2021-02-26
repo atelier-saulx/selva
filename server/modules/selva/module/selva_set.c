@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stddef.h>
 #include "cdefs.h"
 #include "errors.h"
@@ -66,6 +67,10 @@ int SelvaSet_AddDouble(struct SelvaSet *set, double d) {
 
     if (set->type != SELVA_SET_TYPE_DOUBLE) {
         return SELVA_EINTYPE;
+    }
+
+    if (isnan(d)) {
+        return SELVA_EINVAL;
     }
 
     if (SelvaSet_HasDouble(set, d)) {
@@ -190,6 +195,10 @@ int SelvaSet_HasDouble(struct SelvaSet *set, double d) {
     };
 
     if (unlikely(set->type != SELVA_SET_TYPE_DOUBLE)) {
+        return 0;
+    }
+
+    if (isnan(d)) {
         return 0;
     }
 
