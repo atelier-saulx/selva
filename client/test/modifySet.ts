@@ -108,6 +108,10 @@ test.serial('float sets', async (t) => {
 
   await client.set({
     $id: id2,
+    floats: { $add: 7.7 }
+  })
+  await client.set({
+    $id: id2,
     floats: { $add: [NaN] }
   })
   t.throwsAsync(client.set({
@@ -116,7 +120,7 @@ test.serial('float sets', async (t) => {
   }))
 
   const { floats: floats3 } = await client.get({ $id: id2, floats: true })
-  t.deepEqualIgnoreOrder(floats3, [1.5, 2, 3.5, 1.1])
+  t.deepEqualIgnoreOrder(floats3, [1.5, 2, 3.5, 1.1, 7.7])
 })
 
 test.serial('integer sets', async (t) => {
