@@ -60,7 +60,7 @@ test.after(async (_t) => {
   await srv.destroy()
 })
 
-test.serial('complex hierarchy on one set', async (t) => {
+test.serial.skip('complex hierarchy on one set', async (t) => {
   const client = connect({ port })
 
   await client.set({
@@ -76,12 +76,14 @@ test.serial('complex hierarchy on one set', async (t) => {
             title: { en: 'ma21' },
           },
         ],
-        parents: [
-          {
-            $id: 'maTest0002', // Additional parent
-            title: { en: 'ma02' },
-          },
-        ],
+        parents: {
+          $add: [
+            {
+              $id: 'maTest0002', // Additional parent
+              title: { en: 'ma02' },
+            },
+          ],
+        },
       },
       {
         $id: 'maTest0012', // child of the first level
@@ -349,8 +351,8 @@ test.serial('complex hierarchy using add', async (t) => {
   await client.set({
     $id: 'maTest0021',
     parents: {
-        $add: [ 'maTest0011' ]
-      },
+      $add: ['maTest0011'],
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -476,8 +478,8 @@ test.serial('Undo complex hierarchy using set', async (t) => {
   await client.set({
     $id: 'maTest0021',
     parents: {
-        $add: [ 'maTest0011' ]
-      },
+      $add: ['maTest0011'],
+    },
   })
 
   t.deepEqualIgnoreOrder(
@@ -490,7 +492,7 @@ test.serial('Undo complex hierarchy using set', async (t) => {
 
   await client.set({
     $id: 'maTest0021',
-    parents: [ 'maTest0013' ],
+    parents: ['maTest0013'],
   })
 
   t.deepEqualIgnoreOrder(
