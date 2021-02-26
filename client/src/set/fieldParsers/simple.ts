@@ -61,7 +61,7 @@ export const verifiers = {
     return typeof payload === 'boolean'
   },
   float: (payload: number) => {
-    return typeof payload === 'number'
+    return typeof payload === 'number' && !isNaN(payload)
   },
   int: (payload: number) => {
     return typeof payload === 'number'

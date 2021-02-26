@@ -110,10 +110,10 @@ test.serial('float sets', async (t) => {
     $id: id2,
     floats: { $add: 7.7 }
   })
-  await client.set({
+  t.throwsAsync(client.set({
     $id: id2,
     floats: { $add: [NaN] }
-  })
+  }))
   t.throwsAsync(client.set({
     $id: id2,
     floats: { $add: ['abc'] }
