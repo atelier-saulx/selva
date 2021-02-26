@@ -600,18 +600,14 @@ test.serial('FindInSub: simple lookups', async (t) => {
       {
         $id: 'maTest0011', // child of the first level
         title: { en: 'ma11' },
-        children: [
-          {
-            $id: 'maTest0021',
-            title: { en: 'ma21' },
-          },
-        ],
-        parents: [
-          {
-            $id: 'maTest0002', // Additional parent
-            title: { en: 'ma02' },
-          },
-        ],
+        parents: {
+          $add: [
+            {
+              $id: 'maTest0002', // Additional parent
+              title: { en: 'ma02' },
+            },
+          ]
+        },
       },
       {
         $id: 'maTest0012', // child of the first level
@@ -630,10 +626,16 @@ test.serial('FindInSub: simple lookups', async (t) => {
                 title: { en: 'ma31' },
               },
             ],
-          },
+          }
         ],
       },
     ],
+  })
+  await client.set({
+      $id: 'maTest0011',
+      children: {
+        $add: ['maTest0021']
+      }
   })
 
   await client.redis.selva_subscriptions_add(
