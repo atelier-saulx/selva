@@ -1797,3 +1797,107 @@ test.serial(
     await client.destroy()
   }
 )
+
+test.serial.skip('find - now+ subscription', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    type: 'match',
+    name: 'started 5m ago',
+    // startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
+    endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
+  })
+
+  await client.set({
+    type: 'match',
+    name: 'started 2m ago',
+    startTime: Date.now() - 2 * 60 * 1000, // 2 minutes ago
+    endTime: Date.now() + 60 * 60 * 1000, // ends in 1 hour
+  })
+
+  await client.set({
+    type: 'match',
+    name: 'started 2h ago',
+    startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
+    endTime: Date.now() - 60 * 60 * 1000, // ended 1 hour ago
+  })
+
+  const nextRefresh = Date.now() + 2 * 1000
+  await client.set({
+    $id: 'maFuture',
+    type: 'match',
+    name: 'starts in 2s',
+    startTime: nextRefresh + 30e3, // starts in 3s
+    endTime: Date.now() + 2 * 60 * 60 * 1000, // ends in 2 hours
+  })
+
+  await client.set({
+    $id: 'maLaterFut',
+    type: 'match',
+    name: 'starts in 5s',
+    startTime: Date.now() + 5 * 1000 + 30e3, // starts in 5s
+    endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 2 hours
+  })
+
+  let sub = ''
+  for (let i = 0; i < 64; i++) {
+    sub += 'x'
+  }
+
+  t.plan(3)
+  let cnt = 0
+  const observable = client
+    .observe(
+      {
+        $includeMeta: true,
+        $id: 'root',
+        items: {
+          name: true,
+          value: true,
+          $list: {
+            $sort: { $field: 'startTime', $order: 'asc' },
+            $find: {
+              $traverse: 'children',
+              $filter: [
+                {
+                  $field: 'startTime',
+                  $operator: '>',
+                  $value: 'now+30s',
+                },
+              ],
+            },
+          },
+        },
+      },
+      { immutable: true }
+    )
+    .subscribe((d) => {
+      console.log('d', d)
+
+      if (cnt === 0) {
+        t.deepEqualIgnoreOrder(
+          d.items.map((i) => i.name),
+          ['starts in 2s', 'starts in 5s']
+        )
+      } else if (cnt === 1) {
+        t.deepEqualIgnoreOrder(
+          d.items.map((i) => i.name),
+          ['starts in 5s']
+        )
+      } else if (cnt === 2) {
+        t.deepEqualIgnoreOrder(
+          d.items.map((i) => i.name),
+          []
+        )
+      } else {
+        t.fail()
+      }
+
+      cnt++
+    })
+
+  await wait(10e3)
+
+  await client.delete('root')
+  await client.destroy()
+})

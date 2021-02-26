@@ -1,7 +1,13 @@
 import { SelvaClient } from '../../'
 import { GetOperationFind, GetResult, GetOperation, GetOptions } from '../types'
 import { typeCast } from './'
-import { ast2rpn, Fork, FilterAST, isFork } from '@saulx/selva-query-ast-parser'
+import {
+  ast2rpn,
+  Fork,
+  FilterAST,
+  isFork,
+  convertNow,
+} from '@saulx/selva-query-ast-parser'
 import { executeNestedGetOperations, ExecContext, addMarker } from './'
 import { padId, joinIds, getNestedSchema } from '../utils'
 import { setNestedResult } from '../utils'
@@ -152,8 +158,11 @@ async function checkForNextRefresh(
   const withoutTimebased = excludeTimebased(ast)
   await Promise.all(
     timebased.map(async (f) => {
-      const newFilter = Object.assign({}, f)
-      newFilter.$operator = '>'
+      const newFilter: FilterAST = {
+        $operator: '>',
+        $value: 'now',
+        $field: f.$field,
+      }
 
       let newFork: Fork = {
         isFork: true,
@@ -181,6 +190,7 @@ async function checkForNextRefresh(
         ...args
       )
 
+      console.log('ids', ids)
       if (!ids || !ids.length) {
         return
       }
@@ -195,8 +205,20 @@ async function checkForNextRefresh(
         )
       )
 
-      if (!ctx.meta.___refreshAt || ctx.meta.___refreshAt > time) {
-        ctx.meta.___refreshAt = time
+      let v = <string>f.$value
+      if (v.startsWith('now-')) {
+        v = v.replace('now-', 'now+')
+      } else if (v.startsWith('now+')) {
+        v = v.replace('now+', 'now-')
+      }
+
+      let converted = convertNow(v, time)
+      // console.log('TIME NOW', Date.now())
+      // console.log('NEXT TIME', time)
+      // console.log('ADJUSTED', converted)
+
+      if (!ctx.meta.___refreshAt || ctx.meta.___refreshAt > converted) {
+        ctx.meta.___refreshAt = converted
       }
     })
   )
