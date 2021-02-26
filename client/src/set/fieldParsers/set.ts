@@ -49,7 +49,7 @@ export default async (
         // type
         OPT_SET_TYPE.double,
         // verify
-        async (v: SetOptions) => v,
+        async (v: SetOptions) => (await parser(client, schema, 'value', v, [], fields, type), v),
         // toCArr
         (arr: any) => arr]
     : // @ts-ignore
@@ -60,7 +60,7 @@ export default async (
         // type
         OPT_SET_TYPE.long_long,
         // verify
-        async (v: SetOptions) => v,
+        async (v: SetOptions) => (await parser(client, schema, 'value', v, [], fields, type), v),
         // toCArr
         (arr: number[] | undefined | null) => (arr ? arr.map(BigInt) : arr),
       ]
