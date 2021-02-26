@@ -8,7 +8,6 @@ import {
 } from '../modifyDataRecords'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike, FieldType } from '../../schema'
-import parseSetObject from '../validate'
 import parsers from './simple'
 
 const doubleTypes: FieldType[] = ['number', 'float']
@@ -22,18 +21,6 @@ const verifySimple = async (
     return Promise.all(payload.map((v) => verify(v)))
   } else {
     return [await verify(payload)]
-  }
-}
-
-const parseObjectArray = async (
-  client: SelvaClient,
-  payload: any,
-  schema: Schema
-) => {
-  if (Array.isArray(payload) && typeof payload[0] === 'object') {
-    return Promise.all(
-      payload.map((ref) => parseSetObject(client, ref, schema))
-    )
   }
 }
 
@@ -55,18 +42,40 @@ export default async (
   // @ts-ignore
   const elementType = typeSchema.fields[field]?.items?.type || 'string'
   // @ts-ignore
-  const [setRecordDef, opSetType, toCArr] = doubleTypes.includes(elementType)
-    ? [setRecordDefDouble, OPT_SET_TYPE.double, (arr: any) => arr]
+  const [setRecordDef, opSetType, verify, toCArr] = doubleTypes.includes(elementType)
+    ? [
+        // def
+        setRecordDefDouble,
+        // type
+        OPT_SET_TYPE.double,
+        // verify
+        async (v: SetOptions) => v,
+        // toCArr
+        (arr: any) => arr]
     : // @ts-ignore
     intTypes.includes(elementType)
     ? [
+        // def
         setRecordDefInt64,
+        // type
         OPT_SET_TYPE.long_long,
+        // verify
+        async (v: SetOptions) => v,
+        // toCArr
         (arr: number[] | undefined | null) => (arr ? arr.map(BigInt) : arr),
       ]
     : [
+        // def
         setRecordDefCstring,
+        // type
         OPT_SET_TYPE.char,
+        // verify
+        async (v: SetOptions) => {
+          const r: string[] = []
+          await parser(client, schema, 'value', v, r, fields, type)
+          return r[2]
+        },
+        // toCArr
         (arr: string[] | undefined | null) =>
           arr ? arr.map((s) => `${s}\0`).join('') : '',
       ]
@@ -80,21 +89,12 @@ export default async (
     throw new Error(`Cannot find parser for ${fieldType}`)
   }
 
-  const verify = async (v: SetOptions) => {
-    const r: string[] = []
-    await parser(client, schema, 'value', v, r, fields, type)
-    return r[2]
-  }
-
   if (typeof payload === 'object' && !Array.isArray(payload)) {
     let r: SetOptions = {}
 
     for (let k in payload) {
       if (k === '$add') {
-        const parsed = await parseObjectArray(client, payload[k], schema)
-        if (parsed) {
-          r.$add = parsed
-        } else if (
+        if (
           typeof payload[k] === 'object' &&
           !Array.isArray(payload[k])
         ) {
@@ -121,8 +121,8 @@ export default async (
       createRecord(setRecordDef, {
         op_set_type: opSetType,
         delete_all: r.delete_all,
-        $add: toCArr(r.$add),
-        $delete: toCArr(r.$delete),
+        $add: toCArr(r.$add) || null,
+        $delete: toCArr(r.$delete) || null,
         $value: null,
       })
     )
@@ -136,8 +136,7 @@ export default async (
         $delete: null,
         $value: toCArr(
           opSetType === OPT_SET_TYPE.char
-            ? (await parseObjectArray(client, payload, schema)) ||
-                (await verifySimple(payload, verify))
+            ? (await verifySimple(payload, verify))
             : payload
         ),
       })

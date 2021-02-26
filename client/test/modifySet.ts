@@ -30,6 +30,12 @@ test.before(async (t) => {
               type: 'digest',
             },
           },
+          floats: {
+            type: 'set',
+            items: {
+              type: 'float',
+            }
+          },
         },
       },
     },
@@ -64,4 +70,33 @@ test.serial('basic set', async (t) => {
   ])
 
   await client.destroy()
+})
+
+test.serial('float sets', async (t) => {
+  const client = connect({
+    port,
+  })
+
+  const id1 = await client.set({
+    type: 'thing',
+    floats: [9001],
+  })
+  const { floats: floats1 } = await client.get({ $id: id1, floats: true })
+  t.deepEqualIgnoreOrder(floats1, [9001])
+
+  const id2 = await client.set({
+    type: 'thing',
+    floats: {
+      $add: [1.5, 2, 3.5, 1.1],
+    },
+  })
+
+  const { floats: floats2 } = await client.get({ $id: id2, floats: true })
+
+  t.deepEqualIgnoreOrder(floats2, [1.5, 2, 3.5, 1.1])
+
+  await client.set({
+    $id: id2,
+    floats: { $add: [NaN] }
+  })
 })
