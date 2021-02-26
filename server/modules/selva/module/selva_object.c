@@ -1345,6 +1345,16 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     for (int i = ARGV_OKEY; i < argc; i++) {
         const RedisModuleString *okey = argv[i];
         TO_STR(okey);
+
+        if (strstr(okey_str, ".*.")) {
+          const char *sep = ".";
+          char buf[okey_len + 1]; /* We assume that the length has been sanity checked at this point. */
+          char *s = buf;
+          for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
+            const size_t slen = strlen(s);
+          }
+        }
+
         int err;
 
         err = get_key(obj, okey_str, okey_len, 0, &key);

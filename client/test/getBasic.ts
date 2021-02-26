@@ -1956,3 +1956,99 @@ test.serial('get - $inherit with record types does deep merge', async (t) => {
 
   client.destroy()
 })
+
+test.serial.only('get - record with wildcard query', async (t) => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!',
+    },
+    objRec: {
+      myObj1: {
+        hello: 'pff',
+        value: 12,
+      },
+      obj2: {
+        hello: 'ffp',
+        value: 13,
+      },
+    },
+  })
+
+  await client.set({
+    $id: 'viB',
+    title: {
+      en: 'nice!!!',
+    },
+    objRec: {
+      myObj1: {
+        hello: 'hmm',
+        value: 22,
+      },
+      obj2: {
+        hello: 'mmh',
+        value: 23,
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      objRec: {
+        '*': {
+          hello: true,
+        },
+      },
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      objRec: {
+        myObj1: {
+          hello: 'pff',
+        },
+        obj2: {
+          hello: 'ffp',
+        },
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      objRec: {
+        '*': {
+          value: true,
+        },
+      },
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      objRec: {
+        myObj1: {
+          value: 12,
+        },
+        obj2: {
+          value: 13,
+        },
+      },
+    }
+  )
+
+  // TODO: add a find case with both and wildcard for fields thing
+
+  await client.delete('root')
+
+  await client.destroy()
+})
