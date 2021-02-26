@@ -55,7 +55,7 @@ export const verifiers = {
     return re.test(payload.toLowerCase())
   },
   number: (payload: number) => {
-    return typeof payload === 'number'
+    return typeof payload === 'number' && !isNaN(payload)
   },
   boolean: (payload: boolean) => {
     return typeof payload === 'boolean'
