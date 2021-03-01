@@ -244,7 +244,7 @@ static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *node_name;
     RedisModuleKey *key;
 
-    node_name = RedisModule_CreateStringPrintf(ctx, "%.*s", SELVA_NODE_ID_SIZE, id);
+    node_name = RedisModule_CreateStringPrintf(ctx, "%.*s", (int)SELVA_NODE_ID_SIZE, id);
     if (unlikely(!node_name)) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
