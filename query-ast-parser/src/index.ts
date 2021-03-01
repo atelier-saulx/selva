@@ -4,6 +4,8 @@ import ast2rpn from './ast2rpn'
 
 import createAst from './parseFilters'
 
+import convertNow from './convertNow'
+
 import { Filter } from './types'
 
 import { Rpn } from './types'
@@ -20,4 +22,4 @@ const createRpn = (filters: Filter | Filter[]): Rpn | void => {
 
 export * from './types'
 
-export { printAst, isFork, createAst, ast2rpn, createRpn }
+export { printAst, isFork, createAst, ast2rpn, createRpn, convertNow }

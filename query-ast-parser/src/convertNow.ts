@@ -1,4 +1,4 @@
-export default function convertNow(x: string): number {
+export default function convertNow(x: string, now?: number): number {
   const unitLetters = {
     s: true,
     m: true,
@@ -12,7 +12,7 @@ export default function convertNow(x: string): number {
 
   if (x.length === 3) {
     // just 'now'
-    return Date.now()
+    return now || Date.now()
   }
 
   const op = x[3]
@@ -47,7 +47,7 @@ export default function convertNow(x: string): number {
       offset *= 24
     }
 
-    return Date.now() + offset
+    return (now || Date.now()) + offset
   } else {
     return 0
   }

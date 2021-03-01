@@ -1655,3 +1655,22 @@ test.serial('deleting an object', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('setting NaN should fail', async (t) => {
+  const client = connect(
+    {
+      port,
+    },
+    { loglevel: 'info' }
+  )
+
+  t.throwsAsync(
+    client.set({
+      $id: 'root',
+      value: NaN,
+    })
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})

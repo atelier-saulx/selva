@@ -38,6 +38,15 @@ export default async (
     throw new Error('Cannot find type schema ' + type)
   }
 
+  if (!fields || !fields.items) {
+    throw new Error(`Cannot find field ${field} on ${type}`)
+  }
+  const fieldType = fields.items.type
+  const parser = parsers[fieldType]
+  if (!parser) {
+    throw new Error(`Cannot find parser for ${fieldType}`)
+  }
+
   // 'string' is just a guess here if we don't know the type but it's probably the right one
   // @ts-ignore
   const elementType = typeSchema.fields[field]?.items?.type || 'string'
@@ -49,9 +58,11 @@ export default async (
         // type
         OPT_SET_TYPE.double,
         // verify
-        async (v: SetOptions) => v,
+        // eslint-disable-next-line no-sequences
+        async (v: SetOptions) => (await parser(client, schema, 'value', v, [], fields, type), v),
         // toCArr
-        (arr: any) => arr]
+        (arr: any) => arr
+    ]
     : // @ts-ignore
     intTypes.includes(elementType)
     ? [
@@ -60,7 +71,8 @@ export default async (
         // type
         OPT_SET_TYPE.long_long,
         // verify
-        async (v: SetOptions) => v,
+        // eslint-disable-next-line no-sequences
+        async (v: SetOptions) => (await parser(client, schema, 'value', v, [], fields, type), v),
         // toCArr
         (arr: number[] | undefined | null) => (arr ? arr.map(BigInt) : arr),
       ]
@@ -80,19 +92,10 @@ export default async (
           arr ? arr.map((s) => `${s}\0`).join('') : '',
       ]
 
-  if (!fields || !fields.items) {
-    throw new Error(`Cannot find field ${field} on ${type}`)
-  }
-  const fieldType = fields.items.type
-  const parser = parsers[fieldType]
-  if (!parser) {
-    throw new Error(`Cannot find parser for ${fieldType}`)
-  }
-
   if (typeof payload === 'object' && !Array.isArray(payload)) {
-    let r: SetOptions = {}
+    const r: SetOptions = {}
 
-    for (let k in payload) {
+    for (const k in payload) {
       if (k === '$add') {
         if (
           typeof payload[k] === 'object' &&
@@ -134,11 +137,7 @@ export default async (
         op_set_type: opSetType,
         $add: null,
         $delete: null,
-        $value: toCArr(
-          opSetType === OPT_SET_TYPE.char
-            ? (await verifySimple(payload, verify))
-            : payload
-        ),
+        $value: toCArr(await verifySimple(payload, verify)),
       })
     )
   }
