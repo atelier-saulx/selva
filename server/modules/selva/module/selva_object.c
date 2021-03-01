@@ -1693,7 +1693,7 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
 
         switch (type) {
         case SELVA_OBJECT_NULL:
-            RedisModule_LogIOError(io, "warning", "null keys should not exist in RDB");
+            /* NOP - There is generally no reason to recreate NULLs */
             break;
         case SELVA_OBJECT_DOUBLE:
             if(rdb_load_object_double(io, obj, name)) {
@@ -1805,10 +1805,6 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
 
     RedisModule_SaveUnsigned(io, obj->obj_size);
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
-        if (key->type == SELVA_OBJECT_NULL) {
-            continue;
-        }
-
         RedisModule_SaveStringBuffer(io, key->name, key->name_len);
         RedisModule_SaveUnsigned(io, key->type);
         RedisModule_SaveUnsigned(io, key->user_meta);
