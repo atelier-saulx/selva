@@ -139,3 +139,20 @@ test.serial('meta', async (t) => {
     0xbaddcafe
   )
 })
+
+test.serial('deleting deep objects', async (t) => {
+  const client = connect({ port })
+
+  await client.redis.selva_object_set('x', 'a.r.s', 's', 'Hello')
+  await client.redis.selva_object_set('x', 'a.s.s', 's', 'Hallo')
+  t.deepEqual(
+    await client.redis.selva_object_len('x', 'a'),
+    2
+  )
+
+  await client.redis.selva_object_del('x', 'a.r')
+  t.deepEqual(
+    await client.redis.selva_object_len('x', 'a'),
+    1
+  )
+})
