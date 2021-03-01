@@ -5,7 +5,7 @@
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
     "start": "tsc && node dist/index.js",
-    "test": "ava --verbose",
+    "test": "ava --timeout 1m --verbose",
     "watch": "ava --color --watch --verbose",
     "buildLua": " scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ../bin/transpileScript $script; done",
     "buildTs": "tsc",
@@ -78,3 +78,4 @@
     "@saulx/utils": "^1.6.6"
   }
 }
+
