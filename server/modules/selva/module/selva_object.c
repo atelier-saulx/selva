@@ -1686,6 +1686,11 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
         const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
         const SelvaObjectMeta_t user_meta = RedisModule_LoadUnsigned(io);
 
+        if (unlikely(!name)) {
+            RedisModule_LogIOError(io, "warning", "SelvaObject key name cannot be NULL");
+            break;
+        }
+
         switch (type) {
         case SELVA_OBJECT_NULL:
             RedisModule_LogIOError(io, "warning", "null keys should not exist in RDB");
