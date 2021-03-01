@@ -196,10 +196,24 @@ function addSignalHandlers(server: SelvaServer): void {
   process.on('SIGINT', () => {
     console.log('Got SIGINT, closing redis server')
     server.pm.destroy('SIGINT')
+
+    setTimeout(() => {
+      console.log('Exiting after graceful shutdown')
+      process.exit(0)
+    }, 500).unref()
   })
   process.on('SIGTERM', () => {
     console.log('Got SIGTERM, closing redis server')
     server.pm.destroy('SIGTERM')
+
+    setTimeout(() => {
+      console.log('Exiting after graceful shutdown')
+      process.exit(0)
+    }, 500).unref()
+  })
+  process.on('exit', (code) => {
+    console.log('Process exiting with code', code)
+    process.exit(0)
   })
 }
 
