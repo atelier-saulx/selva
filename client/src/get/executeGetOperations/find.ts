@@ -191,7 +191,6 @@ async function checkForNextRefresh(
         ...args
       )
 
-      console.log('ids', ids)
       if (!ids || !ids.length) {
         return
       }
@@ -386,7 +385,7 @@ const findFields = async (
   }
 
   const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
-  console.log('ARGS', args)
+  // console.log('ARGS', args)
   if (op.inKeys) {
     const result = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
