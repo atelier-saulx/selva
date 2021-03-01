@@ -195,7 +195,7 @@ export default class ProcessManager extends EventEmitter {
     this.startLoadMeasurements()
   }
 
-  destroy() {
+  destroy(signal?: NodeJS.Signals) {
     this.isDestroyed = true
     this.stopLoadMeasurements()
 
@@ -204,7 +204,7 @@ export default class ProcessManager extends EventEmitter {
       this.removeAllListeners() // yesh?
       const cp = this.childProcess
       this.childProcess = undefined
-      cp.kill('SIGTERM')
+      cp.kill(signal || 'SIGTERM')
       setTimeout(() => {
         const ok = cp.kill('SIGKILL')
         if (ok) {
