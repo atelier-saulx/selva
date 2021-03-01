@@ -158,9 +158,10 @@ async function checkForNextRefresh(
   const withoutTimebased = excludeTimebased(ast)
   await Promise.all(
     timebased.map(async (f) => {
+      // console.log('TRYING TIMEBASED')
       const newFilter: FilterAST = {
         $operator: '>',
-        $value: (<string>f.$value).startsWith('now+') ? 'now' : f.$value,
+        $value: f.$value,
         $field: f.$field,
       }
 
