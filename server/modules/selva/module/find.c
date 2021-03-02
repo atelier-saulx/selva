@@ -200,7 +200,7 @@ static int parse_dir(
      * We may not need this but we don't know it yet.
      */
     rms_node_id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    node_key = RedisModule_OpenKey(ctx, rms_node_id, REDISMODULE_READ);
+    node_key = RedisModule_OpenKey(ctx, rms_node_id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
     err = SelvaObject_Key2Obj(node_key, &obj);
     if (err) {
         return err;
@@ -336,7 +336,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         return NULL;
     }
 
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
+    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
     if (key) {
         struct SelvaObject *obj;
         RedisModuleString *value = NULL;
@@ -427,13 +427,13 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
     }
 
     RedisModuleKey *key;
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
+    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
     if (!key) {
         return SELVA_ENOENT;
     }
 
     struct SelvaObject *obj;
-    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, id, REDISMODULE_READ), &obj);
+    err = SelvaObject_Key2Obj(key, &obj);
     if (err) {
         return err;
     }
@@ -812,7 +812,7 @@ static ssize_t send_node_object_merge(
     }
 
     RedisModuleKey *key;
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
+    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
     if (!key) {
         return SELVA_ENOENT;
     }
