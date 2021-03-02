@@ -240,7 +240,7 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModul
     return hierarchy;
 }
 
-static int createNodeHash(RedisModuleCtx *ctx, const Selva_NodeId id) {
+static int create_node_object(RedisModuleCtx *ctx, const Selva_NodeId id) {
     RedisModuleString *node_name;
     RedisModuleKey *key;
 
@@ -300,7 +300,7 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
     if (likely(ctx)) {
         int err;
 
-        err = createNodeHash(ctx, id);
+        err = create_node_object(ctx, id);
         if (err) {
             fprintf(stderr, "%s: Failed to create a hash for \"%.*s\": %s\n",
                     __FILE__,
@@ -409,7 +409,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
         SelvaNode_Delete(ctx, rms_id);
 
         if (is_root) {
-            createNodeHash(ctx, id);
+            create_node_object(ctx, id);
         }
     }
 }
