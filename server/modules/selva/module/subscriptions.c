@@ -1307,6 +1307,7 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
 }
 
 /*
+ * Add a new marker to the subscription.
  * KEY SUB_ID MARKER_ID node|ancestors|descendants|ref_field_name NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
  */
 int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
