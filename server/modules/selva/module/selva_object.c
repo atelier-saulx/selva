@@ -1364,6 +1364,10 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                     char new_field[new_field_len];
                     snprintf(new_field, new_field_len, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
                     fprintf(stderr, "GET KEY %s\n", new_field);
+
+                    if (strstr(new_field, ".*.")) {
+                        return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len);
+                    }
                 }
 
                 // TODO: remove
