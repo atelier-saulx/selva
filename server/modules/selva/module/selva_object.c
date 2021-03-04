@@ -1369,7 +1369,9 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                         return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len);
                     }
 
-                    // err = get_key(obj, new_field, new_field_len, 0, &key);
+                    struct SelvaObjectKey *key;
+                    err = get_key(obj, new_field, new_field_len, 0, &key);
+                    fprintf(stderr, "FOUND SOMETHING %s\n", key->name);
 
                     // TODO: remove
                     err = SELVA_ENOENT;
@@ -1413,12 +1415,14 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     }
 
     for (int i = ARGV_OKEY; i < argc; i++) {
+        int is_wildcard = 0;
         const RedisModuleString *okey = argv[i];
         TO_STR(okey);
 
         int err = 0;
 
         if (strstr(okey_str, ".*.")) {
+            is_wildcard = 1;
             err = SelvaObject_GetWithWildcard(ctx, obj, okey_str, okey_len);
         } else {
             err = get_key(obj, okey_str, okey_len, 0, &key);
@@ -1431,7 +1435,9 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             return replyWithSelvaErrorf(ctx, err, "get_key");
         }
 
-        replyWithKeyValue(ctx, key);
+        if (!is_wildcard) {
+            replyWithKeyValue(ctx, key);
+        }
         return REDISMODULE_OK;
     }
 
