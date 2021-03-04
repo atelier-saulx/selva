@@ -671,6 +671,14 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
+    /*
+     * This mode is currently not supported by Selva and should not be enabled
+     * as it will just ignore all errors and make Redis crash.
+     */
+#if 0
+    RedisModule_SetModuleOptions(ctx, REDISMODULE_OPTIONS_HANDLE_IO_ERRORS);
+#endif
+
     if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }

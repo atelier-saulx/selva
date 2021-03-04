@@ -536,7 +536,7 @@ static struct SelvaObject *open_node_object(struct RedisModuleCtx *redis_ctx, st
             return NULL;
         }
 
-        key = RedisModule_OpenKey(redis_ctx, ctx->rms_id, REDISMODULE_READ);
+        key = RedisModule_OpenKey(redis_ctx, ctx->rms_id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
         if (!key) {
             return NULL;
         }

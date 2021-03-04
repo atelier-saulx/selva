@@ -1307,6 +1307,7 @@ static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, Red
 }
 
 /*
+ * Add a new marker to the subscription.
  * KEY SUB_ID MARKER_ID node|ancestors|descendants|ref_field_name NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
  */
 int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -2050,7 +2051,7 @@ int Selva_SubscriptionDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "marker_id: %d", (int)marker->marker_id));
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "flags: %#06x", marker->marker_flags));
         if (is_trigger) {
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "event_type: %s", trigger_event_types[marker->event_type]));
+            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "event_type: %s", trigger_event_types[marker->event_type].name));
         } else {
             RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "node_id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, marker->node_id));
             RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaModify_HierarchyDir2str(marker->dir)));

@@ -1,11 +1,11 @@
 {
   "name": "@saulx/selva",
-  "version": "3.4.5",
+  "version": "3.5.0",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && yarn buildTs",
     "start": "tsc && node dist/index.js",
-    "test": "ava --verbose",
+    "test": "ava --timeout 1m --verbose",
     "watch": "ava --color --watch --verbose",
     "buildLua": " scripts=$(ls *.script-tsconfig.json); for script in $scripts; do echo $script; ../bin/transpileScript $script; done",
     "buildTs": "tsc",
@@ -50,7 +50,7 @@
     ]
   },
   "devDependencies": {
-    "@saulx/selva-server": "3.4.5",
+    "@saulx/selva-server": "3.5.0",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",

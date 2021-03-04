@@ -376,7 +376,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
     if (flags & SELVA_OBJECT_GETKEY_DELETE) {
         RB_REMOVE(SelvaObjectKeys, &cobj->keys_head, key);
-        obj->obj_size--;
+        cobj->obj_size--;
         (void)clear_key_value(key);
 #if MEM_DEBUG
         memset(key, 0, sizeof(*key));
@@ -1672,17 +1672,8 @@ static int rdb_load_object_set(RedisModuleIO *io, struct SelvaObject *obj, const
     return 0;
 }
 
-void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
+static void *rdb_load_object(RedisModuleIO *io) {
     struct SelvaObject *obj;
-
-    if (encver != SELVA_OBJECT_ENCODING_VERSION) {
-        /*
-         * RFE
-         * We should actually log an error here, or try to implement
-         * the ability to load older versions of our data structure.
-         */
-        return NULL;
-    }
 
     obj = SelvaObject_New();
     if (!obj) {
@@ -1696,9 +1687,14 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
         const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
         const SelvaObjectMeta_t user_meta = RedisModule_LoadUnsigned(io);
 
+        if (unlikely(!name)) {
+            RedisModule_LogIOError(io, "warning", "SelvaObject key name cannot be NULL");
+            break;
+        }
+
         switch (type) {
         case SELVA_OBJECT_NULL:
-            RedisModule_LogIOError(io, "warning", "null keys should not exist in RDB");
+            /* NOP - There is generally no reason to recreate NULLs */
             break;
         case SELVA_OBJECT_DOUBLE:
             if(rdb_load_object_double(io, obj, name)) {
@@ -1727,7 +1723,7 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
                     return NULL;
                 }
 
-                key->value = SelvaObjectTypeRDBLoad(io, encver);
+                key->value = rdb_load_object(io);
                 if (!key->value) {
                     RedisModule_LogIOError(io, "warning", "Error while loading an object");
                     return NULL;
@@ -1758,6 +1754,23 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
 
         RedisModule_FreeString(NULL, name);
     }
+
+    return obj;
+}
+
+void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
+    struct SelvaObject *obj;
+
+    if (encver != SELVA_OBJECT_ENCODING_VERSION) {
+        /*
+         * RFE
+         * We should actually log an error here, or try to implement
+         * the ability to load older versions of our data structure.
+         */
+        return NULL;
+    }
+
+    obj = rdb_load_object(io);
 
     return obj;
 }
@@ -1810,10 +1823,6 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
 
     RedisModule_SaveUnsigned(io, obj->obj_size);
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
-        if (key->type == SELVA_OBJECT_NULL) {
-            continue;
-        }
-
         RedisModule_SaveStringBuffer(io, key->name, key->name_len);
         RedisModule_SaveUnsigned(io, key->type);
         RedisModule_SaveUnsigned(io, key->user_meta);
@@ -1834,6 +1843,7 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
         case SELVA_OBJECT_OBJECT:
             if (!key->value) {
                 RedisModule_LogIOError(io, "warning", "OBJECT value missing");
+                /* TODO This would create a fatally broken RDB file. */
                 break;
             }
             SelvaObjectTypeRDBSave(io, key->value);

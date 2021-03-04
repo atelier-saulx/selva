@@ -1,5 +1,5 @@
 import { SelvaClient } from '../../'
-import { GetOperationFind, GetResult, GetOperation, GetOptions } from '../types'
+import { GetOperationFind, GetResult, GetOptions } from '../types'
 import { typeCast } from './'
 import {
   ast2rpn,
@@ -9,15 +9,12 @@ import {
   convertNow,
 } from '@saulx/selva-query-ast-parser'
 import { executeNestedGetOperations, ExecContext, addMarker } from './'
-import { padId, joinIds, getNestedSchema } from '../utils'
+import { padId, joinIds } from '../utils'
 import { setNestedResult } from '../utils'
-import { deepMerge } from '@saulx/utils'
 
 function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
   const pathPrefix = path === '' ? '' : path + '.'
   let fields: Set<string> = new Set()
-  const gets: GetOptions[] = []
-
   let hasAll = false
 
   for (const k in props) {
@@ -549,8 +546,6 @@ const executeFindOperation = async (
     let ids = await findIds(client, op, lang, ctx)
     const allResults = []
     for (const id of ids) {
-      const props = op.props
-
       const realOpts: any = {}
       for (const key in op.props) {
         if (key === '$all' || !key.startsWith('$')) {
@@ -558,7 +553,6 @@ const executeFindOperation = async (
         }
       }
 
-      const entryRes: any = {}
       const fieldResults = await executeNestedGetOperations(
         client,
         {
