@@ -1347,9 +1347,9 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
 
             // TODO: make actual gets here and accumulate the "key"
             struct SelvaObjectKey *key;
-            int inner_err = 0;
+            int err = 0;
 
-            inner_err = get_key(obj, before, before_len, 0, &key);
+            err = get_key(obj, before, before_len, 0, &key);
             fprintf(stderr, "KEY name %s type %d meta %d subtype %d\n", key->name, key->type, key->user_meta, key->subtype);
             if (key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
                 fprintf(stderr, "YES I AM HERE\n");
@@ -1369,17 +1369,17 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                         return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len);
                     }
 
+                    // err = get_key(obj, new_field, new_field_len, 0, &key);
 
+                    // TODO: remove
+                    err = SELVA_ENOENT;
                 }
-
-                // TODO: remove
-                inner_err = SELVA_ENOENT;
             } else {
                 return SELVA_ENOENT;
             }
 
-            if (inner_err) {
-                return inner_err;
+            if (err) {
+                return err;
             }
 
             last_wildcard = idx;
