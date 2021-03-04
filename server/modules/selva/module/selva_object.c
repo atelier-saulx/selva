@@ -1386,7 +1386,6 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
 
             last_wildcard = idx;
         }
-
     }
 
     return 0;
