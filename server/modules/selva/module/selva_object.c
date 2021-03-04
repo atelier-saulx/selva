@@ -1389,11 +1389,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
                             const size_t obj_key_len = strlen(obj_key_name_str);
                             char new_field[before_len + 1 + obj_key_len + 1 + after_len];
-                            memcpy(new_field, before, before_len);
-                            memcpy((char *)new_field + before_len, ".", 1);
-                            memcpy((char *)new_field + before_len + 1, obj_key_name_str, obj_key_len);
-                            memcpy((char *)new_field + before_len + 1 + obj_key_len, ".", 1);
-                            memcpy((char *)new_field + before_len + 1 + obj_key_len + 1, after, after_len);
+                            sprintf(new_field, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
                             fprintf(stderr, "GET KEY %s\n", new_field);
                         }
 
