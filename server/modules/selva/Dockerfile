@@ -6,7 +6,7 @@ RUN apt-get install -y build-essential uuid-dev libssl-dev git
 RUN git clone https://github.com/redis/hiredis
 RUN cd hiredis && make && make install
 
-RUN git clone --depth 1 --branch fastmode-huge-modify https://github.com/atelier-saulx/selva
+RUN git clone --depth 1 --branch fastmode-sm https://github.com/atelier-saulx/selva
 RUN git clone --depth 1 --branch 6.0.10 https://github.com/redis/redis
 RUN cd redis && git apply ../selva/server/redis/0001-Add-RM_ReplicateVerbatimArgs.patch && make PROG_SUFFIX="-selva"
 
