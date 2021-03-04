@@ -1386,6 +1386,15 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
                         const char *obj_key_name_str;
                         while ((obj_key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
                             fprintf(stderr, "HELLO ITERATING %s\n", obj_key_name_str);
+
+                            const size_t obj_key_len = strlen(obj_key_name_str);
+                            char new_field[before_len + 1 + obj_key_len + 1 + after_len];
+                            memcpy(new_field, before, before_len);
+                            memcpy((char *)new_field + before_len, ".", 1);
+                            memcpy((char *)new_field + before_len + 1, obj_key_name_str, obj_key_len);
+                            memcpy((char *)new_field + before_len + 1 + obj_key_len, ".", 1);
+                            memcpy((char *)new_field + before_len + 1 + obj_key_len + 1, after, after_len);
+                            fprintf(stderr, "GET KEY %s\n", new_field);
                         }
 
                         // TODO: remove
