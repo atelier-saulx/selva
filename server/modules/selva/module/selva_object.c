@@ -1346,6 +1346,8 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         const RedisModuleString *okey = argv[i];
         TO_STR(okey);
 
+        int err;
+
         if (strstr(okey_str, ".*.")) {
             const char *sep = ".";
             char buf[okey_len + 1]; /* We assume that the length has been sanity checked at this point. */
@@ -1371,23 +1373,23 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
                     // TODO: make actual gets here and accumulate the "key"
                     struct SelvaObjectKey *key;
-                    int err;
-                    err = get_key(obj, okey_str, okey_len, 0, &key);
+                    int inner_err;
+                    inner_err = get_key(obj, okey_str, okey_len, 0, &key);
                     if (err == SELVA_ENOENT) {
                         /* Keep looking. */
-                        continue;
+                        err = inner_err;
+                        break;
                     } else if (err) {
-                        return replyWithSelvaErrorf(ctx, err, "get_key");
+                        return replyWithSelvaErrorf(ctx, inner_err, "get_key");
                     }
 
                     last_wildcard = idx;
                 }
             }
+        } else {
+            err = get_key(obj, okey_str, okey_len, 0, &key);
         }
 
-        int err;
-
-        err = get_key(obj, okey_str, okey_len, 0, &key);
         if (err == SELVA_ENOENT) {
             /* Keep looking. */
             continue;
