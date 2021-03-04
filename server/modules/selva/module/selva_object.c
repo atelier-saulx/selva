@@ -1371,6 +1371,7 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
 
                     struct SelvaObjectKey *key;
                     err = get_key(obj, new_field, new_field_len, 0, &key);
+                    // TODO: reply with array
                     fprintf(stderr, "FOUND SOMETHING %s\n", key->name);
 
                     // TODO: remove
