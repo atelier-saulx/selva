@@ -1350,8 +1350,29 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
           const char *sep = ".";
           char buf[okey_len + 1]; /* We assume that the length has been sanity checked at this point. */
           char *s = buf;
+          strncpy(s, okey_str, okey_len);
+
+          size_t idx = 0;
+          size_t last_wildcard = 0;
           for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
             const size_t slen = strlen(s);
+
+            idx += slen;
+            if (slen == 1 && s[0] == '*') {
+              char before[idx -  last_wildcard - 1];
+              strncpy(before, &okey_str[last_wildcard], idx -  last_wildcard - 1);
+
+              char after[okey_len - idx];
+              strncpy(after, &okey_str[idx + 2], okey_len - idx - 1);
+
+              fprintf(stderr, "HELLO FOUND WILDCARD %s at index %zu\n", okey_str, idx);
+              fprintf(stderr, "FIELD BEFORE %s\n", before);
+              fprintf(stderr, "FIELD AFTER %s\n", after);
+
+              // TODO: make actual gets here and accumulate the "key"
+
+              last_wildcard = idx;
+            }
           }
         }
 
