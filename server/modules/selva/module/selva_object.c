@@ -1361,13 +1361,13 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
                 idx += slen;
                 if (slen == 1 && s[0] == '*') {
-                    size_t before_len = idx -  last_wildcard - 1;
+                    const size_t before_len = idx -  last_wildcard - 1;
                     char before[before_len];
-                    strncpy(before, &okey_str[last_wildcard], before_len);
+                    memcpy(before, &okey_str[last_wildcard], before_len);
 
-                    size_t after_len = okey_len - idx - 2;
+                    const size_t after_len = okey_len - idx - 2;
                     char after[after_len];
-                    strncpy(after, &okey_str[idx + 2], after_len);
+                    memcpy(after, &okey_str[idx + 2], after_len);
 
                     fprintf(stderr, "HELLO FOUND WILDCARD %s at index %zu\n", okey_str, idx);
                     fprintf(stderr, "FIELD BEFORE %zu %s\n", before_len, before);
@@ -1377,21 +1377,28 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
                     struct SelvaObjectKey *key;
                     int inner_err = 0;
 
-                    RedisModuleString *bef_rs = RedisModule_CreateString(ctx, before, before_len);
-                    RedisModuleString *af_rs = RedisModule_CreateString(ctx, after, after_len);
-                    // inner_err = get_key(obj, bef_rs, before_len, 0, &key);
+                    inner_err = get_key(obj, before, before_len, 0, &key);
+                    fprintf(stderr, "KEY name %s type %d meta %d subtype %d\n", key->name, key->type, key->user_meta, key->subtype);
+                    if (key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
+                        fprintf(stderr, "YES I AM HERE\n");
+                        SelvaObject_Iterator *it = SelvaObject_ForeachBegin(key->value);
 
-                    // TODO: remove
-                    err = SELVA_ENOENT;
-                    if (err == SELVA_ENOENT) {
+                        const char *key_name_str;
+                        while ((key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
+                            fprintf(stderr, "HELLO ITERATING\n");
+                        }
+
+                    } else {
+                        inner_err = SELVA_ENOENT;
+                    }
+
+                    if (inner_err == SELVA_ENOENT) {
                         /* Keep looking. */
                         err = inner_err;
                         break;
                     } else if (err) {
                         return replyWithSelvaErrorf(ctx, inner_err, "get_key");
                     }
-
-                    // fprintf(stderr, "KEY %s %d\n", key->name, key->type);
 
                     last_wildcard = idx;
                 }
