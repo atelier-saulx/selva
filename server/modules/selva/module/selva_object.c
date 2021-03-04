@@ -1368,20 +1368,18 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                     if (strstr(new_field, ".*.")) {
                         return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len);
                     }
+
+
                 }
 
                 // TODO: remove
                 inner_err = SELVA_ENOENT;
             } else {
-                inner_err = SELVA_ENOENT;
+                return SELVA_ENOENT;
             }
 
-            if (inner_err == SELVA_ENOENT) {
-                /* Keep looking. */
+            if (inner_err) {
                 return inner_err;
-                break;
-            } else if (inner_err) {
-                return replyWithSelvaErrorf(ctx, inner_err, "get_key");
             }
 
             last_wildcard = idx;
