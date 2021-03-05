@@ -1326,76 +1326,71 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
     char *s = buf;
     strncpy(s, okey_str, okey_len);
 
-    size_t idx = 0;
+    char *wildcard = strstr(okey_str, ".*.");
+    size_t wildcard_idx = wildcard - okey_str;
+    size_t idx = wildcard_idx + 1; // .*. => *.
     size_t last_wildcard = 0;
-    for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
-        const size_t slen = strlen(s);
 
-        idx += slen;
-        if (slen == 1 && s[0] == '*') {
-            const size_t before_len = idx -  last_wildcard - 1;
-            char before[before_len];
-            memcpy(before, &okey_str[last_wildcard], before_len);
+    const size_t before_len = idx -  last_wildcard - 1;
+    char before[before_len];
+    memcpy(before, &okey_str[last_wildcard], before_len);
 
-            const size_t after_len = okey_len - idx - 2;
-            char after[after_len];
-            memcpy(after, &okey_str[idx + 2], after_len);
+    const size_t after_len = okey_len - idx - 2;
+    char after[after_len];
+    memcpy(after, &okey_str[idx + 2], after_len);
 
-            fprintf(stderr, "HELLO FOUND WILDCARD %s at index %zu\n", okey_str, idx);
-            fprintf(stderr, "FIELD BEFORE %zu %s\n", before_len, before);
-            fprintf(stderr, "FIELD AFTER %zu %s\n", after_len, after);
+    fprintf(stderr, "HELLO FOUND WILDCARD %s at index %zu\n", okey_str, idx);
+    fprintf(stderr, "FIELD BEFORE %zu %s\n", before_len, before);
+    fprintf(stderr, "FIELD AFTER %zu %s\n", after_len, after);
 
-            // TODO: make actual gets here and accumulate the "key"
+    // TODO: make actual gets here and accumulate the "key"
+    struct SelvaObjectKey *key;
+    int err = 0;
+
+    err = get_key(obj, before, before_len, 0, &key);
+    fprintf(stderr, "KEY name %s type %d meta %d subtype %d\n", key->name, key->type, key->user_meta, key->subtype);
+    if (key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
+        void *it = SelvaObject_ForeachBegin(key->value);
+
+        const char *obj_key_name_str;
+        while ((obj_key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
+            fprintf(stderr, "HELLO ITERATING %s\n", obj_key_name_str);
+
+            const size_t obj_key_len = strlen(obj_key_name_str);
+            size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
+            char new_field[new_field_len];
+            sprintf(new_field, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
+            fprintf(stderr, "GET KEY %.*s\n", (int)new_field_len, new_field);
+
+            if (strstr(new_field, ".*.")) {
+                return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count);
+            }
+
             struct SelvaObjectKey *key;
-            int err = 0;
-
-            err = get_key(obj, before, before_len, 0, &key);
-            fprintf(stderr, "KEY name %s type %d meta %d subtype %d\n", key->name, key->type, key->user_meta, key->subtype);
-            if (key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
-                fprintf(stderr, "YES I AM HERE\n");
-                void *it = SelvaObject_ForeachBegin(key->value);
-
-                const char *obj_key_name_str;
-                while ((obj_key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
-                    fprintf(stderr, "HELLO ITERATING %s\n", obj_key_name_str);
-
-                    const size_t obj_key_len = strlen(obj_key_name_str);
-                    size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
-                    char new_field[new_field_len];
-                    sprintf(new_field, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
-                    fprintf(stderr, "GET KEY %.*s\n", (int)new_field_len, new_field);
-
-                    if (strstr(new_field, ".*.")) {
-                        return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count);
-                    }
-
-                    struct SelvaObjectKey *key;
-                    err = get_key(obj, new_field, new_field_len, 0, &key);
-                    // TODO: reply with array
-                    fprintf(stderr, "FOUND SOMETHING %s\n", key->name);
+            err = get_key(obj, new_field, new_field_len, 0, &key);
+            // TODO: reply with array
+            fprintf(stderr, "FOUND SOMETHING %s\n", key->name);
 
 
-                    size_t reply_path_len = obj_key_len + 1 + key->name_len;
-                    char reply_path[reply_path_len];
-                    sprintf(reply_path, "%.*s.%.*s", (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
-                    RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
-                    replyWithKeyValue(ctx, key);
-                    (*resp_count) += 2;
-                    // TODO: remove
-                    // err = SELVA_ENOENT;
-                }
-            } else {
-                return SELVA_ENOENT;
-            }
-
-            if (err) {
-                // TODO: well, error handling needs to change
-                return err;
-            }
-
-            last_wildcard = idx;
+            size_t reply_path_len = obj_key_len + 1 + key->name_len;
+            char reply_path[reply_path_len];
+            sprintf(reply_path, "%.*s.%.*s", (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+            RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
+            replyWithKeyValue(ctx, key);
+            (*resp_count) += 2;
+            // TODO: remove
+            // err = SELVA_ENOENT;
         }
+    } else {
+        return SELVA_ENOENT;
     }
+
+    if (err) {
+        // TODO: well, error handling needs to change
+        return err;
+    }
+
+    last_wildcard = idx;
 
     return 0;
 }
