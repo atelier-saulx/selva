@@ -1384,6 +1384,7 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
             }
 
             if (err) {
+                // TODO: well, error handling needs to change
                 return err;
             }
 
