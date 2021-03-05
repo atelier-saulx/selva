@@ -2067,7 +2067,7 @@ test.serial('get - record with wildcard query', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('get - record with nested wildcard query', async (t) => {
+test.serial('get - record with nested wildcard query', async (t) => {
   const client = connect({ port })
 
   await client.set({
@@ -2156,10 +2156,10 @@ test.serial.only('get - record with nested wildcard query', async (t) => {
         },
         obj2: {
           nestedRec: {
-            thing1: {
+            thing3: {
               hello: 'pff',
             },
-            thing2: {
+            thing4: {
               hello: 'ffp',
             },
           },
@@ -2191,20 +2191,20 @@ test.serial.only('get - record with nested wildcard query', async (t) => {
         myObj1: {
           nestedRec: {
             thing1: {
-              value: 22,
+              value: 12,
             },
             thing2: {
-              value: 23,
+              value: 13,
             },
           },
         },
         obj2: {
           nestedRec: {
-            thing1: {
-              value: 22,
+            thing3: {
+              value: 12,
             },
-            thing2: {
-              value: 23,
+            thing4: {
+              value: 13,
             },
           },
         },

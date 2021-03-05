@@ -1358,7 +1358,8 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
             fprintf(stderr, "GET KEY %.*s\n", (int)new_field_len, new_field);
 
             if (strstr(new_field, ".*.")) {
-                return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx);
+                SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx);
+                continue;
             }
 
             struct SelvaObjectKey *key;
