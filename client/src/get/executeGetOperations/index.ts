@@ -165,7 +165,6 @@ export const TYPE_CASTS: Record<
         const f = origField.includes('.*.')
           ? `${field.substr(0, field.indexOf('*') - 1)}.${key}`
           : `${field}.${key}`
-        console.log('HHHHHMMMMMM', f)
 
         if ((i & 1) === 1) return
         let val = arr[i + 1]
@@ -209,7 +208,9 @@ export const TYPE_CASTS: Record<
             val = typeCast(val, id, f, schema, lang)
             // val = typeCast(val, id, field, schema, lang)
           }
-          o[key] = val
+
+          setNestedResult(o, key, val)
+          // o[key] = val
         }
 
         fieldCount++

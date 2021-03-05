@@ -1957,7 +1957,7 @@ test.serial('get - $inherit with record types does deep merge', async (t) => {
   client.destroy()
 })
 
-test.serial.only('get - record with wildcard query', async (t) => {
+test.serial('get - record with wildcard query', async (t) => {
   const client = connect({ port })
 
   await client.set({
@@ -1994,12 +1994,6 @@ test.serial.only('get - record with wildcard query', async (t) => {
     },
   })
 
-  console.log(
-    'hellooo',
-    await client.redis.selva_object_get('viA', 'objRec'),
-    await client.redis.selva_object_get('viA', 'objRec.myObj1'),
-    await client.redis.selva_object_get('viA', 'objRec.myObj1.hello')
-  )
   t.deepEqual(
     await client.get({
       $id: 'viA',
