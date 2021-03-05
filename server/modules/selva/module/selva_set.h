@@ -76,8 +76,8 @@ int SelvaSet_AddNodeId(struct SelvaSet *set, Selva_NodeId node_id);
         struct RedisModuleString *: SelvaSet_AddRms, \
         double: SelvaSet_AddDouble, \
         long long: SelvaSet_AddLongLong, \
-        char *: SelvaSet_AddNodeId, \
-        ((set), (x))
+        char *: SelvaSet_AddNodeId \
+        )((set), (x))
 
 int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s);
 int SelvaSet_HasDouble(struct SelvaSet *set, double d);
@@ -87,8 +87,8 @@ int SelvaSet_HasNodeId(struct SelvaSet *set, Selva_NodeId node_id);
         struct RedisModuleString *: SelvaSet_HasRms, \
         double: SelvaSet_HasDouble, \
         long long: SelvaSet_HasLongLong, \
-        char *: SelvaSet_HasNodeId, \
-        ((set), (x))
+        char *: SelvaSet_HasNodeId \
+        )((set), (x))
 
 struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s);
 struct SelvaSetElement *SelvaSet_RemoveDouble(struct SelvaSet *set, double d);
@@ -98,8 +98,8 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId
         struct RedisModuleString *: SelvaSet_RemoveRms, \
         double: SelvaSet_RemoveDouble, \
         long long: SelvaSet_RemoveLongLong, \
-        char *: SelvaSet_RemoveNodeId, \
-        ((set), (x))
+        char *: SelvaSet_RemoveNodeId \
+        )((set), (x))
 
 #define SELVA_SET_RMS_FOREACH(el, set) \
     RB_FOREACH(el, SelvaSetRms, &(set)->head_rms)
