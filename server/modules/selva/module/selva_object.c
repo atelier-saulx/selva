@@ -1320,7 +1320,7 @@ int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, co
     return 0;
 }
 
-int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len) {
+int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len, long *resp_count) {
     const char *sep = ".";
     char buf[okey_len + 1]; /* We assume that the length has been sanity checked at this point. */
     char *s = buf;
@@ -1366,7 +1366,7 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                     fprintf(stderr, "GET KEY %s\n", new_field);
 
                     if (strstr(new_field, ".*.")) {
-                        return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len);
+                        return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count);
                     }
 
                     struct SelvaObjectKey *key;
@@ -1423,7 +1423,11 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
         if (strstr(okey_str, ".*.")) {
             is_wildcard = 1;
-            err = SelvaObject_GetWithWildcard(ctx, obj, okey_str, okey_len);
+
+            long resp_count = 0;
+            RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+            err = SelvaObject_GetWithWildcard(ctx, obj, okey_str, okey_len, &resp_count);
+            RedisModule_ReplySetArrayLength(ctx, resp_count);
         } else {
             err = get_key(obj, okey_str, okey_len, 0, &key);
         }
