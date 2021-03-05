@@ -87,6 +87,19 @@ is traversed.
 This reference type is completely unmanaged and nothing will happen if a
 referenced node is removed.
 
+### Edge Field
+
+Edge fields are customizable user defined edge types in the Selva C module.
+An edge field is tied to a user defined edge constraint, that mandates the
+behavior of the edges of the field on creation, traversals, and other
+database operations. This is the reference type that makes Selva a true graph
+database.
+
+These fields are managed according to the selected edge constraint, and
+an edge can only exist if its endpoint exists.
+
+The edge field system is documented [here](edge.md).
+
 ## Subscriptions
 
 A subscription is a collection of subscription markers. A subscription marker is
