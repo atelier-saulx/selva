@@ -1374,8 +1374,10 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                     // TODO: reply with array
                     fprintf(stderr, "FOUND SOMETHING %s\n", key->name);
 
+                    replyWithKeyValue(ctx, key);
+                    (*resp_count)++;
                     // TODO: remove
-                    err = SELVA_ENOENT;
+                    // err = SELVA_ENOENT;
                 }
             } else {
                 return SELVA_ENOENT;
