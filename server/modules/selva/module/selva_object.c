@@ -1334,28 +1334,20 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
     char after[after_len];
     memcpy(after, &okey_str[idx + 2], after_len);
 
-    fprintf(stderr, "HELLO FOUND WILDCARD %s at index %zu\n", okey_str, idx);
-    fprintf(stderr, "FIELD BEFORE %zu %s\n", before_len, before);
-    fprintf(stderr, "FIELD AFTER %zu %s\n", after_len, after);
-
-    // TODO: make actual gets here and accumulate the "key"
     struct SelvaObjectKey *key;
     int err = 0;
 
     err = get_key(obj, before, before_len, 0, &key);
-    fprintf(stderr, "KEY name %s type %d meta %d subtype %d\n", key->name, key->type, key->user_meta, key->subtype);
     if (key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
         void *it = SelvaObject_ForeachBegin(key->value);
 
         const char *obj_key_name_str;
         while ((obj_key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
-            fprintf(stderr, "HELLO ITERATING %s\n", obj_key_name_str);
 
             const size_t obj_key_len = strlen(obj_key_name_str);
             size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
             char new_field[new_field_len];
             sprintf(new_field, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
-            fprintf(stderr, "GET KEY %.*s\n", (int)new_field_len, new_field);
 
             if (strstr(new_field, ".*.")) {
                 SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx);
@@ -1364,18 +1356,13 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
 
             struct SelvaObjectKey *key;
             err = get_key(obj, new_field, new_field_len, 0, &key);
-            // TODO: reply with array
-            fprintf(stderr, "FOUND SOMETHING %s\n", key->name);
-
 
             size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
             char reply_path[reply_path_len];
             if (resp_path_start_idx == -1) {
                 sprintf(reply_path, "%.*s.%.*s", (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
             } else {
-                fprintf(stderr, "HMM OKEY %s %d %s\n", okey_str, (int)resp_path_start_idx, before);
                 sprintf(reply_path, "%.*s.%.*s.%.*s", (int)before_len - resp_path_start_idx, before + resp_path_start_idx, (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
-                fprintf(stderr, "HMM? %.*s\n", (int)reply_path_len, reply_path);
             }
 
             RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);

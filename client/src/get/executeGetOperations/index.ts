@@ -160,13 +160,11 @@ export const TYPE_CASTS: Record<
   object: (all: any, id: string, origField: string, schema, lang) => {
     const result = {}
     let fieldCount = 0
-    console.log('yoyo', all)
     const parse = (o, field: string, arr: string[]) =>
       arr.forEach((key, i, arr) => {
         const f = origField.includes('.*.')
           ? `${field.substr(0, field.indexOf('*') - 1)}.${key}`
           : `${field}.${key}`
-        console.log('f', f)
 
         if ((i & 1) === 1) return
         let val = arr[i + 1]
