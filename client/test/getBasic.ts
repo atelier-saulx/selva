@@ -56,6 +56,20 @@ test.beforeEach(async (t) => {
                 hello: {
                   type: 'string',
                 },
+                nestedRec: {
+                  type: 'record',
+                  values: {
+                    type: 'object',
+                    properties: {
+                      value: {
+                        type: 'number',
+                      },
+                      hello: {
+                        type: 'string',
+                      },
+                    },
+                  },
+                },
                 value: {
                   type: 'number',
                 },
@@ -2041,6 +2055,158 @@ test.serial('get - record with wildcard query', async (t) => {
         },
         obj2: {
           value: 13,
+        },
+      },
+    }
+  )
+
+  // TODO: add a find case with both and wildcard for fields thing
+
+  await client.delete('root')
+
+  await client.destroy()
+})
+
+test.serial.only('get - record with nested wildcard query', async (t) => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!',
+    },
+    objRec: {
+      myObj1: {
+        hello: 'pff',
+        value: 12,
+        nestedRec: {
+          thing1: {
+            hello: 'pff',
+            value: 12,
+          },
+          thing2: {
+            hello: 'ffp',
+            value: 13,
+          },
+        },
+      },
+      obj2: {
+        hello: 'ffp',
+        value: 13,
+        nestedRec: {
+          thing3: {
+            hello: 'pff',
+            value: 12,
+          },
+          thing4: {
+            hello: 'ffp',
+            value: 13,
+          },
+        },
+      },
+    },
+  })
+
+  await client.set({
+    $id: 'viB',
+    title: {
+      en: 'nice!!!',
+    },
+    objRec: {
+      myObj1: {
+        hello: 'hmm',
+        value: 22,
+      },
+      obj2: {
+        hello: 'mmh',
+        value: 23,
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      objRec: {
+        '*': {
+          nestedRec: {
+            '*': {
+              hello: true,
+            },
+          },
+        },
+      },
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      objRec: {
+        myObj1: {
+          nestedRec: {
+            thing1: {
+              hello: 'pff',
+            },
+            thing2: {
+              hello: 'ffp',
+            },
+          },
+        },
+        obj2: {
+          nestedRec: {
+            thing1: {
+              hello: 'pff',
+            },
+            thing2: {
+              hello: 'ffp',
+            },
+          },
+        },
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      $language: 'en',
+      id: true,
+      title: true,
+      objRec: {
+        '*': {
+          nestedRec: {
+            '*': {
+              value: true,
+            },
+          },
+        },
+      },
+    }),
+    {
+      id: 'viA',
+      title: 'nice!',
+      objRec: {
+        myObj1: {
+          nestedRec: {
+            thing1: {
+              value: 22,
+            },
+            thing2: {
+              value: 23,
+            },
+          },
+        },
+        obj2: {
+          nestedRec: {
+            thing1: {
+              value: 22,
+            },
+            thing2: {
+              value: 23,
+            },
+          },
         },
       },
     }
