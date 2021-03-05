@@ -12,6 +12,11 @@
 
 #define SELVA_ALIASES_KEY       "___selva_aliases"
 
+/**
+ * Default Redis key name for Selva hierarchy.
+ */
+#define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
+
 #define SELVA_ID_FIELD         "id"
 #define SELVA_ALIASES_FIELD    "aliases"
 #define SELVA_CREATED_AT_FIELD "createdAt"
@@ -53,12 +58,13 @@ enum SelvaModify_HierarchyTraversal {
     SELVA_HIERARCHY_TRAVERSAL_NODE, /*!< Visit just the given node. */
     SELVA_HIERARCHY_TRAVERSAL_CHILDREN, /*!< Visit children of the given node. */
     SELVA_HIERARCHY_TRAVERSAL_PARENTS, /*!< Visit parents of the given node. */
-    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS,
-    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS,
-    SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS,
-    SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS,
-    SELVA_HIERARCHY_TRAVERSAL_DFS_FULL,
+    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, /*!< Visit ancestors of the given node using BFS. */
+    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS, /*!< Visit descendants of the given node using BFS. */
+    SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS, /*!< Visit ancestors of the given node using DFS. */
+    SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS, /*!< Visit descendants of the given node using DFS. */
+    SELVA_HIERARCHY_TRAVERSAL_DFS_FULL, /*!< Full DFS traversal of the whole hierarchy. */
     SELVA_HIERARCHY_TRAVERSAL_REF, /*!< Visit nodes pointed by a ref field. */
+    SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD, /*!< Traverse an edge field according to its constraints using BFS. */
 };
 
 size_t Selva_NodeIdLen(const Selva_NodeId nodeId);

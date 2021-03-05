@@ -14,6 +14,8 @@ export const OPT_SET_TYPE = {
 export const setRecordDefCstring = compile([
   { name: 'op_set_type', type: 'int8' },
   { name: 'delete_all', type: 'int8' },
+  { name: 'constraint_id', type: 'uint16' },
+  /* 32 zeroed bytes */
   { name: '$add', type: 'cstring_p' },
   { name: '$delete', type: 'cstring_p' },
   { name: '$value', type: 'cstring_p' },
@@ -22,6 +24,7 @@ export const setRecordDefCstring = compile([
 export const setRecordDefDouble = compile([
   { name: 'op_set_type', type: 'int8' },
   { name: 'delete_all', type: 'int8' },
+  /* 48 zeroed bytes */
   { name: '$add', type: 'double_p' },
   { name: '$delete', type: 'double_p' },
   { name: '$value', type: 'double_p' },
@@ -30,6 +33,7 @@ export const setRecordDefDouble = compile([
 export const setRecordDefInt64 = compile([
   { name: 'op_set_type', type: 'int8' },
   { name: 'delete_all', type: 'int8' },
+  /* 48 zeroed bytes */
   { name: '$add', type: 'int64_p' },
   { name: '$delete', type: 'int64_p' },
   { name: '$value', type: 'int64_p' },

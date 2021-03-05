@@ -234,6 +234,7 @@ export default async (
         field,
         createRecord(setRecordDefCstring, {
           op_set_type: OPT_SET_TYPE.reference,
+          constraint_id: 0,
           delete_all:
             r.delete_all || (!r.$add && !r.$delete && isEmpty(r.$value)),
           $add: await toCArr(
@@ -280,6 +281,7 @@ export default async (
       field,
       createRecord(setRecordDefCstring, {
         op_set_type: OPT_SET_TYPE.reference,
+        constraint_id: 0,
         delete_all: isEmpty($value),
         $add: '',
         $delete: '',

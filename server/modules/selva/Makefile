@@ -10,6 +10,7 @@ OBJS := \
 	module/arg_parser.o \
 	module/async_task.o \
 	module/comparator.o \
+	module/edge.o \
 	module/errors.o \
 	module/find.o \
 	module/hierarchy.o \

@@ -60,7 +60,7 @@ SET_DECLARE(selva_objpop, struct SelvaObjectPointerOpts);
  * Defaults for SELVA_OBJECT_POINTER handling.
  * The default is: Do Nothing.
  */
-static struct SelvaObjectPointerOpts default_ptr_opts = {
+static const struct SelvaObjectPointerOpts default_ptr_opts = {
     .ptr_type_id = 0,
 };
 SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
@@ -992,7 +992,7 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, out_subtype, out_p);
 }
 
-int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, struct SelvaObjectPointerOpts *opts) {
+int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, const struct SelvaObjectPointerOpts *opts) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1020,7 +1020,7 @@ int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str,
     return 0;
 }
 
-int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, struct SelvaObjectPointerOpts *opts) {
+int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, const struct SelvaObjectPointerOpts *opts) {
     TO_STR(key_name);
 
     return SelvaObject_SetPointerStr(obj, key_name_str, key_name_len, p, opts);
@@ -1899,7 +1899,7 @@ static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *o
 
     ptr_type_id = RedisModule_LoadUnsigned(io);
     if (ptr_type_id > 0) {
-        struct SelvaObjectPointerOpts *opts;
+        const struct SelvaObjectPointerOpts *opts;
         int err;
         void *p;
 

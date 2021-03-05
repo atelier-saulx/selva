@@ -182,6 +182,7 @@ static const char *get_next_field_name(const char *s)
 
 static int parse_dir(
         RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
         enum SelvaModify_HierarchyTraversal *dir,
         RedisModuleString **field_name_out,
         Selva_NodeId nodeId,
@@ -211,7 +212,6 @@ static int parse_dir(
 
     do {
         const size_t sz = (size_t)((ptrdiff_t)p2 - (ptrdiff_t)p1);
-        enum SelvaObjectType type;
 
         if (sz == 4 && !strncmp("node", p1, 4)) {
             *dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
@@ -233,19 +233,16 @@ static int parse_dir(
                 : SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS;
             break;
         } else if (sz > 0) {
-            /* Check if the field_name is a field name. */
-
-            type = SelvaObject_GetTypeStr(obj, p1, sz);
-            if (type == SELVA_OBJECT_SET) {
+            /*
+             * Check if the field_name is a custom edge field name.
+             */
+            if (Edge_GetField(SelvaHierarchy_FindNode(hierarchy, nodeId), p1, sz)) {
                 RedisModuleString *rms;
 
-#if 0
-                fprintf(stderr, "%s:%d: Field exists. node: %.*s field: %.*s type: %d\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, nodeId,
-                        (int)sz, p1,
-                        type);
-#endif
+                if (algo != HIERARCHY_BFS) {
+                    err = SELVA_MODIFY_HIERARCHY_EINVAL;
+                    break;
+                }
 
                 rms = RedisModule_CreateString(ctx, p1, sz);
                 if (!rms) {
@@ -255,8 +252,39 @@ static int parse_dir(
 
                 err = 0;
                 *field_name_out = rms;
-                *dir = SELVA_HIERARCHY_TRAVERSAL_REF;
+                *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD;
                 break;
+            } else {
+                /*
+                 * Check if the field_name is a regular field containing
+                 * a set of nodeId strings.
+                 */
+                enum SelvaObjectType type;
+
+                /* TODO Actually verify that it contains strings */
+                type = SelvaObject_GetTypeStr(obj, p1, sz);
+                if (type == SELVA_OBJECT_SET) {
+                    RedisModuleString *rms;
+
+#if 0
+                    fprintf(stderr, "%s:%d: Field exists. node: %.*s field: %.*s type: %d\n",
+                            __FILE__, __LINE__,
+                            (int)SELVA_NODE_ID_SIZE, nodeId,
+                            (int)sz, p1,
+                            type);
+#endif
+
+                    rms = RedisModule_CreateString(ctx, p1, sz);
+                    if (!rms) {
+                        err = SELVA_MODIFY_HIERARCHY_ENOMEM;
+                        break;
+                    }
+
+                    err = 0;
+                    *field_name_out = rms;
+                    *dir = SELVA_HIERARCHY_TRAVERSAL_REF;
+                    break;
+                }
             }
         } else {
             err = SELVA_MODIFY_HIERARCHY_EINVAL;
@@ -1437,9 +1465,9 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         /*
          * Get the direction parameter.
          */
-        err = parse_dir(ctx, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
+        err = parse_dir(ctx, hierarchy, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
         if (err) {
-            fprintf(stderr, "%s:%d: Error \"%s\" while selecting the field/dir for the node \"%.*s\", skipping\n",
+            fprintf(stderr, "%s:%d: Error \"%s\" while selecting the field and dir for the node \"%.*s\", skipping\n",
                     __FILE__, __LINE__,
                     getSelvaErrorStr(err),
                     (int)SELVA_NODE_ID_SIZE, nodeId);
@@ -1481,6 +1509,8 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
             TO_STR(ref_field);
 
             err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, &cb);
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD && ref_field) {
+            err = SelvaModify_TraverseHierarchyEdge(hierarchy, nodeId, ref_field, &cb);
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }

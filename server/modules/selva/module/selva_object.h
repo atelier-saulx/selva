@@ -47,6 +47,9 @@ struct SelvaObjectPointerOpts {
     SelvaObject_PtrSave ptr_save;
 };
 
+/**
+ * Register SELVA_OBJECT_POINTER options statically for RDB loading.
+ */
 #define SELVA_OBJECT_POINTER_OPTS(opts) \
     DATA_SET(selva_objpop, opts)
 
@@ -98,8 +101,8 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const struct RedisModuleString
  * @param opts is an optional pointer to SELVA_OBJECT_POINTER ops that can define
  *             how to free the data pointed by the pointer or how to serialize it.
  */
-int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, struct SelvaObjectPointerOpts *opts);
-int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, struct SelvaObjectPointerOpts *opts);
+int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, const struct SelvaObjectPointerOpts *opts);
+int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, const struct SelvaObjectPointerOpts *opts);
 int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p);
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);

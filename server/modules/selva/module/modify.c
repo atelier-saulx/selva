@@ -156,6 +156,105 @@ static int update_hierarchy(
     }
 }
 
+static int update_edge(
+    SelvaModify_Hierarchy *hierarchy,
+    Selva_NodeId node_id,
+    const RedisModuleString *field,
+    struct SelvaModify_OpSet *setOpts
+) {
+    struct SelvaModify_HierarchyNode *node;
+    const unsigned constraint_id = setOpts->edge_constraint_id;
+    TO_STR(field);
+
+    /* TODO This lookup could be optimized away. */
+    node = SelvaHierarchy_FindNode(hierarchy, node_id);
+    if (unlikely(!node)) {
+        return SELVA_ENOENT;
+    }
+
+    if (setOpts->$value_len > 0) {
+        int res = 0;
+
+        if (setOpts->$value_len % SELVA_NODE_ID_SIZE) {
+            return SELVA_EINVAL;
+        }
+
+        /* TODO we should do diff add */
+        Edge_ClearField(node, field_str, field_len);
+        for (size_t i = 0; i < setOpts->$value_len; i += SELVA_NODE_ID_SIZE) {
+            const char *dst_node_id = setOpts->$value + i;
+            struct SelvaModify_HierarchyNode *dst_node;
+            int err;
+
+            dst_node = SelvaHierarchy_FindNode(hierarchy, dst_node_id);
+            if (!dst_node) {
+                /* TODO Should we do something if a node is not found? */
+                continue;
+            }
+
+            err = Edge_Add(field_str, field_len, constraint_id, node, dst_node);
+            if (err && err != SELVA_EEXIST) {
+                /* TODO Handle error */
+                fprintf(stderr, "%s:%d: Adding an edge from %.*s.%.*s to %.*s failed with an error: %s\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, node_id,
+                        (int)field_len, field_str,
+                        (int)SELVA_NODE_ID_SIZE, dst_node_id,
+                        getSelvaErrorStr(err));
+                continue;
+            }
+            res++;
+        }
+
+        return res;
+    } else {
+        int res = 0;
+
+        if (setOpts->$add_len % SELVA_NODE_ID_SIZE ||
+            setOpts->$delete_len % SELVA_NODE_ID_SIZE) {
+            return SELVA_EINVAL;
+        }
+
+        if (setOpts->$add_len > 0) {
+            for (size_t i = 0; i < setOpts->$add_len; i += SELVA_NODE_ID_SIZE) {
+                struct SelvaModify_HierarchyNode *dst_node;
+                int err;
+
+                dst_node = SelvaHierarchy_FindNode(hierarchy, setOpts->$add + i);
+                if (!dst_node) {
+                    /* TODO Should we do something if a node is not found? */
+                    continue;
+                }
+
+                err = Edge_Add(field_str, field_len, constraint_id, node, dst_node);
+                if (err && err != SELVA_EEXIST) {
+                    /* TODO Handle error */
+                    continue;
+                }
+                res++;
+            }
+        }
+        if (setOpts->$delete_len > 0) {
+            for (size_t i = 0; i < setOpts->$delete_len; i += SELVA_NODE_ID_SIZE) {
+                Selva_NodeId dst_node_id;
+                int err;
+
+                /*
+                 * It may or may not be better for caching to have the node_id in
+                 * stack.
+                 */
+                memcpy(dst_node_id, setOpts->$add + i, SELVA_NODE_ID_SIZE);
+                err = Edge_Delete(field_str, field_len, node, dst_node_id);
+                if (err != SELVA_EEXIST) {
+                    res++;
+                }
+            }
+        }
+
+        return res;
+    }
+}
+
 static void selva_set_defer_alias_change_events(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -572,31 +671,46 @@ int SelvaModify_ModifySet(
     const RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
-    const int is_reference = setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE;
     TO_STR(id, field);
 
-    if (setOpts->delete_all) {
-        int err;
+    if (setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+        Selva_NodeId node_id;
+        int isChildren = !strcmp(field_str, "children");
+        int isParents = !isChildren && !strcmp(field_str, "parents");
 
-        if (!strcmp(field_str, "children")) {
-            Selva_NodeId node_id;
+        Selva_NodeIdCpy(node_id, id_str);
 
-            if (!is_reference) {
-                return SELVA_EINTYPE;
+        if (isChildren || isParents) {
+            /*
+             * Children and parents hierarchy is hardcoded for performance.
+             */
+            if (setOpts->delete_all) {
+                /* If delete_all is set the other fields are ignored. */
+                int err;
+
+                if (isChildren) {
+                    err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
+                } else if (isParents) {
+                    err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
+                } else {
+                    err = Edge_ClearField(SelvaHierarchy_FindNode(hierarchy, node_id), field_str, field_len);
+                }
+
+                return err == SELVA_ENOENT ? 1 : err;
+            } else {
+                return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
             }
-
-            Selva_NodeIdCpy(node_id, id_str);
-            err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
-        } else if (!strcmp(field_str, "parents")) {
-            Selva_NodeId node_id;
-
-            if (!is_reference) {
-                return SELVA_EINTYPE;
-            }
-
-            Selva_NodeIdCpy(node_id, id_str);
-            err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
         } else {
+            /*
+             * Other graph fields are dynamic and implemented separately
+             * from hierarchy.
+             */
+            return update_edge(hierarchy, node_id, field, setOpts);
+        }
+    } else {
+        if (setOpts->delete_all) {
+            int err;
+
             /*
              * First we need to delete the aliases of this node from the
              * ___selva_aliases hash.
@@ -621,29 +735,18 @@ int SelvaModify_ModifySet(
             }
 
             err = SelvaObject_DelKey(obj, field);
-        }
+            if (err == 0) {
+                err = 1;
+            }
 
-        if (err == SELVA_ENOENT || err == SELVA_MODIFY_HIERARCHY_ENOENT) {
-            return 0;
-        } else if (err == 0) {
-            return 1;
+            return err == SELVA_ENOENT ? 0 : err;
         } else {
-            return err;
+            /*
+             * Other set ops use C-strings and operate on the node SelvaObject.
+             */
+            return update_set(ctx, hierarchy, obj, id, field, setOpts);
         }
     }
-
-    if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
-        Selva_NodeId node_id;
-
-        if (setOpts->op_set_type != SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
-            return SELVA_EINTYPE;
-        }
-
-        Selva_NodeIdCpy(node_id, id_str);
-        return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
-    }
-
-    return update_set(ctx, hierarchy, obj, id, field, setOpts);
 }
 
 void SelvaModify_ModifyIncrement(

@@ -61,3 +61,10 @@ void SelvaNodeId_copy2buf(char buf[SELVA_NODE_ID_SIZE + 1], const Selva_NodeId i
 
 void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id __unused) {
 }
+
+int Edge_RdbLoad(struct RedisModuleIO *io __unused, int encver __unused, struct SelvaModify_Hierarchy *hierarchy __unused, struct SelvaModify_HierarchyNode *node __unused) {
+    return 0;
+}
+
+void Edge_RdbSave(struct RedisModuleIO *io __unused, struct SelvaModify_HierarchyNode *node __unused) {
+}

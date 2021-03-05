@@ -7,12 +7,10 @@
 #include "svector.h"
 #include "tree.h"
 #include "trx.h"
+#include "edge.h"
 #include "subscriptions.h"
 
-/**
- * Default Redis key name for Selva hierarchy.
- */
-#define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
+#define HIERARCHY_ENCODING_VERSION  1
 
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
@@ -32,6 +30,7 @@ struct SelvaModify_HierarchyMetadata {
      * Subscription markers.
      */
     struct Selva_SubscriptionMarkers sub_markers;
+    struct EdgeFieldContainer custom_edge_fields;
 };
 
 typedef void SelvaModify_HierarchyMetadataHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);
@@ -277,6 +276,11 @@ int SelvaModify_TraverseHierarchyRef(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         const char *ref_field,
+        const struct SelvaModify_HierarchyCallback *cb);
+int SelvaModify_TraverseHierarchyEdge(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        struct RedisModuleString *field_name,
         const struct SelvaModify_HierarchyCallback *cb);
 
 /*

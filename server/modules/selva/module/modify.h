@@ -45,6 +45,7 @@ struct SelvaModify_OpIncrementDouble {
 struct SelvaModify_OpSet {
     int8_t op_set_type; /*!< Set type. One of the SELVA_MODIFY_OP_SET_TYPE_xxx defines. */
     int8_t delete_all; /*!< Delete all intems from the set. */
+    uint16_t edge_constraint_id; /*!< Edge field constraint id when op_set_type is set to SELVA_MODIFY_OP_SET_TYPE_EDGE. */
 
     char *$add;
     size_t $add_len;

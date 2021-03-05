@@ -1,6 +1,6 @@
 #pragma once
-#ifndef SELVA_SET
-#define SELVA_SET
+#ifndef _SELVA_SET_H_
+#define _SELVA_SET_H_
 
 #include "selva.h"
 #include "tree.h"
@@ -143,4 +143,4 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId
 #define SELVA_SET_NODEID_FOREACH_SAFE(el, set, tmp) \
     RB_FOREACH_SAFE(el, SelvaSetNodeId, &(set)->head_nodeId, tmp)
 
-#endif /* SELVA_SET */
+#endif /* _SELVA_SET_H_ */
