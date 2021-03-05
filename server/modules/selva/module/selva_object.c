@@ -1360,10 +1360,10 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                     fprintf(stderr, "HELLO ITERATING %s\n", obj_key_name_str);
 
                     const size_t obj_key_len = strlen(obj_key_name_str);
-                    size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len + 1;
+                    size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
                     char new_field[new_field_len];
-                    snprintf(new_field, new_field_len, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
-                    fprintf(stderr, "GET KEY %s\n", new_field);
+                    sprintf(new_field, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
+                    fprintf(stderr, "GET KEY %.*s\n", (int)new_field_len, new_field);
 
                     if (strstr(new_field, ".*.")) {
                         return SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count);
@@ -1374,7 +1374,11 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                     // TODO: reply with array
                     fprintf(stderr, "FOUND SOMETHING %s\n", key->name);
 
-                    RedisModule_ReplyWithStringBuffer(ctx, new_field, new_field_len - 1);
+
+                    size_t reply_path_len = obj_key_len + 1 + key->name_len;
+                    char reply_path[reply_path_len];
+                    sprintf(reply_path, "%.*s.%.*s", (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+                    RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
                     replyWithKeyValue(ctx, key);
                     (*resp_count) += 2;
                     // TODO: remove

@@ -1994,6 +1994,12 @@ test.serial.only('get - record with wildcard query', async (t) => {
     },
   })
 
+  console.log(
+    'hellooo',
+    await client.redis.selva_object_get('viA', 'objRec'),
+    await client.redis.selva_object_get('viA', 'objRec.myObj1'),
+    await client.redis.selva_object_get('viA', 'objRec.myObj1.hello')
+  )
   t.deepEqual(
     await client.get({
       $id: 'viA',
