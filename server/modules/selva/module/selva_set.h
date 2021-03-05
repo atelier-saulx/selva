@@ -13,6 +13,7 @@ enum SelvaSetType {
     SELVA_SET_TYPE_RMSTRING = 0,
     SELVA_SET_TYPE_DOUBLE = 1,
     SELVA_SET_TYPE_LONGLONG = 2,
+    SELVA_SET_TYPE_NODEID = 3,
 };
 
 struct SelvaObject;
@@ -22,6 +23,7 @@ struct SelvaSetElement {
         struct RedisModuleString *value_rms;
         double value_d;
         long long value_ll;
+        Selva_NodeId value_nodeId;
     };
     RB_ENTRY(SelvaSetElement) _entry;
 };
@@ -29,6 +31,7 @@ struct SelvaSetElement {
 RB_HEAD(SelvaSetRms, SelvaSetElement);
 RB_HEAD(SelvaSetDouble, SelvaSetElement);
 RB_HEAD(SelvaSetLongLong, SelvaSetElement);
+RB_HEAD(SelvaSetNodeId, SelvaSetElement);
 
 struct SelvaSet {
     enum SelvaSetType type;
@@ -37,12 +40,14 @@ struct SelvaSet {
         struct SelvaSetRms head_rms;
         struct SelvaSetDouble head_d;
         struct SelvaSetLongLong head_ll;
+        struct SelvaSetNodeId head_nodeId;
     };
 };
 
 RB_PROTOTYPE(SelvaSetRms, SelvaSetElement, _entry, SelvaSet_CompareRms)
 RB_PROTOTYPE(SelvaSetDouble, SelvaSetElement, _entry, SelvaSet_CompareDouble)
 RB_PROTOTYPE(SelvaSetLongLong, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
+RB_PROTOTYPE(SelvaSetNodeId, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
 void SelvaSet_Destroy(struct SelvaSet *head);
 void SelvaSet_DestroyElement(struct SelvaSetElement *el);
 
@@ -56,6 +61,8 @@ static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
         RB_INIT(&set->head_d);
     } else if (type == SELVA_SET_TYPE_LONGLONG) {
         RB_INIT(&set->head_ll);
+    } else if (type == SELVA_SET_TYPE_NODEID) {
+        RB_INIT(&set->head_nodeId);
     } else {
         /* TODO What to do if type is invalid */
     }
@@ -64,12 +71,35 @@ static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
 int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s);
 int SelvaSet_AddDouble(struct SelvaSet *set, double d);
 int SelvaSet_AddLongLong(struct SelvaSet *set, long long l);
+int SelvaSet_AddNodeId(struct SelvaSet *set, Selva_NodeId node_id);
+#define SelvaSet_Add(set, x) _Generic((x), \
+        struct RedisModuleString *: SelvaSet_AddRms, \
+        double: SelvaSet_AddDouble, \
+        long long: SelvaSet_AddLongLong, \
+        char *: SelvaSet_AddNodeId, \
+        ((set), (x))
+
 int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s);
 int SelvaSet_HasDouble(struct SelvaSet *set, double d);
 int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll);
+int SelvaSet_HasNodeId(struct SelvaSet *set, Selva_NodeId node_id);
+#define SelvaSet_Has(set, x) _Generic((x), \
+        struct RedisModuleString *: SelvaSet_HasRms, \
+        double: SelvaSet_HasDouble, \
+        long long: SelvaSet_HasLongLong, \
+        char *: SelvaSet_HasNodeId, \
+        ((set), (x))
+
 struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s);
 struct SelvaSetElement *SelvaSet_RemoveDouble(struct SelvaSet *set, double d);
 struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long ll);
+struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId node_id);
+#define SelvaSet_Remove(set, x) _Generic((x), \
+        struct RedisModuleString *: SelvaSet_RemoveRms, \
+        double: SelvaSet_RemoveDouble, \
+        long long: SelvaSet_RemoveLongLong, \
+        char *: SelvaSet_RemoveNodeId, \
+        ((set), (x))
 
 #define SELVA_SET_RMS_FOREACH(el, set) \
     RB_FOREACH(el, SelvaSetRms, &(set)->head_rms)
@@ -88,5 +118,11 @@ struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long 
 
 #define SELVA_SET_LONGLONG_FOREACH_SAFE(el, set, tmp) \
     RB_FOREACH_SAFE(el, SelvaSetLongLong, &(set)->head_ll, tmp)
+
+#define SELVA_SET_NODEID_FOREACH(el, set) \
+    RB_FOREACH(el, SelvaSetNodeId, &(set)->head_nodeId)
+
+#define SELVA_SET_NODEID_FOREACH_SAFE(el, set, tmp) \
+    RB_FOREACH_SAFE(el, SelvaSetNodeId, &(set)->head_nodeId, tmp)
 
 #endif /* SELVA_SET */
