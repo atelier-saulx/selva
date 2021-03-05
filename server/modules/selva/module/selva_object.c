@@ -1374,8 +1374,9 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
                     // TODO: reply with array
                     fprintf(stderr, "FOUND SOMETHING %s\n", key->name);
 
+                    RedisModule_ReplyWithStringBuffer(ctx, new_field, new_field_len - 1);
                     replyWithKeyValue(ctx, key);
-                    (*resp_count)++;
+                    (*resp_count) += 2;
                     // TODO: remove
                     // err = SELVA_ENOENT;
                 }
