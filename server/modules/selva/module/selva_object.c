@@ -182,22 +182,22 @@ size_t SelvaObject_MemUsage(const void *value) {
         size += sizeof(*key) + key->name_len + 1;
 
         switch (key->type) {
-            case SELVA_OBJECT_STRING:
-                if (key->value) {
-                    size_t len;
+        case SELVA_OBJECT_STRING:
+            if (key->value) {
+                size_t len;
 
-                    (void)RedisModule_StringPtrLen(key->value, &len);
-                    size += len + 1;
-                }
-                break;
-            case SELVA_OBJECT_OBJECT:
-                if (key->value) {
-                    size += SelvaObject_MemUsage(key->value);
-                }
-                break;
-            default:
-                /* 0 */
-                break;
+                (void)RedisModule_StringPtrLen(key->value, &len);
+                size += len + 1;
+            }
+            break;
+        case SELVA_OBJECT_OBJECT:
+            if (key->value) {
+                size += SelvaObject_MemUsage(key->value);
+            }
+            break;
+        default:
+            /* 0 */
+            break;
         }
     }
 
