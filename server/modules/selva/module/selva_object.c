@@ -1326,10 +1326,12 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
     size_t idx = wildcard_idx + 1; // .*. => *.
     size_t last_wildcard = 0;
 
+    // path before the wildcard character
     const size_t before_len = idx -  last_wildcard - 1;
     char before[before_len];
     memcpy(before, &okey_str[last_wildcard], before_len);
 
+    // path after the wildcard character
     const size_t after_len = okey_len - idx - 2;
     char after[after_len];
     memcpy(after, &okey_str[idx + 2], after_len);
@@ -1343,13 +1345,17 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
 
         const char *obj_key_name_str;
         while ((obj_key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
-
+            // construct a new field path with the resolved path with the following:
+            // -> path before the wildcard
+            // -> the current object key being iterated
+            // -> path after the wildcard
             const size_t obj_key_len = strlen(obj_key_name_str);
             size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
             char new_field[new_field_len];
             sprintf(new_field, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
 
             if (strstr(new_field, ".*.")) {
+                // recurse for nested wildcards while keeping the resolved path
                 SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
             }
@@ -1382,6 +1388,7 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
         err = SELVA_ENOENT;
     }
 
+    // ignore errors unless nothing was returned and an error occurred
     if (err && *resp_count == 0) {
         return err;
     }
