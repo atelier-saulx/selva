@@ -84,7 +84,7 @@ int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
 int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta);
 SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
 const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
-int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len, long *resp_count, int resp_path_start_idx, unsigned int splice_path_by_wildcard_position);
+int SelvaObject_GetWithWildcardStr(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len, long *resp_count, int resp_path_start_idx, unsigned int splice_path_by_wildcard_position);
 /**
  * Foreach value in object.
  * @param name_out is a direct pointer to the name and it will be rendered invalid if the key is deleted.

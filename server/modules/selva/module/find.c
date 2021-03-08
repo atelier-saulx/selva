@@ -518,7 +518,7 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
 
                 if (strstr(field_str, ".*.")) {
                     long resp_count = 0;
-                    err = SelvaObject_GetWithWildcard(ctx, obj, field_str, field_len, &resp_count, -1, 0);
+                    err = SelvaObject_GetWithWildcardStr(ctx, obj, field_str, field_len, &resp_count, -1, 0);
 
                     nr_fields += resp_count / 2;
                     break;

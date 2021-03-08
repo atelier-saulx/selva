@@ -1320,7 +1320,7 @@ int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, co
     return 0;
 }
 
-int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len, long *resp_count, int resp_path_start_idx, unsigned int flags) {
+int SelvaObject_GetWithWildcardStr(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len, long *resp_count, int resp_path_start_idx, unsigned int flags) {
     char *wildcard = strstr(okey_str, ".*.");
     size_t wildcard_idx = wildcard - okey_str;
     size_t idx = wildcard_idx + 1; // .*. => *.
@@ -1355,7 +1355,7 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
 
             if (strstr(new_field, ".*.")) {
                 // recurse for nested wildcards while keeping the resolved path
-                SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
+                SelvaObject_GetWithWildcardStr(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
             }
 
@@ -1429,7 +1429,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
             long resp_count = 0;
             RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-            err = SelvaObject_GetWithWildcard(ctx, obj, okey_str, okey_len, &resp_count, -1, 1);
+            err = SelvaObject_GetWithWildcardStr(ctx, obj, okey_str, okey_len, &resp_count, -1, 1);
             RedisModule_ReplySetArrayLength(ctx, resp_count);
         } else {
             err = get_key(obj, okey_str, okey_len, 0, &key);
