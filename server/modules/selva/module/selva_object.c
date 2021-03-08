@@ -1479,16 +1479,16 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     switch (type) {
     case 'f': /* SELVA_OBJECT_DOUBLE */
         err = SelvaObject_SetDouble(
-                obj,
-                argv[ARGV_OKEY],
-                strtod(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL));
+            obj,
+            argv[ARGV_OKEY],
+            strtod(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL));
         values_set++;
         break;
     case 'i': /* SELVA_OBJECT_LONGLONG */
         err = SelvaObject_SetLongLong(
-                obj,
-                argv[ARGV_OKEY],
-                strtoll(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL, 10));
+            obj,
+            argv[ARGV_OKEY],
+            strtoll(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL, 10));
         values_set++;
         break;
     case 's': /* SELVA_OBJECT_STRING */
