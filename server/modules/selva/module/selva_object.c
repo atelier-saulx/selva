@@ -1477,38 +1477,38 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     }
 
     switch (type) {
-        case 'f': /* SELVA_OBJECT_DOUBLE */
-            err = SelvaObject_SetDouble(
-                    obj,
-                    argv[ARGV_OKEY],
-                    strtod(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL));
-            values_set++;
-            break;
-        case 'i': /* SELVA_OBJECT_LONGLONG */
-            err = SelvaObject_SetLongLong(
-                    obj,
-                    argv[ARGV_OKEY],
-                    strtoll(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL, 10));
-            values_set++;
-            break;
-        case 's': /* SELVA_OBJECT_STRING */
-            err = SelvaObject_SetString(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
-            if (err == 0) {
-                RedisModule_RetainString(ctx, argv[ARGV_OVAL]);
+    case 'f': /* SELVA_OBJECT_DOUBLE */
+        err = SelvaObject_SetDouble(
+                obj,
+                argv[ARGV_OKEY],
+                strtod(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL));
+        values_set++;
+        break;
+    case 'i': /* SELVA_OBJECT_LONGLONG */
+        err = SelvaObject_SetLongLong(
+                obj,
+                argv[ARGV_OKEY],
+                strtoll(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL, 10));
+        values_set++;
+        break;
+    case 's': /* SELVA_OBJECT_STRING */
+        err = SelvaObject_SetString(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
+        if (err == 0) {
+            RedisModule_RetainString(ctx, argv[ARGV_OVAL]);
+        }
+        values_set++;
+        break;
+    case 'S': /* SELVA_OBJECT_SET */
+        for (int i = ARGV_OVAL; i < argc; i++) {
+            if (SelvaObject_AddStringSet(obj, argv[ARGV_OKEY], argv[i]) == 0) {
+                RedisModule_RetainString(ctx, argv[i]);
+                values_set++;
             }
-            values_set++;
-            break;
-        case 'S': /* SELVA_OBJECT_SET */
-            for (int i = ARGV_OVAL; i < argc; i++) {
-                if (SelvaObject_AddStringSet(obj, argv[ARGV_OKEY], argv[i]) == 0) {
-                    RedisModule_RetainString(ctx, argv[i]);
-                    values_set++;
-                }
-            }
-            err = 0;
-            break;
-        default:
-            err = SELVA_EINTYPE;
+        }
+        err = 0;
+        break;
+    default:
+        err = SELVA_EINTYPE;
     }
     if (err) {
         return replyWithSelvaError(ctx, err);
