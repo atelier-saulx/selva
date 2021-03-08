@@ -1766,55 +1766,55 @@ static void *rdb_load_object(RedisModuleIO *io) {
         }
 
         switch (type) {
-            case SELVA_OBJECT_NULL:
-                /* NOP - There is generally no reason to recreate NULLs */
-                break;
-            case SELVA_OBJECT_DOUBLE:
-                if(rdb_load_object_double(io, obj, name)) {
-                    return NULL;
-                }
-                break;
-            case SELVA_OBJECT_LONGLONG:
-                if (rdb_load_object_long_long(io, obj, name)) {
-                    return NULL;
-                }
-                break;
-            case SELVA_OBJECT_STRING:
-                if (rdb_load_object_string(io, obj, name)) {
-                    return NULL;
-                }
-                break;
-            case SELVA_OBJECT_OBJECT:
-                {
-                    struct SelvaObjectKey *key;
-                    TO_STR(name);
-                    int err;
+        case SELVA_OBJECT_NULL:
+            /* NOP - There is generally no reason to recreate NULLs */
+            break;
+        case SELVA_OBJECT_DOUBLE:
+            if(rdb_load_object_double(io, obj, name)) {
+                return NULL;
+            }
+            break;
+        case SELVA_OBJECT_LONGLONG:
+            if (rdb_load_object_long_long(io, obj, name)) {
+                return NULL;
+            }
+            break;
+        case SELVA_OBJECT_STRING:
+            if (rdb_load_object_string(io, obj, name)) {
+                return NULL;
+            }
+            break;
+        case SELVA_OBJECT_OBJECT:
+            {
+                struct SelvaObjectKey *key;
+                TO_STR(name);
+                int err;
 
-                    err = get_key(obj, name_str, name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-                    if (err) {
-                        RedisModule_LogIOError(io, "warning", "Error while creating an object key");
-                        return NULL;
-                    }
-
-                    key->value = rdb_load_object(io);
-                    if (!key->value) {
-                        RedisModule_LogIOError(io, "warning", "Error while loading an object");
-                        return NULL;
-                    }
-                    key->type = SELVA_OBJECT_OBJECT;
-                }
-                break;
-            case SELVA_OBJECT_SET:
-                if (rdb_load_object_set(io, obj, name)) {
+                err = get_key(obj, name_str, name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+                if (err) {
+                    RedisModule_LogIOError(io, "warning", "Error while creating an object key");
                     return NULL;
                 }
-                break;
-            case SELVA_OBJECT_ARRAY:
-                /* TODO Support arrays */
-                RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
-                break;
-            default:
-                RedisModule_LogIOError(io, "warning", "Unknown type");
+
+                key->value = rdb_load_object(io);
+                if (!key->value) {
+                    RedisModule_LogIOError(io, "warning", "Error while loading an object");
+                    return NULL;
+                }
+                key->type = SELVA_OBJECT_OBJECT;
+            }
+            break;
+        case SELVA_OBJECT_SET:
+            if (rdb_load_object_set(io, obj, name)) {
+                return NULL;
+            }
+            break;
+        case SELVA_OBJECT_ARRAY:
+            /* TODO Support arrays */
+            RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
+            break;
+        default:
+            RedisModule_LogIOError(io, "warning", "Unknown type");
         }
 
         /*
