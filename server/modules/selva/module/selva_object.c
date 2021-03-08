@@ -213,7 +213,7 @@ static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleStri
     type = RedisModule_KeyType(key);
 
     if (type != REDISMODULE_KEYTYPE_EMPTY &&
-            RedisModule_ModuleTypeGetType(key) != ObjectType) {
+        RedisModule_ModuleTypeGetType(key) != ObjectType) {
         RedisModule_CloseKey(key);
         RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
 
