@@ -1321,40 +1321,38 @@ int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, co
 }
 
 int SelvaObject_GetWithWildcardStr(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len, long *resp_count, int resp_path_start_idx, unsigned int flags) {
-    char *wildcard = strstr(okey_str, ".*.");
-    size_t wildcard_idx = wildcard - okey_str;
-    size_t idx = wildcard_idx + 1; // .*. => *.
+    size_t idx = strstr(okey_str, ".*.") - okey_str + 1; // .*. => *.
 
-    // path before the wildcard character
+    /* path before the wildcard character */
     const size_t before_len = idx - 1;
-    char before[before_len];
-    memcpy(before, &okey_str[0], before_len);
+    const char *before = okey_str;
 
-    // path after the wildcard character
+    /* path after the wildcard character */
     const size_t after_len = okey_len - idx - 2;
-    char after[after_len];
-    memcpy(after, &okey_str[idx + 2], after_len);
+    const char *after = &okey_str[idx + 2];
 
     struct SelvaObjectKey *key;
-    int err = 0;
+    int err;
 
     err = get_key(obj, before, before_len, 0, &key);
-    if (key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
+    if (!err && key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
         void *it = SelvaObject_ForeachBegin(key->value);
 
         const char *obj_key_name_str;
         while ((obj_key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
-            // construct a new field path with the resolved path with the following:
-            // -> path before the wildcard
-            // -> the current object key being iterated
-            // -> path after the wildcard
+            /*
+                construct a new field path with the resolved path with the following:
+                -> path before the wildcard
+                -> the current object key being iterated
+                -> path after the wildcard
+            */
             const size_t obj_key_len = strlen(obj_key_name_str);
             size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
             char new_field[new_field_len];
             sprintf(new_field, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
 
             if (strstr(new_field, ".*.")) {
-                // recurse for nested wildcards while keeping the resolved path
+                /* recurse for nested wildcards while keeping the resolved path */
                 SelvaObject_GetWithWildcardStr(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
             }
@@ -1363,7 +1361,7 @@ int SelvaObject_GetWithWildcardStr(RedisModuleCtx *ctx, struct SelvaObject *obj,
             err = get_key(obj, new_field, new_field_len, 0, &key);
 
             if (flags == 1) {
-                // if the path should be spliced to start from the first wildcard (as expected by selva.object.get
+                /* if the path should be spliced to start from the first wildcard (as expected by selva.object.get */
                 size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
                 char reply_path[reply_path_len];
                 if (resp_path_start_idx == -1) {
@@ -1373,7 +1371,7 @@ int SelvaObject_GetWithWildcardStr(RedisModuleCtx *ctx, struct SelvaObject *obj,
                 }
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             } else {
-                // if the whole resolved path should be returned
+                /* if the whole resolved path should be returned */
                 size_t reply_path_len = before_len + 1 + obj_key_len + 1 + key->name_len;
                 char reply_path[reply_path_len];
                 sprintf(reply_path, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
@@ -1387,7 +1385,7 @@ int SelvaObject_GetWithWildcardStr(RedisModuleCtx *ctx, struct SelvaObject *obj,
         err = SELVA_ENOENT;
     }
 
-    // ignore errors unless nothing was returned and an error occurred
+    /* ignore errors unless nothing was returned and an error occurred */
     if (err && *resp_count == 0) {
         return err;
     }
