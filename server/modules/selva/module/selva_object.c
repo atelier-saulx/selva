@@ -1375,8 +1375,6 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
 
             replyWithKeyValue(ctx, key);
             (*resp_count) += 2;
-            // TODO: remove
-            // err = SELVA_ENOENT;
         }
     } else {
         return SELVA_ENOENT;
