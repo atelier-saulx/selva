@@ -1320,7 +1320,7 @@ int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, co
     return 0;
 }
 
-int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len, long *resp_count, int resp_path_start_idx) {
+int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, const char *okey_str, size_t okey_len, long *resp_count, int resp_path_start_idx, unsigned int flags) {
     char *wildcard = strstr(okey_str, ".*.");
     size_t wildcard_idx = wildcard - okey_str;
     size_t idx = wildcard_idx + 1; // .*. => *.
@@ -1350,22 +1350,29 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
             sprintf(new_field, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)after_len, after);
 
             if (strstr(new_field, ".*.")) {
-                SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx);
+                SelvaObject_GetWithWildcard(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
             }
 
             struct SelvaObjectKey *key;
             err = get_key(obj, new_field, new_field_len, 0, &key);
 
-            size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
-            char reply_path[reply_path_len];
-            if (resp_path_start_idx == -1) {
-                sprintf(reply_path, "%.*s.%.*s", (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+            if (flags == 1) {
+                size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
+                char reply_path[reply_path_len];
+                if (resp_path_start_idx == -1) {
+                    sprintf(reply_path, "%.*s.%.*s", (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+                } else {
+                    sprintf(reply_path, "%.*s.%.*s.%.*s", (int)before_len - resp_path_start_idx, before + resp_path_start_idx, (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+                }
+                RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             } else {
-                sprintf(reply_path, "%.*s.%.*s.%.*s", (int)before_len - resp_path_start_idx, before + resp_path_start_idx, (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+                size_t reply_path_len = before_len + 1 + obj_key_len + 1 + key->name_len;
+                char reply_path[reply_path_len];
+                sprintf(reply_path, "%.*s.%.*s.%.*s", (int)before_len, before, (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+                RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             }
 
-            RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             replyWithKeyValue(ctx, key);
             (*resp_count) += 2;
             // TODO: remove
@@ -1419,7 +1426,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
             long resp_count = 0;
             RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-            err = SelvaObject_GetWithWildcard(ctx, obj, okey_str, okey_len, &resp_count, -1);
+            err = SelvaObject_GetWithWildcard(ctx, obj, okey_str, okey_len, &resp_count, -1, 1);
             RedisModule_ReplySetArrayLength(ctx, resp_count);
         } else {
             err = get_key(obj, okey_str, okey_len, 0, &key);
