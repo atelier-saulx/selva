@@ -1127,20 +1127,20 @@ const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, c
     }
 
     switch (key->type) {
-        case SELVA_OBJECT_NULL:
-            return NULL;
-        case SELVA_OBJECT_DOUBLE:
-            return &key->emb_double_value;
-        case SELVA_OBJECT_LONGLONG:
-            return &key->emb_ll_value;
-        case SELVA_OBJECT_STRING:
-        case SELVA_OBJECT_OBJECT:
-        case SELVA_OBJECT_POINTER:
-            return key->value;
-        case SELVA_OBJECT_SET:
-            return &key->selva_set;
-        case SELVA_OBJECT_ARRAY:
-            return &key->array;
+    case SELVA_OBJECT_NULL:
+        return NULL;
+    case SELVA_OBJECT_DOUBLE:
+        return &key->emb_double_value;
+    case SELVA_OBJECT_LONGLONG:
+        return &key->emb_ll_value;
+    case SELVA_OBJECT_STRING:
+    case SELVA_OBJECT_OBJECT:
+    case SELVA_OBJECT_POINTER:
+        return key->value;
+    case SELVA_OBJECT_SET:
+        return &key->selva_set;
+    case SELVA_OBJECT_ARRAY:
+        return &key->array;
     }
 
     return NULL;
