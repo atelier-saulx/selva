@@ -1377,11 +1377,10 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
             (*resp_count) += 2;
         }
     } else {
-        return SELVA_ENOENT;
+        err = SELVA_ENOENT;
     }
 
-    if (err) {
-        // TODO: well, error handling needs to change
+    if (err && *resp_count == 0) {
         return err;
     }
 

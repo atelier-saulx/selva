@@ -163,38 +163,6 @@ test.serial('find - with wildcard', async (t) => {
     },
   })
 
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: 'root',
-        id: true,
-        items: {
-          name: true,
-          record: {
-            '*': {
-              a: true,
-              b: true,
-            },
-          },
-          $list: {
-            $find: {
-              $traverse: 'children',
-              $filter: [
-                {
-                  $field: 'type',
-                  $operator: '=',
-                  $value: 'match',
-                },
-              ],
-            },
-          },
-        },
-      }),
-      null,
-      2
-    )
-  )
-
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'root',
