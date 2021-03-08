@@ -1247,40 +1247,40 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
 
 static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
     switch (key->type) {
-        case SELVA_OBJECT_NULL:
+    case SELVA_OBJECT_NULL:
+        RedisModule_ReplyWithNull(ctx);
+        break;
+    case SELVA_OBJECT_DOUBLE:
+        RedisModule_ReplyWithDouble(ctx, key->emb_double_value);
+        break;
+    case SELVA_OBJECT_LONGLONG:
+        RedisModule_ReplyWithLongLong(ctx, key->emb_ll_value);
+        break;
+    case SELVA_OBJECT_STRING:
+        if (key->value) {
+            RedisModule_ReplyWithString(ctx, key->value);
+        } else {
             RedisModule_ReplyWithNull(ctx);
-            break;
-        case SELVA_OBJECT_DOUBLE:
-            RedisModule_ReplyWithDouble(ctx, key->emb_double_value);
-            break;
-        case SELVA_OBJECT_LONGLONG:
-            RedisModule_ReplyWithLongLong(ctx, key->emb_ll_value);
-            break;
-        case SELVA_OBJECT_STRING:
-            if (key->value) {
-                RedisModule_ReplyWithString(ctx, key->value);
-            } else {
-                RedisModule_ReplyWithNull(ctx);
-            }
-            break;
-        case SELVA_OBJECT_OBJECT:
-            if (key->value) {
-                replyWithObject(ctx, key->value);
-            } else {
-                RedisModule_ReplyWithNull(ctx);
-            }
-            break;
-        case SELVA_OBJECT_SET:
-            replyWithSelvaSet(ctx, &key->selva_set);
-            break;
-        case SELVA_OBJECT_ARRAY:
-            replyWithArray(ctx, key->subtype, &key->array);
-            break;
-        case SELVA_OBJECT_POINTER:
-            RedisModule_ReplyWithStringBuffer(ctx, "(pointer)", 9);
-            break;
-        default:
-            (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Type not supported %d", (int)key->type);
+        }
+        break;
+    case SELVA_OBJECT_OBJECT:
+        if (key->value) {
+            replyWithObject(ctx, key->value);
+        } else {
+            RedisModule_ReplyWithNull(ctx);
+        }
+        break;
+    case SELVA_OBJECT_SET:
+        replyWithSelvaSet(ctx, &key->selva_set);
+        break;
+    case SELVA_OBJECT_ARRAY:
+        replyWithArray(ctx, key->subtype, &key->array);
+        break;
+    case SELVA_OBJECT_POINTER:
+        RedisModule_ReplyWithStringBuffer(ctx, "(pointer)", 9);
+        break;
+    default:
+        (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Type not supported %d", (int)key->type);
     }
 }
 
