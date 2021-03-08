@@ -84,55 +84,55 @@ struct SelvaObject *SelvaObject_New(void) {
 
 static int clear_key_value(struct SelvaObjectKey *key) {
     switch (key->type) {
-        case SELVA_OBJECT_NULL:
-            /* NOP */
-            break;
-        case SELVA_OBJECT_DOUBLE:
-            break;
-        case SELVA_OBJECT_LONGLONG:
-            break;
-        case SELVA_OBJECT_STRING:
-            if (key->value) {
-                RedisModule_FreeString(NULL, key->value);
-            }
-            break;
-        case SELVA_OBJECT_OBJECT:
-            if (key->value) {
-                struct SelvaObject *obj = (struct SelvaObject *)key->value;
+    case SELVA_OBJECT_NULL:
+        /* NOP */
+        break;
+    case SELVA_OBJECT_DOUBLE:
+        break;
+    case SELVA_OBJECT_LONGLONG:
+        break;
+    case SELVA_OBJECT_STRING:
+        if (key->value) {
+            RedisModule_FreeString(NULL, key->value);
+        }
+        break;
+    case SELVA_OBJECT_OBJECT:
+        if (key->value) {
+            struct SelvaObject *obj = (struct SelvaObject *)key->value;
 
-                SelvaObject_Destroy(obj);
-            }
-            break;
-        case SELVA_OBJECT_SET:
-            SelvaSet_Destroy(&key->selva_set);
-            break;
-        case SELVA_OBJECT_ARRAY:
-            /* TODO Clear array key */
-            if (key->subtype == SELVA_OBJECT_STRING) {
-                struct SVectorIterator it;
-                RedisModuleString *str;
+            SelvaObject_Destroy(obj);
+        }
+        break;
+    case SELVA_OBJECT_SET:
+        SelvaSet_Destroy(&key->selva_set);
+        break;
+    case SELVA_OBJECT_ARRAY:
+        /* TODO Clear array key */
+        if (key->subtype == SELVA_OBJECT_STRING) {
+            struct SVectorIterator it;
+            RedisModuleString *str;
 
-                SVector_ForeachBegin(&it, &key->array);
-                while ((str = SVector_Foreach(&it))) {
-                    RedisModule_FreeString(NULL, str);
-                }
-            } else {
-                fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
-                        __FILE__, (int)key->subtype);
+            SVector_ForeachBegin(&it, &key->array);
+            while ((str = SVector_Foreach(&it))) {
+                RedisModule_FreeString(NULL, str);
             }
-            SVector_Destroy(&key->array);
-            break;
-        case SELVA_OBJECT_POINTER:
-            /* This is where we could support cleanup. */
-            key->value = NULL; /* Not strictly necessary. */
-            break;
-        default:
-            /*
-             * In general default shouldn't be used because it may mask out missing
-             * type handling but it's acceptable here.
-             */
-            fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
-            return SELVA_EINTYPE;
+        } else {
+            fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
+                    __FILE__, (int)key->subtype);
+        }
+        SVector_Destroy(&key->array);
+        break;
+    case SELVA_OBJECT_POINTER:
+        /* This is where we could support cleanup. */
+        key->value = NULL; /* Not strictly necessary. */
+        break;
+    default:
+        /*
+         * In general default shouldn't be used because it may mask out missing
+         * type handling but it's acceptable here.
+         */
+        fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
+        return SELVA_EINTYPE;
     }
 
     key->type = SELVA_OBJECT_NULL;
