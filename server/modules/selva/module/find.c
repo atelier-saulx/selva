@@ -514,6 +514,18 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
                     break;
                 }
 
+                fprintf(stderr, "helloooooo %s\n", field_str);
+
+                if (strstr(field_str, ".*.")) {
+                    long resp_count = 0;
+                    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+                    err = SelvaObject_GetWithWildcard(ctx, obj, field_str, field_len, &resp_count, -1);
+                    RedisModule_ReplySetArrayLength(ctx, resp_count);
+
+                    nr_fields++;
+                    break;
+                }
+
                 if (SelvaObject_Exists(obj, field)) {
                     /* Field didn't exist in the node. */
                     continue;
