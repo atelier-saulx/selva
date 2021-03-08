@@ -1901,35 +1901,35 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
         RedisModule_SaveUnsigned(io, key->user_meta);
 
         switch (key->type) {
-            case SELVA_OBJECT_NULL:
-                /* null is implicit value and doesn't need to be persisted. */
+        case SELVA_OBJECT_NULL:
+            /* null is implicit value and doesn't need to be persisted. */
+            break;
+        case SELVA_OBJECT_DOUBLE:
+            RedisModule_SaveDouble(io, key->emb_double_value);
+            break;
+        case SELVA_OBJECT_LONGLONG:
+            RedisModule_SaveSigned(io, key->emb_ll_value);
+            break;
+        case SELVA_OBJECT_STRING:
+            rdb_save_object_string(io, key);
+            break;
+        case SELVA_OBJECT_OBJECT:
+            if (!key->value) {
+                RedisModule_LogIOError(io, "warning", "OBJECT value missing");
+                /* TODO This would create a fatally broken RDB file. */
                 break;
-            case SELVA_OBJECT_DOUBLE:
-                RedisModule_SaveDouble(io, key->emb_double_value);
-                break;
-            case SELVA_OBJECT_LONGLONG:
-                RedisModule_SaveSigned(io, key->emb_ll_value);
-                break;
-            case SELVA_OBJECT_STRING:
-                rdb_save_object_string(io, key);
-                break;
-            case SELVA_OBJECT_OBJECT:
-                if (!key->value) {
-                    RedisModule_LogIOError(io, "warning", "OBJECT value missing");
-                    /* TODO This would create a fatally broken RDB file. */
-                    break;
-                }
-                SelvaObjectTypeRDBSave(io, key->value);
-                break;
-            case SELVA_OBJECT_SET:
-                rdb_save_object_set(io, key);
-                break;
-            case SELVA_OBJECT_ARRAY:
-                /* TODO Support arrays */
-                RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
-                break;
-            default:
-                RedisModule_LogIOError(io, "warning", "Unknown type");
+            }
+            SelvaObjectTypeRDBSave(io, key->value);
+            break;
+        case SELVA_OBJECT_SET:
+            rdb_save_object_set(io, key);
+            break;
+        case SELVA_OBJECT_ARRAY:
+            /* TODO Support arrays */
+            RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
+            break;
+        default:
+            RedisModule_LogIOError(io, "warning", "Unknown type");
         }
     }
 }
