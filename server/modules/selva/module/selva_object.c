@@ -56,21 +56,21 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key);
 static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj);
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
-    static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
-        return strcmp(a->name, b->name);
-    }
+static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
+    return strcmp(a->name, b->name);
+}
 
 RB_GENERATE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
-    static const struct so_type_name type_names[] = {
-        [SELVA_OBJECT_NULL] = { "null", 4 },
-        [SELVA_OBJECT_DOUBLE] = { "double", 6 },
-        [SELVA_OBJECT_LONGLONG] = { "long long", 9 },
-        [SELVA_OBJECT_STRING] = { "string", 6 },
-        [SELVA_OBJECT_OBJECT] = { "object", 6 },
-        [SELVA_OBJECT_SET] = { "selva_set", 9 },
-        [SELVA_OBJECT_ARRAY] = { "array", 7 },
-    };
+static const struct so_type_name type_names[] = {
+    [SELVA_OBJECT_NULL] = { "null", 4 },
+    [SELVA_OBJECT_DOUBLE] = { "double", 6 },
+    [SELVA_OBJECT_LONGLONG] = { "long long", 9 },
+    [SELVA_OBJECT_STRING] = { "string", 6 },
+    [SELVA_OBJECT_OBJECT] = { "object", 6 },
+    [SELVA_OBJECT_SET] = { "selva_set", 9 },
+    [SELVA_OBJECT_ARRAY] = { "array", 7 },
+};
 
 struct SelvaObject *SelvaObject_New(void) {
     struct SelvaObject *obj;
