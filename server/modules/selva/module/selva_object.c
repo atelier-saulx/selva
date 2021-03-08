@@ -1324,12 +1324,11 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
     char *wildcard = strstr(okey_str, ".*.");
     size_t wildcard_idx = wildcard - okey_str;
     size_t idx = wildcard_idx + 1; // .*. => *.
-    size_t last_wildcard = 0;
 
     // path before the wildcard character
-    const size_t before_len = idx -  last_wildcard - 1;
+    const size_t before_len = idx - 1;
     char before[before_len];
-    memcpy(before, &okey_str[last_wildcard], before_len);
+    memcpy(before, &okey_str[0], before_len);
 
     // path after the wildcard character
     const size_t after_len = okey_len - idx - 2;
@@ -1392,8 +1391,6 @@ int SelvaObject_GetWithWildcard(RedisModuleCtx *ctx, struct SelvaObject *obj, co
     if (err && *resp_count == 0) {
         return err;
     }
-
-    last_wildcard = idx;
 
     return 0;
 }
