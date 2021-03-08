@@ -1011,33 +1011,33 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
     }
 
     switch (key->type) {
-        case SELVA_OBJECT_NULL:
+    case SELVA_OBJECT_NULL:
+        return 0;
+    case SELVA_OBJECT_DOUBLE:
+    case SELVA_OBJECT_LONGLONG:
+    case SELVA_OBJECT_POINTER:
+        return 1;
+    case SELVA_OBJECT_STRING:
+        if (key->value) {
+            size_t len;
+
+            (void)RedisModule_StringPtrLen(key->value, &len);
+            return len;
+        } else {
             return 0;
-        case SELVA_OBJECT_DOUBLE:
-        case SELVA_OBJECT_LONGLONG:
-        case SELVA_OBJECT_POINTER:
-            return 1;
-        case SELVA_OBJECT_STRING:
-            if (key->value) {
-                size_t len;
+        }
+    case SELVA_OBJECT_OBJECT:
+        if (key->value) {
+            struct SelvaObject *obj2 = (struct SelvaObject *)key->value;
 
-                (void)RedisModule_StringPtrLen(key->value, &len);
-                return len;
-            } else {
-                return 0;
-            }
-        case SELVA_OBJECT_OBJECT:
-            if (key->value) {
-                struct SelvaObject *obj2 = (struct SelvaObject *)key->value;
-
-                return obj2->obj_size;
-            } else {
-                return 0;
-            }
-        case SELVA_OBJECT_SET:
-            return key->selva_set.size;
-        case SELVA_OBJECT_ARRAY:
-            return SVector_Size(&key->array);
+            return obj2->obj_size;
+        } else {
+            return 0;
+        }
+    case SELVA_OBJECT_SET:
+        return key->selva_set.size;
+    case SELVA_OBJECT_ARRAY:
+        return SVector_Size(&key->array);
     }
 
     return SELVA_EINTYPE;
