@@ -397,7 +397,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         return SELVA_ENAMETOOLONG;
     }
 
-    if (strstr(key_name_str, ".")) {
+    if (strnstr(key_name_str, ".", key_name_len)) {
         return get_key_obj(obj, key_name_str, key_name_len, flags, out);
     }
 
