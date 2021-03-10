@@ -66,11 +66,11 @@ int stringlist_searchn(const char *list, const char *str, size_t n) {
 	return 0;
 }
 
-size_t substring_count(const char *string, const char *substring) {
+size_t substring_count(const char *string, const char *substring, size_t n) {
 	size_t i, l1, l2;
 	size_t count = 0;
 
-	l1 = strlen(string);
+	l1 = n;
 	l2 = strlen(substring);
 
 	for (i = 0; i < l1 - l2; i++) {

@@ -157,11 +157,15 @@ export const TYPE_CASTS: Record<
 
     return all
   },
-  object: (all: any, id: string, field: string, schema, lang) => {
+  object: (all: any, id: string, origField: string, schema, lang) => {
     const result = {}
     let fieldCount = 0
     const parse = (o, field: string, arr: string[]) =>
       arr.forEach((key, i, arr) => {
+        const f = origField.includes('.*.')
+          ? `${field.substr(0, field.indexOf('*') - 1)}.${key}`
+          : `${field}.${key}`
+
         if ((i & 1) === 1) return
         let val = arr[i + 1]
 
@@ -169,19 +173,17 @@ export const TYPE_CASTS: Record<
           return
         }
 
-        const fieldSchema = getNestedSchema(schema, id, `${field}.${key}`)
+        const fieldSchema = getNestedSchema(schema, id, f)
 
         if (!fieldSchema) {
           throw new Error(
-            'Cannot find field type ' +
-              id +
-              ` ${field}.${key} - getNestedSchema`
+            'Cannot find field type ' + id + ` ${f} - getNestedSchema`
           )
         }
 
         if (lang && 'text' === fieldSchema.type && Array.isArray(val)) {
           const txtObj = {}
-          parse(txtObj, `${field}.${key}`, val)
+          parse(txtObj, f, val)
 
           if (txtObj[lang]) {
             o[key] = txtObj[lang]
@@ -197,21 +199,23 @@ export const TYPE_CASTS: Record<
           Array.isArray(val)
         ) {
           o[key] = {}
-          parse(o[key], `${field}.${key}`, val)
+          parse(o[key], f, val)
         } else {
           const typeCast = TYPE_CASTS[fieldSchema.type]
           if (typeCast) {
             // TODO do we need to add key here??? did not have this before - does fix stuff
             // TODO: CHECK WITH TONY! - also does not have a test for this...
-            val = typeCast(val, id, `${field}.${key}`, schema, lang)
+            val = typeCast(val, id, f, schema, lang)
             // val = typeCast(val, id, field, schema, lang)
           }
-          o[key] = val
+
+          setNestedResult(o, key, val)
+          // o[key] = val
         }
 
         fieldCount++
       })
-    parse(result, field, all)
+    parse(result, origField, all)
     if (fieldCount) {
       return result
     }
@@ -257,6 +261,10 @@ export function typeCast(
   schema: Schema,
   lang?: string
 ): any {
+  if (field.includes('.*.')) {
+    return TYPE_CASTS.record(x, id, field, schema, lang)
+  }
+
   const fs = getNestedSchema(schema, id, field)
   if (!fs) {
     return x
@@ -542,7 +550,15 @@ export default async function executeGetOperations(
     ) {
       Object.assign(o, r)
     } else if (r !== null && r !== undefined) {
-      setNestedResult(o, ops[i].field, r)
+      if (ops[i].field.includes('.*.')) {
+        setNestedResult(
+          o,
+          ops[i].field.substr(0, ops[i].field.indexOf('*') - 1),
+          r
+        )
+      } else {
+        setNestedResult(o, ops[i].field, r)
+      }
     }
   })
 

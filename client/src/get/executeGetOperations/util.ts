@@ -15,7 +15,6 @@ export function buildResultFromIdFieldAndValue(
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
 
-    console.log('HMM', idx, f, v, res[i])
     const newV = typeCast(v, idx, f, client.schemas[ctx.db], lang)
 
     if (remapped[f]) {
