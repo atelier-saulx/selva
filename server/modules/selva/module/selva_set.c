@@ -34,9 +34,14 @@ int SelvaSet_CompareLongLong(struct SelvaSetElement *a, struct SelvaSetElement *
     return lla < llb ? -1 : lla > llb ? 1 : 0;
 }
 
+int SelvaSet_CompareNodeId(struct SelvaSetElement *a, struct SelvaSetElement *b) {
+    return memcmp(a->value_nodeId, b->value_nodeId, SELVA_NODE_ID_SIZE);
+}
+
 RB_GENERATE(SelvaSetRms, SelvaSetElement, _entry, SelvaSet_CompareRms)
 RB_GENERATE(SelvaSetDouble, SelvaSetElement, _entry, SelvaSet_CompareDouble)
 RB_GENERATE(SelvaSetLongLong, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
+RB_GENERATE(SelvaSetNodeId, SelvaSetElement, _entry, SelvaSet_CompareNodeId)
 
 int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s) {
     struct SelvaSetElement *el;
@@ -114,6 +119,30 @@ int SelvaSet_AddLongLong(struct SelvaSet *set, long long ll) {
     return 0;
 }
 
+int SelvaSet_AddNodeId(struct SelvaSet *set, Selva_NodeId node_id) {
+    struct SelvaSetElement *el;
+
+    if (set->type != SELVA_SET_TYPE_NODEID) {
+        return SELVA_EINTYPE;
+    }
+
+    if (SelvaSet_HasNodeId(set, node_id)) {
+        return SELVA_EEXIST;
+    }
+
+    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    if (!el) {
+        return SELVA_ENOMEM;
+    }
+
+    memcpy(el->value_nodeId, node_id, SELVA_NODE_ID_SIZE);
+
+    (void)RB_INSERT(SelvaSetNodeId, &set->head_nodeId, el);
+    set->size++;
+
+    return 0;
+}
+
 void SelvaSet_DestroyElement(struct SelvaSetElement *el) {
     if (!el) {
         return;
@@ -165,15 +194,32 @@ static void SelvaSet_DestroyLongLong(struct SelvaSet *set) {
     set->size = 0;
 }
 
+static void SelvaSet_DestroyNodeId(struct SelvaSet *set) {
+    struct SelvaSetNodeId *head = &set->head_nodeId;
+    struct SelvaSetElement *el;
+    struct SelvaSetElement *next;
+
+	for (el = RB_MIN(SelvaSetNodeId, head); el != NULL; el = next) {
+		next = RB_NEXT(SelvaSetNodeId, head, el);
+		RB_REMOVE(SelvaSetNodeId, head, el);
+
+        SelvaSet_DestroyElement(el);
+    }
+    set->size = 0;
+}
+
+static void (*const SelvaSet_Destructors[])(struct SelvaSet *set) = {
+    [SELVA_SET_TYPE_RMSTRING] = SelvaSet_DestroyRms,
+    [SELVA_SET_TYPE_DOUBLE] = SelvaSet_DestroyDouble,
+    [SELVA_SET_TYPE_LONGLONG] = SelvaSet_DestroyLongLong,
+    [SELVA_SET_TYPE_NODEID] = SelvaSet_DestroyNodeId,
+};
+
 void SelvaSet_Destroy(struct SelvaSet *set) {
     enum SelvaSetType type = set->type;
 
-    if (type == SELVA_SET_TYPE_RMSTRING) {
-        SelvaSet_DestroyRms(set);
-    } else if (type == SELVA_SET_TYPE_DOUBLE) {
-        SelvaSet_DestroyDouble(set);
-    } else if (type == SELVA_SET_TYPE_LONGLONG) {
-        SelvaSet_DestroyLongLong(set);
+    if (type >= 0 && type < num_elem(SelvaSet_Destructors)) {
+        SelvaSet_Destructors[type](set);
     }
 }
 
@@ -217,6 +263,18 @@ int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll) {
     return !!RB_FIND(SelvaSetLongLong, &set->head_ll, &find);
 }
 
+int SelvaSet_HasNodeId(struct SelvaSet *set, Selva_NodeId node_id) {
+    struct SelvaSetElement find = { 0 };
+
+    memcpy(find.value_nodeId, node_id, SELVA_NODE_ID_SIZE);
+
+    if (unlikely(set->type != SELVA_SET_TYPE_NODEID)) {
+        return 0;
+    }
+
+    return !!RB_FIND(SelvaSetNodeId, &set->head_nodeId, &find);
+}
+
 struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s) {
     struct SelvaSetElement find = {
         .value_rms = s,
@@ -258,6 +316,22 @@ struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long 
     if (likely(set->type == SELVA_SET_TYPE_LONGLONG)) {
         el = RB_FIND(SelvaSetLongLong, &set->head_ll, &find);
         if (el && RB_REMOVE(SelvaSetLongLong, &set->head_ll, el)) {
+            set->size--;
+        }
+    }
+
+    return el;
+}
+
+struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId node_id) {
+    struct SelvaSetElement find = { 0 };
+    struct SelvaSetElement *el = NULL;
+
+    memcpy(find.value_nodeId, node_id, SELVA_NODE_ID_SIZE);
+
+    if (likely(set->type == SELVA_SET_TYPE_NODEID)) {
+        el = RB_FIND(SelvaSetNodeId, &set->head_nodeId, &find);
+        if (el && RB_REMOVE(SelvaSetNodeId, &set->head_nodeId, el)) {
             set->size--;
         }
     }

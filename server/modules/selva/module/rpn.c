@@ -830,11 +830,11 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
             return RPN_ERR_ENOMEM;
         }
 
-        return push_int_result(ctx, SelvaSet_HasRms(set, ctx->rms_field));
+        return push_int_result(ctx, SelvaSet_Has(set, ctx->rms_field));
     } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
-        return push_int_result(ctx, SelvaSet_HasDouble(set, v->d));
+        return push_int_result(ctx, SelvaSet_Has(set, v->d));
     } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
-        return push_int_result(ctx, SelvaSet_HasLongLong(set, (long long)v->d));
+        return push_int_result(ctx, SelvaSet_Has(set, (long long)v->d));
     } else {
         return push_int_result(ctx, 0);
     }
