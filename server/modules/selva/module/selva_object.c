@@ -1328,7 +1328,7 @@ int SelvaObject_GetWithWildcardStr(
         long *resp_count,
         int resp_path_start_idx,
         unsigned int flags) {
-    size_t idx = strstr(okey_str, ".*.") - okey_str + 1; // .*. => *.
+    const size_t idx = strstr(okey_str, ".*.") - okey_str + 1; // .*. => *.
 
     /* path before the wildcard character */
     const size_t before_len = idx - 1;
@@ -1375,9 +1375,15 @@ int SelvaObject_GetWithWildcardStr(
                 const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
                 char reply_path[reply_path_len];
                 if (resp_path_start_idx == -1) {
-                    sprintf(reply_path, "%.*s.%.*s", (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+                    sprintf(
+                        reply_path, "%.*s.%.*s",
+                        (int)obj_key_len, obj_key_name_str,
+                        (int)key->name_len, key->name);
                 } else {
-                    sprintf(reply_path, "%.*s.%.*s.%.*s", (int)before_len - resp_path_start_idx, before + resp_path_start_idx, (int)obj_key_len, obj_key_name_str, (int)key->name_len, key->name);
+                    sprintf(reply_path, "%.*s.%.*s.%.*s",
+                        (int)before_len - resp_path_start_idx, before + resp_path_start_idx,
+                        (int)obj_key_len, obj_key_name_str,
+                        (int)key->name_len, key->name);
                 }
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             } else {
