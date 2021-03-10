@@ -1361,7 +1361,7 @@ int SelvaObject_GetWithWildcardStr(
                     (int)obj_key_len, obj_key_name_str,
                     (int)after_len, after);
 
-            if (strstr(new_field, ".*.")) {
+            if (strnstr(new_field, ".*.", new_field_len)) {
                 /* recurse for nested wildcards while keeping the resolved path */
                 SelvaObject_GetWithWildcardStr(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
