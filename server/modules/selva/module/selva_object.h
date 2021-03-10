@@ -91,7 +91,7 @@ int SelvaObject_GetWithWildcardStr(
         size_t okey_len,
         long *resp_count,
         int resp_path_start_idx,
-        unsigned int splice_path_by_wildcard_position);
+        unsigned int flags);
 /**
  * Foreach value in object.
  * @param name_out is a direct pointer to the name and it will be rendered invalid if the key is deleted.
