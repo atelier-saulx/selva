@@ -448,9 +448,8 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
 /**
  * Get key for modify without destroying the original value.
  */
-static int get_key_modify(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObjectKey **out) {
+static int get_key_modify(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectKey **out) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     /*
@@ -692,12 +691,13 @@ int SelvaObject_GetObject(struct SelvaObject *obj, const RedisModuleString *key_
 }
 
 static int get_selva_set_modify(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
+    TO_STR(key_name);
     struct SelvaObjectKey *key;
     int err;
 
     assert(obj);
 
-    err = get_key_modify(obj, key_name, &key);
+    err = get_key_modify(obj, key_name_str, key_name_len, &key);
     if (err) {
         return err;
     }
@@ -848,7 +848,7 @@ struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleSt
     return SelvaObject_GetSetStr(obj, key_name_str, key_name_len);
 }
 
-int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p) {
+int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -858,7 +858,7 @@ int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_n
         return SELVA_EINTYPE;
     }
 
-    err = get_key_modify(obj, key_name, &key);
+    err = get_key_modify(obj, key_name_str, key_name_len, &key);
     if (err) {
         return err;
     }
@@ -887,7 +887,13 @@ int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return 0;
 }
 
-int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType *out_subtype, void **out_p) {
+int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p) {
+    TO_STR(key_name);
+
+    return SelvaObject_AddArrayStr(obj, key_name_str, key_name_len, subtype, p);
+}
+
+int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType *out_subtype, SVector **out_p) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -912,7 +918,7 @@ int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, s
     return 0;
 }
 
-int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType *out_subtype, void **out_p) {
+int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType *out_subtype, SVector **out_p) {
     TO_STR(key_name);
 
     return SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, out_subtype, out_p);
@@ -1802,7 +1808,7 @@ static void rdb_save_object_set(RedisModuleIO *io, struct SelvaObjectKey *key) {
     }
 }
 
-void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
+void _SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
     struct SelvaObject *obj = (struct SelvaObject *)value;
     struct SelvaObjectKey *key;
 
@@ -1851,6 +1857,10 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
     }
 }
 
+void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *value) {
+    _SelvaObjectTypeRDBSave(io, value);
+}
+
 void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key __unused, void *value __unused) {
     RedisModule_LogIOError(aof, "warning", "AOF rewrite not supported");
 }
@@ -1865,7 +1875,7 @@ static int SelvaObject_OnLoad(RedisModuleCtx *ctx) {
     RedisModuleTypeMethods tm = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
         .rdb_load = SelvaObjectTypeRDBLoad,
-        .rdb_save = SelvaObjectTypeRDBSave,
+        .rdb_save = _SelvaObjectTypeRDBSave,
         .aof_rewrite = SelvaObjectTypeAOFRewrite,
         .mem_usage = SelvaObject_MemUsage,
         .free = SelvaObjectTypeFree,
