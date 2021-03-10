@@ -1328,7 +1328,7 @@ int SelvaObject_GetWithWildcardStr(
         long *resp_count,
         int resp_path_start_idx,
         unsigned int flags) {
-    const size_t idx = strstr(okey_str, ".*.") - okey_str + 1; // .*. => *.
+    const size_t idx = strnstr(okey_str, ".*.", okey_len) - okey_str + 1; // .*. => *.
 
     /* path before the wildcard character */
     const size_t before_len = idx - 1;
