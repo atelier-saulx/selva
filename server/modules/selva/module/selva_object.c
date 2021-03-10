@@ -284,7 +284,7 @@ int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
 
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     const char *sep = ".";
-    const size_t nr_parts = substring_count(key_name_str, ".") + 1;
+    const size_t nr_parts = substring_count(key_name_str, ".", key_name_len) + 1;
     char buf[key_name_len + 1]; /* We assume that the length has been sanity checked at this point. */
     char *s = buf;
     struct SelvaObjectKey *key = NULL;
