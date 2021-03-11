@@ -10,13 +10,16 @@ import { Filter } from './types'
 
 import { Rpn } from './types'
 
-const createRpn = (filters: Filter | Filter[]): Rpn | void => {
+const createRpn = (
+  types: Record<string, { prefix?: string }>,
+  filters: Filter | Filter[]
+): Rpn | void => {
   if (!Array.isArray(filters)) {
     filters = [filters]
   }
   const fork = createAst(filters)
   if (fork) {
-    return ast2rpn(fork)
+    return ast2rpn(types, fork)
   }
 }
 

@@ -143,7 +143,7 @@ async function get(
     subId = null
   } else if (newProps.$trigger) {
     const rpn = newProps.$trigger.$filter
-      ? createRpn(newProps.$trigger.$filter) || []
+      ? createRpn(client.schemas[db].types, newProps.$trigger.$filter) || []
       : []
     await client.redis.selva_subscriptions_addtrigger(
       originDescriptors[db] || { name: db },

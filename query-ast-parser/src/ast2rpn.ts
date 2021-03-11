@@ -31,12 +31,37 @@ const opMapNumber = {
   has: 'a',
 }
 
-export default function ast2rpn(f: Fork, language?: string): Rpn {
+export default function ast2rpn(
+  types: Record<string, { prefix?: string }>,
+  f: Fork,
+  language?: string
+): Rpn {
   let out = ''
   let reg: string[] = []
   let regIndex = 1
 
-  function ast2rpnFilter(f: Filter, ignoreLang: boolean = false) {
+  function ast2rpnFilter(
+    types: Record<string, { prefix?: string }>,
+    f: Filter,
+    ignoreLang: boolean = false
+  ) {
+    // convert type filters to id prefix filters
+    if (
+      f.$operator === '=' &&
+      f.$field === 'type' &&
+      typeof f.$value === 'string' &&
+      types[f.$value] &&
+      types[f.$value].prefix
+    ) {
+      const prefix = types[f.$value].prefix
+
+      const valueId = regIndex
+      reg[regIndex++] = prefix
+
+      out += ` $${valueId} e`
+      return
+    }
+
     if (f.$operator === 'textSearch') {
       out += ' #1'
       return
@@ -64,6 +89,7 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
     const vType = getValueType(f)
     if (!ignoreLang && vType === 'string' && language) {
       ast2rpnFork(
+        types,
         {
           isFork: true,
           $or: [
@@ -169,14 +195,18 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
         }
       }
 
-      ast2rpnFork(fork)
+      ast2rpnFork(types, fork)
     } else {
       // TODO error
       console.error('Type error', vType, f)
     }
   }
 
-  function ast2rpnFork(expr: Fork, ignoreLang: boolean = false) {
+  function ast2rpnFork(
+    types: Record<string, { prefix?: string }>,
+    expr: Fork,
+    ignoreLang: boolean = false
+  ) {
     const lop: ' M' | ' N' = expr.$and ? ' M' : ' N'
     const arr = expr.$and || expr.$or || []
 
@@ -187,9 +217,9 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
         const el = arr[i]
 
         if (isFork(el)) {
-          ast2rpnFork(el)
+          ast2rpnFork(types, el)
         } else {
-          ast2rpnFilter(el, ignoreLang)
+          ast2rpnFilter(types, el, ignoreLang)
         }
 
         if (i > 0) {
@@ -199,7 +229,7 @@ export default function ast2rpn(f: Fork, language?: string): Rpn {
     }
   }
 
-  ast2rpnFork(f)
+  ast2rpnFork(types, f)
 
   const res = [out]
   for (let i = 1; i < regIndex; i++) {

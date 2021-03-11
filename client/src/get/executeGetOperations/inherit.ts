@@ -100,7 +100,7 @@ async function mergeObj(
     })
   }
 
-  const rpn = ast2rpn(fork)
+  const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
 
   if (ctx.subId) {
     console.log('MARKER', ctx, op.id, ...fields)
@@ -211,7 +211,7 @@ async function deepMergeObj(
     })
   }
 
-  const rpn = ast2rpn(fork)
+  const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
@@ -310,7 +310,7 @@ async function inheritItem(
     }
   }
 
-  const rpn = ast2rpn(fork)
+  const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
@@ -430,6 +430,7 @@ export default async function inherit(
         id: op.id,
         fields: [op.sourceField],
         rpn: ast2rpn(
+          client.schemas[ctx.db].types,
           {
             isFork: true,
             $and: [
@@ -503,6 +504,7 @@ export default async function inherit(
         id: op.id,
         fields: [op.sourceField],
         rpn: ast2rpn(
+          client.schemas[ctx.db].types,
           {
             isFork: true,
             $and: [
@@ -579,6 +581,7 @@ export default async function inherit(
       id: op.id,
       fields,
       rpn: ast2rpn(
+        client.schemas[ctx.db].types,
         {
           isFork: true,
           $and: [

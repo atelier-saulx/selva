@@ -171,7 +171,7 @@ async function checkForNextRefresh(
         newFork.$and = [newFilter]
       }
 
-      const args = ast2rpn(newFork, lang)
+      const args = ast2rpn(client.schemas[ctx.db].types, newFork, lang)
       const ids = await client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         '___selva_hierarchy',
@@ -249,7 +249,9 @@ const findIds = async (
   } else if (Array.isArray(op.sourceField)) {
     sourceField = op.sourceField.join('\n')
   }
-  const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
+  const args = op.filter
+    ? ast2rpn(client.schemas[ctx.db].types, op.filter, lang)
+    : ['#1']
   // TODO: change this if ctx.subId (for markers)
   if (op.inKeys) {
     // can make this a bit better....
@@ -381,7 +383,9 @@ const findFields = async (
     sourceField = op.sourceField.join('\n')
   }
 
-  const args = op.filter ? ast2rpn(op.filter, lang) : ['#1']
+  const args = op.filter
+    ? ast2rpn(client.schemas[ctx.db].types, op.filter, lang)
+    : ['#1']
   // console.log('ARGS', args)
   if (op.inKeys) {
     const result = await client.redis.selva_hierarchy_findin(
