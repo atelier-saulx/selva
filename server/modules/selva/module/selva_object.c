@@ -5,6 +5,7 @@
 #include <string.h>
 #include "redismodule.h"
 #include "cdefs.h"
+#include "linker_set.h"
 #include "typestr.h"
 #include "cstrings.h"
 #include "errors.h"
@@ -30,13 +31,16 @@ struct SelvaObjectKey {
     unsigned short name_len;
     RB_ENTRY(SelvaObjectKey) _entry;
     union {
-        void *value; /* The rest of the types use this. */
-        double emb_double_value; /* SELVA_OBJECT_DOUBLE */
-        long long emb_ll_value; /* SELVA_OBJECT_LONGLONG */
-        struct SelvaSet selva_set; /* SELVA_OBJECT_SET */
-        SVector array; /* SELVA_OBJECT_ARRAY */
+        struct {
+            void *value; /*!< The rest of the types use this. */
+            struct SelvaObjectPointerOpts *ptr_opts; /*!< Options for a SELVA_OBJECT_POINTER */
+        };
+        double emb_double_value; /*!< SELVA_OBJECT_DOUBLE */
+        long long emb_ll_value; /*!< SELVA_OBJECT_LONGLONG */
+        struct SelvaSet selva_set; /*!< SELVA_OBJECT_SET */
+        SVector array; /*!< SELVA_OBJECT_ARRAY */
     };
-    char name[0];
+    char name[0]; /*!< Name of the key. */
 };
 
 struct SelvaObject {
@@ -50,6 +54,16 @@ struct so_type_name {
 };
 
 static RedisModuleType *ObjectType;
+SET_DECLARE(selva_objpop, struct SelvaObjectPointerOpts);
+
+/**
+ * Defaults for SELVA_OBJECT_POINTER handling.
+ * The default is: Do Nothing.
+ */
+static struct SelvaObjectPointerOpts default_ptr_opts = {
+    .ptr_type_id = 0,
+};
+SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
 static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key);
@@ -80,6 +94,25 @@ struct SelvaObject *SelvaObject_New(void) {
     RB_INIT(&obj->keys_head);
 
     return obj;
+}
+
+static struct SelvaObjectPointerOpts *get_ptr_opts(unsigned ptr_type_id) {
+    struct SelvaObjectPointerOpts **p;
+
+    if (ptr_type_id >= SET_COUNT(selva_objpop)) {
+        ptr_type_id = 0;
+    }
+
+    SET_FOREACH(p, selva_objpop) {
+        struct SelvaObjectPointerOpts *opts = *p;
+
+        if (opts->ptr_type_id == ptr_type_id) {
+            return opts;
+        }
+    }
+
+    __builtin_unreachable();
+    return NULL; /* Never reached. */
 }
 
 static int clear_key_value(struct SelvaObjectKey *key) {
@@ -123,7 +156,9 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         SVector_Destroy(&key->array);
         break;
     case SELVA_OBJECT_POINTER:
-        /* This is where we could support cleanup. */
+        if (key->ptr_opts && key->ptr_opts->ptr_free) {
+            key->ptr_opts->ptr_free(key->value);
+        }
         key->value = NULL; /* Not strictly necessary. */
         break;
     default:
@@ -924,7 +959,7 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, out_subtype, out_p);
 }
 
-int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p) {
+int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, struct SelvaObjectPointerOpts *opts) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -947,19 +982,19 @@ int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str,
 
     key->type = SELVA_OBJECT_POINTER;
     key->value = p;
+    key->ptr_opts = opts;
 
     return 0;
 }
 
-int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p) {
+int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, struct SelvaObjectPointerOpts *opts) {
     TO_STR(key_name);
 
-    return SelvaObject_SetPointerStr(obj, key_name_str, key_name_len, p);
+    return SelvaObject_SetPointerStr(obj, key_name_str, key_name_len, p, opts);
 }
 
-int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p) {
+int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -978,6 +1013,12 @@ int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleStri
     }
 
     return 0;
+}
+
+int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetPointerStr(obj, key_name_str, key_name_len, out_p);
 }
 
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
@@ -1774,7 +1815,39 @@ static int rdb_load_object_set(RedisModuleIO *io, struct SelvaObject *obj, const
     return 0;
 }
 
-static void *rdb_load_object(RedisModuleIO *io) {
+static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *obj, const RedisModuleString *name, void *ptr_load_data) {
+    unsigned ptr_type_id;
+
+    ptr_type_id = RedisModule_LoadUnsigned(io);
+    if (ptr_type_id > 0) {
+        struct SelvaObjectPointerOpts *opts;
+        int err;
+        void *p;
+
+        opts = get_ptr_opts(ptr_type_id);
+        if (!(opts && opts->ptr_load)) {
+            return SELVA_EINVAL; /* Presumably a serialized pointer should have a loader fn. */
+        }
+
+        p = opts->ptr_load(io, encver, ptr_load_data);
+        if (!p) {
+            RedisModule_LogIOError(io, "warning", "Failed to load a SELVA_OBJECT_POINTER");
+            return SELVA_EGENERAL;
+        }
+
+        err = SelvaObject_SetPointer(obj, name, p, opts);
+        if (err) {
+            RedisModule_LogIOError(io, "warning", "Failed to load a SELVA_OBJECT_POINTER");
+            return SELVA_EGENERAL;
+        }
+    } else {
+        RedisModule_LogIOError(io, "warning", "No ptr_load given");
+    }
+
+    return 0;
+}
+
+static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data) {
     struct SelvaObject *obj;
 
     obj = SelvaObject_New();
@@ -1825,7 +1898,7 @@ static void *rdb_load_object(RedisModuleIO *io) {
                     return NULL;
                 }
 
-                key->value = rdb_load_object(io);
+                key->value = rdb_load_object(io, encver, ptr_load_data);
                 if (!key->value) {
                     RedisModule_LogIOError(io, "warning", "Error while loading an object");
                     return NULL;
@@ -1841,6 +1914,11 @@ static void *rdb_load_object(RedisModuleIO *io) {
         case SELVA_OBJECT_ARRAY:
             /* TODO Support arrays */
             RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
+            break;
+        case SELVA_OBJECT_POINTER:
+            if (rdb_load_pointer(io, encver, obj, name, ptr_load_data)) {
+                return NULL;
+            }
             break;
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
@@ -1860,7 +1938,7 @@ static void *rdb_load_object(RedisModuleIO *io) {
     return obj;
 }
 
-void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
+struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *ptr_load_data) {
     struct SelvaObject *obj;
 
     if (encver != SELVA_OBJECT_ENCODING_VERSION) {
@@ -1872,9 +1950,13 @@ void *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
 
-    obj = rdb_load_object(io);
+    obj = rdb_load_object(io, encver, ptr_load_data);
 
     return obj;
+}
+
+void *_SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
+    return SelvaObjectTypeRDBLoad(io, encver, NULL);
 }
 
 static void rdb_save_object_string(RedisModuleIO *io, struct SelvaObjectKey *key) {
@@ -1914,8 +1996,7 @@ static void rdb_save_object_set(RedisModuleIO *io, struct SelvaObjectKey *key) {
     }
 }
 
-void _SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
-    struct SelvaObject *obj = (struct SelvaObject *)value;
+void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data) {
     struct SelvaObjectKey *key;
 
     if (unlikely(!obj)) {
@@ -1948,7 +2029,7 @@ void _SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
                 /* TODO This would create a fatally broken RDB file. */
                 break;
             }
-            SelvaObjectTypeRDBSave(io, key->value);
+            SelvaObjectTypeRDBSave(io, key->value, ptr_save_data);
             break;
         case SELVA_OBJECT_SET:
             rdb_save_object_set(io, key);
@@ -1957,14 +2038,23 @@ void _SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
             /* TODO Support arrays */
             RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
             break;
+        case SELVA_OBJECT_POINTER:
+            if (key->ptr_opts && key->ptr_opts->ptr_save) {
+                RedisModule_SaveUnsigned(io, key->ptr_opts->ptr_type_id); /* This is used to locate the loader on RDB load. */
+                key->ptr_opts->ptr_save(io, key->value, ptr_save_data);
+            } else {
+                RedisModule_LogIOError(io, "warning", "ptr_save() not given");
+                break;
+            }
+            break;
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
         }
     }
 }
 
-void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *value) {
-    _SelvaObjectTypeRDBSave(io, value);
+void _SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
+    SelvaObjectTypeRDBSave(io, value, NULL);
 }
 
 void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key __unused, void *value __unused) {
@@ -1980,7 +2070,7 @@ void SelvaObjectTypeFree(void *value) {
 static int SelvaObject_OnLoad(RedisModuleCtx *ctx) {
     RedisModuleTypeMethods tm = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
-        .rdb_load = SelvaObjectTypeRDBLoad,
+        .rdb_load = _SelvaObjectTypeRDBLoad,
         .rdb_save = _SelvaObjectTypeRDBSave,
         .aof_rewrite = SelvaObjectTypeAOFRewrite,
         .mem_usage = SelvaObject_MemUsage,

@@ -3,6 +3,7 @@
 #define SELVA_OBJECT
 
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 /*
@@ -20,17 +21,34 @@ enum SelvaObjectType {
     SELVA_OBJECT_POINTER = 7,
 };
 
-typedef uint32_t SelvaObjectMeta_t;
-
 struct RedisModuleCtx;
-struct RedisModuleCtx;
+struct RedisModuleIO;
 struct RedisModuleKey;
 struct RedisModuleString;
 struct SVector;
 struct SelvaObject;
 struct SelvaSet;
 
+typedef uint32_t SelvaObjectMeta_t;
 typedef void SelvaObject_Iterator; /* Opaque type. */
+typedef void *(*SelvaObject_PtrLoad)(struct RedisModuleIO *io, int encver, void *data);
+typedef void (*SelvaObject_PtrSave)(struct RedisModuleIO *io, void *value, void *data);
+
+struct SelvaObjectPointerOpts {
+    unsigned ptr_type_id; /*!< An unique id for serializing the pointer type. 0 is reserved for NOP. */
+    void (*ptr_free)(void *p); /*!< Free a SELVA_OBJECT_POINTER value. */
+    /**
+     * Get the size of a SELVA_OBJECT_POINTER value.
+     * The unit of the size is undefined but typically it should be either a
+     * count of items or the byte size of the value.
+     */
+    size_t (*ptr_size)(void *p);
+    SelvaObject_PtrLoad ptr_load;
+    SelvaObject_PtrSave ptr_save;
+};
+
+#define SELVA_OBJECT_POINTER_OPTS(opts) \
+    DATA_SET(selva_objpop, opts)
 
 #define selvaobject_autofree __attribute__((cleanup(_cleanup_SelvaObject_Destroy)))
 
@@ -74,13 +92,20 @@ int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, s
 int SelvaObject_AddArray(struct SelvaObject *obj, const struct RedisModuleString *key_name, enum SelvaObjectType subtype, void *p);
 int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType *out_subtype, struct SVector **out_p);
 int SelvaObject_GetArray(struct SelvaObject *obj, const struct RedisModuleString *key_name, enum SelvaObjectType *out_subtype, struct SVector **out_p);
-int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p);
-int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p);
+/**
+ * Set a pointer value.
+ * @param p is the pointer value and it must be non-NULL.
+ * @param opts is an optional pointer to SELVA_OBJECT_POINTER ops that can define
+ *             how to free the data pointed by the pointer or how to serialize it.
+ */
+int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, struct SelvaObjectPointerOpts *opts);
+int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, struct SelvaObjectPointerOpts *opts);
+int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p);
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct RedisModuleString *key_name);
-int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *key_name, double value);
-int SelvaObject_RemLongLongSet(struct SelvaObject *obj, const RedisModuleString *key_name, long long value);
+int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
+int SelvaObject_RemLongLongSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);
 int SelvaObject_RemStringSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
 struct SelvaSet *SelvaObject_GetSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const struct RedisModuleString *key_name);
@@ -116,6 +141,7 @@ const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
  */
 int SelvaObject_ReplyWithObject(struct RedisModuleCtx *ctx, struct SelvaObject *obj, const struct RedisModuleString *key_name);
 
-void *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver);
-void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *value);
+struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
+void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);
+
 #endif /* SELVA_OBJECT */
