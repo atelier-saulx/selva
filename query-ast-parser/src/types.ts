@@ -47,6 +47,7 @@ export type FilterAST = {
   $value?: Value
   // $search: string[]
   hasNow?: true
+  isNecessary?: true
 }
 
 export type Fork = {
@@ -54,6 +55,7 @@ export type Fork = {
   $or?: (Fork | FilterAST)[]
   ids?: string[]
   isFork: true
+  isNecessary?: true
 }
 
 export type FieldSubscription = {

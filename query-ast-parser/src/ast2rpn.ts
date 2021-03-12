@@ -59,6 +59,10 @@ export default function ast2rpn(
       reg[regIndex++] = prefix
 
       out += ` $${valueId} e`
+      if (f.isNecessary) {
+        out += ' P'
+      }
+
       return
     }
 
@@ -225,6 +229,10 @@ export default function ast2rpn(
         if (i > 0) {
           out += lop
         }
+      }
+
+      if (expr.isNecessary) {
+        out += ' P'
       }
     }
   }

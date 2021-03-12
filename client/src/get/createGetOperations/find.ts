@@ -1,5 +1,5 @@
 import { Find, GetOperationFind, GetOptions, Sort } from '../types'
-import { createAst } from '@saulx/selva-query-ast-parser'
+import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
 
 const createFindOperation = (
   find: Find,
@@ -37,7 +37,9 @@ const createFindOperation = (
 
   if (find.$filter) {
     const ast = createAst(find.$filter)
+
     if (ast) {
+      optimizeTypeFilters(ast)
       findOperation.filter = ast
     }
   }
