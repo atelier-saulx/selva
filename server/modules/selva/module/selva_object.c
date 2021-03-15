@@ -1062,7 +1062,6 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
         return 0;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
-    case SELVA_OBJECT_POINTER:
         return 1;
     case SELVA_OBJECT_STRING:
         if (key->value) {
@@ -1085,6 +1084,8 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
         return key->selva_set.size;
     case SELVA_OBJECT_ARRAY:
         return SVector_Size(&key->array);
+    case SELVA_OBJECT_POINTER:
+        return (key->ptr_opts && key->ptr_opts->ptr_len) ? key->ptr_opts->ptr_len(key->value) : 1;
     }
 
     return SELVA_EINTYPE;

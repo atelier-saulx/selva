@@ -38,11 +38,11 @@ struct SelvaObjectPointerOpts {
     unsigned ptr_type_id; /*!< An unique id for serializing the pointer type. 0 is reserved for NOP. */
     void (*ptr_free)(void *p); /*!< Free a SELVA_OBJECT_POINTER value. */
     /**
-     * Get the size of a SELVA_OBJECT_POINTER value.
+     * Get the length or size of a SELVA_OBJECT_POINTER value.
      * The unit of the size is undefined but typically it should be either a
      * count of items or the byte size of the value.
      */
-    size_t (*ptr_size)(void *p);
+    size_t (*ptr_len)(void *p);
     SelvaObject_PtrLoad ptr_load;
     SelvaObject_PtrSave ptr_save;
 };

@@ -573,6 +573,49 @@ static char *string_array(void)
     return NULL;
 }
 
+static int freed;
+
+static void ptr_free(void *p __unused) {
+    freed = 1;
+}
+
+static size_t ptr_len(void *p __unused) {
+    return 42;
+}
+
+static char *pointer_values(void) {
+    int err;
+    struct SelvaObjectPointerOpts opts = {
+        .ptr_type_id = 1,
+        .ptr_free = ptr_free,
+        .ptr_len = ptr_len,
+    };
+    struct data {
+        char *text;
+        int value;
+    } d = {
+        .text = "hello",
+        .value = 10,
+    };
+
+    err = SelvaObject_SetPointerStr(root_obj, "mykey", 5, &d, &opts);
+    pu_assert_equal("no error when setting a pointer", err, 0);
+
+    ssize_t len = SelvaObject_LenStr(root_obj, "mykey", 5);
+    pu_assert_equal("got correct len", len, 42);
+
+    struct data *p;
+    err = SelvaObject_GetPointerStr(root_obj, "mykey", 5, &p);
+    pu_assert_equal("no error when getting a pointer", err, 0);
+    pu_assert_ptr_equal("got a pointer to the same data", p, &d);
+
+    err = SelvaObject_DelKeyStr(root_obj, "mykey", 5);
+    pu_assert_equal("no error when deleting", err, 0);
+    pu_assert_equal("ptr_free() was called", freed, 1);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(setget_double, PU_RUN);
@@ -586,4 +629,5 @@ void all_tests(void)
     pu_def_test(delete_object, PU_RUN);
     pu_def_test(delete_nested_key, PU_RUN);
     pu_def_test(string_array, PU_RUN);
+    pu_def_test(pointer_values, PU_RUN);
 }
