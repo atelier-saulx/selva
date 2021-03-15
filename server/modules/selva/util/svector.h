@@ -69,6 +69,16 @@ void SVector_Destroy(SVector *vec);
 SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const void **a, const void **b));
 void SVector_Insert(SVector *vec, void *el);
 void *SVector_InsertFast(SVector *vec, void *el);
+
+/**
+ * Return the index of key in vec.
+ * If the SVector is ordered then the vec_compar() function is used for
+ * finding the element in the vector; Otherwise the `key` pointer is
+ * compared directly to each element in the array to determine its
+ * position in the array.
+ * @returns Returns the index of key in vec; Otherwise -1.
+ */
+ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key);
 void *SVector_Search(const SVector * restrict vec, void *key);
 
 /**
