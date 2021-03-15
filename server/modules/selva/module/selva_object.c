@@ -2075,8 +2075,7 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *obj, void *pt
             rdb_save_object_set(io, key);
             break;
         case SELVA_OBJECT_ARRAY:
-            /* TODO Support arrays */
-            RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
+            rdb_save_object_array(io, key, ptr_save_data);
             break;
         case SELVA_OBJECT_POINTER:
             if (key->ptr_opts && key->ptr_opts->ptr_save) {
