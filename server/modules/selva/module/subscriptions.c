@@ -1711,7 +1711,7 @@ int Selva_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
             return replyWithSelvaErrorf(ctx, err, "Creating missing markers");
         }
 
-        err = SelvaObject_SetPointer(hierarchy->subs.missing, missing, sub);
+        err = SelvaObject_SetPointer(hierarchy->subs.missing, missing, sub, NULL);
         if (err) {
             return replyWithSelvaError(ctx, err);
         }
