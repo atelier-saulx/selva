@@ -1914,6 +1914,63 @@ static void rdb_save_object_set(RedisModuleIO *io, struct SelvaObjectKey *key) {
     }
 }
 
+static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key) {
+    struct SVector *array = &key->array;
+
+    RedisModule_SaveUnsigned(io, key->subtype);
+    RedisModule_SaveUnsigned(io, array->vec_arr_len);
+
+    if (key->subtype == SELVA_OBJECT_LONGLONG) {
+        // const size_t el_size = sizeof(long long);
+        long long *num;
+        struct SVectorIterator it;
+        SVector_ForeachBegin(&it, &key->array);
+        while ((num = SVector_Foreach(&it))) {
+            RedisModule_SaveSigned(io, *num);
+        }
+    } else if (key->subtype == SELVA_OBJECT_DOUBLE) {
+        double *num;
+        struct SVectorIterator it;
+        SVector_ForeachBegin(&it, &key->array);
+        while ((num = SVector_Foreach(&it))) {
+            RedisModule_SaveDouble(io, *num);
+        }
+    } else if (key->subtype == SELVA_OBJECT_STRING) {
+        RedisModuleString *str;
+        struct SVectorIterator it;
+        SVector_ForeachBegin(&it, &key->array);
+        while ((str = SVector_Foreach(&it))) {
+            RedisModule_SaveString(io, str);
+        }
+    } else if (key->subtype == SELVA_OBJECT_OBJECT) {
+        // TODO
+    } else {
+        RedisModule_LogIOError(io, "warning", "Unknown set type");
+    }
+
+    // if (selva_set->type == SELVA_SET_TYPE_RMSTRING) {
+    //     struct SelvaSetElement *el;
+
+    //     SELVA_SET_RMS_FOREACH(el, &key->selva_set) {
+    //         RedisModule_SaveString(io, el->value_rms);
+    //     }
+    // } else if (selva_set->type == SELVA_SET_TYPE_DOUBLE) {
+    //     struct SelvaSetElement *el;
+
+    //     SELVA_SET_DOUBLE_FOREACH(el, &key->selva_set) {
+    //         RedisModule_SaveDouble(io, el->value_d);
+    //     }
+    // } else if (selva_set->type == SELVA_SET_TYPE_LONGLONG) {
+    //     struct SelvaSetElement *el;
+
+    //     SELVA_SET_LONGLONG_FOREACH(el, &key->selva_set) {
+    //         RedisModule_SaveSigned(io, el->value_ll);
+    //     }
+    // } else {
+    //     RedisModule_LogIOError(io, "warning", "Unknown set type");
+    // }
+}
+
 void _SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
     struct SelvaObject *obj = (struct SelvaObject *)value;
     struct SelvaObjectKey *key;
