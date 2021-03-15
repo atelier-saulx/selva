@@ -2004,7 +2004,6 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key)
     RedisModule_SaveUnsigned(io, array->vec_arr_len);
 
     if (key->subtype == SELVA_OBJECT_LONGLONG) {
-        // const size_t el_size = sizeof(long long);
         long long *num;
         struct SVectorIterator it;
         SVector_ForeachBegin(&it, &key->array);
