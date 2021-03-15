@@ -149,6 +149,16 @@ static int clear_key_value(struct SelvaObjectKey *key) {
             while ((str = SVector_Foreach(&it))) {
                 RedisModule_FreeString(NULL, str);
             }
+        } else if (key->subtype == SELVA_OBJECT_DOUBLE || key->subtype == SELVA_OBJECT_LONGLONG) {
+            // do nothing, we store concrete values so it's enough to just clear the SVector itself
+        } else if (key->subtype == SELVA_OBJECT_OBJECT) {
+            struct SVectorIterator it;
+            struct SelvaObject *k;
+
+            SVector_ForeachBegin(&it, &key->array);
+            while ((k = SVector_Foreach(&it))) {
+                SelvaObject_Destroy(k);
+            }
         } else {
             fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
                     __FILE__, (int)key->subtype);
