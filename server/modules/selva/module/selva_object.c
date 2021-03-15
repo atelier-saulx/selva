@@ -140,7 +140,6 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         SelvaSet_Destroy(&key->selva_set);
         break;
     case SELVA_OBJECT_ARRAY:
-        /* TODO Clear array key */
         if (key->subtype == SELVA_OBJECT_STRING) {
             struct SVectorIterator it;
             RedisModuleString *str;
