@@ -363,6 +363,40 @@ void *SVector_GetIndex(const SVector * restrict vec, size_t index) {
     }
 }
 
+void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
+    void *p = NULL;
+
+    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+        const size_t i = vec->vec_arr_shift_index + index;
+
+        if (i < vec->vec_last) {
+            p = vec->vec_arr[i];
+
+            if (vec->vec_last < vec->vec_arr_len) {
+                memmove(&vec->vec_arr[i], &vec->vec_arr[i + 1], vec->vec_last - i - 1);
+            }
+            vec->vec_last--;
+        }
+    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+        size_t i = 0;
+        struct SVector_rbnode *n;
+
+        for (n = RB_MIN(SVector_rbtree, (struct SVector_rbtree *)&vec->vec_rbhead);
+             n != NULL;
+             n = RB_NEXT(SVector_rbtree, &vec->vec_rbhead, n)) {
+            if (i++ == index) {
+                p = n->p;
+                RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
+                break;
+            }
+        }
+    } else {
+        abort();
+    }
+
+    return p;
+}
+
 void *SVector_Remove(SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
 
