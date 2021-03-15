@@ -892,7 +892,7 @@ struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleSt
     return SelvaObject_GetSetStr(obj, key_name_str, key_name_len);
 }
 
-int SelvaObject_AddArray(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p) {
+int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1827,16 +1827,18 @@ static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, con
 
     if (arrayType == SELVA_OBJECT_LONGLONG) {
         long long value = RedisModule_LoadSigned(io);
-        // TODO: add to array
+        SelvaObject_AddArray(obj, name, arrayType, (void *)value);
     } else if (arrayType == SELVA_OBJECT_DOUBLE) {
         double value = RedisModule_LoadDouble(io);
-        // TODO: add to array
+        void *wrapper;
+        memcpy(&wrapper, &value, sizeof(value));
+        SelvaObject_AddArray(obj, name, arrayType, &wrapper);
     } else if (arrayType == SELVA_OBJECT_STRING) {
         RedisModuleString *value = RedisModule_LoadString(io);
-        // TODO: add to array
+        SelvaObject_AddArray(obj, name, arrayType, value);
     } else if (arrayType == SELVA_OBJECT_OBJECT) {
         struct SelvaObject *obj = SelvaObjectTypeRDBLoad(io, encver, ptr_load_data);
-        // TODO: add to array
+        SelvaObject_AddArray(obj, name, arrayType, obj);
     } else {
         RedisModule_LogIOError(io, "warning", "Unknown array type");
         return SELVA_EINTYPE;
