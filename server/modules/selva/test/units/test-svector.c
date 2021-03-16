@@ -371,6 +371,47 @@ static char * test_insert_no_compar(void)
     return NULL;
 }
 
+static char * test_search_index_unordered(void)
+{
+    struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
+
+    SVector_Init(&vec, 5, NULL);
+
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    const size_t i = SVector_SearchIndex(&vec, &el[3]);
+    pu_assert_equal("found it", i, 3);
+
+    const size_t i1 = SVector_SearchIndex(&vec, &(struct data){ 15 });
+    pu_assert_equal("not found", i1, -1);
+
+    return NULL;
+}
+
+static char * test_search_index_ordered(void)
+{
+    struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
+
+    SVector_Init(&vec, 5, compar);
+
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    const size_t i = SVector_SearchIndex(&vec, &el[3]);
+    pu_assert_equal("found it", i, 7);
+
+    const size_t i1 = SVector_SearchIndex(&vec, &(struct data){ 5 });
+    pu_assert_equal("found", i1, 2);
+
+    const size_t i2 = SVector_SearchIndex(&vec, &(struct data){ 16 });
+    pu_assert_equal("not found", i2, -1);
+
+    return NULL;
+}
+
 static char * test_search(void)
 {
     struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
@@ -384,6 +425,30 @@ static char * test_search(void)
     const struct data *res = SVector_Search(&vec, &(struct data){ 15 });
 
     pu_assert_ptr_equal("found the right one", res, &el[2]);
+
+    return NULL;
+}
+
+static char * test_remove_by_index(void)
+{
+    struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
+
+    SVector_Init(&vec, 5, NULL);
+
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    struct data *r0 = SVector_GetIndex(&vec, 3);
+    pu_assert_equal("the element is at expected index", r0->id, 800);
+    pu_assert_equal("the size is correct", SVector_Size(&vec), num_elem(el));
+
+    struct data *r1 = SVector_RemoveIndex(&vec, 3);
+    pu_assert_equal("removed the correct element", r1->id, 800);
+
+    struct data *r2 = SVector_GetIndex(&vec, 3);
+    pu_assert_equal("the old element is no longer there", r2->id, 3);
+    pu_assert_equal("the size was decremented", SVector_Size(&vec), num_elem(el) - 1);
 
     return NULL;
 }
@@ -643,7 +708,10 @@ void all_tests(void)
     pu_def_test(test_insertFast_dedup, PU_RUN);
     pu_def_test(test_mixed_insertFast_and_Remove, PU_RUN);
     pu_def_test(test_insert_no_compar, PU_RUN);
+    pu_def_test(test_search_index_unordered, PU_RUN);
+    pu_def_test(test_search_index_ordered, PU_RUN);
     pu_def_test(test_search, PU_RUN);
+    pu_def_test(test_remove_by_index, PU_RUN);
     pu_def_test(test_remove_one, PU_RUN);
     pu_def_test(test_remove_one_compound_literal, PU_RUN);
     pu_def_test(test_remove_last, PU_RUN);

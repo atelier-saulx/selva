@@ -312,6 +312,43 @@ void *SVector_InsertFast(SVector *vec, void *el) {
     return NULL;
 }
 
+ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key) {
+    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+        /* The array might be unset in case of lazy alloc was requested. */
+        if (unlikely(!vec->vec_arr)) {
+            return -1;
+        }
+
+        if (vec->vec_compar) {
+            void **pp = bsearch(&key, vec->vec_arr + vec->vec_arr_shift_index,
+                                vec->vec_last - vec->vec_arr_shift_index,
+                                sizeof(void *), VEC_COMPAR(vec->vec_compar));
+
+            if (!pp) {
+                return -1;
+            }
+
+            return (ptrdiff_t)(pp - vec->vec_arr) - vec->vec_arr_shift_index;
+        } else {
+            for (size_t i = vec->vec_arr_shift_index; i < vec->vec_last; i++) {
+                if (vec->vec_arr[i] == key) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+        struct SVector_rbnode *res;
+
+        res = rbtree_find(vec, key);
+
+        return !res ? NULL : res->p;
+    } else {
+        abort();
+    }
+}
+
 void *SVector_Search(const SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
 
@@ -361,6 +398,40 @@ void *SVector_GetIndex(const SVector * restrict vec, size_t index) {
     } else {
         abort();
     }
+}
+
+void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
+    void *p = NULL;
+
+    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+        const size_t i = vec->vec_arr_shift_index + index;
+
+        if (i < vec->vec_last) {
+            p = vec->vec_arr[i];
+
+            if (vec->vec_last < vec->vec_arr_len) {
+                memmove(&vec->vec_arr[i], &vec->vec_arr[i + 1], vec->vec_last - i - 1);
+            }
+            vec->vec_last--;
+        }
+    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+        size_t i = 0;
+        struct SVector_rbnode *n;
+
+        for (n = RB_MIN(SVector_rbtree, (struct SVector_rbtree *)&vec->vec_rbhead);
+             n != NULL;
+             n = RB_NEXT(SVector_rbtree, &vec->vec_rbhead, n)) {
+            if (i++ == index) {
+                p = n->p;
+                RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
+                break;
+            }
+        }
+    } else {
+        abort();
+    }
+
+    return p;
 }
 
 void *SVector_Remove(SVector * restrict vec, void *key) {
