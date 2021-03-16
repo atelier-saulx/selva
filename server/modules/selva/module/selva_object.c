@@ -33,7 +33,7 @@ struct SelvaObjectKey {
     union {
         struct {
             void *value; /*!< The rest of the types use this. */
-            struct SelvaObjectPointerOpts *ptr_opts; /*!< Options for a SELVA_OBJECT_POINTER */
+            const struct SelvaObjectPointerOpts *ptr_opts; /*!< Options for a SELVA_OBJECT_POINTER */
         };
         double emb_double_value; /*!< SELVA_OBJECT_DOUBLE */
         long long emb_ll_value; /*!< SELVA_OBJECT_LONGLONG */
