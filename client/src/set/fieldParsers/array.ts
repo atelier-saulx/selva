@@ -17,16 +17,18 @@ export default async (
   if (!Array.isArray(arr)) {
     if (payload.$delete === true) {
       result.push('7', field, '')
-      return
     } else if (payload.$push) {
-      // TODO:
+      result.push('D', field, '')
     } else if (payload.$unshift) {
-      // TODO:
+      result.push('E', field, '')
     } else if (payload.$assign) {
       // TODO: $merge: true/false (true default)
+      // TODO: append index markers for commands
     } else if (payload.$remove) {
-      // TODO:
+      result.push('F', field, `${payload.$remove.$idx}`)
     }
+
+    return
   } else {
     const itemsFields = fields.items
     const parser = fieldParsers[itemsFields.type]
@@ -37,38 +39,7 @@ export default async (
         parser(client, schema, `${index}`, payload, r, itemsFields, type, $lang)
       )
     )
-  }
 
-  // const arr = payload
-  // if (!Array.isArray(arr)) {
-  //   if (payload.$delete === true) {
-  //     // TODO
-  //     // result[field] = { $delete: true }
-  //     result.push('7', field, '')
-  //     return
-  //   } else if (payload.$field) {
-  //     // TODO: verify that it references an array field
-  //     // TODO
-  //     // result[field] = `___selva_$ref:${payload[field]}`
-  //     return
-  //   }
-  //   throw new Error(`Array is not an array ${JSON.stringify(payload)}`)
-  // }
-  // const itemsFields = fields.items
-  // let arrayResult = []
-  // if (itemsFields.type === 'json') {
-  //   arrayResult = arr
-  // } else {
-  //   const parser = fieldParsers[itemsFields.type]
-  //   const r = []
-  //   // need to remove all options from nested fields!
-  //   await Promise.all(
-  //     arr.map((payload, index) =>
-  //       parser(client, schema, `${index}`, payload, r, itemsFields, type, $lang)
-  //     )
-  //   )
-  //   arrayResult = arr
-  // }
-  // // nested json special!
-  // result.push('0', field, JSON.stringify(arrayResult))
+    // TODO: append index markers for commands
+  }
 }
