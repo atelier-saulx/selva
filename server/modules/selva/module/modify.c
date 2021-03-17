@@ -612,19 +612,16 @@ int SelvaModify_ModifySet(
 
     if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
         Selva_NodeId node_id;
-        int err;
 
         if (setOpts->op_set_type != SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
             return SELVA_EINTYPE;
         }
 
         Selva_NodeIdCpy(node_id, id_str);
-        err = update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
-    } else {
-        res = update_set(ctx, hierarchy, obj, id, field, setOpts);
+        return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
     }
 
-    return res;
+    return update_set(ctx, hierarchy, obj, id, field, setOpts);
 }
 
 void SelvaModify_ModifyIncrement(
