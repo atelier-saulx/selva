@@ -22,24 +22,48 @@ export default async (
     } else if (payload.$unshift) {
       result.push('E', field, '')
     } else if (payload.$assign) {
-      // TODO: $merge: true/false (true default)
-      // TODO: append index markers for commands
-    } else if (payload.$remove) {
-      result.push('F', field, `${payload.$remove.$idx}`)
-    }
+      const idx = payload.$assign.$idx
+      const value = payload.$assign.$value
 
-    return
+      if (!idx || !value) {
+        throw new Error(
+          `$assign missing $idx or $value property ${JSON.stringify(payload)}`
+        )
+      }
+
+      const fieldWithIdx = `${field}[${idx}]`
+      const itemsFields = fields.items
+      const parser = fieldParsers[itemsFields.type]
+      parser(
+        client,
+        schema,
+        fieldWithIdx,
+        payload,
+        result,
+        itemsFields,
+        type,
+        $lang
+      )
+    } else if (payload.$remove) {
+      result.push('F', field, `${payload.$removeIdx}`)
+    }
   } else {
     const itemsFields = fields.items
     const parser = fieldParsers[itemsFields.type]
-    const r = []
-
     await Promise.all(
-      arr.map((payload, index) =>
-        parser(client, schema, `${index}`, payload, r, itemsFields, type, $lang)
-      )
+      arr.map((payload, index) => {
+        const fieldWithIdx = `${field}[${index}]`
+        parser(
+          client,
+          schema,
+          fieldWithIdx,
+          payload,
+          result,
+          itemsFields,
+          type,
+          $lang
+        )
+      })
     )
-
-    // TODO: append index markers for commands
   }
 }
