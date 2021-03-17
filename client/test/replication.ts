@@ -1,10 +1,11 @@
 import { promisify } from 'util'
+import { join } from 'path'
 import test from 'ava'
 import { connect } from '../src/index'
 import { start, startReplica } from '@saulx/selva-server'
 import redis, { RedisClient, ReplyError } from 'redis'
 import './assertions'
-import { wait } from './assertions'
+import { wait, removeDump } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -13,15 +14,21 @@ let replica
 let rclientOrigin: RedisClient | null = null
 let rclientReplica: RedisClient | null = null
 
+const dir = join(process.cwd(), 'tmp', 'replication')
+
 test.before(async (t) => {
+  await removeDump(dir)()
+
   port = await getPort()
   srv = await start({
     port,
+    dir: join(dir, 'srv'),
   })
 
   replica = await startReplica({
     registry: { port },
     default: true,
+    dir: join(dir, 'replica'),
   })
   replica.on('stderr', (b) => console.log(b.toString()))
   replica.on('stdout', (b) => console.log(b.toString()))
@@ -74,6 +81,7 @@ test.after(async (_t) => {
   await client.destroy()
   await replica.destroy()
   await srv.destroy()
+  await removeDump(dir)()
 })
 
 test.afterEach(async () => {
