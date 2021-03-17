@@ -16,35 +16,59 @@ export default async (
   const arr = payload
   if (!Array.isArray(arr)) {
     if (payload.$delete === true) {
-      // TODO
-      // result[field] = { $delete: true }
       result.push('7', field, '')
       return
-    } else if (payload.$field) {
-      // TODO: verify that it references an array field
-      // TODO
-      // result[field] = `___selva_$ref:${payload[field]}`
-      return
+    } else if (payload.$push) {
+      // TODO:
+    } else if (payload.$unshift) {
+      // TODO:
+    } else if (payload.$assign) {
+      // TODO: $merge: true/false (true default)
+    } else if (payload.$remove) {
+      // TODO:
     }
-    throw new Error(`Array is not an array ${JSON.stringify(payload)}`)
-  }
-  const itemsFields = fields.items
-  let arrayResult = []
-
-  if (itemsFields.type === 'json') {
-    arrayResult = arr
   } else {
+    const itemsFields = fields.items
     const parser = fieldParsers[itemsFields.type]
     const r = []
-    // need to remove all options from nested fields!
+
     await Promise.all(
       arr.map((payload, index) =>
         parser(client, schema, `${index}`, payload, r, itemsFields, type, $lang)
       )
     )
-
-    arrayResult = arr
   }
-  // nested json special!
-  result.push('0', field, JSON.stringify(arrayResult))
+
+  // const arr = payload
+  // if (!Array.isArray(arr)) {
+  //   if (payload.$delete === true) {
+  //     // TODO
+  //     // result[field] = { $delete: true }
+  //     result.push('7', field, '')
+  //     return
+  //   } else if (payload.$field) {
+  //     // TODO: verify that it references an array field
+  //     // TODO
+  //     // result[field] = `___selva_$ref:${payload[field]}`
+  //     return
+  //   }
+  //   throw new Error(`Array is not an array ${JSON.stringify(payload)}`)
+  // }
+  // const itemsFields = fields.items
+  // let arrayResult = []
+  // if (itemsFields.type === 'json') {
+  //   arrayResult = arr
+  // } else {
+  //   const parser = fieldParsers[itemsFields.type]
+  //   const r = []
+  //   // need to remove all options from nested fields!
+  //   await Promise.all(
+  //     arr.map((payload, index) =>
+  //       parser(client, schema, `${index}`, payload, r, itemsFields, type, $lang)
+  //     )
+  //   )
+  //   arrayResult = arr
+  // }
+  // // nested json special!
+  // result.push('0', field, JSON.stringify(arrayResult))
 }

@@ -25,6 +25,9 @@ enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_OP_SET = '5', /*!< Value is a struct SelvaModify_OpSet. */
     SELVA_MODIFY_ARG_OP_DEL = '7', /*!< Delete field; value is a modifier. */
     SELVA_MODIFY_ARG_OP_OBJ_META = 'C', /*!< Set object user metadata. */
+    SELVA_MODIFY_ARG_OP_ARRAY_PUSH = 'D', /*!< Set a new empty SelvaObject at the end of an array */
+    SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT = 'E', /*!< Set a new empty SelvaObject at the start of an array */
+    SELVA_MODIFY_ARG_OP_ARRAY_REMOVE = 'F', /*!< Remove item in specified index from array */
 };
 
 struct SelvaModify_OpIncrement {
