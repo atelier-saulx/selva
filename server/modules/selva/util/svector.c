@@ -339,11 +339,20 @@ ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key) {
             return -1;
         }
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
-        struct SVector_rbnode *res;
+        struct SVector_rbnode *n;
+        size_t i = 0;
 
-        res = rbtree_find(vec, key);
+        for (n = RB_MIN(SVector_rbtree, (struct SVector_rbtree *)&vec->vec_rbhead);
+             n != NULL;
+             n = RB_NEXT(SVector_rbtree, &vec->vec_rbhead, n)) {
+            if (vec->vec_compar((const void **)&n->p, (const void **)&key) == 0) {
+                return i;
+            } else {
+                i++;
+            }
+        }
 
-        return !res ? NULL : res->p;
+        return -1;
     } else {
         abort();
     }
