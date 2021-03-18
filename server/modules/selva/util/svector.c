@@ -443,6 +443,31 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
     return p;
 }
 
+void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
+    assert(("vec_compare must not be set", !vec->vec_compar));
+
+    void *p = NULL;
+
+    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+        const size_t i = vec->vec_arr_shift_index + index;
+        if (i == -1 || i == vec->vec_last) {
+            return SVector_Insert(vec, el);
+        } else if (i < vec->vec_last) {
+            p = vec->vec_arr[i];
+
+            if (vec->vec_last < vec->vec_arr_len) {
+                memmove(&vec->vec_arr[i+1], &vec->vec_arr[i], vec->vec_last - i - 1);
+            }
+
+            vec->vec_last++;
+        }
+    } else {
+        abort();
+    }
+
+    return;
+}
+
 void *SVector_Remove(SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
 
