@@ -933,6 +933,26 @@ int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return SelvaObject_AddArrayStr(obj, key_name_str, key_name_len, subtype, p);
 }
 
+int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key_modify(obj, key_name_str, key_name_len, &key);
+    if (err) {
+        return err;
+    }
+
+    if (key->type != SELVA_OBJECT_ARRAY) {
+        return SELVA_EINVAL;
+    }
+
+    SVector_RemoveIndex(&key->array, idx);
+
+    return 0;
+}
+
 int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType *out_subtype, SVector **out_p) {
     struct SelvaObjectKey *key;
     int err;
