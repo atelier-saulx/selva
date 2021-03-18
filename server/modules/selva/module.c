@@ -575,6 +575,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * value was modified too.
              */
             continue;
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
+            // TODO
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
+            // TODO
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
+            // TODO
         } else {
             replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
             continue;
