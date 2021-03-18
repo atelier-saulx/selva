@@ -558,7 +558,6 @@ int SelvaModify_ModifySet(
 ) {
     const int is_reference = setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE;
     TO_STR(id, field);
-    int res = 0; /* TODO This should always reflect the number of changes made. */
 
     if (setOpts->delete_all) {
         int err;
@@ -600,11 +599,14 @@ int SelvaModify_ModifySet(
                 if (node_aliases) {
                     selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
                     (void)delete_aliases(alias_key, node_aliases);
-                    res = 1; /* TODO Number of deletions would be nicer but this is fine too. */
+                    /* TODO It would be nice to print the number of deletions. */
                 }
             }
 
             err = SelvaObject_DelKey(obj, field);
+            if (err == 0) {
+                err = 1;
+            }
         }
 
         return err == SELVA_ENOENT ? 0 : err;
