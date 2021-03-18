@@ -933,7 +933,7 @@ int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return SelvaObject_AddArrayStr(obj, key_name_str, key_name_len, subtype, p);
 }
 
-int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t idx, void *p) {
+int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -963,16 +963,56 @@ int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str
         }
     }
 
-    // TODO: insert to the index
     SVector_Insert(&key->array, p);
 
     return 0;
 }
 
-int SelvaObject_InsertArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
+int SelvaObject_InsertArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p) {
     TO_STR(key_name);
 
-    return SelvaObject_InsertArrayStr(obj, key_name_str, key_name_len, subtype, idx, p);
+    return SelvaObject_InsertArrayStr(obj, key_name_str, key_name_len, subtype, p);
+}
+
+int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t idx, void *p) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key_modify(obj, key_name_str, key_name_len, &key);
+    if (err) {
+        return err;
+    }
+
+    /* TODO Should it fail if the subtype doesn't match? */
+    if (key->type != SELVA_OBJECT_ARRAY || key->subtype != subtype) {
+        err = clear_key_value(key);
+        if (err) {
+            return err;
+        }
+
+        /*
+         * Type must be set before initializing the vector to avoid a situation
+         * where we'd have a key with an unknown value type.
+         */
+        key->type = SELVA_OBJECT_ARRAY;
+        key->subtype = subtype;
+
+        if (!SVector_Init(&key->array, 1, NULL)) {
+            return SELVA_ENOMEM;
+        }
+    }
+
+    SVector_InsertIndex(&key->array, idx, p);
+
+    return 0;
+}
+
+int SelvaObject_InsertArrayIndex(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
+    TO_STR(key_name);
+
+    return SelvaObject_InsertArrayIndexStr(obj, key_name_str, key_name_len, subtype, idx, p);
 }
 
 int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx) {
