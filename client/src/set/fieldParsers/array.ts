@@ -19,8 +19,36 @@ export default async (
       result.push('7', field, '')
     } else if (payload.$push) {
       result.push('D', field, '')
+
+      const fieldWithIdx = `${field}[-1]`
+      const itemsFields = fields.items
+      const parser = fieldParsers[itemsFields.type]
+      parser(
+        client,
+        schema,
+        fieldWithIdx,
+        payload,
+        result,
+        itemsFields,
+        type,
+        $lang
+      )
     } else if (payload.$unshift) {
       result.push('E', field, '')
+
+      const fieldWithIdx = `${field}[0]`
+      const itemsFields = fields.items
+      const parser = fieldParsers[itemsFields.type]
+      parser(
+        client,
+        schema,
+        fieldWithIdx,
+        payload,
+        result,
+        itemsFields,
+        type,
+        $lang
+      )
     } else if (payload.$assign) {
       const idx = payload.$assign.$idx
       const value = payload.$assign.$value
