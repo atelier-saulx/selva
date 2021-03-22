@@ -208,7 +208,7 @@ export default class ProcessManager extends EventEmitter {
       setTimeout(() => {
         const ok = cp.kill('SIGKILL')
         if (ok) {
-          console.log(
+          console.info(
             `Child process for ${this.command} didn't terminate within 10 seconds. Sending SIGKILL.`
           )
         }
