@@ -1,12 +1,11 @@
 import { spawn, ChildProcess } from 'child_process'
 import pidusage from 'pidusage'
 import { EventEmitter } from 'events'
-import chalk, { keyword } from 'chalk'
-import { wait } from '../util'
+import chalk from 'chalk'
 
 // const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
 const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every 10 seconds
-var cnt = 0
+let cnt = 0
 
 export default class ProcessManager extends EventEmitter {
   private command: string
@@ -164,7 +163,7 @@ export default class ProcessManager extends EventEmitter {
               } at ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`
             )
           )
-          console.log(chalk.grey(`${this.command} ${this.args}`))
+          console.info(chalk.grey(`${this.command} ${this.args}`))
           console.info('')
           throw err
         } else {
