@@ -646,10 +646,7 @@ class Connection {
 
     connections.set(stringId, this)
 
-    if (
-      serverDescriptor.type === 'origin' ||
-      serverDescriptor.type === 'replica'
-    ) {
+    if (serverDescriptor.type === 'origin') {
       loadScripts(this)
     }
 
