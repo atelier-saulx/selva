@@ -144,8 +144,8 @@ export class SelvaClient extends EventEmitter {
     // can enable / disable logleves
   }
 
-  async initializeSchema(opts: any) {
-    return initializeSchema(this, opts)
+  async initializeSchema(opts: any, waitForSchema: boolean = true) {
+    return initializeSchema(this, opts, waitForSchema)
   }
 
   async id(props: IdOptions): Promise<string> {
@@ -185,7 +185,7 @@ export class SelvaClient extends EventEmitter {
     opts: SchemaOptions,
     name: string = 'default'
   ): Promise<void> {
-    await this.initializeSchema({ $db: name })
+    await this.initializeSchema({ $db: name }, false)
     return updateSchema(this, opts, { name, type: 'origin' })
   }
 
