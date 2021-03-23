@@ -2314,7 +2314,7 @@ int SelvaHierarchy_EdgeListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
 
     if (!obj) {
         /* No custom edges set. */
-        return RedisModule_ReplyWithNull(ctx);
+        return RedisModule_ReplyWithArray(ctx, 0);
     }
 
     RedisModuleString *key_name = argc == 4 ? argv[3] : NULL;

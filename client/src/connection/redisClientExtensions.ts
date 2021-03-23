@@ -26,6 +26,38 @@ const redisSearchCommands = [
   'TAGVALS',
   'CONFIG',
 ]
+const selva_commands = [
+  'selva.id',
+  'selva.modify',
+  'selva.object.del',
+  'selva.object.exists',
+  'selva.object.get',
+  'selva.object.len',
+  'selva.object.set',
+  'selva.object.type',
+  'selva.object.getmeta',
+  'selva.object.setmeta',
+  'selva.hierarchy.parents',
+  'selva.hierarchy.children',
+  'selva.hierarchy.edgelist',
+  'selva.hierarchy.edgeget',
+  'selva.hierarchy.find',
+  'selva.hierarchy.findin',
+  'selva.hierarchy.findinsub',
+  'selva.hierarchy.del',
+  'selva.inherit',
+  'selva.resolve.nodeid',
+  'selva.subscriptions.add',
+  'selva.subscriptions.addmarkerfields',
+  'selva.subscriptions.addalias',
+  'selva.subscriptions.addmissing',
+  'selva.subscriptions.addtrigger',
+  'selva.subscriptions.debug',
+  'selva.subscriptions.del',
+  'selva.subscriptions.list',
+  'selva.subscriptions.listmissing',
+  'selva.subscriptions.refresh',
+];
 
 redis.RedisClient.prototype.on_info_cmd = function (err, res) {
   if (err) {
@@ -110,87 +142,7 @@ redisSearchCommands.forEach((cmd) => {
   // @ts-ignore
   redis.add_command(`FT.${cmd}`)
 })
-
-// @ts-ignore
-redis.add_command('selva.id')
-
-// @ts-ignore
-redis.add_command('selva.modify')
-
-// @ts-ignore
-redis.add_command('selva.object.del')
-
-// @ts-ignore
-redis.add_command('selva.object.exists')
-
-// @ts-ignore
-redis.add_command('selva.object.get')
-
-// @ts-ignore
-redis.add_command('selva.object.len')
-
-// @ts-ignore
-redis.add_command('selva.object.set')
-
-// @ts-ignore
-redis.add_command('selva.object.type')
-
-// @ts-ignore
-redis.add_command('selva.object.getmeta')
-
-// @ts-ignore
-redis.add_command('selva.object.setmeta')
-
-// @ts-ignore
-redis.add_command('selva.hierarchy.parents')
-
-// @ts-ignore
-redis.add_command('selva.hierarchy.children')
-
-// @ts-ignore
-redis.add_command('selva.hierarchy.find')
-
-// @ts-ignore
-redis.add_command('selva.hierarchy.findin')
-
-// @ts-ignore
-redis.add_command('selva.hierarchy.findinsub')
-
-// @ts-ignore
-redis.add_command('selva.hierarchy.del')
-
-// @ts-ignore
-redis.add_command('selva.inherit')
-
-// @ts-ignore
-redis.add_command('selva.resolve.nodeid')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.add')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.addmarkerfields')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.addalias')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.addmissing')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.addtrigger')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.debug')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.del')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.list')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.listmissing')
-
-// @ts-ignore
-redis.add_command('selva.subscriptions.refresh')
+selva_commands.forEach((cmd) =>
+  // @ts-ignore
+  redis.add_command(cmd)
+)
