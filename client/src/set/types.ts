@@ -85,3 +85,13 @@ export type SetOptions = SetItem & {
     }
   }
 }
+
+export type SetMetaResponse = {
+  id: string
+  updated: boolean
+  fields: {
+    changed: Set<string>
+    unchanged: Set<string>
+    errored: Record<string, string>
+  }
+}
