@@ -48,16 +48,19 @@ static void init_node_metadata_edge(
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_edge);
 
 static void deinit_node_metadata_edge(const Selva_NodeId node_id, struct SelvaModify_HierarchyMetadata *metadata) {
+    struct SelvaObject *origins;
     void *obj_it;
     SVector *edge_fields;
     const char *src_node_id;
 
-    if (!metadata->custom_edge_fields.origins) {
+    origins = metadata->custom_edge_fields.origins;
+    if (!origins) {
+        /* No edges pointing to this node. */
         return;
     }
 
-    obj_it = SelvaObject_ForeachBegin(metadata->custom_edge_fields.origins);
-    while ((edge_fields = (SVector *)SelvaObject_ForeachValue(metadata->custom_edge_fields.origins, &obj_it, &src_node_id, SELVA_OBJECT_ARRAY))) {
+    obj_it = SelvaObject_ForeachBegin(origins);
+    while ((edge_fields = (SVector *)SelvaObject_ForeachValue(origins, &obj_it, &src_node_id, SELVA_OBJECT_ARRAY))) {
         struct SVectorIterator vec_it;
         struct EdgeField *src_field;
 
@@ -66,7 +69,7 @@ static void deinit_node_metadata_edge(const Selva_NodeId node_id, struct SelvaMo
          */
         SVector_ForeachBegin(&vec_it, edge_fields);
         while ((src_field = SVector_Foreach(&vec_it))) {
-            SVector_Remove(&src_field->edges, node_id);
+            SVector_Remove(&src_field->edges, (void *)node_id);
         }
     }
 
@@ -164,6 +167,7 @@ static struct EdgeField *Edge_NewField(struct SelvaModify_HierarchyNode *node, c
  */
 static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_HierarchyNode *dst_node) {
     struct SelvaModify_HierarchyMetadata *dst_node_metadata;
+    int err;
 
     /*
      *  Insert the hierarchy node to the edge field.
@@ -179,8 +183,15 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
     if (!dst_node_metadata->custom_edge_fields.origins) {
         /* The edge origin refs struct is initialized lazily. */
         dst_node_metadata->custom_edge_fields.origins = SelvaObject_New();
+        /* TODO It could be problematic if we failed to create the object now */
     }
-    SelvaObject_AddArrayStr(dst_node_metadata->custom_edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, SELVA_OBJECT_POINTER, src_edge_field);
+    err = SelvaObject_AddArrayStr(dst_node_metadata->custom_edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, SELVA_OBJECT_POINTER, src_edge_field);
+    if (err) {
+        /* TODO This error would be pretty fatal now. */
+        fprintf(stderr, "%s:%d: Edge origin update failed: %s\n",
+                __FILE__, __LINE__,
+                getSelvaErrorStr(err));
+    }
 }
 
 int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node) {
@@ -407,15 +418,10 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
 
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
-    Selva_NodeId node_id;
-    struct SelvaModify_HierarchyMetadata *metadata;
 
     if (encver < HIERARCHY_ENCODING_VERSION) {
         return 0; /* Only the latest version supports loading metadata. */
     }
-
-    SelvaModify_HierarchyGetNodeId(node, node_id);
-    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
 
     if (unlikely(!ctx)) {
         RedisModule_LogIOError(io, "warning", "Redis ctx can't be NULL");

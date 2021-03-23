@@ -149,6 +149,12 @@ static int clear_key_value(struct SelvaObjectKey *key) {
             while ((str = SVector_Foreach(&it))) {
                 RedisModule_FreeString(NULL, str);
             }
+        } else if (key->subtype == SELVA_OBJECT_POINTER) {
+            /*
+             * NOP
+             * Pointer arrays don't support cleanup but it would be possible
+             * to add support for SelvaObjectPointerOpts.
+             */
         } else {
             fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
                     __FILE__, (int)key->subtype);
@@ -922,7 +928,7 @@ int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, s
 
     assert(obj);
 
-    if (subtype != SELVA_OBJECT_STRING) {
+    if (!(subtype == SELVA_OBJECT_POINTER || subtype == SELVA_OBJECT_STRING)) {
         return SELVA_EINTYPE;
     }
 
