@@ -11,7 +11,7 @@ const startServerHeartbeat = (server: SelvaServer) => {
         name: server.name,
       },
       constants.SERVER_HEARTBEAT,
-      ''
+      `${Date.now()}`
     )
     server.serverHeartbeatTimeout = setTimeout(setHeartbeat, 5e3)
   }

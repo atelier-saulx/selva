@@ -124,8 +124,22 @@ export default (connection: Connection) => {
   connection.subscriber = startClient(connection, 'subscriber')
   connection.publisher = startClient(connection, 'publisher')
 
-  const serverHeartbeat = () => {
+  const serverHeartbeat = (ts: number) => {
     clearTimeout(connection.serverHeartbeatTimer)
+
+    const now = Date.now()
+
+    if (now - ts > 1000 * 4) {
+      connection.laggyHeartbeatCounter++
+    } else {
+      connection.laggyHeartbeatCounter = 0
+    }
+
+    if (connection.laggyHeartbeatCounter >= 5) {
+      connection.hardDisconnect()
+      return
+    }
+
     connection.serverHeartbeatTimer = setTimeout(() => {
       if (!connection.isDestroyed) {
         log(
@@ -140,16 +154,16 @@ export default (connection: Connection) => {
   connection.on(
     'connect',
     () => {
-      serverHeartbeat()
+      serverHeartbeat(Date.now())
     },
     'connection'
   )
 
   connection.subscriber.subscribe(SERVER_HEARTBEAT)
 
-  connection.subscriber.on('message', (channel) => {
+  connection.subscriber.on('message', (channel, message) => {
     if (channel === SERVER_HEARTBEAT) {
-      serverHeartbeat()
+      serverHeartbeat(Number(message))
     }
   })
 }

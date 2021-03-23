@@ -11,6 +11,8 @@ const {
   STOP_HEARTBEAT,
 } = constants
 
+const HEARTBEAT_DELAY: Record<string, number> = {}
+
 const addListeners = async (
   subsManager: SubscriptionManager
 ): Promise<void> => {
@@ -26,6 +28,18 @@ const addListeners = async (
       }
     } else if (channel === HEARTBEAT) {
       const { client, ts } = JSON.parse(message)
+      const now = Date.now()
+      if (now - ts > 1000 * 3) {
+        HEARTBEAT_DELAY[channel] = (HEARTBEAT_DELAY[channel] || 0) + 1
+      } else {
+        delete HEARTBEAT_DELAY[channel]
+      }
+
+      if (HEARTBEAT_DELAY[channel] >= 3) {
+        // don't updated the heartbeat so it gets cleared and eventually reconnects
+        return
+      }
+
       if (!subsManager.clients[client]) {
         subsManager.clients[client] = { subscriptions: new Set(), lastTs: ts }
         redis.hset(selector, CLIENTS, client, ts)

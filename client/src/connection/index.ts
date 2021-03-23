@@ -525,6 +525,7 @@ class Connection {
   public isDc: boolean
 
   public startClientTimer: NodeJS.Timeout = null
+  public laggyHeartbeatCounter: number = 0
 
   public serverHeartbeatTimer: NodeJS.Timeout = null
 
