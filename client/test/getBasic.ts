@@ -2218,3 +2218,49 @@ test.serial('get - record with nested wildcard query', async (t) => {
 
   await client.destroy()
 })
+
+test.serial.only('get - field with array', async (t) => {
+  const client = connect({ port })
+
+  const id = await client.set({
+    type: 'lekkerType',
+    thing: [],
+    dong: { dingdong: [] },
+    ding: { dong: [] },
+    dingdongs: ['a', 'b', 'test'],
+    refs: [],
+  })
+
+  const result = await client.get({
+    $id: id,
+    thing: true,
+    dong: true,
+    ding: { dong: true },
+    dingdongs: true,
+    children: true,
+    descendants: true,
+    refs: true,
+  })
+
+  t.deepEqual(result, {
+    children: [],
+    descendants: [],
+    dingdongs: ['a', 'b', 'test'],
+    dong: { dingdong: [] },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id,
+      $all: true,
+    }),
+    {
+      id,
+      dong: { dingdong: [] },
+      type: 'lekkerType',
+      dingdongs: ['a', 'b', 'test'],
+    }
+  )
+
+  client.destroy()
+})

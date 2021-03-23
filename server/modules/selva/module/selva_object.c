@@ -469,6 +469,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         obj->obj_size++;
         (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
     } else if (!key) {
+        fprintf(stderr, "ENOENT??? %s\n", key_name_str);
         return SELVA_ENOENT;
     }
 
@@ -1397,10 +1398,12 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
 
 static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SVector *array) {
     /* TODO add selva_object_array reply support */
+    fprintf(stderr, "ARRAY TYPE REPLIES ARE NOT SUPPORTED RIGHT NOW\n");
     (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Array type not supported");
 }
 
 static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
+    fprintf(stderr, "WHAT %s\n", key->name);
     switch (key->type) {
     case SELVA_OBJECT_NULL:
         RedisModule_ReplyWithNull(ctx);
@@ -1604,6 +1607,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             err = SelvaObject_GetWithWildcardStr(ctx, obj, okey_str, okey_len, &resp_count, -1, 1);
             RedisModule_ReplySetArrayLength(ctx, resp_count);
         } else {
+            fprintf(stderr, "HMM KEY getting %s\n", okey_str);
             err = get_key(obj, okey_str, okey_len, 0, &key);
         }
 
