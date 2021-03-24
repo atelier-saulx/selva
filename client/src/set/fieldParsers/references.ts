@@ -32,7 +32,7 @@ const addParent = (
     const noRoot: boolean = anyResult[0][0] === 'N'
     if (!obj.parents) {
       obj.parents = {
-        $value: [],
+        $add: [],
         $noRoot: true,
       }
     } else if (noRoot) {

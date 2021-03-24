@@ -529,18 +529,20 @@ test.serial('set parent by alias 2', async (t) => {
     },
   })
 
-  console.dir(
-    {
-      result2,
-      item: await client.get({
-        $id: match1,
-        $all: true,
-        parents: true,
-        ancestors: true,
-      }),
-    },
-    { depth: null }
-  )
+  // console.dir(
+  //   {
+  //     result2,
+  //     item: await client.get({
+  //       $id: match1,
+  //       $all: true,
+  //       parents: true,
+  //       ancestors: true,
+  //     }),
+  //   },
+  //   { depth: null }
+  // )
+
+  t.deepEqualIgnoreOrder(result2.items, [{ id: match1 }])
 
   await client.delete('root')
   await client.destroy()
