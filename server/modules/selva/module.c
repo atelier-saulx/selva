@@ -383,7 +383,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * ...  ...
      */
     const int nr_triplets = (argc - 3) / 3;
-    struct bitmap *replset = RedisModule_PoolAlloc(ctx, nr_triplets);
+    struct bitmap *replset = RedisModule_PoolAlloc(ctx, BITMAP_ALLOC_SIZE(nr_triplets));
 
     if (!replset) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to allocate memory for replication");

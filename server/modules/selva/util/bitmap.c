@@ -38,6 +38,7 @@
 
 #define BIT2WORDI(i)    ((i - (i & (SIZEOF_BITMAP_T - 1))) / SIZEOF_BITMAP_T)
 #define BIT2WBITOFF(i)  (i & (SIZEOF_BITMAP_T - 1))
+#define BITMAP_SIZE(n) (BITMAP_ALLOC_SIZE(n) - sizeof(struct bitmap))
 
 int bitmap_get(const struct bitmap *bitmap, size_t pos) {
     const size_t k = BIT2WORDI(pos);
@@ -77,7 +78,7 @@ int bitmap_clear(struct bitmap *bitmap, size_t pos) {
 }
 
 void bitmap_erase(struct bitmap *bitmap) {
-    memset(bitmap->d, 0, BITMAP_ALLOC_SIZE(bitmap->nbits));
+    memset(bitmap->d, 0, BITMAP_SIZE(bitmap->nbits));
 }
 
 static inline unsigned int popcnt_u128(__uint128_t n)
@@ -93,7 +94,7 @@ unsigned int bitmap_popcount(const struct bitmap *bitmap) {
     const bitmap_t *d = bitmap->d;
     unsigned int cnt = 0;
 
-    for (size_t i = 0; i < BITMAP_ALLOC_SIZE(nbits) / sizeof(bitmap_t); i++) {
+    for (size_t i = 0; i < BITMAP_SIZE(nbits) / sizeof(bitmap_t); i++) {
         cnt += popcnt_u128(*d++);
     }
 
