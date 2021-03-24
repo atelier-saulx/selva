@@ -4,6 +4,7 @@ SRC-rpn += ../../module/selva_object.c
 SRC-rpn += ../../module/selva_set.c 
 SRC-rpn += ../../rmutil/sds.c
 SRC-rpn += ../../util/cstrings.c
+SRC-rpn += ../../util/strnstr.c
 SRC-rpn += ../../util/mempool.c
 SRC-rpn += ../../util/svector.c
 SRC-rpn += ../errors-mock.c
