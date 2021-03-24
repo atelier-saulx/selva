@@ -701,7 +701,7 @@ static int crossRemove(
         size_t n,
         const Selva_NodeId *nodes,
         int pointers) {
-    svector_autofree SVector sub_markers;
+    SVECTOR_AUTOFREE(sub_markers);
 
     /*
      * Backup the subscription markers so we can refresh them after the
@@ -811,7 +811,7 @@ static int crossRemove(
 static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel) {
     size_t offset_a;
     size_t offset_b;
-    svector_autofree SVector sub_markers = {0};
+    SVECTOR_AUTOFREE(sub_markers);
 
     switch (rel) {
     case RELATIONSHIP_PARENT:
@@ -974,7 +974,7 @@ static int remove_missing(
         size_t nr_nodes,
         const Selva_NodeId *nodes,
         enum SelvaModify_HierarchyNode_Relationship rel) {
-    svector_autofree SVector old_adjs;
+    SVECTOR_AUTOFREE(old_adjs);
     struct SVectorIterator it;
     SelvaModify_HierarchyNode *adj;
     int res = 0;
@@ -1352,7 +1352,7 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
-    svector_autofree SVector q;
+    SVECTOR_AUTOFREE(q);
     if (unlikely(!SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL))) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
@@ -1409,7 +1409,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         return SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
-    svector_autofree SVector stack;
+    SVECTOR_AUTOFREE(stack);
     if (unlikely(!SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL))) {
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
@@ -1456,7 +1456,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
  */
 static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * restrict cb) {
     SelvaModify_HierarchyNode **head;
-    svector_autofree SVector stack;
+    SVECTOR_AUTOFREE(stack);
 
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
@@ -2096,7 +2096,7 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
     SVector *parents;
 
 #if HIERARCHY_SORT_BY_DEPTH
-    svector_autofree SVector parents_d;
+    SVECTOR_AUTOFREE(Sparents_d);
 
     if (unlikely(!SVector_Clone(&parents_d, &node->parents, SVector_HierarchyNode_depth_compare))) {
         return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOMEM);

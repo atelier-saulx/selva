@@ -243,7 +243,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString *id = NULL;
     RedisModuleKey *id_key = NULL;
     struct SelvaObject *obj = NULL;
-    svector_autofree SVector alias_query;
+    SVECTOR_AUTOFREE(alias_query);
     int trigger_created = 0; /* Will be set to 1 if the node was created during this command. */
     int err = REDISMODULE_OK;
 

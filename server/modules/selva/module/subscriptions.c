@@ -775,7 +775,7 @@ void SelvaSubscriptions_ClearAllMarkers(
     const size_t nr_markers = SVector_Size(&metadata->sub_markers.vec);
     struct SVectorIterator it;
     struct Selva_SubscriptionMarker *marker;
-    svector_autofree SVector markers = {0};
+    SVECTOR_AUTOFREE(markers);
 
     if (nr_markers == 0) {
         return;
@@ -1171,7 +1171,7 @@ void Selva_Subscriptions_DeferAliasChangeEvents(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         RedisModuleString *alias_name) {
-    svector_autofree SVector wipe_subs;
+    SVECTOR_AUTOFREE(wipe_subs);
     Selva_NodeId orig_node_id;
     struct SelvaModify_HierarchyMetadata *orig_metadata;
     int err;
