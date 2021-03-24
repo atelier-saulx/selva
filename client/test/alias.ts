@@ -479,6 +479,73 @@ test.serial('set parent by alias', async (t) => {
   await client.destroy()
 })
 
+test.serial('set parent by alias 2', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    type: 'match',
+    title: { en: 'yesh' },
+    aliases: ['snurk'],
+  })
+
+  const result = await client.get({
+    $id: 'root',
+    items: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match',
+          },
+        },
+      },
+    },
+  })
+
+  console.dir(result, { depth: null })
+
+  await client.set({
+    type: 'custom',
+    parents: { $add: [{ $id: match1 }] },
+  })
+
+  const result2 = await client.get({
+    $id: 'root',
+    items: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match',
+          },
+        },
+      },
+    },
+  })
+
+  console.dir(
+    {
+      result2,
+      item: await client.get({
+        $id: match1,
+        $all: true,
+        parents: true,
+        ancestors: true,
+      }),
+    },
+    { depth: null }
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})
+
 test.serial('delete all aliases of a node', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
