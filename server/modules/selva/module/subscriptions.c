@@ -390,8 +390,11 @@ static void clear_marker(struct Selva_SubscriptionMarkers *sub_markers, struct S
 /*
  * Set a marker to a node metadata.
  */
-static int set_node_marker_cb(Selva_NodeId id __unused, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int set_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    struct SelvaModify_HierarchyMetadata *metadata;
     struct Selva_SubscriptionMarker *marker = (struct Selva_SubscriptionMarker *)arg;
+
+    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
@@ -405,8 +408,11 @@ static int set_node_marker_cb(Selva_NodeId id __unused, void *arg, struct SelvaM
     return 0;
 }
 
-static int clear_node_marker_cb(Selva_NodeId id __unused, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int clear_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    struct SelvaModify_HierarchyMetadata *metadata;
     struct Selva_SubscriptionMarker *marker = (struct Selva_SubscriptionMarker*)arg;
+
+    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 

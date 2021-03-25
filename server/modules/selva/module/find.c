@@ -910,10 +910,13 @@ static ssize_t send_node_object_merge(
     return res;
 }
 
-static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
+static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    Selva_NodeId nodeId;
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
+
+    SelvaModify_HierarchyGetNodeId(nodeId, node);
 
     if (take && rpn_ctx) {
         int err;
@@ -985,12 +988,16 @@ static int FindCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify
     return 0;
 }
 
-static int FindInSubCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int FindInSubCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    Selva_NodeId nodeId;
+    struct SelvaModify_HierarchyMetadata *metadata;
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct Selva_SubscriptionMarker *marker = args->marker;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
 
+    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
     Selva_Subscriptions_SetMarker(nodeId, metadata, marker);
 
     if (take && rpn_ctx) {
@@ -1574,7 +1581,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Run the filter for each node.
      */
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        Selva_NodeId nodeId;
+        struct SelvaModify_HierarchyNode *node;
         ssize_t tmp_limit = -1;
         struct FindCommand_Args args = {
             .ctx = ctx,
@@ -1592,8 +1599,10 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             .order_result = &order_result,
         };
 
-        Selva_NodeIdCpy(nodeId, ids_str + i);
-        (void)FindCommand_NodeCb(nodeId, &args, NULL);
+        node = SelvaHierarchy_FindNode(hierarchy, ids_str + i);
+        if (node) {
+            (void)FindCommand_NodeCb(node, &args);
+        }
     }
 
     /*

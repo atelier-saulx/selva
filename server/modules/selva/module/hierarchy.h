@@ -116,7 +116,7 @@ struct SelvaModify_Hierarchy {
  * Called for each node found during a traversal.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
-typedef int (*SelvaModify_HierarchyCallback)(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata);
+typedef int (*SelvaModify_HierarchyCallback)(struct SelvaModify_HierarchyNode *node, void *arg);
 
 struct SelvaModify_HierarchyCallback {
     SelvaModify_HierarchyCallback node_cb;

@@ -89,9 +89,12 @@ static int send_field_value(
     return err;
 }
 
-static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
+static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    Selva_NodeId nodeId;
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     int err;
+
+    SelvaModify_HierarchyGetNodeId(nodeId, node);
 
     /*
      * Check that the node is of an accepted type.

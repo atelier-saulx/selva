@@ -14,9 +14,12 @@ struct send_hierarchy_field_data {
 /*
  * Used for ancestors, children, descendants, parents
  */
-static int send_hierarchy_field_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
+static int send_hierarchy_field_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    Selva_NodeId nodeId;
     struct send_hierarchy_field_data *args = (struct send_hierarchy_field_data *)arg;
     int match = 0;
+
+    SelvaModify_HierarchyGetNodeId(nodeId, node);
 
     /*
      * Some traversal modes must skip the first entry.

@@ -1617,7 +1617,7 @@ static int traverse_ref(
 
         node = SelvaHierarchy_FindNode(hierarchy, nodeId);
         if (node) {
-            cb->node_cb(nodeId, cb->node_arg, &node->metadata);
+            cb->node_cb(node, cb->node_arg);
         }
     }
 
@@ -1632,7 +1632,7 @@ static int traverse_ref(
 static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
     struct SelvaModify_HierarchyCallback *cb = (struct SelvaModify_HierarchyCallback *)arg;
 
-    return cb->node_cb(node->id, cb->node_arg, &node->metadata);
+    return cb->node_cb(node, cb->node_arg);
 }
 
 int SelvaModify_TraverseHierarchy(
@@ -1668,7 +1668,7 @@ int SelvaModify_TraverseHierarchy(
 
     switch (dir) {
     case SELVA_HIERARCHY_TRAVERSAL_NODE:
-        cb->node_cb(head->id, cb->node_arg, &head->metadata);
+        cb->node_cb(head, cb->node_arg);
         err = 0;
         break;
     case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
