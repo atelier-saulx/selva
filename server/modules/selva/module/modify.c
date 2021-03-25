@@ -157,6 +157,7 @@ static int update_hierarchy(
 }
 
 static int update_edge(
+    RedisModuleCtx *ctx,
     SelvaModify_Hierarchy *hierarchy,
     Selva_NodeId node_id,
     const RedisModuleString *field,
@@ -186,14 +187,12 @@ static int update_edge(
             struct SelvaModify_HierarchyNode *dst_node;
             int err;
 
-            dst_node = SelvaHierarchy_FindNode(hierarchy, dst_node_id);
-            //int SelvaModify_UpsertNode(
-            //        RedisModuleCtx *ctx,
-            //        SelvaModify_Hierarchy *hierarchy,
-            //        const Selva_NodeId id,
-            //        SelvaModify_HierarchyNode **out) {
-            if (!dst_node) {
-                /* TODO Should we do something if a node is not found? */
+            err = SelvaHierarchy_UpsertNode(ctx, hierarchy, dst_node_id, &dst_node);
+            if ((err && err != SELVA_MODIFY_HIERARCHY_EEXIST) || !dst_node) {
+                /* TODO Should probably return an error */
+                fprintf(stderr, "%s:%d: Upserting a node failed: %s\n",
+                        __FILE__, __LINE__,
+                        getSelvaErrorStr(err));
                 continue;
             }
 
@@ -225,9 +224,12 @@ static int update_edge(
                 struct SelvaModify_HierarchyNode *dst_node;
                 int err;
 
-                dst_node = SelvaHierarchy_FindNode(hierarchy, setOpts->$add + i);
-                if (!dst_node) {
-                    /* TODO Should we do something if a node is not found? */
+                err = SelvaHierarchy_UpsertNode(ctx, hierarchy, setOpts->$add + i, &dst_node);
+                if ((err && err != SELVA_MODIFY_HIERARCHY_EEXIST) || !dst_node) {
+                    /* TODO Should probably return an error */
+                    fprintf(stderr, "%s:%d: Upserting a node failed: %s\n",
+                            __FILE__, __LINE__,
+                            getSelvaErrorStr(err));
                     continue;
                 }
 
@@ -710,7 +712,7 @@ int SelvaModify_ModifySet(
              * Other graph fields are dynamic and implemented separately
              * from hierarchy.
              */
-            return update_edge(hierarchy, node_id, field, setOpts);
+            return update_edge(ctx, hierarchy, node_id, field, setOpts);
         }
     } else {
         if (setOpts->delete_all) {
