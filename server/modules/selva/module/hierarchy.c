@@ -1121,6 +1121,65 @@ int SelvaModify_SetHierarchyChildren(
     return res;
 }
 
+static int isRdbLoading(RedisModuleCtx *ctx) {
+     return !!(REDISMODULE_CTX_FLAGS_LOADING & RedisModule_GetContextFlags(ctx));
+}
+
+int SelvaHierarchy_UpsertNode(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        SelvaModify_HierarchyNode **out) {
+    SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, id);
+    int isLoading = isRdbLoading(ctx);
+
+    if (node) {
+        if (out) {
+            *out = node;
+        }
+        return SELVA_MODIFY_HIERARCHY_EEXIST;
+    }
+
+    /*
+     * newNode skips some tasks if ctx is set as NULL and it should be set NULL
+     * when loading.
+     */
+     node = newNode(isLoading ? NULL : ctx, id);
+     if (unlikely(!node)) {
+         return SELVA_MODIFY_HIERARCHY_ENOMEM;
+     }
+
+     /*
+      * No need to check if we have event registrations while loading the
+      * database.
+      */
+     if (!isLoading) {
+        SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, id, SELVA_NODE_ID_SIZE);
+     }
+
+     /*
+      * All nodes must be indexed.
+      */
+     if (RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL) {
+         /*
+          * We are being extremely paranoid here as this shouldn't be possible.
+          */
+         SelvaModify_DestroyNode(node);
+
+         return SELVA_MODIFY_HIERARCHY_EEXIST;
+     }
+
+     /*
+      * This node is currently an orphan and it must be marked as such.
+      */
+     mkHead(hierarchy, node);
+
+     if (out) {
+         *out = node;
+     }
+     return 0;
+}
+
 int SelvaModify_AddHierarchy(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -1130,32 +1189,17 @@ int SelvaModify_AddHierarchy(
         size_t nr_children,
         const Selva_NodeId *children) {
     SelvaModify_HierarchyNode *node;
-    int isNewNode = 0;
+    int isNewNode;
     int err, res = 0;
 
-    node = SelvaHierarchy_FindNode(hierarchy, id);
-    if (!node) {
-        node = newNode(ctx, id);
-        if (unlikely(!node)) {
-            return SELVA_MODIFY_HIERARCHY_ENOMEM;
-        }
-
-        SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, id, SELVA_NODE_ID_SIZE);
+    err = SelvaHierarchy_UpsertNode(ctx, hierarchy, id, &node);
+    if (err == SELVA_MODIFY_HIERARCHY_EEXIST) {
+        isNewNode = 0;
+    } else if (err) {
+        return err;
+    } else {
         isNewNode = 1;
-    }
-
-    if (isNewNode) {
-        if (RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL) {
-            SelvaModify_DestroyNode(node);
-
-            return SELVA_MODIFY_HIERARCHY_EEXIST;
-        }
         res++;
-
-        if (nr_parents == 0) {
-            /* This node is orphan */
-            mkHead(hierarchy, node);
-        }
     }
 
     /*
@@ -1559,6 +1603,11 @@ static int bfs_edge(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode 
 
         edge_field = Edge_GetField(node, field_name_str, field_name_len);
         if (!edge_field) {
+#if 0
+            fprintf(stderr, "Edge field %.*s not found in %.*s\n",
+                    (int)field_name_len, field_name_str,
+                    (int)SELVA_NODE_ID_SIZE, node->id);
+#endif
             /* EdgeField not found! */
             continue;
         }
@@ -1871,7 +1920,7 @@ int load_metadata(RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hierarch
 }
 
 void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
-    if (!(encver <= HIERARCHY_ENCODING_VERSION)) {
+    if (encver > HIERARCHY_ENCODING_VERSION) {
         RedisModule_LogIOError(io, "warning", "Unknown selva_hierarchy version");
         return NULL;
     }
@@ -1883,11 +1932,12 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
     while (1) {
         int err;
-        size_t len;
+        size_t len = 0;
         char *node_id __attribute__((cleanup(wrapFree))) = NULL;
 
         node_id = RedisModule_LoadStringBuffer(io, &len);
-        if (len != SELVA_NODE_ID_SIZE) {
+        if (!node_id || len != SELVA_NODE_ID_SIZE) {
+             RedisModule_LogIOError(io, "warning", "Failed to load the next nodeId");
             goto error;
         }
 
@@ -1901,10 +1951,18 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
         /*
          * The node metadata comes right after the node_id.
          */
-        err = load_metadata(io, encver, hierarchy, SelvaHierarchy_FindNode(hierarchy, node_id));
+        SelvaModify_HierarchyNode *node;
+        err = SelvaHierarchy_UpsertNode(RedisModule_GetContextFromIO(io), hierarchy, node_id, &node);
+        if (err && err != SELVA_MODIFY_HIERARCHY_EEXIST) {
+            RedisModule_LogIOError(io, "warning", "Failed to upsert %.*s: %s",
+                                   (int)SELVA_NODE_ID_SIZE, node_id,
+                                   getSelvaErrorStr(err));
+            goto error;
+        }
+        err = load_metadata(io, encver, hierarchy, node);
         if (err) {
             RedisModule_LogIOError(io, "warning", "Failed to load hierarchy metadata");
-            return NULL;
+            goto error;
         }
 
         uint64_t nr_children = RedisModule_LoadUnsigned(io);
@@ -1929,18 +1987,22 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
                 err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
                 if (err < 0) {
                     RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
-                    return NULL;
+                    goto error;
                 }
 
                 memcpy(children + i, child_id, SELVA_NODE_ID_SIZE);
             }
         }
 
-        /* Create the node itself */
+        /*
+         * Insert children of the node.
+         * TODO We could make this faster by skipping the lookup as we already
+         * have a pointer to the node.
+         */
         err = SelvaModify_AddHierarchy(NULL, hierarchy, node_id, 0, NULL, nr_children, children);
         if (err < 0) {
             RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
-            return NULL;
+            goto error;
         }
     }
 

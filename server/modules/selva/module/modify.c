@@ -187,6 +187,11 @@ static int update_edge(
             int err;
 
             dst_node = SelvaHierarchy_FindNode(hierarchy, dst_node_id);
+            //int SelvaModify_UpsertNode(
+            //        RedisModuleCtx *ctx,
+            //        SelvaModify_Hierarchy *hierarchy,
+            //        const Selva_NodeId id,
+            //        SelvaModify_HierarchyNode **out) {
             if (!dst_node) {
                 /* TODO Should we do something if a node is not found? */
                 continue;

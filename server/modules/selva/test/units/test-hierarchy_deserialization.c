@@ -8,6 +8,7 @@
 
 void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver);
 
+extern int redis_mock_ctx_flags;
 extern void (*RedisModule_SaveUnsigned)(RedisModuleIO *io, uint64_t value);
 extern uint64_t (*RedisModule_LoadUnsigned)(RedisModuleIO *io);
 extern void (*RedisModule_SaveSigned)(RedisModuleIO *io, int64_t value);
@@ -19,12 +20,15 @@ extern double (*RedisModule_LoadDouble)(RedisModuleIO *io);
 
 static void setup(void)
 {
+    redis_mock_ctx_flags = REDISMODULE_CTX_FLAGS_LOADING;
     io = RedisRdb_NewIo();
 }
 
 static void teardown(void)
 {
-    SelvaModify_DestroyHierarchy(hierarchy);
+    if (hierarchy) {
+        SelvaModify_DestroyHierarchy(hierarchy);
+    }
     hierarchy = NULL;
 
     free(findRes);
@@ -38,13 +42,14 @@ static char * test_deserialize_one_node(void)
 {
     int n;
 
-    /* A | 0 */
+    /* A | 0 | 0 */
     RedisModule_SaveStringBuffer(io, "grphnode_a", SELVA_NODE_ID_SIZE);
-    RedisModule_SaveUnsigned(io, 0);
+    RedisModule_SaveUnsigned(io, 0); // meta
+    RedisModule_SaveUnsigned(io, 0); // Number of children
     /* EOF */
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE);
 
-    hierarchy = HierarchyTypeRDBLoad(io, 0);
+    hierarchy = HierarchyTypeRDBLoad(io, HIERARCHY_ENCODING_VERSION);
     pu_assert("a hierarchy was returned", hierarchy);
 
     n = SelvaModify_GetHierarchyHeads(hierarchy, &findRes);
@@ -68,15 +73,17 @@ static char * test_deserialize_two_nodes(void)
 
     /* A | 1 | B */
     RedisModule_SaveStringBuffer(io, "grphnode_a", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 1);
     RedisModule_SaveStringBuffer(io, "grphnode_b", SELVA_NODE_ID_SIZE);
     /* B | 0 */
     RedisModule_SaveStringBuffer(io, "grphnode_b", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 0);
     /* EOF */
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE);
 
-    hierarchy = HierarchyTypeRDBLoad(io, 0);
+    hierarchy = HierarchyTypeRDBLoad(io, HIERARCHY_ENCODING_VERSION);
     pu_assert("a hierarchy was returned", hierarchy);
 
     /* Assert heads */
@@ -123,28 +130,33 @@ static char * test_deserialize_cyclic_hierarchy(void)
 
     /* E | 2 | A | B */
     RedisModule_SaveStringBuffer(io, "grphnode_e", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 2);
     RedisModule_SaveStringBuffer(io, "grphnode_a", SELVA_NODE_ID_SIZE);
     RedisModule_SaveStringBuffer(io, "grphnode_b", SELVA_NODE_ID_SIZE);
     /* A | 1 | C */
     RedisModule_SaveStringBuffer(io, "grphnode_a", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 1);
     RedisModule_SaveStringBuffer(io, "grphnode_c", SELVA_NODE_ID_SIZE);
     /* C | 0 */
     RedisModule_SaveStringBuffer(io, "grphnode_c", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 0);
     /* B | 2 | C | D */
     RedisModule_SaveStringBuffer(io, "grphnode_b", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 2);
     RedisModule_SaveStringBuffer(io, "grphnode_c", SELVA_NODE_ID_SIZE);
     RedisModule_SaveStringBuffer(io, "grphnode_d", SELVA_NODE_ID_SIZE);
     /* D | 0 */
     RedisModule_SaveStringBuffer(io, "grphnode_d", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 0);
     /* EOF */
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE);
 
-    hierarchy = HierarchyTypeRDBLoad(io, 0);
+    hierarchy = HierarchyTypeRDBLoad(io, HIERARCHY_ENCODING_VERSION);
     pu_assert("a hierarchy was returned", hierarchy);
 
 
@@ -195,23 +207,27 @@ static char * test_deserialize_multi_head(void)
 
     /* A | 1 | C */
     RedisModule_SaveStringBuffer(io, "grphnode_a", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 1);
     RedisModule_SaveStringBuffer(io, "grphnode_c", SELVA_NODE_ID_SIZE);
     /* C | 0 */
     RedisModule_SaveStringBuffer(io, "grphnode_c", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 0);
     /* B | 2 | C | D */
     RedisModule_SaveStringBuffer(io, "grphnode_b", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 2);
     RedisModule_SaveStringBuffer(io, "grphnode_c", SELVA_NODE_ID_SIZE);
     RedisModule_SaveStringBuffer(io, "grphnode_d", SELVA_NODE_ID_SIZE);
     /* D | 0 */
     RedisModule_SaveStringBuffer(io, "grphnode_d", SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, 0); // meta
     RedisModule_SaveUnsigned(io, 0);
     /* EOF */
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE);
 
-    hierarchy = HierarchyTypeRDBLoad(io, 0);
+    hierarchy = HierarchyTypeRDBLoad(io, HIERARCHY_ENCODING_VERSION);
     pu_assert("a hierarchy was returned", hierarchy);
 
 

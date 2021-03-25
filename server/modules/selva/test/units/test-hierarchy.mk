@@ -1,5 +1,5 @@
 TEST_SRC += test-hierarchy.c
-SRC-hierarchy += ../redis-alloc.c ../hierarchy-utils.c ../rpn-mock.c ../subscriptions-mock.c ../errors-mock.c
+SRC-hierarchy += ../redis-alloc.c ../hierarchy-utils.c ../redis-rdb.c ../rpn-mock.c ../edge-mock.c ../subscriptions-mock.c ../errors-mock.c
 SRC-hierarchy += ../../module/alias.c
 SRC-hierarchy += ../../module/errors.c
 SRC-hierarchy += ../../module/hierarchy.c

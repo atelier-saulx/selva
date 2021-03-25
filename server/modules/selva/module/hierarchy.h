@@ -199,6 +199,12 @@ int SelvaModify_SetHierarchyChildren(
         size_t nr_children,
         const Selva_NodeId *children);
 
+int SelvaHierarchy_UpsertNode(
+        struct RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        struct SelvaModify_HierarchyNode **out);
+
 /**
  * Add new relationships relative to other existing nodes.
  * The function is nondestructive; previously existing edges to and from other

@@ -12,8 +12,8 @@ is written marking the end of the serialized hierarchy.
 The final serialization result looks like this:
 
 ```
-NODE_ID1 | NR_CHILDREN | CHILD_ID_0,..
-NODE_ID2 | NR_CHILDREN | ...
+NODE_ID1 | NODE_METADATA | NR_CHILDREN | CHILD_ID_0,..
+NODE_ID2 | NODE_METADATA | NR_CHILDREN | ...
 HIERARCHY_RDB_EOF
 ```
 

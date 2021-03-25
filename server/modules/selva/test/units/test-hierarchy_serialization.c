@@ -7,6 +7,7 @@
 #include "../redis-rdb.h"
 #include "../hierarchy-utils.h"
 
+extern int redis_mock_ctx_flags;
 void HierarchyTypeRDBSave(RedisModuleIO *io, void *value);
 
 static char str_buf[120];
@@ -46,11 +47,21 @@ static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nr
         return NULL;
     }
 
+    /*
+     * Assert metadata: Edge
+     */
     ioNode = ioNode->next;
-
     snprintf(msg_buf, msg_size, "the chain continues");
     pu_assert(str_buf, ioNode);
+    snprintf(msg_buf, msg_size, "nr of edges is set to 0");
+    pu_assert_equal(str_buf, ioNode->uint64_val, 0);
 
+    /*
+     * Asssert children
+     */
+    ioNode = ioNode->next;
+    snprintf(msg_buf, msg_size, "the chain continues");
+    pu_assert(str_buf, ioNode);
     snprintf(msg_buf, msg_size, "the correct number of children is set");
     pu_assert_equal(str_buf, ioNode->uint64_val, nrChildren);
 
@@ -75,6 +86,7 @@ static char * assert_node(size_t index, const Selva_NodeId expectedId, size_t nr
 
 static void setup(void)
 {
+    redis_mock_ctx_flags = REDISMODULE_CTX_FLAGS_LOADING;
     hierarchy = SelvaModify_NewHierarchy(NULL);
     io = RedisRdb_NewIo();
 }
@@ -98,15 +110,18 @@ static char * test_serialize_one_node(void)
     SelvaModify_SetHierarchy(NULL, hierarchy, id, 0, NULL, 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
+#if 0
+    RedisRdb_Print(io);
+#endif
 
-    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 5);
+    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 7);
 
     res = assert_node(0, id, 0, NULL);
     if (res) {
         return res;
     }
 
-    res = assert_node(4, HIERARCHY_RDB_EOF, 0, NULL);
+    res = assert_node(6, HIERARCHY_RDB_EOF, 0, NULL);
     if (res) {
         return res;
     }
@@ -121,20 +136,23 @@ static char * test_serialize_two_nodes(void)
     SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
+#if 0
+    RedisRdb_Print(io);
+#endif
 
-    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 8);
+    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 11);
 
     res = assert_node(0, "grphnode_a", 1, ((Selva_NodeId []){ "grphnode_b" }));
     if (res) {
         return res;
     }
 
-    res = assert_node(3, "grphnode_b", 0, NULL);
+    res = assert_node(4, "grphnode_b", 0, NULL);
     if (res) {
         return res;
     }
 
-    res = assert_node(7, HIERARCHY_RDB_EOF, 0, NULL);
+    res = assert_node(10, HIERARCHY_RDB_EOF, 0, NULL);
     if (res) {
         return res;
     }
@@ -156,25 +174,28 @@ static char * test_serialize_acyclic_1(void)
     SelvaModify_AddHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
+#if 0
+    RedisRdb_Print(io);
+#endif
 
-    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 12);
+    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 16);
 
     res = assert_node(0, "grphnode_a", 2, ((Selva_NodeId []){ "grphnode_b", "grphnode_c" }));
     if (res) {
         return res;
     }
 
-    res = assert_node(6, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_c"}));
+    res = assert_node(8, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_c"}));
     if (res) {
         return res;
     }
 
-    res = assert_node(4, "grphnode_c", 0, NULL);
+    res = assert_node(5, "grphnode_c", 0, NULL);
     if (res) {
         return res;
     }
 
-    res = assert_node(11, HIERARCHY_RDB_EOF, 0, NULL);
+    res = assert_node(15, HIERARCHY_RDB_EOF, 0, NULL);
     if (res) {
         return res;
     }
@@ -197,30 +218,33 @@ static char * test_serialize_acyclic_2(void)
     SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
 
     HierarchyTypeRDBSave(io, hierarchy);
+#if 0
+    RedisRdb_Print(io);
+#endif
 
-    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 14);
+    pu_assert_equal("the expected next item pointers are set", RedisRdb_CountIo(io), 19);
 
     res = assert_node(0, "grphnode_a", 1, ((Selva_NodeId []){ "grphnode_c" }));
     if (res) {
         return res;
     }
 
-    res = assert_node(3, "grphnode_c", 0, NULL);
+    res = assert_node(4, "grphnode_c", 0, NULL);
     if (res) {
         return res;
     }
 
-    res = assert_node(5, "grphnode_b", 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }));
+    res = assert_node(7, "grphnode_b", 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }));
     if (res) {
         return res;
     }
 
-    res = assert_node(9, "grphnode_d", 0, NULL);
+    res = assert_node(12, "grphnode_d", 0, NULL);
     if (res) {
         return res;
     }
 
-    res = assert_node(13, HIERARCHY_RDB_EOF, 0, NULL);
+    res = assert_node(18, HIERARCHY_RDB_EOF, 0, NULL);
     if (res) {
         return res;
     }
