@@ -17,6 +17,7 @@
     "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist && rm -rf diff/node_modules diff/dist",
     "test": "cd client && yarn test",
     "build-c": "cd ./server/modules/selva && make && cp module.so ../binaries/darwin_x64/selva.so",
+    "build-cx": "cd ./server/modules/selva && ./build.sh",
     "build": "yarn buildAstParser && yarn buildDiff && yarn buildClient && yarn buildServer && yarn buildDiff && yarn buildApi",
     "buildClient": "cd client && yarn buildLua && yarn build",
     "buildDiff": "cd diff && yarn build",
