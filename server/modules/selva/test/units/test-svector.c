@@ -49,7 +49,6 @@ static char * test_init_works_huge(void)
 
     pu_assert_ptr_equal("the vector is returned", vecP, &vec);
     pu_assert_ptr_equal("compar is set", vec.vec_compar, compar);
-    pu_assert_equal("length is correct", vec.vec_arr_len, 1000);
     pu_assert_equal("last is zeroed", vec.vec_last, 0);
     pu_assert_equal("mode is set correctly", SVector_Mode(&vec), SVECTOR_MODE_RBTREE);
 
@@ -381,10 +380,10 @@ static char * test_search_index_unordered(void)
         SVector_Insert(&vec, &el[i]);
     }
 
-    const size_t i = SVector_SearchIndex(&vec, &el[3]);
+    const ssize_t i = SVector_SearchIndex(&vec, &el[3]);
     pu_assert_equal("found it", i, 3);
 
-    const size_t i1 = SVector_SearchIndex(&vec, &(struct data){ 15 });
+    const ssize_t i1 = SVector_SearchIndex(&vec, &(struct data){ 15 });
     pu_assert_equal("not found", i1, -1);
 
     return NULL;
@@ -400,13 +399,13 @@ static char * test_search_index_ordered(void)
         SVector_Insert(&vec, &el[i]);
     }
 
-    const size_t i = SVector_SearchIndex(&vec, &el[3]);
+    const ssize_t i = SVector_SearchIndex(&vec, &el[3]);
     pu_assert_equal("found it", i, 7);
 
-    const size_t i1 = SVector_SearchIndex(&vec, &(struct data){ 5 });
+    const ssize_t i1 = SVector_SearchIndex(&vec, &(struct data){ 5 });
     pu_assert_equal("found", i1, 2);
 
-    const size_t i2 = SVector_SearchIndex(&vec, &(struct data){ 16 });
+    const ssize_t i2 = SVector_SearchIndex(&vec, &(struct data){ 16 });
     pu_assert_equal("not found", i2, -1);
 
     return NULL;
@@ -697,6 +696,7 @@ static char * test_sizeof_ctrl(void)
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
+    pu_def_test(test_init_works_huge, PU_RUN);
     pu_def_test(test_init_lazy_alloc, PU_RUN);
     pu_def_test(test_can_destroy, PU_RUN);
     pu_def_test(test_insert_one, PU_RUN);
