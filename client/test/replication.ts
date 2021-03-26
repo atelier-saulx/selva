@@ -128,27 +128,27 @@ test.serial('verify basic replication', async (t) => {
   )
 })
 
-test.serial.only('hierarchy replication', async (t) => {
-  //console.log('ergergeg');
+test.serial('hierarchy replication', async (t) => {
   //await new Promise((resolve, _reject) => {
   //  setTimeout(resolve, 30000)
   //})
-  await Promise.all([
-    new Promise((resolve, reject) =>
-      rclientOrigin.send_command(
-        'selva.modify',
-        ['grphnode_a', '', '0', 'title.en', 'lol'],
-        (err, res) => (err ? reject(err) : resolve(res))
-      )
-    ),
-    new Promise((resolve, reject) =>
-      rclientOrigin.send_command(
-        'selva.modify',
-        ['grphnode_b', '', '0', 'title.en', 'lol'],
-        (err, res) => (err ? reject(err) : resolve(res))
-      )
-    ),
-  ])
+  t.deepEqual(await Promise.all([
+      new Promise((resolve, reject) =>
+        rclientOrigin.send_command(
+          'selva.modify',
+          ['grphnode_a', '', '0', 'title.en', 'lol'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      new Promise((resolve, reject) =>
+        rclientOrigin.send_command(
+          'selva.modify',
+          ['grphnode_b', '', '0', 'title.en', 'lol'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+    ]),
+    [['grphnode_a', 'UPDATED'], ['grphnode_b', 'UPDATED']])
   await wait(20)
   t.deepEqual(
     await new Promise((resolve, reject) =>
