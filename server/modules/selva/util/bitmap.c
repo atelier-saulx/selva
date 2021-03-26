@@ -31,13 +31,14 @@
  */
 
 #include <nmmintrin.h>
+#include <stddef.h>
 #include <string.h>
 #include "bitmap.h"
 
 #define SIZEOF_BITMAP_T (8 * sizeof(bitmap_t))
 
-#define BIT2WORDI(i)    ((i - (i & (SIZEOF_BITMAP_T - 1))) / SIZEOF_BITMAP_T)
-#define BIT2WBITOFF(i)  (i & (SIZEOF_BITMAP_T - 1))
+#define BIT2WORDI(i)    ((i - (i & (SIZEOF_BITMAP_T - (size_t)1))) / SIZEOF_BITMAP_T)
+#define BIT2WBITOFF(i)  (i & (SIZEOF_BITMAP_T - (size_t)1))
 #define BITMAP_SIZE(n) (BITMAP_ALLOC_SIZE(n) - sizeof(struct bitmap))
 
 int bitmap_get(const struct bitmap *bitmap, size_t pos) {
