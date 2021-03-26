@@ -3,7 +3,7 @@
 #include "edge.h"
 #include "redismodule.h"
 
-struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *node, const char *key_name_str, size_t key_name_len) {
+struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *node __unused, const char *key_name_str __unused, size_t key_name_len __unused) {
     return NULL;
 }
 

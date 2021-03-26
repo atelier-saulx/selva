@@ -20,7 +20,7 @@ SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata);
 /* GCC needs something to be stored in the set. */
 static void deinit_node_metadata(
         Selva_NodeId id __unused,
-        struct SelvaModify_HierarchyMetadata *metadata) {
+        struct SelvaModify_HierarchyMetadata *metadata __unused) {
 }
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata);
 
