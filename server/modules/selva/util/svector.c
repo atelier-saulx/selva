@@ -181,7 +181,7 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
 
 void SVector_Insert(SVector *vec, void *el) {
     if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
-        (vec->vec_last + 1) - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
+        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
         vec->vec_compar) {
         migrate_arr_to_rbtree(vec);
     }
