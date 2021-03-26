@@ -603,7 +603,7 @@ void SVector_Clear(SVector * restrict vec) {
     }
 }
 
-static void *SVector_EmptyForeach(struct SVectorIterator *it) {
+static void *SVector_EmptyForeach(struct SVectorIterator *it __unused) {
     return NULL;
 }
 
