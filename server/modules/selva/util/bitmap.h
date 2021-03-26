@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "cdefs.h"
 
 #if __SIZEOF_INT128__ != 16
 #error The compiler and architecture must have Tetra-Integer support
@@ -24,7 +25,7 @@ struct bitmap {
 /**
  * Byte size of a bitmap struct passable to a malloc()-like function.
  */
-#define BITMAP_ALLOC_SIZE(nbits) (sizeof(struct bitmap) + CEILING((nbits) / 8, sizeof(bitmap_t)) * sizeof(bitmap_t))
+#define BITMAP_ALLOC_SIZE(nbits) (sizeof(struct bitmap) + CEILING(max((nbits), 8) / 8, sizeof(bitmap_t)) * sizeof(bitmap_t))
 
 /**
  * Get the status of a bit in a bitmap pointed by bitmap.

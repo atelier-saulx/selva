@@ -60,7 +60,7 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
      * TODO REDISMODULE_CTX_FLAGS_REPLICATED would be more appropriate here but it's
      * unclear whether it's available only in newer server versions.
      */
-    if (RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE || count == 0) {
+    if ((RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE) || count == 0) {
         return; /* Skip. */
     }
 
@@ -96,6 +96,17 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
         }
         i_arg_type += 3;
     }
+
+#if 0
+    fprintf(stderr, "%s:%d: Replicating: ", __FILE__, __LINE__);
+    for (int i = 0; i < argc; i++) {
+        RedisModuleString *arg = argv[i];
+        TO_STR(arg);
+
+        fwrite(arg_str, sizeof(char), arg_len, stderr);
+        fputc(' ', stderr);
+    }
+#endif
 
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
 }
