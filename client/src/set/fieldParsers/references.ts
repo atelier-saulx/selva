@@ -127,7 +127,10 @@ const toCArr = async (
       const id = await client.set(obj)
       ids.push(id)
     } else if (obj.type) {
-      const id = await client.id({ type: obj.type })
+      const id = await client.id({
+        type: obj.type,
+        db: obj.$db || result.$db || 'default',
+      })
       obj.$id = id
       ids.push(id)
 

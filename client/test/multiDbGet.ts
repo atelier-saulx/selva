@@ -79,6 +79,25 @@ test.before(async (t) => {
             },
           },
         },
+        typeyType: {
+          prefix: 'tt',
+          fields: {
+            value: { type: 'number', search: true },
+            age: { type: 'number' },
+            auth: {
+              type: 'json',
+            },
+            title: { type: 'text' },
+            description: { type: 'text' },
+            image: {
+              type: 'object',
+              properties: {
+                thumb: { type: 'string' },
+                poster: { type: 'string' },
+              },
+            },
+          },
+        },
       },
     },
     'users'
@@ -123,6 +142,39 @@ test.serial('get - multi db', async (t) => {
       },
     ],
   })
+
+  await client.set({
+    $db: 'users',
+    $id: 'us1',
+    children: {
+      $add: [
+        {
+          type: 'typeyType',
+          title: { en: 'something nice' },
+        },
+      ],
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $db: 'users',
+      $id: 'us1',
+      children: {
+        title: true,
+        $list: true,
+      },
+    }),
+    {
+      children: [
+        {
+          title: {
+            en: 'something nice',
+          },
+        },
+      ],
+    }
+  )
 
   const x = {
     component: {
