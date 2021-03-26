@@ -1420,7 +1420,8 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         nr_nodes = FindCommand_PrintOrderedResult(ctx, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
     }
 
-    RedisModule_ReplySetArrayLength(ctx, (merge_strategy == MERGE_STRATEGY_NONE) ? nr_nodes : merge_nr_fields);
+    /* nr_nodes is never negative at this point so we can safely cast it. */
+    RedisModule_ReplySetArrayLength(ctx, (merge_strategy == MERGE_STRATEGY_NONE) ? (size_t)nr_nodes : merge_nr_fields);
 
 out:
     if (rpn_ctx) {
