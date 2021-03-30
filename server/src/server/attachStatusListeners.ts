@@ -18,7 +18,6 @@ const initHierarchy = (
         return server.selvaClient.redis.script(
           info,
           'LOAD',
-          'update-schema',
           SCRIPTS['update-schema'].content
         )
       })

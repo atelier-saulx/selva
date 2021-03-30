@@ -2,6 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
 
+console.log('BUILDING SCRIPT SHAs')
 const script = fs.readFileSync(
   path.join(__dirname, '..', 'client', 'dist', 'lua', 'update-schema.lua')
 )
@@ -9,7 +10,7 @@ const script = fs.readFileSync(
 const shasum = crypto.createHash('sha1')
 shasum.update(script)
 const sha = shasum.digest().toString('hex')
-console.log(sha)
+console.log('SHA', sha)
 
 const content = fs.readFileSync(
   path.join(__dirname, '..', 'client', 'src', 'connection', 'scripts.ts'),
@@ -25,6 +26,7 @@ const keys = `  'update-schema': '${sha}',\n`
 const transformed =
   content.slice(0, startIdx) + keys + content.slice(endIdx, content.length)
 
+console.log('generated file')
 console.log(transformed)
 fs.writeFileSync(
   path.join(__dirname, '..', 'client', 'src', 'connection', 'scripts.ts'),
