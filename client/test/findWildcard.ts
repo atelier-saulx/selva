@@ -213,3 +213,63 @@ test.serial('find - with wildcard', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('find - nothing found with a wildcard', async (t) => {
+  // simple nested - single query
+  const client = connect({ port: port }, { loglevel: 'info' })
+  await client.set({
+    type: 'match',
+    name: 'match 1',
+    value: 1,
+    record: { },
+  })
+
+  await client.set({
+    type: 'match',
+    name: 'match 2',
+    value: 2,
+    record: { },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        record: {
+          '*': {
+            a: true,
+            b: true,
+          },
+        },
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      id: 'root',
+      items: [
+        {
+          name: 'match 1',
+        },
+        {
+          name: 'match 2',
+        },
+      ],
+    }
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})

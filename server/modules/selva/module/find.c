@@ -496,6 +496,12 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
                 } else if (!strcmp(field_str, "children")) {
                     RedisModule_ReplyWithString(ctx, field);
                     err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
+                    if (err) {
+                        fprintf(stderr, "%s:%d: Sending the children field of %.*s failed: %s\n",
+                                __FILE__, __LINE__,
+                                (int)SELVA_NODE_ID_SIZE, nodeId,
+                                getSelvaErrorStr(err));
+                    }
 
                     nr_fields++;
                     break;
@@ -509,6 +515,12 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
                 } else if (!strcmp(field_str, "parents")) {
                     RedisModule_ReplyWithString(ctx, field);
                     err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
+                    if (err) {
+                        fprintf(stderr, "%s:%d: Sending the parents field of %.*s failed: %s\n",
+                                __FILE__, __LINE__,
+                                (int)SELVA_NODE_ID_SIZE, nodeId,
+                                getSelvaErrorStr(err));
+                    }
 
                     nr_fields++;
                     break;
@@ -517,6 +529,13 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
                 if (strstr(field_str, ".*.")) {
                     long resp_count = 0;
                     err = SelvaObject_GetWithWildcardStr(ctx, obj, field_str, field_len, &resp_count, -1, 0);
+                    if (err && err != SELVA_ENOENT) {
+                        fprintf(stderr, "%s:%d Sending wildcard field %.*s of %.*s failed: %s\n",
+                                __FILE__, __LINE__,
+                                (int)field_len, field_str,
+                                (int)SELVA_NODE_ID_SIZE, nodeId,
+                                getSelvaErrorStr(err));
+                    }
 
                     nr_fields += resp_count / 2;
                     break;
