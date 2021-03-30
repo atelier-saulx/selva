@@ -67,6 +67,7 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
   initHierarchy(server, info)
     .catch((e) => console.error('ERROR initializing hierarchy', e))
     .finally(() => {
+      console.log('Hierarchy initialized and lua scripts loaded')
       attachListener(server, info)
     })
 }
