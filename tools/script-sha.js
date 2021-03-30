@@ -17,11 +17,11 @@ const content = fs.readFileSync(
 )
 
 const START_STR = '/* <BEGIN_INSERT_SCRIPTS */\n'
-const END_STR = '  /* <END_INSERT_SCRIPTS */'
+const END_STR = '  /* <END_INSERT_SCRIPTS */\n'
 const startIdx = content.indexOf(START_STR) + START_STR.length
-const endIdx = content.indexOf('  /* <END_INSERT_SCRIPTS */\n')
+const endIdx = content.indexOf(END_STR)
 
-const keys = `  'update-schema': '${sha}'\n`
+const keys = `  'update-schema': '${sha}',\n`
 const transformed =
   content.slice(0, startIdx) + keys + content.slice(endIdx, content.length)
 
