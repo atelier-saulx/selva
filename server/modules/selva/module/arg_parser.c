@@ -126,7 +126,9 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
         do {
             RedisModuleString *key;
             const char *next;
+#if 0
             size_t len;
+#endif
 
             /*
              * Find the separator between the current and the next field name list.
@@ -135,7 +137,14 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
             while (*next != '\0' && *next != '\n') {
                 next++;
             }
+            /*
+             * len could be used for splitting in the do..while loop
+             * but we are currently looking for the separator chars
+             * there.
+             */
+#if 0
             len = (size_t)((ptrdiff_t)next - (ptrdiff_t)cur);
+#endif
 
             /*
              * Create the strings

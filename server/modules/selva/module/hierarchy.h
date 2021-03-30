@@ -5,9 +5,9 @@
 #include "linker_set.h"
 #include "selva.h"
 #include "svector.h"
-#include "subscriptions.h"
 #include "tree.h"
 #include "trx.h"
+#include "subscriptions.h"
 
 /**
  * Default Redis key name for Selva hierarchy.
@@ -16,6 +16,7 @@
 
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
+struct SelvaModify_HierarchyNode;
 
 /* Forward declarations for metadata */
 /* ... */
@@ -27,7 +28,7 @@ typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
  * declared structures.
  */
 struct SelvaModify_HierarchyMetadata {
-    /*
+    /**
      * Subscription markers.
      */
     struct Selva_SubscriptionMarkers sub_markers;
@@ -115,7 +116,7 @@ struct SelvaModify_Hierarchy {
  * Called for each node found during a traversal.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
-typedef int (*SelvaModify_HierarchyCallback)(Selva_NodeId id, void *arg, struct SelvaModify_HierarchyMetadata *metadata);
+typedef int (*SelvaModify_HierarchyCallback)(struct SelvaModify_HierarchyNode *node, void *arg);
 
 struct SelvaModify_HierarchyCallback {
     SelvaModify_HierarchyCallback node_cb;
@@ -142,6 +143,9 @@ SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, str
 
 int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
 
+void SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node);
+
+struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
 struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadata(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id);
@@ -198,7 +202,8 @@ int SelvaModify_SetHierarchyChildren(
 
 /**
  * Add new relationships relative to other existing nodes.
- * Previously existing connections to and from other nodes are be preserved.
+ * The function is nondestructive; previously existing edges to and from other
+ * nodes and metadata are be preserved.
  * If a node with id doesn't exist it will be created.
  * @param ctx If NULL then no events are sent.
  * @param parents   Sets these nodes as parents to this node,
@@ -238,6 +243,13 @@ int SelvaModify_DelHierarchyNode(
         struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id);
+
+/**
+ * Get an opaque pointer to a hierarchy node.
+ * Do not use this function unless you absolutely need it as the safest and
+ * better supporter way to refer to hierarchy nodes is by using nodeId.
+ */
+struct SelvaModify_HierarchyNode *SelvaHierarchy_FindNode(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
 
 /**
  * Get orphan head nodes of the given hierarchy.

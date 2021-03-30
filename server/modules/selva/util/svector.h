@@ -117,6 +117,7 @@ static inline void *SVector_Foreach(struct SVectorIterator *it) {
     return it->fn(it);
 }
 
-#define svector_autofree __attribute__((cleanup(SVector_Destroy)))
+#define SVECTOR_AUTOFREE(name) \
+    __attribute__((cleanup(SVector_Destroy))) SVector name = { 0 }
 
 #endif /* _UTIL_SVECTOR_H_ */

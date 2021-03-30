@@ -390,8 +390,11 @@ static void clear_marker(struct Selva_SubscriptionMarkers *sub_markers, struct S
 /*
  * Set a marker to a node metadata.
  */
-static int set_node_marker_cb(Selva_NodeId id __unused, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int set_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    struct SelvaModify_HierarchyMetadata *metadata;
     struct Selva_SubscriptionMarker *marker = (struct Selva_SubscriptionMarker *)arg;
+
+    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
@@ -405,8 +408,11 @@ static int set_node_marker_cb(Selva_NodeId id __unused, void *arg, struct SelvaM
     return 0;
 }
 
-static int clear_node_marker_cb(Selva_NodeId id __unused, void *arg, struct SelvaModify_HierarchyMetadata *metadata) {
+static int clear_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    struct SelvaModify_HierarchyMetadata *metadata;
     struct Selva_SubscriptionMarker *marker = (struct Selva_SubscriptionMarker*)arg;
+
+    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
@@ -775,7 +781,7 @@ void SelvaSubscriptions_ClearAllMarkers(
     const size_t nr_markers = SVector_Size(&metadata->sub_markers.vec);
     struct SVectorIterator it;
     struct Selva_SubscriptionMarker *marker;
-    svector_autofree SVector markers = {0};
+    SVECTOR_AUTOFREE(markers);
 
     if (nr_markers == 0) {
         return;
@@ -1171,7 +1177,7 @@ void Selva_Subscriptions_DeferAliasChangeEvents(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         RedisModuleString *alias_name) {
-    svector_autofree SVector wipe_subs;
+    SVECTOR_AUTOFREE(wipe_subs);
     Selva_NodeId orig_node_id;
     struct SelvaModify_HierarchyMetadata *orig_metadata;
     int err;

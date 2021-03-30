@@ -8,6 +8,7 @@ SRC-hierarchy += ../../module/selva_object.c
 SRC-hierarchy += ../../module/selva_set.c
 SRC-hierarchy += ../../rmutil/sds.c
 SRC-hierarchy += ../../util/cstrings.c
+SRC-hierarchy += ../../util/strnstr.c
 SRC-hierarchy += ../../util/mempool.c
 SRC-hierarchy += ../../util/svector.c
 SRC-hierarchy += ../../util/trx.c

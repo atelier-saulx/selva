@@ -54,9 +54,9 @@ export class SelvaServer extends EventEmitter {
       // console.error(err)
     })
 
-    beforeExit.do(() => {
-      return this.destroy()
-    })
+    // beforeExit.do(() => {
+    //   return this.destroy()
+    // })
   }
 
   async start(opts: ServerOptions) {
@@ -195,24 +195,29 @@ export class SelvaServer extends EventEmitter {
 function addSignalHandlers(server: SelvaServer): void {
   process.on('SIGINT', () => {
     console.log('Got SIGINT, closing redis server')
-    server.pm.destroy('SIGINT')
+    if (server.pm) {
+      server.pm.destroy('SIGINT')
+    }
 
     setTimeout(() => {
       console.log('Exiting after graceful shutdown')
       process.exit(0)
-    }, 500).unref()
+    }, 1e3 * 4).unref()
   })
   process.on('SIGTERM', () => {
     console.log('Got SIGTERM, closing redis server')
-    server.pm.destroy('SIGTERM')
+    if (server.pm) {
+      server.pm.destroy('SIGTERM')
+    }
 
     setTimeout(() => {
       console.log('Exiting after graceful shutdown')
       process.exit(0)
-    }, 500).unref()
+    }, 1e3 * 4).unref()
   })
   process.on('exit', (code) => {
     console.log('Process exiting with code', code)
+    server.destroy()
     process.exit(0)
   })
 }

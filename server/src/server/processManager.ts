@@ -98,6 +98,20 @@ export default class ProcessManager extends EventEmitter {
     }
   }
 
+  private addLogListeners() {
+    if (!this.childProcess) {
+      return
+    }
+
+    this.childProcess.stdout.on('data', (d) => {
+      this.emit('stdout', d.toString())
+    })
+
+    this.childProcess.stderr.on('data', (d) => {
+      this.emit('stderr', d.toString())
+    })
+  }
+
   start() {
     if (this.childProcess) {
       return
@@ -108,14 +122,7 @@ export default class ProcessManager extends EventEmitter {
     })
 
     this.pid = this.childProcess.pid
-
-    this.childProcess.stdout.on('data', (d) => {
-      this.emit('stdout', d.toString())
-    })
-
-    this.childProcess.stderr.on('data', (d) => {
-      this.emit('stderr', d.toString())
-    })
+    this.addLogListeners()
 
     const exitHandler = (code: number, signal: string) => {
       this.emit(
@@ -200,6 +207,8 @@ export default class ProcessManager extends EventEmitter {
 
     if (this.childProcess) {
       this.childProcess.removeAllListeners()
+      // re-attach log listeners so we know how the shutdown is going
+      this.addLogListeners()
       this.removeAllListeners() // yesh?
       const cp = this.childProcess
       this.childProcess = undefined
@@ -208,10 +217,10 @@ export default class ProcessManager extends EventEmitter {
         const ok = cp.kill('SIGKILL')
         if (ok) {
           console.info(
-            `Child process for ${this.command} didn't terminate within 10 seconds. Sending SIGKILL.`
+            `Child process for ${this.command} didn't terminate within 3 seconds. Sending SIGKILL.`
           )
         }
-      }, 1000 * 10)
+      }, 1000 * 3)
     }
   }
 }

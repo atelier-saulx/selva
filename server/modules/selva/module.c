@@ -60,7 +60,7 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
      * TODO REDISMODULE_CTX_FLAGS_REPLICATED would be more appropriate here but it's
      * unclear whether it's available only in newer server versions.
      */
-    if (RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE || count == 0) {
+    if ((RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE) || count == 0) {
         return; /* Skip. */
     }
 
@@ -96,6 +96,17 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
         }
         i_arg_type += 3;
     }
+
+#if 0
+    fprintf(stderr, "%s:%d: Replicating: ", __FILE__, __LINE__);
+    for (int i = 0; i < argc; i++) {
+        RedisModuleString *arg = argv[i];
+        TO_STR(arg);
+
+        fwrite(arg_str, sizeof(char), arg_len, stderr);
+        fputc(' ', stderr);
+    }
+#endif
 
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
 }
@@ -243,7 +254,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString *id = NULL;
     RedisModuleKey *id_key = NULL;
     struct SelvaObject *obj = NULL;
-    svector_autofree SVector alias_query;
+    SVECTOR_AUTOFREE(alias_query);
     int trigger_created = 0; /* Will be set to 1 if the node was created during this command. */
     int err = REDISMODULE_OK;
 
@@ -383,7 +394,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * ...  ...
      */
     const int nr_triplets = (argc - 3) / 3;
-    struct bitmap *replset = RedisModule_PoolAlloc(ctx, nr_triplets);
+    struct bitmap *replset = RedisModule_PoolAlloc(ctx, BITMAP_ALLOC_SIZE(nr_triplets));
 
     if (!replset) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to allocate memory for replication");

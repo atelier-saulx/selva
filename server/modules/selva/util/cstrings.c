@@ -47,7 +47,7 @@ int stringlist_searchn(const char *list, const char *str, size_t n) {
 		--s1;
 		--s2;
 
-		if (i == (size_t)(-1) &&
+		if (i == (ssize_t)(-1) &&
             ((s1[0] == '\n' || s1[0] == '\0') ||
              (s1[1] == '\0' || s1[1] == '\n'))) {
 			return 1;
