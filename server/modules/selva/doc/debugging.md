@@ -62,6 +62,9 @@ gdb --args redis-server --loadmodule ./module.so
 
 ### GDB Tips
 
+**NOTE:** On MacOS LLDB is the preferred debugger because it doesn't require
+signing and it seems to have fewer bugs.
+
 **Watchpoints**
 
 Sometimes there are no (more) HW watchpoints available and `watch` doesn't work.
@@ -82,6 +85,17 @@ fini
 ```
 
 - [Continuing and Stepping](https://sourceware.org/gdb/current/onlinedocs/gdb/Continuing-and-Stepping.html#Continuing-and-Stepping)
+
+## LLDB
+
+LLDB can attach to a running `redis-server-selva` process with the `attach`
+command or it can start a new server. When using attach, remember to use
+`cont` command instead of `run` after attaching, so that the process doesn't
+restart from `main()` after attaching to it.
+
+LLDB is partially compatible with GDB but many commands behave a bit differently
+and some commands don't exist with the same syntax.
+See the LLDB [Tutorial](https://lldb.llvm.org/use/tutorial.html).
 
 ## Valgrind
 
