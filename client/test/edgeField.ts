@@ -107,11 +107,20 @@ test.serial('basic edge ops', async (t) => {
   )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'ma2'),
-    [ 'a', [ 'b', '(pointer)' ]]
+    ['a', [
+      'b', [
+       'ma1',
+       'ma3',
+      ],
+    ]]
   )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'ma2', 'a'),
-    [ 'b', '(pointer)' ]
+    ['b', [
+      'ma1',
+       'ma3',
+      ],
+    ]
   )
 
   await t.throwsAsync(() => client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'ma2', 'a'))
@@ -188,7 +197,7 @@ test.serial('traverse a custom field', async (t) => {
   )
 })
 
-test.serial.only('find can return edge fields', async (t) => {
+test.serial('find can return edge fields', async (t) => {
   const client = connect({ port })
 
   // Create nodes
@@ -225,13 +234,36 @@ test.serial.only('find can return edge fields', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'a.b', 'fields', 'a.b', 'root'),
+    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'a.b', 'fields', 'a.b\nparents', 'root'),
     [
-      ['root', ['ma1', 'ma2']],
-      ['ma1', ['ma3']],
-      ['ma2', ['ma4']],
-      ['ma3', []],
-      ['ma4', []],
+      [
+        'root', [
+          'a.b', ['ma1', 'ma2'],
+          'parents', [],
+        ]
+      ],
+      [
+        'ma1', [
+          'a.b', ['ma3'],
+          'parents', ['root'],
+        ],
+      ],
+      [
+        'ma2', [
+          'a.b', ['ma4'],
+          'parents', ['root'],
+        ],
+      ],
+      [
+        'ma3', [
+          'parents', ['root'],
+        ]
+      ],
+      [
+        'ma4', [
+          'parents', ['root'],
+        ],
+      ],
     ]
   )
 })

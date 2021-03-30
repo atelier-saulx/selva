@@ -13,6 +13,7 @@ struct EdgeFieldConstraint {
     } flags;
 };
 
+static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p);
 static void EdgeField_Free(void *p);
 static size_t EdgeField_Len(void *p);
 static void *EdgeField_RdbLoad(struct RedisModuleIO *io, int encver, void *data);
@@ -29,6 +30,7 @@ static const struct EdgeFieldConstraint edge_constraints[] = {
 
 static const struct SelvaObjectPointerOpts obj_opts = {
     .ptr_type_id = 1, /* TODO reserve these in a nice way */
+    .ptr_reply = EdgeField_Reply,
     .ptr_free = EdgeField_Free,
     .ptr_len = EdgeField_Len,
     .ptr_save = EdgeField_RdbSave,
@@ -337,6 +339,27 @@ int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key
     }
 
     return 0;
+}
+
+static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p) {
+    struct EdgeField *edge_field = (struct EdgeField *)p;
+    SVector *edges = &edge_field->edges;
+    struct SelvaModify_HierarchyNode *dst_node;
+    struct SVectorIterator it;
+
+    RedisModule_ReplyWithArray(ctx, SVector_Size(edges));
+#if 0
+    RedisModule_ReplyWithArray(ctx, 1 + SVector_Size(&edge_field->edges));
+    RedisModule_ReplyWithLongLong(ctx, edge_field->constraint_id);
+#endif
+
+    SVector_ForeachBegin(&it, edges);
+    while ((dst_node = SVector_Foreach(&it))) {
+        Selva_NodeId dst_node_id;
+
+        SelvaModify_HierarchyGetNodeId(dst_node_id, dst_node);
+        RedisModule_ReplyWithStringBuffer(ctx, dst_node_id, Selva_NodeIdLen(dst_node_id));
+    }
 }
 
 static void EdgeField_Free(void *p) {

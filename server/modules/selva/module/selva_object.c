@@ -1392,7 +1392,15 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
         replyWithArray(ctx, key->subtype, &key->array);
         break;
     case SELVA_OBJECT_POINTER:
-        RedisModule_ReplyWithStringBuffer(ctx, "(pointer)", 9);
+        if (key->value) {
+            if (key->ptr_opts && key->ptr_opts->ptr_reply) {
+                key->ptr_opts->ptr_reply(ctx, key->value);
+            } else {
+                RedisModule_ReplyWithStringBuffer(ctx, "(pointer)", 9);
+            }
+        } else {
+            RedisModule_ReplyWithStringBuffer(ctx, "(null pointer)", 14);
+        }
         break;
     default:
         (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Type not supported %d", (int)key->type);

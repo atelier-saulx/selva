@@ -35,8 +35,22 @@ typedef void *(*SelvaObject_PtrLoad)(struct RedisModuleIO *io, int encver, void 
 typedef void (*SelvaObject_PtrSave)(struct RedisModuleIO *io, void *value, void *data);
 
 struct SelvaObjectPointerOpts {
-    unsigned ptr_type_id; /*!< An unique id for serializing the pointer type. 0 is reserved for NOP. */
-    void (*ptr_free)(void *p); /*!< Free a SELVA_OBJECT_POINTER value. */
+    /**
+     * An unique id for serializing the pointer type.
+     * The value 0 is reserved for NOP.
+     */
+    unsigned ptr_type_id;
+
+    /**
+     * Send the pointer value as a reply to the client.
+     */
+    void (*ptr_reply)(struct RedisModuleCtx *ctx, void *p);
+
+    /**
+     * Free a SELVA_OBJECT_POINTER value.
+     */
+    void (*ptr_free)(void *p);
+
     /**
      * Get the length or size of a SELVA_OBJECT_POINTER value.
      * The unit of the size is undefined but typically it should be either a
