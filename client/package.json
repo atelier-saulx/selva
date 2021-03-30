@@ -3,7 +3,7 @@
   "version": "3.5.0",
   "main": "dist/src/index.js",
   "scripts": {
-    "build": "yarn clean && yarn buildLua && yarn buildTs",
+    "build": "yarn clean && yarn buildLua && node ../tools/script-sha.js && yarn buildTs",
     "start": "tsc && node dist/index.js",
     "test": "ava --timeout 1m --verbose",
     "watch": "ava --color --watch --verbose",
@@ -78,3 +78,4 @@
     "@saulx/utils": "^1.6.6"
   }
 }
+
