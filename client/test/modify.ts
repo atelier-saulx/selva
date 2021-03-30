@@ -166,7 +166,7 @@ test.serial('root', async (t) => {
   await client.destroy()
 })
 
-test.serial('root.children $delete: []', async (t) => {
+test.serial.only('root.children $delete: []', async (t) => {
   const client = connect(
     {
       port,

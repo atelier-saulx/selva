@@ -2,7 +2,7 @@ import { join as pathJoin } from 'path'
 import { readFileSync } from 'fs'
 import { Connection } from '.'
 
-let SCRIPTS: Record<string, { content: string; sha: string }>
+export let SCRIPTS: Record<string, { content: string; sha: string }>
 
 try {
   SCRIPTS = ['update-schema'].reduce((obj, scriptName) => {

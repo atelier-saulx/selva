@@ -34,7 +34,12 @@ import { waitUntilEvent } from './util'
 
 import hardDisconnect from './hardDisconnect'
 
-import { connections, Connection, createConnection } from './connection'
+import {
+  connections,
+  Connection,
+  createConnection,
+  SCRIPTS,
+} from './connection'
 
 import { Observable, createObservable } from './observable'
 
@@ -315,4 +320,5 @@ export {
   Connection,
   Observable,
   moduleId,
+  SCRIPTS,
 }

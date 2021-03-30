@@ -1,5 +1,5 @@
 import updateRegistry from './updateRegistry'
-import { ServerDescriptor } from '@saulx/selva'
+import { ServerDescriptor, SCRIPTS } from '@saulx/selva'
 import { ServerOptions, Stats } from '../types'
 import { SelvaServer } from './'
 
@@ -13,6 +13,13 @@ const initHierarchy = (
       .selva_modify(info, 'root', 'R', '0', 'type', 'root')
       .then((res) => {
         console.log('Empty hierarchy initialized', res)
+        return server.selvaClient.redis.command(
+          info,
+          'SCRIPT',
+          'LOAD',
+          'update-schema',
+          SCRIPTS['update-schema']
+        )
       })
   }
 
