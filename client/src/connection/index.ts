@@ -2,7 +2,6 @@ import { RedisCommand, SelvaClient } from '..'
 import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import drainQueue from './drainQueue'
-import { SCRIPTS } from './scripts'
 import startRedisClient from './startRedisClient'
 import { RedisClient } from 'redis'
 import { Callback } from '../redis/types'
@@ -669,6 +668,6 @@ const createConnection = (serverDescriptor: ServerDescriptor) => {
   return connection
 }
 
-export { createConnection, connections, Connection, SCRIPTS }
+export { createConnection, connections, Connection }
 
 // for logging

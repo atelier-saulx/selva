@@ -1,7 +1,9 @@
 import updateRegistry from './updateRegistry'
-import { ServerDescriptor, SCRIPTS } from '@saulx/selva'
+import { ServerDescriptor } from '@saulx/selva'
 import { ServerOptions, Stats } from '../types'
 import { SelvaServer } from './'
+
+import { SCRIPTS } from './scripts'
 
 const initHierarchy = (
   server: SelvaServer,
