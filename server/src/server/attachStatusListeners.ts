@@ -13,12 +13,11 @@ const initHierarchy = (
       .selva_modify(info, 'root', 'R', '0', 'type', 'root')
       .then((res) => {
         console.log('Empty hierarchy initialized', res)
-        return server.selvaClient.redis.command(
+        return server.selvaClient.redis.script(
           info,
-          'SCRIPT',
           'LOAD',
           'update-schema',
-          SCRIPTS['update-schema']
+          SCRIPTS['update-schema'].content
         )
       })
   }
