@@ -1200,6 +1200,8 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return RedisModule_WrongArity(ctx);
     }
 
+    RedisModuleString *lang = argv[ARGV_LANG];
+
     /*
      * Open the Redis key.
      */
@@ -1499,6 +1501,8 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         return RedisModule_WrongArity(ctx);
     }
 
+    RedisModuleString *lang = argv[ARGV_LANG];
+
     /*
      * Open the Redis key.
      */
@@ -1662,7 +1666,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_LANG = 1;
+    const int ARGV_LANG       = 1;
     const int ARGV_REDIS_KEY  = 2;
     const int ARGV_SUB_ID     = 3;
     const int ARGV_MARKER_ID  = 4;
@@ -1682,6 +1686,8 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     if (argc < 5) {
         return RedisModule_WrongArity(ctx);
     }
+
+    RedisModuleString *lang = argv[ARGV_LANG];
 
     /*
      * Open the Redis key.
