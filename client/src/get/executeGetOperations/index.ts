@@ -310,6 +310,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     if (field === 'ancestors') {
       return client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        lang,
         '___selva_hierarchy',
         'bfs',
         'ancestors',
@@ -318,6 +319,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     } else if (field === 'descendants') {
       return client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        lang,
         '___selva_hierarchy',
         'bfs',
         'descendants',

@@ -124,6 +124,7 @@ async function mergeObj(
 
   const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    lang,
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -234,6 +235,7 @@ async function deepMergeObj(
 
   const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    lang,
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -333,6 +335,7 @@ async function inheritItem(
 
   const [results] = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    lang,
     '___selva_hierarchy',
     'bfs',
     'ancestors',

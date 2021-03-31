@@ -174,6 +174,7 @@ async function checkForNextRefresh(
       const args = ast2rpn(client.schemas[ctx.db].types, newFork, lang)
       const ids = await client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        lang,
         '___selva_hierarchy',
         'bfs',
         sourceField,
@@ -258,6 +259,7 @@ const findIds = async (
     // can make this a bit better....
     const ids = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      lang,
       '___selva_hierarchy',
       'order',
       op.options.sort?.$field || '',
@@ -327,6 +329,7 @@ const findIds = async (
 
     const ids = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      lang,
       '___selva_hierarchy',
       'bfs',
       sourceField,
@@ -411,6 +414,7 @@ const findFields = async (
 
     const result = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      lang,
       '___selva_hierarchy',
       'order',
       op.options.sort?.$field || '',
@@ -482,6 +486,7 @@ const findFields = async (
 
     const result = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      lang,
       '___selva_hierarchy',
       'bfs',
       sourceField,

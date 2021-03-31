@@ -255,6 +255,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -265,6 +266,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -293,6 +295,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -325,6 +328,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -355,6 +359,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -395,6 +400,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -449,6 +455,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -479,6 +486,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -511,6 +519,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -521,6 +530,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -545,6 +555,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -561,6 +572,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqual(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -616,6 +628,7 @@ test.serial('deep hierarchy manipulation', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -626,6 +639,7 @@ test.serial('deep hierarchy manipulation', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -636,6 +650,7 @@ test.serial('deep hierarchy manipulation', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -646,6 +661,7 @@ test.serial('deep hierarchy manipulation', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -657,6 +673,7 @@ test.serial('deep hierarchy manipulation', async (t) => {
   console.log(
     '###',
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -671,6 +688,7 @@ test.serial('deep hierarchy manipulation', async (t) => {
   console.log(
     '???',
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -679,6 +697,7 @@ test.serial('deep hierarchy manipulation', async (t) => {
   )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -689,6 +708,7 @@ test.serial('deep hierarchy manipulation', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
