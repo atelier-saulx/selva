@@ -204,6 +204,20 @@ test.serial('subscription find multi-db', async (t) => {
   })
 
   await wait(1000)
+  const subs = await client.redis.selva_subscriptions_list(
+    // { name: 'matches' },
+    '___selva_hierarchy'
+  )
+  const debug = await Promise.all(
+    subs.map((s) =>
+      client.redis.selva_subscriptions_debug(
+        // { name: 'matches' },
+        '___selva_hierarchy',
+        s
+      )
+    )
+  )
+  console.log('HMM', subs, debug)
   t.is(cnt, 1)
 
   await client.set({
