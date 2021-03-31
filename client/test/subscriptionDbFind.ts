@@ -149,24 +149,40 @@ test.serial('subscription find multi-db', async (t) => {
 
   await wait(100)
   // TODO: make this work
+  const obs = client.observe({
+    $id: league,
+    items: {
+      $id: 'root',
+      $db: 'matches',
+      children: {
+        id: true,
+        name: true,
+        value: true,
+        $list: {
+          $sort: { $field: 'value', $order: 'asc' },
+          $limit: 100,
+          $offset: 0,
+        },
+      },
+    },
+  })
+
   // const obs = client.observe({
   //   $id: league,
-  //   items: {
-  //     $id: 'root',
+  //   children: {
   //     $db: 'matches',
-  //     children: {
-  //       id: true,
-  //       name: true,
-  //       value: true,
-  //       $list: {
-  //         $sort: { $field: 'value', $order: 'asc' },
-  //         $limit: 100,
-  //         $offset: 0,
-  //       },
+  //     id: true,
+  //     name: true,
+  //     value: true,
+  //     $list: {
+  //       $sort: { $field: 'value', $order: 'asc' },
+  //       $limit: 100,
+  //       $offset: 0,
   //     },
   //   },
   // })
 
+  // already works
   // const obs = client.observe({
   //   $id: 'root',
   //   $db: 'matches',
@@ -181,21 +197,6 @@ test.serial('subscription find multi-db', async (t) => {
   //     },
   //   },
   // })
-
-  const obs = client.observe({
-    $id: league,
-    children: {
-      $db: 'matches',
-      id: true,
-      name: true,
-      value: true,
-      $list: {
-        $sort: { $field: 'value', $order: 'asc' },
-        $limit: 100,
-        $offset: 0,
-      },
-    },
-  })
 
   let cnt = 0
   const sub = obs.subscribe((d) => {

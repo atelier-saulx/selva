@@ -388,6 +388,26 @@ const findFields = async (
     : ['#1']
   // console.log('ARGS', args)
   if (op.inKeys) {
+    if (ctx.subId) {
+      let added = false
+      await Promise.all(
+        op.inKeys.map(async (id) => {
+          const r = await addMarker(client, ctx, {
+            type: 'node',
+            id: id,
+            fields: op.props.$all === true ? [] : [...fieldsOpt.values()],
+            rpn: args,
+          })
+
+          added = added || r
+        })
+      )
+
+      if (added) {
+        ctx.hasFindMarkers = true
+      }
+    }
+
     const result = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '___selva_hierarchy',
