@@ -149,24 +149,40 @@ test.serial('subscription find multi-db', async (t) => {
 
   await wait(100)
   // TODO: make this work
+  const obs = client.observe({
+    $id: league,
+    items: {
+      $id: 'root',
+      $db: 'matches',
+      children: {
+        id: true,
+        name: true,
+        value: true,
+        $list: {
+          $sort: { $field: 'value', $order: 'asc' },
+          $limit: 100,
+          $offset: 0,
+        },
+      },
+    },
+  })
+
   // const obs = client.observe({
   //   $id: league,
-  //   items: {
-  //     $id: 'root',
+  //   children: {
   //     $db: 'matches',
-  //     children: {
-  //       id: true,
-  //       name: true,
-  //       value: true,
-  //       $list: {
-  //         $sort: { $field: 'value', $order: 'asc' },
-  //         $limit: 100,
-  //         $offset: 0,
-  //       },
+  //     id: true,
+  //     name: true,
+  //     value: true,
+  //     $list: {
+  //       $sort: { $field: 'value', $order: 'asc' },
+  //       $limit: 100,
+  //       $offset: 0,
   //     },
   //   },
   // })
 
+  // already works
   // const obs = client.observe({
   //   $id: 'root',
   //   $db: 'matches',
@@ -182,21 +198,6 @@ test.serial('subscription find multi-db', async (t) => {
   //   },
   // })
 
-  const obs = client.observe({
-    $id: league,
-    children: {
-      $db: 'matches',
-      id: true,
-      name: true,
-      value: true,
-      $list: {
-        $sort: { $field: 'value', $order: 'asc' },
-        $limit: 100,
-        $offset: 0,
-      },
-    },
-  })
-
   let cnt = 0
   const sub = obs.subscribe((d) => {
     console.log('wuut', JSON.stringify(d, null, 2))
@@ -204,6 +205,22 @@ test.serial('subscription find multi-db', async (t) => {
   })
 
   await wait(1000)
+  // for (const db of ['default', 'matches']) {
+  //   const subs = await client.redis.selva_subscriptions_list(
+  //     { name: db },
+  //     '___selva_hierarchy'
+  //   )
+  //   const debug = await Promise.all(
+  //     subs.map((s) =>
+  //       client.redis.selva_subscriptions_debug(
+  //         { name: db },
+  //         '___selva_hierarchy',
+  //         s
+  //       )
+  //     )
+  //   )
+  //   console.log('HMM', subs, debug)
+  // }
   t.is(cnt, 1)
 
   await client.set({

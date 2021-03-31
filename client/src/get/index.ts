@@ -83,6 +83,7 @@ function makeNewGetOptions(
 async function get(
   client: SelvaClient,
   props: GetOptions,
+  ctx?: any,
   meta?: any,
   nested: boolean = false
 ): Promise<GetResult> {
@@ -91,11 +92,11 @@ async function get(
   // TODO: need to intialize for each db!
 
   const db = props.$db || 'default'
-  let subId = props.$subscription
+  let subId = props.$subscription || (ctx && ctx.subId)
 
   let originDescriptors: Record<string, ServerDescriptor> = {}
   if (subId) {
-    originDescriptors = props.$originDescriptors || {}
+    originDescriptors = props.$originDescriptors || ctx.originDescriptors || {}
   }
 
   const extraQueries: ExtraQueries = {}
@@ -171,10 +172,17 @@ async function get(
   const lang = newProps.$language
   let resultMeta: any = {}
 
+  ctx = {
+    db,
+    subId,
+    meta: resultMeta,
+    originDescriptors,
+  }
+
   const getResult = await executeGetOperations(
     client,
     lang,
-    { db, subId, meta: resultMeta, originDescriptors },
+    ctx,
     createGetOperations(client, newProps, id, '', db)
   )
 
@@ -198,7 +206,14 @@ async function get(
     }
   }
 
-  await combineResults(client, extraQueries, props.$language, getResult, meta)
+  await combineResults(
+    client,
+    extraQueries,
+    props.$language,
+    getResult,
+    ctx,
+    meta
+  )
 
   if (props.$includeMeta && !nested) {
     getResult.$meta = meta
