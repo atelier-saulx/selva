@@ -119,6 +119,7 @@ SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
 const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
 int SelvaObject_GetWithWildcardStr(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         struct SelvaObject *obj,
         const char *okey_str,
         size_t okey_len,
@@ -139,7 +140,7 @@ const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
 /*
  * Send a SelvaObject as a Redis reply.
  */
-int SelvaObject_ReplyWithObject(struct RedisModuleCtx *ctx, struct SelvaObject *obj, const struct RedisModuleString *key_name);
+int SelvaObject_ReplyWithObject(struct RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const struct RedisModuleString *key_name);
 
 struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
 void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);

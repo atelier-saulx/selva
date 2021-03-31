@@ -465,6 +465,7 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
 
         return fields_len;
     } else if (fields_len == 1 && fields_contains(fields, "*", 1)) { /* '*' is a wildcard */
+        // TODO: in this function handle it the same as selva_object.c GetCommand
         err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
         if (err) {
             fprintf(stderr, "%s: Failed to send all fields for node_id: \"%.*s\"\n",
@@ -550,6 +551,7 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
                  * Send the reply.
                  */
                 RedisModule_ReplyWithString(ctx, field);
+                // TODO: in this function handle it the same as selva_object.c GetCommand
                 err = SelvaObject_ReplyWithObject(ctx, obj, field);
                 if (err) {
                     fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
@@ -648,6 +650,7 @@ static ssize_t send_merge_all(
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
         RedisModule_ReplyWithString(ctx, full_field_path);
+        // TODO: in this function handle it the same as selva_object.c GetCommand
         err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
         if (err) {
             TO_STR(obj_path);
@@ -709,6 +712,7 @@ static ssize_t send_named_merge(
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, full_field_path);
+            // TODO: in this function handle it the same as selva_object.c GetCommand
             err = SelvaObject_ReplyWithObject(ctx, obj, field);
             if (err) {
                 TO_STR(field);
@@ -802,6 +806,7 @@ static ssize_t send_deep_merge(
 
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, next_path);
+            // TODO: in this function handle it the same as selva_object.c GetCommand
             err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
             if (err) {
                 TO_STR(obj_path);
@@ -897,6 +902,7 @@ static ssize_t send_node_object_merge(
 
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, obj_path);
+            // TODO: in this function handle it the same as selva_object.c GetCommand
             err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
             if (err) {
                 TO_STR(obj_path);
@@ -1159,23 +1165,24 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_KEY = 1;
-    const int ARGV_ALGO      = 2;
-    const int ARGV_DIRECTION = 3;
-    const int ARGV_ORDER_TXT = 4;
-    const int ARGV_ORDER_FLD = 5;
-    const int ARGV_ORDER_ORD = 6;
-    int ARGV_OFFSET_TXT      = 4;
-    int ARGV_OFFSET_NUM      = 5;
-    int ARGV_LIMIT_TXT       = 4;
-    int ARGV_LIMIT_NUM       = 5;
-    int ARGV_MERGE_TXT       = 4;
-    int ARGV_MERGE_VAL       = 5;
-    int ARGV_FIELDS_TXT      = 4;
-    int ARGV_FIELDS_VAL      = 5;
-    int ARGV_NODE_IDS        = 4;
-    int ARGV_FILTER_EXPR     = 5;
-    int ARGV_FILTER_ARGS     = 6;
+    const int ARGV_LANG      = 1;
+    const int ARGV_REDIS_KEY = 2;
+    const int ARGV_ALGO      = 3;
+    const int ARGV_DIRECTION = 4;
+    const int ARGV_ORDER_TXT = 5;
+    const int ARGV_ORDER_FLD = 6;
+    const int ARGV_ORDER_ORD = 7;
+    int ARGV_OFFSET_TXT      = 5;
+    int ARGV_OFFSET_NUM      = 6;
+    int ARGV_LIMIT_TXT       = 5;
+    int ARGV_LIMIT_NUM       = 6;
+    int ARGV_MERGE_TXT       = 5;
+    int ARGV_MERGE_VAL       = 6;
+    int ARGV_FIELDS_TXT      = 5;
+    int ARGV_FIELDS_VAL      = 6;
+    int ARGV_NODE_IDS        = 5;
+    int ARGV_FILTER_EXPR     = 6;
+    int ARGV_FILTER_ARGS     = 7;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
@@ -1189,7 +1196,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < 5) {
+    if (argc < 6) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -1463,19 +1470,20 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_KEY = 1;
-    const int ARGV_ORDER_TXT = 2;
-    const int ARGV_ORDER_FLD = 3;
-    const int ARGV_ORDER_ORD = 4;
-    int ARGV_OFFSET_TXT      = 2;
-    int ARGV_OFFSET_NUM      = 3;
-    int ARGV_LIMIT_TXT       = 2;
-    int ARGV_LIMIT_NUM       = 3;
-    int ARGV_FIELDS_TXT      = 2;
-    int ARGV_FIELDS_VAL      = 3;
-    int ARGV_NODE_IDS        = 2;
-    int ARGV_FILTER_EXPR     = 3;
-    int ARGV_FILTER_ARGS     = 4;
+    const int ARGV_LANG      = 1;
+    const int ARGV_REDIS_KEY = 2;
+    const int ARGV_ORDER_TXT = 3;
+    const int ARGV_ORDER_FLD = 4;
+    const int ARGV_ORDER_ORD = 5;
+    int ARGV_OFFSET_TXT      = 3;
+    int ARGV_OFFSET_NUM      = 4;
+    int ARGV_LIMIT_TXT       = 3;
+    int ARGV_LIMIT_NUM       = 4;
+    int ARGV_FIELDS_TXT      = 3;
+    int ARGV_FIELDS_VAL      = 4;
+    int ARGV_NODE_IDS        = 3;
+    int ARGV_FILTER_EXPR     = 4;
+    int ARGV_FILTER_ARGS     = 5;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
@@ -1487,7 +1495,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < 4) {
+    if (argc < 5) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -1654,23 +1662,24 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_KEY = 1;
-    const int ARGV_SUB_ID    = 2;
-    const int ARGV_MARKER_ID = 3;
-    const int ARGV_ORDER_TXT = 4;
-    const int ARGV_ORDER_FLD = 5;
-    const int ARGV_ORDER_ORD = 6;
-    int ARGV_OFFSET_TXT      = 4;
-    int ARGV_OFFSET_NUM      = 5;
-    int ARGV_LIMIT_TXT       = 4;
-    int ARGV_LIMIT_NUM       = 5;
+    const int ARGV_REDIS_LANG = 1;
+    const int ARGV_REDIS_KEY  = 2;
+    const int ARGV_SUB_ID     = 3;
+    const int ARGV_MARKER_ID  = 4;
+    const int ARGV_ORDER_TXT  = 5;
+    const int ARGV_ORDER_FLD  = 6;
+    const int ARGV_ORDER_ORD  = 7;
+    int ARGV_OFFSET_TXT       = 5;
+    int ARGV_OFFSET_NUM       = 6;
+    int ARGV_LIMIT_TXT        = 5;
+    int ARGV_LIMIT_NUM        = 6;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
     ARGV_LIMIT_TXT += i; \
     ARGV_LIMIT_NUM += i
 
-    if (argc < 4) {
+    if (argc < 5) {
         return RedisModule_WrongArity(ctx);
     }
 

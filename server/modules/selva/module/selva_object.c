@@ -66,8 +66,8 @@ static struct SelvaObjectPointerOpts default_ptr_opts = {
 SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
-static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key);
-static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj);
+static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key);
+static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj);
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
@@ -1293,7 +1293,7 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
     (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Array type not supported");
 }
 
-static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
+static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
         RedisModule_ReplyWithNull(ctx);
@@ -1313,7 +1313,20 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
         break;
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
-            replyWithObject(ctx, key->value);
+            if (key->user_meta == 2) {
+                TO_STR(lang);
+                if (lang_len > 0) {
+                    struct SelvaObjectKey *key;
+                    int err = get_key(key->value, lang_str, lang_len, 0, &key);
+                    // ignore errors on purpose
+                    if (!err) {
+                        RedisModule_ReplyWithString(ctx, key->value);
+                    }
+                    break;
+                }
+            }
+
+            replyWithObject(ctx, lang, key->value);
         } else {
             RedisModule_ReplyWithNull(ctx);
         }
@@ -1332,7 +1345,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
     }
 }
 
-static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
+static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj) {
     struct SelvaObjectKey *key;
     size_t n = 0;
 
@@ -1340,7 +1353,7 @@ static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
 
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
         RedisModule_ReplyWithStringBuffer(ctx, key->name, key->name_len);
-        replyWithKeyValue(ctx, key);
+        replyWithKeyValue(ctx, lang, key);
 
         n += 2;
     }
@@ -1348,12 +1361,12 @@ static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
-int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, const RedisModuleString *key_name) {
+int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *key_name) {
     struct SelvaObjectKey *key;
     int err;
 
     if (!key_name) {
-        replyWithObject(ctx, obj);
+        replyWithObject(ctx, lang, obj);
         return 0;
     }
 
@@ -1363,13 +1376,14 @@ int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, co
         return err;
     }
 
-    replyWithKeyValue(ctx, key);
+    replyWithKeyValue(ctx, lang, key);
 
     return 0;
 }
 
 int SelvaObject_GetWithWildcardStr(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         struct SelvaObject *obj,
         const char *okey_str,
         size_t okey_len,
@@ -1411,7 +1425,7 @@ int SelvaObject_GetWithWildcardStr(
 
             if (strnstr(new_field, ".*.", new_field_len)) {
                 /* recurse for nested wildcards while keeping the resolved path */
-                SelvaObject_GetWithWildcardStr(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
+                SelvaObject_GetWithWildcardStr(ctx, lang, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
             }
 
@@ -1445,7 +1459,7 @@ int SelvaObject_GetWithWildcardStr(
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             }
 
-            replyWithKeyValue(ctx, key);
+            replyWithKeyValue(ctx, lang, key);
             *resp_count += 2;
         }
     } else {
@@ -1465,20 +1479,22 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     struct SelvaObject *obj;
     struct SelvaObjectKey *key;
 
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
+    const int ARGV_LANG = 1;
+    const int ARGV_KEY = 2;
+    const int ARGV_OKEY = 3;
 
-    if (argc < 2) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
 
+    RedisModuleString *lang = argv[ARGV_LANG];
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
         return REDISMODULE_OK;
     }
 
-    if (argc == 2) {
-        replyWithObject(ctx, obj);
+    if (argc == 3) {
+        replyWithObject(ctx, lang, obj);
         return REDISMODULE_OK;
     }
 
@@ -1494,7 +1510,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
             long resp_count = 0;
             RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-            err = SelvaObject_GetWithWildcardStr(ctx, obj, okey_str, okey_len, &resp_count, -1, 1);
+            err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, okey_str, okey_len, &resp_count, -1, 1);
             RedisModule_ReplySetArrayLength(ctx, resp_count);
         } else {
             err = get_key(obj, okey_str, okey_len, 0, &key);
@@ -1508,7 +1524,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         }
 
         if (!is_wildcard) {
-            replyWithKeyValue(ctx, key);
+            replyWithKeyValue(ctx, lang, key);
         }
         return REDISMODULE_OK;
     }
