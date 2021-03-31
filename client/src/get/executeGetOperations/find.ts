@@ -197,6 +197,7 @@ async function checkForNextRefresh(
       const time = Number(
         await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
+          lang,
           id,
           f.$field
         )

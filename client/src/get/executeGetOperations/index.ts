@@ -302,7 +302,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     ctx: ExecContext,
     id: string,
     field: string,
-    _lang?: string
+    lang?: string
   ) => {
     const { db } = ctx
     const paddedId = id.padEnd(10, '\0')
@@ -338,6 +338,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     } else {
       return client.redis.selva_object_get(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        lang,
         id,
         field
       )
@@ -352,7 +353,7 @@ const TYPE_TO_SPECIAL_OP: Record<
   ) => {
     const { db } = ctx
 
-    let args = [id]
+    let args = [lang, id]
     if (lang) {
       args.push(`${field}.${lang}`)
       if (client.schemas[db].languages) {
@@ -411,6 +412,7 @@ export const executeGetOperation = async (
     if (op.id) {
       const id = await client.redis.selva_object_get(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        lang,
         op.id,
         ...(op.sourceField
           ? Array.isArray(op.sourceField)
@@ -484,6 +486,7 @@ export const executeGetOperation = async (
 
           return client.redis.selva_object_get(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
+            lang,
             op.id,
             f
           )
@@ -508,6 +511,7 @@ export const executeGetOperation = async (
       } else {
         r = await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
+          lang,
           op.id,
           op.sourceField
         )
