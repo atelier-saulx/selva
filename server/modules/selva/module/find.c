@@ -50,6 +50,7 @@ enum SelvaModify_Hierarchy_Algo {
 
 struct FindCommand_Args {
     RedisModuleCtx *ctx;
+    RedisModuleString *lang;
     SelvaModify_Hierarchy *hierarchy;
 
     ssize_t *nr_nodes; /*!< Number of nodes in the result. */
@@ -417,7 +418,7 @@ static int fields_contains(struct SelvaObject *fields, const char *field_name_st
     return 0;
 }
 
-static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selva_NodeId nodeId, struct SelvaObject *fields) {
+static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaModify_Hierarchy *hierarchy, Selva_NodeId nodeId, struct SelvaObject *fields) {
     RedisModuleString *id;
     int err;
 
@@ -465,8 +466,7 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
 
         return fields_len;
     } else if (fields_len == 1 && fields_contains(fields, "*", 1)) { /* '*' is a wildcard */
-        // TODO: in this function handle it the same as selva_object.c GetCommand
-        err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
+        err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
         if (err) {
             fprintf(stderr, "%s: Failed to send all fields for node_id: \"%.*s\"\n",
                     __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId);
@@ -529,7 +529,7 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
 
                 if (strstr(field_str, ".*.")) {
                     long resp_count = 0;
-                    err = SelvaObject_GetWithWildcardStr(ctx, obj, field_str, field_len, &resp_count, -1, 0);
+                    err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, 0);
                     if (err && err != SELVA_ENOENT) {
                         fprintf(stderr, "%s:%d Sending wildcard field %.*s of %.*s failed: %s\n",
                                 __FILE__, __LINE__,
@@ -551,8 +551,7 @@ static int send_node_fields(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarch
                  * Send the reply.
                  */
                 RedisModule_ReplyWithString(ctx, field);
-                // TODO: in this function handle it the same as selva_object.c GetCommand
-                err = SelvaObject_ReplyWithObject(ctx, obj, field);
+                err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
                 if (err) {
                     fprintf(stderr, "%s: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
                             __FILE__,
@@ -604,6 +603,7 @@ static int is_text_field(struct SelvaObject *obj, const char *key_name_str, size
 
 static ssize_t send_merge_all(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         Selva_NodeId nodeId,
         struct SelvaObject *fields,
         struct SelvaObject *obj,
@@ -650,8 +650,7 @@ static ssize_t send_merge_all(
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
         RedisModule_ReplyWithString(ctx, full_field_path);
-        // TODO: in this function handle it the same as selva_object.c GetCommand
-        err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
+        err = SelvaObject_ReplyWithObject(ctx, lang, obj, key_name);
         if (err) {
             TO_STR(obj_path);
 
@@ -672,6 +671,7 @@ static ssize_t send_merge_all(
 
 static ssize_t send_named_merge(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         Selva_NodeId nodeId,
         struct SelvaObject *fields,
         struct SelvaObject *obj,
@@ -712,8 +712,7 @@ static ssize_t send_named_merge(
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, full_field_path);
-            // TODO: in this function handle it the same as selva_object.c GetCommand
-            err = SelvaObject_ReplyWithObject(ctx, obj, field);
+            err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
             if (err) {
                 TO_STR(field);
 
@@ -737,6 +736,7 @@ static ssize_t send_named_merge(
 
 static ssize_t send_deep_merge(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         Selva_NodeId nodeId,
         struct SelvaObject *fields,
         struct SelvaObject *obj,
@@ -777,7 +777,7 @@ static ssize_t send_deep_merge(
                 return err;
             }
 
-            err = send_deep_merge(ctx, nodeId, fields, next_obj, next_path, nr_fields_out);
+            err = send_deep_merge(ctx, lang, nodeId, fields, next_obj, next_path, nr_fields_out);
             if (err < 0) {
                 fprintf(stderr, "%s:%d: Deep merge failed %s\n",
                         __FILE__, __LINE__,
@@ -806,8 +806,7 @@ static ssize_t send_deep_merge(
 
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, next_path);
-            // TODO: in this function handle it the same as selva_object.c GetCommand
-            err = SelvaObject_ReplyWithObject(ctx, obj, key_name);
+            err = SelvaObject_ReplyWithObject(ctx, lang, obj, key_name);
             if (err) {
                 TO_STR(obj_path);
 
@@ -829,6 +828,7 @@ static ssize_t send_deep_merge(
 
 static ssize_t send_node_object_merge(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         Selva_NodeId nodeId,
         enum merge_strategy merge_strategy,
         RedisModuleString *obj_path,
@@ -902,8 +902,7 @@ static ssize_t send_node_object_merge(
 
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, obj_path);
-            // TODO: in this function handle it the same as selva_object.c GetCommand
-            err = SelvaObject_ReplyWithObject(ctx, obj, NULL);
+            err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
             if (err) {
                 TO_STR(obj_path);
 
@@ -920,13 +919,13 @@ static ssize_t send_node_object_merge(
         res = 0;
     } else if (merge_strategy == MERGE_STRATEGY_ALL) {
         /* Send all keys from the nested object. */
-        res = send_merge_all(ctx, nodeId, fields, obj, obj_path, nr_fields_out);
+        res = send_merge_all(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
     } else if (merge_strategy == MERGE_STRATEGY_NAMED) {
         /* Send named keys from the nested object. */
-        res = send_named_merge(ctx, nodeId, fields, obj, obj_path, nr_fields_out);
+        res = send_named_merge(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
     } else if (merge_strategy == MERGE_STRATEGY_DEEP) {
         /* Deep merge all keys and nested objects. */
-        res = send_deep_merge(ctx, nodeId, fields, obj, obj_path, nr_fields_out);
+        res = send_deep_merge(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
     } else {
         res = replyWithSelvaErrorf(ctx, SELVA_ENOTSUP, "Merge strategy not supported: %d\n", (int)merge_strategy);
     }
@@ -971,9 +970,9 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
             int err;
 
             if (args->merge_strategy != MERGE_STRATEGY_NONE) {
-                err = send_node_object_merge(args->ctx, nodeId, args->merge_strategy, args->merge_path, args->fields, args->merge_nr_fields);
+                err = send_node_object_merge(args->ctx, args->lang, nodeId, args->merge_strategy, args->merge_path, args->fields, args->merge_nr_fields);
             } else if (args->fields) {
-                err = send_node_fields(args->ctx, args->hierarchy, nodeId, args->fields);
+                err = send_node_fields(args->ctx, args->lang, args->hierarchy, nodeId, args->fields);
             } else {
                 RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
                 err = 0;
@@ -1077,6 +1076,7 @@ static int FindInSubCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
  */
 static size_t FindCommand_PrintOrderedResult(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         SelvaModify_Hierarchy *hierarchy,
         ssize_t offset,
         ssize_t limit,
@@ -1108,9 +1108,9 @@ static size_t FindCommand_PrintOrderedResult(
         }
 
         if (merge_strategy != MERGE_STRATEGY_NONE) {
-            err = send_node_object_merge(ctx, item->id, merge_strategy, merge_path, fields, nr_fields_out);
+            err = send_node_object_merge(ctx, lang, item->id, merge_strategy, merge_path, fields, nr_fields_out);
         } else if (fields) {
-            err = send_node_fields(ctx, hierarchy, item->id, fields);
+            err = send_node_fields(ctx, lang, hierarchy, item->id, fields);
         } else {
             RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
             err = 0;
@@ -1402,6 +1402,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         const size_t skip = get_skip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args args = {
             .ctx = ctx,
+            .lang = lang,
             .hierarchy = hierarchy,
             .nr_nodes = &nr_nodes,
             .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
@@ -1445,7 +1446,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        nr_nodes = FindCommand_PrintOrderedResult(ctx, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
+        nr_nodes = FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
     }
 
     /* nr_nodes is never negative at this point so we can safely cast it. */
@@ -1617,6 +1618,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         ssize_t tmp_limit = -1;
         struct FindCommand_Args args = {
             .ctx = ctx,
+            .lang = lang,
             .hierarchy = hierarchy,
             .nr_nodes = &array_len,
             .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset : 0,
@@ -1642,7 +1644,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        array_len = FindCommand_PrintOrderedResult(ctx, hierarchy, offset, limit, MERGE_STRATEGY_NONE, NULL, fields, &order_result, NULL);
+        array_len = FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, MERGE_STRATEGY_NONE, NULL, fields, &order_result, NULL);
     }
 
     RedisModule_ReplySetArrayLength(ctx, array_len);
@@ -1784,6 +1786,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     size_t skip = get_skip(marker->dir); /* Skip n nodes from the results. */
     struct FindCommand_Args args = {
         .ctx = ctx,
+        .lang = lang,
         .hierarchy = hierarchy,
         .nr_nodes = &array_len,
         .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
@@ -1837,7 +1840,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        array_len = FindCommand_PrintOrderedResult(ctx, hierarchy, offset, limit, MERGE_STRATEGY_NONE, NULL, NULL, &order_result, NULL);
+        array_len = FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, MERGE_STRATEGY_NONE, NULL, NULL, &order_result, NULL);
     }
 
     RedisModule_ReplySetArrayLength(ctx, array_len);
