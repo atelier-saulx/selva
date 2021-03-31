@@ -12,6 +12,7 @@ export default async function combineResults(
   extraQueries: ExtraQueries,
   $language: string | undefined,
   getResult: GetResult,
+  ctx: any,
   meta?: any
 ) {
   if (Object.keys(extraQueries).length === 0) {
@@ -21,7 +22,7 @@ export default async function combineResults(
   if (Object.keys(getResult).length === 1 && getResult.listResult) {
     await Promise.all(
       getResult.listResult.map((res) => {
-        return combineResults(client, extraQueries, $language, res, meta)
+        return combineResults(client, extraQueries, $language, res, ctx, meta)
       })
     )
     return
@@ -64,6 +65,7 @@ export default async function combineResults(
                     { [db]: [newQuery] },
                     $language,
                     r,
+                    ctx,
                     meta
                   )
                 })
@@ -87,6 +89,7 @@ export default async function combineResults(
                 $includeMeta: !!meta,
                 ...q.getOpts,
               },
+              ctx,
               meta,
               true
             )
@@ -114,6 +117,7 @@ export default async function combineResults(
                     },
                   },
                 },
+                ctx,
                 meta,
                 true
               )
@@ -148,6 +152,7 @@ export default async function combineResults(
                       },
                     },
                   },
+                  ctx,
                   meta,
                   true
                 )
@@ -172,6 +177,7 @@ export default async function combineResults(
                     },
                   },
                 },
+                ctx,
                 meta,
                 true
               )
@@ -186,6 +192,7 @@ export default async function combineResults(
                 $db: db, // if not db ofc
                 ...q.getOpts,
               },
+              ctx,
               meta,
               true
             )

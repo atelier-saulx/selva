@@ -405,6 +405,7 @@ export const executeGetOperation = async (
   op: GetOperation,
   nested?: boolean
 ): Promise<any> => {
+  console.log('EXECUTING', ctx, op)
   if (op.type === 'value') {
     return op.value
   } else if (op.type === 'nested_query') {
