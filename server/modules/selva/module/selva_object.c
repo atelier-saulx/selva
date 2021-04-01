@@ -1319,9 +1319,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
                     struct SelvaObjectKey *text_key;
                     int err = get_key(key->value, lang_str, lang_len, 0, &text_key);
                     // ignore errors on purpose
-                    if (text_key->type == SELVA_OBJECT_STRING) {
-                        RedisModuleString *hmm = text_key->value;
-                        TO_STR(hmm);
+                    if (!err && text_key->type == SELVA_OBJECT_STRING) {
                         RedisModule_ReplyWithString(ctx, text_key->value);
                     } else {
                         RedisModule_ReplyWithNull(ctx);
