@@ -348,7 +348,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         if (!err) {
             enum SelvaObjectType obj_type;
 
-            obj_type = SelvaObject_GetType(obj, (RedisModuleString *)order_field);
+            obj_type = SelvaObject_GetType(obj, order_field);
             if (obj_type == SELVA_OBJECT_STRING) {
                 err = SelvaObject_GetString(obj, order_field, &value);
                 if (!err && value) {
