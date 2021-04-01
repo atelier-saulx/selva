@@ -103,7 +103,6 @@ async function mergeObj(
   const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
 
   if (ctx.subId) {
-    console.log('MARKER', ctx, op.id, ...fields)
     bufferNodeMarker(ctx, op.id, ...fields)
     const added = await addMarker(client, ctx, {
       type: 'ancestors',
@@ -134,18 +133,6 @@ async function mergeObj(
     field,
     op.id,
     ...rpn
-  )
-  console.log('RESSS', res)
-  console.log(
-    '___selva_hierarchy',
-    'bfs',
-    'offset',
-    -1,
-    'ancestors',
-    'merge',
-    field,
-    op.id,
-    rpn
   )
 
   const o = buildResultFromIdFieldAndValue(
@@ -245,17 +232,6 @@ async function deepMergeObj(
     field,
     op.id,
     ...rpn
-  )
-  console.log(
-    '___selva_hierarchy',
-    'bfs',
-    'ancestors',
-    'offset',
-    -1,
-    'deepMerge',
-    field,
-    op.id,
-    rpn
   )
 
   const o = buildResultFromIdFieldAndValue(ctx, client, remapped, field, res)
@@ -625,7 +601,6 @@ export default async function inherit(
     }
   }
 
-  console.log(['___selva_hierarchy', op.id, prefixes || '', fields])
   let res = await client.redis.selva_inherit(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     lang || '',
