@@ -2,24 +2,21 @@ import { SelvaClient } from '../../'
 import {
   GetOperationInherit,
   GetResult,
-  GetOperation,
   Fork,
   GetOptions,
   FilterAST,
 } from '../types'
-import { getNestedSchema, getNestedField, setNestedResult } from '../utils'
-import executeGetOperations, {
+import { getNestedSchema, setNestedResult } from '../utils'
+import {
   TYPE_CASTS,
   typeCast,
   ExecContext,
   executeNestedGetOperations,
   addMarker,
   bufferNodeMarker,
-  executeGetOperation,
 } from './'
-import { FieldSchema, Schema } from '../../schema'
+import { Schema, FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
-import { deepMerge } from '@saulx/utils'
 import { buildResultFromIdFieldAndValue } from './util'
 
 function makeRealKeys(
@@ -51,11 +48,10 @@ function makeRealKeys(
 async function mergeObj(
   client: SelvaClient,
   op: GetOperationInherit,
-  schema: Schema,
+  _schema: Schema,
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> {
-  const { db } = ctx
   const remapped: Record<string, string> = {}
   const props = makeRealKeys(op.props, op.field, true)
   const fields = Object.keys(props).map((f) => {
@@ -150,11 +146,10 @@ async function mergeObj(
 async function deepMergeObj(
   client: SelvaClient,
   op: GetOperationInherit,
-  schema: Schema,
+  _schema: Schema,
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> {
-  const { db } = ctx
   const remapped: Record<string, string> = {}
   const props = makeRealKeys(op.props, op.field, true)
   const fields = Object.keys(props).map((f) => {
@@ -244,7 +239,6 @@ async function inheritItem(
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> {
-  const { db } = ctx
   const schema = client.schemas[ctx.db]
 
   const props = makeRealKeys(op.props, op.field)
@@ -391,7 +385,7 @@ export default async function inherit(
     return acc
   }, '')
 
-  let fs
+  let fs: FieldSchema | null
   if (op.types && op.types.length > 0) {
     fs = getNestedSchema(
       schema,
