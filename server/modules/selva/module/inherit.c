@@ -20,6 +20,7 @@
 
 struct InheritCommand_Args {
     RedisModuleCtx *ctx;
+    RedisModuleString *lang;
 
     size_t first_node; /*!< We ignore the type of the first node. */
     size_t nr_types;
@@ -29,7 +30,7 @@ struct InheritCommand_Args {
     ssize_t nr_results; /*!< Number of results sent. */
 };
 
-static int send_object_field_value(RedisModuleCtx *ctx, struct SelvaObject *obj, RedisModuleString *node_id, RedisModuleString *field) {
+static int send_object_field_value(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, RedisModuleString *node_id, RedisModuleString *field) {
     int err = SELVA_ENOENT;
 
     if (!SelvaObject_Exists(obj, field)) {
@@ -42,7 +43,7 @@ static int send_object_field_value(RedisModuleCtx *ctx, struct SelvaObject *obj,
         RedisModule_ReplyWithString(ctx, node_id);
         RedisModule_ReplyWithString(ctx, field);
 
-        err = SelvaObject_ReplyWithObject(ctx, obj, field);
+        err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
         if (err) {
             TO_STR(field);
 
@@ -55,6 +56,7 @@ static int send_object_field_value(RedisModuleCtx *ctx, struct SelvaObject *obj,
 
 static int send_field_value(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         const Selva_NodeId nodeId,
         RedisModuleString *field) {
     int err;
@@ -82,7 +84,7 @@ static int send_field_value(
      * but we don't send the header yet.
      */
 
-    err = send_object_field_value(ctx, obj, id, field);
+    err = send_object_field_value(ctx, lang, obj, id, field);
 
     RedisModule_CloseKey(key);
 
@@ -127,7 +129,7 @@ static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *a
         /*
          * Get and send the field value to the client.
          */
-        err = send_field_value(args->ctx, nodeId, field_name);
+        err = send_field_value(args->ctx, args->lang, nodeId, field_name);
         if (err == 0) { /* found */
             args->field_names[i] = NULL; /* No need to look for this one anymore. */
             args->nr_results++;
@@ -217,14 +219,17 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_KEY     = 1;
-    const int ARGV_NODE_ID       = 2;
-    const int ARGV_TYPES         = 3;
-    const int ARGV_FIELD_NAMES   = 4;
+    const int ARGV_LANG          = 1;
+    const int ARGV_REDIS_KEY     = 2;
+    const int ARGV_NODE_ID       = 3;
+    const int ARGV_TYPES         = 4;
+    const int ARGV_FIELD_NAMES   = 5;
 
     if (argc < ARGV_FIELD_NAMES + 1) {
         return RedisModule_WrongArity(ctx);
     }
+
+    RedisModuleString *lang = argv[ARGV_LANG];
 
     /*
      * Open the Redis key.
@@ -272,6 +277,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     struct InheritCommand_Args args = {
         .ctx = ctx,
+        .lang = lang,
         .first_node = 1,
         .nr_types = nr_types,
         .types = types,
