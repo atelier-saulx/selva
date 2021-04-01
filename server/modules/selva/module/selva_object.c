@@ -1322,7 +1322,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
                     if (!err && text_key->type == SELVA_OBJECT_STRING) {
                         RedisModule_ReplyWithString(ctx, text_key->value);
                     } else {
-                        RedisModule_ReplyWithNull(ctx);
+                        replyWithObject(ctx, lang, key->value);
                     }
                 } else {
                     replyWithObject(ctx, lang, key->value);
