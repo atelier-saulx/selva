@@ -43,8 +43,8 @@ static const struct SelvaObjectPointerOpts obj_opts = {
 static void init_node_metadata_edge(
         Selva_NodeId id __unused,
         struct SelvaModify_HierarchyMetadata *metadata) {
-    metadata->custom_edge_fields.edges = NULL;
-    metadata->custom_edge_fields.origins = NULL;
+    metadata->edge_fields.edges = NULL;
+    metadata->edge_fields.origins = NULL;
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_edge);
 
@@ -54,7 +54,7 @@ static void deinit_node_metadata_edge(const Selva_NodeId node_id, struct SelvaMo
     SVector *edge_fields;
     const char *src_node_id;
 
-    origins = metadata->custom_edge_fields.origins;
+    origins = metadata->edge_fields.origins;
     if (!origins) {
         /* No edges pointing to this node. */
         return;
@@ -74,8 +74,8 @@ static void deinit_node_metadata_edge(const Selva_NodeId node_id, struct SelvaMo
         }
     }
 
-    SelvaObject_Destroy(metadata->custom_edge_fields.origins);
-    metadata->custom_edge_fields.origins = NULL;
+    SelvaObject_Destroy(metadata->edge_fields.origins);
+    metadata->edge_fields.origins = NULL;
 }
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_edge);
 
@@ -127,11 +127,11 @@ struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *src_node, cons
      * The edges object is allocated lazily so the called might need to allocate it.
      */
     src_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(src_node);
-    if (!src_metadata->custom_edge_fields.edges) {
+    if (!src_metadata->edge_fields.edges) {
         return NULL;
     }
 
-    err = SelvaObject_GetPointerStr(src_metadata->custom_edge_fields.edges, key_name_str, key_name_len, (void **)(&src_edge_field));
+    err = SelvaObject_GetPointerStr(src_metadata->edge_fields.edges, key_name_str, key_name_len, (void **)(&src_edge_field));
     if (err) {
         return NULL;
     }
@@ -148,14 +148,14 @@ static struct EdgeField *Edge_NewField(struct SelvaModify_HierarchyNode *node, c
     SelvaModify_HierarchyGetNodeId(node_id, node);
     node_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
 
-    edges = node_metadata->custom_edge_fields.edges;
+    edges = node_metadata->edge_fields.edges;
     if (!edges) {
         edges = SelvaObject_New();
         if (!edges) {
             return NULL;
         }
 
-        node_metadata->custom_edge_fields.edges = edges;
+        node_metadata->edge_fields.edges = edges;
     }
 
     edge_field = new_EdgeField(node_id, constraint_id, 0);
@@ -189,12 +189,12 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
      */
     dst_node_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(dst_node);
 
-    if (!dst_node_metadata->custom_edge_fields.origins) {
+    if (!dst_node_metadata->edge_fields.origins) {
         /* The edge origin refs struct is initialized lazily. */
-        dst_node_metadata->custom_edge_fields.origins = SelvaObject_New();
+        dst_node_metadata->edge_fields.origins = SelvaObject_New();
         /* TODO It could be problematic if we failed to create the object now */
     }
-    err = SelvaObject_AddArrayStr(dst_node_metadata->custom_edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, SELVA_OBJECT_POINTER, src_edge_field);
+    err = SelvaObject_AddArrayStr(dst_node_metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, SELVA_OBJECT_POINTER, src_edge_field);
     if (err) {
         /* TODO This error would be pretty fatal now. */
         fprintf(stderr, "%s:%d: Edge origin update failed: %s\n",
@@ -252,7 +252,7 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
     int err;
 
     metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(dst_node);
-    err = SelvaObject_GetArrayStr(metadata->custom_edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, &out_subtype, &origin_fields);
+    err = SelvaObject_GetArrayStr(metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, &out_subtype, &origin_fields);
     if (err) {
         return err;
     }
@@ -269,7 +269,7 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
          * edge_field, as it should be so if all the ref counting is done
          * correctly.
          */
-        SelvaObject_DelKeyStr(metadata->custom_edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE);
+        SelvaObject_DelKeyStr(metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE);
     } else {
         /* Otherwise remove the specific edge_field from the SVector. */
         ssize_t i;
@@ -367,7 +367,7 @@ int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key
     /*
      * Doing this will cause a full cleanup of the edges and origin pointers (EdgeField_Free()).
      */
-    if (SelvaObject_DelKeyStr(SelvaModify_HierarchyGetNodeMetadataByPtr(src_node)->custom_edge_fields.edges, key_name_str, key_name_len)) {
+    if (SelvaObject_DelKeyStr(SelvaModify_HierarchyGetNodeMetadataByPtr(src_node)->edge_fields.edges, key_name_str, key_name_len)) {
         fprintf(stderr, "%s:%d: Failed to delete the edge field: \"%.*s\"",
                 __FILE__, __LINE__,
                 (int)key_name_len, key_name_str);
@@ -524,12 +524,12 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
 
 void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaModify_HierarchyNode *node) {
     struct SelvaModify_HierarchyMetadata *metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
-    struct SelvaObject *edges = metadata->custom_edge_fields.edges;
+    struct SelvaObject *edges = metadata->edge_fields.edges;
 
     /* A boolean marker to trigger the loader. */
     if (edges && SelvaObject_Len(edges, NULL) > 0) {
         RedisModule_SaveUnsigned(io, 1);
-        SelvaObjectTypeRDBSave(io, metadata->custom_edge_fields.edges, NULL);
+        SelvaObjectTypeRDBSave(io, metadata->edge_fields.edges, NULL);
     } else {
         RedisModule_SaveUnsigned(io, 0);
     }

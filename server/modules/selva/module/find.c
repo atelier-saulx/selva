@@ -618,7 +618,7 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
                      * Check if the field name is an edge field.
                      */
                     struct SelvaModify_HierarchyMetadata *metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
-                    struct SelvaObject *edges = metadata->custom_edge_fields.edges;
+                    struct SelvaObject *edges = metadata->edge_fields.edges;
 
                     if (edges && SelvaObject_ExistsStr(edges, field_str, field_len) == 0) {
                         RedisModule_ReplyWithString(ctx, field);

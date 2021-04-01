@@ -30,7 +30,7 @@ struct SelvaModify_HierarchyMetadata {
      * Subscription markers.
      */
     struct Selva_SubscriptionMarkers sub_markers;
-    struct EdgeFieldContainer custom_edge_fields;
+    struct EdgeFieldContainer edge_fields;
 };
 
 typedef void SelvaModify_HierarchyMetadataHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);

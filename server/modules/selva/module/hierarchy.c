@@ -2372,7 +2372,7 @@ int SelvaHierarchy_EdgeListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
     }
 
-    struct SelvaObject *obj = node->metadata.custom_edge_fields.edges;
+    struct SelvaObject *obj = node->metadata.edge_fields.edges;
 
     if (!obj) {
         /* No custom edges set. */
@@ -2429,7 +2429,7 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_ENOENT);
     }
 
-    struct SelvaObject *obj = node->metadata.custom_edge_fields.edges;
+    struct SelvaObject *obj = node->metadata.edge_fields.edges;
     if (!obj) {
         /* No custom edges set. */
         return RedisModule_ReplyWithNull(ctx);
