@@ -1002,7 +1002,7 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                fprint(stderr, "%s:%d: Out of memory while creating an ordered result item\n",
+                fprintf(stderr, "%s:%d: Out of memory while creating an ordered result item\n",
                         __FILE__, __LINE__);
             }
         }
