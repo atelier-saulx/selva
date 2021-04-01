@@ -72,6 +72,16 @@ int Edge_Delete(const char *key_name_str, size_t key_name_len, struct SelvaModif
 int Edge_ClearField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len);
 int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len);
 
+/**
+ * Get the number of nodes pointing to this nodes from edge fields.
+ * Note that this isn't the number of edges as one node may have
+ * multiple edges from separate edge fields pointing to the same destination
+ * node.
+ * @param node is a pointer to the node.
+ * @returns Returns the number of references from other nodes.
+ */
+int Edge_Refcount(struct SelvaModify_HierarchyNode *node);
+
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node);
 void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaModify_HierarchyNode *node);
 

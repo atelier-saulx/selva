@@ -376,6 +376,19 @@ int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key
     return 0;
 }
 
+int Edge_Refcount(struct SelvaModify_HierarchyNode *node) {
+    struct SelvaModify_HierarchyMetadata *metadata;
+    int refcount = 0;
+
+    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+
+    if (metadata->edge_fields.origins) {
+        refcount = SelvaObject_Len(metadata->edge_fields.origins, NULL);
+    }
+
+    return refcount;
+}
+
 static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p) {
     struct EdgeField *edge_field = (struct EdgeField *)p;
     SVector *arcs = &edge_field->arcs;

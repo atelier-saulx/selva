@@ -1330,9 +1330,10 @@ static int SelvaModify_DelHierarchyNodeP(
         }
 
         /*
-         * Recursively delete the child and its children if its parents are gone.
+         * Recursively delete the child and its children if its parents field is
+         * empty and no edge fields are pointing to it.
          */
-        if (SVector_Size(&child->parents) == 0) {
+        if (SVector_Size(&child->parents) == 0 && Edge_Refcount(child) == 0) {
             err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
             if (err) {
                 return err;
