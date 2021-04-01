@@ -399,12 +399,12 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
 static int fields_contains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len) {
     void *iterator;
-    SVector *vec;
+    const SVector *vec;
 
     iterator = SelvaObject_ForeachBegin(fields);
     while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
         struct SVectorIterator it;
-        RedisModuleString *s;
+        const RedisModuleString *s;
 
         SVector_ForeachBegin(&it, vec);
         while ((s = SVector_Foreach(&it))) {
