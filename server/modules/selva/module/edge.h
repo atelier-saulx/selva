@@ -18,7 +18,7 @@ struct SelvaObject;
 struct EdgeField {
     unsigned constraint_id; /*!< An index in the constraints array edge_constraints. */
     Selva_NodeId src_node_id; /*!< Source nodeId of this edge field. */
-    struct SVector edges; /*!< Pointers to nodes. */
+    struct SVector arcs; /*!< Pointers to nodes. */
 };
 
 /*
@@ -36,7 +36,6 @@ struct EdgeFieldContainer {
      */
     struct SelvaObject *edges;
     /**
-     *
      * Custom edge field origin references.
      * A.field <- B
      *
@@ -50,6 +49,7 @@ struct EdgeFieldContainer {
     struct SelvaObject *origins;
 };
 
+const struct EdgeFieldConstraint *Edge_GetConstraint(unsigned constraint_id);
 const struct EdgeFieldConstraint* Edge_GetFieldConstraint(const struct EdgeField *edge_field);
 
 /**

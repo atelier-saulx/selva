@@ -1612,7 +1612,7 @@ static int bfs_edge(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode 
             continue;
         }
 
-        SVector_ForeachBegin(&it, &edge_field->edges);
+        SVector_ForeachBegin(&it, &edge_field->arcs);
         while((adj = SVector_Foreach(&it))) {
             if (!Trx_IsStamped(&hierarchy->current_trx, &adj->visit_stamp)) {
                 Trx_Stamp(&hierarchy->current_trx, &adj->visit_stamp);
@@ -2444,14 +2444,14 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return replyWithSelvaError(ctx, err);
     }
 
-    struct SVector *edges = &edge_field->edges;
+    struct SVector *arcs = &edge_field->arcs;
     struct SVectorIterator it;
     SelvaModify_HierarchyNode *dst;
 
-    RedisModule_ReplyWithArray(ctx, 1 + SVector_Size(edges));
+    RedisModule_ReplyWithArray(ctx, 1 + SVector_Size(arcs));
     RedisModule_ReplyWithLongLong(ctx, edge_field->constraint_id);
 
-    SVector_ForeachBegin(&it, edges);
+    SVector_ForeachBegin(&it, arcs);
     while ((dst = SVector_Foreach(&it))) {
         RedisModule_ReplyWithStringBuffer(ctx, dst->id, Selva_NodeIdLen(dst->id));
     }

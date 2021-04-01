@@ -30,3 +30,8 @@ int SelvaSVectorComparator_RMS(const void ** restrict ap, const void ** restrict
 
     return memcmp(a_str, b_str, a_len);
 }
+
+int SelvaSVectorComparator_Node(const void ** restrict a, const void ** restrict b) {
+    /* We expect that the node struct starts with the node_id. */
+    return memcmp(*a, *b, SELVA_NODE_ID_SIZE);
+}

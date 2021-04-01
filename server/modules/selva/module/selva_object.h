@@ -61,6 +61,12 @@ struct SelvaObjectPointerOpts {
     SelvaObject_PtrSave ptr_save;
 };
 
+/*
+ * Pointer types.
+ * These types are needed for the serialization of opaque pointer types.
+ */
+#define SELVA_OBJECT_POINTER_EDGE 1
+
 /**
  * Register SELVA_OBJECT_POINTER options statically for RDB loading.
  */
