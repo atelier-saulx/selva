@@ -135,7 +135,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     return REDISMODULE_OK;
 }
 
-static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, RedisModuleString *id) {
+static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, const RedisModuleString *id) {
     TO_STR(id);
 
     id_str = RedisModule_StringPtrLen(id, &id_len);
