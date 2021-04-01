@@ -157,7 +157,7 @@ static const char *sztok(const char *s, size_t size, size_t * restrict i) {
     return r;
 }
 
-static int parse_flags(RedisModuleString *arg) {
+static int parse_flags(const RedisModuleString *arg) {
     TO_STR(arg);
     int flags = 0;
 
@@ -193,9 +193,9 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, st
     }
 
     memcpy(op, data_str, data_len);
-    op->$add    = op->$add    ? (char *)((char *)op + (ptrdiff_t)op->$add)    : NULL;
-    op->$delete = op->$delete ? (char *)((char *)op + (ptrdiff_t)op->$delete) : NULL;
-    op->$value  = op->$value  ? (char *)((char *)op + (ptrdiff_t)op->$value)  : NULL;
+    op->$add    = op->$add    ? ((char *)op + (ptrdiff_t)op->$add)    : NULL;
+    op->$delete = op->$delete ? ((char *)op + (ptrdiff_t)op->$delete) : NULL;
+    op->$value  = op->$value  ? ((char *)op + (ptrdiff_t)op->$value)  : NULL;
 
     if (!(((!op->$add    && op->$add_len == 0)    || (in_mem_range(op->$add,    op, data_len) && in_mem_range(op->$add    + op->$add_len,    op, data_len))) &&
           ((!op->$delete && op->$delete_len == 0) || (in_mem_range(op->$delete, op, data_len) && in_mem_range(op->$delete + op->$delete_len, op, data_len))) &&
