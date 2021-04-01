@@ -310,7 +310,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     if (field === 'ancestors') {
       return client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        lang,
+        lang || '',
         '___selva_hierarchy',
         'bfs',
         'ancestors',
@@ -319,7 +319,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     } else if (field === 'descendants') {
       return client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        lang,
+        lang || '',
         '___selva_hierarchy',
         'bfs',
         'descendants',
@@ -340,7 +340,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     } else {
       return client.redis.selva_object_get(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        lang,
+        lang || '',
         id,
         field
       )
@@ -355,7 +355,7 @@ const TYPE_TO_SPECIAL_OP: Record<
   ) => {
     const { db } = ctx
 
-    let args = [lang, id]
+    let args = [lang || '', id]
     if (lang) {
       args.push(`${field}.${lang}`)
       if (client.schemas[db].languages) {
@@ -414,7 +414,7 @@ export const executeGetOperation = async (
     if (op.id) {
       const id = await client.redis.selva_object_get(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        lang,
+        lang || '',
         op.id,
         ...(op.sourceField
           ? Array.isArray(op.sourceField)
@@ -488,7 +488,7 @@ export const executeGetOperation = async (
 
           return client.redis.selva_object_get(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
-            lang,
+            lang || '',
             op.id,
             f
           )
@@ -513,7 +513,7 @@ export const executeGetOperation = async (
       } else {
         r = await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          lang,
+          lang || '',
           op.id,
           op.sourceField
         )
