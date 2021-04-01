@@ -469,7 +469,7 @@ export default async function inherit(
 
     const res = await client.redis.selva_inherit(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      lang,
+      lang || '',
       '___selva_hierarchy',
       op.id,
       prefixes,
@@ -544,7 +544,7 @@ export default async function inherit(
 
     const res = await client.redis.selva_inherit(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      lang,
+      lang || '',
       '___selva_hierarchy',
       op.id,
       prefixes,
@@ -628,7 +628,7 @@ export default async function inherit(
   console.log(['___selva_hierarchy', op.id, prefixes || '', fields])
   let res = await client.redis.selva_inherit(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    lang,
+    lang || '',
     '___selva_hierarchy',
     op.id,
     prefixes,
