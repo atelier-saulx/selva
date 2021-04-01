@@ -141,8 +141,8 @@ static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *a
              * SELVA_ENOENT is expected as not all nodes have all fields set;
              * Any other error is unexpected.
              */
-            fprintf(stderr, "%s: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
-                    __FILE__,
+            fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
+                    __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, nodeId,
                     RedisModule_StringPtrLen(field_name, NULL),
                     getSelvaErrorStr(err));
@@ -201,8 +201,9 @@ size_t inheritHierarchyFields(
         }
 
         if (err < 0) {
-            fprintf(stderr, "%s: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
-                    __FILE__, (int)SELVA_NODE_ID_SIZE, node_id, field_name_str, getSelvaErrorStr(err));
+            fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, node_id, field_name_str, getSelvaErrorStr(err));
         }
     }
 
@@ -291,7 +292,9 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         /*
          * We can't reply with an error anymore, so we just log it.
          */
-        fprintf(stderr, "%s: %s\n", __FILE__, getSelvaErrorStr(err));
+        fprintf(stderr, "%s:%d: Inherit failed: %s\n",
+                __FILE__, __LINE__,
+                getSelvaErrorStr(err));
     }
 
     return REDISMODULE_OK;

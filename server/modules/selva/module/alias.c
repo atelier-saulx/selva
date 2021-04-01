@@ -12,7 +12,7 @@ RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx) {
 
     alias_key_name = RedisModule_CreateString(ctx, SELVA_ALIASES_KEY, sizeof(SELVA_ALIASES_KEY) - 1);
     if (!alias_key_name) {
-        fprintf(stderr, "%s: ENOMEM\n", __FILE__);
+        fprintf(stderr, "%s:%d: ENOMEM\n", __FILE__, __LINE__);
         return NULL;
     }
 

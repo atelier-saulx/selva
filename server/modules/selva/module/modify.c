@@ -505,7 +505,7 @@ static int update_set(
     if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
         alias_key = open_aliases_key(ctx);
         if (!alias_key) {
-            fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+            fprintf(stderr, "%s:%d: Unable to open aliases\n", __FILE__, __LINE__);
             return SELVA_ENOENT;
         }
     }
@@ -591,7 +591,8 @@ int SelvaModify_ModifySet(
 
                 alias_key = open_aliases_key(ctx);
                 if (!alias_key) {
-                    fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+                    fprintf(stderr, "%s:%d: Unable to open aliases\n",
+                            __FILE__, __LINE__);
                     return SELVA_ENOENT;
                 }
 

@@ -75,7 +75,9 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
 
     argv = RedisModule_PoolAlloc(ctx, ((size_t)leading_args + count) * sizeof(RedisModuleString *));
     if (!argv) {
-        fprintf(stderr, "%s: Replication error: %s\n", __FILE__, getSelvaErrorStr(SELVA_ENOMEM));
+        fprintf(stderr, "%s:%d: Replication error: %s\n",
+                __FILE__, __LINE__,
+                getSelvaErrorStr(SELVA_ENOMEM));
         return;
     }
 
@@ -323,7 +325,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else {
 #if 0
             /* This is probably ok and it's a sign that there are no aliases in the DB yet. */
-            fprintf(stderr, "%s: Unable open aliases key or its type is invalid\n", __FILE__);
+            fprintf(stderr, "%s:%d: Unable open aliases key or its type is invalid\n",
+                    __FILE__, __LINE__);
 #endif
         }
 
@@ -599,7 +602,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
 
 #if 0
-        fprintf(stderr, "%s: Updated %.*s %s\n", __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId, field_str);
+        fprintf(stderr, "%s:%d: Updated %.*s %s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, nodeId, field_str);
 #endif
 
         RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
