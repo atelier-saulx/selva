@@ -1101,7 +1101,7 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, const RedisModuleString *key_na
     return SelvaObject_LenStr(obj, key_name_str, key_name_len);
 }
 
-int SelvaObjet_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta) {
+int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta) {
     int err;
     struct SelvaObjectKey *key;
 
@@ -1114,10 +1114,10 @@ int SelvaObjet_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str,
     return 0;
 }
 
-int SelvaObjet_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t *meta) {
+int SelvaObject_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t *meta) {
     TO_STR(key_name);
 
-    return SelvaObjet_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
+    return SelvaObject_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
 }
 
 int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta) {
@@ -1731,7 +1731,7 @@ int SelvaObject_GetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     SelvaObjectMeta_t user_meta;
-    err = SelvaObjet_GetUserMeta(obj, argv[ARGV_OKEY], &user_meta);
+    err = SelvaObject_GetUserMeta(obj, argv[ARGV_OKEY], &user_meta);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "Failed to get key metadata");
     }

@@ -323,7 +323,7 @@ static orderFunc getOrderFunc(enum hierarchy_result_order order) {
     }
 }
 
-static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCtx *ctx, Selva_NodeId nodeId, const RedisModuleString *order_field) {
+static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCtx *ctx, RedisModuleString *lang, Selva_NodeId nodeId, const RedisModuleString *order_field) {
     RedisModuleString *id;
     RedisModuleKey *key;
     struct FindCommand_OrderedItem *item;
@@ -348,11 +348,19 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
             enum SelvaObjectType obj_type;
 
             obj_type = SelvaObject_GetType(obj, (RedisModuleString *)order_field);
+
             if (obj_type == SELVA_OBJECT_STRING) {
                 err = SelvaObject_GetString(obj, order_field, &value);
                 if (!err && value) {
                     data = RedisModule_StringPtrLen(value, &data_len);
                     type = ORDERED_ITEM_TYPE_TEXT;
+                }
+            } else if (obj_type == SELVA_OBJECT_OBJECT) {
+                SelvaObjectMeta_t meta;
+                SelvaObject_GetUserMeta(obj, order_field, &meta);
+
+                if (meta == 2) {
+                    TO_STR(lang);
                 }
             } else if (obj_type == SELVA_OBJECT_DOUBLE) {
                 err = SelvaObject_GetDouble(obj, order_field, &d);
@@ -593,7 +601,7 @@ static int is_text_field(struct SelvaObject *obj, const char *key_name_str, size
     SelvaObjectMeta_t meta;
     int err;
 
-    err = SelvaObjet_GetUserMetaStr(obj, key_name_str, key_name_len, &meta);
+    err = SelvaObject_GetUserMetaStr(obj, key_name_str, key_name_len, &meta);
     if (err) {
         return 0;
     }
@@ -994,7 +1002,7 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
         } else {
             struct FindCommand_OrderedItem *item;
 
-            item = createFindCommand_OrderItem(args->ctx, nodeId, args->order_field);
+            item = createFindCommand_OrderItem(args->ctx, args->lang, nodeId, args->order_field);
             if (item) {
                 SVector_InsertFast(args->order_result, item);
             } else {
@@ -1059,7 +1067,7 @@ static int FindInSubCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
         } else {
             struct FindCommand_OrderedItem *item;
 
-            item = createFindCommand_OrderItem(args->ctx, nodeId, args->order_field);
+            item = createFindCommand_OrderItem(args->ctx, args->lang, nodeId, args->order_field);
             if (item) {
                 SVector_InsertFast(args->order_result, item);
             } else {
