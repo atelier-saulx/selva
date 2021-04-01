@@ -17,7 +17,7 @@ import {
 } from './'
 import { Schema, FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
-import { buildResultFromIdFieldAndValue } from './util'
+import { buildResultFromIdFieldAndValue, makeLangArg } from './util'
 
 function makeRealKeys(
   props: GetOptions,
@@ -119,7 +119,7 @@ async function mergeObj(
 
   const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    lang || '',
+    makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -217,7 +217,7 @@ async function deepMergeObj(
 
   const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    lang || '',
+    makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -305,7 +305,7 @@ async function inheritItem(
 
   const [results] = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    lang || '',
+    makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -439,7 +439,7 @@ export default async function inherit(
 
     const res = await client.redis.selva_inherit(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      lang || '',
+      makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       op.id,
       prefixes,
@@ -514,7 +514,7 @@ export default async function inherit(
 
     const res = await client.redis.selva_inherit(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      lang || '',
+      makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       op.id,
       prefixes,
@@ -597,7 +597,7 @@ export default async function inherit(
 
   let res = await client.redis.selva_inherit(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    lang || '',
+    makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
     op.id,
     prefixes,

@@ -1316,14 +1316,24 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
             if (key->user_meta == 2) {
                 TO_STR(lang);
                 if (lang_len > 0) {
-                    struct SelvaObjectKey *text_key;
-                    int err = get_key(key->value, lang_str, lang_len, 0, &text_key);
-                    // ignore errors on purpose
-                    if (!err && text_key->type == SELVA_OBJECT_STRING) {
-                        RedisModule_ReplyWithString(ctx, text_key->value);
-                    } else {
-                        replyWithObject(ctx, lang, key->value);
+                    char buf[lang_len + 1];
+                    char *s = buf;
+                    strncpy(s, lang_str, lang_len);
+                    s[lang_len] = '\0';
+                    const char *sep = "|";
+                    for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
+                        const size_t slen = strlen(s);
+
+                        struct SelvaObjectKey *text_key;
+                        int err = get_key(key->value, s, slen, 0, &text_key);
+                        // ignore errors on purpose
+                        if (!err && text_key->type == SELVA_OBJECT_STRING) {
+                            RedisModule_ReplyWithString(ctx, text_key->value);
+                            return;
+                        }
                     }
+
+                    RedisModule_ReplyWithNull(ctx);
                 } else {
                     replyWithObject(ctx, lang, key->value);
                 }

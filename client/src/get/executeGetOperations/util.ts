@@ -26,3 +26,22 @@ export function buildResultFromIdFieldAndValue(
 
   return o
 }
+
+export function makeLangArg(languages: string[] | undefined, lang?: string) {
+  if (!lang) {
+    return ''
+  }
+
+  languages = languages || []
+
+  let str = lang
+  for (let i = 0; i < languages.length; i++) {
+    if (languages[i] === lang) {
+      continue
+    }
+
+    str += `|${languages[i]}`
+  }
+
+  return str
+}

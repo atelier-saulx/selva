@@ -9,6 +9,7 @@ import inherit from './inherit'
 import { Rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
+import { makeLangArg } from './util'
 
 export type ExecContext = {
   db: string
@@ -310,7 +311,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     if (field === 'ancestors') {
       return client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        lang || '',
+        '',
         '___selva_hierarchy',
         'bfs',
         'ancestors',
@@ -319,7 +320,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     } else if (field === 'descendants') {
       return client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        lang || '',
+        '',
         '___selva_hierarchy',
         'bfs',
         'descendants',
@@ -340,7 +341,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     } else {
       return client.redis.selva_object_get(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        lang || '',
+        '',
         id,
         field
       )
@@ -355,7 +356,7 @@ const TYPE_TO_SPECIAL_OP: Record<
   ) => {
     const { db } = ctx
 
-    let args = [lang || '', id]
+    let args = [makeLangArg(client.schemas[ctx.db].languages, lang), id]
     if (lang) {
       args.push(`${field}.${lang}`)
       if (client.schemas[db].languages) {
@@ -414,7 +415,7 @@ export const executeGetOperation = async (
     if (op.id) {
       const id = await client.redis.selva_object_get(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        lang || '',
+        makeLangArg(client.schemas[ctx.db].languages, lang),
         op.id,
         ...(op.sourceField
           ? Array.isArray(op.sourceField)
@@ -488,7 +489,7 @@ export const executeGetOperation = async (
 
           return client.redis.selva_object_get(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
-            lang || '',
+            makeLangArg(client.schemas[ctx.db].languages, lang),
             op.id,
             f
           )
@@ -513,7 +514,7 @@ export const executeGetOperation = async (
       } else {
         r = await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          lang || '',
+          makeLangArg(client.schemas[ctx.db].languages, lang),
           op.id,
           op.sourceField
         )
