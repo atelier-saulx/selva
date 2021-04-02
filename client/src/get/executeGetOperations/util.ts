@@ -40,7 +40,7 @@ export function makeLangArg(languages: string[] | undefined, lang?: string) {
       continue
     }
 
-    str += `|${languages[i]}`
+    str += `\n${languages[i]}`
   }
 
   return str

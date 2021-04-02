@@ -1320,7 +1320,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
                     char *s = buf;
                     strncpy(s, lang_str, lang_len);
                     s[lang_len] = '\0';
-                    const char *sep = "|";
+                    const char *sep = "\n";
                     for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
                         const size_t slen = strlen(s);
 
