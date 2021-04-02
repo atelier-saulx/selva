@@ -21,12 +21,6 @@ enum SelvaObjectType {
     SELVA_OBJECT_POINTER = 7,
 };
 
-enum SelvaObjectMetaSubtype {
-    SELVA_OBJECT_META_SUBTYPE_OBJECT = 0,
-    SELVA_OBJECT_META_SUBTYPE_RECORD = 1,
-    SELVA_OBJECT_META_SUBTYPE_TEXT = 2,
-};
-
 struct RedisModuleCtx;
 struct RedisModuleIO;
 struct RedisModuleKey;
