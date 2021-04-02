@@ -359,7 +359,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
                 SelvaObjectMeta_t meta;
                 SelvaObject_GetUserMeta(obj, order_field, &meta);
 
-                if (meta == 2) {
+                if (meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
                     TO_STR(lang);
                     struct SelvaObject *text_obj;
                     int text_err = SelvaObject_GetObject(obj, order_field, &text_obj);
@@ -643,7 +643,7 @@ static int is_text_field(struct SelvaObject *obj, const char *key_name_str, size
         return 0;
     }
 
-    return meta == 2; /* TODO Define this somewhere */
+    return meta == SELVA_OBJECT_META_SUBTYPE_TEXT;
 }
 
 static ssize_t send_merge_all(

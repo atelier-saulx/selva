@@ -1313,7 +1313,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
         break;
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
-            if (key->user_meta == 2) {
+            if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
                 TO_STR(lang);
                 if (lang_len > 0) {
                     char buf[lang_len + 1];
