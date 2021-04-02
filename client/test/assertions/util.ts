@@ -57,7 +57,7 @@ export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
         if (id.startsWith(`tag:`)) {
           return null
         }
-        return <any>client.redis.selva_object_get(id)
+        return <any>client.redis.selva_object_get('', id)
       })
     )
   )

@@ -11,6 +11,7 @@ import {
 import { executeNestedGetOperations, ExecContext, addMarker } from './'
 import { padId, joinIds } from '../utils'
 import { setNestedResult } from '../utils'
+import { makeLangArg } from './util'
 
 function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
   const pathPrefix = path === '' ? '' : path + '.'
@@ -174,6 +175,7 @@ async function checkForNextRefresh(
       const args = ast2rpn(client.schemas[ctx.db].types, newFork, lang)
       const ids = await client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
         'bfs',
         sourceField,
@@ -197,6 +199,7 @@ async function checkForNextRefresh(
       const time = Number(
         await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
+          makeLangArg(client.schemas[ctx.db].languages, lang),
           id,
           f.$field
         )
@@ -257,6 +260,7 @@ const findIds = async (
     // can make this a bit better....
     const ids = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      lang,
       '___selva_hierarchy',
       'order',
       op.options.sort?.$field || '',
@@ -326,6 +330,7 @@ const findIds = async (
 
     const ids = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       'bfs',
       sourceField,
@@ -410,6 +415,7 @@ const findFields = async (
 
     const result = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      lang,
       '___selva_hierarchy',
       'order',
       op.options.sort?.$field || '',
@@ -481,6 +487,7 @@ const findFields = async (
 
     const result = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       'bfs',
       sourceField,

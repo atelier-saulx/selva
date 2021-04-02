@@ -179,7 +179,7 @@ test.serial('set alias and get by $alias', async (t) => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_object_get(match1, 'aliases'),
+    await client.redis.selva_object_get('', match1, 'aliases'),
     ['nice_match']
   )
 
@@ -223,12 +223,12 @@ test.serial('set alias and get by $alias', async (t) => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_object_get(match2, 'aliases'),
+    await client.redis.selva_object_get('', match2, 'aliases'),
     ['nice_match', 'very_nice_match']
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_object_get(match1, 'aliases'),
+    await client.redis.selva_object_get('', match1, 'aliases'),
     []
   )
 
@@ -278,12 +278,12 @@ test.serial('set alias and get by $alias', async (t) => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_object_get(match2, 'aliases'),
+    await client.redis.selva_object_get('', match2, 'aliases'),
     ['nice_match']
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_object_get(match1, 'aliases'),
+    await client.redis.selva_object_get('', match1, 'aliases'),
     ['ok_match']
   )
 
@@ -320,7 +320,7 @@ test.serial('set new entry with alias', async (t) => {
   })
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_object_get(match1, 'aliases'),
+    await client.redis.selva_object_get('', match1, 'aliases'),
     ['nice_match']
   )
 
