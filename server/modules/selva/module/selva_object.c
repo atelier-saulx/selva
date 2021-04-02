@@ -1336,32 +1336,26 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
         break;
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
-            if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
-                TO_STR(lang);
-                // fprintf(stderr, "YOYO %.*s\n", (int)lang_len, lang_str);
-                if (lang && lang_len > 0) {
-                    char buf[lang_len + 1];
-                    char *s = buf;
-                    strncpy(s, lang_str, lang_len);
-                    s[lang_len] = '\0';
-                    const char *sep = "\n";
-                    for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
-                        const size_t slen = strlen(s);
+            TO_STR(lang);
+            if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT && lang && lang_len > 0) {
+                char buf[lang_len + 1];
+                char *s = buf;
+                strncpy(s, lang_str, lang_len);
+                s[lang_len] = '\0';
+                const char *sep = "\n";
+                for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
+                    const size_t slen = strlen(s);
 
-                        // fprintf(stderr, "TRYNA %.*s\n", (int)slen, s);
-                        struct SelvaObjectKey *text_key;
-                        int err = get_key(key->value, s, slen, 0, &text_key);
-                        // ignore errors on purpose
-                        if (!err && text_key->type == SELVA_OBJECT_STRING) {
-                            RedisModule_ReplyWithString(ctx, text_key->value);
-                            return;
-                        }
+                    struct SelvaObjectKey *text_key;
+                    int err = get_key(key->value, s, slen, 0, &text_key);
+                    // ignore errors on purpose
+                    if (!err && text_key->type == SELVA_OBJECT_STRING) {
+                        RedisModule_ReplyWithString(ctx, text_key->value);
+                        return;
                     }
-
-                    RedisModule_ReplyWithNull(ctx);
-                } else {
-                    replyWithObject(ctx, lang, key->value);
                 }
+
+                RedisModule_ReplyWithNull(ctx);
             } else {
                 replyWithObject(ctx, lang, key->value);
             }
