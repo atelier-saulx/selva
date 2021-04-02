@@ -361,6 +361,38 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
                 if (meta == 2) {
                     TO_STR(lang);
+                    struct SelvaObject *text_obj;
+                    int text_err = SelvaObject_GetObject(obj, order_field, &text_obj);
+                    if (text_err) {
+                        goto cleanup;
+                    }
+
+                    if (!lang_len) {
+                        goto cleanup;
+                    }
+
+                    char buf[lang_len + 1];
+                    char *s = buf;
+                    strncpy(s, lang_str, lang_len);
+                    s[lang_len] = '\0';
+                    const char *sep = "|";
+                    for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
+                        const size_t slen = strlen(s);
+
+                        RedisModuleString *raw_value = NULL;
+                        text_err = SelvaObject_GetStringStr(text_obj, s, slen, &raw_value);
+                        if (!text_err && raw_value) {
+                            TO_STR(raw_value);
+                            if (raw_value_len) {
+                                value = raw_value;
+                                data = raw_value_str;
+                                data_len = raw_value_len;
+                                type = ORDERED_ITEM_TYPE_TEXT;
+                                break;
+                            }
+
+                        }
+                    }
                 }
             } else if (obj_type == SELVA_OBJECT_DOUBLE) {
                 err = SelvaObject_GetDouble(obj, order_field, &d);
@@ -402,6 +434,11 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     }
 
     return item;
+
+
+cleanup:
+        RedisModule_CloseKey(key);
+        return NULL;
 }
 
 static int fields_contains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len) {
