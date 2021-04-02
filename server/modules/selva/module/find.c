@@ -1215,8 +1215,8 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_LANG      = 1;
-    const int ARGV_REDIS_KEY = 2;
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_LANG      = 2;
     const int ARGV_ALGO      = 3;
     const int ARGV_DIRECTION = 4;
     const int ARGV_ORDER_TXT = 5;
@@ -1525,8 +1525,8 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_LANG      = 1;
-    const int ARGV_REDIS_KEY = 2;
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_LANG      = 2;
     const int ARGV_ORDER_TXT = 3;
     const int ARGV_ORDER_FLD = 4;
     const int ARGV_ORDER_ORD = 5;
@@ -1720,8 +1720,8 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_LANG       = 1;
-    const int ARGV_REDIS_KEY  = 2;
+    const int ARGV_REDIS_KEY  = 1;
+    const int ARGV_LANG       = 2;
     const int ARGV_SUB_ID     = 3;
     const int ARGV_MARKER_ID  = 4;
     const int ARGV_ORDER_TXT  = 5;
