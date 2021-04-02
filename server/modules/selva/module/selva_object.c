@@ -1339,7 +1339,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
             if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
                 TO_STR(lang);
                 // fprintf(stderr, "YOYO %.*s\n", (int)lang_len, lang_str);
-                if (lang_len > 0) {
+                if (lang && lang_len > 0) {
                     char buf[lang_len + 1];
                     char *s = buf;
                     strncpy(s, lang_str, lang_len);
