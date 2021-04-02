@@ -59,7 +59,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     uint64_t thread_idx = (uint64_t)argv;
     redisContext *ctx = NULL;
 
-    printf("Started worker number %i\n", (int)thread_idx);
+    fprintf(stderr, "Started async task worker number %i\n", (int)thread_idx);
 
     queue_cb_t *queue = queues + thread_idx;
 

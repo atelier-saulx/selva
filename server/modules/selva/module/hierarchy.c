@@ -254,9 +254,8 @@ static int create_node_object(RedisModuleCtx *ctx, const Selva_NodeId id) {
      */
     key = RedisModule_OpenKey(ctx, node_name, REDISMODULE_READ | REDISMODULE_WRITE);
     if (!key) {
-        fprintf(stderr, "%s:%d Failed to open key: %.*s\n",
-                __FILE__,
-                __LINE__,
+        fprintf(stderr, "%s:%d: Failed to open key: %.*s\n",
+                __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE,
                 id);
         return SELVA_MODIFY_HIERARCHY_ENOMEM; // TODO ??
@@ -267,7 +266,9 @@ static int create_node_object(RedisModuleCtx *ctx, const Selva_NodeId id) {
 
         err = SelvaNode_Initialize(ctx, key, node_name, id);
         if (err) {
-            fprintf(stderr, "%s: %s\n", __FILE__, getSelvaErrorStr(err));
+            fprintf(stderr, "%s:%d: Node initialization error: %s\n",
+                    __FILE__, __LINE__,
+                    getSelvaErrorStr(err));
             RedisModule_CloseKey(key);
             return err;
         }
@@ -286,7 +287,9 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
     };
 
 #if 0
-    fprintf(stderr, "Creating node %.*s\n", (int)SELVA_NODE_ID_SIZE, id);
+    fprintf(stderr, "%s:%d: Creating node %.*s\n",
+            __FILE__, __LINE__,
+            (int)SELVA_NODE_ID_SIZE, id);
 #endif
 
     if (unlikely(!SVector_Init(&node->parents, HIERARCHY_INITIAL_VECTOR_LEN, SVector_HierarchyNode_id_compare) ||
@@ -302,8 +305,8 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
 
         err = create_node_object(ctx, id);
         if (err) {
-            fprintf(stderr, "%s: Failed to create a hash for \"%.*s\": %s\n",
-                    __FILE__,
+            fprintf(stderr, "%s:%d: Failed to create a hash for \"%.*s\": %s\n",
+                    __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, id,
                     selvaStrError[-err]);
             /*
@@ -435,7 +438,7 @@ static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyN
     }
 
     if (unlikely(!SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL))) {
-        fprintf(stderr, "%s: Depth update error\n", __FILE__);
+        fprintf(stderr, "%s:%d: Depth update error\n", __FILE__, __LINE__);
         abort();
     }
 
@@ -557,8 +560,9 @@ static int cross_insert_children(
 
             adjacent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
             if (!adjacent) {
-                fprintf(stderr, "%s: Node state error, node: \"%.*s\"\n",
-                        __FILE__, (int)SELVA_NODE_ID_SIZE, nodes[i]);
+                fprintf(stderr, "%s:%d: Node state error, node: \"%.*s\"\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, nodes[i]);
                 return SELVA_MODIFY_HIERARCHY_EGENERAL;
             }
         }
@@ -642,8 +646,8 @@ static int cross_insert_parents(
                     1, ((Selva_NodeId []){ ROOT_NODE_ID }),
                     0, NULL);
             if (err < 0) {
-                fprintf(stderr, "%s: Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
-                        __FILE__,
+                fprintf(stderr, "%s:%d: Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
+                        __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
                         selvaStrError[-err]);
@@ -652,8 +656,8 @@ static int cross_insert_parents(
 
             adjacent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
             if (!adjacent) {
-                fprintf(stderr, "%s: Node state error, node: \"%.*s\"\n",
-                        __FILE__,
+                fprintf(stderr, "%s:%d: Node state error, node: \"%.*s\"\n",
+                        __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, nodes[i]);
                 return SELVA_MODIFY_HIERARCHY_EGENERAL;
             }
@@ -1700,7 +1704,9 @@ int SelvaModify_TraverseHierarchy(
         err = full_dfs(hierarchy, &tcb);
         break;
      default:
-        fprintf(stderr, "%s: Invalid traversal requested (%d)\n", __FILE__, (int)dir);
+        fprintf(stderr, "%s:%d: Invalid traversal requested (%d)\n",
+                __FILE__, __LINE__,
+                (int)dir);
         err = SELVA_MODIFY_HIERARCHY_ENOTSUP;
     }
 
@@ -2065,8 +2071,8 @@ int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString *
                     /*
                      * We ignore and log any errors.
                      */
-                    fprintf(stderr, "%s: Failed to delete the child \"%.*s\" of \"%.*s\"\n",
-                            __FILE__,
+                    fprintf(stderr, "%s:%d: Failed to delete the child \"%.*s\" of \"%.*s\"\n",
+                            __FILE__, __LINE__,
                             (int)SELVA_NODE_ID_SIZE, childId,
                             (int)SELVA_NODE_ID_SIZE, nodeId);
                 }

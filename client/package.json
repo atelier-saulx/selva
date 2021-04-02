@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "3.5.0",
+  "version": "4.0.2",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && node ../tools/script-sha.js && yarn buildTs",
@@ -50,7 +50,7 @@
     ]
   },
   "devDependencies": {
-    "@saulx/selva-server": "3.5.0",
+    "@saulx/selva-server": "4.0.2",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",
@@ -70,7 +70,7 @@
   "dependencies": {
     "data-record": "^0.5.2",
     "@saulx/selva-diff": "^1.0.17",
-    "@saulx/selva-query-ast-parser": "^1.1.0",
+    "@saulx/selva-query-ast-parser": "^1.2.0",
     "@types/uuid": "^8.3.0",
     "chalk": "^4.1.0",
     "redis": "^2.8.0",
@@ -78,4 +78,3 @@
     "@saulx/utils": "^1.6.6"
   }
 }
-

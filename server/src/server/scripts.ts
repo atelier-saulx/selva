@@ -5,7 +5,7 @@ export let SCRIPTS: Record<string, { content: string; sha: string }>
 
 try {
   SCRIPTS = ['update-schema'].reduce((obj, scriptName) => {
-    let distPath = pathJoin(__dirname, '..', '..', '..', 'client')
+    let distPath = pathJoin(__dirname, '..', '..')
     if (!distPath.endsWith('dist')) {
       distPath = pathJoin(distPath, 'dist')
     }

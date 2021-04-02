@@ -142,7 +142,6 @@ static int update_hierarchy(
         }
         if (setOpts->$delete_len > 0) {
             const size_t nr_nodes = setOpts->$delete_len / SELVA_NODE_ID_SIZE;
-            int res = 0;
 
             if (isFieldParents) { /* parents */
                 err = SelvaModify_DelHierarchy(ctx, hierarchy, node_id,
@@ -505,7 +504,7 @@ static int update_set(
     if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
         alias_key = open_aliases_key(ctx);
         if (!alias_key) {
-            fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+            fprintf(stderr, "%s:%d: Unable to open aliases\n", __FILE__, __LINE__);
             return SELVA_ENOENT;
         }
     }
@@ -591,7 +590,8 @@ int SelvaModify_ModifySet(
 
                 alias_key = open_aliases_key(ctx);
                 if (!alias_key) {
-                    fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+                    fprintf(stderr, "%s:%d: Unable to open aliases\n",
+                            __FILE__, __LINE__);
                     return SELVA_ENOENT;
                 }
 

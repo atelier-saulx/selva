@@ -164,8 +164,8 @@ static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
 
     rms = *rms_p;
     if (((struct redisObjectAccessor *)rms)->refcount > 1) {
-        fprintf(stderr, "%s, The given RMS (%p) is already in use and cannot be modified\n",
-                __FILE__, rms);
+        fprintf(stderr, "%s:%d:, The given RMS (%p) is already in use and cannot be modified\n",
+                __FILE__, __LINE__, rms);
         return RPN_ERR_NOTSUP;
     }
 
@@ -272,7 +272,7 @@ __used static int isnan_undefined(double x) {
 
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
 	if (unlikely(ctx->depth >= RPN_MAX_D)) {
-        fprintf(stderr, "RPN: Stack overflow\n");
+        fprintf(stderr, "%s:%d: Stack overflow\n", __FILE__, __LINE__);
         return RPN_ERR_BADSTK;
     }
 
@@ -486,20 +486,23 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     const size_t i = fast_atou(str_index);
 
     if (i >= (size_t)ctx->nr_reg) {
-        fprintf(stderr, "RPN: Register index out of bounds: %zu\n", i);
+        fprintf(stderr, "%s:%d: Register index out of bounds: %zu\n",
+                __FILE__, __LINE__, i);
         return RPN_ERR_BNDS;
     }
 
     struct rpn_operand *r = ctx->reg[i];
 
     if (!r) {
-        fprintf(stderr, "RPN: Register value is a NULL pointer: %zu\n", i);
+        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %zu\n",
+                __FILE__, __LINE__, i);
         return RPN_ERR_NPE;
     }
 
     if (type == RPN_LVTYPE_NUMBER) {
         if (isnan(r->d)) {
-            fprintf(stderr, "RPN: Register value is not a number: %zu\n", i);
+            fprintf(stderr, "%s:%d: Register value is not a number: %zu\n",
+                    __FILE__, __LINE__, i);
             return RPN_ERR_NAN;
         }
 
@@ -507,7 +510,8 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     } else if (type == RPN_LVTYPE_STRING) {
         push(ctx, r);
     } else {
-        fprintf(stderr, "RPN: Unknown type code: %d\n", type);
+        fprintf(stderr, "%s:%d: Unknown type code: %d\n",
+                __FILE__, __LINE__, type);
         return RPN_ERR_TYPE;
     }
 
@@ -564,7 +568,8 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
 
     obj = open_node_object(redis_ctx, ctx);
     if (!obj) {
-        fprintf(stderr, "RPN: Node object not found for: \"%.*s\"\n",
+        fprintf(stderr, "%s:%d: Node object not found for: \"%.*s\"\n",
+                __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, RedisModule_StringPtrLen(ctx->rms_field, NULL));
         return RPN_ERR_NPE;
     }
@@ -581,7 +586,8 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
         obj = open_node_object(redis_ctx, ctx);
         if (!obj) {
             /* TODO This should be an error? */
-            fprintf(stderr, "RPN: Node object not found for: \"%.*s\"\n",
+            fprintf(stderr, "%s:%d: Node object not found for: \"%.*s\"\n",
+                    __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, RedisModule_StringPtrLen(ctx->rms_field, NULL));
             return push_empty_value(ctx);
         }
@@ -617,7 +623,8 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
             if (err) {
                 const char *type_str = SelvaObject_Type2String(field_type, NULL);
 
-                fprintf(stderr, "RPN: Field value [%.*s].%.*s is not a number, actual type: \"%s\"\n",
+                fprintf(stderr, "%s:%d: Field value [%.*s].%.*s is not a number, actual type: \"%s\"\n",
+                        __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]),
                         (int)field->s_size, OPERAND_GET_S(field),
                         type_str ? type_str : "INVALID");
@@ -632,7 +639,8 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
             err = SelvaObject_GetString(obj, ctx->rms_field, &value);
             if (err || !value) {
 #if 0
-                fprintf(stderr, "RPN: Field \"%s\" not found for node: \"%.*s\"\n",
+                fprintf(stderr, "%s:%d: Field \"%s\" not found for node: \"%.*s\"\n",
+                        __FILE__, __LINE__,
                         OPERAND_GET_S(field),
                         (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]));
 #endif
@@ -809,7 +817,8 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
         /* The operand `s` is a field_name string. */
         obj = open_node_object(redis_ctx, ctx);
         if (!obj) {
-            fprintf(stderr, "RPN: Node object not found for: \"%.*s\"\n",
+            fprintf(stderr, "%s:%d: Node object not found for: \"%.*s\"\n",
+                    __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, RedisModule_StringPtrLen(ctx->rms_field, NULL));
             return push_int_result(ctx, 0);
         }
@@ -1080,7 +1089,8 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                     v->s[0] = '\0';
 
                     if (unlikely(e == str)) {
-                        fprintf(stderr, "RPN: Operand is not a number: %s\n", s);
+                        fprintf(stderr, "%s:%d: Operand is not a number: %s\n",
+                                __FILE__, __LINE__, s);
                         return RPN_ERR_NAN;
                     }
 
@@ -1117,7 +1127,8 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                 }
                 break;
             default:
-                fprintf(stderr, "RPN: Illegal operand: \"%s\"\n", s);
+                fprintf(stderr, "%s:%d: Illegal operand: \"%s\"\n",
+                        __FILE__, __LINE__, s);
                 clear_stack(ctx);
                 return RPN_ERR_ILLOPN;
             }
