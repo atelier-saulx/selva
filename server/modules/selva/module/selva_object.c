@@ -1315,6 +1315,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
         if (key->value) {
             if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
                 TO_STR(lang);
+                // fprintf(stderr, "YOYO %.*s\n", (int)lang_len, lang_str);
                 if (lang_len > 0) {
                     char buf[lang_len + 1];
                     char *s = buf;
@@ -1324,6 +1325,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
                     for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
                         const size_t slen = strlen(s);
 
+                        // fprintf(stderr, "TRYNA %.*s\n", (int)slen, s);
                         struct SelvaObjectKey *text_key;
                         int err = get_key(key->value, s, slen, 0, &text_key);
                         // ignore errors on purpose
