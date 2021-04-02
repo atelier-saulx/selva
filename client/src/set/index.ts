@@ -1,4 +1,4 @@
-import { SetOptions } from './types'
+import { SetOptions, SetMetaResponse } from './types'
 import { SelvaClient } from '..'
 import { v4 as uuid } from 'uuid'
 import { SCRIPT } from '../constants'
@@ -8,8 +8,9 @@ export async function _set(
   client: SelvaClient,
   payload: (string | Buffer)[],
   schemaSha: string,
-  db?: string
-): Promise<string> {
+  db?: string,
+  meta: boolean = false
+): Promise<string | SetMetaResponse> {
   const asAny = <any>payload
 
   if (!asAny.$id) {
@@ -42,6 +43,33 @@ export async function _set(
       ),
       ...asAny.$extraQueries,
     ])
+
+    if (meta) {
+      let anyUpdated = false
+      const changed: Set<string> = new Set()
+      const unchanged: Set<string> = new Set()
+      const errored: Record<string, string> = {}
+      for (let i = 2, j = 1; i < payload.length; i += 3, j++) {
+        if (all[0][j] === 'UPDATED') {
+          anyUpdated = true
+          changed.add(<string>payload[i])
+        } else if (all[0][j] === 'OK') {
+          unchanged.add(<string>payload[i])
+        } else {
+          errored[<string>payload[i]] = 'ERROR' // TODO: real error
+        }
+      }
+
+      return {
+        id: all[0][0],
+        updated: anyUpdated,
+        fields: {
+          changed,
+          unchanged,
+          errored,
+        },
+      }
+    }
 
     return !all[0] ? undefined : all[0][0]
   } catch (err) {
@@ -98,7 +126,48 @@ async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
 
   const parsed = await parseSetObject(client, payload, schema)
 
-  return _set(client, parsed, schema.sha, payload.$db)
+  return <Promise<string>>_set(client, parsed, schema.sha, payload.$db, false)
 }
 
-export { set, SetOptions }
+async function setWithMeta(
+  client: SelvaClient,
+  payload: SetOptions
+): Promise<SetMetaResponse> {
+  const schema = client.schemas[payload.$db || 'default']
+
+  // need to add queue and process.next here to merge modify
+  if (!payload.type && !payload.$id && payload.$alias) {
+    let aliases = payload.$alias
+    if (!Array.isArray(payload.$alias)) {
+      aliases = [aliases]
+    }
+
+    for (const alias of aliases) {
+      const id = await client.redis.hget(`___selva_aliases`, alias)
+      if (id) {
+        payload.$id = id
+        break
+      }
+    }
+
+    if (!payload.$id) {
+      throw new Error(
+        `.set() without the type property requires an existing record or $id to be set with the wanted type prefix. No existing id found for alias ${JSON.stringify(
+          payload.$alias
+        )}`
+      )
+    }
+  }
+
+  // nested aliases need to be supported
+
+  // refactor this whole thign
+
+  const parsed = await parseSetObject(client, payload, schema)
+
+  return <Promise<SetMetaResponse>>(
+    _set(client, parsed, schema.sha, payload.$db, true)
+  )
+}
+
+export { set, setWithMeta, SetOptions }

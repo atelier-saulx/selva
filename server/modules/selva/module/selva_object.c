@@ -799,9 +799,8 @@ int SelvaObject_AddStringSet(struct SelvaObject *obj, const RedisModuleString *k
     return SelvaSet_Add(selva_set, value);
 }
 
-static int get_selva_set(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
+static int get_selva_set_str(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaSetType type, struct SelvaSet **set_out) {
     struct SelvaObjectKey *key;
-    TO_STR(key_name);
     int err;
 
     assert(obj);
@@ -823,11 +822,38 @@ static int get_selva_set(struct SelvaObject *obj, const RedisModuleString *key_n
     return 0;
 }
 
-int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+static int get_selva_set(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
+    TO_STR(key_name);
+
+    return get_selva_set_str(obj, key_name_str, key_name_len, type, set_out);
+}
+
+int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
     struct SelvaSet *selva_set;
     int err;
 
-    err = get_selva_set(obj, key_name, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    if (err) {
+        return err;
+    }
+
+    /* TODO Should we return SELVA_EINVAL if the element was not found? */
+    SelvaSet_DestroyElement(SelvaSet_Remove(selva_set, value));
+
+    return 0;
+}
+
+int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+    TO_STR(key_name);
+
+    return SelvaObject_RemDoubleSetStr(obj, key_name_str, key_name_len, value);
+}
+
+int SelvaObject_RemLongLongSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
+    struct SelvaSet *selva_set;
+    int err;
+
+    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_LONGLONG, &selva_set);
     if (err) {
         return err;
     }
@@ -839,26 +865,17 @@ int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *k
 }
 
 int SelvaObject_RemLongLongSet(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
-    struct SelvaSet *selva_set;
-    int err;
+    TO_STR(key_name);
 
-    err = get_selva_set(obj, key_name, SELVA_SET_TYPE_LONGLONG, &selva_set);
-    if (err) {
-        return err;
-    }
-
-    /* TODO Should we return SELVA_EINVAL if the element was not found? */
-    SelvaSet_DestroyElement(SelvaSet_Remove(selva_set, value));
-
-    return 0;
+    return SelvaObject_RemLongLongSetStr(obj, key_name_str, key_name_len, value);
 }
 
-int SelvaObject_RemStringSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString *value) {
     struct SelvaSet *selva_set;
     struct SelvaSetElement *el;
     int err;
 
-    err = get_selva_set(obj, key_name, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_RMSTRING, &selva_set);
     if (err) {
         return err;
     }
@@ -871,6 +888,12 @@ int SelvaObject_RemStringSet(struct SelvaObject *obj, const RedisModuleString *k
     SelvaSet_DestroyElement(el);
 
     return 0;
+}
+
+int SelvaObject_RemStringSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+    TO_STR(key_name);
+
+    return SelvaObject_RemStringSetStr(obj, key_name_str, key_name_len, value);
 }
 
 struct SelvaSet *SelvaObject_GetSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {

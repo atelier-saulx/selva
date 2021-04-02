@@ -49,7 +49,6 @@ static char * test_init_works_huge(void)
 
     pu_assert_ptr_equal("the vector is returned", vecP, &vec);
     pu_assert_ptr_equal("compar is set", vec.vec_compar, compar);
-    pu_assert_equal("length is correct", vec.vec_arr_len, 1000);
     pu_assert_equal("last is zeroed", vec.vec_last, 0);
     pu_assert_equal("mode is set correctly", SVector_Mode(&vec), SVECTOR_MODE_RBTREE);
 
@@ -88,6 +87,21 @@ static char * test_insert_one(void)
 
     SVector_Init(&vec, 5, compar);
     SVector_Insert(&vec, &el1);
+
+    pu_assert_equal("last is incremented", vec.vec_last, 1);
+    pu_assert_ptr_equal("el1 was inserted", vec.vec_arr[0], &el1);
+
+    return NULL;
+}
+
+static char * test_insert_one_fast(void)
+{
+    struct data el1 = {
+        .id = 10,
+    };
+
+    SVector_Init(&vec, 5, compar);
+    SVector_InsertFast(&vec, &el1);
 
     pu_assert_equal("last is incremented", vec.vec_last, 1);
     pu_assert_ptr_equal("el1 was inserted", vec.vec_arr[0], &el1);
@@ -381,10 +395,10 @@ static char * test_search_index_unordered(void)
         SVector_Insert(&vec, &el[i]);
     }
 
-    const size_t i = SVector_SearchIndex(&vec, &el[3]);
+    const ssize_t i = SVector_SearchIndex(&vec, &el[3]);
     pu_assert_equal("found it", i, 3);
 
-    const size_t i1 = SVector_SearchIndex(&vec, &(struct data){ 15 });
+    const ssize_t i1 = SVector_SearchIndex(&vec, &(struct data){ 15 });
     pu_assert_equal("not found", i1, -1);
 
     return NULL;
@@ -400,13 +414,13 @@ static char * test_search_index_ordered(void)
         SVector_Insert(&vec, &el[i]);
     }
 
-    const size_t i = SVector_SearchIndex(&vec, &el[3]);
+    const ssize_t i = SVector_SearchIndex(&vec, &el[3]);
     pu_assert_equal("found it", i, 7);
 
-    const size_t i1 = SVector_SearchIndex(&vec, &(struct data){ 5 });
+    const ssize_t i1 = SVector_SearchIndex(&vec, &(struct data){ 5 });
     pu_assert_equal("found", i1, 2);
 
-    const size_t i2 = SVector_SearchIndex(&vec, &(struct data){ 16 });
+    const ssize_t i2 = SVector_SearchIndex(&vec, &(struct data){ 16 });
     pu_assert_equal("not found", i2, -1);
 
     return NULL;
@@ -665,6 +679,30 @@ static char * test_foreach_large(void)
     while ((d = SVector_Foreach(&it))) {
         pu_assert_ptr_equal("el[0] is pointing to the correct item", d, &el[i++]);
     }
+    pu_assert_equal("found all items", i, num_elem(el));
+
+    return NULL;
+}
+
+static char * test_foreach_large_fast_insert(void)
+{
+    struct data el[] = {
+        { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 6 }, { 7 }, { 8 }, { 9 }, { 10 }, { 11 }, { 12 }, { 13 }, { 14 }, { 15 }, { 16 }, { 17 }, { 18 }, { 19 }, { 20 }, { 21 }, { 22 }, { 23 }, { 24 }, { 25 }, { 26 }, { 27 }, { 28 }, { 29 }, { 30 }, { 31 }, { 32 }, { 33 }, { 34 }, { 35 }, { 36 }, { 37 }, { 38 }, { 39 }, { 40 }, { 41 }, { 42 }, { 43 }, { 44 }, { 45 }, { 46 }, { 47 }, { 48 }, { 49 }, { 50 }, { 51 }, { 52 }, { 53 }, { 54 }, { 55 }, { 56 }, { 57 }, { 58 }, { 59 }, { 60 }, { 61 }, { 62 }, { 63 }, { 64 }, { 65 }, { 66 }, { 67 }, { 68 }, { 69 }, { 70 }, { 71 }, { 72 }, { 73 }, { 74 }, { 75 }, { 76 }, { 77 }, { 78 }, { 79 }, { 80 }, { 81 }, { 82 }, { 83 }, { 84 }, { 85 }, { 86 }, { 87 }, { 88 }, { 89 }, { 90 }, { 91 }, { 92 }, { 93 }, { 94 }, { 95 }, { 96 }, { 97 }, { 98 }, { 99 }, { 100 }, { 101 }, { 102 }, { 103 }, { 104 }, { 105 }, { 106 }, { 107 }, { 108 }, { 109 }, { 110 }, { 111 }, { 112 }, { 113 }, { 114 }, { 115 }, { 116 }, { 117 }, { 118 }, { 119 }, { 120 }, { 121 }, { 122 }, { 123 }, { 124 }, { 125 }, { 126 }, { 127 }, { 128 }, { 129 }, { 130 }, { 131 }, { 132 }, { 133 }, { 134 }, { 135 }, { 136 }, { 137 }, { 138 }, { 139 }, { 140 }, { 141 }, { 142 }, { 143 }, { 144 }, { 145 }, { 146 }, { 147 }, { 148 }, { 149 }, { 150 } };
+
+    SVector_Init(&vec, 3, compar);
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_InsertFast(&vec, &el[i]);
+    }
+
+    size_t i = 0;
+    struct SVectorIterator it;
+    struct data *d;
+
+    SVector_ForeachBegin(&it, &vec);
+    while ((d = SVector_Foreach(&it))) {
+        pu_assert_ptr_equal("el[0] is pointing to the correct item", d, &el[i++]);
+    }
+    pu_assert_equal("found all items", i, num_elem(el));
 
     return NULL;
 }
@@ -697,9 +735,11 @@ static char * test_sizeof_ctrl(void)
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
+    pu_def_test(test_init_works_huge, PU_RUN);
     pu_def_test(test_init_lazy_alloc, PU_RUN);
     pu_def_test(test_can_destroy, PU_RUN);
     pu_def_test(test_insert_one, PU_RUN);
+    pu_def_test(test_insert_one_fast, PU_RUN);
     pu_def_test(test_insert_one_lazy_alloc, PU_RUN);
     pu_def_test(test_insert_two_desc, PU_RUN);
     pu_def_test(test_insert_many, PU_RUN);
@@ -723,6 +763,7 @@ void all_tests(void)
     pu_def_test(test_shift_reset, PU_RUN);
     pu_def_test(test_foreach_small, PU_RUN);
     pu_def_test(test_foreach_large, PU_RUN);
+    pu_def_test(test_foreach_large_fast_insert, PU_RUN);
     pu_def_test(test_get_index, PU_RUN);
     pu_def_test(test_sizeof_ctrl, PU_RUN);
 }

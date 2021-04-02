@@ -23,7 +23,7 @@ import conformToSchema from './schema/conformToSchema'
 import initializeSchema from './schema/initializeSchema'
 
 import { GetOptions, ObserveEventOptions, GetResult, get } from './get'
-import { SetOptions, set } from './set'
+import { SetOptions, set, setWithMeta } from './set'
 import { IdOptions } from 'lua/src/id'
 import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
@@ -46,6 +46,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import getServer from './getServer'
 import { ObservableOptions, ObsSettings } from './observable/types'
+import { SetMetaResponse } from './set/types'
 
 export * as constants from './constants'
 
@@ -143,8 +144,8 @@ export class SelvaClient extends EventEmitter {
     // can enable / disable logleves
   }
 
-  async initializeSchema(opts: any) {
-    return initializeSchema(this, opts)
+  async initializeSchema(opts: any, waitForSchema: boolean = true) {
+    return initializeSchema(this, opts, waitForSchema)
   }
 
   async id(props: IdOptions): Promise<string> {
@@ -160,6 +161,11 @@ export class SelvaClient extends EventEmitter {
   async set(setOpts: SetOptions): Promise<Id | undefined> {
     await this.initializeSchema(setOpts)
     return set(this, setOpts)
+  }
+
+  async setWithMeta(setOpts: SetOptions): Promise<SetMetaResponse | undefined> {
+    await this.initializeSchema(setOpts)
+    return setWithMeta(this, setOpts)
   }
 
   async delete(deleteOpts: DeleteOptions): Promise<boolean> {
@@ -179,7 +185,7 @@ export class SelvaClient extends EventEmitter {
     opts: SchemaOptions,
     name: string = 'default'
   ): Promise<void> {
-    await this.initializeSchema({ $db: name })
+    await this.initializeSchema({ $db: name }, false)
     return updateSchema(this, opts, { name, type: 'origin' })
   }
 

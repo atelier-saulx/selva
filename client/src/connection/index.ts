@@ -2,7 +2,6 @@ import { RedisCommand, SelvaClient } from '..'
 import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import drainQueue from './drainQueue'
-import { loadScripts } from './scripts'
 import startRedisClient from './startRedisClient'
 import { RedisClient } from 'redis'
 import { Callback } from '../redis/types'
@@ -645,13 +644,6 @@ class Connection {
     }
 
     connections.set(stringId, this)
-
-    if (
-      serverDescriptor.type === 'origin' ||
-      serverDescriptor.type === 'replica'
-    ) {
-      loadScripts(this)
-    }
 
     // connection connect
     this.on(

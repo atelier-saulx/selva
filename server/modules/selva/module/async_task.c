@@ -1,10 +1,11 @@
+#include <pthread.h>
+#include <sched.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
 #include <string.h>
-#include <pthread.h>
-#include <stdbool.h>
+#include <unistd.h>
 
 #include <hiredis/hiredis.h>
 
@@ -49,11 +50,16 @@ static int getRedisPort(void) {
     return strtol(str, NULL, 10);
 }
 
+static void selva_yield(void) {
+    sched_yield();
+    usleep(ASYNC_TASK_PEEK_INTERVAL_US);
+}
+
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     uint64_t thread_idx = (uint64_t)argv;
     redisContext *ctx = NULL;
 
-    printf("Started worker number %i\n", (int)thread_idx);
+    fprintf(stderr, "Started async task worker number %i\n", (int)thread_idx);
 
     queue_cb_t *queue = queues + thread_idx;
 
@@ -74,7 +80,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         char *next;
 
         if (!queue_peek(queue, (void **)&next)) {
-            usleep(ASYNC_TASK_PEEK_INTERVAL_US);
+            selva_yield();
             continue;
         }
 
@@ -104,7 +110,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
             if (remaining > 0) {
                 if (!queue_peek(queue, (void **)&next)) {
-                    usleep(ASYNC_TASK_PEEK_INTERVAL_US);
+                    selva_yield();
                     continue;
                 }
             }

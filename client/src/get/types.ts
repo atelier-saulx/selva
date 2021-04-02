@@ -144,25 +144,25 @@ export type ObserveEventOptions = GetItem & {
   $filter?: Filter
 }
 
-export type GetOperationFind = {
+type GetOperationCommon = {
+  id: string
+  field: string
+  sourceField: string | string[]
+}
+
+export type GetOperationFind = GetOperationCommon & {
   type: 'find'
   props: GetOptions
   single?: boolean
   filter?: Fork
   inKeys?: string[]
-  field: string
   nested?: GetOperationFind
   isNested?: boolean
-  sourceField: string | string[]
-  id: string
   options: { limit: number; offset: number; sort?: Sort | undefined }
 }
 
-export type GetOperationInherit = {
+export type GetOperationInherit = GetOperationCommon & {
   type: 'inherit'
-  id: string
-  field: string
-  sourceField: string | string[]
   props: GetOptions
   types: string[]
   single?: boolean
@@ -173,21 +173,15 @@ export type GetOperationInherit = {
 }
 
 export type GetOperation =
-  | {
+  | (GetOperationCommon & {
       type: 'db'
-      id: string
-      field: string
-      sourceField: string | string[]
       default?: any
-    }
+    })
   | { type: 'value'; value: string; field: string }
-  | {
+  | (WithOptional<GetOperationCommon, 'id' | 'sourceField'> & {
       type: 'nested_query'
       props: GetOptions
-      field: string
-      id?: string
-      sourceField?: string | string[]
-    }
+    })
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
   | GetOperationFind
   | GetOperationInherit

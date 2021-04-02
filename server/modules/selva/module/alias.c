@@ -12,7 +12,7 @@ RedisModuleKey *open_aliases_key(RedisModuleCtx *ctx) {
 
     alias_key_name = RedisModule_CreateString(ctx, SELVA_ALIASES_KEY, sizeof(SELVA_ALIASES_KEY) - 1);
     if (!alias_key_name) {
-        fprintf(stderr, "%s: ENOMEM\n", __FILE__);
+        fprintf(stderr, "%s:%d: ENOMEM\n", __FILE__, __LINE__);
         return NULL;
     }
 
@@ -56,12 +56,7 @@ void update_alias(RedisModuleCtx *ctx, RedisModuleKey *alias_key, RedisModuleStr
                 struct SelvaObject *obj;
 
                 if (SelvaObject_Key2Obj(key, &obj) == 0) {
-                    RedisModuleString *field;
-
-                    field = RedisModule_CreateStringPrintf(ctx, "%s", SELVA_ALIASES_FIELD);
-                    if (field) {
-                        SelvaObject_RemStringSet(obj, field, ref);
-                    }
+                    SelvaObject_RemStringSetStr(obj, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD) - 1, ref);
                 }
             }
 

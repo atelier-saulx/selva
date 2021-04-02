@@ -89,9 +89,12 @@ static int send_field_value(
     return err;
 }
 
-static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaModify_HierarchyMetadata *metadata __unused) {
+static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+    Selva_NodeId nodeId;
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     int err;
+
+    SelvaModify_HierarchyGetNodeId(nodeId, node);
 
     /*
      * Check that the node is of an accepted type.
@@ -138,8 +141,8 @@ static int InheritCommand_NodeCb(Selva_NodeId nodeId, void *arg, struct SelvaMod
              * SELVA_ENOENT is expected as not all nodes have all fields set;
              * Any other error is unexpected.
              */
-            fprintf(stderr, "%s: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
-                    __FILE__,
+            fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
+                    __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, nodeId,
                     RedisModule_StringPtrLen(field_name, NULL),
                     getSelvaErrorStr(err));
@@ -198,8 +201,9 @@ size_t inheritHierarchyFields(
         }
 
         if (err < 0) {
-            fprintf(stderr, "%s: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
-                    __FILE__, (int)SELVA_NODE_ID_SIZE, node_id, field_name_str, getSelvaErrorStr(err));
+            fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, node_id, field_name_str, getSelvaErrorStr(err));
         }
     }
 
@@ -288,7 +292,9 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         /*
          * We can't reply with an error anymore, so we just log it.
          */
-        fprintf(stderr, "%s: %s\n", __FILE__, getSelvaErrorStr(err));
+        fprintf(stderr, "%s:%d: Inherit failed: %s\n",
+                __FILE__, __LINE__,
+                getSelvaErrorStr(err));
     }
 
     return REDISMODULE_OK;

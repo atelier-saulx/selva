@@ -47,7 +47,7 @@ SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void
         .vec_arr = NULL,
     };
 
-    if (initial_len > 0) {
+    if (initial_len > (size_t)0) {
         /* RBTREE mode requires compar function */
         if (initial_len < SVECTOR_THRESHOLD || !compar) {
             vec->vec_arr = RedisModule_Alloc(VEC_SIZE(initial_len));
@@ -114,30 +114,23 @@ static struct SVector_rbnode *rbtree_find(const SVector * restrict vec, void *ke
 
 
 static void migrate_arr_to_rbtree(SVector *vec) {
-    const size_t len = SVector_Size(vec);
-    void **vec_arr = vec->vec_arr;
-    size_t vec_last = vec->vec_last;
-    void **pp;
-
     assert(vec->vec_mode == SVECTOR_MODE_ARRAY);
     assert(vec->vec_compar);
 
     SVector_ShiftReset(vec);
+
+    const size_t len = SVector_Size(vec);
+    const size_t vec_last = vec->vec_last;
+    void **vec_arr = vec->vec_arr;
+
     RB_INIT(&vec->vec_rbhead);
     mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode));
 
+    void **pp;
     for (typeof(pp) pp_end = (typeof(pp))vec_arr + vec_last, pp = (typeof(pp))vec_arr;
          (void **)pp < (void **)pp_end;
          pp++) {
-        void *p = *pp;
-
-        /*
-         * This shouldn't be required but we do it just in case to be
-         * defensive againts anything weird happening.
-         */
-        if (p) {
-            (void)rbtree_insert(vec, p);
-        }
+        (void)rbtree_insert(vec, *pp);
     }
 
     RedisModule_Free(vec_arr);
@@ -187,15 +180,14 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
 }
 
 void SVector_Insert(SVector *vec, void *el) {
-    ssize_t i = vec->vec_last++;
-
     if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
-        i - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
+        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
         vec->vec_compar) {
         migrate_arr_to_rbtree(vec);
     }
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+        ssize_t i = vec->vec_last++;
         ssize_t vec_len = vec->vec_arr_len;
         void **vec_arr = vec->vec_arr;
 
@@ -628,7 +620,7 @@ void SVector_Clear(SVector * restrict vec) {
     }
 }
 
-static void *SVector_EmptyForeach(struct SVectorIterator *it) {
+static void *SVector_EmptyForeach(struct SVectorIterator *it __unused) {
     return NULL;
 }
 

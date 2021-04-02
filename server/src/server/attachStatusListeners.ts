@@ -3,6 +3,8 @@ import { ServerDescriptor } from '@saulx/selva'
 import { ServerOptions, Stats } from '../types'
 import { SelvaServer } from './'
 
+import { SCRIPTS } from './scripts'
+
 const initHierarchy = (
   server: SelvaServer,
   info: ServerDescriptor
@@ -13,6 +15,11 @@ const initHierarchy = (
       .selva_modify(info, 'root', 'R', '0', 'type', 'root')
       .then((res) => {
         console.log('Empty hierarchy initialized', res)
+        return server.selvaClient.redis.script(
+          info,
+          'LOAD',
+          SCRIPTS['update-schema'].content
+        )
       })
   }
 
@@ -60,6 +67,7 @@ const attachStatusListeners = (server: SelvaServer, opts: ServerOptions) => {
   initHierarchy(server, info)
     .catch((e) => console.error('ERROR initializing hierarchy', e))
     .finally(() => {
+      console.log('Hierarchy initialized and lua scripts loaded')
       attachListener(server, info)
     })
 }

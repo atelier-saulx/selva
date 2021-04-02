@@ -60,7 +60,7 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
      * TODO REDISMODULE_CTX_FLAGS_REPLICATED would be more appropriate here but it's
      * unclear whether it's available only in newer server versions.
      */
-    if (RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE || count == 0) {
+    if ((RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE) || count == 0) {
         return; /* Skip. */
     }
 
@@ -75,7 +75,9 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
 
     argv = RedisModule_PoolAlloc(ctx, ((size_t)leading_args + count) * sizeof(RedisModuleString *));
     if (!argv) {
-        fprintf(stderr, "%s: Replication error: %s\n", __FILE__, getSelvaErrorStr(SELVA_ENOMEM));
+        fprintf(stderr, "%s:%d: Replication error: %s\n",
+                __FILE__, __LINE__,
+                getSelvaErrorStr(SELVA_ENOMEM));
         return;
     }
 
@@ -96,6 +98,17 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
         }
         i_arg_type += 3;
     }
+
+#if 0
+    fprintf(stderr, "%s:%d: Replicating: ", __FILE__, __LINE__);
+    for (int i = 0; i < argc; i++) {
+        RedisModuleString *arg = argv[i];
+        TO_STR(arg);
+
+        fwrite(arg_str, sizeof(char), arg_len, stderr);
+        fputc(' ', stderr);
+    }
+#endif
 
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
 }
@@ -122,7 +135,7 @@ int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     return REDISMODULE_OK;
 }
 
-static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, RedisModuleString *id) {
+static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, const RedisModuleString *id) {
     TO_STR(id);
 
     id_str = RedisModule_StringPtrLen(id, &id_len);
@@ -144,7 +157,7 @@ static const char *sztok(const char *s, size_t size, size_t * restrict i) {
     return r;
 }
 
-static int parse_flags(RedisModuleString *arg) {
+static int parse_flags(const RedisModuleString *arg) {
     TO_STR(arg);
     int flags = 0;
 
@@ -180,9 +193,9 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, st
     }
 
     memcpy(op, data_str, data_len);
-    op->$add    = op->$add    ? (char *)((char *)op + (ptrdiff_t)op->$add)    : NULL;
-    op->$delete = op->$delete ? (char *)((char *)op + (ptrdiff_t)op->$delete) : NULL;
-    op->$value  = op->$value  ? (char *)((char *)op + (ptrdiff_t)op->$value)  : NULL;
+    op->$add    = op->$add    ? ((char *)op + (ptrdiff_t)op->$add)    : NULL;
+    op->$delete = op->$delete ? ((char *)op + (ptrdiff_t)op->$delete) : NULL;
+    op->$value  = op->$value  ? ((char *)op + (ptrdiff_t)op->$value)  : NULL;
 
     if (!(((!op->$add    && op->$add_len == 0)    || (in_mem_range(op->$add,    op, data_len) && in_mem_range(op->$add    + op->$add_len,    op, data_len))) &&
           ((!op->$delete && op->$delete_len == 0) || (in_mem_range(op->$delete, op, data_len) && in_mem_range(op->$delete + op->$delete_len, op, data_len))) &&
@@ -243,7 +256,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString *id = NULL;
     RedisModuleKey *id_key = NULL;
     struct SelvaObject *obj = NULL;
-    svector_autofree SVector alias_query;
+    SVECTOR_AUTOFREE(alias_query);
     int trigger_created = 0; /* Will be set to 1 if the node was created during this command. */
     int err = REDISMODULE_OK;
 
@@ -312,7 +325,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else {
 #if 0
             /* This is probably ok and it's a sign that there are no aliases in the DB yet. */
-            fprintf(stderr, "%s: Unable open aliases key or its type is invalid\n", __FILE__);
+            fprintf(stderr, "%s:%d: Unable open aliases key or its type is invalid\n",
+                    __FILE__, __LINE__);
 #endif
         }
 
@@ -383,7 +397,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * ...  ...
      */
     const int nr_triplets = (argc - 3) / 3;
-    struct bitmap *replset = RedisModule_PoolAlloc(ctx, nr_triplets);
+    struct bitmap *replset = RedisModule_PoolAlloc(ctx, BITMAP_ALLOC_SIZE(nr_triplets));
 
     if (!replset) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to allocate memory for replication");
@@ -594,7 +608,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
 
 #if 0
-        fprintf(stderr, "%s: Updated %.*s %s\n", __FILE__, (int)SELVA_NODE_ID_SIZE, nodeId, field_str);
+        fprintf(stderr, "%s:%d: Updated %.*s %s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, nodeId, field_str);
 #endif
 
         RedisModule_ReplyWithSimpleString(ctx, "UPDATED");

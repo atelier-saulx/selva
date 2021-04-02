@@ -1,8 +1,8 @@
 import { RedisCommand } from '../redis/types'
 import execBatch from './execBatch'
-import { getScriptSha, loadScripts } from './scripts'
+import { getScriptSha } from './scripts'
 import * as constants from '../constants'
-import { Connection, connections } from './'
+import { Connection } from './'
 
 const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
   if (!connection.queueInProgress) {
@@ -12,9 +12,6 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
 
     connection.queueInProgress = true
     process.nextTick(() => {
-      let modify: RedisCommand
-      let modifyResolvers = []
-      let modifyRejects = []
       if (connection.connected) {
         if (!q) {
           q = connection.queue
@@ -69,27 +66,6 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
                   continue
                 } else {
                   args[0] = sha
-                  if (script === `${constants.SCRIPT}:modify`) {
-                    let no = false
-                    if (!modify) {
-                      modify = redisCommand
-                    } else {
-                      if (modify.args.length > 2e3) {
-                        if (!nextQ) {
-                          nextQ = []
-                        }
-                        nextQ.push(redisCommand)
-                        no = true
-                      } else {
-                        modify.args.push(...args.slice(2))
-                      }
-                    }
-                    if (!no) {
-                      modifyResolvers.push(redisCommand.resolve)
-                      modifyRejects.push(redisCommand.reject)
-                    }
-                    continue
-                  }
                 }
               }
             }
@@ -100,33 +76,6 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
               break
             }
           }
-        }
-
-        if (modify) {
-          const orig = modify
-          modify.resolve = (results) => {
-            for (let i = 0; i < modifyResolvers.length; i++) {
-              if (modifyResolvers[i]) {
-                modifyResolvers[i](results[i])
-              }
-            }
-          }
-          modify.reject = (err) => {
-            if (err.stack.includes('NOSCRIPT')) {
-              loadScripts(connection, () => {
-                orig.args[0] = getScriptSha('modify')
-                connection.command(orig)
-              })
-              return
-            }
-            modifyRejects.forEach((reject) => {
-              if (reject) {
-                reject(err)
-              }
-            })
-          }
-          parsedQ.push(modify)
-          modify = undefined
         }
 
         const queueDone = () => {

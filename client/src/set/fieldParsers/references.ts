@@ -32,7 +32,7 @@ const addParent = (
     const noRoot: boolean = anyResult[0][0] === 'N'
     if (!obj.parents) {
       obj.parents = {
-        $value: [],
+        $add: [],
         $noRoot: true,
       }
     } else if (noRoot) {
@@ -127,7 +127,10 @@ const toCArr = async (
       const id = await client.set(obj)
       ids.push(id)
     } else if (obj.type) {
-      const id = await client.id({ type: obj.type })
+      const id = await client.id({
+        type: obj.type,
+        db: obj.$db || result.$db || 'default',
+      })
       obj.$id = id
       ids.push(id)
 
