@@ -1511,8 +1511,8 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     struct SelvaObject *obj;
     struct SelvaObjectKey *key;
 
-    const int ARGV_KEY = 1;
-    const int ARGV_LANG = 2;
+    const int ARGV_LANG = 1;
+    const int ARGV_KEY = 2;
     const int ARGV_OKEY = 3;
 
     if (argc < 3) {

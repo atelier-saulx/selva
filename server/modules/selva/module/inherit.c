@@ -220,8 +220,8 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_KEY     = 1;
-    const int ARGV_LANG          = 2;
+    const int ARGV_LANG          = 1;
+    const int ARGV_REDIS_KEY     = 2;
     const int ARGV_NODE_ID       = 3;
     const int ARGV_TYPES         = 4;
     const int ARGV_FIELD_NAMES   = 5;
