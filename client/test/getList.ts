@@ -695,3 +695,98 @@ test.serial('get - default sorting in $list with references', async (t) => {
   */
   await client.destroy()
 })
+
+// TODO: BETTER SORTING
+// test.serial.only('get - sort is case sensivite', async (t) => {
+//   const client = connect({ port }, { loglevel: 'info' })
+//
+//   await client.updateSchema({
+//     languages: ['en', 'de', 'nl'],
+//     types: {
+//       custom: {
+//         prefix: 'cu',
+//         fields: {
+//           value: { type: 'number', search: true },
+//           age: { type: 'number' },
+//           auth: {
+//             type: 'json',
+//           },
+//           title: { type: 'text' },
+//           name: { type: 'string' },
+//           description: { type: 'text' },
+//           image: {
+//             type: 'object',
+//             properties: {
+//               thumb: { type: 'string' },
+//               poster: { type: 'string' },
+//             },
+//           },
+//         },
+//       },
+//     },
+//   })
+//
+//   const children = []
+//
+//   for (let i = 0; i < 100; i++) {
+//     children.push({
+//       type: 'custom',
+//       value: i,
+//       name: 'flurp' + i,
+//     })
+//   }
+//
+//   children.push(
+//     await client.set({
+//       type: 'custom',
+//       value: 999,
+//       name: 'Flurp' + 999,
+//     })
+//   )
+//
+//   await Promise.all([
+//     client.set({
+//       $id: 'cuA',
+//       image: {
+//         thumb: 'flurp.jpg',
+//       },
+//       title: { en: 'snurf' },
+//       children,
+//     }),
+//   ])
+//
+//   const c = await client.get({
+//     $id: 'cuA',
+//     children: {
+//       name: true,
+//       value: true,
+//       $list: {
+//         $sort: { $field: 'name', $order: 'asc' },
+//         $limit: 10,
+//       },
+//     },
+//   })
+//
+//   console.log(c)
+//   // t.deepEqual(
+//   //   c,
+//   //   {
+//   //     children: [
+//   //       { value: 0, name: 'Flurp999' },
+//   //       { value: 0, name: 'flurp0' },
+//   //       { value: 1, name: 'flurp1' },
+//   //       { value: 2, name: 'flurp2' },
+//   //       { value: 3, name: 'flurp3' },
+//   //       { value: 4, name: 'flurp4' },
+//   //       { value: 5, name: 'flurp5' },
+//   //       { value: 6, name: 'flurp6' },
+//   //       { value: 7, name: 'flurp7' },
+//   //       { value: 8, name: 'flurp8' },
+//   //       { value: 9, name: 'flurp9' },
+//   //     ],
+//   //   },
+//   //   'non redis search sort'
+//   // )
+//
+//   await client.destroy()
+// })
