@@ -142,7 +142,7 @@ export default function validateFilter(
     }
   } else if (filter.$operator === '<' || filter.$operator === '>') {
     if (
-      !filter.$value ||
+      filter.$value === null ||
       (typeof filter.$value !== 'string' && typeof filter.$value !== 'number')
     ) {
       err(
