@@ -8,7 +8,6 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-let rclient: RedisClient | null = null
 
 test.before(async (t) => {
   port = await getPort()
@@ -64,8 +63,6 @@ test.beforeEach(async (t) => {
   })
 
   await client.destroy()
-
-  rclient = redis.createClient(port + 2)
 })
 
 test.after(async (_t) => {
@@ -73,13 +70,6 @@ test.after(async (_t) => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
-})
-
-test.afterEach(async () => {
-  if (rclient) {
-    rclient.end(true)
-    rclient = null
-  }
 })
 
 test.serial('get a single keyval', async (t) => {
