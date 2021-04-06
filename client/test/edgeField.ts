@@ -473,7 +473,7 @@ test.serial('edge modify `add` and `delete` values diff', async (t) => {
   )
 })
 
-test.serial.only('edge modify `delete_all`', async (t) => {
+test.serial('edge modify `delete_all`', async (t) => {
   const client = connect({ port })
 
   // Create nodes
