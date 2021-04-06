@@ -67,6 +67,14 @@
     "@nodelib/fs.scandir" "2.1.4"
     fastq "^1.6.0"
 
+"@saulx/diff@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@saulx/diff/-/diff-1.0.0.tgz#c0b587f383cc6190ea6b69895bce9f8f9ac6750d"
+  integrity sha512-Bbrh7xoVUSZed6V4/HRB0vO1xxyUI10gqrwyM7sa1YUw0/bZUoYo2rpE9vmUD+TA5/fBg/hcSx9kw1cvVEfYvg==
+  dependencies:
+    "@saulx/hash" "^1.0.1"
+    "@saulx/utils" "^2.0.1"
+
 "@saulx/eslint-config@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@saulx/eslint-config/-/eslint-config-1.1.0.tgz#9b01d491c25d63910c3b60366085589489a2d8bd"
@@ -84,15 +92,34 @@
     eslint-plugin-react "^7.22.0"
     typescript "^4.1.3"
 
+"@saulx/hash@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@saulx/hash/-/hash-1.0.1.tgz#ebc83e6c11e40cdf4320f89f8be858f657c9f546"
+  integrity sha512-BDpU4zancvwMPL6bpZPCtPmB2h4O5Mi8g5FChLQUrKpoxvoMtSyTF4UHi07OX4nxtHyciJL3Axn57K9S77/kYw==
+
 "@saulx/prettier-config@^1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@saulx/prettier-config/-/prettier-config-1.0.0.tgz#a6ef16178953483d55709ecb1e3414fa35259c38"
   integrity sha512-UtITV+SUiK6gaNsUdQKHJbffHiNsh1dt+IxZSiUqFcgbq16iWAYWPfty/pchNzYwMgXmjsuIN98++WE4DWdQ/g==
 
+"@saulx/selva-diff@^1.0.17":
+  version "1.0.17"
+  resolved "https://registry.yarnpkg.com/@saulx/selva-diff/-/selva-diff-1.0.17.tgz#bb8147c90a493af3f7dac9511a9359f829f1a22b"
+  integrity sha512-7pIjfI+P428UObfdjK7aFqRjTepkKhjxzfCrgdpuN37Cs6nu+rzDECJdrqOkV7TQG08C4U0WvSN1n5rktK3r7g==
+  dependencies:
+    "@saulx/utils" "^1.6.6"
+
 "@saulx/utils@^1.6.6":
   version "1.6.6"
   resolved "https://registry.yarnpkg.com/@saulx/utils/-/utils-1.6.6.tgz#4be3cab609a4ad70b043a8487056812964327cac"
   integrity sha512-JNH7jM2HmG/JsCO+QnYb998iyoQ50Xf/eIp2STLKC/kbLzM/Yu+ONsbPBcElxeVkFmk1c3ZFLkJ3A/neOeEhgA==
+  dependencies:
+    is-plain-obj "^3.0.0"
+
+"@saulx/utils@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@saulx/utils/-/utils-2.0.1.tgz#9839954ff4cfea6c2c2643f69eadc98453eee95f"
+  integrity sha512-imqYoSocOARjVZcQQy7XZfVpP3pGoHph712fh4C6aVdlWHUBepHsnj1uYDvguMhlay37+OUrj2BQihe++ZdT/A==
   dependencies:
     is-plain-obj "^3.0.0"
 

@@ -57,8 +57,8 @@
     "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
-    "@saulx/utils": "^1.6.6",
-    "@saulx/selva-diff": "^1.0.17",
+    "@saulx/hash": "^1.0.1",
+    "@saulx/diff": "^1.0.0",
     "@saulx/selva": "4.1.0",
     "aws-sdk": "^2.841.0",
     "body-parser": "^1.19.0",
