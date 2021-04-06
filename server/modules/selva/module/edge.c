@@ -291,15 +291,10 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
     return 0;
 }
 
-int Edge_Delete(const char *key_name_str, size_t key_name_len, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id) {
-    struct EdgeField *src_edge_field;
+int Edge_Delete(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id) {
+    struct EdgeField *src_edge_field = edgeField;
     struct SelvaModify_HierarchyNode *dst_node;
     int err;
-
-    src_edge_field = Edge_GetField(src_node, key_name_str, key_name_len);
-    if (!src_edge_field) {
-        return SELVA_ENOENT;
-    }
 
     dst_node = SVector_Search(&src_edge_field->arcs, dst_node_id);
     if (!dst_node) {

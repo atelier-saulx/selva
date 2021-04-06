@@ -75,7 +75,7 @@ int Edge_Has(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *dst_
  * constraint then the function will return SELVA_EINVAL.
  */
 int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node);
-int Edge_Delete(const char *key_name_str, size_t key_name_len, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id);
+int Edge_Delete(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id);
 int Edge_ClearField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len);
 int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len);
 

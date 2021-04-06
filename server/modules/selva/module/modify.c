@@ -214,7 +214,7 @@ static int update_edge(
             SVector_ForeachBegin(&it, &old_arcs);
             while ((dst_id = SVector_Foreach(&it))) {
                 if (!SVector_Search(&new_ids, dst_id)) {
-                    Edge_Delete(field_str, field_len, node, dst_id);
+                    Edge_Delete(edgeField, node, dst_id);
                     res++; /* Count delete as a change. */
                 }
             }
@@ -285,18 +285,21 @@ static int update_edge(
             }
         }
         if (setOpts->$delete_len > 0) {
-            for (size_t i = 0; i < setOpts->$delete_len; i += SELVA_NODE_ID_SIZE) {
-                Selva_NodeId dst_node_id;
-                int err;
+            struct EdgeField *edgeField = Edge_GetField(node, field_str, field_len);
+            if (edgeField) {
+                for (size_t i = 0; i < setOpts->$delete_len; i += SELVA_NODE_ID_SIZE) {
+                    Selva_NodeId dst_node_id;
+                    int err;
 
-                /*
-                 * It may or may not be better for caching to have the node_id in
-                 * stack.
-                 */
-                memcpy(dst_node_id, setOpts->$delete + i, SELVA_NODE_ID_SIZE);
-                err = Edge_Delete(field_str, field_len, node, dst_node_id);
-                if (!err) {
-                    res++;
+                    /*
+                     * It may or may not be better for caching to have the node_id in
+                     * stack.
+                     */
+                    memcpy(dst_node_id, setOpts->$delete + i, SELVA_NODE_ID_SIZE);
+                    err = Edge_Delete(edgeField, node, dst_node_id);
+                    if (!err) {
+                        res++;
+                    }
                 }
             }
         }
