@@ -8,18 +8,17 @@ import {
   SUBSCRIPTIONS,
   REMOVE_SUBSCRIPTION,
   REGISTRY_MOVE_SUBSCRIPTION,
-  CLIENTS,
   CACHE,
 } from '../constants'
 import parseError from './parseError'
 import { ServerSelector } from '../types'
 import chalk from 'chalk'
-import { applyPatch } from '@saulx/selva-diff'
+import { applyPatch } from '@saulx/diff'
 
 // import { unzip as unzipCb } from 'zlib'
 // import { promisify } from 'util'
 
-import { deepCopy, wait } from '@saulx/utils'
+import { deepCopy } from '@saulx/utils'
 
 // const unzip = promisify(unzipCb)
 
