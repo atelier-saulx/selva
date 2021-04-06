@@ -106,7 +106,6 @@ enum FindCommand_OrderedItemType {
 
 struct FindCommand_OrderedItem {
     Selva_NodeId id;
-    struct SelvaModify_HierarchyNode *node;
     enum FindCommand_OrderedItemType type;
     double d;
     size_t data_len;
@@ -1224,7 +1223,15 @@ static size_t FindCommand_PrintOrderedResult(
         if (merge_strategy != MERGE_STRATEGY_NONE) {
             err = send_node_object_merge(ctx, lang, item->id, merge_strategy, merge_path, fields, nr_fields_out);
         } else if (fields) {
-            err = send_node_fields(ctx, lang, hierarchy, item->node, fields);
+            struct SelvaModify_HierarchyNode *node;
+
+            /* TODO Consider if having hierarchy node pointers here would be better. */
+            node = SelvaHierarchy_FindNode(hierarchy, item->id);
+            if (node) {
+                err = send_node_fields(ctx, lang, hierarchy, node, fields);
+            } else {
+                err = SELVA_MODIFY_HIERARCHY_ENOENT;
+            }
         } else {
             RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
             err = 0;
