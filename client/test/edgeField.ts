@@ -186,13 +186,13 @@ test.serial('traverse a custom field', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'a.b', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'a.b', 'root'),
     [ 'root', 'ma1', 'ma2', 'ma3', 'ma4' ]
   )
   // Currently an error is not returned even though dfs is not supported, instead
   // an invalid traversal option just skips the node in the list.
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'dfs', 'a.b', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'dfs', 'a.b', 'root'),
     []
   )
 })
@@ -234,7 +234,7 @@ test.serial('find can return edge fields', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'a.b', 'fields', 'a.b\nparents', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'a.b', 'fields', 'a.b\nparents', 'root'),
     [
       [
         'root', [
@@ -284,7 +284,7 @@ test.serial('missing edges are added automatically', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('___selva_hierarchy', 'bfs', 'a.b', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'a.b', 'root'),
     [ 'root', 'ma1', 'ma2' ]
   )
 })

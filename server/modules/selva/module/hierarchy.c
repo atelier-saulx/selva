@@ -2389,7 +2389,7 @@ int SelvaHierarchy_EdgeListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         }
     }
 
-    SelvaObject_ReplyWithObject(ctx, obj, NULL);
+    SelvaObject_ReplyWithObject(ctx, NULL, obj, NULL);
 
     return REDISMODULE_OK;
 }

@@ -621,7 +621,7 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
 
                     if (edges && SelvaObject_ExistsStr(edges, field_str, field_len) == 0) {
                         RedisModule_ReplyWithString(ctx, field);
-                        err = SelvaObject_ReplyWithObject(ctx, edges, field);
+                        err = SelvaObject_ReplyWithObject(ctx, lang, edges, field);
                         if (err) {
                             replyWithSelvaErrorf(ctx, err, "Sending the edge field failed");
                         }
