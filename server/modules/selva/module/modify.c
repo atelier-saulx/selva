@@ -167,7 +167,6 @@ static int update_edge(
     const unsigned constraint_id = setOpts->edge_constraint_id;
     TO_STR(field);
 
-    /* TODO This lookup could be optimized away. */
     node = SelvaHierarchy_FindNode(hierarchy, node_id);
     if (unlikely(!node)) {
         return SELVA_ENOENT;
@@ -230,25 +229,34 @@ static int update_edge(
 
             err = SelvaHierarchy_UpsertNode(ctx, hierarchy, dst_node_id, &dst_node);
             if ((err && err != SELVA_MODIFY_HIERARCHY_EEXIST) || !dst_node) {
-                /* TODO Should probably return an error */
                 fprintf(stderr, "%s:%d: Upserting a node failed: %s\n",
                         __FILE__, __LINE__,
                         getSelvaErrorStr(err));
-                continue;
+                /*
+                 * We could also ignore the error and try to insert the rest but
+                 * perhaps it can be considered a fatal error if one of the
+                 * nodes cannot be referenced/created.
+                 */
+                return err;
             }
 
             err = Edge_Add(field_str, field_len, constraint_id, node, dst_node);
             if (!err) {
                 res++;
             } else if (err != SELVA_EEXIST) {
-                /* TODO Handle error */
+                /*
+                 * This will most likely happen in real production only when
+                 * the constraints don't match.
+                 */
+#if 0
                 fprintf(stderr, "%s:%d: Adding an edge from %.*s.%.*s to %.*s failed with an error: %s\n",
                         __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, node_id,
                         (int)field_len, field_str,
                         (int)SELVA_NODE_ID_SIZE, dst_node_id,
                         getSelvaErrorStr(err));
-                continue;
+#endif
+                return err;
             }
         }
 
@@ -268,19 +276,30 @@ static int update_edge(
 
                 err = SelvaHierarchy_UpsertNode(ctx, hierarchy, setOpts->$add + i, &dst_node);
                 if ((err && err != SELVA_MODIFY_HIERARCHY_EEXIST) || !dst_node) {
-                    /* TODO Should probably return an error */
+                    /* See similar case with $value */
                     fprintf(stderr, "%s:%d: Upserting a node failed: %s\n",
                             __FILE__, __LINE__,
                             getSelvaErrorStr(err));
-                    continue;
+                    return err;
                 }
 
                 err = Edge_Add(field_str, field_len, constraint_id, node, dst_node);
                 if (!err) {
                     res++;
                 } else if (err != SELVA_EEXIST) {
-                    /* TODO Handle error */
-                    continue;
+                    /*
+                     * This will most likely happen in real production only when
+                     * the constraints don't match.
+                     */
+#if 0
+                    fprintf(stderr, "%s:%d: Adding an edge from %.*s.%.*s to %.*s failed with an error: %s\n",
+                            __FILE__, __LINE__,
+                            (int)SELVA_NODE_ID_SIZE, node_id,
+                            (int)field_len, field_str,
+                            (int)SELVA_NODE_ID_SIZE, dst_node_id,
+                            getSelvaErrorStr(err));
+#endif
+                    return err;
                 }
             }
         }
@@ -733,26 +752,28 @@ int SelvaModify_ModifySet(
 
         Selva_NodeIdCpy(node_id, id_str);
 
-        if (isChildren || isParents) {
-            /*
-             * Children and parents hierarchy is hardcoded for performance.
-             */
-            if (setOpts->delete_all) {
-                /* If delete_all is set the other fields are ignored. */
-                int err;
+        if (setOpts->delete_all) {
+            /* If delete_all is set the other fields are ignored. */
+            int err;
 
-                if (isChildren) {
-                    err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
-                } else if (isParents) {
-                    err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
-                } else {
-                    err = Edge_ClearField(SelvaHierarchy_FindNode(hierarchy, node_id), field_str, field_len);
-                }
-
-                return err == SELVA_ENOENT ? 1 : err;
+            if (isChildren) {
+                err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
+            } else if (isParents) {
+                err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
             } else {
-                return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
+                err = Edge_ClearField(SelvaHierarchy_FindNode(hierarchy, node_id), field_str, field_len);
             }
+
+            /* TODO We'd potentially want to see the real number of deletions here. */
+            if (err == 0) {
+                return 1;
+            } else if (err == SELVA_ENOENT || err == SELVA_MODIFY_HIERARCHY_ENOENT) {
+                return 0;
+            } else {
+                return err;
+            }
+        } else if (isChildren || isParents) {
+            return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
         } else {
             /*
              * Other graph fields are dynamic and implemented separately
@@ -783,12 +804,12 @@ int SelvaModify_ModifySet(
                 if (node_aliases) {
                     selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
                     (void)delete_aliases(alias_key, node_aliases);
-                    /* TODO It would be nice to return the actual number of deletions. */
                 }
             }
 
             err = SelvaObject_DelKey(obj, field);
             if (err == 0) {
+                /* TODO It would be nice to return the actual number of deletions. */
                 err = 1;
             }
 

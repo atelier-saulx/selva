@@ -472,3 +472,47 @@ test.serial('edge modify `add` and `delete` values diff', async (t) => {
     1
   )
 })
+
+test.serial.only('edge modify `delete_all`', async (t) => {
+  const client = connect({ port })
+
+  // Create nodes
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '0', 'o.a', 'hello'),
+    ['root', 'UPDATED']
+  );
+
+  const rec1 = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['ma1', 'ma2']),
+    $delete: null,
+    $value: null,
+  })
+  const rec2 = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 1,
+    constraint_id: 0,
+    $add: null,
+    $delete: null,
+    $value: null,
+  })
+
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '5', 'a.b', rec1),
+    ['root', 'UPDATED']
+  );
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
+    [0, 'ma1', 'ma2']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '5', 'a.b', rec2),
+    ['root', 'UPDATED']
+  );
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
+    [0]
+  )
+})
