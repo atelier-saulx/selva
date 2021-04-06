@@ -1969,7 +1969,7 @@ int Selva_SubscriptionsListMissingCommand(RedisModuleCtx *ctx, RedisModuleString
         return REDISMODULE_OK;
     }
 
-    err = SelvaObject_ReplyWithObject(ctx, hierarchy->subs.missing, NULL);
+    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->subs.missing, NULL);
     if (err) {
         replyWithSelvaError(ctx, err);
     }

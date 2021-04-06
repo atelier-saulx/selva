@@ -8,7 +8,6 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-let rclient: RedisClient | null = null
 
 test.before(async (t) => {
   port = await getPort()
@@ -64,8 +63,6 @@ test.beforeEach(async (t) => {
   })
 
   await client.destroy()
-
-  rclient = redis.createClient(port + 2)
 })
 
 test.after(async (_t) => {
@@ -75,18 +72,11 @@ test.after(async (_t) => {
   await srv.destroy()
 })
 
-test.afterEach(async () => {
-  if (rclient) {
-    rclient.end(true)
-    rclient = null
-  }
-})
-
 test.serial('get a single keyval', async (t) => {
   const client = connect({ port })
 
   t.deepEqual(
-    await client.redis.selva_object_get('maTest0001', 'title.en'),
+    await client.redis.selva_object_get('', 'maTest0001', 'title.en'),
     'ma1'
   )
 })
@@ -94,7 +84,7 @@ test.serial('get a single keyval', async (t) => {
 test.serial('get all', async (t) => {
   const client = connect({ port })
 
-  t.deepEqual(await client.redis.selva_object_get('maTest0001'), [
+  t.deepEqual(await client.redis.selva_object_get('', 'maTest0001'), [
     'id',
     'maTest0001',
     'title',
@@ -107,37 +97,29 @@ test.serial('get all', async (t) => {
 test.serial('obj len', async (t) => {
   const client = connect({ port })
 
-  t.deepEqual(
-    await client.redis.selva_object_len('maTest0001'),
-    3
-  )
+  t.deepEqual(await client.redis.selva_object_len('maTest0001'), 3)
 })
 
 test.serial('string len', async (t) => {
   const client = connect({ port })
 
-  t.deepEqual(
-    await client.redis.selva_object_len('maTest0001', 'title.en'),
-    3
-  )
+  t.deepEqual(await client.redis.selva_object_len('maTest0001', 'title.en'), 3)
 })
 
 test.serial('meta', async (t) => {
   const client = connect({ port })
 
   await client.redis.selva_object_set('x', 'a', 's', 'abc')
+  t.deepEqual(await client.redis.selva_object_getmeta('', 'x', 'a'), 0)
   t.deepEqual(
-    await client.redis.selva_object_getmeta('x', 'a'),
-    0
-  )
-  t.deepEqual(
-    await client.redis.selva_object_setmeta('x', 'a', Buffer.from(Uint32Array.from([0xBADDCAFE]).buffer)),
+    await client.redis.selva_object_setmeta(
+      'x',
+      'a',
+      Buffer.from(Uint32Array.from([0xbaddcafe]).buffer)
+    ),
     1
   )
-  t.deepEqual(
-    await client.redis.selva_object_getmeta('x', 'a'),
-    0xbaddcafe
-  )
+  t.deepEqual(await client.redis.selva_object_getmeta('', 'x', 'a'), 0xbaddcafe)
 })
 
 test.serial('deleting deep objects', async (t) => {
@@ -145,14 +127,8 @@ test.serial('deleting deep objects', async (t) => {
 
   await client.redis.selva_object_set('x', 'a.r.s', 's', 'Hello')
   await client.redis.selva_object_set('x', 'a.s.s', 's', 'Hallo')
-  t.deepEqual(
-    await client.redis.selva_object_len('x', 'a'),
-    2
-  )
+  t.deepEqual(await client.redis.selva_object_len('x', 'a'), 2)
 
   await client.redis.selva_object_del('x', 'a.r')
-  t.deepEqual(
-    await client.redis.selva_object_len('x', 'a'),
-    1
-  )
+  t.deepEqual(await client.redis.selva_object_len('x', 'a'), 1)
 })

@@ -2,25 +2,22 @@ import { SelvaClient } from '../../'
 import {
   GetOperationInherit,
   GetResult,
-  GetOperation,
   Fork,
   GetOptions,
   FilterAST,
 } from '../types'
-import { getNestedSchema, getNestedField, setNestedResult } from '../utils'
-import executeGetOperations, {
+import { getNestedSchema, setNestedResult } from '../utils'
+import {
   TYPE_CASTS,
   typeCast,
   ExecContext,
   executeNestedGetOperations,
   addMarker,
   bufferNodeMarker,
-  executeGetOperation,
 } from './'
-import { FieldSchema, Schema } from '../../schema'
+import { Schema, FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
-import { deepMerge } from '@saulx/utils'
-import { buildResultFromIdFieldAndValue } from './util'
+import { buildResultFromIdFieldAndValue, makeLangArg } from './util'
 
 function makeRealKeys(
   props: GetOptions,
@@ -51,11 +48,10 @@ function makeRealKeys(
 async function mergeObj(
   client: SelvaClient,
   op: GetOperationInherit,
-  schema: Schema,
+  _schema: Schema,
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> {
-  const { db } = ctx
   const remapped: Record<string, string> = {}
   const props = makeRealKeys(op.props, op.field, true)
   const fields = Object.keys(props).map((f) => {
@@ -103,7 +99,6 @@ async function mergeObj(
   const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
 
   if (ctx.subId) {
-    console.log('MARKER', ctx, op.id, ...fields)
     bufferNodeMarker(ctx, op.id, ...fields)
     const added = await addMarker(client, ctx, {
       type: 'ancestors',
@@ -124,6 +119,7 @@ async function mergeObj(
 
   const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -133,18 +129,6 @@ async function mergeObj(
     field,
     op.id,
     ...rpn
-  )
-  console.log('RESSS', res)
-  console.log(
-    '___selva_hierarchy',
-    'bfs',
-    'offset',
-    -1,
-    'ancestors',
-    'merge',
-    field,
-    op.id,
-    rpn
   )
 
   const o = buildResultFromIdFieldAndValue(
@@ -162,11 +146,10 @@ async function mergeObj(
 async function deepMergeObj(
   client: SelvaClient,
   op: GetOperationInherit,
-  schema: Schema,
+  _schema: Schema,
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> {
-  const { db } = ctx
   const remapped: Record<string, string> = {}
   const props = makeRealKeys(op.props, op.field, true)
   const fields = Object.keys(props).map((f) => {
@@ -234,6 +217,7 @@ async function deepMergeObj(
 
   const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -243,17 +227,6 @@ async function deepMergeObj(
     field,
     op.id,
     ...rpn
-  )
-  console.log(
-    '___selva_hierarchy',
-    'bfs',
-    'ancestors',
-    'offset',
-    -1,
-    'deepMerge',
-    field,
-    op.id,
-    rpn
   )
 
   const o = buildResultFromIdFieldAndValue(ctx, client, remapped, field, res)
@@ -266,7 +239,6 @@ async function inheritItem(
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> {
-  const { db } = ctx
   const schema = client.schemas[ctx.db]
 
   const props = makeRealKeys(op.props, op.field)
@@ -333,6 +305,7 @@ async function inheritItem(
 
   const [results] = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
     'bfs',
     'ancestors',
@@ -412,7 +385,7 @@ export default async function inherit(
     return acc
   }, '')
 
-  let fs
+  let fs: FieldSchema | null
   if (op.types && op.types.length > 0) {
     fs = getNestedSchema(
       schema,
@@ -466,6 +439,7 @@ export default async function inherit(
 
     const res = await client.redis.selva_inherit(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       op.id,
       prefixes,
@@ -540,6 +514,7 @@ export default async function inherit(
 
     const res = await client.redis.selva_inherit(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       op.id,
       prefixes,
@@ -620,9 +595,9 @@ export default async function inherit(
     }
   }
 
-  console.log(['___selva_hierarchy', op.id, prefixes || '', fields])
   let res = await client.redis.selva_inherit(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
     op.id,
     prefixes,

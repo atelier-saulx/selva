@@ -17,6 +17,13 @@
 #define SELVA_CREATED_AT_FIELD "createdAt"
 #define SELVA_UPDATED_AT_FIELD "updatedAt"
 
+/*
+ * Defines for SelvaObject user meta
+ */
+#define SELVA_OBJECT_META_SUBTYPE_OBJECT 0
+#define SELVA_OBJECT_META_SUBTYPE_RECORD 1
+#define SELVA_OBJECT_META_SUBTYPE_TEXT 2
+
 /**
  * Type for Selva NodeId.
  */

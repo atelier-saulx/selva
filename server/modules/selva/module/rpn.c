@@ -635,6 +635,7 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
             return push_double_result(ctx, dvalue);
         } else { /* Assume SELVA_OBJECT_STRING && RPN_LVTYPE_STRING */
             /* This will fail if the field type is not a string. */
+            // TODO: wrap this in a new function so it takes lang and gets from text if it's a text type object instead of string inn rms_field
             err = SelvaObject_GetString(obj, ctx->rms_field, &value);
             if (err || !value) {
 #if 0

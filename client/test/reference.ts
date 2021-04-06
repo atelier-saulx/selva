@@ -417,3 +417,96 @@ test.serial('singular reference inherit reference', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+// TODO: this is annoying but needs to work
+// test.serial.only('list of simple singular reference', async (t) => {
+//   const client = connect({ port }, { loglevel: 'info' })
+//
+//   // const match1 = await client.set({
+//   //   $id: 'maA',
+//   //   title: {
+//   //     en: 'yesh match'
+//   //   }
+//   // })
+//
+//   // const club1 = await client.set({
+//   //   $id: 'clA',
+//   //   title: {
+//   //     en: 'yesh club'
+//   //   },
+//   //   specialMatch: match1
+//   // })
+//
+//   const club1 = await client.set({
+//     $id: 'clA',
+//     title: {
+//       en: 'yesh club',
+//     },
+//     specialMatch: {
+//       $id: 'maA',
+//       title: {
+//         en: 'yesh match',
+//       },
+//     },
+//   })
+//
+//   // t.deepEqualIgnoreOrder(
+//   //   await client.get({
+//   //     $id: 'clA',
+//   //     $language: 'en',
+//   //     title: true,
+//   //     specialMatch: true,
+//   //   }),
+//   //   {
+//   //     title: 'yesh club',
+//   //     specialMatch: 'maA',
+//   //   }
+//   // )
+//
+//   // t.deepEqualIgnoreOrder(
+//   //   await client.get({
+//   //     $id: 'clA',
+//   //     $language: 'en',
+//   //     title: true,
+//   //     specialMatch: {
+//   //       title: true,
+//   //       description: { $default: 'no description' },
+//   //     },
+//   //   }),
+//   //   {
+//   //     title: 'yesh club',
+//   //     specialMatch: {
+//   //       title: 'yesh match',
+//   //       description: 'no description',
+//   //     },
+//   //   }
+//   // )
+//
+//   const result = await client.get({
+//     $id: 'root',
+//     $language: 'en',
+//     children: {
+//       id: true,
+//       title: true,
+//       specialMatch: {
+//         id: true,
+//         title: true,
+//       },
+//       $list: {
+//         $find: {
+//           $filter: [
+//             {
+//               $field: 'type',
+//               $operator: '=',
+//               $value: 'club',
+//             },
+//           ],
+//         },
+//       },
+//     },
+//   })
+//   console.dir(result, { depth: null })
+//
+//   await client.delete('root')
+//   await client.destroy()
+// })

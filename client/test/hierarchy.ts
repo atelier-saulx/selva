@@ -249,6 +249,7 @@ test.serial.skip(
 
     const ancestors = (id) =>
       client.redis.selva_hierarchy_find(
+        '',
         '___selva_hierarchy',
         'bfs',
         'ancestors',
@@ -359,6 +360,7 @@ test.serial('ancestry has only one season in real world setting', async (t) => {
 
   const ancestors = (id) =>
     client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -460,6 +462,7 @@ test.serial.skip(
 
     const ancestors = (id) =>
       client.redis.selva_hierarchy_find(
+        '',
         '___selva_hierarchy',
         'bfs',
         'ancestors',
@@ -587,6 +590,7 @@ test.serial('more complex hierarchies', async (t) => {
   // families
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -596,6 +600,7 @@ test.serial('more complex hierarchies', async (t) => {
   )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -607,6 +612,7 @@ test.serial('more complex hierarchies', async (t) => {
   // players
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -616,6 +622,7 @@ test.serial('more complex hierarchies', async (t) => {
   )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -625,6 +632,7 @@ test.serial('more complex hierarchies', async (t) => {
   )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -634,6 +642,7 @@ test.serial('more complex hierarchies', async (t) => {
   )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -645,6 +654,7 @@ test.serial('more complex hierarchies', async (t) => {
   // cars
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -654,6 +664,7 @@ test.serial('more complex hierarchies', async (t) => {
   )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -665,6 +676,7 @@ test.serial('more complex hierarchies', async (t) => {
   // league
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -676,6 +688,7 @@ test.serial('more complex hierarchies', async (t) => {
   // season
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -687,6 +700,7 @@ test.serial('more complex hierarchies', async (t) => {
   // club
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -698,6 +712,7 @@ test.serial('more complex hierarchies', async (t) => {
   // teams
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -707,6 +722,7 @@ test.serial('more complex hierarchies', async (t) => {
   )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',
@@ -718,6 +734,7 @@ test.serial('more complex hierarchies', async (t) => {
   // match
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
+      '',
       '___selva_hierarchy',
       'bfs',
       'ancestors',

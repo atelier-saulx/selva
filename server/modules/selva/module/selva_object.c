@@ -66,8 +66,8 @@ static struct SelvaObjectPointerOpts default_ptr_opts = {
 SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
-static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key);
-static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj);
+static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key);
+static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj);
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
@@ -1232,7 +1232,7 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, const RedisModuleString *key_na
     return SelvaObject_LenStr(obj, key_name_str, key_name_len);
 }
 
-int SelvaObjet_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta) {
+int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta) {
     int err;
     struct SelvaObjectKey *key;
 
@@ -1245,10 +1245,10 @@ int SelvaObjet_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str,
     return 0;
 }
 
-int SelvaObjet_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t *meta) {
+int SelvaObject_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t *meta) {
     TO_STR(key_name);
 
-    return SelvaObjet_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
+    return SelvaObject_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
 }
 
 int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta) {
@@ -1425,8 +1425,7 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
     (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Array type not supported");
 }
 
-static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
-    fprintf(stderr, "WHAT %s\n", key->name);
+static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
         RedisModule_ReplyWithNull(ctx);
@@ -1446,7 +1445,29 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
         break;
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
-            replyWithObject(ctx, key->value);
+            TO_STR(lang);
+            if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT && lang && lang_len > 0) {
+                char buf[lang_len + 1];
+                char *s = buf;
+                strncpy(s, lang_str, lang_len);
+                s[lang_len] = '\0';
+                const char *sep = "\n";
+                for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
+                    const size_t slen = strlen(s);
+
+                    struct SelvaObjectKey *text_key;
+                    int err = get_key(key->value, s, slen, 0, &text_key);
+                    // ignore errors on purpose
+                    if (!err && text_key->type == SELVA_OBJECT_STRING) {
+                        RedisModule_ReplyWithString(ctx, text_key->value);
+                        return;
+                    }
+                }
+
+                RedisModule_ReplyWithNull(ctx);
+            } else {
+                replyWithObject(ctx, lang, key->value);
+            }
         } else {
             RedisModule_ReplyWithNull(ctx);
         }
@@ -1465,7 +1486,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, struct SelvaObjectKey *key) {
     }
 }
 
-static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
+static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj) {
     struct SelvaObjectKey *key;
     size_t n = 0;
 
@@ -1473,7 +1494,7 @@ static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
 
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
         RedisModule_ReplyWithStringBuffer(ctx, key->name, key->name_len);
-        replyWithKeyValue(ctx, key);
+        replyWithKeyValue(ctx, lang, key);
 
         n += 2;
     }
@@ -1481,12 +1502,12 @@ static void replyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
-int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, const RedisModuleString *key_name) {
+int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *key_name) {
     struct SelvaObjectKey *key;
     int err;
 
     if (!key_name) {
-        replyWithObject(ctx, obj);
+        replyWithObject(ctx, lang, obj);
         return 0;
     }
 
@@ -1496,13 +1517,14 @@ int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, struct SelvaObject *obj, co
         return err;
     }
 
-    replyWithKeyValue(ctx, key);
+    replyWithKeyValue(ctx, lang, key);
 
     return 0;
 }
 
 int SelvaObject_GetWithWildcardStr(
         RedisModuleCtx *ctx,
+        RedisModuleString *lang,
         struct SelvaObject *obj,
         const char *okey_str,
         size_t okey_len,
@@ -1544,7 +1566,7 @@ int SelvaObject_GetWithWildcardStr(
 
             if (strnstr(new_field, ".*.", new_field_len)) {
                 /* recurse for nested wildcards while keeping the resolved path */
-                SelvaObject_GetWithWildcardStr(ctx, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
+                SelvaObject_GetWithWildcardStr(ctx, lang, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
             }
 
@@ -1578,7 +1600,7 @@ int SelvaObject_GetWithWildcardStr(
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             }
 
-            replyWithKeyValue(ctx, key);
+            replyWithKeyValue(ctx, lang, key);
             *resp_count += 2;
         }
     } else {
@@ -1598,20 +1620,22 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     struct SelvaObject *obj;
     struct SelvaObjectKey *key;
 
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
+    const int ARGV_LANG = 1;
+    const int ARGV_KEY = 2;
+    const int ARGV_OKEY = 3;
 
-    if (argc < 2) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
 
+    RedisModuleString *lang = argv[ARGV_LANG];
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
         return REDISMODULE_OK;
     }
 
-    if (argc == 2) {
-        replyWithObject(ctx, obj);
+    if (argc == 3) {
+        replyWithObject(ctx, lang, obj);
         return REDISMODULE_OK;
     }
 
@@ -1627,7 +1651,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
             long resp_count = 0;
             RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-            err = SelvaObject_GetWithWildcardStr(ctx, obj, okey_str, okey_len, &resp_count, -1, 1);
+            err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, okey_str, okey_len, &resp_count, -1, 1);
             RedisModule_ReplySetArrayLength(ctx, resp_count);
         } else {
             fprintf(stderr, "HMM KEY getting %s\n", okey_str);
@@ -1642,7 +1666,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         }
 
         if (!is_wildcard) {
-            replyWithKeyValue(ctx, key);
+            replyWithKeyValue(ctx, lang, key);
         }
         return REDISMODULE_OK;
     }
@@ -1836,7 +1860,7 @@ int SelvaObject_GetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     SelvaObjectMeta_t user_meta;
-    err = SelvaObjet_GetUserMeta(obj, argv[ARGV_OKEY], &user_meta);
+    err = SelvaObject_GetUserMeta(obj, argv[ARGV_OKEY], &user_meta);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "Failed to get key metadata");
     }
@@ -2286,7 +2310,7 @@ static int SelvaObject_OnLoad(RedisModuleCtx *ctx) {
      */
     if (RedisModule_CreateCommand(ctx, "selva.object.del", SelvaObject_DelCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.object.exists", SelvaObject_ExistsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.get", SelvaObject_GetCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.object.get", SelvaObject_GetCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR ||
 #if 0
         RedisModule_CreateCommand(ctx, "selva.object.getrange", SelvaObject_GetRangeCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.object.incrby", SelvaObject_IncrbyCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
