@@ -203,7 +203,7 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
     }
 }
 
-static int get_or_create_EdgeFiled(struct SelvaModify_HierarchyNode *node, const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct EdgeField **out) {
+static int get_or_create_EdgeField(struct SelvaModify_HierarchyNode *node, const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct EdgeField **out) {
     struct EdgeField *edge_field;
 
     edge_field = Edge_GetField(node, key_name_str, key_name_len);
@@ -225,6 +225,10 @@ static int get_or_create_EdgeFiled(struct SelvaModify_HierarchyNode *node, const
     return 0;
 }
 
+int Edge_Has(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *dst_node) {
+    return SVector_SearchIndex(&edgeField->arcs, dst_node) >= 0;
+}
+
 int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node) {
     const struct EdgeFieldConstraint *constraint;
     struct EdgeField *src_edge_field;
@@ -235,9 +239,13 @@ int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_
         return SELVA_EINVAL;
     }
 
-    err = get_or_create_EdgeFiled(src_node, key_name_str, key_name_len, constraint_id, &src_edge_field);
+    err = get_or_create_EdgeField(src_node, key_name_str, key_name_len, constraint_id, &src_edge_field);
     if (err) {
         return err;
+    }
+
+    if (Edge_Has(src_edge_field, dst_node)) {
+        return SELVA_EEXIST;
     }
 
     insert_edge(src_edge_field, dst_node);

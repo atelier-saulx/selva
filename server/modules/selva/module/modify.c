@@ -180,8 +180,49 @@ static int update_edge(
             return SELVA_EINVAL;
         }
 
-        /* TODO we should do diff add */
-        Edge_ClearField(node, field_str, field_len);
+        SVECTOR_AUTOFREE(new_ids);
+
+        /* The comparator works for both nodes and nodeIds. */
+        if (!SVector_Init(&new_ids, setOpts->$value_len / SELVA_NODE_ID_SIZE, SelvaSVectorComparator_Node)) {
+            return SELVA_ENOMEM;
+        }
+
+        for (size_t i = 0; i < setOpts->$value_len; i += SELVA_NODE_ID_SIZE) {
+            char *dst_node_id = setOpts->$value + i;
+
+            SVector_Insert(&new_ids, dst_node_id);
+        }
+
+        struct EdgeField *edgeField = Edge_GetField(node, field_str, field_len);
+        if (edgeField) {
+            /*
+             * First we remove the arcs from the old set that don't exist
+             * in the new set.
+             * Note that we can cast a hierarchy node to Selva_NodeId or even a
+             * char as it's guaranteed that the structure starts with the id
+             * that has a known length.
+             */
+
+            struct SVectorIterator it;
+            SVECTOR_AUTOFREE(old_arcs);
+            char *dst_id;
+
+            if (!SVector_Clone(&old_arcs, &edgeField->arcs, NULL)) {
+                return SELVA_ENOMEM;
+            }
+
+            SVector_ForeachBegin(&it, &old_arcs);
+            while ((dst_id = SVector_Foreach(&it))) {
+                if (!SVector_Search(&new_ids, dst_id)) {
+                    SVector_Remove(&edgeField->arcs, dst_id);
+                    res++; /* Count delete as a change. */
+                }
+            }
+        }
+
+        /*
+         * Then we add the new arcs.
+         */
         for (size_t i = 0; i < setOpts->$value_len; i += SELVA_NODE_ID_SIZE) {
             const char *dst_node_id = setOpts->$value + i;
             struct SelvaModify_HierarchyNode *dst_node;
@@ -197,7 +238,9 @@ static int update_edge(
             }
 
             err = Edge_Add(field_str, field_len, constraint_id, node, dst_node);
-            if (err && err != SELVA_EEXIST) {
+            if (!err) {
+                res++;
+            } else if (err != SELVA_EEXIST) {
                 /* TODO Handle error */
                 fprintf(stderr, "%s:%d: Adding an edge from %.*s.%.*s to %.*s failed with an error: %s\n",
                         __FILE__, __LINE__,
@@ -207,7 +250,6 @@ static int update_edge(
                         getSelvaErrorStr(err));
                 continue;
             }
-            res++;
         }
 
         return res;
@@ -234,11 +276,12 @@ static int update_edge(
                 }
 
                 err = Edge_Add(field_str, field_len, constraint_id, node, dst_node);
-                if (err && err != SELVA_EEXIST) {
+                if (!err) {
+                    res++;
+                } else if (err != SELVA_EEXIST) {
                     /* TODO Handle error */
                     continue;
                 }
-                res++;
             }
         }
         if (setOpts->$delete_len > 0) {
@@ -250,9 +293,9 @@ static int update_edge(
                  * It may or may not be better for caching to have the node_id in
                  * stack.
                  */
-                memcpy(dst_node_id, setOpts->$add + i, SELVA_NODE_ID_SIZE);
+                memcpy(dst_node_id, setOpts->$delete + i, SELVA_NODE_ID_SIZE);
                 err = Edge_Delete(field_str, field_len, node, dst_node_id);
-                if (err != SELVA_EEXIST) {
+                if (!err) {
                     res++;
                 }
             }

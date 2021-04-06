@@ -62,6 +62,13 @@ const struct EdgeFieldConstraint* Edge_GetFieldConstraint(const struct EdgeField
 struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *node, const char *key_name_str, size_t key_name_len);
 
 /**
+ * Check if an EdgeField has a reference to dst_node.
+ * @returns 0 = not found;
+ *          1 = found.
+ */
+int Edge_Has(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *dst_node);
+
+/**
  * Add a new edge.
  * If the field doesn't exist it will be created using the given constraint_id.
  * If the field exists but the constraint_id doesn't match to the currently set
