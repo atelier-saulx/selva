@@ -604,12 +604,15 @@ int SelvaModify_ModifySet(
             }
 
             err = SelvaObject_DelKey(obj, field);
-            if (err == 0) {
-                err = 1;
-            }
         }
 
-        return err == SELVA_ENOENT ? 0 : err;
+        if (err == SELVA_ENOENT || err == SELVA_MODIFY_HIERARCHY_ENOENT) {
+            return 0;
+        } else if (err == 0) {
+            return 1;
+        } else {
+            return err;
+        }
     }
 
     if (!strcmp(field_str, "children") || !strcmp(field_str, "parents")) {
