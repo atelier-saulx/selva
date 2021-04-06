@@ -214,7 +214,7 @@ static int update_edge(
             SVector_ForeachBegin(&it, &old_arcs);
             while ((dst_id = SVector_Foreach(&it))) {
                 if (!SVector_Search(&new_ids, dst_id)) {
-                    SVector_Remove(&edgeField->arcs, dst_id);
+                    Edge_Delete(field_str, field_len, node, dst_id);
                     res++; /* Count delete as a change. */
                 }
             }
