@@ -457,6 +457,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         if (is_array_insert(field_str, field_len)) {
             // TODO
+            replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
+            continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
 
