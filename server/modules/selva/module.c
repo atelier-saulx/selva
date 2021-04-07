@@ -1,5 +1,6 @@
 #include <math.h>
 #include <time.h>
+#include <regex.h>
 
 #include "cdefs.h"
 #include "redismodule.h"
@@ -231,6 +232,38 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
     }
 }
 
+static int is_array_insert(const char *field_name_str, size_t field_name_len) {
+    regex_t regex;
+    int reti;
+    int retval = 0;
+    char msgbuf[100];
+
+    /* Compile regular expression */
+    reti = regcomp(&regex, "\\[[[:digit:]]\\{1,\\}\\]$", 0);
+    if (reti) {
+        fprintf(stderr, "Could not compile regex\n");
+        goto cleanup;
+    }
+
+    /* Execute regular expression */
+    reti = regexec(&regex, field_name_str, 0, NULL, 0);
+    if (!reti) {
+        retval = 1;
+        goto cleanup;
+    } else if (reti == REG_NOMATCH) {
+        return 0;
+    } else {
+        regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+        fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+        goto cleanup;
+    }
+
+cleanup:
+    /* Free memory allocated to the pattern buffer by regcomp() */
+    regfree(&regex);
+    return retval;
+}
+
 /*
  * Request:
  * id, FLAGS type, field, value [, ... type, field, value]]
@@ -426,6 +459,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char type_code = type_str[0];
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
+        // TODO: here check if field_str ends with '[:number:]' and do array insert things
         if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
 
