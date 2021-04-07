@@ -1606,8 +1606,6 @@ test.serial(
     t.deepEqual(
       (
         await client.get({
-          $includeMeta: true,
-          $subscription: sub,
           $id: 'root',
           items: {
             name: true,
@@ -1732,8 +1730,6 @@ test.serial(
     t.deepEqual(
       (
         await client.get({
-          $includeMeta: true,
-          $subscription: sub,
           $id: 'root',
           items: {
             name: true,
@@ -1953,7 +1949,6 @@ test.serial.skip('find - now- subscription', async (t) => {
   const observable = client
     .observe(
       {
-        $includeMeta: true,
         $id: 'root',
         items: {
           name: true,
