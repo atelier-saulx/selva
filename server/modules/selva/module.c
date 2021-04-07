@@ -34,6 +34,8 @@
 #define FISSET_CREATED_AT(m) (((m) & FLAG_CREATED_AT) == FLAG_CREATED_AT)
 #define FISSET_UPDATED_AT(m) (((m) & FLAG_UPDATED_AT) == FLAG_UPDATED_AT)
 
+regex_t array_syntax_regex;
+
 SET_DECLARE(selva_onload, Selva_Onload);
 
 /*
@@ -232,36 +234,30 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
     }
 }
 
+static int compile_array_syntax_regex() {
+    int reti = regcomp(&array_syntax_regex, "\\[[[:digit:]]\\{1,\\}\\]$", 0);
+    if (reti) {
+        fprintf(stderr, "Could not compile array syntax regex\n");
+        exit(1);
+    }
+}
+
 static int is_array_insert(const char *field_name_str, size_t field_name_len) {
-    regex_t regex;
     int reti;
     int retval = 0;
     char msgbuf[100];
 
-    /* Compile regular expression */
-    reti = regcomp(&regex, "\\[[[:digit:]]\\{1,\\}\\]$", 0);
-    if (reti) {
-        fprintf(stderr, "Could not compile regex\n");
-        goto cleanup;
-    }
-
     /* Execute regular expression */
-    reti = regexec(&regex, field_name_str, 0, NULL, 0);
+    reti = regexec(&array_syntax_regex, field_name_str, 0, NULL, 0);
     if (!reti) {
-        retval = 1;
-        goto cleanup;
+        return 1;
     } else if (reti == REG_NOMATCH) {
-        goto cleanup;
+        return 0;
     } else {
-        regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+        regerror(reti, &array_syntax_regex, msgbuf, sizeof(msgbuf));
         fprintf(stderr, "Regex match failed: %s\n", msgbuf);
-        goto cleanup;
+        return 0;
     }
-
-cleanup:
-    /* Free memory allocated to the pattern buffer by regcomp() */
-    regfree(&regex);
-    return retval;
 }
 
 /*
@@ -722,6 +718,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
+    compile_array_syntax_regex();
+
     // Register the module itself
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
