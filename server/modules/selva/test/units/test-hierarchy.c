@@ -892,7 +892,7 @@ static char * test_del_node(void)
 
     /* e doesn't exist */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_e" }), &findRes);
-    pu_assert_equal("nothing found", nr_descendants, SELVA_MODIFY_HIERARCHY_ENOENT);
+    pu_assert_equal("nothing found", nr_descendants, SELVA_HIERARCHY_ENOENT);
     free(findRes);
     findRes = NULL;
 

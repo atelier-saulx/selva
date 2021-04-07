@@ -727,7 +727,7 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
              * Don't report ENOENT errors because subscriptions are valid for
              * non-existent nodeIds.
              */
-            if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+            if (err != SELVA_HIERARCHY_ENOENT) {
                 res = err; /* Report the last error */
             }
         }

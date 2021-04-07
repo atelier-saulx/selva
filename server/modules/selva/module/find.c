@@ -129,7 +129,7 @@ static int parse_order(
     enum hierarchy_result_order tmpOrder;
 
     if (strcmp("order", txt_str)) {
-        return SELVA_MODIFY_HIERARCHY_ENOENT;
+        return SELVA_HIERARCHY_ENOENT;
     }
     if (unlikely(ord_len < 3)) {
         goto einval;
@@ -144,7 +144,7 @@ einval:
         fprintf(stderr, "%s:%d: Invalid order \"%.*s\"\n",
                 __FILE__, __LINE__,
                 (int)ord_len, ord_str);
-        return SELVA_MODIFY_HIERARCHY_EINVAL;
+        return SELVA_HIERARCHY_EINVAL;
     }
 
     if (fld_len == 0 || fld_str[0] == '\0') {
@@ -168,7 +168,7 @@ static int parse_algo(enum SelvaModify_Hierarchy_Algo *algo, const RedisModuleSt
     } else if (!strcmp("dfs", str)) {
         *algo = HIERARCHY_DFS;
     } else {
-        return SELVA_MODIFY_HIERARCHY_ENOTSUP;
+        return SELVA_HIERARCHY_ENOTSUP;
     }
 
     return 0;
@@ -240,13 +240,13 @@ static int parse_dir(
                 RedisModuleString *rms;
 
                 if (algo != HIERARCHY_BFS) {
-                    err = SELVA_MODIFY_HIERARCHY_EINVAL;
+                    err = SELVA_HIERARCHY_EINVAL;
                     break;
                 }
 
                 rms = RedisModule_CreateString(ctx, p1, sz);
                 if (!rms) {
-                    err = SELVA_MODIFY_HIERARCHY_ENOMEM;
+                    err = SELVA_HIERARCHY_ENOMEM;
                     break;
                 }
 
@@ -276,7 +276,7 @@ static int parse_dir(
 
                     rms = RedisModule_CreateString(ctx, p1, sz);
                     if (!rms) {
-                        err = SELVA_MODIFY_HIERARCHY_ENOMEM;
+                        err = SELVA_HIERARCHY_ENOMEM;
                         break;
                     }
 
@@ -287,13 +287,13 @@ static int parse_dir(
                 }
             }
         } else {
-            err = SELVA_MODIFY_HIERARCHY_EINVAL;
+            err = SELVA_HIERARCHY_EINVAL;
             break;
         }
 
         if (*p2 == '\0') {
             /* If this was the last field_name, we give up. */
-            err = SELVA_MODIFY_HIERARCHY_ENOENT;
+            err = SELVA_HIERARCHY_ENOENT;
             break;
         }
 
@@ -577,7 +577,7 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
                 if (!strcmp(field_str, "ancestors")) {
                     RedisModule_ReplyWithString(ctx, field);
                     /* Ancestors is forbidden because we only supportone traversal at time. */
-                    replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_EINVAL, "Forbidden field");
+                    replyWithSelvaErrorf(ctx, SELVA_HIERARCHY_EINVAL, "Forbidden field");
 
                     nr_fields++;
                     break;
@@ -596,7 +596,7 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
                 } else if (!strcmp(field_str, "descendants")) {
                     RedisModule_ReplyWithString(ctx, field);
                     /* Descencants is forbidden because we only supportone traversal at time. */
-                    replyWithSelvaErrorf(ctx, SELVA_MODIFY_HIERARCHY_EINVAL, "Forbidden field");
+                    replyWithSelvaErrorf(ctx, SELVA_HIERARCHY_EINVAL, "Forbidden field");
 
                     nr_fields++;
                     break;
@@ -1230,7 +1230,7 @@ static size_t FindCommand_PrintOrderedResult(
             if (node) {
                 err = send_node_fields(ctx, lang, hierarchy, node, fields);
             } else {
-                err = SELVA_MODIFY_HIERARCHY_ENOENT;
+                err = SELVA_HIERARCHY_ENOENT;
             }
         } else {
             RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
@@ -1352,7 +1352,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
                           argv[ARGV_ORDER_ORD]);
         if (err == 0) {
             SHIFT_ARGS(3);
-        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+        } else if (err != SELVA_HIERARCHY_ENOENT) {
             return replyWithSelvaErrorf(ctx, err, "order");
         }
     }
@@ -1475,7 +1475,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
 
     if (argc <= ARGV_NODE_IDS) {
-        replyWithSelvaError(ctx, SELVA_MODIFY_HIERARCHY_EINVAL);
+        replyWithSelvaError(ctx, SELVA_HIERARCHY_EINVAL);
         goto out;
     }
 
@@ -1649,7 +1649,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
                           argv[ARGV_ORDER_ORD]);
         if (err == 0) {
             SHIFT_ARGS(3);
-        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+        } else if (err != SELVA_HIERARCHY_ENOENT) {
             return replyWithSelvaErrorf(ctx, err, "order");
         }
     }
@@ -1862,7 +1862,7 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
                           argv[ARGV_ORDER_ORD]);
         if (err == 0) {
             SHIFT_ARGS(3);
-        } else if (err != SELVA_MODIFY_HIERARCHY_ENOENT) {
+        } else if (err != SELVA_HIERARCHY_ENOENT) {
             return replyWithSelvaErrorf(ctx, err, "order");
         }
     }

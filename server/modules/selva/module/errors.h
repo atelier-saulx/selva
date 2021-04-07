@@ -41,27 +41,27 @@
 /**
  * General error.
  */
-#define SELVA_MODIFY_HIERARCHY_EGENERAL (-9)
+#define SELVA_HIERARCHY_EGENERAL        (-9)
 /**
  * Operation not supported.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOTSUP  (-10)
+#define SELVA_HIERARCHY_ENOTSUP         (-10)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_MODIFY_HIERARCHY_EINVAL   (-11)
+#define SELVA_HIERARCHY_EINVAL          (-11)
 /**
  * Out of memory.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOMEM   (-12)
+#define SELVA_HIERARCHY_ENOMEM          (-12)
 /**
  * Node or entity not found.
  */
-#define SELVA_MODIFY_HIERARCHY_ENOENT   (-13)
+#define SELVA_HIERARCHY_ENOENT          (-13)
 /**
  * Node or entity already exist.
  */
-#define SELVA_MODIFY_HIERARCHY_EEXIST   (-14)
+#define SELVA_HIERARCHY_EEXIST          (-14)
 /**
  * General error.
  */

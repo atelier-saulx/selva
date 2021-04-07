@@ -228,7 +228,7 @@ static int update_edge(
             int err;
 
             err = SelvaHierarchy_UpsertNode(ctx, hierarchy, dst_node_id, &dst_node);
-            if ((err && err != SELVA_MODIFY_HIERARCHY_EEXIST) || !dst_node) {
+            if ((err && err != SELVA_HIERARCHY_EEXIST) || !dst_node) {
                 fprintf(stderr, "%s:%d: Upserting a node failed: %s\n",
                         __FILE__, __LINE__,
                         getSelvaErrorStr(err));
@@ -275,7 +275,7 @@ static int update_edge(
                 int err;
 
                 err = SelvaHierarchy_UpsertNode(ctx, hierarchy, setOpts->$add + i, &dst_node);
-                if ((err && err != SELVA_MODIFY_HIERARCHY_EEXIST) || !dst_node) {
+                if ((err && err != SELVA_HIERARCHY_EEXIST) || !dst_node) {
                     /* See similar case with $value */
                     fprintf(stderr, "%s:%d: Upserting a node failed: %s\n",
                             __FILE__, __LINE__,
@@ -767,7 +767,7 @@ int SelvaModify_ModifySet(
             /* TODO We'd potentially want to see the real number of deletions here. */
             if (err == 0) {
                 return 1;
-            } else if (err == SELVA_ENOENT || err == SELVA_MODIFY_HIERARCHY_ENOENT) {
+            } else if (err == SELVA_ENOENT || err == SELVA_HIERARCHY_ENOENT) {
                 return 0;
             } else {
                 return err;
