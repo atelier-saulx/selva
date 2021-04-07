@@ -339,6 +339,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
     size_t nr_parts_found = 0;
     for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
+        // TODO: get by value by index if s+slen is an array field and if it's a selva_object then return the type else return the array type
         const size_t slen = strlen(s);
         int err;
 
@@ -443,6 +444,16 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
 
     if (strnstr(key_name_str, ".", key_name_len)) {
         return get_key_obj(obj, key_name_str, key_name_len, flags, out);
+    }
+
+    // just return the actual array type if getting type of an array field directly
+    if (is_array_field(key_name_str, key_name_len)) {
+        for (size_t i = key_name_len; i > 0; i--) {
+            key_name_len--;
+            if (key_name_str[i] == '[') {
+                break;
+            }
+        }
     }
 
     const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
