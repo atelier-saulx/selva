@@ -108,3 +108,15 @@ int get_array_field_index(const char *field_str, size_t field_len) {
     fprintf(stderr, "Missing opening [ for array index in field %.*s\n", (int)field_len, field_str);
     return -1;
 }
+
+int get_array_field_start_idx(const char *field_str, size_t field_len) {
+    for (size_t i = field_len; i > 0; i--) {
+        field_len--;
+        if (field_str[i] == '[') {
+            return field_len;
+            break;
+        }
+    }
+
+    return -1;
+}
