@@ -1427,7 +1427,7 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
 
     struct trx trx_cur;
     if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
-        return SELVA_HIERARCHY_EGENERAL; /* TODO a proper error code. */
+        return SELVA_HIERARCHY_ETRMAX;
     }
 
     Trx_Visit(&trx_cur, &head->trx_label);
@@ -1484,7 +1484,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
 
     struct trx trx_cur;
     if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
-        return SELVA_HIERARCHY_EGENERAL; /* TODO a proper error code. */
+        return SELVA_HIERARCHY_ETRMAX;
     }
 
     SVector_Insert(&stack, head);
@@ -1537,7 +1537,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
 
     struct trx trx_cur;
     if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
-        return SELVA_HIERARCHY_EGENERAL; /* TODO a proper error code. */
+        return SELVA_HIERARCHY_ETRMAX;
     }
 
     struct SVectorIterator it;
@@ -1587,7 +1587,7 @@ static int bfs_edge(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode 
 
     struct trx trx_cur;
     if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
-        return SELVA_HIERARCHY_EGENERAL; /* TODO a proper error code. */
+        return SELVA_HIERARCHY_ETRMAX;
     }
 
     Trx_Visit(&trx_cur, &head->trx_label);
@@ -1970,7 +1970,6 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
         Selva_NodeId *children __attribute__((cleanup(wrapFree))) = NULL;
 
         if (nr_children > 0) {
-            /* TODO do we need to free this? */
             children = RedisModule_Calloc(nr_children, SELVA_NODE_ID_SIZE);
             if (!children) {
                 goto error;

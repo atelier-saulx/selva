@@ -63,35 +63,39 @@
  */
 #define SELVA_HIERARCHY_EEXIST          (-14)
 /**
+ * Maximum number of recursive traversal calls reached.
+ */
+#define SELVA_HIERARCHY_ETRMAX          (-15)
+/**
  * General error.
  */
-#define SELVA_SUBSCRIPTIONS_EGENERAL    (-15)
+#define SELVA_SUBSCRIPTIONS_EGENERAL    (-16)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_SUBSCRIPTIONS_EINVAL      (-16)
+#define SELVA_SUBSCRIPTIONS_EINVAL      (-17)
 /**
  * Out of memory.
  */
-#define SELVA_SUBSCRIPTIONS_ENOMEM      (-17)
+#define SELVA_SUBSCRIPTIONS_ENOMEM      (-18)
 /**
  * Node or entity not found.
  */
-#define SELVA_SUBSCRIPTIONS_ENOENT      (-18)
+#define SELVA_SUBSCRIPTIONS_ENOENT      (-19)
 /**
  * Node or entity already exist.
  */
-#define SELVA_SUBSCRIPTIONS_EEXIST      (-19)
+#define SELVA_SUBSCRIPTIONS_EEXIST      (-20)
 /**
  * RPN compilation error.
  */
-#define SELVA_RPN_ECOMP                 (-20)
+#define SELVA_RPN_ECOMP                 (-21)
 /**
  * Selva object has reached the maximum size.
  */
-#define SELVA_OBJECT_EOBIG              (-21)
+#define SELVA_OBJECT_EOBIG              (-22)
 /* This must be the last error */
-#define SELVA_INVALID_ERROR             (-22)
+#define SELVA_INVALID_ERROR             (-23)
 
 struct RedisModuleCtx;
 

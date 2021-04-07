@@ -20,6 +20,7 @@ const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
     [-SELVA_HIERARCHY_ENOMEM]           = (const char *)"ERR_HIERARCHY ENOMEM Out of memory",
     [-SELVA_HIERARCHY_ENOENT]           = (const char *)"ERR_HIERARCHY ENOENT Not found",
     [-SELVA_HIERARCHY_EEXIST]           = (const char *)"ERR_HIERARCHY EEXIST Exist",
+    [-SELVA_HIERARCHY_ETRMAX]           = (const char *)"ERR_HIERARCHY ETRMAX Maximum number of recursive find calls reached",
     [-SELVA_SUBSCRIPTIONS_EGENERAL]     = (const char *)"ERR_SUBSCRIPTIONS EGENERAL Unknown error",
     [-SELVA_SUBSCRIPTIONS_EINVAL]       = (const char *)"ERR_SUBSCRIPTIONS EINVAL Invalid argument or input value",
     [-SELVA_SUBSCRIPTIONS_ENOMEM]       = (const char *)"ERR_SUBSCRIPTIONS ENOMEM Out of memory",
