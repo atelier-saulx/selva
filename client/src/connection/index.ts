@@ -237,7 +237,7 @@ class Connection {
 
   public subscribe(channel: string, id: string = '') {
     if (!id) {
-      console.log('NO ID PROVIDED', channel, id, new Error().stack)
+      console.error('NO ID PROVIDED', channel, id, new Error().stack)
     }
     this.genericSubscribe('subscriptions', 'subscribe', channel, id)
   }

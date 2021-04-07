@@ -115,11 +115,6 @@ export class Observable {
     )
 
     await this.start()
-    console.info(
-      chalk.gray(
-        `Successfully restarted observable ${this.uuid} after hard disconnect connect to ${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
-      )
-    )
   }
 
   public listeners: UpdateCallback[] = []
@@ -464,13 +459,13 @@ export class Observable {
         // console.log('Incoming msg for observable', msg)
         const versions = JSON.parse(msg)
         if (versions && versions[0] === this.version) {
-          console.log(
-            'Subs manager send current version (with no update)',
-            this.options,
-            this.uuid,
-            this.version,
-            versions
-          )
+          // console.log(
+          //   'Subs manager send current version (with no update)',
+          //   this.options,
+          //   this.uuid,
+          //   this.version,
+          //   versions
+          // )
         } else {
           this.getValue(versions)
         }
