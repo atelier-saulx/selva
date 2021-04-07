@@ -48,12 +48,9 @@ RB_HEAD(hierarchy_subscriptions_tree, Selva_Subscription);
 
 struct SelvaModify_Hierarchy {
     /**
-     * Current transaction timestamp.
-     * Set before traversal begins and is used for marking visited nodes. Due to the
-     * marking being a timestamp it's not necessary to clear it afterwards, which
-     * could be a costly operation itself.
+     * Global transaction state.
      */
-    Trx current_trx;
+    struct trx_state trx_state;
 
     /**
      * Index of all hierarchy nodes by ID.

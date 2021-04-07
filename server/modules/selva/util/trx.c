@@ -1,53 +1,45 @@
-#include <assert.h>
-#include <string.h>
-#include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
-
-#ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-#endif
-
+#include <stdint.h>
 #include "trx.h"
 
-#define timespec_cmp(tvp, uvp, cmp)             \
-    (((tvp)->tv_sec == (uvp)->tv_sec)           \
-        ? ((tvp)->tv_nsec cmp (uvp)->tv_nsec)   \
-        : ((tvp)->tv_sec cmp (uvp)->tv_sec))
+int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx) {
+    const trxid_t cl = (trxid_t)1 << __builtin_popcount(state->cl);
 
-void Trx_Begin(Trx *trx) {
-    assert(trx->tv_sec == 0 && trx->tv_nsec == 0);
+    if (cl == (trxid_t)1 << (sizeof(trxid_t) * 8 - 1)) {
+        return -1;
+    }
 
-#ifdef __MACH__
-	clock_serv_t cclock;
-	mach_timespec_t mts;
-	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-	clock_get_time(cclock, &mts);
-	mach_port_deallocate(mach_task_self(), cclock);
+    state->cl |= cl;
 
-	trx->tv_sec = mts.tv_sec;
-	trx->tv_nsec = mts.tv_nsec;
-#elif !defined _POSIX_MONOTONIC_CLOCK || _POSIX_MONOTONIC_CLOCK < 0
-    clock_gettime(CLOCK_REALTIME, trx);
-#elif _POSIX_MONOTONIC_CLOCK > 0
-    clock_gettime(CLOCK_MONOTONIC, trx);
-#elif _POSIX_TIMERS
-    if (clock_gettime(CLOCK_MONOTONIC, trx))
-        clock_gettime(CLOCK_REALTIME, trx);
-#else
-#error No clock source available
-#endif
+    trx->id = state->id;
+    trx->cl = cl;
+
+    return 0;
 }
 
-void Trx_Stamp(const Trx *trx, struct timespec *ts) {
-    memcpy(ts, trx, sizeof(Trx));
+int Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label) {
+    if (cur_trx->id != label->id) {
+        /* Visit. */
+        label->id = cur_trx->id;
+        label->cl = cur_trx->cl;
+
+        return 1;
+    } else if (!(cur_trx->cl & label->cl)) {
+        /* Visit */
+        label->id = cur_trx->id;
+        label->cl |= cur_trx->cl;
+
+        return 1;
+    }
+
+    return 0; /* Don't visit. */
 }
 
-int Trx_IsStamped(const Trx *trx, struct timespec *ts) {
-    return timespec_cmp(trx, ts, ==);
-}
+void Trx_End(struct trx_state * restrict state, struct trx * restrict cur) {
+    state->ex |= cur->cl;
 
-void Trx_End(Trx *trx) {
-    memset(trx, 0, sizeof(*trx));
+    if (state->ex == state->cl) {
+        state->id++;
+        state->cl = 0;
+        state->ex = 0;
+    }
 }

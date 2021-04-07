@@ -24,7 +24,7 @@
 
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
-    struct timespec visit_stamp;
+    struct trx trx_label;
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
 #endif
@@ -1425,10 +1425,13 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    Trx_Begin(&hierarchy->current_trx);
-    Trx_Stamp(&hierarchy->current_trx, &head->visit_stamp);
-    SVector_Insert(&q, head);
+    struct trx trx_cur;
+    if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
+        return SELVA_MODIFY_HIERARCHY_EGENERAL; /* TODO a proper error code. */
+    }
 
+    Trx_Visit(&trx_cur, &head->trx_label);
+    SVector_Insert(&q, head);
     head_cb(head, cb->head_arg);
 
     while (SVector_Size(&q) > 0) {
@@ -1437,23 +1440,20 @@ static int bfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         SelvaModify_HierarchyNode *adj;
 
         if (node_cb(node, cb->node_arg)) {
-            Trx_End(&hierarchy->current_trx);
+            Trx_End(&hierarchy->trx_state, &trx_cur);
             return 0;
         }
 
         SVector_ForeachBegin(&it, (SVector *)((char *)node + offset));
         while((adj = SVector_Foreach(&it))) {
-            if (!Trx_IsStamped(&hierarchy->current_trx, &adj->visit_stamp)) {
-                Trx_Stamp(&hierarchy->current_trx, &adj->visit_stamp);
-
+            if (Trx_Visit(&trx_cur, &adj->trx_label)) {
                 child_cb(node, adj, cb->child_arg);
-
                 SVector_Insert(&q, adj);
             }
         }
     }
 
-    Trx_End(&hierarchy->current_trx);
+    Trx_End(&hierarchy->trx_state, &trx_cur);
     return 0;
 }
 
@@ -1482,20 +1482,21 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    Trx_Begin(&hierarchy->current_trx);
-    SVector_Insert(&stack, head);
+    struct trx trx_cur;
+    if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
+        return SELVA_MODIFY_HIERARCHY_EGENERAL; /* TODO a proper error code. */
+    }
 
+    SVector_Insert(&stack, head);
     head_cb(head, cb->head_arg);
 
     while (SVector_Size(&stack) > 0) {
-        SelvaModify_HierarchyNode *node = SVector_Pop(&stack);
+        SelvaModify_HierarchyNode *node;
 
-        if (!Trx_IsStamped(&hierarchy->current_trx, &node->visit_stamp)) {
-            /* Mark node as visited */
-            Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
-
+        node = SVector_Pop(&stack);
+        if (Trx_Visit(&trx_cur, &node->trx_label)) {
             if (node_cb(node, cb->node_arg)) {
-                Trx_End(&hierarchy->current_trx);
+                Trx_End(&hierarchy->trx_state, &trx_cur);
                 return 0;
             }
 
@@ -1515,7 +1516,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
         }
     }
 
-    Trx_End(&hierarchy->current_trx);
+    Trx_End(&hierarchy->trx_state, &trx_cur);
     return 0;
 }
 
@@ -1534,25 +1535,24 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    Trx_Begin(&hierarchy->current_trx);
+    struct trx trx_cur;
+    if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
+        return SELVA_MODIFY_HIERARCHY_EGENERAL; /* TODO a proper error code. */
+    }
 
     struct SVectorIterator it;
 
     SVector_ForeachBegin(&it, &hierarchy->heads);
     while ((head = SVector_Foreach(&it))) {
         SVector_Insert(&stack, head);
-
         head_cb(*head, cb->head_arg);
 
         while (SVector_Size(&stack) > 0) {
             SelvaModify_HierarchyNode *node = SVector_Pop(&stack);
 
-            if (!Trx_IsStamped(&hierarchy->current_trx, &node->visit_stamp)) {
-                /* Mark node as visited */
-                Trx_Stamp(&hierarchy->current_trx, &node->visit_stamp);
-
+            if (Trx_Visit(&trx_cur, &node->trx_label)) {
                 if (node_cb(node, cb->node_arg)) {
-                    Trx_End(&hierarchy->current_trx);
+                    Trx_End(&hierarchy->trx_state, &trx_cur);
                     return 0;
                 }
 
@@ -1570,7 +1570,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
         }
     }
 
-    Trx_End(&hierarchy->current_trx);
+    Trx_End(&hierarchy->trx_state, &trx_cur);
     return 0;
 }
 
@@ -1585,10 +1585,13 @@ static int bfs_edge(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode 
         return SELVA_MODIFY_HIERARCHY_ENOMEM;
     }
 
-    Trx_Begin(&hierarchy->current_trx);
-    Trx_Stamp(&hierarchy->current_trx, &head->visit_stamp);
-    SVector_Insert(&q, head);
+    struct trx trx_cur;
+    if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
+        return SELVA_MODIFY_HIERARCHY_EGENERAL; /* TODO a proper error code. */
+    }
 
+    Trx_Visit(&trx_cur, &head->trx_label);
+    SVector_Insert(&q, head);
     head_cb(head, cb->head_arg);
 
     while (SVector_Size(&q) > 0) {
@@ -1598,7 +1601,7 @@ static int bfs_edge(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode 
         struct EdgeField *edge_field;
 
         if (node_cb(node, cb->node_arg)) {
-            Trx_End(&hierarchy->current_trx);
+            Trx_End(&hierarchy->trx_state, &trx_cur);
             return 0;
         }
 
@@ -1615,17 +1618,14 @@ static int bfs_edge(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode 
 
         SVector_ForeachBegin(&it, &edge_field->arcs);
         while((adj = SVector_Foreach(&it))) {
-            if (!Trx_IsStamped(&hierarchy->current_trx, &adj->visit_stamp)) {
-                Trx_Stamp(&hierarchy->current_trx, &adj->visit_stamp);
-
+            if (Trx_Visit(&trx_cur, &adj->trx_label)) {
                 child_cb(node, adj, cb->child_arg);
-
                 SVector_Insert(&q, adj);
             }
         }
     }
 
-    Trx_End(&hierarchy->current_trx);
+    Trx_End(&hierarchy->trx_state, &trx_cur);
     return 0;
 }
 
