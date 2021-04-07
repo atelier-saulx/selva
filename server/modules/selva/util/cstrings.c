@@ -1,4 +1,6 @@
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include "cstrings.h"
 
@@ -81,4 +83,28 @@ size_t substring_count(const char *string, const char *substring, size_t n) {
 	}
 
 	return count;
+}
+
+int is_array_field(const char *field_str, size_t field_len) {
+    // we assume that field names are typically just alphanumeric -- which is true
+    if (field_str[field_len-1] == ']') {
+        return 1;
+    }
+
+    return 0;
+}
+
+int get_array_field_index(const char *field_str, size_t field_len) {
+    if (!is_array_field(field_str, field_len)) {
+        return -1;
+    }
+
+    for (size_t i = field_len - 2; i > 0; i--) {
+        if (field_str[i] == '[') {
+            return (int)strtol(field_str + i + 1, NULL, 10);
+        }
+    }
+
+    fprintf(stderr, "Missing opening [ for array index in field %.*s\n", (int)field_len, field_str);
+    return -1;
 }

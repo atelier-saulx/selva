@@ -234,6 +234,7 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
     }
 }
 
+// TODO: replace all this with util function that just walks the string with a for loop, field strings only allow alphanumeric otherwise so this is unnecessarily complicated
 static int compile_array_syntax_regex() {
     int reti = regcomp(&array_syntax_regex, "\\[[[:digit:]]\\{1,\\}\\]$", 0);
     if (reti) {
@@ -453,12 +454,20 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         TO_STR(type, field, value);
         /* [0] always points to a valid char in RM_String. */
         const char type_code = type_str[0];
+        // TODO: needs to support array syntax
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
         if (is_array_insert(field_str, field_len)) {
-            // TODO
-            replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
-            continue;
+            if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
+                // TODO
+            } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
+                // TODO
+            } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
+                // TODO
+            } else {
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
+                continue;
+            }
         } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
 
