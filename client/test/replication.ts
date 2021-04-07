@@ -154,7 +154,7 @@ test.serial('hierarchy replication', async (t) => {
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
         'selva.hierarchy.find',
-        ['___selva_hierarchy', 'bfs', 'descendants', 'root'],
+        ['', '___selva_hierarchy', 'bfs', 'descendants', 'root'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -173,7 +173,7 @@ test.serial('hierarchy replication', async (t) => {
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
         'selva.hierarchy.find',
-        ['___selva_hierarchy', 'bfs', 'descendants', 'root'],
+        ['', '___selva_hierarchy', 'bfs', 'descendants', 'root'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -199,7 +199,7 @@ test.serial('modify command is replicated', async (t) => {
     await new Promise((resolve, reject) =>
       rclientOrigin.send_command(
         'selva.object.get',
-        ['grphnode_a'],
+        ['', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -209,7 +209,7 @@ test.serial('modify command is replicated', async (t) => {
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
         'selva.object.get',
-        ['grphnode_a'],
+        ['', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -230,7 +230,7 @@ test.serial('modify command is replicated', async (t) => {
     await new Promise((resolve, reject) =>
       rclientOrigin.send_command(
         'selva.object.get',
-        ['grphnode_a'],
+        ['', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -240,7 +240,7 @@ test.serial('modify command is replicated', async (t) => {
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
         'selva.object.get',
-        ['grphnode_a'],
+        ['', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -270,7 +270,7 @@ test.serial('modify command is replicated ignoring errors', async (t) => {
     await new Promise((resolve, reject) =>
       rclientOrigin.send_command(
         'selva.object.get',
-        ['grphnode_a'],
+        ['', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -280,7 +280,7 @@ test.serial('modify command is replicated ignoring errors', async (t) => {
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
         'selva.object.get',
-        ['grphnode_a'],
+        ['', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
