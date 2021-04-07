@@ -455,8 +455,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char type_code = type_str[0];
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
-        // TODO: here check if field_str ends with '[:number:]' and do array insert things
-        if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
+        if (is_array_insert(field_str, field_len)) {
+            // TODO
+        } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
 
             SelvaModify_ModifyIncrement(obj, field, old_type, incrementOpts);
