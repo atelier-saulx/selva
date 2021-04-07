@@ -251,7 +251,7 @@ static int is_array_insert(const char *field_name_str, size_t field_name_len) {
         retval = 1;
         goto cleanup;
     } else if (reti == REG_NOMATCH) {
-        return 0;
+        goto cleanup;
     } else {
         regerror(reti, &regex, msgbuf, sizeof(msgbuf));
         fprintf(stderr, "Regex match failed: %s\n", msgbuf);
