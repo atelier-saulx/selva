@@ -823,7 +823,7 @@ int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_st
     struct SelvaSetElement *el;
     int err;
 
-    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_DOUBLE, &selva_set);
     if (err) {
         return err;
     }
