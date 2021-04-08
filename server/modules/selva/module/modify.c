@@ -479,11 +479,13 @@ static int del_set_values(
                 fprintf(stderr, "%s:%d: Double set field update failed\n", __FILE__, __LINE__);
                 return err;
             }
+            if (err == 0) {
+                res++;
+            }
 
             const size_t skip_off = part_len;
             ptr += skip_off;
             i += skip_off;
-            res++;
         }
     } else {
         return SELVA_EINTYPE;
