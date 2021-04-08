@@ -3,6 +3,7 @@
 #include <regex.h>
 
 #include "cdefs.h"
+#include "cstrings.h"
 #include "redismodule.h"
 #include "typestr.h"
 #include "rmutil/util.h"
@@ -243,24 +244,6 @@ static int compile_array_syntax_regex() {
     }
 }
 
-static int is_array_insert(const char *field_name_str, size_t field_name_len) {
-    int reti;
-    int retval = 0;
-    char msgbuf[100];
-
-    /* Execute regular expression */
-    reti = regexec(&array_syntax_regex, field_name_str, 0, NULL, 0);
-    if (!reti) {
-        return 1;
-    } else if (reti == REG_NOMATCH) {
-        return 0;
-    } else {
-        regerror(reti, &array_syntax_regex, msgbuf, sizeof(msgbuf));
-        fprintf(stderr, "Regex match failed: %s\n", msgbuf);
-        return 0;
-    }
-}
-
 /*
  * Request:
  * id, FLAGS type, field, value [, ... type, field, value]]
@@ -457,7 +440,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         // TODO: needs to support array syntax
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
-        if (is_array_insert(field_str, field_len)) {
+        if (is_array_field(field_str, field_len)) {
             if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
                 // TODO
             } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
