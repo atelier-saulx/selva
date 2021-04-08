@@ -414,6 +414,7 @@ static int del_set_values(
     int8_t type
 ) {
     char *ptr = value_ptr;
+    int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
         type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
@@ -424,13 +425,17 @@ static int del_set_values(
         for (size_t i = 0; i < value_len; ) {
             RedisModuleString *ref;
             const ssize_t part_len = string2rms(ctx, type, ptr, &ref);
+            int err;
 
             if (part_len < 0) {
                 return SELVA_EINVAL;
             }
 
             /* Remove from the node object. */
-            SelvaObject_RemStringSet(obj, field, ref);
+            err = SelvaObject_RemStringSet(obj, field, ref);
+            if (!err) {
+                res++;
+            }
 
             /* Remove from the global aliases hash. */
             if (alias_key) {
@@ -470,7 +475,7 @@ static int del_set_values(
                 memcpy(&v, ptr, part_len);
                 err = SelvaObject_RemLongLongSet(obj, field, v);
             }
-            if (err && err != SELVA_EEXIST) {
+            if (err && err != SELVA_EEXIST && err != SELVA_EINVAL) {
                 fprintf(stderr, "%s:%d: Double set field update failed\n", __FILE__, __LINE__);
                 return err;
             }
@@ -478,12 +483,13 @@ static int del_set_values(
             const size_t skip_off = part_len;
             ptr += skip_off;
             i += skip_off;
+            res++;
         }
     } else {
         return SELVA_EINTYPE;
     }
 
-    return 0;
+    return res;
 }
 
 /*
@@ -537,10 +543,10 @@ static int update_set(
             int err;
 
             err = del_set_values(ctx, alias_key, obj, field, setOpts->$delete,setOpts->$delete_len, setOpts->op_set_type);
-            if (err) {
+            if (err < 0) {
                 return err;
             }
-            res += 1; /* TODO This should reflect the number of actual deletions. */
+            res += err;
         }
     }
 
