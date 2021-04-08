@@ -442,7 +442,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         if (is_array_field(field_str, field_len)) {
             if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
-                SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_STRING, value);
+                fprintf(stderr, "HELLO WORLD I AM HERE\n");
+                int idx = get_array_field_index(field_str, field_len);
+                int new_len = get_array_field_start_idx(field_str, field_len);
+                SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
             } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
                 // TODO
             } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
