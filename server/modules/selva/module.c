@@ -579,7 +579,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
 
-            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
 
             /* This triplet needs to be replicated. */
             bitmap_set(replset, i / 3 - 1);
