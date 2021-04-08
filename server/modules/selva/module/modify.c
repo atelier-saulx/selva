@@ -698,7 +698,7 @@ int SelvaModify_ModifyDel(
             err = REDISMODULE_ERR;
         }
     } else { /* Delete a field. */
-        (void)SelvaObject_DelKey(obj, field);
+        err = SelvaObject_DelKey(obj, field);
     }
 
     return err;

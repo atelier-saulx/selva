@@ -472,7 +472,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
             err = SelvaModify_ModifyDel(ctx, hierarchy, obj, id, field);
-            if (err) {
+            if (err == SELVA_ENOENT) {
+                /* No need to replicate. */
+                publish = false;
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+                continue;
+            } else if (err) {
                 TO_STR(field);
                 char err_msg[120];
 
