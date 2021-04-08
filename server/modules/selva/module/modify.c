@@ -475,7 +475,10 @@ static int del_set_values(
                 memcpy(&v, ptr, part_len);
                 err = SelvaObject_RemLongLongSet(obj, field, v);
             }
-            if (err && err != SELVA_EEXIST && err != SELVA_EINVAL) {
+            if (err &&
+                err != SELVA_ENOENT &&
+                err != SELVA_EEXIST &&
+                err != SELVA_EINVAL) {
                 fprintf(stderr, "%s:%d: Double set field update failed\n", __FILE__, __LINE__);
                 return err;
             }
