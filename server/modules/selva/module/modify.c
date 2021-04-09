@@ -203,11 +203,9 @@ static int add_set_values(
         }
 
         if (remove_diff) {
-            if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
-                SVector_Init(&new_set, value_len / SELVA_NODE_ID_SIZE, SelvaSVectorComparator_NodeId);
-            } else {
-                SVector_Init(&new_set, 1, SelvaSVectorComparator_RMS);
-            }
+            size_t inital_size = (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) ? value_len / SELVA_NODE_ID_SIZE : 1;
+
+            SVector_Init(&new_set, inital_size, SelvaSVectorComparator_RMS);
         } else {
             /* If it's empty the destroy function will just skip over. */
             memset(&new_set, 0, sizeof(new_set));
@@ -282,7 +280,7 @@ static int add_set_values(
 
                 if (!SVector_Search(&new_set, (void *)el)) {
                     /* el doesn't exist in new_set, therefore it should be removed. */
-                    SelvaSet_DestroyElement(SelvaSet_RemoveRms(objSet, el));
+                    SelvaSet_DestroyElement(SelvaSet_Remove(objSet, el));
 
                     if (alias_key) {
                         /* TODO This could be its own function in the future. */
@@ -547,7 +545,7 @@ static int update_set(
         if (setOpts->$delete_len > 0) {
             int err;
 
-            err = del_set_values(ctx, alias_key, obj, field, setOpts->$delete,setOpts->$delete_len, setOpts->op_set_type);
+            err = del_set_values(ctx, alias_key, obj, field, setOpts->$delete, setOpts->$delete_len, setOpts->op_set_type);
             if (err < 0) {
                 return err;
             }
