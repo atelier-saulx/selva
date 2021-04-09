@@ -31,7 +31,7 @@ const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
 };
 
 const char *getSelvaErrorStr(int err) {
-    if (err >= 0 || -err >= (int)num_elem(selvaStrError)) {
+    if (err > 0 || -err >= (int)num_elem(selvaStrError)) {
         return selvaStrError[-SELVA_EGENERAL];
     }
     return selvaStrError[-err];
