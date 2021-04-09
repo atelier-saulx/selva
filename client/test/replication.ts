@@ -953,8 +953,372 @@ test.serial('modify set ops are replicated (cstring)', async (t) => {
   }))
 })
 
-test.serial.skip('modify set ops are replicated (reference)', async (t) => {
-    // TODO Test reference sets
+test.serial('modify set ops are replicated (reference)', async (t) => {
+  // Create a new set
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: null,
+            $delete: null,
+            $value: 'grphnode_bgrphnode_c',
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: null,
+            $delete: null,
+            $value: 'grphnode_bgrphnode_c',
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'OK',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['f01', ['grphnode_b', 'grphnode_c']],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+
+  // Add to an existing set
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: 'grphnode_d',
+            $delete: null,
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: 'grphnode_d',
+            $delete: null,
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'OK',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['f01', ['grphnode_b', 'grphnode_c', 'grphnode_d']],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+
+  // Delete from a set
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: null,
+            $delete: 'grphnode_c',
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: null,
+            $delete: 'grphnode_c',
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'OK',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['f01', ['grphnode_b', 'grphnode_d']],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+
+  // Replace values
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: null,
+            $delete: null,
+            $value: 'grphnode_xgrphnode_ygrphnode_z',
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['f01', ['grphnode_x', 'grphnode_y', 'grphnode_z']],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+
+  // delete_all
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 1,
+            $add: null,
+            $delete: null,
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 1,
+            $add: null,
+            $delete: null,
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'OK',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+
+  // Delete from a non-existing set
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: null,
+            $delete: 'grphnode_y',
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'OK',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+
+  // Add to a new set
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'f01', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.reference,
+            delete_all: 0,
+            $add: 'grphnode_o',
+            $delete: null,
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['f01', ['grphnode_o']],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
 })
 
 test.serial('modify set ops are replicated (double)', async (t) => {
@@ -1693,8 +2057,254 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
   }))
 })
 
-test.serial.skip('modify $alias is replicated', async (t) => {
-    // TODO Test alias replication
+test.serial('modify aliases is replicated', async (t) => {
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'aliases', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.char,
+            delete_all: 0,
+            $add: 'ali1\0ali2',
+            $delete: null,
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'aliases', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.char,
+            delete_all: 0,
+            $add: 'ali1\0ali2',
+            $delete: null,
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'OK',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['aliases', ['ali1', 'ali2']],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'hgetall',
+          ['___selva_aliases'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      {
+        ali1: 'grphnode_a',
+        ali2: 'grphnode_a',
+      }
+    )
+  }))
+
+  // Delete one alias
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_OP_SET, 'aliases', createRecord(setRecordDefCstring, {
+            op_set_type: OPT_SET_TYPE.char,
+            delete_all: 0,
+            $add: null,
+            $delete: 'ali1',
+            $value: null,
+          })],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['aliases', ['ali2']],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'hgetall',
+          ['___selva_aliases'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      {
+        ali2: 'grphnode_a',
+      }
+    )
+  }))
+})
+
+test.serial('modify $alias query is replicated', async (t) => {
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_STRING_ARRAY, '$alias', 'ali1\0ali2'],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'UPDATED',
+    ]
+  )
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_STRING_ARRAY, '$alias', 'ali1\0ali2'],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'OK',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['aliases', ['ali1', 'ali2']],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'hgetall',
+          ['___selva_aliases'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      {
+        ali1: 'grphnode_a',
+        ali2: 'grphnode_a',
+      }
+    )
+  }))
+
+  // Use alias again
+  t.deepEqual(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.modify',
+        [
+          'grphnode_a', '',
+          ...[SELVA_MODIFY_ARG_STRING_ARRAY, '$alias', 'ali1'],
+          ...[SELVA_MODIFY_ARG_DEFAULT_STRING, 'f01', 'hallo'],
+        ],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    [
+      'grphnode_a',
+      'OK',
+      'UPDATED',
+    ]
+  )
+  await wait(200)
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'selva.object.get',
+          ['', 'grphnode_a'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      [
+        ...['aliases', ['ali1', 'ali2']],
+        ...['f01', 'hallo'],
+        ...['id', 'grphnode_a'],
+      ]
+    )
+  }))
+  await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        r.send_command(
+          'hgetall',
+          ['___selva_aliases'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      {
+        ali1: 'grphnode_a',
+        ali2: 'grphnode_a',
+      }
+    )
+  }))
 })
 
 test.serial('replicate hierarchy parents with modify', async (t) => {
