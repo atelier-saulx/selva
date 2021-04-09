@@ -258,6 +258,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     struct SelvaObject *obj = NULL;
     SVECTOR_AUTOFREE(alias_query);
     int trigger_created = 0; /* Will be set to 1 if the node was created during this command. */
+    bool new_alias = false; /* Set if $alias will be creating new alias(es). */
     int err = REDISMODULE_OK;
 
     /*
@@ -328,6 +329,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             fprintf(stderr, "%s:%d: Unable open aliases key or its type is invalid\n",
                     __FILE__, __LINE__);
 #endif
+            new_alias = true;
         }
 
         RedisModule_CloseKey(alias_key);
@@ -461,10 +463,14 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
         } else if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY) {
             /*
-             * Currently $alias is the only field using string arrays.
+             * Currently the $alias query is the only operation using string arrays.
              * $alias: NOP
              */
-            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            if (new_alias) {
+                RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
+            } else {
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+            }
 
             /* This triplet needs to be replicated. */
             bitmap_set(replset, i / 3 - 1);
