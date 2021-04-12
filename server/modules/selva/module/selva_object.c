@@ -333,6 +333,7 @@ int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
     return 0;
 }
 
+// TODO: add array syntax stuff here
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     const char *sep = ".";
     const size_t nr_parts = substring_count(key_name_str, ".", key_name_len) + 1;
