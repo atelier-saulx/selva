@@ -53,16 +53,12 @@ __attribute__((weak)) int replyWithSelvaErrorf(RedisModuleCtx *ctx, int selvaErr
     msg = getSelvaErrorStr(selvaErr);
     len = strlen(msg);
 
-    if (len <= sizeof(buf) - 1) {
+    if (len + 2 <= sizeof(buf) - 1) {
         strcpy(buf, msg);
 
-        if (len + 2 < sizeof(buf)) {
-            buf[len++] = ':';
-            buf[len++] = ' ';
-            vsnprintf(buf + len, sizeof(buf) - len, fmt, args);
-        } else {
-            buf[len] = '\0';
-        }
+        buf[len++] = ':';
+        buf[len++] = ' ';
+        vsnprintf(buf + len, sizeof(buf) - len, fmt, args);
         msg = buf;
     }
 
