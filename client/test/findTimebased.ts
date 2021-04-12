@@ -1227,44 +1227,9 @@ test.serial('find - already started', async (t) => {
     endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 2 hours
   })
 
-  let sub = ''
-  for (let i = 0; i < 64; i++) {
-    sub += 'x'
-  }
-
-  t.deepEqualIgnoreOrder(
-    (
-      await client.get({
-        $includeMeta: true,
-        $subscription: sub,
-        $id: 'root',
-        items: {
-          name: true,
-          value: true,
-          $list: {
-            $sort: { $field: 'startTime', $order: 'desc' },
-            $find: {
-              $traverse: 'children',
-              $filter: [
-                {
-                  $field: 'startTime',
-                  $operator: '<',
-                  $value: 'now',
-                },
-              ],
-            },
-          },
-        },
-      })
-    ).$meta.___refreshAt,
-    nextRefresh
-  )
-
   t.deepEqual(
     (
       await client.get({
-        $includeMeta: true,
-        $subscription: sub,
         $id: 'root',
         items: {
           name: true,
@@ -1606,8 +1571,6 @@ test.serial(
     t.deepEqual(
       (
         await client.get({
-          $includeMeta: true,
-          $subscription: sub,
           $id: 'root',
           items: {
             name: true,
@@ -1732,8 +1695,6 @@ test.serial(
     t.deepEqual(
       (
         await client.get({
-          $includeMeta: true,
-          $subscription: sub,
           $id: 'root',
           items: {
             name: true,
@@ -1953,7 +1914,6 @@ test.serial.skip('find - now- subscription', async (t) => {
   const observable = client
     .observe(
       {
-        $includeMeta: true,
         $id: 'root',
         items: {
           name: true,

@@ -31,7 +31,7 @@ const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
 };
 
 const char *getSelvaErrorStr(int err) {
-    if (err >= 0 || -err >= (int)num_elem(selvaStrError)) {
+    if (err > 0 || -err >= (int)num_elem(selvaStrError)) {
         return selvaStrError[-SELVA_EGENERAL];
     }
     return selvaStrError[-err];
@@ -53,16 +53,12 @@ __attribute__((weak)) int replyWithSelvaErrorf(RedisModuleCtx *ctx, int selvaErr
     msg = getSelvaErrorStr(selvaErr);
     len = strlen(msg);
 
-    if (len <= sizeof(buf) - 1) {
+    if (len + 2 <= sizeof(buf) - 1) {
         strcpy(buf, msg);
 
-        if (len + 2 < sizeof(buf)) {
-            buf[len++] = ':';
-            buf[len++] = ' ';
-            vsnprintf(buf + len, sizeof(buf) - len, fmt, args);
-        } else {
-            buf[len] = '\0';
-        }
+        buf[len++] = ':';
+        buf[len++] = ' ';
+        vsnprintf(buf + len, sizeof(buf) - len, fmt, args);
         msg = buf;
     }
 

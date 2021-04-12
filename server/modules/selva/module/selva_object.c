@@ -836,15 +836,19 @@ static int get_selva_set(struct SelvaObject *obj, const RedisModuleString *key_n
 
 int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
     struct SelvaSet *selva_set;
+    struct SelvaSetElement *el;
     int err;
 
-    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_DOUBLE, &selva_set);
     if (err) {
         return err;
     }
 
-    /* TODO Should we return SELVA_EINVAL if the element was not found? */
-    SelvaSet_DestroyElement(SelvaSet_Remove(selva_set, value));
+    el = SelvaSet_Remove(selva_set, value);
+    if (!el) {
+        return SELVA_EINVAL;
+    }
+    SelvaSet_DestroyElement(el);
 
     return 0;
 }
@@ -857,6 +861,7 @@ int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *k
 
 int SelvaObject_RemLongLongSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
     struct SelvaSet *selva_set;
+    struct SelvaSetElement *el;
     int err;
 
     err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_LONGLONG, &selva_set);
@@ -864,8 +869,11 @@ int SelvaObject_RemLongLongSetStr(struct SelvaObject *obj, const char *key_name_
         return err;
     }
 
-    /* TODO Should we return SELVA_EINVAL if the element was not found? */
-    SelvaSet_DestroyElement(SelvaSet_Remove(selva_set, value));
+    el = SelvaSet_Remove(selva_set, value);
+    if (!el) {
+        return SELVA_EINVAL;
+    }
+    SelvaSet_DestroyElement(el);
 
     return 0;
 }
@@ -888,7 +896,7 @@ int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_st
 
     el = SelvaSet_Remove(selva_set, value);
     if (!el) {
-        return 0; /* TODO Should we return SELVA_EINVAL? */
+        return SELVA_EINVAL;
     }
     RedisModule_FreeString(NULL, el->value_rms);
     SelvaSet_DestroyElement(el);
@@ -1452,12 +1460,13 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
             TO_STR(lang);
+
             if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT && lang && lang_len > 0) {
                 char buf[lang_len + 1];
                 char *s = buf;
-                strncpy(s, lang_str, lang_len);
-                s[lang_len] = '\0';
+                memcpy(s, lang_str, lang_len + 1);
                 const char *sep = "\n";
+
                 for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
                     const size_t slen = strlen(s);
 
@@ -1564,8 +1573,9 @@ int SelvaObject_GetWithWildcardStr(
             */
             const size_t obj_key_len = strlen(obj_key_name_str);
             const size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
-            char new_field[new_field_len];
-            sprintf(new_field, "%.*s.%.*s.%.*s",
+            char new_field[new_field_len + 1];
+
+            snprintf(new_field, new_field_len + 1, "%.*s.%.*s.%.*s",
                     (int)before_len, before,
                     (int)obj_key_len, obj_key_name_str,
                     (int)after_len, after);
@@ -1582,24 +1592,27 @@ int SelvaObject_GetWithWildcardStr(
             if (flags == 1) {
                 /* if the path should be spliced to start from the first wildcard (as expected by selva.object.get */
                 const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
-                char reply_path[reply_path_len];
+                char reply_path[reply_path_len + 1];
+
                 if (resp_path_start_idx == -1) {
-                    sprintf(
-                        reply_path, "%.*s.%.*s",
+                    snprintf(
+                        reply_path, reply_path_len + 1, "%.*s.%.*s",
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
                 } else {
-                    sprintf(reply_path, "%.*s.%.*s.%.*s",
-                        (int)before_len - resp_path_start_idx, before + resp_path_start_idx,
+                    snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s.%.*s",
+                        (int)(before_len - resp_path_start_idx), before + resp_path_start_idx,
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
                 }
+
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             } else {
                 /* if the whole resolved path should be returned */
                 const size_t reply_path_len = before_len + 1 + obj_key_len + 1 + key->name_len;
-                char reply_path[reply_path_len];
-                sprintf(reply_path, "%.*s.%.*s.%.*s",
+                char reply_path[reply_path_len + 1];
+
+                snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s.%.*s",
                         (int)before_len, before,
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
