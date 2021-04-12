@@ -1,6 +1,5 @@
 #include <math.h>
 #include <time.h>
-#include <regex.h>
 
 #include "cdefs.h"
 #include "cstrings.h"
@@ -34,8 +33,6 @@
 #define FISSET_UPDATE(m) (((m) & FLAG_UPDATE) == FLAG_UPDATE)
 #define FISSET_CREATED_AT(m) (((m) & FLAG_CREATED_AT) == FLAG_CREATED_AT)
 #define FISSET_UPDATED_AT(m) (((m) & FLAG_UPDATED_AT) == FLAG_UPDATED_AT)
-
-regex_t array_syntax_regex;
 
 SET_DECLARE(selva_onload, Selva_Onload);
 
@@ -232,15 +229,6 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
                 SVector_Insert(out, (void *)s);
             }
         }
-    }
-}
-
-// TODO: replace all this with util function that just walks the string with a for loop, field strings only allow alphanumeric otherwise so this is unnecessarily complicated
-static int compile_array_syntax_regex() {
-    int reti = regcomp(&array_syntax_regex, "\\[[[:digit:]]\\{1,\\}\\]$", 0);
-    if (reti) {
-        fprintf(stderr, "Could not compile array syntax regex\n");
-        exit(1);
     }
 }
 
@@ -727,8 +715,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
-    compile_array_syntax_regex();
-
     // Register the module itself
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
