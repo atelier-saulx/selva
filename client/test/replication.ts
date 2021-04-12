@@ -518,37 +518,37 @@ test.serial('modify all cases are replicated', async (t) => {
     [
       'grphnode_a',
       'OK',         // f01
-      'UPDATED',    // f01
+      'OK',         // f01
       'OK',         // f02
-      'UPDATED',    // f02
+      'OK',         // f02
       'OK',         // f03
-      'UPDATED',    // f03
+      'OK',         // f03
       'OK',         // f04
-      'UPDATED',    // f04
+      'OK',         // f04
       //'UPDATED',    // f05
       //'UPDATED',    // f05
       'OK',         // f06
-      'UPDATED',    // f06
+      'OK',         // f06
       'OK',         // f07
-      'UPDATED',    // f07
+      'OK',         // f07
       'OK',         // f08
-      'UPDATED',    // f08
+      'OK',         // f08
       'OK',         // f09
-      'UPDATED',    // f09
+      'OK',         // f09
       'OK',         // f10
-      'UPDATED',    // f10
+      'OK',         // f10
       'OK',         // f11
-      'UPDATED',    // f11
+      'OK',         // f11
       'UPDATED',    // f12
-      'UPDATED',    // f12
+      'OK',         // f12
       'UPDATED',    // f13
-      'UPDATED',    // f13
+      'OK',         // f13
       'UPDATED',    // f14
-      'UPDATED',    // f14
+      'OK',         // f14
       'UPDATED',    // f15
-      'UPDATED',    // f15
+      'OK',         // f15
       'OK',         // f16
-      'UPDATED',    // f16
+      'OK',         // f16
       'OK',         // f17
     ]
   )

@@ -576,29 +576,34 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             SelvaObject_SetDouble(obj, field, v.d);
         } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-            SelvaObjectMeta_t user_meta;
+            SelvaObjectMeta_t new_user_meta;
+            SelvaObjectMeta_t old_user_meta;
 
             if (value_len < sizeof(SelvaObjectMeta_t)) {
-                replyWithSelvaErrorf(ctx, SELVA_EINTYPE,"Expected: %s", typeof_str(user_meta));
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(new_user_meta));
                 continue;
             }
 
-            memcpy(&user_meta, value_str, sizeof(SelvaObjectMeta_t));
-            err = SelvaObject_SetUserMeta(obj, field, user_meta);
+            memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
+            err = SelvaObject_SetUserMeta(obj, field, new_user_meta, &old_user_meta);
             if (err) {
                 replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
                 continue;
             }
 
-            RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
-
-            /* This triplet needs to be replicated. */
-            bitmap_set(replset, i / 3 - 1);
+            if (new_user_meta != old_user_meta) {
+                RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
+            } else {
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+            }
 
             /*
-             * We don't count this as a modification as we assume that the
-             * value was modified too.
+             * This triplet needs to be replicated.
+             * We replicate it regardless of any changes just in case for now
+             * and we might stop replicate it later on when we are sure that
+             * it isn't necessary.
              */
+            bitmap_set(replset, i / 3 - 1);
             continue;
         } else {
             replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);

@@ -1153,7 +1153,7 @@ int SelvaObject_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *ke
     return SelvaObject_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
 }
 
-int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta) {
+int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta) {
     int err;
     struct SelvaObjectKey *key;
 
@@ -1162,14 +1162,17 @@ int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
         return err;
     }
 
+    if (old_meta) {
+        *old_meta = key->user_meta;
+    }
     key->user_meta = meta;
     return 0;
 }
 
-int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta) {
+int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta) {
     TO_STR(key_name);
 
-    return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta);
+    return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta, old_meta);
 }
 
 /* TODO Support nested objects */
@@ -1802,7 +1805,7 @@ int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     memcpy(&user_meta, mval_str, sizeof(SelvaObjectMeta_t));
-    err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta);
+    err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta, NULL);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
     }
@@ -1994,7 +1997,7 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
          * Not the most efficient way to do this as we may need to look
          * multiple lookups.
          */
-        if (SelvaObject_SetUserMeta(obj, name, user_meta)) {
+        if (SelvaObject_SetUserMeta(obj, name, user_meta, NULL)) {
             RedisModule_LogIOError(io, "warning", "Failed to set user meta");
         }
 
