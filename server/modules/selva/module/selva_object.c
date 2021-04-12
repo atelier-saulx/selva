@@ -1458,8 +1458,9 @@ int SelvaObject_GetWithWildcardStr(
             */
             const size_t obj_key_len = strlen(obj_key_name_str);
             const size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
-            char new_field[new_field_len];
-            sprintf(new_field, "%.*s.%.*s.%.*s",
+            char new_field[new_field_len + 1];
+
+            snprintf(new_field, new_field_len + 1, "%.*s.%.*s.%.*s",
                     (int)before_len, before,
                     (int)obj_key_len, obj_key_name_str,
                     (int)after_len, after);
@@ -1476,24 +1477,27 @@ int SelvaObject_GetWithWildcardStr(
             if (flags == 1) {
                 /* if the path should be spliced to start from the first wildcard (as expected by selva.object.get */
                 const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
-                char reply_path[reply_path_len];
+                char reply_path[reply_path_len + 1];
+
                 if (resp_path_start_idx == -1) {
-                    sprintf(
-                        reply_path, "%.*s.%.*s",
+                    snprintf(
+                        reply_path, reply_path_len + 1, "%.*s.%.*s",
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
                 } else {
-                    sprintf(reply_path, "%.*s.%.*s.%.*s",
-                        (int)before_len - resp_path_start_idx, before + resp_path_start_idx,
+                    snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s.%.*s",
+                        (int)(before_len - resp_path_start_idx), before + resp_path_start_idx,
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
                 }
+
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             } else {
                 /* if the whole resolved path should be returned */
                 const size_t reply_path_len = before_len + 1 + obj_key_len + 1 + key->name_len;
-                char reply_path[reply_path_len];
-                sprintf(reply_path, "%.*s.%.*s.%.*s",
+                char reply_path[reply_path_len + 1];
+
+                snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s.%.*s",
                         (int)before_len, before,
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
