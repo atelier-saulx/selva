@@ -454,6 +454,7 @@ void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
             vec->vec_last++;
         }
     } else {
+        fprintf(stderr, "ABORTY BORTY\n");
         abort();
     }
 

@@ -146,8 +146,15 @@ static int clear_key_value(struct SelvaObjectKey *key) {
 
             SVector_ForeachBegin(&it, &key->array);
             while ((str = SVector_Foreach(&it))) {
+                // BEGIN DEBUG
+                TO_STR(str);
+                fprintf(stderr, "HELLO DELETE %.*s\n", (int)str_len, str_str);
+                // END DEBUG
+
                 RedisModule_FreeString(NULL, str);
             }
+
+            SVector_Destroy(&key->array);
         } else if (key->subtype == SELVA_OBJECT_DOUBLE || key->subtype == SELVA_OBJECT_LONGLONG) {
             // do nothing, we store concrete values so it's enough to just clear the SVector itself
         } else if (key->subtype == SELVA_OBJECT_OBJECT) {
