@@ -336,18 +336,20 @@ int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
 // TODO: add array syntax stuff here
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     const char *sep = ".";
-    const size_t nr_parts = substring_count(key_name_str, ".", key_name_len) + 1;
+    const size_t nr_parts = substring_count(key_name_str, sep, key_name_len) + 1;
     char buf[key_name_len + 1]; /* We assume that the length has been sanity checked at this point. */
-    char *s = buf;
     struct SelvaObjectKey *key = NULL;
     struct SelvaObject *cobj = obj; /* Containing object. */
 
-    strncpy(s, key_name_str, key_name_len);
-    s[key_name_len] = '\0';
+    strncpy(buf, key_name_str, key_name_len);
+    buf[key_name_len] = '\0';
 
+    char *rest;
     size_t nr_parts_found = 0;
-    for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
-        // TODO: get by value by index if s+slen is an array field and if it's a selva_object then return the type else return the array type
+
+    for (char *s = strtok_r(buf, sep, &rest);
+         s != NULL;
+         s = strtok_r(NULL, sep, &rest)) {
         const size_t slen = strlen(s);
         int err;
 
@@ -1284,7 +1286,7 @@ int SelvaObject_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *ke
     return SelvaObject_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
 }
 
-int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta) {
+int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta) {
     int err;
     struct SelvaObjectKey *key;
 
@@ -1293,14 +1295,17 @@ int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
         return err;
     }
 
+    if (old_meta) {
+        *old_meta = key->user_meta;
+    }
     key->user_meta = meta;
     return 0;
 }
 
-int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta) {
+int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta) {
     TO_STR(key_name);
 
-    return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta);
+    return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta, old_meta);
 }
 
 /* TODO Support nested objects */
@@ -1504,15 +1509,17 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
 
             if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT && lang && lang_len > 0) {
                 char buf[lang_len + 1];
-                char *s = buf;
-                memcpy(s, lang_str, lang_len + 1);
+                memcpy(buf, lang_str, lang_len + 1);
                 const char *sep = "\n";
+                char *rest;
 
-                for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
+                for (char *s = strtok_r(buf, sep, &rest);
+                     s != NULL;
+                     s = strtok_r(NULL, sep, &rest)) {
                     const size_t slen = strlen(s);
-
                     struct SelvaObjectKey *text_key;
                     int err = get_key(key->value, s, slen, 0, &text_key);
+
                     // ignore errors on purpose
                     if (!err && text_key->type == SELVA_OBJECT_STRING) {
                         RedisModule_ReplyWithString(ctx, text_key->value);
@@ -1955,7 +1962,7 @@ int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     memcpy(&user_meta, mval_str, sizeof(SelvaObjectMeta_t));
-    err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta);
+    err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta, NULL);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
     }
@@ -2173,7 +2180,7 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
          * Not the most efficient way to do this as we may need to look
          * multiple lookups.
          */
-        if (SelvaObject_SetUserMeta(obj, name, user_meta)) {
+        if (SelvaObject_SetUserMeta(obj, name, user_meta, NULL)) {
             RedisModule_LogIOError(io, "warning", "Failed to set user meta");
         }
 

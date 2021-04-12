@@ -122,9 +122,9 @@ typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_
 static int parse_order(
         const RedisModuleString **order_by_field,
         enum hierarchy_result_order *order,
-        RedisModuleString *txt,
-        RedisModuleString *fld,
-        RedisModuleString *ord) {
+        const RedisModuleString *txt,
+        const RedisModuleString *fld,
+        const RedisModuleString *ord) {
     TO_STR(txt, fld, ord);
     enum hierarchy_result_order tmpOrder;
 
@@ -159,7 +159,7 @@ einval:
     return 0;
 }
 
-static int parse_algo(enum SelvaModify_Hierarchy_Algo *algo, RedisModuleString *arg) {
+static int parse_algo(enum SelvaModify_Hierarchy_Algo *algo, const RedisModuleString *arg) {
     size_t len;
     const char *str = RedisModule_StringPtrLen(arg, &len);
 
@@ -186,7 +186,7 @@ static int parse_dir(
         RedisModuleString **field_name_out,
         Selva_NodeId nodeId,
         enum SelvaModify_Hierarchy_Algo algo,
-        RedisModuleString *arg) {
+        const RedisModuleString *arg) {
     const char *p1 = RedisModule_StringPtrLen(arg, NULL); /* Beginning of a field_name or a list of field_names. */
     const char *p2 = get_next_field_name(p1); /* Last char of the first field_name. */
 
@@ -349,7 +349,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
         if (!err) {
             enum SelvaObjectType obj_type;
 
-            obj_type = SelvaObject_GetType(obj, (RedisModuleString *)order_field);
+            obj_type = SelvaObject_GetType(obj, order_field);
 
             if (obj_type == SELVA_OBJECT_STRING) {
                 err = SelvaObject_GetString(obj, order_field, &value);
@@ -374,15 +374,17 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
                     }
 
                     char buf[lang_len + 1];
-                    char *s = buf;
-                    memcpy(s, lang_str, lang_len + 1);
+                    memcpy(buf, lang_str, lang_len + 1);
                     const char *sep = "\n";
+                    char *rest = NULL;
 
-                    for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
-                        const size_t slen = strlen(s);
+                    for (char *token = strtok_r(buf, sep, &rest);
+                         token != NULL;
+                         token = strtok_r(NULL, sep, &rest)) {
+                        const size_t slen = strlen(token);
 
                         RedisModuleString *raw_value = NULL;
-                        text_err = SelvaObject_GetStringStr(text_obj, s, slen, &raw_value);
+                        text_err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
                         if (!text_err && raw_value) {
                             TO_STR(raw_value);
                             if (raw_value_len) {
@@ -1626,8 +1628,8 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         return replyWithSelvaError(ctx, SELVA_ENOMEM);
     }
 
-    RedisModuleString *ids = argv[ARGV_NODE_IDS];
-    RedisModuleString *filter = argv[ARGV_FILTER_EXPR];
+    const RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    const RedisModuleString *filter = argv[ARGV_FILTER_EXPR];
     TO_STR(ids, filter);
 
     /*
@@ -1652,11 +1654,10 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     }
 
     SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
-    if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
-            goto out;
-        }
+    if (order != HIERARCHY_RESULT_ORDER_NONE &&
+        !SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
+        replyWithSelvaError(ctx, SELVA_ENOMEM);
+        goto out;
     }
 
     ssize_t array_len = 0;
@@ -1822,10 +1823,9 @@ int SelvaHierarchy_FindInSubCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     }
 
     SVECTOR_AUTOFREE(order_result); /* No need to init for ORDER_NODE */
-    if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
-            return replyWithSelvaError(ctx, SELVA_ENOMEM);
-        }
+    if (order != HIERARCHY_RESULT_ORDER_NONE &&
+        !SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
+        return replyWithSelvaError(ctx, SELVA_ENOMEM);
     }
 
     ssize_t array_len = 0;

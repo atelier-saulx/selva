@@ -180,7 +180,7 @@ static int in_mem_range(const void *p, const void *start, size_t size) {
     return (ptrdiff_t)p >= (ptrdiff_t)start && (ptrdiff_t)p <= end;
 }
 
-static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, struct RedisModuleString *data) {
+static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, const struct RedisModuleString *data) {
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
@@ -215,9 +215,9 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, st
  */
 static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) {
     for (int i = 0; i < argc; i += 3) {
-        RedisModuleString *type = argv[i];
-        RedisModuleString *field = argv[i + 1];
-        RedisModuleString *value = argv[i + 2];
+        const RedisModuleString *type = argv[i];
+        const RedisModuleString *field = argv[i + 1];
+        const RedisModuleString *value = argv[i + 2];
 
         TO_STR(type, field, value);
         char type_code = type_str[0];
@@ -382,7 +382,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return replyWithSelvaErrorf(ctx, err, "Failed to open the object for id: \"%s\"", id_str);
     }
 
-    struct SelvaModify_HierarchyMetadata *metadata;
+    const struct SelvaModify_HierarchyMetadata *metadata;
 
     metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, nodeId, metadata);
@@ -420,8 +420,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     for (int i = 3; i < argc; i += 3) {
         bool publish = true;
-        RedisModuleString *type = argv[i];
-        RedisModuleString *field = argv[i + 1];
+        const RedisModuleString *type = argv[i];
+        const RedisModuleString *field = argv[i + 1];
         RedisModuleString *value = argv[i + 2];
 
         TO_STR(type, field, value);
@@ -445,11 +445,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
         } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
-            struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
+            const struct SelvaModify_OpIncrement *incrementOpts = (const struct SelvaModify_OpIncrement *)value_str;
 
             SelvaModify_ModifyIncrement(obj, field, old_type, incrementOpts);
         } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE) {
-            struct SelvaModify_OpIncrementDouble *incrementOpts = (struct SelvaModify_OpIncrementDouble*)value_str;
+            const struct SelvaModify_OpIncrementDouble *incrementOpts = (const struct SelvaModify_OpIncrementDouble*)value_str;
 
             SelvaModify_ModifyIncrementDouble(ctx, obj, field, old_type, incrementOpts);
         } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
@@ -592,29 +592,34 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             SelvaObject_SetDouble(obj, field, v.d);
         } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-            SelvaObjectMeta_t user_meta;
+            SelvaObjectMeta_t new_user_meta;
+            SelvaObjectMeta_t old_user_meta;
 
             if (value_len < sizeof(SelvaObjectMeta_t)) {
-                replyWithSelvaErrorf(ctx, SELVA_EINTYPE,"Expected: %s", typeof_str(user_meta));
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(new_user_meta));
                 continue;
             }
 
-            memcpy(&user_meta, value_str, sizeof(SelvaObjectMeta_t));
-            err = SelvaObject_SetUserMeta(obj, field, user_meta);
+            memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
+            err = SelvaObject_SetUserMeta(obj, field, new_user_meta, &old_user_meta);
             if (err) {
                 replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
                 continue;
             }
 
-            RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
-
-            /* This triplet needs to be replicated. */
-            bitmap_set(replset, i / 3 - 1);
+            if (new_user_meta != old_user_meta) {
+                RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
+            } else {
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+            }
 
             /*
-             * We don't count this as a modification as we assume that the
-             * value was modified too.
+             * This triplet needs to be replicated.
+             * We replicate it regardless of any changes just in case for now
+             * and we might stop replicate it later on when we are sure that
+             * it isn't necessary.
              */
+            bitmap_set(replset, i / 3 - 1);
             continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
             // TODO
