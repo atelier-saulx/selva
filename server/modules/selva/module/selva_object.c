@@ -1013,6 +1013,7 @@ int SelvaObject_InsertArray(struct SelvaObject *obj, const RedisModuleString *ke
 }
 
 int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t idx, void *p) {
+    fprintf(stderr, "OKAY DOING THINGS %.*s %zu\n", (int)key_name_len, key_name_str, idx);
     struct SelvaObjectKey *key;
     int err;
 
@@ -1043,6 +1044,16 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     }
 
     SVector_InsertIndex(&key->array, idx, p);
+
+    // BEGIN DEBUG
+    RedisModuleString *str;
+    struct SVectorIterator it;
+    SVector_ForeachBegin(&it, &key->array);
+    while ((str = SVector_Foreach(&it))) {
+        TO_STR(str);
+        fprintf(stderr, "HAS CONTENT %.*s\n", (int)str_len, str_str);
+    }
+    // END DEBUG
 
     return 0;
 }
@@ -1434,9 +1445,31 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
 }
 
 static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SVector *array) {
-    /* TODO add selva_object_array reply support */
-    fprintf(stderr, "ARRAY TYPE REPLIES ARE NOT SUPPORTED RIGHT NOW\n");
-    (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Array type not supported");
+    RedisModuleString *str;
+    struct SVectorIterator it;
+    SVector_ForeachBegin(&it, array);
+    size_t n = 0;
+
+    while ((str = SVector_Foreach(&it))) {
+        switch (subtype) {
+        case SELVA_OBJECT_DOUBLE:
+            n++;
+            // TODO
+            break;
+        case SELVA_OBJECT_LONGLONG:
+            n++;
+            // TODO
+            break;
+        case SELVA_OBJECT_STRING:
+            n++;
+            RedisModule_ReplyWithString(ctx, str);
+            break;
+        default:
+            break;
+        }
+    }
+
+    RedisModule_ReplySetArrayLength(ctx, n);
 }
 
 static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key) {
