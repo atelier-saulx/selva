@@ -329,7 +329,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
     char *rest;
     size_t nr_parts_found = 0;
-    for (char *s = strtok_r(buf, sep, &rest);
+    for (const char *s = strtok_r(buf, sep, &rest);
          s != NULL;
          s = strtok_r(NULL, sep, &rest)) {
         const size_t slen = strlen(s);
@@ -1357,7 +1357,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
                 const char *sep = "\n";
                 char *rest;
 
-                for (char *s = strtok_r(buf, sep, &rest);
+                for (const char *s = strtok_r(buf, sep, &rest);
                      s != NULL;
                      s = strtok_r(NULL, sep, &rest)) {
                     const size_t slen = strlen(s);

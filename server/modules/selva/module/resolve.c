@@ -109,7 +109,7 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return replyWithSelvaErrorf(ctx, resolved, "Resolve failed");
     }
 
-    RedisModuleString *argv_sub_id = argv[ARGV_SUB_ID];
+    const RedisModuleString *argv_sub_id = argv[ARGV_SUB_ID];
     TO_STR(argv_sub_id);
 
     if ((resolved & SELVA_RESOLVE_ALIAS) && argv_sub_id_len > 0) {
