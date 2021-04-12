@@ -374,15 +374,17 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
                     }
 
                     char buf[lang_len + 1];
-                    char *s = buf;
-                    memcpy(s, lang_str, lang_len + 1);
+                    memcpy(buf, lang_str, lang_len + 1);
                     const char *sep = "\n";
+                    char *rest = NULL;
 
-                    for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
-                        const size_t slen = strlen(s);
+                    for (char *token = strtok_r(buf, sep, &rest);
+                         token != NULL;
+                         token = strtok_r(NULL, sep, &rest)) {
+                        const size_t slen = strlen(token);
 
                         RedisModuleString *raw_value = NULL;
-                        text_err = SelvaObject_GetStringStr(text_obj, s, slen, &raw_value);
+                        text_err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
                         if (!text_err && raw_value) {
                             TO_STR(raw_value);
                             if (raw_value_len) {
