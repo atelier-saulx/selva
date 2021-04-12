@@ -185,7 +185,7 @@ static int add_set_values(
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     char *value_ptr,
     size_t value_len,
     int8_t type,
@@ -406,7 +406,7 @@ static int del_set_values(
     RedisModuleCtx *ctx,
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     char *value_ptr,
     size_t value_len,
     int8_t type
@@ -503,7 +503,7 @@ static int update_set(
     SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
     TO_STR(field);
@@ -561,7 +561,7 @@ int SelvaModify_ModifySet(
     SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
     const int is_reference = setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE;
@@ -640,9 +640,9 @@ int SelvaModify_ModifySet(
 
 void SelvaModify_ModifyIncrement(
     struct SelvaObject *obj,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     enum SelvaObjectType old_type,
-    struct SelvaModify_OpIncrement *incrementOpts
+    const struct SelvaModify_OpIncrement *incrementOpts
 ) {
     int64_t new = incrementOpts->$default;
 
@@ -660,9 +660,9 @@ void SelvaModify_ModifyIncrement(
 void SelvaModify_ModifyIncrementDouble(
     RedisModuleCtx *ctx __unused,
     struct SelvaObject *obj,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     enum SelvaObjectType old_type,
-    struct SelvaModify_OpIncrementDouble *incrementOpts
+    const struct SelvaModify_OpIncrementDouble *incrementOpts
 ) {
     double new = incrementOpts->$default;
 
@@ -682,7 +682,7 @@ int SelvaModify_ModifyDel(
     SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field
+    const RedisModuleString *field
 ) {
     TO_STR(id, field);
     int err = 0;

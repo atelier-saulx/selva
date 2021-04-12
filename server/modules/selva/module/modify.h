@@ -65,23 +65,23 @@ int SelvaModify_ModifySet(
     struct SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     struct RedisModuleString *id,
-    struct RedisModuleString *field,
+    const struct RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 );
 
 void SelvaModify_ModifyIncrement(
     struct SelvaObject *obj,
-    struct RedisModuleString *field,
+    const struct RedisModuleString *field,
     enum SelvaObjectType old_type,
-    struct SelvaModify_OpIncrement *incrementOpts
+    const struct SelvaModify_OpIncrement *incrementOpts
 );
 
 void SelvaModify_ModifyIncrementDouble(
-    RedisModuleCtx *ctx,
+    struct RedisModuleCtx *ctx,
     struct SelvaObject *obj,
-    RedisModuleString *field,
+    const struct RedisModuleString *field,
     enum SelvaObjectType old_type,
-    struct SelvaModify_OpIncrementDouble *incrementOpts
+    const struct SelvaModify_OpIncrementDouble *incrementOpts
 );
 
 int SelvaModify_ModifyDel(
@@ -89,7 +89,7 @@ int SelvaModify_ModifyDel(
     struct SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     struct RedisModuleString *id,
-    struct RedisModuleString *field
+    const struct RedisModuleString *field
 );
 
 #endif /* SELVA_MODIFY_H */

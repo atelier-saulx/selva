@@ -40,7 +40,7 @@ static inline uint8_t next_queue_idx() {
 }
 
 static int getRedisPort(void) {
-    char *str;
+    const char *str;
 
     str = getenv("REDIS_PORT");
     if (!str) {

@@ -179,7 +179,7 @@ static int in_mem_range(const void *p, const void *start, size_t size) {
     return (ptrdiff_t)p >= (ptrdiff_t)start && (ptrdiff_t)p <= end;
 }
 
-static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, struct RedisModuleString *data) {
+static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, const struct RedisModuleString *data) {
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
@@ -214,9 +214,9 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, st
  */
 static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) {
     for (int i = 0; i < argc; i += 3) {
-        RedisModuleString *type = argv[i];
-        RedisModuleString *field = argv[i + 1];
-        RedisModuleString *value = argv[i + 2];
+        const RedisModuleString *type = argv[i];
+        const RedisModuleString *field = argv[i + 1];
+        const RedisModuleString *value = argv[i + 2];
 
         TO_STR(type, field, value);
         char type_code = type_str[0];
@@ -381,7 +381,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return replyWithSelvaErrorf(ctx, err, "Failed to open the object for id: \"%s\"", id_str);
     }
 
-    struct SelvaModify_HierarchyMetadata *metadata;
+    const struct SelvaModify_HierarchyMetadata *metadata;
 
     metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, nodeId, metadata);
@@ -419,8 +419,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     for (int i = 3; i < argc; i += 3) {
         bool publish = true;
-        RedisModuleString *type = argv[i];
-        RedisModuleString *field = argv[i + 1];
+        const RedisModuleString *type = argv[i];
+        const RedisModuleString *field = argv[i + 1];
         RedisModuleString *value = argv[i + 2];
 
         TO_STR(type, field, value);
@@ -429,11 +429,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
         if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
-            struct SelvaModify_OpIncrement *incrementOpts = (struct SelvaModify_OpIncrement *)value_str;
+            const struct SelvaModify_OpIncrement *incrementOpts = (const struct SelvaModify_OpIncrement *)value_str;
 
             SelvaModify_ModifyIncrement(obj, field, old_type, incrementOpts);
         } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE) {
-            struct SelvaModify_OpIncrementDouble *incrementOpts = (struct SelvaModify_OpIncrementDouble*)value_str;
+            const struct SelvaModify_OpIncrementDouble *incrementOpts = (const struct SelvaModify_OpIncrementDouble*)value_str;
 
             SelvaModify_ModifyIncrementDouble(ctx, obj, field, old_type, incrementOpts);
         } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
