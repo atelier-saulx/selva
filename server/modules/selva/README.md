@@ -4,8 +4,44 @@
 
 Here's what you need to do to build your first module:
 
-1. `make`
+1. `make` or `make -j4`
 2. Run redis loading the module: `redis-server --loadmodule ./module.so`
+
+
+## Testing
+
+### Cppcheck
+
+Cppcheck is configured in the `Makefile`:
+
+```
+make check
+```
+
+
+### Unit Tests
+
+The unit tests are implemented using a modified version of the PUnit test
+framework. The test can be run with the following command.
+
+```
+make test
+```
+
+The tests can be run with `valgrind` individually.
+
+```
+valgrind test/units/bin/test-rpn
+```
+
+Currently there is no automated coverage reporting but `gcov` is configured for
+the tests. On Linux `gcov` can be run as follows:
+
+```
+cd test/units
+gcov "test-svector" -m -k -j -q -t
+```
+
 
 ## Documentation
 
