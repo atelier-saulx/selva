@@ -1005,7 +1005,7 @@ rpn_token *rpn_compile(const char *input, size_t len) {
     }
 
     char *rest;
-    for (char *s = strtok_r(sa, w, &rest);
+    for (const char *s = strtok_r(sa, w, &rest);
          s != NULL;
          s = strtok_r(NULL, w, &rest)) {
         rpn_token *new = RedisModule_Realloc(expr, size);

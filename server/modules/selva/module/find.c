@@ -378,7 +378,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
                     const char *sep = "\n";
                     char *rest = NULL;
 
-                    for (char *token = strtok_r(buf, sep, &rest);
+                    for (const char *token = strtok_r(buf, sep, &rest);
                          token != NULL;
                          token = strtok_r(NULL, sep, &rest)) {
                         const size_t slen = strlen(token);
