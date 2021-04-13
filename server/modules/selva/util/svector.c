@@ -560,7 +560,6 @@ void *SVector_Peek(SVector * restrict vec) {
         }
 
         first = n->p;
-    } else {
     }
 
     return first;
