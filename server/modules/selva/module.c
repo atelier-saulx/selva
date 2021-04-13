@@ -446,14 +446,40 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 RedisModule_RetainString(ctx, value);
             } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
                 //  TODO: handle default
+                union {
+                    char s[sizeof(double)];
+                    double d;
+                } v = {
+                    .d = 0.0,
+                };
+                memcpy(v.s, value_str, sizeof(v.d));
+                fprintf(stderr, "WUUT DOUBLE %f\n", v.d);
                 void *wrapper;
-                memcpy(&wrapper, &value, sizeof(value));
-                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, wrapper);
+                memcpy(&wrapper, &v.d, sizeof(v.d));
+                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
+
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                    continue;
+                }
             } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
                 //  TODO: handle default
+                union {
+                    char s[sizeof(double)];
+                    long long ll;
+                } v = {
+                    .ll = 0,
+                };
+                memcpy(v.s, value_str, sizeof(v.ll));
+                fprintf(stderr, "WUUT LONG %lld\n", v.ll);
                 void *wrapper;
-                memcpy(&wrapper, &value, sizeof(value));
-                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, wrapper);
+                memcpy(&wrapper, &v.ll, sizeof(v.ll));
+                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
+
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                    continue;
+                }
             } else {
                 replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
                 continue;
