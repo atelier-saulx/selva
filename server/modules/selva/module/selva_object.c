@@ -1463,14 +1463,15 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
     SVector_ForeachBegin(&it, array);
     size_t n = 0;
 
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     while ((str = SVector_Foreach(&it))) {
         switch (subtype) {
         case SELVA_OBJECT_DOUBLE:
-            n++;
+            // n++;
             // TODO
             break;
         case SELVA_OBJECT_LONGLONG:
-            n++;
+            // n++;
             // TODO
             break;
         case SELVA_OBJECT_STRING:
@@ -1486,6 +1487,7 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
 }
 
 static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key) {
+    fprintf(stderr, "REPLY KEY VALUE %.*s\n", (int)key->name_len, key->name);
     switch (key->type) {
     case SELVA_OBJECT_NULL:
         RedisModule_ReplyWithNull(ctx);
@@ -1726,6 +1728,13 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         }
 
         if (err == SELVA_ENOENT) {
+            // fprintf(stderr, "\n\nHELLO DEBUG\n\n");
+            // void *it = SelvaObject_ForeachBegin(obj);
+            // const char *str;
+            // while ((str = SelvaObject_ForeachKey(obj, &it))) {
+            //     fprintf(stderr, "OBJ HAS KEY %s\n", str);
+            // }
+            // fprintf(stderr, "\n\nBYEEE DEBUG\n\n\n");
             /* Keep looking. */
             continue;
         } else if (err) {

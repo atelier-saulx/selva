@@ -143,7 +143,10 @@ export const TYPE_CASTS: Record<
   int: Number,
   boolean: (x: any) => !!Number(x),
   json: (x: any) => JSON.parse(x),
-  array: (x: any) => JSON.parse(x),
+  // array: (x: any) => JSON.parse(x),
+  array: (x: any) => {
+    return x
+  },
   set: (all: any, id: string, field: string, schema, lang) => {
     const fieldSchema = <FieldSchemaArrayLike>getNestedSchema(schema, id, field)
     if (!fieldSchema || !fieldSchema.items) {

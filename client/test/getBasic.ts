@@ -2234,8 +2234,6 @@ test.serial.only('get - field with array', async (t) => {
   const result = await client.get({
     $id: id,
     thing: true,
-    dong: true,
-    ding: { dong: true },
     dingdongs: true,
     children: true,
     descendants: true,
@@ -2246,7 +2244,6 @@ test.serial.only('get - field with array', async (t) => {
     children: [],
     descendants: [],
     dingdongs: ['a', 'b', 'test'],
-    dong: { dingdong: [] },
   })
 
   t.deepEqualIgnoreOrder(
@@ -2256,7 +2253,7 @@ test.serial.only('get - field with array', async (t) => {
     }),
     {
       id,
-      dong: { dingdong: [] },
+      // dong: { dingdong: [] },
       type: 'lekkerType',
       dingdongs: ['a', 'b', 'test'],
     }

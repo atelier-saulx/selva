@@ -113,8 +113,7 @@ int get_array_field_start_idx(const char *field_str, size_t field_len) {
     for (size_t i = field_len; i > 0; i--) {
         field_len--;
         if (field_str[i] == '[') {
-            return field_len;
-            break;
+            return field_len + 1;
         }
     }
 
