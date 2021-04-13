@@ -1455,8 +1455,10 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
     case SELVA_OBJECT_DOUBLE:
         SVector_ForeachBegin(&it, array);
 
-        double *d;
-        while ((d = SVector_Foreach(&it))) {
+        void *pd;
+        while ((pd = SVector_Foreach(&it))) {
+            double *d;
+            memcpy(d, pd, sizeof(double));
             n++;
             RedisModule_ReplyWithLongLong(ctx, *d);
         }
@@ -1465,10 +1467,12 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
     case SELVA_OBJECT_LONGLONG:
         SVector_ForeachBegin(&it, array);
 
-        long long *ll;
-        while ((ll = SVector_Foreach(&it))) {
+        void *p;
+        while ((p = SVector_Foreach(&it))) {
+            long long ll = (long long)p;
+            // fprintf(stderr, "WHAT IS THIS COME ON %lld\n", ll);
             n++;
-            RedisModule_ReplyWithLongLong(ctx, *ll);
+            RedisModule_ReplyWithLongLong(ctx, ll);
         }
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
