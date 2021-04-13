@@ -1452,17 +1452,19 @@ int SelvaObject_GetWithWildcardStr(
     int err;
 
     err = get_key(obj, before, before_len, 0, &key);
-    if (!err && key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
+    if (!err && (key->type != SELVA_OBJECT_OBJECT || key->user_meta != 1)) {
+        err = SELVA_ENOENT;
+    } else if (!err) {
         void *it = SelvaObject_ForeachBegin(key->value);
-
         const char *obj_key_name_str;
+
         while ((obj_key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
             /*
-                construct a new field path with the resolved path with the following:
-                -> path before the wildcard
-                -> the current object key being iterated
-                -> path after the wildcard
-            */
+             *  Construct a new field path with the resolved path with the following:
+             *  -> path before the wildcard
+             *  -> the current object key being iterated
+             *  -> path after the wildcard
+             */
             const size_t obj_key_len = strlen(obj_key_name_str);
             const size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
             char new_field[new_field_len + 1];
@@ -1473,16 +1475,26 @@ int SelvaObject_GetWithWildcardStr(
                     (int)after_len, after);
 
             if (strnstr(new_field, ".*.", new_field_len)) {
-                /* recurse for nested wildcards while keeping the resolved path */
+                /* Recurse for nested wildcards while keeping the resolved path. */
                 SelvaObject_GetWithWildcardStr(ctx, lang, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
             }
 
-            struct SelvaObjectKey *key;
+            struct SelvaObjectKey *key; /* Note that we shadow the variable here. */
             err = get_key(obj, new_field, new_field_len, 0, &key);
+            if (err) {
+                /*
+                 * This is an unlikely event because the field is known to exist,
+                 * but if it happens we must skip to avoid segfaulting.
+                 */
+                fprintf(stderr, "%s:%d: Failed to get value for \"%.*s\"\n",
+                        __FILE__, __LINE__,
+                        (int)new_field_len, new_field);
+                continue;
+            }
 
             if (flags == 1) {
-                /* if the path should be spliced to start from the first wildcard (as expected by selva.object.get */
+                /* if the path should be spliced to start from the first wildcard as expected by selva.object.get */
                 const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
                 char reply_path[reply_path_len + 1];
 
@@ -1514,8 +1526,6 @@ int SelvaObject_GetWithWildcardStr(
             replyWithKeyValue(ctx, lang, key);
             *resp_count += 2;
         }
-    } else {
-        err = SELVA_ENOENT;
     }
 
     /* ignore errors unless nothing was returned and an error occurred */
