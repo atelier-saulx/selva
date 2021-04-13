@@ -1458,32 +1458,47 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
 }
 
 static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SVector *array) {
-    RedisModuleString *str;
-    struct SVectorIterator it;
-    SVector_ForeachBegin(&it, array);
-    size_t n = 0;
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    while ((str = SVector_Foreach(&it))) {
-        switch (subtype) {
-        case SELVA_OBJECT_DOUBLE:
-            // n++;
-            // TODO
-            break;
-        case SELVA_OBJECT_LONGLONG:
-            // n++;
-            // TODO
-            break;
-        case SELVA_OBJECT_STRING:
+    struct SVectorIterator it;
+    size_t n = 0;
+
+    switch (subtype) {
+    case SELVA_OBJECT_DOUBLE:
+        SVector_ForeachBegin(&it, array);
+
+        double *d;
+        while ((d = SVector_Foreach(&it))) {
+            n++;
+            RedisModule_ReplyWithLongLong(ctx, *d);
+        }
+        RedisModule_ReplySetArrayLength(ctx, n);
+        break;
+    case SELVA_OBJECT_LONGLONG:
+        SVector_ForeachBegin(&it, array);
+
+        long long *ll;
+        while ((ll = SVector_Foreach(&it))) {
+            n++;
+            RedisModule_ReplyWithLongLong(ctx, *ll);
+        }
+        RedisModule_ReplySetArrayLength(ctx, n);
+        break;
+    case SELVA_OBJECT_STRING:
+        SVector_ForeachBegin(&it, array);
+
+        RedisModuleString *str;
+        while ((str = SVector_Foreach(&it))) {
             n++;
             RedisModule_ReplyWithString(ctx, str);
-            break;
-        default:
-            break;
         }
+        RedisModule_ReplySetArrayLength(ctx, n);
+        break;
+    default:
+        RedisModule_ReplySetArrayLength(ctx, 0);
+        break;
     }
 
-    RedisModule_ReplySetArrayLength(ctx, n);
 }
 
 static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key) {

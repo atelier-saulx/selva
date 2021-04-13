@@ -104,6 +104,8 @@ test.beforeEach(async (t) => {
           },
           dong: { type: 'json' },
           dingdongs: { type: 'array', items: { type: 'string' } },
+          floatArray: { type: 'array', items: { type: 'float' } },
+          intArray: { type: 'array', items: { type: 'int' } },
           refs: { type: 'references' },
           value: { type: 'number' },
           age: { type: 'number' },
@@ -2228,6 +2230,8 @@ test.serial.only('get - field with array', async (t) => {
     // dong: { dingdong: [] },
     // ding: { dong: [] },
     dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
     // refs: [],
   })
 
@@ -2244,6 +2248,8 @@ test.serial.only('get - field with array', async (t) => {
     children: [],
     descendants: [],
     dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
   })
 
   t.deepEqualIgnoreOrder(
@@ -2256,6 +2262,8 @@ test.serial.only('get - field with array', async (t) => {
       // dong: { dingdong: [] },
       type: 'lekkerType',
       dingdongs: ['a', 'b', 'test'],
+      intArray: [1, 2, 3, 4, 5],
+      floatArray: [1.1, 2.2, 3.3, 4.4],
     }
   )
 

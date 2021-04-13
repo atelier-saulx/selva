@@ -431,10 +431,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
         if (is_array_field(field_str, field_len)) {
+            int idx = get_array_field_index(field_str, field_len);
+            int new_len = get_array_field_start_idx(field_str, field_len);
+
             if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
+                //  TODO: handle default
                 fprintf(stderr, "HELLO WORLD I AM HERE\n");
-                int idx = get_array_field_index(field_str, field_len);
-                int new_len = get_array_field_start_idx(field_str, field_len);
                 int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
@@ -443,9 +445,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
                 RedisModule_RetainString(ctx, value);
             } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
-                // TODO
+                //  TODO: handle default
+                void *wrapper;
+                memcpy(&wrapper, &value, sizeof(value));
+                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, wrapper);
             } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
-                // TODO
+                //  TODO: handle default
+                void *wrapper;
+                memcpy(&wrapper, &value, sizeof(value));
+                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, wrapper);
             } else {
                 replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
                 continue;
