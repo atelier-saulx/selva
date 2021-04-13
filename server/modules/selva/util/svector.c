@@ -179,6 +179,30 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
     return dest;
 }
 
+static void SVector_Resize(SVector *vec, size_t i) {
+    void **vec_arr = vec->vec_arr;
+    ssize_t vec_len = vec->vec_arr_len;
+
+    if (i >= vec_len - 1) {
+        const size_t new_len = vec_len * 2 + 1; /* + 1 to make lazy alloc work. */
+        const size_t new_size = VEC_SIZE(new_len);
+
+        void **new_arr = RedisModule_Realloc(vec_arr, new_size);
+        if (!new_arr) {
+            fprintf(stderr, "SVector realloc failed\n");
+            /*
+             * TODO We shouldn't abort here but there is absolutely no safe way
+             * to fail as of now.
+             */
+            abort(); /* This will cause a core dump. */
+        }
+
+        vec->vec_arr = new_arr;
+        vec->vec_arr_len = new_len;
+        vec->vec_arr = new_arr;
+    }
+}
+
 void SVector_Insert(SVector *vec, void *el) {
     if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
         vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
@@ -193,24 +217,7 @@ void SVector_Insert(SVector *vec, void *el) {
 
         assert(el);
 
-        if (i >= vec_len - 1) {
-            const size_t new_len = vec_len * 2 + 1; /* + 1 to make lazy alloc work. */
-            const size_t new_size = VEC_SIZE(new_len);
-
-            void **new_arr = RedisModule_Realloc(vec_arr, new_size);
-            if (!new_arr) {
-                fprintf(stderr, "SVector realloc failed\n");
-                /*
-                 * TODO We shouldn't abort here but there is absolutely no safe way
-                 * to fail as of now.
-                 */
-                abort(); /* This will cause a core dump. */
-            }
-
-            vec->vec_arr = new_arr;
-            vec->vec_arr_len = new_len;
-            vec_arr = new_arr;
-        }
+        SVector_Resize(vec, i);
 
         vec_arr[i] = el;
 
@@ -435,30 +442,28 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
     return p;
 }
 
+// TODO: make sure you null things before the last entry and the first inserted index if it's larger than it's current size
 void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
 
-    void *p = NULL;
-
+    fprintf(stderr, "NO MITS VITTUS\n");
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
-        const size_t i = vec->vec_arr_shift_index + index;
-        if (i == -1 || i == vec->vec_last) {
-            return SVector_Insert(vec, el);
-        } else if (i < vec->vec_last) {
-            p = vec->vec_arr[i];
+        SVector_ShiftReset(vec);
+        if (index < vec->vec_last) {
+            vec->vec_arr[index] = el;
+        } else if (index < vec->vec_arr_len) {
+            memset(vec->vec_arr + vec->vec_last, 0, vec->vec_arr_len - vec->vec_last);
 
-            if (vec->vec_last < vec->vec_arr_len) {
-                memmove(&vec->vec_arr[i+1], &vec->vec_arr[i], vec->vec_last - i - 1);
-            }
-
-            vec->vec_last++;
+            vec->vec_arr[index] = el;
+            vec->vec_last = index + 1;
+        } else {
+            SVector_Resize(vec, index);
+            SVector_InsertIndex(vec, index, el);
         }
     } else {
         fprintf(stderr, "ABORTY BORTY\n");
         abort();
     }
-
-    return;
 }
 
 void *SVector_Remove(SVector * restrict vec, void *key) {

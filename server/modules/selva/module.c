@@ -435,7 +435,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 fprintf(stderr, "HELLO WORLD I AM HERE\n");
                 int idx = get_array_field_index(field_str, field_len);
                 int new_len = get_array_field_start_idx(field_str, field_len);
-                SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
+                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                    continue;
+                }
             } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
                 // TODO
             } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
