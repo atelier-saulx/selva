@@ -2224,11 +2224,11 @@ test.serial.only('get - field with array', async (t) => {
 
   const id = await client.set({
     type: 'lekkerType',
-    thing: [],
-    dong: { dingdong: [] },
-    ding: { dong: [] },
+    // thing: [],
+    // dong: { dingdong: [] },
+    // ding: { dong: [] },
     dingdongs: ['a', 'b', 'test'],
-    refs: [],
+    // refs: [],
   })
 
   const result = await client.get({

@@ -181,7 +181,7 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
 
 static void SVector_Resize(SVector *vec, size_t i) {
     void **vec_arr = vec->vec_arr;
-    ssize_t vec_len = vec->vec_arr_len;
+    size_t vec_len = vec->vec_arr_len;
 
     if (i >= vec_len - 1) {
         const size_t new_len = vec_len * 2 + 1; /* + 1 to make lazy alloc work. */
@@ -446,8 +446,8 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
 void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
 
-    fprintf(stderr, "NO MITS VITTUS\n");
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+        fprintf(stderr, "THIS IS SPARTA %p %zu %zu\n", vec->vec_arr, vec->vec_last, vec->vec_arr_len);
         SVector_ShiftReset(vec);
         if (index < vec->vec_last) {
             vec->vec_arr[index] = el;
@@ -461,7 +461,6 @@ void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
             SVector_InsertIndex(vec, index, el);
         }
     } else {
-        fprintf(stderr, "ABORTY BORTY\n");
         abort();
     }
 }
@@ -598,7 +597,7 @@ void *SVector_Peek(SVector * restrict vec) {
 }
 
 void SVector_ShiftReset(SVector * restrict vec) {
-    if (vec->vec_mode != SVECTOR_MODE_ARRAY) {
+    if (vec->vec_mode != SVECTOR_MODE_ARRAY || !vec->vec_arr) {
         /* Reseting shift index is only necessary in the array mode. */
         return;
     }

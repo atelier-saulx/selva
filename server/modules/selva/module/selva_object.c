@@ -1035,6 +1035,7 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
 
     /* TODO Should it fail if the subtype doesn't match? */
     if (key->type != SELVA_OBJECT_ARRAY || key->subtype != subtype) {
+        fprintf(stderr, "MIKS CLEAR EN JUMMARRA %.*s %d %d\n", (int)key->name_len, key->name, key->type, key->subtype);
         err = clear_key_value(key);
         if (err) {
             return err;
@@ -1047,7 +1048,7 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
         key->type = SELVA_OBJECT_ARRAY;
         key->subtype = subtype;
 
-        if (!SVector_Init(&key->array, 1, NULL)) {
+        if (!SVector_Init(&key->array, idx+1, NULL)) {
             return SELVA_ENOMEM;
         }
     }

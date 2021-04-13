@@ -440,6 +440,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                     replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
                     continue;
                 }
+
+                RedisModule_RetainString(ctx, value);
             } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
                 // TODO
             } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
