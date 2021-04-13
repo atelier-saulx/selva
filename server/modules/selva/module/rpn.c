@@ -805,7 +805,6 @@ static enum rpn_error rpn_op_range(struct RedisModuleCtx *redis_ctx __unused, st
 }
 
 static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
-    struct SelvaObject *obj;
     struct SelvaSet *set;
     OPERAND(ctx, s); /* set */
     OPERAND(ctx, v); /* value */
@@ -815,6 +814,8 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
         set = s->set;
     } else {
         /* The operand `s` is a field_name string. */
+        struct SelvaObject *obj;
+
         obj = open_node_object(redis_ctx, ctx);
         if (!obj) {
             fprintf(stderr, "%s:%d: Node object not found for: \"%.*s\"\n",

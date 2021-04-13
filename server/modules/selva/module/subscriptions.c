@@ -210,9 +210,7 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
     if (marker->fields) {
         memset(marker->fields, 0, sizeof(*marker->fields));
     }
-    if (marker) {
-        memset(marker, 0, sizeof(*marker));
-    }
+    memset(marker, 0, sizeof(*marker));
 #endif
     RedisModule_Free(marker->filter_expression);
     RedisModule_Free(marker->fields);
@@ -556,19 +554,13 @@ int Selva_AddSubscriptionAliasMarker(
         RedisModuleString *alias_name,
         Selva_NodeId node_id
     ) {
-    struct rpn_ctx *filter_ctx;
-    rpn_token *filter_expression;
+    struct rpn_ctx *filter_ctx = NULL;
+    rpn_token *filter_expression = NULL;
     int err = 0;
 
     if (SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id)) {
         /* Marker already created. */
         return SELVA_SUBSCRIPTIONS_EEXIST;
-    }
-
-    filter_ctx = rpn_init(3);
-    if (!filter_ctx) {
-        err = SELVA_SUBSCRIPTIONS_ENOMEM;
-        goto out;
     }
 
     /*
@@ -583,6 +575,12 @@ int Selva_AddSubscriptionAliasMarker(
         goto out;
     }
 
+    filter_ctx = rpn_init(3);
+    if (!filter_ctx) {
+        err = SELVA_SUBSCRIPTIONS_ENOMEM;
+        goto out;
+    }
+
     /* Set RPN registers */
     /* TODO Handle errors */
     (void)rpn_set_reg_rm(filter_ctx, 1, alias_name);
@@ -594,7 +592,7 @@ int Selva_AddSubscriptionAliasMarker(
                                       node_id, sub_dir,
                                       filter_ctx, filter_expression);
 out:
-    if (err && filter_ctx) {
+    if (err) {
         rpn_destroy(filter_ctx);
         RedisModule_Free(filter_expression);
     }

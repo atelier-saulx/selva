@@ -195,9 +195,7 @@ void SelvaObject_Clear(struct SelvaObject *obj) {
 void SelvaObject_Destroy(struct SelvaObject *obj) {
     SelvaObject_Clear(obj);
 #if MEM_DEBUG
-    if (obj) {
-        memset(obj, 0, sizeof(*obj));
-    }
+    memset(obj, 0, sizeof(*obj));
 #endif
     RedisModule_Free(obj);
 }
@@ -470,9 +468,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         obj->obj_size--;
         (void)clear_key_value(key);
 #if MEM_DEBUG
-        if (key) {
-            memset(key, 0, sizeof(*key));
-        }
+        memset(key, 0, sizeof(*key));
 #endif
         RedisModule_Free(key);
         key = NULL;
