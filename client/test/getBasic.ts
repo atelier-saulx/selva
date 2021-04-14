@@ -53,6 +53,8 @@ test.beforeEach(async (t) => {
             values: {
               type: 'object',
               properties: {
+                floatArray: { type: 'array', items: { type: 'float' } },
+                intArray: { type: 'array', items: { type: 'int' } },
                 hello: {
                   type: 'string',
                 },
@@ -2232,6 +2234,12 @@ test.serial.only('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+      },
+    },
     // refs: [],
   })
 
@@ -2244,6 +2252,7 @@ test.serial.only('get - field with array', async (t) => {
     refs: true,
     intArray: true,
     floatArray: true,
+    objRec: true,
   })
 
   t.deepEqual(result, {
@@ -2252,6 +2261,12 @@ test.serial.only('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+      },
+    },
   })
 
   const all = await client.get({
@@ -2266,6 +2281,12 @@ test.serial.only('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+      },
+    },
   })
 
   client.destroy()

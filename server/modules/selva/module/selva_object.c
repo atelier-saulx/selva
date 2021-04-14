@@ -351,6 +351,12 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
          s = strtok_r(NULL, sep, &rest)) {
         const size_t slen = strlen(s);
         int err;
+        size_t ary_idx = -1;
+
+        if (is_array_field(key_name_str, key_name_len)) {
+            ary_idx = get_array_field_index(key_name_str, key_name_len);
+            key_name_len = get_array_field_index(key_name_str, key_name_len);
+        }
 
         cobj = obj;
         key = NULL; /* This needs to be cleared on every iteration. */
