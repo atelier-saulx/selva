@@ -730,6 +730,10 @@ static int get_selva_set_modify(struct SelvaObject *obj, const RedisModuleString
 
     assert(obj);
 
+    if (!SelvaSet_isValidType(type)) {
+        return SELVA_EINTYPE;
+    }
+
     err = get_key_modify(obj, key_name_str, key_name_len, &key);
     if (err) {
         return err;

@@ -148,7 +148,7 @@ static int update_hierarchy(
             if (err < 0) {
                 return err;
             }
-            res += 1; // TODO err;
+            res += 1;
         }
 
         return res;
@@ -616,7 +616,7 @@ int SelvaModify_ModifySet(
                 if (node_aliases) {
                     selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
                     (void)delete_aliases(alias_key, node_aliases);
-                    /* TODO It would be nice to print the number of deletions. */
+                    /* TODO It would be nice to return the actual number of deletions. */
                 }
             }
 
