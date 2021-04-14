@@ -47,13 +47,6 @@ static int update_hierarchy(
     const char *field_str,
     struct SelvaModify_OpSet *setOpts
 ) {
-    RedisModuleString *key_name;
-
-    key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-    if (!key_name) {
-        return SELVA_ENOMEM;
-    }
-
     /*
      * If the field starts with 'p' we assume "parents"; Otherwise "children".
      * No other field can modify the hierarchy.
